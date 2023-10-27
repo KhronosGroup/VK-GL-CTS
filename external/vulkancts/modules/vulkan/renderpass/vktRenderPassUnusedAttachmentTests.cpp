@@ -229,6 +229,64 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 	return renderPassInfo.createRenderPass(vk, vkDevice);
 }
 
+VkImageLayout chooseInputImageLayout(const SharedGroupParams groupParams)
+{
+#ifndef CTS_USES_VULKANSC
+	if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
+		// use general layout for local reads for some tests
+		if (groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			return VK_IMAGE_LAYOUT_GENERAL;
+		return VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+	}
+#else
+	DE_UNREF(groupParams);
+#endif
+	return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+}
+
+#ifndef CTS_USES_VULKANSC
+void beginSecondaryCmdBuffer(const DeviceInterface&	vk,
+							 VkCommandBuffer		secCmdBuffer,
+							 const void*			additionalInheritanceRenderingInfo)
+{
+	VkCommandBufferUsageFlags	usageFlags				(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	const std::vector<VkFormat>	colorAttachmentFormats	(3, VK_FORMAT_R8G8B8A8_UNORM);
+
+	const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		additionalInheritanceRenderingInfo,										// const void*						pNext;
+		0u,																		// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		3u,																		// uint32_t							colorAttachmentCount;
+		colorAttachmentFormats.data(),											// const VkFormat*					pColorAttachmentFormats;
+		VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,						// VkStructureType					sType;
+		&inheritanceRenderingInfo,												// const void*						pNext;
+		DE_NULL,																// VkRenderPass						renderPass;
+		0u,																		// deUint32							subpass;
+		DE_NULL,																// VkFramebuffer					framebuffer;
+		VK_FALSE,																// VkBool32							occlusionQueryEnable;
+		(VkQueryControlFlags)0u,												// VkQueryControlFlags				queryFlags;
+		(VkQueryPipelineStatisticFlags)0u										// VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType							sType;
+		DE_NULL,																// const void*								pNext;
+		usageFlags,																// VkCommandBufferUsageFlags				flags;
+		&bufferInheritanceInfo													// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+	};
+	VK_CHECK(vk.beginCommandBuffer(secCmdBuffer, &commandBufBeginParams));
+}
+#endif // CTS_USES_VULKANSC
+
 class UnusedAttachmentTest : public vkt::TestCase
 {
 public:
@@ -252,11 +310,25 @@ public:
 																			 const TestParams&		testParams);
 	virtual								~UnusedAttachmentTestInstance		(void) = default;
 	virtual tcu::TestStatus				iterate								(void);
+
+protected:
 	template<typename RenderpassSubpass>
 	void								createCommandBuffer					(const DeviceInterface&	vk,
 																			 VkDevice				vkDevice);
 	void								createCommandBufferDynamicRendering	(const DeviceInterface&	vk,
 																			 VkDevice				vkDevice);
+
+#ifndef CTS_USES_VULKANSC
+	void								preRenderCommands					(const DeviceInterface&	vk,
+																			 VkCommandBuffer		cmdBuffer);
+	void								inbetweenRenderCommands				(const DeviceInterface&	vk,
+																			 VkCommandBuffer		cmdBuffer);
+#endif // CTS_USES_VULKANSC
+	void								drawFirstSubpass					(const DeviceInterface&	vk,
+																			 VkCommandBuffer		cmdBuffer);
+	void								drawSecondSubpass					(const DeviceInterface&	vk,
+																			 VkCommandBuffer		cmdBuffer);
+
 private:
 	tcu::TestStatus						verifyImage							(void);
 
@@ -274,6 +346,7 @@ private:
 	Move<VkImage>						m_inputImage;
 	de::MovePtr<Allocation>				m_inputImageAlloc;
 	Move<VkImageView>					m_inputAttachmentView;
+	VkImageLayout						m_inputImageReadLayout;
 
 	Move<VkDescriptorSetLayout>			m_descriptorSetLayoutSubpass0;
 	Move<VkDescriptorSetLayout>			m_descriptorSetLayoutSubpass1;
@@ -300,6 +373,7 @@ private:
 
 	Move<VkCommandPool>					m_cmdPool;
 	Move<VkCommandBuffer>				m_cmdBuffer;
+	Move<VkCommandBuffer>				m_secCmdBuffer;
 };
 
 UnusedAttachmentTest::UnusedAttachmentTest (tcu::TestContext&	testContext,
@@ -361,10 +435,11 @@ void UnusedAttachmentTest::initPrograms (SourceCollections& sourceCollections) c
 
 UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 															const TestParams&	testParams)
-	: vkt::TestInstance	(context)
-	, m_testParams		(testParams)
-	, m_renderSize		(32u, 32u)
-	, m_vertices		(createQuad())
+	: vkt::TestInstance			(context)
+	, m_testParams				(testParams)
+	, m_renderSize				(32u, 32u)
+	, m_inputImageReadLayout	(chooseInputImageLayout(testParams.groupParams))
+	, m_vertices				(createQuad())
 {
 	const DeviceInterface&		vk						= m_context.getDeviceInterface();
 	const VkDevice				vkDevice				= m_context.getDevice();
@@ -711,16 +786,11 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 
 		m_descriptorSetSubpass1 = allocateDescriptorSet(vk, vkDevice, &descriptorSetAllocateInfo);
 
-		VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-#ifndef CTS_USES_VULKANSC
-		if (testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-			imageLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-#endif
 		const VkDescriptorImageInfo			inputImageInfo				=
 		{
 			DE_NULL,									// VkSampleri		sampler;
 			*m_inputAttachmentView,						// VkImageView		imageView;
-			imageLayout									// VkImageLayout	imageLayout;
+			m_inputImageReadLayout						// VkImageLayout	imageLayout;
 		};
 
 		const VkWriteDescriptorSet			descriptorWrite				=
@@ -929,13 +999,11 @@ void UnusedAttachmentTestInstance::createCommandBuffer (const DeviceInterface&	v
 		makeClearValueColorF32(0.5f, 0.2f, 0.1f, 1.0f)	// input
 	};
 
-	const VkDeviceSize vertexBufferOffset = 0;
-
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-	const VkRenderPassBeginInfo renderPassBeginInfo =
+	const VkRenderPassBeginInfo renderPassBeginInfo
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
 		DE_NULL,									// const void*			pNext;
@@ -947,13 +1015,9 @@ void UnusedAttachmentTestInstance::createCommandBuffer (const DeviceInterface&	v
 	};
 	RenderpassSubpass::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfo, &subpassBeginInfo);
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineSubpass0);
-	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+	drawFirstSubpass(vk, *m_cmdBuffer);
 	vk.cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineSubpass1);
-	vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutSubpass1, 0, 1, &m_descriptorSetSubpass1.get(), 0, DE_NULL);
-	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+	drawSecondSubpass(vk, *m_cmdBuffer);
 
 	RenderpassSubpass::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
 	endCommandBuffer(vk, *m_cmdBuffer);
@@ -963,28 +1027,20 @@ void UnusedAttachmentTestInstance::createCommandBufferDynamicRendering(const Dev
 																	   VkDevice					vkDevice)
 {
 #ifndef CTS_USES_VULKANSC
-	const VkImageSubresourceRange	subresourceRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1));
-
-	VkImageMemoryBarrier imageBarriers[]
-	{
-		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_colorImage, subresourceRange),
-		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_unusedImage, subresourceRange),
-		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR, *m_inputImage, subresourceRange),
-	};
-
-	deUint32 colorAttachmentLocationsSubpass0[]{ VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED, 0 };
-	deUint32 colorAttachmentLocationsSubpass1[]{ 0, VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED };
+	deUint32 colorAttachmentLocationsSubpass0[]		{ VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED, 0 };
+	deUint32 colorAttachmentLocationsSubpass1[]		{ 0, VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED };
 	VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocationInfo = initVulkanStructure();
 	renderingAttachmentLocationInfo.colorAttachmentCount = 3u;
 	renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass0;
 
-	deUint32 colorAttachmentInputIndices[]{ VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED, 0 };
+	deUint32 colorAttachmentInputIndicesSubpass0[]	{ VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED };
+	deUint32 colorAttachmentInputIndicesSubpass1[]	{ VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED, 0 };
 	VkRenderingInputAttachmentIndexInfoKHR renderingInputAttachmentIndexInfo
 	{
 		VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR,
 		DE_NULL,
 		3u,														// uint32_t					colorAttachmentCount
-		colorAttachmentInputIndices,							// const uint32_t*			pColorAttachmentInputIndices
+		colorAttachmentInputIndicesSubpass1,					// const uint32_t*			pColorAttachmentInputIndices
 		DE_NULL,												// uint32_t					depthInputAttachmentIndex
 		DE_NULL,												// uint32_t					stencilInputAttachmentIndex
 	};
@@ -1007,7 +1063,7 @@ void UnusedAttachmentTestInstance::createCommandBufferDynamicRendering(const Dev
 	colorAttachments[1].loadOp			= m_testParams.loadOp;
 	colorAttachments[1].storeOp			= m_testParams.storeOp;
 	colorAttachments[2].imageView		= *m_inputAttachmentView;
-	colorAttachments[2].imageLayout		= VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+	colorAttachments[2].imageLayout		= m_inputImageReadLayout;
 	colorAttachments[2].clearValue		= makeClearValueColorF32(0.5f, 0.2f, 0.1f, 1.0f);
 
 	VkRenderingInfo renderingInfo
@@ -1024,47 +1080,112 @@ void UnusedAttachmentTestInstance::createCommandBufferDynamicRendering(const Dev
 		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 	};
 
-	const VkDeviceSize vertexBufferOffset = 0;
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+	if (m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+	{
+		m_secCmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		VkCommandBuffer secCmdBuffer = *m_secCmdBuffer;
 
-	// layout transition barriers
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 3u, imageBarriers);
+		// record secondary command buffer
+		renderingAttachmentLocationInfo.pNext = &renderingInputAttachmentIndexInfo;
+		beginSecondaryCmdBuffer(vk, secCmdBuffer, &renderingAttachmentLocationInfo);
+		vk.cmdBeginRendering(secCmdBuffer, &renderingInfo);
 
-	vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
+		renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass0;
+		renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices = colorAttachmentInputIndicesSubpass0;
+		vk.cmdSetRenderingAttachmentLocationsKHR(secCmdBuffer, &renderingAttachmentLocationInfo);
+		vk.cmdSetRenderingInputAttachmentIndicesKHR(secCmdBuffer, &renderingInputAttachmentIndexInfo);
+		drawFirstSubpass(vk, secCmdBuffer);
+		inbetweenRenderCommands(vk, secCmdBuffer);
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineSubpass0);
-	vk.cmdSetRenderingAttachmentLocationsKHR(*m_cmdBuffer, &renderingAttachmentLocationInfo);
-	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+		renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass1;
+		renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices = colorAttachmentInputIndicesSubpass1;
+		vk.cmdSetRenderingAttachmentLocationsKHR(secCmdBuffer, &renderingAttachmentLocationInfo);
+		vk.cmdSetRenderingInputAttachmentIndicesKHR(secCmdBuffer, &renderingInputAttachmentIndexInfo);
+		drawSecondSubpass(vk, secCmdBuffer);
 
-	// barier before next subpass
-	VkImageMemoryBarrier imageBarrier(
-		makeImageMemoryBarrier(
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-			VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,
-			VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,
-			*m_inputImage,
-			subresourceRange));
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+		vk.cmdEndRendering(secCmdBuffer);
+		endCommandBuffer(vk, secCmdBuffer);
 
-	renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass1;
-	vk.cmdSetRenderingAttachmentLocationsKHR(*m_cmdBuffer, &renderingAttachmentLocationInfo);
-	vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
+		// record primary command buffer
+		renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass0;
+		renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices = colorAttachmentInputIndicesSubpass1;
+		beginCommandBuffer(vk, *m_cmdBuffer);
+		preRenderCommands(vk, *m_cmdBuffer);
+		vk.cmdSetRenderingAttachmentLocationsKHR(*m_cmdBuffer, &renderingAttachmentLocationInfo);
+		vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
+		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffer);
+		endCommandBuffer(vk, *m_cmdBuffer);
+	}
+	else
+	{
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+		preRenderCommands(vk, *m_cmdBuffer);
+		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineSubpass1);
-	vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutSubpass1, 0, 1, &m_descriptorSetSubpass1.get(), 0, DE_NULL);
-	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+		vk.cmdSetRenderingAttachmentLocationsKHR(*m_cmdBuffer, &renderingAttachmentLocationInfo);
+		drawFirstSubpass(vk, *m_cmdBuffer);
+		inbetweenRenderCommands(vk, *m_cmdBuffer);
 
-	vk.cmdEndRendering(*m_cmdBuffer);
-	endCommandBuffer(vk, *m_cmdBuffer);
+		renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass1;
+		vk.cmdSetRenderingAttachmentLocationsKHR(*m_cmdBuffer, &renderingAttachmentLocationInfo);
+		vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
+		drawSecondSubpass(vk, *m_cmdBuffer);
 
+		vk.cmdEndRendering(*m_cmdBuffer);
+		endCommandBuffer(vk, *m_cmdBuffer);
+	}
 #else
 	DE_UNREF(vk);
 	DE_UNREF(vkDevice);
 #endif // CTS_USES_VULKANSC
+}
+
+#ifndef CTS_USES_VULKANSC
+void UnusedAttachmentTestInstance::preRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	const VkImageSubresourceRange	subresourceRange(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1));
+	const VkImageMemoryBarrier		imageBarriers[]
+	{
+		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_colorImage, subresourceRange),
+		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_unusedImage, subresourceRange),
+		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, m_inputImageReadLayout, *m_inputImage, subresourceRange),
+	};
+
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 3u, imageBarriers);
+}
+
+void UnusedAttachmentTestInstance::inbetweenRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	const VkImageSubresourceRange	subresourceRange(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1));
+	VkImageMemoryBarrier			imageBarrier(
+		makeImageMemoryBarrier(
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+			m_inputImageReadLayout,
+			m_inputImageReadLayout,
+			*m_inputImage,
+			subresourceRange));
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+}
+#endif // CTS_USES_VULKANSC
+
+void UnusedAttachmentTestInstance::drawFirstSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	const VkDeviceSize vertexBufferOffset = 0;
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineSubpass0);
+	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+	vk.cmdDraw(cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+}
+
+void UnusedAttachmentTestInstance::drawSecondSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	const VkDeviceSize vertexBufferOffset = 0;
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineSubpass1);
+	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutSubpass1, 0, 1, &m_descriptorSetSubpass1.get(), 0, DE_NULL);
+	vk.cmdDraw(cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
 }
 
 tcu::TestStatus UnusedAttachmentTestInstance::iterate (void)

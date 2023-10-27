@@ -8006,16 +8006,17 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 		break;
 	}
 
-	if (groupParams->useSecondaryCmdBuffer == false)	// Note: support for secondary command buffers will be added in separate change
+	// attachment mapping from dynamic_rendering_local_read can't be used when
+	// secondary command buffer doesn't compleately contain dynamic renderpass
+	if ((renderingType != RENDERING_TYPE_DYNAMIC_RENDERING) || (groupParams->useSecondaryCmdBuffer == groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass))
 	{
 		suballocationTestGroup->addChild(createRenderPassSampleReadTests(testCtx, groupParams));
 		suballocationTestGroup->addChild(createRenderPassMultisampleTests(testCtx, groupParams));
 		suballocationTestGroup->addChild(createRenderPassUnusedAttachmentTests(testCtx, groupParams));
 		suballocationTestGroup->addChild(createRenderPassUnusedAttachmentSparseFillingTests(testCtx, groupParams));
-		suballocationTestGroup->addChild(createRenderPassMultisampleResolveTests(testCtx, groupParams));
 	}
-
 	suballocationTestGroup->addChild(createRenderPassSubpassDependencyTests(testCtx, groupParams));
+	suballocationTestGroup->addChild(createRenderPassMultisampleResolveTests(testCtx, groupParams));
 	suballocationTestGroup->addChild(createRenderPassUnusedClearAttachmentTests(testCtx, groupParams));
 
 #ifndef CTS_USES_VULKANSC

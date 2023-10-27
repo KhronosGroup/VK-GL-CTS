@@ -103,6 +103,66 @@ de::SharedPtr<T> safeSharedPtr (T* ptr)
 	}
 }
 
+VkImageLayout chooseInputImageLayout(const SharedGroupParams groupParams)
+{
+#ifndef CTS_USES_VULKANSC
+	if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
+		// use general layout for local reads for some tests
+		if (groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			return VK_IMAGE_LAYOUT_GENERAL;
+		return VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+	}
+#else
+	DE_UNREF(groupParams);
+#endif
+	return VK_IMAGE_LAYOUT_GENERAL;
+}
+
+#ifndef CTS_USES_VULKANSC
+void beginSecondaryCmdBuffer(const					DeviceInterface& vk,
+							 VkCommandBuffer		secCmdBuffer,
+							 deUint32				colorAttachmentsCount,
+							 VkSampleCountFlagBits	rasterizationSamples,
+							 const void*			additionalInheritanceRenderingInfo = DE_NULL)
+{
+	VkCommandBufferUsageFlags	usageFlags				(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	const std::vector<VkFormat>	colorAttachmentFormats	(colorAttachmentsCount, VK_FORMAT_R8G8B8A8_UNORM);
+
+	const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		additionalInheritanceRenderingInfo,										// const void*						pNext;
+		0u,																		// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		colorAttachmentsCount,													// uint32_t							colorAttachmentCount;
+		colorAttachmentFormats.data(),											// const VkFormat*					pColorAttachmentFormats;
+		VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+		rasterizationSamples													// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,						// VkStructureType					sType;
+		&inheritanceRenderingInfo,												// const void*						pNext;
+		DE_NULL,																// VkRenderPass						renderPass;
+		0u,																		// deUint32							subpass;
+		DE_NULL,																// VkFramebuffer					framebuffer;
+		VK_FALSE,																// VkBool32							occlusionQueryEnable;
+		(VkQueryControlFlags)0u,												// VkQueryControlFlags				queryFlags;
+		(VkQueryPipelineStatisticFlags)0u										// VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType							sType;
+		DE_NULL,																// const void*								pNext;
+		usageFlags,																// VkCommandBufferUsageFlags				flags;
+		&bufferInheritanceInfo													// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+	};
+	VK_CHECK(vk.beginCommandBuffer(secCmdBuffer, &commandBufBeginParams));
+}
+#endif
+
 enum TestType
 {
 	RESOLVE			= 0,
@@ -205,6 +265,7 @@ protected:
 
 	const VkFormat					m_format;
 	const VkSampleCountFlagBits		m_sampleCount;
+	const VkImageLayout				m_inputImageReadLayout;
 	const deUint32					m_layerCount;
 	const deUint32					m_baseLayer;
 	const deUint32					m_attachmentsCount;
@@ -218,6 +279,7 @@ MultisampleRenderPassTestBase::MultisampleRenderPassTestBase (Context& context, 
 	, m_groupParams				(config.groupParams)
 	, m_format					(config.format)
 	, m_sampleCount				(sampleCountBitFromSampleCount(config.sampleCount))
+	, m_inputImageReadLayout	(chooseInputImageLayout(m_groupParams))
 	, m_layerCount				(config.layerCount)
 	, m_baseLayer				(config.baseLayer)
 	, m_attachmentsCount		(config.attachmentCount)
@@ -897,17 +959,15 @@ void MultisampleRenderPassTestInstance::submitDynamicRendering (void)
 		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 	};
 
-	if (m_groupParams->useSecondaryCmdBuffer)
+	if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 	{
 		secCmdBuffer = allocateCommandBuffer(vkd, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
 		// record secondary command buffer
 		beginSecondaryCmdBuffer(*secCmdBuffer);
-		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-			vkd.cmdBeginRendering(*secCmdBuffer, &renderingInfo);
+		vkd.cmdBeginRendering(*secCmdBuffer, &renderingInfo);
 		drawCommands(*secCmdBuffer, *m_renderPipeline, *m_renderPipelineLayout);
-		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-			vkd.cmdEndRendering(*secCmdBuffer);
+		vkd.cmdEndRendering(*secCmdBuffer);
 
 		endCommandBuffer(vkd, *secCmdBuffer);
 
@@ -917,15 +977,7 @@ void MultisampleRenderPassTestInstance::submitDynamicRendering (void)
 		vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)singlesampleImageBarriers.size(), &singlesampleImageBarriers[0]);
 		vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)multisampleImageBarriers.size(), &multisampleImageBarriers[0]);
 
-		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-		{
-			renderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
-			vkd.cmdBeginRendering(*cmdBuffer, &renderingInfo);
-		}
 		vkd.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
-
-		if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-			vkd.cmdEndRendering(*cmdBuffer);
 	}
 	else
 	{
@@ -1857,6 +1909,20 @@ private:
 	template<typename RenderpassSubpass>
 	void					submit						(void);
 	void					submitDynamicRendering		(void);
+
+#ifndef CTS_USES_VULKANSC
+	void					preRenderCommands			(const DeviceInterface&		vk,
+														 VkCommandBuffer			cmdBuffer);
+	void					inbetweenRenderCommands		(const DeviceInterface&		vk,
+														 VkCommandBuffer			cmdBuffer);
+#endif // CTS_USES_VULKANSC
+	void					drawFirstSubpass			(const DeviceInterface&		vk,
+														 VkCommandBuffer			cmdBuffer);
+	void					drawSecondSubpass			(const DeviceInterface&		vk,
+														 VkCommandBuffer			cmdBuffer);
+	void					postRenderCommands			(const DeviceInterface&		vk,
+														 VkCommandBuffer			cmdBuffer);
+
 	void					submitSwitch				(RenderingType renderingType);
 	void					verify						(void);
 
@@ -2000,105 +2066,15 @@ void MaxAttachmenstsRenderPassTestInstance::submit (void)
 	clearAttachments(*commandBuffer);
 
 	// First subpass - render black samples
-	{
-		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelinePass0);
-		vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
-	}
+	drawFirstSubpass(vkd, *commandBuffer);
 
 	// Second subpasss - merge attachments
-	{
-		RenderpassSubpass::cmdNextSubpass(vkd, *commandBuffer, &subpassBeginInfo, &subpassEndInfo);
-		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelinePass1);
-		vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutPass1, 0, 1u, &*m_descriptorSet, 0, NULL);
-		vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
-	}
+	RenderpassSubpass::cmdNextSubpass(vkd, *commandBuffer, &subpassBeginInfo, &subpassEndInfo);
+	drawSecondSubpass(vkd, *commandBuffer);
 
 	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
-	// Memory barriers between rendering and copies
-	{
-		std::vector<VkImageMemoryBarrier> barriers;
-
-		for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
-		{
-			const VkImageMemoryBarrier barrier =
-			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-				DE_NULL,
-
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-				VK_ACCESS_TRANSFER_READ_BIT,
-
-				VK_IMAGE_LAYOUT_GENERAL,
-				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-
-				VK_QUEUE_FAMILY_IGNORED,
-				VK_QUEUE_FAMILY_IGNORED,
-
-				**m_singlesampleImages[dstNdx],
-				{
-					VK_IMAGE_ASPECT_COLOR_BIT,
-					0u,
-					1u,
-					m_baseLayer,
-					m_layerCount
-				}
-			};
-
-			barriers.push_back(barrier);
-		}
-
-		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)barriers.size(), &barriers[0]);
-	}
-
-	// Copy image memory to buffers
-	for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
-	{
-		const VkBufferImageCopy region =
-		{
-			0u,
-			0u,
-			0u,
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				0u,
-				0u,
-				m_layerCount,
-			},
-			{ 0u, 0u, 0u },
-			{ m_width, m_height, 1u }
-		};
-
-		vkd.cmdCopyImageToBuffer(*commandBuffer, **m_singlesampleImages[dstNdx], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_buffers[dstNdx], 1u, &region);
-	}
-
-	// Memory barriers between copies and host access
-	{
-		std::vector<VkBufferMemoryBarrier> barriers;
-
-		for (size_t dstNdx = 0; dstNdx < m_buffers.size(); dstNdx++)
-		{
-			const VkBufferMemoryBarrier barrier =
-			{
-				VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-				DE_NULL,
-
-				VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_ACCESS_HOST_READ_BIT,
-
-				VK_QUEUE_FAMILY_IGNORED,
-				VK_QUEUE_FAMILY_IGNORED,
-
-				**m_buffers[dstNdx],
-				0u,
-				VK_WHOLE_SIZE
-			};
-
-			barriers.push_back(barrier);
-		}
-
-		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, (deUint32)barriers.size(), &barriers[0], 0u, DE_NULL);
-	}
+	postRenderCommands(vkd, *commandBuffer);
 
 	endCommandBuffer(vkd, *commandBuffer);
 
@@ -2114,7 +2090,7 @@ void MaxAttachmenstsRenderPassTestInstance::submitDynamicRendering()
 	const DeviceInterface&			vk					(m_context.getDeviceInterface());
 	const VkDevice					device				(m_context.getDevice());
 	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const VkImageSubresourceRange	subresourceRange	{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_layerCount };
+	Move<VkCommandBuffer>			secCmdBuffers[2];
 
 	const tcu::TextureFormat		format				(mapVkFormat(m_format));
 	const tcu::TextureChannelClass	channelClass		= tcu::getTextureChannelClass(format.type);
@@ -2130,7 +2106,7 @@ void MaxAttachmenstsRenderPassTestInstance::submitDynamicRendering()
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout			imageLayout;
 			resolveMode,										// VkResolveModeFlagBits	resolveMode;
 			VK_NULL_HANDLE,										// VkImageView				resolveImageView;
-			VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,			// VkImageLayout			resolveImageLayout;
+			m_inputImageReadLayout,								// VkImageLayout			resolveImageLayout;
 			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp		loadOp;
 			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp		storeOp;
 			getClearValue()										// VkClearValue				clearValue;
@@ -2142,7 +2118,7 @@ void MaxAttachmenstsRenderPassTestInstance::submitDynamicRendering()
 		firstColorAttachments[i].resolveImageView	= **m_singlesampleImageViews[i];
 
 		secondColorAttachments[i].imageView			= **m_singlesampleImageViews[i];
-		secondColorAttachments[i].imageLayout		= VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+		secondColorAttachments[i].imageLayout		= m_inputImageReadLayout;
 		secondColorAttachments[i].resolveMode		= VK_RESOLVE_MODE_NONE;
 		secondColorAttachments[i].loadOp			= VK_ATTACHMENT_LOAD_OP_LOAD;
 	}
@@ -2174,89 +2150,147 @@ void MaxAttachmenstsRenderPassTestInstance::submitDynamicRendering()
 	renderingInputAttachmentIndexInfo.colorAttachmentCount			= (deUint32)colorAttachmentLocationsAndInputs.size();
 	renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices	= colorAttachmentLocationsAndInputs.data();
 
-	beginCommandBuffer(vk, *cmdBuffer);
-
-	// Transition image layouts
+	if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 	{
-		std::vector<VkImageMemoryBarrier> barriers(m_multisampleImages.size() + m_singlesampleImages.size(),
-			makeImageMemoryBarrier(
-				VK_ACCESS_TRANSFER_READ_BIT,
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				0,
-				subresourceRange));
+		secCmdBuffers[0] = allocateCommandBuffer(vk, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		secCmdBuffers[1] = allocateCommandBuffer(vk, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		renderingInputAttachmentIndexInfo.pNext = &renderingAttachmentLocationInfo;
 
-		for (size_t i = 0; i < m_multisampleImages.size(); ++i)
-			barriers[i].image		= **m_multisampleImages[i];
-		for (size_t i = m_multisampleImages.size(); i < barriers.size(); ++i)
-		{
-			barriers[i].image		= **m_singlesampleImages[i - m_multisampleImages.size()];
-			barriers[i].newLayout	= VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-		}
+		// record secondary command buffer for first subpass
+		beginSecondaryCmdBuffer(vk, *secCmdBuffers[0], (deUint32)m_multisampleImages.size(), m_sampleCount);
+		vk.cmdBeginRendering(*secCmdBuffers[0], &firstRenderingInfo);
+		drawFirstSubpass(vk, *secCmdBuffers[0]);
+		vk.cmdEndRendering(*secCmdBuffers[0]);
+		endCommandBuffer(vk, *secCmdBuffers[0]);
 
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-							  0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)barriers.size(), barriers.data());
+		// record secondary command buffer for second subpass
+		beginSecondaryCmdBuffer(vk, *secCmdBuffers[1], (deUint32)m_multisampleImages.size(), VK_SAMPLE_COUNT_1_BIT, &renderingInputAttachmentIndexInfo);
+		vk.cmdBeginRendering(*secCmdBuffers[1], &secondRenderingInfo);
+		drawSecondSubpass(vk, *secCmdBuffers[1]);
+		vk.cmdEndRendering(*secCmdBuffers[1]);
+		endCommandBuffer(vk, *secCmdBuffers[1]);
+
+		renderingInputAttachmentIndexInfo.pNext = DE_NULL;
+
+		// record primary command buffer
+		beginCommandBuffer(vk, *cmdBuffer);
+		preRenderCommands(vk, *cmdBuffer);
+		vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocationInfo);
+		vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
+		vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffers[0]);
+		inbetweenRenderCommands(vk, *cmdBuffer);
+		vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffers[1]);
+		postRenderCommands(vk, *cmdBuffer);
+		endCommandBuffer(vk, *cmdBuffer);
 	}
-
-	// First dynamic render pass - render black samples
-	vk.cmdBeginRendering(*cmdBuffer, &firstRenderingInfo);
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelinePass0);
-	vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
-	vk.cmdEndRendering(*cmdBuffer);
-
-	VkMemoryBarrier memoryBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-						  VK_DEPENDENCY_BY_REGION_BIT, 1u, &memoryBarrier, 0u, DE_NULL, 0, DE_NULL);
-
-	// Second dynamic render pass - merge resolved attachments
-	vk.cmdBeginRendering(*cmdBuffer, &secondRenderingInfo);
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelinePass1);
-	vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocationInfo);
-	vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutPass1, 0, 1u, &*m_descriptorSet, 0, NULL);
-	vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
-	vk.cmdEndRendering(*cmdBuffer);
-
-	// Memory barriers between rendering and copies
+	else
 	{
-		std::vector<VkImageMemoryBarrier> barriers(m_singlesampleImages.size(),
-			makeImageMemoryBarrier(
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-				VK_ACCESS_TRANSFER_READ_BIT,
-				VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,
-				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				0u,
-				subresourceRange));
+		beginCommandBuffer(vk, *cmdBuffer);
 
-		for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
-			barriers[dstNdx].image = **m_singlesampleImages[dstNdx];
+		preRenderCommands(vk, *cmdBuffer);
 
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)barriers.size(), &barriers[0]);
+		// First dynamic render pass - render black samples
+		vk.cmdBeginRendering(*cmdBuffer, &firstRenderingInfo);
+		drawFirstSubpass(vk, *cmdBuffer);
+		vk.cmdEndRendering(*cmdBuffer);
+
+		inbetweenRenderCommands(vk, *cmdBuffer);
+
+		// Second dynamic render pass - merge resolved attachments
+		vk.cmdBeginRendering(*cmdBuffer, &secondRenderingInfo);
+		vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocationInfo);
+		vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
+		drawSecondSubpass(vk, *cmdBuffer);
+		vk.cmdEndRendering(*cmdBuffer);
+
+		postRenderCommands(vk, *cmdBuffer);
+		endCommandBuffer(vk, *cmdBuffer);
 	}
-
-	// Copy image memory to buffers
-	const VkBufferImageCopy region = makeBufferImageCopy({ m_width, m_height, 1u }, { VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, m_layerCount });
-	for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
-		vk.cmdCopyImageToBuffer(*cmdBuffer, **m_singlesampleImages[dstNdx], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_buffers[dstNdx], 1u, &region);
-
-	// Memory barriers between copies and host access
-	{
-		std::vector<VkBufferMemoryBarrier> barriers(m_buffers.size(),
-			makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, 0u, 0u, VK_WHOLE_SIZE));
-		for (size_t i = 0u ; i < barriers.size() ; ++i)
-			barriers[i].buffer = **m_buffers[i];
-
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, (deUint32)barriers.size(), &barriers[0], 0u, DE_NULL);
-	}
-
-	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
 
 	for (size_t memoryBufferNdx = 0; memoryBufferNdx < m_bufferMemory.size(); memoryBufferNdx++)
 		invalidateMappedMemoryRange(vk, device, m_bufferMemory[memoryBufferNdx]->getMemory(), 0u, VK_WHOLE_SIZE);
 #endif
+}
+
+#ifndef CTS_USES_VULKANSC
+void MaxAttachmenstsRenderPassTestInstance::preRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	const VkImageSubresourceRange	subresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_layerCount };
+	std::vector<VkImageMemoryBarrier> barriers		(m_multisampleImages.size() + m_singlesampleImages.size(),
+		makeImageMemoryBarrier(
+			VK_ACCESS_TRANSFER_READ_BIT,
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			0,
+			subresourceRange));
+
+	for (size_t i = 0; i < m_multisampleImages.size(); ++i)
+		barriers[i].image = **m_multisampleImages[i];
+	for (size_t i = m_multisampleImages.size(); i < barriers.size(); ++i)
+	{
+		barriers[i].image = **m_singlesampleImages[i - m_multisampleImages.size()];
+		barriers[i].newLayout = m_inputImageReadLayout;
+	}
+
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)barriers.size(), barriers.data());
+}
+
+void MaxAttachmenstsRenderPassTestInstance::inbetweenRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	VkMemoryBarrier memoryBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		VK_DEPENDENCY_BY_REGION_BIT, 1u, &memoryBarrier, 0u, DE_NULL, 0, DE_NULL);
+}
+#endif // CTS_USES_VULKANSC
+
+void MaxAttachmenstsRenderPassTestInstance::drawFirstSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelinePass0);
+	vk.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
+}
+
+void MaxAttachmenstsRenderPassTestInstance::drawSecondSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelinePass1);
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutPass1, 0, 1u, &*m_descriptorSet, 0, NULL);
+	vk.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
+}
+
+void MaxAttachmenstsRenderPassTestInstance::postRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	const VkImageSubresourceRange subresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_layerCount };
+
+	// Memory barriers between rendering and copies
+	std::vector<VkImageMemoryBarrier> imageBarriers(m_singlesampleImages.size(),
+		makeImageMemoryBarrier(
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_ACCESS_TRANSFER_READ_BIT,
+			m_inputImageReadLayout,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			0u,
+			subresourceRange));
+
+	for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
+		imageBarriers[dstNdx].image = **m_singlesampleImages[dstNdx];
+
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)imageBarriers.size(), imageBarriers.data());
+
+	// Copy image memory to buffers
+	const VkBufferImageCopy region = makeBufferImageCopy({ m_width, m_height, 1u }, { VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, m_layerCount });
+	for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
+		vk.cmdCopyImageToBuffer(cmdBuffer, **m_singlesampleImages[dstNdx], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_buffers[dstNdx], 1u, &region);
+
+	// Memory barriers between copies and host access
+	std::vector<VkBufferMemoryBarrier> bufferBarriers(m_buffers.size(),
+		makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, 0u, 0u, VK_WHOLE_SIZE));
+	for (size_t i = 0u; i < bufferBarriers.size(); ++i)
+		bufferBarriers[i].buffer = **m_buffers[i];
+
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, (deUint32)bufferBarriers.size(), bufferBarriers.data(), 0u, DE_NULL);
 }
 
 void MaxAttachmenstsRenderPassTestInstance::submitSwitch (RenderingType renderingType)
@@ -2528,12 +2562,6 @@ Move<VkDescriptorSet> MaxAttachmenstsRenderPassTestInstance::createDescriptorSet
 	Move<VkDescriptorSet>			descriptorSet		= allocateDescriptorSet(vkd, device, &allocateInfo);
 	vector<VkDescriptorImageInfo>	descriptorImageInfo	(m_attachmentsCount);
 	vector<VkWriteDescriptorSet>	descriptorWrites	(m_attachmentsCount);
-	VkImageLayout					imageLayout			(VK_IMAGE_LAYOUT_GENERAL);
-
-#ifndef CTS_USES_VULKANSC
-	if (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-		imageLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-#endif
 
 	for (deUint32 idx = 0; idx < m_attachmentsCount; ++idx)
 	{
@@ -2541,7 +2569,7 @@ Move<VkDescriptorSet> MaxAttachmenstsRenderPassTestInstance::createDescriptorSet
 		{
 			DE_NULL,									// VkSampler		sampler
 			**m_singlesampleImageViews[idx],			// VkImageView		imageView
-			imageLayout									// VkImageLayout	imageLayout
+			m_inputImageReadLayout						// VkImageLayout	imageLayout
 		};
 
 		descriptorWrites[idx] =
@@ -3322,7 +3350,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 				// construct shaders during test execution. To be able to test this we need to execute tests for all available
 				// numbers of attachments despite the fact that we are only interested in the maximal number; test construction code
 				// assumes that the number of attachments is power of two
-				if ((layerCount == 1) && !groupParams->useSecondaryCmdBuffer)
+				if ((layerCount == 1) && (groupParams->useSecondaryCmdBuffer == groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass))
 				{
 					for (deUint32 power = 2; power < 5; ++power)
 					{

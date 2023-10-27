@@ -1287,7 +1287,8 @@ Move<VkDescriptorSet> createSplitDescriptorSet (const DeviceInterface&	vkd,
 												VkDescriptorSetLayout	layout,
 												VkRenderPass			renderPass,
 												VkImageView				primaryImageView,
-												VkImageView				secondaryImageView)
+												VkImageView				secondaryImageView,
+												VkImageLayout			imageReadLayout)
 {
 	DE_UNREF(renderPass);
 
@@ -1303,23 +1304,17 @@ Move<VkDescriptorSet> createSplitDescriptorSet (const DeviceInterface&	vkd,
 	Move<VkDescriptorSet> set (allocateDescriptorSet(vkd, device, &allocateInfo));
 
 	{
-		VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-#ifndef CTS_USES_VULKANSC
-		if (renderPass == DE_NULL)
-			imageLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-#endif // CTS_USES_VULKANSC
-
 		const VkDescriptorImageInfo	imageInfos[]	=
 		{
 			{
 				(VkSampler)0u,
 				primaryImageView,
-				imageLayout
+				imageReadLayout
 			},
 			{
 				(VkSampler)0u,
 				secondaryImageView,
-				imageLayout
+				imageReadLayout
 			}
 		};
 		const VkWriteDescriptorSet	writes[]	=
@@ -1364,18 +1359,18 @@ struct TestConfig
 {
 				TestConfig		(VkFormat			format_,
 								 deUint32			sampleCount_,
-								 RenderingType		renderingType_,
+								 SharedGroupParams	groupParams_,
 								 TestSeparateUsage	separateStencilUsage_ = (TestSeparateUsage)0u)
-		: format			(format_)
-		, sampleCount		(sampleCount_)
-		, renderingType		(renderingType_)
-		, separateStencilUsage(separateStencilUsage_)
+		: format				(format_)
+		, sampleCount			(sampleCount_)
+		, groupParams			(groupParams_)
+		, separateStencilUsage	(separateStencilUsage_)
 	{
 	}
 
 	VkFormat			format;
 	deUint32			sampleCount;
-	RenderingType		renderingType;
+	SharedGroupParams	groupParams;
 	TestSeparateUsage	separateStencilUsage;
 };
 
@@ -1405,6 +1400,70 @@ VkFormat getDstFormat (VkFormat vkFormat, TestSeparateUsage separateStencilUsage
 		return vkFormat;
 }
 
+VkImageLayout chooseSrcInputImageLayout(const SharedGroupParams groupParams)
+{
+#ifndef CTS_USES_VULKANSC
+	if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
+		// use general layout for local reads for some tests
+		if (groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			return VK_IMAGE_LAYOUT_GENERAL;
+		return VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+	}
+#else
+	DE_UNREF(groupParams);
+#endif
+	return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+}
+
+#ifndef CTS_USES_VULKANSC
+void beginSecondaryCmdBuffer(const DeviceInterface&	vk,
+							 VkCommandBuffer		secCmdBuffer,
+							 VkFormat				srcFormat,
+							 VkFormat				dstFormat,
+							 deUint32				colorAttachmentCount,
+							 deUint32				sampleCount)
+{
+	VkCommandBufferUsageFlags	usageFlags				(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	const tcu::TextureFormat	format					(mapVkFormat(srcFormat));
+	const bool					isDepthFormat			(tcu::hasDepthComponent(format.order));
+	const bool					isStencilFormat			(tcu::hasStencilComponent(format.order));
+	std::vector<VkFormat>		colorAttachmentFormats	(colorAttachmentCount, dstFormat);
+
+	const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		0u,																		// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		colorAttachmentCount,													// uint32_t							colorAttachmentCount;
+		colorAttachmentFormats.data(),											// const VkFormat*					pColorAttachmentFormats;
+		isDepthFormat ? srcFormat : VK_FORMAT_UNDEFINED,						// VkFormat							depthAttachmentFormat;
+		isStencilFormat ? srcFormat : VK_FORMAT_UNDEFINED,						// VkFormat							stencilAttachmentFormat;
+		sampleCountBitFromomSampleCount(sampleCount),							// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,						// VkStructureType					sType;
+		&inheritanceRenderingInfo,												// const void*						pNext;
+		DE_NULL,																// VkRenderPass						renderPass;
+		0u,																		// deUint32							subpass;
+		DE_NULL,																// VkFramebuffer					framebuffer;
+		VK_FALSE,																// VkBool32							occlusionQueryEnable;
+		(VkQueryControlFlags)0u,												// VkQueryControlFlags				queryFlags;
+		(VkQueryPipelineStatisticFlags)0u										// VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType							sType;
+		DE_NULL,																// const void*								pNext;
+		usageFlags,																// VkCommandBufferUsageFlags				flags;
+		&bufferInheritanceInfo													// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+	};
+	VK_CHECK(vk.beginCommandBuffer(secCmdBuffer, &commandBufBeginParams));
+}
+#endif // CTS_USES_VULKANSC
+
 class MultisampleRenderPassTestInstance : public TestInstance
 {
 public:
@@ -1416,10 +1475,26 @@ public:
 	template<typename RenderpassSubpass>
 	tcu::TestStatus	iterateInternal						(void);
 	tcu::TestStatus	iterateInternalDynamicRendering		(void);
+#ifndef CTS_USES_VULKANSC
+	void			preRenderCommands					(const DeviceInterface&		vk,
+														 VkCommandBuffer			cmdBuffer,
+														 VkImageAspectFlags			aspectMask);
+	void			inbetweenRenderCommands				(const DeviceInterface&		vk,
+														 VkCommandBuffer			cmdBuffer,
+														 VkImageAspectFlags			aspectMask);
+#endif // CTS_USES_VULKANSC
+	void			drawFirstSubpass					(const DeviceInterface&		vk,
+														 VkCommandBuffer			cmdBuffer);
+	void			drawNextSubpass						(const DeviceInterface&		vk,
+														 VkCommandBuffer			cmdBuffer,
+														 deUint32					splitPipelineNdx);
+	void			postRenderCommands					(const DeviceInterface&		vk,
+														 VkCommandBuffer			cmdBuffer);
+
 	tcu::TestStatus	verifyResult						(void);
 
 private:
-	const RenderingType								m_renderingType;
+	const SharedGroupParams							m_groupParams;
 	const TestSeparateUsage							m_separateStencilUsage;
 
 	const VkFormat									m_srcFormat;
@@ -1435,6 +1510,7 @@ private:
 	const Unique<VkImageView>						m_srcImageView;
 	const Unique<VkImageView>						m_srcPrimaryInputImageView;
 	const Unique<VkImageView>						m_srcSecondaryInputImageView;
+	const VkImageLayout								m_srcInputImageReadLayout;
 
 	const std::vector<VkImageSp>					m_dstMultisampleImages;
 	const std::vector<de::SharedPtr<Allocation> >	m_dstMultisampleImageMemory;
@@ -1465,7 +1541,7 @@ private:
 
 MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& context, TestConfig config)
 	: TestInstance					(context)
-	, m_renderingType				(config.renderingType)
+	, m_groupParams					(config.groupParams)
 	, m_separateStencilUsage		(config.separateStencilUsage)
 	, m_srcFormat					(config.format)
 	, m_dstFormat					(getDstFormat(config.format, config.separateStencilUsage))
@@ -1480,6 +1556,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_srcImageView				(createImageAttachmentView(context.getDeviceInterface(), context.getDevice(), *m_srcImage, m_srcFormat, m_srcImageAspect))
 	, m_srcPrimaryInputImageView	(createSrcPrimaryInputImageView(context.getDeviceInterface(), context.getDevice(), *m_srcImage, m_srcFormat, m_srcImageAspect, m_separateStencilUsage))
 	, m_srcSecondaryInputImageView	(createSrcSecondaryInputImageView(context.getDeviceInterface(), context.getDevice(), *m_srcImage, m_srcFormat, m_srcImageAspect, m_separateStencilUsage))
+	, m_srcInputImageReadLayout		(chooseSrcInputImageLayout(config.groupParams))
 
 	, m_dstMultisampleImages		(createMultisampleImages(context.getInstanceInterface(), context.getPhysicalDevice(), context.getDeviceInterface(), context.getDevice(), m_dstFormat, m_sampleCount, m_width, m_height))
 	, m_dstMultisampleImageMemory	(createImageMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), m_dstMultisampleImages))
@@ -1492,7 +1569,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_dstBuffers					(createBuffers(context.getDeviceInterface(), context.getDevice(), m_dstFormat, m_sampleCount, m_width, m_height))
 	, m_dstBufferMemory				(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), m_dstBuffers))
 
-	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_srcFormat, m_dstFormat, m_sampleCount, config.renderingType, m_separateStencilUsage))
+	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_srcFormat, m_dstFormat, m_sampleCount, m_groupParams->renderingType, m_separateStencilUsage))
 	, m_framebuffer					(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_srcImageView, m_dstMultisampleImageViews, m_dstSinglesampleImageViews, m_width, m_height))
 
 	, m_renderPipelineLayout		(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
@@ -1502,7 +1579,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_splitPipelineLayout			(createSplitPipelineLayout(context.getDeviceInterface(), context.getDevice(), *m_splitDescriptorSetLayout))
 	, m_splitPipelines				(createSplitPipelines(context.getDeviceInterface(), context.getDevice(), m_srcFormat, m_dstFormat, *m_renderPass, *m_splitPipelineLayout, context.getBinaryCollection(), m_width, m_height, m_sampleCount))
 	, m_splitDescriptorPool			(createSplitDescriptorPool(context.getDeviceInterface(), context.getDevice()))
-	, m_splitDescriptorSet			(createSplitDescriptorSet(context.getDeviceInterface(), context.getDevice(), *m_splitDescriptorPool, *m_splitDescriptorSetLayout, *m_renderPass, *m_srcPrimaryInputImageView, *m_srcSecondaryInputImageView))
+	, m_splitDescriptorSet			(createSplitDescriptorSet(context.getDeviceInterface(), context.getDevice(), *m_splitDescriptorPool, *m_splitDescriptorSetLayout, *m_renderPass, *m_srcPrimaryInputImageView, *m_srcSecondaryInputImageView, m_srcInputImageReadLayout))
 	, m_commandPool					(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 {
 }
@@ -1513,7 +1590,7 @@ MultisampleRenderPassTestInstance::~MultisampleRenderPassTestInstance (void)
 
 tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 {
-	switch (m_renderingType)
+	switch (m_groupParams->renderingType)
 	{
 		case RENDERING_TYPE_RENDERPASS_LEGACY:
 			return iterateInternal<RenderpassSubpass1>();
@@ -1559,14 +1636,14 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal(void)
 	// Stencil needs to be cleared if it exists.
 	if (tcu::hasStencilComponent(mapVkFormat(m_srcFormat).order))
 	{
-		const VkClearAttachment clearAttachment =
+		const VkClearAttachment clearAttachment
 		{
 			VK_IMAGE_ASPECT_STENCIL_BIT,						// VkImageAspectFlags	aspectMask;
 			0,													// deUint32				colorAttachment;
 			makeClearValueDepthStencil(0, 0)					// VkClearValue			clearValue;
 		};
 
-		const VkClearRect clearRect =
+		const VkClearRect clearRect
 		{
 			{
 				{ 0u, 0u },
@@ -1579,28 +1656,17 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal(void)
 		vkd.cmdClearAttachments(*commandBuffer, 1, &clearAttachment, 1, &clearRect);
 	}
 
-	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
-
-	for (deUint32 sampleNdx = 0; sampleNdx < m_sampleCount; sampleNdx++)
-	{
-		vkd.cmdPushConstants(*commandBuffer, *m_renderPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(sampleNdx), &sampleNdx);
-		vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
-	}
+	drawFirstSubpass(vkd, *commandBuffer);
 
 	for (deUint32 splitPipelineNdx = 0; splitPipelineNdx < m_splitPipelines.size(); splitPipelineNdx++)
 	{
 		RenderpassSubpass::cmdNextSubpass(vkd, *commandBuffer, &subpassBeginInfo, &subpassEndInfo);
-
-		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **m_splitPipelines[splitPipelineNdx]);
-		vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_splitPipelineLayout, 0u, 1u, &*m_splitDescriptorSet, 0u, DE_NULL);
-		vkd.cmdPushConstants(*commandBuffer, *m_splitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(splitPipelineNdx), &splitPipelineNdx);
-		vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
+		drawNextSubpass(vkd, *commandBuffer, splitPipelineNdx);
 	}
 
 	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
-	for (size_t dstNdx = 0; dstNdx < m_dstSinglesampleImages.size(); dstNdx++)
-		copyImageToBuffer(vkd, *commandBuffer, **m_dstSinglesampleImages[dstNdx], **m_dstBuffers[dstNdx], tcu::IVec2(m_width, m_height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	postRenderCommands(vkd, *commandBuffer);
 
 	endCommandBuffer(vkd, *commandBuffer);
 
@@ -1613,9 +1679,10 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternalDynamicRenderi
 {
 #ifndef CTS_USES_VULKANSC
 
-	const DeviceInterface&			vk						(m_context.getDeviceInterface());
-	const VkDevice					device					(m_context.getDevice());
-	const Unique<VkCommandBuffer>	cmdBuffer				(allocateCommandBuffer(vk, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const DeviceInterface&					vk				(m_context.getDeviceInterface());
+	const VkDevice							device			(m_context.getDevice());
+	const Unique<VkCommandBuffer>			cmdBuffer		(allocateCommandBuffer(vk, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	Move<VkCommandBuffer>					secCmdBuffer;
 
 	const deUint32					splitSubpassCount		(deDivRoundUp32(m_sampleCount, MAX_COLOR_ATTACHMENT_COUNT));
 	const VkClearValue				clearValue				(makeClearValueColor(tcu::Vec4(0.0f)));
@@ -1637,9 +1704,6 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternalDynamicRenderi
 			resolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
 	}
 
-	const VkImageSubresourceRange srcSubresourceRange(makeImageSubresourceRange(aspectMask, 0, 1, 0, 1));
-	const VkImageSubresourceRange dstSubresourceRange(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1));
-
 	deUint32 colorAttachmentIndex = !isDepthStencilFormat;
 	deUint32 colorAttachmentCount = colorAttachmentIndex;
 	for (deUint32 splitSubpassIndex = 0; splitSubpassIndex < splitSubpassCount; splitSubpassIndex++)
@@ -1649,24 +1713,6 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternalDynamicRenderi
 	deUint32				stencilAttachmentInputIndex		(0);
 	std::vector<deUint32>	colorAttachmentInputIndices		(colorAttachmentCount, VK_ATTACHMENT_UNUSED);
 	std::vector<deUint32>	colorAttachmentLocations		(colorAttachmentCount, VK_ATTACHMENT_UNUSED);
-
-	// Memory barrier to set singlesamepled image layout
-	VkPipelineStageFlags dstStageMaskForSourceImage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	VkImageMemoryBarrier srcImageBarrier(makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-																VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR, *m_srcImage, srcSubresourceRange));
-	if (isDepthStencilFormat)
-	{
-		dstStageMaskForSourceImage		= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-		srcImageBarrier.dstAccessMask	= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-	}
-
-	// Memory barriers to set singlesamepled and multisample images layout to COLOR_ATTACHMENT_OPTIMAL
-	std::vector<VkImageMemoryBarrier> dstImageBarriers(m_dstSinglesampleImages.size() + m_dstMultisampleImages.size(),
-		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DE_NULL, dstSubresourceRange));
-	for (size_t dstNdx = 0; dstNdx < m_dstSinglesampleImages.size(); dstNdx++)
-		dstImageBarriers[dstNdx].image = **m_dstSinglesampleImages[dstNdx];
-	for (size_t dstNdx = m_dstSinglesampleImages.size(); dstNdx < dstImageBarriers.size(); dstNdx++)
-		dstImageBarriers[dstNdx].image = **m_dstMultisampleImages[dstNdx - m_dstSinglesampleImages.size()];
 
 	VkRenderingAttachmentInfo depthAttachment
 	{
@@ -1684,7 +1730,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternalDynamicRenderi
 	std::vector<VkRenderingAttachmentInfo> colorAttachments(colorAttachmentCount, depthAttachment);
 
 	// If depth/stencil attachments are used then they will be used as input attachments
-	depthAttachment.imageLayout	= VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+	depthAttachment.imageLayout	= m_srcInputImageReadLayout;
 
 	// If stencil attachment is used then we need to clear it
 	VkRenderingAttachmentInfo stencilAttachment = depthAttachment;
@@ -1692,7 +1738,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternalDynamicRenderi
 
 	// If source image has color aspect then we will use first color attachment as input for second subpass
 	if (colorAttachmentIndex)
-		colorAttachments[0].imageLayout	= VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+		colorAttachments[0].imageLayout	= m_srcInputImageReadLayout;
 
 	for (deUint32 i = 0; i < m_dstMultisampleImageViews.size(); ++i)
 	{
@@ -1707,68 +1753,162 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternalDynamicRenderi
 	{
 		VK_STRUCTURE_TYPE_RENDERING_INFO,
 		DE_NULL,
-		0,														// VkRenderingFlagsKHR					flags;
-		makeRect2D(m_width, m_height),							// VkRect2D								renderArea;
-		1u,														// deUint32								layerCount;
-		0u,														// deUint32								viewMask;
-		(deUint32)colorAttachments.size(),						// deUint32								colorAttachmentCount;
-		colorAttachments.data(),								// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
-		isDepthFormat ? &depthAttachment : DE_NULL,				// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
-		isStencilFormat ? &stencilAttachment : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+		0,													// VkRenderingFlagsKHR					flags;
+		makeRect2D(m_width, m_height),						// VkRect2D								renderArea;
+		1u,													// deUint32								layerCount;
+		0u,													// deUint32								viewMask;
+		(deUint32)colorAttachments.size(),					// deUint32								colorAttachmentCount;
+		colorAttachments.data(),							// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+		isDepthFormat ? &depthAttachment : DE_NULL,			// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+		isStencilFormat ? &stencilAttachment : DE_NULL,		// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 	};
 
 	auto renderingInputAttachmentIndexInfo = getRenderingInputAttachmentIndexInfo(colorAttachmentInputIndices, depthAttachmentInputIndex, stencilAttachmentInputIndex, isDepthFormat, isStencilFormat);
 	VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocation;
 
-	beginCommandBuffer(vk, *cmdBuffer);
-
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dstStageMaskForSourceImage, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &srcImageBarrier);
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)dstImageBarriers.size(), dstImageBarriers.data());
-
-	vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
-
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
-	for (deUint32 sampleNdx = 0; sampleNdx < m_sampleCount; sampleNdx++)
+	if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 	{
-		vk.cmdPushConstants(*cmdBuffer, *m_renderPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(sampleNdx), &sampleNdx);
-		vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
+		secCmdBuffer = allocateCommandBuffer(vk, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+		// record secondary command buffer
+		beginSecondaryCmdBuffer(vk, *secCmdBuffer, m_srcFormat, m_dstFormat, colorAttachmentCount, m_sampleCount);
+		vk.cmdBeginRendering(*secCmdBuffer, &renderingInfo);
+
+		drawFirstSubpass(vk, *secCmdBuffer);
+		inbetweenRenderCommands(vk, *secCmdBuffer, aspectMask);
+
+		for (deUint32 splitPipelineNdx = 0; splitPipelineNdx < m_splitPipelines.size(); splitPipelineNdx++)
+		{
+			renderingAttachmentLocation = getRenderingAttachmentLocationInfo(colorAttachmentLocations, isDepthStencilFormat, m_sampleCount, splitPipelineNdx);
+			vk.cmdSetRenderingAttachmentLocationsKHR(*secCmdBuffer, &renderingAttachmentLocation);
+			vk.cmdSetRenderingInputAttachmentIndicesKHR(*secCmdBuffer, &renderingInputAttachmentIndexInfo);
+
+			drawNextSubpass(vk, *secCmdBuffer, splitPipelineNdx);
+		}
+
+		vk.cmdEndRendering(*secCmdBuffer);
+		endCommandBuffer(vk, *secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(vk, *cmdBuffer);
+		preRenderCommands(vk, *cmdBuffer, aspectMask);
+		vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
+		postRenderCommands(vk, *cmdBuffer);
+		endCommandBuffer(vk, *cmdBuffer);
 	}
-
-	VkImageMemoryBarrier imageBarrier(
-		makeImageMemoryBarrier(
-			srcImageBarrier.dstAccessMask,
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-			VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,
-			VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,
-			*m_srcImage,
-			srcSubresourceRange));
-	vk.cmdPipelineBarrier(*cmdBuffer, dstStageMaskForSourceImage, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
-
-	for (deUint32 splitPipelineNdx = 0; splitPipelineNdx < m_splitPipelines.size(); splitPipelineNdx++)
+	else
 	{
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **m_splitPipelines[splitPipelineNdx]);
+		beginCommandBuffer(vk, *cmdBuffer);
 
-		renderingAttachmentLocation = getRenderingAttachmentLocationInfo(colorAttachmentLocations, isDepthStencilFormat, m_sampleCount, splitPipelineNdx);
-		vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocation);
-		vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
+		preRenderCommands(vk, *cmdBuffer, aspectMask);
 
-		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_splitPipelineLayout, 0u, 1u, &*m_splitDescriptorSet, 0u, DE_NULL);
-		vk.cmdPushConstants(*cmdBuffer, *m_splitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(splitPipelineNdx), &splitPipelineNdx);
-		vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
+		vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+
+		drawFirstSubpass(vk, *cmdBuffer);
+
+		inbetweenRenderCommands(vk, *cmdBuffer, aspectMask);
+
+		for (deUint32 splitPipelineNdx = 0; splitPipelineNdx < m_splitPipelines.size(); splitPipelineNdx++)
+		{
+			renderingAttachmentLocation = getRenderingAttachmentLocationInfo(colorAttachmentLocations, isDepthStencilFormat, m_sampleCount, splitPipelineNdx);
+			vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocation);
+			vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
+
+			drawNextSubpass(vk, *cmdBuffer, splitPipelineNdx);
+		}
+
+		vk.cmdEndRendering(*cmdBuffer);
+
+		postRenderCommands(vk, *cmdBuffer);
+
+		endCommandBuffer(vk, *cmdBuffer);
 	}
-
-	vk.cmdEndRendering(*cmdBuffer);
-
-	for (size_t dstNdx = 0; dstNdx < m_dstSinglesampleImages.size(); dstNdx++)
-		copyImageToBuffer(vk, *cmdBuffer, **m_dstSinglesampleImages[dstNdx], **m_dstBuffers[dstNdx], tcu::IVec2(m_width, m_height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
 
 #endif // CTS_USES_VULKANSC
 
 	return verifyResult();
+}
+
+#ifndef CTS_USES_VULKANSC
+void MultisampleRenderPassTestInstance::preRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer, VkImageAspectFlags aspectMask)
+{
+	const tcu::TextureFormat	format			(mapVkFormat(m_srcFormat));
+	const bool					isDepthFormat	(tcu::hasDepthComponent(format.order));
+	const bool					isStencilFormat	(tcu::hasStencilComponent(format.order));
+
+	const VkImageSubresourceRange srcSubresourceRange(makeImageSubresourceRange(aspectMask, 0, 1, 0, 1));
+	const VkImageSubresourceRange dstSubresourceRange(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1));
+
+	// Memory barrier to set singlesamepled image layout to COLOR_ATTACHMENT_OPTIMAL
+	VkPipelineStageFlags	dstStageMaskForSourceImage	= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	VkImageMemoryBarrier	srcImageBarrier				(makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, m_srcInputImageReadLayout,
+														 *m_srcImage, srcSubresourceRange));
+	if (isDepthFormat || isStencilFormat)
+	{
+		dstStageMaskForSourceImage		= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		srcImageBarrier.dstAccessMask	= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	}
+
+	// Memory barriers to set singlesamepled and multisample images layout to COLOR_ATTACHMENT_OPTIMAL
+	std::vector<VkImageMemoryBarrier> dstImageBarriers(m_dstSinglesampleImages.size() + m_dstMultisampleImages.size(),
+		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DE_NULL, dstSubresourceRange));
+	for (size_t dstNdx = 0; dstNdx < m_dstSinglesampleImages.size(); dstNdx++)
+		dstImageBarriers[dstNdx].image = **m_dstSinglesampleImages[dstNdx];
+	for (size_t dstNdx = m_dstSinglesampleImages.size(); dstNdx < dstImageBarriers.size(); dstNdx++)
+		dstImageBarriers[dstNdx].image = **m_dstMultisampleImages[dstNdx - m_dstSinglesampleImages.size()];
+
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dstStageMaskForSourceImage, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &srcImageBarrier);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)dstImageBarriers.size(), dstImageBarriers.data());
+}
+
+void MultisampleRenderPassTestInstance::inbetweenRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer, VkImageAspectFlags aspectMask)
+{
+	const VkImageSubresourceRange	srcSubresourceRange(makeImageSubresourceRange(aspectMask, 0, 1, 0, 1));
+	VkAccessFlags					dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+	VkPipelineStageFlags			dstStageMaskForSourceImage(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+	if (aspectMask != VK_IMAGE_ASPECT_COLOR_BIT)
+	{
+		dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dstStageMaskForSourceImage = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+	}
+
+	VkImageMemoryBarrier imageBarrier(
+		makeImageMemoryBarrier(
+			dstAccessMask,
+			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+			m_srcInputImageReadLayout,
+			m_srcInputImageReadLayout,
+			*m_srcImage,
+			srcSubresourceRange));
+	vk.cmdPipelineBarrier(cmdBuffer, dstStageMaskForSourceImage, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+}
+#endif // CTS_USES_VULKANSC
+
+void MultisampleRenderPassTestInstance::drawFirstSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
+	for (deUint32 sampleNdx = 0; sampleNdx < m_sampleCount; sampleNdx++)
+	{
+		vk.cmdPushConstants(cmdBuffer, *m_renderPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(sampleNdx), &sampleNdx);
+		vk.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
+	}
+}
+
+void MultisampleRenderPassTestInstance::drawNextSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer, deUint32 splitPipelineNdx)
+{
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **m_splitPipelines[splitPipelineNdx]);
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_splitPipelineLayout, 0u, 1u, &*m_splitDescriptorSet, 0u, DE_NULL);
+	vk.cmdPushConstants(cmdBuffer, *m_splitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(splitPipelineNdx), &splitPipelineNdx);
+	vk.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
+}
+
+void MultisampleRenderPassTestInstance::postRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	for (size_t dstNdx = 0; dstNdx < m_dstSinglesampleImages.size(); dstNdx++)
+		copyImageToBuffer(vk, cmdBuffer, **m_dstSinglesampleImages[dstNdx], **m_dstBuffers[dstNdx], tcu::IVec2(m_width, m_height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 }
 
 tcu::TestStatus MultisampleRenderPassTestInstance::verifyResult(void)
@@ -2392,10 +2532,10 @@ struct Programs
 
 void checkSupport(Context& context, TestConfig config)
 {
-	if (config.renderingType == RENDERING_TYPE_RENDERPASS2)
+	if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
-	if (config.renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	if (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
 		const InstanceInterface&				vki					= context.getInstanceInterface();
 		vk::VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
@@ -2431,7 +2571,7 @@ std::string formatToName (VkFormat format)
 	return de::toLower(formatStr.substr(prefix.length()));
 }
 
-void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
+void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 {
 	static const VkFormat	formats[]	=
 	{
@@ -2510,7 +2650,7 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 		for (size_t sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountNdx++)
 		{
 			const deUint32		sampleCount	(sampleCounts[sampleCountNdx]);
-			const TestConfig	testConfig	(format, sampleCount, renderingType);
+			const TestConfig	testConfig	(format, sampleCount, groupParams);
 			const std::string	testName	("samples_" + de::toString(sampleCount));
 
 			formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
@@ -2520,10 +2660,10 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 			{
 				de::MovePtr<tcu::TestCaseGroup>	sampleGroup	(new tcu::TestCaseGroup(testCtx, testName.c_str(), testName.c_str()));
 				{
-					const TestConfig	separateUsageDepthTestConfig	(format, sampleCount, renderingType, TEST_DEPTH);
+					const TestConfig	separateUsageDepthTestConfig	(format, sampleCount, groupParams, TEST_DEPTH);
 					sampleGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "test_depth", "depth with input attachment bit", separateUsageDepthTestConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, separateUsageDepthTestConfig)));
 
-					const TestConfig	separateUsageStencilTestConfig	(format, sampleCount, renderingType, TEST_STENCIL);
+					const TestConfig	separateUsageStencilTestConfig	(format, sampleCount, groupParams, TEST_STENCIL);
 					sampleGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "test_stencil", "stencil with input attachment bit", separateUsageStencilTestConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, separateUsageStencilTestConfig)));
 				}
 
@@ -2542,7 +2682,7 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 
 tcu::TestCaseGroup* createRenderPassMultisampleTests(tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "multisample", "Multisample render pass tests", initTests, groupParams->renderingType);
+	return createTestGroup(testCtx, "multisample", "Multisample render pass tests", initTests, groupParams);
 }
 
 } // renderpass

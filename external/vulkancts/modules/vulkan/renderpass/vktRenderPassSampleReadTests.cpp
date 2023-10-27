@@ -201,6 +201,22 @@ Move<VkImageView> createImageView (const DeviceInterface&	vkd,
 	return createImageView(vkd, device, 0u, image, VK_IMAGE_VIEW_TYPE_2D, format, makeComponentMappingRGBA(), range);
 }
 
+VkImageLayout chooseSrcInputImageLayout(const SharedGroupParams groupParams)
+{
+#ifndef CTS_USES_VULKANSC
+	if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
+		// use general layout for local reads for some tests
+		if (groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			return VK_IMAGE_LAYOUT_GENERAL;
+		return VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+	}
+#else
+	DE_UNREF(groupParams);
+#endif
+	return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+}
+
 VkDeviceSize getPixelSize (VkFormat vkFormat)
 {
 	const tcu::TextureFormat	format	(mapVkFormat(vkFormat));
@@ -759,7 +775,8 @@ Move<VkDescriptorSet> createSubpassDescriptorSet (const DeviceInterface&	vkd,
 												  VkRenderPass				renderPass,
 												  VkDescriptorPool			pool,
 												  VkDescriptorSetLayout		layout,
-												  VkImageView				imageView)
+												  VkImageView				imageView,
+												  VkImageLayout				imageReadLayout)
 {
 	DE_UNREF(renderPass);
 
@@ -772,18 +789,11 @@ Move<VkDescriptorSet> createSubpassDescriptorSet (const DeviceInterface&	vkd,
 		&layout
 	};
 	Move<VkDescriptorSet> set (allocateDescriptorSet(vkd, device, &allocateInfo));
-
-	VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-#ifndef CTS_USES_VULKANSC
-	if (renderPass == DE_NULL)
-		imageLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-#endif
-
 	const VkDescriptorImageInfo	imageInfo
 	{
 		(VkSampler)0u,
 		imageView,
-		imageLayout
+		imageReadLayout
 	};
 	const VkWriteDescriptorSet	write
 	{
@@ -804,6 +814,46 @@ Move<VkDescriptorSet> createSubpassDescriptorSet (const DeviceInterface&	vkd,
 
 	return set;
 }
+
+#ifndef CTS_USES_VULKANSC
+void beginSecondaryCmdBuffer(const DeviceInterface&	vk,
+							 VkCommandBuffer		secCmdBuffer)
+{
+	VkCommandBufferUsageFlags	usageFlags					= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	VkFormat					colorAttachmentFormats[]	= { VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT };
+	const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		0u,																		// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		2u,																		// uint32_t							colorAttachmentCount;
+		colorAttachmentFormats,													// const VkFormat*					pColorAttachmentFormats;
+		VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,						// VkStructureType					sType;
+		&inheritanceRenderingInfo,												// const void*						pNext;
+		DE_NULL,																// VkRenderPass						renderPass;
+		0u,																		// deUint32							subpass;
+		DE_NULL,																// VkFramebuffer					framebuffer;
+		VK_FALSE,																// VkBool32							occlusionQueryEnable;
+		(VkQueryControlFlags)0u,												// VkQueryControlFlags				queryFlags;
+		(VkQueryPipelineStatisticFlags)0u										// VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType							sType;
+		DE_NULL,																// const void*								pNext;
+		usageFlags,																// VkCommandBufferUsageFlags				flags;
+		&bufferInheritanceInfo													// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+	};
+	VK_CHECK(vk.beginCommandBuffer(secCmdBuffer, &commandBufBeginParams));
+}
+#endif // CTS_USES_VULKANSC
 
 enum TestMode
 {
@@ -842,6 +892,15 @@ protected:
 	template<typename RenderpassSubpass>
 	tcu::TestStatus							iterateInternal					(void);
 	tcu::TestStatus							iterateInternalDynamicRendering	(void);
+
+#ifndef CTS_USES_VULKANSC
+	void									preRenderCommands				(const DeviceInterface& vk, VkCommandBuffer cmdBuffer);
+	void									inbetweenRenderCommands			(const DeviceInterface& vk, VkCommandBuffer cmdBuffer);
+#endif // CTS_USES_VULKANSC
+	void									drawFirstSubpass				(const DeviceInterface& vk, VkCommandBuffer cmdBuffer);
+	void									drawSecondSubpass				(const DeviceInterface& vk, VkCommandBuffer cmdBuffer);
+	void									postRenderCommands				(const DeviceInterface& vk, VkCommandBuffer cmdBuffer);
+
 	void									verifyResult					(void);
 
 private:
@@ -857,6 +916,7 @@ private:
 	const de::UniquePtr<Allocation>			m_srcImageMemory;
 	const Unique<VkImageView>				m_srcImageView;
 	const Unique<VkImageView>				m_srcInputImageView;
+	const VkImageLayout						m_srcInputImageReadLayout;
 
 	const Unique<VkImage>					m_dstMultisampleImage;
 	const de::UniquePtr<Allocation>			m_dstMultisampleImageMemory;
@@ -897,6 +957,7 @@ SampleReadTestInstance::SampleReadTestInstance (Context& context, TestConfig con
 	, m_srcImageMemory				(createImageMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_srcImage))
 	, m_srcImageView				(createImageView(context.getDeviceInterface(), context.getDevice(), *m_srcImage, VK_FORMAT_R32_UINT, VK_IMAGE_ASPECT_COLOR_BIT))
 	, m_srcInputImageView			(createImageView(context.getDeviceInterface(), context.getDevice(), *m_srcImage, VK_FORMAT_R32_UINT, VK_IMAGE_ASPECT_COLOR_BIT))
+	, m_srcInputImageReadLayout		(chooseSrcInputImageLayout(config.groupParams))
 	, m_dstMultisampleImage			(createImage(context.getInstanceInterface(), context.getPhysicalDevice(), context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R32_UINT, sampleCountBitFromSampleCount(m_sampleCount), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, m_width, m_height))
 	, m_dstMultisampleImageMemory	(createImageMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_dstMultisampleImage))
 	, m_dstMultisampleImageView		(createImageView(context.getDeviceInterface(), context.getDevice(), *m_dstMultisampleImage, VK_FORMAT_R32_UINT, VK_IMAGE_ASPECT_COLOR_BIT))
@@ -913,7 +974,7 @@ SampleReadTestInstance::SampleReadTestInstance (Context& context, TestConfig con
 	, m_subpassPipelineLayout		(createSubpassPipelineLayout(context.getDeviceInterface(), context.getDevice(), *m_subpassDescriptorSetLayout))
 	, m_subpassPipeline				(createSubpassPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_subpassPipelineLayout, context.getBinaryCollection(), m_width, m_height, m_sampleCount))
 	, m_subpassDescriptorPool		(createSubpassDescriptorPool(context.getDeviceInterface(), context.getDevice()))
-	, m_subpassDescriptorSet		(createSubpassDescriptorSet(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_subpassDescriptorPool, *m_subpassDescriptorSetLayout, *m_srcInputImageView))
+	, m_subpassDescriptorSet		(createSubpassDescriptorSet(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_subpassDescriptorPool, *m_subpassDescriptorSetLayout, *m_srcInputImageView, m_srcInputImageReadLayout))
 	, m_commandPool					(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 {
 }
@@ -968,19 +1029,15 @@ tcu::TestStatus SampleReadTestInstance::iterateInternal (void)
 		RenderpassSubpass::cmdBeginRenderPass(vkd, *commandBuffer, &beginInfo, &subpassBeginInfo);
 	}
 
-	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
-
-	vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
+	drawFirstSubpass(vkd, *commandBuffer);
 
 	RenderpassSubpass::cmdNextSubpass(vkd, *commandBuffer, &subpassBeginInfo, &subpassEndInfo);
 
-	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpassPipeline);
-	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpassPipelineLayout, 0u, 1u,  &*m_subpassDescriptorSet, 0u, DE_NULL);
-	vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
+	drawSecondSubpass(vkd, *commandBuffer);
 
 	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
-	copyImageToBuffer(vkd, *commandBuffer, *m_dstSinglesampleImage, *m_dstBuffer, tcu::IVec2(m_width, m_height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	postRenderCommands(vkd, *commandBuffer);
 
 	endCommandBuffer(vkd, *commandBuffer);
 
@@ -998,16 +1055,9 @@ tcu::TestStatus SampleReadTestInstance::iterateInternalDynamicRendering()
 	const DeviceInterface&			vk				(m_context.getDeviceInterface());
 	const VkDevice					device			(m_context.getDevice());
 	const Unique<VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vk, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	Move<VkCommandBuffer>			secCmdBuffer;
 
 	const VkClearValue				clearValue		(makeClearValueColor(tcu::Vec4(0.0f)));
-	const VkImageSubresourceRange	subresourceRange(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1));
-
-	VkImageMemoryBarrier imageBarriers[]
-	{
-		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR, *m_srcImage, subresourceRange),
-		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_dstMultisampleImage, subresourceRange),
-		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_dstSinglesampleImage, subresourceRange),
-	};
 
 	deUint32 colorAttachmentLocations[]										{ VK_ATTACHMENT_UNUSED, 0 };
 	VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocationInfo	= initVulkanStructure();
@@ -1024,7 +1074,7 @@ tcu::TestStatus SampleReadTestInstance::iterateInternalDynamicRendering()
 			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,		// VkStructureType			sType
 			DE_NULL,											// const void*				pNext
 			*m_srcImageView,									// VkImageView				imageView
-			VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,			// VkImageLayout			imageLayout
+			m_srcInputImageReadLayout,							// VkImageLayout			imageLayout
 			VK_RESOLVE_MODE_NONE,								// VkResolveModeFlagBits	resolveMode
 			DE_NULL,											// VkImageView				resolveImageView
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout			resolveImageLayout
@@ -1051,39 +1101,48 @@ tcu::TestStatus SampleReadTestInstance::iterateInternalDynamicRendering()
 		DE_NULL,												// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 	};
 
-	beginCommandBuffer(vk, *cmdBuffer);
+	if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+	{
+		secCmdBuffer = allocateCommandBuffer(vk, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
-	// layout transition barriers
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 3u, imageBarriers);
+		// record secondary command buffer
+		beginSecondaryCmdBuffer(vk, *secCmdBuffer);
+		vk.cmdBeginRendering(*secCmdBuffer, &renderingInfo);
 
-	vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+		drawFirstSubpass(vk, *secCmdBuffer);
+		inbetweenRenderCommands(vk, *secCmdBuffer);
+		vk.cmdSetRenderingAttachmentLocationsKHR(*secCmdBuffer, &renderingAttachmentLocationInfo);
+		vk.cmdSetRenderingInputAttachmentIndicesKHR(*secCmdBuffer, &renderingInputAttachmentIndexInfo);
+		drawSecondSubpass(vk, *secCmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
-	vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
+		vk.cmdEndRendering(*secCmdBuffer);
+		endCommandBuffer(vk, *secCmdBuffer);
 
-	// barier before next subpass
-	VkImageMemoryBarrier imageBarrier(
-		makeImageMemoryBarrier(
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-			VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,
-			VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,
-			*m_srcImage,
-			subresourceRange));
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+		// record primary command buffer
+		beginCommandBuffer(vk, *cmdBuffer);
+		preRenderCommands(vk, *cmdBuffer);
+		vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer);
+		postRenderCommands(vk, *cmdBuffer);
+		endCommandBuffer(vk, *cmdBuffer);
+	}
+	else
+	{
+		beginCommandBuffer(vk, *cmdBuffer);
 
-	vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocationInfo);
-	vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
+		preRenderCommands(vk, *cmdBuffer);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpassPipeline);
-	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpassPipelineLayout, 0u, 1u,  &*m_subpassDescriptorSet, 0u, DE_NULL);
-	vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
+		vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+		drawFirstSubpass(vk, *cmdBuffer);
+		inbetweenRenderCommands(vk, *cmdBuffer);
+		vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocationInfo);
+		vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
+		drawSecondSubpass(vk, *cmdBuffer);
+		vk.cmdEndRendering(*cmdBuffer);
 
-	vk.cmdEndRendering(*cmdBuffer);
+		postRenderCommands(vk, *cmdBuffer);
 
-	copyImageToBuffer(vk, *cmdBuffer, *m_dstSinglesampleImage, *m_dstBuffer, tcu::IVec2(m_width, m_height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
-	endCommandBuffer(vk, *cmdBuffer);
+		endCommandBuffer(vk, *cmdBuffer);
+	}
 
 	submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
 
@@ -1092,6 +1151,55 @@ tcu::TestStatus SampleReadTestInstance::iterateInternalDynamicRendering()
 #endif // CTS_USES_VULKANSC
 
 	return tcu::TestStatus(m_resultCollector.getResult(), m_resultCollector.getMessage());
+}
+
+#ifndef CTS_USES_VULKANSC
+void SampleReadTestInstance::preRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	const VkImageSubresourceRange	subresourceRange(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1));
+	VkImageMemoryBarrier			imageBarriers[]
+	{
+		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, m_srcInputImageReadLayout, *m_srcImage, subresourceRange),
+		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_dstMultisampleImage, subresourceRange),
+		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_dstSinglesampleImage, subresourceRange),
+	};
+
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 3u, imageBarriers);
+}
+
+void SampleReadTestInstance::inbetweenRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	const VkImageSubresourceRange	subresourceRange(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1));
+	VkImageMemoryBarrier			imageBarrier(makeImageMemoryBarrier(
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+		m_srcInputImageReadLayout,
+		m_srcInputImageReadLayout,
+		*m_srcImage,
+		subresourceRange));
+
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		VK_DEPENDENCY_BY_REGION_BIT, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+}
+#endif // CTS_USES_VULKANSC
+
+void SampleReadTestInstance::drawFirstSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
+	vk.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
+}
+
+void SampleReadTestInstance::drawSecondSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpassPipeline);
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpassPipelineLayout, 0u, 1u, &*m_subpassDescriptorSet, 0u, DE_NULL);
+	vk.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
+}
+
+void SampleReadTestInstance::postRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	copyImageToBuffer(vk, cmdBuffer, *m_dstSinglesampleImage, *m_dstBuffer, tcu::IVec2(m_width, m_height),
+					  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 }
 
 void SampleReadTestInstance::verifyResult()

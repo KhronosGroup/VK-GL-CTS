@@ -115,7 +115,64 @@ void generateInputAttachmentParams(deUint32 activeAttachmentCount, deUint32 allA
 	}
 }
 
+VkImageLayout chooseInputImageLayout(const SharedGroupParams groupParams)
+{
 #ifndef CTS_USES_VULKANSC
+	if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+	{
+		// use general layout for local reads for some tests
+		if (groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+			return VK_IMAGE_LAYOUT_GENERAL;
+		return VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+	}
+#else
+	DE_UNREF(groupParams);
+#endif
+	return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+}
+
+#ifndef CTS_USES_VULKANSC
+void beginSecondaryCmdBuffer(const DeviceInterface&	vk,
+							 VkCommandBuffer		secCmdBuffer,
+							 deUint32				colorAttachmentsCount,
+							 const void*			additionalInheritanceRenderingInfo)
+{
+	VkCommandBufferUsageFlags	usageFlags				(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	const std::vector<VkFormat>	colorAttachmentFormats	(colorAttachmentsCount, VK_FORMAT_R8G8B8A8_UNORM);
+
+	const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
+		additionalInheritanceRenderingInfo,										// const void*						pNext;
+		0u,																		// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		colorAttachmentsCount,													// uint32_t							colorAttachmentCount;
+		colorAttachmentFormats.data(),											// const VkFormat*					pColorAttachmentFormats;
+		VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
+		VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits			rasterizationSamples;
+	};
+	const VkCommandBufferInheritanceInfo bufferInheritanceInfo
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,						// VkStructureType					sType;
+		&inheritanceRenderingInfo,												// const void*						pNext;
+		DE_NULL,																// VkRenderPass						renderPass;
+		0u,																		// deUint32							subpass;
+		DE_NULL,																// VkFramebuffer					framebuffer;
+		VK_FALSE,																// VkBool32							occlusionQueryEnable;
+		(VkQueryControlFlags)0u,												// VkQueryControlFlags				queryFlags;
+		(VkQueryPipelineStatisticFlags)0u										// VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+	const VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType							sType;
+		DE_NULL,																// const void*								pNext;
+		usageFlags,																// VkCommandBufferUsageFlags				flags;
+		&bufferInheritanceInfo													// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+	};
+	VK_CHECK(vk.beginCommandBuffer(secCmdBuffer, &commandBufBeginParams));
+}
+
 VkRenderingInputAttachmentIndexInfoKHR getRenderingInputAttachmentIndexInfo(deUint32 activeAttachmentCount, std::vector<uint32_t>& inputAttachments)
 {
 	std::vector<deUint32> unnededIndices;
@@ -156,11 +213,19 @@ public:
 																					 const TestParams&	testParams);
 	virtual								~InputAttachmentSparseFillingTestInstance	(void) = default;
 	virtual tcu::TestStatus				iterate										(void);
+
+protected:
 	template<typename RenderpassSubpass>
 	void								createCommandBuffer							(const DeviceInterface&	vk,
 																					 VkDevice				vkDevice);
 	void								createCommandBufferDynamicRendering			(const DeviceInterface&	vk,
 																					 VkDevice				vkDevice);
+	void								preRenderCommands							(const DeviceInterface&	vk,
+																					 VkCommandBuffer		cmdBuffer);
+	void								drawCommands								(const DeviceInterface&	vk,
+																					 VkCommandBuffer		cmdBuffer);
+	void								postRenderCommands							(const DeviceInterface&	vk,
+																					 VkCommandBuffer		cmdBuffer);
 
 	template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
 	Move<VkRenderPass>					createRenderPass							(const DeviceInterface&	vk,
@@ -175,6 +240,7 @@ private:
 	std::vector<VkImageSp>				m_inputImages;
 	std::vector<AllocationSp>			m_inputImageMemory;
 	std::vector<VkImageViewSp>			m_inputImageViews;
+	VkImageLayout						m_inputImageReadLayout;
 
 	VkImageSp							m_outputImage;
 	AllocationSp						m_outputImageMemory;
@@ -200,6 +266,7 @@ private:
 
 	Move<VkCommandPool>					m_cmdPool;
 	Move<VkCommandBuffer>				m_cmdBuffer;
+	Move<VkCommandBuffer>				m_secCmdBuffer;
 };
 
 InputAttachmentSparseFillingTest::InputAttachmentSparseFillingTest (tcu::TestContext&	testContext,
@@ -283,10 +350,11 @@ void InputAttachmentSparseFillingTest::checkSupport(Context& context) const
 }
 
 InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstance (Context& context, const TestParams& testParams)
-	: vkt::TestInstance	(context)
-	, m_renderSize		(RENDER_SIZE, RENDER_SIZE)
-	, m_vertices		(createFullscreenTriangle())
-	, m_testParams		(testParams)
+	: vkt::TestInstance		(context)
+	, m_renderSize			(RENDER_SIZE, RENDER_SIZE)
+	, m_vertices			(createFullscreenTriangle())
+	, m_testParams			(testParams)
+	, m_inputImageReadLayout(chooseInputImageLayout(testParams.groupParams))
 {
 	const DeviceInterface&				vk						= m_context.getDeviceInterface();
 	const VkDevice						vkDevice				= m_context.getDevice();
@@ -417,11 +485,6 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
 			VK_IMAGE_LAYOUT_GENERAL	// VkImageLayout	imageLayout;
 		}
 	);
-	VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-#ifndef CTS_USES_VULKANSC
-	if (testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
-		imageLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-#endif
 	for (auto& inputImageView : m_inputImageViews)
 	{
 		framebufferImageViews.push_back(**inputImageView);
@@ -429,7 +492,7 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
 			VkDescriptorImageInfo{
 				DE_NULL,									// VkSampleri		sampler;
 				**inputImageView,							// VkImageView		imageView;
-				imageLayout									// VkImageLayout	imageLayout;
+				m_inputImageReadLayout						// VkImageLayout	imageLayout;
 			}
 		);
 	}
@@ -640,66 +703,7 @@ void InputAttachmentSparseFillingTestInstance::createCommandBuffer (const Device
 
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-	// clear output image (rg16ui) to (0,0), set image layout to VK_IMAGE_LAYOUT_GENERAL
-	VkImageSubresourceRange		range				= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	{
-		const VkImageMemoryBarrier	outputImageInitBarrier =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// VkStructureType			sType;
-			DE_NULL,												// const void*				pNext;
-			0u,														// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,							// VkAccessFlags			dstAcessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_GENERAL,								// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,								// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,								// deUint32					destQueueFamilyIndex;
-			**m_outputImage,										// VkImage					image;
-			range													// VkImageSubresourceRange	subresourceRange;
-		};
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &outputImageInitBarrier);
-		VkClearValue				clearColor = makeClearValueColorU32(0, 0, 0, 0);
-		vk.cmdClearColorImage(*m_cmdBuffer, **m_outputImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
-		VkMemoryBarrier					memBarrier =
-		{
-			VK_STRUCTURE_TYPE_MEMORY_BARRIER,						// sType
-			DE_NULL,												// pNext
-			VK_ACCESS_TRANSFER_WRITE_BIT,							// srcAccessMask
-			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT	// dstAccessMask
-		};
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
-	}
-	// clear all input attachments (rgba8) to (1,1,1,1), set image layout to VK_IMAGE_LAYOUT_GENERAL
-	for (auto& inputImage : m_inputImages)
-	{
-		const VkImageMemoryBarrier	inputImageInitBarrier =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			0u,													// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_MEMORY_WRITE_BIT,							// VkAccessFlags			dstAcessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_GENERAL,							// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,							// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,							// deUint32					destQueueFamilyIndex;
-			**inputImage,										// VkImage					image;
-			range												// VkImageSubresourceRange	subresourceRange;
-		};
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &inputImageInitBarrier);
-		VkClearValue				clearColor = makeClearValueColorF32(1.0f, 1.0f, 1.0f, 1.0f);
-
-		vk.cmdClearColorImage(*m_cmdBuffer, **inputImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
-
-		VkMemoryBarrier					memBarrier =
-		{
-			VK_STRUCTURE_TYPE_MEMORY_BARRIER,					// sType
-			DE_NULL,											// pNext
-			VK_ACCESS_TRANSFER_WRITE_BIT,						// srcAccessMask
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT					// dstAccessMask
-		};
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
-	}
+	preRenderCommands(vk, *m_cmdBuffer);
 
 	// Render pass does not use clear values - input images were prepared beforehand
 	const VkRenderPassBeginInfo renderPassBeginInfo =
@@ -715,16 +719,12 @@ void InputAttachmentSparseFillingTestInstance::createCommandBuffer (const Device
 	const typename RenderpassSubpass::SubpassBeginInfo	subpassBeginInfo(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
 	RenderpassSubpass::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfo, &subpassBeginInfo);
 
-	const VkDeviceSize			vertexBufferOffset = 0;
-	vk.cmdBindPipeline			(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
-	vk.cmdBindDescriptorSets	(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
-	vk.cmdBindVertexBuffers		(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-	vk.cmdDraw					(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+	drawCommands(vk, *m_cmdBuffer);
 
 	const typename RenderpassSubpass::SubpassEndInfo	subpassEndInfo(DE_NULL);
 	RenderpassSubpass::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
 
-	copyImageToBuffer(vk, *m_cmdBuffer, **m_outputImage, **m_outputBuffer, tcu::IVec2(m_renderSize.x(), m_renderSize.y()), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
+	postRenderCommands(vk, *m_cmdBuffer);
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
@@ -737,7 +737,7 @@ void InputAttachmentSparseFillingTestInstance::createCommandBufferDynamicRenderi
 			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,		// VkStructureType			sType;
 			DE_NULL,											// const void*				pNext;
 			VK_NULL_HANDLE,										// VkImageView				imageView;
-			VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,			// VkImageLayout			imageLayout;
+			m_inputImageReadLayout,								// VkImageLayout			imageLayout;
 			VK_RESOLVE_MODE_NONE,								// VkResolveModeFlagBits	resolveMode;
 			DE_NULL,											// VkImageView				resolveImageView;
 			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			resolveImageLayout;
@@ -767,82 +767,86 @@ void InputAttachmentSparseFillingTestInstance::createCommandBufferDynamicRenderi
 
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
-
-	// clear output image (rg16ui) to (0,0), set image layout to VK_IMAGE_LAYOUT_GENERAL
-	VkImageSubresourceRange		range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	if (m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 	{
-		const VkImageMemoryBarrier	outputImageInitBarrier =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// VkStructureType			sType;
-			DE_NULL,												// const void*				pNext;
-			0u,														// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,							// VkAccessFlags			dstAcessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_GENERAL,								// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,								// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,								// deUint32					destQueueFamilyIndex;
-			**m_outputImage,										// VkImage					image;
-			range													// VkImageSubresourceRange	subresourceRange;
-		};
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &outputImageInitBarrier);
-		VkClearValue				clearColor = makeClearValueColorU32(0, 0, 0, 0);
-		vk.cmdClearColorImage(*m_cmdBuffer, **m_outputImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
-		VkMemoryBarrier					memBarrier =
-		{
-			VK_STRUCTURE_TYPE_MEMORY_BARRIER,						// sType
-			DE_NULL,												// pNext
-			VK_ACCESS_TRANSFER_WRITE_BIT,							// srcAccessMask
-			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT	// dstAccessMask
-		};
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+		m_secCmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+		// record secondary command buffer
+		beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, m_testParams.activeInputAttachmentCount, &renderingInputAttachmentIndexInfo);
+		vk.cmdBeginRendering(*m_secCmdBuffer, &renderingInfo);
+		drawCommands(vk, *m_secCmdBuffer);
+		vk.cmdEndRendering(*m_secCmdBuffer);
+		endCommandBuffer(vk, *m_secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(vk, *m_cmdBuffer);
+		preRenderCommands(vk, *m_cmdBuffer);
+		vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
+		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+		postRenderCommands(vk, *m_cmdBuffer);
+		endCommandBuffer(vk, *m_cmdBuffer);
 	}
-	// clear all input attachments (rgba8) to (1,1,1,1), set image layout to VK_IMAGE_LAYOUT_GENERAL
-	for (auto& inputImage : m_inputImages)
+	else
 	{
-		VkImageMemoryBarrier imageBarrier
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType			sType;
-			DE_NULL,											// const void*				pNext;
-			0u,													// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_MEMORY_WRITE_BIT,							// VkAccessFlags			dstAcessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_GENERAL,							// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,							// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,							// deUint32					destQueueFamilyIndex;
-			**inputImage,										// VkImage					image;
-			range												// VkImageSubresourceRange	subresourceRange;
-		};
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
-		VkClearValue				clearColor = makeClearValueColorF32(1.0f, 1.0f, 1.0f, 1.0f);
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+		preRenderCommands(vk, *m_cmdBuffer);
+		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 
-		vk.cmdClearColorImage(*m_cmdBuffer, **inputImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
+		vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
+		drawCommands(vk, *m_cmdBuffer);
 
-		imageBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-		imageBarrier.newLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+		vk.cmdEndRendering(*m_cmdBuffer);
+		postRenderCommands(vk, *m_cmdBuffer);
+		endCommandBuffer(vk, *m_cmdBuffer);
 	}
-
-	vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
-
-	const VkDeviceSize			vertexBufferOffset = 0;
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
-	vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
-	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-	vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
-	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
-
-	vk.cmdEndRendering(*m_cmdBuffer);
-
-	copyImageToBuffer(vk, *m_cmdBuffer, **m_outputImage, **m_outputBuffer, tcu::IVec2(m_renderSize.x(), m_renderSize.y()), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
-
-	endCommandBuffer(vk, *m_cmdBuffer);
 
 #else
 	DE_UNREF(vk);
 	DE_UNREF(vkDevice);
 #endif // CTS_USES_VULKANSC
+}
+
+void InputAttachmentSparseFillingTestInstance::preRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	// clear output image (rg16ui) to (0,0), set image layout to VK_IMAGE_LAYOUT_GENERAL
+	VkImageSubresourceRange		range					= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const VkImageMemoryBarrier	outputImageInitBarrier	= makeImageMemoryBarrier(
+		0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, **m_outputImage, range);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &outputImageInitBarrier);
+
+	VkClearValue clearColor = makeClearValueColorU32(0, 0, 0, 0);
+	vk.cmdClearColorImage(cmdBuffer, **m_outputImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
+
+	VkMemoryBarrier memBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+
+	// clear all input attachments (rgba8) to (1,1,1,1), set image layout to VK_IMAGE_LAYOUT_GENERAL
+	clearColor = makeClearValueColorF32(1.0f, 1.0f, 1.0f, 1.0f);
+	for (auto& inputImage : m_inputImages)
+	{
+		VkImageMemoryBarrier imageBarrier = makeImageMemoryBarrier(
+			0u, VK_ACCESS_MEMORY_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, **inputImage, range);
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+
+		vk.cmdClearColorImage(cmdBuffer, **inputImage, VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
+	}
+
+	memBarrier.dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+}
+
+void InputAttachmentSparseFillingTestInstance::drawCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	const VkDeviceSize vertexBufferOffset = 0;
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
+	vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+	vk.cmdDraw(cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+}
+
+void InputAttachmentSparseFillingTestInstance::postRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
+{
+	copyImageToBuffer(vk, cmdBuffer, **m_outputImage, **m_outputBuffer, tcu::IVec2(m_renderSize.x(), m_renderSize.y()), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
 }
 
 template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
