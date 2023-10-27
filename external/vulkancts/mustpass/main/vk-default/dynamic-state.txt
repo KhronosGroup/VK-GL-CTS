@@ -18,6 +18,7 @@ dEQP-VK.dynamic_state.fast_linked_library.ds_state.stencil_params_basic_2
 dEQP-VK.dynamic_state.fast_linked_library.ds_state.stencil_params_basic_2_mesh
 dEQP-VK.dynamic_state.fast_linked_library.general_state.bind_order
 dEQP-VK.dynamic_state.fast_linked_library.general_state.bind_order_mesh
+dEQP-VK.dynamic_state.fast_linked_library.general_state.double_static_bind
 dEQP-VK.dynamic_state.fast_linked_library.general_state.state_persistence
 dEQP-VK.dynamic_state.fast_linked_library.general_state.state_switch
 dEQP-VK.dynamic_state.fast_linked_library.general_state.state_switch_mesh
@@ -202,6 +203,7 @@ dEQP-VK.dynamic_state.monolithic.ds_state.stencil_params_basic_2
 dEQP-VK.dynamic_state.monolithic.ds_state.stencil_params_basic_2_mesh
 dEQP-VK.dynamic_state.monolithic.general_state.bind_order
 dEQP-VK.dynamic_state.monolithic.general_state.bind_order_mesh
+dEQP-VK.dynamic_state.monolithic.general_state.double_static_bind
 dEQP-VK.dynamic_state.monolithic.general_state.state_persistence
 dEQP-VK.dynamic_state.monolithic.general_state.state_switch
 dEQP-VK.dynamic_state.monolithic.general_state.state_switch_mesh
@@ -262,6 +264,7 @@ dEQP-VK.dynamic_state.pipeline_library.ds_state.stencil_params_basic_2
 dEQP-VK.dynamic_state.pipeline_library.ds_state.stencil_params_basic_2_mesh
 dEQP-VK.dynamic_state.pipeline_library.general_state.bind_order
 dEQP-VK.dynamic_state.pipeline_library.general_state.bind_order_mesh
+dEQP-VK.dynamic_state.pipeline_library.general_state.double_static_bind
 dEQP-VK.dynamic_state.pipeline_library.general_state.state_persistence
 dEQP-VK.dynamic_state.pipeline_library.general_state.state_switch
 dEQP-VK.dynamic_state.pipeline_library.general_state.state_switch_mesh

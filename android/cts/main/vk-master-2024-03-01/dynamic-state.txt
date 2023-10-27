@@ -1,3 +1,4 @@
+dEQP-VK.dynamic_state.fast_linked_library.general_state.double_static_bind
 dEQP-VK.dynamic_state.fast_linked_library.general_state.static_stencil_mask_zero
 dEQP-VK.dynamic_state.fast_linked_library.inheritance.nested
 dEQP-VK.dynamic_state.fast_linked_library.inheritance.nested_with_count
@@ -9,6 +10,7 @@ dEQP-VK.dynamic_state.fast_linked_library.line_width.static_dyna.list3_strip4
 dEQP-VK.dynamic_state.fast_linked_library.line_width.static_dyna.list7_list8
 dEQP-VK.dynamic_state.fast_linked_library.line_width.static_dyna.strip11_list12
 dEQP-VK.dynamic_state.fast_linked_library.line_width.static_dyna.strip15_strip16
+dEQP-VK.dynamic_state.monolithic.general_state.double_static_bind
 dEQP-VK.dynamic_state.monolithic.general_state.static_stencil_mask_zero
 dEQP-VK.dynamic_state.monolithic.inheritance.nested
 dEQP-VK.dynamic_state.monolithic.inheritance.nested_with_count
@@ -20,6 +22,7 @@ dEQP-VK.dynamic_state.monolithic.line_width.static_dyna.list3_strip4
 dEQP-VK.dynamic_state.monolithic.line_width.static_dyna.list7_list8
 dEQP-VK.dynamic_state.monolithic.line_width.static_dyna.strip11_list12
 dEQP-VK.dynamic_state.monolithic.line_width.static_dyna.strip15_strip16
+dEQP-VK.dynamic_state.pipeline_library.general_state.double_static_bind
 dEQP-VK.dynamic_state.pipeline_library.general_state.static_stencil_mask_zero
 dEQP-VK.dynamic_state.pipeline_library.inheritance.nested
 dEQP-VK.dynamic_state.pipeline_library.inheritance.nested_with_count
