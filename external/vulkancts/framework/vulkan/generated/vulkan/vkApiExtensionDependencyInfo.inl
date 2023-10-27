@@ -2845,6 +2845,18 @@ bool check_VK_ARM_shader_core_properties(const tcu::UVec2& v, const ExtPropVect&
 	return isCompatibile(1, 1, v);
 }
 
+bool check_VK_ARM_scheduling_controls(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_scheduling_controls"))
+		return true;
+
+	// depends attribute in xml: VK_ARM_shader_core_builtins
+	return isSupported(vDEP, "VK_ARM_shader_core_builtins");
+}
+
 bool check_VK_EXT_image_sliced_view_of_3d(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3524,6 +3536,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_pageable_device_local_memory",					&check_VK_EXT_pageable_device_local_memory),
 	std::make_pair("VK_KHR_maintenance4",									&check_VK_KHR_maintenance4),
 	std::make_pair("VK_ARM_shader_core_properties",							&check_VK_ARM_shader_core_properties),
+	std::make_pair("VK_ARM_scheduling_controls",							&check_VK_ARM_scheduling_controls),
 	std::make_pair("VK_EXT_image_sliced_view_of_3d",						&check_VK_EXT_image_sliced_view_of_3d),
 	std::make_pair("VK_VALVE_descriptor_set_host_mapping",					&check_VK_VALVE_descriptor_set_host_mapping),
 	std::make_pair("VK_EXT_depth_clamp_zero_one",							&check_VK_EXT_depth_clamp_zero_one),
@@ -3814,6 +3827,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 1, "VK_KHR_video_encode_queue"),
 	std::make_tuple(1, 0, "VK_NV_device_diagnostics_config"),
 	std::make_tuple(1, 0, "VK_QCOM_render_pass_store_ops"),
+	std::make_tuple(1, 0, "VK_NV_cuda_kernel_launch"),
 	std::make_tuple(1, 0, "VK_NV_low_latency"),
 	std::make_tuple(1, 0, "VK_EXT_metal_objects"),
 	std::make_tuple(1, 0, "VK_KHR_synchronization2"),
@@ -3874,6 +3888,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_pageable_device_local_memory"),
 	std::make_tuple(1, 1, "VK_KHR_maintenance4"),
 	std::make_tuple(1, 1, "VK_ARM_shader_core_properties"),
+	std::make_tuple(1, 0, "VK_ARM_scheduling_controls"),
 	std::make_tuple(1, 0, "VK_EXT_image_sliced_view_of_3d"),
 	std::make_tuple(1, 0, "VK_VALVE_descriptor_set_host_mapping"),
 	std::make_tuple(1, 0, "VK_EXT_depth_clamp_zero_one"),

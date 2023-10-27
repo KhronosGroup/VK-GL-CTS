@@ -3383,6 +3383,21 @@ template<> VkStructureType getStructureType<VkBufferCollectionConstraintsInfoFUC
 	return VK_STRUCTURE_TYPE_BUFFER_COLLECTION_CONSTRAINTS_INFO_FUCHSIA;
 }
 
+template<> VkStructureType getStructureType<VkCudaModuleCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_CUDA_MODULE_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkCudaFunctionCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_CUDA_FUNCTION_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkCudaLaunchInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_CUDA_LAUNCH_INFO_NV;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RGBA10X6_FORMATS_FEATURES_EXT;
@@ -4216,5 +4231,30 @@ template<> VkStructureType getStructureType<VkSwapchainLatencyCreateInfoNV> (voi
 template<> VkStructureType getStructureType<VkLatencySurfaceCapabilitiesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_LATENCY_SURFACE_CAPABILITIES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCudaKernelLaunchFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCudaKernelLaunchPropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_PROPERTIES_NV;
+}
+
+template<> VkStructureType getStructureType<VkDeviceQueueShaderCoreControlCreateInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_QUEUE_SHADER_CORE_CONTROL_CREATE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceSchedulingControlsFeaturesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_FEATURES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceSchedulingControlsPropertiesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_PROPERTIES_ARM;
 }
 

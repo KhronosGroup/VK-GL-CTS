@@ -753,6 +753,12 @@ m_vk.setBufferCollectionBufferConstraintsFUCHSIA = (SetBufferCollectionBufferCon
 m_vk.setBufferCollectionImageConstraintsFUCHSIA = (SetBufferCollectionImageConstraintsFUCHSIAFunc) GET_PROC_ADDR("vkSetBufferCollectionImageConstraintsFUCHSIA");
 m_vk.destroyBufferCollectionFUCHSIA = (DestroyBufferCollectionFUCHSIAFunc) GET_PROC_ADDR("vkDestroyBufferCollectionFUCHSIA");
 m_vk.getBufferCollectionPropertiesFUCHSIA = (GetBufferCollectionPropertiesFUCHSIAFunc) GET_PROC_ADDR("vkGetBufferCollectionPropertiesFUCHSIA");
+m_vk.createCudaModuleNV = (CreateCudaModuleNVFunc) GET_PROC_ADDR("vkCreateCudaModuleNV");
+m_vk.getCudaModuleCacheNV = (GetCudaModuleCacheNVFunc) GET_PROC_ADDR("vkGetCudaModuleCacheNV");
+m_vk.createCudaFunctionNV = (CreateCudaFunctionNVFunc) GET_PROC_ADDR("vkCreateCudaFunctionNV");
+m_vk.destroyCudaModuleNV = (DestroyCudaModuleNVFunc) GET_PROC_ADDR("vkDestroyCudaModuleNV");
+m_vk.destroyCudaFunctionNV = (DestroyCudaFunctionNVFunc) GET_PROC_ADDR("vkDestroyCudaFunctionNV");
+m_vk.cmdCudaLaunchKernelNV = (CmdCudaLaunchKernelNVFunc) GET_PROC_ADDR("vkCmdCudaLaunchKernelNV");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.cmdBeginRendering = (CmdBeginRenderingFunc) GET_PROC_ADDR("vkCmdBeginRendering");
 if (!m_vk.cmdBeginRendering)

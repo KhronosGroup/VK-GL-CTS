@@ -607,6 +607,12 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetBufferCollectionBufferConstraints
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetBufferCollectionImageConstraintsFUCHSIAFunc)						(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyBufferCollectionFUCHSIAFunc)									(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetBufferCollectionPropertiesFUCHSIAFunc)								(VkDevice device, VkBufferCollectionFUCHSIA collection, VkBufferCollectionPropertiesFUCHSIA* pProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateCudaModuleNVFunc)												(VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaModuleNV* pModule);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetCudaModuleCacheNVFunc)												(VkDevice device, VkCudaModuleNV module, size_t* pCacheSize, void* pCacheData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateCudaFunctionNVFunc)												(VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaFunctionNV* pFunction);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyCudaModuleNVFunc)												(VkDevice device, VkCudaModuleNV module, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyCudaFunctionNVFunc)												(VkDevice device, VkCudaFunctionNV function, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCudaLaunchKernelNVFunc)												(VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingFunc)													(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingKHRFunc)												(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderingFunc)													(VkCommandBuffer commandBuffer);

@@ -2174,6 +2174,36 @@ VkResult DeviceDriver::getBufferCollectionPropertiesFUCHSIA (VkDevice device, Vk
 	return m_vk.getBufferCollectionPropertiesFUCHSIA(device, collection, pProperties);
 }
 
+VkResult DeviceDriver::createCudaModuleNV (VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaModuleNV* pModule) const
+{
+	return m_vk.createCudaModuleNV(device, pCreateInfo, pAllocator, pModule);
+}
+
+VkResult DeviceDriver::getCudaModuleCacheNV (VkDevice device, VkCudaModuleNV module, size_t* pCacheSize, void* pCacheData) const
+{
+	return m_vk.getCudaModuleCacheNV(device, module, pCacheSize, pCacheData);
+}
+
+VkResult DeviceDriver::createCudaFunctionNV (VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaFunctionNV* pFunction) const
+{
+	return m_vk.createCudaFunctionNV(device, pCreateInfo, pAllocator, pFunction);
+}
+
+void DeviceDriver::destroyCudaModuleNV (VkDevice device, VkCudaModuleNV module, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyCudaModuleNV(device, module, pAllocator);
+}
+
+void DeviceDriver::destroyCudaFunctionNV (VkDevice device, VkCudaFunctionNV function, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyCudaFunctionNV(device, function, pAllocator);
+}
+
+void DeviceDriver::cmdCudaLaunchKernelNV (VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo) const
+{
+	m_vk.cmdCudaLaunchKernelNV(commandBuffer, pLaunchInfo);
+}
+
 void DeviceDriver::cmdBeginRendering (VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const
 {
 	m_vk.cmdBeginRendering(commandBuffer, pRenderingInfo);

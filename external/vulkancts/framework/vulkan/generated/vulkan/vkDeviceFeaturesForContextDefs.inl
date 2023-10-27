@@ -84,6 +84,7 @@ const vk::VkPhysicalDevicePresentIdFeaturesKHR&								Context::getPresentIdFeat
 const vk::VkPhysicalDevicePrivateDataFeatures&								Context::getPrivateDataFeatures								(void) const { return m_device->getPrivateDataFeatures();							}
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeatures&				Context::getPipelineCreationCacheControlFeatures			(void) const { return m_device->getPipelineCreationCacheControlFeatures();			}
 const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&						Context::getDiagnosticsConfigFeatures						(void) const { return m_device->getDiagnosticsConfigFeatures();						}
+const vk::VkPhysicalDeviceCudaKernelLaunchFeaturesNV&						Context::getCudaKernelLaunchFeaturesNV						(void) const { return m_device->getCudaKernelLaunchFeaturesNV();					}
 const vk::VkPhysicalDeviceSynchronization2Features&							Context::getSynchronization2Features						(void) const { return m_device->getSynchronization2Features();						}
 const vk::VkPhysicalDeviceDescriptorBufferFeaturesEXT&						Context::getDescriptorBufferFeaturesEXT						(void) const { return m_device->getDescriptorBufferFeaturesEXT();					}
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&				Context::getGraphicsPipelineLibraryFeaturesEXT				(void) const { return m_device->getGraphicsPipelineLibraryFeaturesEXT();			}
@@ -127,6 +128,7 @@ const vk::VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI&				Context::getClu
 const vk::VkPhysicalDeviceBorderColorSwizzleFeaturesEXT&					Context::getBorderColorSwizzleFeaturesEXT					(void) const { return m_device->getBorderColorSwizzleFeaturesEXT();					}
 const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&				Context::getPageableDeviceLocalMemoryFeaturesEXT			(void) const { return m_device->getPageableDeviceLocalMemoryFeaturesEXT();			}
 const vk::VkPhysicalDeviceMaintenance4Features&								Context::getMaintenance4Features							(void) const { return m_device->getMaintenance4Features();							}
+const vk::VkPhysicalDeviceSchedulingControlsFeaturesARM&					Context::getSchedulingControlsFeaturesARM					(void) const { return m_device->getSchedulingControlsFeaturesARM();					}
 const vk::VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT&					Context::getImageSlicedViewOf3DFeaturesEXT					(void) const { return m_device->getImageSlicedViewOf3DFeaturesEXT();				}
 const vk::VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE&			Context::getDescriptorSetHostMappingFeaturesVALVE			(void) const { return m_device->getDescriptorSetHostMappingFeaturesVALVE();			}
 const vk::VkPhysicalDeviceDepthClampZeroOneFeaturesEXT&						Context::getDepthClampZeroOneFeaturesEXT					(void) const { return m_device->getDepthClampZeroOneFeaturesEXT();					}

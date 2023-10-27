@@ -48,6 +48,7 @@ const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		getShaderIntegerDo
 const vk::VkPhysicalDeviceTexelBufferAlignmentProperties&			getTexelBufferAlignmentProperties			(void) const;
 const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					getRobustness2PropertiesEXT					(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			getCustomBorderColorPropertiesEXT			(void) const;
+const vk::VkPhysicalDeviceCudaKernelLaunchPropertiesNV&				getCudaKernelLaunchPropertiesNV				(void) const;
 const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&			getDescriptorBufferPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		getGraphicsPipelineLibraryPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	getFragmentShaderBarycentricProperties		(void) const;
@@ -63,6 +64,7 @@ const vk::VkPhysicalDeviceDisplacementMicromapPropertiesNV&			getDisplacementMic
 const vk::VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI&		getClusterCullingShaderPropertiesHUAWEI		(void) const;
 const vk::VkPhysicalDeviceMaintenance4Properties&					getMaintenance4Properties					(void) const;
 const vk::VkPhysicalDeviceShaderCorePropertiesARM&					getShaderCorePropertiesARM					(void) const;
+const vk::VkPhysicalDeviceSchedulingControlsPropertiesARM&			getSchedulingControlsPropertiesARM			(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&	getFragmentDensityMapOffsetPropertiesQCOM	(void) const;
 const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&			getCopyMemoryIndirectProperties				(void) const;
 const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&			getMemoryDecompressionProperties			(void) const;

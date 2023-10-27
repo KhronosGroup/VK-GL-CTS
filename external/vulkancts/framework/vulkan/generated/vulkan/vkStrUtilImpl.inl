@@ -51,6 +51,8 @@ template<> const char*	getTypeName<VkDebugReportCallbackEXT>			(void) { return "
 template<> const char*	getTypeName<VkDebugUtilsMessengerEXT>			(void) { return "VkDebugUtilsMessengerEXT";			}
 template<> const char*	getTypeName<VkVideoSessionKHR>					(void) { return "VkVideoSessionKHR";				}
 template<> const char*	getTypeName<VkVideoSessionParametersKHR>		(void) { return "VkVideoSessionParametersKHR";		}
+template<> const char*	getTypeName<VkCudaModuleNV>						(void) { return "VkCudaModuleNV";					}
+template<> const char*	getTypeName<VkCudaFunctionNV>					(void) { return "VkCudaFunctionNV";					}
 
 namespace pt
 {
@@ -2046,6 +2048,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_FEEDBACK_INFO_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_FEEDBACK_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV:							return "VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_CUDA_MODULE_CREATE_INFO_NV:											return "VK_STRUCTURE_TYPE_CUDA_MODULE_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_CUDA_FUNCTION_CREATE_INFO_NV:										return "VK_STRUCTURE_TYPE_CUDA_FUNCTION_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_CUDA_LAUNCH_INFO_NV:													return "VK_STRUCTURE_TYPE_CUDA_LAUNCH_INFO_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV:										return "VK_STRUCTURE_TYPE_QUERY_LOW_LATENCY_SUPPORT_NV";
 		case VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT:										return "VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECTS_INFO_EXT";
@@ -2208,6 +2215,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS:									return "VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS";
 		case VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS:									return "VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM";
+		case VK_STRUCTURE_TYPE_DEVICE_QUEUE_SHADER_CORE_CONTROL_CREATE_INFO_ARM:					return "VK_STRUCTURE_TYPE_DEVICE_QUEUE_SHADER_CORE_CONTROL_CREATE_INFO_ARM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_FEATURES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_FEATURES_ARM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_PROPERTIES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_PROPERTIES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE";
@@ -2525,6 +2535,8 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR:				return "VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR";
 		case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV:		return "VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV";
 		case VK_OBJECT_TYPE_PRIVATE_DATA_SLOT:					return "VK_OBJECT_TYPE_PRIVATE_DATA_SLOT";
+		case VK_OBJECT_TYPE_CUDA_MODULE_NV:						return "VK_OBJECT_TYPE_CUDA_MODULE_NV";
+		case VK_OBJECT_TYPE_CUDA_FUNCTION_NV:					return "VK_OBJECT_TYPE_CUDA_FUNCTION_NV";
 		case VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA:			return "VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA";
 		case VK_OBJECT_TYPE_MICROMAP_EXT:						return "VK_OBJECT_TYPE_MICROMAP_EXT";
 		case VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV:			return "VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV";
@@ -3909,6 +3921,8 @@ const char* getDebugReportObjectTypeEXTName (VkDebugReportObjectTypeEXT value)
 		case VK_DEBUG_REPORT_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR_EXT:	return "VK_DEBUG_REPORT_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR_EXT";
 		case VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_EXT";
 		case VK_DEBUG_REPORT_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_CUDA_MODULE_NV:					return "VK_DEBUG_REPORT_OBJECT_TYPE_CUDA_MODULE_NV";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_CUDA_FUNCTION_NV:					return "VK_DEBUG_REPORT_OBJECT_TYPE_CUDA_FUNCTION_NV";
 		case VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA_EXT";
 		default:															return DE_NULL;
 	}
@@ -4488,6 +4502,15 @@ const char* getOutOfBandQueueTypeNVName (VkOutOfBandQueueTypeNV value)
 		case VK_OUT_OF_BAND_QUEUE_TYPE_PRESENT_NV:	return "VK_OUT_OF_BAND_QUEUE_TYPE_PRESENT_NV";
 		default:									return DE_NULL;
 	}
+}
+
+tcu::Format::Bitfield<64> getPhysicalDeviceSchedulingControlsFlagsARMStr (VkPhysicalDeviceSchedulingControlsFlagsARM value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_SHADER_CORE_COUNT_ARM,	"VK_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_SHADER_CORE_COUNT_ARM"),
+	};
+	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
 const char* getVendorIdName (VkVendorId value)
@@ -15651,6 +15674,49 @@ std::ostream& operator<< (std::ostream& s, const VkBufferCollectionConstraintsIn
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkCudaModuleCreateInfoNV& value)
+{
+	s << "VkCudaModuleCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdataSize = " << value.dataSize << '\n';
+	s << "\tpData = " << value.pData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCudaFunctionCreateInfoNV& value)
+{
+	s << "VkCudaFunctionCreateInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmodule = " << value.module << '\n';
+	s << "\tpName = " << getCharPtrStr(value.pName) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCudaLaunchInfoNV& value)
+{
+	s << "VkCudaLaunchInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfunction = " << value.function << '\n';
+	s << "\tgridDimX = " << value.gridDimX << '\n';
+	s << "\tgridDimY = " << value.gridDimY << '\n';
+	s << "\tgridDimZ = " << value.gridDimZ << '\n';
+	s << "\tblockDimX = " << value.blockDimX << '\n';
+	s << "\tblockDimY = " << value.blockDimY << '\n';
+	s << "\tblockDimZ = " << value.blockDimZ << '\n';
+	s << "\tsharedMemBytes = " << value.sharedMemBytes << '\n';
+	s << "\tparamCount = " << value.paramCount << '\n';
+	s << "\tpParams = " << value.pParams << '\n';
+	s << "\textraCount = " << value.extraCount << '\n';
+	s << "\tpExtras = " << value.pExtras << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT = {\n";
@@ -17700,6 +17766,57 @@ std::ostream& operator<< (std::ostream& s, const VkLatencySurfaceCapabilitiesNV&
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpresentModeCount = " << value.presentModeCount << '\n';
 	s << "\tpPresentModes = " << value.pPresentModes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCudaKernelLaunchFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceCudaKernelLaunchFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcudaKernelLaunchFeatures = " << value.cudaKernelLaunchFeatures << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCudaKernelLaunchPropertiesNV& value)
+{
+	s << "VkPhysicalDeviceCudaKernelLaunchPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcomputeCapabilityMinor = " << value.computeCapabilityMinor << '\n';
+	s << "\tcomputeCapabilityMajor = " << value.computeCapabilityMajor << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceQueueShaderCoreControlCreateInfoARM& value)
+{
+	s << "VkDeviceQueueShaderCoreControlCreateInfoARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderCoreCount = " << value.shaderCoreCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSchedulingControlsFeaturesARM& value)
+{
+	s << "VkPhysicalDeviceSchedulingControlsFeaturesARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tschedulingControls = " << value.schedulingControls << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSchedulingControlsPropertiesARM& value)
+{
+	s << "VkPhysicalDeviceSchedulingControlsPropertiesARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tschedulingControlsFlags = " << getPhysicalDeviceSchedulingControlsFlagsARMStr(value.schedulingControlsFlags) << '\n';
 	s << '}';
 	return s;
 }

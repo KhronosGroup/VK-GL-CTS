@@ -84,6 +84,7 @@ const vk::VkPhysicalDevicePresentIdFeaturesKHR&								getPresentIdFeatures					
 const vk::VkPhysicalDevicePrivateDataFeatures&								getPrivateDataFeatures								(void) const;
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeatures&				getPipelineCreationCacheControlFeatures				(void) const;
 const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&						getDiagnosticsConfigFeatures						(void) const;
+const vk::VkPhysicalDeviceCudaKernelLaunchFeaturesNV&						getCudaKernelLaunchFeaturesNV						(void) const;
 const vk::VkPhysicalDeviceSynchronization2Features&							getSynchronization2Features							(void) const;
 const vk::VkPhysicalDeviceDescriptorBufferFeaturesEXT&						getDescriptorBufferFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT&				getGraphicsPipelineLibraryFeaturesEXT				(void) const;
@@ -127,6 +128,7 @@ const vk::VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI&				getClusterCulli
 const vk::VkPhysicalDeviceBorderColorSwizzleFeaturesEXT&					getBorderColorSwizzleFeaturesEXT					(void) const;
 const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&				getPageableDeviceLocalMemoryFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceMaintenance4Features&								getMaintenance4Features								(void) const;
+const vk::VkPhysicalDeviceSchedulingControlsFeaturesARM&					getSchedulingControlsFeaturesARM					(void) const;
 const vk::VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT&					getImageSlicedViewOf3DFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE&			getDescriptorSetHostMappingFeaturesVALVE			(void) const;
 const vk::VkPhysicalDeviceDepthClampZeroOneFeaturesEXT&						getDepthClampZeroOneFeaturesEXT						(void) const;

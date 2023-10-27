@@ -7520,6 +7520,40 @@ struct VkImageConstraintsInfoFUCHSIA
 	VkImageConstraintsInfoFlagsFUCHSIA			flags;
 };
 
+struct VkCudaModuleCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	size_t			dataSize;
+	const void*		pData;
+};
+
+struct VkCudaFunctionCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkCudaModuleNV	module;
+	const char*		pName;
+};
+
+struct VkCudaLaunchInfoNV
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkCudaFunctionNV	function;
+	uint32_t			gridDimX;
+	uint32_t			gridDimY;
+	uint32_t			gridDimZ;
+	uint32_t			blockDimX;
+	uint32_t			blockDimY;
+	uint32_t			blockDimZ;
+	uint32_t			sharedMemBytes;
+	size_t				paramCount;
+	const void* const *	pParams;
+	size_t				extraCount;
+	const void* const *	pExtras;
+};
+
 struct VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT
 {
 	VkStructureType	sType;
@@ -9037,6 +9071,42 @@ struct VkLatencySurfaceCapabilitiesNV
 	const void*			pNext;
 	uint32_t			presentModeCount;
 	VkPresentModeKHR*	pPresentModes;
+};
+
+struct VkPhysicalDeviceCudaKernelLaunchFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		cudaKernelLaunchFeatures;
+};
+
+struct VkPhysicalDeviceCudaKernelLaunchPropertiesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		computeCapabilityMinor;
+	uint32_t		computeCapabilityMajor;
+};
+
+struct VkDeviceQueueShaderCoreControlCreateInfoARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		shaderCoreCount;
+};
+
+struct VkPhysicalDeviceSchedulingControlsFeaturesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		schedulingControls;
+};
+
+struct VkPhysicalDeviceSchedulingControlsPropertiesARM
+{
+	VkStructureType								sType;
+	void*										pNext;
+	VkPhysicalDeviceSchedulingControlsFlagsARM	schedulingControlsFlags;
 };
 
 struct StdVideoH264SpsVuiFlags

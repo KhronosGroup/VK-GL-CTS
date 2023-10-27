@@ -598,6 +598,7 @@ tcu::Format::Bitfield<32>	getFrameBoundaryFlagsEXTStr									(VkFrameBoundaryFl
 tcu::Format::Bitfield<32>	getPresentScalingFlagsEXTStr								(VkPresentScalingFlagsEXT value);
 tcu::Format::Bitfield<32>	getPresentGravityFlagsEXTStr								(VkPresentGravityFlagsEXT value);
 tcu::Format::Bitfield<32>	getShaderCreateFlagsEXTStr									(VkShaderCreateFlagsEXT value);
+tcu::Format::Bitfield<64>	getPhysicalDeviceSchedulingControlsFlagsARMStr				(VkPhysicalDeviceSchedulingControlsFlagsARM value);
 tcu::Format::Bitfield<32>	getVideoCodecOperationFlagsKHRStr							(VkVideoCodecOperationFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoCapabilityFlagsKHRStr								(VkVideoCapabilityFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoSessionCreateFlagsKHRStr							(VkVideoSessionCreateFlagsKHR value);
@@ -1438,6 +1439,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkSysmemColorSpaceFUCHSIA& valu
 std::ostream&	operator<<	(std::ostream& s, const VkImageFormatConstraintsInfoFUCHSIA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageConstraintsInfoFUCHSIA& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferCollectionConstraintsInfoFUCHSIA& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCudaModuleCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCudaFunctionCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCudaLaunchInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFormatProperties3& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDrmFormatModifierPropertiesList2EXT& value);
@@ -1616,6 +1620,11 @@ std::ostream&	operator<<	(std::ostream& s, const VkOutOfBandQueueTypeInfoNV& val
 std::ostream&	operator<<	(std::ostream& s, const VkLatencySubmissionPresentIdNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainLatencyCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkLatencySurfaceCapabilitiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCudaKernelLaunchFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCudaKernelLaunchPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceQueueShaderCoreControlCreateInfoARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSchedulingControlsFeaturesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSchedulingControlsPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

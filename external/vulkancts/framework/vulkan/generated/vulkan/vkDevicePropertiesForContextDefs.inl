@@ -48,6 +48,7 @@ const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		Context::getShader
 const vk::VkPhysicalDeviceTexelBufferAlignmentProperties&			Context::getTexelBufferAlignmentProperties			(void) const { return m_device->getTexelBufferAlignmentProperties();			}
 const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					Context::getRobustness2PropertiesEXT				(void) const { return m_device->getRobustness2PropertiesEXT();					}
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			Context::getCustomBorderColorPropertiesEXT			(void) const { return m_device->getCustomBorderColorPropertiesEXT();			}
+const vk::VkPhysicalDeviceCudaKernelLaunchPropertiesNV&				Context::getCudaKernelLaunchPropertiesNV			(void) const { return m_device->getCudaKernelLaunchPropertiesNV();				}
 const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&			Context::getDescriptorBufferPropertiesEXT			(void) const { return m_device->getDescriptorBufferPropertiesEXT();				}
 const vk::VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT&		Context::getGraphicsPipelineLibraryPropertiesEXT	(void) const { return m_device->getGraphicsPipelineLibraryPropertiesEXT();		}
 const vk::VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR&	Context::getFragmentShaderBarycentricProperties		(void) const { return m_device->getFragmentShaderBarycentricProperties();		}
@@ -63,6 +64,7 @@ const vk::VkPhysicalDeviceDisplacementMicromapPropertiesNV&			Context::getDispla
 const vk::VkPhysicalDeviceClusterCullingShaderPropertiesHUAWEI&		Context::getClusterCullingShaderPropertiesHUAWEI	(void) const { return m_device->getClusterCullingShaderPropertiesHUAWEI();		}
 const vk::VkPhysicalDeviceMaintenance4Properties&					Context::getMaintenance4Properties					(void) const { return m_device->getMaintenance4Properties();					}
 const vk::VkPhysicalDeviceShaderCorePropertiesARM&					Context::getShaderCorePropertiesARM					(void) const { return m_device->getShaderCorePropertiesARM();					}
+const vk::VkPhysicalDeviceSchedulingControlsPropertiesARM&			Context::getSchedulingControlsPropertiesARM			(void) const { return m_device->getSchedulingControlsPropertiesARM();			}
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&	Context::getFragmentDensityMapOffsetPropertiesQCOM	(void) const { return m_device->getFragmentDensityMapOffsetPropertiesQCOM();	}
 const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&			Context::getCopyMemoryIndirectProperties			(void) const { return m_device->getCopyMemoryIndirectProperties();				}
 const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&			Context::getMemoryDecompressionProperties			(void) const { return m_device->getMemoryDecompressionProperties();				}

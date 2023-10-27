@@ -303,6 +303,18 @@ VKAPI_ATTR VkResult VKAPI_CALL createBufferCollectionFUCHSIA (VkDevice device, c
 	VK_NULL_RETURN((*pCollection = allocateNonDispHandle<BufferCollectionFUCHSIA, VkBufferCollectionFUCHSIA>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createCudaModuleNV (VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaModuleNV* pModule)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pModule = allocateNonDispHandle<CudaModuleNV, VkCudaModuleNV>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createCudaFunctionNV (VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaFunctionNV* pFunction)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pFunction = allocateNonDispHandle<CudaFunctionNV, VkCudaFunctionNV>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createMicromapEXT (VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap)
 {
 	DE_UNREF(pAllocator);
@@ -545,6 +557,18 @@ VKAPI_ATTR void VKAPI_CALL destroyBufferCollectionFUCHSIA (VkDevice device, VkBu
 {
 	DE_UNREF(device);
 	freeNonDispHandle<BufferCollectionFUCHSIA, VkBufferCollectionFUCHSIA>(collection, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyCudaModuleNV (VkDevice device, VkCudaModuleNV module, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<CudaModuleNV, VkCudaModuleNV>(module, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyCudaFunctionNV (VkDevice device, VkCudaFunctionNV function, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<CudaFunctionNV, VkCudaFunctionNV>(function, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyMicromapEXT (VkDevice device, VkMicromapEXT micromap, const VkAllocationCallbacks* pAllocator)
@@ -3772,6 +3796,21 @@ VKAPI_ATTR VkResult VKAPI_CALL getBufferCollectionPropertiesFUCHSIA (VkDevice de
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getCudaModuleCacheNV (VkDevice device, VkCudaModuleNV module, size_t* pCacheSize, void* pCacheData)
+{
+	DE_UNREF(device);
+	DE_UNREF(module);
+	DE_UNREF(pCacheSize);
+	DE_UNREF(pCacheData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCudaLaunchKernelNV (VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pLaunchInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdBeginRendering (VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo)
 {
 	DE_UNREF(commandBuffer);
@@ -4666,6 +4705,12 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkSetBufferCollectionImageConstraintsFUCHSIA,				setBufferCollectionImageConstraintsFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkDestroyBufferCollectionFUCHSIA,							destroyBufferCollectionFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkGetBufferCollectionPropertiesFUCHSIA,						getBufferCollectionPropertiesFUCHSIA),
+	VK_NULL_FUNC_ENTRY(vkCreateCudaModuleNV,										createCudaModuleNV),
+	VK_NULL_FUNC_ENTRY(vkGetCudaModuleCacheNV,										getCudaModuleCacheNV),
+	VK_NULL_FUNC_ENTRY(vkCreateCudaFunctionNV,										createCudaFunctionNV),
+	VK_NULL_FUNC_ENTRY(vkDestroyCudaModuleNV,										destroyCudaModuleNV),
+	VK_NULL_FUNC_ENTRY(vkDestroyCudaFunctionNV,										destroyCudaFunctionNV),
+	VK_NULL_FUNC_ENTRY(vkCmdCudaLaunchKernelNV,										cmdCudaLaunchKernelNV),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginRendering,											cmdBeginRendering),
 	VK_NULL_FUNC_ENTRY(vkCmdEndRendering,											cmdEndRendering),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutHostMappingInfoVALVE,				getDescriptorSetLayoutHostMappingInfoVALVE),

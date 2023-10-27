@@ -1035,6 +1035,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NV_cuda_kernel_launch")
+	{
+		return;
+	}
 	if (extName == "VK_NV_low_latency")
 	{
 		return;
@@ -1276,6 +1280,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_ARM_shader_core_properties")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_scheduling_controls")
 	{
 		return;
 	}
@@ -2694,6 +2702,16 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_NV_cuda_kernel_launch")
+	{
+		functions.push_back("vkCreateCudaModuleNV");
+		functions.push_back("vkGetCudaModuleCacheNV");
+		functions.push_back("vkCreateCudaFunctionNV");
+		functions.push_back("vkDestroyCudaModuleNV");
+		functions.push_back("vkDestroyCudaFunctionNV");
+		functions.push_back("vkCmdCudaLaunchKernelNV");
+		return;
+	}
 	if (extName == "VK_NV_low_latency")
 	{
 		return;
@@ -3005,6 +3023,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_ARM_shader_core_properties")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_scheduling_controls")
 	{
 		return;
 	}
@@ -3564,6 +3586,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_video_encode_queue",
 	"VK_NV_device_diagnostics_config",
 	"VK_QCOM_render_pass_store_ops",
+	"VK_NV_cuda_kernel_launch",
 	"VK_NV_low_latency",
 	"VK_EXT_metal_objects",
 	"VK_KHR_synchronization2",
@@ -3622,6 +3645,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_pageable_device_local_memory",
 	"VK_KHR_maintenance4",
 	"VK_ARM_shader_core_properties",
+	"VK_ARM_scheduling_controls",
 	"VK_EXT_image_sliced_view_of_3d",
 	"VK_VALVE_descriptor_set_host_mapping",
 	"VK_EXT_depth_clamp_zero_one",
