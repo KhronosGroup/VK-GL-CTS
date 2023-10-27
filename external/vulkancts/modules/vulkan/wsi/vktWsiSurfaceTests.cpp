@@ -233,14 +233,20 @@ tcu::TestStatus createSurfaceTest (Context& context, Type wsiType)
 
 tcu::TestStatus querySurfaceCounterTest (Context& context, Type wsiType)
 {
-	const InstanceHelper			instHelper		(context, wsiType);
+	const InstanceHelper			instHelper		(context, wsiType, {"VK_KHR_display", "VK_EXT_display_surface_counter"});
 	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType);
 	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
-	const vk::InstanceInterface&	vki				= context.getInstanceInterface();
-	const vk::VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const vk::InstanceInterface&	vki				= instHelper.vki;
+	const tcu::CommandLine&			cmdLine			= context.getTestContext().getCommandLine();
+	const vk::VkPhysicalDevice		physicalDevice	= chooseDevice(vki, instHelper.instance, cmdLine);
 
 	if (!isInstanceExtensionSupported(context.getUsedApiVersion(), context.getInstanceExtensions(), "VK_EXT_display_surface_counter"))
 		TCU_THROW(NotSupportedError, "VK_EXT_display_surface_counter not supported");
+
+	VkBool32 surfaceSupported;
+	vki.getPhysicalDeviceSurfaceSupportKHR(physicalDevice, 0u, surface.get(), &surfaceSupported);
+	if (!surfaceSupported)
+		TCU_THROW(NotSupportedError, "Surface is not supported by physical device");
 
 	const vk::VkSurfaceCapabilities2EXT	capsExt = getPhysicalDeviceSurfaceCapabilities2EXT	(vki, physicalDevice, surface.get());
 	const vk::VkSurfaceCapabilitiesKHR	capsKhr = getPhysicalDeviceSurfaceCapabilities		(vki, physicalDevice, surface.get());
