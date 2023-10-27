@@ -4091,7 +4091,7 @@ VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer co
 	DE_UNREF(countInfo);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, VkLatencySleepModeInfoNV* pSleepModeInfo)
+VKAPI_ATTR VkResult VKAPI_CALL setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo)
 {
 	DE_UNREF(device);
 	DE_UNREF(swapchain);
@@ -4099,7 +4099,7 @@ VKAPI_ATTR VkResult VKAPI_CALL setLatencySleepModeNV (VkDevice device, VkSwapcha
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, VkLatencySleepInfoNV* pSleepInfo)
+VKAPI_ATTR VkResult VKAPI_CALL latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo)
 {
 	DE_UNREF(device);
 	DE_UNREF(swapchain);
@@ -4107,7 +4107,7 @@ VKAPI_ATTR VkResult VKAPI_CALL latencySleepNV (VkDevice device, VkSwapchainKHR s
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo)
+VKAPI_ATTR void VKAPI_CALL setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo)
 {
 	DE_UNREF(device);
 	DE_UNREF(swapchain);
@@ -4122,7 +4122,7 @@ VKAPI_ATTR void VKAPI_CALL getLatencyTimingsNV (VkDevice device, VkSwapchainKHR 
 	DE_UNREF(pLatencyMarkerInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL queueNotifyOutOfBandNV (VkQueue queue, VkOutOfBandQueueTypeInfoNV pQueueTypeInfo)
+VKAPI_ATTR void VKAPI_CALL queueNotifyOutOfBandNV (VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo)
 {
 	DE_UNREF(queue);
 	DE_UNREF(pQueueTypeInfo);

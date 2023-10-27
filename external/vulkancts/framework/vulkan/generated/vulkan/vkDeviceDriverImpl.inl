@@ -2409,17 +2409,17 @@ void DeviceDriver::cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer commandBuf
 	m_vk.cmdDispatchGraphIndirectCountAMDX(commandBuffer, scratch, countInfo);
 }
 
-VkResult DeviceDriver::setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, VkLatencySleepModeInfoNV* pSleepModeInfo) const
+VkResult DeviceDriver::setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo) const
 {
 	return m_vk.setLatencySleepModeNV(device, swapchain, pSleepModeInfo);
 }
 
-VkResult DeviceDriver::latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, VkLatencySleepInfoNV* pSleepInfo) const
+VkResult DeviceDriver::latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo) const
 {
 	return m_vk.latencySleepNV(device, swapchain, pSleepInfo);
 }
 
-void DeviceDriver::setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
+void DeviceDriver::setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
 {
 	m_vk.setLatencyMarkerNV(device, swapchain, pLatencyMarkerInfo);
 }
@@ -2429,7 +2429,7 @@ void DeviceDriver::getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchai
 	m_vk.getLatencyTimingsNV(device, swapchain, pTimingCount, pLatencyMarkerInfo);
 }
 
-void DeviceDriver::queueNotifyOutOfBandNV (VkQueue queue, VkOutOfBandQueueTypeInfoNV pQueueTypeInfo) const
+void DeviceDriver::queueNotifyOutOfBandNV (VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const
 {
 	m_vk.queueNotifyOutOfBandNV(queue, pQueueTypeInfo);
 }

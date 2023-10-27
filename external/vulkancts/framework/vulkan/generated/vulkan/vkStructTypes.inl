@@ -7733,6 +7733,22 @@ struct VkDescriptorSetLayoutHostMappingInfoVALVE
 	uint32_t		descriptorSize;
 };
 
+struct VkPhysicalDeviceNestedCommandBufferFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		nestedCommandBuffer;
+	VkBool32		nestedCommandBufferRendering;
+	VkBool32		nestedCommandBufferSimultaneousUse;
+};
+
+struct VkPhysicalDeviceNestedCommandBufferPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxCommandBufferNestingLevel;
+};
+
 struct VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT
 {
 	VkStructureType	sType;
@@ -8548,6 +8564,22 @@ struct VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV
 	VkStructureType						sType;
 	void*								pNext;
 	VkRayTracingInvocationReorderModeNV	rayTracingInvocationReorderReorderingHint;
+};
+
+struct VkPhysicalDeviceExtendedSparseAddressSpaceFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		extendedSparseAddressSpace;
+};
+
+struct VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkDeviceSize		extendedSparseAddressSpaceSize;
+	VkImageUsageFlags	extendedSparseImageUsageFlags;
+	VkBufferUsageFlags	extendedSparseBufferUsageFlags;
 };
 
 struct VkDirectDriverLoadingInfoLUNARG

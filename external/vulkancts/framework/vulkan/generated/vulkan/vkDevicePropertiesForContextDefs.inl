@@ -67,6 +67,7 @@ const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesQCOM&	Context::getFr
 const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&			Context::getCopyMemoryIndirectProperties			(void) const { return m_device->getCopyMemoryIndirectProperties();				}
 const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&			Context::getMemoryDecompressionProperties			(void) const { return m_device->getMemoryDecompressionProperties();				}
 const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&			Context::getImageProcessingPropertiesQCOM			(void) const { return m_device->getImageProcessingPropertiesQCOM();				}
+const vk::VkPhysicalDeviceNestedCommandBufferPropertiesEXT&			Context::getNestedCommandBufferPropertiesEXT		(void) const { return m_device->getNestedCommandBufferPropertiesEXT();			}
 const vk::VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&		Context::getExtendedDynamicState3PropertiesEXT		(void) const { return m_device->getExtendedDynamicState3PropertiesEXT();		}
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		Context::getShaderModuleIdentifierPropertiesEXT		(void) const { return m_device->getShaderModuleIdentifierPropertiesEXT();		}
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&					Context::getOpticalFlowProperties					(void) const { return m_device->getOpticalFlowProperties();						}
@@ -74,6 +75,7 @@ const vk::VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&	Context::getEx
 const vk::VkPhysicalDeviceMaintenance5PropertiesKHR&				Context::getMaintenance5Properties					(void) const { return m_device->getMaintenance5Properties();					}
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				Context::getShaderObjectPropertiesEXT				(void) const { return m_device->getShaderObjectPropertiesEXT();					}
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	Context::getRayTracingInvocationReorderProperties	(void) const { return m_device->getRayTracingInvocationReorderProperties();		}
+const vk::VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&	Context::getExtendedSparseAddressSpacePropertiesNV	(void) const { return m_device->getExtendedSparseAddressSpacePropertiesNV();	}
 const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			Context::getShaderCoreBuiltinsPropertiesARM			(void) const { return m_device->getShaderCoreBuiltinsPropertiesARM();			}
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			Context::getCooperativeMatrixProperties				(void) const { return m_device->getCooperativeMatrixProperties();				}
 const vk::VkPhysicalDeviceImageProcessing2PropertiesQCOM&			Context::getImageProcessing2PropertiesQCOM			(void) const { return m_device->getImageProcessing2PropertiesQCOM();			}

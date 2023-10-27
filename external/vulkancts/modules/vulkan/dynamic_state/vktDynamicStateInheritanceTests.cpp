@@ -85,16 +85,19 @@ struct Rectangle
 // Determines where the secondary command buffer's inherited viewport/scissor state comes from (if inherited at all).
 enum InheritanceMode
 {
-	kInheritanceDisabled,   // Disable extension, use non-dynamic viewport/scissor count
-	kInheritFromPrimary,    // Inherit from calling primary cmd buffer
-	kInheritFromSecondary,  // Inherit from earlier secondary cmd buffer
-	kSplitInheritance,      // Split viewport/scissor array in two, inherit
-							// some from primary and rest from secondary
+	kInheritanceDisabled,			// Disable extension, use non-dynamic viewport/scissor count
+	kInheritFromPrimary,			// Inherit from calling primary cmd buffer
+	kInheritFromSecondary,			// Inherit from earlier secondary cmd buffer
+	kInheritFromSecondaryNested,	// Inherit from earlier secondary cmd buffer nested within another secondary buffer
+	kSplitInheritance,				// Split viewport/scissor array in two, inherit
+									// some from primary and rest from secondary
 
 	// Inherit state-with-count-EXT from calling primary cmd buffer
 	kInheritFromPrimaryWithCount,
 	// Inherit state-with-count-EXT from earlier secondary cmd buffer
 	kInheritFromSecondaryWithCount,
+	// Inherit state-with-count-EXT from earlier secondary cmd buffer nested within another secondary buffer
+	kInheritFromSecondaryNestedWithCount,
 };
 
 // Input test geometry.
@@ -173,6 +176,9 @@ class InheritanceTestInstance : public TestInstance
 	// viewport/scissor state, second for subpass contents.
 	// Both re-used to check for stale state.
 	Move<VkCommandBuffer> m_setStateCmdBuffer, m_subpassCmdBuffer;
+
+	// Secondary command buffer for nested command buffer tests
+	Move<VkCommandBuffer> m_nestedCmdBuffer;
 
 	// "depth buffer" used for CPU rasterization of expected image.
 	float m_cpuDepthBuffer[kHeight][kWidth];
@@ -495,6 +501,7 @@ InheritanceTestInstance::InheritanceTestInstance(Context& context, PipelineConst
 	cmdBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 	m_setStateCmdBuffer = allocateCommandBuffer(m_vk, dev, &cmdBufferInfo);
 	m_subpassCmdBuffer = allocateCommandBuffer(m_vk, dev, &cmdBufferInfo);
+	m_nestedCmdBuffer = allocateCommandBuffer(m_vk, dev, &cmdBufferInfo);
 }
 
 
@@ -559,6 +566,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 	case kInheritFromPrimaryWithCount:
 		break;
 	case kInheritFromSecondary:
+	case kInheritFromSecondaryNested:
 		// Set all viewport/scissor state.
 		if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
 		{
@@ -597,6 +605,7 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 		}
 		break;
 	case kInheritFromSecondaryWithCount:
+	case kInheritFromSecondaryNestedWithCount:
 #ifndef CTS_USES_VULKANSC
 		m_vk.cmdSetViewportWithCount(m_setStateCmdBuffer.get(),
 									 deUint32(geometry.viewports.size()),
@@ -665,11 +674,13 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 	case kInheritanceDisabled:
 	case kInheritFromPrimary:
 	case kInheritFromSecondary:
+	case kInheritFromSecondaryNested:
 	case kSplitInheritance:
 		staticViewportCount = deUint32(geometry.viewports.size());
 		break;
 	case kInheritFromPrimaryWithCount:
 	case kInheritFromSecondaryWithCount:
+	case kInheritFromSecondaryNestedWithCount:
 		staticViewportCount = 0;
 		break;
 	}
@@ -714,6 +725,15 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 	m_vk.cmdBindVertexBuffers(m_subpassCmdBuffer.get(), 0, 1, &vertexBuffer, &offset);
 	m_vk.cmdDraw(m_subpassCmdBuffer.get(), deUint32(geometry.rectangles.size()), 1, 0, 0);
 	VK_CHECK(m_vk.endCommandBuffer(m_subpassCmdBuffer.get()));
+
+	VkCommandBuffer secondaryCmdBuffers[2] = {m_setStateCmdBuffer.get(),
+											  m_subpassCmdBuffer.get()};
+
+	if (m_inheritanceMode == kInheritFromSecondaryNested || m_inheritanceMode == kInheritFromSecondaryNestedWithCount) {
+		VK_CHECK(m_vk.beginCommandBuffer(m_nestedCmdBuffer.get(), &cmdBeginInfo));
+		m_vk.cmdExecuteCommands(m_nestedCmdBuffer.get(), 2, secondaryCmdBuffers);
+		VK_CHECK(m_vk.endCommandBuffer(m_nestedCmdBuffer.get()));
+	}
 
 	// ************************************************************************
 	// Primary command buffer commands, start render pass and execute
@@ -803,6 +823,8 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 	case kInheritanceDisabled:
 	case kInheritFromSecondary:
 	case kInheritFromSecondaryWithCount:
+	case kInheritFromSecondaryNested:
+	case kInheritFromSecondaryNestedWithCount:
 		// Specify some bogus state, ensure correctly overwritten later.
 		VkViewport bogusViewport { 0.f, 0.f, 8.f, 8.f, 0.f, 0.1f };
 		VkRect2D   bogusScissors { { 2, 0 }, { 100, 100 }};
@@ -825,9 +847,23 @@ void InheritanceTestInstance::startRenderCmds(const TestGeometry& geometry)
 	}
 
 	m_renderPass.begin(m_vk, m_primaryCmdBuffer.get(), renderPassBeginInfo.renderArea, renderPassBeginInfo.clearValueCount, renderPassBeginInfo.pClearValues, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-	VkCommandBuffer secondaryCmdBuffers[2] = {m_setStateCmdBuffer.get(),
-											  m_subpassCmdBuffer.get()};
-	m_vk.cmdExecuteCommands(m_primaryCmdBuffer.get(), 2, secondaryCmdBuffers);
+
+	switch (m_inheritanceMode)
+	{
+	case kInheritanceDisabled:
+	case kInheritFromPrimary:
+	case kInheritFromSecondary:
+	case kSplitInheritance:
+	case kInheritFromPrimaryWithCount:
+	case kInheritFromSecondaryWithCount:
+		m_vk.cmdExecuteCommands(m_primaryCmdBuffer.get(), 2, secondaryCmdBuffers);
+		break;
+	case kInheritFromSecondaryNested:
+	case kInheritFromSecondaryNestedWithCount:
+		m_vk.cmdExecuteCommands(m_primaryCmdBuffer.get(), 1, &m_nestedCmdBuffer.get());
+		break;
+	}
+
 	m_renderPass.end(m_vk, m_primaryCmdBuffer.get());
 
 	// Barrier, then copy rendered image to download buffer.
@@ -1148,6 +1184,18 @@ public:
 		{
 			context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
 		}
+		if (m_inheritanceMode == kInheritFromSecondaryNested || m_inheritanceMode == kInheritFromSecondaryNestedWithCount) {
+			context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+#ifndef CTS_USES_VULKANSC
+			const auto& features = *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+			if (!features.nestedCommandBuffer)
+#endif // CTS_USES_VULKANSC
+				TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+#ifndef CTS_USES_VULKANSC
+			if (!features.nestedCommandBufferRendering)
+#endif // CTS_USES_VULKANSC
+				TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
+		}
 		checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 	}
 
@@ -1181,12 +1229,16 @@ void DynamicStateInheritanceTests::init (void)
 	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromPrimary, "primary"));
 	// Inherit viewport/scissor from another secondary command buffer
 	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromSecondary, "secondary"));
+	// Inherit viewport/scissor from another secondary command buffer
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromSecondaryNested, "nested"));
 	// Inherit some viewports/scissors from primary, some from secondary
 	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kSplitInheritance, "split"));
 	// Inherit viewport/scissor with count from calling primary command buffer
 	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromPrimaryWithCount, "primary_with_count"));
 	// Inherit viewport/scissor with count from another secondary command buffer
 	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromSecondaryWithCount, "secondary_with_count"));
+	// Inherit viewport/scissor with count from another secondary command buffer within a secondary buffer
+	addChild(new InheritanceTestCase(m_testCtx, m_pipelineConstructionType, kInheritFromSecondaryNestedWithCount, "nested_with_count"));
 #endif // CTS_USES_VULKANSC
 }
 

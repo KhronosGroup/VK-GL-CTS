@@ -118,7 +118,8 @@ struct DrawParamsBase
 		{
 			gParams->useDynamicRendering,
 			gParams->useSecondaryCmdBuffer,
-			gParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass
+			gParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass,
+			gParams->nestedSecondaryCmdBuffer
 		}
 	{}
 };
@@ -289,7 +290,9 @@ public:
 
 #ifndef CTS_USES_VULKANSC
 	void							beginSecondaryCmdBuffer	(const vk::DeviceInterface& vk, vk::VkRenderingFlagsKHR renderingFlags = 0u);
+	void							beginNestedCmdBuffer	(const vk::DeviceInterface& vk, vk::VkRenderingFlagsKHR renderingFlags = 0u);
 	void							beginDynamicRender		(vk::VkCommandBuffer cmdBuffer, vk::VkRenderingFlagsKHR renderingFlags = 0u);
+	void							beginNestedDynamicRender(vk::VkCommandBuffer cmdBuffer, bool nested, vk::VkRenderingFlagsKHR renderingFlags = 0u);
 	void							endDynamicRender		(vk::VkCommandBuffer cmdBuffer);
 #endif // CTS_USES_VULKANSC
 
@@ -314,6 +317,7 @@ protected:
 	vk::Move<vk::VkCommandPool>								m_cmdPool;
 	vk::Move<vk::VkCommandBuffer>							m_cmdBuffer;
 	vk::Move<vk::VkCommandBuffer>							m_secCmdBuffer;
+	vk::Move<vk::VkCommandBuffer>							m_nestedCmdBuffer;
 
 	enum
 	{
@@ -445,6 +449,9 @@ void DrawTestInstanceBase::initialize (const DrawParamsBase& data)
 
 	if (m_data.groupParams.useSecondaryCmdBuffer)
 		m_secCmdBuffer = vk::allocateCommandBuffer(m_vk, device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+	if (m_data.groupParams.nestedSecondaryCmdBuffer)
+		m_nestedCmdBuffer = vk::allocateCommandBuffer(m_vk, device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
 	initPipeline(device);
 }
@@ -582,12 +589,66 @@ void DrawTestInstanceBase::beginSecondaryCmdBuffer(const vk::DeviceInterface& vk
 	VK_CHECK(vk.beginCommandBuffer(*m_secCmdBuffer, &commandBufBeginParams));
 }
 
+void DrawTestInstanceBase::beginNestedCmdBuffer(const vk::DeviceInterface& vk, vk::VkRenderingFlagsKHR renderingFlags)
+{
+	const vk::VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,	// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		renderingFlags,															// VkRenderingFlagsKHR				flags;
+		0u,																		// uint32_t							viewMask;
+		1u,																		// uint32_t							colorAttachmentCount;
+		&m_colorAttachmentFormat,												// const VkFormat*					pColorAttachmentFormats;
+		vk::VK_FORMAT_UNDEFINED,												// VkFormat							depthAttachmentFormat;
+		vk::VK_FORMAT_UNDEFINED,												// VkFormat							stencilAttachmentFormat;
+		vk::VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits			rasterizationSamples;
+	};
+
+	const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,					// VkStructureType					sType;
+		&inheritanceRenderingInfo,												// const void*						pNext;
+		DE_NULL,																// VkRenderPass						renderPass;
+		0u,																		// deUint32							subpass;
+		DE_NULL,																// VkFramebuffer					framebuffer;
+		VK_FALSE,																// VkBool32							occlusionQueryEnable;
+		(vk::VkQueryControlFlags)0u,											// VkQueryControlFlags				queryFlags;
+		(vk::VkQueryPipelineStatisticFlags)0u									// VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+
+	vk::VkCommandBufferUsageFlags usageFlags = vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	if (!m_data.groupParams.secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+		usageFlags |= vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+	const vk::VkCommandBufferBeginInfo commandBufBeginParams
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,						// VkStructureType					sType;
+		DE_NULL,																// const void*						pNext;
+		usageFlags,																// VkCommandBufferUsageFlags		flags;
+		&bufferInheritanceInfo
+	};
+
+	VK_CHECK(vk.beginCommandBuffer(*m_nestedCmdBuffer, &commandBufBeginParams));
+}
+
 void DrawTestInstanceBase::beginDynamicRender(vk::VkCommandBuffer cmdBuffer, vk::VkRenderingFlagsKHR renderingFlags)
 {
 	const vk::VkClearValue	clearColor{ { { 0.0f, 0.0f, 0.0f, 1.0f } } };
 	const vk::VkRect2D		renderArea = vk::makeRect2D(WIDTH, HEIGHT);
 
 	vk::beginRendering(m_vk, cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD, renderingFlags);
+}
+
+void DrawTestInstanceBase::beginNestedDynamicRender(vk::VkCommandBuffer cmdBuffer, bool half, vk::VkRenderingFlagsKHR renderingFlags)
+{
+	const vk::VkClearValue	clearColor{ { { 0.0f, 0.0f, 0.0f, 1.0f } } };
+	if (half) {
+		const vk::VkRect2D		renderArea = vk::makeRect2D(WIDTH / 2, HEIGHT);
+		vk::beginRendering(m_vk, cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD, renderingFlags);
+	} else {
+		const vk::VkRect2D		renderArea = vk::makeRect2D(WIDTH, HEIGHT);
+		vk::beginRendering(m_vk, cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD, renderingFlags);
+	}
 }
 
 void DrawTestInstanceBase::endDynamicRender(vk::VkCommandBuffer cmdBuffer)
@@ -721,6 +782,15 @@ void DrawTestCase<T>::checkSupport (Context& context) const
 	if (m_data.groupParams.useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
+	if (m_data.groupParams.nestedSecondaryCmdBuffer) {
+		context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+		const auto& features = *vk::findStructure<vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+		if (!features.nestedCommandBuffer)
+			TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+		if (!features.nestedCommandBufferRendering)
+			TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported, so VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT cannot be used");
+	}
+
 	if (m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().triangleFans)
@@ -814,7 +884,11 @@ tcu::TestStatus DrawTestInstance<DrawParams>::iterate (void)
 		if (m_data.groupParams.secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 		{
 			beginSecondaryCmdBuffer(m_vk, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
-			beginDynamicRender(*m_secCmdBuffer);
+			if (m_data.groupParams.nestedSecondaryCmdBuffer) {
+				beginNestedDynamicRender(*m_secCmdBuffer, true);
+			} else {
+				beginDynamicRender(*m_secCmdBuffer);
+			}
 		}
 		else
 			beginSecondaryCmdBuffer(m_vk);
@@ -828,15 +902,43 @@ tcu::TestStatus DrawTestInstance<DrawParams>::iterate (void)
 
 		endCommandBuffer(m_vk, *m_secCmdBuffer);
 
+		if (m_data.groupParams.nestedSecondaryCmdBuffer) {
+			// record buffer to nest secondary buffer in
+			beginNestedCmdBuffer(m_vk, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT | vk::VK_RENDERING_CONTENTS_INLINE_BIT_EXT);
+
+			// record a second renderpass inline, before or after the nested buffer renderpass
+			const bool inlineAfterNested = !m_data.groupParams.secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+			if (inlineAfterNested) {
+				m_vk.cmdExecuteCommands(*m_nestedCmdBuffer, 1u, &*m_secCmdBuffer);
+			}
+			beginNestedDynamicRender(*m_nestedCmdBuffer, inlineAfterNested, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT | vk::VK_RENDERING_CONTENTS_INLINE_BIT_EXT);
+			m_vk.cmdBindVertexBuffers(*m_nestedCmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+			m_vk.cmdBindPipeline(*m_nestedCmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+			draw(*m_nestedCmdBuffer);
+			endDynamicRender(*m_nestedCmdBuffer);
+			if (!inlineAfterNested) {
+				m_vk.cmdExecuteCommands(*m_nestedCmdBuffer, 1u, &*m_secCmdBuffer);
+			}
+			endCommandBuffer(m_vk, *m_nestedCmdBuffer);
+		}
+
 		// record primary command buffer
 		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 
 		preRenderBarriers();
 
-		if (!m_data.groupParams.secondaryCmdBufferCompletelyContainsDynamicRenderpass)
-			beginDynamicRender(*m_cmdBuffer, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
-
-		m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+		if (!m_data.groupParams.secondaryCmdBufferCompletelyContainsDynamicRenderpass) {
+			if (m_data.groupParams.nestedSecondaryCmdBuffer) {
+				beginNestedDynamicRender(*m_cmdBuffer, false, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT | vk::VK_RENDERING_CONTENTS_INLINE_BIT_EXT);
+			} else {
+				beginDynamicRender(*m_cmdBuffer, vk::VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+			}
+		}
+		if (m_data.groupParams.nestedSecondaryCmdBuffer) {
+			m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_nestedCmdBuffer);
+		} else {
+			m_vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+		}
 
 		if (!m_data.groupParams.secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 			endDynamicRender(*m_cmdBuffer);
@@ -1655,6 +1757,9 @@ void createDrawTests(tcu::TestCaseGroup* testGroup, const SharedGroupParams grou
 
 			// reduce number of tests for dynamic rendering cases where secondary command buffer is used
 			if (groupParams->useSecondaryCmdBuffer && (topologyIdx % 2u))
+				continue;
+
+			if (groupParams->nestedSecondaryCmdBuffer && drawTypeIndex != DRAW_COMMAND_TYPE_DRAW)
 				continue;
 
 			// Testcases with a specific topology.

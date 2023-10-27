@@ -1327,6 +1327,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_nested_command_buffer")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_external_memory_acquire_unmodified")
 	{
 		return;
@@ -1393,6 +1397,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_NV_ray_tracing_invocation_reorder")
+	{
+		return;
+	}
+	if (extName == "VK_NV_extended_sparse_address_space")
 	{
 		return;
 	}
@@ -3057,6 +3065,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_nested_command_buffer")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_external_memory_acquire_unmodified")
 	{
 		return;
@@ -3198,6 +3210,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_NV_ray_tracing_invocation_reorder")
+	{
+		return;
+	}
+	if (extName == "VK_NV_extended_sparse_address_space")
 	{
 		return;
 	}
@@ -3617,6 +3633,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_linear_color_attachment",
 	"VK_EXT_image_compression_control_swapchain",
 	"VK_QCOM_image_processing",
+	"VK_EXT_nested_command_buffer",
 	"VK_EXT_external_memory_acquire_unmodified",
 	"VK_EXT_extended_dynamic_state3",
 	"VK_EXT_subpass_merge_feedback",
@@ -3633,6 +3650,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_SEC_amigo_profiling",
 	"VK_QCOM_multiview_per_view_viewports",
 	"VK_NV_ray_tracing_invocation_reorder",
+	"VK_NV_extended_sparse_address_space",
 	"VK_EXT_mutable_descriptor_type",
 	"VK_ARM_shader_core_builtins",
 	"VK_EXT_pipeline_library_group_handles",

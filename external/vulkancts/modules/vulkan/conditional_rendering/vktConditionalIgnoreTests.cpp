@@ -211,10 +211,18 @@ tcu::TestStatus ConditionalIgnoreClearTestInstance::iterate(void)
 	const auto commandPool	= createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, qIndex);
 	auto commandBuffer		= allocateCommandBuffer(vkd, device, commandPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	auto commandBuffer2		= allocateCommandBuffer(vkd, device, commandPool.get(), VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+	auto commandBuffer3		= allocateCommandBuffer(vkd, device, commandPool.get(), VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
 	auto conditionalBuffer = createConditionalRenderingBuffer(m_context, m_data);
 	//prepare command buffers
 	const bool useSecondaryCmdBuffer = m_data.conditionInherited || m_data.conditionInSecondaryCommandBuffer;
+
+	if (m_data.secondaryCommandBufferNested) {
+		m_context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+		const auto& features = *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&m_context.getDeviceFeatures2());
+		if (!features.nestedCommandBuffer)
+			TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+	}
 
 	VkCommandBufferInheritanceConditionalRenderingInfoEXT conditionalRenderingInheritanceInfo = initVulkanStructure();
 	conditionalRenderingInheritanceInfo.conditionalRenderingEnable = m_data.conditionInherited ? VK_TRUE : VK_FALSE;
@@ -259,6 +267,10 @@ tcu::TestStatus ConditionalIgnoreClearTestInstance::iterate(void)
 	//do all combinations of clears
 	if (useSecondaryCmdBuffer)
 	{
+		if (m_data.secondaryCommandBufferNested) {
+			vkd.beginCommandBuffer(*commandBuffer3, &commandBufferBeginInfo);
+		}
+
 		vkd.beginCommandBuffer(*commandBuffer2, &commandBufferBeginInfo);
 		if (m_data.conditionInSecondaryCommandBuffer)
 		{
@@ -283,7 +295,13 @@ tcu::TestStatus ConditionalIgnoreClearTestInstance::iterate(void)
 		}
 
 		vkd.endCommandBuffer(*commandBuffer2);
-		vkd.cmdExecuteCommands(commandBuffer.get(), 1, &commandBuffer2.get());
+		if (m_data.secondaryCommandBufferNested) {
+			vkd.cmdExecuteCommands(commandBuffer3.get(), 1, &commandBuffer2.get());
+			vkd.endCommandBuffer(*commandBuffer3);
+			vkd.cmdExecuteCommands(commandBuffer.get(), 1, &commandBuffer3.get());
+		} else {
+			vkd.cmdExecuteCommands(commandBuffer.get(), 1, &commandBuffer2.get());
+		}
 	}
 	else
 	{

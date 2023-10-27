@@ -222,6 +222,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	const vk::Unique<vk::VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
 	const vk::Unique<vk::VkCommandBuffer>	cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const vk::Unique<vk::VkCommandBuffer>	secondaryCmdBuffer	(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY));
+	const vk::Unique<vk::VkCommandBuffer>	nestedCmdBuffer		(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 
 	// Create indirect buffer
 	const vk::VkDispatchIndirectCommand dispatchCommands[] = { { 1u, 1u, 1u } };
@@ -273,6 +274,10 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 			&inheritanceInfo
 		};
 
+		if (m_conditionalData.secondaryCommandBufferNested) {
+			VK_CHECK(vk.beginCommandBuffer(*nestedCmdBuffer, &commandBufferBeginInfo));
+		}
+
 		VK_CHECK(vk.beginCommandBuffer(*secondaryCmdBuffer, &commandBufferBeginInfo));
 
 		targetCmdBuffer = *secondaryCmdBuffer;
@@ -289,11 +294,19 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 		recordDispatch(vk, *secondaryCmdBuffer, indirectBuffer);
 		vk.cmdEndConditionalRenderingEXT(*secondaryCmdBuffer);
 		vk.endCommandBuffer(*secondaryCmdBuffer);
+		if (m_conditionalData.secondaryCommandBufferNested) {
+			vk.cmdExecuteCommands(*nestedCmdBuffer, 1, &secondaryCmdBuffer.get());
+			vk.endCommandBuffer(*nestedCmdBuffer);
+		}
 	}
 	else if (m_conditionalData.conditionInherited)
 	{
 		recordDispatch(vk, *secondaryCmdBuffer, indirectBuffer);
 		vk.endCommandBuffer(*secondaryCmdBuffer);
+		if (m_conditionalData.secondaryCommandBufferNested) {
+			vk.cmdExecuteCommands(*nestedCmdBuffer, 1, &secondaryCmdBuffer.get());
+			vk.endCommandBuffer(*nestedCmdBuffer);
+		}
 	}
 
 	if (m_conditionalData.conditionInPrimaryCommandBuffer)
@@ -302,7 +315,11 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 
 		if (m_conditionalData.conditionInherited)
 		{
-			vk.cmdExecuteCommands(*cmdBuffer, 1, &secondaryCmdBuffer.get());
+			if (m_conditionalData.secondaryCommandBufferNested) {
+				vk.cmdExecuteCommands(*cmdBuffer, 1, &nestedCmdBuffer.get());
+			} else {
+				vk.cmdExecuteCommands(*cmdBuffer, 1, &secondaryCmdBuffer.get());
+			}
 		}
 		else
 		{
@@ -313,7 +330,11 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	}
 	else if (useSecondaryCmdBuffer)
 	{
-		vk.cmdExecuteCommands(*cmdBuffer, 1, &secondaryCmdBuffer.get());
+		if (m_conditionalData.secondaryCommandBufferNested) {
+			vk.cmdExecuteCommands(*cmdBuffer, 1, &nestedCmdBuffer.get());
+		} else {
+			vk.cmdExecuteCommands(*cmdBuffer, 1, &secondaryCmdBuffer.get());
+		}
 	}
 
 	const vk::VkBufferMemoryBarrier outputBufferMemoryBarrier =
@@ -551,6 +572,7 @@ void ConditionalDispatchTests::init (void)
 						true,						//	bool					allocationOffset;
 						false,						//	bool					clearInRenderPass;
 						false,						//	bool					expectCommandExecution;
+						false,						//	bool					secondaryCommandBufferNested;
 						memoryTypeCase.memoryType,	//	ConditionalBufferMemory	memoryType;
 					};
 
