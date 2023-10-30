@@ -132,6 +132,12 @@ static bool isFeatureSupported(const vkt::Context &ctx, const std::string &featu
         return ctx.get8BitStorageFeatures().storageBuffer8BitAccess;
     if (feature == "IndexTypeUint8Features.indexTypeUint8")
         return ctx.getIndexTypeUint8Features().indexTypeUint8;
+    if (feature == "RayTracingPipelineFeaturesKHR.rayTracingPipeline")
+        return ctx.getRayTracingPipelineFeatures().rayTracingPipeline;
+    if (feature == "AccelerationStructureFeaturesKHR.accelerationStructure")
+        return ctx.getAccelerationStructureFeatures().accelerationStructure;
+    if (feature == "BufferDeviceAddressFeatures.bufferDeviceAddress")
+        return ctx.getBufferDeviceAddressFeatures().bufferDeviceAddress;
 
     std::string message = std::string("Unexpected feature name: ") + feature;
     TCU_THROW(InternalError, message.c_str());
@@ -458,8 +464,41 @@ void AmberTestCase::initPrograms(vk::SourceCollections &programCollection) const
                     << glu::TessellationEvaluationSource(shader.shader_source)
                     << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, allowSpirv14);
                 break;
+            case amber::kShaderTypeRayGeneration:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::RaygenSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeAnyHit:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::AnyHitSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeClosestHit:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::ClosestHitSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeMiss:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::MissSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeIntersection:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::IntersectionSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
+            case amber::kShaderTypeCall:
+                programCollection.glslSources.add(shader.shader_name)
+                    << glu::CallableSource(shader.shader_source)
+                    << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, true);
+                break;
             case amber::kShaderTypeMulti:
                 DE_ASSERT(false && "Multi shaders not supported");
+                break;
+            default:
+                DE_ASSERT(false && "Unknown shader");
                 break;
             }
         }

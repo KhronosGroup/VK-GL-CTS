@@ -335,9 +335,9 @@ PACKAGES = [
         "f589bc456545fbab97caf49380b102b8aafe1f40",
         "vulkan-validationlayers"),
     GitRepo(
-        "https://github.com/google/amber.git",
-        "git@github.com:google/amber.git",
-        "0f003c2785489f59cd01bb2440fcf303149100f2",
+        "https://github.com/archimedus/amber.git",
+        "git@github.com:archimedus/amber.git",
+        "6db152f2f7430a90464298b84ef8e19b0035eaaa",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
