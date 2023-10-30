@@ -269,18 +269,73 @@ void registerLegacyOptions (de::cmdline::Parser& parser)
 
 
 // Used to store hashes of test case names
-typedef size_t test_case_hash_t;
+typedef uint64_t test_case_hash_t;
+
+// Source: https://github.com/aappleby/smhasher/blob/master/src/MurmurHash2.cpp
+// MurmurHash2, 64-bit versions, by Austin Appleby
+static uint64_t MurmurHash64B ( const void * key, int len, uint64_t seed )
+{
+	const uint32_t m = 0x5bd1e995;
+	const int r = 24;
+
+	uint32_t h1 = uint32_t(seed) ^ len;
+	uint32_t h2 = uint32_t(seed >> 32);
+
+	const uint32_t * data = (const uint32_t *)key;
+
+	while(len >= 8)
+	{
+		uint32_t k1 = *data++;
+		k1 *= m; k1 ^= k1 >> r; k1 *= m;
+		h1 *= m; h1 ^= k1;
+		len -= 4;
+
+		uint32_t k2 = *data++;
+		k2 *= m; k2 ^= k2 >> r; k2 *= m;
+		h2 *= m; h2 ^= k2;
+		len -= 4;
+	}
+
+	if(len >= 4)
+	{
+		uint32_t k1 = *data++;
+		k1 *= m; k1 ^= k1 >> r; k1 *= m;
+		h1 *= m; h1 ^= k1;
+		len -= 4;
+	}
+
+	switch(len)
+	{
+		case 3: h2 ^= ((unsigned char*)data)[2] << 16;
+			// fall through
+		case 2: h2 ^= ((unsigned char*)data)[1] << 8;
+			// fall through
+		case 1: h2 ^= ((unsigned char*)data)[0];
+			h2 *= m;
+	};
+
+	h1 ^= h2 >> 18; h1 *= m;
+	h2 ^= h1 >> 22; h2 *= m;
+	h1 ^= h2 >> 17; h1 *= m;
+	h2 ^= h1 >> 19; h2 *= m;
+
+	uint64_t h = h1;
+
+	h = (h << 32) | h2;
+
+	return h;
+}
 
 /*--------------------------------------------------------------------*//*!
  * \brief Generates an hash for the test case name part provided.
  * If a hashCollisionDetectionMap is passed, will detect hash
  * collisions using that map. hashCollisionDetectionMap can be NULL.
- * As an example, the standard std::hash<std::string>, truncated to
- * 32-bit, will collide with 'random_298' and 'subgroupand_int16_t_mesh_requiredsubgroupsize'
+ * As an example, the standard std::hash<std::string> on a 32-bit
+ * machine will collide with 'random_298' and 'subgroupand_int16_t_mesh_requiredsubgroupsize'
  *//*--------------------------------------------------------------------*/
-static test_case_hash_t hashTestNodeName(const std::string &name, std::unordered_map<test_case_hash_t, std::string> *hashCollisionDetectionMap)
+static test_case_hash_t hashTestNodeName (const std::string &name, std::unordered_map<test_case_hash_t, std::string> *hashCollisionDetectionMap)
 {
-	const test_case_hash_t hash = (test_case_hash_t)std::hash<std::string>{}(name);
+	test_case_hash_t hash = MurmurHash64B(name.c_str(), (int)name.length(), 1);
 	if(hashCollisionDetectionMap != nullptr) {
 		auto search = hashCollisionDetectionMap->find(hash);
 		if (search != hashCollisionDetectionMap->end()) {
