@@ -175,6 +175,19 @@ def genAndroidTestXml (mustpass):
 
 	# Target preparer for incremental dEQP
 	preparerElement = ElementTree.SubElement(configElement, "target_preparer")
+	preparerElement.set("class", "com.android.compatibility.common.tradefed.targetprep.FilePusher")
+	addOptionElement(preparerElement, "cleanup", "true")
+	addOptionElement(preparerElement, "disable", "true")
+	addOptionElement(preparerElement, "push", "deqp-binary32->/data/local/tmp/deqp-binary32")
+	addOptionElement(preparerElement, "push", "deqp-binary64->/data/local/tmp/deqp-binary64")
+	addOptionElement(preparerElement, "push", "gles2->/data/local/tmp/gles2")
+	addOptionElement(preparerElement, "push", "gles3->/data/local/tmp/gles3")
+	addOptionElement(preparerElement, "push", "gles3-incremental-deqp.txt->/data/local/tmp/gles3-incremental-deqp.txt")
+	addOptionElement(preparerElement, "push", "gles31->/data/local/tmp/gles31")
+	addOptionElement(preparerElement, "push", "internal->/data/local/tmp/internal")
+	addOptionElement(preparerElement, "push", "vk-incremental-deqp.txt->/data/local/tmp/vk-incremental-deqp.txt")
+	addOptionElement(preparerElement, "push", "vulkan->/data/local/tmp/vulkan")
+	preparerElement = ElementTree.SubElement(configElement, "target_preparer")
 	preparerElement.set("class", "com.android.compatibility.common.tradefed.targetprep.IncrementalDeqpPreparer")
 	addOptionElement(preparerElement, "disable", "true")
 
