@@ -175,11 +175,28 @@ void checkSupport (Context& context, const TestParameters params)
 			context.getPhysicalDevice(),
 			params.format);
 
+		const bool					transferByViews = disjoint && (getPlanarFormatDescription(params.format).numPlanes > 1);
+
 		if (!disjoint && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Storage images are not supported for this format");
 
 		if (disjoint && ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Disjoint planes are not supported for this format");
+
+		if (disjoint && transferByViews)
+		{
+			const PlanarFormatDescription	formatDescription				= getPlanarFormatDescription(params.format);
+			for (deUint32 planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
+			{
+				const VkFormat				planeCompatibleFormat			= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
+				const VkFormatProperties	planeCompatibleFormatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+					context.getPhysicalDevice(),
+					planeCompatibleFormat);
+
+				if ((planeCompatibleFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
+					TCU_THROW(NotSupportedError, "Storage images are not supported for the plane compatible format");
+			}
+		}
 	}
 }
 
