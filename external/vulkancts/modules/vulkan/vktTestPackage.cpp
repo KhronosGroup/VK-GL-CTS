@@ -117,7 +117,11 @@
 #include "vktReconvergenceTests.hpp"
 #include "vktMeshShaderTests.hpp"
 #include "vktFragmentShadingBarycentricTests.hpp"
+
+#ifndef DEQP_EXCLUDE_VK_VIDEO_TESTS
 #include "vktVideoTests.hpp"
+#endif // DEQP_EXCLUDE_VK_VIDEO_TESTS
+
 #ifdef CTS_USES_VULKANSC
 #include "vktSafetyCriticalTests.hpp"
 #endif // CTS_USES_VULKANSC
@@ -1137,7 +1141,9 @@ void TestPackage::init (void)
 	addChild(FragmentShadingBarycentric::createTests(m_testCtx));
 	// Amber depth pipeline tests
 	addChild(cts_amber::createAmberDepthGroup	(m_testCtx));
+#ifndef DEQP_EXCLUDE_VK_VIDEO_TESTS
 	addChild(video::createTests					(m_testCtx));
+#endif
 }
 
 void ExperimentalTestPackage::init (void)

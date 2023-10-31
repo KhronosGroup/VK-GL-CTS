@@ -2166,7 +2166,7 @@ void Utils::readChannel(GLenum type, GLuint channel, const GLubyte* pixel, GLdou
 		break;
 
 	/* Complicated */
-	/* 3 channles */
+	/* 3 channels */
 	case GL_UNSIGNED_BYTE_3_3_2:
 		read3Channel<GLubyte, 3, 3, 2, 5, 2, 0>(channel, pixel, value);
 		break;
@@ -2237,7 +2237,7 @@ void Utils::writeChannel(GLenum type, GLuint channel, GLdouble value, GLubyte* p
 
 	/* Complicated */
 
-	/* 3 channles */
+	/* 3 channels */
 	case GL_UNSIGNED_BYTE_3_3_2:
 		write3Channel<GLubyte, 3, 3, 2, 5, 2, 0>(channel, value, pixel);
 		break;
