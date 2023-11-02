@@ -1277,8 +1277,10 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 					const auto tcuFormat	= mapVkFormat(format);
 					const auto hasDepth		= tcu::hasDepthComponent(tcuFormat.order);
 					const auto hasStencil	= tcu::hasStencilComponent(tcuFormat.order);
-					renderingCreateInfo.depthAttachmentFormat	= (hasDepth   ? format : VK_FORMAT_UNDEFINED);
-					renderingCreateInfo.stencilAttachmentFormat	= (hasStencil ? format : VK_FORMAT_UNDEFINED);
+					const auto useDepth		= att.usage & ATTACHMENT_USAGE_DEPTH;
+					const auto useStencil	= att.usage & ATTACHMENT_USAGE_STENCIL;
+					renderingCreateInfo.depthAttachmentFormat	= (hasDepth && useDepth		? format : VK_FORMAT_UNDEFINED);
+					renderingCreateInfo.stencilAttachmentFormat	= (hasStencil && useStencil ? format : VK_FORMAT_UNDEFINED);
 				}
 				else if (!(att.usage & ATTACHMENT_USAGE_RESOLVE_TARGET))
 				{
