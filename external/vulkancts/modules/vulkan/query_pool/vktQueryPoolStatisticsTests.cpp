@@ -4197,9 +4197,9 @@ public:
                        << "layout(location = 0) out vec4 out_color;\n"
                        << "\n"
                        << "void main() {\n"
-                       << "	gl_Position = positions[gl_VertexIndex];\n"
-                       << "	gl_PointSize = 1.0f;\n"
-                       << "	out_color = vec4(0.0f, 0.0f, 1.0f, 1.0f); // blue\n"
+                       << "    gl_Position = positions[gl_VertexIndex];\n"
+                       << "    gl_PointSize = 1.0f;\n"
+                       << "    out_color = vec4(0.0f, 0.0f, 1.0f, 1.0f); // blue\n"
                        << "}\n";
                 sourceCollections.glslSources.add("vertex") << glu::VertexSource(source.str());
             }
