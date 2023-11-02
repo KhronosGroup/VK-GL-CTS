@@ -4251,6 +4251,7 @@ public:
 		const bool	gplSupport			= contextGPLFeatures.graphicsPipelineLibrary;
 
 		vk::VkPhysicalDeviceMeshShaderFeaturesEXT				meshFeatures				= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceMultiviewFeatures					multiviewFeatures			= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures					= vk::initVulkanStructure();
 
 		vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT	eds3Features				= vk::initVulkanStructure();
@@ -4261,6 +4262,12 @@ public:
 		{
 			meshFeatures.pNext	= features2.pNext;
 			features2.pNext		= &meshFeatures;
+
+			if (contextMeshFeatures.multiviewMeshShader)
+			{
+				multiviewFeatures.pNext = features2.pNext;
+				features2.pNext = &multiviewFeatures;
+			}
 		}
 
 		if (gplSupport)
@@ -4270,6 +4277,10 @@ public:
 		}
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+		// If shadingRateImage feature is enabled pipelineFragmentShadingRate must not be enabled primitiveFragmentShadingRate
+		// and if primitiveFragmentShadingRate is not enabled primitiveFragmentShadingRateMeshShader must not be enabled
+		meshFeatures.primitiveFragmentShadingRateMeshShader = VK_FALSE;
+
 #endif // CTS_USES_VULKANSC
 
 		std::vector<const char*> extensions
@@ -4280,7 +4291,11 @@ public:
 
 #ifndef CTS_USES_VULKANSC
 		if (meshShaderSupport)
+		{
 			extensions.push_back("VK_EXT_mesh_shader");
+			if (contextMeshFeatures.multiviewMeshShader)
+				extensions.push_back("VK_KHR_multiview");
+		}
 
 		if (gplSupport)
 		{
