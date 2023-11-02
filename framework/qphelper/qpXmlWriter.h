@@ -105,9 +105,10 @@ void			qpXmlWriter_flush (qpXmlWriter* writer);
 /*--------------------------------------------------------------------*//*!
  * \brief Start XML document
  * \param writer qpXmlWriter instance
+ * \param writeXmlHeader whether to write the <xml.. header
  * \return true on success, false on error
  *//*--------------------------------------------------------------------*/
-deBool			qpXmlWriter_startDocument (qpXmlWriter* writer);
+deBool			qpXmlWriter_startDocument (qpXmlWriter* writer, deBool writeXmlHeader);
 
 /*--------------------------------------------------------------------*//*!
  * \brief End XML document
