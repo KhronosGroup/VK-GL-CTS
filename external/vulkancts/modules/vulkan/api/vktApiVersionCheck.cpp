@@ -509,6 +509,15 @@ private:
 				&& !isSupportedDeviceExt("VK_KHR_draw_indirect_count", apiVersion))
 				continue;
 
+			// vkCmdPushDescriptorSetWithTemplateKHR is available if:
+			// - VK_KHR_push_descriptor is supported AND
+			//   - API >= VK_VERSION_1_1 OR
+			//   - VK_KHR_descriptor_update_template is supported
+			if (deStringEqual(funcName, "vkCmdPushDescriptorSetWithTemplateKHR") &&
+			    (!isSupportedDeviceExt("VK_KHR_push_descriptor", apiVersion) ||
+			      (apiVersion < VK_API_VERSION_1_1 && !isSupportedDeviceExt("VK_KHR_descriptor_update_template", apiVersion))))
+				continue;
+
 			if (funcType == FUNCTIONORIGIN_PLATFORM)
 			{
 				checkPlatformFunction(ctx, log, funcName, DE_TRUE, failsQuantity);
