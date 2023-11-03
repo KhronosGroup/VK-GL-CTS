@@ -230,7 +230,22 @@ private:
 		mutable VkSubpassDescriptionDepthStencilResolve m_dsr = {};
 		mutable VkAttachmentReference2		m_depthStencilResolveAttachment = {};
 	};
+	struct SubpassDependency
+	{
+		SubpassDependency (const VkSubpassDependency& dependency);
+		SubpassDependency (const VkSubpassDependency2& dependency);
+
+		uint32_t				srcSubpass;
+		uint32_t				dstSubpass;
+		VkPipelineStageFlags2	srcStageMask;
+		VkPipelineStageFlags2	dstStageMask;
+		VkAccessFlags2			srcAccessMask;
+		VkAccessFlags2			dstAccessMask;
+		VkDependencyFlags		dependencyFlags;
+		bool					sync2;
+	};
 	std::vector<Subpass>					m_subpasses;
+	std::vector<SubpassDependency>			m_dependencies;
 	std::vector<vk::VkAttachmentDescription2> m_attachments;
 	std::vector<vk::VkImage>				m_images;
 	std::vector<vk::VkImageView>			m_imageViews;
@@ -245,6 +260,7 @@ private:
 	void									clearAttachments				(const DeviceInterface& vk, const VkCommandBuffer commandBuffer) const;
 	void									updateLayout					(VkImage updatedImage, VkImageLayout newLayout) const;
 	void									transitionLayouts				(const DeviceInterface& vk, const VkCommandBuffer commandBuffer, const Subpass& subpass, bool renderPassBegin) const;
+	void									insertDependencies				(const DeviceInterface& vk, const VkCommandBuffer commandBuffer, uint32_t subpassIdx) const;
 
 public:
 	void									fillInheritanceRenderingInfo	(deUint32 subpassIndex, std::vector<vk::VkFormat>* colorFormats, vk::VkCommandBufferInheritanceRenderingInfo* inheritanceRenderingInfo) const;

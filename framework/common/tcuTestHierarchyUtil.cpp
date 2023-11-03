@@ -71,7 +71,7 @@ static void writeXmlCaselist (TestHierarchyIterator& iter, qpXmlWriter* writer)
 		attribs[numAttribs++] = qpSetStringAttrib("PackageName", node->getName());
 		DE_ASSERT(numAttribs <= DE_LENGTH_OF_ARRAY(attribs));
 
-		if (!qpXmlWriter_startDocument(writer) ||
+		if (!qpXmlWriter_startDocument(writer, true) ||
 			!qpXmlWriter_startElement(writer, "TestCaseList", numAttribs, attribs))
 			throw Exception("Failed to start XML document");
 	}

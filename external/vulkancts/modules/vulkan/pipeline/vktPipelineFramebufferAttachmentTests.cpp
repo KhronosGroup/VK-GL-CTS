@@ -1920,14 +1920,19 @@ std::string getTestCaseString (const CaseDef& caseDef)
 	return str.str();
 }
 
+void checkConstructionTypeSupport (Context& context, PipelineConstructionType pipelineConstructionType)
+{
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), pipelineConstructionType);
+}
+
 void checkSupport (Context& context, const CaseDef caseDef)
 {
-	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
+	checkConstructionTypeSupport(context, caseDef.pipelineConstructionType);
 }
 
 void checkSupportNoAtt (Context& context, const NoAttCaseDef caseDef)
 {
-	const VkPhysicalDeviceFeatures features = context.getDeviceFeatures();
+	const auto& features = context.getDeviceFeatures();
 
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
 
@@ -1937,7 +1942,7 @@ void checkSupportNoAtt (Context& context, const NoAttCaseDef caseDef)
 	if (caseDef.multisample)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING); // MS shader uses gl_SampleID
 
-	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
+	checkConstructionTypeSupport(context, caseDef.pipelineConstructionType);
 }
 
 void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
@@ -1999,8 +2004,8 @@ void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineCon
 	addFunctionCaseWithPrograms(group, "no_attachments_ms", checkSupportNoAtt, initImagePrograms, testNoAtt, noAttCaseDef);
 
 	// Test render pass with attachment set as unused.
-	if (!isConstructionTypeLibrary(pipelineConstructionType))
-		addFunctionCase(group, "unused_attachment", testUnusedAtt, pipelineConstructionType);
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC || pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+		addFunctionCase(group, "unused_attachment", checkConstructionTypeSupport, testUnusedAtt, pipelineConstructionType);
 
 	// Tests with multiple attachments that have different sizes.
 	const CaseDef	differentAttachmentSizesCaseDef[]	=

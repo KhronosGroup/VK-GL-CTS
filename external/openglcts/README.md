@@ -669,6 +669,9 @@ Full list of parameters for the `glcts` binary:
     Enable or disable log file fflush
     default: 'enable'
 
+  --deqp-log-compact=[enable|disable]
+    Enable or disable the compact version of the log
+    default: 'disable'
 
   --deqp-renderdoc=[enable|disable]
     Enable RenderDoc frame markers

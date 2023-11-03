@@ -158,13 +158,16 @@ void qpXmlWriter_flush (qpXmlWriter* writer)
 	closePending(writer);
 }
 
-deBool qpXmlWriter_startDocument (qpXmlWriter* writer)
+deBool qpXmlWriter_startDocument (qpXmlWriter* writer, deBool writeXmlHeader)
 {
 	DE_ASSERT(writer && !writer->xmlIsWriting);
 	writer->xmlIsWriting			= DE_TRUE;
 	writer->xmlElementDepth			= 0;
 	writer->xmlPrevIsStartElement	= DE_FALSE;
-	fprintf(writer->outputFile, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+	if(writeXmlHeader)
+	{
+		fprintf(writer->outputFile, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+	}
 	return DE_TRUE;
 }
 

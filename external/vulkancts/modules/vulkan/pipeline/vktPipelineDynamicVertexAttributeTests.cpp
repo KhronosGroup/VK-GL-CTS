@@ -417,6 +417,7 @@ tcu::TestStatus NonSequentialInstance::iterate (void)
 				DE_NULL,
 				DE_NULL)
 			.setupFragmentOutputState(*renderPass)
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 	}
 

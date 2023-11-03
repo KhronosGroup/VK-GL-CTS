@@ -4400,13 +4400,20 @@ public:
 
 		vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT			dbcFeatures					= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceMeshShaderFeaturesEXT				meshFeatures				= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceMultiviewFeatures					multiviewFeatures			= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures					= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures		= vk::initVulkanStructure();
 
 		const auto addFeatures = vk::makeStructChainAdder(&features2);
 
-		if (meshShaderSupport)
+		if (meshShaderSupport) {
 			addFeatures(&meshFeatures);
+
+			if (contextMeshFeatures.multiviewMeshShader)
+			{
+				addFeatures(&multiviewFeatures);
+			}
+		}
 
 		if (gplSupport)
 			addFeatures(&gplFeatures);
@@ -4418,6 +4425,10 @@ public:
 			addFeatures(&shaderObjectFeatures);
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+		// If shadingRateImage feature is enabled pipelineFragmentShadingRate must not be enabled primitiveFragmentShadingRate
+		// and if primitiveFragmentShadingRate is not enabled primitiveFragmentShadingRateMeshShader must not be enabled
+		meshFeatures.primitiveFragmentShadingRateMeshShader = VK_FALSE;
+
 #endif // CTS_USES_VULKANSC
 
 		std::vector<const char*> extensions
@@ -4428,7 +4439,11 @@ public:
 
 #ifndef CTS_USES_VULKANSC
 		if (meshShaderSupport)
+		{
 			extensions.push_back("VK_EXT_mesh_shader");
+			if (contextMeshFeatures.multiviewMeshShader)
+				extensions.push_back("VK_KHR_multiview");
+		}
 
 		if (gplSupport)
 		{

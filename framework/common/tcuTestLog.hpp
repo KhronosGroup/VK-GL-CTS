@@ -188,6 +188,7 @@ private:
 
 	qpTestLog*			m_log;
 	bool				m_logSupressed;
+	bool				m_skipAdditionalDataInLog;
 };
 
 class MessageBuilder
