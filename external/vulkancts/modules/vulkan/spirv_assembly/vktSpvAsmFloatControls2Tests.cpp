@@ -1222,6 +1222,9 @@ public:
 
 			{ OID_SIGN, V_MINUS_INF, V_UNUSED, V_MINUS_ONE, FP::NotInf },
 
+			{ OID_FRACT, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+			{ OID_FRACT, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+
 			{ OID_SQRT, V_MINUS_ONE, V_UNUSED, V_NAN, FP::NotNaN },
 			{ OID_SQRT, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotNaN },
 
@@ -1337,7 +1340,7 @@ public:
 			{ OID_SIGN,				V_ZERO_OR_MINUS_ZERO, V_ONE,	V_SIGN_NAN	},
 			{ OID_FLOOR,			V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_CEIL,				V_MINUS_ZERO,	V_INF,			V_NAN		},
-			{ OID_FRACT,			V_UNUSED,		V_UNUSED,		V_NAN		},
+			{ OID_FRACT,			V_ZERO,			V_UNUSED,		V_NAN		},		// fract(Inf) == NaN, so needs non-standard flags.
 			{ OID_SQRT,				V_MINUS_ZERO,	V_INF,			V_NAN		},
 			{ OID_INV_SQRT,			V_UNUSED,		V_ZERO,			V_NAN		},		// -0 needs NotInf, so handled as special case.
 			{ OID_MODF,				V_MINUS_ZERO,	V_UNUSED,		V_NAN		},
