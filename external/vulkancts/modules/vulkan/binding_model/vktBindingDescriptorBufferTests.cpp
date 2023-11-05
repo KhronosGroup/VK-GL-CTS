@@ -4415,6 +4415,8 @@ tcu::TestStatus	DescriptorBufferTestInstance::iterate()
 	{
 		deUint32 currentSet = INDEX_INVALID;
 
+		deUint32 inlineUniformSize = 0u;
+
 		for (const auto& sb : m_simpleBindings)
 		{
 			if ((currentSet == INDEX_INVALID) || (currentSet < sb.set))
@@ -4440,6 +4442,7 @@ tcu::TestStatus	DescriptorBufferTestInstance::iterate()
 			if (sb.type == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
 			{
 				binding.descriptorCount = sizeof(deUint32) * ConstInlineBlockDwords;
+				inlineUniformSize += binding.descriptorCount;
 			}
 			else
 			{
@@ -4462,6 +4465,11 @@ tcu::TestStatus	DescriptorBufferTestInstance::iterate()
 			}
 
 			dsl.bindings.emplace_back(binding);
+		}
+
+		const VkPhysicalDeviceVulkan13Properties& vulkan13properties = m_context.getDeviceVulkan13Properties();
+		if (m_context.getUsedApiVersion() >= VK_API_VERSION_1_3 && inlineUniformSize > vulkan13properties.maxInlineUniformTotalSize) {
+			TCU_THROW(NotSupportedError, "Test require more inline uniform total size among all stages. Provided " + de::toString(vulkan13properties.maxInlineUniformTotalSize));
 		}
 	}
 
