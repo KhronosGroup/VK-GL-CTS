@@ -1586,6 +1586,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkBlitImageCubicWeightsInfoQCOM
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessing2FeaturesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageProcessing2PropertiesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerBlockMatchWindowCreateInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingAttachmentLocationInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingInputAttachmentIndexInfoKHR& value);
@@ -1638,7 +1639,7 @@ std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeH265ReferenceInfo
 std::ostream&	operator<<	(std::ostream& s, const StdVideoDecodeH265ReferenceInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265WeightTableFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265WeightTable& value);
-std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265SliceSegmentLongTermRefPics& value);
+std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265LongTermRefPics& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265SliceSegmentHeaderFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265SliceSegmentHeader& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoEncodeH265ReferenceListsInfoFlags& value);

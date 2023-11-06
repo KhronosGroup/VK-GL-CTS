@@ -70,6 +70,7 @@ extern "C" {
 #define STD_VIDEO_H264_SCALING_LIST_8X8_NUM_ELEMENTS 64
 #define STD_VIDEO_H264_MAX_NUM_LIST_REF   32
 #define STD_VIDEO_H264_MAX_CHROMA_PLANES  2
+#define STD_VIDEO_H264_NO_REFERENCE_PICTURE 0xFF
 
 typedef enum StdVideoH264ChromaFormatIdc {
     STD_VIDEO_H264_CHROMA_FORMAT_IDC_MONOCHROME = 0,
@@ -375,9 +376,9 @@ extern "C" {
 #define vulkan_video_codec_h264std_encode 1
 
 // Vulkan 0.9 provisional Vulkan video H.264 encode std specification version number
-#define VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_10 VK_MAKE_VIDEO_STD_VERSION(0, 9, 10)
+#define VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_11 VK_MAKE_VIDEO_STD_VERSION(0, 9, 11)
 
-#define VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_SPEC_VERSION VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_10
+#define VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_SPEC_VERSION VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_API_VERSION_0_9_11
 #define VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_EXTENSION_NAME "VK_STD_vulkan_video_codec_h264_encode"
 typedef struct StdVideoEncodeH264WeightTableFlags {
     deUint32    luma_weight_l0_flag;
@@ -433,7 +434,7 @@ typedef struct StdVideoEncodeH264RefListModEntry {
 } StdVideoEncodeH264RefListModEntry;
 
 typedef struct StdVideoEncodeH264RefPicMarkingEntry {
-    StdVideoH264MemMgmtControlOp    operation;
+    StdVideoH264MemMgmtControlOp    memory_management_control_operation;
     deUint16                        difference_of_pic_nums_minus1;
     deUint16                        long_term_pic_num;
     deUint16                        long_term_frame_idx;
@@ -484,7 +485,8 @@ typedef struct StdVideoEncodeH264SliceHeader {
     StdVideoH264SliceType                     slice_type;
     deInt8                                    slice_alpha_c0_offset_div2;
     deInt8                                    slice_beta_offset_div2;
-    deUint16                                  reserved1;
+    deInt8                                    slice_qp_delta;
+    deUint8                                   reserved1;
     StdVideoH264CabacInitIdc                  cabac_init_idc;
     StdVideoH264DisableDeblockingFilterIdc    disable_deblocking_filter_idc;
     const StdVideoEncodeH264WeightTable*      pWeightTable;
@@ -542,6 +544,7 @@ extern "C" {
 #define STD_VIDEO_H265_MAX_LONG_TERM_REF_PICS_SPS 32
 #define STD_VIDEO_H265_MAX_LONG_TERM_PICS 16
 #define STD_VIDEO_H265_MAX_DELTA_POC      48
+#define STD_VIDEO_H265_NO_REFERENCE_PICTURE 0xFF
 
 typedef enum StdVideoH265ChromaFormatIdc {
     STD_VIDEO_H265_CHROMA_FORMAT_IDC_MONOCHROME = 0,
@@ -1156,7 +1159,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 262
+#define VK_HEADER_VERSION 263
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -2213,6 +2216,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX = 1000529002,
     VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX = 1000529003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX = 1000529004,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV = 1000546000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -3814,6 +3818,8 @@ typedef enum VkDescriptorPoolCreateFlagBits {
     VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT = 0x00000001,
     VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT = 0x00000002,
     VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT = 0x00000004,
+    VK_DESCRIPTOR_POOL_CREATE_ALLOW_OVERALLOCATION_SETS_BIT_NV = 0x00000008,
+    VK_DESCRIPTOR_POOL_CREATE_ALLOW_OVERALLOCATION_POOLS_BIT_NV = 0x00000010,
     VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,
     VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_VALVE = VK_DESCRIPTOR_POOL_CREATE_HOST_ONLY_BIT_EXT,
     VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
@@ -9093,6 +9099,7 @@ typedef enum VkQueryResultStatusKHR {
     VK_QUERY_RESULT_STATUS_ERROR_KHR = -1,
     VK_QUERY_RESULT_STATUS_NOT_READY_KHR = 0,
     VK_QUERY_RESULT_STATUS_COMPLETE_KHR = 1,
+    VK_QUERY_RESULT_STATUS_INSUFFICIENT_BITSTREAM_BUFFER_RANGE_KHR = -1000299000,
     VK_QUERY_RESULT_STATUS_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkQueryResultStatusKHR;
 
@@ -10946,8 +10953,8 @@ typedef struct VkRenderingInputAttachmentIndexInfoKHR {
     const void*        pNext;
     deUint32           colorAttachmentCount;
     const deUint32*    pColorAttachmentInputIndices;
-    deUint32           depthInputAttachmentIndex;
-    deUint32           stencilInputAttachmentIndex;
+    const deUint32*    pDepthInputAttachmentIndex;
+    const deUint32*    pStencilInputAttachmentIndex;
 } VkRenderingInputAttachmentIndexInfoKHR;
 
 typedef void (VKAPI_PTR *PFN_vkCmdSetRenderingAttachmentLocationsKHR)(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo);
@@ -18803,6 +18810,18 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetAttachmentFeedbackLoopEnableEXT(
     VkCommandBuffer                             commandBuffer,
     VkImageAspectFlags                          aspectMask);
 #endif
+
+
+// VK_NV_descriptor_pool_overallocation is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_descriptor_pool_overallocation 1
+#define VK_NV_DESCRIPTOR_POOL_OVERALLOCATION_SPEC_VERSION 1
+#define VK_NV_DESCRIPTOR_POOL_OVERALLOCATION_EXTENSION_NAME "VK_NV_descriptor_pool_overallocation"
+typedef struct VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           descriptorPoolOverallocation;
+} VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV;
+
 
 
 // VK_KHR_acceleration_structure is a preprocessor guard. Do not pass it to API calls.

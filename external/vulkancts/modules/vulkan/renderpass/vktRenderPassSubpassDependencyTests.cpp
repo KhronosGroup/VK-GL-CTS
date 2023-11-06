@@ -2740,15 +2740,16 @@ void SeparateChannelsTestInstance::setup(void)
 
 		void* pNext = DE_NULL;
 #ifndef CTS_USES_VULKANSC
-		const deUint32 inputAttachmentIndex = 0;
+		const deUint32 inputAttachmentIndex		= 0;
+		const deUint32 dsInputAttachmentIndex	= VK_ATTACHMENT_UNUSED;
 		VkRenderingInputAttachmentIndexInfoKHR renderingInputAttachmentIndexInfo
 		{
 			VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR,
 			DE_NULL,
 			1u,
 			&inputAttachmentIndex,
-			VK_ATTACHMENT_UNUSED,
-			VK_ATTACHMENT_UNUSED
+			(isDSFormat ? &dsInputAttachmentIndex : DE_NULL),
+			(isDSFormat ? &dsInputAttachmentIndex : DE_NULL)
 		};
 		VkPipelineRenderingCreateInfo renderingCreateInfo
 		{

@@ -4118,6 +4118,11 @@ template<> VkStructureType getStructureType<VkSamplerBlockMatchWindowCreateInfoQ
 	return VK_STRUCTURE_TYPE_SAMPLER_BLOCK_MATCH_WINDOW_CREATE_INFO_QCOM;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR;

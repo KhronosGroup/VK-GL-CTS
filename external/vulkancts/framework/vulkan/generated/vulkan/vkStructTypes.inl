@@ -8867,6 +8867,13 @@ struct VkSamplerBlockMatchWindowCreateInfoQCOM
 	VkBlockMatchWindowCompareModeQCOM	windowCompareMode;
 };
 
+struct VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		descriptorPoolOverallocation;
+};
+
 struct VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR
 {
 	VkStructureType	sType;
@@ -8888,8 +8895,8 @@ struct VkRenderingInputAttachmentIndexInfoKHR
 	const void*		pNext;
 	uint32_t		colorAttachmentCount;
 	const uint32_t*	pColorAttachmentInputIndices;
-	uint32_t		depthInputAttachmentIndex;
-	uint32_t		stencilInputAttachmentIndex;
+	const uint32_t*	pDepthInputAttachmentIndex;
+	const uint32_t*	pStencilInputAttachmentIndex;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -9181,7 +9188,7 @@ struct StdVideoEncodeH264RefListModEntry
 
 struct StdVideoEncodeH264RefPicMarkingEntry
 {
-	StdVideoH264MemMgmtControlOp	operation;
+	StdVideoH264MemMgmtControlOp	memory_management_control_operation;
 	uint16_t						difference_of_pic_nums_minus1;
 	uint16_t						long_term_pic_num;
 	uint16_t						long_term_frame_idx;
@@ -9243,7 +9250,8 @@ struct StdVideoEncodeH264SliceHeader
 	StdVideoH264SliceType					slice_type;
 	int8_t									slice_alpha_c0_offset_div2;
 	int8_t									slice_beta_offset_div2;
-	uint16_t								reserved1;
+	int8_t									slice_qp_delta;
+	uint8_t									reserved1;
 	StdVideoH264CabacInitIdc				cabac_init_idc;
 	StdVideoH264DisableDeblockingFilterIdc	disable_deblocking_filter_idc;
 	const StdVideoEncodeH264WeightTable*	pWeightTable;
@@ -9720,7 +9728,7 @@ struct StdVideoEncodeH265WeightTable
 	int8_t								delta_chroma_offset_l1[STD_VIDEO_H265_MAX_NUM_LIST_REF][STD_VIDEO_H265_MAX_CHROMA_PLANES];
 };
 
-struct StdVideoEncodeH265SliceSegmentLongTermRefPics
+struct StdVideoEncodeH265LongTermRefPics
 {
 	uint8_t		num_long_term_sps;
 	uint8_t		num_long_term_pics;
@@ -9762,7 +9770,8 @@ struct StdVideoEncodeH265SliceSegmentHeader
 	int8_t										slice_act_y_qp_offset;
 	int8_t										slice_act_cb_qp_offset;
 	int8_t										slice_act_cr_qp_offset;
-	uint8_t										reserved1[3];
+	int8_t										slice_qp_delta;
+	uint16_t									reserved1;
 	const StdVideoEncodeH265WeightTable*		pWeightTable;
 };
 
@@ -9808,18 +9817,18 @@ struct StdVideoEncodeH265PictureInfoFlags
 
 struct StdVideoEncodeH265PictureInfo
 {
-	StdVideoEncodeH265PictureInfoFlags						flags;
-	StdVideoH265PictureType									pic_type;
-	uint8_t													sps_video_parameter_set_id;
-	uint8_t													pps_seq_parameter_set_id;
-	uint8_t													pps_pic_parameter_set_id;
-	uint8_t													short_term_ref_pic_set_idx;
-	int32_t													PicOrderCntVal;
-	uint8_t													TemporalId;
-	uint8_t													reserved1[7];
-	const StdVideoEncodeH265ReferenceListsInfo*				pRefLists;
-	const StdVideoH265ShortTermRefPicSet*					pShortTermRefPicSet;
-	const StdVideoEncodeH265SliceSegmentLongTermRefPics*	pLongTermRefPics;
+	StdVideoEncodeH265PictureInfoFlags			flags;
+	StdVideoH265PictureType						pic_type;
+	uint8_t										sps_video_parameter_set_id;
+	uint8_t										pps_seq_parameter_set_id;
+	uint8_t										pps_pic_parameter_set_id;
+	uint8_t										short_term_ref_pic_set_idx;
+	int32_t										PicOrderCntVal;
+	uint8_t										TemporalId;
+	uint8_t										reserved1[7];
+	const StdVideoEncodeH265ReferenceListsInfo*	pRefLists;
+	const StdVideoH265ShortTermRefPicSet*		pShortTermRefPicSet;
+	const StdVideoEncodeH265LongTermRefPics*	pLongTermRefPics;
 };
 
 struct VkVideoEncodeH265PictureInfoEXT

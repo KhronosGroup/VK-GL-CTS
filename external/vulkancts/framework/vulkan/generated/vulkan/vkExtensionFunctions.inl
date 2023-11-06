@@ -1441,6 +1441,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NV_descriptor_pool_overallocation")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -3233,6 +3237,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetScreenBufferPropertiesQNX");
 		return;
 	}
+	if (extName == "VK_NV_descriptor_pool_overallocation")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -3609,4 +3617,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_QCOM_filter_cubic_clamp",
 	"VK_EXT_attachment_feedback_loop_dynamic_state",
 	"VK_QNX_external_memory_screen_buffer",
+	"VK_NV_descriptor_pool_overallocation",
 };
