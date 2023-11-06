@@ -842,6 +842,10 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Terminate the run on first failure
     default: 'disable'
 
+  --deqp-terminate-on-device-lost=[enable|disable]
+    Terminate the run on first device lost error
+    default: 'disable'
+
   --deqp-subprocess=[enable|disable]
     Inform app that it works as subprocess (Vulkan SC only, do not use manually)
     default: 'disable'

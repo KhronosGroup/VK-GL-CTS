@@ -52,6 +52,9 @@ void Context::createRenderContext(glu::ContextType& contextType, glu::ContextFla
 	try
 	{
 		glu::RenderConfig renderCfg(glu::ContextType(contextType.getAPI(), contextType.getFlags() | ctxFlags));
+		if (m_testCtx.getCommandLine().isTerminateOnDeviceLostEnabled()) {
+			renderCfg.resetNotificationStrategy = glu::RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET;
+		}
 
 		glu::parseRenderConfig(&renderCfg, m_testCtx.getCommandLine());
 

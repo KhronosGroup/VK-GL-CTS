@@ -397,6 +397,7 @@ GLXContext GlxVisual::createContext (const GlxContextFactory&		factory,
 
 	if (resetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
 	{
+		checkGlxExtension(m_display, "GLX_ARB_create_context_robustness");
 		attribs.push_back(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB);
 
 		if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)

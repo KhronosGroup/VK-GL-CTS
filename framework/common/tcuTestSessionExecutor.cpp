@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuTestSessionExecutor.hpp"
+#include "qpTestLog.h"
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
 
@@ -304,6 +305,8 @@ void TestSessionExecutor::leaveTestCase (TestCase* testCase)
 				case QP_TEST_RESULT_QUALITY_WARNING:		m_status.numWarnings		+= 1;	break;
 				case QP_TEST_RESULT_COMPATIBILITY_WARNING:	m_status.numWarnings		+= 1;	break;
 				case QP_TEST_RESULT_WAIVER:					m_status.numWaived			+= 1;	break;
+				case QP_TEST_RESULT_DEVICE_LOST:			m_status.numDeviceLost		+= 1;
+															m_status.numFailed			+= 1;	break;
 				default:									m_status.numFailed			+= 1;	break;
 			}
 		}
@@ -314,7 +317,8 @@ void TestSessionExecutor::leaveTestCase (TestCase* testCase)
 
 		// terminateAfter, Resource error or any error in deinit means that execution should end
 		if (terminateAfter || testResult == QP_TEST_RESULT_RESOURCE_ERROR ||
-			(m_status.numFailed > 0 && m_testCtx.getCommandLine().isTerminateOnFailEnabled()))
+			(m_status.numFailed > 0 && m_testCtx.getCommandLine().isTerminateOnFailEnabled()) ||
+			(m_status.numDeviceLost > 0 && m_testCtx.getCommandLine().isTerminateOnDeviceLostEnabled()))
 
 			m_abortSession = true;
 	}

@@ -108,6 +108,7 @@ DE_DECLARE_COMMAND_LINE_OPT(CaseFractionMandatoryTests,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(WaiverFile,					std::string);
 DE_DECLARE_COMMAND_LINE_OPT(RunnerType,					tcu::TestRunnerType);
 DE_DECLARE_COMMAND_LINE_OPT(TerminateOnFail,			bool);
+DE_DECLARE_COMMAND_LINE_OPT(TerminateOnDeviceLost,		bool);
 DE_DECLARE_COMMAND_LINE_OPT(SubProcess,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(SubprocessTestCount,		int);
 DE_DECLARE_COMMAND_LINE_OPT(SubprocessConfigFile,		std::string);
@@ -238,6 +239,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<WaiverFile>					(DE_NULL,	"deqp-waiver-file",							"Read waived tests from given file",									"")
 		<< Option<RunnerType>					(DE_NULL,	"deqp-runner-type",							"Filter test cases based on runner",				s_runnerTypes,		"any")
 		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable")
+		<< Option<TerminateOnDeviceLost>		(DE_NULL,	"deqp-terminate-on-device-lost",			"Terminate the run on a device lost error",			s_enableNames,		"disable")
 		<< Option<SubProcess>					(DE_NULL,	"deqp-subprocess",							"Inform app that it works as subprocess (Vulkan SC only, do not use manually)", s_enableNames, "disable")
 		<< Option<SubprocessTestCount>			(DE_NULL,	"deqp-subprocess-test-count",				"Define default number of tests performed in subprocess for specific test cases(Vulkan SC only)",	"65536")
 		<< Option<SubprocessConfigFile>			(DE_NULL,	"deqp-subprocess-cfg-file",					"Config file defining number of tests performed in subprocess for specific test branches (Vulkan SC only)", "")
@@ -1079,6 +1081,7 @@ const char*				CommandLine::getCaseFractionMandatoryTests	(void) const	{ return 
 const char*				CommandLine::getArchiveDir					(void) const	{ return m_cmdLine.getOption<opt::ArchiveDir>().c_str();					}
 tcu::TestRunnerType		CommandLine::getRunnerType					(void) const	{ return m_cmdLine.getOption<opt::RunnerType>();							}
 bool					CommandLine::isTerminateOnFailEnabled		(void) const	{ return m_cmdLine.getOption<opt::TerminateOnFail>();						}
+bool					CommandLine::isTerminateOnDeviceLostEnabled	(void) const	{ return m_cmdLine.getOption<opt::TerminateOnDeviceLost>();					}
 bool					CommandLine::isSubProcess					(void) const	{ return m_cmdLine.getOption<opt::SubProcess>();							}
 int						CommandLine::getSubprocessTestCount			(void) const	{ return m_cmdLine.getOption<opt::SubprocessTestCount>();					}
 int						CommandLine::getCommandPoolMinSize			(void) const	{ return m_cmdLine.getOption<opt::CommandPoolMinSize>();					}

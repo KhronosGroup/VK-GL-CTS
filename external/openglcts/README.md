@@ -697,6 +697,10 @@ Full list of parameters for the `glcts` binary:
     Terminate the run on first failure
     default: 'disable'
 
+  --deqp-terminate-on-device-lost=[enable|disable]
+    Terminate the run on first device lost error
+    default: 'disable'
+
   --deqp-egl-config-id=<value>
     Legacy name for --deqp-gl-config-id
     default: '-1'
