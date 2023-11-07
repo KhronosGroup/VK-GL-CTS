@@ -4454,6 +4454,9 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 
 				results.check(properties.maxResourceSize >= (VkDeviceSize)MINIMUM_REQUIRED_IMAGE_RESOURCE_SIZE,
 							  "maxResourceSize smaller than minimum required size");
+
+				if (format == VK_FORMAT_UNDEFINED)
+					results.fail("VK_SUCCESS returned for VK_FORMAT_UNDEFINED format");
 			}
 			else if (queryResult == VK_ERROR_FORMAT_NOT_SUPPORTED)
 			{
@@ -4461,9 +4464,6 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 
 				if (isRequiredCombination)
 					results.fail("VK_ERROR_FORMAT_NOT_SUPPORTED returned for required image parameter combination");
-
-				if ((format != VK_FORMAT_UNDEFINED))
-					results.fail("VK_ERROR_FORMAT_NOT_SUPPORTED returned for a supported format");
 
 				// Specification requires that all fields are set to 0
 				results.check(properties.maxExtent.width	== 0, "maxExtent.width != 0");
@@ -4476,6 +4476,9 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 			}
 			else
 			{
+				if (format == VK_FORMAT_UNDEFINED)
+					results.fail(de::toString(queryResult) + " returned for VK_FORMAT_UNDEFINED format");
+
 				results.fail("Got unexpected error" + de::toString(queryResult));
 			}
 		}
