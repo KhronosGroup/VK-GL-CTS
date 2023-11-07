@@ -1,10 +1,10 @@
-#ifndef _VKTSUBGROUPSQUADSCOPETESTS_HPP
-#define _VKTSUBGROUPSQUADSCOPETESTS_HPP
+#ifndef _VKTSUBGROUPSQUADCONTROLTESTS_HPP
+#define _VKTSUBGROUPSQUADCONTROLTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2022 The Khronos Group Inc.
+ * Copyright (c) 2023 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
  *
  */ /*!
  * \file
- * \brief Tests for VK_KHR_shader_quad_scope
+ * \brief Tests for VK_KHR_shader_quad_control
  */ /*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -31,9 +31,9 @@ namespace vkt
 namespace subgroups
 {
 
-tcu::TestCaseGroup* createSubgroupsQuadScopeTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createSubgroupsQuadControlTests(tcu::TestContext& testCtx);
 
 } // subgroups
 } // vkt
 
-#endif // _VKTSUBGROUPSQUADSCOPETESTS_HPP
+#endif // _VKTSUBGROUPSQUADCONTROLTESTS_HPP

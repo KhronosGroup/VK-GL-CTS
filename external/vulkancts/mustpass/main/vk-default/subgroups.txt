@@ -30752,8 +30752,9 @@ dEQP-VK.subgroups.quad.ray_tracing.subgroupquadswapvertical_uint64_t
 dEQP-VK.subgroups.quad.ray_tracing.subgroupquadswapvertical_uint8_t
 dEQP-VK.subgroups.quad.ray_tracing.subgroupquadswapvertical_uvec4
 dEQP-VK.subgroups.quad.ray_tracing.subgroupquadswapvertical_vec4
-dEQP-VK.subgroups.shader_quad_scope.quad_derivatives
-dEQP-VK.subgroups.shader_quad_scope.require_full_quads
+dEQP-VK.subgroups.shader_quad_control.divergent_condition
+dEQP-VK.subgroups.shader_quad_control.quad_derivatives
+dEQP-VK.subgroups.shader_quad_control.require_full_quads
 dEQP-VK.subgroups.shape.compute.clustered
 dEQP-VK.subgroups.shape.compute.clustered_requiredsubgroupsize
 dEQP-VK.subgroups.shape.compute.quad

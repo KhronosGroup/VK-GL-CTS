@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2022 The Khronos Group Inc.
+ * Copyright (c) 2023 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@
  *
  *//*!
  * \file
- * \brief Additional tests for VK_KHR_shader_quad_scope
+ * \brief Additional tests for VK_KHR_shader_quad_control
  *//*--------------------------------------------------------------------*/
 
-#include "vktSubgroupsQuadScopeTests.hpp"
+#include "vktSubgroupsQuadControlTests.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -53,16 +53,17 @@ using namespace vk;
 enum class TestMode
 {
 	QUAD_DERIVATIVES			= 0,
-	REQUIRE_FULL_QUADS
+	REQUIRE_FULL_QUADS,
+	DIVERGENT_CONDITION,
 };
 
-class DrawWithQuadScopeInstanceBase : public vkt::TestInstance
+class DrawWithQuadControlInstanceBase : public vkt::TestInstance
 {
 public:
-								DrawWithQuadScopeInstanceBase	(Context&	context,
+								DrawWithQuadControlInstanceBase	(Context&	context,
 																 TestMode	mode);
 
-	virtual						~DrawWithQuadScopeInstanceBase	(void) = default;
+	virtual						~DrawWithQuadControlInstanceBase(void) = default;
 
 	virtual tcu::TestStatus		iterate							(void) override;
 
@@ -83,8 +84,8 @@ protected:
 	std::vector<float>			m_vertices;
 };
 
-DrawWithQuadScopeInstanceBase::DrawWithQuadScopeInstanceBase(Context&	context,
-															 TestMode	mode)
+DrawWithQuadControlInstanceBase::DrawWithQuadControlInstanceBase(Context&	context,
+																 TestMode	mode)
 	: vkt::TestInstance		(context)
 	, m_mode				(mode)
 	, m_mipColors
@@ -100,7 +101,7 @@ DrawWithQuadScopeInstanceBase::DrawWithQuadScopeInstanceBase(Context&	context,
 {
 }
 
-VkImageCreateInfo DrawWithQuadScopeInstanceBase::getImageCreateInfo(VkExtent3D extent, deUint32 mipLevels, VkImageUsageFlags usage) const
+VkImageCreateInfo DrawWithQuadControlInstanceBase::getImageCreateInfo(VkExtent3D extent, deUint32 mipLevels, VkImageUsageFlags usage) const
 {
 	return
 	{
@@ -122,7 +123,7 @@ VkImageCreateInfo DrawWithQuadScopeInstanceBase::getImageCreateInfo(VkExtent3D e
 	};
 }
 
-tcu::TestStatus DrawWithQuadScopeInstanceBase::iterate(void)
+tcu::TestStatus DrawWithQuadControlInstanceBase::iterate(void)
 {
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
@@ -320,19 +321,19 @@ tcu::TestStatus DrawWithQuadScopeInstanceBase::iterate(void)
 	return tcu::TestStatus::fail("Fail");
 }
 
-class QuadDerivativesInstance : public DrawWithQuadScopeInstanceBase
+class QuadDerivativesInstance : public DrawWithQuadControlInstanceBase
 {
 public:
-								QuadDerivativesInstance				(Context&	context,
-																	 TestMode	mode);
+					QuadDerivativesInstance				(Context&	context,
+														 TestMode	mode);
 
-	virtual						~QuadDerivativesInstance			(void) = default;
+	virtual			~QuadDerivativesInstance			(void) = default;
 
-	virtual bool				isResultCorrect						(const tcu::ConstPixelBufferAccess& outputAccess) const override;
+	virtual bool	isResultCorrect						(const tcu::ConstPixelBufferAccess& outputAccess) const override;
 };
 
 QuadDerivativesInstance::QuadDerivativesInstance(Context& context, TestMode mode)
-	: DrawWithQuadScopeInstanceBase(context, mode)
+	: DrawWithQuadControlInstanceBase(context, mode)
 {
 	// create vertex for 5 triangles - defined in order from displayed on the left to the right
 	m_vertices =
@@ -381,19 +382,19 @@ bool QuadDerivativesInstance::isResultCorrect(const tcu::ConstPixelBufferAccess&
 	return true;
 }
 
-class RequireFullQuadsInstance : public DrawWithQuadScopeInstanceBase
+class RequireFullQuadsInstance : public DrawWithQuadControlInstanceBase
 {
 public:
-								RequireFullQuadsInstance	(Context&	context,
-															 TestMode	mode);
+					RequireFullQuadsInstance	(Context&	context,
+												 TestMode	mode);
 
-	virtual						~RequireFullQuadsInstance	(void) = default;
+	virtual			~RequireFullQuadsInstance	(void) = default;
 
-	virtual bool				isResultCorrect				(const tcu::ConstPixelBufferAccess& outputAccess) const override;
+	virtual bool	isResultCorrect				(const tcu::ConstPixelBufferAccess& outputAccess) const override;
 };
 
 RequireFullQuadsInstance::RequireFullQuadsInstance(Context& context, TestMode mode)
-	: DrawWithQuadScopeInstanceBase(context, mode)
+	: DrawWithQuadControlInstanceBase(context, mode)
 {
 	// create vertex for 4 conected triangles with an odd angles
 	m_vertices =
@@ -414,10 +415,11 @@ RequireFullQuadsInstance::RequireFullQuadsInstance(Context& context, TestMode mo
 
 bool RequireFullQuadsInstance::isResultCorrect(const tcu::ConstPixelBufferAccess& outputAccess) const
 {
-	const float		reference		(0.9f);
-	deUint32		renderedCount	(0);
-	deUint32		ballotCount		(0);
-	deUint32		helperCount		(0);
+	const float		reference				(0.9f);
+	deUint32		renderedCount			(0);
+	deUint32		properIDsCount			(0);
+	deUint32		withHelpersCount		(0);
+	deUint32		withoutHelpersCount		(0);
 
 	// ensure at least some shaders have the vote return True and are filled with read color
 	for (deUint32 x = 0u; x < m_renderSize.x(); ++x)
@@ -429,25 +431,119 @@ bool RequireFullQuadsInstance::isResultCorrect(const tcu::ConstPixelBufferAccess
 
 		++renderedCount;
 
-		// if blue channel is 1 then quadBallotBitCount returned 4
-		ballotCount += deUint32(pixel.y() > reference);
+		// if blue channel is 1 then quads had proper IDs
+		properIDsCount += deUint32(pixel.y() > reference);
 
 		// at least some shaders should have voted True if any helper invocations existed
-		helperCount += deUint32(pixel.z() > reference);
+		withHelpersCount += deUint32(pixel.z() > reference);
+
+		// at least some shaders should have voted True if there were quads without helper invocations
+		withoutHelpersCount += deUint32(pixel.w() > reference);
 	}
 
-	return (renderedCount == ballotCount) && (helperCount > 50) && (renderedCount > helperCount);
+	return (renderedCount == properIDsCount) &&
+		   (renderedCount == (withHelpersCount + withoutHelpersCount)) &&
+		   (withoutHelpersCount > 50) &&
+		   (withHelpersCount > 50);
 }
 
-class DrawWithQuadScopeTestCase : public vkt::TestCase
+class DivergentConditionInstance : public DrawWithQuadControlInstanceBase
 {
 public:
+					DivergentConditionInstance	(Context&	context,
+												 TestMode	mode);
 
-					DrawWithQuadScopeTestCase	(tcu::TestContext&		testContext,
+	virtual			~DivergentConditionInstance	(void) = default;
+
+	virtual bool	isResultCorrect				(const tcu::ConstPixelBufferAccess& outputAccess) const override;
+};
+
+DivergentConditionInstance::DivergentConditionInstance(Context& context, TestMode mode)
+	: DrawWithQuadControlInstanceBase(context, mode)
+{
+	// create vertex for 2 triangles forming full screen quad
+	m_vertices =
+	{	// position						uvCoords
+		-1.0f,  1.0f, 0.0f, 1.0f,		0.0f, 1.0f,
+		 1.0f,  1.0f, 0.0f, 1.0f,		1.0f, 1.0f,
+		-1.0f, -1.0f, 0.0f, 1.0f,		0.0f, 0.0f,
+		 1.0f, -1.0f, 0.0f, 1.0f,		1.0f, 0.0f,
+	};
+	m_topology		= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+	m_renderSize	= tcu::UVec2(16);
+}
+
+bool DivergentConditionInstance::isResultCorrect(const tcu::ConstPixelBufferAccess& outputAccess) const
+{
+	bool		testPassed	(true);
+	const float	reference	(0.99f);
+	const float	lambda		(0.01f);
+
+	auto checkCondition = [](int x, int y)
+	{
+		return (((x % 8) > 4) || (((x % 8) == 2) && bool(y % 2)));
+	};
+
+	for (deUint32 x = 0u; x < m_renderSize.x(); x += 1u)
+	for (deUint32 y = 0u; y < m_renderSize.y(); y += 1u)
+	{
+		tcu::Vec4 pixel = outputAccess.getPixel(x, y, 0);
+
+		// if the fragment coord does not meet the first condition then this fragment should have r and g component set to 0
+		if (!checkCondition(x, y))
+		{
+			if ((pixel.x() > lambda) || (pixel.y() > lambda))
+				testPassed = false;
+
+			// go to next pixel
+			continue;
+		}
+
+		deUint32 qx = x - (x % 2);
+		deUint32 qy = y - (y % 2);
+		int sum =
+			(checkCondition(qx + 0, qy + 0) && checkCondition(qy + 0, qx + 0)) +
+			(checkCondition(qx + 0, qy + 1) && checkCondition(qy + 1, qx + 0)) +
+			(checkCondition(qx + 1, qy + 0) && checkCondition(qy + 0, qx + 1)) +
+			(checkCondition(qx + 1, qy + 1) && checkCondition(qy + 1, qx + 1));
+		int activeCount =
+			checkCondition(qx + 0, qy + 0) +
+			checkCondition(qx + 0, qy + 1) +
+			checkCondition(qx + 1, qy + 0) +
+			checkCondition(qx + 1, qy + 1);
+
+		// if none of fragments in the quad meets second condition then this fragment should have r and g components set to 0
+		if (sum == 0)
+		{
+			if ((pixel.x() > lambda) || (pixel.y() > lambda))
+				testPassed = false;
+			continue;
+		}
+
+		// if all active quad fragments meets second condition then this fragment should have r and g components set to 1
+		if (sum == activeCount)
+		{
+			if ((pixel.x() < reference) || (pixel.y() < reference))
+				testPassed = false;
+			continue;
+		}
+
+		// if at least one active quad fragment meets second condition then this fragment should have r component set to 1 and g component to 0
+		if ((pixel.x() < reference) || (pixel.y() > lambda))
+			testPassed = false;
+	}
+
+	return testPassed;
+}
+
+class DrawWithQuadControlTestCase : public vkt::TestCase
+{
+public:
+					DrawWithQuadControlTestCase	(tcu::TestContext&		testContext,
 												 const std::string&		name,
 												 TestMode				mode);
 
-	virtual			~DrawWithQuadScopeTestCase	(void) = default;
+	virtual			~DrawWithQuadControlTestCase(void) = default;
 
 	void			checkSupport				(Context& context) const override;
 	TestInstance*	createInstance				(Context& context) const override;
@@ -457,30 +553,29 @@ protected:
 	const TestMode		m_testMode;
 };
 
-DrawWithQuadScopeTestCase::DrawWithQuadScopeTestCase(tcu::TestContext&		testContext,
-													 const std::string&		name,
-													 TestMode				mode)
+DrawWithQuadControlTestCase::DrawWithQuadControlTestCase(tcu::TestContext&		testContext,
+														 const std::string&		name,
+														 TestMode				mode)
 	: vkt::TestCase		(testContext, name)
 	, m_testMode		(mode)
 {}
 
-void DrawWithQuadScopeTestCase::checkSupport(Context& context) const
+void DrawWithQuadControlTestCase::checkSupport(Context& context) const
 {
-	context.requireDeviceFunctionality("VK_KHR_shader_quad_scope");
-	if (m_testMode == TestMode::REQUIRE_FULL_QUADS)
-		context.requireDeviceFunctionality("VK_EXT_shader_subgroup_vote");
+	context.requireDeviceFunctionality("VK_KHR_shader_quad_control");
 }
 
-TestInstance* DrawWithQuadScopeTestCase::createInstance(Context& context) const
+TestInstance* DrawWithQuadControlTestCase::createInstance(Context& context) const
 {
 	if (m_testMode == TestMode::QUAD_DERIVATIVES)
 		return new QuadDerivativesInstance(context, m_testMode);
+	if (m_testMode == TestMode::REQUIRE_FULL_QUADS)
+		return new RequireFullQuadsInstance(context, m_testMode);
 
-	// TestMode::REQUIRE_FULL_QUADS
-	return new RequireFullQuadsInstance(context, m_testMode);
+	return new DivergentConditionInstance(context, m_testMode);
 }
 
-void DrawWithQuadScopeTestCase::initPrograms(SourceCollections& sourceCollections) const
+void DrawWithQuadControlTestCase::initPrograms(SourceCollections& sourceCollections) const
 {
 	std::string vertexSource(
 		"#version 450\n"
@@ -500,208 +595,99 @@ void DrawWithQuadScopeTestCase::initPrograms(SourceCollections& sourceCollection
 		// we are drawing few triangles and in shader we have a condition
 		// that will be true for exactly one fragment in each triangle
 
-		// "#version 450\n"
-		// "precision highp float;\n"
-		// "#extension GL_EXT_shader_quad: enable\n"
-		// "#extension GL_KHR_shader_subgroup_vote: enable\n"
-		// "layout(location = 0) in highp vec2 inTexCoords;\n"
-		// "layout(location = 0) out vec4 outFragColor;\n"
-		// "layout(binding = 0) uniform sampler2D texSampler;\n"
-		// "void main (void)\n"
-		// "{\n"
-		// "\tbool conditionTrueForOneFrag = (abs(gl_FragCoord.y - 8.5) < 0.1) && (mod(gl_FragCoord.x-3.5, 6.0) < 0.1);\n"
-		// "\tif (quadAny(conditionTrueForOneFrag))\n"
-		// "\t\toutFragColor = texture(texSampler, inTexCoords);\n"
-		// "\telse\n"
-		// "\t\toutFragColor = vec4(0.9, 0.2, 0.2, 1.0);\n"
-		// "}\n";
-
 		fragmentSource =
-			"OpCapability Shader\n"
-			"OpCapability GroupNonUniform\n"
-			"OpCapability GroupNonUniformVote\n"
-			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
-			"OpMemoryModel Logical GLSL450\n"
-			"OpEntryPoint Fragment %4 \"main\" %12 %41 %49\n"
-			"OpExecutionMode %4 OriginUpperLeft\n"
-			"OpDecorate %12 BuiltIn FragCoord\n"
-			"OpDecorate %41 Location 0\n"
-			"OpDecorate %45 DescriptorSet 0\n"
-			"OpDecorate %45 Binding 0\n"
-			"OpDecorate %49 Location 0\n"
-			"%2 = OpTypeVoid\n"
-			"%3 = OpTypeFunction %2\n"
-			"%6 = OpTypeBool\n"
-			"%7 = OpTypePointer Function %6\n"
-			"%9 = OpTypeFloat 32\n"
-			"%10 = OpTypeVector %9 4\n"
-			"%11 = OpTypePointer Input %10\n"
-			"%12 = OpVariable %11 Input\n"
-			"%13 = OpTypeInt 32 0\n"
-			"%14 = OpConstant %13 1\n"
-			"%15 = OpTypePointer Input %9\n"
-			"%18 = OpConstant %9 8.5\n"
-			"%21 = OpConstant %9 0.100000001\n"
-			"%25 = OpConstant %13 0\n"
-			"%28 = OpConstant %9 3.5\n"
-			"%30 = OpConstant %9 6\n"
-			"%36 = OpConstant %13 3\n"
-			"%40 = OpTypePointer Output %10\n"
-			"%41 = OpVariable %40 Output\n"
-			"%42 = OpTypeImage %9 2D 0 0 0 1 Unknown\n"
-			"%43 = OpTypeSampledImage %42\n"
-			"%44 = OpTypePointer UniformConstant %43\n"
-			"%45 = OpVariable %44 UniformConstant\n"
-			"%47 = OpTypeVector %9 2\n"
-			"%48 = OpTypePointer Input %47\n"
-			"%49 = OpVariable %48 Input\n"
-			"%53 = OpConstant %9 0.899999976\n"
-			"%54 = OpConstant %9 0.200000003\n"
-			"%55 = OpConstant %9 1\n"
-			"%56 = OpConstantComposite %10 %53 %54 %54 %55\n"
-			"%4 = OpFunction %2 None %3\n"
-			"%5 = OpLabel\n"
-			"%8 = OpVariable %7 Function\n"
-			"%16 = OpAccessChain %15 %12 %14\n"
-			"%17 = OpLoad %9 %16\n"
-			"%19 = OpFSub %9 %17 %18\n"
-			"%20 = OpExtInst %9 %1 FAbs %19\n"
-			"%22 = OpFOrdLessThan %6 %20 %21\n"
-			"OpSelectionMerge %24 None\n"
-			"OpBranchConditional %22 %23 %24\n"
-			"%23 = OpLabel\n"
-			"%26 = OpAccessChain %15 %12 %25\n"
-			"%27 = OpLoad %9 %26\n"
-			"%29 = OpFSub %9 %27 %28\n"
-			"%31 = OpFMod %9 %29 %30\n"
-			"%33 = OpFOrdLessThan %6 %31 %21\n"
-			"OpBranch %24\n"
-			"%24 = OpLabel\n"
-			"%34 = OpPhi %6 %22 %5 %33 %23\n"
-			"OpStore %8 %34\n"
-			"%35 = OpLoad %6 %8\n"
-			"%37 = OpGroupNonUniformAny %6 %36 %35\n"
-			"OpSelectionMerge %39 None\n"
-			"OpBranchConditional %37 %38 %52\n"
-			"%38 = OpLabel\n"
-			"%46 = OpLoad %43 %45\n"
-			"%50 = OpLoad %47 %49\n"
-			"%51 = OpImageSampleImplicitLod %10 %46 %50\n"
-			"OpStore %41 %51\n"
-			"OpBranch %39\n"
-			"%52 = OpLabel\n"
-			"OpStore %41 %56\n"
-			"OpBranch %39\n"
-			"%39 = OpLabel\n"
-			"OpReturn\n"
-			"OpFunctionEnd\n";
+			"#version 450\n"
+			"precision highp float;\n"
+			"precision highp int;\n"
+			"#extension GL_EXT_shader_quad_control: enable\n"
+			"#extension GL_KHR_shader_subgroup_vote: enable\n"
+			"layout(quad_derivatives) in;\n"
+			"layout(location = 0) in highp vec2 inTexCoords;\n"
+			"layout(location = 0) out vec4 outFragColor;\n"
+			"layout(binding = 0) uniform sampler2D texSampler;\n"
+			"void main (void)\n"
+			"{\n"
+			"\tbool conditionTrueForOneFrag = (abs(gl_FragCoord.y - 8.5) < 0.1) && (mod(gl_FragCoord.x-3.5, 6.0) < 0.1);\n"
+			"\tif (subgroupQuadAny(conditionTrueForOneFrag))\n"
+			"\t\toutFragColor = texture(texSampler, inTexCoords);\n"
+			"\telse\n"
+			"\t\toutFragColor = vec4(0.9, 0.2, 0.2, 1.0);\n"
+			"}\n";
 	}
-	else // TestMode::REQUIRE_FULL_QUADS
+	else if(m_testMode == TestMode::REQUIRE_FULL_QUADS)
 	{
 		// we are drawing few connected triangles at odd angles
 		// RequireFullQuadsKHR ensures lots of helper lanes
 
-		//fragmentSource =
-		//"#version 450\n"
-		//"precision highp float;\n"
-		//"#extension GL_KHR_shader_subgroup_vote: enable\n"
-		//"#extension GL_KHR_shader_subgroup_ballot: enable\n"
-		//"layout(location = 0) in highp vec2 inTexCoords;\n"
-		//"layout(location = 0) out vec4 outFragColor;\n"
-		//"layout(binding = 0) uniform sampler2D texSampler;\n"
-		//"void main (void)\n"
-		//"{\n"
-		//"\tuvec4 ballot = subgroupBallot(true);\n"
-		//"\toutFragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
-		//"\tif (subgroupBallotBitCount(ballot) == 4)\n"
-		//"\t\toutFragColor.g = 1.0;\n"
-		//"\tif (subgroupAny(gl_HelperInvocation))\n"
-		//"\t\toutFragColor.b = 1.0;\n"
-		//"}\n";
-		//const ShaderBuildOptions buildOptions(sourceCollections.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
-		//sourceCollections.glslSources.add("frag") << glu::FragmentSource(fragmentSource) << buildOptions;
+		fragmentSource =
+			"#version 450\n"
+			"#extension GL_KHR_shader_subgroup_quad: enable\n"
+			"#extension GL_KHR_shader_subgroup_vote: enable\n"
+			"#extension GL_EXT_shader_quad_control: enable\n"
+			"precision highp float;\n"
+			"precision highp int;\n"
+			"layout(full_quads) in;\n"
+			"layout(location = 0) in highp vec2 inTexCoords;\n"
+			"layout(location = 0) out vec4 outFragColor;\n"
+			"layout(binding = 0) uniform sampler2D texSampler;\n"
+			"void main (void)\n"
+			"{\n"
+			"\tuint quadID = gl_SubgroupInvocationID % 4;\n"
+			"\tuint idSum = quadID;\n"
+			"\tidSum += subgroupQuadSwapHorizontal(quadID);\n"
+			"\tidSum += subgroupQuadSwapVertical(quadID);\n"
+			"\tidSum += subgroupQuadSwapDiagonal(quadID);\n"
+			"\toutFragColor = vec4(1.0, 0.0, 0.0, 0.0);\n"
+			"\tif (idSum == 6)\n"
+			"\t\toutFragColor.g = 1.0;\n"
+			"\tif (subgroupQuadAny(gl_HelperInvocation))\n"
+			"\t\toutFragColor.b = 1.0;\n"
+			"\tif (subgroupQuadAll(!gl_HelperInvocation))\n"
+			"\t\toutFragColor.a = 1.0;\n"
+			"}\n";
+	}
+	else // TestMode::DIVERGENT_CONDITION
+	{
+		// draw fullscreen quad and use quadAny/quadAll
+		// inside divergent control flow
 
 		fragmentSource =
-			"OpCapability Shader\n"
-			"OpCapability GroupNonUniform\n"
-			"OpCapability GroupNonUniformVote\n"
-			"OpCapability GroupNonUniformBallot\n"
-			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
-			"OpMemoryModel Logical GLSL450\n"
-			"OpEntryPoint Fragment %4 \"main\" %17 %31 %40\n"
-			"OpExecutionMode %4 OriginUpperLeft\n"
-			"OpDecorate %17 Location 0\n"
-			"OpDecorate %31 BuiltIn HelperInvocation\n"
-			"OpDecorate %40 Location 0\n"
-			"OpDecorate %44 DescriptorSet 0\n"
-			"OpDecorate %44 Binding 0\n"
-			"%2 = OpTypeVoid\n"
-			"%3 = OpTypeFunction %2\n"
-			"%6 = OpTypeInt 32 0\n"
-			"%7 = OpTypeVector %6 4\n"
-			"%8 = OpTypePointer Function %7\n"
-			"%10 = OpTypeBool\n"
-			"%11 = OpConstantTrue %10\n"
-			"%12 = OpConstant %6 3\n"
-			"%14 = OpTypeFloat 32\n"
-			"%15 = OpTypeVector %14 4\n"
-			"%16 = OpTypePointer Output %15\n"
-			"%17 = OpVariable %16 Output\n"
-			"%18 = OpConstant %14 1\n"
-			"%19 = OpConstant %14 0\n"
-			"%20 = OpConstantComposite %15 %18 %19 %19 %18\n"
-			"%23 = OpConstant %6 4\n"
-			"%27 = OpConstant %6 1\n"
-			"%28 = OpTypePointer Output %14\n"
-			"%30 = OpTypePointer Input %10\n"
-			"%31 = OpVariable %30 Input\n"
-			"%36 = OpConstant %6 2\n"
-			"%38 = OpTypeVector %14 2\n"
-			"%39 = OpTypePointer Input %38\n"
-			"%40 = OpVariable %39 Input\n"
-			"%41 = OpTypeImage %14 2D 0 0 0 1 Unknown\n"
-			"%42 = OpTypeSampledImage %41\n"
-			"%43 = OpTypePointer UniformConstant %42\n"
-			"%44 = OpVariable %43 UniformConstant\n"
-			"%4 = OpFunction %2 None %3\n"
-			"%5 = OpLabel\n"
-			"%9 = OpVariable %8 Function\n"
-			"%13 = OpGroupNonUniformBallot %7 %12 %11\n"
-			"OpStore %9 %13\n"
-			"OpStore %17 %20\n"
-			"%21 = OpLoad %7 %9\n"
-			"%22 = OpGroupNonUniformBallotBitCount %6 %12 Reduce %21\n"
-			"%24 = OpIEqual %10 %22 %23\n"
-			"OpSelectionMerge %26 None\n"
-			"OpBranchConditional %24 %25 %26\n"
-			"%25 = OpLabel\n"
-			"%29 = OpAccessChain %28 %17 %27\n"
-			"OpStore %29 %18\n"
-			"OpBranch %26\n"
-			"%26 = OpLabel\n"
-			"%32 = OpLoad %10 %31\n"
-			"%33 = OpGroupNonUniformAny %10 %12 %32\n"
-			"OpSelectionMerge %35 None\n"
-			"OpBranchConditional %33 %34 %35\n"
-			"%34 = OpLabel\n"
-			"%37 = OpAccessChain %28 %17 %36\n"
-			"OpStore %37 %18\n"
-			"OpBranch %35\n"
-			"%35 = OpLabel\n"
-			"OpReturn\n"
-			"OpFunctionEnd\n";
+			"#version 450\n"
+			"#extension GL_KHR_shader_subgroup_vote: enable\n"
+			"#extension GL_EXT_shader_quad_control: enable\n"
+			"precision highp float;\n"
+			"precision highp int;\n"
+			"layout(location = 0) out vec4 outFragColor;\n"
+			"bool checkCondition(int x, int y) {\n"
+			"\treturn (((x % 8) > 4) || (((x % 8) == 2) && bool(y % 2)));\n"
+			"}\n"
+			"void main (void)\n"
+			"{\n"
+			"\toutFragColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
+			"\tint x = int(gl_FragCoord.x);\n"
+			"\tint y = int(gl_FragCoord.y);\n"
+			"\tif (checkCondition(x, y))\n"
+			"\t{\n"
+			"\t\tbool v = checkCondition(y, x);\n"
+			"\t\tif (subgroupQuadAny(v))\n"
+			"\t\t\toutFragColor.r = 1.0;\n"
+			"\t\tif (subgroupQuadAll(v))\n"
+			"\t\t\toutFragColor.g = 1.0;\n"
+			"\t}\n"
+			"}\n";
 	}
 
-	const SpirVAsmBuildOptions buildOptionsSpr(sourceCollections.usedVulkanVersion, SPIRV_VERSION_1_3);
-	sourceCollections.spirvAsmSources.add("frag") << fragmentSource << buildOptionsSpr;
+	const ShaderBuildOptions buildOptions(sourceCollections.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
+	sourceCollections.glslSources.add("frag") << glu::FragmentSource(fragmentSource) << buildOptions;
 }
 
-tcu::TestCaseGroup* createSubgroupsQuadScopeTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createSubgroupsQuadControlTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> quadScopeTests(new tcu::TestCaseGroup(testCtx, "shader_quad_scope", "Test for VK_KHR_shader_quad_scope"));
+	de::MovePtr<tcu::TestCaseGroup> quadScopeTests(new tcu::TestCaseGroup(testCtx, "shader_quad_control", "Test for VK_KHR_shader_quad_control"));
 
-	quadScopeTests->addChild(new DrawWithQuadScopeTestCase(testCtx, "quad_derivatives",		TestMode::QUAD_DERIVATIVES));
-	quadScopeTests->addChild(new DrawWithQuadScopeTestCase(testCtx, "require_full_quads",	TestMode::REQUIRE_FULL_QUADS));
+	quadScopeTests->addChild(new DrawWithQuadControlTestCase(testCtx, "quad_derivatives",	TestMode::QUAD_DERIVATIVES));
+	quadScopeTests->addChild(new DrawWithQuadControlTestCase(testCtx, "require_full_quads",	TestMode::REQUIRE_FULL_QUADS));
+	quadScopeTests->addChild(new DrawWithQuadControlTestCase(testCtx, "divergent_condition", TestMode::DIVERGENT_CONDITION));
 
 	return quadScopeTests.release();
 }

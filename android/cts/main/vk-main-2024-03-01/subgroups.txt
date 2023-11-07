@@ -1,2 +1,3 @@
-dEQP-VK.subgroups.shader_quad_scope.quad_derivatives
-dEQP-VK.subgroups.shader_quad_scope.require_full_quads
+dEQP-VK.subgroups.shader_quad_control.divergent_condition
+dEQP-VK.subgroups.shader_quad_control.quad_derivatives
+dEQP-VK.subgroups.shader_quad_control.require_full_quads
