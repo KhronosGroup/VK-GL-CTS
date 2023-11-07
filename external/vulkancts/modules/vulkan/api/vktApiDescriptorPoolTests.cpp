@@ -40,6 +40,11 @@
 #include "deInt32.h"
 #include "deSTLUtil.hpp"
 
+#ifdef CTS_USES_VULKANSC
+#include "vkSafetyCriticalUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
+#endif
+
 #define VK_DESCRIPTOR_TYPE_LAST (VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1)
 
 namespace vkt
@@ -345,6 +350,137 @@ tcu::TestStatus zeroPoolSizeCount(Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+#ifdef CTS_USES_VULKANSC
+tcu::TestStatus noResetDescriptorPoolTest (Context& context, const ResetDescriptorPoolTestParams params)
+{
+	const DeviceInterface&		vkd			= context.getDeviceInterface();
+
+	const deUint32	numDescriptorSetsPerIter	= 100;
+	const float		queuePriority				= 1.0f;
+
+	const VkDeviceQueueCreateInfo	deviceQueueCI		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,							// sType
+		DE_NULL,															// pNext
+		(VkDeviceQueueCreateFlags)0u,										// flags
+		0,																	//queueFamilyIndex;
+		1,																	//queueCount;
+		&queuePriority,														//pQueuePriorities;
+	};
+
+	VkDeviceCreateInfo				deviceCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,								// sType;
+		DE_NULL,															// pNext;
+		(VkDeviceCreateFlags)0u,											// flags
+		1,																	// queueCount;
+		&deviceQueueCI,														// pQueues;
+		0,																	// layerCount;
+		DE_NULL,															// ppEnabledLayerNames;
+		0,																	// extensionCount;
+		DE_NULL,															// ppEnabledExtensionNames;
+		DE_NULL,															// pEnabledFeatures;
+	};
+
+	VkDeviceObjectReservationCreateInfo	objectInfo		= resetDeviceObjectReservationCreateInfo();
+	objectInfo.descriptorPoolRequestCount				= 1u;
+	objectInfo.descriptorSetRequestCount				= numDescriptorSetsPerIter;
+	objectInfo.descriptorSetLayoutRequestCount			= numDescriptorSetsPerIter;
+	objectInfo.descriptorSetLayoutBindingRequestCount	= numDescriptorSetsPerIter;
+	objectInfo.descriptorSetLayoutBindingLimit			= 1u;
+	objectInfo.pNext									= DE_NULL;
+
+	VkPhysicalDeviceVulkanSC10Features	sc10Features	= createDefaultSC10Features();
+	sc10Features.pNext									= &objectInfo;
+
+	deviceCreateInfo.pNext								= &sc10Features;
+
+	const VkDescriptorPoolSize		descriptorPoolSize	=
+	{
+		VK_DESCRIPTOR_TYPE_SAMPLER,	// type
+		numDescriptorSetsPerIter	// descriptorCount
+	};
+
+	const VkDescriptorPoolCreateInfo descriptorPoolInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,										// sType
+		NULL,																				// pNext
+		(VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,		// flags
+		numDescriptorSetsPerIter,															// maxSets
+		1,																					// poolSizeCount
+		&descriptorPoolSize																	// pPoolSizes
+	};
+
+	for (deUint32 i = 0; i < params.m_numIterations; ++i)
+	{
+		vkt::CustomInstance	instance		= vkt::createCustomInstanceFromContext(context);
+		VkPhysicalDevice	physicalDevice	= chooseDevice(instance.getDriver(), instance, context.getTestContext().getCommandLine());
+		Move<VkDevice>		device			= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instance, instance.getDriver(), physicalDevice, &deviceCreateInfo);
+
+		VkDescriptorPool descriptorPool = 0;
+		VK_CHECK(vkd.createDescriptorPool(*device, &descriptorPoolInfo, DE_NULL, &descriptorPool));
+		if (!descriptorPool)
+			TCU_THROW(TestError, "create descriptor pool failed");
+
+		const VkDescriptorSetLayoutBinding descriptorSetLayoutBinding =
+		{
+			0,							// binding
+			VK_DESCRIPTOR_TYPE_SAMPLER, // descriptorType
+			1,							// descriptorCount
+			VK_SHADER_STAGE_ALL,		// stageFlags
+			NULL						// pImmutableSamplers
+		};
+
+		const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo =
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// sType
+			NULL,													// pNext
+			0,														// flags
+			1,														// bindingCount
+			&descriptorSetLayoutBinding								// pBindings
+		};
+
+		typedef de::SharedPtr<Unique<VkDescriptorSetLayout> > DescriptorSetLayoutPtr;
+
+		vector<DescriptorSetLayoutPtr> descriptorSetLayouts;
+		descriptorSetLayouts.reserve(numDescriptorSetsPerIter);
+
+		for (deUint32 ndx = 0; ndx < numDescriptorSetsPerIter; ++ndx)
+		{
+			descriptorSetLayouts.push_back(
+				DescriptorSetLayoutPtr(
+					new Unique<VkDescriptorSetLayout>(
+						createDescriptorSetLayout(vkd, *device,
+												  &descriptorSetLayoutInfo))));
+		}
+
+		vector<VkDescriptorSetLayout> descriptorSetLayoutsRaw(numDescriptorSetsPerIter);
+
+		for (deUint32 ndx = 0; ndx < numDescriptorSetsPerIter; ++ndx)
+		{
+			descriptorSetLayoutsRaw[ndx] = **descriptorSetLayouts[ndx];
+		}
+
+		const VkDescriptorSetAllocateInfo descriptorSetInfo =
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // sType
+			NULL,											// pNext
+			descriptorPool,									// descriptorPool
+			numDescriptorSetsPerIter,						// descriptorSetCount
+			&descriptorSetLayoutsRaw[0]						// pSetLayouts
+		};
+
+		vector<VkDescriptorSet> testSets(numDescriptorSetsPerIter);
+
+		VK_CHECK(vkd.allocateDescriptorSets(*device, &descriptorSetInfo, &testSets[0]));
+		VK_CHECK(vkd.freeDescriptorSets(*device, descriptorPool, numDescriptorSetsPerIter, &testSets[0]));
+	}
+
+	// If it didn't crash, pass
+	return tcu::TestStatus::pass("Pass");
+}
+#endif
+
 } // anonymous
 
 tcu::TestCaseGroup* createDescriptorPoolTests (tcu::TestContext& testCtx)
@@ -382,6 +518,17 @@ tcu::TestCaseGroup* createDescriptorPoolTests (tcu::TestContext& testCtx)
 	addFunctionCase(descriptorPoolTests.get(),
 					"zero_pool_size_count",
 					zeroPoolSizeCount);
+#ifdef CTS_USES_VULKANSC
+	// Test 2 cycles of vkAllocateDescriptorSets, vkFreeDescriptorSets and vkDestroyDevice (should pass)
+	addFunctionCase(descriptorPoolTests.get(),
+					"repeated_free_no_reset_short",
+					noResetDescriptorPoolTest, ResetDescriptorPoolTestParams(2U, true));
+
+	// Test many cycles of vkAllocateDescriptorSets, vkFreeDescriptorSets and vkDestroyDevice (should pass)
+	addFunctionCase(descriptorPoolTests.get(),
+					"repeated_free_no_reset_long",
+					noResetDescriptorPoolTest, ResetDescriptorPoolTestParams(200U, true));
+#endif
 
 	return descriptorPoolTests.release();
 }
