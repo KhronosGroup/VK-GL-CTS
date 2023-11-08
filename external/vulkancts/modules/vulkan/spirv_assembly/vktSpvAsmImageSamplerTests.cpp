@@ -572,23 +572,50 @@ std::string getFunctionDstParamStr (ReadOp readOp, TestType testType)
 	return result;
 }
 
+struct FormatDataForShaders
+{
+	vk::VkFormat	m_format;
+	std::string		m_name;
+	std::string		m_spirvMismatchFormat;
+	std::string		m_spirvType;
+	std::string		m_spirvVectorType;
+};
+
+static const FormatDataForShaders	optypeimageFormatMismatchSpirvData[]						=
+{
+	{ vk::VK_FORMAT_R8G8B8A8_UNORM,			"rgba8",		"Rgba16f",	"%f32",	"%v4f32" },
+	{ vk::VK_FORMAT_R8G8B8A8_SNORM,			"rgba8snorm",	"Rgba16f",	"%f32",	"%v4f32" },
+	{ vk::VK_FORMAT_R8G8B8A8_UINT,			"rgba8ui",		"Rgba16ui",	"%u32",	"%v4u32" },
+	{ vk::VK_FORMAT_R8G8B8A8_SINT,			"rgba8i",		"Rgba16i",	"%i32",	"%v4i32" },
+	{ vk::VK_FORMAT_R16G16B16A16_UINT,		"rgba16ui",		"Rgba32ui",	"%u32",	"%v4u32" },
+	{ vk::VK_FORMAT_R16G16B16A16_SINT,		"rgba16i",		"Rgba32i",	"%i32",	"%v4i32" },
+	{ vk::VK_FORMAT_R16G16B16A16_SFLOAT,	"rgba16f",		"Rgba32f",	"%f32",	"%v4f32" },
+	{ vk::VK_FORMAT_R32_UINT,				"r32ui",		"Rgba32ui",	"%u32",	"%v4u32" },
+	{ vk::VK_FORMAT_R32_SINT,				"r32i",			"Rgba32i",	"%i32",	"%v4i32" },
+	{ vk::VK_FORMAT_R32G32B32A32_UINT,		"rgba32ui",		"Rgba8ui",	"%u32",	"%v4u32" },
+	{ vk::VK_FORMAT_R32G32B32A32_SINT,		"rgba32i",		"Rgba8i",	"%i32",	"%v4i32" },
+	{ vk::VK_FORMAT_R32G32B32A32_SFLOAT,	"rgba32f",		"Rgba8",	"%f32",	"%v4f32" },
+};
+
+static const uint32_t				optypeimageFormatMismatchFormatCount	= DE_LENGTH_OF_ARRAY(optypeimageFormatMismatchSpirvData);
+
 // Get read operation
-std::string getImageReadOpStr (ReadOp readOp, bool useNontemporal = false)
+std::string getImageReadOpStr (ReadOp readOp, const FormatDataForShaders& formatData, bool useNontemporal = false)
 {
 	std::string imageOperand = useNontemporal ? " Nontemporal" : "";
 
 	switch (readOp)
 	{
 		case READOP_IMAGEREAD:
-			return std::string("OpImageRead %v4f32 %func_img %coord") + imageOperand;
+			return "OpImageRead " + formatData.m_spirvVectorType + " %func_img %coord" + imageOperand;
 
 		case READOP_IMAGEFETCH:
-			return std::string("OpImageFetch %v4f32 %func_img %coord") + imageOperand;
+			return "OpImageFetch " + formatData.m_spirvVectorType + " %func_img %coord" + imageOperand;
 
 		case READOP_IMAGESAMPLE:
 			if (useNontemporal)
-				return "OpImageSampleExplicitLod %v4f32 %func_smi %normalcoordf Lod|Nontemporal %c_f32_0";
-			return "OpImageSampleExplicitLod %v4f32 %func_smi %normalcoordf Lod %c_f32_0";
+				return "OpImageSampleExplicitLod " + formatData.m_spirvVectorType + " %func_smi %normalcoordf Lod|Nontemporal %c_f32_0";
+			return "OpImageSampleExplicitLod " + formatData.m_spirvVectorType + " %func_smi %normalcoordf Lod %c_f32_0";
 
 		case READOP_IMAGESAMPLE_DREF_IMPLICIT_LOD:
 			return "OpImageSampleDrefImplicitLod %f32 %func_smi %normalcoordf %c_f32_0_5 Bias %c_f32_0";
@@ -607,71 +634,21 @@ bool isImageSampleDrefReadOp (ReadOp readOp)
 	return (readOp == READOP_IMAGESAMPLE_DREF_IMPLICIT_LOD) || (readOp == READOP_IMAGESAMPLE_DREF_EXPLICIT_LOD);
 }
 
-static const VkFormat optypeimageFormatMismatchVkFormat[] =
-{
-	VK_FORMAT_R8G8B8A8_UNORM,
-	VK_FORMAT_R8G8B8A8_SNORM,
-	VK_FORMAT_R8G8B8A8_UINT,
-	VK_FORMAT_R8G8B8A8_SINT,
-	VK_FORMAT_R16G16B16A16_UINT,
-	VK_FORMAT_R16G16B16A16_SINT,
-	VK_FORMAT_R16G16B16A16_SFLOAT,
-	VK_FORMAT_R32_UINT,
-	VK_FORMAT_R32_SINT,
-	VK_FORMAT_R32G32B32A32_UINT,
-	VK_FORMAT_R32G32B32A32_SINT,
-	VK_FORMAT_R32G32B32A32_SFLOAT
-};
-
-static const size_t optypeimageFormatMismatchFormatCount = sizeof(optypeimageFormatMismatchVkFormat) / sizeof(VkFormat);
-
-static const char *optypeimageFormatMismatchSpirvFormat[] =
-{
-	"Rgba8",
-	"Rgba8Snorm",
-	"Rgba8ui",
-	"Rgba8i",
-	"Rgba16ui",
-	"Rgba16i",
-	"Rgba16f",
-	"R32ui",
-	"R32i",
-	"Rgba32ui",
-	"Rgba32i",
-	"Rgba32f"
-};
-
-static const char *optypeimageFormatMismatchCase[] =
-{
-	"rgba8",
-	"rgba8snorm",
-	"rgba8ui",
-	"rgba8i",
-	"rgba16ui",
-	"rgba16i",
-	"rgba16f",
-	"r32ui",
-	"r32i",
-	"rgba32ui",
-	"rgba32i",
-	"rgba32f"
-};
-
 // Get types and pointers for input images and samplers
-std::string getImageSamplerTypeStr (DescriptorType descType, ReadOp readOp, deUint32 depthProperty, TestType testType, int formatIndex)
+std::string getImageSamplerTypeStr (DescriptorType descType, ReadOp readOp, deUint32 depthProperty, TestType testType, const FormatDataForShaders& formatData)
 {
-	const string imageFormat =	(testType == TESTTYPE_OPTYPEIMAGE_MISMATCH) ? optypeimageFormatMismatchSpirvFormat[formatIndex] :
+	const string imageFormat =	(testType == TESTTYPE_OPTYPEIMAGE_MISMATCH) ? formatData.m_spirvMismatchFormat :
 								isImageSampleDrefReadOp(readOp) ? "R32f" : "Rgba32f";
 
 	switch (descType)
 	{
 		case DESCRIPTOR_TYPE_STORAGE_IMAGE:
-			return	"              %Image = OpTypeImage %f32 2D " + de::toString(depthProperty) + " 0 0 2 " + imageFormat + "\n"
+			return	"              %Image = OpTypeImage " + formatData.m_spirvType + " 2D " + de::toString(depthProperty) + " 0 0 2 " + imageFormat + "\n"
 					"           %ImagePtr = OpTypePointer UniformConstant %Image\n"
 					"          %InputData = OpVariable %ImagePtr UniformConstant\n";
 
 		case DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-			return	"              %Image = OpTypeImage %f32 2D " + de::toString(depthProperty) + " 0 0 1 " + imageFormat + "\n"
+			return	"              %Image = OpTypeImage " + formatData.m_spirvType + " 2D " + de::toString(depthProperty) + " 0 0 1 " + imageFormat + "\n"
 					"           %ImagePtr = OpTypePointer UniformConstant %Image\n"
 					"          %InputData = OpVariable %ImagePtr UniformConstant\n"
 
@@ -681,13 +658,13 @@ std::string getImageSamplerTypeStr (DescriptorType descType, ReadOp readOp, deUi
 					"       %SampledImage = OpTypeSampledImage %Image\n";
 
 		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-			return	"              %Image = OpTypeImage %f32 2D " + de::toString(depthProperty) + " 0 0 1 " + imageFormat + "\n"
+			return	"              %Image = OpTypeImage " + formatData.m_spirvType + " 2D " + de::toString(depthProperty) + " 0 0 1 " + imageFormat + "\n"
 					"       %SampledImage = OpTypeSampledImage %Image\n"
 					"         %SamplerPtr = OpTypePointer UniformConstant %SampledImage\n"
 					"          %InputData = OpVariable %SamplerPtr UniformConstant\n";
 
 		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES:
-			return	"              %Image = OpTypeImage %f32 2D " + de::toString(depthProperty) + " 0 0 1 " + imageFormat + "\n"
+			return	"              %Image = OpTypeImage " + formatData.m_spirvType + " 2D " + de::toString(depthProperty) + " 0 0 1 " + imageFormat + "\n"
 					"           %ImagePtr = OpTypePointer UniformConstant %Image\n"
 					"          %InputData = OpVariable %ImagePtr UniformConstant\n"
 
@@ -697,7 +674,7 @@ std::string getImageSamplerTypeStr (DescriptorType descType, ReadOp readOp, deUi
 					"       %SampledImage = OpTypeSampledImage %Image\n";
 
 		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS:
-			return	"              %Image = OpTypeImage %f32 2D " + de::toString(depthProperty) + " 0 0 1 " + imageFormat + "\n"
+			return	"              %Image = OpTypeImage " + formatData.m_spirvType + " 2D " + de::toString(depthProperty) + " 0 0 1 " + imageFormat + "\n"
 					"           %ImagePtr = OpTypePointer UniformConstant %Image\n"
 					"          %InputData = OpVariable %ImagePtr UniformConstant\n"
 					"         %InputData2 = OpVariable %ImagePtr UniformConstant\n"
@@ -816,14 +793,15 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 
 				for (deUint32 formatIndex = 0; formatIndex < numFormats; formatIndex++)
 				{
-					const std::string	imageSamplerTypes = getImageSamplerTypeStr((DescriptorType)descNdx, (ReadOp)opNdx, DEPTH_PROPERTY_NON_DEPTH, (TestType)testNdx, formatIndex);
-					const std::string	functionParamTypes = getFunctionParamTypeStr((TestType)testNdx);
+					const FormatDataForShaders&	formatData				= optypeimageFormatMismatchSpirvData[formatIndex];
+					const std::string			imageSamplerTypes		= getImageSamplerTypeStr((DescriptorType)descNdx, (ReadOp)opNdx, DEPTH_PROPERTY_NON_DEPTH, (TestType)testNdx, formatData);
+					const std::string			functionParamTypes		= getFunctionParamTypeStr((TestType)testNdx);
 
-					const std::string	functionSrcVariables = getFunctionSrcVariableStr((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx);
-					const std::string	functionDstVariables = getFunctionDstVariableStr((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx);
+					const std::string			functionSrcVariables	= getFunctionSrcVariableStr((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx);
+					const std::string			functionDstVariables	= getFunctionDstVariableStr((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx);
 
-					const std::string	functionSrcParams = getFunctionSrcParamStr((TestType)testNdx);
-					const std::string	functionDstParams = getFunctionDstParamStr((ReadOp)opNdx, (TestType)testNdx);
+					const std::string			functionSrcParams		= getFunctionSrcParamStr((TestType)testNdx);
+					const std::string			functionDstParams		= getFunctionDstParamStr((ReadOp)opNdx, (TestType)testNdx);
 
 					getDefaultColors(defaultColors);
 
@@ -864,7 +842,7 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 						std::string	interfaceList		("");
 						std::string	outputDecoration	("BufferBlock");
 						std::string	outputType			("Uniform");
-						std::string	imageReadOp			(getImageReadOpStr((ReadOp)opNdx, useSpirV16));
+						std::string	imageReadOp			(getImageReadOpStr((ReadOp)opNdx, formatData, useSpirV16));
 
 						// adjust shader code to spv16
 						if (useSpirV16)
@@ -882,7 +860,7 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 							"                       OpExecutionMode %main LocalSize 1 1 1\n"
 							"                       OpSource GLSL 430\n"
 							"                       OpDecorate %id BuiltIn GlobalInvocationId\n"
-							"                       OpDecorate %_arr_v4f_u32_64 ArrayStride 16\n"
+							"                       OpDecorate %_arr_v4type_u32_64 ArrayStride 16\n"
 							"                       OpMemberDecorate %Output 0 Offset 0\n"
 							"                       OpDecorate %Output " + outputDecoration + "\n"
 							"                       OpDecorate %InputData DescriptorSet 0\n"
@@ -909,14 +887,16 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 							"              %v2u32 = OpTypeVector %u32 2\n"
 							"              %v2f32 = OpTypeVector %f32 2\n"
 							"              %v4f32 = OpTypeVector %f32 4\n"
+							"              %v4u32 = OpTypeVector %u32 4\n"
+							"              %v4i32 = OpTypeVector %i32 4\n"
 							"           %uint_128 = OpConstant %u32 128\n"
 							"           %c_u32_64 = OpConstant %u32 64\n"
 							"            %c_u32_8 = OpConstant %u32 8\n"
 							"            %c_f32_8 = OpConstant %f32 8.0\n"
 							"        %c_v2f32_8_8 = OpConstantComposite %v2f32 %c_f32_8 %c_f32_8\n"
-							"    %_arr_v4f_u32_64 = OpTypeArray %v4f32 %c_u32_64\n"
-							"   %_ptr_Uniform_v4f = OpTypePointer " + outputType + " %v4f32\n"
-							"             %Output = OpTypeStruct %_arr_v4f_u32_64\n"
+							" %_arr_v4type_u32_64 = OpTypeArray " + formatData.m_spirvVectorType + " %c_u32_64\n"
+							"%_ptr_Uniform_v4type = OpTypePointer " + outputType + " " + formatData.m_spirvVectorType + "\n"
+							"             %Output = OpTypeStruct %_arr_v4type_u32_64\n"
 							"%_ptr_Uniform_Output = OpTypePointer " + outputType + " %Output\n"
 							"         %OutputData = OpVariable %_ptr_Uniform_Output " + outputType + "\n"
 
@@ -939,7 +919,7 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 							+ functionDstVariables +
 
 							"              %color = " + imageReadOp + "\n"
-							"                 %36 = OpAccessChain %_ptr_Uniform_v4f %OutputData %c_u32_0 %func_ndx\n"
+							"                 %36 = OpAccessChain %_ptr_Uniform_v4type %OutputData %c_u32_0 %func_ndx\n"
 							"                       OpStore %36 %color\n"
 							"                       OpReturn\n"
 							"                       OpFunctionEnd\n"
@@ -966,9 +946,10 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 						{
 							// If testing for mismatched optypeimage, ignore the
 							// result (we're only interested to see if we crash)
-							spec.verifyIO = nopVerifyFunction;
+							spec.verifyIO		= nopVerifyFunction;
+							spec.inputFormat	= formatData.m_format;
 
-							testname = testname + string("_") + string(optypeimageFormatMismatchCase[formatIndex]);
+							testname			= testname + string("_") + formatData.m_name;
 						}
 
 						testname += spirvData.postfix;
@@ -986,16 +967,17 @@ map<string, string> generateGraphicsImageSamplerSource (ReadOp readOp, Descripto
 {
 	map<string, string>	source;
 
-	const std::string	imageReadOp				= getImageReadOpStr(readOp);
-	const std::string	imageSamplerTypes		= getImageSamplerTypeStr(descriptorType, readOp, depthProperty, testType, formatIndex);
-	const std::string	functionParamTypes		= getFunctionParamTypeStr(testType);
-	const std::string	functionSrcVariables	= getFunctionSrcVariableStr(readOp, descriptorType, testType);
-	const std::string	functionDstVariables	= getFunctionDstVariableStr(readOp, descriptorType, testType);
-	const std::string	functionSrcParams		= getFunctionSrcParamStr(testType);
-	const std::string	functionDstParams		= getFunctionDstParamStr(readOp, testType);
-	const std::string	samplerDecoration		= getSamplerDecoration(descriptorType);
-	const std::string	outputUniformPtr		= isImageSampleDrefReadOp(readOp) ? "%_ptr_Uniform_f32" : "%_ptr_Uniform_v4f32";
-	const std::string	outputArrayStruct		= isImageSampleDrefReadOp(readOp) ? "%_arr_f32_u32_64" : "%_arr_v4f32_u32_64";
+	const FormatDataForShaders&	formatData				= optypeimageFormatMismatchSpirvData[formatIndex];
+	const std::string			imageReadOp				= getImageReadOpStr(readOp, formatData);
+	const std::string			imageSamplerTypes		= getImageSamplerTypeStr(descriptorType, readOp, depthProperty, testType, formatData);
+	const std::string			functionParamTypes		= getFunctionParamTypeStr(testType);
+	const std::string			functionSrcVariables	= getFunctionSrcVariableStr(readOp, descriptorType, testType);
+	const std::string			functionDstVariables	= getFunctionDstVariableStr(readOp, descriptorType, testType);
+	const std::string			functionSrcParams		= getFunctionSrcParamStr(testType);
+	const std::string			functionDstParams		= getFunctionDstParamStr(readOp, testType);
+	const std::string			samplerDecoration		= getSamplerDecoration(descriptorType);
+	const std::string			outputUniformPtr		= isImageSampleDrefReadOp(readOp) ? "%_ptr_Uniform_type" : "%_ptr_Uniform_v4type";
+	const std::string			outputArrayStruct		= isImageSampleDrefReadOp(readOp) ? "%_arr_type_u32_64" : "%_arr_v4type_u32_64";
 
 	source["pre_main"]	=
 		"           %c_u32_64 = OpConstant %u32 64\n"
@@ -1003,10 +985,10 @@ map<string, string> generateGraphicsImageSamplerSource (ReadOp readOp, Descripto
 		"            %c_i32_8 = OpConstant %i32 8\n"
 		"        %c_v2f32_8_8 = OpConstantComposite %v2f32 %c_f32_8 %c_f32_8\n"
 
-		"    %_arr_f32_u32_64 = OpTypeArray %f32 %c_u32_64\n"
-		"  %_arr_v4f32_u32_64 = OpTypeArray %v4f32 %c_u32_64\n"
-		"   %_ptr_Uniform_f32 = OpTypePointer Uniform %f32\n"
-		" %_ptr_Uniform_v4f32 = OpTypePointer Uniform %v4f32\n"
+		"   %_arr_type_u32_64 = OpTypeArray " + formatData.m_spirvType + " %c_u32_64\n"
+		" %_arr_v4type_u32_64 = OpTypeArray " + formatData.m_spirvVectorType + " %c_u32_64\n"
+		"  %_ptr_Uniform_type = OpTypePointer Uniform " + formatData.m_spirvType + "\n"
+		"%_ptr_Uniform_v4type = OpTypePointer Uniform " + formatData.m_spirvVectorType + "\n"
 
 		"             %Output = OpTypeStruct " + outputArrayStruct + "\n"
 		"%_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
@@ -1017,8 +999,8 @@ map<string, string> generateGraphicsImageSamplerSource (ReadOp readOp, Descripto
 		"     %read_func_type = OpTypeFunction %void %i32" + functionParamTypes + "\n";
 
 	source["decoration"]	=
-		"                       OpDecorate %_arr_f32_u32_64 ArrayStride 4\n"
-		"                       OpDecorate %_arr_v4f32_u32_64 ArrayStride 16\n"
+		"                       OpDecorate %_arr_type_u32_64 ArrayStride 4\n"
+		"                       OpDecorate %_arr_v4type_u32_64 ArrayStride 16\n"
 		"                       OpMemberDecorate %Output 0 Offset 0\n"
 		"                       OpDecorate %Output BufferBlock\n"
 		"                       OpDecorate %InputData DescriptorSet 0\n"
@@ -1129,9 +1111,11 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 
 				for (deUint32 formatIndex = 0; formatIndex < formatCount; formatIndex++)
 				{
+					const FormatDataForShaders&		formatData				= optypeimageFormatMismatchSpirvData[formatIndex];
+
 					// optypeimage_mismatch uses an additional level of test hierarchy
-					const char *groupname = testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH ? optypeimageFormatMismatchCase[formatIndex] : getTestTypeName((TestType)testNdx);
-					de::MovePtr<tcu::TestCaseGroup>	typeGroup(new tcu::TestCaseGroup(testCtx, groupname, ""));
+					const char*						groupname				= (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH) ? formatData.m_name.c_str() : getTestTypeName((TestType)testNdx);
+					de::MovePtr<tcu::TestCaseGroup>	typeGroup				(new tcu::TestCaseGroup(testCtx, groupname, ""));
 
 					GraphicsResources				resources;
 
@@ -1158,14 +1142,14 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 
 					getDefaultColors(defaultColors);
 
-					const map<string, string>		fragments = generateGraphicsImageSamplerSource((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx, DEPTH_PROPERTY_NON_DEPTH, (deUint32)resources.inputs.size(), (deUint32)((formatIndex + 1) % optypeimageFormatMismatchFormatCount));
+					const map<string, string>		fragments = generateGraphicsImageSamplerSource((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx, DEPTH_PROPERTY_NON_DEPTH, (deUint32)resources.inputs.size(), formatIndex);
 
 					// If testing for mismatched optypeimage, ignore the rendered
 					// result (we're only interested to see if we crash)
 					if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
 					{
 						resources.verifyIO = nopVerifyFunction;
-						resources.inputFormat = optypeimageFormatMismatchVkFormat[formatIndex];
+						resources.inputFormat = formatData.m_format;
 					}
 
 					vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
