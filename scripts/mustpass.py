@@ -423,8 +423,13 @@ def parseCmdLineArgs ():
 						dest="targetName",
 						default=DEFAULT_TARGET,
 						help="dEQP build target")
+	parser.add_argument("-v", "--verbose",
+						dest="verbose",
+						action="store_true",
+						help="Enable verbose logging")
 	return parser.parse_args()
 
 def parseBuildConfigFromCmdLineArgs ():
 	args = parseCmdLineArgs()
+	initializeLogger(args.verbose)
 	return getBuildConfig(args.buildDir, args.targetName, args.buildType)
