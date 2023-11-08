@@ -2431,6 +2431,332 @@ int AttachmentFeedbackLoopLayoutSamplerTest::getArraySize (SamplerViewType viewT
 
 	return 1;
 }
+
+// The idea behind this test is to reproduce a behavior that was causing GPU hangs on RADV.
+// * create a color attachment
+// * transition from UNDEFINED to COLOR_ATTACHMENT_OPTIMAL
+// * draw something
+// * transition from COLOR_ATTACHMENT_OPTIMAL to ATTACHMENT_FEEDBACK_LOOP_OPTIMAL
+// * draw something with a pipeline that has 0 color attachments
+// * GPU hanged
+void noColorAttachmentSupport (Context& context)
+{
+	context.requireDeviceFunctionality("VK_EXT_attachment_feedback_loop_layout");
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+}
+
+void noColorAttachmentPrograms (SourceCollections& dst)
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "layout (location=0) in vec4 inPos;\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = inPos;\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	// For the initial draw, simple color.
+	std::ostringstream frag1;
+	frag1
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "layout (push_constant, std430) uniform PushConstantBlock {\n"
+		<< "    vec4 color;\n"
+		<< "} pc;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = pc.color;\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("frag1") << glu::FragmentSource(frag1.str());
+
+	// For the second draw, store without color attachments.
+	std::ostringstream frag2;
+	frag2
+		<< "#version 460\n"
+		<< "layout (set=0, binding=0, std430) buffer BufferBlock {\n"
+		<< "    uint value;\n"
+		<< "} outBuffer;\n"
+		<< "void main (void) {\n"
+		<< "    atomicAdd(outBuffer.value, 1u);\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("frag2") << glu::FragmentSource(frag2.str());
+}
+
+tcu::TestStatus noColorAttachmentTest (Context& context)
+{
+	const auto&			ctx			= context.getContextCommonData();
+	const tcu::IVec3	fbExtent	(544, 544, 1); // The image needs to be large-ish.
+	const auto			vkExtent	= makeExtent3D(fbExtent);
+	const auto			fbFormat	= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat	= mapVkFormat(fbFormat);
+	const auto			fbUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT);
+	const tcu::Vec4		clearColor	(0.0f, 0.0f, 0.0f, 1.0f);
+	const tcu::Vec4		geomColor1	(0.0f, 0.0f, 1.0f, 1.0f);
+	const tcu::Vec4		geomColor2	(1.0f, 0.0f, 1.0f, 1.0f);
+	const tcu::Vec4		threshold	(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+	const auto			descType	= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	const auto			bindPoint	= VK_PIPELINE_BIND_POINT_GRAPHICS;
+	const auto			dataStages	= VK_SHADER_STAGE_FRAGMENT_BIT;
+	const auto			colorSRR	= makeDefaultImageSubresourceRange();
+
+	// Color buffer with verification buffer.
+	ImageWithBuffer colorBuffer1 (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		vkExtent,
+		fbFormat,
+		fbUsage,
+		VK_IMAGE_TYPE_2D);
+
+	// Second color buffer with verification buffer.
+	ImageWithBuffer colorBuffer2 (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		vkExtent,
+		fbFormat,
+		fbUsage,
+		VK_IMAGE_TYPE_2D);
+
+	// Vertices.
+	const std::vector<tcu::Vec4> vertices
+	{
+		tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+		tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f),
+		tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f),
+		tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f),
+	};
+
+	// Indices.
+	const std::vector<uint32_t> indices
+	{
+		0u, 1u, 2u,
+		2u, 1u, 3u,
+	};
+
+	// Vertex buffer
+	const auto			vbSize			= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vbInfo			= makeBufferCreateInfo(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	BufferWithMemory	vertexBuffer	(ctx.vkd, ctx.device, ctx.allocator, vbInfo, MemoryRequirement::HostVisible);
+	const auto			vbAlloc			= vertexBuffer.getAllocation();
+	void*				vbData			= vbAlloc.getHostPtr();
+	const auto			vbOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(vbData, de::dataOrNull(vertices), de::dataSize(vertices));
+	flushAlloc(ctx.vkd, ctx.device, vbAlloc);
+
+	// Index buffer.
+	const auto			ibSize			= static_cast<VkDeviceSize>(de::dataSize(indices));
+	const auto			ibInfo			= makeBufferCreateInfo(ibSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+	BufferWithMemory	indexBuffer		(ctx.vkd, ctx.device, ctx.allocator, ibInfo, MemoryRequirement::HostVisible);
+	const auto			ibAlloc			= indexBuffer.getAllocation();
+	void*				ibData			= ibAlloc.getHostPtr();
+	const auto			ibOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(ibData, de::dataOrNull(indices), de::dataSize(indices));
+	flushAlloc(ctx.vkd, ctx.device, ibAlloc);
+
+	// Data buffer for the second fragment shader.
+	const auto			dbSize			= static_cast<VkDeviceSize>(sizeof(uint32_t));
+	const auto			dbInfo			= makeBufferCreateInfo(dbSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	BufferWithMemory	dataBuffer		(ctx.vkd, ctx.device, ctx.allocator, dbInfo, MemoryRequirement::HostVisible);
+	const auto			dbAlloc			= dataBuffer.getAllocation();
+	void*				dbData			= dbAlloc.getHostPtr();
+	const auto			dbOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemset(dbData, 0, sizeof(uint32_t));
+	flushAlloc(ctx.vkd, ctx.device, dbAlloc);
+
+	// Descriptor pool, set, layout, etc.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(descType);
+	const auto descriptorPool	= poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+	DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(descType, dataStages);
+	const auto setLayout		= layoutBuilder.build(ctx.vkd, ctx.device);
+	const auto descriptorSet	= makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+	DescriptorSetUpdateBuilder updateBuilder;
+	const auto dbDescInfo = makeDescriptorBufferInfo(dataBuffer.get(), dbOffset, dbSize);
+	updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType, &dbDescInfo);
+	updateBuilder.update(ctx.vkd, ctx.device);
+
+	// Push constant for the color attachment pipeline.
+	const auto pcSize	= static_cast<uint32_t>(sizeof(geomColor1));
+	const auto pcRange	= makePushConstantRange(dataStages, 0u, pcSize);
+
+	// Two pipeline layouts: one without any descriptor and one with the single descriptor we use.
+	const auto pipelineLayout1	= makePipelineLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+	const auto pipelineLayout2	= makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+
+	// Two render passes: one with one color attachment and one empty.
+	const auto renderPass1		= makeRenderPass(ctx.vkd, ctx.device, fbFormat, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_LOAD);
+	const auto renderPass2		= makeRenderPass(ctx.vkd, ctx.device);
+
+	// Three framebuffers: two with a color attachment and one empty with the same size.
+	const auto framebuffer1		= makeFramebuffer(ctx.vkd, ctx.device, *renderPass1, colorBuffer1.getImageView(), vkExtent.width, vkExtent.height);
+	const auto framebuffer2		= makeFramebuffer(ctx.vkd, ctx.device, *renderPass2, 0u, nullptr, vkExtent.width, vkExtent.height);
+	const auto framebuffer3		= makeFramebuffer(ctx.vkd, ctx.device, *renderPass1, colorBuffer2.getImageView(), vkExtent.width, vkExtent.height);
+
+	// Modules.
+	const auto&	binaries		= context.getBinaryCollection();
+	const auto	vertModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragModule1		= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag1"));
+	const auto	fragModule2		= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag2"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	// Two pipelines, with separate modules, layouts and render passes.
+	const auto pipeline1 = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout1,
+		*vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule1,
+		*renderPass1, viewports, scissors); // The default values work for the current setup, including the vertex input data format.
+
+	const auto pipeline2 = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout2,
+		*vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule2,
+		*renderPass2, viewports, scissors); // Ditto.
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+	// Transition color buffers to color attachment optimal.
+	{
+		const std::vector<VkImage> images { colorBuffer1.getImage(), colorBuffer2.getImage() };
+		std::vector<VkImageMemoryBarrier> barriers;
+		barriers.reserve(images.size());
+
+		for (const auto& img : images)
+		{
+			const auto transitionBarrier = makeImageMemoryBarrier(0u,
+				(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				img, colorSRR);
+			barriers.push_back(transitionBarrier);
+		}
+		cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, de::dataOrNull(barriers), barriers.size());
+	}
+
+	beginRenderPass(ctx.vkd, cmdBuffer, *renderPass1, *framebuffer1, scissors.at(0u), clearColor);
+	ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+	ctx.vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffer.get(), ibOffset, VK_INDEX_TYPE_UINT32);
+	ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline1);
+	ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout1, dataStages, 0u, pcSize, &geomColor1);
+	ctx.vkd.cmdDrawIndexed(cmdBuffer, de::sizeU32(indices), 1u, 0u, 0, 0u);
+	endRenderPass(ctx.vkd, cmdBuffer);
+
+	// Transition first color buffer to feedback loop layout optimal.
+	{
+		const auto transitionBarrier = makeImageMemoryBarrier((VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+			0u,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT,
+			colorBuffer1.getImage(), colorSRR);
+		cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, &transitionBarrier);
+	}
+
+	// Draw with the empty framebuffer and the second pipeline, saving results to the storage buffer.
+	beginRenderPass(ctx.vkd, cmdBuffer, *renderPass2, *framebuffer2, scissors.at(0u));
+	ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout2, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+	ctx.vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffer.get(), ibOffset, VK_INDEX_TYPE_UINT32);
+	ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline2);
+	ctx.vkd.cmdDrawIndexed(cmdBuffer, de::sizeU32(indices), 1u, 0u, 0, 0u);
+	endRenderPass(ctx.vkd, cmdBuffer);
+
+	// Barrier for the storage buffer.
+	{
+		const auto frag2hostBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+		cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &frag2hostBarrier);
+	}
+
+#if 0
+	// Transition color buffer back to color attachment optimal.
+	{
+		const auto transitionBarrier = makeImageMemoryBarrier(0u,
+			(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+			VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			colorBuffer1.getImage(), colorSRR);
+		cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &transitionBarrier);
+	}
+#endif
+
+	beginRenderPass(ctx.vkd, cmdBuffer, *renderPass1, *framebuffer3, scissors.at(0u), clearColor);
+	ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+	ctx.vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffer.get(), ibOffset, VK_INDEX_TYPE_UINT32);
+	ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline1);
+	ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout1, dataStages, 0u, pcSize, &geomColor2);
+	ctx.vkd.cmdDrawIndexed(cmdBuffer, de::sizeU32(indices), 1u, 0u, 0, 0u);
+	endRenderPass(ctx.vkd, cmdBuffer);
+
+	copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer1.getImage(), colorBuffer1.getBuffer(),
+		fbExtent.swizzle(0, 1),
+		0u,
+		VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT,
+		1u,
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+
+	copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer2.getImage(), colorBuffer2.getBuffer(),
+		fbExtent.swizzle(0, 1),
+		(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		1u,
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color outputs.
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer1.getBufferAllocation());
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer2.getBufferAllocation());
+
+	tcu::PixelBufferAccess resultAccess1 (tcuFormat, fbExtent, colorBuffer1.getBufferAllocation().getHostPtr());
+	tcu::PixelBufferAccess resultAccess2 (tcuFormat, fbExtent, colorBuffer2.getBufferAllocation().getHostPtr());
+
+	tcu::TextureLevel	referenceLevel1		(tcuFormat, fbExtent.x(), fbExtent.y());
+	auto				referenceAccess1	= referenceLevel1.getAccess();
+	tcu::clear(referenceAccess1, geomColor1);
+
+	tcu::TextureLevel	referenceLevel2		(tcuFormat, fbExtent.x(), fbExtent.y());
+	auto				referenceAccess2	= referenceLevel2.getAccess();
+	tcu::clear(referenceAccess2, geomColor2);
+
+	auto& log = context.getTestContext().getLog();
+
+	if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess1, resultAccess1, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		TCU_FAIL("Unexpected color in first result buffer; check log for details");
+
+	if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess2, resultAccess2, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		TCU_FAIL("Unexpected color in second result buffer; check log for details");
+
+	// Verify storage buffer.
+	invalidateAlloc(ctx.vkd, ctx.device, dbAlloc);
+	{
+		uint32_t	outputVal;
+		const auto	expectedVal = vkExtent.width * vkExtent.height;
+
+		deMemcpy(&outputVal, dbData, sizeof(outputVal));
+		if (outputVal != expectedVal)
+			TCU_FAIL("Unexpected data buffer value: expected " + std::to_string(expectedVal) + " and found " + std::to_string(outputVal));
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+using TestCaseGroupPtr = de::MovePtr<tcu::TestCaseGroup>;
+
 } // anonymous
 
 tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
@@ -2466,7 +2792,7 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 		VK_FORMAT_S8_UINT
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> samplingTypeTests		(new tcu::TestCaseGroup(testCtx, "sampler"));
+	TestCaseGroupPtr samplingTypeTests		(new tcu::TestCaseGroup(testCtx, "sampler"));
 
 	const struct
 	{
@@ -2517,15 +2843,15 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 
 	for (int imageDescriptorTypeNdx = 0; imageDescriptorTypeNdx < DE_LENGTH_OF_ARRAY(imageDescriptorTypes); imageDescriptorTypeNdx++)
 	{
-		VkDescriptorType				imageDescriptorType			= imageDescriptorTypes[imageDescriptorTypeNdx].type;
-		de::MovePtr<tcu::TestCaseGroup>	imageDescriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, imageDescriptorTypes[imageDescriptorTypeNdx].name));
-		de::MovePtr<tcu::TestCaseGroup>	imageTypeTests				(new tcu::TestCaseGroup(testCtx, "image_type"));
+		VkDescriptorType	imageDescriptorType			= imageDescriptorTypes[imageDescriptorTypeNdx].type;
+		TestCaseGroupPtr	imageDescriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, imageDescriptorTypes[imageDescriptorTypeNdx].name));
+		TestCaseGroupPtr	imageTypeTests				(new tcu::TestCaseGroup(testCtx, "image_type"));
 
 		for (int viewTypeNdx = 0; viewTypeNdx < DE_LENGTH_OF_ARRAY(imageViewTypes); viewTypeNdx++)
 		{
-			const SamplerViewType			viewType		= imageViewTypes[viewTypeNdx].type;
-			de::MovePtr<tcu::TestCaseGroup> viewTypeGroup	(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name));
-			de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, "format"));
+			const SamplerViewType	viewType		= imageViewTypes[viewTypeNdx].type;
+			TestCaseGroupPtr		viewTypeGroup	(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name));
+			TestCaseGroupPtr		formatTests		(new tcu::TestCaseGroup(testCtx, "format"));
 
 			for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 			{
@@ -2596,7 +2922,7 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 
 	if (pipelineConstructionType == PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+		TestCaseGroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
 		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_color_attachment", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_COLOR, false, PipelineStateMode::STATIC, true));
 		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_ds_attachment", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_DEPTH, false, PipelineStateMode::STATIC, true));
 		samplingTypeTests->addChild(miscGroup.release());
@@ -2607,10 +2933,18 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 
 tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> attachmentFeedbackLoopLayoutTests(new tcu::TestCaseGroup(testCtx, "attachment_feedback_loop_layout"));
+	TestCaseGroupPtr attachmentFeedbackLoopLayoutTests(new tcu::TestCaseGroup(testCtx, "attachment_feedback_loop_layout"));
 	{
 		attachmentFeedbackLoopLayoutTests->addChild(createAttachmentFeedbackLoopLayoutSamplerTests(testCtx, pipelineConstructionType));
 	}
+
+	TestCaseGroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
+	{
+		if (pipelineConstructionType == PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+			addFunctionCaseWithPrograms(miscGroup.get(), "no_color_draw", noColorAttachmentSupport, noColorAttachmentPrograms, noColorAttachmentTest);
+	}
+
+	attachmentFeedbackLoopLayoutTests->addChild(miscGroup.release());
 
 	return attachmentFeedbackLoopLayoutTests.release();
 }
