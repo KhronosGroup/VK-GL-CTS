@@ -22,6 +22,7 @@ SHADER tessellation_control tesc_shader GLSL
 #version 450
 
 layout (vertices = 3) out;
+in gl_PerVertex { vec4 gl_Position; float gl_PointSize; float gl_ClipDistance[]; } gl_in[gl_MaxPatchVertices];
 
 void main(void)
 {
