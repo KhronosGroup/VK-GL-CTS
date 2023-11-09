@@ -1413,8 +1413,10 @@ const OperationTestCaseInputs nonStc16and32Only[] = {
 	{ OID_TAN, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
 
 	{ OID_ASIN, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+	{ OID_ASIN, V_TWO, V_UNUSED, V_NAN, FP::NotNaN },
 	{ OID_ASIN, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
 	{ OID_ACOS, V_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
+	{ OID_ACOS, V_TWO, V_UNUSED, V_NAN, FP::NotNaN },
 	{ OID_ACOS, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
 
 	{ OID_ATAN, V_MINUS_INF, V_UNUSED, V_MINUS_PI_DIV_2, FP::NotInf },
@@ -1427,6 +1429,7 @@ const OperationTestCaseInputs nonStc16and32Only[] = {
 
 	{ OID_ACOSH, V_ZERO, V_UNUSED, V_NAN, FP::NotNaN },
 	{ OID_ACOSH, V_MINUS_ZERO, V_UNUSED, V_NAN, FP::NSZ|FP::NotNaN },
+	{ OID_ACOSH, V_HALF, V_UNUSED, V_NAN, FP::NotNaN },
 	{ OID_ACOSH, V_INF, V_UNUSED, V_INF, FP::NotInf },
 	{ OID_ACOSH, V_MINUS_INF, V_UNUSED, V_NAN, FP::NotInf|FP::NotNaN },
 
