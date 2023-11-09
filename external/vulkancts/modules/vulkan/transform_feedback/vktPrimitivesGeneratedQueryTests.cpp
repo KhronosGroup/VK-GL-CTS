@@ -1620,7 +1620,27 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 
 	if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
 	{
-		beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, *renderPass, *framebuffer);
+		const VkCommandBufferInheritanceInfo inheritanceInfo =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,	//	VkStructureType					sType;
+			nullptr,											//	const void*						pNext;
+			*renderPass,										//	VkRenderPass					renderPass;
+			0u,													//	deUint32						subpass;
+			*framebuffer,										//	VkFramebuffer					framebuffer;
+			VK_FALSE,											//	VkBool32						occlusionQueryEnable;
+			queryControlFlags,									//	VkQueryControlFlags				queryFlags;
+			psCreateInfo.pipelineStatistics,					//	VkQueryPipelineStatisticFlags	pipelineStatistics;
+		};
+
+		const VkCommandBufferBeginInfo beginInfo =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,		//	VkStructureType							sType;
+			nullptr,											//	const void*								pNext;
+			VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,	//	VkCommandBufferUsageFlags				flags;
+			&inheritanceInfo,									//	const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+		};
+
+		vk.beginCommandBuffer(*secondaryCmdBuffer, &beginInfo);
 		vk.cmdBeginQueryIndexedEXT(*secondaryCmdBuffer, *pgqPool, 0, queryControlFlags, m_parameters.pgqStreamIndex());
 		vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdBindVertexBuffers(*secondaryCmdBuffer, 0, 1, &vtxBuffer.get(), &vertexBufferOffset);
