@@ -1862,14 +1862,13 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 		{
 			// change layout of density map - after filling it layout was changed
 			// to density map optimal but here we want to render values to it
-			const VkImageSubresourceRange	subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, densityMapImageLayers, 0u, 1u);
 			const VkImageMemoryBarrier		imageBarrier		= makeImageMemoryBarrier(
-				VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,		// VkAccessFlags			srcAccessMask;
+				VK_ACCESS_NONE_KHR,									// VkAccessFlags			srcAccessMask;
 				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
-				VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,	// VkImageLayout			oldLayout;
+				VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			oldLayout;
 				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout			newLayout;
 				**m_densityMapImages[0],							// VkImage					image;
-				subresourceRange									// VkImageSubresourceRange	subresourceRange;
+				densityMapSubresourceRange							// VkImageSubresourceRange	subresourceRange;
 			);
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_NONE_KHR, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 								  0, 0, DE_NULL, 0, DE_NULL, 1, &imageBarrier);
@@ -2101,18 +2100,30 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 			renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 	}
 
-	// Add barrier to ensure work on subsampled image is complete before copying to output image.
-	VkImageMemoryBarrier subsampledImageBarrier = makeImageMemoryBarrier(
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT					,			// VkAccessFlags						srcAccessMask;
-			VK_ACCESS_SHADER_READ_BIT,											// VkAccessFlags						dstAccessMask;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,							// VkImageLayout						oldLayout;
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,							// VkImageLayout						newLayout;
-			*m_colorImage,														// VkImage								image;
-			colorSubresourceRange												// VkImageSubresourceRange				subresourceRange;
-		);
+	// If testParams.subsampledLoads is true, the color image is left in the color attachment layout, so we need to transition it. Does not happen otherwise
+	// Dynamic rendering tests don't have the copy step due to no subpasses. Transition from color attachment to read only layout happens in copy step. Since
+	// we don't have that step, a transition is needed
+	if (isDynamicRendering || testParams.subsampledLoads)
+	{
+		// Add barrier to ensure work on subsampled image is complete before copying to output image.
+		vk::VkImage	inputImage = *m_colorImage;
+		if (isColorImageMultisampled)
+			inputImage = *m_colorResolvedImage;
+		else if (m_testParams.makeCopy)
+			inputImage = *m_colorCopyImage;
 
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                          0, 0, DE_NULL, 0, DE_NULL, 1u, &subsampledImageBarrier);
+		VkImageMemoryBarrier subsampledImageBarrier = makeImageMemoryBarrier(
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT					,				// VkAccessFlags						srcAccessMask;
+				VK_ACCESS_SHADER_READ_BIT,												// VkAccessFlags						dstAccessMask;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,								// VkImageLayout						oldLayout;
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,								// VkImageLayout						newLayout;
+				inputImage,																// VkImage								image;
+				colorSubresourceRange													// VkImageSubresourceRange				subresourceRange;
+			);
+
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+							  0, 0, DE_NULL, 0, DE_NULL, 1u, &subsampledImageBarrier);
+	}
 
 	// Copy subsampled image to normal image using sampler that is able to read from subsampled images
 	// (subsampled image cannot be copied using vkCmdCopyImageToBuffer)
