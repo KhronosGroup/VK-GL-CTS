@@ -100,7 +100,8 @@ void createTestBuffer (Context&									context,
 					   de::MovePtr<Allocation>&					bufferAlloc,
 					   AccessRangesData&						data,
 					   FillBufferProcPtr						fillBufferProc,
-					   const void* const						blob)
+					   const void* const						blob,
+					   deBool									useAccessRange)
 {
 	const VkBufferCreateInfo	bufferParams	=
 	{
@@ -126,9 +127,9 @@ void createTestBuffer (Context&									context,
 	VK_CHECK(deviceInterface.bindBufferMemory(device, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
 #ifdef CTS_USES_VULKANSC
 	if(context.getTestContext().getCommandLine().isSubProcess())
-		fillBufferProc(bufferAlloc->getHostPtr(), bufferMemoryReqs.size, blob);
+		fillBufferProc(bufferAlloc->getHostPtr(), useAccessRange ? accessRange : bufferMemoryReqs.size, blob);
 #else
-	fillBufferProc(bufferAlloc->getHostPtr(), bufferMemoryReqs.size, blob);
+	fillBufferProc(bufferAlloc->getHostPtr(), useAccessRange ? accessRange : bufferMemoryReqs.size, blob);
 	DE_UNREF(context);
 #endif // CTS_USES_VULKANCSC
 	flushMappedMemoryRange(deviceInterface, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), VK_WHOLE_SIZE);
@@ -1428,8 +1429,8 @@ AccessInstance::AccessInstance (Context&			context,
 		}
 	}
 
-	createTestBuffer(context, vk, *m_device, inBufferAccessRange, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, memAlloc, m_inBuffer, m_inBufferAlloc, m_inBufferAccess, &populateBufferWithValues, &m_bufferFormat);
-	createTestBuffer(context, vk, *m_device, outBufferAccessRange, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, memAlloc, m_outBuffer, m_outBufferAlloc, m_outBufferAccess, &populateBufferWithFiller, DE_NULL);
+	createTestBuffer(context, vk, *m_device, inBufferAccessRange, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, memAlloc, m_inBuffer, m_inBufferAlloc, m_inBufferAccess, &populateBufferWithValues, &m_bufferFormat, DE_FALSE);
+	createTestBuffer(context, vk, *m_device, outBufferAccessRange, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, memAlloc, m_outBuffer, m_outBufferAlloc, m_outBufferAccess, &populateBufferWithFiller, DE_NULL, DE_FALSE);
 
 	deInt32 indices[] = {
 		(m_accessOutOfBackingMemory && (m_bufferAccessType == BUFFER_ACCESS_TYPE_READ_FROM_STORAGE)) ? static_cast<deInt32>(RobustAccessWithPointersTest::s_testArraySize) - 1 : 0,
@@ -1437,7 +1438,7 @@ AccessInstance::AccessInstance (Context&			context,
 		0
 	};
 	AccessRangesData indicesAccess;
-	createTestBuffer(context, vk, *m_device, 3 * sizeof(deInt32), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memAlloc, m_indicesBuffer, m_indicesBufferAlloc, indicesAccess, &populateBufferWithCopy, &indices);
+	createTestBuffer(context, vk, *m_device, 3 * sizeof(deInt32), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memAlloc, m_indicesBuffer, m_indicesBufferAlloc, indicesAccess, &populateBufferWithCopy, &indices, DE_TRUE);
 
 	log << tcu::TestLog::Message << "input  buffer - alloc size: " << m_inBufferAccess.allocSize << tcu::TestLog::EndMessage;
 	log << tcu::TestLog::Message << "input  buffer - max access range: " << m_inBufferAccess.maxAccessRange << tcu::TestLog::EndMessage;
@@ -1529,7 +1530,7 @@ AccessInstance::AccessInstance (Context&			context,
 			Vec4( 1.0f, -1.0f, 0.0f, 1.0f),
 		};
 		const VkDeviceSize							vertexBufferSize = static_cast<VkDeviceSize>(sizeof(vertices));
-		createTestBuffer(context, vk, *m_device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, memAlloc, m_vertexBuffer, m_vertexBufferAlloc, vertexAccess, &populateBufferWithCopy, &vertices);
+		createTestBuffer(context, vk, *m_device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, memAlloc, m_vertexBuffer, m_vertexBufferAlloc, vertexAccess, &populateBufferWithCopy, &vertices, DE_TRUE);
 
 		const GraphicsEnvironment::DrawConfig		drawWithOneVertexBuffer =
 		{
