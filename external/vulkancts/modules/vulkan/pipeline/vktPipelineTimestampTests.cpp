@@ -42,6 +42,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuCommandLine.hpp"
 #include "deUniquePtr.hpp"
@@ -486,6 +487,9 @@ protected:
 	de::MovePtr<Allocator>	m_customAllocator;
 
 	VkDevice				m_device;
+#ifdef CTS_USES_VULKANSC
+	const CustomInstance	m_customInstance;
+#endif // CTS_USES_VULKANSC
 	Allocator*				m_allocator;
 	uint32_t				m_queueFamilyIndex;
 
@@ -546,6 +550,9 @@ TimestampTestInstance::TimestampTestInstance (Context&						context,
 											  const bool					transferOnlyQueue,
 											  const VkQueryResultFlags		queryResultFlags)
 	: TestInstance			(context)
+#ifdef CTS_USES_VULKANSC
+	, m_customInstance		(createCustomInstanceFromContext(context))
+#endif // CTS_USES_VULKANSC
 	, m_stages				(stages)
 	, m_inRenderPass		(inRenderPass)
 	, m_hostQueryReset		(hostQueryReset)
@@ -796,9 +803,17 @@ Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory (VkFormat							
 
 void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
 {
-	const InstanceInterface&	vki				= m_context.getInstanceInterface();
-	const DeviceInterface&		vk				= m_context.getDeviceInterface();
-	const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
+#ifdef CTS_USES_VULKANSC
+	vk::VkInstance					instance				= m_customInstance;
+	const vk::InstanceInterface&	vki						= m_customInstance.getDriver();
+	const VkPhysicalDevice			physicalDevice			= chooseDevice(vki, m_customInstance, m_context.getTestContext().getCommandLine());
+#else
+	vk::VkInstance instance									= m_context.getInstance();
+	const vk::InstanceInterface&	vki						= m_context.getInstanceInterface();
+	const VkPhysicalDevice			physicalDevice			= m_context.getPhysicalDevice();
+#endif // CTS_USES_VULKANSC
+
+	const DeviceInterface&			vk						= m_context.getDeviceInterface();
 
 	m_queueFamilyIndex = findQueueFamilyIndexWithCaps(vki, physicalDevice, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
@@ -877,7 +892,7 @@ void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
 		DE_NULL,										// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	m_customDevice		= vkt::createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), vki, physicalDevice, &deviceCreateInfo);
+	m_customDevice		= vkt::createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, vki, physicalDevice, &deviceCreateInfo);
 	m_customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(vk, *m_customDevice, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 
 	m_device			= *m_customDevice;
