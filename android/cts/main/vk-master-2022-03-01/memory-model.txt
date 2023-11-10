@@ -1,3 +1,6 @@
+dEQP-VK.memory_model.message_passing.permuted_index.barrier
+dEQP-VK.memory_model.message_passing.permuted_index.release_acquire
+dEQP-VK.memory_model.message_passing.permuted_index.release_acquire_atomic_payload
 dEQP-VK.memory_model.shared.scalar_types.0
 dEQP-VK.memory_model.shared.scalar_types.1
 dEQP-VK.memory_model.shared.scalar_types.2
@@ -208,6 +211,3 @@ dEQP-VK.memory_model.shared.8bit.nested_structs_arrays.6
 dEQP-VK.memory_model.shared.8bit.nested_structs_arrays.7
 dEQP-VK.memory_model.shared.8bit.nested_structs_arrays.8
 dEQP-VK.memory_model.shared.8bit.nested_structs_arrays.9
-dEQP-VK.memory_model.message_passing.permuted_index.barrier
-dEQP-VK.memory_model.message_passing.permuted_index.release_acquire
-dEQP-VK.memory_model.message_passing.permuted_index.release_acquire_atomic_payload
