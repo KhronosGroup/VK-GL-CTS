@@ -2444,6 +2444,7 @@ enum VkDriverId
 	VK_DRIVER_ID_MESA_DOZEN						= 23,
 	VK_DRIVER_ID_MESA_NVK						= 24,
 	VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA	= 25,
+	VK_DRIVER_ID_MESA_AGXV						= 26,
 	VK_DRIVER_ID_MAX_ENUM						= 0x7FFFFFFF
 };
 typedef VkDriverId VkDriverIdKHR;
@@ -2819,6 +2820,8 @@ typedef uint32_t VkPresentScalingFlagsEXT;
 typedef uint32_t VkPresentGravityFlagsEXT;
 
 typedef uint32_t VkShaderCreateFlagsEXT;
+
+typedef uint64_t VkPhysicalDeviceSchedulingControlsFlagsARM;
 
 typedef uint32_t VkVideoCodecOperationFlagsKHR;
 

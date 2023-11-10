@@ -607,6 +607,12 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetBufferCollectionBufferConstraints
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetBufferCollectionImageConstraintsFUCHSIAFunc)						(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyBufferCollectionFUCHSIAFunc)									(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetBufferCollectionPropertiesFUCHSIAFunc)								(VkDevice device, VkBufferCollectionFUCHSIA collection, VkBufferCollectionPropertiesFUCHSIA* pProperties);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateCudaModuleNVFunc)												(VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaModuleNV* pModule);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetCudaModuleCacheNVFunc)												(VkDevice device, VkCudaModuleNV module, size_t* pCacheSize, void* pCacheData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateCudaFunctionNVFunc)												(VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaFunctionNV* pFunction);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyCudaModuleNVFunc)												(VkDevice device, VkCudaModuleNV module, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyCudaFunctionNVFunc)												(VkDevice device, VkCudaFunctionNV function, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCudaLaunchKernelNVFunc)												(VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingFunc)													(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderingKHRFunc)												(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderingFunc)													(VkCommandBuffer commandBuffer);
@@ -665,3 +671,8 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPushDescriptorSet2KHRFunc)										
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPushDescriptorSetWithTemplate2KHRFunc)								(VkCommandBuffer commandBuffer, const VkPushDescriptorSetWithTemplateInfoKHR* pPushDescriptorSetWithTemplateInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDescriptorBufferOffsets2EXTFunc)									(VkCommandBuffer commandBuffer, const VkSetDescriptorBufferOffsetsInfoEXT* pSetDescriptorBufferOffsetsInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindDescriptorBufferEmbeddedSamplers2EXTFunc)						(VkCommandBuffer commandBuffer, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetLatencySleepModeNVFunc)												(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* LatencySleepNVFunc)													(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* SetLatencyMarkerNVFunc)												(VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetLatencyTimingsNVFunc)												(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pTimingCount, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* QueueNotifyOutOfBandNVFunc)											(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo);

@@ -437,6 +437,12 @@ virtual VkResult			setBufferCollectionBufferConstraintsFUCHSIA				(VkDevice devi
 virtual VkResult			setBufferCollectionImageConstraintsFUCHSIA				(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo) const = 0;
 virtual void				destroyBufferCollectionFUCHSIA							(VkDevice device, VkBufferCollectionFUCHSIA collection, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			getBufferCollectionPropertiesFUCHSIA					(VkDevice device, VkBufferCollectionFUCHSIA collection, VkBufferCollectionPropertiesFUCHSIA* pProperties) const = 0;
+virtual VkResult			createCudaModuleNV										(VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaModuleNV* pModule) const = 0;
+virtual VkResult			getCudaModuleCacheNV									(VkDevice device, VkCudaModuleNV module, size_t* pCacheSize, void* pCacheData) const = 0;
+virtual VkResult			createCudaFunctionNV									(VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaFunctionNV* pFunction) const = 0;
+virtual void				destroyCudaModuleNV										(VkDevice device, VkCudaModuleNV module, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual void				destroyCudaFunctionNV									(VkDevice device, VkCudaFunctionNV function, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual void				cmdCudaLaunchKernelNV									(VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo) const = 0;
 virtual void				cmdBeginRendering										(VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const = 0;
 virtual void				cmdEndRendering											(VkCommandBuffer commandBuffer) const = 0;
 virtual void				getDescriptorSetLayoutHostMappingInfoVALVE				(VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const = 0;
@@ -490,3 +496,8 @@ virtual void				cmdPushDescriptorSet2KHR								(VkCommandBuffer commandBuffer, 
 virtual void				cmdPushDescriptorSetWithTemplate2KHR					(VkCommandBuffer commandBuffer, const VkPushDescriptorSetWithTemplateInfoKHR* pPushDescriptorSetWithTemplateInfo) const = 0;
 virtual void				cmdSetDescriptorBufferOffsets2EXT						(VkCommandBuffer commandBuffer, const VkSetDescriptorBufferOffsetsInfoEXT* pSetDescriptorBufferOffsetsInfo) const = 0;
 virtual void				cmdBindDescriptorBufferEmbeddedSamplers2EXT				(VkCommandBuffer commandBuffer, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo) const = 0;
+virtual VkResult			setLatencySleepModeNV									(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo) const = 0;
+virtual VkResult			latencySleepNV											(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo) const = 0;
+virtual void				setLatencyMarkerNV										(VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const = 0;
+virtual void				getLatencyTimingsNV										(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pTimingCount, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const = 0;
+virtual void				queueNotifyOutOfBandNV									(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const = 0;

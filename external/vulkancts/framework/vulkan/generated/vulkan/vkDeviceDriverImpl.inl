@@ -2174,6 +2174,36 @@ VkResult DeviceDriver::getBufferCollectionPropertiesFUCHSIA (VkDevice device, Vk
 	return m_vk.getBufferCollectionPropertiesFUCHSIA(device, collection, pProperties);
 }
 
+VkResult DeviceDriver::createCudaModuleNV (VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaModuleNV* pModule) const
+{
+	return m_vk.createCudaModuleNV(device, pCreateInfo, pAllocator, pModule);
+}
+
+VkResult DeviceDriver::getCudaModuleCacheNV (VkDevice device, VkCudaModuleNV module, size_t* pCacheSize, void* pCacheData) const
+{
+	return m_vk.getCudaModuleCacheNV(device, module, pCacheSize, pCacheData);
+}
+
+VkResult DeviceDriver::createCudaFunctionNV (VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaFunctionNV* pFunction) const
+{
+	return m_vk.createCudaFunctionNV(device, pCreateInfo, pAllocator, pFunction);
+}
+
+void DeviceDriver::destroyCudaModuleNV (VkDevice device, VkCudaModuleNV module, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyCudaModuleNV(device, module, pAllocator);
+}
+
+void DeviceDriver::destroyCudaFunctionNV (VkDevice device, VkCudaFunctionNV function, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyCudaFunctionNV(device, function, pAllocator);
+}
+
+void DeviceDriver::cmdCudaLaunchKernelNV (VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo) const
+{
+	m_vk.cmdCudaLaunchKernelNV(commandBuffer, pLaunchInfo);
+}
+
 void DeviceDriver::cmdBeginRendering (VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const
 {
 	m_vk.cmdBeginRendering(commandBuffer, pRenderingInfo);
@@ -2437,4 +2467,29 @@ void DeviceDriver::cmdSetDescriptorBufferOffsets2EXT (VkCommandBuffer commandBuf
 void DeviceDriver::cmdBindDescriptorBufferEmbeddedSamplers2EXT (VkCommandBuffer commandBuffer, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo) const
 {
 	m_vk.cmdBindDescriptorBufferEmbeddedSamplers2EXT(commandBuffer, pBindDescriptorBufferEmbeddedSamplersInfo);
+}
+
+VkResult DeviceDriver::setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo) const
+{
+	return m_vk.setLatencySleepModeNV(device, swapchain, pSleepModeInfo);
+}
+
+VkResult DeviceDriver::latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo) const
+{
+	return m_vk.latencySleepNV(device, swapchain, pSleepInfo);
+}
+
+void DeviceDriver::setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
+{
+	m_vk.setLatencyMarkerNV(device, swapchain, pLatencyMarkerInfo);
+}
+
+void DeviceDriver::getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pTimingCount, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
+{
+	m_vk.getLatencyTimingsNV(device, swapchain, pTimingCount, pLatencyMarkerInfo);
+}
+
+void DeviceDriver::queueNotifyOutOfBandNV (VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const
+{
+	m_vk.queueNotifyOutOfBandNV(queue, pQueueTypeInfo);
 }
