@@ -625,7 +625,7 @@ tcu::TestStatus test (Context& context, TestParams testParams)
 		beginCommandBuffer(vk, *cmdBuffer);
 
 		// Begin render pass
-		beginRenderPassWithRasterizationDisabled(vk, *cmdBuffer, *renderPass, *framebuffer);
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(1, 1));
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);

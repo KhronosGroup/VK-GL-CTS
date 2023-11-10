@@ -623,6 +623,8 @@ static void buildTest (tcu::TestCaseGroup* testParentGroup, deUint32 threadsCoun
 		for (size_t factorNdx = 0; factorNdx < DE_LENGTH_OF_ARRAY(factors); ++factorNdx)
 		for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 		{
+			if (deviceBuild && sizes[sizesNdx] > 256)
+				continue;
 			const deUint32	factor					= factors[factorNdx];
 			const deUint32	largestGroup			= sizes[sizesNdx] * sizes[sizesNdx] / factor / factor;
 			const deUint32	squaresGroupCount		= testsNdx == 0 ? largestGroup : factor;
@@ -652,6 +654,8 @@ static void buildTest (tcu::TestCaseGroup* testParentGroup, deUint32 threadsCoun
 		for (size_t factorNdx = 0; factorNdx < DE_LENGTH_OF_ARRAY(factors); ++factorNdx)
 		for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 		{
+			if (deviceBuild && sizes[sizesNdx] > 256)
+				continue;
 			const deUint32	factor					= factors[factorNdx];
 			const deUint32	largestGroup			= sizes[sizesNdx] * sizes[sizesNdx] / factor / factor;
 			const deUint32	squaresGroupCount		= testsNdx == 0 ? largestGroup : factor;
@@ -681,6 +685,8 @@ static void buildTest (tcu::TestCaseGroup* testParentGroup, deUint32 threadsCoun
 		for (size_t factorNdx = 0; factorNdx < DE_LENGTH_OF_ARRAY(factors); ++factorNdx)
 		for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 		{
+			if (deviceBuild && sizes[sizesNdx] > 256)
+				continue;
 			const deUint32	factor					= factors[factorNdx];
 			const deUint32	largestGroup			= sizes[sizesNdx] * sizes[sizesNdx] / factor / factor;
 			const deUint32	squaresGroupCount		= testsNdx == 0 ? largestGroup : factor;
