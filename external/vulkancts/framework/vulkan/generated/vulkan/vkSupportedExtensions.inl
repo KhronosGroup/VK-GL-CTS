@@ -44,17 +44,14 @@ void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char
 		dst.push_back("VK_KHR_copy_commands2");
 		dst.push_back("VK_KHR_format_feature_flags2");
 		dst.push_back("VK_KHR_maintenance4");
-		dst.push_back("VK_EXT_texture_compression_astc_hdr");
 		dst.push_back("VK_EXT_inline_uniform_block");
 		dst.push_back("VK_EXT_pipeline_creation_feedback");
 		dst.push_back("VK_EXT_subgroup_size_control");
 		dst.push_back("VK_EXT_tooling_info");
-		dst.push_back("VK_EXT_extended_dynamic_state");
 		dst.push_back("VK_EXT_shader_demote_to_helper_invocation");
 		dst.push_back("VK_EXT_private_data");
 		dst.push_back("VK_EXT_pipeline_creation_cache_control");
 		dst.push_back("VK_EXT_image_robustness");
-		dst.push_back("VK_EXT_4444_formats");
 	}
 	if (coreVersion >= VK_API_VERSION_1_1)
 	{
