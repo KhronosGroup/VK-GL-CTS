@@ -175,7 +175,6 @@ class OpaqueTypeIndexingCase : public TestCase
 public:
 										OpaqueTypeIndexingCase		(tcu::TestContext&			testCtx,
 																	 const char*				name,
-																	 const char*				description,
 																	 const glu::ShaderType		shaderType,
 																	 const IndexExprType		indexExprType);
 	virtual								~OpaqueTypeIndexingCase		(void);
@@ -196,10 +195,9 @@ protected:
 
 OpaqueTypeIndexingCase::OpaqueTypeIndexingCase (tcu::TestContext&			testCtx,
 												const char*					name,
-												const char*					description,
 												const glu::ShaderType		shaderType,
 												const IndexExprType			indexExprType)
-	: TestCase			(testCtx, name, description)
+	: TestCase			(testCtx, name)
 	, m_name			(name)
 	, m_shaderType		(shaderType)
 	, m_indexExprType	(indexExprType)
@@ -1011,7 +1009,6 @@ class SamplerIndexingCase : public OpaqueTypeIndexingCase
 public:
 								SamplerIndexingCase			(tcu::TestContext&			testCtx,
 															 const char*				name,
-															 const char*				description,
 															 const glu::ShaderType		shaderType,
 															 glu::DataType				samplerType,
 															 IndexExprType				indexExprType);
@@ -1033,11 +1030,10 @@ private:
 
 SamplerIndexingCase::SamplerIndexingCase (tcu::TestContext&			testCtx,
 										  const char*				name,
-										  const char*				description,
 										  const glu::ShaderType		shaderType,
 										  glu::DataType				samplerType,
 										  IndexExprType				indexExprType)
-	: OpaqueTypeIndexingCase	(testCtx, name, description, shaderType, indexExprType)
+	: OpaqueTypeIndexingCase	(testCtx, name, shaderType, indexExprType)
 	, m_samplerType				(samplerType)
 	, m_numSamplers				(SamplerIndexingCaseInstance::NUM_SAMPLERS)
 	, m_numLookups				(SamplerIndexingCaseInstance::NUM_LOOKUPS)
@@ -1383,7 +1379,6 @@ class BlockArrayIndexingCase : public OpaqueTypeIndexingCase
 public:
 								BlockArrayIndexingCase		(tcu::TestContext&			testCtx,
 															 const char*				name,
-															 const char*				description,
 															 BlockType					blockType,
 															 IndexExprType				indexExprType,
 															 const glu::ShaderType		shaderType,
@@ -1407,12 +1402,11 @@ private:
 
 BlockArrayIndexingCase::BlockArrayIndexingCase (tcu::TestContext&			testCtx,
 												const char*					name,
-												const char*					description,
 												BlockType					blockType,
 												IndexExprType				indexExprType,
 												const glu::ShaderType		shaderType,
 												deUint32					flags)
-	: OpaqueTypeIndexingCase	(testCtx, name, description, shaderType, indexExprType)
+	: OpaqueTypeIndexingCase	(testCtx, name, shaderType, indexExprType)
 	, m_blockType				(blockType)
 	, m_flags					(flags)
 	, m_readIndices				(BlockArrayIndexingCaseInstance::NUM_READS)
@@ -1850,7 +1844,6 @@ class AtomicCounterIndexingCase : public OpaqueTypeIndexingCase
 public:
 								AtomicCounterIndexingCase	(tcu::TestContext&			testCtx,
 															 const char*				name,
-															 const char*				description,
 															 IndexExprType				indexExprType,
 															 const glu::ShaderType		shaderType);
 	virtual						~AtomicCounterIndexingCase	(void);
@@ -1868,10 +1861,9 @@ private:
 
 AtomicCounterIndexingCase::AtomicCounterIndexingCase (tcu::TestContext&			testCtx,
 													  const char*				name,
-													  const char*				description,
 													  IndexExprType				indexExprType,
 													  const glu::ShaderType		shaderType)
-	: OpaqueTypeIndexingCase	(testCtx, name, description, shaderType, indexExprType)
+	: OpaqueTypeIndexingCase	(testCtx, name, shaderType, indexExprType)
 	, m_opIndices				(AtomicCounterIndexingCaseInstance::NUM_OPS)
 {
 	createShaderSpec();
@@ -1965,7 +1957,7 @@ private:
 };
 
 OpaqueTypeIndexingTests::OpaqueTypeIndexingTests (tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup(testCtx, "opaque_type_indexing", "Opaque Type Indexing Tests")
+	: tcu::TestCaseGroup(testCtx, "opaque_type_indexing")
 {
 }
 
@@ -1979,13 +1971,16 @@ void OpaqueTypeIndexingTests::init (void)
 	{
 		IndexExprType	type;
 		const char*		name;
-		const char*		description;
 	} indexingTypes[] =
 	{
-		{ INDEX_EXPR_TYPE_CONST_LITERAL,	"const_literal",		"Indexing by constant literal"					},
-		{ INDEX_EXPR_TYPE_CONST_EXPRESSION,	"const_expression",		"Indexing by constant expression"				},
-		{ INDEX_EXPR_TYPE_UNIFORM,			"uniform",				"Indexing by uniform value"						},
-		{ INDEX_EXPR_TYPE_DYNAMIC_UNIFORM,	"dynamically_uniform",	"Indexing by dynamically uniform expression"	}
+		// Indexing by constant literal
+		{ INDEX_EXPR_TYPE_CONST_LITERAL,	"const_literal"},
+		// Indexing by constant expression
+		{ INDEX_EXPR_TYPE_CONST_EXPRESSION,	"const_expression"},
+		// Indexing by uniform value
+		{ INDEX_EXPR_TYPE_UNIFORM,			"uniform"},
+		// Indexing by dynamically uniform expression
+		{ INDEX_EXPR_TYPE_DYNAMIC_UNIFORM,	"dynamically_uniform"}
 	};
 
 	static const struct
@@ -2031,19 +2026,20 @@ void OpaqueTypeIndexingTests::init (void)
 			glu::TYPE_UINT_SAMPLER_3D,
 		};
 
-		tcu::TestCaseGroup* const samplerGroup = new tcu::TestCaseGroup(m_testCtx, "sampler", "Sampler Array Indexing Tests");
+		// Sampler Array Indexing Tests
+		tcu::TestCaseGroup* const samplerGroup = new tcu::TestCaseGroup(m_testCtx, "sampler");
 		addChild(samplerGroup);
 
 		for (int indexTypeNdx = 0; indexTypeNdx < DE_LENGTH_OF_ARRAY(indexingTypes); indexTypeNdx++)
 		{
 			const IndexExprType			indexExprType	= indexingTypes[indexTypeNdx].type;
-			tcu::TestCaseGroup* const	indexGroup		= new tcu::TestCaseGroup(m_testCtx, indexingTypes[indexTypeNdx].name, indexingTypes[indexTypeNdx].description);
+			tcu::TestCaseGroup* const	indexGroup		= new tcu::TestCaseGroup(m_testCtx, indexingTypes[indexTypeNdx].name);
 			samplerGroup->addChild(indexGroup);
 
 			for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(shaderTypes); shaderTypeNdx++)
 			{
 				const glu::ShaderType		shaderType		= shaderTypes[shaderTypeNdx].type;
-				tcu::TestCaseGroup* const	shaderGroup		= new tcu::TestCaseGroup(m_testCtx, shaderTypes[shaderTypeNdx].name, "");
+				tcu::TestCaseGroup* const	shaderGroup		= new tcu::TestCaseGroup(m_testCtx, shaderTypes[shaderTypeNdx].name);
 				indexGroup->addChild(shaderGroup);
 
 				// \note [pyry] In Vulkan CTS 1.0.2 sampler groups should not cover tess/geom stages
@@ -2058,7 +2054,7 @@ void OpaqueTypeIndexingTests::init (void)
 					const char*			samplerName	= getDataTypeName(samplerType);
 					const std::string	caseName	= de::toLower(samplerName);
 
-					shaderGroup->addChild(new SamplerIndexingCase(m_testCtx, caseName.c_str(), "", shaderType, samplerType, indexExprType));
+					shaderGroup->addChild(new SamplerIndexingCase(m_testCtx, caseName.c_str(), shaderType, samplerType, indexExprType));
 				}
 			}
 		}
@@ -2066,7 +2062,8 @@ void OpaqueTypeIndexingTests::init (void)
 
 	// .ubo / .ssbo / .atomic_counter
 	{
-		tcu::TestCaseGroup* const	uboGroup			= new tcu::TestCaseGroup(m_testCtx, "ubo",								"Uniform Block Instance Array Indexing Tests");
+		// Uniform Block Instance Array Indexing Tests
+		tcu::TestCaseGroup* const	uboGroup			= new tcu::TestCaseGroup(m_testCtx, "ubo");
 		tcu::TestCaseGroup* const	ssboGroup			= new tcu::TestCaseGroup(m_testCtx, "ssbo",								"Buffer Block Instance Array Indexing Tests");
 		tcu::TestCaseGroup* const	ssboStorageBufGroup	= new tcu::TestCaseGroup(m_testCtx, "ssbo_storage_buffer_decoration",	"Buffer Block (new StorageBuffer decoration) Instance Array Indexing Tests");
 		tcu::TestCaseGroup* const	acGroup				= new tcu::TestCaseGroup(m_testCtx, "atomic_counter",					"Atomic Counter Array Indexing Tests");
@@ -2079,17 +2076,16 @@ void OpaqueTypeIndexingTests::init (void)
 		{
 			const IndexExprType		indexExprType		= indexingTypes[indexTypeNdx].type;
 			const char*				indexExprName		= indexingTypes[indexTypeNdx].name;
-			const char*				indexExprDesc		= indexingTypes[indexTypeNdx].description;
 
 			for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(shaderTypes); shaderTypeNdx++)
 			{
 				const glu::ShaderType	shaderType		= shaderTypes[shaderTypeNdx].type;
 				const std::string		name			= std::string(indexExprName) + "_" + shaderTypes[shaderTypeNdx].name;
 
-				uboGroup->addChild	(new BlockArrayIndexingCase		(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_UNIFORM,	indexExprType, shaderType));
-				acGroup->addChild	(new AtomicCounterIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, indexExprType, shaderType));
-				ssboGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_BUFFER, indexExprType, shaderType));
-				ssboStorageBufGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_BUFFER, indexExprType, shaderType, (deUint32)BlockArrayIndexingCaseInstance::FLAG_USE_STORAGE_BUFFER));
+				uboGroup->addChild	(new BlockArrayIndexingCase		(m_testCtx, name.c_str(), BLOCKTYPE_UNIFORM,	indexExprType, shaderType));
+				acGroup->addChild	(new AtomicCounterIndexingCase	(m_testCtx, name.c_str(), indexExprType, shaderType));
+				ssboGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), BLOCKTYPE_BUFFER, indexExprType, shaderType));
+				ssboStorageBufGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), BLOCKTYPE_BUFFER, indexExprType, shaderType, (deUint32)BlockArrayIndexingCaseInstance::FLAG_USE_STORAGE_BUFFER));
 			}
 		}
 	}

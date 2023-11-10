@@ -93,7 +93,7 @@ public:
 	MultisampleCaseBase	(tcu::TestContext&		testCtx,
 						 const std::string&		name,
 						 const ImageMSParams&	imageMSParams)
-		: TestCase(testCtx, name, "")
+		: TestCase(testCtx, name)
 		, m_imageMSParams(imageMSParams)
 	{}
 	virtual void checkSupport (Context& context) const
@@ -175,7 +175,7 @@ tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
 								 const multisample::ComponentData&			componentData = multisample::ComponentData{},
 								 const float								shadingRate = 1.0f)
 {
-	de::MovePtr<tcu::TestCaseGroup> caseGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
+	de::MovePtr<tcu::TestCaseGroup> caseGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 	for (deUint32 imageSizeNdx = 0u; imageSizeNdx < imageSizesElemCount; ++imageSizeNdx)
 	{
@@ -184,7 +184,7 @@ tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
 
 		imageSizeStream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
 
-		de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, imageSizeStream.str().c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, imageSizeStream.str().c_str()));
 
 		for (deUint32 imageSamplesNdx = 0u; imageSamplesNdx < imageSamplesElemCount; ++imageSamplesNdx)
 		{

@@ -109,7 +109,7 @@ protected:
 };
 
 EmitTest::EmitTest (TestContext& testCtx, const EmitTestSpec& emitTestSpec)
-	: TestCase			(testCtx, emitTestSpec.name, emitTestSpec.desc)
+	: TestCase			(testCtx, emitTestSpec.name)
 	, m_emitTestSpec	(emitTestSpec)
 
 {

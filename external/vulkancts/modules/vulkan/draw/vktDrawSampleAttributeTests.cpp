@@ -77,7 +77,7 @@ struct TestParameters
 class SampleShadingSampleAttributeTestCase : public vkt::TestCase
 {
 public:
-	SampleShadingSampleAttributeTestCase    (tcu::TestContext& context, const std::string& name, const std::string& description, const TestParameters& params);
+	SampleShadingSampleAttributeTestCase    (tcu::TestContext& context, const std::string& name, const TestParameters& params);
 	void            initPrograms            (SourceCollections& programCollection) const override;
 	TestInstance*   createInstance          (Context& context) const override;
 	void            checkSupport            (Context& context) const override;
@@ -101,8 +101,8 @@ private:
 	static constexpr uint32_t				expectedCounter	= sampleCount * width * height;
 };
 
-SampleShadingSampleAttributeTestCase::SampleShadingSampleAttributeTestCase(tcu::TestContext& context, const std::string& name, const std::string& description, const TestParameters& params):
-	vkt::TestCase(context, name, description), m_params(params) { }
+SampleShadingSampleAttributeTestCase::SampleShadingSampleAttributeTestCase(tcu::TestContext& context, const std::string& name, const TestParameters& params):
+	vkt::TestCase(context, name), m_params(params) { }
 
 void SampleShadingSampleAttributeTestCase::checkSupport(Context& context) const
 {
@@ -471,20 +471,22 @@ tcu::TestCaseGroup* createSampleAttributeTests (tcu::TestContext& testCtx, const
 	{
 		Trigger		trigger;
 		const char*	name;
-		const char*	desc;
 	} triggerCases[] =
 	{
-		{ Trigger::SAMPLE_DECORATION_DYNAMIC_USE,	"sample_decoration_dynamic_use",	"Dynamically use the sample decoration on a frag shader input variable"	},
-		{ Trigger::SAMPLE_ID_STATIC_USE,			"sample_id_static_use",				"Declare SampleId built-in in the frag shader without using it"			},
-		{ Trigger::SAMPLE_POSITION_STATIC_USE,		"sample_position_static_use",		"Declare SamplePosition built-in in the frag shader without using it"	},
+		// Dynamically use the sample decoration on a frag shader input variable
+		{ Trigger::SAMPLE_DECORATION_DYNAMIC_USE,	"sample_decoration_dynamic_use"},
+		// Declare SampleId built-in in the frag shader without using it
+		{ Trigger::SAMPLE_ID_STATIC_USE,			"sample_id_static_use"},
+		// Declare SamplePosition built-in in the frag shader without using it
+		{ Trigger::SAMPLE_POSITION_STATIC_USE,		"sample_position_static_use"},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group {new tcu::TestCaseGroup{testCtx, "implicit_sample_shading", ""}};
+	de::MovePtr<tcu::TestCaseGroup> group {new tcu::TestCaseGroup{testCtx, "implicit_sample_shading"}};
 
 	for (const auto& triggerCase : triggerCases)
 	{
 		const TestParameters params { groupParams, triggerCase.trigger };
-		group->addChild(new SampleShadingSampleAttributeTestCase(testCtx, triggerCase.name, triggerCase.desc, params));
+		group->addChild(new SampleShadingSampleAttributeTestCase(testCtx, triggerCase.name, params));
 	}
 
 	return group.release();

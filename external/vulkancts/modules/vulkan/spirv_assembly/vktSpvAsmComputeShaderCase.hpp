@@ -56,7 +56,7 @@ private:
 class SpvAsmComputeShaderCase : public TestCase
 {
 public:
-						SpvAsmComputeShaderCase	(tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec);
+						SpvAsmComputeShaderCase	(tcu::TestContext& testCtx, const char* name, const ComputeShaderSpec& spec);
 	void				checkSupport			(Context& context) const;
 	void				initPrograms			(vk::SourceCollections& programCollection) const;
 	TestInstance*		createInstance			(Context& ctx) const;

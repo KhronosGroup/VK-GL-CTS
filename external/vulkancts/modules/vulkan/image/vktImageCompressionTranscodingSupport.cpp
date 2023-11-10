@@ -2648,7 +2648,6 @@ class TexelViewCompatibleCase : public TestCase
 public:
 							TexelViewCompatibleCase		(TestContext&				testCtx,
 														 const std::string&			name,
-														 const std::string&			desc,
 														 const TestParameters&		parameters);
 	void					initPrograms				(SourceCollections&			programCollection) const;
 	TestInstance*			createInstance				(Context&					context) const;
@@ -2657,8 +2656,8 @@ protected:
 	const TestParameters	m_parameters;
 };
 
-TexelViewCompatibleCase::TexelViewCompatibleCase (TestContext& testCtx, const std::string& name, const std::string& desc, const TestParameters& parameters)
-	: TestCase				(testCtx, name, desc)
+TexelViewCompatibleCase::TexelViewCompatibleCase (TestContext& testCtx, const std::string& name, const TestParameters& parameters)
+	: TestCase				(testCtx, name)
 	, m_parameters			(parameters)
 {
 }
@@ -3332,21 +3331,21 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 
 	DE_ASSERT(DE_LENGTH_OF_ARRAY(formatsCompressedSets) == DE_LENGTH_OF_ARRAY(formatsUncompressedSets));
 
-	MovePtr<tcu::TestCaseGroup>	texelViewCompatibleTests							(new tcu::TestCaseGroup(testCtx, "texel_view_compatible", "Texel view compatible cases"));
+	MovePtr<tcu::TestCaseGroup>	texelViewCompatibleTests							(new tcu::TestCaseGroup(testCtx, "texel_view_compatible"));
 
 	for (int shaderType = SHADER_TYPE_COMPUTE; shaderType < SHADER_TYPE_LAST; ++shaderType)
 	{
-		MovePtr<tcu::TestCaseGroup>	pipelineTypeGroup	(new tcu::TestCaseGroup(testCtx, pipelineName[shaderType].c_str(), ""));
+		MovePtr<tcu::TestCaseGroup>	pipelineTypeGroup	(new tcu::TestCaseGroup(testCtx, pipelineName[shaderType].c_str()));
 
 		for (int mipmapTestNdx = 0; mipmapTestNdx < DE_LENGTH_OF_ARRAY(mipmapness); mipmapTestNdx++)
 		{
 			const bool mipmapTest = mipmapness[mipmapTestNdx];
 
-			MovePtr<tcu::TestCaseGroup>	mipmapTypeGroup	(new tcu::TestCaseGroup(testCtx, mipmanpnessName[mipmapTestNdx].c_str(), ""));
+			MovePtr<tcu::TestCaseGroup>	mipmapTypeGroup	(new tcu::TestCaseGroup(testCtx, mipmanpnessName[mipmapTestNdx].c_str()));
 
 			for (int imageTypeNdx = 0; imageTypeNdx < DE_LENGTH_OF_ARRAY(imageTypes); imageTypeNdx++)
 			{
-				MovePtr<tcu::TestCaseGroup> imageTypeGroup	(new tcu::TestCaseGroup(testCtx, imageTypes[imageTypeNdx].name.c_str(), ""));
+				MovePtr<tcu::TestCaseGroup> imageTypeGroup	(new tcu::TestCaseGroup(testCtx, imageTypes[imageTypeNdx].name.c_str()));
 				ImageType					imageType = imageTypes[imageTypeNdx].type;
 
 				for (int operationNdx = OPERATION_IMAGE_LOAD; operationNdx < OPERATION_LAST; ++operationNdx)
@@ -3361,7 +3360,7 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 						(operationNdx == OPERATION_ATTACHMENT_READ || operationNdx == OPERATION_ATTACHMENT_WRITE))
 						continue;
 
-					MovePtr<tcu::TestCaseGroup>	imageOperationGroup	(new tcu::TestCaseGroup(testCtx, operationName[operationNdx].c_str(), ""));
+					MovePtr<tcu::TestCaseGroup>	imageOperationGroup	(new tcu::TestCaseGroup(testCtx, operationName[operationNdx].c_str()));
 
 					deUint32 depth		= 1u + 2 * (imageType == IMAGE_TYPE_3D);
 					deUint32 imageCount	= 2u + (operationNdx == OPERATION_IMAGE_STORE);
@@ -3373,7 +3372,7 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 						{
 							const VkFormat				formatCompressed			= formatsCompressedSets[formatBitnessGroup].formats[formatCompressedNdx];
 							const std::string			compressedFormatGroupName	= getFormatShortString(formatCompressed);
-							MovePtr<tcu::TestCaseGroup>	compressedFormatGroup		(new tcu::TestCaseGroup(testCtx, compressedFormatGroupName.c_str(), ""));
+							MovePtr<tcu::TestCaseGroup>	compressedFormatGroup		(new tcu::TestCaseGroup(testCtx, compressedFormatGroupName.c_str()));
 
 							for (deUint32 formatUncompressedNdx = 0; formatUncompressedNdx < formatsUncompressedSets[formatBitnessGroup].count; ++formatUncompressedNdx)
 							{
@@ -3398,7 +3397,7 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 									false,
 								};
 
-								compressedFormatGroup->addChild(new TexelViewCompatibleCase(testCtx, uncompressedFormatGroupName, "", parameters));
+								compressedFormatGroup->addChild(new TexelViewCompatibleCase(testCtx, uncompressedFormatGroupName, parameters));
 							}
 
 							imageOperationGroup->addChild(compressedFormatGroup.release());
@@ -3463,7 +3462,7 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 							true,
 						};
 
-						compressedFormatGroup->addChild(new TexelViewCompatibleCase(testCtx, uncompressedFormatGroupName, "", parameters));
+						compressedFormatGroup->addChild(new TexelViewCompatibleCase(testCtx, uncompressedFormatGroupName, parameters));
 					}
 
 					imageOperationGroup->addChild(compressedFormatGroup.release());

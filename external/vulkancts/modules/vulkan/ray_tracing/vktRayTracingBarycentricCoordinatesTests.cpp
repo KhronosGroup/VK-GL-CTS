@@ -86,7 +86,7 @@ constexpr deUint32	kNumRays	= 20u;
 class BarycentricCoordinatesCase : public TestCase
 {
 public:
-							BarycentricCoordinatesCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							BarycentricCoordinatesCase	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~BarycentricCoordinatesCase	(void) {}
 
 	virtual void			checkSupport				(Context& context) const;
@@ -109,8 +109,8 @@ protected:
 	TestParams					m_params;
 };
 
-BarycentricCoordinatesCase::BarycentricCoordinatesCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: TestCase	(testCtx, name, description)
+BarycentricCoordinatesCase::BarycentricCoordinatesCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {}
 
@@ -485,16 +485,16 @@ tcu::TestCaseGroup*	createBarycentricCoordinatesTests (tcu::TestContext& testCtx
 {
 	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-	GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "barycentric_coordinates", "Test barycentric coordinates reported in hit attributes"));
+	// Test barycentric coordinates reported in hit attributes
+	GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "barycentric_coordinates"));
 
 	deUint32 seed = 1614343620u;
-	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "chit",			 "", TestParams{TestCaseRT::CLOSEST_HIT,						seed++}));
-	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "ahit",			 "", TestParams{TestCaseRT::ANY_HIT,							seed++}));
-	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "ahitTerminate", "", TestParams{TestCaseRT::CLOSEST_AND_ANY_HIT_TERMINATE,		seed++}));
+	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "chit", TestParams{TestCaseRT::CLOSEST_HIT,						seed++}));
+	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "ahit", TestParams{TestCaseRT::ANY_HIT,							seed++}));
+	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "ahitTerminate", TestParams{TestCaseRT::CLOSEST_AND_ANY_HIT_TERMINATE,		seed++}));
 
 	return mainGroup.release();
 }
 
 } // RayTracing
 } // vkt
-

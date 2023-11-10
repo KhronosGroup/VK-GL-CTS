@@ -5332,6 +5332,8 @@ dEQP-VK.protected_memory.image.access.compute.protected_access.no_protected_acce
 dEQP-VK.protected_memory.image.access.compute.protected_access.no_protected_access.imageatomics.xor.r32ui
 dEQP-VK.protected_memory.image.access.compute.protected_access.no_protected_access.imageatomics.exchange.r32i
 dEQP-VK.protected_memory.image.access.compute.protected_access.no_protected_access.imageatomics.exchange.r32ui
+dEQP-VK.protected_memory.image.access.misc.maintenance5_protected_access
+dEQP-VK.protected_memory.image.access.misc.maintenance5_no_protected_access
 dEQP-VK.protected_memory.buffer.fill.float_buffer.primary.static.test_1
 dEQP-VK.protected_memory.buffer.fill.float_buffer.primary.static.test_2
 dEQP-VK.protected_memory.buffer.fill.float_buffer.primary.static.test_3

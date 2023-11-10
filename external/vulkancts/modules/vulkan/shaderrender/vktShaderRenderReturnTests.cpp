@@ -69,7 +69,6 @@ class ShaderReturnCase : public ShaderRenderCase
 public:
 								ShaderReturnCase		(tcu::TestContext&			testCtx,
 														 const std::string&			name,
-														 const std::string&			description,
 														 bool						isVertexCase,
 														 const std::string&			shaderSource,
 														 const ShaderEvalFunc		evalFunc,
@@ -79,12 +78,11 @@ public:
 
 ShaderReturnCase::ShaderReturnCase (tcu::TestContext&			testCtx,
 									const std::string&			name,
-									const std::string&			description,
 									bool						isVertexCase,
 									const std::string&			shaderSource,
 									const ShaderEvalFunc		evalFunc,
 									const UniformSetup*			uniformFunc)
-	: ShaderRenderCase(testCtx, name, description, isVertexCase, evalFunc, uniformFunc, DE_NULL)
+	: ShaderRenderCase(testCtx, name, isVertexCase, evalFunc, uniformFunc, DE_NULL)
 {
 	if (isVertexCase)
 	{
@@ -135,7 +133,7 @@ private:
 
 // Test case builders.
 
-de::MovePtr<ShaderReturnCase> makeConditionalReturnInFuncCase (tcu::TestContext& context, const std::string& name, const std::string& description, ReturnMode returnMode, bool isVertex)
+de::MovePtr<ShaderReturnCase> makeConditionalReturnInFuncCase (tcu::TestContext& context, const std::string& name, ReturnMode returnMode, bool isVertex)
 {
 	tcu::StringTemplate tmpl(
 		"#version 310 es\n"
@@ -172,10 +170,10 @@ de::MovePtr<ShaderReturnCase> makeConditionalReturnInFuncCase (tcu::TestContext&
 		default:					DE_ASSERT(DE_FALSE);
 	}
 
-	return de::MovePtr<ShaderReturnCase>(new ShaderReturnCase(context, name, description, isVertex, tmpl.specialize(params), getEvalFunc(returnMode), DE_NULL));
+	return de::MovePtr<ShaderReturnCase>(new ShaderReturnCase(context, name, isVertex, tmpl.specialize(params), getEvalFunc(returnMode), DE_NULL));
 }
 
-de::MovePtr<ShaderReturnCase> makeOutputWriteReturnCase (tcu::TestContext& context, const std::string& name, const std::string& description, bool inFunction, ReturnMode returnMode, bool isVertex)
+de::MovePtr<ShaderReturnCase> makeOutputWriteReturnCase (tcu::TestContext& context, const std::string& name, bool inFunction, ReturnMode returnMode, bool isVertex)
 {
 	tcu::StringTemplate tmpl(
 		inFunction
@@ -227,10 +225,10 @@ de::MovePtr<ShaderReturnCase> makeOutputWriteReturnCase (tcu::TestContext& conte
 		default:					DE_ASSERT(DE_FALSE);
 	}
 
-	return de::MovePtr<ShaderReturnCase>(new ShaderReturnCase(context, name, description, isVertex, tmpl.specialize(params), getEvalFunc(returnMode), DE_NULL));
+	return de::MovePtr<ShaderReturnCase>(new ShaderReturnCase(context, name, isVertex, tmpl.specialize(params), getEvalFunc(returnMode), DE_NULL));
 }
 
-de::MovePtr<ShaderReturnCase> makeReturnInLoopCase (tcu::TestContext& context, const std::string& name, const std::string& description, bool isDynamicLoop, ReturnMode returnMode, bool isVertex)
+de::MovePtr<ShaderReturnCase> makeReturnInLoopCase (tcu::TestContext& context, const std::string& name, bool isDynamicLoop, ReturnMode returnMode, bool isVertex)
 {
 	tcu::StringTemplate tmpl(
 		"#version 310 es\n"
@@ -274,7 +272,7 @@ de::MovePtr<ShaderReturnCase> makeReturnInLoopCase (tcu::TestContext& context, c
 		default:					DE_ASSERT(DE_FALSE);
 	}
 
-	return de::MovePtr<ShaderReturnCase>(new ShaderReturnCase(context, name, description, isVertex, tmpl.specialize(params), getEvalFunc(returnMode), new ReturnTestUniformSetup(UI_ONE)));
+	return de::MovePtr<ShaderReturnCase>(new ShaderReturnCase(context, name, isVertex, tmpl.specialize(params), getEvalFunc(returnMode), new ReturnTestUniformSetup(UI_ONE)));
 }
 
 static const char* getReturnModeName (ReturnMode mode)
@@ -284,19 +282,6 @@ static const char* getReturnModeName (ReturnMode mode)
 		case RETURNMODE_ALWAYS:		return "always";
 		case RETURNMODE_NEVER:		return "never";
 		case RETURNMODE_DYNAMIC:	return "dynamic";
-		default:
-			DE_ASSERT(DE_FALSE);
-			return DE_NULL;
-	}
-}
-
-static const char* getReturnModeDesc (ReturnMode mode)
-{
-	switch (mode)
-	{
-		case RETURNMODE_ALWAYS:		return "Always return";
-		case RETURNMODE_NEVER:		return "Never return";
-		case RETURNMODE_DYNAMIC:	return "Return based on coords";
 		default:
 			DE_ASSERT(DE_FALSE);
 			return DE_NULL;
@@ -316,7 +301,7 @@ private:
 };
 
 ShaderReturnTests::ShaderReturnTests (tcu::TestContext& context)
-	: TestCaseGroup(context, "return", "Return Statement Tests")
+	: TestCaseGroup(context, "return")
 {
 }
 
@@ -326,7 +311,8 @@ ShaderReturnTests::~ShaderReturnTests (void)
 
 void ShaderReturnTests::init (void)
 {
-	addChild(new ShaderReturnCase(m_testCtx, "single_return_vertex", "Single return statement in function", true,
+	// Single return statement in function
+	addChild(new ShaderReturnCase(m_testCtx, "single_return_vertex", true,
 		"#version 310 es\n"
 		"layout(location = 0) in highp vec4 a_position;\n"
 		"layout(location = 1) in highp vec4 a_coords;\n"
@@ -340,7 +326,8 @@ void ShaderReturnTests::init (void)
 		"    gl_Position = a_position;\n"
 		"    v_color = getColor();\n"
 		"}\n", evalReturnAlways, DE_NULL));
-	addChild(new ShaderReturnCase(m_testCtx, "single_return_fragment", "Single return statement in function", false,
+	// Single return statement in function
+	addChild(new ShaderReturnCase(m_testCtx, "single_return_fragment", false,
 		"#version 310 es\n"
 		"layout(location = 0) in mediump vec4 v_coords;\n"
 		"layout(location = 0) out mediump vec4 o_color;\n"
@@ -359,14 +346,13 @@ void ShaderReturnTests::init (void)
 		for (int isFragment = 0; isFragment < 2; isFragment++)
 		{
 			std::string						name		= std::string("conditional_return_") + getReturnModeName((ReturnMode)returnMode) + (isFragment ? "_fragment" : "_vertex");
-			std::string						description	= std::string(getReturnModeDesc((ReturnMode)returnMode)) + " in function";
-			de::MovePtr<ShaderReturnCase>	testCase	(makeConditionalReturnInFuncCase(m_testCtx, name, description, (ReturnMode)returnMode, isFragment == 0));
+			de::MovePtr<ShaderReturnCase>	testCase	(makeConditionalReturnInFuncCase(m_testCtx, name, (ReturnMode)returnMode, isFragment == 0));
 			addChild(testCase.release());
 		}
 	}
 
 	// Unconditional double return in function.
-	addChild(new ShaderReturnCase(m_testCtx, "double_return_vertex", "Unconditional double return in function", true,
+	addChild(new ShaderReturnCase(m_testCtx, "double_return_vertex", true,
 		"#version 310 es\n"
 		"layout(location = 0) in highp vec4 a_position;\n"
 		"layout(location = 1) in highp vec4 a_coords;\n"
@@ -381,7 +367,8 @@ void ShaderReturnTests::init (void)
 		"    gl_Position = a_position;\n"
 		"    v_color = getColor();\n"
 		"}\n", evalReturnAlways, DE_NULL));
-	addChild(new ShaderReturnCase(m_testCtx, "double_return_fragment", "Unconditional double return in function", false,
+	// Unconditional double return in function
+	addChild(new ShaderReturnCase(m_testCtx, "double_return_fragment", false,
 		"#version 310 es\n"
 		"layout(location = 0) in mediump vec4 v_coords;\n"
 		"layout(location = 0) out mediump vec4 o_color;\n\n"
@@ -396,7 +383,8 @@ void ShaderReturnTests::init (void)
 		"}\n", evalReturnAlways, DE_NULL));
 
 	// Last statement in main.
-	addChild(new ShaderReturnCase(m_testCtx, "last_statement_in_main_vertex", "Return as a final statement in main()", true,
+	// Return as a final statement in main()
+	addChild(new ShaderReturnCase(m_testCtx, "last_statement_in_main_vertex", true,
 		"#version 310 es\n"
 		"layout(location = 0) in highp vec4 a_position;\n"
 		"layout(location = 1) in highp vec4 a_coords;\n"
@@ -407,7 +395,8 @@ void ShaderReturnTests::init (void)
 		"    v_color = vec4(a_coords.xyz, 1.0);\n"
 		"    return;\n"
 		"}\n", evalReturnAlways, DE_NULL));
-	addChild(new ShaderReturnCase(m_testCtx, "last_statement_in_main_fragment", "Return as a final statement in main()", false,
+	// Return as a final statement in main()
+	addChild(new ShaderReturnCase(m_testCtx, "last_statement_in_main_fragment", false,
 		"#version 310 es\n"
 		"layout(location = 0) in mediump vec4 v_coords;\n"
 		"layout(location = 0) out mediump vec4 o_color;\n\n"
@@ -425,8 +414,7 @@ void ShaderReturnTests::init (void)
 			for (int isFragment = 0; isFragment < 2; isFragment++)
 			{
 				std::string						name		= std::string("output_write_") + (inFunc ? "in_func_" : "") + getReturnModeName((ReturnMode)returnMode) + (isFragment ? "_fragment" : "_vertex");
-				std::string						desc		= std::string(getReturnModeDesc((ReturnMode)returnMode)) + (inFunc ? " in user-defined function" : " in main()") + " between output writes";
-				de::MovePtr<ShaderReturnCase>	testCase	= (makeOutputWriteReturnCase(m_testCtx, name, desc, inFunc != 0, (ReturnMode)returnMode, isFragment == 0));
+				de::MovePtr<ShaderReturnCase>	testCase	= (makeOutputWriteReturnCase(m_testCtx, name, inFunc != 0, (ReturnMode)returnMode, isFragment == 0));
 				addChild(testCase.release());
 			}
 		}
@@ -440,15 +428,14 @@ void ShaderReturnTests::init (void)
 			for (int isFragment = 0; isFragment < 2; isFragment++)
 			{
 				std::string						name		= std::string("return_in_") + (isDynamicLoop ? "dynamic" : "static") + "_loop_" + getReturnModeName((ReturnMode)returnMode) + (isFragment ? "_fragment" : "_vertex");
-				std::string						description	= std::string(getReturnModeDesc((ReturnMode)returnMode)) + " in loop";
-				de::MovePtr<ShaderReturnCase>	testCase	(makeReturnInLoopCase(m_testCtx, name, description, isDynamicLoop != 0, (ReturnMode)returnMode, isFragment == 0));
+				de::MovePtr<ShaderReturnCase>	testCase	(makeReturnInLoopCase(m_testCtx, name, isDynamicLoop != 0, (ReturnMode)returnMode, isFragment == 0));
 				addChild(testCase.release());
 			}
 		}
 	}
 
 	// Unconditional return in infinite loop.
-	addChild(new ShaderReturnCase(m_testCtx, "return_in_infinite_loop_vertex", "Return in infinite loop", true,
+	addChild(new ShaderReturnCase(m_testCtx, "return_in_infinite_loop_vertex", true,
 		"#version 310 es\n"
 		"layout(location = 0) in highp vec4 a_position;\n"
 		"layout(location = 1) in highp vec4 a_coords;\n"
@@ -466,7 +453,8 @@ void ShaderReturnTests::init (void)
 		"    v_color = vec4(getCoords().xyz, 1.0);\n"
 		"    return;\n"
 		"}\n", evalReturnAlways, new ReturnTestUniformSetup(UI_ZERO)));
-	addChild(new ShaderReturnCase(m_testCtx, "return_in_infinite_loop_fragment", "Return in infinite loop", false,
+	// Return in infinite loop
+	addChild(new ShaderReturnCase(m_testCtx, "return_in_infinite_loop_fragment", false,
 		"#version 310 es\n"
 		"layout(location = 0) in mediump vec4 v_coords;\n"
 		"layout(location = 0) out mediump vec4 o_color;\n"

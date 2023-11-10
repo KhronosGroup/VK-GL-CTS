@@ -1989,21 +1989,22 @@ public:
 
 tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "device_object_reservation", "Tests verifying VkDeviceObjectReservationCreateInfo"));
+	// Tests verifying VkDeviceObjectReservationCreateInfo
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "device_object_reservation"));
 
 	// add basic tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> basicGroup(new tcu::TestCaseGroup(group->getTestContext(), "basic", ""));
+		de::MovePtr<tcu::TestCaseGroup> basicGroup(new tcu::TestCaseGroup(group->getTestContext(), "basic"));
 
-		basicGroup->addChild(new InstanceFactory1<DeviceObjectReservationInstance, TestParams>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "create_device", "", TestParams()));
-		basicGroup->addChild(new InstanceFactory1<MultipleReservation, TestParams>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "multiple_device_object_reservation", "", TestParams()));
+		basicGroup->addChild(new InstanceFactory1<DeviceObjectReservationInstance, TestParams>(testCtx, "create_device", TestParams()));
+		basicGroup->addChild(new InstanceFactory1<MultipleReservation, TestParams>(testCtx, "multiple_device_object_reservation", TestParams()));
 
 		group->addChild(basicGroup.release());
 	}
 
 	// add tests verifying device limits
 	{
-		de::MovePtr<tcu::TestCaseGroup> limitGroup(new tcu::TestCaseGroup(group->getTestContext(), "limits", ""));
+		de::MovePtr<tcu::TestCaseGroup> limitGroup(new tcu::TestCaseGroup(group->getTestContext(), "limits"));
 		struct TestMaxValuesData
 		{
 			TestMaxValues							testMaxValues;
@@ -2019,7 +2020,7 @@ tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCt
 			{ TMV_MAX_TIMESTAMP_QUERIES_PER_POOL,			"max_timestamp_queries_per_pool" },
 		};
 		{
-			de::MovePtr<tcu::TestCaseGroup> maxValGroup(new tcu::TestCaseGroup(group->getTestContext(), "max_values", ""));
+			de::MovePtr<tcu::TestCaseGroup> maxValGroup(new tcu::TestCaseGroup(group->getTestContext(), "max_values"));
 
 			for (deInt32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testMaxValues); ndx++)
 			{
@@ -2028,7 +2029,7 @@ tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCt
 					testMaxValues[ndx].testMaxValues,
 					TRC_UNDEFINED
 				};
-				maxValGroup->addChild(new InstanceFactory1WithSupport<VerifyMaxValues, TestParams, FunctionSupport1<TestParams>>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testMaxValues[ndx].name, "", testParams,
+				maxValGroup->addChild(new InstanceFactory1WithSupport<VerifyMaxValues, TestParams, FunctionSupport1<TestParams>>(testCtx, testMaxValues[ndx].name, testParams,
 					typename FunctionSupport1<TestParams>::Args(checkSupportVerifyMaxValues, testParams)));
 			}
 
@@ -2068,7 +2069,7 @@ tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCt
 //			{ TRC_DISPLAY_MODE,					"display_mode" },
 		};
 		{
-			de::MovePtr<tcu::TestCaseGroup> requestCountGroup(new tcu::TestCaseGroup(group->getTestContext(), "request_count", ""));
+			de::MovePtr<tcu::TestCaseGroup> requestCountGroup(new tcu::TestCaseGroup(group->getTestContext(), "request_count"));
 
 			for (deInt32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testRequestCounts); ndx++)
 			{
@@ -2077,7 +2078,7 @@ tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCt
 					TMV_UNDEFINED,
 					testRequestCounts[ndx].requestCount
 				};
-				requestCountGroup->addChild(new InstanceFactory1WithSupport<VerifyRequestCounts, TestParams, FunctionSupport1<TestParams>, ProgramsVerifyLimits>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testRequestCounts[ndx].name, "",
+				requestCountGroup->addChild(new InstanceFactory1WithSupport<VerifyRequestCounts, TestParams, FunctionSupport1<TestParams>, ProgramsVerifyLimits>(testCtx, testRequestCounts[ndx].name,
 					ProgramsVerifyLimits(), testParams, typename FunctionSupport1<TestParams>::Args(checkSupportVerifyRequestCounts, testParams)));
 			}
 
@@ -2089,7 +2090,7 @@ tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCt
 
 	// add tests verifying pipeline pool sizes
 	{
-		de::MovePtr<tcu::TestCaseGroup> ppsGroup(new tcu::TestCaseGroup(group->getTestContext(), "pipeline_pool_size", ""));
+		de::MovePtr<tcu::TestCaseGroup> ppsGroup(new tcu::TestCaseGroup(group->getTestContext(), "pipeline_pool_size"));
 
 
 		struct PoolSizesData
@@ -2109,7 +2110,7 @@ tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCt
 		{
 			TestParams testParams(TMV_UNDEFINED, TRC_UNDEFINED, poolSizes[ndx].type);
 
-			ppsGroup->addChild(new InstanceFactory1<VerifyPipelinePoolSizes, TestParams, ProgramsVerifyLimits>(testCtx, tcu::NODETYPE_SELF_VALIDATE, poolSizes[ndx].name, "", ProgramsVerifyLimits(), testParams));
+			ppsGroup->addChild(new InstanceFactory1<VerifyPipelinePoolSizes, TestParams, ProgramsVerifyLimits>(testCtx, poolSizes[ndx].name, ProgramsVerifyLimits(), testParams));
 		}
 
 

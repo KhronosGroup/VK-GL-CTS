@@ -112,7 +112,7 @@ tcu::TestStatus deviceLimitsTestCase(Context& context, const LimitsCaseDefinitio
 //! These tests correspond roughly to dEQP-GLES31.functional.tessellation.state_query.*
 tcu::TestCaseGroup* createLimitsTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "limits", "Tessellation limits tests"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "limits"));
 
 	static const struct
 	{
@@ -131,7 +131,7 @@ tcu::TestCaseGroup* createLimitsTests (tcu::TestContext& testCtx)
 	};
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
-		addFunctionCase<LimitsCaseDefinition>(group.get(), cases[i].caseName, "", deviceLimitsTestCase, cases[i].caseDef);
+		addFunctionCase<LimitsCaseDefinition>(group.get(), cases[i].caseName, deviceLimitsTestCase, cases[i].caseDef);
 
 	return group.release();
 }

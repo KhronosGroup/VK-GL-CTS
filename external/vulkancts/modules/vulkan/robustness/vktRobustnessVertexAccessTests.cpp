@@ -54,7 +54,6 @@ class VertexAccessTest : public vkt::TestCase
 public:
 						VertexAccessTest	(tcu::TestContext&		testContext,
 											 const std::string&		name,
-											 const std::string&		description,
 											 VkFormat				inputFormat,
 											 deUint32				numVertexValues,
 											 deUint32				numInstanceValues,
@@ -81,7 +80,6 @@ class DrawAccessTest : public VertexAccessTest
 public:
 						DrawAccessTest		(tcu::TestContext&		testContext,
 											 const std::string&		name,
-											 const std::string&		description,
 											 VkFormat				inputFormat,
 											 deUint32				numVertexValues,
 											 deUint32				numInstanceValues,
@@ -110,7 +108,6 @@ public:
 
 						DrawIndexedAccessTest		(tcu::TestContext&		testContext,
 													 const std::string&		name,
-													 const std::string&		description,
 													 VkFormat				inputFormat,
 													 IndexConfig			indexConfig);
 
@@ -253,14 +250,13 @@ protected:
 
 VertexAccessTest::VertexAccessTest (tcu::TestContext&		testContext,
 									const std::string&		name,
-									const std::string&		description,
 									VkFormat				inputFormat,
 									deUint32				numVertexValues,
 									deUint32				numInstanceValues,
 									deUint32				numVertices,
 									deUint32				numInstances)
 
-	: vkt::TestCase				(testContext, name, description)
+	: vkt::TestCase				(testContext, name)
 	, m_inputFormat				(inputFormat)
 	, m_numVertexValues			(numVertexValues)
 	, m_numInstanceValues		(numInstanceValues)
@@ -385,14 +381,13 @@ void VertexAccessTest::initPrograms (SourceCollections& programCollection) const
 
 DrawAccessTest::DrawAccessTest (tcu::TestContext&		testContext,
 								const std::string&		name,
-								const std::string&		description,
 								VkFormat				inputFormat,
 								deUint32				numVertexValues,
 								deUint32				numInstanceValues,
 								deUint32				numVertices,
 								deUint32				numInstances)
 
-	: VertexAccessTest		(testContext, name, description, inputFormat, numVertexValues, numInstanceValues, numVertices, numInstances)
+	: VertexAccessTest		(testContext, name, inputFormat, numVertexValues, numInstanceValues, numVertices, numInstances)
 {
 }
 
@@ -439,13 +434,11 @@ const std::vector<deUint32> DrawIndexedAccessTest::s_indexConfigs[INDEX_CONFIG_C
 
 DrawIndexedAccessTest::DrawIndexedAccessTest (tcu::TestContext&		testContext,
 											  const std::string&	name,
-											  const std::string&	description,
 											  VkFormat				inputFormat,
 											  IndexConfig			indexConfig)
 
 	: VertexAccessTest	(testContext,
 						 name,
-						 description,
 						 inputFormat,
 						 getNumUsedChannels(mapVkFormat(inputFormat).order) * (deUint32)s_indexConfigs[indexConfig].size() * 2,	// numVertexValues
 						 getNumUsedChannels(mapVkFormat(inputFormat).order),													// numInstanceValues
@@ -1175,7 +1168,6 @@ static tcu::TestCaseGroup* createDrawTests (tcu::TestContext& testCtx, VkFormat 
 	struct TestConfig
 	{
 		std::string		name;
-		std::string		description;
 		VkFormat		inputFormat;
 		deUint32		numVertexValues;
 		deUint32		numInstanceValues;
@@ -1187,19 +1179,22 @@ static tcu::TestCaseGroup* createDrawTests (tcu::TestContext& testCtx, VkFormat 
 
 	const TestConfig testConfigs[] =
 	{
-		// name						description											format	numVertexValues			numInstanceValues	numVertices		numInstances
-		{ "vertex_out_of_bounds",	"Create data for 6 vertices, draw 9 vertices",		format,	numChannels * 2 * 6,	numChannels,		9,				1	 },
-		{ "vertex_incomplete",		"Create data for half a vertex, draw 3 vertices",	format,	numChannels,			numChannels,		3,				1	 },
-		{ "instance_out_of_bounds", "Create data for 1 instance, draw 3 instances",		format,	numChannels * 2 * 9,	numChannels,		3,				3	 },
+		// name											format	numVertexValues			numInstanceValues	numVertices		numInstances
+		// Create data for 6 vertices, draw 9 vertices
+		{ "vertex_out_of_bounds",	format,	numChannels * 2 * 6,	numChannels,		9,				1	 },
+		// Create data for half a vertex, draw 3 vertices
+		{ "vertex_incomplete",	format,	numChannels,			numChannels,		3,				1	 },
+		// Create data for 1 instance, draw 3 instances
+		{ "instance_out_of_bounds",		format,	numChannels * 2 * 9,	numChannels,		3,				3	 },
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	drawTests (new tcu::TestCaseGroup(testCtx, "draw", ""));
+	de::MovePtr<tcu::TestCaseGroup>	drawTests (new tcu::TestCaseGroup(testCtx, "draw"));
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(testConfigs); i++)
 	{
 		const TestConfig &config = testConfigs[i];
 
-		drawTests->addChild(new DrawAccessTest(testCtx, config.name, config.description, config.inputFormat,
+		drawTests->addChild(new DrawAccessTest(testCtx, config.name, config.inputFormat,
 											   config.numVertexValues, config.numInstanceValues,
 											   config.numVertices, config.numInstances));
 	}
@@ -1212,26 +1207,28 @@ static tcu::TestCaseGroup* createDrawIndexedTests (tcu::TestContext& testCtx, Vk
 	struct TestConfig
 	{
 		std::string							name;
-		std::string							description;
 		VkFormat							inputFormat;
 		DrawIndexedAccessTest::IndexConfig	indexConfig;
 	};
 
 	const TestConfig testConfigs[] =
 	{
-		// name							description								format		indexConfig
-		{ "last_index_out_of_bounds",	"Only last index is out of bounds",		format,		DrawIndexedAccessTest::INDEX_CONFIG_LAST_INDEX_OUT_OF_BOUNDS },
-		{ "indices_out_of_bounds",		"Random indices out of bounds",			format,		DrawIndexedAccessTest::INDEX_CONFIG_INDICES_OUT_OF_BOUNDS },
-		{ "triangle_out_of_bounds",		"First triangle is out of bounds",		format,		DrawIndexedAccessTest::INDEX_CONFIG_TRIANGLE_OUT_OF_BOUNDS },
+		// name								format		indexConfig
+		// Only last index is out of bounds
+		{ "last_index_out_of_bounds",		format,		DrawIndexedAccessTest::INDEX_CONFIG_LAST_INDEX_OUT_OF_BOUNDS },
+		// Random indices out of bounds
+		{ "indices_out_of_bounds",		format,		DrawIndexedAccessTest::INDEX_CONFIG_INDICES_OUT_OF_BOUNDS },
+		// First triangle is out of bounds
+		{ "triangle_out_of_bounds",		format,		DrawIndexedAccessTest::INDEX_CONFIG_TRIANGLE_OUT_OF_BOUNDS },
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	drawTests (new tcu::TestCaseGroup(testCtx, "draw_indexed", ""));
+	de::MovePtr<tcu::TestCaseGroup>	drawTests (new tcu::TestCaseGroup(testCtx, "draw_indexed"));
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(testConfigs); i++)
 	{
 		const TestConfig &config = testConfigs[i];
 
-		drawTests->addChild(new DrawIndexedAccessTest(testCtx, config.name, config.description, config.inputFormat, config.indexConfig));
+		drawTests->addChild(new DrawIndexedAccessTest(testCtx, config.name, config.inputFormat, config.indexConfig));
 	}
 
 	return drawTests.release();
@@ -1262,7 +1259,7 @@ static void addVertexFormatTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(vertexFormats); i++)
 	{
 		const std::string				formatName	= getFormatName(vertexFormats[i]);
-		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, de::toLower(formatName.substr(10)).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, de::toLower(formatName.substr(10)).c_str()));
 
 		formatGroup->addChild(createDrawTests(testCtx, vertexFormats[i]));
 		formatGroup->addChild(createDrawIndexedTests(testCtx, vertexFormats[i]));
@@ -1273,7 +1270,7 @@ static void addVertexFormatTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 
 tcu::TestCaseGroup* createVertexAccessTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> vertexAccessTests	(new tcu::TestCaseGroup(testCtx, "vertex_access", ""));
+	de::MovePtr<tcu::TestCaseGroup> vertexAccessTests	(new tcu::TestCaseGroup(testCtx, "vertex_access"));
 
 	addVertexFormatTests(testCtx, vertexAccessTests.get());
 

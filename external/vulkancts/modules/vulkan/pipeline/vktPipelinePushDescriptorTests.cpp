@@ -75,6 +75,7 @@ struct TestParams
 	VkDescriptorType			descriptorType;
 	deUint32					binding;
 	deUint32					numCalls;						// Number of draw or dispatch calls
+	bool						useMaintenance5;
 };
 
 VkDeviceSize calcItemSize (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, deUint32 numElements = 1u)
@@ -418,11 +419,12 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 
 	// Create buffers. One color value in each buffer.
 	{
+		VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2 = vk::initVulkanStructure();
 		for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(defaultTestColors); bufIdx++)
 		{
 			const VkBufferUsageFlags	usageFlags			= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
-			const VkBufferCreateInfo	bufferCreateInfo	=
+			VkBufferCreateInfo	bufferCreateInfo
 			{
 				VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
 				DE_NULL,								// const void*			pNext;
@@ -433,6 +435,13 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 				1u,										// deUint32				queueFamilyCount;
 				&m_queueFamilyIndex						// const deUint32*		pQueueFamilyIndices;
 			};
+
+			if (m_params.useMaintenance5)
+			{
+				bufferUsageFlags2.usage = (VkBufferUsageFlagBits2KHR)usageFlags;
+				bufferCreateInfo.pNext = &bufferUsageFlags2;
+				bufferCreateInfo.usage = 0;
+			}
 
 			m_buffers.push_back(VkBufferSp(new Unique<VkBuffer>(createBuffer(m_vkd, *m_device, &bufferCreateInfo))));
 			m_bufferAllocs.push_back(AllocationSp(m_allocator.allocate(getBufferMemoryRequirements(m_vkd, *m_device, **m_buffers[bufIdx]), MemoryRequirement::HostVisible).release()));
@@ -638,7 +647,6 @@ class PushDescriptorBufferGraphicsTest : public vkt::TestCase
 public:
 						PushDescriptorBufferGraphicsTest	(tcu::TestContext&	testContext,
 															 const string&		name,
-															 const string&		description,
 															 const TestParams&	params);
 						~PushDescriptorBufferGraphicsTest	(void);
 	void				checkSupport						(Context& context) const;
@@ -651,9 +659,8 @@ protected:
 
 PushDescriptorBufferGraphicsTest::PushDescriptorBufferGraphicsTest (tcu::TestContext&	testContext,
 																	const string&		name,
-																	const string&		description,
 																	const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -669,6 +676,9 @@ TestInstance* PushDescriptorBufferGraphicsTest::createInstance (Context& context
 
 void PushDescriptorBufferGraphicsTest::checkSupport(Context& context) const
 {
+	if (m_params.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
 	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
@@ -1001,7 +1011,6 @@ class PushDescriptorBufferComputeTest : public vkt::TestCase
 public:
 						PushDescriptorBufferComputeTest		(tcu::TestContext&	testContext,
 															 const string&		name,
-															 const string&		description,
 															 const TestParams&	params);
 						~PushDescriptorBufferComputeTest	(void);
 	void				initPrograms						(SourceCollections& sourceCollections) const;
@@ -1013,9 +1022,8 @@ protected:
 
 PushDescriptorBufferComputeTest::PushDescriptorBufferComputeTest (tcu::TestContext&	testContext,
 																  const string&		name,
-																  const string&		description,
 																  const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -1795,7 +1803,6 @@ class PushDescriptorImageGraphicsTest : public vkt::TestCase
 public:
 						PushDescriptorImageGraphicsTest		(tcu::TestContext&	testContext,
 															 const string&		name,
-															 const string&		description,
 															 const TestParams&	params);
 						~PushDescriptorImageGraphicsTest	(void);
 
@@ -1809,9 +1816,8 @@ protected:
 
 PushDescriptorImageGraphicsTest::PushDescriptorImageGraphicsTest	(tcu::TestContext&	testContext,
 																	const string&		name,
-																	const string&		description,
 																	const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -2591,7 +2597,6 @@ class PushDescriptorImageComputeTest : public vkt::TestCase
 public:
 						PushDescriptorImageComputeTest	(tcu::TestContext&	testContext,
 														 const string&		name,
-														 const string&		description,
 														 const TestParams&	params);
 						~PushDescriptorImageComputeTest	(void);
 	void				initPrograms					(SourceCollections& sourceCollections) const;
@@ -2603,9 +2608,8 @@ protected:
 
 PushDescriptorImageComputeTest::PushDescriptorImageComputeTest	(tcu::TestContext&	testContext,
 																 const string&		name,
-																 const string&		description,
 																 const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -2825,11 +2829,12 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 	}
 
 	// Create buffers
+	VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2 = vk::initVulkanStructure();
 	for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(defaultTestColors); bufIdx++)
 	{
 		const VkBufferUsageFlags	usageFlags			= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ? VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
 
-		const VkBufferCreateInfo	bufferCreateInfo	=
+		VkBufferCreateInfo	bufferCreateInfo
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
@@ -2840,6 +2845,13 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 			1u,										// deUint32				queueFamilyCount;
 			&m_queueFamilyIndex						// const deUint32*		pQueueFamilyIndices;
 		};
+
+		if (m_params.useMaintenance5)
+		{
+			bufferUsageFlags2.usage = (VkBufferUsageFlagBits2KHR)usageFlags;
+			bufferCreateInfo.pNext = &bufferUsageFlags2;
+			bufferCreateInfo.usage = 0;
+		}
 
 		m_buffers.push_back(VkBufferSp(new Unique<VkBuffer>(createBuffer(m_vkd, *m_device, &bufferCreateInfo))));
 		m_bufferAllocs.push_back(AllocationSp(m_allocator.allocate(getBufferMemoryRequirements(m_vkd, *m_device, **m_buffers[bufIdx]), MemoryRequirement::HostVisible).release()));
@@ -3117,7 +3129,6 @@ class PushDescriptorTexelBufferGraphicsTest : public vkt::TestCase
 public:
 						PushDescriptorTexelBufferGraphicsTest	(tcu::TestContext&	testContext,
 																 const string&		name,
-																 const string&		description,
 																 const TestParams&	params);
 						~PushDescriptorTexelBufferGraphicsTest	(void);
 
@@ -3131,9 +3142,8 @@ protected:
 
 PushDescriptorTexelBufferGraphicsTest::PushDescriptorTexelBufferGraphicsTest	(tcu::TestContext&	testContext,
 																				 const string&		name,
-																				 const string&		description,
 																				 const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -3149,6 +3159,9 @@ TestInstance* PushDescriptorTexelBufferGraphicsTest::createInstance (Context& co
 
 void PushDescriptorTexelBufferGraphicsTest::checkSupport(Context& context) const
 {
+	if (m_params.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
 	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
@@ -3509,7 +3522,6 @@ class PushDescriptorTexelBufferComputeTest : public vkt::TestCase
 public:
 						PushDescriptorTexelBufferComputeTest	(tcu::TestContext&	testContext,
 																 const string&		name,
-																 const string&		description,
 																 const TestParams&	params);
 						~PushDescriptorTexelBufferComputeTest	(void);
 	void				initPrograms							(SourceCollections& sourceCollections) const;
@@ -3521,9 +3533,8 @@ protected:
 
 PushDescriptorTexelBufferComputeTest::PushDescriptorTexelBufferComputeTest	(tcu::TestContext&	testContext,
 																			 const string&		name,
-																			 const string&		description,
 																			 const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -4193,7 +4204,6 @@ class PushDescriptorInputAttachmentGraphicsTest : public vkt::TestCase
 public:
 						PushDescriptorInputAttachmentGraphicsTest		(tcu::TestContext&	testContext,
 															 const string&		name,
-															 const string&		description,
 															 const TestParams&	params);
 						~PushDescriptorInputAttachmentGraphicsTest	(void);
 
@@ -4207,9 +4217,8 @@ protected:
 
 PushDescriptorInputAttachmentGraphicsTest::PushDescriptorInputAttachmentGraphicsTest	(tcu::TestContext&	testContext,
 																	const string&		name,
-																	const string&		description,
 																	const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -4264,51 +4273,51 @@ void PushDescriptorInputAttachmentGraphicsTest::initPrograms (SourceCollections&
 
 tcu::TestCaseGroup* createPushDescriptorTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineType)
 {
-	const TestParams params[] =
+	const TestParams params[]
 	{
-		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				0u, 1u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				0u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				1u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				3u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				0u, 1u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				0u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				1u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				3u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				1u, 128u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		0u, 1u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		0u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		1u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		3u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER,						0u, 1u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER,						0u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER,						1u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER,						3u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				0u, 1u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				0u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				1u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				3u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,				0u, 1u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,				0u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,				1u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,				3u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,		0u, 1u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,		0u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,		1u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,		3u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,		0u, 1u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,		0u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,		1u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,		3u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,			0u, 1u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,			0u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,			1u, 2u },
-		{ pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,			3u, 2u }
+		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				0u, 1u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				0u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				1u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				3u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				0u, 1u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				0u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				1u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				3u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				1u, 128u,	false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		0u, 1u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		0u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		1u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		3u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER,						0u, 1u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER,						0u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER,						1u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLER,						3u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				0u, 1u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				0u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				1u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				3u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,				0u, 1u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,				0u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,				1u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,				3u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,		0u, 1u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,		0u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,		1u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,		3u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,		0u, 1u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,		0u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,		1u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,		3u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,			0u, 1u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,			0u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,			1u, 2u,		false },
+		{ pipelineType, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,			3u, 2u,		false }
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	pushDescriptorTests	(new tcu::TestCaseGroup(testCtx, "push_descriptor", "Push descriptor tests"));
+	de::MovePtr<tcu::TestCaseGroup>	pushDescriptorTests	(new tcu::TestCaseGroup(testCtx, "push_descriptor"));
 
-	de::MovePtr<tcu::TestCaseGroup>	graphicsTests		(new tcu::TestCaseGroup(testCtx, "graphics", "graphics pipeline"));
-	de::MovePtr<tcu::TestCaseGroup>	computeTests		(new tcu::TestCaseGroup(testCtx, "compute", "compute pipeline"));
+	de::MovePtr<tcu::TestCaseGroup>	graphicsTests		(new tcu::TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<tcu::TestCaseGroup>	computeTests		(new tcu::TestCaseGroup(testCtx, "compute"));
 
 	for (deUint32 testIdx = 0; testIdx < DE_LENGTH_OF_ARRAY(params); testIdx++)
 	{
@@ -4319,59 +4328,59 @@ tcu::TestCaseGroup* createPushDescriptorTests (tcu::TestContext& testCtx, Pipeli
 			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 				testName += "_uniform_buffer";
 				if (params[testIdx].numCalls <= 2)
-					graphicsTests->addChild(new PushDescriptorBufferGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+					graphicsTests->addChild(new PushDescriptorBufferGraphicsTest(testCtx, testName.c_str(), params[testIdx]));
 				if (pipelineType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-					computeTests->addChild(new PushDescriptorBufferComputeTest(testCtx, testName.c_str(), "", params[testIdx]));
+					computeTests->addChild(new PushDescriptorBufferComputeTest(testCtx, testName.c_str(), params[testIdx]));
 				break;
 
 			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
 				testName += "_storage_buffer";
 				if (params[testIdx].numCalls <= 2)
-					graphicsTests->addChild(new PushDescriptorBufferGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+					graphicsTests->addChild(new PushDescriptorBufferGraphicsTest(testCtx, testName.c_str(), params[testIdx]));
 				if (pipelineType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-					computeTests->addChild(new PushDescriptorBufferComputeTest(testCtx, testName.c_str(), "", params[testIdx]));
+					computeTests->addChild(new PushDescriptorBufferComputeTest(testCtx, testName.c_str(), params[testIdx]));
 				break;
 
 			case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 				testName += "_combined_image_sampler";
-				graphicsTests->addChild(new PushDescriptorImageGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+				graphicsTests->addChild(new PushDescriptorImageGraphicsTest(testCtx, testName.c_str(), params[testIdx]));
 				if (pipelineType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-					computeTests->addChild(new PushDescriptorImageComputeTest(testCtx, testName.c_str(), "", params[testIdx]));
+					computeTests->addChild(new PushDescriptorImageComputeTest(testCtx, testName.c_str(), params[testIdx]));
 				break;
 
 			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 				testName += "_sampled_image";
-				graphicsTests->addChild(new PushDescriptorImageGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+				graphicsTests->addChild(new PushDescriptorImageGraphicsTest(testCtx, testName.c_str(), params[testIdx]));
 				if (pipelineType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-					computeTests->addChild(new PushDescriptorImageComputeTest(testCtx, testName.c_str(), "", params[testIdx]));
+					computeTests->addChild(new PushDescriptorImageComputeTest(testCtx, testName.c_str(), params[testIdx]));
 				break;
 
 			case VK_DESCRIPTOR_TYPE_SAMPLER:
 				testName += "_sampler";
-				graphicsTests->addChild(new PushDescriptorImageGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+				graphicsTests->addChild(new PushDescriptorImageGraphicsTest(testCtx, testName.c_str(), params[testIdx]));
 				if (pipelineType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-					computeTests->addChild(new PushDescriptorImageComputeTest(testCtx, testName.c_str(), "", params[testIdx]));
+					computeTests->addChild(new PushDescriptorImageComputeTest(testCtx, testName.c_str(), params[testIdx]));
 				break;
 
 			case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 				testName += "_storage_image";
-				graphicsTests->addChild(new PushDescriptorImageGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+				graphicsTests->addChild(new PushDescriptorImageGraphicsTest(testCtx, testName.c_str(), params[testIdx]));
 				if (pipelineType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-					computeTests->addChild(new PushDescriptorImageComputeTest(testCtx, testName.c_str(), "", params[testIdx]));
+					computeTests->addChild(new PushDescriptorImageComputeTest(testCtx, testName.c_str(), params[testIdx]));
 				break;
 
 			case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 				testName += "_uniform_texel_buffer";
-				graphicsTests->addChild(new PushDescriptorTexelBufferGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+				graphicsTests->addChild(new PushDescriptorTexelBufferGraphicsTest(testCtx, testName.c_str(), params[testIdx]));
 				if (pipelineType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-					computeTests->addChild(new PushDescriptorTexelBufferComputeTest(testCtx, testName.c_str(), "", params[testIdx]));
+					computeTests->addChild(new PushDescriptorTexelBufferComputeTest(testCtx, testName.c_str(), params[testIdx]));
 				break;
 
 			case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 				testName += "_storage_texel_buffer";
-				graphicsTests->addChild(new PushDescriptorTexelBufferGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+				graphicsTests->addChild(new PushDescriptorTexelBufferGraphicsTest(testCtx, testName.c_str(), params[testIdx]));
 				if (pipelineType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-					computeTests->addChild(new PushDescriptorTexelBufferComputeTest(testCtx, testName.c_str(), "", params[testIdx]));
+					computeTests->addChild(new PushDescriptorTexelBufferComputeTest(testCtx, testName.c_str(), params[testIdx]));
 				break;
 
 			case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
@@ -4379,7 +4388,7 @@ tcu::TestCaseGroup* createPushDescriptorTests (tcu::TestContext& testCtx, Pipeli
 				if (!vk::isConstructionTypeShaderObject(pipelineType))
 				{
 					testName += "_input_attachment";
-					graphicsTests->addChild(new PushDescriptorInputAttachmentGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+					graphicsTests->addChild(new PushDescriptorInputAttachmentGraphicsTest(testCtx, testName.c_str(), params[testIdx]));
 				}
 				break;
 
@@ -4387,6 +4396,16 @@ tcu::TestCaseGroup* createPushDescriptorTests (tcu::TestContext& testCtx, Pipeli
 				DE_FATAL("Unexpected descriptor type");
 				break;
 		}
+	}
+
+	if (pipelineType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	{
+		TestParams testParams = { pipelineType, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 0u, 1u, true };
+		graphicsTests->addChild(new PushDescriptorTexelBufferGraphicsTest(testCtx, "maintenance5_uniform_texel_buffer", testParams));
+		testParams.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+		graphicsTests->addChild(new PushDescriptorTexelBufferGraphicsTest(testCtx, "maintenance5_storage_texel_buffer", testParams));
+		testParams.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		graphicsTests->addChild(new PushDescriptorBufferGraphicsTest(testCtx, "maintenance5_uniform_buffer", testParams));
 	}
 
 	pushDescriptorTests->addChild(graphicsTests.release());

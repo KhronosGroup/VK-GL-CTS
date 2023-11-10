@@ -75,7 +75,6 @@ class SubpassMergeFeedbackTest : public vkt::TestCase
 public:
 										SubpassMergeFeedbackTest	(tcu::TestContext&	testContext,
 																     const std::string&	name,
-																     const std::string&	description,
 																     const TestParams&	testParams);
 	virtual								~SubpassMergeFeedbackTest	(void);
 	virtual TestInstance*				createInstance			(Context&			context) const;
@@ -100,9 +99,8 @@ private:
 
 SubpassMergeFeedbackTest::SubpassMergeFeedbackTest (tcu::TestContext&	testContext,
 											const std::string&	name,
-											const std::string&	description,
 											const TestParams&	testParams)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_testParams	(testParams)
 {
 }
@@ -360,7 +358,7 @@ tcu::TestCaseGroup* createRenderPassSubpassMergeFeedbackTests (tcu::TestContext&
 		return nullptr;
 	}
 
-	de::MovePtr<tcu::TestCaseGroup>		subpassMergeFeedbackTests		(new tcu::TestCaseGroup(testCtx, "subpass_merge_feedback", "Subpass merge feedback tests"));
+	de::MovePtr<tcu::TestCaseGroup>		subpassMergeFeedbackTests		(new tcu::TestCaseGroup(testCtx, "subpass_merge_feedback"));
 
 	{
 		TestParams			params;
@@ -370,7 +368,7 @@ tcu::TestCaseGroup* createRenderPassSubpassMergeFeedbackTests (tcu::TestContext&
 		params.disallowMergeRenderpass = false;
 		params.disallowMergeSubPass1 = false;
 
-		subpassMergeFeedbackTests->addChild(new SubpassMergeFeedbackTest(testCtx, testName, "", params));
+		subpassMergeFeedbackTests->addChild(new SubpassMergeFeedbackTest(testCtx, testName, params));
 	}
 	{
 		TestParams			params;
@@ -380,7 +378,7 @@ tcu::TestCaseGroup* createRenderPassSubpassMergeFeedbackTests (tcu::TestContext&
 		params.disallowMergeRenderpass = true;
 		params.disallowMergeSubPass1 = false;
 
-		subpassMergeFeedbackTests->addChild(new SubpassMergeFeedbackTest(testCtx, testName, "", params));
+		subpassMergeFeedbackTests->addChild(new SubpassMergeFeedbackTest(testCtx, testName, params));
 	}
 	{
 		TestParams			params;
@@ -390,7 +388,7 @@ tcu::TestCaseGroup* createRenderPassSubpassMergeFeedbackTests (tcu::TestContext&
 		params.disallowMergeRenderpass = false;
 		params.disallowMergeSubPass1 = false;
 
-		subpassMergeFeedbackTests->addChild(new SubpassMergeFeedbackTest(testCtx, testName, "", params));
+		subpassMergeFeedbackTests->addChild(new SubpassMergeFeedbackTest(testCtx, testName, params));
 	}
 	{
 		TestParams			params;
@@ -400,7 +398,7 @@ tcu::TestCaseGroup* createRenderPassSubpassMergeFeedbackTests (tcu::TestContext&
 		params.disallowMergeRenderpass = true;
 		params.disallowMergeSubPass1 = false;
 
-		subpassMergeFeedbackTests->addChild(new SubpassMergeFeedbackTest(testCtx, testName, "", params));
+		subpassMergeFeedbackTests->addChild(new SubpassMergeFeedbackTest(testCtx, testName, params));
 	}
 	{
 		TestParams			params;
@@ -410,7 +408,7 @@ tcu::TestCaseGroup* createRenderPassSubpassMergeFeedbackTests (tcu::TestContext&
 		params.disallowMergeRenderpass = false;
 		params.disallowMergeSubPass1 = true;
 
-		subpassMergeFeedbackTests->addChild(new SubpassMergeFeedbackTest(testCtx, testName, "", params));
+		subpassMergeFeedbackTests->addChild(new SubpassMergeFeedbackTest(testCtx, testName, params));
 	}
 	{
 		TestParams			params;
@@ -420,7 +418,7 @@ tcu::TestCaseGroup* createRenderPassSubpassMergeFeedbackTests (tcu::TestContext&
 		params.disallowMergeRenderpass = false;
 		params.disallowMergeSubPass1 = false;
 
-		subpassMergeFeedbackTests->addChild(new SubpassMergeFeedbackTest(testCtx, testName, "", params));
+		subpassMergeFeedbackTests->addChild(new SubpassMergeFeedbackTest(testCtx, testName, params));
 	}
 
 	return subpassMergeFeedbackTests.release();

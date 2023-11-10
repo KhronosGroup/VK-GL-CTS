@@ -49,11 +49,11 @@ namespace ProtectedMem
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> protectedTests (new tcu::TestCaseGroup(testCtx, name.c_str(), "Protected Memory Tests"));
+	de::MovePtr<tcu::TestCaseGroup> protectedTests (new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	// Attachment test case group
 	{
-		de::MovePtr<tcu::TestCaseGroup> attachmentTestGroup (new tcu::TestCaseGroup(testCtx, "attachment", "Protected Memory Attachment Tests"));
+		de::MovePtr<tcu::TestCaseGroup> attachmentTestGroup (new tcu::TestCaseGroup(testCtx, "attachment"));
 		attachmentTestGroup->addChild(createAttachmentLoadTests(testCtx));
 		attachmentTestGroup->addChild(createAttachmentClearTests(testCtx));
 		protectedTests->addChild(attachmentTestGroup.release());
@@ -61,7 +61,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 
 	// Image test case group
 	{
-		de::MovePtr<tcu::TestCaseGroup> imageTestGroup (new tcu::TestCaseGroup(testCtx, "image", "Protected Memory Image Tests"));
+		de::MovePtr<tcu::TestCaseGroup> imageTestGroup (new tcu::TestCaseGroup(testCtx, "image"));
 		imageTestGroup->addChild(createCopyImageTests(testCtx));
 		imageTestGroup->addChild(createBlitImageTests(testCtx));
 		imageTestGroup->addChild(createClearColorImageTests(testCtx));
@@ -72,7 +72,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 
 	// Buffer test case group
 	{
-		de::MovePtr<tcu::TestCaseGroup> bufferTestGroup (new tcu::TestCaseGroup(testCtx, "buffer", "Protected Memory Buffer Tests"));
+		de::MovePtr<tcu::TestCaseGroup> bufferTestGroup (new tcu::TestCaseGroup(testCtx, "buffer"));
 		bufferTestGroup->addChild(createFillBufferTests(testCtx));
 		bufferTestGroup->addChild(createUpdateBufferTests(testCtx));
 		bufferTestGroup->addChild(createCopyBufferTests(testCtx));
@@ -82,7 +82,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 
 	// Storage buffer test case group
 	{
-		de::MovePtr<tcu::TestCaseGroup> ssboTestGroup (new tcu::TestCaseGroup(testCtx, "ssbo", "Storage Buffer Tests"));
+		de::MovePtr<tcu::TestCaseGroup> ssboTestGroup (new tcu::TestCaseGroup(testCtx, "ssbo"));
 		ssboTestGroup->addChild(createReadStorageBufferTests(testCtx));
 		ssboTestGroup->addChild(createWriteStorageBufferTests(testCtx));
 		ssboTestGroup->addChild(createAtomicStorageBufferTests(testCtx));
@@ -90,7 +90,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> interactionTestGroup (new tcu::TestCaseGroup(testCtx, "interaction", "Various tests which interacts with other extensions"));
+		de::MovePtr<tcu::TestCaseGroup> interactionTestGroup (new tcu::TestCaseGroup(testCtx, "interaction"));
 #ifndef CTS_USES_VULKANSC
 		interactionTestGroup->addChild(createSwapchainTests(testCtx));
 #endif

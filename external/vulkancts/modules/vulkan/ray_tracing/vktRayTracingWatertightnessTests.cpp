@@ -226,7 +226,7 @@ namespace vkt
 			class RayTracingTestCase : public TestCase
 			{
 			public:
-				RayTracingTestCase(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data, const bool& useClosedFan);
+				RayTracingTestCase(tcu::TestContext& context, const char* name, const CaseDef data, const bool& useClosedFan);
 				~RayTracingTestCase(void);
 
 				virtual	void			initPrograms(SourceCollections& programCollection) const;
@@ -238,8 +238,8 @@ namespace vkt
 				const bool				m_useClosedFan;
 			};
 
-			RayTracingTestCase::RayTracingTestCase(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data, const bool& useClosedFan)
-				: vkt::TestCase(context, name, desc)
+			RayTracingTestCase::RayTracingTestCase(tcu::TestContext& context, const char* name, const CaseDef data, const bool& useClosedFan)
+				: vkt::TestCase(context, name)
 				, m_data(data)
 				, m_useClosedFan(useClosedFan)
 			{
@@ -792,13 +792,14 @@ namespace vkt
 
 		tcu::TestCaseGroup* createWatertightnessTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> watertightnessGroup(new tcu::TestCaseGroup(testCtx, "watertightness", "Ray watertightness tests"));
+			// Ray watertightness tests
+			de::MovePtr<tcu::TestCaseGroup> watertightnessGroup(new tcu::TestCaseGroup(testCtx, "watertightness"));
 
 			const size_t	numTests = 10;
 
 			for (size_t testNdx = 0; testNdx < numTests; ++testNdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, de::toString(testNdx).c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, de::toString(testNdx).c_str()));
 				const deUint32					sizes[] = { 4, 16, 64, 256, 1024, 4096, 16384, 65536 };
 
 				// Legacy tests
@@ -821,7 +822,7 @@ namespace vkt
 					};
 					const std::string	testName = de::toString(caseDef.squaresGroupCount);
 
-					group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef, false /* useClosedFan */));
+					group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef, false /* useClosedFan */));
 				}
 
 				watertightnessGroup->addChild(group.release());
@@ -836,7 +837,7 @@ namespace vkt
 					const auto groupName = (nBottomASConfig == 0)	? "closedFan"
 																	: "closedFan2";
 
-					de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, groupName, ""));
+					de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, groupName));
 
 					for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 					{
@@ -855,7 +856,7 @@ namespace vkt
 						};
 						const std::string	testName = de::toString(sharedEdgeCount);
 
-						group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef, true /* useClosedFan */));
+						group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef, true /* useClosedFan */));
 					}
 
 					watertightnessGroup->addChild(group.release());

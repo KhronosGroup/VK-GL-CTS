@@ -179,7 +179,6 @@ typedef function<TestStatus (TestContext&,Context&, const VkDevice device, Devic
 struct Robustness1TestInfo
 {
 	string	name;
-	string	description;
 	TestFn	testFn;
 };
 static const auto		renderTargetSize	= IVec2(12, 12);
@@ -194,7 +193,6 @@ static const auto		robustness1Tests	= vector<Robustness1TestInfo>
 	*/
 	{
 		"out_of_bounds_stride_0",														// string			name
-		"Last elements 4 out of bounds, color with stride 0",							// string			description
 		[](TestContext& testContext, Context& context, const VkDevice device, DeviceDriverPtr deviceDriver)
 		{
 			struct Color
@@ -253,7 +251,6 @@ static const auto		robustness1Tests	= vector<Robustness1TestInfo>
 	},
 	{
 		"out_of_bounds_stride_16_single_buffer",										// string			name
-		"Last 4 elements out of bounds, color with stride 16",							// string			description
 		[](TestContext& testContext, Context& context, const VkDevice device, DeviceDriverPtr deviceDriver)
 		{
 			struct Vertex
@@ -308,7 +305,6 @@ static const auto		robustness1Tests	= vector<Robustness1TestInfo>
 	},
 	{
 		"out_of_bounds_stride_30_middle_of_buffer",										// string			name
-		"Last elements 4 out of bounds, color with stride 30, data middle of buffer",	// string			description
 		[](TestContext& testContext, Context& context, const VkDevice device, DeviceDriverPtr deviceDriver)
 		{
 			const vector<deUint32>	invalidIndices	= { 5, 6, 9, 10 };
@@ -367,7 +363,6 @@ static const auto		robustness1Tests	= vector<Robustness1TestInfo>
 	},
 	{
 		"out_of_bounds_stride_8_middle_of_buffer_separate",								// string			name
-		"Last elements 4 out of bounds, color with stride 8, data middle of buffer",	// string			description
 		[](TestContext& testContext, Context& context, const VkDevice device, DeviceDriverPtr deviceDriver)
 		{
 			/* NOTE: Out of range entries ('padding') need to be initialized with unusedColor as the spec
@@ -882,7 +877,7 @@ private:
 };
 
 Robustness1AccessTest::Robustness1AccessTest (TestContext &testContext, const Robustness1TestInfo& testInfo)
-	: vkt::TestCase(testContext, testInfo.name, testInfo.description),
+	: vkt::TestCase(testContext, testInfo.name),
 	  m_testInfo(testInfo)
 {
 }
@@ -961,7 +956,7 @@ void Robustness1AccessTest::initPrograms (SourceCollections& programCollection) 
 
 TestCaseGroup* createRobustness1VertexAccessTests (TestContext& testCtx)
 {
-	MovePtr<TestCaseGroup> robustness1AccessTests	(new TestCaseGroup(testCtx, "robustness1_vertex_access", ""));
+	MovePtr<TestCaseGroup> robustness1AccessTests	(new TestCaseGroup(testCtx, "robustness1_vertex_access"));
 	for(const auto& info : robustness1Tests)
 	{
 		robustness1AccessTests->addChild(new Robustness1AccessTest(testCtx, info));

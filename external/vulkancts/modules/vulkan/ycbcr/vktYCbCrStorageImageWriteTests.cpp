@@ -284,7 +284,7 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 			shaderName << "comp" << planeNdx;
 			auto							shaderModule			= makeVkSharedPtr(createShaderModule(vkd, device, context.getBinaryCollection().get(shaderName.str()), DE_NULL));
 			shaderModules.push_back(shaderModule);
-			auto							computePipeline			= makeVkSharedPtr(makeComputePipeline(vkd, device, *pipelineLayout, (VkPipelineCreateFlags) 0u, shaderModule->get(), (VkPipelineShaderStageCreateFlags) 0u, DE_NULL));
+			auto							computePipeline			= makeVkSharedPtr(makeComputePipeline(vkd, device, *pipelineLayout, (VkPipelineCreateFlags) 0u, nullptr, shaderModule->get(), (VkPipelineShaderStageCreateFlags) 0u, DE_NULL));
 			computePipelines.push_back(computePipeline);
 			vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline->get());
 
@@ -725,7 +725,7 @@ tcu::TestCaseGroup* populateStorageImageWriteFormatGroup (tcu::TestContext& test
 		const VkFormat					format				= (VkFormat)formatNdx;
 		tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(format);
 		std::string						formatName			= de::toLower(de::toString(format).substr(10));
-		de::MovePtr<tcu::TestCaseGroup> formatGroup			( new tcu::TestCaseGroup(testCtx, formatName.c_str(), "") );
+		de::MovePtr<tcu::TestCaseGroup> formatGroup			( new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 
 		for (size_t sizeNdx = 0; sizeNdx < availableSizes.size(); sizeNdx++)
 		{
@@ -739,10 +739,10 @@ tcu::TestCaseGroup* populateStorageImageWriteFormatGroup (tcu::TestContext& test
 
 			std::ostringstream stream;
 			stream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
-			de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, stream.str().c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, stream.str().c_str()));
 
-			addFunctionCaseWithPrograms(sizeGroup.get(), "joint", "", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, 0u));
-			addFunctionCaseWithPrograms(sizeGroup.get(), "disjoint", "", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, (VkImageCreateFlags)(VK_IMAGE_CREATE_DISJOINT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT)));
+			addFunctionCaseWithPrograms(sizeGroup.get(), "joint", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, 0u));
+			addFunctionCaseWithPrograms(sizeGroup.get(), "disjoint", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, (VkImageCreateFlags)(VK_IMAGE_CREATE_DISJOINT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT)));
 
 			formatGroup->addChild(sizeGroup.release());
 		}
@@ -766,7 +766,7 @@ tcu::TestCaseGroup* populateStorageImageWriteFormatGroup (tcu::TestContext& test
 
 tcu::TestCaseGroup* createStorageImageWriteTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "storage_image_write", "Writing to YCbCr storage images"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "storage_image_write"));
 	return populateStorageImageWriteFormatGroup(testCtx, testGroup);
 }
 

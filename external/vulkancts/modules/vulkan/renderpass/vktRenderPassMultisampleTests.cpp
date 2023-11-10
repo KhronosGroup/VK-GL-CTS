@@ -1266,7 +1266,7 @@ VkFormat getDstFormat (VkFormat vkFormat, TestSeparateUsage separateStencilUsage
 		return vkFormat;
 }
 
-bool isExtensionSupported(Context& context, RenderingType renderingType, TestSeparateUsage separateStencilUsage)
+bool isExtensionSupported(Context& context, RenderingType renderingType, TestSeparateUsage separateStencilUsage, VkFormat format)
 {
 	if (renderingType == RENDERING_TYPE_RENDERPASS2)
 		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
@@ -1276,6 +1276,13 @@ bool isExtensionSupported(Context& context, RenderingType renderingType, TestSep
 		context.requireDeviceFunctionality	("VK_EXT_separate_stencil_usage");
 		context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 	}
+
+#ifndef CTS_USES_VULKANSC
+	if (format == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#else
+	DE_UNREF(format);
+#endif // CTS_USES_VULKANSC
 
 	return true;
 }
@@ -1340,7 +1347,7 @@ private:
 
 MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& context, TestConfig config)
 	: TestInstance					(context)
-	, m_extensionSupported			(isExtensionSupported(context, config.renderingType, config.separateStencilUsage))
+	, m_extensionSupported			(isExtensionSupported(context, config.renderingType, config.separateStencilUsage, config.format))
 	, m_renderingType				(config.renderingType)
 	, m_separateStencilUsage		(config.separateStencilUsage)
 	, m_srcFormat					(config.format)
@@ -1541,7 +1548,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 				{
 					const Vec4 threshold (verifyDepth ? (1.0f / 1024.0f) : 0.0f, 0.0f, 0.0f, 0.0f);
 
-					if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), name.c_str(), name.c_str(), reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
+					if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), name.c_str(), "", reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
 						m_resultCollector.fail("Compare failed for sample " + de::toString(sampleNdx));
 				}
 			}
@@ -1590,7 +1597,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 							reference.getAccess().setPixel(color, x, y);
 						}
 
-						if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), name.c_str(), name.c_str(), reference.getAccess(), access, UVec4(0u), tcu::COMPARE_LOG_ON_ERROR))
+						if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), name.c_str(), "", reference.getAccess(), access, UVec4(0u), tcu::COMPARE_LOG_ON_ERROR))
 							m_resultCollector.fail("Compare failed for sample " + de::toString(sampleNdx));
 
 						break;
@@ -1635,7 +1642,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 							reference.getAccess().setPixel(color, x, y);
 						}
 
-						if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), name.c_str(), name.c_str(), reference.getAccess(), access, UVec4(0u), tcu::COMPARE_LOG_ON_ERROR))
+						if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), name.c_str(), "", reference.getAccess(), access, UVec4(0u), tcu::COMPARE_LOG_ON_ERROR))
 							m_resultCollector.fail("Compare failed for sample " + de::toString(sampleNdx));
 
 						break;
@@ -1651,7 +1658,8 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 						const Vec4						maxLimit		(65536.0);
 						const Vec4						minValue		(tcu::max(info.valueMin, minLimit));
 						const Vec4						range			(tcu::min(info.valueMax, maxLimit) - minValue);
-						const int						componentCount	(tcu::getNumUsedChannels(format.order));
+						const bool						isAlphaOnly		= isAlphaOnlyFormat(m_dstFormat);
+						const int						componentCount	(isAlphaOnly ? 4 : tcu::getNumUsedChannels(format.order));
 						const deUint32					bitSize			(bits[0] + bits[1] + bits[2] + bits[3]);
 
 						for (deUint32 y = 0; y < m_height; y++)
@@ -1693,7 +1701,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 							// Convert target format ulps to float ulps and allow 64ulp differences
 							const UVec4 threshold (64u * (UVec4(1u) << (UVec4(23) - tcu::getTextureFormatMantissaBitDepth(format).cast<deUint32>())));
 
-							if (!tcu::floatUlpThresholdCompare(m_context.getTestContext().getLog(), name.c_str(), name.c_str(), reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
+							if (!tcu::floatUlpThresholdCompare(m_context.getTestContext().getLog(), name.c_str(), "", reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
 								m_resultCollector.fail("Compare failed for sample " + de::toString(sampleNdx));
 						}
 						else
@@ -1701,7 +1709,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 							// Allow error of 4 times the minimum presentable difference
 							const Vec4 threshold (4.0f * 1.0f / ((UVec4(1u) << tcu::getTextureFormatMantissaBitDepth(format).cast<deUint32>()) - 1u).cast<float>());
 
-							if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), name.c_str(), name.c_str(), reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
+							if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), name.c_str(), "", reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
 								m_resultCollector.fail("Compare failed for sample " + de::toString(sampleNdx));
 						}
 
@@ -1950,7 +1958,8 @@ struct Programs
 						fragmentShader << "\tcolor[" << ndx << "] = "  << minValue[ndx] << ";\n";
 
 					{
-						const int		componentCount	= tcu::getNumUsedChannels(format.order);
+						const bool		isAlphaOnly		= isAlphaOnlyFormat(config.format);
+						const int		componentCount	= (isAlphaOnly ? 4 : tcu::getNumUsedChannels(format.order));
 						const deUint32	bitSize			(bits[0] + bits[1] + bits[2] + bits[3]);
 						deUint32		dstBitsUsed[4]	= { 0u, 0u, 0u, 0u };
 						deUint32		nextSrcBit		= 0;
@@ -2121,6 +2130,9 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_UINT,
 		VK_FORMAT_R8G8_SINT,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8B8A8_UNORM,
 		VK_FORMAT_R8G8B8A8_SNORM,
 		VK_FORMAT_R8G8B8A8_UINT,
@@ -2175,14 +2187,14 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 		2u, 4u, 8u, 16u, 32u
 	};
 	tcu::TestContext&				testCtx		(group->getTestContext());
-	de::MovePtr<tcu::TestCaseGroup>	extGroup	(new tcu::TestCaseGroup(testCtx, "separate_stencil_usage", "test VK_EXT_separate_stencil_usage"));
+	de::MovePtr<tcu::TestCaseGroup>	extGroup	(new tcu::TestCaseGroup(testCtx, "separate_stencil_usage"));
 
 	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 	{
 		const VkFormat					format			(formats[formatNdx]);
 		const std::string				formatName		(formatToName(format));
-		de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, formatName.c_str(), formatName.c_str()));
-		de::MovePtr<tcu::TestCaseGroup>	extFormatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str(), formatName.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	extFormatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 
 		for (size_t sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountNdx++)
 		{
@@ -2190,18 +2202,18 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 			const TestConfig	testConfig	(format, sampleCount, renderingType);
 			const std::string	testName	("samples_" + de::toString(sampleCount));
 
-			formatGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+			formatGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, testName.c_str(), testConfig));
 
 			// create tests for VK_EXT_separate_stencil_usage
 			if (tcu::hasDepthComponent(mapVkFormat(format).order) && tcu::hasStencilComponent(mapVkFormat(format).order))
 			{
-				de::MovePtr<tcu::TestCaseGroup>	sampleGroup	(new tcu::TestCaseGroup(testCtx, testName.c_str(), testName.c_str()));
+				de::MovePtr<tcu::TestCaseGroup>	sampleGroup	(new tcu::TestCaseGroup(testCtx, testName.c_str()));
 				{
 					const TestConfig	separateUsageDepthTestConfig	(format, sampleCount, renderingType, TEST_DEPTH);
-					sampleGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "test_depth", "depth with input attachment bit", separateUsageDepthTestConfig));
+					sampleGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, "test_depth", separateUsageDepthTestConfig));
 
 					const TestConfig	separateUsageStencilTestConfig	(format, sampleCount, renderingType, TEST_STENCIL);
-					sampleGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "test_stencil", "stencil with input attachment bit", separateUsageStencilTestConfig));
+					sampleGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, "test_stencil", separateUsageStencilTestConfig));
 				}
 
 				extFormatGroup->addChild(sampleGroup.release());
@@ -2219,12 +2231,12 @@ void initTests (tcu::TestCaseGroup* group, RenderingType renderingType)
 
 tcu::TestCaseGroup* createRenderPassMultisampleTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "multisample", "Multisample render pass tests", initTests, RENDERING_TYPE_RENDERPASS_LEGACY);
+	return createTestGroup(testCtx, "multisample", initTests, RENDERING_TYPE_RENDERPASS_LEGACY);
 }
 
 tcu::TestCaseGroup* createRenderPass2MultisampleTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "multisample", "Multisample render pass tests", initTests, RENDERING_TYPE_RENDERPASS2);
+	return createTestGroup(testCtx, "multisample", initTests, RENDERING_TYPE_RENDERPASS2);
 }
 
 } // vkt

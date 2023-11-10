@@ -1610,7 +1610,7 @@ void addCases (const MovePtr<tcu::TestCaseGroup>& group, const CaseDescription<O
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; cur++)
 	{
-		addFunctionCase(group.get(), cur->name, "", cases.function, cur->parameters);
+		addFunctionCase(group.get(), cur->name, cases.function, cur->parameters);
 	}
 }
 
@@ -1619,13 +1619,13 @@ void addCasesWithProgs (const MovePtr<tcu::TestCaseGroup>& group, const CaseDesc
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; cur++)
 	{
-		addFunctionCaseWithPrograms(group.get(), cur->name, "", Object::initPrograms, cases.function, cur->parameters);
+		addFunctionCaseWithPrograms(group.get(), cur->name, Object::initPrograms, cases.function, cur->parameters);
 	}
 }
 
-tcu::TestCaseGroup* createObjectTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc, const CaseDescriptions& cases)
+tcu::TestCaseGroup* createObjectTestsGroup (tcu::TestContext& testCtx, const char* name, const CaseDescriptions& cases)
 {
-	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
+	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name));
 
 	addCases			(group, cases.device);
 	addCases			(group, cases.deviceMemory);
@@ -1853,7 +1853,7 @@ tcu::TestStatus createDestroyObjectTest (Context& context, typename Object::Para
 
 tcu::TestCaseGroup* createAddressBindingReportTests (tcu::TestContext& testCtx)
 {
-	MovePtr<tcu::TestCaseGroup>	addressBindingReportTests  (new tcu::TestCaseGroup(testCtx, "address_binding_report", "Address Binding Report tests"));
+	MovePtr<tcu::TestCaseGroup>	addressBindingReportTests  (new tcu::TestCaseGroup(testCtx, "address_binding_report"));
 
 	const Image::Parameters		img1D			(0u,
 												 VK_IMAGE_TYPE_1D,
@@ -2069,7 +2069,8 @@ tcu::TestCaseGroup* createAddressBindingReportTests (tcu::TestContext& testCtx)
 		CASE_DESC(createDestroyObjectTest	<CommandPool>,			s_commandPoolCases),
 		CASE_DESC(createDestroyObjectTest	<CommandBuffer>,		s_commandBufferCases),
 	};
-	addressBindingReportTests->addChild(createObjectTestsGroup(testCtx, "create_and_destroy_object", "Check emitted callbacks are properly paired", s_createDestroyObjectGroup));
+	// Check emitted callbacks are properly paired
+	addressBindingReportTests->addChild(createObjectTestsGroup(testCtx, "create_and_destroy_object", s_createDestroyObjectGroup));
 
 	return addressBindingReportTests.release();
 }

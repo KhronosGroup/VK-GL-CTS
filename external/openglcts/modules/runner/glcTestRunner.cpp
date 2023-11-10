@@ -654,7 +654,7 @@ static void writeRunSummary(const TestRunSummary& summary, const char* filename)
 	if (!writer)
 		throw std::bad_alloc();
 
-	XML_CHECK(qpXmlWriter_startDocument(writer.get()));
+	XML_CHECK(qpXmlWriter_startDocument(writer.get(), true));
 
 	{
 		qpXmlAttribute attribs[2];

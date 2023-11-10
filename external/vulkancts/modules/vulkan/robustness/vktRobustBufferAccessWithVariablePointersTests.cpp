@@ -188,7 +188,6 @@ public:
 
 								RobustAccessWithPointersTest	(tcu::TestContext&		testContext,
 																 const std::string&		name,
-																 const std::string&		description,
 																 VkShaderStageFlags		shaderStage,
 																 ShaderType				shaderType,
 																 VkFormat				bufferFormat);
@@ -210,11 +209,10 @@ const deUint32 RobustAccessWithPointersTest::s_numberOfBytesAccessed = static_ca
 
 RobustAccessWithPointersTest::RobustAccessWithPointersTest(tcu::TestContext&		testContext,
 	const std::string&		name,
-	const std::string&		description,
 	VkShaderStageFlags		shaderStage,
 	ShaderType				shaderType,
 	VkFormat				bufferFormat)
-	: vkt::TestCase(testContext, name, description)
+	: vkt::TestCase(testContext, name)
 	, m_shaderStage(shaderStage)
 	, m_shaderType(shaderType)
 	, m_bufferFormat(bufferFormat)
@@ -238,7 +236,6 @@ class RobustReadTest : public RobustAccessWithPointersTest
 public:
 								RobustReadTest					(tcu::TestContext&		testContext,
 																 const std::string&		name,
-																 const std::string&		description,
 																 VkShaderStageFlags		shaderStage,
 																 ShaderType				shaderType,
 																 VkFormat				bufferFormat,
@@ -260,7 +257,6 @@ class RobustWriteTest : public RobustAccessWithPointersTest
 public:
 								RobustWriteTest				(tcu::TestContext&		testContext,
 															 const std::string&		name,
-															 const std::string&		description,
 															 VkShaderStageFlags		shaderStage,
 															 ShaderType				shaderType,
 															 VkFormat				bufferFormat,
@@ -1300,13 +1296,12 @@ std::string MakeShader(VkShaderStageFlags shaderStage, ShaderType shaderType, Vk
 
 RobustReadTest::RobustReadTest (tcu::TestContext&		testContext,
 								const std::string&		name,
-								const std::string&		description,
 								VkShaderStageFlags		shaderStage,
 								ShaderType				shaderType,
 								VkFormat				bufferFormat,
 								VkDeviceSize			readAccessRange,
 								bool					accessOutOfBackingMemory)
-	: RobustAccessWithPointersTest	(testContext, name, description, shaderStage, shaderType, bufferFormat)
+	: RobustAccessWithPointersTest	(testContext, name, shaderStage, shaderType, bufferFormat)
 	, m_readAccessRange				(readAccessRange)
 	, m_accessOutOfBackingMemory	(accessOutOfBackingMemory)
 {
@@ -1339,14 +1334,13 @@ void RobustReadTest::initPrograms(SourceCollections&	programCollection) const
 
 RobustWriteTest::RobustWriteTest (tcu::TestContext&		testContext,
 								  const std::string&	name,
-								  const std::string&	description,
 								  VkShaderStageFlags	shaderStage,
 								  ShaderType			shaderType,
 								  VkFormat				bufferFormat,
 								  VkDeviceSize			writeAccessRange,
 								  bool					accessOutOfBackingMemory)
 
-	: RobustAccessWithPointersTest	(testContext, name, description, shaderStage, shaderType, bufferFormat)
+	: RobustAccessWithPointersTest	(testContext, name, shaderStage, shaderType, bufferFormat)
 	, m_writeAccessRange			(writeAccessRange)
 	, m_accessOutOfBackingMemory	(accessOutOfBackingMemory)
 {
@@ -1902,20 +1896,20 @@ WriteInstance::WriteInstance (Context&				context,
 tcu::TestCaseGroup* createBufferAccessWithVariablePointersTests(tcu::TestContext& testCtx)
 {
 	// Lets make group for the tests
-	de::MovePtr<tcu::TestCaseGroup> bufferAccessWithVariablePointersTests	(new tcu::TestCaseGroup(testCtx, "through_pointers", ""));
+	de::MovePtr<tcu::TestCaseGroup> bufferAccessWithVariablePointersTests	(new tcu::TestCaseGroup(testCtx, "through_pointers"));
 
 	// Lets add subgroups to better organise tests
-	de::MovePtr<tcu::TestCaseGroup> computeWithVariablePointersTests		(new tcu::TestCaseGroup(testCtx, "compute", ""));
-	de::MovePtr<tcu::TestCaseGroup> computeReads							(new tcu::TestCaseGroup(testCtx, "reads", ""));
-	de::MovePtr<tcu::TestCaseGroup> computeWrites							(new tcu::TestCaseGroup(testCtx, "writes", ""));
+	de::MovePtr<tcu::TestCaseGroup> computeWithVariablePointersTests		(new tcu::TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<tcu::TestCaseGroup> computeReads							(new tcu::TestCaseGroup(testCtx, "reads"));
+	de::MovePtr<tcu::TestCaseGroup> computeWrites							(new tcu::TestCaseGroup(testCtx, "writes"));
 
-	de::MovePtr<tcu::TestCaseGroup> graphicsWithVariablePointersTests		(new tcu::TestCaseGroup(testCtx, "graphics", ""));
-	de::MovePtr<tcu::TestCaseGroup> graphicsReads							(new tcu::TestCaseGroup(testCtx, "reads", ""));
-	de::MovePtr<tcu::TestCaseGroup> graphicsReadsVertex						(new tcu::TestCaseGroup(testCtx, "vertex", ""));
-	de::MovePtr<tcu::TestCaseGroup> graphicsReadsFragment					(new tcu::TestCaseGroup(testCtx, "fragment", ""));
-	de::MovePtr<tcu::TestCaseGroup> graphicsWrites							(new tcu::TestCaseGroup(testCtx, "writes", ""));
-	de::MovePtr<tcu::TestCaseGroup> graphicsWritesVertex					(new tcu::TestCaseGroup(testCtx, "vertex", ""));
-	de::MovePtr<tcu::TestCaseGroup> graphicsWritesFragment					(new tcu::TestCaseGroup(testCtx, "fragment", ""));
+	de::MovePtr<tcu::TestCaseGroup> graphicsWithVariablePointersTests		(new tcu::TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsReads							(new tcu::TestCaseGroup(testCtx, "reads"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsReadsVertex						(new tcu::TestCaseGroup(testCtx, "vertex"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsReadsFragment					(new tcu::TestCaseGroup(testCtx, "fragment"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsWrites							(new tcu::TestCaseGroup(testCtx, "writes"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsWritesVertex					(new tcu::TestCaseGroup(testCtx, "vertex"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsWritesFragment					(new tcu::TestCaseGroup(testCtx, "fragment"));
 
 	// A struct for describing formats
 	struct Formats
@@ -1980,7 +1974,7 @@ tcu::TestCaseGroup* createBufferAccessWithVariablePointersTests(tcu::TestContext
 					{
 						std::ostringstream	name;
 						name << types[i].sizes[k] << "B_" << backingMemory[s] << "_with_" << types[i].name << '_' << types[i].formats[j].name;
-						stages[stageId].reads->addChild(new RobustReadTest(testCtx, name.str().c_str(), "", stages[stageId].stage, types[i].value, types[i].formats[j].value, types[i].sizes[k], s != 0));
+						stages[stageId].reads->addChild(new RobustReadTest(testCtx, name.str().c_str(), stages[stageId].stage, types[i].value, types[i].formats[j].value, types[i].sizes[k], s != 0));
 					}
 
 	for (deInt32 stageId = 0; stageId < DE_LENGTH_OF_ARRAY(stages); ++stageId)
@@ -1991,7 +1985,7 @@ tcu::TestCaseGroup* createBufferAccessWithVariablePointersTests(tcu::TestContext
 					{
 						std::ostringstream	name;
 						name << types[i].sizes[k] << "B_" << backingMemory[s] << "_with_" << types[i].name << '_' << types[i].formats[j].name;
-						stages[stageId].writes->addChild(new RobustWriteTest(testCtx, name.str().c_str(), "", stages[stageId].stage, types[i].value, types[i].formats[j].value, types[i].sizes[k], s != 0));
+						stages[stageId].writes->addChild(new RobustWriteTest(testCtx, name.str().c_str(), stages[stageId].stage, types[i].value, types[i].formats[j].value, types[i].sizes[k], s != 0));
 					}
 
 	graphicsReads->addChild(graphicsReadsVertex.release());

@@ -65,7 +65,6 @@ class BufferSparseResidencyCase : public TestCase
 public:
 					BufferSparseResidencyCase	(tcu::TestContext&		testCtx,
 												 const std::string&		name,
-												 const std::string&		description,
 												 const deUint32			bufferSize,
 												 const glu::GLSLVersion	glslVersion,
 												 const bool				useDeviceGroups);
@@ -83,12 +82,11 @@ private:
 
 BufferSparseResidencyCase::BufferSparseResidencyCase (tcu::TestContext&			testCtx,
 													  const std::string&		name,
-													  const std::string&		description,
 													  const deUint32			bufferSize,
 													  const glu::GLSLVersion	glslVersion,
 													  const bool				useDeviceGroups)
 
-	: TestCase			(testCtx, name, description)
+	: TestCase			(testCtx, name)
 	, m_bufferSize		(bufferSize)
 	, m_glslVersion		(glslVersion)
 	, m_useDeviceGroups	(useDeviceGroups)
@@ -424,12 +422,12 @@ TestInstance* BufferSparseResidencyCase::createInstance (Context& context) const
 
 void addBufferSparseResidencyTests(tcu::TestCaseGroup* group, const bool useDeviceGroups)
 {
-	group->addChild(new BufferSparseResidencyCase(group->getTestContext(), "buffer_size_2_10", "", 1 << 10, glu::GLSL_VERSION_440, useDeviceGroups));
-	group->addChild(new BufferSparseResidencyCase(group->getTestContext(), "buffer_size_2_12", "", 1 << 12, glu::GLSL_VERSION_440, useDeviceGroups));
-	group->addChild(new BufferSparseResidencyCase(group->getTestContext(), "buffer_size_2_16", "", 1 << 16, glu::GLSL_VERSION_440, useDeviceGroups));
-	group->addChild(new BufferSparseResidencyCase(group->getTestContext(), "buffer_size_2_17", "", 1 << 17, glu::GLSL_VERSION_440, useDeviceGroups));
-	group->addChild(new BufferSparseResidencyCase(group->getTestContext(), "buffer_size_2_20", "", 1 << 20, glu::GLSL_VERSION_440, useDeviceGroups));
-	group->addChild(new BufferSparseResidencyCase(group->getTestContext(), "buffer_size_2_24", "", 1 << 24, glu::GLSL_VERSION_440, useDeviceGroups));
+	group->addChild(new BufferSparseResidencyCase(group->getTestContext(), "buffer_size_2_10", 1 << 10, glu::GLSL_VERSION_440, useDeviceGroups));
+	group->addChild(new BufferSparseResidencyCase(group->getTestContext(), "buffer_size_2_12", 1 << 12, glu::GLSL_VERSION_440, useDeviceGroups));
+	group->addChild(new BufferSparseResidencyCase(group->getTestContext(), "buffer_size_2_16", 1 << 16, glu::GLSL_VERSION_440, useDeviceGroups));
+	group->addChild(new BufferSparseResidencyCase(group->getTestContext(), "buffer_size_2_17", 1 << 17, glu::GLSL_VERSION_440, useDeviceGroups));
+	group->addChild(new BufferSparseResidencyCase(group->getTestContext(), "buffer_size_2_20", 1 << 20, glu::GLSL_VERSION_440, useDeviceGroups));
+	group->addChild(new BufferSparseResidencyCase(group->getTestContext(), "buffer_size_2_24", 1 << 24, glu::GLSL_VERSION_440, useDeviceGroups));
 }
 
 } // sparse

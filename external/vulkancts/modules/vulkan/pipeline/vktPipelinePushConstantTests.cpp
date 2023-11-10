@@ -1044,7 +1044,6 @@ class PushConstantGraphicsTest : public vkt::TestCase
 public:
 							PushConstantGraphicsTest	(tcu::TestContext&					testContext,
 														 const std::string&					name,
-														 const std::string&					description,
 														 const PipelineConstructionType		pipelineConstructionType,
 														 const deUint32						rangeCount,
 														 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
@@ -1068,13 +1067,12 @@ protected:
 
 PushConstantGraphicsTest::PushConstantGraphicsTest (tcu::TestContext&					testContext,
 													const std::string&					name,
-													const std::string&					description,
 													const PipelineConstructionType		pipelineConstructionType,
 													const deUint32						rangeCount,
 													const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 													const deBool						multipleUpdate,
 													const IndexType						indexType)
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_rangeCount					(rangeCount)
 	, m_multipleUpdate				(multipleUpdate)
@@ -1123,7 +1121,6 @@ class PushConstantGraphicsDisjointTest : public PushConstantGraphicsTest
 public:
 							PushConstantGraphicsDisjointTest	(tcu::TestContext&					testContext,
 																 const std::string&					name,
-																 const std::string&					description,
 																 const PipelineConstructionType		pipelineConstructionType,
 																 const deUint32						rangeCount,
 																 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
@@ -1137,13 +1134,12 @@ public:
 
 PushConstantGraphicsDisjointTest::PushConstantGraphicsDisjointTest (tcu::TestContext&				testContext,
 																	const std::string&				name,
-																	const std::string&				description,
 																	const PipelineConstructionType	pipelineConstructionType,
 																	const deUint32					rangeCount,
 																	const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
 																	const deBool					multipleUpdate,
 																	const IndexType					indexType)
-	: PushConstantGraphicsTest (testContext, name, description, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType)
+	: PushConstantGraphicsTest (testContext, name, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType)
 {
 }
 
@@ -1470,7 +1466,6 @@ class PushConstantGraphicsOverlapTest : public PushConstantGraphicsTest
 public:
 							PushConstantGraphicsOverlapTest		(tcu::TestContext&					testContext,
 																 const std::string&					name,
-																 const std::string&					description,
 																 const PipelineConstructionType		pipelineConstructionType,
 																 const deUint32						rangeCount,
 																 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT]);
@@ -1482,11 +1477,10 @@ public:
 
 PushConstantGraphicsOverlapTest::PushConstantGraphicsOverlapTest (tcu::TestContext&					testContext,
 																  const std::string&				name,
-																  const std::string&				description,
 																  const PipelineConstructionType	pipelineConstructionType,
 																  const deUint32					rangeCount,
 																  const PushConstantData			pushConstantRange[MAX_RANGE_COUNT])
-	: PushConstantGraphicsTest (testContext, name, description, pipelineConstructionType, rangeCount, pushConstantRange, false, INDEX_TYPE_CONST_LITERAL)
+	: PushConstantGraphicsTest (testContext, name, pipelineConstructionType, rangeCount, pushConstantRange, false, INDEX_TYPE_CONST_LITERAL)
 {
 }
 
@@ -1715,7 +1709,6 @@ class PushConstantComputeTest : public vkt::TestCase
 public:
 							PushConstantComputeTest		(tcu::TestContext&		testContext,
 														 const std::string&		name,
-														 const std::string&		description,
 														 const ComputeTestType	testType,
 														 const PushConstantData	pushConstantRange);
 	virtual					~PushConstantComputeTest	(void);
@@ -1758,10 +1751,9 @@ private:
 
 PushConstantComputeTest::PushConstantComputeTest (tcu::TestContext&			testContext,
 												  const std::string&		name,
-												  const std::string&		description,
 												  const ComputeTestType		testType,
 												  const PushConstantData	pushConstantRange)
-	: vkt::TestCase			(testContext, name, description)
+	: vkt::TestCase			(testContext, name)
 	, m_testType			(testType)
 	, m_pushConstantRange	(pushConstantRange)
 {
@@ -1980,7 +1972,6 @@ class PushConstantLifetimeTest : public vkt::TestCase
 public:
 	PushConstantLifetimeTest(tcu::TestContext&					testContext,
 							 const std::string&					name,
-							 const std::string&					description,
 							 const PipelineConstructionType		pipelineConstructionType,
 							 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 							 const std::vector<CommandData>&	cmdList);
@@ -2056,11 +2047,10 @@ private:
 
 PushConstantLifetimeTest::PushConstantLifetimeTest(tcu::TestContext&				testContext,
 												   const std::string&				name,
-												   const std::string&				description,
 												   const PipelineConstructionType	pipelineConstructionType,
 												   const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
 												   const std::vector<CommandData>&	cmdList)
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_cmdList						(cmdList)
 {
@@ -2720,7 +2710,7 @@ struct OverwriteTestParams
 class OverwriteTestCase : public vkt::TestCase
 {
 public:
-							OverwriteTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const OverwriteTestParams& params);
+							OverwriteTestCase		(tcu::TestContext& testCtx, const std::string& name, const OverwriteTestParams& params);
 	virtual					~OverwriteTestCase		(void) {}
 
 	virtual void			checkSupport			(Context &context) const;
@@ -2743,8 +2733,8 @@ protected:
 	OverwriteTestParams			m_params;
 };
 
-OverwriteTestCase::OverwriteTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const OverwriteTestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+OverwriteTestCase::OverwriteTestCase (tcu::TestContext& testCtx, const std::string& name, const OverwriteTestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -2902,7 +2892,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 	if (isComp)
 	{
 		compModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
-		pipeline	= makeComputePipeline(vkd, device, pipelineLayout.get(), 0u, compModule.getModule(), 0u, nullptr);
+		pipeline	= makeComputePipeline(vkd, device, pipelineLayout.get(), compModule.getModule());
 	}
 	else
 	{
@@ -3065,7 +3055,8 @@ void addOverwriteCase (tcu::TestCaseGroup* group, tcu::TestContext& testCtx, Pip
 	testParams.pipelineConstructionType = pipelineConstructionType;
 	testParams.bindPoint				= bindPoint;
 
-	group->addChild(new OverwriteTestCase(testCtx, "overwrite", "Test push constant range overwrites", testParams));
+	// Test push constant range overwrites
+	group->addChild(new OverwriteTestCase(testCtx, "overwrite", testParams));
 }
 
 } // anonymous
@@ -3075,33 +3066,31 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 	static const struct
 	{
 		const char*			name;
-		const char*			description;
 		deUint32			count;
 		PushConstantData	range[MAX_RANGE_COUNT];
 		deBool				hasMultipleUpdates;
 		IndexType			indexType;
 	} graphicsParams[] =
 	{
-		// test range size from minimum valid size to maximum
+		// test range size is 4 bytes(minimum valid size)
 		{
 			"range_size_4",
-			"test range size is 4 bytes(minimum valid size)",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 4 } , { 0, 4 } } },
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test range size is 16 bytes, and together with a normal uniform
 		{
 			"range_size_16",
-			"test range size is 16 bytes, and together with a normal uniform",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } } },
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test range size is 128 bytes(maximum valid size)
 		{
 			"range_size_128",
-			"test range size is 128 bytes(maximum valid size)",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 128 }, { 0, 128 } } },
 			false,
@@ -3110,7 +3099,6 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 		// test range count, including all valid shader stage in graphics pipeline, and also multiple shader stages share one single range
 		{
 			"count_2_shaders_vert_frag",
-			"test range count is 2, use vertex and fragment shaders",
 			2u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
@@ -3119,9 +3107,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test range count is 3, use vertex, geometry and fragment shaders
 		{
 			"count_3_shaders_vert_geom_frag",
-			"test range count is 3, use vertex, geometry and fragment shaders",
 			3u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
@@ -3131,9 +3119,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test range count is 5, use vertex, tessellation, geometry and fragment shaders
 		{
 			"count_5_shaders_vert_tess_geom_frag",
-			"test range count is 5, use vertex, tessellation, geometry and fragment shaders",
 			5u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
@@ -3145,9 +3133,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test range count is 1, vertex and fragment shaders share one range
 		{
 			"count_1_shader_vert_frag",
-			"test range count is 1, vertex and fragment shaders share one range",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4 }, { 0, 4 } } },
 			false,
@@ -3156,39 +3144,38 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 		// test data partial update and multiple times update
 		{
 			"data_update_partial_1",
-			"test partial update of the values",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 32 }, { 4, 24 } } },
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test partial update of the values
 		{
 			"data_update_partial_2",
-			"test partial update of the values",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 48 }, { 32, 16 } } },
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test multiple times update of the values
 		{
 			"data_update_multiple",
-			"test multiple times update of the values",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 4 }, { 0, 4 } } },
 			true,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// dynamically uniform indexing of vertex, matrix, and array in vertex shader
 		{
 			"dynamic_index_vert",
-			"dynamically uniform indexing of vertex, matrix, and array in vertex shader",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 64 }, { 0, 64 } } },
 			false,
 			INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR
 		},
+		// dynamically uniform indexing of vertex, matrix, and array in fragment shader
 		{
 			"dynamic_index_frag",
-			"dynamically uniform indexing of vertex, matrix, and array in fragment shader",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 64 }, { 0, 64 } } },
 			false,
@@ -3199,24 +3186,22 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 	static const struct
 	{
 		const char*			name;
-		const char*			description;
 		deUint32			count;
 		PushConstantData	range[MAX_RANGE_COUNT];
 	} overlapGraphicsParams[] =
 	{
-		// test ranges with multiple overlapping stages
+		// overlapping range count is 2, use vertex and fragment shaders
 		{
 			"overlap_2_shaders_vert_frag",
-			"overlapping range count is 2, use vertex and fragment shaders",
 			2u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
 				{ { VK_SHADER_STAGE_FRAGMENT_BIT, 12, 36 }, { 12, 36 } },
 			}
 		},
+		// overlapping range count is 3, use vertex, geometry and fragment shaders
 		{
 			"overlap_3_shaders_vert_geom_frag",
-			"overlapping range count is 3, use vertex, geometry and fragment shaders",
 			3u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 12, 36 }, { 12, 36 } },
@@ -3224,9 +3209,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ { VK_SHADER_STAGE_FRAGMENT_BIT, 20, 4 }, { 20, 4 } }
 			}
 		},
+		// overlapping range count is 4, use vertex, tessellation and fragment shaders
 		{
 			"overlap_4_shaders_vert_tess_frag",
-			"overlapping range count is 4, use vertex, tessellation and fragment shaders",
 			4u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 8, 4 }, { 8, 4 } },
@@ -3235,9 +3220,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ { VK_SHADER_STAGE_FRAGMENT_BIT, 60, 36 }, { 60, 36 } }
 			}
 		},
+		// overlapping range count is 5, use vertex, tessellation, geometry and fragment shaders
 		{
 			"overlap_5_shaders_vert_tess_geom_frag",
-			"overlapping range count is 5, use vertex, tessellation, geometry and fragment shaders",
 			5u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 40, 8 }, { 40, 8 } },
@@ -3252,20 +3237,19 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 	static const struct
 	{
 		const char*			name;
-		const char*			description;
 		ComputeTestType		type;
 		PushConstantData	range;
 	} computeParams[] =
 	{
+		// test compute pipeline
 		{
 			"simple_test",
-			"test compute pipeline",
 			CTT_SIMPLE,
 			{ { VK_SHADER_STAGE_COMPUTE_BIT, 0, 16 }, { 0, 16 } },
 		},
+		// test push constant that is dynamically unused
 		{
 			"uninitialized",
-			"test push constant that is dynamically unused",
 			CTT_UNINITIALIZED,
 			{ { VK_SHADER_STAGE_COMPUTE_BIT, 0, 16 }, { 0, 16 } },
 		},
@@ -3274,14 +3258,13 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 	static const struct
 	{
 		const char*						name;
-		const char*						description;
 		PushConstantData				range[MAX_RANGE_COUNT];
 		std::vector<CommandData>		cmdList;
 	} lifetimeParams[] =
 	{
+		// bind different layout with the same range
 		{
 			"push_range0_bind_layout1",
-			"bind different layout with the same range",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}}
@@ -3292,9 +3275,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// bind layout with same range then push different range
 		{
 			"push_range1_bind_layout1_push_range0",
-			"bind layout with same range then push different range",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}}
@@ -3307,9 +3290,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// same range same layout then same range from a different layout and same range from the same layout
 		{
 			"push_range0_bind_layout0_push_range1_push_range0",
-			"same range same layout then same range from a different layout and same range from the same layout",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}}
@@ -3322,9 +3305,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// same range same layout then diff range and same range update
 		{
 			"push_range0_bind_layout0_push_diff_overlapping_range1_push_range0",
-			"same range same layout then diff range and same range update",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 16, 32}, {16, 32}}
@@ -3337,9 +3320,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// update push constant bind different layout with the same range then bind correct layout
 		{
 			"push_range0_bind_layout1_bind_layout0",
-			"update push constant bind different layout with the same range then bind correct layout",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}}
@@ -3351,9 +3334,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// update push constant then bind different layout with overlapping range then bind correct layout
 		{
 			"push_range0_bind_layout1_overlapping_range_bind_layout0",
-			"update push constant then bind different layout with overlapping range then bind correct layout",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 16, 32}, {16, 32}}
@@ -3365,9 +3348,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// bind different layout with different range then update push constant and bind correct layout
 		{
 			"bind_layout1_push_range0_bind_layout0",
-			"bind different layout with different range then update push constant and bind correct layout",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 16, 32}, {16, 32}}
@@ -3379,9 +3362,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// change pipeline same range, bind then push, stages vertex and compute
 		{
 			"pipeline_change_same_range_bind_push_vert_and_comp",
-			"change pipeline same range, bind then push, stages vertex and compute",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, 0, 32}, {0, 32}}
@@ -3395,9 +3378,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DISPATCH, -1 },
 			}
 		},
+		// change pipeline different range overlapping, bind then push, stages vertex and compute
 		{
 			"pipeline_change_diff_range_bind_push_vert_and_comp",
-			"change pipeline different range overlapping, bind then push, stages vertex and compute",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, 16, 32}, {16, 32}}
@@ -3413,36 +3396,36 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 		}
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	pushConstantTests	(new tcu::TestCaseGroup(testCtx, "push_constant", "PushConstant tests"));
+	de::MovePtr<tcu::TestCaseGroup>	pushConstantTests	(new tcu::TestCaseGroup(testCtx, "push_constant"));
 
-	de::MovePtr<tcu::TestCaseGroup>	graphicsTests	(new tcu::TestCaseGroup(testCtx, "graphics_pipeline", "graphics pipeline"));
+	de::MovePtr<tcu::TestCaseGroup>	graphicsTests	(new tcu::TestCaseGroup(testCtx, "graphics_pipeline"));
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(graphicsParams); ndx++)
 	{
-		graphicsTests->addChild(new PushConstantGraphicsDisjointTest(testCtx, graphicsParams[ndx].name, graphicsParams[ndx].description, pipelineConstructionType, graphicsParams[ndx].count, graphicsParams[ndx].range, graphicsParams[ndx].hasMultipleUpdates, graphicsParams[ndx].indexType));
+		graphicsTests->addChild(new PushConstantGraphicsDisjointTest(testCtx, graphicsParams[ndx].name, pipelineConstructionType, graphicsParams[ndx].count, graphicsParams[ndx].range, graphicsParams[ndx].hasMultipleUpdates, graphicsParams[ndx].indexType));
 	}
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(overlapGraphicsParams); ndx++)
 	{
-		graphicsTests->addChild(new PushConstantGraphicsOverlapTest(testCtx, overlapGraphicsParams[ndx].name, overlapGraphicsParams[ndx].description, pipelineConstructionType, overlapGraphicsParams[ndx].count, overlapGraphicsParams[ndx].range));
+		graphicsTests->addChild(new PushConstantGraphicsOverlapTest(testCtx, overlapGraphicsParams[ndx].name, pipelineConstructionType, overlapGraphicsParams[ndx].count, overlapGraphicsParams[ndx].range));
 	}
 	addOverwriteCase(graphicsTests.get(), testCtx, pipelineConstructionType, VK_PIPELINE_BIND_POINT_GRAPHICS);
 	pushConstantTests->addChild(graphicsTests.release());
 
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	computeTests	(new tcu::TestCaseGroup(testCtx, "compute_pipeline", "compute pipeline"));
+		de::MovePtr<tcu::TestCaseGroup>	computeTests	(new tcu::TestCaseGroup(testCtx, "compute_pipeline"));
 		for (const auto& params : computeParams)
 		{
-			computeTests->addChild(new PushConstantComputeTest(testCtx, params.name, params.description, params.type, params.range));
+			computeTests->addChild(new PushConstantComputeTest(testCtx, params.name, params.type, params.range));
 		}
 		addOverwriteCase(computeTests.get(), testCtx, pipelineConstructionType, VK_PIPELINE_BIND_POINT_COMPUTE);
 		pushConstantTests->addChild(computeTests.release());
 	}
 
-	de::MovePtr<tcu::TestCaseGroup>	lifetimeTests	(new tcu::TestCaseGroup(testCtx, "lifetime", "lifetime tests"));
+	de::MovePtr<tcu::TestCaseGroup>	lifetimeTests	(new tcu::TestCaseGroup(testCtx, "lifetime"));
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(lifetimeParams); ndx++)
 	{
-		lifetimeTests->addChild(new PushConstantLifetimeTest(testCtx, lifetimeParams[ndx].name, lifetimeParams[ndx].description, pipelineConstructionType, lifetimeParams[ndx].range, lifetimeParams[ndx].cmdList));
+		lifetimeTests->addChild(new PushConstantLifetimeTest(testCtx, lifetimeParams[ndx].name, pipelineConstructionType, lifetimeParams[ndx].range, lifetimeParams[ndx].cmdList));
 	}
 	pushConstantTests->addChild(lifetimeTests.release());
 

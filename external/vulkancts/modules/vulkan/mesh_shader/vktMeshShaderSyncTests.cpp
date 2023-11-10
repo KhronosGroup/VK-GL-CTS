@@ -478,8 +478,8 @@ public:
 class MeshShaderSyncCase : public vkt::TestCase
 {
 public:
-					MeshShaderSyncCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-						: vkt::TestCase (testCtx, name, description), m_params (params)
+					MeshShaderSyncCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+						: vkt::TestCase (testCtx, name), m_params (params)
 						{}
 
 	virtual			~MeshShaderSyncCase		(void) {}
@@ -1277,12 +1277,12 @@ tcu::TestCaseGroup* createMeshShaderSyncTests (tcu::TestContext& testCtx)
 
 	uint32_t testValue = 1628510124u;
 
-	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "synchronization", "Mesh Shader synchronization tests"));
+	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "synchronization"));
 
 	for (const auto& stageCombination : stageCombinations)
 	{
 		const std::string	combinationName		= de::toString(stageCombination.fromStage) + "_to_" + de::toString(stageCombination.toStage);
-		GroupPtr			combinationGroup	(new tcu::TestCaseGroup(testCtx, combinationName.c_str(), ""));
+		GroupPtr			combinationGroup	(new tcu::TestCaseGroup(testCtx, combinationName.c_str()));
 
 		for (const auto& resourceCase : resourceTypes)
 		{
@@ -1292,7 +1292,7 @@ tcu::TestCaseGroup* createMeshShaderSyncTests (tcu::TestContext& testCtx)
 			if (!canReadFrom(stageCombination.toStage, resourceCase.resourceType))
 				continue;
 
-			GroupPtr resourceGroup (new tcu::TestCaseGroup(testCtx, resourceCase.name, ""));
+			GroupPtr resourceGroup (new tcu::TestCaseGroup(testCtx, resourceCase.name));
 
 			for (const auto& barrierCase : barrierTypes)
 			{
@@ -1300,7 +1300,7 @@ tcu::TestCaseGroup* createMeshShaderSyncTests (tcu::TestContext& testCtx)
 				if (readAndWriteFromShaders(stageCombination.fromStage, stageCombination.toStage) && barrierCase.barrierType == BarrierType::SPECIFIC)
 					continue;
 
-				GroupPtr barrierGroup (new tcu::TestCaseGroup(testCtx, barrierCase.name, ""));
+				GroupPtr barrierGroup (new tcu::TestCaseGroup(testCtx, barrierCase.name));
 
 				for (const auto& writeCase	: writeAccesses)
 				for (const auto& readCase	: readAccesses)
@@ -1327,7 +1327,7 @@ tcu::TestCaseGroup* createMeshShaderSyncTests (tcu::TestContext& testCtx)
 						testValue++,				//	uint32_t		testValue;
 					};
 
-					barrierGroup->addChild(new MeshShaderSyncCase(testCtx, accessCaseName, "", testParams));
+					barrierGroup->addChild(new MeshShaderSyncCase(testCtx, accessCaseName, testParams));
 				}
 
 				resourceGroup->addChild(barrierGroup.release());

@@ -87,7 +87,7 @@ void createComputeTest(ComputeShaderSpec& computeResources, const tcu::StringTem
 	computeResources.assembly		= shaderTemplate.specialize(fragments);
 	computeResources.numWorkGroups	= tcu::IVec3(1, 1, 1);
 
-	group.addChild(new SpvAsmComputeShaderCase(group.getTestContext(), testName.c_str(), testName.c_str(), computeResources));
+	group.addChild(new SpvAsmComputeShaderCase(group.getTestContext(), testName.c_str(), computeResources));
 }
 
 // The compute shader switch tests output a single 32-bit integer.
@@ -733,7 +733,6 @@ public:
 	typedef bool	(*QuaternaryFilterFuncType)	(T, T, T, T);
 					SpvAsmTypeTests				(tcu::TestContext&			testCtx,
 												 const char*				name,
-												 const char*				description,
 												 const char*				deviceFeature,
 												 const char*				spirvCapability,
 												 const char*				spirvType,
@@ -877,14 +876,13 @@ private:
 template <class T>
 SpvAsmTypeTests<T>::SpvAsmTypeTests	(tcu::TestContext&	testCtx,
 									 const char*		name,
-									 const char*		description,
 									 const char*		deviceFeature,
 									 const char*		spirvCapability,
 									 const char*		spirvType,
 									 InputType			inputType,
 									 deUint32			typeSize,
 									 deUint32			vectorSize)
-	: tcu::TestCaseGroup	(testCtx, name, description)
+	: tcu::TestCaseGroup	(testCtx, name)
 	, m_rnd					(deStringHash(name))
 	, m_deviceFeature		(deviceFeature)
 	, m_spirvCapability		(spirvCapability)
@@ -2526,7 +2524,7 @@ public:
 
 SpvAsmTypeInt8Tests::SpvAsmTypeInt8Tests	(tcu::TestContext&	testCtx,
 											 deUint32			vectorSize)
-	: SpvAsmTypeTests	(testCtx, "i8", "int8 tests", DE_NULL, "Int8", "OpTypeInt 8 1", TYPE_I8, 8, vectorSize)
+	: SpvAsmTypeTests	(testCtx, "i8", DE_NULL, "Int8", "OpTypeInt 8 1", TYPE_I8, 8, vectorSize)
 {
 	m_cases[0] = -42;
 	m_cases[1] = 73;
@@ -2577,7 +2575,7 @@ public:
 
 SpvAsmTypeInt16Tests::SpvAsmTypeInt16Tests	(tcu::TestContext&	testCtx,
 											 deUint32			vectorSize)
-	: SpvAsmTypeTests	(testCtx, "i16", "int16 tests", "shaderInt16", "Int16", "OpTypeInt 16 1", TYPE_I16, 16, vectorSize)
+	: SpvAsmTypeTests	(testCtx, "i16", "shaderInt16", "Int16", "OpTypeInt 16 1", TYPE_I16, 16, vectorSize)
 {
 	m_cases[0] = -3221;
 	m_cases[1] = 3210;
@@ -2628,7 +2626,7 @@ public:
 
 SpvAsmTypeInt32Tests::SpvAsmTypeInt32Tests (tcu::TestContext&	testCtx,
 											deUint32			vectorSize)
-	: SpvAsmTypeTests	(testCtx, "i32", "int32 tests", DE_NULL, DE_NULL, "OpTypeInt 32 1", TYPE_I32, 32, vectorSize)
+	: SpvAsmTypeTests	(testCtx, "i32", DE_NULL, DE_NULL, "OpTypeInt 32 1", TYPE_I32, 32, vectorSize)
 {
 	m_cases[0] = -3221;
 	m_cases[1] = 3210;
@@ -2679,7 +2677,7 @@ public:
 
 SpvAsmTypeInt64Tests::SpvAsmTypeInt64Tests (tcu::TestContext&	testCtx,
 											deUint32			vectorSize)
-	: SpvAsmTypeTests	(testCtx, "i64", "int64 tests", "shaderInt64", "Int64", "OpTypeInt 64 1", TYPE_I64, 64, vectorSize)
+	: SpvAsmTypeTests	(testCtx, "i64", "shaderInt64", "Int64", "OpTypeInt 64 1", TYPE_I64, 64, vectorSize)
 {
 	m_cases[0] = 3210;
 	m_cases[1] = -268438669;
@@ -2730,7 +2728,7 @@ public:
 
 SpvAsmTypeUint8Tests::SpvAsmTypeUint8Tests	(tcu::TestContext&	testCtx,
 											 deUint32			vectorSize)
-	: SpvAsmTypeTests	(testCtx, "u8", "uint8 tests", DE_NULL, "Int8", "OpTypeInt 8 0", TYPE_U8, 8, vectorSize)
+	: SpvAsmTypeTests	(testCtx, "u8", DE_NULL, "Int8", "OpTypeInt 8 0", TYPE_U8, 8, vectorSize)
 {
 	m_cases[0] = 0;
 	m_cases[1] = 73;
@@ -2780,7 +2778,7 @@ public:
 
 SpvAsmTypeUint16Tests::SpvAsmTypeUint16Tests	(tcu::TestContext&	testCtx,
 												 deUint32			vectorSize)
-	: SpvAsmTypeTests	(testCtx, "u16", "uint16 tests", "shaderInt16", "Int16", "OpTypeInt 16 0", TYPE_U16, 16, vectorSize)
+	: SpvAsmTypeTests	(testCtx, "u16", "shaderInt16", "Int16", "OpTypeInt 16 0", TYPE_U16, 16, vectorSize)
 {
 	m_cases[0] = 0;
 	m_cases[1] = 3210;
@@ -2830,7 +2828,7 @@ public:
 
 SpvAsmTypeUint32Tests::SpvAsmTypeUint32Tests (tcu::TestContext&	testCtx,
 											  deUint32			vectorSize)
-	: SpvAsmTypeTests	(testCtx, "u32", "uint32 tests", DE_NULL, DE_NULL, "OpTypeInt 32 0", TYPE_U32, 32, vectorSize)
+	: SpvAsmTypeTests	(testCtx, "u32", DE_NULL, DE_NULL, "OpTypeInt 32 0", TYPE_U32, 32, vectorSize)
 {
 	m_cases[0] = 0;
 	m_cases[1] = 3210;
@@ -2880,7 +2878,7 @@ public:
 
 SpvAsmTypeUint64Tests::SpvAsmTypeUint64Tests (tcu::TestContext&	testCtx,
 											  deUint32			vectorSize)
-	: SpvAsmTypeTests	(testCtx, "u64", "uint64 tests", "shaderInt64", "Int64", "OpTypeInt 64 0", TYPE_U64, 64, vectorSize)
+	: SpvAsmTypeTests	(testCtx, "u64", "shaderInt64", "Int64", "OpTypeInt 64 0", TYPE_U64, 64, vectorSize)
 {
 	m_cases[0] = 3210;
 	m_cases[1] = 268438669;
@@ -3913,8 +3911,8 @@ const string bitFieldTestPostfix[] =
 
 tcu::TestCaseGroup* createTypeTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>		typeTests			(new tcu::TestCaseGroup(testCtx, "type", "Test types"));
-	de::MovePtr<tcu::TestCaseGroup>		typeScalarTests		(new tcu::TestCaseGroup(testCtx, "scalar", "scalar tests"));
+	de::MovePtr<tcu::TestCaseGroup>		typeTests			(new tcu::TestCaseGroup(testCtx, "type"));
+	de::MovePtr<tcu::TestCaseGroup>		typeScalarTests		(new tcu::TestCaseGroup(testCtx, "scalar"));
 	de::MovePtr<tcu::TestCaseGroup>		typeVectorTests[3];
 
 	de::MovePtr<SpvAsmTypeInt8Tests>	int8Tests[4];
@@ -3929,7 +3927,7 @@ tcu::TestCaseGroup* createTypeTests (tcu::TestContext& testCtx)
 	for (deUint32 ndx = 0; ndx < 3; ++ndx)
 	{
 		std::string testName = "vec" + de::toString(ndx + 2);
-		typeVectorTests[ndx] = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, testName.c_str(), "vector tests"));
+		typeVectorTests[ndx] = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, testName.c_str()));
 	}
 
 	for (deUint32 ndx = 0; ndx < 4; ++ndx)

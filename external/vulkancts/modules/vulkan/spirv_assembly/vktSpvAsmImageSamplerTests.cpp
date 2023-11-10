@@ -817,11 +817,11 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 
 	for (deUint32 opNdx = 0u; opNdx <= READOP_IMAGESAMPLE; opNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> readOpGroup	(new tcu::TestCaseGroup(testCtx, getReadOpName((ReadOp)opNdx), ""));
+		de::MovePtr<tcu::TestCaseGroup> readOpGroup	(new tcu::TestCaseGroup(testCtx, getReadOpName((ReadOp)opNdx)));
 
 		for (deUint32 descNdx = 0u; descNdx < DESCRIPTOR_TYPE_LAST; descNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> descGroup (new tcu::TestCaseGroup(testCtx, getDescriptorName((DescriptorType)descNdx), ""));
+			de::MovePtr<tcu::TestCaseGroup> descGroup (new tcu::TestCaseGroup(testCtx, getDescriptorName((DescriptorType)descNdx)));
 
 			for (deUint32 testNdx = 0u; testNdx < TESTTYPE_LAST; testNdx++)
 			{
@@ -902,9 +902,9 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 							testname = testname + string("_") + string(optypeimageFormatMismatchCase[formatIndex]);
 						}
 						testname += spirvData.postfix;
-						de::MovePtr<tcu::TestCaseGroup> typeGroup (new tcu::TestCaseGroup(testCtx, testname.c_str(), ""));
+						de::MovePtr<tcu::TestCaseGroup> typeGroup (new tcu::TestCaseGroup(testCtx, testname.c_str()));
 
-						de::MovePtr<tcu::TestCaseGroup> depthGroup (new tcu::TestCaseGroup(testCtx, "depth_property", ""));
+						de::MovePtr<tcu::TestCaseGroup> depthGroup (new tcu::TestCaseGroup(testCtx, "depth_property"));
 						for (deUint32 propertyNdx = 0u; propertyNdx < DEPTH_PROPERTY_LAST; propertyNdx++)
 						{
 							const std::string	imageSamplerTypes = getImageSamplerTypeStr((DescriptorType)descNdx, (ReadOp)opNdx, (DepthProperty)propertyNdx, (TestType)testNdx, formatIndex);
@@ -994,7 +994,7 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 
 							spec.assembly = shaderSource;
 
-							depthGroup->addChild(new SpvAsmComputeShaderCase(testCtx, getDepthPropertyName((DepthProperty)propertyNdx), "", spec));
+							depthGroup->addChild(new SpvAsmComputeShaderCase(testCtx, getDepthPropertyName((DepthProperty)propertyNdx), spec));
 						}
 						typeGroup->addChild(depthGroup.release());
 						descGroup->addChild(typeGroup.release());
@@ -1166,14 +1166,14 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 
 	for (deUint32 opNdx = 0u; opNdx < READOP_LAST; opNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	readOpGroup	(new tcu::TestCaseGroup(testCtx, getReadOpName((ReadOp)opNdx), ""));
+		de::MovePtr<tcu::TestCaseGroup>	readOpGroup	(new tcu::TestCaseGroup(testCtx, getReadOpName((ReadOp)opNdx)));
 
 		const VkFormat					imageFormat			= getImageFormat((ReadOp)opNdx);
 		const bool						hasDepthComponent	= tcu::hasDepthComponent(vk::mapVkFormat(imageFormat).order);
 
 		for (deUint32 descNdx = 0u; descNdx < DESCRIPTOR_TYPE_LAST; descNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> descGroup (new tcu::TestCaseGroup(testCtx, getDescriptorName((DescriptorType)descNdx), ""));
+			de::MovePtr<tcu::TestCaseGroup> descGroup (new tcu::TestCaseGroup(testCtx, getDescriptorName((DescriptorType)descNdx)));
 
 			for (deUint32 testNdx = 0u; testNdx < TESTTYPE_LAST; testNdx++)
 			{
@@ -1185,13 +1185,13 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 					formatCount = optypeimageFormatMismatchFormatCount;
 
 				// this group is only used for optypeimage_mismatch case
-				de::MovePtr<tcu::TestCaseGroup> testtypeGroup(new tcu::TestCaseGroup(testCtx, getTestTypeName((TestType)testNdx), ""));
+				de::MovePtr<tcu::TestCaseGroup> testtypeGroup(new tcu::TestCaseGroup(testCtx, getTestTypeName((TestType)testNdx)));
 
 				for (deUint32 formatIndex = 0; formatIndex < formatCount; formatIndex++)
 				{
 					// optypeimage_mismatch uses an additional level of test hierarchy
 					const char *groupname = testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH ? optypeimageFormatMismatchCase[formatIndex] : getTestTypeName((TestType)testNdx);
-					de::MovePtr<tcu::TestCaseGroup>	typeGroup(new tcu::TestCaseGroup(testCtx, groupname, ""));
+					de::MovePtr<tcu::TestCaseGroup>	typeGroup(new tcu::TestCaseGroup(testCtx, groupname));
 					vector<Vec4>&					inputData = hasDepthComponent && testNdx != TESTTYPE_OPTYPEIMAGE_MISMATCH ? inputDataBaseDepth : inputDataBase;
 					GraphicsResources				resources;
 
@@ -1231,10 +1231,10 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 						resources.inputFormat	= getImageFormat((ReadOp)opNdx);
 					}
 
-					de::MovePtr<tcu::TestCaseGroup> depthGroup (new tcu::TestCaseGroup(testCtx, "depth_property", ""));
+					de::MovePtr<tcu::TestCaseGroup> depthGroup (new tcu::TestCaseGroup(testCtx, "depth_property"));
 					for (deUint32 propertyNdx = 0u; propertyNdx < DEPTH_PROPERTY_LAST; propertyNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup> depthPropertyGroup (new tcu::TestCaseGroup(testCtx, getDepthPropertyName((DepthProperty)propertyNdx), ""));
+						de::MovePtr<tcu::TestCaseGroup> depthPropertyGroup (new tcu::TestCaseGroup(testCtx, getDepthPropertyName((DepthProperty)propertyNdx)));
 						const map<string, string>		fragments = generateGraphicsImageSamplerSource((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx, (DepthProperty)propertyNdx, (deUint32)resources.inputs.size(), (deUint32)((formatIndex + 1) % optypeimageFormatMismatchFormatCount));
 
 						// READOP_IMAGESAMPLE_DREF_IMPLICIT_LOD and READOP_IMAGESAMPLE_DREF_EXPLICIT_LOD can only be present in fragment/compute
@@ -1281,7 +1281,8 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createImageSamplerComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "image_sampler", "Compute tests for combining images and samplers."));
+	// Compute tests for combining images and samplers.
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "image_sampler"));
 	addComputeImageSamplerTest(group.get());
 
 	return group.release();
@@ -1289,7 +1290,8 @@ tcu::TestCaseGroup* createImageSamplerComputeGroup (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createImageSamplerGraphicsGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "image_sampler", "Graphics tests for combining images and samplers."));
+	// Graphics tests for combining images and samplers.
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "image_sampler"));
 
 	addGraphicsImageSamplerTest(group.get());
 

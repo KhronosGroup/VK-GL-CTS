@@ -106,6 +106,7 @@ protected:
 	de::SharedPtr<Draw::Buffer>		m_conditionalBuffer;
 
 	vk::Move<vk::VkCommandBuffer>	m_secondaryCmdBuffer;
+	vk::Move<vk::VkCommandBuffer>	m_nestedCmdBuffer;
 
 	std::vector<deUint32>		    m_indexes;
 	de::SharedPtr<Draw::Buffer>		m_indexBuffer;
@@ -128,13 +129,14 @@ ConditionalDraw::ConditionalDraw (Context &context, ConditionalTestSpec testSpec
 	: Draw::DrawTestsBaseClass(context,
 							   testSpec.shaders[glu::SHADERTYPE_VERTEX],
 							   testSpec.shaders[glu::SHADERTYPE_FRAGMENT],
-							   Draw::SharedGroupParams(new Draw::GroupParams{ false, false, false }),
+							   Draw::SharedGroupParams(new Draw::GroupParams{ false, false, false, false }),
 							   vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 	, m_command(testSpec.command)
 	, m_drawCalls(testSpec.drawCalls)
 	, m_conditionalData(testSpec.conditionalData)
 {
 	checkConditionalRenderingCapabilities(context, m_conditionalData);
+	checkNestedRenderPassCapabilities(context);
 	checkSupport(context, m_command);
 
 	const float minX = -0.3f;
@@ -176,6 +178,7 @@ ConditionalDraw::ConditionalDraw (Context &context, ConditionalTestSpec testSpec
 		createRenderPassWithClear();
 
 	m_secondaryCmdBuffer = vk::allocateCommandBuffer(m_vk, m_context.getDevice(), *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+	m_nestedCmdBuffer = vk::allocateCommandBuffer(m_vk, m_context.getDevice(), *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 }
 
 void ConditionalDraw::createRenderPassWithClear (void)
@@ -448,6 +451,10 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 			&inheritanceInfo
 		};
 
+		if (m_conditionalData.secondaryCommandBufferNested) {
+			VK_CHECK(m_vk.beginCommandBuffer(*m_nestedCmdBuffer, &commandBufferBeginInfo));
+		}
+
 		VK_CHECK(m_vk.beginCommandBuffer(*m_secondaryCmdBuffer, &commandBufferBeginInfo));
 
 		targetCmdBuffer = *m_secondaryCmdBuffer;
@@ -511,6 +518,11 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 		m_vk.endCommandBuffer(*m_secondaryCmdBuffer);
 	}
 
+	if (useSecondaryCmdBuffer && m_conditionalData.secondaryCommandBufferNested) {
+		m_vk.cmdExecuteCommands(*m_nestedCmdBuffer, 1, &m_secondaryCmdBuffer.get());
+		m_vk.endCommandBuffer(*m_nestedCmdBuffer);
+	}
+
 	if (m_conditionalData.conditionInPrimaryCommandBuffer)
 	{
 		if (!m_conditionalData.clearInRenderPass)
@@ -518,7 +530,11 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 
 		if (m_conditionalData.conditionInherited)
 		{
-			m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_secondaryCmdBuffer.get());
+			if (m_conditionalData.secondaryCommandBufferNested) {
+				m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_nestedCmdBuffer.get());
+			} else {
+				m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_secondaryCmdBuffer.get());
+			}
 		}
 		else
 		{
@@ -530,7 +546,11 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 	}
 	else if (useSecondaryCmdBuffer)
 	{
-		m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_secondaryCmdBuffer.get());
+		if (m_conditionalData.secondaryCommandBufferNested) {
+			m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_nestedCmdBuffer.get());
+		} else {
+			m_vk.cmdExecuteCommands(*m_cmdBuffer, 1, &m_secondaryCmdBuffer.get());
+		}
 	}
 
 	if (m_conditionalData.clearInRenderPass)
@@ -597,7 +617,7 @@ tcu::TestStatus ConditionalDraw::iterate (void)
 }	// anonymous
 
 ConditionalDrawTests::ConditionalDrawTests (tcu::TestContext &testCtx)
-	: TestCaseGroup	(testCtx, "draw", "Conditional Rendering Of Draw Commands")
+	: TestCaseGroup	(testCtx, "draw")
 {
 	/* Left blank on purpose */
 }
@@ -623,7 +643,7 @@ void ConditionalDrawTests::init (void)
 			testSpec.shaders[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
 			testSpec.shaders[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
 
-			conditionalDrawRootGroup->addChild(new Draw::InstanceFactory<ConditionalDraw>(m_testCtx, getDrawCommandTypeName(command), "", testSpec));
+			conditionalDrawRootGroup->addChild(new Draw::InstanceFactory<ConditionalDraw>(m_testCtx, getDrawCommandTypeName(command), testSpec));
 		}
 
 		addChild(conditionalDrawRootGroup);

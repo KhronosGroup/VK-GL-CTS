@@ -121,8 +121,8 @@ struct TestParams
 class ConditionalRenderingCase : public vkt::TestCase
 {
 public:
-					ConditionalRenderingCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					ConditionalRenderingCase	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 	virtual			~ConditionalRenderingCase	(void) {}
@@ -557,7 +557,7 @@ tcu::TestStatus ConditionalRenderingInstance::iterate ()
 
 tcu::TestCaseGroup* createMeshShaderConditionalRenderingTestsEXT (tcu::TestContext& testCtx)
 {
-	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "conditional_rendering", "Mesh Shader with Conditional Rendering"));
+	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "conditional_rendering"));
 
 	const struct
 	{
@@ -625,27 +625,27 @@ tcu::TestCaseGroup* createMeshShaderConditionalRenderingTestsEXT (tcu::TestConte
 
 	for (const auto& drawTypeCase : drawTypeCases)
 	{
-		GroupPtr drawTypeGroup (new tcu::TestCaseGroup(testCtx, drawTypeCase.name, ""));
+		GroupPtr drawTypeGroup (new tcu::TestCaseGroup(testCtx, drawTypeCase.name));
 
 		for (const auto& cmdBufferTypeCase : cmdBufferTypeCases)
 		{
-			GroupPtr cmdBufferTypeGroup (new tcu::TestCaseGroup(testCtx, cmdBufferTypeCase.name, ""));
+			GroupPtr cmdBufferTypeGroup (new tcu::TestCaseGroup(testCtx, cmdBufferTypeCase.name));
 
 			for (const auto& bindWithOffsetCase : bindWithOffsetCases)
 			{
-				GroupPtr bindWithOffsetGroup (new tcu::TestCaseGroup(testCtx, bindWithOffsetCase.name, ""));
+				GroupPtr bindWithOffsetGroup (new tcu::TestCaseGroup(testCtx, bindWithOffsetCase.name));
 
 				for (const auto& condWithOffsetCase : condWithOffsetCases)
 				{
-					GroupPtr condWithOffsetGroup (new tcu::TestCaseGroup(testCtx, condWithOffsetCase.name, ""));
+					GroupPtr condWithOffsetGroup (new tcu::TestCaseGroup(testCtx, condWithOffsetCase.name));
 
 					for (const auto& inversionCase : inversionCases)
 					{
-						GroupPtr inversionGroup (new tcu::TestCaseGroup(testCtx, inversionCase.name, ""));
+						GroupPtr inversionGroup (new tcu::TestCaseGroup(testCtx, inversionCase.name));
 
 						for (const auto& useTaskCase : useTaskCases)
 						{
-							GroupPtr useTaskGroup (new tcu::TestCaseGroup(testCtx, useTaskCase.name, ""));
+							GroupPtr useTaskGroup (new tcu::TestCaseGroup(testCtx, useTaskCase.name));
 
 							for (const auto& condValue : condValues)
 							{
@@ -660,7 +660,7 @@ tcu::TestCaseGroup* createMeshShaderConditionalRenderingTestsEXT (tcu::TestConte
 									inversionCase.inverted,				//	bool			inverted;
 									useTaskCase.useTask,				//	bool			useTask;
 								};
-								useTaskGroup->addChild(new ConditionalRenderingCase(testCtx, testName, "", params));
+								useTaskGroup->addChild(new ConditionalRenderingCase(testCtx, testName, params));
 							}
 
 							inversionGroup->addChild(useTaskGroup.release());

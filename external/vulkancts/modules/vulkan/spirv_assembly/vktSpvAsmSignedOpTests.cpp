@@ -89,7 +89,7 @@ tcu::TestCaseGroup* createSignedOpTestsGroup (tcu::TestContext& testCtx)
 {
 	// Location of the Amber script files under the data/vulkan/amber source tree.
 	const char* data_dir = "spirv_assembly/instruction/compute/signed_op";
-	return createTestGroup(testCtx, "signed_op", "Signed op over uint values", createSignedOpTests, data_dir);
+	return createTestGroup(testCtx, "signed_op", createSignedOpTests, data_dir);
 }
 
 } // SpirVAssembly

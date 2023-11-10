@@ -4285,8 +4285,8 @@ class DescriptorIndexingTestCase : public TestCase
 {
 	const TestCaseParams m_testCaseParams;
 public:
-	DescriptorIndexingTestCase (tcu::TestContext &context, const char *name, const char *description, const TestCaseParams& testCaseParams)
-		: TestCase(context, name, description)
+	DescriptorIndexingTestCase (tcu::TestContext &context, const char *name, const TestCaseParams& testCaseParams)
+		: TestCase(context, name)
 		, m_testCaseParams(testCaseParams)
 	{
 	}
@@ -4531,7 +4531,6 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 	struct TestCaseInfo
 	{
 		const char*			name;
-		const char*			description;
 		VkDescriptorType	descriptorType;
 	};
 
@@ -4539,17 +4538,17 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 
 	TestCaseInfo casesAfterBindAndLoop[] =
 	{
-		{ "storage_buffer",			"Regular Storage Buffer Descriptors",	VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			},
-		{ "storage_texel_buffer",	"Storage Texel Buffer Descriptors",		VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,	},
-		{ "uniform_texel_buffer",	"Uniform Texel Buffer Descriptors",		VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,	},
-		{ "storage_image",			"Storage Image Descriptors",			VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,			},
-		{ "sampler",				"Sampler Descriptors",					VK_DESCRIPTOR_TYPE_SAMPLER,					},
-		{ "sampled_image",			"Sampled Image Descriptors",			VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,			},
-		{ "combined_image_sampler",	"Combined Image Sampler Descriptors",	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	},
-		{ "uniform_buffer",			"Regular Uniform Buffer Descriptors",	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			},
-		{ "storage_buffer_dynamic",	"Dynamic Storage Buffer Descriptors",	VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,	},
-		{ "uniform_buffer_dynamic",	"Dynamic Uniform Buffer Descriptors",	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	},
-		{ "input_attachment",		"Input Attachment Descriptors",			VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,		},
+		{ "storage_buffer",			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			},
+		{ "storage_texel_buffer",		VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,	},
+		{ "uniform_texel_buffer",		VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,	},
+		{ "storage_image",			VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,			},
+		{ "sampler",					VK_DESCRIPTOR_TYPE_SAMPLER,					},
+		{ "sampled_image",			VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,			},
+		{ "combined_image_sampler",	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	},
+		{ "uniform_buffer",			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			},
+		{ "storage_buffer_dynamic",	VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,	},
+		{ "uniform_buffer_dynamic",	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	},
+		{ "input_attachment",		VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,		},
 	};
 
 	for (int updateAfterBind = 0; updateAfterBind < 2; ++updateAfterBind)
@@ -4571,18 +4570,12 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 							continue;
 
 						std::string		caseName		(info.name);
-						std::string		caseDescription	(info.description);
 						TestCaseParams	params;
 
 						caseName		+= (updateAfterBind	? "_after_bind"	: "");
 						caseName		+= (calculateInLoop ? "_in_loop"	: "");
 						caseName		+= (usesMipMaps		? "_with_lod"	: "");
 						caseName		+= (lifetimeCheck	? "_lifetime"	: "");
-
-						caseDescription	+= (updateAfterBind	? " After Bind"	: "");
-						caseDescription	+= (calculateInLoop	? " In Loop"	: "");
-						caseDescription	+= (usesMipMaps		? " Use LOD"	: "");
-						caseDescription	+= (lifetimeCheck	? " Lifetime"	: "");
 
 						params.descriptorType	= info.descriptorType;
 						params.stageFlags		= (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ? VK_SHADER_STAGE_COMPUTE_BIT : (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -4593,7 +4586,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 						params.lifetimeCheck	= lifetimeCheck		? true : false;
 						params.minNonUniform	= false;
 
-						group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params));
+						group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), params));
 					}
 				}
 			}
@@ -4606,12 +4599,12 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 
 	TestCaseInfo casesMinNonUniform[] =
 	{
-		{ "storage_buffer",			"Regular Storage Buffer Descriptors",	VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			},
-		{ "storage_texel_buffer",	"Storage Texel Buffer Descriptors",		VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,	},
-		{ "uniform_texel_buffer",	"Uniform Texel Buffer Descriptors",		VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,	},
-		{ "uniform_buffer",			"Regular Uniform Buffer Descriptors",	VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			},
-		{ "combined_image_sampler",	"Combined Image Sampler Descriptors",	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	},
-		{ "storage_image",			"Storage Image Descriptors",			VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,			},
+		{ "storage_buffer",			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			},
+		{ "storage_texel_buffer",		VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,	},
+		{ "uniform_texel_buffer",		VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,	},
+		{ "uniform_buffer",			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			},
+		{ "combined_image_sampler",	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	},
+		{ "storage_image",			VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,			},
 	};
 
 	for (int usesMipMaps = 0; usesMipMaps < 2; ++usesMipMaps)
@@ -4624,14 +4617,10 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 				continue;
 
 			std::string		caseName(info.name);
-			std::string		caseDescription(info.description);
 			TestCaseParams	params;
 
 			caseName		+= (usesMipMaps		? "_with_lod"	: "");
 			caseName		+= "_minNonUniform";
-
-			caseDescription	+= (usesMipMaps		? " Use LOD"	: "");
-			caseDescription += " With Minimum NonUniform Decorations";
 
 			params.descriptorType	= info.descriptorType;
 			params.stageFlags		= (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ? VK_SHADER_STAGE_COMPUTE_BIT : (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -4641,7 +4630,7 @@ void descriptorIndexingDescriptorSetsCreateTests (tcu::TestCaseGroup* group)
 			params.usesMipMaps		= usesMipMaps ? true : false;
 			params.minNonUniform	= true;
 
-			TestCase* tc = new DescriptorIndexingTestCase(context, caseName.c_str(), caseDescription.c_str(), params);
+			TestCase* tc = new DescriptorIndexingTestCase(context, caseName.c_str(), params);
 			group->addChild(tc);
 		}
 	}

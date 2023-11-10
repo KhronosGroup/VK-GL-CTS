@@ -60,7 +60,7 @@ using namespace vk;
 class DynamicIndexingCase : public vkt::TestCase
 {
 public:
-							DynamicIndexingCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description);
+							DynamicIndexingCase		(tcu::TestContext& testCtx, const std::string& name);
 	virtual					~DynamicIndexingCase	(void) {}
 
 	virtual void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -88,8 +88,8 @@ public:
 	virtual tcu::TestStatus		iterate						(void);
 };
 
-DynamicIndexingCase::DynamicIndexingCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-	: vkt::TestCase (testCtx, name, description)
+DynamicIndexingCase::DynamicIndexingCase (tcu::TestContext& testCtx, const std::string& name)
+	: vkt::TestCase (testCtx, name)
 {}
 
 void DynamicIndexingCase::initPrograms (vk::SourceCollections& programCollection) const
@@ -517,7 +517,7 @@ private:
 HelperInvocationsCase::HelperInvocationsCase (TestContext&						testCtx,
 											  const HelperInvocationsParams&	params,
 											  const std::string&				name)
-	: TestCase	(testCtx, name, std::string())
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {
 }
@@ -1049,16 +1049,16 @@ TestCaseGroup* addHelperInvocationsTests(TestContext& testCtx)
 	auto rootGroup = new TestCaseGroup(testCtx, "helper_invocations", "Ray query helper invocation tests");
 	for (auto& build : builds)
 	{
-		auto buildGroup = new tcu::TestCaseGroup(testCtx, build.second, "");
+		auto buildGroup = new tcu::TestCaseGroup(testCtx, build.second);
 		for (auto& style : styles)
 		{
-			auto styleGroup = new tcu::TestCaseGroup(testCtx, style.second, "");
+			auto styleGroup = new tcu::TestCaseGroup(testCtx, style.second);
 			for (auto& mode : modes)
 			{
-				auto modeGroup = new tcu::TestCaseGroup(testCtx, mode.second, "");
+				auto modeGroup = new tcu::TestCaseGroup(testCtx, mode.second);
 				for (auto& screen : screens)
 				{
-					auto screenGroup = new TestCaseGroup(testCtx, makeTestName(screen).c_str(), "");
+					auto screenGroup = new TestCaseGroup(testCtx, makeTestName(screen).c_str());
 					for (auto& model : models)
 					{
 						HelperInvocationsParams p;
@@ -1083,13 +1083,14 @@ TestCaseGroup* addHelperInvocationsTests(TestContext& testCtx)
 
 tcu::TestCaseGroup*	createMiscTests	(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "misc", "Miscellaneous ray query tests"));
+	// Miscellaneous ray query tests
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "misc"));
 
-	group->addChild(new DynamicIndexingCase(testCtx, "dynamic_indexing", "Dynamic indexing of ray queries"));
+	// Dynamic indexing of ray queries
+	group->addChild(new DynamicIndexingCase(testCtx, "dynamic_indexing"));
 
 	return group.release();
 }
 
 } // RayQuery
 } // vkt
-

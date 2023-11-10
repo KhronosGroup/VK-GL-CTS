@@ -509,7 +509,7 @@ class Maintenance3StructTestCase : public TestCase
 {
 public:
 											Maintenance3StructTestCase				(tcu::TestContext&	testCtx)
-												: TestCase(testCtx, "maintenance3_properties", "tests VkPhysicalDeviceMaintenance3Properties struct")
+												: TestCase(testCtx, "maintenance3_properties")
 	{}
 
 	virtual									~Maintenance3StructTestCase				(void)
@@ -692,7 +692,7 @@ class Maintenance3DescriptorTestCase : public TestCase
 
 public:
 											Maintenance3DescriptorTestCase			(tcu::TestContext&	testCtx)
-												: TestCase(testCtx, "descriptor_set", "tests vkGetDescriptorSetLayoutSupport struct")
+												: TestCase(testCtx, "descriptor_set")
 	{}
 	virtual									~Maintenance3DescriptorTestCase			(void)
 	{}
@@ -881,7 +881,7 @@ std::string getDescriptorTypeShortName (const VkDescriptorType descType)
 
 tcu::TestCaseGroup*							createMaintenance3Tests					(tcu::TestContext&	testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	main3Tests(new tcu::TestCaseGroup(testCtx, "maintenance3_check", "Maintenance3 Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	main3Tests(new tcu::TestCaseGroup(testCtx, "maintenance3_check"));
 	main3Tests->addChild(new Maintenance3StructTestCase(testCtx));
 	main3Tests->addChild(new Maintenance3DescriptorTestCase(testCtx));
 
@@ -911,7 +911,7 @@ tcu::TestCaseGroup*							createMaintenance3Tests					(tcu::TestContext&	testCtx
 					const auto						caseName			= "support_count_" + getDescriptorTypeShortName(descriptorType) + extraBindingsSuffix + variableSizeSuffix;
 					const CountLayoutSupportParams	params				{ descriptorType, extraBindings, useVariableSize };
 
-					addFunctionCase(main3Tests.get(), caseName.c_str(), "", checkSupportCountLayoutSupport, testCountLayoutSupport, params);
+					addFunctionCase(main3Tests.get(), caseName.c_str(), checkSupportCountLayoutSupport, testCountLayoutSupport, params);
 				}
 	}
 

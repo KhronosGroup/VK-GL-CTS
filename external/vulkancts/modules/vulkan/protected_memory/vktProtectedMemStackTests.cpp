@@ -111,9 +111,8 @@ class StackTestCase : public TestCase
 public:
 								StackTestCase	(tcu::TestContext&		testCtx,
 												 const std::string&		name,
-												 const std::string&		description,
 												 const Params&			params)
-									: TestCase		(testCtx, name, description)
+									: TestCase		(testCtx, name)
 									, m_validator	(vk::VK_FORMAT_R8G8B8A8_UNORM)
 									, m_params		(params)
 								{
@@ -395,7 +394,8 @@ bool StackTestInstance::validateResult (vk::VkImage image, vk::VkImageLayout ima
 
 tcu::TestCaseGroup*	createStackTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> stackGroup (new tcu::TestCaseGroup(testCtx, "stack", "Protected memory stack tests"));
+	// Protected memory stack tests
+	de::MovePtr<tcu::TestCaseGroup> stackGroup (new tcu::TestCaseGroup(testCtx, "stack"));
 
 	static const deUint32 stackMemSizes[] = { 32, 64, 128, 256, 512, 1024 };
 
@@ -403,7 +403,7 @@ tcu::TestCaseGroup*	createStackTests (tcu::TestContext& testCtx)
 	{
 		std::string testName = std::string("stacksize_") + de::toString(stackMemSizes[stackMemSizeIdx]);
 
-		stackGroup->addChild(new StackTestCase(testCtx, testName, "", Params(stackMemSizes[stackMemSizeIdx])));
+		stackGroup->addChild(new StackTestCase(testCtx, testName, Params(stackMemSizes[stackMemSizeIdx])));
 	}
 
 	return stackGroup.release();

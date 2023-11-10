@@ -67,7 +67,34 @@ enum IncompleteBinaryTestType
 	CREATE_FROM_HALF_SIZE_GARBAGE,
 };
 
-vk::Move<vk::VkShaderEXT> createShader (const vk::DeviceInterface& vk, const vk::BinaryCollection& binaries, const vk::VkDevice device, vk::VkPhysicalDeviceFeatures features, vk::VkDescriptorSetLayout descriptorSetLayout, bool linked, vk::VkShaderStageFlagBits stage, bool tessellationSupported, bool geometrySupported)
+vk::VkShaderStageFlags getNextStage (vk::VkShaderStageFlagBits shaderStage, bool tessellationShaderFeature, bool geometryShaderFeature)
+{
+	if (shaderStage == vk::VK_SHADER_STAGE_VERTEX_BIT)
+	{
+		if (tessellationShaderFeature)
+			return vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+		else if (geometryShaderFeature)
+			return vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+		return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+	}
+	else if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+	{
+		return vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	}
+	else if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+	{
+		if (geometryShaderFeature)
+			return vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+		return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+	}
+	else if (shaderStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT)
+	{
+		return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+	}
+	return 0u;
+}
+
+vk::Move<vk::VkShaderEXT> createShader (const vk::DeviceInterface& vk, const vk::BinaryCollection& binaries, const vk::VkDevice device, vk::VkPhysicalDeviceFeatures features, vk::VkDescriptorSetLayout descriptorSetLayout, bool linked, vk::VkShaderStageFlagBits stage)
 {
 	vk::VkShaderEXT				shader;
 
@@ -80,7 +107,7 @@ vk::Move<vk::VkShaderEXT> createShader (const vk::DeviceInterface& vk, const vk:
 			DE_NULL,																	// const void*					pNext;
 			0u,																			// VkShaderCreateFlagsEXT		flags;
 			stage,																		// VkShaderStageFlagBits		stage;
-			vk::getShaderObjectNextStages(stage, tessellationSupported, geometrySupported),										// VkShaderStageFlags			nextStage;
+			getNextStage(stage, features.tessellationShader, features.geometryShader),	// VkShaderStageFlags			nextStage;
 			vk::VK_SHADER_CODE_TYPE_SPIRV_EXT,											// VkShaderCodeTypeEXT			codeType;
 			src.getSize(),																// size_t						codeSize;
 			src.getBinary(),															// const void*					pCode;
@@ -109,7 +136,7 @@ vk::Move<vk::VkShaderEXT> createShader (const vk::DeviceInterface& vk, const vk:
 				DE_NULL,										// const void*					pNext;
 				vk::VK_SHADER_CREATE_LINK_STAGE_BIT_EXT,		// VkShaderCreateFlagsEXT		flags;
 				vk::VK_SHADER_STAGE_VERTEX_BIT,					// VkShaderStageFlagBits		stage;
-				vk::getShaderObjectNextStages(vk::VK_SHADER_STAGE_VERTEX_BIT, tessellationSupported, geometrySupported),	// VkShaderStageFlags			nextStage;
+				getNextStage(vk::VK_SHADER_STAGE_VERTEX_BIT, features.tessellationShader, features.geometryShader),	// VkShaderStageFlags			nextStage;
 				vk::VK_SHADER_CODE_TYPE_SPIRV_EXT,				// VkShaderCodeTypeEXT			codeType;
 				vert.getSize(),									// size_t						codeSize;
 				vert.getBinary(),								// const void*					pCode;
@@ -125,7 +152,7 @@ vk::Move<vk::VkShaderEXT> createShader (const vk::DeviceInterface& vk, const vk:
 				DE_NULL,										// const void*					pNext;
 				vk::VK_SHADER_CREATE_LINK_STAGE_BIT_EXT,		// VkShaderCreateFlagsEXT		flags;
 				vk::VK_SHADER_STAGE_FRAGMENT_BIT,				// VkShaderStageFlagBits		stage;
-				vk::getShaderObjectNextStages(vk::VK_SHADER_STAGE_FRAGMENT_BIT, tessellationSupported, geometrySupported),	// VkShaderStageFlags			nextStage;
+				getNextStage(vk::VK_SHADER_STAGE_FRAGMENT_BIT, features.tessellationShader, features.geometryShader),	// VkShaderStageFlags			nextStage;
 				vk::VK_SHADER_CODE_TYPE_SPIRV_EXT,				// VkShaderCodeTypeEXT			codeType;
 				frag.getSize(),									// size_t						codeSize;
 				frag.getBinary(),								// const void*					pCode;
@@ -145,7 +172,7 @@ vk::Move<vk::VkShaderEXT> createShader (const vk::DeviceInterface& vk, const vk:
 					DE_NULL,										// const void*					pNext;
 					vk::VK_SHADER_CREATE_LINK_STAGE_BIT_EXT,		// VkShaderCreateFlagsEXT		flags;
 					vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	// VkShaderStageFlagBits		stage;
-					vk::getShaderObjectNextStages(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, tessellationSupported, geometrySupported),	// VkShaderStageFlags			nextStage;
+					getNextStage(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, features.tessellationShader, features.geometryShader),	// VkShaderStageFlags			nextStage;
 					vk::VK_SHADER_CODE_TYPE_SPIRV_EXT,				// VkShaderCodeTypeEXT			codeType;
 					tesc.getSize(),									// size_t						codeSize;
 					tesc.getBinary(),								// const void*					pCode;
@@ -163,7 +190,7 @@ vk::Move<vk::VkShaderEXT> createShader (const vk::DeviceInterface& vk, const vk:
 					DE_NULL,										// const void*					pNext;
 					vk::VK_SHADER_CREATE_LINK_STAGE_BIT_EXT,		// VkShaderCreateFlagsEXT		flags;
 					vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,// VkShaderStageFlagBits		stage;
-					vk::getShaderObjectNextStages(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, tessellationSupported, geometrySupported),	// VkShaderStageFlags			nextStage;
+					getNextStage(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, features.tessellationShader, features.geometryShader),	// VkShaderStageFlags			nextStage;
 					vk::VK_SHADER_CODE_TYPE_SPIRV_EXT,				// VkShaderCodeTypeEXT			codeType;
 					tese.getSize(),									// size_t						codeSize;
 					tese.getBinary(),								// const void*					pCode;
@@ -184,7 +211,7 @@ vk::Move<vk::VkShaderEXT> createShader (const vk::DeviceInterface& vk, const vk:
 					DE_NULL,										// const void*					pNext;
 					vk::VK_SHADER_CREATE_LINK_STAGE_BIT_EXT,		// VkShaderCreateFlagsEXT		flags;
 					vk::VK_SHADER_STAGE_GEOMETRY_BIT,				// VkShaderStageFlagBits		stage;
-					vk::getShaderObjectNextStages(vk::VK_SHADER_STAGE_GEOMETRY_BIT, tessellationSupported, geometrySupported),	// VkShaderStageFlags			nextStage;
+					getNextStage(vk::VK_SHADER_STAGE_GEOMETRY_BIT, features.tessellationShader, features.geometryShader),	// VkShaderStageFlags			nextStage;
 					vk::VK_SHADER_CODE_TYPE_SPIRV_EXT,				// VkShaderCodeTypeEXT			codeType;
 					geom.getSize(),									// size_t						codeSize;
 					geom.getBinary(),								// const void*					pCode;
@@ -251,7 +278,7 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate (void)
 	vk::VkDescriptorSetLayout	layout				= (m_params.stage == vk::VK_SHADER_STAGE_COMPUTE_BIT) ? *descriptorSetLayout : VK_NULL_HANDLE;
 
 	const auto&					binaries			= m_context.getBinaryCollection();
-	vk::Move<vk::VkShaderEXT>	shader				= createShader(vk, binaries, device, m_context.getDeviceFeatures(), layout, m_params.linked, m_params.stage, tessellationSupported, geometrySupported);
+	vk::Move<vk::VkShaderEXT>	shader				= createShader(vk, binaries, device, m_context.getDeviceFeatures(), layout, m_params.linked, m_params.stage);
 
 	size_t						dataSize			= 0;
 	vk.getShaderBinaryDataEXT(device, *shader, &dataSize, DE_NULL);
@@ -270,7 +297,7 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate (void)
 		}
 		else if (m_params.queryType == NEW_SHADER)
 		{
-			vk::Move<vk::VkShaderEXT> otherShader = createShader(vk, binaries, device, m_context.getDeviceFeatures(), layout, m_params.linked, m_params.stage, tessellationSupported, geometrySupported);
+			vk::Move<vk::VkShaderEXT> otherShader = createShader(vk, binaries, device, m_context.getDeviceFeatures(), layout, m_params.linked, m_params.stage);
 			vk.getShaderBinaryDataEXT(device, *otherShader, &otherDataSize, DE_NULL);
 			otherData.resize(otherDataSize);
 			vk.getShaderBinaryDataEXT(device, *otherShader, &otherDataSize, otherData.data());
@@ -291,6 +318,8 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate (void)
 			if (m_params.queryType == DEVICE_NO_EXTS_FEATURES)
 			{
 				features2 = vk::initVulkanStructure(&shaderObjectFeatures);
+				features2.features.tessellationShader = tessellationSupported;
+				features2.features.geometryShader = geometrySupported;
 				extensions.push_back("VK_EXT_shader_object");
 			}
 			else
@@ -326,7 +355,7 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate (void)
 
 			vk::Move<vk::VkDevice>		otherDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, instanceDriver, physicalDevice, &deviceCreateInfo);
 
-			vk::Move<vk::VkShaderEXT>	otherShader		= createShader(vk, binaries, *otherDevice, m_context.getDeviceFeatures(), layout, m_params.linked, m_params.stage, tessellationSupported, geometrySupported);
+			vk::Move<vk::VkShaderEXT>	otherShader		= createShader(vk, binaries, *otherDevice, features2.features, layout, m_params.linked, m_params.stage);
 			vk.getShaderBinaryDataEXT(*otherDevice, *otherShader, &otherDataSize, DE_NULL);
 			otherData.resize(otherDataSize);
 			vk.getShaderBinaryDataEXT(*otherDevice, *otherShader, &otherDataSize, otherData.data());
@@ -346,8 +375,8 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate (void)
 class ShaderObjectBinaryQueryCase : public vkt::TestCase
 {
 public:
-					ShaderObjectBinaryQueryCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, TestParams params)
-													: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectBinaryQueryCase		(tcu::TestContext& testCtx, const std::string& name, TestParams params)
+													: vkt::TestCase		(testCtx, name)
 													, m_params			(params)
 													{}
 	virtual			~ShaderObjectBinaryQueryCase	(void) {}
@@ -494,8 +523,8 @@ tcu::TestStatus ShaderObjectIncompatibleBinaryInstance::iterate (void)
 class ShaderObjectIncompatibleBinaryCase : public vkt::TestCase
 {
 public:
-					ShaderObjectIncompatibleBinaryCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const vk::VkShaderStageFlagBits shaderStage, const IncompleteBinaryTestType testType)
-														: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectIncompatibleBinaryCase	(tcu::TestContext& testCtx, const std::string& name, const vk::VkShaderStageFlagBits shaderStage, const IncompleteBinaryTestType testType)
+														: vkt::TestCase		(testCtx, name)
 														, m_shaderStage		(shaderStage)
 														, m_testType		(testType)
 														{}
@@ -563,8 +592,6 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 	const vk::DeviceInterface&	vk						= m_context.getDeviceInterface();
 	const vk::VkDevice			device					= m_context.getDevice();
 	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
-	const bool					tessellationSupported	= m_context.getDeviceFeatures().tessellationShader;
-	const bool					geometrySupported		= m_context.getDeviceFeatures().geometryShader;
 	const auto&					binaries				= m_context.getBinaryCollection();
 
 	const vk::VkPhysicalDeviceFeatures	features		= m_context.getDeviceFeatures();
@@ -576,7 +603,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 
 	vk::VkDescriptorSetLayout	layout				= (m_stage == vk::VK_SHADER_STAGE_COMPUTE_BIT) ? *descriptorSetLayout : VK_NULL_HANDLE;
 
-	vk::Move<vk::VkShaderEXT>	shader				= createShader(vk, binaries, device, features, layout, m_linked, m_stage, tessellationSupported, geometrySupported);
+	vk::Move<vk::VkShaderEXT>	shader				= createShader(vk, binaries, device, features, layout, m_linked, m_stage);
 
 	size_t						dataSize			= 0;
 	vk.getShaderBinaryDataEXT(device, *shader, &dataSize, DE_NULL);
@@ -913,9 +940,6 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 
 	const deUint32 coreFeaturesCount	= 50u;
 	const deUint32 pNextFeaturesCount	= (deUint32)pNextFeatures.size();
-	// Geometry and tessellation features must not be modified, we will skip them
-	const deUint32 geomIndex			= 4u;
-	const deUint32 tessIndex			= 5u;
 
 	// There are too many features to test every combination, so we group them by step = 10
 	const deUint32 step1 = 10u;
@@ -930,11 +954,8 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 		void* pNext = DE_NULL;
 		for (deUint32 j = 0; j < coreFeaturesCount; ++j)
 		{
-			deUint32 k = j;
-			if (j > geomIndex) k++;
-			if (j > tessIndex) k++;
 			if (((m_index >> (j / step1)) & 1) == 0)
-				coreFeaturesPtr[k] = VK_FALSE;
+				coreFeaturesPtr[j] = VK_FALSE;
 		}
 		for (deUint32 j = 0; j < pNextFeaturesCount; ++j)
 		{
@@ -950,10 +971,13 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 
 		shaderObjectFeatures.pNext = pNext;
 		testFeatures.pNext = &shaderObjectFeatures;
+		// Geometry and tessellation features must not be modified
+		testFeatures.features.tessellationShader = features.tessellationShader;
+		testFeatures.features.geometryShader = features.geometryShader;
 
 		vk::Move<vk::VkDevice>		otherDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, instanceDriver, physicalDevice, &deviceCreateInfo);
 
-		vk::Move<vk::VkShaderEXT>	otherShader = createShader(vk, binaries, *otherDevice, features, layout, m_linked, m_stage, tessellationSupported, geometrySupported);
+		vk::Move<vk::VkShaderEXT>	otherShader = createShader(vk, binaries, *otherDevice, features, layout, m_linked, m_stage);
 		vk.getShaderBinaryDataEXT(*otherDevice, *otherShader, &otherDataSize, DE_NULL);
 		otherData.resize(otherDataSize);
 		vk.getShaderBinaryDataEXT(*otherDevice, *otherShader, &otherDataSize, otherData.data());
@@ -972,8 +996,8 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 class ShaderObjectDeviceFeaturesBinaryCase : public vkt::TestCase
 {
 public:
-					ShaderObjectDeviceFeaturesBinaryCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const bool linked, const vk::VkShaderStageFlagBits stage, const deUint32 index)
-															: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectDeviceFeaturesBinaryCase	(tcu::TestContext& testCtx, const std::string& name, const bool linked, const vk::VkShaderStageFlagBits stage, const deUint32 index)
+															: vkt::TestCase		(testCtx, name)
 															, m_linked			(linked)
 															, m_stage			(stage)
 															, m_index			(index)
@@ -1032,7 +1056,7 @@ std::string getName (QueryType queryType)
 
 tcu::TestCaseGroup* createShaderObjectBinaryTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> binaryGroup(new tcu::TestCaseGroup(testCtx, "binary", ""));
+	de::MovePtr<tcu::TestCaseGroup> binaryGroup(new tcu::TestCaseGroup(testCtx, "binary"));
 
 	const struct
 	{
@@ -1063,17 +1087,17 @@ tcu::TestCaseGroup* createShaderObjectBinaryTests (tcu::TestContext& testCtx)
 		DEVICE_NO_EXTS_FEATURES,
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> queryGroup(new tcu::TestCaseGroup(testCtx, "query", ""));
+	de::MovePtr<tcu::TestCaseGroup> queryGroup(new tcu::TestCaseGroup(testCtx, "query"));
 	for (const auto& stage : stageTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name));
 		for (const auto& linked : linkedTests)
 		{
 			if (linked && stage.stage == vk::VK_SHADER_STAGE_COMPUTE_BIT)
 				continue;
 
 			std::string linkedName = linked ? "linked" : "unlinked";
-			de::MovePtr<tcu::TestCaseGroup> linkedGroup(new tcu::TestCaseGroup(testCtx, linkedName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> linkedGroup(new tcu::TestCaseGroup(testCtx, linkedName.c_str()));
 			for (const auto& queryType : queryTypeTests)
 			{
 				TestParams params =
@@ -1082,7 +1106,7 @@ tcu::TestCaseGroup* createShaderObjectBinaryTests (tcu::TestContext& testCtx)
 					linked,
 					queryType,
 				};
-				linkedGroup->addChild(new ShaderObjectBinaryQueryCase(testCtx, getName(queryType), "", params));
+				linkedGroup->addChild(new ShaderObjectBinaryQueryCase(testCtx, getName(queryType), params));
 			}
 			stageGroup->addChild(linkedGroup.release());
 		}
@@ -1102,31 +1126,31 @@ tcu::TestCaseGroup* createShaderObjectBinaryTests (tcu::TestContext& testCtx)
 		{ CREATE_FROM_HALF_SIZE_GARBAGE,	"create_from_half_size_garbage"	},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> incompatibleGroup(new tcu::TestCaseGroup(testCtx, "incompatible", ""));
+	de::MovePtr<tcu::TestCaseGroup> incompatibleGroup(new tcu::TestCaseGroup(testCtx, "incompatible"));
 	for (const auto& stage : stageTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name));
 		for (const auto& testType : incompatibleTests)
 		{
-			stageGroup->addChild(new ShaderObjectIncompatibleBinaryCase(testCtx, testType.name, "", stage.stage, testType.type));
+			stageGroup->addChild(new ShaderObjectIncompatibleBinaryCase(testCtx, testType.name, stage.stage, testType.type));
 		}
 		incompatibleGroup->addChild(stageGroup.release());
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> deviceFeaturesGroup(new tcu::TestCaseGroup(testCtx, "device_features", ""));
+	de::MovePtr<tcu::TestCaseGroup> deviceFeaturesGroup(new tcu::TestCaseGroup(testCtx, "device_features"));
 	for (const auto& stage : stageTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name));
 		for (const auto& linked : linkedTests)
 		{
 			if (linked && stage.stage == vk::VK_SHADER_STAGE_COMPUTE_BIT)
 				continue;
 
 			std::string linkedName = linked ? "linked" : "unlinked";
-			de::MovePtr<tcu::TestCaseGroup> linkedGroup(new tcu::TestCaseGroup(testCtx, linkedName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> linkedGroup(new tcu::TestCaseGroup(testCtx, linkedName.c_str()));
 			for (deUint32 i = 0; i < 32; ++i)
 			{
-				linkedGroup->addChild(new ShaderObjectDeviceFeaturesBinaryCase(testCtx, std::to_string(i), "", linked, stage.stage, i));
+				linkedGroup->addChild(new ShaderObjectDeviceFeaturesBinaryCase(testCtx, std::to_string(i), linked, stage.stage, i));
 			}
 			stageGroup->addChild(linkedGroup.release());
 		}
@@ -1142,4 +1166,3 @@ tcu::TestCaseGroup* createShaderObjectBinaryTests (tcu::TestContext& testCtx)
 
 } // ShaderObject
 } // vkt
-

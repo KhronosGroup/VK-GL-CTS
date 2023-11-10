@@ -370,7 +370,7 @@ public:
 	};
 
 	AliasTest(tcu::TestContext& testCtx, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, caseDef.testName(), caseDef.testName())
+		: TestCase							(testCtx, caseDef.testName())
 		, m_caseDef							(caseDef)
 		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
@@ -819,7 +819,7 @@ public:
 	};
 
 	ZeroTest(tcu::TestContext& testCtx, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, caseDef.testName(), caseDef.testName())
+		: TestCase							(testCtx, caseDef.testName())
 		, m_caseDef							(caseDef)
 		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
@@ -1080,7 +1080,7 @@ public:
 	};
 
 	PaddingTest(tcu::TestContext& testCtx, const CaseDef& caseDef, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, caseDef.testName(), caseDef.testName())
+		: TestCase							(testCtx, caseDef.testName())
 		, m_caseDef							(caseDef)
 		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
@@ -1230,7 +1230,7 @@ class SizeTest : public vkt::TestCase
 {
 public:
 	SizeTest(tcu::TestContext& testCtx, deUint32 size, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-		: TestCase							(testCtx, de::toString(size), de::toString(size))
+		: TestCase							(testCtx, de::toString(size))
 		, m_size							(size)
 		, m_computePipelineConstructionType	(computePipelineConstructionType)
 	{
@@ -1347,7 +1347,6 @@ void AddSizeTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionType
 
 cts_amber::AmberTestCase* CreateAmberTestCase(tcu::TestContext& testCtx,
 											  const char* name,
-											  const char* description,
 											  const std::string& filename,
 											  const std::vector<std::string>& requirements = std::vector<std::string>(),
 											  bool zeroinit = false,
@@ -1358,7 +1357,7 @@ cts_amber::AmberTestCase* CreateAmberTestCase(tcu::TestContext& testCtx,
 
 	const std::string test_filename = shaderObjects ? "shader_object_" + std::string(filename) : filename;
 
-	cts_amber::AmberTestCase *t = cts_amber::createAmberTestCase(testCtx, name, description, "compute/workgroup_memory_explicit_layout", test_filename.c_str(), requirements);
+	cts_amber::AmberTestCase *t = cts_amber::createAmberTestCase(testCtx, name, "compute/workgroup_memory_explicit_layout", test_filename.c_str(), requirements);
 	t->setSpirVAsmBuildOptions(asm_options);
 	t->addRequirement("VK_KHR_workgroup_memory_explicit_layout");
 	t->addRequirement("VK_KHR_spirv_1_4");
@@ -1379,9 +1378,9 @@ void AddCopyMemoryTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructi
 
 	bool shaderObject = (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV) || (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY);
 
-	group->addChild(CreateAmberTestCase(testCtx, "basic", "", "copy_memory_basic.amber", {}, false, shaderObject));
-	group->addChild(CreateAmberTestCase(testCtx, "two_invocations", "", "copy_memory_two_invocations.amber", {}, false, shaderObject));
-	group->addChild(CreateAmberTestCase(testCtx, "variable_pointers", "", "copy_memory_variable_pointers.amber",
+	group->addChild(CreateAmberTestCase(testCtx, "basic", "copy_memory_basic.amber", {}, false, shaderObject));
+	group->addChild(CreateAmberTestCase(testCtx, "two_invocations", "copy_memory_two_invocations.amber", {}, false, shaderObject));
+	group->addChild(CreateAmberTestCase(testCtx, "variable_pointers", "copy_memory_variable_pointers.amber",
 										{ "VariablePointerFeatures.variablePointers" }, false, shaderObject));
 }
 
@@ -1391,22 +1390,24 @@ void AddZeroInitializeExtensionTests(tcu::TestCaseGroup* group, vk::ComputePipel
 
 	bool shaderObject = (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV) || (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY);
 
-	group->addChild(CreateAmberTestCase(testCtx, "block", "", "zero_ext_block.amber", std::vector<std::string>(), true, shaderObject));
-	group->addChild(CreateAmberTestCase(testCtx, "other_block", "", "zero_ext_other_block.amber", std::vector<std::string>(), true, shaderObject));
-	group->addChild(CreateAmberTestCase(testCtx, "block_with_offset", "", "zero_ext_block_with_offset.amber", std::vector<std::string>(), true, shaderObject));
+	group->addChild(CreateAmberTestCase(testCtx, "block", "zero_ext_block.amber", std::vector<std::string>(), true, shaderObject));
+	group->addChild(CreateAmberTestCase(testCtx, "other_block", "zero_ext_other_block.amber", std::vector<std::string>(), true, shaderObject));
+	group->addChild(CreateAmberTestCase(testCtx, "block_with_offset", "zero_ext_block_with_offset.amber", std::vector<std::string>(), true, shaderObject));
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> tests(new tcu::TestCaseGroup(testCtx, "workgroup_memory_explicit_layout", "VK_KHR_workgroup_memory_explicit_layout tests"));
+	de::MovePtr<tcu::TestCaseGroup> tests(new tcu::TestCaseGroup(testCtx, "workgroup_memory_explicit_layout"));
 
-	tcu::TestCaseGroup* alias = new tcu::TestCaseGroup(testCtx, "alias", "Aliasing between different blocks and types");
+	// Aliasing between different blocks and types
+	tcu::TestCaseGroup* alias = new tcu::TestCaseGroup(testCtx, "alias");
 	AddAliasTests(alias, computePipelineConstructionType);
 	tests->addChild(alias);
 
-	tcu::TestCaseGroup* zero = new tcu::TestCaseGroup(testCtx, "zero", "Manually zero initialize a block and read from another");
+	// Manually zero initialize a block and read from another
+	tcu::TestCaseGroup* zero = new tcu::TestCaseGroup(testCtx, "zero");
 	AddZeroTests(zero, computePipelineConstructionType);
 	tests->addChild(zero);
 

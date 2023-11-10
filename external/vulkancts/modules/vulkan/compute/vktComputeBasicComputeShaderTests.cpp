@@ -123,7 +123,6 @@ class SharedVarTest : public vkt::TestCase
 public:
 						SharedVarTest	(tcu::TestContext&		testCtx,
 										 const std::string&		name,
-										 const std::string&		description,
 										 const tcu::IVec3&		localSize,
 										 const tcu::IVec3&		workSize,
 										 const vk::ComputePipelineConstructionType computePipelineConstructionType);
@@ -156,11 +155,10 @@ private:
 
 SharedVarTest::SharedVarTest (tcu::TestContext&		testCtx,
 							  const std::string&	name,
-							  const std::string&	description,
 							  const tcu::IVec3&		localSize,
 							  const tcu::IVec3&		workSize,
 							  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase		(testCtx, name, description)
+	: TestCase		(testCtx, name)
 	, m_localSize	(localSize)
 	, m_workSize	(workSize)
 	, m_computePipelineConstructionType(computePipelineConstructionType)
@@ -307,7 +305,6 @@ class SharedVarAtomicOpTest : public vkt::TestCase
 public:
 						SharedVarAtomicOpTest	(tcu::TestContext&	testCtx,
 												 const std::string&	name,
-												 const std::string&	description,
 												 const tcu::IVec3&	localSize,
 												 const tcu::IVec3&	workSize,
 												 const vk::ComputePipelineConstructionType computePipelineConstructionType);
@@ -340,11 +337,10 @@ private:
 
 SharedVarAtomicOpTest::SharedVarAtomicOpTest (tcu::TestContext&		testCtx,
 											  const std::string&	name,
-											  const std::string&	description,
 											  const tcu::IVec3&		localSize,
 											  const tcu::IVec3&		workSize,
 											  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase							(testCtx, name, description)
+	: TestCase							(testCtx, name)
 	, m_localSize						(localSize)
 	, m_workSize						(workSize)
 	, m_computePipelineConstructionType	(computePipelineConstructionType)
@@ -491,7 +487,6 @@ class SSBOLocalBarrierTest : public vkt::TestCase
 public:
 						SSBOLocalBarrierTest	(tcu::TestContext&	testCtx,
 												 const std::string& name,
-												 const std::string&	description,
 												 const tcu::IVec3&	localSize,
 												 const tcu::IVec3&	workSize,
 												 const vk::ComputePipelineConstructionType computePipelineConstructionType
@@ -525,11 +520,10 @@ private:
 
 SSBOLocalBarrierTest::SSBOLocalBarrierTest (tcu::TestContext&	testCtx,
 											const std::string&	name,
-											const std::string&	description,
 											const tcu::IVec3&	localSize,
 											const tcu::IVec3&	workSize,
 											const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase		(testCtx, name, description)
+	: TestCase		(testCtx, name)
 	, m_localSize	(localSize)
 	, m_workSize	(workSize)
 	, m_computePipelineConstructionType(computePipelineConstructionType)
@@ -680,7 +674,6 @@ class CopyImageToSSBOTest : public vkt::TestCase
 public:
 						CopyImageToSSBOTest		(tcu::TestContext&	testCtx,
 												 const std::string&	name,
-												 const std::string&	description,
 												 const tcu::IVec2&	localSize,
 												 const tcu::IVec2&	imageSize,
 												 const vk::ComputePipelineConstructionType computePipelineConstructionType);
@@ -713,11 +706,10 @@ private:
 
 CopyImageToSSBOTest::CopyImageToSSBOTest (tcu::TestContext&		testCtx,
 										  const std::string&	name,
-										  const std::string&	description,
 										  const tcu::IVec2&		localSize,
 										  const tcu::IVec2&		imageSize,
 										  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase							(testCtx, name, description)
+	: TestCase							(testCtx, name)
 	, m_localSize						(localSize)
 	, m_imageSize						(imageSize)
 	, m_computePipelineConstructionType	(computePipelineConstructionType)
@@ -888,7 +880,6 @@ class CopySSBOToImageTest : public vkt::TestCase
 public:
 						CopySSBOToImageTest	(tcu::TestContext&	testCtx,
 											 const std::string&	name,
-											 const std::string&	description,
 											 const tcu::IVec2&	localSize,
 											 const tcu::IVec2&	imageSize,
 											 const vk::ComputePipelineConstructionType computePipelineConstructionType);
@@ -921,11 +912,10 @@ private:
 
 CopySSBOToImageTest::CopySSBOToImageTest (tcu::TestContext&		testCtx,
 										  const std::string&	name,
-										  const std::string&	description,
 										  const tcu::IVec2&		localSize,
 										  const tcu::IVec2&		imageSize,
 										  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase							(testCtx, name, description)
+	: TestCase							(testCtx, name)
 	, m_localSize						(localSize)
 	, m_imageSize						(imageSize)
 	, m_computePipelineConstructionType	(computePipelineConstructionType)
@@ -1093,7 +1083,6 @@ public:
 
 	static BufferToBufferInvertTest*	UBOToSSBOInvertCase			(tcu::TestContext&	testCtx,
 																	 const std::string& name,
-																	 const std::string& description,
 																	 const deUint32		numValues,
 																	 const tcu::IVec3&	localSize,
 																	 const tcu::IVec3&	workSize,
@@ -1101,7 +1090,6 @@ public:
 
 	static BufferToBufferInvertTest*	CopyInvertSSBOCase			(tcu::TestContext&	testCtx,
 																	 const std::string& name,
-																	 const std::string& description,
 																	 const deUint32		numValues,
 																	 const tcu::IVec3&	localSize,
 																	 const tcu::IVec3&	workSize,
@@ -1110,7 +1098,6 @@ public:
 private:
 										BufferToBufferInvertTest	(tcu::TestContext&	testCtx,
 																	 const std::string& name,
-																	 const std::string& description,
 																	 const deUint32		numValues,
 																	 const tcu::IVec3&	localSize,
 																	 const tcu::IVec3&	workSize,
@@ -1146,13 +1133,12 @@ private:
 
 BufferToBufferInvertTest::BufferToBufferInvertTest (tcu::TestContext&	testCtx,
 													const std::string&	name,
-													const std::string&	description,
 													const deUint32		numValues,
 													const tcu::IVec3&	localSize,
 													const tcu::IVec3&	workSize,
 													const BufferType	bufferType,
 													const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase							(testCtx, name, description)
+	: TestCase							(testCtx, name)
 	, m_bufferType						(bufferType)
 	, m_numValues						(numValues)
 	, m_localSize						(localSize)
@@ -1165,24 +1151,22 @@ BufferToBufferInvertTest::BufferToBufferInvertTest (tcu::TestContext&	testCtx,
 
 BufferToBufferInvertTest* BufferToBufferInvertTest::UBOToSSBOInvertCase (tcu::TestContext&	testCtx,
 																		 const std::string&	name,
-																		 const std::string&	description,
 																		 const deUint32		numValues,
 																		 const tcu::IVec3&	localSize,
 																		 const tcu::IVec3&	workSize,
 																		 const vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	return new BufferToBufferInvertTest(testCtx, name, description, numValues, localSize, workSize, BUFFER_TYPE_UNIFORM, computePipelineConstructionType);
+	return new BufferToBufferInvertTest(testCtx, name, numValues, localSize, workSize, BUFFER_TYPE_UNIFORM, computePipelineConstructionType);
 }
 
 BufferToBufferInvertTest* BufferToBufferInvertTest::CopyInvertSSBOCase (tcu::TestContext&	testCtx,
 																		const std::string&	name,
-																		const std::string&	description,
 																		const deUint32		numValues,
 																		const tcu::IVec3&	localSize,
 																		const tcu::IVec3&	workSize,
 																		const vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	return new BufferToBufferInvertTest(testCtx, name, description, numValues, localSize, workSize, BUFFER_TYPE_SSBO, computePipelineConstructionType);
+	return new BufferToBufferInvertTest(testCtx, name, numValues, localSize, workSize, BUFFER_TYPE_SSBO, computePipelineConstructionType);
 }
 
 void BufferToBufferInvertTest::checkSupport (Context& context) const
@@ -1372,7 +1356,6 @@ class InvertSSBOInPlaceTest : public vkt::TestCase
 public:
 						InvertSSBOInPlaceTest	(tcu::TestContext&	testCtx,
 												 const std::string&	name,
-												 const std::string&	description,
 												 const deUint32		numValues,
 												 const bool			sized,
 												 const tcu::IVec3&	localSize,
@@ -1411,13 +1394,12 @@ private:
 
 InvertSSBOInPlaceTest::InvertSSBOInPlaceTest (tcu::TestContext&		testCtx,
 											  const std::string&	name,
-											  const std::string&	description,
 											  const deUint32		numValues,
 											  const bool			sized,
 											  const tcu::IVec3&		localSize,
 											  const tcu::IVec3&		workSize,
 											  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase							(testCtx, name, description)
+	: TestCase							(testCtx, name)
 	, m_numValues						(numValues)
 	, m_sized							(sized)
 	, m_localSize						(localSize)
@@ -1575,7 +1557,6 @@ class WriteToMultipleSSBOTest : public vkt::TestCase
 public:
 						WriteToMultipleSSBOTest	(tcu::TestContext&	testCtx,
 												 const std::string&	name,
-												 const std::string&	description,
 												 const deUint32		numValues,
 												 const bool			sized,
 												 const tcu::IVec3&	localSize,
@@ -1614,13 +1595,12 @@ private:
 
 WriteToMultipleSSBOTest::WriteToMultipleSSBOTest (tcu::TestContext&		testCtx,
 												  const std::string&	name,
-												  const std::string&	description,
 												  const deUint32		numValues,
 												  const bool			sized,
 												  const tcu::IVec3&		localSize,
 												  const tcu::IVec3&		workSize,
 												  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase							(testCtx, name, description)
+	: TestCase							(testCtx, name)
 	, m_numValues						(numValues)
 	, m_sized							(sized)
 	, m_localSize						(localSize)
@@ -1799,7 +1779,6 @@ class SSBOBarrierTest : public vkt::TestCase
 public:
 						SSBOBarrierTest		(tcu::TestContext&	testCtx,
 											 const std::string&	name,
-											 const std::string&	description,
 											 const tcu::IVec3&	workSize,
 											 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
@@ -1828,10 +1807,9 @@ private:
 
 SSBOBarrierTest::SSBOBarrierTest (tcu::TestContext&		testCtx,
 								  const std::string&	name,
-								  const std::string&	description,
 								  const tcu::IVec3&		workSize,
 								  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase		(testCtx, name, description)
+	: TestCase		(testCtx, name)
 	, m_workSize	(workSize)
 	, m_computePipelineConstructionType(computePipelineConstructionType)
 {
@@ -2024,7 +2002,6 @@ class ImageAtomicOpTest : public vkt::TestCase
 public:
 						ImageAtomicOpTest		(tcu::TestContext&	testCtx,
 												 const std::string& name,
-												 const std::string& description,
 												 const deUint32		localSize,
 												 const tcu::IVec2&	imageSize,
 												 const vk::ComputePipelineConstructionType computePipelineConstructionType);
@@ -2057,11 +2034,10 @@ private:
 
 ImageAtomicOpTest::ImageAtomicOpTest (tcu::TestContext&		testCtx,
 									  const std::string&	name,
-									  const std::string&	description,
 									  const deUint32		localSize,
 									  const tcu::IVec2&		imageSize,
 	const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase							(testCtx, name, description)
+	: TestCase							(testCtx, name)
 	, m_localSize						(localSize)
 	, m_imageSize						(imageSize)
 	, m_computePipelineConstructionType	(computePipelineConstructionType)
@@ -2244,7 +2220,6 @@ class ImageBarrierTest : public vkt::TestCase
 public:
 						ImageBarrierTest	(tcu::TestContext&	testCtx,
 											const std::string&	name,
-											const std::string&	description,
 											const tcu::IVec2&	imageSize,
 											const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
@@ -2273,10 +2248,9 @@ private:
 
 ImageBarrierTest::ImageBarrierTest (tcu::TestContext&	testCtx,
 									const std::string&	name,
-									const std::string&	description,
 									const tcu::IVec2&	imageSize,
 									const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase							(testCtx, name, description)
+	: TestCase							(testCtx, name)
 	, m_imageSize						(imageSize)
 	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
@@ -2637,12 +2611,12 @@ class DispatchBaseTest : public vkt::TestCase
 public:
 						DispatchBaseTest	(tcu::TestContext&	testCtx,
 											const std::string&	name,
-											const std::string&	description,
 											const deUint32		numValues,
 											const tcu::IVec3&	localsize,
 											const tcu::IVec3&	worksize,
 											const tcu::IVec3&	splitsize,
-											const vk::ComputePipelineConstructionType computePipelineConstructionType);
+											const vk::ComputePipelineConstructionType computePipelineConstructionType,
+											const bool			useMaintenance5);
 
 	virtual void		checkSupport		(Context& context) const;
 	void				initPrograms		(SourceCollections& sourceCollections) const;
@@ -2654,6 +2628,7 @@ private:
 	const tcu::IVec3					m_workSize;
 	const tcu::IVec3					m_splitSize;
 	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+	const bool							m_useMaintenance5;
 };
 
 class DispatchBaseTestInstance : public ComputeTestInstance
@@ -2664,7 +2639,8 @@ public:
 																const tcu::IVec3&	localsize,
 																const tcu::IVec3&	worksize,
 																const tcu::IVec3&	splitsize,
-																const vk::ComputePipelineConstructionType computePipelineConstructionType);
+																const vk::ComputePipelineConstructionType computePipelineConstructionType,
+																const bool			useMaintenance5);
 
 	bool							isInputVectorValid			(const tcu::IVec3& small, const tcu::IVec3& big);
 	tcu::TestStatus					iterate						(void);
@@ -2674,28 +2650,32 @@ private:
 	const tcu::IVec3					m_localSize;
 	const tcu::IVec3					m_workSize;
 	const tcu::IVec3					m_splitWorkSize;
+	const bool							m_useMaintenance5;
 };
 
 DispatchBaseTest::DispatchBaseTest (tcu::TestContext&	testCtx,
 									const std::string&	name,
-									const std::string&	description,
 									const deUint32		numValues,
 									const tcu::IVec3&	localsize,
 									const tcu::IVec3&	worksize,
 									const tcu::IVec3&	splitsize,
-									const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase		(testCtx, name, description)
+									const vk::ComputePipelineConstructionType computePipelineConstructionType,
+									const bool			useMaintenance5)
+	: TestCase		(testCtx, name)
 	, m_numValues	(numValues)
 	, m_localSize	(localsize)
 	, m_workSize	(worksize)
 	, m_splitSize	(splitsize)
 	, m_computePipelineConstructionType(computePipelineConstructionType)
+	, m_useMaintenance5	(useMaintenance5)
 {
 }
 
 void DispatchBaseTest::checkSupport (Context& context) const
 {
 	checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
+	if (m_useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
 
 void DispatchBaseTest::initPrograms (SourceCollections& sourceCollections) const
@@ -2726,7 +2706,7 @@ void DispatchBaseTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* DispatchBaseTest::createInstance (Context& context) const
 {
-	return new DispatchBaseTestInstance(context, m_numValues, m_localSize, m_workSize, m_splitSize, m_computePipelineConstructionType);
+	return new DispatchBaseTestInstance(context, m_numValues, m_localSize, m_workSize, m_splitSize, m_computePipelineConstructionType, m_useMaintenance5);
 }
 
 DispatchBaseTestInstance::DispatchBaseTestInstance (Context& context,
@@ -2734,13 +2714,15 @@ DispatchBaseTestInstance::DispatchBaseTestInstance (Context& context,
 													const tcu::IVec3&	localsize,
 													const tcu::IVec3&	worksize,
 													const tcu::IVec3&	splitsize,
-													const vk::ComputePipelineConstructionType computePipelineConstructionType)
+													const vk::ComputePipelineConstructionType computePipelineConstructionType,
+													const bool			useMaintenance5)
 
 	: ComputeTestInstance				(context, computePipelineConstructionType)
 	, m_numValues						(numValues)
 	, m_localSize						(localsize)
 	, m_workSize						(worksize)
 	, m_splitWorkSize					(splitsize)
+	, m_useMaintenance5		(useMaintenance5)
 {
 	// For easy work distribution across physical devices:
 	// WorkSize should be a multiple of SplitWorkSize only in the X component
@@ -2840,6 +2822,19 @@ tcu::TestStatus DispatchBaseTestInstance::iterate (void)
 	ComputePipelineWrapper			pipeline(vk, device, m_computePipelineConstructionType, m_context.getBinaryCollection().get("comp"));
 	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
 	pipeline.setPipelineCreateFlags(VK_PIPELINE_CREATE_DISPATCH_BASE);
+
+#ifndef CTS_USES_VULKANSC
+	if (m_useMaintenance5)
+	{
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_DISPATCH_BASE_BIT_KHR;
+		pipeline.setPipelineCreatePNext(&pipelineFlags2CreateInfo);
+		pipeline.setPipelineCreateFlags(0);
+	}
+#else
+	DE_UNREF(m_useMaintenance5);
+#endif // CTS_USES_VULKANSC
+
 	pipeline.buildPipeline();
 
 	const VkBufferMemoryBarrier hostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer, 0ull, bufferSizeBytes);
@@ -2919,7 +2914,6 @@ class DeviceIndexTest : public vkt::TestCase
 public:
 	DeviceIndexTest		(tcu::TestContext&	testCtx,
 											const std::string&	name,
-											const std::string&	description,
 											const deUint32		numValues,
 											const tcu::IVec3&	localsize,
 											const tcu::IVec3&	splitsize,
@@ -2954,12 +2948,11 @@ private:
 
 DeviceIndexTest::DeviceIndexTest (tcu::TestContext&	testCtx,
 									const std::string&	name,
-									const std::string&	description,
 									const deUint32		numValues,
 									const tcu::IVec3&	localsize,
 									const tcu::IVec3&	worksize,
 									const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase							(testCtx, name, description)
+	: TestCase							(testCtx, name)
 	, m_numValues						(numValues)
 	, m_localSize						(localsize)
 	, m_workSize						(worksize)
@@ -3206,7 +3199,6 @@ class ConcurrentCompute : public vkt::TestCase
 public:
 						ConcurrentCompute	(tcu::TestContext&	testCtx,
 											 const std::string&	name,
-											 const std::string&	description,
 											 const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 
@@ -3229,9 +3221,8 @@ private:
 
 ConcurrentCompute::ConcurrentCompute (tcu::TestContext&	testCtx,
 									  const std::string&	name,
-									  const std::string&	description,
 									  const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase							(testCtx, name, description)
+	: TestCase							(testCtx, name)
 	, m_computePipelineConstructionType (computePipelineConstructionType)
 {
 }
@@ -3629,7 +3620,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 class EmptyWorkGroupCase : public vkt::TestCase
 {
 public:
-					EmptyWorkGroupCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const tcu::UVec3& dispatchSize, const vk::ComputePipelineConstructionType computePipelineConstructionType);
+					EmptyWorkGroupCase		(tcu::TestContext& testCtx, const std::string& name, const tcu::UVec3& dispatchSize, const vk::ComputePipelineConstructionType computePipelineConstructionType);
 	virtual			~EmptyWorkGroupCase		(void) {}
 
 	virtual void	checkSupport			(Context& context) const override;
@@ -3658,8 +3649,8 @@ protected:
 	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-EmptyWorkGroupCase::EmptyWorkGroupCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const tcu::UVec3& dispatchSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: vkt::TestCase						(testCtx, name, description)
+EmptyWorkGroupCase::EmptyWorkGroupCase (tcu::TestContext& testCtx, const std::string& name, const tcu::UVec3& dispatchSize, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: vkt::TestCase						(testCtx, name)
 	, m_dispatchSize					(dispatchSize)
 	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
@@ -3769,7 +3760,7 @@ public:
 		Axis axis;
 	};
 
-							MaxWorkGroupSizeTest	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params, const vk::ComputePipelineConstructionType computePipelineConstructionType);
+							MaxWorkGroupSizeTest	(tcu::TestContext& testCtx, const std::string& name, const Params& params, const vk::ComputePipelineConstructionType computePipelineConstructionType);
 	virtual					~MaxWorkGroupSizeTest	(void) {}
 
 	virtual void			initPrograms			(vk::SourceCollections& programCollection) const;
@@ -3824,8 +3815,8 @@ deUint32 MaxWorkGroupSizeTest::getSSBOSize (deUint32 invocations)
 	return invocations * static_cast<deUint32>(sizeof(deUint32));
 }
 
-MaxWorkGroupSizeTest::MaxWorkGroupSizeTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: vkt::TestCase						(testCtx, name, description)
+MaxWorkGroupSizeTest::MaxWorkGroupSizeTest (tcu::TestContext& testCtx, const std::string& name, const Params& params, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: vkt::TestCase						(testCtx, name)
 	, m_params							(params)
 	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {}
@@ -4171,8 +4162,8 @@ Move<VkDevice> createComputeOnlyDevice(Context& context, uint32_t& queueFamilyIn
 
 class SecondaryCommandBufferComputeOnlyTest : public vkt::TestCase {
 public:
-	SecondaryCommandBufferComputeOnlyTest(tcu::TestContext& context, const std::string& name, const std::string& description)
-		: vkt::TestCase(context, name, description)
+	SecondaryCommandBufferComputeOnlyTest(tcu::TestContext& context, const std::string& name)
+		: vkt::TestCase(context, name)
 	{};
 
 	void            initPrograms            (SourceCollections& programCollection) const override;
@@ -4323,88 +4314,103 @@ tcu::TestStatus SecondaryCommandBufferComputeOnlyTestInstance::iterate()
 
 } // anonymous
 
-inline TestCase* createFunctionCaseWithPrograms2 (tcu::TestContext&				testCtx,
-												 tcu::TestNodeType				type,
-												 const std::string&				name,
-												 const std::string&				desc,
-												 FunctionSupport0::Function		checkSupport,
-												 FunctionPrograms0::Function	initPrograms,
-												 FunctionInstance0::Function	testFunction)
-{
-	return new InstanceFactory1WithSupport<FunctionInstance0, FunctionInstance0::Function, FunctionSupport0, FunctionPrograms0>(
-		testCtx, type, name, desc, FunctionPrograms0(initPrograms), testFunction, checkSupport);
-}
 tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> basicComputeTests(new tcu::TestCaseGroup(testCtx, "basic", "Basic compute tests"));
+	// Basic compute tests
+	de::MovePtr<tcu::TestCaseGroup> basicComputeTests(new tcu::TestCaseGroup(testCtx, "basic"));
 
-	addFunctionCaseWithPrograms(basicComputeTests.get(), "empty_shader", "Shader that does nothing", EmptyShaderTest::checkSupport, EmptyShaderTest::createProgram, EmptyShaderTest::createTest, computePipelineConstructionType);
+	// Shader that does nothing
+	addFunctionCaseWithPrograms(basicComputeTests.get(), "empty_shader", EmptyShaderTest::checkSupport, EmptyShaderTest::createProgram, EmptyShaderTest::createTest, computePipelineConstructionType);
 
-	basicComputeTests->addChild(new ConcurrentCompute(testCtx, "concurrent_compute", "Concurrent compute test", computePipelineConstructionType));
+	// Concurrent compute test
+	basicComputeTests->addChild(new ConcurrentCompute(testCtx, "concurrent_compute", computePipelineConstructionType));
 
-	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_x", "Use an empty workgroup with size 0 on the X axis", tcu::UVec3(0u, 2u, 3u), computePipelineConstructionType));
-	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_y", "Use an empty workgroup with size 0 on the Y axis", tcu::UVec3(2u, 0u, 3u), computePipelineConstructionType));
-	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_z", "Use an empty workgroup with size 0 on the Z axis", tcu::UVec3(2u, 3u, 0u), computePipelineConstructionType));
-	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_all", "Use an empty workgroup with size 0 on the X, Y and Z axes", tcu::UVec3(0u, 0u, 0u), computePipelineConstructionType));
+	// Use an empty workgroup with size 0 on the X axis
+	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_x", tcu::UVec3(0u, 2u, 3u), computePipelineConstructionType));
+	// Use an empty workgroup with size 0 on the Y axis
+	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_y", tcu::UVec3(2u, 0u, 3u), computePipelineConstructionType));
+	// Use an empty workgroup with size 0 on the Z axis
+	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_z", tcu::UVec3(2u, 3u, 0u), computePipelineConstructionType));
+	// Use an empty workgroup with size 0 on the X, Y and Z axes
+	basicComputeTests->addChild(new EmptyWorkGroupCase(testCtx, "empty_workgroup_all", tcu::UVec3(0u, 0u, 0u), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_x", "Use the maximum work group size on the X axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::X}, computePipelineConstructionType));
-	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_y", "Use the maximum work group size on the Y axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::Y}, computePipelineConstructionType));
-	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_z", "Use the maximum work group size on the Z axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::Z}, computePipelineConstructionType));
+	// Use the maximum work group size on the X axis
+	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_x", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::X}, computePipelineConstructionType));
+	// Use the maximum work group size on the Y axis
+	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_y", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::Y}, computePipelineConstructionType));
+	// Use the maximum work group size on the Z axis
+	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_z", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::Z}, computePipelineConstructionType));
 
-	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_single_invocation",	"Copy from UBO to SSBO, inverting bits",	256,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_single_group",			"Copy from UBO to SSBO, inverting bits",	1024,	tcu::IVec3(2,1,4),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_multiple_invocations",	"Copy from UBO to SSBO, inverting bits",	1024,	tcu::IVec3(1,1,1),	tcu::IVec3(2,4,1), computePipelineConstructionType));
-	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_multiple_groups",		"Copy from UBO to SSBO, inverting bits",	1024,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
+	// Concurrent compute test
+	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_single_invocation",	256,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_single_group",	1024,	tcu::IVec3(2,1,4),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_multiple_invocations",	1024,	tcu::IVec3(1,1,1),	tcu::IVec3(2,4,1), computePipelineConstructionType));
+	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_multiple_groups",	1024,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
 
-	basicComputeTests->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(testCtx,	"copy_ssbo_single_invocation",		"Copy between SSBOs, inverting bits",	256,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(testCtx,	"copy_ssbo_multiple_invocations",	"Copy between SSBOs, inverting bits",	1024,	tcu::IVec3(1,1,1),	tcu::IVec3(2,4,1), computePipelineConstructionType));
-	basicComputeTests->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(testCtx,	"copy_ssbo_multiple_groups",		"Copy between SSBOs, inverting bits",	1024,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
+	// Concurrent compute test
+	basicComputeTests->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(testCtx,	"copy_ssbo_single_invocation",	256,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(testCtx,	"copy_ssbo_multiple_invocations",	1024,	tcu::IVec3(1,1,1),	tcu::IVec3(2,4,1), computePipelineConstructionType));
+	basicComputeTests->addChild(BufferToBufferInvertTest::CopyInvertSSBOCase(testCtx,	"copy_ssbo_multiple_groups",	1024,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_rw_single_invocation",			"Read and write same SSBO",		256,	true,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_rw_multiple_groups",				"Read and write same SSBO",		1024,	true,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
-	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_unsized_arr_single_invocation",	"Read and write same SSBO",		256,	false,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_unsized_arr_multiple_groups",		"Read and write same SSBO",		1024,	false,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
+	// Read and write same SSBO
+	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_rw_single_invocation", 256,	true,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_rw_multiple_groups",		1024,	true,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
+	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_unsized_arr_single_invocation",		256,	false,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new InvertSSBOInPlaceTest(testCtx,	"ssbo_unsized_arr_multiple_groups",		1024,	false,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_arr_single_invocation",			"Write to multiple SSBOs",	256,	true,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_arr_multiple_groups",			"Write to multiple SSBOs",	1024,	true,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
-	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_unsized_arr_single_invocation",	"Write to multiple SSBOs",	256,	false,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_unsized_arr_multiple_groups",	"Write to multiple SSBOs",	1024,	false,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
+	// Write to multiple SSBOs
+	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_arr_single_invocation", 256,	true,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_arr_multiple_groups",	1024,	true,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
+	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_unsized_arr_single_invocation",	256,	false,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new WriteToMultipleSSBOTest(testCtx,	"write_multiple_unsized_arr_multiple_groups",	1024,	false,	tcu::IVec3(1,4,2),	tcu::IVec3(2,2,4), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx,	"ssbo_local_barrier_single_invocation",	"SSBO local barrier usage",	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx,	"ssbo_local_barrier_single_group",		"SSBO local barrier usage",	tcu::IVec3(3,2,5),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx,	"ssbo_local_barrier_multiple_groups",	"SSBO local barrier usage",	tcu::IVec3(3,4,1),	tcu::IVec3(2,7,3), computePipelineConstructionType));
+	// SSBO local barrier usage
+	basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx,	"ssbo_local_barrier_single_invocation", tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx,	"ssbo_local_barrier_single_group",	tcu::IVec3(3,2,5),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx,	"ssbo_local_barrier_multiple_groups",	tcu::IVec3(3,4,1),	tcu::IVec3(2,7,3), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new SSBOBarrierTest(testCtx,	"ssbo_cmd_barrier_single",		"SSBO memory barrier usage",	tcu::IVec3(1,1,1),	computePipelineConstructionType));
-	basicComputeTests->addChild(new SSBOBarrierTest(testCtx,	"ssbo_cmd_barrier_multiple",	"SSBO memory barrier usage",	tcu::IVec3(11,5,7), computePipelineConstructionType));
+	// SSBO memory barrier usage
+	basicComputeTests->addChild(new SSBOBarrierTest(testCtx,	"ssbo_cmd_barrier_single", tcu::IVec3(1,1,1),	computePipelineConstructionType));
+	basicComputeTests->addChild(new SSBOBarrierTest(testCtx,	"ssbo_cmd_barrier_multiple",	tcu::IVec3(11,5,7), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_single_invocation",		"Basic shared variable usage",	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_single_group",			"Basic shared variable usage",	tcu::IVec3(3,2,5),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_multiple_invocations",	"Basic shared variable usage",	tcu::IVec3(1,1,1),	tcu::IVec3(2,5,4), computePipelineConstructionType));
-	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_multiple_groups",		"Basic shared variable usage",	tcu::IVec3(3,4,1),	tcu::IVec3(2,7,3), computePipelineConstructionType));
+	// Basic shared variable usage
+	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_single_invocation", tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_single_group",	tcu::IVec3(3,2,5),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_multiple_invocations",	tcu::IVec3(1,1,1),	tcu::IVec3(2,5,4), computePipelineConstructionType));
+	basicComputeTests->addChild(new SharedVarTest(testCtx,	"shared_var_multiple_groups",	tcu::IVec3(3,4,1),	tcu::IVec3(2,7,3), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_single_invocation",		"Atomic operation with shared var",		tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_single_group",			"Atomic operation with shared var",		tcu::IVec3(3,2,5),	tcu::IVec3(1,1,1), computePipelineConstructionType));
-	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_multiple_invocations",	"Atomic operation with shared var",		tcu::IVec3(1,1,1),	tcu::IVec3(2,5,4), computePipelineConstructionType));
-	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_multiple_groups",			"Atomic operation with shared var",		tcu::IVec3(3,4,1),	tcu::IVec3(2,7,3), computePipelineConstructionType));
+	// Atomic operation with shared var
+	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_single_invocation", tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_single_group",		tcu::IVec3(3,2,5),	tcu::IVec3(1,1,1), computePipelineConstructionType));
+	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_multiple_invocations",		tcu::IVec3(1,1,1),	tcu::IVec3(2,5,4), computePipelineConstructionType));
+	basicComputeTests->addChild(new SharedVarAtomicOpTest(testCtx,	"shared_atomic_op_multiple_groups",		tcu::IVec3(3,4,1),	tcu::IVec3(2,7,3), computePipelineConstructionType));
 
-	basicComputeTests->addChild(new CopyImageToSSBOTest(testCtx,	"copy_image_to_ssbo_small",	"Image to SSBO copy",	tcu::IVec2(1,1),	tcu::IVec2(64,64),		computePipelineConstructionType));
-	basicComputeTests->addChild(new CopyImageToSSBOTest(testCtx,	"copy_image_to_ssbo_large",	"Image to SSBO copy",	tcu::IVec2(2,4),	tcu::IVec2(512,512),	computePipelineConstructionType));
+	// Image to SSBO copy
+	basicComputeTests->addChild(new CopyImageToSSBOTest(testCtx,	"copy_image_to_ssbo_small", tcu::IVec2(1,1),	tcu::IVec2(64,64),		computePipelineConstructionType));
+	basicComputeTests->addChild(new CopyImageToSSBOTest(testCtx,	"copy_image_to_ssbo_large",	tcu::IVec2(2,4),	tcu::IVec2(512,512),	computePipelineConstructionType));
 
-	basicComputeTests->addChild(new CopySSBOToImageTest(testCtx,	"copy_ssbo_to_image_small",	"SSBO to image copy",	tcu::IVec2(1, 1),	tcu::IVec2(64, 64),		computePipelineConstructionType));
-	basicComputeTests->addChild(new CopySSBOToImageTest(testCtx,	"copy_ssbo_to_image_large",	"SSBO to image copy",	tcu::IVec2(2, 4),	tcu::IVec2(512, 512),	computePipelineConstructionType));
+	// SSBO to image copy
+	basicComputeTests->addChild(new CopySSBOToImageTest(testCtx,	"copy_ssbo_to_image_small", tcu::IVec2(1, 1),	tcu::IVec2(64, 64),		computePipelineConstructionType));
+	basicComputeTests->addChild(new CopySSBOToImageTest(testCtx,	"copy_ssbo_to_image_large",	tcu::IVec2(2, 4),	tcu::IVec2(512, 512),	computePipelineConstructionType));
 
-	basicComputeTests->addChild(new ImageAtomicOpTest(testCtx,	"image_atomic_op_local_size_1",	"Atomic operation with image",	1,	tcu::IVec2(64,64),	computePipelineConstructionType));
-	basicComputeTests->addChild(new ImageAtomicOpTest(testCtx,	"image_atomic_op_local_size_8",	"Atomic operation with image",	8,	tcu::IVec2(64,64),	computePipelineConstructionType));
+	// Atomic operation with image
+	basicComputeTests->addChild(new ImageAtomicOpTest(testCtx,	"image_atomic_op_local_size_1", 1,	tcu::IVec2(64,64),	computePipelineConstructionType));
+	basicComputeTests->addChild(new ImageAtomicOpTest(testCtx,	"image_atomic_op_local_size_8",	8,	tcu::IVec2(64,64),	computePipelineConstructionType));
 
-	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_single",		"Image barrier",	tcu::IVec2(1,1),	computePipelineConstructionType));
-	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_multiple",	"Image barrier",	tcu::IVec2(64,64),	computePipelineConstructionType));
+	// Image barrier
+	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_single", tcu::IVec2(1,1),	computePipelineConstructionType));
+	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_multiple",	tcu::IVec2(64,64),	computePipelineConstructionType));
 
-	basicComputeTests->addChild(new ComputeOnlyQueueTests::SecondaryCommandBufferComputeOnlyTest(testCtx, "secondary_compute_only_queue", "Test secondary command buffers in compute only queues"));
+	// Test secondary command buffers in compute only queues
+	basicComputeTests->addChild(new ComputeOnlyQueueTests::SecondaryCommandBufferComputeOnlyTest(testCtx, "secondary_compute_only_queue"));
 
 #ifndef CTS_USES_VULKANSC
-	basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "write_ssbo_array", "", "compute", "write_ssbo_array.amber"));
-	basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "branch_past_barrier", "", "compute", "branch_past_barrier.amber"));
-	basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx,"webgl_spirv_loop", "Simple SPIR-V loop from a WebGL example that caused problems in some implementations", "compute", "webgl_spirv_loop.amber"));
+	if (!isComputePipelineConstructionTypeShaderObject(computePipelineConstructionType))
+	{
+		basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "write_ssbo_array", "", "compute", "write_ssbo_array.amber"));
+		basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "branch_past_barrier", "", "compute", "branch_past_barrier.amber"));
+		basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "webgl_spirv_loop", "Simple SPIR-V loop from a WebGL example that caused problems in some implementations", "compute", "webgl_spirv_loop.amber"));
+	}
 #endif
 
 	return basicComputeTests.release();
@@ -4412,10 +4418,13 @@ tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx, vk
 
 tcu::TestCaseGroup* createBasicDeviceGroupComputeShaderTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> deviceGroupComputeTests(new tcu::TestCaseGroup(testCtx, "device_group", "Basic device group compute tests"));
+	de::MovePtr<tcu::TestCaseGroup> deviceGroupComputeTests(new tcu::TestCaseGroup(testCtx, "device_group"));
 
-	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx,	"dispatch_base",	"Compute shader with base groups",				32768,	tcu::IVec3(4,2,4),	tcu::IVec3(16,8,8),	tcu::IVec3(4,8,8), computePipelineConstructionType));
-	deviceGroupComputeTests->addChild(new DeviceIndexTest(testCtx,	"device_index",		"Compute shader using deviceIndex in SPIRV",	96,		tcu::IVec3(3,2,1),	tcu::IVec3(2,4,1), computePipelineConstructionType));
+	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx,	"dispatch_base",	32768,	tcu::IVec3(4,2,4),	tcu::IVec3(16,8,8),	tcu::IVec3(4,8,8), computePipelineConstructionType, false));
+#ifndef CTS_USES_VULKANSC
+	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx, "dispatch_base_maintenance5",	32768, tcu::IVec3(4, 2, 4), tcu::IVec3(16, 8, 8), tcu::IVec3(4, 8, 8), computePipelineConstructionType, true));
+#endif
+	deviceGroupComputeTests->addChild(new DeviceIndexTest(testCtx,	"device_index",	96,		tcu::IVec3(3,2,1),	tcu::IVec3(2,4,1), computePipelineConstructionType));
 
 	return deviceGroupComputeTests.release();
 

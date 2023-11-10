@@ -1928,11 +1928,10 @@ std::string InterfaceBlockCaseInstance::validateValues (const void* recievedData
 
 InterfaceBlockCase::InterfaceBlockCase (tcu::TestContext&	testCtx,
 										const std::string&	name,
-										const std::string&	description,
 										MatrixLoadFlags		matrixLoadFlag,
 										TestStageFlags		testStageFlags,
 										bool				shuffleInterfaceMembers)
-	: TestCase					(testCtx, name, description)
+	: TestCase					(testCtx, name)
 	, m_matrixLoadFlag			(matrixLoadFlag)
 	, m_testStageFlags			(testStageFlags)
 	, m_shuffleInterfaceMembers	(shuffleInterfaceMembers)

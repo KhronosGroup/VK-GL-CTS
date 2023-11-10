@@ -261,7 +261,6 @@ public:
 protected:
 	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
 											 const std::string&							name,
-											 const std::string&							desc,
 											 VkBufferCreateFlags						arg0) = 0;
 
 	virtual tcu::TestStatus execTest		(Context&									context,
@@ -292,7 +291,6 @@ public:
 protected:
 	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
 											 const std::string&							name,
-											 const std::string&							desc,
 											 VkBufferCreateFlags						arg0);
 
 	virtual tcu::TestStatus execTest		(Context&									context,
@@ -341,10 +339,10 @@ void BufferMemoryRequirementsOriginal::populateTestGroup (tcu::TestCaseGroup* gr
 #endif // CTS_USES_VULKANSC
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> bufferGroup(new tcu::TestCaseGroup(group->getTestContext(), "buffer", ""));
+	de::MovePtr<tcu::TestCaseGroup> bufferGroup(new tcu::TestCaseGroup(group->getTestContext(), "buffer"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(bufferCases); ++ndx)
-		addFunctionTestCase(bufferGroup.get(), bufferCases[ndx].name, "", bufferCases[ndx].flags);
+		addFunctionTestCase(bufferGroup.get(), bufferCases[ndx].name, bufferCases[ndx].flags);
 
 	group->addChild(bufferGroup.release());
 }
@@ -363,10 +361,9 @@ void checkSupportBufferMemoryRequirementsOriginal (Context& context, VkBufferCre
 
 void BufferMemoryRequirementsOriginal::addFunctionTestCase (tcu::TestCaseGroup*	group,
 															const std::string&	name,
-															const std::string&	desc,
 															VkBufferCreateFlags	arg0)
 {
-	addFunctionCase(group, name, desc, checkSupportBufferMemoryRequirementsOriginal, testEntryPoint, arg0);
+	addFunctionCase(group, name, checkSupportBufferMemoryRequirementsOriginal, testEntryPoint, arg0);
 }
 
 tcu::TestStatus BufferMemoryRequirementsOriginal::execTest (Context& context, const VkBufferCreateFlags bufferFlags)
@@ -530,7 +527,6 @@ class BufferMemoryRequirementsExtended : public BufferMemoryRequirementsOriginal
 protected:
 	virtual void addFunctionTestCase		(tcu::TestCaseGroup*		group,
 											 const std::string&			name,
-											 const std::string&			desc,
 											 VkBufferCreateFlags		arg0);
 
 	virtual void updateMemoryRequirements	(const DeviceInterface&		vk,
@@ -557,10 +553,9 @@ void checkSupportBufferMemoryRequirementsExtended (Context& context, VkBufferCre
 
 void BufferMemoryRequirementsExtended::addFunctionTestCase (tcu::TestCaseGroup*	group,
 															const std::string&	name,
-															const std::string&	desc,
 															VkBufferCreateFlags	arg0)
 {
-	addFunctionCase(group, name, desc, checkSupportBufferMemoryRequirementsExtended, testEntryPoint, arg0);
+	addFunctionCase(group, name, checkSupportBufferMemoryRequirementsExtended, testEntryPoint, arg0);
 }
 
 void BufferMemoryRequirementsExtended::updateMemoryRequirements (const DeviceInterface&		vk,
@@ -589,7 +584,6 @@ class BufferMemoryRequirementsDedicatedAllocation : public BufferMemoryRequireme
 protected:
 	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
 											 const std::string&							name,
-											 const std::string&							desc,
 											 VkBufferCreateFlags						arg0);
 
 	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
@@ -630,10 +624,9 @@ void checkSupportBufferMemoryRequirementsDedicatedAllocation (Context& context, 
 
 void BufferMemoryRequirementsDedicatedAllocation::addFunctionTestCase (tcu::TestCaseGroup*	group,
 																	   const std::string&	name,
-																	   const std::string&	desc,
 																	   VkBufferCreateFlags	arg0)
 {
-	addFunctionCase(group, name, desc, checkSupportBufferMemoryRequirementsDedicatedAllocation, testEntryPoint, arg0);
+	addFunctionCase(group, name, checkSupportBufferMemoryRequirementsDedicatedAllocation, testEntryPoint, arg0);
 }
 
 void BufferMemoryRequirementsDedicatedAllocation::updateMemoryRequirements (const DeviceInterface&		vk,
@@ -695,7 +688,6 @@ class BufferMemoryRequirementsCreateInfo : public BufferMemoryRequirementsOrigin
 protected:
 	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
 											 const std::string&							name,
-											 const std::string&							desc,
 											 VkBufferCreateFlags						arg0);
 
 	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
@@ -733,10 +725,9 @@ void checkSupportBufferMemoryRequirementsCreateInfo (Context& context, VkBufferC
 
 void BufferMemoryRequirementsCreateInfo::addFunctionTestCase(tcu::TestCaseGroup*	group,
 															 const std::string&		name,
-															 const std::string&		desc,
 															 VkBufferCreateFlags	arg0)
 {
-	addFunctionCase(group, name, desc, checkSupportBufferMemoryRequirementsCreateInfo, testEntryPoint, arg0);
+	addFunctionCase(group, name, checkSupportBufferMemoryRequirementsCreateInfo, testEntryPoint, arg0);
 }
 
 void BufferMemoryRequirementsCreateInfo::updateMemoryRequirements	(const DeviceInterface&		vk,
@@ -812,7 +803,6 @@ public:
 protected:
 	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
 											 const std::string&							name,
-											 const std::string&							desc,
 											 const ImageTestParams						arg0) = 0;
 
 	virtual tcu::TestStatus execTest		(Context&									context,
@@ -836,7 +826,6 @@ public:
 protected:
 	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
 											 const std::string&							name,
-											 const std::string&							desc,
 											 const ImageTestParams						arg0);
 
 	virtual tcu::TestStatus execTest		(Context&									context,
@@ -892,7 +881,7 @@ void ImageMemoryRequirementsOriginal::populateTestGroup (tcu::TestCaseGroup* gro
 #endif // CTS_USES_VULKANSC
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(group->getTestContext(), "image", ""));
+	de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(group->getTestContext(), "image"));
 
 	for (int flagsNdx = 0; flagsNdx < DE_LENGTH_OF_ARRAY(imageFlagsCases); ++flagsNdx)
 	for (int tilingNdx = 0; tilingNdx <= 1; ++tilingNdx)
@@ -919,7 +908,7 @@ void ImageMemoryRequirementsOriginal::populateTestGroup (tcu::TestCaseGroup* gro
 		if ((params.flags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) && (params.tiling == VK_IMAGE_TILING_LINEAR))
 			continue;
 
-		addFunctionTestCase(imageGroup.get(), caseName.str(), "", params);
+		addFunctionTestCase(imageGroup.get(), caseName.str(), params);
 	}
 
 	group->addChild(imageGroup.release());
@@ -941,10 +930,9 @@ void checkSupportImageMemoryRequirementsOriginal (Context& context, ImageTestPar
 
 void ImageMemoryRequirementsOriginal::addFunctionTestCase (tcu::TestCaseGroup*		group,
 														   const std::string&		name,
-														   const std::string&		desc,
 														   const ImageTestParams	arg0)
 {
-	addFunctionCase(group, name, desc, checkSupportImageMemoryRequirementsOriginal, testEntryPoint, arg0);
+	addFunctionCase(group, name, checkSupportImageMemoryRequirementsOriginal, testEntryPoint, arg0);
 }
 
 void ImageMemoryRequirementsOriginal::updateMemoryRequirements	(const DeviceInterface&		vk,
@@ -1049,6 +1037,14 @@ bool doesUsageSatisfyFeatures (const VkImageUsageFlags usage, const VkFormatFeat
 bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkImageCreateInfo& info)
 {
 	DE_ASSERT(info.extent.width >= 1u && info.extent.height >= 1u && info.extent.depth >= 1u);
+
+#ifndef CTS_USES_VULKANSC
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5"))
+	{
+		if (info.format == VK_FORMAT_A8_UNORM_KHR || info.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+			return false;
+	}
+#endif // CTS_USES_VULKANSC
 
 	if (isYCbCrFormat(info.format)
 		&& (info.imageType != VK_IMAGE_TYPE_2D
@@ -1293,6 +1289,9 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
@@ -1300,6 +1299,9 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,
@@ -1613,7 +1615,6 @@ public:
 protected:
 	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
 											 const std::string&							name,
-											 const std::string&							desc,
 											 const ImageTestParams						arg0);
 
 	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
@@ -1637,10 +1638,9 @@ void checkSupportImageMemoryRequirementsExtended (Context& context, ImageTestPar
 
 void ImageMemoryRequirementsExtended::addFunctionTestCase (tcu::TestCaseGroup*		group,
 														   const std::string&		name,
-														   const std::string&		desc,
 														   const ImageTestParams	arg0)
 {
-	addFunctionCase(group, name, desc, checkSupportImageMemoryRequirementsExtended, testEntryPoint, arg0);
+	addFunctionCase(group, name, checkSupportImageMemoryRequirementsExtended, testEntryPoint, arg0);
 }
 
 void ImageMemoryRequirementsExtended::updateMemoryRequirements (const DeviceInterface&		vk,
@@ -1659,7 +1659,6 @@ public:
 protected:
 	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
 											 const std::string&							name,
-											 const std::string&							desc,
 											 const ImageTestParams						arg0);
 
 	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
@@ -1690,10 +1689,9 @@ void checkSupportImageMemoryRequirementsDedicatedAllocation (Context& context, I
 
 void ImageMemoryRequirementsDedicatedAllocation::addFunctionTestCase (tcu::TestCaseGroup*		group,
 																	  const std::string&		name,
-																	  const std::string&		desc,
 																	  const ImageTestParams		arg0)
 {
-	addFunctionCase(group, name, desc, checkSupportImageMemoryRequirementsDedicatedAllocation, testEntryPoint, arg0);
+	addFunctionCase(group, name, checkSupportImageMemoryRequirementsDedicatedAllocation, testEntryPoint, arg0);
 }
 
 void ImageMemoryRequirementsDedicatedAllocation::updateMemoryRequirements (const DeviceInterface&	vk,
@@ -1736,7 +1734,6 @@ public:
 protected:
 	virtual void addFunctionTestCase		(tcu::TestCaseGroup*						group,
 											 const std::string&							name,
-											 const std::string&							desc,
 											 const ImageTestParams						arg0);
 
 	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
@@ -1767,10 +1764,9 @@ void checkSupportImageMemoryRequirementsCreateInfo (Context& context, ImageTestP
 
 void ImageMemoryRequirementsCreateInfo::addFunctionTestCase (tcu::TestCaseGroup*	group,
 															 const std::string&		name,
-															 const std::string&		desc,
 															 const ImageTestParams	arg0)
 {
-	addFunctionCase(group, name, desc, checkSupportImageMemoryRequirementsCreateInfo, testEntryPoint, arg0);
+	addFunctionCase(group, name, checkSupportImageMemoryRequirementsCreateInfo, testEntryPoint, arg0);
 }
 
 void ImageMemoryRequirementsCreateInfo::updateMemoryRequirements (const DeviceInterface&	vk,
@@ -2230,7 +2226,7 @@ void populateMultiplaneTestGroup (tcu::TestCaseGroup* group, bool useMaint4)
 		if (tiling == VK_IMAGE_TILING_LINEAR && (flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) != 0)
 			continue;
 
-		addFunctionCase(group, name, name, checkSupportMultiplane, testMultiplaneImages, params);
+		addFunctionCase(group, name, checkSupportMultiplane, testMultiplaneImages, params);
 	}
 }
 
@@ -2290,7 +2286,7 @@ tcu::TestStatus testVkMemoryPropertyFlags(Context& context)
 
 void populateMemoryPropertyFlagsTestGroup(tcu::TestCaseGroup* group)
 {
-	addFunctionCase(group, "check_all", "", testVkMemoryPropertyFlags);
+	addFunctionCase(group, "check_all", testVkMemoryPropertyFlags);
 }
 
 void populateMultiplaneTestGroup (tcu::TestCaseGroup* group)
@@ -2308,7 +2304,7 @@ void populateCreateInfoTestGroup (tcu::TestCaseGroup* group)
 	bufferTest.populateTestGroup(group);
 	imageTest.populateTestGroup(group);
 
-	de::MovePtr<tcu::TestCaseGroup> multiplaneGroup(new tcu::TestCaseGroup(group->getTestContext(), "multiplane_image", ""));
+	de::MovePtr<tcu::TestCaseGroup> multiplaneGroup(new tcu::TestCaseGroup(group->getTestContext(), "multiplane_image"));
 	populateMultiplaneTestGroup(multiplaneGroup.get(), true);
 	group->addChild(multiplaneGroup.release());
 }
@@ -2319,15 +2315,22 @@ void populateCreateInfoTestGroup (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createRequirementsTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> requirementsGroup(new tcu::TestCaseGroup(testCtx, "requirements", "Buffer and image memory requirements"));
+	// Buffer and image memory requirements
+	de::MovePtr<tcu::TestCaseGroup> requirementsGroup(new tcu::TestCaseGroup(testCtx, "requirements"));
 
-	requirementsGroup->addChild(createTestGroup(testCtx, "core",					"Memory requirements tests with core functionality",						populateCoreTestGroup));
-	requirementsGroup->addChild(createTestGroup(testCtx, "extended",				"Memory requirements tests with extension VK_KHR_get_memory_requirements2",	populateExtendedTestGroup));
-	requirementsGroup->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Memory requirements tests with extension VK_KHR_dedicated_allocation",		populateDedicatedAllocationTestGroup));
-	requirementsGroup->addChild(createTestGroup(testCtx, "multiplane_image",		"Memory requirements tests with vkGetImagePlaneMemoryRequirements",			populateMultiplaneTestGroup));
-	requirementsGroup->addChild(createTestGroup(testCtx, "memory_property_flags",	"Memory requirements tests with vkGetPhysicalDeviceMemoryProperties",		populateMemoryPropertyFlagsTestGroup));
+	// Memory requirements tests with core functionality
+	requirementsGroup->addChild(createTestGroup(testCtx, "core", populateCoreTestGroup));
+	// Memory requirements tests with extension VK_KHR_get_memory_requirements2
+	requirementsGroup->addChild(createTestGroup(testCtx, "extended", populateExtendedTestGroup));
+	// Memory requirements tests with extension VK_KHR_dedicated_allocation
+	requirementsGroup->addChild(createTestGroup(testCtx, "dedicated_allocation", populateDedicatedAllocationTestGroup));
+	// Memory requirements tests with vkGetImagePlaneMemoryRequirements
+	requirementsGroup->addChild(createTestGroup(testCtx, "multiplane_image", populateMultiplaneTestGroup));
+	// Memory requirements tests with vkGetPhysicalDeviceMemoryProperties
+	requirementsGroup->addChild(createTestGroup(testCtx, "memory_property_flags", populateMemoryPropertyFlagsTestGroup));
 #ifndef CTS_USES_VULKANSC
-	requirementsGroup->addChild(createTestGroup(testCtx, "create_info",				"Memory requirements tests with extension VK_KHR_maintenance4",				populateCreateInfoTestGroup));
+	// Memory requirements tests with extension VK_KHR_maintenance4
+	requirementsGroup->addChild(createTestGroup(testCtx, "create_info", populateCreateInfoTestGroup));
 #endif // CTS_USES_VULKANSC
 
 	return requirementsGroup.release();

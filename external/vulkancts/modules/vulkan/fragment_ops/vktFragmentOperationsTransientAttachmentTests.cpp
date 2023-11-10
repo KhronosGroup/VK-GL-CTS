@@ -253,7 +253,7 @@ TransientAttachmentTest::TransientAttachmentTest (
 	const TestMode				testMode,
 	const VkMemoryPropertyFlags	flags,
 	const tcu::IVec2			renderSize)
-	: TestCase		(testCtx, name, "")
+	: TestCase		(testCtx, name)
 	, m_testMode	(testMode)
 	, m_flags		(flags)
 	, m_renderSize	(renderSize)
@@ -567,7 +567,8 @@ TestInstance* TransientAttachmentTest::createInstance (Context& context) const
 
 tcu::TestCaseGroup* createTransientAttachmentTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "transient_attachment_bit", "image usage transient attachment bit load and store op test"));
+	// image usage transient attachment bit load and store op test
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "transient_attachment_bit"));
 
 	{
 		static const struct

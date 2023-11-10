@@ -1920,14 +1920,19 @@ std::string getTestCaseString (const CaseDef& caseDef)
 	return str.str();
 }
 
+void checkConstructionTypeSupport (Context& context, PipelineConstructionType pipelineConstructionType)
+{
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), pipelineConstructionType);
+}
+
 void checkSupport (Context& context, const CaseDef caseDef)
 {
-	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
+	checkConstructionTypeSupport(context, caseDef.pipelineConstructionType);
 }
 
 void checkSupportNoAtt (Context& context, const NoAttCaseDef caseDef)
 {
-	const VkPhysicalDeviceFeatures features = context.getDeviceFeatures();
+	const auto& features = context.getDeviceFeatures();
 
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
 
@@ -1937,7 +1942,7 @@ void checkSupportNoAtt (Context& context, const NoAttCaseDef caseDef)
 	if (caseDef.multisample)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING); // MS shader uses gl_SampleID
 
-	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
+	checkConstructionTypeSupport(context, caseDef.pipelineConstructionType);
 }
 
 void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
@@ -1989,18 +1994,18 @@ void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineCon
 	};
 
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(caseDef); ++sizeNdx)
-		addFunctionCaseWithPrograms(group, getTestCaseString(caseDef[sizeNdx]).c_str(), "", checkSupport, initColorPrograms, test, caseDef[sizeNdx]);
+		addFunctionCaseWithPrograms(group, getTestCaseString(caseDef[sizeNdx]).c_str(), checkSupport, initColorPrograms, test, caseDef[sizeNdx]);
 
 	// Add tests for the case where there are no color attachments but the
 	// fragment shader writes to an image via imageStore().
 	NoAttCaseDef noAttCaseDef { pipelineConstructionType, false };
-	addFunctionCaseWithPrograms(group, "no_attachments",    "", checkSupportNoAtt, initImagePrograms, testNoAtt, noAttCaseDef);
+	addFunctionCaseWithPrograms(group, "no_attachments",    checkSupportNoAtt, initImagePrograms, testNoAtt, noAttCaseDef);
 	noAttCaseDef.multisample = true;
-	addFunctionCaseWithPrograms(group, "no_attachments_ms", "", checkSupportNoAtt, initImagePrograms, testNoAtt, noAttCaseDef);
+	addFunctionCaseWithPrograms(group, "no_attachments_ms", checkSupportNoAtt, initImagePrograms, testNoAtt, noAttCaseDef);
 
 	// Test render pass with attachment set as unused.
-	if (!isConstructionTypeLibrary(pipelineConstructionType))
-		addFunctionCase(group, "unused_attachment", "", testUnusedAtt, pipelineConstructionType);
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC || pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+		addFunctionCase(group, "unused_attachment", checkConstructionTypeSupport, testUnusedAtt, pipelineConstructionType);
 
 	// Tests with multiple attachments that have different sizes.
 	const CaseDef	differentAttachmentSizesCaseDef[]	=
@@ -2024,14 +2029,14 @@ void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineCon
 	};
 
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(differentAttachmentSizesCaseDef); ++sizeNdx)
-		addFunctionCaseWithPrograms(group, (std::string("diff_attachments_") + getTestCaseString(differentAttachmentSizesCaseDef[sizeNdx])).c_str(), "", checkSupport, initDifferentAttachmentSizesPrograms, testMultiAttachments, differentAttachmentSizesCaseDef[sizeNdx]);
+		addFunctionCaseWithPrograms(group, (std::string("diff_attachments_") + getTestCaseString(differentAttachmentSizesCaseDef[sizeNdx])).c_str(), checkSupport, initDifferentAttachmentSizesPrograms, testMultiAttachments, differentAttachmentSizesCaseDef[sizeNdx]);
 
 	// Tests with same attachment for input and resolving.
 	const CaseDef resolveInputSameAttachmentCaseDef = { pipelineConstructionType,	VK_IMAGE_VIEW_TYPE_2D,	IVec3(64, 64, 1),	IVec3(64, 64, 1),	1,	true,	MULTI_ATTACHMENTS_NONE };
 	// Input attachments are not supported with dynamic rendering
 	if (!vk::isConstructionTypeShaderObject(pipelineConstructionType))
 	{
-		addFunctionCaseWithPrograms(group, "resolve_input_same_attachment", "", checkSupport, initInputResolveSameAttachmentPrograms, testInputResolveSameAttachment, resolveInputSameAttachmentCaseDef);
+		addFunctionCaseWithPrograms(group, "resolve_input_same_attachment", checkSupport, initInputResolveSameAttachmentPrograms, testInputResolveSameAttachment, resolveInputSameAttachmentCaseDef);
 	}
 
 	// Tests with multiple attachments, which some of them are not used in FS.
@@ -2043,14 +2048,14 @@ void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineCon
 	};
 
 	for (int Ndx = 0; Ndx < DE_LENGTH_OF_ARRAY(AttachmentCaseDef); ++Ndx)
-		addFunctionCaseWithPrograms(group, (std::string("multi_attachments_not_exported_") + getTestCaseString(AttachmentCaseDef[Ndx])).c_str(), "", checkSupport, initMultiAttachmentsNotExportPrograms, testMultiAttachments, AttachmentCaseDef[Ndx]);
+		addFunctionCaseWithPrograms(group, (std::string("multi_attachments_not_exported_") + getTestCaseString(AttachmentCaseDef[Ndx])).c_str(), checkSupport, initMultiAttachmentsNotExportPrograms, testMultiAttachments, AttachmentCaseDef[Ndx]);
 }
 
 } // anonymous ns
 
 tcu::TestCaseGroup* createFramebufferAttachmentTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "framebuffer_attachment", "Framebuffer attachment tests", addAttachmentTestCasesWithFunctions, pipelineConstructionType);
+	return createTestGroup(testCtx, "framebuffer_attachment", addAttachmentTestCasesWithFunctions, pipelineConstructionType);
 }
 
 } // pipeline

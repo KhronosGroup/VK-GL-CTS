@@ -72,7 +72,7 @@ struct TestParams
 class PositionFetchCase : public TestCase
 {
 public:
-	PositionFetchCase(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+	PositionFetchCase(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~PositionFetchCase(void) {}
 
 	virtual void			checkSupport(Context& context) const;
@@ -95,8 +95,8 @@ protected:
 	TestParams					m_params;
 };
 
-PositionFetchCase::PositionFetchCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: TestCase	(testCtx, name, description)
+PositionFetchCase::PositionFetchCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {}
 
@@ -463,7 +463,8 @@ tcu::TestStatus PositionFetchInstance::iterate (void)
 
 tcu::TestCaseGroup*	createPositionFetchTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "position_fetch", "Test ray pipeline shaders using position fetch"));
+	// Test ray pipeline shaders using position fetch
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "position_fetch"));
 
 	struct
 	{
@@ -499,14 +500,14 @@ tcu::TestCaseGroup*	createPositionFetchTests (tcu::TestContext& testCtx)
 
 	for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
 
 		for (size_t vertexFormatNdx = 0; vertexFormatNdx < DE_LENGTH_OF_ARRAY(vertexFormats); ++vertexFormatNdx)
 		{
 			const auto format = vertexFormats[vertexFormatNdx];
 			const auto formatName = getFormatSimpleName(format);
 
-			de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(new tcu::TestCaseGroup(group->getTestContext(), formatName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(new tcu::TestCaseGroup(group->getTestContext(), formatName.c_str()));
 
 			for (deUint32 testFlagMask = 0; testFlagMask < TEST_FLAG_BIT_LAST; testFlagMask++)
 			{
@@ -524,7 +525,7 @@ tcu::TestCaseGroup*	createPositionFetchTests (tcu::TestContext& testCtx)
 				if (maskName == "")
 					maskName = "NoFlags";
 
-				de::MovePtr<tcu::TestCaseGroup> testFlagGroup(new tcu::TestCaseGroup(group->getTestContext(), maskName.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> testFlagGroup(new tcu::TestCaseGroup(group->getTestContext(), maskName.c_str()));
 
 				TestParams testParams
 				{
@@ -533,7 +534,7 @@ tcu::TestCaseGroup*	createPositionFetchTests (tcu::TestContext& testCtx)
 					testFlagMask,
 				};
 
-				vertexFormatGroup->addChild(new PositionFetchCase(testCtx, maskName, "", testParams));
+				vertexFormatGroup->addChild(new PositionFetchCase(testCtx, maskName, testParams));
 			}
 			buildGroup->addChild(vertexFormatGroup.release());
 		}
@@ -546,4 +547,3 @@ tcu::TestCaseGroup*	createPositionFetchTests (tcu::TestContext& testCtx)
 
 } // RayTracing
 } // vkt
-

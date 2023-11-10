@@ -255,14 +255,13 @@ Move<VkImage> MultisampleRenderPassTestBase::createImage (VkSampleCountFlagBits	
 
 	try
 	{
-		const VkImageFormatProperties	imageFormatProperties(getPhysicalDeviceImageFormatProperties(vki, physicalDevice, m_format, imageType, imageTiling, usage, 0u));
+		const VkImageFormatProperties	imageFormatProperties	(getPhysicalDeviceImageFormatProperties(vki, physicalDevice, m_format, imageType, imageTiling, usage, 0u));
+		const auto						isDSFormat				= (tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order));
 
-		if ((tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order))
-			&& (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0)
+		if (isDSFormat && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Format can't be used as depth stencil attachment");
 
-		if (!(tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order))
-			&& (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
+		if (!isDSFormat && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Format can't be used as color attachment");
 
 		if (imageFormatProperties.maxExtent.width < imageExtent.width
@@ -539,7 +538,8 @@ VkDeviceSize MultisampleRenderPassTestBase::getPixelSize () const
 tcu::Vec4 MultisampleRenderPassTestBase::getFormatThreshold () const
 {
 	const tcu::TextureFormat	tcuFormat		(mapVkFormat(m_format));
-	const deUint32				componentCount	(tcu::getNumUsedChannels(tcuFormat.order));
+	const bool					isAlphaOnly		= isAlphaOnlyFormat(m_format);
+	const deUint32				componentCount	(isAlphaOnly ? 4u : tcu::getNumUsedChannels(tcuFormat.order));
 
 	if (isSnormFormat(m_format))
 	{
@@ -550,10 +550,10 @@ tcu::Vec4 MultisampleRenderPassTestBase::getFormatThreshold () const
 	}
 	else if (isUnormFormat(m_format))
 	{
-		return Vec4((componentCount >= 1) ? 1.5f * getRepresentableDiffUnorm(m_format, 0) : 0.0f,
-					(componentCount >= 2) ? 1.5f * getRepresentableDiffUnorm(m_format, 1) : 0.0f,
-					(componentCount >= 3) ? 1.5f * getRepresentableDiffUnorm(m_format, 2) : 0.0f,
-					(componentCount == 4) ? 1.5f * getRepresentableDiffUnorm(m_format, 3) : 0.0f);
+		return Vec4((componentCount >= 1 && !isAlphaOnly)	? 1.5f * getRepresentableDiffUnorm(m_format, 0) : 0.0f,
+					(componentCount >= 2 && !isAlphaOnly)	? 1.5f * getRepresentableDiffUnorm(m_format, 1) : 0.0f,
+					(componentCount >= 3 && !isAlphaOnly)	? 1.5f * getRepresentableDiffUnorm(m_format, 2) : 0.0f,
+					(componentCount == 4)					? 1.5f * getRepresentableDiffUnorm(m_format, 3) : 0.0f);
 	}
 	else if (isFloatFormat(m_format))
 	{
@@ -1055,7 +1055,8 @@ void MultisampleRenderPassTestInstance::verify (void)
 		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 		{
-			const int	componentCount	(tcu::getNumUsedChannels(format.order));
+			const bool	isAlphaOnly		= isAlphaOnlyFormat(m_format);
+			const int	componentCount	(isAlphaOnly ? 4 : tcu::getNumUsedChannels(format.order));
 			bool		isOk			= true;
 			float		clearValue;
 			float		renderValue;
@@ -1086,14 +1087,14 @@ void MultisampleRenderPassTestInstance::verify (void)
 				// Color has to be black if no samples were covered, white if all samples were covered or same in every attachment
 				const Vec4	firstColor	(accesses[0].getPixel(x, y, z));
 				const Vec4	refColor	(m_sampleMask == 0x0u
-										? Vec4(clearValue,
-												componentCount > 1 ? clearValue : 0.0f,
-												componentCount > 2 ? clearValue : 0.0f,
+										? Vec4((isAlphaOnly ? 0.0f : clearValue),
+												componentCount > 1 && !isAlphaOnly ? clearValue : 0.0f,
+												componentCount > 2 && !isAlphaOnly ? clearValue : 0.0f,
 												componentCount > 3 ? clearValue : 1.0f)
 										: m_sampleMask == ((0x1u << m_sampleCount) - 1u)
-										? Vec4(renderValue,
-												componentCount > 1 ? renderValue : 0.0f,
-												componentCount > 2 ? renderValue : 0.0f,
+										? Vec4((isAlphaOnly ? 0.0f : renderValue),
+												componentCount > 1 && !isAlphaOnly ? renderValue : 0.0f,
+												componentCount > 2 && !isAlphaOnly ? renderValue : 0.0f,
 												componentCount > 3 ? renderValue : 1.0f)
 										: firstColor);
 
@@ -1399,7 +1400,8 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 				|| channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT
 				|| channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT)
 		{
-			const int			componentCount	(tcu::getNumUsedChannels(format.order));
+			const bool			isAlphaOnly		= isAlphaOnlyFormat(m_format);
+			const int			componentCount	(isAlphaOnly ? 4 : tcu::getNumUsedChannels(format.order));
 			const Vec4			errorColor		(1.0f, 0.0f, 0.0f, 1.0f);
 			const Vec4			okColor			(0.0f, 1.0f, 0.0f, 1.0f);
 			tcu::TextureLevel	errorMask		(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), m_width, m_height, totalLayers());
@@ -1411,7 +1413,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 			{
 				case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 				{
-					expectedAverage = Vec4(0.5f, componentCount > 1 ? 0.5f : 0.0f, componentCount > 2 ? 0.5f : 0.0f, componentCount > 3 ? 0.5f : 1.0f);
+					expectedAverage = Vec4((isAlphaOnly ? 0.0f : 0.5f), componentCount > 1 && !isAlphaOnly ? 0.5f : 0.0f, componentCount > 2 && !isAlphaOnly ? 0.5f : 0.0f, componentCount > 3 ? 0.5f : 1.0f);
 					break;
 				}
 
@@ -2950,6 +2952,11 @@ struct Programs
 template<class TestConfigType>
 void checkSupport(Context& context, TestConfigType config)
 {
+#ifndef CTS_USES_VULKANSC
+	if (config.format == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	if (config.layerCount > 1)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
@@ -2974,6 +2981,9 @@ void checkSupport(Context& context, TestConfigType config)
 
 	if (config.attachmentCount > properties.limits.maxColorAttachments)
 		TCU_THROW(NotSupportedError, "Required number of color attachments not supported.");
+
+	if (config.testType == MAX_ATTACHMENTS && config.attachmentCount > properties.limits.maxPerStageDescriptorInputAttachments)
+		TCU_THROW(NotSupportedError, "Required number of per stage descriptor input attachments not supported.");
 }
 
 std::string formatToName (VkFormat format)
@@ -2995,6 +3005,9 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_UINT,
@@ -3058,13 +3071,13 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 	{
 		const deUint32					layerCount		(layerCounts[layerCountNdx]);
 		const std::string				layerGroupName	("layers_" + de::toString(layerCount));
-		de::MovePtr<tcu::TestCaseGroup>	layerGroup		(new tcu::TestCaseGroup(testCtx, layerGroupName.c_str(), layerGroupName.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	layerGroup		(new tcu::TestCaseGroup(testCtx, layerGroupName.c_str()));
 
 		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
 			const VkFormat					format		(formats[formatNdx]);
 			const std::string				formatName	(formatToName(format));
-			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str(), formatName.c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 
 			for (size_t sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountNdx++)
 			{
@@ -3092,7 +3105,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 					groupParams
 				};
 
-				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
+				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
 
 				const TestConfig	testConfigBaseLayer
 				{
@@ -3108,7 +3121,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 				};
 				std::string			testNameBaseLayer	("samples_" + de::toString(sampleCount) + "_baseLayer1");
 
-				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testNameBaseLayer.c_str(), testNameBaseLayer.c_str(), testConfigBaseLayer, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfigBaseLayer)));
+				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, testNameBaseLayer.c_str(), testConfigBaseLayer, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfigBaseLayer)));
 
 				for (deUint32 resolveLevel : resolveLevels)
 				{
@@ -3116,7 +3129,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 					std::string resolveLevelTestNameStr(testName + "_resolve_level_" + de::toString(resolveLevel));
 					const char* resolveLevelTestName = resolveLevelTestNameStr.c_str();
 
-					formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassResolveLevelTestInstance, TestConfig2, FunctionSupport1<TestConfig2>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, resolveLevelTestName, resolveLevelTestName, testConfig2, typename FunctionSupport1<TestConfig2>::Args(checkSupport, testConfig2)));
+					formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassResolveLevelTestInstance, TestConfig2, FunctionSupport1<TestConfig2>, Programs>(testCtx, resolveLevelTestName, testConfig2, typename FunctionSupport1<TestConfig2>::Args(checkSupport, testConfig2)));
 
 					// Reduce number of tests for dynamic rendering cases where secondary command buffer is used
 					if (groupParams->useSecondaryCmdBuffer)
@@ -3140,7 +3153,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 						maxAttachmentsTestConfig.testType			= MAX_ATTACHMENTS;
 						maxAttachmentsTestConfig.attachmentCount	= attachmentCount;
 
-						formatGroup->addChild(new InstanceFactory1WithSupport<MaxAttachmenstsRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, maxAttName.c_str(), maxAttName.c_str(), maxAttachmentsTestConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, maxAttachmentsTestConfig)));
+						formatGroup->addChild(new InstanceFactory1WithSupport<MaxAttachmenstsRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, maxAttName.c_str(), maxAttachmentsTestConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, maxAttachmentsTestConfig)));
 					}
 
 					{
@@ -3150,7 +3163,7 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 						compatibilityTestConfig.testType			= COMPATIBILITY;
 						compatibilityTestConfig.attachmentCount		= 1;
 
-						formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, compatibilityTestName.c_str(), compatibilityTestName.c_str(), compatibilityTestConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, compatibilityTestConfig)));
+						formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, compatibilityTestName.c_str(), compatibilityTestConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, compatibilityTestConfig)));
 					}
 				}
 			}
@@ -3170,17 +3183,17 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 
 tcu::TestCaseGroup* createRenderPassMultisampleResolveTests (tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "multisample_resolve", "Multisample render pass resolve tests", initTests, groupParams);
+	return createTestGroup(testCtx, "multisample_resolve", initTests, groupParams);
 }
 
 tcu::TestCaseGroup* createRenderPass2MultisampleResolveTests (tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "multisample_resolve", "Multisample render pass resolve tests", initTests, groupParams);
+	return createTestGroup(testCtx, "multisample_resolve", initTests, groupParams);
 }
 
 tcu::TestCaseGroup* createDynamicRenderingMultisampleResolveTests (tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "multisample_resolve", "Multisample dynamic rendering resolve tests", initTests, groupParams);
+	return createTestGroup(testCtx, "multisample_resolve", initTests, groupParams);
 }
 
 } // vkt

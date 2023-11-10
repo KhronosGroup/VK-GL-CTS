@@ -2266,8 +2266,8 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModeProperties2KHR (v
 class DisplayCoverageTestsCase : public vkt::TestCase
 {
 public:
-	DisplayCoverageTestsCase (tcu::TestContext &context, const char *name, const char *description, const DisplayIndexTest testId)
-		: TestCase	(context, name, description)
+	DisplayCoverageTestsCase (tcu::TestContext &context, const char *name, const DisplayIndexTest testId)
+		: TestCase	(context, name)
 		, m_testId	(testId)
 	{
 	}
@@ -2284,11 +2284,11 @@ private:
 /*--------------------------------------------------------------------*//*!
  * \brief Adds a test into group
  *//*--------------------------------------------------------------------*/
-static void addTest (tcu::TestCaseGroup* group, const DisplayIndexTest testId, const char* name, const char* description)
+static void addTest (tcu::TestCaseGroup* group, const DisplayIndexTest testId, const char* name)
 {
 	tcu::TestContext&	testCtx	= group->getTestContext();
 
-	group->addChild(new DisplayCoverageTestsCase(testCtx, name, description, testId));
+	group->addChild(new DisplayCoverageTestsCase(testCtx, name, testId));
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -2297,22 +2297,33 @@ static void addTest (tcu::TestCaseGroup* group, const DisplayIndexTest testId, c
 void createDisplayCoverageTests (tcu::TestCaseGroup* group)
 {
 	// VK_KHR_display extension tests
-	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES,				"get_display_properties",				"Display enumeration coverage test");
-	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES,					"get_display_plane_properties",			"Planes enumeration coverage test");
-	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_SUPPORTED_DISPLAY,	"get_display_plane_supported_displays", "Display plane support coverage test");
-	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_MODE,						"get_display_mode_properties",			"Display mode properties coverage test");
-	addTest(group, DISPLAY_TEST_INDEX_CREATE_DISPLAY_MODE,					"create_display_mode",					"Create display mode coverage test");
-	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES,		"get_display_plane_capabilities",		"Display-plane capabilities coverage test");
-	addTest(group, DISPLAY_TEST_INDEX_CREATE_DISPLAY_PLANE_SURFACE,			"create_display_plane_surface",			"Create display plane surface coverage test");
-	addTest(group, DISPLAY_TEST_INDEX_SURFACE_COUNTERS,						"surface_counters",						"Display plane surface counters test");
+	// Display enumeration coverage test
+	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES,				"get_display_properties");
+	// Planes enumeration coverage test
+	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES,					"get_display_plane_properties");
+	// Display plane support coverage test
+	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_SUPPORTED_DISPLAY,	"get_display_plane_supported_displays");
+	// Display mode properties coverage test
+	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_MODE,						"get_display_mode_properties");
+	// Create display mode coverage test
+	addTest(group, DISPLAY_TEST_INDEX_CREATE_DISPLAY_MODE,					"create_display_mode");
+	// Display-plane capabilities coverage test
+	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES,		"get_display_plane_capabilities");
+	// Create display plane surface coverage test
+	addTest(group, DISPLAY_TEST_INDEX_CREATE_DISPLAY_PLANE_SURFACE,			"create_display_plane_surface");
+	// Display plane surface counters test
+	addTest(group, DISPLAY_TEST_INDEX_SURFACE_COUNTERS,						"surface_counters");
 
 	// VK_KHR_get_display_properties2 extension tests
-	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES2,				"get_display_properties2",				"Display enumeration coverage test using VK_KHR_get_display_properties2");
-	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES2,					"get_display_plane_properties2",		"Planes enumeration coverage test using VK_KHR_get_display_properties2");
-	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_MODE2,					"get_display_mode_properties2",			"Display mode properties coverage test using VK_KHR_get_display_properties2");
-	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES2,		"get_display_plane_capabilities2",		"Display-plane capabilities coverage test using VK_KHR_get_display_properties2");
+	// Display enumeration coverage test using VK_KHR_get_display_properties2
+	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES2,				"get_display_properties2");
+	// Planes enumeration coverage test using VK_KHR_get_display_properties2
+	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES2,					"get_display_plane_properties2");
+	// Display mode properties coverage test using VK_KHR_get_display_properties2
+	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_MODE2,					"get_display_mode_properties2");
+	// Display-plane capabilities coverage test using VK_KHR_get_display_properties2
+	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES2,		"get_display_plane_capabilities2");
 }
 
 } //wsi
 } //vkt
-

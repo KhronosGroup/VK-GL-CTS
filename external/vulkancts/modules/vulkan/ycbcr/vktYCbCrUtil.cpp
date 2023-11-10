@@ -562,7 +562,8 @@ void downloadImage (const DeviceInterface&	vkd,
 					VkImage					image,
 					MultiPlaneImageData*	imageData,
 					VkAccessFlags			prevAccess,
-					VkImageLayout			initialLayout)
+					VkImageLayout			initialLayout,
+					uint32_t			baseArrayLayer)
 {
 	const VkQueue					queue			= getDeviceQueue(vkd, device, queueFamilyNdx, 0u);
 	const Unique<VkCommandPool>		cmdPool			(createCommandPool(vkd, device, (VkCommandPoolCreateFlags)0, queueFamilyNdx));
@@ -597,7 +598,7 @@ void downloadImage (const DeviceInterface&	vkd,
 					static_cast<vk::VkImageAspectFlags>(aspect),
 					0u,
 					1u,
-					0u,
+					baseArrayLayer,
 					1u
 				}
 			};
@@ -621,7 +622,7 @@ void downloadImage (const DeviceInterface&	vkd,
 				0u,		// bufferOffset
 				0u,		// bufferRowLength
 				0u,		// bufferImageHeight
-				{ (VkImageAspectFlags)aspect, 0u, 0u, 1u },
+				{ (VkImageAspectFlags)aspect, 0u, baseArrayLayer, 1u },
 				makeOffset3D(0u, 0u, 0u),
 				planeExtent
 			};

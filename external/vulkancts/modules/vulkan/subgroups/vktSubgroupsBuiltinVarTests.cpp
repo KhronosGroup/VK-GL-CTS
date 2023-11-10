@@ -2012,7 +2012,7 @@ TestCaseGroup* createSubgroupsBuiltinVarTests (TestContext& testCtx)
 				DE_FALSE							//  deBool				requiredSubgroupSize;
 			};
 
-			addFunctionCaseWithPrograms(graphicGroup.get(), varLower, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(graphicGroup.get(), varLower,  supportedCheck, initPrograms, test, caseDef);
 		}
 
 #ifndef CTS_USES_VULKANSC
@@ -2025,7 +2025,7 @@ TestCaseGroup* createSubgroupsBuiltinVarTests (TestContext& testCtx)
 				DE_FALSE							//  deBool				requiredSubgroupSize;
 			};
 
-			addFunctionCaseWithPrograms(raytracingGroup.get(), varLower, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(raytracingGroup.get(), varLower,  supportedCheck, initPrograms, test, caseDef);
 		}
 #endif // CTS_USES_VULKANSC
 
@@ -2042,7 +2042,7 @@ TestCaseGroup* createSubgroupsBuiltinVarTests (TestContext& testCtx)
 			};
 			const string			testName				= varLower + "_" + getShaderStageName(caseDef.shaderStage) + testNameSuffix;
 
-			addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(computeGroup.get(), testName,  supportedCheck, initPrograms, test, caseDef);
 		}
 
 #ifndef CTS_USES_VULKANSC
@@ -2061,7 +2061,7 @@ TestCaseGroup* createSubgroupsBuiltinVarTests (TestContext& testCtx)
 				};
 				const string			testName				= varLower + "_" + getShaderStageName(caseDef.shaderStage) + testNameSuffix;
 
-				addFunctionCaseWithPrograms(meshGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(meshGroup.get(), testName,  supportedCheck, initPrograms, test, caseDef);
 			}
 		}
 #endif // CTS_USES_VULKANSC
@@ -2077,7 +2077,7 @@ TestCaseGroup* createSubgroupsBuiltinVarTests (TestContext& testCtx)
 			};
 			const string			testName	= varLower + "_" + getShaderStageName(caseDef.shaderStage);
 
-			addFunctionCaseWithPrograms(framebufferGroup.get(), testName, "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+			addFunctionCaseWithPrograms(framebufferGroup.get(), testName,  supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
 	}
 
@@ -2099,7 +2099,7 @@ TestCaseGroup* createSubgroupsBuiltinVarTests (TestContext& testCtx)
 			};
 			const string			testName				= varLower + testNameSuffix;
 
-			addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(computeGroup.get(), testName,  supportedCheck, initPrograms, test, caseDef);
 		}
 
 #ifndef CTS_USES_VULKANSC
@@ -2118,7 +2118,7 @@ TestCaseGroup* createSubgroupsBuiltinVarTests (TestContext& testCtx)
 				};
 				const string			testName				= varLower + testNameSuffix + "_" + getShaderStageName(stage);
 
-				addFunctionCaseWithPrograms(meshGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(meshGroup.get(), testName,  supportedCheck, initPrograms, test, caseDef);
 			}
 		}
 #endif // CTS_USES_VULKANSC

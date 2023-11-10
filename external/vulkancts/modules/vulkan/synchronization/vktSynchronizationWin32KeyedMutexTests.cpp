@@ -1882,7 +1882,7 @@ static void createTests (tcu::TestCaseGroup* group)
 		const std::string	opGroupName	= getOperationName(writeOp) + "_" + getOperationName(readOp);
 		bool				empty		= true;
 
-		de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(testCtx, opGroupName.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(testCtx, opGroupName.c_str()));
 
 		for (size_t resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resourcesWin32KeyedMutex); ++resourceNdx)
 		{
@@ -1902,7 +1902,7 @@ static void createTests (tcu::TestCaseGroup* group)
 				{
 					const TestConfig config (resource, writeOp, readOp, cases[caseNdx].memoryHandleTypeBuffer, cases[caseNdx].memoryHandleTypeImage);
 
-					opGroup->addChild(new InstanceFactory1<Win32KeyedMutexTestInstance, TestConfig, Progs>(testCtx, tcu::NODETYPE_SELF_VALIDATE,  name, "", Progs(), config));
+					opGroup->addChild(new InstanceFactory1<Win32KeyedMutexTestInstance, TestConfig, Progs>(testCtx, name, Progs(), config));
 					empty = false;
 				}
 			}
@@ -1922,7 +1922,7 @@ static void cleanupGroup (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createWin32KeyedMutexTest (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "win32_keyed_mutex", "", createTests, cleanupGroup);
+	return createTestGroup(testCtx, "win32_keyed_mutex", createTests, cleanupGroup);
 }
 
 } // synchronization

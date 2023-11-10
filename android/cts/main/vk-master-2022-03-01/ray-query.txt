@@ -3698,6 +3698,7 @@ dEQP-VK.ray_query.opacity_micromap.copy.Compact.4.level_12
 dEQP-VK.ray_query.opacity_micromap.copy.Compact.4.level_13
 dEQP-VK.ray_query.opacity_micromap.copy.Compact.4.level_14
 dEQP-VK.ray_query.opacity_micromap.copy.Compact.4.level_15
+dEQP-VK.ray_query.opacity_micromap.copy.misc.maintenance5
 dEQP-VK.ray_query.non_uniform_args.no_miss
 dEQP-VK.ray_query.non_uniform_args.miss_cause_1
 dEQP-VK.ray_query.non_uniform_args.miss_cause_2
@@ -3705,6 +3706,18 @@ dEQP-VK.ray_query.non_uniform_args.miss_cause_3
 dEQP-VK.ray_query.non_uniform_args.miss_cause_4
 dEQP-VK.ray_query.non_uniform_args.miss_cause_5
 dEQP-VK.ray_query.non_uniform_args.miss_cause_6
+dEQP-VK.ray_query.multiple_ray_queries.vertex_shader
+dEQP-VK.ray_query.multiple_ray_queries.tess_control_shader
+dEQP-VK.ray_query.multiple_ray_queries.tess_evaluation_shader
+dEQP-VK.ray_query.multiple_ray_queries.geometry_shader
+dEQP-VK.ray_query.multiple_ray_queries.fragment_shader
+dEQP-VK.ray_query.multiple_ray_queries.compute_shader
+dEQP-VK.ray_query.multiple_ray_queries.rgen_shader
+dEQP-VK.ray_query.multiple_ray_queries.isect_shader
+dEQP-VK.ray_query.multiple_ray_queries.ahit_shader
+dEQP-VK.ray_query.multiple_ray_queries.chit_shader
+dEQP-VK.ray_query.multiple_ray_queries.miss_shader
+dEQP-VK.ray_query.multiple_ray_queries.call_shader
 dEQP-VK.ray_query.inside_aabbs.ray_end_tmax_zero.scaling_factor_0.rotation_0
 dEQP-VK.ray_query.inside_aabbs.ray_end_tmax_zero.scaling_factor_0.rotation_1
 dEQP-VK.ray_query.inside_aabbs.ray_end_tmax_zero.scaling_factor_0.rotation_2

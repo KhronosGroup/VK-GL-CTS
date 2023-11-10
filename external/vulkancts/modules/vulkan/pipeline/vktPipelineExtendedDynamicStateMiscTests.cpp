@@ -353,8 +353,18 @@ tcu::TestStatus sampleShadingWithDynamicSampleCount (Context& context, PipelineC
 			DE_ASSERT(false);
 #endif // CTS_USES_VULKANSC
 		}
-		ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &dynamicScissors.at(drawIdx));
-		ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 1, &dynamicViewports.at(drawIdx));
+#ifndef CTS_USES_VULKANSC
+		if (isConstructionTypeShaderObject(constructionType))
+		{
+			ctx.vkd.cmdSetScissorWithCount(cmdBuffer, 1u, &dynamicScissors.at(drawIdx));
+			ctx.vkd.cmdSetViewportWithCount(cmdBuffer, 1u, &dynamicViewports.at(drawIdx));
+		}
+		else
+#endif // CTS_USES_VULKANSC
+		{
+			ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &dynamicScissors.at(drawIdx));
+			ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 1u, &dynamicViewports.at(drawIdx));
+		}
 		ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSets.at(drawIdx).get(), 0u, nullptr);
 		ctx.vkd.cmdDraw(cmdBuffer, kVertexCount, 1u, 0u, 0u);
 	}
@@ -416,8 +426,8 @@ using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 tcu::TestCaseGroup* createExtendedDynamicStateMiscTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	GroupPtr miscGroup (new tcu::TestCaseGroup(testCtx, "misc", "Extended dynamic state misc tests"));
-	addFunctionCaseWithPrograms(miscGroup.get(), "sample_shading_dynamic_sample_count", "", sampleShadingWithDynamicSampleCountSupport, sampleShadingWithDynamicSampleCountPrograms, sampleShadingWithDynamicSampleCount, pipelineConstructionType);
+	GroupPtr miscGroup (new tcu::TestCaseGroup(testCtx, "misc"));
+	addFunctionCaseWithPrograms(miscGroup.get(), "sample_shading_dynamic_sample_count", sampleShadingWithDynamicSampleCountSupport, sampleShadingWithDynamicSampleCountPrograms, sampleShadingWithDynamicSampleCount, pipelineConstructionType);
 	return miscGroup.release();
 }
 

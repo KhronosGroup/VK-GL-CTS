@@ -634,15 +634,15 @@ tcu::TestCaseGroup* createStencilExportTests (tcu::TestContext& testCtx, Pipelin
 		false
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_stencil_export", ""));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_stencil_export"));
 	for (int fmtIdx = 0; fmtIdx < DE_LENGTH_OF_ARRAY(kFormats); ++fmtIdx)
 	{
 		params.stencilFormat = kFormats[fmtIdx].format;
-		de::MovePtr<tcu::TestCaseGroup> formatGroup (new tcu::TestCaseGroup(testCtx, kFormats[fmtIdx].name.c_str(), ""));
-		addFunctionCaseWithPrograms(formatGroup.get(), "op_replace", "", checkSupport, initPrograms, testStencilExportReplace, params);
+		de::MovePtr<tcu::TestCaseGroup> formatGroup (new tcu::TestCaseGroup(testCtx, kFormats[fmtIdx].name.c_str()));
+		addFunctionCaseWithPrograms(formatGroup.get(), "op_replace", checkSupport, initPrograms, testStencilExportReplace, params);
 #ifndef CTS_USES_VULKANSC
 		params.early_and_late = true;
-		addFunctionCaseWithPrograms(formatGroup.get(), "op_replace_early_and_late", "", checkSupport, initPrograms, testStencilExportReplace, params);
+		addFunctionCaseWithPrograms(formatGroup.get(), "op_replace_early_and_late", checkSupport, initPrograms, testStencilExportReplace, params);
 		params.early_and_late = false;
 #endif
 		group->addChild(formatGroup.release());

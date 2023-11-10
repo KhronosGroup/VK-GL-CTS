@@ -1631,7 +1631,7 @@ template <class T>
 class T64bitCompareTest : public TestCase
 {
 public:
-							T64bitCompareTest	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParameters<T>& params);
+							T64bitCompareTest	(tcu::TestContext& testCtx, const std::string& name, const TestParameters<T>& params);
 	virtual void			checkSupport		(Context& context) const;
 	virtual void			initPrograms		(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance		(Context& ctx) const;
@@ -1641,8 +1641,8 @@ private:
 };
 
 template <class T>
-T64bitCompareTest<T>::T64bitCompareTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParameters<T>& params)
-	: TestCase(testCtx, name, description), m_params(params)
+T64bitCompareTest<T>::T64bitCompareTest (tcu::TestContext& testCtx, const std::string& name, const TestParameters<T>& params)
+	: TestCase(testCtx, name), m_params(params)
 {
 	// This is needed so that the same operands can be used for single-element comparisons or for vectorized comparisons (which use *vec4 types).
 	DE_ASSERT(m_params.operands.size() % 4 == 0);
@@ -1790,7 +1790,7 @@ void createDoubleCompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName
 	{
 		TestParameters<double>	params		= { typeNamePair.first, *opPtr, stageNamePair.first, DOUBLE_OPERANDS, requireNanPair.first };
 		std::string				testName	= stageNamePair.second + "_" + de::toLower(opPtr->spirvName()) + "_" + requireNanPair.second + "_" + typeNamePair.second;
-		tests->addChild(new T64bitCompareTest<double>(tests->getTestContext(), testName, "", params));
+		tests->addChild(new T64bitCompareTest<double>(tests->getTestContext(), testName, params));
 	}
 }
 
@@ -1812,7 +1812,7 @@ void createInt64CompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName*
 	{
 		TestParameters<deInt64>	params		= { typeNamePair.first, *opPtr, stageNamePair.first, INT64_OPERANDS, false };
 		std::string				testName	= stageNamePair.second + "_" + de::toLower(opPtr->spirvName()) + "_" + typeNamePair.second;
-		tests->addChild(new T64bitCompareTest<deInt64>(tests->getTestContext(), testName, "", params));
+		tests->addChild(new T64bitCompareTest<deInt64>(tests->getTestContext(), testName, params));
 	}
 }
 
@@ -1834,7 +1834,7 @@ void createUint64CompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName
 	{
 		TestParameters<deUint64>	params		= { typeNamePair.first, *opPtr, stageNamePair.first, UINT64_OPERANDS, false };
 		std::string					testName	= stageNamePair.second + "_" + de::toLower(opPtr->spirvName()) + "_" + typeNamePair.second;
-		tests->addChild(new T64bitCompareTest<deUint64>(tests->getTestContext(), testName, "", params));
+		tests->addChild(new T64bitCompareTest<deUint64>(tests->getTestContext(), testName, params));
 	}
 }
 
@@ -1849,19 +1849,12 @@ struct TestMgr
 	static std::string getGroupName ();
 
 	template <class T>
-	static std::string getGroupDesc ();
-
-	template <class T>
 	static CreationFunctionPtr getCreationFunction ();
 };
 
 template <> std::string TestMgr::getGroupName<double>()		{ return "double";	}
 template <> std::string TestMgr::getGroupName<deInt64>()	{ return "int64";	}
 template <> std::string TestMgr::getGroupName<deUint64>()	{ return "uint64";	}
-
-template <> std::string TestMgr::getGroupDesc<double>()		{ return "64-bit floating point tests";		}
-template <> std::string TestMgr::getGroupDesc<deInt64>()	{ return "64-bit signed integer tests";		}
-template <> std::string TestMgr::getGroupDesc<deUint64>()	{ return "64-bit unsigned integer tests";	}
 
 template <> TestMgr::CreationFunctionPtr TestMgr::getCreationFunction<double> ()	{ return createDoubleCompareTestsInGroup;	}
 template <> TestMgr::CreationFunctionPtr TestMgr::getCreationFunction<deInt64> ()	{ return createInt64CompareTestsInGroup;	}
@@ -1877,10 +1870,10 @@ tcu::TestCaseGroup* create64bitCompareGraphicsGroup (tcu::TestContext& testCtx)
 		std::make_pair(vk::VK_SHADER_STAGE_FRAGMENT_BIT,	"frag"),
 	};
 
-	tcu::TestCaseGroup* newGroup = new tcu::TestCaseGroup(testCtx, TestMgr::getParentGroupName(), TestMgr::getParentGroupDesc());
-	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<double>(),	TestMgr::getGroupDesc<double>(),	TestMgr::getCreationFunction<double>(),		&graphicStages));
-	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deInt64>(),	TestMgr::getGroupDesc<deInt64>(),	TestMgr::getCreationFunction<deInt64>(),	&graphicStages));
-	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deUint64>(),	TestMgr::getGroupDesc<deUint64>(),	TestMgr::getCreationFunction<deUint64>(),	&graphicStages));
+	tcu::TestCaseGroup* newGroup = new tcu::TestCaseGroup(testCtx, TestMgr::getParentGroupName());
+	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<double>(), TestMgr::getCreationFunction<double>(),		&graphicStages));
+	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deInt64>(), TestMgr::getCreationFunction<deInt64>(),	&graphicStages));
+	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deUint64>(), TestMgr::getCreationFunction<deUint64>(),	&graphicStages));
 	return newGroup;
 }
 
@@ -1891,10 +1884,10 @@ tcu::TestCaseGroup* create64bitCompareComputeGroup (tcu::TestContext& testCtx)
 		std::make_pair(vk::VK_SHADER_STAGE_COMPUTE_BIT,		"comp"),
 	};
 
-	tcu::TestCaseGroup* newGroup = new tcu::TestCaseGroup(testCtx, TestMgr::getParentGroupName(), TestMgr::getParentGroupDesc());
-	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<double>(),	TestMgr::getGroupDesc<double>(),	TestMgr::getCreationFunction<double>(),		&computeStages));
-	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deInt64>(),	TestMgr::getGroupDesc<deInt64>(),	TestMgr::getCreationFunction<deInt64>(),	&computeStages));
-	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deUint64>(),	TestMgr::getGroupDesc<deUint64>(),	TestMgr::getCreationFunction<deUint64>(),	&computeStages));
+	tcu::TestCaseGroup* newGroup = new tcu::TestCaseGroup(testCtx, TestMgr::getParentGroupName());
+	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<double>(),	TestMgr::getCreationFunction<double>(),		&computeStages));
+	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deInt64>(),TestMgr::getCreationFunction<deInt64>(),	&computeStages));
+	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deUint64>(),TestMgr::getCreationFunction<deUint64>(),	&computeStages));
 	return newGroup;
 }
 

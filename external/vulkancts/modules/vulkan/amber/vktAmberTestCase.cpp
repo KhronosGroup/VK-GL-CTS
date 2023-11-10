@@ -48,10 +48,11 @@ AmberTestCase::AmberTestCase (tcu::TestContext&		testCtx,
 							  const char*			name,
 							  const char*			description,
 							  const std::string&	readFilename)
-	: TestCase(testCtx, name, description),
+	: TestCase(testCtx, name),
 	  m_recipe(DE_NULL),
 	  m_readFilename(readFilename)
 {
+	(void)description;
 }
 
 AmberTestCase::~AmberTestCase (void)

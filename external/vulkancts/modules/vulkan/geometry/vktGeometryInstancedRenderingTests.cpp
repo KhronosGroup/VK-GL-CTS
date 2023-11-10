@@ -407,7 +407,7 @@ void checkSupport (Context& context, TestParams params)
 //!       a shader based on that. This applies to number of GS invocations which can't be injected into the shader.
 tcu::TestCaseGroup* createInstancedRenderingTests (tcu::TestContext& testCtx)
 {
-	MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "instanced", "Instanced rendering tests."));
+	MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "instanced"));
 
 	const int drawInstanceCases[]	=
 	{
@@ -431,7 +431,7 @@ tcu::TestCaseGroup* createInstancedRenderingTests (tcu::TestContext& testCtx)
 			*pNumInvocations,
 		};
 
-		addFunctionCaseWithPrograms(group.get(), caseName.str(), "", checkSupport, initPrograms, test, params);
+		addFunctionCaseWithPrograms(group.get(), caseName.str(), checkSupport, initPrograms, test, params);
 	}
 
 	return group.release();

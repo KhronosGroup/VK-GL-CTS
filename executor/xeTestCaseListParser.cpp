@@ -109,8 +109,8 @@ void TestCaseListParser::parse (const deUint8* bytes, int numBytes)
 					XE_CHECK_MSG(parent->getNodeType() == TESTNODETYPE_GROUP, "Only TestGroups are allowed to have child nodes");
 
 					bool			isGroup		= deStringEqual(caseType, "TestGroup") == DE_TRUE;
-					TestNode*		node		= isGroup ? static_cast<TestNode*>(static_cast<TestGroup*>(parent)->createGroup(name, description))
-														  : static_cast<TestNode*>(static_cast<TestGroup*>(parent)->createCase(getTestCaseType(caseType), name, description));
+					TestNode*		node		= isGroup ? static_cast<TestNode*>(static_cast<TestGroup*>(parent)->createGroup(name))
+														  : static_cast<TestNode*>(static_cast<TestGroup*>(parent)->createCase(getTestCaseType(caseType), name));
 
 					m_nodeStack.push_back(node);
 				}

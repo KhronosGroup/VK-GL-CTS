@@ -759,6 +759,9 @@ std::string getImageFormatID (VkFormat format)
 		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT:
 		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT:
 		case VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT:
+#ifndef CTS_USES_VULKANSC
+		case VK_FORMAT_A8_UNORM_KHR:
+#endif // CTS_USES_VULKANSC
 			return de::toLower(std::string(getFormatName(format)).substr(10));
 
 		default:

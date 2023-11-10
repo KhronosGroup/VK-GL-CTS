@@ -19,7 +19,9 @@ vk-master-2022-03-01/image/depth-stencil-descriptor.txt
 vk-master-2022-03-01/image/extend-operands-spirv1p4.txt
 vk-master-2022-03-01/image/extended-usage-bit-compatibility.txt
 vk-master-2022-03-01/image/format-reinterpret.txt
+vk-master-2022-03-01/image/host-image-copy.txt
 vk-master-2022-03-01/image/image-size.txt
+vk-master-2022-03-01/image/load-store-multisample.txt
 vk-master-2022-03-01/image/load-store.txt
 vk-master-2022-03-01/image/mismatched-write-op.txt
 vk-master-2022-03-01/image/nontemporal-operand.txt

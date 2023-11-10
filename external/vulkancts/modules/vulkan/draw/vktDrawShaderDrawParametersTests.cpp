@@ -452,13 +452,13 @@ void addDrawCase (tcu::TestCaseGroup* group, DrawTest::TestSpec testSpec, const 
 
 	testSpec.flags |= flags;
 
-	group->addChild(new InstanceFactory<DrawTest, FunctionSupport1<DrawTest::TestSpec>>(group->getTestContext(), name.str(), "", testSpec, FunctionSupport1<DrawTest::TestSpec>::Args(checkSupport, testSpec)));
+	group->addChild(new InstanceFactory<DrawTest, FunctionSupport1<DrawTest::TestSpec>>(group->getTestContext(), name.str(), testSpec, FunctionSupport1<DrawTest::TestSpec>::Args(checkSupport, testSpec)));
 }
 
 }	// anonymous
 
 ShaderDrawParametersTests::ShaderDrawParametersTests (tcu::TestContext &testCtx, const SharedGroupParams groupParams)
-	: TestCaseGroup			(testCtx, "shader_draw_parameters", "VK_KHR_shader_draw_parameters")
+	: TestCaseGroup			(testCtx, "shader_draw_parameters")
 	, m_groupParams			(groupParams)
 {
 }
@@ -472,7 +472,7 @@ void ShaderDrawParametersTests::init (void)
 		testSpec.topology							= vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 		testSpec.flags								= 0;
 
-		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(getTestContext(), "base_vertex", ""));
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(getTestContext(), "base_vertex"));
 		addDrawCase(group.get(), testSpec, 0);
 		addDrawCase(group.get(), testSpec, TEST_FLAG_INDEXED);
 		addDrawCase(group.get(), testSpec, TEST_FLAG_INDIRECT);
@@ -486,7 +486,7 @@ void ShaderDrawParametersTests::init (void)
 		testSpec.topology							= vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 		testSpec.flags								= TEST_FLAG_INSTANCED;
 
-		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(getTestContext(), "base_instance", ""));
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(getTestContext(), "base_instance"));
 		addDrawCase(group.get(), testSpec, 0);
 		addDrawCase(group.get(), testSpec, TEST_FLAG_INDEXED);
 		addDrawCase(group.get(), testSpec, TEST_FLAG_INDIRECT);
@@ -502,7 +502,7 @@ void ShaderDrawParametersTests::init (void)
 		testSpec.topology							= vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 		testSpec.flags								= TEST_FLAG_INDIRECT | TEST_FLAG_MULTIDRAW;
 
-		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(getTestContext(), "draw_index", ""));
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(getTestContext(), "draw_index"));
 		addDrawCase(group.get(), testSpec, 0);
 		addDrawCase(group.get(), testSpec, TEST_FLAG_INSTANCED);
 		addDrawCase(group.get(), testSpec, TEST_FLAG_INDEXED);

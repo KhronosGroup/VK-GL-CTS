@@ -81,52 +81,55 @@ enum TestType
 	TEST_TYPE_LAST
 };
 
+struct TestSpec2 : TestSpecBase
+{
+	const int32_t			vertexOffset;
+	const vk::VkDeviceSize	bindIndexBufferOffset;
+	const vk::VkDeviceSize	memoryBindOffset;
+	const TestType			testType;
+	bool					useMaintenance5Ext;
+	const bool				nullDescriptor;
+	const bool				bindIndexBuffer2;
+
+	TestSpec2 (const ShaderMap& shaders_,
+			  vk::VkPrimitiveTopology topology_,
+			  SharedGroupParams groupParams_,
+			  int32_t vertexOffset_,
+			  vk::VkDeviceSize bindIndexBufferOffset_,
+			  vk::VkDeviceSize memoryBindOffset_,
+			  TestType testType_,
+			  bool useMaintenance5Ext_,
+			  bool nullDescriptor_,
+			  bool bindIndexBuffer2_)
+		: TestSpecBase			{shaders_, topology_, groupParams_}
+		, vertexOffset			(vertexOffset_)
+		, bindIndexBufferOffset	(bindIndexBufferOffset_)
+		, memoryBindOffset		(memoryBindOffset_)
+		, testType				(testType_)
+		, useMaintenance5Ext	(useMaintenance5Ext_)
+		, nullDescriptor		(nullDescriptor_)
+		, bindIndexBuffer2		(bindIndexBuffer2_)
+	{
+	}
+};
+
 class DrawIndexed : public DrawTestsBaseClass
 {
 public:
-	struct TestSpec : public TestSpecBase
-	{
-		const int32_t			vertexOffset;
-		const vk::VkDeviceSize	bindIndexBufferOffset;
-		const vk::VkDeviceSize	memoryBindOffset;
+	typedef		TestSpec2	TestSpec;
 
-		const TestType			testType;
-		const bool				nullDescriptor;
-		const bool				bindIndexBuffer2;
-
-		TestSpec (const ShaderMap& shaders_,
-				  vk::VkPrimitiveTopology topology_,
-				  SharedGroupParams groupParams_,
-				  int32_t vertexOffset_,
-				  vk::VkDeviceSize bindIndexBufferOffset_,
-				  vk::VkDeviceSize memoryBindOffset_,
-				  TestType testType_,
-				  bool nullDescriptor_,
-				  bool bindIndexBuffer2_
-			)
-			: TestSpecBase			{shaders_, topology_, groupParams_}
-			, vertexOffset			(vertexOffset_)
-			, bindIndexBufferOffset	(bindIndexBufferOffset_)
-			, memoryBindOffset		(memoryBindOffset_)
-			, testType				(testType_)
-			, nullDescriptor		(nullDescriptor_)
-			, bindIndexBuffer2		(bindIndexBuffer2_)
-		{
-		}
-	};
-
-								DrawIndexed				(Context &context, TestSpec testSpec);
+								DrawIndexed				(Context				&context,
+														 TestSpec				testSpec);
 	virtual		tcu::TestStatus iterate					(void);
 protected:
+				void			cmdBindIndexBufferImpl	(vk::VkCommandBuffer	commandBuffer,
+														 vk::VkBuffer			indexBuffer,
+														 vk::VkDeviceSize		offset,
+														 vk::VkDeviceSize		size,
+														 vk::VkIndexType		indexType);
 	std::vector<deUint32>		m_indexes;
 	de::SharedPtr<Buffer>		m_indexBuffer;
-	const int32_t				m_vertexOffset;
-	const vk::VkDeviceSize		m_bindIndexBufferOffset;
-	const vk::VkDeviceSize		m_memoryBindOffset;
-
-	const TestType				m_testType;
-	const bool					m_nullDescriptor;
-	const bool					m_bindIndexBuffer2;
+	const TestSpec				m_testSpec;
 };
 
 class DrawInstancedIndexed : public DrawIndexed
@@ -136,14 +139,9 @@ public:
 	virtual		tcu::TestStatus	iterate					(void);
 };
 
-DrawIndexed::DrawIndexed(Context& context, TestSpec testSpec)
+DrawIndexed::DrawIndexed (Context &context, TestSpec testSpec)
 	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.groupParams, testSpec.topology)
-	, m_vertexOffset(testSpec.vertexOffset)
-	, m_bindIndexBufferOffset(testSpec.bindIndexBufferOffset)
-	, m_memoryBindOffset(testSpec.memoryBindOffset)
-	, m_testType(testSpec.testType)
-	, m_nullDescriptor(testSpec.nullDescriptor)
-	, m_bindIndexBuffer2(testSpec.bindIndexBuffer2)
+	, m_testSpec(testSpec)
 {
 	if (testSpec.testType == TEST_TYPE_NON_MAINTENANCE_6)
 	{
@@ -155,7 +153,7 @@ DrawIndexed::DrawIndexed(Context& context, TestSpec testSpec)
 		// - Store vertices at the start of the vertex buffer.
 		// - Increase indices by abs(offset) so when substracting it, it results in the regular positions.
 
-		const uint32_t indexOffset = (m_vertexOffset < 0 ? static_cast<uint32_t>(-m_vertexOffset) : 0u);
+		const uint32_t indexOffset = (m_testSpec.vertexOffset < 0 ? static_cast<uint32_t>(-m_testSpec.vertexOffset) : 0u);
 
 		switch (m_topology)
 		{
@@ -199,12 +197,12 @@ DrawIndexed::DrawIndexed(Context& context, TestSpec testSpec)
 	}
 
 	// This works for both positive and negative vertex offsets.
-	for (int unusedIdx = 0; unusedIdx < m_vertexOffset; unusedIdx++)
+	for (int unusedIdx = 0; unusedIdx < testSpec.vertexOffset; unusedIdx++)
 	{
 		m_data.push_back(VertexElementData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), -1));
 	}
 
-	int vertexIndex = (m_vertexOffset >= 0 ? m_vertexOffset : 0);
+	int vertexIndex = (testSpec.vertexOffset >= 0 ? testSpec.vertexOffset : 0);
 
 	m_data.push_back(VertexElementData(tcu::Vec4(	-0.3f,	 0.3f,	1.0f,	1.0f), tcu::RGBA::blue().toVec(), vertexIndex++));
 	m_data.push_back(VertexElementData(tcu::Vec4(	-1.0f,	 1.0f,	1.0f,	1.0f), tcu::RGBA::blue().toVec(), vertexIndex++));
@@ -220,6 +218,23 @@ DrawIndexed::DrawIndexed(Context& context, TestSpec testSpec)
 	initialize();
 }
 
+void DrawIndexed::cmdBindIndexBufferImpl(vk::VkCommandBuffer	commandBuffer,
+										 vk::VkBuffer			indexBuffer,
+										 vk::VkDeviceSize		offset,
+										 vk::VkDeviceSize		dataSize,
+										 vk::VkIndexType		indexType)
+{
+#ifndef CTS_USES_VULKANSC
+	if (m_testSpec.useMaintenance5Ext)
+		m_vk.cmdBindIndexBuffer2KHR(commandBuffer, indexBuffer, offset, dataSize, indexType);
+	else
+#endif
+	{
+		DE_UNREF(dataSize);
+		m_vk.cmdBindIndexBuffer(commandBuffer, indexBuffer, offset, indexType);
+	}
+}
+
 tcu::TestStatus DrawIndexed::iterate (void)
 {
 	tcu::TestLog&			log			= m_context.getTestContext().getLog();
@@ -229,8 +244,9 @@ tcu::TestStatus DrawIndexed::iterate (void)
 	const vk::VkDevice		device		= m_context.getDevice();
 	const auto				memProps	= vk::getPhysicalDeviceMemoryProperties(vki, physDev);
 	const auto				atomSize	= m_context.getDeviceProperties().limits.nonCoherentAtomSize;
-	const vk::VkDeviceSize	bufferSize	= de::dataSize(m_indexes) + m_bindIndexBufferOffset;
-	vk::SimpleAllocator		allocator	(m_vk, device, memProps, vk::SimpleAllocator::OptionalOffsetParams({ atomSize, m_memoryBindOffset }));
+	const auto				dataSize	= static_cast<vk::VkDeviceSize>(de::dataSize(m_indexes));
+	const auto				bufferSize	= dataSize + m_testSpec.bindIndexBufferOffset;
+	vk::SimpleAllocator		allocator	(m_vk, device, memProps, vk::SimpleAllocator::OptionalOffsetParams({ atomSize, m_testSpec.memoryBindOffset }));
 
 	m_indexBuffer = Buffer::createAndAlloc(	m_vk, device,
 											BufferCreateInfo(bufferSize,
@@ -240,8 +256,8 @@ tcu::TestStatus DrawIndexed::iterate (void)
 
 	uint8_t* ptr = reinterpret_cast<uint8_t*>(m_indexBuffer->getBoundMemory().getHostPtr());
 
-	deMemset(ptr, 0xFF, static_cast<size_t>(m_bindIndexBufferOffset));
-	deMemcpy(ptr + m_bindIndexBufferOffset, de::dataOrNull(m_indexes), de::dataSize(m_indexes));
+	deMemset(ptr, 0xFF, static_cast<size_t>(m_testSpec.bindIndexBufferOffset));
+	deMemcpy(ptr + m_testSpec.bindIndexBufferOffset, de::dataOrNull(m_indexes), de::dataSize(m_indexes));
 	vk::flushAlloc(m_vk, device, m_indexBuffer->getBoundMemory());
 
 	const vk::VkDeviceSize	vertexBufferOffset	= 0;
@@ -261,9 +277,9 @@ tcu::TestStatus DrawIndexed::iterate (void)
 			beginSecondaryCmdBuffer(m_vk);
 
 		m_vk.cmdBindVertexBuffers(*m_secCmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-		m_vk.cmdBindIndexBuffer(*m_secCmdBuffer, indexBuffer, m_bindIndexBufferOffset, vk::VK_INDEX_TYPE_UINT32);
+		cmdBindIndexBufferImpl(*m_secCmdBuffer, indexBuffer, m_testSpec.bindIndexBufferOffset, dataSize, vk::VK_INDEX_TYPE_UINT32);
 		m_vk.cmdBindPipeline(*m_secCmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-		m_vk.cmdDrawIndexed(*m_secCmdBuffer, 6, 1, 2, m_vertexOffset, 0);
+		m_vk.cmdDrawIndexed(*m_secCmdBuffer, 6, 1, 2, m_testSpec.vertexOffset, 0);
 
 		if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 			endDynamicRender(*m_secCmdBuffer);
@@ -291,9 +307,9 @@ tcu::TestStatus DrawIndexed::iterate (void)
 		beginDynamicRender(*m_cmdBuffer);
 
 		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-		m_vk.cmdBindIndexBuffer(*m_cmdBuffer, indexBuffer, m_bindIndexBufferOffset, vk::VK_INDEX_TYPE_UINT32);
+		cmdBindIndexBufferImpl(*m_cmdBuffer, indexBuffer, m_testSpec.bindIndexBufferOffset, dataSize, vk::VK_INDEX_TYPE_UINT32);
 		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-		m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 1, 2, m_vertexOffset, 0);
+		m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 1, 2, m_testSpec.vertexOffset, 0);
 
 		endDynamicRender(*m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -307,9 +323,9 @@ tcu::TestStatus DrawIndexed::iterate (void)
 		beginLegacyRender(*m_cmdBuffer);
 
 		m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-		m_vk.cmdBindIndexBuffer(*m_cmdBuffer, indexBuffer, m_bindIndexBufferOffset, vk::VK_INDEX_TYPE_UINT32);
+		cmdBindIndexBufferImpl(*m_cmdBuffer, indexBuffer, m_testSpec.bindIndexBufferOffset, dataSize, vk::VK_INDEX_TYPE_UINT32);
 		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-		m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 1, 2, m_vertexOffset, 0);
+		m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 1, 2, m_testSpec.vertexOffset, 0);
 
 		endLegacyRender(*m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -372,9 +388,10 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	const vk::VkQueue		queue		= m_context.getUniversalQueue();
 	const vk::VkDevice		device		= m_context.getDevice();
 	const auto				memProps	= vk::getPhysicalDeviceMemoryProperties(vki, physDev);
-	const vk::VkDeviceSize	bufferSize	= de::dataSize(m_indexes) + m_bindIndexBufferOffset;
+	const auto				dataSize	= static_cast<vk::VkDeviceSize>(de::dataSize(m_indexes));
+	const vk::VkDeviceSize	bufferSize	= dataSize + m_testSpec.bindIndexBufferOffset;
 	const auto				atomSize	= m_context.getDeviceProperties().limits.nonCoherentAtomSize;
-	vk::SimpleAllocator		allocator	(m_vk, device, memProps, vk::SimpleAllocator::OptionalOffsetParams({ atomSize, m_memoryBindOffset }));
+	vk::SimpleAllocator		allocator	(m_vk, device, memProps, vk::SimpleAllocator::OptionalOffsetParams({ atomSize, m_testSpec.memoryBindOffset }));
 
 	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 	preRenderBarriers();
@@ -396,8 +413,8 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 
 	uint8_t* ptr = reinterpret_cast<uint8_t*>(m_indexBuffer->getBoundMemory().getHostPtr());
 
-	deMemset(ptr, 0xFF, static_cast<size_t>(m_bindIndexBufferOffset));
-	deMemcpy(ptr + m_bindIndexBufferOffset, de::dataOrNull(m_indexes), de::dataSize(m_indexes));
+	deMemset(ptr, 0xFF, static_cast<size_t>(m_testSpec.bindIndexBufferOffset));
+	deMemcpy(ptr + m_testSpec.bindIndexBufferOffset, de::dataOrNull(m_indexes), de::dataSize(m_indexes));
 	vk::flushAlloc(m_vk, device, m_indexBuffer->getBoundMemory());
 
 	const vk::VkDeviceSize	vertexBufferOffset	= 0;
@@ -405,16 +422,16 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	const vk::VkBuffer		indexBuffer			= m_indexBuffer->object();
 
 	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-	m_vk.cmdBindIndexBuffer(*m_cmdBuffer, indexBuffer, m_bindIndexBufferOffset, vk::VK_INDEX_TYPE_UINT32);
+	cmdBindIndexBufferImpl(*m_cmdBuffer, indexBuffer, m_testSpec.bindIndexBufferOffset, dataSize, vk::VK_INDEX_TYPE_UINT32);
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
 	switch (m_topology)
 	{
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-			m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 4, 2, m_vertexOffset, 2);
+			m_vk.cmdDrawIndexed(*m_cmdBuffer, 6, 4, 2, m_testSpec.vertexOffset, 2);
 			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
-			m_vk.cmdDrawIndexed(*m_cmdBuffer, 4, 4, 2, m_vertexOffset, 2);
+			m_vk.cmdDrawIndexed(*m_cmdBuffer, 4, 4, 2, m_testSpec.vertexOffset, 2);
 			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
 		case vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
@@ -565,7 +582,7 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
 	const vk::VkDevice		device = m_context.getDevice();
 	const auto				memProps = vk::getPhysicalDeviceMemoryProperties(vki, physDev);
 	const auto				atomSize = m_context.getDeviceProperties().limits.nonCoherentAtomSize;
-	vk::SimpleAllocator		allocator(m_vk, device, memProps, vk::SimpleAllocator::OptionalOffsetParams({ atomSize, m_memoryBindOffset }));
+	vk::SimpleAllocator		allocator(m_vk, device, memProps, vk::SimpleAllocator::OptionalOffsetParams({ atomSize, m_testSpec.memoryBindOffset }));
 
 	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 	preRenderBarriers();
@@ -579,7 +596,7 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
 	beginLegacyRender(*m_cmdBuffer);
 #endif // CTS_USES_VULKANSC
 
-	const uint32_t indexCount = m_nullDescriptor ? 3 : 0;
+	const uint32_t indexCount = m_testSpec.nullDescriptor ? 3 : 0;
 
 	const vk::VkDrawIndexedIndirectCommand drawParams =	{indexCount, 1, 0, 0, 0};
 
@@ -612,7 +629,7 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
 	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
 #ifndef CTS_USES_VULKANSC
-	if (m_bindIndexBuffer2)
+	if (m_testSpec.bindIndexBuffer2)
 	{
 		m_vk.cmdBindIndexBuffer2KHR(*m_cmdBuffer, VK_NULL_HANDLE, 0, 0, vk::VK_INDEX_TYPE_UINT32);
 	}
@@ -624,7 +641,7 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
-	switch (m_testType)
+	switch (m_testSpec.testType)
 	{
 		case TEST_TYPE_MAINTENANCE6_INDEXED:
 		{
@@ -681,7 +698,7 @@ tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
 	tcu::TextureLevel refImage(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
 	tcu::clear(refImage.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
-	if (m_nullDescriptor)
+	if (m_testSpec.nullDescriptor)
 	{
 		std::vector<tcu::Vec4>	vertices;
 		std::vector<tcu::Vec4>	colors;
@@ -775,12 +792,16 @@ void checkSupport(Context& context, DrawIndexed::TestSpec testSpec)
 			context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
 		}
 	}
+#ifndef CTS_USES_VULKANSC
+	if (testSpec.useMaintenance5Ext)
+		context.requireDeviceFunctionality(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+#endif
 }
 
 }	// anonymous
 
 DrawIndexedTests::DrawIndexedTests (tcu::TestContext &testCtx, const SharedGroupParams groupParams)
-	: TestCaseGroup		(testCtx, "indexed_draw", "drawing indexed geometry")
+	: TestCaseGroup		(testCtx, "indexed_draw")
 	, m_groupParams		(groupParams)
 {
 	/* Left blank on purpose */
@@ -788,51 +809,63 @@ DrawIndexedTests::DrawIndexedTests (tcu::TestContext &testCtx, const SharedGroup
 
 DrawIndexedTests::~DrawIndexedTests (void) {}
 
-void DrawIndexedTests::init (void)
+
+void DrawIndexedTests::init	(void)
 {
-	const struct
-	{
+	init(false);
+#ifndef CTS_USES_VULKANSC
+	init(true);
+#endif
+}
+
+void DrawIndexedTests::init (bool useMaintenance5Ext)
+{
+	std::string	maintenance5ExtNameSuffix = useMaintenance5Ext ? "_maintenance_5" : "";
+
+	const struct {
 		const vk::VkPrimitiveTopology		topology;
 		const char*							nameSuffix;
-		const char*							descSuffix;
 	} TopologyCases[] =
 	{
-		{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	"triangle_list",	"triangle list" },
-		{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	"triangle_strip",	"triangle strip" },
+		// triangle list
+		{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	"triangle_list"},
+		// triangle strip
+		{ vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	"triangle_strip"},
 	};
 
 	const struct
 	{
 		const int		offset;
 		const char*		nameSuffix;
-		const char*		descSuffix;
 	} OffsetCases[] =
 	{
-		{ VERTEX_OFFSET_DEFAULT,	"",							""														},
-		{ VERTEX_OFFSET_MINUS_ONE,	"_offset_minus_one",		" using -1 as the vertex offset"						},
-		{ VERTEX_OFFSET_NEGATIVE,	"_offset_negative_large",	" using a large negative number as the vertex offset"	},
+		{ VERTEX_OFFSET_DEFAULT,	""},
+		//  using -1 as the vertex offset
+		{ VERTEX_OFFSET_MINUS_ONE,	"_offset_minus_one"},
+		//  using a large negative number as the vertex offset
+		{ VERTEX_OFFSET_NEGATIVE,	"_offset_negative_large"},
 	};
 
 	const struct
 	{
 		IndexBindOffset	bindOffset;
 		const char*		nameSuffix;
-		const char*		descSuffix;
 	} IndexBindOffsetCases[] =
 	{
-		{ IndexBindOffset::DEFAULT,		"",						""											},
-		{ IndexBindOffset::POSITIVE,	"_with_bind_offset",	" and applying an index buffer bind offset"	},
+		{ IndexBindOffset::DEFAULT,		""},
+		//  and applying an index buffer bind offset
+		{ IndexBindOffset::POSITIVE,	"_with_bind_offset"},
 	};
 
 	const struct
 	{
 		MemoryBindOffset	memoryBindOffset;
 		const char*			nameSuffix;
-		const char*			descSuffix;
 	} MemoryBindOffsetCases[] =
 	{
-		{ MemoryBindOffset::DEFAULT,	"",						""													},
-		{ MemoryBindOffset::POSITIVE,	"_with_alloc_offset",	" and applying an extra memory allocation offset"	},
+		{ MemoryBindOffset::DEFAULT,	""},
+		//  and applying an extra memory allocation offset
+		{ MemoryBindOffset::POSITIVE,	"_with_alloc_offset"},
 	};
 
 	for (const auto& offsetCase : OffsetCases)
@@ -860,15 +893,15 @@ void DrawIndexedTests::init (void)
 							indexBindOffset,
 							memoryBindOffset,
 							TEST_TYPE_NON_MAINTENANCE_6,
+							useMaintenance5Ext,
 							false,
 							false
 						);
 
-						const auto testName = std::string("draw_indexed_") + topologyCase.nameSuffix + offsetCase.nameSuffix + indexBindOffsetCase.nameSuffix + memoryBindOffsetCase.nameSuffix;
-						const auto testDesc = std::string("Draws indexed ") + topologyCase.descSuffix + offsetCase.descSuffix + indexBindOffsetCase.descSuffix + memoryBindOffsetCase.descSuffix;
+						const auto testName = std::string("draw_indexed_") + topologyCase.nameSuffix + offsetCase.nameSuffix + indexBindOffsetCase.nameSuffix + memoryBindOffsetCase.nameSuffix + maintenance5ExtNameSuffix;
 
 						addChild(new InstanceFactory<DrawIndexed, FunctionSupport1<DrawIndexed::TestSpec> >
-							(m_testCtx, testName, testDesc, testSpec, FunctionSupport1<DrawIndexed::TestSpec>::Args(checkSupport, testSpec)));
+							(m_testCtx, testName, testSpec, FunctionSupport1<DrawIndexed::TestSpec>::Args(checkSupport, testSpec)));
 					}
 					{
 						DrawInstancedIndexed::TestSpec testSpec
@@ -883,15 +916,15 @@ void DrawIndexedTests::init (void)
 							indexBindOffset,
 							memoryBindOffset,
 							TEST_TYPE_NON_MAINTENANCE_6,
+							useMaintenance5Ext,
 							false,
 							false
 						);
 
-						const auto testName = std::string("draw_instanced_indexed_") + topologyCase.nameSuffix + offsetCase.nameSuffix + indexBindOffsetCase.nameSuffix + memoryBindOffsetCase.nameSuffix;
-						const auto testDesc = std::string("Draws instanced indexed ") + topologyCase.descSuffix + offsetCase.descSuffix + indexBindOffsetCase.descSuffix + memoryBindOffsetCase.descSuffix;
+						const auto testName = std::string("draw_instanced_indexed_") + topologyCase.nameSuffix + offsetCase.nameSuffix + indexBindOffsetCase.nameSuffix + memoryBindOffsetCase.nameSuffix + maintenance5ExtNameSuffix;
 
 						addChild(new InstanceFactory<DrawInstancedIndexed, FunctionSupport1<DrawInstancedIndexed::TestSpec> >
-							(m_testCtx, testName, testDesc, testSpec, FunctionSupport1<DrawInstancedIndexed::TestSpec>::Args(checkSupport, testSpec)));
+							(m_testCtx, testName, testSpec, FunctionSupport1<DrawInstancedIndexed::TestSpec>::Args(checkSupport, testSpec)));
 					}
 				}
 			}
@@ -901,15 +934,14 @@ void DrawIndexedTests::init (void)
 	const struct
 	{
 		TestType	testType;
-		const char* nameSuffix;
-		const char* descSuffix;
+		std::string	nameSuffix;
 	} Maintenance6Cases[] =
 	{
-		{ TEST_TYPE_MAINTENANCE6_INDEXED,	"",								""},
-		{ TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT,	"indirect_",			""},
-		{ TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT_COUNT, "indirect_count_",	""},
+		{ TEST_TYPE_MAINTENANCE6_INDEXED,	"" },
+		{ TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT,	"_indirect" },
+		{ TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT_COUNT, "_indirect_count" },
 #ifndef CTS_USES_VULKANSC
-		{ TEST_TYPE_MAINTENANCE6_MULTI_INDEXED_EXT,	"multi_",				""},
+		{ TEST_TYPE_MAINTENANCE6_MULTI_INDEXED_EXT,	"_multi" },
 #endif
 	};
 
@@ -931,18 +963,18 @@ void DrawIndexedTests::init (void)
 					0,
 					0,
 					maintenance6Case.testType,
+					useMaintenance5Ext,
 					null == 1,
 					m5 == 1
-					);
+				);
 
 				const char* m5Suffix = m5 == 0 ? "" : "_bindindexbuffer2";
 				const char* nullSuffix = null == 0 ? "" : "_nulldescriptor";
 
-				const auto testName = std::string("draw_indexed_") + maintenance6Case.nameSuffix + std::string("maintenance6") + m5Suffix + nullSuffix;
-				const auto testDesc = std::string("Draws indexed ") + maintenance6Case.descSuffix;
+				const auto testName = std::string("draw_indexed") + maintenance6Case.nameSuffix + m5Suffix + nullSuffix + maintenance5ExtNameSuffix + std::string("_maintenance6");
 
 				addChild(new InstanceFactory<DrawIndexedMaintenance6, FunctionSupport1<DrawIndexed::TestSpec> >
-					(m_testCtx, testName, testDesc, testSpec, FunctionSupport1<DrawIndexedMaintenance6::TestSpec>::Args(checkSupport, testSpec)));
+					(m_testCtx, testName, testSpec, FunctionSupport1<DrawIndexedMaintenance6::TestSpec>::Args(checkSupport, testSpec)));
 			}
 		}
 	}

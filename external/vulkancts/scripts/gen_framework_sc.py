@@ -2231,7 +2231,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 {
 """)
 	for x in testedStructureDetail:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", "' + x.name + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
 	stream.append('}\n')
 
 	# write out
@@ -2578,7 +2578,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 {
 """)
 	for x in testFunctions:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x[len('createDeviceWithUnsupportedFeaturesTest'):]) + '", "' + x + '", ' + x + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x[len('createDeviceWithUnsupportedFeaturesTest'):]) + '", ' + x + ');')
 	stream.append('}\n')
 
 	writeInlFile(filename, INL_HEADER, stream)

@@ -252,7 +252,7 @@ class WaitTestCase : public TestCase
 {
 public:
 	WaitTestCase (tcu::TestContext& testCtx, const std::string& name, SynchronizationType type, bool waitAll, bool signalFromDevice)
-		: TestCase				(testCtx, name.c_str(), "")
+		: TestCase				(testCtx, name.c_str())
 		, m_type				(type)
 		, m_waitAll				(waitAll)
 		, m_signalFromDevice	(signalFromDevice)
@@ -385,7 +385,7 @@ public:
 	HostWaitBeforeSignalTestCase(tcu::TestContext&		testCtx,
 								 const std::string&		name,
 								 SynchronizationType	type)
-		: TestCase(testCtx, name.c_str(), "")
+		: TestCase(testCtx, name.c_str())
 		, m_type(type)
 	{
 	}
@@ -497,7 +497,7 @@ class PollTestCase : public TestCase
 {
 public:
 	PollTestCase (tcu::TestContext& testCtx, const std::string& name, bool signalFromDevice)
-		: TestCase				(testCtx, name.c_str(), "")
+		: TestCase				(testCtx, name.c_str())
 		, m_signalFromDevice	(signalFromDevice)
 	{
 	}
@@ -735,8 +735,9 @@ tcu::TestStatus initialValueCase (Context& context, SynchronizationType type)
 class WaitTests : public tcu::TestCaseGroup
 {
 public:
+	// Various wait cases of timeline semaphores
 	WaitTests (tcu::TestContext& testCtx, SynchronizationType type)
-		: tcu::TestCaseGroup(testCtx, "wait", "Various wait cases of timeline semaphores")
+		: tcu::TestCaseGroup(testCtx, "wait")
 		, m_type(type)
 	{
 	}
@@ -1077,13 +1078,12 @@ class DeviceHostSyncTestCase : public TestCase
 public:
 	DeviceHostSyncTestCase	(tcu::TestContext&			testCtx,
 							 const std::string&			name,
-							 const std::string&			description,
 							 SynchronizationType		type,
 							 const ResourceDescription	resourceDesc,
 							 const OperationName		writeOp,
 							 const OperationName		readOp,
 							 PipelineCacheData&			pipelineCacheData)
-		: TestCase				(testCtx, name, description)
+		: TestCase				(testCtx, name)
 		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
@@ -1121,8 +1121,9 @@ private:
 class DeviceHostTestsBase : public tcu::TestCaseGroup
 {
 public:
+	// Synchronization of serialized device/host operations
 	DeviceHostTestsBase(tcu::TestContext& testCtx, SynchronizationType type)
-		: tcu::TestCaseGroup(testCtx, "device_host", "Synchronization of serialized device/host operations")
+		: tcu::TestCaseGroup(testCtx, "device_host")
 		, m_type(type)
 	{
 	}
@@ -1193,7 +1194,7 @@ public:
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str()));
 
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
@@ -1202,7 +1203,7 @@ public:
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new DeviceHostSyncTestCase(m_testCtx, name, "", m_type, resource, writeOp, readOp, m_pipelineCacheData));
+					opGroup->addChild(new DeviceHostSyncTestCase(m_testCtx, name, m_type, resource, writeOp, readOp, m_pipelineCacheData));
 					empty = false;
 				}
 			}
@@ -1233,8 +1234,10 @@ public:
 		initCommonTests();
 
 		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc", ""));
-		addFunctionCase(miscGroup.get(), "max_difference_value", "Timeline semaphore properties test", checkSupport, maxDifferenceValueCase, m_type);
-		addFunctionCase(miscGroup.get(), "initial_value", "Timeline semaphore initial value test", checkSupport, initialValueCase, m_type);
+		// Timeline semaphore properties test
+		addFunctionCase(miscGroup.get(), "max_difference_value", checkSupport, maxDifferenceValueCase, m_type);
+		// Timeline semaphore initial value test
+		addFunctionCase(miscGroup.get(), "initial_value", checkSupport, initialValueCase, m_type);
 		addChild(miscGroup.release());
 	}
 };
@@ -1252,7 +1255,8 @@ public:
 		initCommonTests();
 
 		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc", ""));
-		addFunctionCase(miscGroup.get(), "max_difference_value", "Timeline semaphore properties test", checkSupport, maxDifferenceValueCase, m_type);
+		// Timeline semaphore properties test
+		addFunctionCase(miscGroup.get(), "max_difference_value", checkSupport, maxDifferenceValueCase, m_type);
 		addChild(miscGroup.release());
 	}
 };
@@ -1704,13 +1708,12 @@ class WaitBeforeSignalTestCase : public TestCase
 public:
 	WaitBeforeSignalTestCase	(tcu::TestContext&			testCtx,
 								 const std::string&			name,
-								 const std::string&			description,
 								 SynchronizationType		type,
 								 const ResourceDescription	resourceDesc,
 								 const OperationName		writeOp,
 								 const OperationName		readOp,
 								 PipelineCacheData&			pipelineCacheData)
-		: TestCase				(testCtx, name, description)
+		: TestCase				(testCtx, name)
 		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
@@ -1754,8 +1757,9 @@ private:
 class WaitBeforeSignalTests : public tcu::TestCaseGroup
 {
 public:
+	// Synchronization of out of order submissions to queues
 	WaitBeforeSignalTests (tcu::TestContext& testCtx, SynchronizationType type)
-		: tcu::TestCaseGroup(testCtx, "wait_before_signal", "Synchronization of out of order submissions to queues")
+		: tcu::TestCaseGroup(testCtx, "wait_before_signal")
 		, m_type(type)
 	{
 	}
@@ -1826,7 +1830,7 @@ public:
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str()));
 
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
@@ -1835,7 +1839,7 @@ public:
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new WaitBeforeSignalTestCase(m_testCtx, name, "", m_type, resource, writeOp, readOp, m_pipelineCacheData));
+					opGroup->addChild(new WaitBeforeSignalTestCase(m_testCtx, name, m_type, resource, writeOp, readOp, m_pipelineCacheData));
 					empty = false;
 				}
 			}
@@ -2197,13 +2201,12 @@ class OneToNTestCase : public TestCase
 public:
 	OneToNTestCase	(tcu::TestContext&			testCtx,
 					 const std::string&			name,
-					 const std::string&			description,
 					 SynchronizationType		type,
 					 const ResourceDescription	resourceDesc,
 					 const OperationName		writeOp,
 					 const OperationName		readOp,
 					 PipelineCacheData&			pipelineCacheData)
-		: TestCase				(testCtx, name, description)
+		: TestCase				(testCtx, name)
 		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
@@ -2248,7 +2251,7 @@ class OneToNTests : public tcu::TestCaseGroup
 {
 public:
 	OneToNTests (tcu::TestContext& testCtx, SynchronizationType type)
-		: tcu::TestCaseGroup(testCtx, "one_to_n", "Synchronization multiple waiter on a signal producer")
+		: tcu::TestCaseGroup(testCtx, "one_to_n")
 		, m_type(type)
 	{
 	}
@@ -2319,7 +2322,7 @@ public:
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str()));
 
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
@@ -2328,7 +2331,7 @@ public:
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new OneToNTestCase(m_testCtx, name, "", m_type, resource, writeOp, readOp, m_pipelineCacheData));
+					opGroup->addChild(new OneToNTestCase(m_testCtx, name, m_type, resource, writeOp, readOp, m_pipelineCacheData));
 					empty = false;
 				}
 			}
@@ -2367,7 +2370,7 @@ struct SparseBindParams
 class SparseBindCase : public vkt::TestCase
 {
 public:
-							SparseBindCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const SparseBindParams& params);
+							SparseBindCase	(tcu::TestContext& testCtx, const std::string& name, const SparseBindParams& params);
 	virtual					~SparseBindCase	(void) {}
 
 	virtual TestInstance*	createInstance	(Context& context) const;
@@ -2389,8 +2392,8 @@ private:
 	SparseBindParams m_params;
 };
 
-SparseBindCase::SparseBindCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const SparseBindParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+SparseBindCase::SparseBindCase (tcu::TestContext& testCtx, const std::string& name, const SparseBindParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -2597,8 +2600,9 @@ tcu::TestStatus SparseBindInstance::iterate (void)
 class SparseBindGroup : public tcu::TestCaseGroup
 {
 public:
+	// vkQueueBindSparse combined with timeline semaphores
 	SparseBindGroup (tcu::TestContext& testCtx)
-		: tcu::TestCaseGroup (testCtx, "sparse_bind", "vkQueueBindSparse combined with timeline semaphores")
+		: tcu::TestCaseGroup (testCtx, "sparse_bind")
 	{}
 
 	virtual void init (void)
@@ -2608,18 +2612,22 @@ public:
 			deUint32	waitSems;
 			deUint32	sigSems;
 			std::string	name;
-			std::string	desc;
 		} kSparseBindCases[] =
 		{
-			{	0u,		0u,		"no_sems",			"No semaphores to wait for or signal"					},
-			{	0u,		1u,		"no_wait_sig",		"Signal semaphore without waiting for any other"		},
-			{	1u,		0u,		"wait_no_sig",		"Wait for semaphore but do not signal any other"		},
-			{	1u,		1u,		"wait_and_sig",		"Wait for semaphore and signal a second one"			},
-			{	2u,		2u,		"wait_and_sig_2",	"Wait for two semaphores and signal two other ones"		},
+			// No semaphores to wait for or signal
+			{	0u,		0u,		"no_sems"},
+			// Signal semaphore without waiting for any other
+			{	0u,		1u,		"no_wait_sig"},
+			// Wait for semaphore but do not signal any other
+			{	1u,		0u,		"wait_no_sig"},
+			// Wait for semaphore and signal a second one
+			{	1u,		1u,		"wait_and_sig"},
+			// Wait for two semaphores and signal two other ones
+			{	2u,		2u,		"wait_and_sig_2"},
 		};
 
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(kSparseBindCases); ++i)
-			addChild(new SparseBindCase(m_testCtx, kSparseBindCases[i].name, kSparseBindCases[i].desc, SparseBindParams{kSparseBindCases[i].waitSems, kSparseBindCases[i].sigSems}));
+			addChild(new SparseBindCase(m_testCtx, kSparseBindCases[i].name, SparseBindParams{kSparseBindCases[i].waitSems, kSparseBindCases[i].sigSems}));
 	}
 };
 
@@ -2630,7 +2638,7 @@ public:
 tcu::TestCaseGroup* createTimelineSemaphoreTests (tcu::TestContext& testCtx)
 {
 	const SynchronizationType			type		(SynchronizationType::LEGACY);
-	de::MovePtr<tcu::TestCaseGroup>		basicTests	(new tcu::TestCaseGroup(testCtx, "timeline_semaphore", "Timeline semaphore tests"));
+	de::MovePtr<tcu::TestCaseGroup>		basicTests	(new tcu::TestCaseGroup(testCtx, "timeline_semaphore"));
 
 	basicTests->addChild(new LegacyDeviceHostTests(testCtx));
 	basicTests->addChild(new OneToNTests(testCtx, type));
@@ -2646,7 +2654,7 @@ tcu::TestCaseGroup* createTimelineSemaphoreTests (tcu::TestContext& testCtx)
 tcu::TestCaseGroup* createSynchronization2TimelineSemaphoreTests(tcu::TestContext& testCtx)
 {
 	const SynchronizationType			type		(SynchronizationType::SYNCHRONIZATION2);
-	de::MovePtr<tcu::TestCaseGroup>		basicTests	(new tcu::TestCaseGroup(testCtx, "timeline_semaphore", "Timeline semaphore tests"));
+	de::MovePtr<tcu::TestCaseGroup>		basicTests	(new tcu::TestCaseGroup(testCtx, "timeline_semaphore"));
 
 	basicTests->addChild(new Sytnchronization2DeviceHostTests(testCtx));
 	basicTests->addChild(new OneToNTests(testCtx, type));

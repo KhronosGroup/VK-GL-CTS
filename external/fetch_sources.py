@@ -140,7 +140,7 @@ class SourcePackage (Source):
 			raise Exception("Checksum mismatch for %s, expected %s, got %s" % (self.filename, self.checksum, checksum))
 
 		if not os.path.exists(os.path.dirname(dstPath)):
-			os.mkdir(os.path.dirname(dstPath))
+			os.makedirs(os.path.dirname(dstPath))
 
 		writeBinaryFile(dstPath, data)
 
@@ -306,18 +306,18 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		"git@github.com:KhronosGroup/SPIRV-Tools.git",
-		"bfc94f63a7adbcf8ae166f5f108ac9f69079efc0",
+		"4f014aff9c653e5e16de1cc5f7130e99e02982e5",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"c5117b328afc86e16edff6ed6afe0fe7872a7cf3",
+		"8fa46582ec517911d053d7c49c8087d8717e191a",
 		"glslang",
 		removeTags = ["main-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		"git@github.com:KhronosGroup/SPIRV-Headers.git",
-		"b8b9eb8640c8c0107ba580fbcb10f969022ca32c",
+		"88bc5e321c2839707df8b1ab534e243e00744177",
 		"spirv-headers"),
 	GitRepo(
 		None,#"https://gitlab.khronos.org/vulkan/vulkan.git",
@@ -340,7 +340,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/vk_video_samples.git",
 		"git@github.com:Igalia/vk_video_samples.git",
-		"cts-integration-0.9.9-1",
+		"cts-integration-0.9.9-2",
 		"nvidia-video-samples"),
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",

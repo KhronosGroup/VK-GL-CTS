@@ -92,9 +92,8 @@ class MemoryCommitmentTestCase : public vkt::TestCase
 public:
 							MemoryCommitmentTestCase	(tcu::TestContext&				testCtx,
 														const std::string&				name,
-														const std::string&				description,
 														MemoryCommitmentCaseParams		memoryCommitmentTestInfo)
-							: vkt::TestCase					(testCtx, name, description)
+							: vkt::TestCase					(testCtx, name)
 							, m_memoryCommitmentTestInfo	(memoryCommitmentTestInfo)
 							{}
 	virtual					~MemoryCommitmentTestCase(void){}
@@ -360,9 +359,8 @@ class MemoryCommitmentAllocateOnlyTestCase : public vkt::TestCase
 {
 public:
 							MemoryCommitmentAllocateOnlyTestCase	(tcu::TestContext&				testCtx,
-																	const std::string&				name,
-																	const std::string&				description)
-							: vkt::TestCase							(testCtx, name, description)
+																	const std::string&				name)
+							: vkt::TestCase							(testCtx, name)
 							{}
 	virtual					~MemoryCommitmentAllocateOnlyTestCase(void){}
 	virtual TestInstance*	createInstance	(Context&			context)			const
@@ -505,11 +503,11 @@ tcu::TestCaseGroup* createMemoryCommitmentTests (tcu::TestContext& testCtx)
 		0u,		// deUint32	elementOffset
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	getMemoryCommitmentTests	(new tcu::TestCaseGroup(testCtx, "get_memory_commitment", "Memory Commitment Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	getMemoryCommitmentTests	(new tcu::TestCaseGroup(testCtx, "get_memory_commitment"));
 
 	{
-		getMemoryCommitmentTests->addChild(new MemoryCommitmentTestCase(testCtx, "memory_commitment", "memory_commitment_test", info));
-		getMemoryCommitmentTests->addChild(new MemoryCommitmentAllocateOnlyTestCase(testCtx, "memory_commitment_allocate_only", "memory_commitment_allocate_only_test"));
+		getMemoryCommitmentTests->addChild(new MemoryCommitmentTestCase(testCtx, "memory_commitment", info));
+		getMemoryCommitmentTests->addChild(new MemoryCommitmentAllocateOnlyTestCase(testCtx, "memory_commitment_allocate_only"));
 	}
 
 	return getMemoryCommitmentTests.release();

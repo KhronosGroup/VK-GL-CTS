@@ -5016,7 +5016,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 
 	// Test 1: Simple tests that verify Nx multisampling actually uses N samples.
 	{
-		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "basic", "Tests that NxMSAA rendering actually renders to N samples"));
+		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "basic"));
 
 		de::Random	rng(0xDEADBEEF);
 
@@ -5057,7 +5057,6 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 						addFunctionCaseWithPrograms(
 								resolveGroup.get(),
 								renderToWholeFramebuffer ? "whole_framebuffer" : "sub_framebuffer",
-								"",
 								checkRequirements,
 								initBasicPrograms,
 								testBasic,
@@ -5076,7 +5075,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 
 	// Test 2: Test that vkCmdClearAttachments works.
 	{
-		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "clear_attachments", "Tests that vkCmdClearAttachments works"));
+		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "clear_attachments"));
 
 		de::Random	rng(0x0FEDCBA9);
 
@@ -5117,7 +5116,6 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 						addFunctionCaseWithPrograms(
 								resolveGroup.get(),
 								renderToWholeFramebuffer ? "whole_framebuffer" : "sub_framebuffer",
-								"",
 								checkRequirements,
 								initBasicPrograms,
 								testClearAttachments,
@@ -5137,7 +5135,8 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 	// Multiple subpasses can't be tested with dynamic rendering.
 	if (!dynamicRendering)
 	{
-		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "multi_subpass", "Single render pass with multiple subpasses"));
+		// Single render pass with multiple subpasses
+		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "multi_subpass"));
 		MovePtr<tcu::TestCaseGroup> formatGroup[color1FormatCount][color2FormatCount][color3FormatCount][depthStencilFormatCount];
 
 		for (deUint32 color1FormatNdx = 0; color1FormatNdx < color1FormatCount; ++color1FormatNdx)
@@ -5182,7 +5181,6 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 			addFunctionCaseWithPrograms(
 				formatGroup[color1FormatNdx][color2FormatNdx][color3FormatNdx][depthStencilFormatNdx].get(),
 				name.str().c_str(),
-				"",
 				checkRequirements,
 				initMultipassPrograms,
 				testSingleRenderPass,
@@ -5202,7 +5200,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 
 	// Test 4: Tests with a multiple render passes, a single subpass each.
 	{
-		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "multi_renderpass", "Multiple render passes with a single subpass each"));
+		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "multi_renderpass"));
 		MovePtr<tcu::TestCaseGroup> formatGroup[color1FormatCount][color2FormatCount][color3FormatCount][depthStencilFormatCount];
 
 		for (deUint32 color1FormatNdx = 0; color1FormatNdx < color1FormatCount; ++color1FormatNdx)
@@ -5247,7 +5245,6 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 			addFunctionCaseWithPrograms(
 				formatGroup[color1FormatNdx][color2FormatNdx][color3FormatNdx][depthStencilFormatNdx].get(),
 				name.str().c_str(),
-				"",
 				checkRequirements,
 				initMultipassPrograms,
 				testMultiRenderPass,
@@ -5269,7 +5266,8 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 	// These tests have two subpasses, so these can't be tested with dynamic rendering.
 	if (!dynamicRendering && !vk::isConstructionTypeShaderObject(pipelineConstructionType))
 	{
-		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "input_attachments", "Tests that input attachment interaction with multisampled rendering works"));
+		// Tests that input attachment interaction with multisampled rendering works
+		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "input_attachments"));
 
 		de::Random	rng(0x18273645);
 
@@ -5310,7 +5308,6 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 						addFunctionCaseWithPrograms(
 								resolveGroup.get(),
 								renderToWholeFramebuffer ? "whole_framebuffer" : "sub_framebuffer",
-								"",
 								checkRequirements,
 								initInputAttachmentsPrograms,
 								testInputAttachments,
@@ -5338,7 +5335,6 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 			addFunctionCase(
 					group.get(),
 					getFormatShortString(format),
-					"",
 					checkHasMsrtss,
 					testPerfQuery,
 					format);
@@ -5349,7 +5345,6 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 			addFunctionCase(
 					group.get(),
 					getFormatShortString(format),
-					"",
 					checkHasMsrtss,
 					testPerfQuery,
 					format);
@@ -5360,7 +5355,6 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 			addFunctionCase(
 					group.get(),
 					getFormatShortString(format),
-					"",
 					checkHasMsrtss,
 					testPerfQuery,
 					format);
@@ -5371,7 +5365,6 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 			addFunctionCase(
 					group.get(),
 					getFormatShortString(format),
-					"",
 					checkHasMsrtss,
 					testPerfQuery,
 					format);
@@ -5406,10 +5399,10 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 
 			generateBasicTest(rng, testParams, VK_SAMPLE_COUNT_2_BIT, VK_RESOLVE_MODE_SAMPLE_ZERO_BIT, DE_TRUE);
 
+			// Combination of framebuffer attachment formats
 			addFunctionCaseWithPrograms(
 					group.get(),
 					getFormatCaseName(color1Format, color2Format, color3Format, depthStencilFormat).c_str(),
-					"Combination of framebuffer attachment formats",
 					checkRequirements,
 					initBasicPrograms,
 					testBasic,
@@ -5442,12 +5435,13 @@ void createMultisampledMiscTestsInGroup (tcu::TestCaseGroup* rootGroup, Pipeline
 
 tcu::TestCaseGroup* createMultisampledRenderToSingleSampledTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "multisampled_render_to_single_sampled", "Test multisampled rendering to single-sampled framebuffer attachments", createMultisampledRenderToSingleSampledTestsInGroup, pipelineConstructionType);
+	// Test multisampled rendering to single-sampled framebuffer attachments
+	return createTestGroup(testCtx, "multisampled_render_to_single_sampled", createMultisampledRenderToSingleSampledTestsInGroup, pipelineConstructionType);
 }
 
 tcu::TestCaseGroup* createMultisampledMiscTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "misc", "Miscellaneous multisampled rendering tests", createMultisampledMiscTestsInGroup, pipelineConstructionType);
+	return createTestGroup(testCtx, "misc", createMultisampledMiscTestsInGroup, pipelineConstructionType);
 }
 
 } // pipeline

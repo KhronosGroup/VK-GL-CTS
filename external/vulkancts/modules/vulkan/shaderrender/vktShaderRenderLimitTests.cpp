@@ -118,7 +118,7 @@ void FragmentInputComponentCaseInstance::setupDefaultInputs (void)
 class FragmentInputComponentCase : public TestCase
 {
 public:
-	FragmentInputComponentCase	(TestContext& testCtx, const string& name, const string& description, const deUint16 inputComponents);
+	FragmentInputComponentCase	(TestContext& testCtx, const string& name, const deUint16 inputComponents);
 	virtual						~FragmentInputComponentCase(void);
 
 	void						initPrograms(SourceCollections& dst) const;
@@ -129,8 +129,8 @@ private:
 	const deUint16				m_inputComponents;
 };
 
-FragmentInputComponentCase::FragmentInputComponentCase (TestContext& testCtx, const string& name, const string& description, const deUint16 inputComponents)
-	: TestCase			(testCtx, name, description)
+FragmentInputComponentCase::FragmentInputComponentCase (TestContext& testCtx, const string& name, const deUint16 inputComponents)
+	: TestCase			(testCtx, name)
 	, m_inputComponents	(inputComponents)
 {
 }
@@ -260,7 +260,7 @@ TestCaseGroup* createLimitTests (TestContext& testCtx)
 	for (deUint16 limitNdx = 0; limitNdx < DE_LENGTH_OF_ARRAY(fragmentComponentMaxLimits); limitNdx++)
 	{
 		for (deInt16 cases = 5; cases > 0; cases--)
-			inputComponentsGroup->addChild(new FragmentInputComponentCase(testCtx, "components_" + de::toString(fragmentComponentMaxLimits[limitNdx] - cases), "Input component count", (deUint16)(fragmentComponentMaxLimits[limitNdx] - cases)));
+			inputComponentsGroup->addChild(new FragmentInputComponentCase(testCtx, "components_" + de::toString(fragmentComponentMaxLimits[limitNdx] - cases), (deUint16)(fragmentComponentMaxLimits[limitNdx] - cases)));
 	}
 
 	nearGroup->addChild(inputComponentsGroup.release());

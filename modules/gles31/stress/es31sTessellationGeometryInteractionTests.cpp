@@ -89,6 +89,8 @@ private:
 		RENDER_SIZE = 256
 	};
 
+	std::string			m_description;
+
 	const int			m_flags;
 
 	glu::ShaderProgram*	m_program;
@@ -97,6 +99,7 @@ private:
 
 GridRenderCase::GridRenderCase (Context& context, const char* name, const char* description, int flags)
 	: TestCase		(context, name, description)
+	, m_description	(description)
 	, m_flags		(flags)
 	, m_program		(DE_NULL)
 	, m_numLayers	(1)
@@ -130,7 +133,7 @@ void GridRenderCase::init (void)
 	m_testCtx.getLog()
 		<< tcu::TestLog::Message
 		<< "Testing tessellation and geometry shaders that output a large number of primitives.\n"
-		<< getDescription()
+		<< m_description
 		<< tcu::TestLog::EndMessage;
 
 	// Gen program

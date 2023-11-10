@@ -109,7 +109,7 @@ namespace vkt
             {
             public:
                 Maintenance6MaxCombinedImageSamplerDescriptorCountTestCase(tcu::TestContext& testCtx)
-                    : TestCase(testCtx, "maintenance6_properties", "tests VkPhysicalDeviceMaintenance6Properties struct")
+                    : TestCase(testCtx, "maintenance6_properties")
                 {}
 
                 virtual ~Maintenance6MaxCombinedImageSamplerDescriptorCountTestCase(void)

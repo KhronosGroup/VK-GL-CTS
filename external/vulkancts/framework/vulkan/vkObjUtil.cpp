@@ -41,6 +41,7 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 									  const VkDevice							device,
 									  const VkPipelineLayout					pipelineLayout,
 									  const VkPipelineCreateFlags				pipelineFlags,
+									  const void*								pipelinePNext,
 									  const VkShaderModule						shaderModule,
 									  const VkPipelineShaderStageCreateFlags	shaderFlags,
 									  const VkSpecializationInfo*				specializationInfo,
@@ -66,7 +67,7 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 	const VkComputePipelineCreateInfo pipelineCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
-		nullptr,											// const void*						pNext;
+		pipelinePNext,										// const void*						pNext;
 		pipelineFlags,										// VkPipelineCreateFlags			flags;
 		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
 		pipelineLayout,										// VkPipelineLayout					layout;
@@ -85,6 +86,7 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
 							   device,
 							   pipelineLayout,
 							   static_cast<VkPipelineCreateFlags>(0u),
+							   DE_NULL,
 							   shaderModule,
 							   static_cast<VkPipelineShaderStageCreateFlags>(0u),
 							   DE_NULL);

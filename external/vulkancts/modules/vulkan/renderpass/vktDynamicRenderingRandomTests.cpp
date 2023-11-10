@@ -840,7 +840,6 @@ class RandomTestCase : public TestCase
 public:
 							RandomTestCase	(tcu::TestContext&		context,
 											 const std::string&		name,
-											 const std::string&		description,
 											 const TestParameters&	parameters);
 	virtual					~RandomTestCase	(void);
 
@@ -854,9 +853,8 @@ protected:
 
 RandomTestCase::RandomTestCase (tcu::TestContext&		context,
 								const std::string&		name,
-								const std::string&		description,
 								const TestParameters&	parameters)
-: TestCase		(context, name, description)
+: TestCase		(context, name)
 , m_parameters	(parameters)
 {
 }
@@ -1068,14 +1066,15 @@ tcu::TestNode* addDynamicRenderingTest (tcu::TestContext& testCtx, TestParameter
 {
 	const std::string testName = "seed" + de::toString(parameters.randomSeed) + (parameters.enableGeometry ? "_geometry" : "") + (parameters.enableTessellation ? "_tessellation" : "");
 
-	return new RandomTestCase(testCtx, testName, "", parameters);
+	return new RandomTestCase(testCtx, testName, parameters);
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createDynamicRenderingRandomTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup (new tcu::TestCaseGroup(testCtx, "random", "Random dynamic rendering tests"));
+	// Random dynamic rendering tests
+	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup (new tcu::TestCaseGroup(testCtx, "random"));
 
 	for (auto geometry : {true, false})
 		for (auto tessellation : {true, false})

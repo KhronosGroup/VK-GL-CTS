@@ -133,7 +133,7 @@ protected:
 };
 
 GeometryExpanderRenderTest::GeometryExpanderRenderTest (TestContext& testCtx, const PrimitiveTestSpec& inputPrimitives)
-	: TestCase			(testCtx, inputPrimitives.name, inputPrimitives.name)
+	: TestCase			(testCtx, inputPrimitives.name)
 	, m_primitiveType	(inputPrimitives.primitiveType)
 	, m_outputType		(inputPrimitives.outputType)
 {

@@ -153,6 +153,7 @@ public:
 bool	isValid				(TextureFormat format);
 int		getPixelSize		(TextureFormat format);
 int		getNumUsedChannels	(TextureFormat::ChannelOrder order);
+bool	hasAlphaChannel		(TextureFormat::ChannelOrder order);
 int		getChannelSize		(TextureFormat::ChannelType type);
 
 /*--------------------------------------------------------------------*//*!
@@ -378,6 +379,7 @@ public:
 	UVec4					getPixelUint				(int x, int y, int z = 0) const { return getPixelInt(x, y, z).cast<deUint32>(); }
 	I64Vec4					getPixelInt64				(int x, int y, int z = 0) const;
 	U64Vec4					getPixelUint64				(int x, int y, int z = 0) const { return getPixelInt64(x, y, z).cast<deUint64>(); }
+	U64Vec4					getPixelBitsAsUint64		(int x, int y, int z = 0) const;
 
 	template<typename T>
 	Vector<T, 4>			getPixelT					(int x, int y, int z = 0) const;

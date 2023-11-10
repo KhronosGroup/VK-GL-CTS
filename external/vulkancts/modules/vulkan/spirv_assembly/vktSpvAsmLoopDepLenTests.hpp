@@ -36,7 +36,7 @@ namespace SpirVAssembly
 class SpvAsmLoopControlDependencyLengthCase : public TestCase
 {
 public:
-							SpvAsmLoopControlDependencyLengthCase	(tcu::TestContext& testCtx, const char* name, const char* description);
+							SpvAsmLoopControlDependencyLengthCase	(tcu::TestContext& testCtx, const char* name);
 	void					initPrograms							(vk::SourceCollections& programCollection) const;
 	TestInstance*			createInstance							(Context& context) const;
 };

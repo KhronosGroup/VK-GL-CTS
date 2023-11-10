@@ -60,14 +60,13 @@ class ImageSparseBindingCase : public TestCase
 public:
 	ImageSparseBindingCase			(tcu::TestContext&	testCtx,
 									 const std::string&	name,
-									 const std::string&	description,
 									 const ImageType	imageType,
 									 const tcu::UVec3&	imageSize,
 									 const VkFormat		format,
 									 const bool			useDeviceGroups = false);
 
 	TestInstance*	createInstance	(Context&			context) const;
-	virtual void	checkSupport			(Context&					context) const;
+	virtual void	checkSupport	(Context&			context) const;
 
 private:
 	const bool			m_useDeviceGroups;
@@ -78,13 +77,12 @@ private:
 
 ImageSparseBindingCase::ImageSparseBindingCase (tcu::TestContext&	testCtx,
 												const std::string&	name,
-												const std::string&	description,
 												const ImageType		imageType,
 												const tcu::UVec3&	imageSize,
 												const VkFormat		format,
 												const bool			useDeviceGroups)
 
-	: TestCase			(testCtx, name, description)
+	: TestCase			(testCtx, name)
 	, m_useDeviceGroups	(useDeviceGroups)
 	, m_imageType		(imageType)
 	, m_imageSize		(imageSize)
@@ -95,6 +93,11 @@ ImageSparseBindingCase::ImageSparseBindingCase (tcu::TestContext&	testCtx,
 void ImageSparseBindingCase::checkSupport (Context& context) const
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+
+#ifndef CTS_USES_VULKANSC
+	if (m_format == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
 
 	if (!isImageSizeSupported(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageType, m_imageSize))
 		TCU_THROW(NotSupportedError, "Image size not supported for device");
@@ -461,31 +464,41 @@ TestInstance* ImageSparseBindingCase::createInstance (Context& context) const
 	return new ImageSparseBindingInstance(context, m_imageType, m_imageSize, m_format, m_useDeviceGroups);
 }
 
+std::vector<TestFormat> getSparseBindingTestFormats (ImageType imageType, bool addExtraFormat)
+{
+	auto formats = getTestFormats(imageType);
+#ifndef CTS_USES_VULKANSC
+	if (addExtraFormat)
+		formats.push_back(TestFormat{ VK_FORMAT_A8_UNORM_KHR });
+#endif // CTS_USES_VULKANSC
+	return formats;
+}
+
 } // anonymous ns
 
 tcu::TestCaseGroup* createImageSparseBindingTestsCommon(tcu::TestContext& testCtx, de::MovePtr<tcu::TestCaseGroup> testGroup, const bool useDeviceGroup = false)
 {
 	const std::vector<TestImageParameters> imageParameters
 	{
-		{ IMAGE_TYPE_1D,			{ tcu::UVec3(512u, 1u,   1u ),	tcu::UVec3(1024u, 1u,   1u),	tcu::UVec3(11u,  1u,   1u) },	getTestFormats(IMAGE_TYPE_1D) },
-		{ IMAGE_TYPE_1D_ARRAY,		{ tcu::UVec3(512u, 1u,   64u),	tcu::UVec3(1024u, 1u,   8u),	tcu::UVec3(11u,  1u,   3u) },	getTestFormats(IMAGE_TYPE_1D_ARRAY) },
-		{ IMAGE_TYPE_2D,			{ tcu::UVec3(512u, 256u, 1u ),	tcu::UVec3(1024u, 128u, 1u),	tcu::UVec3(11u,  137u, 1u) },	getTestFormats(IMAGE_TYPE_2D) },
-		{ IMAGE_TYPE_2D_ARRAY,		{ tcu::UVec3(512u, 256u, 6u ),	tcu::UVec3(1024u, 128u, 8u),	tcu::UVec3(11u,  137u, 3u) },	getTestFormats(IMAGE_TYPE_2D_ARRAY) },
-		{ IMAGE_TYPE_3D,			{ tcu::UVec3(512u, 256u, 6u ),	tcu::UVec3(1024u, 128u, 8u),	tcu::UVec3(11u,  137u, 3u) },	getTestFormats(IMAGE_TYPE_3D) },
-		{ IMAGE_TYPE_CUBE,			{ tcu::UVec3(256u, 256u, 1u ),	tcu::UVec3(128u,  128u, 1u),	tcu::UVec3(137u, 137u, 1u) },	getTestFormats(IMAGE_TYPE_CUBE) },
-		{ IMAGE_TYPE_CUBE_ARRAY,	{ tcu::UVec3(256u, 256u, 6u ),	tcu::UVec3(128u,  128u, 8u),	tcu::UVec3(137u, 137u, 3u) },	getTestFormats(IMAGE_TYPE_CUBE_ARRAY) }
+		{ IMAGE_TYPE_1D,			{ tcu::UVec3(512u, 1u,   1u ),	tcu::UVec3(1024u, 1u,   1u),	tcu::UVec3(11u,  1u,   1u) },	getSparseBindingTestFormats(IMAGE_TYPE_1D, !useDeviceGroup) },
+		{ IMAGE_TYPE_1D_ARRAY,		{ tcu::UVec3(512u, 1u,   64u),	tcu::UVec3(1024u, 1u,   8u),	tcu::UVec3(11u,  1u,   3u) },	getSparseBindingTestFormats(IMAGE_TYPE_1D_ARRAY, !useDeviceGroup) },
+		{ IMAGE_TYPE_2D,			{ tcu::UVec3(512u, 256u, 1u ),	tcu::UVec3(1024u, 128u, 1u),	tcu::UVec3(11u,  137u, 1u) },	getSparseBindingTestFormats(IMAGE_TYPE_2D, !useDeviceGroup) },
+		{ IMAGE_TYPE_2D_ARRAY,		{ tcu::UVec3(512u, 256u, 6u ),	tcu::UVec3(1024u, 128u, 8u),	tcu::UVec3(11u,  137u, 3u) },	getSparseBindingTestFormats(IMAGE_TYPE_2D_ARRAY, !useDeviceGroup) },
+		{ IMAGE_TYPE_3D,			{ tcu::UVec3(512u, 256u, 6u ),	tcu::UVec3(1024u, 128u, 8u),	tcu::UVec3(11u,  137u, 3u) },	getSparseBindingTestFormats(IMAGE_TYPE_3D, !useDeviceGroup) },
+		{ IMAGE_TYPE_CUBE,			{ tcu::UVec3(256u, 256u, 1u ),	tcu::UVec3(128u,  128u, 1u),	tcu::UVec3(137u, 137u, 1u) },	getSparseBindingTestFormats(IMAGE_TYPE_CUBE, !useDeviceGroup) },
+		{ IMAGE_TYPE_CUBE_ARRAY,	{ tcu::UVec3(256u, 256u, 6u ),	tcu::UVec3(128u,  128u, 8u),	tcu::UVec3(137u, 137u, 3u) },	getSparseBindingTestFormats(IMAGE_TYPE_CUBE_ARRAY, !useDeviceGroup) }
 	};
 
 	for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
 	{
 		const ImageType					imageType		= imageParameters[imageTypeNdx].imageType;
-		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup	(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup	(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str()));
 
 		for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
 		{
 			VkFormat						format				= imageParameters[imageTypeNdx].formats[formatNdx].format;
 			tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(format);
-			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str()));
 
 			for (size_t imageSizeNdx = 0; imageSizeNdx < imageParameters[imageTypeNdx].imageSizes.size(); ++imageSizeNdx)
 			{
@@ -500,7 +513,7 @@ tcu::TestCaseGroup* createImageSparseBindingTestsCommon(tcu::TestContext& testCt
 				std::ostringstream	stream;
 				stream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
 
-				formatGroup->addChild(new ImageSparseBindingCase(testCtx, stream.str(), "", imageType, imageSize, format, useDeviceGroup));
+				formatGroup->addChild(new ImageSparseBindingCase(testCtx, stream.str(), imageType, imageSize, format, useDeviceGroup));
 			}
 			imageTypeGroup->addChild(formatGroup.release());
 		}
@@ -512,13 +525,13 @@ tcu::TestCaseGroup* createImageSparseBindingTestsCommon(tcu::TestContext& testCt
 
 tcu::TestCaseGroup* createImageSparseBindingTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_sparse_binding", "Image Sparse Binding"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_sparse_binding"));
 	return createImageSparseBindingTestsCommon(testCtx, testGroup);
 }
 
 tcu::TestCaseGroup* createDeviceGroupImageSparseBindingTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "device_group_image_sparse_binding", "Device Group Image Sparse Binding"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "device_group_image_sparse_binding"));
 	return createImageSparseBindingTestsCommon(testCtx, testGroup, true);
 }
 

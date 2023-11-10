@@ -648,11 +648,14 @@ class API:
 			for memberNode in typeNode:
 				if memberNode.tag != "member":
 					continue
-				# handle enum nodes that can be used for arrays
+				# handle enum nodes that can be used for array dimensions
 				arraySizeList = []
 				for node in memberNode:
 					if node.tag == "enum":
 						arraySizeList.append(node.text)
+						# check if there are array dimension that are not enums
+						if '[' in node.tail and len(node.tail) > 2:
+							arraySizeList += node.tail.replace(']', ' ').replace('[', ' ').split()
 				# handle additional text after name tag; it can represent array
 				# size like in VkPipelineFragmentShadingRateEnumStateCreateInfoNV
 				# or number of bits like in VkAccelerationStructureInstanceKHR
@@ -664,7 +667,7 @@ class API:
 						fieldWidth = nameTail.replace(':', '').replace(' ', '')
 					elif '[' in nameTail and ']' in nameTail:
 						nameTail = nameTail.replace(']', ' ').replace('[', ' ')
-						arraySizeList = nameTail.split()
+						arraySizeList = nameTail.split() + arraySizeList
 				# handle additional text after type tag; it can represent pointers like *pNext
 				memberTypeNode	= memberNode.find("type")
 				pointer			= memberTypeNode.tail.strip() if memberTypeNode.tail is not None else None
@@ -1453,8 +1456,22 @@ def getPromotedFunctions (api):
 	promotedFunctions = collections.defaultdict(lambda: list())
 	for feature in api.features:
 		versionSplit = feature.name.split('_')
-		apiMajor = versionSplit[-2]
-		apiMinor = versionSplit[-1]
+		apiMajor = int(versionSplit[-2])
+		apiMinor = int(versionSplit[-1])
+		apiPrefix = '_'.join(versionSplit[:-2])
+		if apiNum == 0 and apiPrefix != 'VK_VERSION':
+			continue
+		if apiNum == 1 and apiPrefix == 'VK_VERSION':
+			# Map of "standard" Vulkan versions to VulkanSC version.
+			stdToSCMap = {
+				(1, 0):	(1, 0),
+				(1, 1): (1, 0),
+				(1, 2): (1, 0),
+			}
+			mapKey = (apiMajor, apiMinor)
+			if mapKey not in stdToSCMap:
+				continue
+			(apiMajor, apiMinor) = stdToSCMap[mapKey]
 		apituple = (apiNum, apiMajor, apiMinor)
 		for featureRequirement in feature.requirementsList:
 			for promotedFun in featureRequirement.commandList:
@@ -1723,11 +1740,10 @@ def writeStrUtilImpl (api, filename):
 					valFmt = "getCharPtrStr(value.%s)" % member.name
 				elif member.type == PLATFORM_TYPE_NAMESPACE + "::Win32LPCWSTR":
 					valFmt = "getWStr(value.%s)" % member.name
-				elif len(member.arraySizeList) > 0:
-					singleDimensional = len(member.arraySizeList) == 1
+				elif len(member.arraySizeList) == 1:
 					if member.name in ["extensionName", "deviceName", "layerName", "description"]:
 						valFmt = "(const char*)value.%s" % member.name
-					elif singleDimensional and (member.type == 'char' or member.type == 'uint8_t'):
+					elif member.type == 'char' or member.type == 'uint8_t':
 						newLine = "'\\n' << "
 						valFmt	= "tcu::formatArray(tcu::Format::HexIterator<%s>(DE_ARRAY_BEGIN(value.%s)), tcu::Format::HexIterator<%s>(DE_ARRAY_END(value.%s)))" % (member.type, member.name, member.type, member.name)
 					else:
@@ -1738,6 +1754,18 @@ def writeStrUtilImpl (api, filename):
 						newLine = "'\\n' << "
 						valFmt	= "tcu::formatArray(DE_ARRAY_BEGIN(value.%s), %s)" % (member.name, endIter)
 					memberName = member.name
+				elif len(member.arraySizeList) > 1:
+					yield f"\ts << \"\\t{member.name} = \" << '\\n';"
+					dim = 0
+					index = ''
+					dimensionCount = len(member.arraySizeList)
+					while dim < dimensionCount-1:
+						yield f"\tfor(deUint32 i{dim} = 0 ; i{dim} < {member.arraySizeList[dim]} ; ++i{dim})"
+						index += f"[i{dim}]"
+						dim +=1
+					yield f"\t\ts << tcu::formatArray(DE_ARRAY_BEGIN(value.{member.name}{index}), DE_ARRAY_END(value.{member.name}{index})) << '\\n';"
+					# move to next member
+					continue
 				else:
 					valFmt = "value.%s" % member.name
 				yield ("\ts << \"\\t%s = \" << " % memberName) + newLine + valFmt + " << '\\n';"
@@ -2567,9 +2595,9 @@ def writeDeviceFeatures2(api, filename):
 	# function to create tests
 	stream.append("void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)\n{")
 	for x in testedStructureDetail:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", "' + x.nameList[0] + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
 	for x in promotedTests:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x) + '", "", ' + x + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x) + '", ' + x + ');')
 	stream.append('}\n')
 
 	# write out
@@ -2843,7 +2871,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 {
 """)
 	for x in testFunctions:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x[len('createDeviceWithUnsupportedFeaturesTest'):]) + '", "' + x + '", ' + x + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x[len('createDeviceWithUnsupportedFeaturesTest'):]) + '", ' + x + ');')
 	stream.append('}\n')
 
 	writeInlFile(filename, INL_HEADER, stream)
@@ -3181,8 +3209,12 @@ def writeMandatoryFeatures(api, filename):
 
 	structList = sorted(usedFeatureStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
 	apiStructs = list( filter(lambda x : structInAPI(x[0]), structList)) # remove items not defined in current API
+	varVariants = {} # Some variables are going to be declared only for specific variants.
 
 	for structName, extensions in apiStructs:
+		# The variable name will be the structure name without the Vk prefix and starting in lowercase.
+		newVar = structName[2].lower() + structName[3:]
+
 		metaCondition = ''
 		if structName in dictStructs:
 			mandatoryVariantList = dictStructs[structName][1]
@@ -3190,9 +3222,7 @@ def writeMandatoryFeatures(api, filename):
 				mandatoryVariant = mandatoryVariantList[0]
 				metaCondition = 'defined(CTS_USES_' + mandatoryVariant.upper() + ')'
 				stream.append('#if ' + metaCondition)
-
-		# The variable name will be the structure name without the Vk prefix and starting in lowercase.
-		newVar = structName[2].lower() + structName[3:]
+				varVariants[newVar] = mandatoryVariant
 
 		stream.extend(['\tvk::' + structName + ' ' + newVar + ';',
 					'\tdeMemset(&' + newVar + ', 0, sizeof(' + newVar + '));',
@@ -3235,8 +3265,8 @@ def writeMandatoryFeatures(api, filename):
 	for v in dictData:
 		if not structInAPI(v[0]): # remove items not defined in current API ( important for Vulkan SC )
 			continue
-		structType = v[0];
-		structName = 'coreFeatures.features';
+		structType = v[0]
+		structName = 'coreFeatures.features'
 		metaCondition = ''
 		if len(v) == 4 and v[3] != '':
 			# for x in v[3].split('_'):
@@ -3259,7 +3289,12 @@ def writeMandatoryFeatures(api, filename):
 			stream.append('\t' + condition)
 		stream.append('\t{')
 		# Don't need to support an AND case since that would just be another line in the .txt
+		reqMetaCondition = ''
 		if len(v[1]) == 1:
+			# If the req struct type has a mandatory variant we need to add an #ifdef block, unless we're already inside one.
+			if len(metaCondition) == 0 and structName in varVariants:
+				reqMetaCondition = 'defined(CTS_USES_' + varVariants[structName].upper() + ')'
+				stream.append('#if ' + reqMetaCondition)
 			stream.append('\t\tif ( ' + structName + '.' + v[1][0] + ' == VK_FALSE )')
 		else:
 			condition = 'if ( '
@@ -3273,8 +3308,10 @@ def writeMandatoryFeatures(api, filename):
 		stream.extend(['\t\t{',
 					   '\t\t\tlog << tcu::TestLog::Message << "Mandatory feature ' + featureSet + ' not supported" << tcu::TestLog::EndMessage;',
 					   '\t\t\tresult = false;',
-					   '\t\t}',
-					   '\t}'])
+					   '\t\t}'])
+		if reqMetaCondition != '':
+			stream.append('#endif // ' + reqMetaCondition)
+		stream.append('\t}')
 		if metaCondition != '':
 			stream.extend(['#endif // ' + metaCondition[4:],
 						  ''])
@@ -3620,27 +3657,12 @@ def writeGetDeviceProcAddr(api, filename):
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
 	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
 
-	const std::vector<std::string> loaderExceptions{
-		"vkSetDebugUtilsObjectNameEXT",
-		"vkSetDebugUtilsObjectTagEXT",
-		"vkQueueBeginDebugUtilsLabelEXT",
-		"vkQueueEndDebugUtilsLabelEXT",
-		"vkQueueInsertDebugUtilsLabelEXT",
-		"vkCmdBeginDebugUtilsLabelEXT",
-		"vkCmdEndDebugUtilsLabelEXT",
-		"vkCmdInsertDebugUtilsLabelEXT",
-	};
-
 	const std::vector<std::string> functions{'''
 	testBlockEnd = '''	};
 
 	bool fail = false;
 	for (const auto& function : functions)
 	{
-		if (std::find(loaderExceptions.begin(), loaderExceptions.end(), function) != loaderExceptions.end())
-		{
-			continue;
-		}
 		if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != DE_NULL)
 		{
 			fail = true;
@@ -3675,14 +3697,14 @@ def writeGetDeviceProcAddr(api, filename):
 
 	# function to create tests
 	stream.append("void addGetDeviceProcAddrTests (tcu::TestCaseGroup* testGroup)\n{")
-	stream.append('\taddFunctionCase(testGroup, "non_enabled", "GetDeviceProcAddr", testGetDeviceProcAddr);')
+	stream.append('\taddFunctionCase(testGroup, "non_enabled", testGetDeviceProcAddr);')
 	stream.append('}\n')
 	stream.append('}\n')
 
 	writeInlFile(filename, INL_HEADER, stream)
 
 def writeConformanceVersions(filename):
-    # get list of all vulkan/vulkansc tags from git
+	# get list of all vulkan/vulkansc tags from git
 	listOfTags = os.popen("git ls-remote -t").read()
 	vkMatches = re.findall("vulkan-cts-(\d).(\d).(\d).(\d)", listOfTags, re.M)
 	scMatches = re.findall("vulkansc-cts-(\d).(\d).(\d).(\d)", listOfTags, re.M)
@@ -3696,10 +3718,10 @@ def writeConformanceVersions(filename):
 		if "withdrawal" not in fileName:
 			continue
 		fileContent	= readFile(fileName)
-        # get date when releases are withdrawn
+		# get date when releases are withdrawn
 		match = re.search(r"(20\d\d)-(\d\d)-(\d\d).+ withdrawn", fileContent, re.IGNORECASE)
 		if match is not None:
-            # check if announcement refers to date in the past
+			# check if announcement refers to date in the past
 			if today > datetime.date(int(match[1]), int(match[2]), int(match[3])):
 				# get names of withdrawn branches
 				vkBranchMatches = re.findall("vulkan(\w\w)?-cts-(\d).(\d).(\d).(\d)", fileContent, re.M)
@@ -3714,12 +3736,12 @@ def writeConformanceVersions(filename):
 		addedVersions = set()
 		for v in reversed(versionsToAdd):
 			# add only unique versions; ignore duplicates (e.g. with "-rc1", "-rc2" postfix);
-            # also add versions that are greater then maximal withdrawn version
+			# also add versions that are greater then maximal withdrawn version
 			if v in addedVersions or v <= maxWithdrawnVersion:
 				continue
 			addedVersions.add(v)
 			stream.append(f'\tmakeConformanceVersion({v[0]}, {v[1]}, {v[2]}, {v[3]}),')
-    # save array with versions
+	# save array with versions
 	stream = ['static const VkConformanceVersion knownConformanceVersions[]',\
 			  '{',\
 			  '#ifndef CTS_USES_VULKANSC']
@@ -3821,7 +3843,7 @@ if __name__ == "__main__":
 	writeApiExtensionDependencyInfo			(api, os.path.join(outputPath, "vkApiExtensionDependencyInfo.inl"))
 	writeEntryPointValidation				(api, os.path.join(outputPath, "vkEntryPointValidation.inl"))
 	writeGetDeviceProcAddr					(api, os.path.join(outputPath, "vkGetDeviceProcAddr.inl"))
-	writeConformanceVersions                (     os.path.join(outputPath, "vkKnownConformanceVersions.inl"))
+	writeConformanceVersions				(     os.path.join(outputPath, "vkKnownConformanceVersions.inl"))
 
 	# NOTE: when new files are generated then they should also be added to the
 	# vk-gl-cts\external\vulkancts\framework\vulkan\CMakeLists.txt outputs list

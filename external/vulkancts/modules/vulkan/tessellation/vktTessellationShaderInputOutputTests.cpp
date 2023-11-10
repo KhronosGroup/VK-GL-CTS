@@ -351,7 +351,6 @@ struct CaseDefinition
 	std::string		caseName;
 	bool			usesReferenceImageFromFile;
 	std::string		referenceImagePath;
-	std::string		caseDescription;
 };
 
 int getNumPrimitives (const CaseType type)
@@ -946,7 +945,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 //! These tests correspond to dEQP-GLES31.functional.tessellation.shader_input_output.*
 tcu::TestCaseGroup* createShaderInputOutputTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_input_output", "Test tessellation control and evaluation shader inputs and outputs"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_input_output"));
 
 	// Patch vertex counts
 	{
@@ -971,7 +970,8 @@ tcu::TestCaseGroup* createShaderInputOutputTests (tcu::TestContext& testCtx)
 				inSize, outSize, "vulkan/data/tessellation/" + caseName + "_ref.png"
 			};
 
-			addFunctionCaseWithPrograms(group.get(), caseName, "Test input and output patch vertex counts",
+			// Test input and output patch vertex counts
+			addFunctionCaseWithPrograms(group.get(), caseName,
 										PatchVertexCount::initPrograms, PatchVertexCount::test, caseDef);
 		}
 	}
@@ -980,20 +980,30 @@ tcu::TestCaseGroup* createShaderInputOutputTests (tcu::TestContext& testCtx)
 	{
 		static const PerPatchData::CaseDefinition cases[] =
 		{
-			{ PerPatchData::CASETYPE_PRIMITIVE_ID_TCS,		"primitive_id_tcs",		  true, "vulkan/data/tessellation/primitive_id_tcs_ref.png", "Read gl_PrimitiveID in TCS and pass it as patch output to TES" },
-			{ PerPatchData::CASETYPE_PRIMITIVE_ID_TES,		"primitive_id_tes",		  true, "vulkan/data/tessellation/primitive_id_tes_ref.png", "Read gl_PrimitiveID in TES" },
-			{ PerPatchData::CASETYPE_PATCH_VERTICES_IN_TCS,	"patch_vertices_in_tcs",  false, "", "Read gl_PatchVerticesIn in TCS and pass it as patch output to TES" },
-			{ PerPatchData::CASETYPE_PATCH_VERTICES_IN_TES,	"patch_vertices_in_tes",  false, "", "Read gl_PatchVerticesIn in TES" },
-			{ PerPatchData::CASETYPE_TESS_LEVEL_INNER0_TES,	"tess_level_inner_0_tes", false, "", "Read gl_TessLevelInner[0] in TES" },
-			{ PerPatchData::CASETYPE_TESS_LEVEL_INNER1_TES,	"tess_level_inner_1_tes", false, "", "Read gl_TessLevelInner[1] in TES" },
-			{ PerPatchData::CASETYPE_TESS_LEVEL_OUTER0_TES,	"tess_level_outer_0_tes", false, "", "Read gl_TessLevelOuter[0] in TES" },
-			{ PerPatchData::CASETYPE_TESS_LEVEL_OUTER1_TES,	"tess_level_outer_1_tes", false, "", "Read gl_TessLevelOuter[1] in TES" },
-			{ PerPatchData::CASETYPE_TESS_LEVEL_OUTER2_TES,	"tess_level_outer_2_tes", false, "", "Read gl_TessLevelOuter[2] in TES" },
-			{ PerPatchData::CASETYPE_TESS_LEVEL_OUTER3_TES,	"tess_level_outer_3_tes", false, "", "Read gl_TessLevelOuter[3] in TES" },
+			// Read gl_PrimitiveID in TCS and pass it as patch output to TES
+			{ PerPatchData::CASETYPE_PRIMITIVE_ID_TCS,		"primitive_id_tcs",		  true, "vulkan/data/tessellation/primitive_id_tcs_ref.png"},
+			// Read gl_PrimitiveID in TES
+			{ PerPatchData::CASETYPE_PRIMITIVE_ID_TES,		"primitive_id_tes",		  true, "vulkan/data/tessellation/primitive_id_tes_ref.png"},
+			// Read gl_PatchVerticesIn in TCS and pass it as patch output to TES
+			{ PerPatchData::CASETYPE_PATCH_VERTICES_IN_TCS,	"patch_vertices_in_tcs",  false, ""},
+			// Read gl_PatchVerticesIn in TES
+			{ PerPatchData::CASETYPE_PATCH_VERTICES_IN_TES,	"patch_vertices_in_tes",  false, ""},
+			// Read gl_TessLevelInner[0] in TES
+			{ PerPatchData::CASETYPE_TESS_LEVEL_INNER0_TES,	"tess_level_inner_0_tes", false, ""},
+			// Read gl_TessLevelInner[1] in TES
+			{ PerPatchData::CASETYPE_TESS_LEVEL_INNER1_TES,	"tess_level_inner_1_tes", false, ""},
+			// Read gl_TessLevelOuter[0] in TES
+			{ PerPatchData::CASETYPE_TESS_LEVEL_OUTER0_TES,	"tess_level_outer_0_tes", false, ""},
+			// Read gl_TessLevelOuter[1] in TES
+			{ PerPatchData::CASETYPE_TESS_LEVEL_OUTER1_TES,	"tess_level_outer_1_tes", false, ""},
+			// Read gl_TessLevelOuter[2] in TES
+			{ PerPatchData::CASETYPE_TESS_LEVEL_OUTER2_TES,	"tess_level_outer_2_tes", false, ""},
+			// Read gl_TessLevelOuter[3] in TES
+			{ PerPatchData::CASETYPE_TESS_LEVEL_OUTER3_TES,	"tess_level_outer_3_tes", false, ""},
 		};
 
 		for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
-			addFunctionCaseWithPrograms(group.get(), cases[caseNdx].caseName, cases[caseNdx].caseDescription,
+			addFunctionCaseWithPrograms(group.get(), cases[caseNdx].caseName,
 										PerPatchData::initPrograms, PerPatchData::test, cases[caseNdx]);
 	}
 
@@ -1010,13 +1020,15 @@ tcu::TestCaseGroup* createShaderInputOutputTests (tcu::TestContext& testCtx)
 			{ GLPosition::CASETYPE_VS_TO_TCS_TO_TES, "gl_position_vs_to_tcs_to_tes" },
 		};
 
-		for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
-			addFunctionCaseWithPrograms(group.get(), cases[caseNdx].caseName, "Pass gl_Position between VS and TCS, or between TCS and TES",
+		for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx) {
+			// Pass gl_Position between VS and TCS, or between TCS and TES
+			addFunctionCaseWithPrograms(group.get(), cases[caseNdx].caseName,
 										GLPosition::initPrograms, GLPosition::test, cases[caseNdx].type);
+		}
 	}
 
 	// Barrier
-	addFunctionCaseWithPrograms(group.get(), "barrier", "Basic barrier usage", Barrier::initPrograms, Barrier::test);
+	addFunctionCaseWithPrograms(group.get(), "barrier", Barrier::initPrograms, Barrier::test);
 
 	// Cross invocation communication
 	{
@@ -1050,7 +1062,8 @@ tcu::TestCaseGroup* createShaderInputOutputTests (tcu::TestContext& testCtx)
 				std::string						testName	= caseTypes[caseNdx].name + "_" + dataTypes[dataTypeNdx].name;
 				CrossInvocation::CaseDefinition	caseDef		= { caseTypes[caseNdx].caseType, dataTypes[dataTypeNdx].dataType };
 
-				addFunctionCaseWithPrograms(group.get(), testName, "Write output varyings from multiple invocations.",
+				// Write output varyings from multiple invocations.
+				addFunctionCaseWithPrograms(group.get(), testName,
 						CrossInvocation::initPrograms, CrossInvocation::test, caseDef);
 			}
 	}

@@ -1118,7 +1118,7 @@ TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 
 	// Test sanity of the subgroup size properties.
 	{
-		addFunctionCase(genericGroup.get(), "subgroup_size_properties", "", supportedCheck, testSanitySubgroupSizeProperties);
+		addFunctionCase(genericGroup.get(), "subgroup_size_properties", supportedCheck, testSanitySubgroupSizeProperties);
 	}
 
 	const TestParams			testParams[]		= {{false, true, ""}, {true, false, "_spirv16"}, {true, true, "_flags_spirv16"}};
@@ -1130,9 +1130,9 @@ TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 		const CaseDefinition	caseDefVary				= {params.flagsEnabled ? flagsVary : 0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_FALSE, REQUIRED_SUBGROUP_SIZE_NONE,
 														   de::SharedPtr<bool>(new bool), params.useSpirv16 ? SPIRV_VERSION_1_6 : SPIRV_VERSION_1_3};
 
-		addFunctionCaseWithPrograms(computeGroup.get(), "allow_varying_subgroup_size" + params.postfix, "", supportedCheckFeatures,
+		addFunctionCaseWithPrograms(computeGroup.get(), "allow_varying_subgroup_size" + params.postfix,  supportedCheckFeatures,
 									initPrograms, test, caseDefVary);
-		addFunctionCaseWithPrograms(graphicsGroup.get(), "allow_varying_subgroup_size" + params.postfix, "",
+		addFunctionCaseWithPrograms(graphicsGroup.get(), "allow_varying_subgroup_size" + params.postfix,
 									supportedCheckFeaturesShader, initPrograms, test, caseDefVary);
 
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(fbStages); ++stageIndex)
@@ -1141,7 +1141,7 @@ TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 													   de::SharedPtr<bool>(new bool), params.useSpirv16 ? SPIRV_VERSION_1_6 : SPIRV_VERSION_1_3};
 
 			string					name			= getShaderStageName(caseDefStage.shaderStage) + "_allow_varying_subgroup_size" + params.postfix;
-			addFunctionCaseWithPrograms(framebufferGroup.get(), name, "", supportedCheckFeaturesShader, initFrameBufferPrograms,
+			addFunctionCaseWithPrograms(framebufferGroup.get(), name, supportedCheckFeaturesShader, initFrameBufferPrograms,
 										noSSBOtest, caseDefStage);
 		}
 
@@ -1151,7 +1151,7 @@ TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 			const CaseDefinition	caseDefMesh	= {(params.flagsEnabled ? flagsVary : 0u), stage, DE_FALSE, REQUIRED_SUBGROUP_SIZE_NONE,
 													de::SharedPtr<bool>(new bool), (params.useSpirv16 ? SPIRV_VERSION_1_6 : SPIRV_VERSION_1_4)};
 			const std::string		name		= getShaderStageName(stage) + "_allow_varying_subgroup_size" + params.postfix;
-			addFunctionCaseWithPrograms(meshGroup.get(), name, "", supportedCheckFeatures, initPrograms, test, caseDefMesh);
+			addFunctionCaseWithPrograms(meshGroup.get(), name, supportedCheckFeatures, initPrograms, test, caseDefMesh);
 		}
 #endif // CTS_USES_VULKANSC
 
@@ -1160,25 +1160,25 @@ TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 														  | VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT;
 		const CaseDefinition	caseDefFullVary			= {params.flagsEnabled ? flagsFullVary : 0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_TRUE, REQUIRED_SUBGROUP_SIZE_NONE, de::SharedPtr<bool>(new bool),
 														   params.useSpirv16 ? SPIRV_VERSION_1_6 : SPIRV_VERSION_1_3};
-		addFunctionCaseWithPrograms(computeGroup.get(), "require_full_subgroups_allow_varying_subgroup_size" + params.postfix, "",
+		addFunctionCaseWithPrograms(computeGroup.get(), "require_full_subgroups_allow_varying_subgroup_size" + params.postfix,
 									supportedCheckFeatures, initProgramsRequireFull, testRequireFullSubgroups, caseDefFullVary);
 
 		// Require full subgroups cases (only compute shaders).
 		const deUint32			flagsFull				= VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT;
 		const CaseDefinition	caseDefFull				= {params.flagsEnabled ? flagsFull : 0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_TRUE, REQUIRED_SUBGROUP_SIZE_NONE, de::SharedPtr<bool>(new bool),
 														   params.useSpirv16 ? SPIRV_VERSION_1_6 : SPIRV_VERSION_1_3};
-		addFunctionCaseWithPrograms(computeGroup.get(), "require_full_subgroups" + params.postfix, "", supportedCheckFeatures, initProgramsRequireFull,
+		addFunctionCaseWithPrograms(computeGroup.get(), "require_full_subgroups" + params.postfix,  supportedCheckFeatures, initProgramsRequireFull,
 									testRequireFullSubgroups, caseDefFull);
 
 		// Tests to check setting a required subgroup size value, together with require full subgroups (only compute shaders).
 		const CaseDefinition	caseDefMaxFull			= {params.flagsEnabled ? flagsFull : 0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_TRUE, REQUIRED_SUBGROUP_SIZE_MAX, de::SharedPtr<bool>(new bool),
 														   params.useSpirv16 ? SPIRV_VERSION_1_6 : SPIRV_VERSION_1_3};
-		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_max_require_full_subgroups" + params.postfix, "", supportedCheckFeatures,
+		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_max_require_full_subgroups" + params.postfix,  supportedCheckFeatures,
 									initProgramsRequireFull, testRequireSubgroupSize, caseDefMaxFull);
 
 		const CaseDefinition	caseDefMinFull			= {params.flagsEnabled ? flagsFull : 0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_TRUE, REQUIRED_SUBGROUP_SIZE_MIN, de::SharedPtr<bool>(new bool),
 														   params.useSpirv16 ? SPIRV_VERSION_1_6 : SPIRV_VERSION_1_3};
-		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_min_require_full_subgroups" + params.postfix, "", supportedCheckFeatures,
+		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_min_require_full_subgroups" + params.postfix,  supportedCheckFeatures,
 									initProgramsRequireFull, testRequireSubgroupSize, caseDefMinFull);
 
 		// Ray tracing cases with allow varying subgroup.
@@ -1186,7 +1186,7 @@ TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 		const deUint32			flagsRayTracing			= VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT;
 		const CaseDefinition	caseDefAllRaytracing	= {params.flagsEnabled ? flagsRayTracing : 0u, SHADER_STAGE_ALL_RAY_TRACING, DE_FALSE, REQUIRED_SUBGROUP_SIZE_NONE,
 														   de::SharedPtr<bool>(new bool), params.useSpirv16 ? SPIRV_VERSION_1_6 : SPIRV_VERSION_1_4};
-		addFunctionCaseWithPrograms(raytracingGroup.get(), "allow_varying_subgroup_size" + params.postfix, "", supportedCheckFeaturesShader,
+		addFunctionCaseWithPrograms(raytracingGroup.get(), "allow_varying_subgroup_size" + params.postfix,  supportedCheckFeaturesShader,
 									initPrograms, test, caseDefAllRaytracing);
 #endif // CTS_USES_VULKANSC
 	}
@@ -1194,28 +1194,28 @@ TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 	// Tests to check setting a required subgroup size value.
 	{
 		const CaseDefinition caseDefAllGraphicsMax = {0u, VK_SHADER_STAGE_ALL_GRAPHICS, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX, de::SharedPtr<bool>(new bool), SPIRV_VERSION_1_3};
-		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_max", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMax);
+		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_max",  supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMax);
 		const CaseDefinition caseDefComputeMax = {0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX, de::SharedPtr<bool>(new bool), SPIRV_VERSION_1_3};
-		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_max", "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefComputeMax);
+		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_max",  supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefComputeMax);
 #ifndef CTS_USES_VULKANSC
 		const CaseDefinition caseDefAllRaytracingMax = {0u, SHADER_STAGE_ALL_RAY_TRACING, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX, de::SharedPtr<bool>(new bool), SPIRV_VERSION_1_4};
-		addFunctionCaseWithPrograms(raytracingGroup.get(), "required_subgroup_size_max", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllRaytracingMax);
+		addFunctionCaseWithPrograms(raytracingGroup.get(), "required_subgroup_size_max",  supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllRaytracingMax);
 #endif // CTS_USES_VULKANSC
 
 		const CaseDefinition caseDefAllGraphicsMin = {0u, VK_SHADER_STAGE_ALL_GRAPHICS, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN, de::SharedPtr<bool>(new bool), SPIRV_VERSION_1_3};
-		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_min", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMin);
+		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_min",  supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMin);
 		const CaseDefinition caseDefComputeMin = {0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN, de::SharedPtr<bool>(new bool), SPIRV_VERSION_1_3};
-		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_min", "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefComputeMin);
+		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_min",  supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefComputeMin);
 #ifndef CTS_USES_VULKANSC
 		const CaseDefinition caseDefAllRaytracingMin = {0u, SHADER_STAGE_ALL_RAY_TRACING, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN, de::SharedPtr<bool>(new bool), SPIRV_VERSION_1_4};
-		addFunctionCaseWithPrograms(raytracingGroup.get(), "required_subgroup_size_min", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllRaytracingMin);
+		addFunctionCaseWithPrograms(raytracingGroup.get(), "required_subgroup_size_min",  supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllRaytracingMin);
 #endif // CTS_USES_VULKANSC
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(fbStages); ++stageIndex)
 		{
 			const CaseDefinition caseDefStageMax = {0u, fbStages[stageIndex], DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX, de::SharedPtr<bool>(new bool), SPIRV_VERSION_1_3};
-			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStageMax.shaderStage) + "_required_subgroup_size_max", "", supportedCheckFeaturesShader, initFrameBufferPrograms, noSSBOtestRequireSubgroupSize, caseDefStageMax);
+			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStageMax.shaderStage) + "_required_subgroup_size_max",  supportedCheckFeaturesShader, initFrameBufferPrograms, noSSBOtestRequireSubgroupSize, caseDefStageMax);
 			const CaseDefinition caseDefStageMin = {0u, fbStages[stageIndex], DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN, de::SharedPtr<bool>(new bool), SPIRV_VERSION_1_3};
-			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStageMin.shaderStage) + "_required_subgroup_size_min", "", supportedCheckFeaturesShader, initFrameBufferPrograms, noSSBOtestRequireSubgroupSize, caseDefStageMin);
+			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStageMin.shaderStage) + "_required_subgroup_size_min",  supportedCheckFeaturesShader, initFrameBufferPrograms, noSSBOtestRequireSubgroupSize, caseDefStageMin);
 		}
 
 #ifndef CTS_USES_VULKANSC
@@ -1224,9 +1224,9 @@ TestCaseGroup* createSubgroupsSizeControlTests (TestContext& testCtx)
 			const auto stageName = getShaderStageName(stage);
 
 			const CaseDefinition caseDefMeshMax = {0u, stage, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX, de::SharedPtr<bool>(new bool), SPIRV_VERSION_1_4};
-			addFunctionCaseWithPrograms(meshGroup.get(), "required_subgroup_size_max_" + stageName, "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefMeshMax);
+			addFunctionCaseWithPrograms(meshGroup.get(), "required_subgroup_size_max_" + stageName,  supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefMeshMax);
 			const CaseDefinition caseDefMeshMin = {0u, stage, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN, de::SharedPtr<bool>(new bool), SPIRV_VERSION_1_4};
-			addFunctionCaseWithPrograms(meshGroup.get(), "required_subgroup_size_min_" + stageName, "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefMeshMin);
+			addFunctionCaseWithPrograms(meshGroup.get(), "required_subgroup_size_min_" + stageName,  supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefMeshMin);
 		}
 #endif // CTS_USES_VULKANSC
 	}

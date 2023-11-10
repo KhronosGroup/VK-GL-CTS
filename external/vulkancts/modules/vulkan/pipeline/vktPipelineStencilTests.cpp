@@ -113,7 +113,6 @@ public:
 
 											StencilTest				(tcu::TestContext&			testContext,
 																	 const std::string&			name,
-																	 const std::string&			description,
 																	 PipelineConstructionType	pipelineConstructionType,
 																	 VkFormat					stencilFormat,
 																	 const VkStencilOpState&	stencilOpStateFront,
@@ -269,14 +268,13 @@ const float StencilTest::s_quadDepths[QUAD_COUNT] =
 
 StencilTest::StencilTest (tcu::TestContext&			testContext,
 						  const std::string&		name,
-						  const std::string&		description,
 						  PipelineConstructionType	pipelineConstructionType,
 						  VkFormat					stencilFormat,
 						  const VkStencilOpState&	stencilOpStateFront,
 						  const VkStencilOpState&	stencilOpStateBack,
 						  const bool				colorAttachmentEnable,
 						  const bool				separateDepthStencilLayouts)
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_stencilFormat				(stencilFormat)
 	, m_stencilOpStateFront			(stencilOpStateFront)
@@ -917,17 +915,6 @@ const char* getShortName (VkStencilOp stencilOp)
 	return DE_NULL;
 }
 
-std::string getStencilStateSetDescription(const VkStencilOpState& stencilOpStateFront,
-										  const VkStencilOpState& stencilOpStateBack)
-{
-	std::ostringstream desc;
-
-	desc << "\nFront faces:\n" << stencilOpStateFront;
-	desc << "Back faces:\n" << stencilOpStateBack;
-
-	return desc.str();
-}
-
 std::string getFormatCaseName (VkFormat format)
 {
 	const std::string fullName = getFormatName(format);
@@ -964,8 +951,10 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConst
 		"comp_always"
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>		stencilTests				(new tcu::TestCaseGroup(testCtx, "stencil", "Stencil tests"));
-	de::MovePtr<tcu::TestCaseGroup>		noColorAttachmentTests		(new tcu::TestCaseGroup(testCtx, "nocolor", "Stencil tests with no color attachment"));
+	// Stencil tests
+	de::MovePtr<tcu::TestCaseGroup>		stencilTests				(new tcu::TestCaseGroup(testCtx, "stencil"));
+	// Stencil tests with no color attachment
+	de::MovePtr<tcu::TestCaseGroup>		noColorAttachmentTests		(new tcu::TestCaseGroup(testCtx, "nocolor"));
 	const bool							colorAttachmentEnabled[]	= { true, false };
 
 	for (deUint32 colorAttachmentEnabledIdx = 0; colorAttachmentEnabledIdx < DE_LENGTH_OF_ARRAY(colorAttachmentEnabled); colorAttachmentEnabledIdx++)
@@ -1008,7 +997,7 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConst
 							 << "backRef = " << stencilConfig.backRef;
 					}
 
-					stencilStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states", desc.str().c_str()));
+					stencilStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
 				}
 
 				stencilOpItr.reset();
@@ -1016,17 +1005,17 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConst
 				for (deUint32 failOpNdx = 0u; failOpNdx < DE_LENGTH_OF_ARRAY(stencilOps); failOpNdx++)
 				{
 					const std::string				failOpName	= std::string("fail_") + getShortName(stencilOps[failOpNdx]);
-					de::MovePtr<tcu::TestCaseGroup>	failOpTest	(new tcu::TestCaseGroup(testCtx, failOpName.c_str(), ""));
+					de::MovePtr<tcu::TestCaseGroup>	failOpTest	(new tcu::TestCaseGroup(testCtx, failOpName.c_str()));
 
 					for (deUint32 passOpNdx = 0u; passOpNdx < DE_LENGTH_OF_ARRAY(stencilOps); passOpNdx++)
 					{
 						const std::string				passOpName	= std::string("pass_") + getShortName(stencilOps[passOpNdx]);
-						de::MovePtr<tcu::TestCaseGroup>	passOpTest	(new tcu::TestCaseGroup(testCtx, passOpName.c_str(), ""));
+						de::MovePtr<tcu::TestCaseGroup>	passOpTest	(new tcu::TestCaseGroup(testCtx, passOpName.c_str()));
 
 						for (deUint32 dFailOpNdx = 0u; dFailOpNdx < DE_LENGTH_OF_ARRAY(stencilOps); dFailOpNdx++)
 						{
 							const std::string				dFailOpName	= std::string("dfail_") + getShortName(stencilOps[dFailOpNdx]);
-							de::MovePtr<tcu::TestCaseGroup>	dFailOpTest	(new tcu::TestCaseGroup(testCtx, dFailOpName.c_str(), ""));
+							de::MovePtr<tcu::TestCaseGroup>	dFailOpTest	(new tcu::TestCaseGroup(testCtx, dFailOpName.c_str()));
 
 							for (deUint32 compareOpNdx = 0u; compareOpNdx < DE_LENGTH_OF_ARRAY(compareOps); compareOpNdx++)
 							{
@@ -1045,9 +1034,8 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConst
 								// Iterate back set of stencil state in random order
 								const VkStencilOpState	stencilStateBack	= stencilOpItr.next();
 								const std::string		caseName			= compareOpNames[compareOpNdx];
-								const std::string		caseDesc			= getStencilStateSetDescription(stencilStateFront, stencilStateBack);
 
-								dFailOpTest->addChild(new StencilTest(testCtx, caseName, caseDesc, pipelineConstructionType, stencilFormat, stencilStateFront, stencilStateBack, colorEnabled, useSeparateDepthStencilLayouts));
+								dFailOpTest->addChild(new StencilTest(testCtx, caseName, pipelineConstructionType, stencilFormat, stencilStateFront, stencilStateBack, colorEnabled, useSeparateDepthStencilLayouts));
 							}
 							passOpTest->addChild(dFailOpTest.release());
 						}

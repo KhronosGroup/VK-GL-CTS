@@ -319,7 +319,6 @@ public:
 
 								UniformBlockCase			(tcu::TestContext&	testCtx,
 															 const std::string&	name,
-															 const std::string&	description,
 															 BufferMode			bufferMode,
 															 MatrixLoadFlags	matrixLoadFlag,
 															 bool				shuffleUniformMembers = false);

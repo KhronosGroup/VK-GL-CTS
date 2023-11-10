@@ -74,7 +74,7 @@ using namespace vk;
 class ConditionalIgnoreClearTestCase : public vkt::TestCase
 {
 public:
-	ConditionalIgnoreClearTestCase(tcu::TestContext& context, const std::string& name, const std::string& description, const ConditionalData& data);
+	ConditionalIgnoreClearTestCase(tcu::TestContext& context, const std::string& name, const ConditionalData& data);
 	void            initPrograms            (SourceCollections&) const override { }
 	TestInstance*   createInstance          (Context& context) const override;
 	void            checkSupport            (Context& context) const override
@@ -101,8 +101,8 @@ private:
 };
 
 
-ConditionalIgnoreClearTestCase::ConditionalIgnoreClearTestCase(tcu::TestContext& context, const std::string& name, const std::string& description, const ConditionalData& data)
-	: vkt::TestCase (context, name, description)
+ConditionalIgnoreClearTestCase::ConditionalIgnoreClearTestCase(tcu::TestContext& context, const std::string& name, const ConditionalData& data)
+	: vkt::TestCase (context, name)
 	, m_data(data)
 { }
 
@@ -211,10 +211,18 @@ tcu::TestStatus ConditionalIgnoreClearTestInstance::iterate(void)
 	const auto commandPool	= createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, qIndex);
 	auto commandBuffer		= allocateCommandBuffer(vkd, device, commandPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	auto commandBuffer2		= allocateCommandBuffer(vkd, device, commandPool.get(), VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+	auto commandBuffer3		= allocateCommandBuffer(vkd, device, commandPool.get(), VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
 	auto conditionalBuffer = createConditionalRenderingBuffer(m_context, m_data);
 	//prepare command buffers
 	const bool useSecondaryCmdBuffer = m_data.conditionInherited || m_data.conditionInSecondaryCommandBuffer;
+
+	if (m_data.secondaryCommandBufferNested) {
+		m_context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+		const auto& features = *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&m_context.getDeviceFeatures2());
+		if (!features.nestedCommandBuffer)
+			TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+	}
 
 	VkCommandBufferInheritanceConditionalRenderingInfoEXT conditionalRenderingInheritanceInfo = initVulkanStructure();
 	conditionalRenderingInheritanceInfo.conditionalRenderingEnable = m_data.conditionInherited ? VK_TRUE : VK_FALSE;
@@ -259,6 +267,10 @@ tcu::TestStatus ConditionalIgnoreClearTestInstance::iterate(void)
 	//do all combinations of clears
 	if (useSecondaryCmdBuffer)
 	{
+		if (m_data.secondaryCommandBufferNested) {
+			vkd.beginCommandBuffer(*commandBuffer3, &commandBufferBeginInfo);
+		}
+
 		vkd.beginCommandBuffer(*commandBuffer2, &commandBufferBeginInfo);
 		if (m_data.conditionInSecondaryCommandBuffer)
 		{
@@ -283,7 +295,13 @@ tcu::TestStatus ConditionalIgnoreClearTestInstance::iterate(void)
 		}
 
 		vkd.endCommandBuffer(*commandBuffer2);
-		vkd.cmdExecuteCommands(commandBuffer.get(), 1, &commandBuffer2.get());
+		if (m_data.secondaryCommandBufferNested) {
+			vkd.cmdExecuteCommands(commandBuffer3.get(), 1, &commandBuffer2.get());
+			vkd.endCommandBuffer(*commandBuffer3);
+			vkd.cmdExecuteCommands(commandBuffer.get(), 1, &commandBuffer3.get());
+		} else {
+			vkd.cmdExecuteCommands(commandBuffer.get(), 1, &commandBuffer2.get());
+		}
 	}
 	else
 	{
@@ -319,8 +337,9 @@ tcu::TestStatus ConditionalIgnoreClearTestInstance::iterate(void)
 
 }	// anonymous
 
+// operations that ignore conditions
 ConditionalIgnoreTests::ConditionalIgnoreTests(tcu::TestContext &testCtx)
-	: TestCaseGroup	(testCtx, "conditional_ignore", "operations that ignore conditions")
+	: TestCaseGroup	(testCtx, "conditional_ignore")
 { }
 
 ConditionalIgnoreTests::~ConditionalIgnoreTests(void)
@@ -335,8 +354,8 @@ void ConditionalIgnoreTests::init (void)
 		if (conditionData.clearInRenderPass)
 			continue;
 
-		addChild(new ConditionalIgnoreClearTestCase(m_testCtx, std::string("clear_") + de::toString(conditionData).c_str(),
-			"tests that some clear operations always happen", conditionData));
+		// tests that some clear operations always happen
+		addChild(new ConditionalIgnoreClearTestCase(m_testCtx, std::string("clear_") + de::toString(conditionData).c_str(), conditionData));
 	}
 }
 

@@ -406,7 +406,7 @@ class TrinaryMinMaxCase : public vkt::TestCase
 public:
 	using ReplacementsMap = std::map<std::string, std::string>;
 
-							TrinaryMinMaxCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							TrinaryMinMaxCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~TrinaryMinMaxCase		(void) {}
 
 	virtual void			initPrograms			(vk::SourceCollections& programCollection) const;
@@ -433,8 +433,8 @@ private:
 	TestParams	m_params;
 };
 
-TrinaryMinMaxCase::TrinaryMinMaxCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+TrinaryMinMaxCase::TrinaryMinMaxCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -887,7 +887,7 @@ tcu::TestCaseGroup* createTrinaryMinMaxGroup (tcu::TestContext& testCtx)
 					aggType.first,		// AggregationType	aggregation;
 					seed++,				// deUint32			randomSeed;
 				};
-				typeGroup->addChild(new TrinaryMinMaxCase{testCtx, aggType.second, "", params});
+				typeGroup->addChild(new TrinaryMinMaxCase{testCtx, aggType.second, params});
 			}
 
 			opGroup->addChild(typeGroup.release());

@@ -79,7 +79,7 @@ public:
 															 vk::VkClearColorValue		clearColorValue,
 															 ValidationData				data,
 															 CmdBufferType				cmdBufferType)
-									: TestCase				(testCtx, name, "Clear color image.")
+									: TestCase				(testCtx, name)
 									, m_clearColorValue		(clearColorValue)
 									, m_refData				(data)
 									, m_cmdBufferType		(cmdBufferType)
@@ -312,7 +312,8 @@ tcu::TestCaseGroup*	createClearColorImageTests (tcu::TestContext& testCtx, CmdBu
 		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	clearStaticTests	(new tcu::TestCaseGroup(testCtx, "static", "Clear Color Image Tests with static input"));
+	// Clear Color Image Tests with static input
+	de::MovePtr<tcu::TestCaseGroup>	clearStaticTests	(new tcu::TestCaseGroup(testCtx, "static"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
@@ -321,7 +322,8 @@ tcu::TestCaseGroup*	createClearColorImageTests (tcu::TestContext& testCtx, CmdBu
 	}
 
 	/* Add a few randomized tests */
-	de::MovePtr<tcu::TestCaseGroup>	clearRandomTests	(new tcu::TestCaseGroup(testCtx, "random", "Clear Color Image Tests with random input"));
+	// Clear Color Image Tests with random input
+	de::MovePtr<tcu::TestCaseGroup>	clearRandomTests	(new tcu::TestCaseGroup(testCtx, "random"));
 	const int						testCount			= 10;
 	de::Random						rnd					(testCtx.getCommandLine().getBaseSeed());
 	for (int ndx = 0; ndx < testCount; ++ndx)
