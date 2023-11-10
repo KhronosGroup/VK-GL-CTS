@@ -460,7 +460,7 @@ DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestPara
 		0u,
 		DE_NULL,
 		m_format,
-		m_format
+		VK_FORMAT_UNDEFINED
 	};
 
 	if (m_groupParams->useDynamicRendering)

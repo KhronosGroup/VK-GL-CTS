@@ -14,7 +14,7 @@ tcu::TestStatus testPhysicalDeviceFeature4444FormatsFeaturesEXT (Context& contex
 	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDevice4444FormatsFeaturesEXT	device4444FormatsFeaturesEXT[count];
-	const bool								is4444FormatsFeaturesEXT = checkExtension(properties, "VK_EXT_4444_formats") || context.contextSupports(vk::ApiVersion(0, 1, 3, 0));
+	const bool								is4444FormatsFeaturesEXT = checkExtension(properties, "VK_EXT_4444_formats");
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -412,7 +412,7 @@ tcu::TestStatus testPhysicalDeviceFeatureExtendedDynamicStateFeaturesEXT (Contex
 	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceExtendedDynamicStateFeaturesEXT	deviceExtendedDynamicStateFeaturesEXT[count];
-	const bool										isExtendedDynamicStateFeaturesEXT = checkExtension(properties, "VK_EXT_extended_dynamic_state") || context.contextSupports(vk::ApiVersion(0, 1, 3, 0));
+	const bool										isExtendedDynamicStateFeaturesEXT = checkExtension(properties, "VK_EXT_extended_dynamic_state");
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{

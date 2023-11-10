@@ -156,7 +156,6 @@ typedef deUint32 FeatureFlags;
 vk::VkImageCreateInfo			makeImageCreateInfo							(const tcu::IVec2& size, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const deUint32 numArrayLayers);
 vk::Move<vk::VkRenderPass>		makeRenderPassWithoutAttachments			(const vk::DeviceInterface& vk, const vk::VkDevice device);
 vk::VkBufferImageCopy			makeBufferImageCopy							(const vk::VkExtent3D extent, const vk::VkImageSubresourceLayers subresourceLayers);
-void							beginRenderPassWithRasterizationDisabled	(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer);
 void							requireFeatures								(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const FeatureFlags flags);
 float							getClampedTessLevel							(const SpacingMode mode, const float tessLevel);
 int								getRoundedTessLevel							(const SpacingMode mode, const float clampedTessLevel);
