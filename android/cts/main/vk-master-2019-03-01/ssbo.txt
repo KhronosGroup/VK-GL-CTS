@@ -1,7 +1,3 @@
-dEQP-VK.ssbo.unsized_array_length.float_no_offset_explicit_size
-dEQP-VK.ssbo.unsized_array_length.float_no_offset_whole_size
-dEQP-VK.ssbo.unsized_array_length.float_offset_explicit_size
-dEQP-VK.ssbo.unsized_array_length.float_offset_whole_size
 dEQP-VK.ssbo.layout.single_basic_type.std140.lowp_float
 dEQP-VK.ssbo.layout.single_basic_type.std140.mediump_float
 dEQP-VK.ssbo.layout.single_basic_type.std140.highp_float
@@ -3880,3 +3876,7 @@ dEQP-VK.ssbo.layout.random.8bit.scalar.96
 dEQP-VK.ssbo.layout.random.8bit.scalar.97
 dEQP-VK.ssbo.layout.random.8bit.scalar.98
 dEQP-VK.ssbo.layout.random.8bit.scalar.99
+dEQP-VK.ssbo.unsized_array_length.float_no_offset_explicit_size
+dEQP-VK.ssbo.unsized_array_length.float_no_offset_whole_size
+dEQP-VK.ssbo.unsized_array_length.float_offset_explicit_size
+dEQP-VK.ssbo.unsized_array_length.float_offset_whole_size

@@ -1,3 +1,5 @@
+dEQP-VK.dynamic_state.monolithic.rs_state.nonzero_depth_bias_constant
+dEQP-VK.dynamic_state.monolithic.rs_state.nonzero_depth_bias_clamp
 dEQP-VK.dynamic_state.pipeline_library.vp_state.viewport
 dEQP-VK.dynamic_state.pipeline_library.vp_state.scissor
 dEQP-VK.dynamic_state.pipeline_library.vp_state.viewport_array
@@ -21,8 +23,6 @@ dEQP-VK.dynamic_state.pipeline_library.inheritance.secondary
 dEQP-VK.dynamic_state.pipeline_library.inheritance.split
 dEQP-VK.dynamic_state.pipeline_library.inheritance.primary_with_count
 dEQP-VK.dynamic_state.pipeline_library.inheritance.secondary_with_count
-dEQP-VK.dynamic_state.monolithic.rs_state.nonzero_depth_bias_constant
-dEQP-VK.dynamic_state.monolithic.rs_state.nonzero_depth_bias_clamp
 dEQP-VK.dynamic_state.fast_linked_library.vp_state.viewport
 dEQP-VK.dynamic_state.fast_linked_library.vp_state.scissor
 dEQP-VK.dynamic_state.fast_linked_library.vp_state.viewport_array

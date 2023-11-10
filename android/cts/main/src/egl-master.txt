@@ -1,2 +1,2 @@
-dEQP-EGL.info.*
 dEQP-EGL.functional.*
+dEQP-EGL.info.*

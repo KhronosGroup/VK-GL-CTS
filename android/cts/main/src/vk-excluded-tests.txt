@@ -1,4 +1,35 @@
-# Issue 242: Excluded blend tests where propagated errors may be large
+
+
+
+
+
+
+
+
+
+
+
+dEQP-VK.api.copy_and_blit.core.blit_image.simple_tests.scaling_and_offset.b8g8r8a8_unorm_linear
+dEQP-VK.api.driver_properties.conformance_version
+dEQP-VK.clipping.clip_volume.clipped.large_points
+dEQP-VK.clipping.clip_volume.clipped.wide_lines_axis_aligned
+dEQP-VK.clipping.clip_volume.clipped.wide_lines_diagonal
+dEQP-VK.glsl.texture_functions.texturegrad.samplercubeshadow_fragment
+dEQP-VK.glsl.texture_functions.texturegrad.samplercubeshadow_vertex
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_isampler3d_vertex
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_isamplercube_fragment
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_isamplercube_vertex
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_usamplercube_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_isampler2darray_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_isampler2d_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_isampler3d_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_isamplercube_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_usampler2darray_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_usampler2d_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_usampler3d_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_usamplercube_bias_fragment
+dEQP-VK.pipeline.*.blend.dual_source.format.r8g8b8a8_srgb.states.color_ca_1ms1a_sub_alpha_1msa_1mca_sub-color_1msc_da_max_alpha_o_da_add-color_s1c_s1a_max_alpha_dc_1ms1a_sub-color_s1a_z_sub_alpha_1msa_1msc_max
+dEQP-VK.pipeline.*.blend.dual_source.format.r8g8b8a8_srgb.states.color_ca_1ms1a_sub_alpha_1msa_1mdc_sub-color_1mda_sas_add_alpha_o_ca_add-color_sa_1mdc_sub_alpha_o_1mca_rsub-color_s1c_1msa_rsub_alpha_1msa_1mca_add
 dEQP-VK.pipeline.*.blend.format.a2r10g10b10_unorm_pack32.states.color_dc_dc_add_alpha_o_1msc_add-color_sas_1mdc_max_alpha_sa_1msc_min-color_dc_sas_min_alpha_1mcc_cc_sub-color_z_1mda_add_alpha_o_1mdc_add
 dEQP-VK.pipeline.*.blend.format.a2r10g10b10_unorm_pack32.states.color_sa_z_sub_alpha_ca_cc_sub-color_sas_1msa_rsub_alpha_ca_da_sub-color_1mca_ca_min_alpha_1msc_1mcc_rsub-color_dc_da_sub_alpha_1mcc_1mda_add
 dEQP-VK.pipeline.*.blend.format.b5g5r5a1_unorm_pack16.states.color_1mcc_cc_min_alpha_sc_cc_min-color_o_o_min_alpha_1msc_1msc_add-color_sas_da_add_alpha_1mdc_ca_add-color_cc_1mda_sub_alpha_dc_1mda_add
@@ -7,51 +38,20 @@ dEQP-VK.pipeline.*.blend.format.b5g5r5a1_unorm_pack16.states.color_sa_z_sub_alph
 dEQP-VK.pipeline.*.blend.format.r5g5b5a1_unorm_pack16.states.color_1mcc_cc_min_alpha_sc_cc_min-color_o_o_min_alpha_1msc_1msc_add-color_sas_da_add_alpha_1mdc_ca_add-color_cc_1mda_sub_alpha_dc_1mda_add
 dEQP-VK.pipeline.*.blend.format.r5g5b5a1_unorm_pack16.states.color_dc_dc_add_alpha_o_1msc_add-color_sas_1mdc_max_alpha_sa_1msc_min-color_dc_sas_min_alpha_1mcc_cc_sub-color_z_1mda_add_alpha_o_1mdc_add
 dEQP-VK.pipeline.*.blend.format.r5g5b5a1_unorm_pack16.states.color_sa_z_sub_alpha_ca_cc_sub-color_sas_1msa_rsub_alpha_ca_da_sub-color_1mca_ca_min_alpha_1msc_1mcc_rsub-color_dc_da_sub_alpha_1mcc_1mda_add
-
-# Excluded texture function tests according to the Android GLES3 issue list
-dEQP-VK.glsl.texture_functions.texturegrad.samplercubeshadow_fragment
-dEQP-VK.glsl.texture_functions.texturegrad.samplercubeshadow_vertex
-
-# Excluded sparse version of the above texture function tests
-dEQP-VK.glsl.texture_functions.texturegrad.sparse_isamplercube_fragment
-dEQP-VK.glsl.texture_functions.texturegrad.sparse_isamplercube_vertex
-dEQP-VK.glsl.texture_functions.texturegrad.sparse_usamplercube_fragment
-dEQP-VK.glsl.texture_functions.texturegrad.sparse_isampler3d_vertex
-
-# Issue 419: Failing sparse tests (Image mismatch)
-dEQP-VK.glsl.texture_functions.texture.sparse_isampler2d_bias_fragment
-dEQP-VK.glsl.texture_functions.texture.sparse_usampler2d_bias_fragment
-dEQP-VK.glsl.texture_functions.texture.sparse_isamplercube_bias_fragment
-dEQP-VK.glsl.texture_functions.texture.sparse_usamplercube_bias_fragment
-dEQP-VK.glsl.texture_functions.texture.sparse_isampler2darray_bias_fragment
-dEQP-VK.glsl.texture_functions.texture.sparse_usampler2darray_bias_fragment
-dEQP-VK.glsl.texture_functions.texture.sparse_isampler3d_bias_fragment
-dEQP-VK.glsl.texture_functions.texture.sparse_usampler3d_bias_fragment
-
-# Issue 420: Exclude problematic clipping tests
-dEQP-VK.clipping.clip_volume.clipped.large_points
-dEQP-VK.clipping.clip_volume.clipped.wide_lines_axis_aligned
-dEQP-VK.clipping.clip_volume.clipped.wide_lines_diagonal
-
-# Issue 431: Excluded copies and blitting tests
-dEQP-VK.api.copy_and_blit.core.blit_image.simple_tests.scaling_and_offset.b8g8r8a8_unorm_linear
-
-# New tests from AOSP
 dEQP-VK.texture.explicit_lod.*
-
-#VK-GL-CTS 110: Excluded wsi android tests as they require android loader support
-dEQP-VK.wsi.android.surface.query_devgroup_*
-
-# Issue: b/66464066
-dEQP-VK.wsi.android.shared_presentable_image.scale_down.*
-
-# Issue: b/67022169
 dEQP-VK.wsi.android.incremental_present.scale_down.*
-
+dEQP-VK.wsi.android.shared_presentable_image.scale_down.*
+dEQP-VK.wsi.android.surface.query_devgroup_*
 # Exclude conformance version from android test, issue 1839
-dEQP-VK.api.driver_properties.conformance_version
-
-# VK-GL-CTS 2157, CL 5278
+# Excluded sparse version of the above texture function tests
+# Excluded texture function tests according to the Android GLES3 issue list
 # Excluded them as Intel HW is failing these tests.
-dEQP-VK.pipeline.*.blend.dual_source.format.r8g8b8a8_srgb.states.color_ca_1ms1a_sub_alpha_1msa_1mca_sub-color_1msc_da_max_alpha_o_da_add-color_s1c_s1a_max_alpha_dc_1ms1a_sub-color_s1a_z_sub_alpha_1msa_1msc_max
-dEQP-VK.pipeline.*.blend.dual_source.format.r8g8b8a8_srgb.states.color_ca_1ms1a_sub_alpha_1msa_1mdc_sub-color_1mda_sas_add_alpha_o_ca_add-color_sa_1mdc_sub_alpha_o_1mca_rsub-color_s1c_1msa_rsub_alpha_1msa_1mca_add
+# Issue 242: Excluded blend tests where propagated errors may be large
+# Issue 419: Failing sparse tests (Image mismatch)
+# Issue 420: Exclude problematic clipping tests
+# Issue 431: Excluded copies and blitting tests
+# Issue: b/66464066
+# Issue: b/67022169
+# New tests from AOSP
+#VK-GL-CTS 110: Excluded wsi android tests as they require android loader support
+# VK-GL-CTS 2157, CL 5278

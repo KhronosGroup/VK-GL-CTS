@@ -1,5 +1,5 @@
-# WSI tests for other platforms
-dEQP-VK.wsi.xlib.*
-dEQP-VK.wsi.xcb.*
 dEQP-VK.wsi.wayland.*
 dEQP-VK.wsi.win32.*
+dEQP-VK.wsi.xcb.*
+dEQP-VK.wsi.xlib.*
+# WSI tests for other platforms
