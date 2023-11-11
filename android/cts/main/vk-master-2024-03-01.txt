@@ -12,6 +12,7 @@ vk-master-2024-03-01/fragment-operations.txt
 vk-master-2024-03-01/fragment-shading-barycentric.txt
 vk-master-2024-03-01/fragment-shading-rate.txt
 vk-master-2024-03-01/glsl.txt
+vk-master-2024-03-01/image/extended-usage-bit-compatibility.txt
 vk-master-2024-03-01/image/format-reinterpret.txt
 vk-master-2024-03-01/image/host-image-copy.txt
 vk-master-2024-03-01/image/load-store.txt
