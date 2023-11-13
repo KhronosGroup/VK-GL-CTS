@@ -9081,6 +9081,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 			{
 				TestConfig config(baseConfig);
+				config.forceUnormColorFormat					= true;
 				config.logicOpEnableConfig.staticValue			= true;
 				config.logicOpEnableConfig.dynamicValue			= false;
 				config.logicOpConfig.staticValue				= vk::VK_LOGIC_OP_CLEAR;
