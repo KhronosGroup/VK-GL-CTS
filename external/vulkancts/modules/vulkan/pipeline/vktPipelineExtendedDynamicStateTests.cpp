@@ -9170,7 +9170,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			}
 		}
 
-		// Null state pointers.
+		// Null state pointers. These do not make sense for shader objects.
+		if (!vk::isConstructionTypeShaderObject(pipelineConstructionType))
 		{
 			TestConfig baseConfig(pipelineConstructionType, kOrdering, kUseMeshShaders);
 			baseConfig.favorStaticNullPointers = true;
