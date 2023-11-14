@@ -64,6 +64,7 @@
 #include <cstddef>
 #include <set>
 #include <array>
+#include <map>
 
 namespace vkt
 {
@@ -1966,6 +1967,9 @@ struct TestConfig
 	bool							sampleShadingEnable;
 	float							minSampleShading;
 
+	// Force alpha to one feature disabled.
+	bool							disableAlphaToOneFeature;
+
 	// Static and dynamic pipeline configuration.
 	VertexGeneratorConfig			vertexGenerator;
 	CullModeConfig					cullModeConfig;
@@ -2079,6 +2083,7 @@ struct TestConfig
 		, extraDepthThreshold			(0.0f)
 		, sampleShadingEnable			(false)
 		, minSampleShading				(0.0f)
+		, disableAlphaToOneFeature		(false)
 		, vertexGenerator				(makeVertexGeneratorConfig(staticVertexGenerator, dynamicVertexGenerator))
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
 		, frontFaceConfig				(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
@@ -2195,6 +2200,7 @@ struct TestConfig
 		, extraDepthThreshold			(other.extraDepthThreshold)
 		, sampleShadingEnable			(other.sampleShadingEnable)
 		, minSampleShading				(other.minSampleShading)
+		, disableAlphaToOneFeature		(other.disableAlphaToOneFeature)
 		, vertexGenerator				(other.vertexGenerator)
 		, cullModeConfig				(other.cullModeConfig)
 		, frontFaceConfig				(other.frontFaceConfig)
@@ -4366,15 +4372,34 @@ protected:
 	std::vector<std::string>	m_extensions;
 };
 
-// This one creates a new device with VK_NV_shading_rate_image and VK_EXT_extended_dynamic_state3.
-// It also enables other extensions like VK_EXT_mesh_shader if supported, as some tests need them.
-class ShadingRateImageDeviceHelper : public DeviceHelper
+// A non-default device helper that can create a custom device with some options that can be specify in the constructor.
+class CustomizedDeviceHelper : public DeviceHelper
 {
 public:
-	ShadingRateImageDeviceHelper (Context& context)
+	// Options, chosen so that a default value of false gives the default device.
+	struct Options
 	{
-		const auto&	vkp				= context.getPlatformInterface();
-		const auto&	vki				= context.getInstanceInterface();
+		bool shadingRateImage;  // Enable VK_NV_shading_rate_image.
+		bool disableAlphaToOne; // Forcefully disable alphaToOne.
+		bool disableAdvBlendingCoherentOps;
+
+		// We need to sort these options in a map below, so we need operator< and the boilerplate below.
+		bool operator<(const Options& other) const
+		{
+				return (this->toVec() < other.toVec());
+		}
+
+	private:
+		std::vector<bool> toVec (void) const
+		{
+				return std::vector<bool>{shadingRateImage, disableAlphaToOne, disableAdvBlendingCoherentOps};
+		}
+	};
+
+	CustomizedDeviceHelper (Context& context, const Options& options)
+	{
+		const auto&	vkp			= context.getPlatformInterface();
+		const auto&	vki			= context.getInstanceInterface();
 		const auto	instance		= context.getInstance();
 		const auto	physicalDevice	= context.getPhysicalDevice();
 		const auto	queuePriority	= 1.0f;
@@ -4395,34 +4420,46 @@ public:
 
 #ifndef CTS_USES_VULKANSC
 		const auto&	contextMeshFeatures	= context.getMeshShaderFeaturesEXT();
-		const auto& contextGPLFeatures	= context.getGraphicsPipelineLibraryFeaturesEXT();
-		const auto& contextDBCFeatures	= context.getDepthBiasControlFeaturesEXT();
+		const auto&	contextGPLFeatures	= context.getGraphicsPipelineLibraryFeaturesEXT();
+		const auto&	contextDBCFeatures	= context.getDepthBiasControlFeaturesEXT();
 		const auto&	contextSOFeatures	= context.getShaderObjectFeaturesEXT();
+		const auto&	contextBlendFeatures    = context.getBlendOperationAdvancedFeaturesEXT();
 
 		const bool	meshShaderSupport	= contextMeshFeatures.meshShader;
-		const bool	gplSupport			= contextGPLFeatures.graphicsPipelineLibrary;
-		const bool	dbcSupport			= contextDBCFeatures.depthBiasControl;
-		const bool  shaderObjectSupport = contextSOFeatures.shaderObject;
+		const bool	gplSupport		= contextGPLFeatures.graphicsPipelineLibrary;
+		const bool	dbcSupport		= contextDBCFeatures.depthBiasControl;
+		const bool	shaderObjectSupport	= contextSOFeatures.shaderObject;
+		const bool	eds3Support		= context.isDeviceFunctionalitySupported("VK_EXT_extended_dynamic_state3");
+		const bool	blendFeaturesSupport	= contextBlendFeatures.advancedBlendCoherentOperations;
 
+		// Mandatory.
+		vk::VkPhysicalDeviceFeatures2	features2	= vk::initVulkanStructure();
+
+		// Optional.
 		vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT	eds3Features				= vk::initVulkanStructure();
-		vk::VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures	= vk::initVulkanStructure(&eds3Features);
-		vk::VkPhysicalDeviceFeatures2							features2					= vk::initVulkanStructure(&shadingRateImageFeatures);
-
+		vk::VkPhysicalDeviceShadingRateImageFeaturesNV			shadingRateImageFeatures	= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT			dbcFeatures					= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceMeshShaderFeaturesEXT				meshFeatures				= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceMultiviewFeatures					multiviewFeatures			= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures					= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures		= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceDynamicRenderingFeatures			dynamicRenderingFeatures	= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT	blendOperationAdvFeatures		= vk::initVulkanStructure();
 
 		const auto addFeatures = vk::makeStructChainAdder(&features2);
 
-		if (meshShaderSupport) {
+		if (eds3Support)
+			addFeatures(&eds3Features);
+
+		if (options.shadingRateImage)
+			addFeatures(&shadingRateImageFeatures);
+
+		if (meshShaderSupport)
+		{
 			addFeatures(&meshFeatures);
 
 			if (contextMeshFeatures.multiviewMeshShader)
-			{
 				addFeatures(&multiviewFeatures);
-			}
 		}
 
 		if (gplSupport)
@@ -4432,22 +4469,46 @@ public:
 			addFeatures(&dbcFeatures);
 
 		if (shaderObjectSupport)
+		{
 			addFeatures(&shaderObjectFeatures);
+			addFeatures(&dynamicRenderingFeatures);
+		}
+
+		if (options.disableAdvBlendingCoherentOps && blendFeaturesSupport)
+			addFeatures(&blendOperationAdvFeatures);
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-		// If shadingRateImage feature is enabled pipelineFragmentShadingRate must not be enabled primitiveFragmentShadingRate
-		// and if primitiveFragmentShadingRate is not enabled primitiveFragmentShadingRateMeshShader must not be enabled
-		meshFeatures.primitiveFragmentShadingRateMeshShader = VK_FALSE;
+
+		if (options.shadingRateImage)
+		{
+			// [VUID-VkDeviceCreateInfo-shadingRateImage-04479]
+			// If the shadingRateImage feature is enabled primitiveFragmentShadingRate must not be enabled
+			//
+			// [VUID-VkPhysicalDeviceMeshShaderFeaturesEXT-primitiveFragmentShadingRateMeshShader-07033]
+			// If primitiveFragmentShadingRateMeshShader is enabled then
+			// VkPhysicalDeviceFragmentShadingRateFeaturesKHR::primitiveFragmentShadingRate must also be enabled
+			meshFeatures.primitiveFragmentShadingRateMeshShader = VK_FALSE;
+		}
+
+		// Disable alpha-to-one if requested by options.
+		if (options.disableAlphaToOne)
+			features2.features.alphaToOne = VK_FALSE;
+
+		// Disable robust buffer access and advanced color blend operations explicitly.
+		features2.features.robustBufferAccess = VK_FALSE;
+		blendOperationAdvFeatures.advancedBlendCoherentOperations   = VK_FALSE;
 
 #endif // CTS_USES_VULKANSC
 
-		std::vector<const char*> extensions
-		{
-			"VK_EXT_extended_dynamic_state3",
-			"VK_NV_shading_rate_image",
-		};
+		std::vector<const char*> extensions;
 
 #ifndef CTS_USES_VULKANSC
+		if (options.shadingRateImage)
+			extensions.push_back("VK_NV_shading_rate_image");
+
+		if (eds3Support)
+			extensions.push_back("VK_EXT_extended_dynamic_state3");
+
 		if (meshShaderSupport)
 		{
 			extensions.push_back("VK_EXT_mesh_shader");
@@ -4465,10 +4526,10 @@ public:
 			extensions.push_back("VK_EXT_depth_bias_control");
 
 		if (shaderObjectSupport)
+		{
+			extensions.push_back("VK_KHR_dynamic_rendering");
 			extensions.push_back("VK_EXT_shader_object");
-
-		// Disable robustness.
-		features2.features.robustBufferAccess = VK_FALSE;
+		}
 #endif // CTS_USES_VULKANSC
 
 		for (const auto& ext : extensions)
@@ -4496,9 +4557,13 @@ public:
 		m_vkd		.reset(new vk::DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion()));
 		m_queue		= getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
 		m_allocator	.reset(new vk::SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+
+#ifdef CTS_USES_VULKANSC
+		DE_UNREF(options);
+#endif // CTS_USES_VULKANSC
 	}
 
-	virtual ~ShadingRateImageDeviceHelper () {}
+	virtual ~CustomizedDeviceHelper () {}
 
 	const vk::DeviceInterface&		getDeviceInterface	(void) const override	{ return *m_vkd;				}
 	vk::VkDevice					getDevice			(void) const override	{ return m_device.get();		}
@@ -4516,150 +4581,40 @@ protected:
 	std::vector<std::string>				m_extensions;
 };
 
-class CoherentBlendingDeviceHelper : public DeviceHelper
-{
-public:
-	CoherentBlendingDeviceHelper (Context& context)
-	{
-		const auto&	vkp             = context.getPlatformInterface();
-		const auto&	vki             = context.getInstanceInterface();
-		const auto	instance        = context.getInstance();
-		const auto	physicalDevice  = context.getPhysicalDevice();
-		const auto	queuePriority   = 1.0f;
-
-		// Queue index first.
-		m_queueFamilyIndex          = context.getUniversalQueueFamilyIndex();
-
-		// Create a universal queue that supports graphics and compute.
-		const vk::VkDeviceQueueCreateInfo queueParams =
-		{
-			vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType              sType;
-			DE_NULL,                                        // const void*                  pNext;
-			0u,												// VkDeviceQueueCreateFlags     flags;
-			m_queueFamilyIndex,								// deUint32                     queueFamilyIndex;
-			1u,												// deUint32                     queueCount;
-			&queuePriority									// const float*                 pQueuePriorities;
-		};
-
-#ifndef CTS_USES_VULKANSC
-		const auto& contextMeshFeatures     = context.getMeshShaderFeaturesEXT();
-		const auto& contextGPLFeatures      = context.getGraphicsPipelineLibraryFeaturesEXT();
-		const auto& contextSOFeatures       = context.getShaderObjectFeaturesEXT();
-		const auto& contextBlendFeatures    = context.getBlendOperationAdvancedFeaturesEXT();
-
-		const bool meshShaderSupport       = contextMeshFeatures.meshShader;
-		const bool gplSupport              = contextGPLFeatures.graphicsPipelineLibrary;
-		const bool shaderObjectSupport     = contextSOFeatures.shaderObject;
-		const bool blendFeaturesSupport    = contextBlendFeatures.advancedBlendCoherentOperations;
-
-		vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT    eds3Features                = vk::initVulkanStructure();
-		vk::VkPhysicalDeviceFeatures2                           features2                   = vk::initVulkanStructure(&eds3Features);
-
-		vk::VkPhysicalDeviceMeshShaderFeaturesEXT               meshFeatures                = vk::initVulkanStructure();
-		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT  gplFeatures                 = vk::initVulkanStructure();
-		vk::VkPhysicalDeviceShaderObjectFeaturesEXT             shaderObjectFeatures        = vk::initVulkanStructure();
-		vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT   blendOperationAdvFeatures   = vk::initVulkanStructure();
-
-		const auto addFeatures = vk::makeStructChainAdder(&features2);
-
-		if (meshShaderSupport)
-			addFeatures(&meshFeatures);
-
-		if (gplSupport)
-			addFeatures(&gplFeatures);
-
-		if (shaderObjectSupport)
-			addFeatures(&shaderObjectFeatures);
-
-		if (blendFeaturesSupport)
-			addFeatures(&blendOperationAdvFeatures);
-
-		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-
-		// Disable robust buffer access and advanced color blend operations explicitly.
-		features2.features.robustBufferAccess                       = VK_FALSE;
-		blendOperationAdvFeatures.advancedBlendCoherentOperations   = VK_FALSE;
-
-#endif // CTS_USES_VULKANSC
-
-		const auto& creationExtensions = context.getDeviceCreationExtensions();
-
-		m_extensions.reserve(creationExtensions.size());
-		for (const auto& ext : creationExtensions)
-			m_extensions.push_back(ext);
-
-		const vk::VkDeviceCreateInfo deviceCreateInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,               //sType;
-#ifndef CTS_USES_VULKANSC
-			&features2,                                             //pNext;
-#else
-			nullptr,
-#endif // CTS_USES_VULKANSC
-			0u,                                                     //flags
-			1u,                                                     //queueRecordCount;
-			&queueParams,                                           //pRequestedQueues;
-			0u,                                                     //layerCount;
-			nullptr,                                                //ppEnabledLayerNames;
-			de::sizeU32(creationExtensions),                        // deUint32 enabledExtensionCount;
-			de::dataOrNull(creationExtensions),                     // const char* const* ppEnabledExtensionNames;
-			nullptr,                                                //pEnabledFeatures;
-		};
-
-		m_device    = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-		m_vkd.reset(new vk::DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion()));
-		m_queue     = getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
-		m_allocator.reset(new vk::SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
-	}
-
-	virtual ~CoherentBlendingDeviceHelper () {}
-
-	const vk::DeviceInterface&		getDeviceInterface	(void) const override	{ return *m_vkd;				}
-	vk::VkDevice					getDevice			(void) const override	{ return m_device.get();		}
-	uint32_t						getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
-	vk::VkQueue						getQueue			(void) const override	{ return m_queue;				}
-	vk::Allocator&					getAllocator		(void) const override	{ return *m_allocator;			}
-	const std::vector<std::string>&	getDeviceExtensions	(void) const override	{ return m_extensions;			}
-
-protected:
-	vk::Move<vk::VkDevice>					m_device;
-	std::unique_ptr<vk::DeviceDriver>		m_vkd;
-	deUint32								m_queueFamilyIndex;
-	vk::VkQueue								m_queue;
-	std::unique_ptr<vk::SimpleAllocator>	m_allocator;
-	std::vector<std::string>				m_extensions;
-};
-
-std::unique_ptr<DeviceHelper> g_shadingRateDeviceHelper;
-std::unique_ptr<DeviceHelper> g_coherentBlendingDeviceHelper;
-std::unique_ptr<DeviceHelper> g_contextDeviceHelper;
+using DeviceHelperPtr = std::unique_ptr<DeviceHelper>;
+std::map<CustomizedDeviceHelper::Options, DeviceHelperPtr> g_deviceHelpers;
 
 DeviceHelper& getDeviceHelper(Context& context, const TestConfig& testConfig)
 {
-	if (testConfig.shadingRateImage)
+	const CustomizedDeviceHelper::Options deviceOptions
 	{
-		if (!g_shadingRateDeviceHelper)
-			g_shadingRateDeviceHelper.reset(new ShadingRateImageDeviceHelper(context));
-		return *g_shadingRateDeviceHelper;
-	}
+		testConfig.shadingRateImage,
+		testConfig.disableAlphaToOneFeature,
+		testConfig.disableAdvBlendingCoherentOps,
+	};
 
-	if (testConfig.disableAdvBlendingCoherentOps)
+	auto itr = g_deviceHelpers.find(deviceOptions);
+	if (itr == g_deviceHelpers.end())
 	{
-		if (!g_coherentBlendingDeviceHelper)
-			g_coherentBlendingDeviceHelper.reset(new CoherentBlendingDeviceHelper(context));
-		return *g_coherentBlendingDeviceHelper;
-	}
+		using MapValueType = decltype(g_deviceHelpers)::value_type;
 
-	if (!g_contextDeviceHelper)
-		g_contextDeviceHelper.reset(new ContextDeviceHelper(context));
-	return *g_contextDeviceHelper;
+		// Using the default options results in a non-custom device from the context. Otherwise a custom device is created.
+		const bool		defaultOptions	= (!deviceOptions.shadingRateImage && !deviceOptions.disableAlphaToOne && !deviceOptions.disableAdvBlendingCoherentOps);
+		DeviceHelperPtr	ptr				= DeviceHelperPtr(defaultOptions
+										? static_cast<DeviceHelper*>(new ContextDeviceHelper(context))
+										: static_cast<DeviceHelper*>(new CustomizedDeviceHelper(context, deviceOptions)));
+		MapValueType	mapValue		(std::move(deviceOptions), std::move(ptr));
+
+		itr = g_deviceHelpers.insert(std::move(mapValue)).first;
+	}
+	return *itr->second;
 }
 
 void cleanupDevices()
 {
-	g_shadingRateDeviceHelper.reset(nullptr);
-	g_coherentBlendingDeviceHelper.reset(nullptr);
-	g_contextDeviceHelper.reset(nullptr);
+	for (auto& keyValue : g_deviceHelpers)
+		keyValue.second.reset(nullptr);
+	g_deviceHelpers.clear();
 }
 
 tcu::TextureChannelClass getChannelClass (const tcu::TextureFormat& format)
@@ -5977,7 +5932,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 														&& m_testConfig.rasterizationSamplesConfig.dynamicValue
 														&& m_testConfig.sampleMaskConfig.dynamicValue
 														&& m_testConfig.alphaToCoverageConfig.dynamicValue
-														&& m_testConfig.alphaToOneConfig.dynamicValue)
+														&& (m_testConfig.alphaToOneConfig.dynamicValue
+														    || m_testConfig.disableAlphaToOneFeature))
 													? nullptr
 													: &multisampleStateCreateInfo);
 
@@ -9248,6 +9204,19 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.alphaToOneConfig.dynamicValue			= false;
 				// Use null pMultisampleState
 				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_multisample_state", config));
+			}
+
+			{
+				TestConfig config(baseConfig);
+				config.rasterizationSamplesConfig.staticValue	= kMultiSampleCount;
+				config.rasterizationSamplesConfig.dynamicValue	= kSingleSampleCount;
+				config.sampleMaskConfig.staticValue				= SampleMaskVec(1u, 0u);
+				config.sampleMaskConfig.dynamicValue			= SampleMaskVec(1u, 0xFFu);
+				config.alphaToCoverageConfig.staticValue		= true;
+				config.alphaToCoverageConfig.dynamicValue		= false;
+				config.disableAlphaToOneFeature					= true;
+				// Use null pMultisampleState
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "null_multisample_state_no_alpha_to_one", config));
 			}
 
 			{
