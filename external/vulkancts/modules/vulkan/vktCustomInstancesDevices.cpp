@@ -224,7 +224,7 @@ UncheckedInstance::~UncheckedInstance ()
 	if (m_instance != DE_NULL)
 	{
 #ifndef CTS_USES_VULKANSC
-		m_callback.~Move<vk::VkDebugReportCallbackEXT>();
+		m_callback = vk::Move<vk::VkDebugReportCallbackEXT>();
 		m_recorder.reset(nullptr);
 #endif // CTS_USES_VULKANSC
 		m_driver->destroyInstance(m_instance, m_allocator);
