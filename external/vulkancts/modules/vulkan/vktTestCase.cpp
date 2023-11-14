@@ -503,7 +503,7 @@ public:
 private:
 #ifndef CTS_USES_VULKANSC
 	using DebugReportRecorderPtr		= de::UniquePtr<vk::DebugReportRecorder>;
-	using DebugReportCallbackPtr		= vk::Move<VkDebugReportCallbackEXT>;
+	using DebugReportCallbackPtr		= vk::Move<VkDebugUtilsMessengerEXT>;
 #endif // CTS_USES_VULKANSC
 
 	const deUint32						m_maximumFrameworkVulkanVersion;

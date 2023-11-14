@@ -41,8 +41,8 @@ using vk::VkInstance;
 #ifndef CTS_USES_VULKANSC
 using vk::InstanceDriver;
 using vk::DebugReportRecorder;
-using vk::VkDebugReportCallbackCreateInfoEXT;
-using vk::VkDebugReportCallbackEXT;
+using vk::VkDebugUtilsMessengerCreateInfoEXT;
+using vk::VkDebugUtilsMessengerEXT;
 #else
 using vk::InstanceDriverSC;
 #endif // CTS_USES_VULKANSC
@@ -110,7 +110,7 @@ CustomInstance::CustomInstance(Context& context, Move<VkInstance> instance)
 	, m_instance	(instance)
 #ifndef CTS_USES_VULKANSC
 	, m_driver		(new InstanceDriver(context.getPlatformInterface(), *m_instance))
-	, m_callback	(m_recorder ? m_recorder->createCallback(*m_driver, *m_instance) : Move<VkDebugReportCallbackEXT>())
+	, m_callback	(m_recorder ? m_recorder->createCallback(*m_driver, *m_instance) : Move<VkDebugUtilsMessengerEXT>())
 #else
 	, m_driver		(new InstanceDriverSC(context.getPlatformInterface(), *m_instance, context.getTestContext().getCommandLine(), context.getResourceInterface()))
 #endif // CTS_USES_VULKANSC
@@ -158,7 +158,7 @@ void CustomInstance::swap (CustomInstance& other)
 	Move<VkInstance> aux = m_instance; m_instance = other.m_instance; other.m_instance = aux;
 	m_driver.swap(other.m_driver);
 #ifndef CTS_USES_VULKANSC
-	Move<VkDebugReportCallbackEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
+	Move<VkDebugUtilsMessengerEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
 #endif // CTS_USES_VULKANSC
 }
 
@@ -208,7 +208,7 @@ UncheckedInstance::UncheckedInstance(Context& context, vk::VkInstance instance, 
 	, m_instance	(instance)
 #ifndef CTS_USES_VULKANSC
 	, m_driver((m_instance != DE_NULL) ? new InstanceDriver(context.getPlatformInterface(), m_instance) : nullptr)
-	, m_callback	((m_driver && m_recorder) ? m_recorder->createCallback(*m_driver, m_instance) : Move<VkDebugReportCallbackEXT>())
+	, m_callback	((m_driver && m_recorder) ? m_recorder->createCallback(*m_driver, m_instance) : Move<VkDebugUtilsMessengerEXT>())
 #else
 	, m_driver((m_instance != DE_NULL) ? new InstanceDriverSC(context.getPlatformInterface(), m_instance, context.getTestContext().getCommandLine(), context.getResourceInterface()) : nullptr)
 #endif // CTS_USES_VULKANSC
@@ -225,7 +225,7 @@ UncheckedInstance::~UncheckedInstance ()
 	if (m_instance != DE_NULL)
 	{
 #ifndef CTS_USES_VULKANSC
-		m_callback = vk::Move<vk::VkDebugReportCallbackEXT>();
+		m_callback = vk::Move<vk::VkDebugUtilsMessengerEXT>();
 		m_recorder.reset(nullptr);
 #endif // CTS_USES_VULKANSC
 		m_driver->destroyInstance(m_instance, m_allocator);
@@ -242,7 +242,7 @@ void UncheckedInstance::swap (UncheckedInstance& other)
 	vk::VkInstance aux = m_instance; m_instance = other.m_instance; other.m_instance = aux;
 	m_driver.swap(other.m_driver);
 #ifndef CTS_USES_VULKANSC
-	Move<VkDebugReportCallbackEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
+	Move<VkDebugUtilsMessengerEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
 #endif // CTS_USES_VULKANSC
 }
 
@@ -387,7 +387,7 @@ CustomInstance createCustomInstanceFromInfo (Context& context, const vk::VkInsta
 	const vk::PlatformInterface&			vkp						= context.getPlatformInterface();
 #ifndef CTS_USES_VULKANSC
 	std::unique_ptr<DebugReportRecorder>	recorder;
-	VkDebugReportCallbackCreateInfoEXT		callbackInfo;
+	VkDebugUtilsMessengerCreateInfoEXT		callbackInfo;
 #endif // CTS_USES_VULKANSC
 
 	if (validationEnabled && allowLayers)
@@ -466,7 +466,7 @@ vk::VkResult createUncheckedInstance (Context& context, const vk::VkInstanceCrea
 
 #ifndef CTS_USES_VULKANSC
 		recorder.reset(new DebugReportRecorder(printValidationErrors));
-		// No need to add VkDebugReportCallbackCreateInfoEXT to VkInstanceCreateInfo since we
+		// No need to add VkDebugUtilsMessengerCreateInfoEXT to VkInstanceCreateInfo since we
 		// don't want to check for errors at instance creation. This is intended since we use
 		// UncheckedInstance to try to create invalid instances for driver stability
 #endif // CTS_USES_VULKANSC

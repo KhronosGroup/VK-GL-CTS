@@ -75,7 +75,7 @@ private:
 	vk::Move<vk::VkInstance>					m_instance;
 #ifndef CTS_USES_VULKANSC
 	std::unique_ptr<vk::InstanceDriver>			m_driver;
-	vk::Move<vk::VkDebugReportCallbackEXT>		m_callback;
+	vk::Move<vk::VkDebugUtilsMessengerEXT>		m_callback;
 #else
 	std::unique_ptr<vk::InstanceDriverSC>		m_driver;
 #endif // CTS_USES_VULKANSC
@@ -108,7 +108,7 @@ private:
 	vk::VkInstance								m_instance;
 #ifndef CTS_USES_VULKANSC
 	std::unique_ptr<vk::InstanceDriver>			m_driver;
-	vk::Move<vk::VkDebugReportCallbackEXT>		m_callback;
+	vk::Move<vk::VkDebugUtilsMessengerEXT>		m_callback;
 #else
 	std::unique_ptr<vk::InstanceDriverSC>		m_driver;
 #endif // CTS_USES_VULKANSC
