@@ -78,7 +78,10 @@ enum class TestType
 	SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS,
 
 	// Use EXT_descriptor_buffer if available
-	SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS_DESCRIPTOR_BUFFER
+	SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS_DESCRIPTOR_BUFFER,
+
+	// Test that blend state is using unmapped indexes
+	MAPPING_NOT_AFFECTING_BLEND_STATE
 };
 
 // During test creation we dont know what is the maximal number of input attachments.
@@ -825,7 +828,7 @@ tcu::TestStatus SampledImageLocalReadTestInstance::iterate()
 																	   0, 0, &vertexInputState, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL,
 																	   &renderingCreateInfo, (useDescriptorBuffer ? VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT : 0));
 	Move<VkCommandPool>		commandPool			= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
-	Move<VkCommandBuffer>	commandBuffer		= allocateCommandBuffer(vk, device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	Move<VkCommandBuffer>	commandBuffer		= allocateCommandBuffer(vk, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	VkCommandBuffer			cmdBuffer			= *commandBuffer;
 
 	VkRenderingInfo renderingInfo = initVulkanStructure();
@@ -882,6 +885,237 @@ tcu::TestStatus SampledImageLocalReadTestInstance::iterate()
 	}
 
 	return tcu::TestStatus::pass("Pass");
+}
+
+class MappingWithBlendStateTestInstance : public vkt::TestInstance
+{
+public:
+	MappingWithBlendStateTestInstance	(Context&			context,
+										 const TestType		testType);
+protected:
+	tcu::TestStatus		iterate			(void) override;
+
+private:
+	const deUint32 m_renderSize;
+};
+
+MappingWithBlendStateTestInstance::MappingWithBlendStateTestInstance(Context& context, const TestType testType)
+	: vkt::TestInstance		(context)
+	, m_renderSize			(16)
+{
+	DE_UNREF(testType);
+}
+
+tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
+{
+	const DeviceInterface&			vk						= m_context.getDeviceInterface();
+	const VkDevice					device					= m_context.getDevice();
+	Allocator&						memAlloc				= m_context.getDefaultAllocator();
+	VkQueue							queue					= m_context.getUniversalQueue();
+	const deUint32					queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkFormat					imageFormat				= VK_FORMAT_R8G8B8A8_UNORM;
+	const tcu::TextureFormat		textureFormat			= mapVkFormat(imageFormat);
+	const deUint32					colorAttachmentCount	= 4u;
+
+	const VkImageSubresourceRange	colorSRR				= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const VkImageSubresourceLayers	colorSL					= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const VkBufferImageCopy			copyRegion				= makeBufferImageCopy({ m_renderSize, m_renderSize, 1u }, colorSL);
+
+	Move<VkCommandPool>				commandPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+	Move<VkCommandBuffer>			commandBuffer			= allocateCommandBuffer(vk, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	VkCommandBuffer					cmdBuffer				= *commandBuffer;
+
+	const std::vector<VkViewport>	viewports				{ makeViewport(m_renderSize, m_renderSize) };
+	const std::vector<VkRect2D>		scissors				{ makeRect2D(m_renderSize, m_renderSize) };
+
+	const tcu::Vec4 clearValues[]	// blend src color
+	{
+		{ 0.5f, 0.5f, 0.4f, 1.0f },
+		{ 0.2f, 0.4f, 0.3f, 0.1f },
+		{ 0.2f, 1.0f, 0.5f, 0.8f },
+		{ 1.0f, 0.1f, 0.3f, 0.5f },
+	};
+	DE_ASSERT(DE_LENGTH_OF_ARRAY(clearValues) == colorAttachmentCount);
+
+	const VkPipelineColorBlendAttachmentState colorBlendAttachmentStates[]
+	{
+		{ 1, VK_BLEND_FACTOR_SRC_ALPHA,				VK_BLEND_FACTOR_DST_ALPHA,				VK_BLEND_OP_ADD,		VK_BLEND_FACTOR_SRC_ALPHA,				VK_BLEND_FACTOR_DST_ALPHA, VK_BLEND_OP_MAX,		0xf },
+		{ 1, VK_BLEND_FACTOR_ONE,					VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,	VK_BLEND_OP_SUBTRACT,	VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,	VK_BLEND_FACTOR_DST_ALPHA, VK_BLEND_OP_ADD,		0xf },
+		{ 1, VK_BLEND_FACTOR_ONE,					VK_BLEND_FACTOR_ONE,					VK_BLEND_OP_MIN,		VK_BLEND_FACTOR_SRC_ALPHA,				VK_BLEND_FACTOR_DST_ALPHA, VK_BLEND_OP_MAX,		0xf },
+		{ 1, VK_BLEND_FACTOR_SRC_COLOR,				VK_BLEND_FACTOR_DST_COLOR,				VK_BLEND_OP_MAX,		VK_BLEND_FACTOR_SRC_ALPHA,				VK_BLEND_FACTOR_DST_ALPHA, VK_BLEND_OP_MIN,		0xf },
+	};
+	DE_ASSERT(DE_LENGTH_OF_ARRAY(colorBlendAttachmentStates) == colorAttachmentCount);
+
+	const deUint32 colorAttachmentLocations[]{ 3, 0, 2, 1 };
+	DE_ASSERT(DE_LENGTH_OF_ARRAY(colorAttachmentLocations) == colorAttachmentCount);
+
+	VkRenderingAttachmentInfo colorAttachment
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,				// VkStructureType			sType;
+		DE_NULL,													// const void*				pNext;
+		DE_NULL,													// VkImageView				imageView;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,					// VkImageLayout			imageLayout;
+		VK_RESOLVE_MODE_NONE,										// VkResolveModeFlagBits	resolveMode;
+		DE_NULL,													// VkImageView				resolveImageView;
+		VK_IMAGE_LAYOUT_UNDEFINED,									// VkImageLayout			resolveImageLayout;
+		VK_ATTACHMENT_LOAD_OP_CLEAR,								// VkAttachmentLoadOp		loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,								// VkAttachmentStoreOp		storeOp;
+		makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f))		// VkClearValue				clearValue;
+	};
+	VkImageMemoryBarrier		imageMemoryBarrier	= makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																			 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																			 DE_NULL, colorSRR);
+	const VkDeviceSize			outputBufferSize	= (VkDeviceSize)m_renderSize * m_renderSize * tcu::getPixelSize(textureFormat);
+	const VkBufferCreateInfo	outputBufferInfo	= makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+	// construct required containers
+	std::vector<ImageWithMemorySp>			images					(colorAttachmentCount, ImageWithMemorySp());
+	std::vector<VkImageViewSp>				imageViews				(colorAttachmentCount, VkImageViewSp());
+	std::vector<VkFormat>					colorImageFormats		(colorAttachmentCount, imageFormat);
+	std::vector<VkRenderingAttachmentInfo>	colorAttachments		(colorAttachmentCount, colorAttachment);
+	std::vector<VkImageMemoryBarrier>		colorImageBarriers		(colorAttachmentCount, imageMemoryBarrier);
+	std::vector <BufferWithMemorySp>		outputBuffers			(colorAttachmentCount, BufferWithMemorySp());
+
+	for (deUint32 i = 0; i < colorAttachmentCount; ++i)
+	{
+		// create images and image views for input attachments
+		images[i]			= createImage(m_context, m_renderSize, imageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+		imageViews[i]		= VkImageViewSp(new vk::Move<VkImageView>(makeImageView(vk, device, **images[i], VK_IMAGE_VIEW_TYPE_2D, imageFormat, colorSRR)));
+
+		colorAttachments[i].imageView	= **imageViews[i];
+		colorAttachments[i].clearValue	= makeClearValueColor(clearValues[i]);
+		colorImageBarriers[i].image		= **images[i];
+
+		// create output buffers that will be used to get attachments data
+		outputBuffers[i]	= BufferWithMemorySp(new BufferWithMemory(vk, device, memAlloc, outputBufferInfo, MemoryRequirement::HostVisible));
+	}
+
+	Move<VkPipelineLayout>	pipelineLayout		= makePipelineLayout(vk, device, DE_NULL);
+	Move<VkShaderModule>	vertShaderModule	= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
+	Move<VkShaderModule>	fragShaderModule	= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0);
+
+	// define empty VertexInputState, full screen quad will be generated in vertex shader
+	const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+	// define ColorBlendState so that we can write to multiple color attachments
+	VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
+	colorBlendStateCreateInfo.attachmentCount	= colorAttachmentCount;
+	colorBlendStateCreateInfo.pAttachments		= colorBlendAttachmentStates;
+
+	VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocations
+	{
+		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR,
+		DE_NULL,
+		colorAttachmentCount,
+		colorAttachmentLocations
+	};
+	VkPipelineRenderingCreateInfo renderingCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		&renderingAttachmentLocations,
+		0u,
+		colorAttachmentCount,
+		colorImageFormats.data(),
+		VK_FORMAT_UNDEFINED,
+		VK_FORMAT_UNDEFINED
+	};
+
+	Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(vk, device, *pipelineLayout, *vertShaderModule, DE_NULL, DE_NULL, DE_NULL,
+															 *fragShaderModule, DE_NULL, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+															 0, 0, &vertexInputState, DE_NULL, DE_NULL, DE_NULL, &colorBlendStateCreateInfo, DE_NULL,
+															 &renderingCreateInfo);
+
+	VkRenderingInfo renderingInfo
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INFO,
+		DE_NULL,
+		0u,											// VkRenderingFlags						flags
+		scissors[0],								// VkRect2D								renderArea
+		1u,											// deUint32								layerCount
+		0u,											// deUint32								viewMask
+		colorAttachmentCount,						// deUint32								colorAttachmentCount
+		colorAttachments.data(),					// const VkRenderingAttachmentInfo*		pColorAttachments
+		DE_NULL,									// const VkRenderingAttachmentInfo*		pDepthAttachment
+		DE_NULL										// const VkRenderingAttachmentInfo*		pStencilAttachment
+	};
+
+	// record primary command buffer
+	beginCommandBuffer(vk, cmdBuffer);
+
+	// transfer layout to color attachment optimal
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, 0u, 0u, 0u, colorAttachmentCount, colorImageBarriers.data());
+
+	vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
+
+	// remaping should affect to which attachments shader writes but not blend state
+	vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocations);
+
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
+	vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+
+	vk.cmdEndRendering(cmdBuffer);
+
+	// transition colorbuffers layout to transfer source optimal
+	for (deUint32 i = 0; i < colorAttachmentCount; ++i)
+	{
+		colorImageBarriers[i].srcAccessMask	= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		colorImageBarriers[i].dstAccessMask	= VK_ACCESS_TRANSFER_READ_BIT;
+		colorImageBarriers[i].oldLayout		= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		colorImageBarriers[i].newLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	}
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, 0u, 0u, 0u, colorAttachmentCount, colorImageBarriers.data());
+
+	// read back color images
+	for (deUint32 i = 0; i < colorAttachmentCount; ++i)
+		vk.cmdCopyImageToBuffer(cmdBuffer, **images[i], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **outputBuffers[i], 1u, &copyRegion);
+
+	endCommandBuffer(vk, cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+
+	const tcu::Vec4 expectedLeftSideColors[]
+	{
+		{ 0.50f, 0.98f, 0.72f, 1.00f },
+		{ 0.42f, 0.44f, 0.63f, 0.17f },
+		{ 0.10f, 0.30f, 0.50f, 0.80f },
+		{ 1.00f, 0.40f, 0.30f, 0.50f },
+	};
+	DE_ASSERT(DE_LENGTH_OF_ARRAY(expectedLeftSideColors) == colorAttachmentCount);
+
+	bool				testPassed		(true);
+	const tcu::Vec4		colorPrecision	(0.05f);
+	auto&				log				(m_context.getTestContext().getLog());
+
+	// verify result
+	for (deUint32 i = 0; i < colorAttachmentCount; ++i)
+	{
+		bool	colorIsCorrect	= true;
+		auto&	allocation		= outputBuffers[i]->getAllocation();
+		invalidateAlloc(vk, device, allocation);
+
+		tcu::ConstPixelBufferAccess outputAccess(textureFormat, m_renderSize, m_renderSize, 1u, allocation.getHostPtr());
+
+		// check one fragment from the left side of image (after blending)
+		tcu::Vec4 fragmentColorOnLeftSide = outputAccess.getPixel(i, i, 0);
+		if (tcu::boolAny(tcu::greaterThan(tcu::absDiff(fragmentColorOnLeftSide, expectedLeftSideColors[i]), colorPrecision)))
+			colorIsCorrect = false;
+
+		// check one fragment from the right side of image (clear color should be there)
+		tcu::Vec4 fragmentColorOnRightSide(outputAccess.getPixel(m_renderSize - 1 - i, m_renderSize - 1 - i, 0));
+		if (tcu::boolAny(tcu::greaterThan(tcu::absDiff(fragmentColorOnRightSide, clearValues[i]), colorPrecision)))
+			colorIsCorrect = false;
+
+		if (!colorIsCorrect)
+		{
+			std::string imageName = std::string("Attachment") + std::to_string(i);
+			log << tcu::TestLog::Image(imageName, imageName, outputAccess);
+			testPassed = false;
+		}
+	}
+
+	if (testPassed)
+		return tcu::TestStatus::pass("Pass");
+
+	return tcu::TestStatus::fail("Fail");
 }
 
 class LocalReadTestCase : public vkt::TestCase
@@ -1177,6 +1411,25 @@ void LocalReadTestCase::initPrograms (SourceCollections& programCollection) cons
 			"}\n");
 		glslSources.add("frag") << glu::FragmentSource(fragSrc);
 	}
+
+	if (m_testType == TestType::MAPPING_NOT_AFFECTING_BLEND_STATE)
+	{
+		std::string fragSrc(
+			"#version 450\n"
+			"layout(location = 0) out vec4 outColor0;\n"
+			"layout(location = 1) out vec4 outColor1;\n"
+			"layout(location = 2) out vec4 outColor2;\n"
+			"layout(location = 3) out vec4 outColor3;\n"
+			"void main()\n{\n"
+			"  if (gl_FragCoord.x > 8.0)\n"
+			"    discard;\n"
+			"  outColor0 = vec4(0.6, 0.8, 0.9, 0.2);\n"		// used for attachment 1
+			"  outColor1 = vec4(0.6, 0.4, 0.2, 0.6);\n"		// used for attachment 3
+			"  outColor2 = vec4(0.1, 0.3, 0.6, 0.2);\n"		// used for attachment 2
+			"  outColor3 = vec4(0.0, 0.6, 0.4, 0.8);\n"		// used for attachment 0
+			"}\n");
+		glslSources.add("frag") << glu::FragmentSource(fragSrc);
+	}
 }
 
 TestInstance* LocalReadTestCase::createInstance (Context& context) const
@@ -1184,6 +1437,8 @@ TestInstance* LocalReadTestCase::createInstance (Context& context) const
 	if ((m_testType == TestType::SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS) ||
 		(m_testType == TestType::SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS_DESCRIPTOR_BUFFER))
 		return new SampledImageLocalReadTestInstance(context, m_testType);
+	else if (m_testType == TestType::MAPPING_NOT_AFFECTING_BLEND_STATE)
+		return new MappingWithBlendStateTestInstance(context, m_testType);
 
 	return new BasicLocalReadTestInstance(context, m_testType);
 }
@@ -1207,6 +1462,7 @@ tcu::TestCaseGroup* createDynamicRenderingLocalReadTests(tcu::TestContext& testC
 		{ "depth_mapping_stencil_not",								TestType::DEPTH_MAPPING_STENCIL_NOT },
 		{ "sampled_images_as_input_attachments",					TestType::SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS },
 		{ "sampled_images_as_input_attachments_descriptor_buffer",	TestType::SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS_DESCRIPTOR_BUFFER },
+		{ "mapping_not_affecting_blend_state",						TestType::MAPPING_NOT_AFFECTING_BLEND_STATE },
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> mainGroup (new tcu::TestCaseGroup(testCtx, "local_read", "Test dynamic rendering local read"));
