@@ -835,6 +835,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	const VkComponentMapping				componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 	bool									depthIsUndefined		= false;
+	bool									stencilIsUndefined		= false;
 
 	std::vector<Move<VkImage>>				attachmentImages;
 	std::vector<de::MovePtr<Allocation>>	attachmentImageAllocs;
@@ -855,11 +856,13 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			aspectFlags = getImageAspectFlags(mapVkFormat(format));
 			usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-			// If depth load op is NONE and the depth buffer is not initialized in the render pass
-			// then its contents during the render pass are undefined and we need to be careful
-			// when programming the depth test.
-			if (att.loadOp == VK_ATTACHMENT_LOAD_OP_NONE_EXT && !(att.init & ATTACHMENT_INIT_CMD_CLEAR))
+			// If depth or stencil load op is NONE, "the previous contents of the image will be undefined inside the render pass. No
+			// access type is used as the image is not accessed."
+			if (att.loadOp == VK_ATTACHMENT_LOAD_OP_NONE_EXT)
 				depthIsUndefined = true;
+
+			if (att.stencilLoadOp == VK_ATTACHMENT_LOAD_OP_NONE_EXT)
+				stencilIsUndefined = true;
 		}
 		else
 		{
@@ -1015,6 +1018,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 		bool		multisample			= false;
 		bool		uintColorBuffer		= false;
 		VkCompareOp	depthCompareOp		= VK_COMPARE_OP_GREATER;
+		VkCompareOp	stencilCompareOp	= VK_COMPARE_OP_GREATER;
 
 		// Create pipeline layout.
 		{
@@ -1059,6 +1063,9 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 						stencilTest = true;
 					if (ref.usage & ATTACHMENT_USAGE_STENCIL_WRITE_OFF)
 						stencilWrite = false;
+
+					if (stencilIsUndefined && stencilTest)
+						stencilCompareOp = VK_COMPARE_OP_ALWAYS;
 				}
 				if (ref.usage & ATTACHMENT_USAGE_MULTISAMPLE)
 				{
@@ -1210,7 +1217,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 				VK_STENCIL_OP_KEEP,											// VkStencilOp	failOp
 				stencilWrite ? VK_STENCIL_OP_REPLACE : VK_STENCIL_OP_KEEP,	// VkStencilOp	passOp
 				VK_STENCIL_OP_KEEP,											// VkStencilOp	depthFailOp
-				VK_COMPARE_OP_GREATER,										// VkCompareOp	compareOp
+				stencilCompareOp,											// VkCompareOp	compareOp
 				0xff,														// deUint32		compareMask
 				0xff,														// deUint32		writeMask
 				0xff														// deUint32		reference
