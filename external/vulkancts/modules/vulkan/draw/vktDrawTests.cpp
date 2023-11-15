@@ -54,6 +54,7 @@
 #include "vktDrawAhbExternalFormatResolveTests.hpp"
 #include "vktDrawMultiExtTests.hpp"
 #endif // CTS_USES_VULKANSC
+#include "vktDrawPointClampTests.hpp"
 
 namespace vkt
 {
@@ -127,6 +128,9 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 			false,			// bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
 			false,			// bool nestedSecondaryCmdBuffer;
 		}));
+
+	renderpassGroup->addChild(createDrawPointClampTests(testCtx));
+
 	mainGroup->addChild(renderpassGroup.release());
 
 #ifndef CTS_USES_VULKANSC

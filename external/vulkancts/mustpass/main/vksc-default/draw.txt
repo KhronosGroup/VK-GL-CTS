@@ -1570,3 +1570,4 @@ dEQP-VKSC.draw.renderpass.multiple_clears_within_render_pass.clear_clear_c_r8g8b
 dEQP-VKSC.draw.renderpass.implicit_sample_shading.sample_decoration_dynamic_use
 dEQP-VKSC.draw.renderpass.implicit_sample_shading.sample_id_static_use
 dEQP-VKSC.draw.renderpass.implicit_sample_shading.sample_position_static_use
+dEQP-VKSC.draw.renderpass.point_size_clamp.point_size_clamp_max

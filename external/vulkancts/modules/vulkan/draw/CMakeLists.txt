@@ -58,6 +58,8 @@ set(DEQP_VK_VKSC_DRAW_SRCS
 	vktDrawMultipleClearsWithinRenderPass.hpp
 	vktDrawSampleAttributeTests.cpp
 	vktDrawSampleAttributeTests.hpp
+	vktDrawPointClampTests.cpp
+	vktDrawPointClampTests.hpp
 )
 
 set(DEQP_VK_DRAW_SRCS
