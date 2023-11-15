@@ -3228,10 +3228,10 @@ tcu::TestStatus testBufferQueriesMaintenance5(Context& context, vk::VkExternalMe
 		vk::VkExternalBufferProperties properties1 = vk::initVulkanStructure();
 		vki.getPhysicalDeviceExternalBufferProperties(physicalDevice, &info, &properties1);
 
-		vk::VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = vk::initVulkanStructure();
-		pipelineFlags2CreateInfo.flags = (vk::VkPipelineCreateFlagBits2KHR)usageFlag;
+		vk::VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2CreateInfo = vk::initVulkanStructure();
+		bufferUsageFlags2CreateInfo.usage = (vk::VkBufferUsageFlags2KHR)usageFlag;
 		vk::VkExternalBufferProperties properties2 = vk::initVulkanStructure();
-		info.pNext = &pipelineFlags2CreateInfo;
+		info.pNext = &bufferUsageFlags2CreateInfo;
 		info.usage = 0;
 		vki.getPhysicalDeviceExternalBufferProperties(physicalDevice, &info, &properties2);
 
