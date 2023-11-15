@@ -787,6 +787,15 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	enabledFeatures.sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	enabledFeatures.pNext					= &multiviewFeatures;
 
+#ifndef CTS_USES_VULKANSC
+	VkPhysicalDeviceNestedCommandBufferFeaturesEXT nestedCommandBufferFeatures = vk::initVulkanStructure();
+	if (m_parameters.viewIndex == TEST_TYPE_NESTED_CMD_BUFFER)
+	{
+		nestedCommandBufferFeatures.pNext = enabledFeatures.pNext;
+		enabledFeatures.pNext = &nestedCommandBufferFeatures;
+	}
+#endif
+
 	instanceDriver.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
 
 	if (!multiviewFeatures.multiview)
@@ -840,6 +849,9 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 
 		if (m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
 			deviceExtensions.push_back("VK_EXT_depth_range_unrestricted");
+
+		if (m_parameters.viewIndex == TEST_TYPE_NESTED_CMD_BUFFER)
+			deviceExtensions.push_back("VK_EXT_nested_command_buffer");
 
 		void* pNext												= &enabledFeatures;
 #ifdef CTS_USES_VULKANSC
@@ -4494,6 +4506,8 @@ private:
 			context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted");
 		if (m_parameters.viewIndex == TEST_TYPE_QUERIES)
 			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_OCCLUSION_QUERY_PRECISE);
+		if (m_parameters.viewIndex == TEST_TYPE_NESTED_CMD_BUFFER)
+			context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
 
 #ifdef CTS_USES_VULKANSC
 		const InstanceInterface&			instance			= context.getInstanceInterface();
