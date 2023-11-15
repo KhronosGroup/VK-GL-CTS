@@ -155,7 +155,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 		queueRequirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
 		queueRequirements.push_back(QueueRequirements(VK_QUEUE_COMPUTE_BIT, 1u));
 
-		createDeviceSupportingQueues(queueRequirements);
+		createDeviceSupportingQueues(queueRequirements, false, m_format == VK_FORMAT_A8_UNORM_KHR);
 	}
 
 	const VkPhysicalDevice		physicalDevice	= getPhysicalDevice();
