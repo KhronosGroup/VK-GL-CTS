@@ -160,40 +160,19 @@
 #endif
 
 /* Sized data types. */
-typedef signed char			deInt8;
-typedef signed short		deInt16;
-typedef signed int			deInt32;
-typedef unsigned char		deUint8;
-typedef unsigned short		deUint16;
-typedef unsigned int		deUint32;
-
-#if (DE_COMPILER == DE_COMPILER_MSC)
-	typedef signed __int64		deInt64;
-	typedef unsigned __int64	deUint64;
-
-#	if (DE_OS == DE_OS_WINCE)
-#		include <basetsd.h>
-		typedef INT_PTR			deIntptr;
-		typedef UINT_PTR		deUintptr;
-#	elif (DE_OS == DE_OS_WIN32)
-#		include <crtdefs.h>
-		typedef intptr_t		deIntptr;
-		typedef uintptr_t		deUintptr;
-#	else
-#		error Define intptr types.
-#	endif
-
-#elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
-	/* \note stddef.h is needed for size_t definition. */
-#	include <stddef.h>
-#	include <stdint.h>
-	typedef int64_t				deInt64;
-	typedef uint64_t			deUint64;
-	typedef intptr_t			deIntptr;
-	typedef uintptr_t			deUintptr;
-#else
-#	error Define 64-bit and intptr types.
-#endif
+/* \note stddef.h is needed for size_t definition. */
+#include <stddef.h>
+#include <stdint.h>
+typedef int8_t				deInt8;
+typedef uint8_t				deUint8;
+typedef int16_t				deInt16;
+typedef uint16_t			deUint16;
+typedef int32_t				deInt32;
+typedef uint32_t			deUint32;
+typedef int64_t				deInt64;
+typedef uint64_t			deUint64;
+typedef intptr_t			deIntptr;
+typedef uintptr_t			deUintptr;
 
 /** Boolean type. */
 typedef int deBool;
@@ -228,13 +207,6 @@ typedef void (*deFunctionPtr) (void);
 #	endif
 #endif
 
-/* Debug code macro. */
-#if defined(DE_DEBUG)
-#	define DE_DEBUG_CODE(X) X
-#else
-#	define DE_DEBUG_CODE(X)
-#endif
-
 /* Inline. */
 #if (DE_COMPILER == DE_COMPILER_MSC)
 #	define DE_INLINE __forceinline
@@ -256,6 +228,9 @@ typedef void (*deFunctionPtr) (void);
 
 /** Length of array. C++ version does compile time check that passed value is an array reference. */
 #if defined(__cplusplus) && (DE_COMPILER == DE_COMPILER_MSC)
+	// deArraySizeHelper is a function that receives a reference to an array of N elements of type T and returns a reference to an
+	// array of N chars. This forces the compiler to check the argument is an actual array and not some other type implementing
+	// operator[]. The actual function is never defined anywhere, but taking the sizeof() of the result is allowed and equal to N.
 	template <typename T, size_t N> char (&deArraySizeHelper(T (&array)[N]))[N];
 #	define DE_LENGTH_OF_ARRAY(ARRAY) ((int)(sizeof(deArraySizeHelper(ARRAY))))
 #else
@@ -278,14 +253,14 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 
 /* Assertion macro. */
 #if defined(DE_DEBUG) && !defined(DE_COVERAGE_BUILD)
-#	define DE_ASSERT(X) do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
+#	define DE_ASSERT(X) do { if (!(X)) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
 #else
 #	define DE_ASSERT(X) /*@ -noeffect*/ ((void)0)	/*!< Assertion macro. */
 #endif
 
 /* Verify macro. Behaves like assert in debug build, but executes statement in release build. */
 #if defined(DE_DEBUG)
-#	define DE_VERIFY(X) do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
+#	define DE_VERIFY(X) do { if (!(X)) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
 #else
 #	define DE_VERIFY(X) X
 #endif
@@ -298,21 +273,19 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 #endif
 
 /** Test assert macro for use in testers (same as DE_ASSERT, but always enabled). */
-#define DE_TEST_ASSERT(X) do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
+#define DE_TEST_ASSERT(X) do { if (!(X)) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
 
 #if (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
 	/* GCC 4.8 and newer warns about unused typedefs. */
-#	define DE_UNUSED_TYPEDEF_ATTR __attribute__((unused))
+#	define DE_UNUSED_ATTR __attribute__((unused))
 #else
-#	define DE_UNUSED_TYPEDEF_ATTR
+#	define DE_UNUSED_ATTR
 #endif
 
 /** Compile-time assertion macro. */
-#define DE_STATIC_ASSERT(X)						typedef char DE_UNIQUE_NAME[(X) ? 1 : -1] DE_UNUSED_TYPEDEF_ATTR
-#define DE_HEADER_STATIC_ASSERT(HEADERTOKEN, X)	typedef char DE_HEADER_UNIQUE_NAME(HEADERTOKEN)[(X) ? 1 : -1] DE_UNUSED_TYPEDEF_ATTR
+#define DE_STATIC_ASSERT(X)						typedef char DE_UNIQUE_NAME[(X) ? 1 : -1] DE_UNUSED_ATTR
 
 #define DE_UNIQUE_NAME						DE_MAKE_NAME(__LINE__, hoax)
-#define DE_HEADER_UNIQUE_NAME(HEADERTOKEN)	DE_MAKE_NAME(__LINE__, HEADERTOKEN)
 #define DE_MAKE_NAME(line, token) DE_MAKE_NAME2(line, token)
 #define DE_MAKE_NAME2(line, token) _static_assert_##line##_##token
 
@@ -336,6 +309,9 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 
 /** Offset of a struct member. */
 #define DE_OFFSET_OF(STRUCT, MEMBER) ((deUint32)(deUintptr)(deUint8*)&(((STRUCT*)0)->MEMBER))
+
+/** Used in enum to easify declarations for struct serialization. Declares 'NAME'_OFFSET, 'NAME'_SIZE, and offsets counter for next enum value by SIZE. */
+#define DE_SERIALIZED_FIELD(NAME, SIZE) NAME ## _OFFSET, NAME ## _SIZE = (SIZE), _DE_TMP_ ## NAME = NAME ## _OFFSET + (SIZE) - 1
 
 /* Pointer size. */
 #if defined(DE_PTR_SIZE)

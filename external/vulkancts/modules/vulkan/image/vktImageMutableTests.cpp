@@ -914,7 +914,8 @@ VkImageUsageFlags getImageUsageForTestCase (const CaseDef& caseDef)
 		flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		break;
 	default:
-		DE_ASSERT("Invalid upload method");
+		// Invalid upload method
+		DE_ASSERT(false);
 		break;
 	}
 
@@ -930,7 +931,8 @@ VkImageUsageFlags getImageUsageForTestCase (const CaseDef& caseDef)
 		flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		break;
 	default:
-		DE_ASSERT("Invalid download method");
+		// Invalid download method
+		DE_ASSERT(false);
 		break;
 	}
 
@@ -1101,7 +1103,8 @@ void UploadDownloadExecutor::run(Context& context, VkBuffer buffer)
 		uploadCopy(context);
 		break;
 	default:
-		DE_ASSERT("Unsupported upload method");
+		// Unsupported upload method
+		DE_ASSERT(false);
 	}
 
 	switch (m_caseDef.download)
@@ -1116,7 +1119,8 @@ void UploadDownloadExecutor::run(Context& context, VkBuffer buffer)
 		downloadTexture(context, buffer);
 		break;
 	default:
-		DE_ASSERT("Unsupported download method");
+		// Unsupported download method
+		DE_ASSERT(false);
 	}
 
 	VK_CHECK(m_vk.endCommandBuffer(*m_cmdBuffer));
@@ -1692,7 +1696,8 @@ tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
 		break;
 	default:
-		DE_ASSERT("Invalid upload method");
+		// Invalid upload method
+		DE_ASSERT(false);
 		break;
 	}
 	switch (caseDef.download)
@@ -1707,7 +1712,8 @@ tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
 		break;
 	default:
-		DE_ASSERT("Invalid download method");
+		// Invalid download method
+		DE_ASSERT(false);
 		break;
 	}
 

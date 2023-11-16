@@ -20,12 +20,12 @@
 #
 #-------------------------------------------------------------------------
 
-import sys
-from argparse import ArgumentParser
-from common import getChangedFiles, getAllProjectFiles
-from check_include_guards import checkIncludeGuards
-from check_whitespace import checkWhitespace
-from check_license import checkLicense
+import	sys
+from	argparse				import	ArgumentParser
+from	common					import	getChangedFiles, getAllProjectFiles
+from	check_include_guards	import	checkIncludeGuards
+from	check_whitespace		import	checkWhitespace
+from	check_license			import	checkLicense
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -39,15 +39,18 @@ if __name__ == "__main__":
     else:
         files = getAllProjectFiles()
 
-    error = not all([
-        checkWhitespace(files),
-        checkIncludeGuards(files),
-        checkLicense(files),
-        #todo checkRedundantIncludeGuards(files),
-        ])
+	# filter out original Vulkan header sources
+	files = [f for f in files if "vulkancts/scripts/src" not in f.replace("\\", "/")]
 
-    if error:
-        print "One or more checks failed"
-        sys.exit(1)
-    if not args.onlyErrors:
-        print "All checks passed"
+	error = not all([
+		checkWhitespace(files),
+		checkIncludeGuards(files),
+		checkLicense(files),
+		#todo checkRedundantIncludeGuards(files),
+		])
+
+	if	error:
+		print("One or more checks failed")
+		sys.exit(1)
+	if	not	args.onlyErrors:
+		print("All checks passed")

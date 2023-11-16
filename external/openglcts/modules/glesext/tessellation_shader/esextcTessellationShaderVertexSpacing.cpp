@@ -822,7 +822,8 @@ TessellationShaderVertexSpacing::_tess_edges TessellationShaderVertexSpacing::ge
 
 				default:
 				{
-					DE_ASSERT("Invalid edge index");
+					// Invalid edge index
+					DE_ASSERT(false);
 				}
 				} /* switch (n_edge_ptr) */
 			}

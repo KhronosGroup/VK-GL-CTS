@@ -404,7 +404,8 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 			resultBufferStride = sizeof(tcu::UVec4);
 			break;
 		default:
-			DE_ASSERT("Illegal data type");
+			// Illegal data type
+			DE_ASSERT(false);
 	}
 
 	const deUint32				resultBufferSize	= numInvocations * resultBufferStride;

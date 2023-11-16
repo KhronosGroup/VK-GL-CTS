@@ -4936,7 +4936,7 @@ const char* BufferBackedBlockInterfaceTestGroup::getGroupName (glu::Storage stor
 		case glu::STORAGE_UNIFORM:	return "uniform_block";
 		case glu::STORAGE_BUFFER:	return "shader_storage_block";
 		default:
-			DE_ASSERT("false");
+			DE_ASSERT(false);
 			return DE_NULL;
 	}
 }
@@ -4948,7 +4948,7 @@ const char* BufferBackedBlockInterfaceTestGroup::getGroupDescription (glu::Stora
 		case glu::STORAGE_UNIFORM:	return "Uniform block interface";
 		case glu::STORAGE_BUFFER:	return "Shader storage block interface";
 		default:
-			DE_ASSERT("false");
+			DE_ASSERT(false);
 			return DE_NULL;
 	}
 }

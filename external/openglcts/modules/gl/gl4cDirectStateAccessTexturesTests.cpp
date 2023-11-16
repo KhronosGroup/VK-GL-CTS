@@ -1557,7 +1557,8 @@ const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
 		case 3:
 			return s_fragment_shader_3D_idecl_lowp;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
@@ -1575,7 +1576,8 @@ const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
 			case 3:
 				return s_fragment_shader_3D_fdecl_lowp;
 			default:
-				DE_ASSERT("invalid texture dimension");
+				// invalid texture dimension
+				DE_ASSERT(false);
 				return DE_NULL;
 			}
 		}
@@ -1590,7 +1592,8 @@ const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
 			case 3:
 				return s_fragment_shader_3D_udecl_lowp;
 			default:
-				DE_ASSERT("invalid texture dimension");
+				// invalid texture dimension
+				DE_ASSERT(false);
 				return DE_NULL;
 			}
 		}
@@ -1607,7 +1610,8 @@ const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
 		case 3:
 			return s_fragment_shader_3D_idecl_mediump;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
@@ -1625,7 +1629,8 @@ const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
 			case 3:
 				return s_fragment_shader_3D_fdecl_mediump;
 			default:
-				DE_ASSERT("invalid texture dimension");
+				// invalid texture dimension
+				DE_ASSERT(false);
 				return DE_NULL;
 			}
 		}
@@ -1640,7 +1645,8 @@ const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
 			case 3:
 				return s_fragment_shader_3D_udecl_mediump;
 			default:
-				DE_ASSERT("invalid texture dimension");
+				// invalid texture dimension
+				DE_ASSERT(false);
 				return DE_NULL;
 			}
 		}
@@ -1657,7 +1663,8 @@ const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
 		case 3:
 			return s_fragment_shader_3D_idecl_highp;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
@@ -1673,7 +1680,8 @@ const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
 		case 3:
 			return s_fragment_shader_3D_udecl_highp;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
@@ -1687,7 +1695,8 @@ const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderDeclarat
 	case 3:
 		return s_fragment_shader_3D_fdecl_highp;
 	default:
-		DE_ASSERT("invalid texture dimension");
+		// invalid texture dimension
+		DE_ASSERT(false);
 		return DE_NULL;
 	}
 }
@@ -1710,7 +1719,8 @@ const glw::GLchar* StorageAndSubImageTest<T, S, N, D, I>::FragmentShaderTail()
 	case 3:
 		return s_fragment_shader_3D_tail;
 	default:
-		DE_ASSERT("invalid texture dimension");
+		// invalid texture dimension
+		DE_ASSERT(false);
 		return DE_NULL;
 	}
 }
@@ -1733,7 +1743,8 @@ glw::GLenum StorageAndSubImageTest<T, S, N, D, I>::TextureTarget()
 	case 3:
 		return GL_TEXTURE_3D;
 	default:
-		DE_ASSERT("invalid texture dimension");
+		// invalid texture dimension
+		DE_ASSERT(false);
 		return DE_NULL;
 	}
 }
@@ -1763,7 +1774,8 @@ bool StorageAndSubImageTest<T, S, N, D, I>::TextureStorage(glw::GLenum target, g
 			gl.texStorage3D(target, levels, internalformat, width, height, depth);
 			break;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 		}
 
 		/* TextureSubImage* (not TextureStorage*) is tested */
@@ -1784,7 +1796,8 @@ bool StorageAndSubImageTest<T, S, N, D, I>::TextureStorage(glw::GLenum target, g
 			gl.textureStorage3D(texture, levels, internalformat, width, height, depth);
 			break;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 		}
 
 		glw::GLenum error;
@@ -1831,7 +1844,8 @@ bool StorageAndSubImageTest<T, S, N, D, I>::TextureSubImage(glw::GLenum target, 
 			gl.textureSubImage3D(texture, level, 0, 0, 0, width, height, depth, format, type, data);
 			break;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 		}
 
 		glw::GLenum error;
@@ -1865,7 +1879,8 @@ bool StorageAndSubImageTest<T, S, N, D, I>::TextureSubImage(glw::GLenum target, 
 			gl.texSubImage3D(target, level, 0, 0, 0, width, height, depth, format, type, data);
 			break;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 		}
 
 		/* TextureStorage* (not TextureSubImage) is tested */
@@ -2851,7 +2866,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 		case 3:
 			return s_fragment_shader_ms_3D_idecl_lowp;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
@@ -2867,7 +2883,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 			case 3:
 				return s_fragment_shader_ms_3D_fdecl_lowp;
 			default:
-				DE_ASSERT("invalid texture dimension");
+				// invalid texture dimension
+				DE_ASSERT(false);
 				return DE_NULL;
 			}
 		}
@@ -2880,7 +2897,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 			case 3:
 				return s_fragment_shader_ms_3D_udecl_lowp;
 			default:
-				DE_ASSERT("invalid texture dimension");
+				// invalid texture dimension
+				DE_ASSERT(false);
 				return DE_NULL;
 			}
 		}
@@ -2895,7 +2913,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 		case 3:
 			return s_fragment_shader_ms_3D_idecl_mediump;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
@@ -2911,7 +2930,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 			case 3:
 				return s_fragment_shader_ms_3D_fdecl_mediump;
 			default:
-				DE_ASSERT("invalid texture dimension");
+				// invalid texture dimension
+				DE_ASSERT(false);
 				return DE_NULL;
 			}
 		}
@@ -2924,7 +2944,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 			case 3:
 				return s_fragment_shader_ms_3D_udecl_mediump;
 			default:
-				DE_ASSERT("invalid texture dimension");
+				// invalid texture dimension
+				DE_ASSERT(false);
 				return DE_NULL;
 			}
 		}
@@ -2939,7 +2960,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 		case 3:
 			return s_fragment_shader_ms_3D_idecl_highp;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
@@ -2953,7 +2975,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 		case 3:
 			return s_fragment_shader_ms_3D_udecl_highp;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
@@ -2967,12 +2990,14 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 		case 3:
 			return s_fragment_shader_ms_3D_fdecl_highp;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
 
-	DE_ASSERT("invalid type");
+	// invalid type
+	DE_ASSERT(false);
 	return DE_NULL;
 }
 
@@ -2992,7 +3017,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 		case 3:
 			return s_fragment_shader_aux_3D_idecl_lowp;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
@@ -3008,7 +3034,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 			case 3:
 				return s_fragment_shader_aux_3D_fdecl_lowp;
 			default:
-				DE_ASSERT("invalid texture dimension");
+				// invalid texture dimension
+				DE_ASSERT(false);
 				return DE_NULL;
 			}
 		}
@@ -3021,7 +3048,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 			case 3:
 				return s_fragment_shader_aux_3D_udecl_lowp;
 			default:
-				DE_ASSERT("invalid texture dimension");
+				// invalid texture dimension
+				DE_ASSERT(false);
 				return DE_NULL;
 			}
 		}
@@ -3036,7 +3064,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 		case 3:
 			return s_fragment_shader_aux_3D_idecl_mediump;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
@@ -3052,7 +3081,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 			case 3:
 				return s_fragment_shader_aux_3D_fdecl_mediump;
 			default:
-				DE_ASSERT("invalid texture dimension");
+				// invalid texture dimension
+				DE_ASSERT(false);
 				return DE_NULL;
 			}
 		}
@@ -3065,7 +3095,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 			case 3:
 				return s_fragment_shader_aux_3D_udecl_mediump;
 			default:
-				DE_ASSERT("invalid texture dimension");
+				// invalid texture dimension
+				DE_ASSERT(false);
 				return DE_NULL;
 			}
 		}
@@ -3080,7 +3111,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 		case 3:
 			return s_fragment_shader_aux_3D_idecl_highp;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
@@ -3094,7 +3126,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 		case 3:
 			return s_fragment_shader_aux_3D_udecl_highp;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
@@ -3108,12 +3141,14 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclaration
 		case 3:
 			return s_fragment_shader_aux_3D_fdecl_highp;
 		default:
-			DE_ASSERT("invalid texture dimension");
+			// invalid texture dimension
+			DE_ASSERT(false);
 			return DE_NULL;
 		}
 	}
 
-	DE_ASSERT("invalid type");
+	// invalid type
+	DE_ASSERT(false);
 	return DE_NULL;
 }
 
@@ -3131,7 +3166,8 @@ const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderTail()
 	case 3:
 		return s_fragment_shader_tail_3D;
 	default:
-		DE_ASSERT("invalid texture dimension");
+		// invalid texture dimension
+		DE_ASSERT(false);
 		return DE_NULL;
 	}
 }
@@ -3150,7 +3186,8 @@ glw::GLenum StorageMultisampleTest<T, S, N, D>::MultisampleTextureTarget()
 	case 3:
 		return GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
 	default:
-		DE_ASSERT("invalid texture dimension");
+		// invalid texture dimension
+		DE_ASSERT(false);
 		return DE_NULL;
 	}
 }
@@ -3169,7 +3206,8 @@ glw::GLenum StorageMultisampleTest<T, S, N, D>::InputTextureTarget()
 	case 3:
 		return GL_TEXTURE_2D_ARRAY;
 	default:
-		DE_ASSERT("invalid texture dimension");
+		// invalid texture dimension
+		DE_ASSERT(false);
 		return DE_NULL;
 	}
 }
@@ -3198,7 +3236,8 @@ void StorageMultisampleTest<T, S, N, D>::InputTextureImage(const glw::GLenum int
 		gl.texImage3D(InputTextureTarget(), 0, internal_format, width, height, depth, 0, format, type, data);
 		break;
 	default:
-		DE_ASSERT("invalid texture dimension");
+		// invalid texture dimension
+		DE_ASSERT(false);
 	}
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage has failed");
@@ -3341,7 +3380,8 @@ bool StorageMultisampleTest<T, S, N, D>::PrepareFramebufferMultisample(const glw
 									   TestReferenceDataHeight(), TestReferenceDataDepth(), false);
 		break;
 	default:
-		DE_ASSERT("invalid texture dimension");
+		// invalid texture dimension
+		DE_ASSERT(false);
 		return false;
 	}
 
@@ -3372,7 +3412,8 @@ bool StorageMultisampleTest<T, S, N, D>::PrepareFramebufferMultisample(const glw
 		}
 		break;
 	default:
-		DE_ASSERT("invalid texture dimension");
+		// invalid texture dimension
+		DE_ASSERT(false);
 		return false;
 	}
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferRenderbuffer call failed.");
@@ -3432,7 +3473,8 @@ void StorageMultisampleTest<T, S, N, D>::PrepareFramebufferAuxiliary(const glw::
 							TestReferenceDataDepth());
 		break;
 	default:
-		DE_ASSERT("invalid texture dimension");
+		// invalid texture dimension
+		DE_ASSERT(false);
 	}
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTextureStorage2D call failed.");
 
@@ -3454,7 +3496,8 @@ void StorageMultisampleTest<T, S, N, D>::PrepareFramebufferAuxiliary(const glw::
 		}
 		break;
 	default:
-		DE_ASSERT("invalid texture dimension");
+		// invalid texture dimension
+		DE_ASSERT(false);
 	}
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferRenderbuffer call failed.");
 
