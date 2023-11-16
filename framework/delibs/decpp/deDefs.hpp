@@ -29,6 +29,8 @@
 #	error "C++ is required"
 #endif
 
+#include <utility>
+
 namespace de
 {
 

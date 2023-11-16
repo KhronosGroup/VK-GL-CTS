@@ -20,7 +20,6 @@
  * \file
  * \brief Multiview tests.
  * Tests functionality provided by the three multiview extensions.
- * Note that this file is formatted using external/openglcts/.clang-format
  */ /*--------------------------------------------------------------------*/
 
 #include "es3fMultiviewTests.hpp"
