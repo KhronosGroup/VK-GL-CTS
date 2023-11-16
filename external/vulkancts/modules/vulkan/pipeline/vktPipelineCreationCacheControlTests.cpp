@@ -1118,8 +1118,6 @@ TestStatus testInstance(Context& context, const TestParams& testParameter)
 
 using namespace test_common;
 
-// Disable formatting on this next block for readability
-// clang-format off
 /*--------------------------------------------------------------------*//*!
  * \brief Duplicate single pipeline recreation with explicit caching
  *//*--------------------------------------------------------------------*/
@@ -1344,7 +1342,6 @@ static constexpr TestParams TEST_CASES[] =
 	DUPLICATE_BATCH_PIPELINES_NO_CACHE,
 	DUPLICATE_BATCH_PIPELINES_DERIVATIVE_INDEX
 };
-// clang-format on
 
 /*--------------------------------------------------------------------*//*!
  * \brief Variadic version of de::newMovePtr
