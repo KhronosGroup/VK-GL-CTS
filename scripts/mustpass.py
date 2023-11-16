@@ -69,9 +69,10 @@ class Filter:
 	TYPE_INCLUDE = 0
 	TYPE_EXCLUDE = 1
 
-	def __init__ (self, type, filename):
+	def __init__ (self, type, filenames):
 		self.type		= type
-		self.filename	= filename
+		self.filenames	= filenames
+		self.key		= ",".join(filenames)
 
 class TestRoot:
 	def __init__ (self):
@@ -121,20 +122,18 @@ def getCaseListFile (buildCfg, generator, module):
 	genCaseList(buildCfg, generator, module, "txt")
 	return getCaseListPath(buildCfg, module, "txt")
 
-def readPatternList (filename):
-	ptrns = []
+def readPatternList (filename, patternList):
 	with open(filename, 'rt') as f:
 		for line in f:
 			line = line.strip()
 			if len(line) > 0 and line[0] != '#':
-				ptrns.append(line)
-	return ptrns
+				patternList.append(line)
 
-def include (filename):
-	return Filter(Filter.TYPE_INCLUDE, filename)
+def include (*filenames):
+	return Filter(Filter.TYPE_INCLUDE, filenames)
 
-def exclude (filename):
-	return Filter(Filter.TYPE_EXCLUDE, filename)
+def exclude (*filenames):
+	return Filter(Filter.TYPE_EXCLUDE, filenames)
 
 def insertXMLHeaders (mustpass, doc):
 	if mustpass.project.copyright != None:
@@ -236,8 +235,10 @@ def readPatternSets (mustpass):
 	for package in mustpass.packages:
 		for cfg in package.configurations:
 			for filter in cfg.filters:
-				if not filter.filename in patternSets:
-					patternList = readPatternList(os.path.join(getSrcDir(mustpass), filter.filename))
+				if not filter.key in patternSets:
+					patternList = []
+					for filename in filter.filenames:
+						readPatternList(os.path.join(getSrcDir(mustpass), filename), patternList)
 					patternSet = PatternSet()
 					for pattern in patternList:
 						if pattern.find('*') == -1:
@@ -249,7 +250,7 @@ def readPatternSets (mustpass):
 						else:
 							# We use regex instead of fnmatch because it's faster
 							patternSet.wildcardPatternsDict[re.compile("^" + pattern.replace(".", r"\.").replace("*", ".*?") + "$")] = 0
-					patternSets[filter.filename] = patternSet
+					patternSets[filter.key] = patternSet
 	return patternSets
 
 def genMustpassFromLists (mustpass, moduleCaseListFiles):
@@ -299,7 +300,7 @@ def genMustpassFromLists (mustpass, moduleCaseListFiles):
 					for filter in config.filters:
 						if filter.type == Filter.TYPE_INCLUDE:
 							keep = False
-							patterns = patternSets[filter.filename].wildcardPatternsDict
+							patterns = patternSets[filter.key].wildcardPatternsDict
 							for pattern in patterns.keys():
 								keep = pattern.match(caseName)
 								if keep:
@@ -307,7 +308,7 @@ def genMustpassFromLists (mustpass, moduleCaseListFiles):
 									break
 
 							if not keep:
-								t = patternSets[filter.filename].namedPatternsTree
+								t = patternSets[filter.key].namedPatternsTree
 								if len(t.keys()) == 0:
 									continue
 								for part in caseParts:
@@ -318,11 +319,11 @@ def genMustpassFromLists (mustpass, moduleCaseListFiles):
 										break
 								keep = t == {}
 								if keep:
-									patternSets[filter.filename].namedPatternsDict[caseName] += 1
+									patternSets[filter.key].namedPatternsDict[caseName] += 1
 
 						# Do the excludes
 						if filter.type == Filter.TYPE_EXCLUDE:
-							patterns = patternSets[filter.filename].wildcardPatternsDict
+							patterns = patternSets[filter.key].wildcardPatternsDict
 							for pattern in patterns.keys():
 								discard = pattern.match(caseName)
 								if discard:
@@ -330,7 +331,7 @@ def genMustpassFromLists (mustpass, moduleCaseListFiles):
 									keep = False
 									break
 							if keep:
-								t = patternSets[filter.filename].namedPatternsTree
+								t = patternSets[filter.key].namedPatternsTree
 								if len(t.keys()) == 0:
 									continue
 								for part in caseParts:
@@ -340,7 +341,7 @@ def genMustpassFromLists (mustpass, moduleCaseListFiles):
 										t = None  # Not found
 										break
 								if t == {}:
-									patternSets[filter.filename].namedPatternsDict[caseName] += 1
+									patternSets[filter.key].namedPatternsDict[caseName] += 1
 									keep = False
 						if not keep:
 							break
@@ -367,13 +368,13 @@ def genMustpassFromLists (mustpass, moduleCaseListFiles):
 			# This check will help identifying typos and patterns becoming stale
 			for filter in config.filters:
 				if filter.type == Filter.TYPE_INCLUDE:
-					patternSet = patternSets[filter.filename]
+					patternSet = patternSets[filter.key]
 					for pattern, usage in patternSet.namedPatternsDict.items():
 						if usage == 0:
-							logging.error("Case %s in file %s for module %s was never used!" % (pattern, filter.filename, config.name))
+							die("Case %s in file %s for module %s was never used!" % (pattern, filter.key, config.name))
 					for pattern, usage in patternSet.wildcardPatternsDict.items():
 						if usage == 0:
-							logging.error("Pattern %s in file %s for module %s was never used!" % (pattern, filter.filename, config.name))
+							die("Pattern %s in file %s for module %s was never used!" % (pattern, filter.key, config.name))
 
 	# Generate XML
 	specXML = genSpecXML(mustpass)
