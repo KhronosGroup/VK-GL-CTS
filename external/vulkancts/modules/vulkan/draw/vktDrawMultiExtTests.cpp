@@ -368,6 +368,8 @@ void MultiDrawTest::checkSupport (Context& context) const
 {
 	context.requireDeviceFunctionality("VK_EXT_multi_draw");
 
+	context.requireDeviceFunctionality("VK_KHR_shader_draw_parameters");
+
 	if (m_params.useTessellation)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
 

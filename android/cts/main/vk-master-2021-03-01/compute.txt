@@ -1,3 +1,7 @@
+dEQP-VK.compute.basic.max_local_size_x
+dEQP-VK.compute.basic.max_local_size_y
+dEQP-VK.compute.basic.max_local_size_z
+dEQP-VK.compute.basic.write_ssbo_array
 dEQP-VK.compute.zero_initialize_workgroup_memory.max_workgroup_memory.1
 dEQP-VK.compute.zero_initialize_workgroup_memory.max_workgroup_memory.2
 dEQP-VK.compute.zero_initialize_workgroup_memory.max_workgroup_memory.4
@@ -4461,7 +4465,3 @@ dEQP-VK.compute.workgroup_memory_explicit_layout.size.65536
 dEQP-VK.compute.workgroup_memory_explicit_layout.copy_memory.basic
 dEQP-VK.compute.workgroup_memory_explicit_layout.copy_memory.two_invocations
 dEQP-VK.compute.workgroup_memory_explicit_layout.copy_memory.variable_pointers
-dEQP-VK.compute.basic.max_local_size_x
-dEQP-VK.compute.basic.max_local_size_y
-dEQP-VK.compute.basic.max_local_size_z
-dEQP-VK.compute.basic.write_ssbo_array

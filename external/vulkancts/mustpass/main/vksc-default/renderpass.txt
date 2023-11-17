@@ -1,3 +1,4 @@
+dEQP-VKSC.renderpass.multiple_subpasses_multiple_command_buffers.test
 dEQP-VKSC.renderpass.suballocation.simple.color
 dEQP-VKSC.renderpass.suballocation.simple.depth
 dEQP-VKSC.renderpass.suballocation.simple.stencil
@@ -8756,7 +8757,6 @@ dEQP-VKSC.renderpass.suballocation.unused_clear_attachments.colorused_colorused_
 dEQP-VKSC.renderpass.suballocation.unused_clear_attachments.colorused_colorused_colorunused_colorused_depthstencil_d32s8_used
 dEQP-VKSC.renderpass.suballocation.unused_clear_attachments.colorused_colorused_colorused_colorunused_depthstencil_d32s8_used
 dEQP-VKSC.renderpass.suballocation.unused_clear_attachments.colorused_colorused_colorused_colorused_depthstencil_d32s8_used
-dEQP-VKSC.renderpass.multiple_subpasses_multiple_command_buffers.test
 dEQP-VKSC.renderpass.dedicated_allocation.simple.color
 dEQP-VKSC.renderpass.dedicated_allocation.simple.depth
 dEQP-VKSC.renderpass.dedicated_allocation.simple.stencil
