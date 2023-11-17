@@ -1,2 +1,2 @@
-dEQP-GLES3.functional.*
 dEQP-GLES3.info.*
+dEQP-GLES3.functional.*
