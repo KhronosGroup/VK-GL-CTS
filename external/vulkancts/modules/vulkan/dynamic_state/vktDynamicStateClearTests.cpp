@@ -375,6 +375,29 @@ public:
 				extent,				// VkExtent3D				extent;
 			};
 			m_vk.cmdResolveImage(*m_cmdBuffer, m_image->object(), vk::VK_IMAGE_LAYOUT_GENERAL, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL, 1, &resolveRegion);
+
+			const vk::VkImageSubresourceRange subresourceRange =
+			{
+				vk::VK_IMAGE_ASPECT_COLOR_BIT,	//	VkImageAspectFlags	aspectMask;
+				0u,								//	uint32_t			baseMipLevel;
+				1u,								//	uint32_t			levelCount;
+				0u,								//	uint32_t			baseArrayLayer;
+				1u,								//	uint32_t			layerCount;
+			};
+			const vk::VkImageMemoryBarrier	imageBarrier =
+			{
+				vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,	// VkStructureType			sType;
+				DE_NULL,									// const void*				pNext;
+				vk::VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			srcAccessMask;
+				vk::VK_ACCESS_TRANSFER_READ_BIT,			// VkAccessFlags			dstAccessMask;
+				vk::VK_IMAGE_LAYOUT_GENERAL,				// VkImageLayout			oldLayout;
+				vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	// VkImageLayout			newLayout;
+				VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+				VK_QUEUE_FAMILY_IGNORED,					// deUint32					destQueueFamilyIndex;
+				m_image->object(),							// VkImage					image;
+				subresourceRange,							// VkImageSubresourceRange	subresourceRange;
+			};
+			m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
 		}
 	}
 
