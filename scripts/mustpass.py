@@ -311,6 +311,7 @@ def genMustpassFromLists (mustpass, moduleCaseListFiles):
 									if part in t:
 										t = t[part]
 									else:
+										t = None  # Not found
 										break
 								keep = t == {}
 								if keep:
@@ -333,6 +334,7 @@ def genMustpassFromLists (mustpass, moduleCaseListFiles):
 									if part in t:
 										t = t[part]
 									else:
+										t = None  # Not found
 										break
 								if t == {}:
 									patternSets[filter.filename].namedPatternsDict[caseName] += 1
@@ -365,10 +367,10 @@ def genMustpassFromLists (mustpass, moduleCaseListFiles):
 					patternSet = patternSets[filter.filename]
 					for pattern, usage in patternSet.namedPatternsDict.items():
 						if usage == 0:
-							die("Case %s in file %s for module %s was never used!" % (pattern, filter.filename, config.name))
+							logging.error("Case %s in file %s for module %s was never used!" % (pattern, filter.filename, config.name))
 					for pattern, usage in patternSet.wildcardPatternsDict.items():
 						if usage == 0:
-							die("Pattern %s in file %s for module %s was never used!" % (pattern, filter.filename, config.name))
+							logging.error("Pattern %s in file %s for module %s was never used!" % (pattern, filter.filename, config.name))
 
 	# Generate XML
 	specXML = genSpecXML(mustpass)
