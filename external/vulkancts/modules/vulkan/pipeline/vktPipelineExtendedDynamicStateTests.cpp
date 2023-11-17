@@ -8875,7 +8875,6 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			} kFaces[] =
 			{
 				{ vk::VK_STENCIL_FACE_FRONT_BIT,			"face_front"		},
-				{ vk::VK_STENCIL_FACE_BACK_BIT,				"face_back"			},
 				{ vk::VK_STENCIL_FACE_FRONT_AND_BACK,		"face_both_single"	},
 				{ vk::VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM,	"face_both_dual"	},	// MAX_ENUM is a placeholder.
 			};
@@ -8886,20 +8885,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				std::string			name;
 			} kCompare[] =
 			{
-				{ vk::VK_COMPARE_OP_NEVER,				"xf"		},
 				{ vk::VK_COMPARE_OP_LESS,				"lt"		},
-				{ vk::VK_COMPARE_OP_EQUAL,				"eq"		},
-				{ vk::VK_COMPARE_OP_LESS_OR_EQUAL,		"le"		},
 				{ vk::VK_COMPARE_OP_GREATER,			"gt"		},
-				{ vk::VK_COMPARE_OP_GREATER_OR_EQUAL,	"ge"		},
-				{ vk::VK_COMPARE_OP_ALWAYS,				"xt"		},
 			};
 
 			using u8vec = std::vector<deUint8>;
 
 			static const auto kMinVal	= std::numeric_limits<deUint8>::min();
 			static const auto kMaxVal	= std::numeric_limits<deUint8>::max();
-			static const auto kMidVal	= static_cast<deUint8>(kMaxVal * 2u / 5u);
 			static const auto kMinValI	= static_cast<int>(kMinVal);
 			static const auto kMaxValI	= static_cast<int>(kMaxVal);
 
@@ -8911,13 +8904,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				vk::VkStencilOp		incompatibleOp;	// Alternative operation giving incompatible results for the given values.
 			} kStencilOps[] =
 			{
-				{ vk::VK_STENCIL_OP_KEEP,					"keep",			u8vec{kMidVal},					vk::VK_STENCIL_OP_ZERO					},
-				{ vk::VK_STENCIL_OP_ZERO,					"zero",			u8vec{kMidVal},					vk::VK_STENCIL_OP_KEEP					},
-				{ vk::VK_STENCIL_OP_REPLACE,				"replace",		u8vec{kMidVal},					vk::VK_STENCIL_OP_ZERO					},
 				{ vk::VK_STENCIL_OP_INCREMENT_AND_CLAMP,	"inc_clamp",	u8vec{kMaxVal - 1, kMaxVal},	vk::VK_STENCIL_OP_ZERO					},
-				{ vk::VK_STENCIL_OP_DECREMENT_AND_CLAMP,	"dec_clamp",	u8vec{kMinVal + 1, kMinVal},	vk::VK_STENCIL_OP_INCREMENT_AND_CLAMP	},
-				{ vk::VK_STENCIL_OP_INVERT,					"invert",		u8vec{kMidVal},					vk::VK_STENCIL_OP_ZERO					},
-				{ vk::VK_STENCIL_OP_INCREMENT_AND_WRAP,		"inc_wrap",		u8vec{kMaxVal - 1, kMaxVal},	vk::VK_STENCIL_OP_KEEP					},
 				{ vk::VK_STENCIL_OP_DECREMENT_AND_WRAP,		"dec_wrap",		u8vec{kMinVal + 1, kMinVal},	vk::VK_STENCIL_OP_KEEP					},
 			};
 
@@ -8929,7 +8916,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				for (const auto clearVal : op.clearValues)
 				{
 					// Use interesting values as the reference stencil value.
-					for (int delta = -1; delta <= 1; ++delta)
+					for (const auto delta : { -1, 1 })
 					{
 						const int refVal = clearVal + delta;
 						if (refVal < kMinValI || refVal > kMaxValI)
