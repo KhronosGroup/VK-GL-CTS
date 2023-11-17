@@ -1,3 +1,4 @@
+dEQP-VK.multiview.depth_different_ranges.3_6_12_9_6_12_9_3_6_12_9_3
 dEQP-VK.multiview.renderpass2.depth_different_ranges.3_6_12_9_6_12_9_3_6_12_9_3
 dEQP-VK.multiview.dynamic_rendering.masks.15
 dEQP-VK.multiview.dynamic_rendering.masks.8
@@ -162,4 +163,3 @@ dEQP-VK.multiview.dynamic_rendering.index.tessellation_shader.8_1_1_8
 dEQP-VK.multiview.dynamic_rendering.index.tessellation_shader.5_10_5_10
 dEQP-VK.multiview.dynamic_rendering.index.tessellation_shader.1_2_4_8_16_32
 dEQP-VK.multiview.dynamic_rendering.index.tessellation_shader.max_multi_view_view_count
-dEQP-VK.multiview.depth_different_ranges.3_6_12_9_6_12_9_3_6_12_9_3
