@@ -1473,7 +1473,8 @@ void addSubpassDescription(const TestParams&										params,
 	}
 	else if (preserveAttachments && !isInAttachmentReferences(inputAttachmentReferences, attachmentNdxes[0]))
 	{
-		preserveAttachments->push_back(attachmentNdxes[0]);
+		if (attachmentNdxes[0] != -1)
+			preserveAttachments->push_back(attachmentNdxes[0]);
 	}
 	if (perPass.floatColor2Location >= 0)
 	{
@@ -1483,7 +1484,8 @@ void addSubpassDescription(const TestParams&										params,
 	}
 	else if (preserveAttachments && !isInAttachmentReferences(inputAttachmentReferences, attachmentNdxes[1]))
 	{
-		preserveAttachments->push_back(attachmentNdxes[1]);
+		if (attachmentNdxes[1] != -1)
+			preserveAttachments->push_back(attachmentNdxes[1]);
 	}
 	if (perPass.intColorLocation >= 0)
 	{
@@ -1493,7 +1495,8 @@ void addSubpassDescription(const TestParams&										params,
 	}
 	else if (preserveAttachments && !isInAttachmentReferences(inputAttachmentReferences, attachmentNdxes[2]))
 	{
-		preserveAttachments->push_back(attachmentNdxes[2]);
+		if (attachmentNdxes[2] != -1)
+			preserveAttachments->push_back(attachmentNdxes[2]);
 	}
 	if (perPass.hasDepthStencil)
 	{
@@ -1503,7 +1506,8 @@ void addSubpassDescription(const TestParams&										params,
 	}
 	else if (preserveAttachments && !isInAttachmentReferences(inputAttachmentReferences, attachmentNdxes[3]))
 	{
-		preserveAttachments->push_back(attachmentNdxes[3]);
+		if (attachmentNdxes[3] != -1)
+			preserveAttachments->push_back(attachmentNdxes[3]);
 	}
 
 	// Resolve attachments
@@ -1514,7 +1518,8 @@ void addSubpassDescription(const TestParams&										params,
 	}
 	else if (preserveAttachments && !isInAttachmentReferences(inputAttachmentReferences, attachmentNdxes[4]))
 	{
-		preserveAttachments->push_back(attachmentNdxes[4]);
+		if (attachmentNdxes[4] != -1)
+			preserveAttachments->push_back(attachmentNdxes[4]);
 	}
 	if (perPass.resolveFloatColor2)
 	{
@@ -1523,7 +1528,8 @@ void addSubpassDescription(const TestParams&										params,
 	}
 	else if (preserveAttachments && !isInAttachmentReferences(inputAttachmentReferences, attachmentNdxes[5]))
 	{
-		preserveAttachments->push_back(attachmentNdxes[5]);
+		if (attachmentNdxes[5] != -1)
+			preserveAttachments->push_back(attachmentNdxes[5]);
 	}
 	if (perPass.resolveIntColor)
 	{
@@ -1532,7 +1538,8 @@ void addSubpassDescription(const TestParams&										params,
 	}
 	else if (preserveAttachments && !isInAttachmentReferences(inputAttachmentReferences, attachmentNdxes[6]))
 	{
-		preserveAttachments->push_back(attachmentNdxes[6]);
+		if (attachmentNdxes[6] != -1)
+			preserveAttachments->push_back(attachmentNdxes[6]);
 	}
 
 	// Account for single-sampled attachments in input attachments as well.
@@ -1571,7 +1578,8 @@ void addSubpassDescription(const TestParams&										params,
 	}
 	else if (preserveAttachments && !isInAttachmentReferences(inputAttachmentReferences, attachmentNdxes[7]))
 	{
-		preserveAttachments->push_back(attachmentNdxes[7]);
+		if (attachmentNdxes[7] != -1)
+			preserveAttachments->push_back(attachmentNdxes[7]);
 	}
 
 	VkSubpassDescription2 subpassDescription =

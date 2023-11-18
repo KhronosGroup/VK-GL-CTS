@@ -117,7 +117,7 @@ public:
 	const VkPipelineLayout			operator*						(void) const { return *m_pipelineLayout; }
 	const VkPipelineLayout			get								(void) const { return *m_pipelineLayout; }
 	PipelineLayoutWrapper&			operator=						(PipelineLayoutWrapper&& rhs);
-	void							destroy							(void) { m_pipelineLayout.disown(); }
+	void							destroy							(void) { m_pipelineLayout = vk::Move<VkPipelineLayout>{}; }
 
 	deUint32						getSetLayoutCount				(void) const { return m_setLayoutCount; }
 	const VkDescriptorSetLayout*	getSetLayouts					(void) const { return m_setLayouts.data(); }

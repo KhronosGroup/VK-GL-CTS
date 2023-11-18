@@ -5682,11 +5682,14 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 												geomModule);
 		}
 
+		vk::ShaderWrapper			emptyFrag		{};
+		const vk::ShaderWrapper&	fragForStatic	= m_testConfig.rastDiscardEnableConfig.staticValue ? emptyFrag : staticFragModule;
+
 		staticPipeline
 #ifndef CTS_USES_VULKANSC
 					  .setRepresentativeFragmentTestState(pReprFragment.get())
 #endif // CTS_USES_VULKANSC
-					  .setupFragmentShaderState(pipelineLayout, *renderPassFramebuffers[0], 0u, staticFragModule, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
+					  .setupFragmentShaderState(pipelineLayout, *renderPassFramebuffers[0], 0u, fragForStatic, &depthStencilStateCreateInfo, &multisampleStateCreateInfo)
 					  .setupFragmentOutputState(*renderPassFramebuffers[0], 0u, &staticCBStateInfo, &multisampleStateCreateInfo)
 					  .setMonolithicPipelineLayout(pipelineLayout)
 					  .buildPipeline();

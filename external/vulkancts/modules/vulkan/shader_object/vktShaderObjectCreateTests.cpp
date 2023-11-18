@@ -79,7 +79,7 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate	(void)
 	const vk::VkDescriptorSetLayoutBinding layoutBinding =
 	{
 		0u,														// deUint32					binding;
-		vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,			// VkDescriptorType			descriptorType;
+		vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,					// VkDescriptorType			descriptorType;
 		1u,														// deUint32					arraySize;
 		vk::VK_SHADER_STAGE_COMPUTE_BIT,						// VkShaderStageFlags		stageFlags;
 		DE_NULL													// const VkSampler*			pImmutableSamplers;

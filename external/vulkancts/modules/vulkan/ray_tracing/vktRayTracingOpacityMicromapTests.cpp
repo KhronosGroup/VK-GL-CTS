@@ -443,12 +443,10 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 		0ull										  // VkDeviceAddress				deviceAddress;
 	};
 
-	VkMicromapEXT micromap;
-
-	VK_CHECK(vkd.createMicromapEXT(device, &maCreateInfo, nullptr, &micromap));
+	Move<VkMicromapEXT> micromap = vk::createMicromapEXT(vkd, device, &maCreateInfo);
 
 	// Do the build
-	mmBuildInfo.dstMicromap = micromap;
+	mmBuildInfo.dstMicromap = *micromap;
 	mmBuildInfo.data = makeDeviceOrHostAddressConstKHR(vkd, device, micromapDataBuffer.get(), DataOffset);
 	mmBuildInfo.triangleArray = makeDeviceOrHostAddressConstKHR(vkd, device, micromapDataBuffer.get(), TriangleOffset);
 	mmBuildInfo.scratchData = makeDeviceOrHostAddressKHR(vkd, device, micromapScratchBuffer.get(), 0);
@@ -485,7 +483,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 		1u,																						//uint32_t							usageCountsCount;
 		& mmUsage,																				//const VkMicromapUsageEXT*			pUsageCounts;
 		DE_NULL,																				//const VkMicromapUsageEXT* const*	ppUsageCounts;
-		micromap																				//VkMicromapEXT						micromap;
+		*micromap																				//VkMicromapEXT						micromap;
 	};
 
 	const std::vector<tcu::Vec3> triangle =

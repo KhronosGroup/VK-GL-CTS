@@ -76,6 +76,11 @@ struct TestParams
 	deBool					dynamicState;
 
 	deBool					useMaintenance5Ext;
+
+	bool isIndirectDraw (void) const
+	{
+		return (function == FUNCTION_DRAW_INDIRECT || function == FUNCTION_DRAW_INDEXED_INDIRECT);
+	}
 };
 
 struct VertexPositionAndColor
@@ -608,7 +613,8 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 	int firstInstanceIndicesCount = DE_LENGTH_OF_ARRAY(firstInstanceIndices);
 
 	// Require 'drawIndirectFirstInstance' feature to run non-zero firstInstance indirect draw tests.
-	if (m_params.function == TestParams::FUNCTION_DRAW_INDIRECT && !m_context.getDeviceFeatures().drawIndirectFirstInstance)
+	const auto& deviceFeatures = m_context.getDeviceFeatures();
+	if (m_params.isIndirectDraw() && !deviceFeatures.drawIndirectFirstInstance)
 	{
 		firstInstanceIndicesCount = 1;
 	}
