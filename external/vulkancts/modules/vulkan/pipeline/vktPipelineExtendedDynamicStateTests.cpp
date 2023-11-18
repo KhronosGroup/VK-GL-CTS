@@ -7173,8 +7173,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.colorBlendBoth                = true;
 
 				const char* testName = "color_blend_att_count_0_adv";
-				const char* testDesc = "Set all VkPipelineColorBlendAttachmentState substates as dynamic and set VkPipelineColorBlendStateCreateInfo::attachmentCount to 0 when DS3 advanced blending is supported";
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
 			}
 
 			// VkPipelineColorBlendStateCreateInfo::attachmentCount = 0 and VkPipelineColorBlendStateCreateInfo::pAttachments may not be null
@@ -7186,8 +7185,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.colorBlendBoth                = false;
 
 				const char* testName = "color_blend_att_count_0";
-				const char* testDesc = "Set all VkPipelineColorBlendAttachmentState substates as dynamic and set VkPipelineColorBlendStateCreateInfo::attachmentCount to 0";
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
 			}
 
 			// VkPipelineColorBlendStateCreateInfo::attachmentCount = 0 and VkPipelineColorBlendStateCreateInfo::pAttachments = nullptr
@@ -7198,8 +7196,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				config.nullStaticColorBlendAttPtr    = true;
 
 				const char* testName = "color_blend_no_attachments";
-				const char* testDesc = "Set all VkPipelineColorBlendAttachmentState substates as dynamic and set VkPipelineColorBlendStateCreateInfo::attachmentCount to 0 and VkPipelineColorBlendStateCreateInfo::pAttachments to null";
-				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, testDesc, config));
+				orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, testName, config));
 			}
 		}
 
