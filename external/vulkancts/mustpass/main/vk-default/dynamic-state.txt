@@ -31,6 +31,7 @@ dEQP-VK.dynamic_state.monolithic.general_state.bind_order
 dEQP-VK.dynamic_state.monolithic.general_state.state_persistence
 dEQP-VK.dynamic_state.monolithic.general_state.state_switch_mesh
 dEQP-VK.dynamic_state.monolithic.general_state.bind_order_mesh
+dEQP-VK.dynamic_state.monolithic.general_state.static_stencil_mask_zero
 dEQP-VK.dynamic_state.monolithic.inheritance.baseline
 dEQP-VK.dynamic_state.monolithic.inheritance.primary
 dEQP-VK.dynamic_state.monolithic.inheritance.secondary
@@ -214,6 +215,7 @@ dEQP-VK.dynamic_state.pipeline_library.general_state.bind_order
 dEQP-VK.dynamic_state.pipeline_library.general_state.state_persistence
 dEQP-VK.dynamic_state.pipeline_library.general_state.state_switch_mesh
 dEQP-VK.dynamic_state.pipeline_library.general_state.bind_order_mesh
+dEQP-VK.dynamic_state.pipeline_library.general_state.static_stencil_mask_zero
 dEQP-VK.dynamic_state.pipeline_library.inheritance.baseline
 dEQP-VK.dynamic_state.pipeline_library.inheritance.primary
 dEQP-VK.dynamic_state.pipeline_library.inheritance.secondary
@@ -273,6 +275,7 @@ dEQP-VK.dynamic_state.fast_linked_library.general_state.bind_order
 dEQP-VK.dynamic_state.fast_linked_library.general_state.state_persistence
 dEQP-VK.dynamic_state.fast_linked_library.general_state.state_switch_mesh
 dEQP-VK.dynamic_state.fast_linked_library.general_state.bind_order_mesh
+dEQP-VK.dynamic_state.fast_linked_library.general_state.static_stencil_mask_zero
 dEQP-VK.dynamic_state.fast_linked_library.inheritance.baseline
 dEQP-VK.dynamic_state.fast_linked_library.inheritance.primary
 dEQP-VK.dynamic_state.fast_linked_library.inheritance.secondary
@@ -332,6 +335,7 @@ dEQP-VK.dynamic_state.shader_object_unlinked_spirv.general_state.bind_order
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.general_state.state_persistence
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.general_state.state_switch_mesh
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.general_state.bind_order_mesh
+dEQP-VK.dynamic_state.shader_object_unlinked_spirv.general_state.static_stencil_mask_zero
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.inheritance.baseline
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.inheritance.primary
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.inheritance.secondary
@@ -515,6 +519,7 @@ dEQP-VK.dynamic_state.shader_object_unlinked_binary.general_state.bind_order
 dEQP-VK.dynamic_state.shader_object_unlinked_binary.general_state.state_persistence
 dEQP-VK.dynamic_state.shader_object_unlinked_binary.general_state.state_switch_mesh
 dEQP-VK.dynamic_state.shader_object_unlinked_binary.general_state.bind_order_mesh
+dEQP-VK.dynamic_state.shader_object_unlinked_binary.general_state.static_stencil_mask_zero
 dEQP-VK.dynamic_state.shader_object_unlinked_binary.inheritance.baseline
 dEQP-VK.dynamic_state.shader_object_unlinked_binary.inheritance.primary
 dEQP-VK.dynamic_state.shader_object_unlinked_binary.inheritance.secondary
@@ -574,6 +579,7 @@ dEQP-VK.dynamic_state.shader_object_linked_spirv.general_state.bind_order
 dEQP-VK.dynamic_state.shader_object_linked_spirv.general_state.state_persistence
 dEQP-VK.dynamic_state.shader_object_linked_spirv.general_state.state_switch_mesh
 dEQP-VK.dynamic_state.shader_object_linked_spirv.general_state.bind_order_mesh
+dEQP-VK.dynamic_state.shader_object_linked_spirv.general_state.static_stencil_mask_zero
 dEQP-VK.dynamic_state.shader_object_linked_spirv.inheritance.baseline
 dEQP-VK.dynamic_state.shader_object_linked_spirv.inheritance.primary
 dEQP-VK.dynamic_state.shader_object_linked_spirv.inheritance.secondary
@@ -633,6 +639,7 @@ dEQP-VK.dynamic_state.shader_object_linked_binary.general_state.bind_order
 dEQP-VK.dynamic_state.shader_object_linked_binary.general_state.state_persistence
 dEQP-VK.dynamic_state.shader_object_linked_binary.general_state.state_switch_mesh
 dEQP-VK.dynamic_state.shader_object_linked_binary.general_state.bind_order_mesh
+dEQP-VK.dynamic_state.shader_object_linked_binary.general_state.static_stencil_mask_zero
 dEQP-VK.dynamic_state.shader_object_linked_binary.inheritance.baseline
 dEQP-VK.dynamic_state.shader_object_linked_binary.inheritance.primary
 dEQP-VK.dynamic_state.shader_object_linked_binary.inheritance.secondary

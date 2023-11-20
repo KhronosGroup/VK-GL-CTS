@@ -13,6 +13,7 @@ dEQP-VKSC.dynamic_state.monolithic.ds_state.stencil_params_advanced
 dEQP-VKSC.dynamic_state.monolithic.general_state.state_switch
 dEQP-VKSC.dynamic_state.monolithic.general_state.bind_order
 dEQP-VKSC.dynamic_state.monolithic.general_state.state_persistence
+dEQP-VKSC.dynamic_state.monolithic.general_state.static_stencil_mask_zero
 dEQP-VKSC.dynamic_state.monolithic.inheritance.baseline
 dEQP-VKSC.dynamic_state.monolithic.image.clear
 dEQP-VKSC.dynamic_state.monolithic.image.blit
@@ -151,6 +152,7 @@ dEQP-VKSC.dynamic_state.pipeline_library.ds_state.stencil_params_advanced
 dEQP-VKSC.dynamic_state.pipeline_library.general_state.state_switch
 dEQP-VKSC.dynamic_state.pipeline_library.general_state.bind_order
 dEQP-VKSC.dynamic_state.pipeline_library.general_state.state_persistence
+dEQP-VKSC.dynamic_state.pipeline_library.general_state.static_stencil_mask_zero
 dEQP-VKSC.dynamic_state.pipeline_library.inheritance.baseline
 dEQP-VKSC.dynamic_state.pipeline_library.image.clear
 dEQP-VKSC.dynamic_state.pipeline_library.image.blit
@@ -185,6 +187,7 @@ dEQP-VKSC.dynamic_state.fast_linked_library.ds_state.stencil_params_advanced
 dEQP-VKSC.dynamic_state.fast_linked_library.general_state.state_switch
 dEQP-VKSC.dynamic_state.fast_linked_library.general_state.bind_order
 dEQP-VKSC.dynamic_state.fast_linked_library.general_state.state_persistence
+dEQP-VKSC.dynamic_state.fast_linked_library.general_state.static_stencil_mask_zero
 dEQP-VKSC.dynamic_state.fast_linked_library.inheritance.baseline
 dEQP-VKSC.dynamic_state.fast_linked_library.image.clear
 dEQP-VKSC.dynamic_state.fast_linked_library.image.blit
@@ -219,6 +222,7 @@ dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.ds_state.stencil_params_adv
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.general_state.state_switch
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.general_state.bind_order
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.general_state.state_persistence
+dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.general_state.static_stencil_mask_zero
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.inheritance.baseline
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.image.clear
 dEQP-VKSC.dynamic_state.shader_object_unlinked_spirv.image.blit
@@ -357,6 +361,7 @@ dEQP-VKSC.dynamic_state.shader_object_unlinked_binary.ds_state.stencil_params_ad
 dEQP-VKSC.dynamic_state.shader_object_unlinked_binary.general_state.state_switch
 dEQP-VKSC.dynamic_state.shader_object_unlinked_binary.general_state.bind_order
 dEQP-VKSC.dynamic_state.shader_object_unlinked_binary.general_state.state_persistence
+dEQP-VKSC.dynamic_state.shader_object_unlinked_binary.general_state.static_stencil_mask_zero
 dEQP-VKSC.dynamic_state.shader_object_unlinked_binary.inheritance.baseline
 dEQP-VKSC.dynamic_state.shader_object_unlinked_binary.image.clear
 dEQP-VKSC.dynamic_state.shader_object_unlinked_binary.image.blit
@@ -391,6 +396,7 @@ dEQP-VKSC.dynamic_state.shader_object_linked_spirv.ds_state.stencil_params_advan
 dEQP-VKSC.dynamic_state.shader_object_linked_spirv.general_state.state_switch
 dEQP-VKSC.dynamic_state.shader_object_linked_spirv.general_state.bind_order
 dEQP-VKSC.dynamic_state.shader_object_linked_spirv.general_state.state_persistence
+dEQP-VKSC.dynamic_state.shader_object_linked_spirv.general_state.static_stencil_mask_zero
 dEQP-VKSC.dynamic_state.shader_object_linked_spirv.inheritance.baseline
 dEQP-VKSC.dynamic_state.shader_object_linked_spirv.image.clear
 dEQP-VKSC.dynamic_state.shader_object_linked_spirv.image.blit
@@ -425,6 +431,7 @@ dEQP-VKSC.dynamic_state.shader_object_linked_binary.ds_state.stencil_params_adva
 dEQP-VKSC.dynamic_state.shader_object_linked_binary.general_state.state_switch
 dEQP-VKSC.dynamic_state.shader_object_linked_binary.general_state.bind_order
 dEQP-VKSC.dynamic_state.shader_object_linked_binary.general_state.state_persistence
+dEQP-VKSC.dynamic_state.shader_object_linked_binary.general_state.static_stencil_mask_zero
 dEQP-VKSC.dynamic_state.shader_object_linked_binary.inheritance.baseline
 dEQP-VKSC.dynamic_state.shader_object_linked_binary.image.clear
 dEQP-VKSC.dynamic_state.shader_object_linked_binary.image.blit
