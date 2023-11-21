@@ -827,8 +827,8 @@ void MultisampleRenderPassTestInstance::submitDynamicRendering (void)
 				VK_IMAGE_ASPECT_COLOR_BIT,
 				m_renderLevel,
 				1u,
-				m_baseLayer,
-				m_layerCount
+				0u,
+				totalLayers()
 			}
 		});
 	for (size_t dstNdx = 0; dstNdx < m_singlesampleImages.size(); dstNdx++)
@@ -974,8 +974,8 @@ void MultisampleRenderPassTestInstance::submitDynamicRendering (void)
 					VK_IMAGE_ASPECT_COLOR_BIT,
 					m_renderLevel,
 					1u,
-					m_baseLayer,
-					m_layerCount
+					0u,
+					totalLayers()
 				}
 			};
 
