@@ -7520,6 +7520,40 @@ struct VkImageConstraintsInfoFUCHSIA
 	VkImageConstraintsInfoFlagsFUCHSIA			flags;
 };
 
+struct VkCudaModuleCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	size_t			dataSize;
+	const void*		pData;
+};
+
+struct VkCudaFunctionCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkCudaModuleNV	module;
+	const char*		pName;
+};
+
+struct VkCudaLaunchInfoNV
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkCudaFunctionNV	function;
+	uint32_t			gridDimX;
+	uint32_t			gridDimY;
+	uint32_t			gridDimZ;
+	uint32_t			blockDimX;
+	uint32_t			blockDimY;
+	uint32_t			blockDimZ;
+	uint32_t			sharedMemBytes;
+	size_t				paramCount;
+	const void* const *	pParams;
+	size_t				extraCount;
+	const void* const *	pExtras;
+};
+
 struct VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT
 {
 	VkStructureType	sType;
@@ -7731,6 +7765,22 @@ struct VkDescriptorSetLayoutHostMappingInfoVALVE
 	void*			pNext;
 	size_t			descriptorOffset;
 	uint32_t		descriptorSize;
+};
+
+struct VkPhysicalDeviceNestedCommandBufferFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		nestedCommandBuffer;
+	VkBool32		nestedCommandBufferRendering;
+	VkBool32		nestedCommandBufferSimultaneousUse;
+};
+
+struct VkPhysicalDeviceNestedCommandBufferPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxCommandBufferNestingLevel;
 };
 
 struct VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT
@@ -8550,6 +8600,22 @@ struct VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV
 	VkRayTracingInvocationReorderModeNV	rayTracingInvocationReorderReorderingHint;
 };
 
+struct VkPhysicalDeviceExtendedSparseAddressSpaceFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		extendedSparseAddressSpace;
+};
+
+struct VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkDeviceSize		extendedSparseAddressSpaceSize;
+	VkImageUsageFlags	extendedSparseImageUsageFlags;
+	VkBufferUsageFlags	extendedSparseBufferUsageFlags;
+};
+
 struct VkDirectDriverLoadingInfoLUNARG
 {
 	VkStructureType						sType;
@@ -8901,6 +8967,146 @@ struct VkPhysicalDeviceLayeredDriverPropertiesMSFT
 	VkStructureType						sType;
 	void*								pNext;
 	VkLayeredDriverUnderlyingApiMSFT	underlyingAPI;
+};
+
+struct VkPhysicalDeviceExternalFormatResolveFeaturesANDROID
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		externalFormatResolve;
+};
+
+struct VkPhysicalDeviceExternalFormatResolvePropertiesANDROID
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkBool32			nullColorAttachmentWithExternalFormatResolve;
+	VkChromaLocation	externalFormatResolveChromaOffsetX;
+	VkChromaLocation	externalFormatResolveChromaOffsetY;
+};
+
+struct VkAndroidHardwareBufferFormatResolvePropertiesANDROID
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkFormat		colorAttachmentFormat;
+};
+
+struct VkLatencySleepModeInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		lowLatencyMode;
+	VkBool32		lowLatencyBoost;
+	uint32_t		minimumIntervalUs;
+};
+
+struct VkLatencySleepInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkSemaphore		signalSemaphore;
+	uint64_t		value;
+};
+
+struct VkSetLatencyMarkerInfoNV
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	uint64_t			presentID;
+	VkLatencyMarkerNV	marker;
+};
+
+struct VkLatencyTimingsFrameReportNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint64_t		presentID;
+	uint64_t		inputSampleTimeUs;
+	uint64_t		simStartTimeUs;
+	uint64_t		simEndTimeUs;
+	uint64_t		renderSubmitStartTimeUs;
+	uint64_t		renderSubmitEndTimeUs;
+	uint64_t		presentStartTimeUs;
+	uint64_t		presentEndTimeUs;
+	uint64_t		driverStartTimeUs;
+	uint64_t		driverEndTimeUs;
+	uint64_t		osRenderQueueStartTimeUs;
+	uint64_t		osRenderQueueEndTimeUs;
+	uint64_t		gpuRenderStartTimeUs;
+	uint64_t		gpuRenderEndTimeUs;
+};
+
+struct VkGetLatencyMarkerInfoNV
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkLatencyTimingsFrameReportNV*	pTimings;
+};
+
+struct VkOutOfBandQueueTypeInfoNV
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkOutOfBandQueueTypeNV	queueType;
+};
+
+struct VkLatencySubmissionPresentIdNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint64_t		presentID;
+};
+
+struct VkSwapchainLatencyCreateInfoNV
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		latencyModeEnable;
+};
+
+struct VkLatencySurfaceCapabilitiesNV
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	uint32_t			presentModeCount;
+	VkPresentModeKHR*	pPresentModes;
+};
+
+struct VkPhysicalDeviceCudaKernelLaunchFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		cudaKernelLaunchFeatures;
+};
+
+struct VkPhysicalDeviceCudaKernelLaunchPropertiesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		computeCapabilityMinor;
+	uint32_t		computeCapabilityMajor;
+};
+
+struct VkDeviceQueueShaderCoreControlCreateInfoARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		shaderCoreCount;
+};
+
+struct VkPhysicalDeviceSchedulingControlsFeaturesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		schedulingControls;
+};
+
+struct VkPhysicalDeviceSchedulingControlsPropertiesARM
+{
+	VkStructureType								sType;
+	void*										pNext;
+	VkPhysicalDeviceSchedulingControlsFlagsARM	schedulingControlsFlags;
 };
 
 struct StdVideoH264SpsVuiFlags

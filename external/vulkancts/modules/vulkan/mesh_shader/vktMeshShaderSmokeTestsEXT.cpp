@@ -163,9 +163,9 @@ struct MeshTriangleRendererParams
 class MeshOnlyTriangleCase : public vkt::TestCase
 {
 public:
-					MeshOnlyTriangleCase			(tcu::TestContext& testCtx, const std::string& name, const std::string& description,
+					MeshOnlyTriangleCase			(tcu::TestContext& testCtx, const std::string& name,
 													 PipelineConstructionType constructionType, bool rasterizationDisabled = false)
-						: vkt::TestCase				(testCtx, name, description)
+						: vkt::TestCase				(testCtx, name)
 						, m_constructionType		(constructionType)
 						, m_rasterizationDisabled	(rasterizationDisabled)
 						{}
@@ -183,8 +183,8 @@ protected:
 class MeshTaskTriangleCase : public vkt::TestCase
 {
 public:
-					MeshTaskTriangleCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, PipelineConstructionType constructionType)
-						: vkt::TestCase			(testCtx, name, description)
+					MeshTaskTriangleCase	(tcu::TestContext& testCtx, const std::string& name, PipelineConstructionType constructionType)
+						: vkt::TestCase			(testCtx, name)
 						, m_constructionType	(constructionType)
 						{}
 	virtual			~MeshTaskTriangleCase	(void) {}
@@ -201,8 +201,8 @@ protected:
 class TaskOnlyTriangleCase : public vkt::TestCase
 {
 public:
-					TaskOnlyTriangleCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, PipelineConstructionType constructionType)
-						: vkt::TestCase			(testCtx, name, description)
+					TaskOnlyTriangleCase	(tcu::TestContext& testCtx, const std::string& name, PipelineConstructionType constructionType)
+						: vkt::TestCase			(testCtx, name)
 						, m_constructionType	(constructionType)
 						{}
 	virtual			~TaskOnlyTriangleCase	(void) {}
@@ -1025,8 +1025,8 @@ public:
 	static constexpr uint32_t kNumWorkGroups    = 2u;
 	static constexpr uint32_t kTotalPrimitives  = kNumWorkGroups * kMaxPrimitives;
 
-					PartialUsageCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const PartialUsageParams& params)
-						: vkt::TestCase(testCtx, name, description)
+					PartialUsageCase	(tcu::TestContext& testCtx, const std::string& name, const PartialUsageParams& params)
+						: vkt::TestCase(testCtx, name)
 						, m_params(params)
 						{}
 	virtual			~PartialUsageCase	(void) {}
@@ -1547,8 +1547,8 @@ tcu::TestStatus PartialUsageInstance::iterate ()
 class SharedFragLibraryCase : public vkt::TestCase
 {
 public:
-					SharedFragLibraryCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, PipelineConstructionType constructionType)
-						: vkt::TestCase			(testCtx, name, description)
+					SharedFragLibraryCase	(tcu::TestContext& testCtx, const std::string& name, PipelineConstructionType constructionType)
+						: vkt::TestCase			(testCtx, name)
 						, m_constructionType	(constructionType)
 						{}
 	virtual			~SharedFragLibraryCase	(void) {}
@@ -2051,18 +2051,18 @@ tcu::TestCaseGroup* createMeshShaderSmokeTestsEXT (tcu::TestContext& testCtx)
 		{ PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY,			"fast_lib"			},
 	};
 
-	GroupPtr smokeTests (new tcu::TestCaseGroup(testCtx, "smoke", "Mesh Shader Smoke Tests"));
+	GroupPtr smokeTests (new tcu::TestCaseGroup(testCtx, "smoke"));
 
 	for (const auto& constructionCase : constructionTypes)
 	{
-		GroupPtr constructionGroup(new tcu::TestCaseGroup(testCtx, constructionCase.name, ""));
+		GroupPtr constructionGroup(new tcu::TestCaseGroup(testCtx, constructionCase.name));
 
 		const auto& cType = constructionCase.constructionType;
 
-		constructionGroup->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle", "", cType));
-		constructionGroup->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle_rasterization_disabled", "", cType, true/*rasterizationDisabled*/));
-		constructionGroup->addChild(new MeshTaskTriangleCase(testCtx, "mesh_task_shader_triangle", "", cType));
-		constructionGroup->addChild(new TaskOnlyTriangleCase(testCtx, "task_only_shader_triangle", "", cType));
+		constructionGroup->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle", cType));
+		constructionGroup->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle_rasterization_disabled", cType, true/*rasterizationDisabled*/));
+		constructionGroup->addChild(new MeshTaskTriangleCase(testCtx, "mesh_task_shader_triangle", cType));
+		constructionGroup->addChild(new TaskOnlyTriangleCase(testCtx, "task_only_shader_triangle", cType));
 
 		for (int i = 0; i < 2; ++i)
 		{
@@ -2070,16 +2070,16 @@ tcu::TestCaseGroup* createMeshShaderSmokeTestsEXT (tcu::TestContext& testCtx)
 			const std::string			nameSuffix	= (compaction ? "" : "_without_compaction");
 			const PartialUsageParams	params		{ cType, compaction };
 
-			constructionGroup->addChild(new PartialUsageCase(testCtx, "partial_usage" + nameSuffix, "", params));
+			constructionGroup->addChild(new PartialUsageCase(testCtx, "partial_usage" + nameSuffix, params));
 		}
 
-		addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient",			"", checkMeshSupport, initGradientPrograms, testFullscreenGradient, GradientParams(tcu::nothing<FragmentSize>(), cType));
-		addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient_fs2x2",	"", checkMeshSupport, initGradientPrograms, testFullscreenGradient, GradientParams(tcu::just(FragmentSize::SIZE_2X2), cType));
-		addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient_fs2x1",	"", checkMeshSupport, initGradientPrograms, testFullscreenGradient, GradientParams(tcu::just(FragmentSize::SIZE_2X1), cType));
+		addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient",			checkMeshSupport, initGradientPrograms, testFullscreenGradient, GradientParams(tcu::nothing<FragmentSize>(), cType));
+		addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient_fs2x2",	checkMeshSupport, initGradientPrograms, testFullscreenGradient, GradientParams(tcu::just(FragmentSize::SIZE_2X2), cType));
+		addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient_fs2x1",	checkMeshSupport, initGradientPrograms, testFullscreenGradient, GradientParams(tcu::just(FragmentSize::SIZE_2X1), cType));
 
 		if (cType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 		{
-			constructionGroup->addChild(new SharedFragLibraryCase(testCtx, "shared_frag_library", "", cType));
+			constructionGroup->addChild(new SharedFragLibraryCase(testCtx, "shared_frag_library", cType));
 		}
 
 		smokeTests->addChild(constructionGroup.release());

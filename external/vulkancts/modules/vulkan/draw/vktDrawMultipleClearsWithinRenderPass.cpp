@@ -718,8 +718,8 @@ tcu::TestStatus MultipleClearsTest::iterate (void)
 class MultipleClearsWithinRenderPassTest : public TestCase
 {
 public:
-	MultipleClearsWithinRenderPassTest (tcu::TestContext& testCtx, const string& name, const string& description, const TestParams& params)
-		: TestCase(testCtx, name, description)
+	MultipleClearsWithinRenderPassTest (tcu::TestContext& testCtx, const string& name, const TestParams& params)
+		: TestCase(testCtx, name)
 		, m_params(params)
 	{
 		DE_ASSERT(m_params.steps.size() <= static_cast<size_t>(TEST_MAX_STEPS_COUNT));
@@ -808,7 +808,7 @@ private:
 }	// anonymous
 
 MultipleClearsWithinRenderPassTests::MultipleClearsWithinRenderPassTests (tcu::TestContext &testCtx, const SharedGroupParams groupParams)
-	: TestCaseGroup	(testCtx, "multiple_clears_within_render_pass", "Tests for multiple clears within render pass")
+	: TestCaseGroup	(testCtx, "multiple_clears_within_render_pass")
 	, m_groupParams	(groupParams)
 {
 }
@@ -852,7 +852,8 @@ void MultipleClearsWithinRenderPassTests::init ()
 						{ ClearOp::DRAW		, Vec4(0.0f, 0.0f, 1.0f, 0.5f)	, 0.9f }
 					}
 				};
-				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "load_clear_draw" + testNameSuffix, "Multiple clears within same render pass, methods: load, clear, draw", params));
+				// Multiple clears within same render pass, methods: load, clear, draw
+				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "load_clear_draw" + testNameSuffix, params));
 			}
 			{
 				const TestParams params
@@ -873,7 +874,8 @@ void MultipleClearsWithinRenderPassTests::init ()
 						{ ClearOp::DRAW		, Vec4(0.0f, 0.0f, 1.0f, 0.5f)	, 0.9f }
 					}
 				};
-				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "draw_clear_draw" + testNameSuffix, "Multiple clears within same render pass, methods: draw, clear, draw", params));
+				// Multiple clears within same render pass, methods: draw, clear, draw
+				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "draw_clear_draw" + testNameSuffix, params));
 			}
 			{
 				const TestParams params
@@ -894,7 +896,8 @@ void MultipleClearsWithinRenderPassTests::init ()
 						{ ClearOp::DRAW		, Vec4(0.0f, 0.0f, 1.0f, 0.5f)	, 0.9f }
 					}
 				};
-				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "clear_clear_draw" + testNameSuffix, "Multiple clears within same render pass, methods: clear, clear, draw", params));
+				// Multiple clears within same render pass, methods: clear, clear, draw
+				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "clear_clear_draw" + testNameSuffix, params));
 			}
 			{
 				const TestParams params
@@ -914,7 +917,8 @@ void MultipleClearsWithinRenderPassTests::init ()
 						{ ClearOp::CLEAR	, Vec4(0.0f, 1.0f, 0.0f, 1.0f)	, 0.9f }
 					}
 				};
-				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "load_clear" + testNameSuffix, "Multiple clears within same render pass, methods: load, clear", params));
+				// Multiple clears within same render pass, methods: load, clear
+				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "load_clear" + testNameSuffix, params));
 			}
 			{
 				const TestParams params
@@ -934,7 +938,8 @@ void MultipleClearsWithinRenderPassTests::init ()
 						{ ClearOp::CLEAR	, Vec4(0.0f, 1.0f, 0.0f, 1.0f)	, 0.9f }
 					}
 				};
-				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "draw_clear" + testNameSuffix, "Multiple clears within same render pass, methods: draw, clear", params));
+				// Multiple clears within same render pass, methods: draw, clear
+				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "draw_clear" + testNameSuffix, params));
 			}
 			{
 				const TestParams params
@@ -954,7 +959,8 @@ void MultipleClearsWithinRenderPassTests::init ()
 						{ ClearOp::CLEAR	, Vec4(0.0f, 1.0f, 0.0f, 1.0f)	, 0.9f }
 					}
 				};
-				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "clear_clear" + testNameSuffix, "Multiple clears within same render pass, methods: clear, clear", params));
+				// Multiple clears within same render pass, methods: clear, clear
+				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "clear_clear" + testNameSuffix, params));
 			}
 		}
 	}

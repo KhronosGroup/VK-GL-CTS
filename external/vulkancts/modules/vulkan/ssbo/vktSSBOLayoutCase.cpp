@@ -1061,19 +1061,19 @@ void generateImmMatrixSrc (std::ostream& src,
 	{
 		for (int rowNdex = 0; rowNdex < numRows; rowNdex++)
 		{
-			src << "\t" << resultVar << " = " << resultVar << " && compare_" << typeName << "(" << shaderName << "[" << colNdex << "][" << rowNdex << "], ";
+			src << "\t" << resultVar << " = compare_" << typeName << "(" << shaderName << "[" << colNdex << "][" << rowNdex << "], ";
 			const deUint8*	compPtr	= (const deUint8*)valuePtr + (isRowMajor ? rowNdex*matrixStride + colNdex*compSize
 																						: colNdex*matrixStride + rowNdex*compSize);
 
 			src << de::floatToString(*((const float*)compPtr), 1);
-			src << ");\n";
+			src << ") && " << resultVar << ";\n";
 		}
 	}
 
 	typeName = "vec";
 	for (int colNdex = 0; colNdex < numCols; colNdex++)
 	{
-		src << "\t" << resultVar << " = " << resultVar << " && compare_" << typeName << numRows << "(" << shaderName << "[" << colNdex << "], " << typeName << numRows << "(";
+		src << "\t" << resultVar << " = compare_" << typeName << numRows << "(" << shaderName << "[" << colNdex << "], " << typeName << numRows << "(";
 		for (int rowNdex = 0; rowNdex < numRows; rowNdex++)
 		{
 			const deUint8*	compPtr	= (const deUint8*)valuePtr + (isRowMajor ? (rowNdex * matrixStride + colNdex * compSize)
@@ -1083,7 +1083,7 @@ void generateImmMatrixSrc (std::ostream& src,
 			if (rowNdex < numRows-1)
 				src << ", ";
 		}
-		src << "));\n";
+		src << ")) && " << resultVar << ";\n";
 	}
 }
 
@@ -1216,27 +1216,33 @@ void generateCompareSrc (
 	const BlockDataPtr&			blockPtr,
 	const BufferVar&			bufVar,
 	const glu::SubTypeAccess&	accessPath,
-	MatrixLoadFlags				matrixLoadFlag)
+	MatrixLoadFlags				matrixLoadFlag,
+	int&						compareLimit)
 {
 	const VarType curType = accessPath.getType();
+
+	// if limit for number of performed compare operations was reached then skip remaining compares
+	if (compareLimit < 1)
+		return;
 
 	if (curType.isArrayType())
 	{
 		const int arraySize = curType.getArraySize() == VarType::UNSIZED_ARRAY ? block.getLastUnsizedArraySize(instanceNdx) : curType.getArraySize();
 
 		for (int elemNdx = 0; elemNdx < arraySize; elemNdx++)
-			generateCompareSrc(src, resultVar, bufferLayout, block, instanceNdx, blockPtr, bufVar, accessPath.element(elemNdx), LOAD_FULL_MATRIX);
+			generateCompareSrc(src, resultVar, bufferLayout, block, instanceNdx, blockPtr, bufVar, accessPath.element(elemNdx), LOAD_FULL_MATRIX, compareLimit);
 	}
 	else if (curType.isStructType())
 	{
 		const int numMembers = curType.getStructPtr()->getNumMembers();
 
 		for (int memberNdx = 0; memberNdx < numMembers; memberNdx++)
-			generateCompareSrc(src, resultVar, bufferLayout, block, instanceNdx, blockPtr, bufVar, accessPath.member(memberNdx), LOAD_FULL_MATRIX);
+			generateCompareSrc(src, resultVar, bufferLayout, block, instanceNdx, blockPtr, bufVar, accessPath.member(memberNdx), LOAD_FULL_MATRIX, compareLimit);
 	}
 	else
 	{
 		DE_ASSERT(curType.isBasicType());
+		compareLimit--;
 
 		const string	apiName	= getAPIName(block, bufVar, accessPath.getPath());
 		const int		varNdx	= bufferLayout.getVariableIndex(apiName);
@@ -1279,6 +1285,11 @@ void generateCompareSrc (
 
 void generateCompareSrc (std::ostream& src, const char* resultVar, const ShaderInterface& interface, const BufferLayout& layout, const vector<BlockDataPtr>& blockPointers, MatrixLoadFlags matrixLoadFlag)
 {
+	// limit number of performed compare operations; some generated tests execute
+	// large number of compare operations that result in slow compile times which
+	// in turn result in test skip on slower platforms
+	int compareLimit = 130;
+
 	for (int declNdx = 0; declNdx < interface.getNumBlocks(); declNdx++)
 	{
 		const BufferBlock&	block			= interface.getBlock(declNdx);
@@ -1300,7 +1311,7 @@ void generateCompareSrc (std::ostream& src, const char* resultVar, const ShaderI
 				if ((bufVar.getFlags() & ACCESS_READ) == 0)
 					continue; // Don't read from that variable.
 
-				generateCompareSrc(src, resultVar, layout, block, instanceNdx, blockPtr, bufVar, glu::SubTypeAccess(bufVar.getType()), matrixLoadFlag);
+				generateCompareSrc(src, resultVar, layout, block, instanceNdx, blockPtr, bufVar, glu::SubTypeAccess(bufVar.getType()), matrixLoadFlag, compareLimit);
 			}
 		}
 	}
@@ -2444,8 +2455,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 // SSBOLayoutCase.
 
-SSBOLayoutCase::SSBOLayoutCase (tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer)
-	: TestCase			(testCtx, name, description)
+SSBOLayoutCase::SSBOLayoutCase (tcu::TestContext& testCtx, const char* name, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer)
+	: TestCase			(testCtx, name)
 	, m_bufferMode		(bufferMode)
 	, m_matrixLoadFlag	(matrixLoadFlag)
 	, m_matrixStoreFlag	(matrixStoreFlag)

@@ -1,5 +1,9 @@
-dEQP-GLES31.functional.sample_shading.min_sample_shading.default_framebuffer_color
-dEQP-GLES31.functional.sample_shading.min_sample_shading.default_framebuffer_discard
+dEQP-GLES31.info.vendor
+dEQP-GLES31.info.renderer
+dEQP-GLES31.info.version
+dEQP-GLES31.info.shading_language_version
+dEQP-GLES31.info.extensions
+dEQP-GLES31.info.render_target
 dEQP-GLES31.functional.shaders.sample_variables.num_samples.default_framebuffer
 dEQP-GLES31.functional.shaders.sample_variables.max_samples.default_framebuffer
 dEQP-GLES31.functional.shaders.sample_variables.sample_id.default_framebuffer
@@ -15,9 +19,5 @@ dEQP-GLES31.functional.shaders.sample_variables.sample_mask.discard_half_per_two
 dEQP-GLES31.functional.shaders.sample_variables.sample_mask.inverse_per_pixel.default_framebuffer
 dEQP-GLES31.functional.shaders.sample_variables.sample_mask.inverse_per_sample.default_framebuffer
 dEQP-GLES31.functional.shaders.sample_variables.sample_mask.inverse_per_two_samples.default_framebuffer
-dEQP-GLES31.info.vendor
-dEQP-GLES31.info.renderer
-dEQP-GLES31.info.version
-dEQP-GLES31.info.shading_language_version
-dEQP-GLES31.info.extensions
-dEQP-GLES31.info.render_target
+dEQP-GLES31.functional.sample_shading.min_sample_shading.default_framebuffer_color
+dEQP-GLES31.functional.sample_shading.min_sample_shading.default_framebuffer_discard

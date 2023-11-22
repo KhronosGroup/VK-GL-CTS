@@ -86,6 +86,18 @@ int getBlockSize (CompressedTexFormat format)
 				return -1;
 		}
 	}
+	else if (isAhbRawFormat(format))
+	{
+		switch (format)
+		{
+			case COMPRESSEDTEXFORMAT_AHB_RAW10:	return 5;
+			case COMPRESSEDTEXFORMAT_AHB_RAW12:	return 3;
+
+			default:
+				DE_ASSERT(false);
+				return -1;
+		}
+	}
 	else
 	{
 		DE_ASSERT(false);
@@ -140,6 +152,18 @@ IVec3 getBlockPixelSize (CompressedTexFormat format)
 	else if (isBcFormat(format))
 	{
 		return IVec3(4, 4, 1);
+	}
+	else if (isAhbRawFormat(format))
+	{
+		switch (format)
+		{
+			case COMPRESSEDTEXFORMAT_AHB_RAW10:	return IVec3(4, 1, 1);
+			case COMPRESSEDTEXFORMAT_AHB_RAW12:	return IVec3(2, 1, 1);
+
+			default:
+				DE_ASSERT(false);
+				return IVec3();
+		}
 	}
 	else
 	{
@@ -292,6 +316,19 @@ bool isAstcSRGBFormat (CompressedTexFormat format)
 	}
 }
 
+bool isAhbRawFormat (CompressedTexFormat format)
+{
+	switch(format)
+	{
+		case COMPRESSEDTEXFORMAT_AHB_RAW10:
+		case COMPRESSEDTEXFORMAT_AHB_RAW12:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 TextureFormat getUncompressedFormat (CompressedTexFormat format)
 {
 	if (isEtcFormat(format))
@@ -334,6 +371,13 @@ TextureFormat getUncompressedFormat (CompressedTexFormat format)
 			return TextureFormat(TextureFormat::sRGBA, TextureFormat::UNORM_INT8);
 		else
 			return TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8);
+	}
+	else if (isAhbRawFormat(format))
+	{
+		if (format == COMPRESSEDTEXFORMAT_AHB_RAW10)
+			return TextureFormat(TextureFormat::R, TextureFormat::UNORM_SHORT_10); // Can be changed to a more fitting value if needed
+		else // COMPRESSEDTEXFORMAT_AHB_RAW12
+			return TextureFormat(TextureFormat::R, TextureFormat::UNORM_SHORT_12); // Can be changed to a more fitting value if needed
 	}
 	else
 	{
@@ -2415,6 +2459,58 @@ void decompressBc7 (const PixelBufferAccess& dst, const deUint8* src)
 	}
 }
 
+void decompressAhbRaw10 (const PixelBufferAccess& dst, const deUint8* src)
+{
+	// Packed format with 4 pixels in 5 bytes
+	// Layout: https://developer.android.com/reference/android/graphics/ImageFormat#RAW10
+
+	deUint32	firstPixel	= (*(src + 0u));
+	deUint32	secondPixel	= (*(src + 1u));
+	deUint32	thirdPixel	= (*(src + 2u));
+	deUint32	fourthPixel	= (*(src + 3u));
+	deUint32	packedPixel	= (*(src + 4u));
+
+	// We now need to take last bits for each pixel from the packed pixel to build all pixel values
+	firstPixel				= ((firstPixel  << 2u) | ((packedPixel >> 0u) & 0b00000011u));
+	secondPixel				= ((secondPixel << 2u) | ((packedPixel >> 2u) & 0b00000011u));
+	thirdPixel				= ((thirdPixel  << 2u) | ((packedPixel >> 4u) & 0b00000011u));
+	fourthPixel				= ((fourthPixel << 2u) | ((packedPixel >> 6u) & 0b00000011u));
+
+	// Store values in buffer (higher bits is were data is stored)
+	deUint16* pixel			= static_cast<deUint16*>(dst.getDataPtr());
+	(*pixel)				= static_cast<deUint16>(firstPixel << 6u);
+
+	pixel++;
+	(*pixel)				= static_cast<deUint16>(secondPixel << 6u);
+
+	pixel++;
+	(*pixel)				= static_cast<deUint16>(thirdPixel << 6u);
+
+	pixel++;
+	(*pixel)				= static_cast<deUint16>(fourthPixel << 6u);
+}
+
+void decompressAhbRaw12 (const PixelBufferAccess& dst, const deUint8* src)
+{
+	// Packed format with 2 pixels in 3 bytes
+	// Layout: https://developer.android.com/reference/android/graphics/ImageFormat#RAW12
+
+	deUint32	firstPixel	= (*(src + 0));
+	deUint32	secondPixel	= (*(src + 1));
+	deUint32	packedPixel	= (*(src + 2));
+
+	// We now need to take last bits for each pixel from the packed pixel to build all pixel values
+	firstPixel				= ((firstPixel << 4u)	| ((packedPixel >> 0u) & 0b00001111u));
+	secondPixel				= ((secondPixel << 4u)	| ((packedPixel >> 4u) & 0b00001111u));
+
+	// Store values in buffer (higher bits is were data is stored)
+	deUint16* pixel			= static_cast<deUint16*>(dst.getDataPtr());
+	(*pixel)				= static_cast<deUint16>(firstPixel << 6u);
+
+	pixel++;
+	(*pixel)				= static_cast<deUint16>(secondPixel << 6u);
+}
+
 void decompressBlock (CompressedTexFormat format, const PixelBufferAccess& dst, const deUint8* src, const TexDecompressionParams& params)
 {
 	// No 3D blocks supported right now
@@ -2481,6 +2577,9 @@ void decompressBlock (CompressedTexFormat format, const PixelBufferAccess& dst, 
 		case COMPRESSEDTEXFORMAT_BC6H_SFLOAT_BLOCK:					decompressBc6H							(dst, src, true);	break;
 		case COMPRESSEDTEXFORMAT_BC7_UNORM_BLOCK:					decompressBc7							(dst, src);			break;
 		case COMPRESSEDTEXFORMAT_BC7_SRGB_BLOCK:					decompressBc7							(dst, src);			break;
+
+		case COMPRESSEDTEXFORMAT_AHB_RAW10:							decompressAhbRaw10						(dst, src);			break;
+		case COMPRESSEDTEXFORMAT_AHB_RAW12:							decompressAhbRaw12						(dst, src);			break;
 
 		default:
 			DE_FATAL("Unexpected format");

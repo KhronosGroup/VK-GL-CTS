@@ -183,7 +183,7 @@ struct TestParams
 class ImageSubresourceLayoutCase : public vkt::TestCase
 {
 public:
-							ImageSubresourceLayoutCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							ImageSubresourceLayoutCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~ImageSubresourceLayoutCase		(void) {}
 
 	virtual void			initPrograms					(vk::SourceCollections&) const {}
@@ -209,8 +209,8 @@ private:
 	TestParams m_params;
 };
 
-ImageSubresourceLayoutCase::ImageSubresourceLayoutCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+ImageSubresourceLayoutCase::ImageSubresourceLayoutCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {
 }
@@ -650,6 +650,7 @@ tcu::TestStatus ImageSubresourceLayoutInstance::iterateAspect (VkImageAspectFlag
 	return tcu::TestStatus::pass("Pass");
 }
 
+#ifndef CTS_USES_VULKANSC
 class ImageSubresourceLayoutInvarianceInstance: public vkt::TestInstance
 {
 public:
@@ -670,7 +671,6 @@ ImageSubresourceLayoutInvarianceInstance::ImageSubresourceLayoutInvarianceInstan
 
 tcu::TestStatus ImageSubresourceLayoutInvarianceInstance::iterate(void)
 {
-#ifndef CTS_USES_VULKANSC
 	const VkDevice			device	= m_context.getDevice();
 	const DeviceInterface&	vk		= m_context.getDeviceInterface();
 
@@ -743,9 +743,6 @@ tcu::TestStatus ImageSubresourceLayoutInvarianceInstance::iterate(void)
 				return tcu::TestStatus::fail("Fail (vkGetImageSubresourceLayout2KHR)");
 		}
 	}
-#else
-	DE_UNREF(m_params);
-#endif // CTS_USES_VULKANSC
 	return tcu::TestStatus::pass("Pass");
 }
 
@@ -760,7 +757,7 @@ public:
 };
 
 ImageSubresourceLayoutInvarianceCase::ImageSubresourceLayoutInvarianceCase(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
-	: ImageSubresourceLayoutCase(testCtx, name, "", params)
+	: ImageSubresourceLayoutCase(testCtx, name, params)
 {
 }
 
@@ -774,37 +771,43 @@ void ImageSubresourceLayoutInvarianceCase::checkSupport(Context& context) const
 	ImageSubresourceLayoutCase::checkSupport(context);
 	context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
+#endif // CTS_USES_VULKANSC
 
 } // anonymous namespace
 
 tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> layoutTestGroup (new tcu::TestCaseGroup(testCtx, "subresource_layout", "Tests for vkGetImageSubresourceLayout"));
+	de::MovePtr<tcu::TestCaseGroup> layoutTestGroup (new tcu::TestCaseGroup(testCtx, "subresource_layout"));
 
 	struct
 	{
 		VkImageType	type;
 		bool		array;
 		const char*	name;
-		const char*	desc;
 	} imageClass[] =
 	{
-		{ VK_IMAGE_TYPE_2D,	false,	"2d",		"2D images"							},
-		{ VK_IMAGE_TYPE_2D,	true,	"2d_array",	"2D images with multiple layers"	},
-		{ VK_IMAGE_TYPE_3D,	false,	"3d",		"3D images"							},
+		// 2D images
+		{ VK_IMAGE_TYPE_2D,	false,	"2d"},
+		// 2D images with multiple layers
+		{ VK_IMAGE_TYPE_2D,	true,	"2d_array"},
+		// 3D images
+		{ VK_IMAGE_TYPE_3D,	false,	"3d"},
 	};
 
 	struct
 	{
 		deUint32	maxLevels;
 		const char*	name;
-		const char*	desc;
 	} mipLevels[] =
 	{
-		{ 1u,									"1_level",		"Single mip level"		},
-		{ 2u,									"2_levels",		"Two mip levels"		},
-		{ 4u,									"4_levels",		"Four mip levels"		},
-		{ std::numeric_limits<deUint32>::max(),	"all_levels",	"All possible levels"	},
+		// Single mip level
+		{ 1u,									"1_level"},
+		// Two mip levels
+		{ 2u,									"2_levels"},
+		// Four mip levels
+		{ 4u,									"4_levels"},
+		// All possible levels
+		{ std::numeric_limits<deUint32>::max(), "all_levels"},
 	};
 
 	VkFormat testFormats[] =
@@ -959,19 +962,18 @@ tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx
 	for (int classIdx = 0; classIdx < DE_LENGTH_OF_ARRAY(imageClass); ++classIdx)
 	{
 		const auto& imgClass = imageClass[classIdx];
-		de::MovePtr<tcu::TestCaseGroup> classGroup (new tcu::TestCaseGroup(testCtx, imgClass.name, imgClass.desc));
+		de::MovePtr<tcu::TestCaseGroup> classGroup (new tcu::TestCaseGroup(testCtx, imgClass.name));
 
 		for (int mipIdx = 0; mipIdx < DE_LENGTH_OF_ARRAY(mipLevels); ++mipIdx)
 		{
 			const auto &mipLevel = mipLevels[mipIdx];
-			de::MovePtr<tcu::TestCaseGroup> mipGroup (new tcu::TestCaseGroup(testCtx, mipLevel.name, mipLevel.desc));
+			de::MovePtr<tcu::TestCaseGroup> mipGroup (new tcu::TestCaseGroup(testCtx, mipLevel.name));
 
 			for (int formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); ++formatIdx)
 			{
 				const auto			format		= testFormats[formatIdx];
 				const auto			fmtName		= std::string(getFormatName(format));
 				const auto			name		= de::toLower(fmtName.substr(prefixLen)); // Remove VK_FORMAT_ prefix.
-				const auto			desc		= "Using format " + fmtName;
 
 				TestParams params;
 				params.imageFormat	= format;
@@ -980,11 +982,11 @@ tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx
 				params.dimensions	= getDefaultDimensions(imgClass.type, imgClass.array);
 				params.imageOffset	= false;
 
-				mipGroup->addChild(new ImageSubresourceLayoutCase(testCtx, name, desc, params));
+				mipGroup->addChild(new ImageSubresourceLayoutCase(testCtx, name, params));
 
 				params.imageOffset	= true;
 
-				mipGroup->addChild(new ImageSubresourceLayoutCase(testCtx, name+"_offset", desc, params));
+				mipGroup->addChild(new ImageSubresourceLayoutCase(testCtx, name+"_offset", params));
 			}
 
 			classGroup->addChild(mipGroup.release());
@@ -994,7 +996,8 @@ tcu::TestCaseGroup* createImageSubresourceLayoutTests (tcu::TestContext& testCtx
 	}
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<tcu::TestCaseGroup> invarianceGroup(new tcu::TestCaseGroup(testCtx, "invariance", "Tests for vkGetDeviceImageSubresourceLayoutKHR"));
+	// Tests for vkGetDeviceImageSubresourceLayoutKHR
+	de::MovePtr<tcu::TestCaseGroup> invarianceGroup(new tcu::TestCaseGroup(testCtx, "invariance"));
 
 	TestParams params;
 	params.imageOffset = false;

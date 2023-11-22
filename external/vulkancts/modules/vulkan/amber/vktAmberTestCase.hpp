@@ -135,6 +135,14 @@ protected:
 
 AmberTestCase* createAmberTestCase (tcu::TestContext&							testCtx,
 									const char*									name,
+									const char*									category,
+									const std::string&							filename,
+									const std::vector<std::string>				requirements = std::vector<std::string>(),
+									const std::vector<vk::VkImageCreateInfo>	imageRequirements = std::vector<vk::VkImageCreateInfo>(),
+									const std::vector<BufferRequirement>		bufferRequirements = std::vector<BufferRequirement>());
+
+AmberTestCase* createAmberTestCase (tcu::TestContext&							testCtx,
+									const char*									name,
 									const char*									description,
 									const char*									category,
 									const std::string&							filename,

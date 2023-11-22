@@ -201,6 +201,7 @@ TestLog::~TestLog (void)
 void TestLog::writeMessage (const char* msgStr)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_writeText(m_log, DE_NULL, DE_NULL, QP_KEY_TAG_NONE, msgStr) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -208,6 +209,7 @@ void TestLog::writeMessage (const char* msgStr)
 void TestLog::startImageSet (const char* name, const char* description)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_startImageSet(m_log, name, description) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -215,6 +217,7 @@ void TestLog::startImageSet (const char* name, const char* description)
 void TestLog::endImageSet (void)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_endImageSet(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -245,6 +248,7 @@ static Vector<int, Size> computeScaledSize (const Vector<int, Size>& imageSize, 
 void TestLog::writeImage (const char* name, const char* description, const ConstPixelBufferAccess& access, const Vec4& pixelScale, const Vec4& pixelBias, qpImageCompressionMode compressionMode)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	const TextureFormat&	format		= access.getFormat();
 	int						width		= access.getWidth();
 	int						height		= access.getHeight();
@@ -370,6 +374,7 @@ void TestLog::writeImage (const char* name, const char* description, const Const
 void TestLog::writeImage (const char* name, const char* description, qpImageCompressionMode compressionMode, qpImageFormat format, int width, int height, int stride, const void* data)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_writeImage(m_log, name, description, compressionMode, format, width, height, stride, data) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -377,6 +382,7 @@ void TestLog::writeImage (const char* name, const char* description, qpImageComp
 void TestLog::startSection (const char* name, const char* description)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_startSection(m_log, name, description) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -384,6 +390,7 @@ void TestLog::startSection (const char* name, const char* description)
 void TestLog::endSection (void)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_endSection(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -391,6 +398,7 @@ void TestLog::endSection (void)
 void TestLog::startShaderProgram (bool linkOk, const char* linkInfoLog)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_startShaderProgram(m_log, linkOk?DE_TRUE:DE_FALSE, linkInfoLog) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -398,6 +406,7 @@ void TestLog::startShaderProgram (bool linkOk, const char* linkInfoLog)
 void TestLog::endShaderProgram (void)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_endShaderProgram(m_log) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -405,6 +414,7 @@ void TestLog::endShaderProgram (void)
 void TestLog::writeShader (qpShaderType type, const char* source, bool compileOk, const char* infoLog)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_writeShader(m_log, type, source, compileOk?DE_TRUE:DE_FALSE, infoLog) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -412,6 +422,7 @@ void TestLog::writeShader (qpShaderType type, const char* source, bool compileOk
 void TestLog::writeSpirVAssemblySource (const char* source)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_writeSpirVAssemblySource(m_log, source) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -419,6 +430,7 @@ void TestLog::writeSpirVAssemblySource (const char* source)
 void TestLog::writeKernelSource (const char* source)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_writeKernelSource(m_log, source) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -426,6 +438,7 @@ void TestLog::writeKernelSource (const char* source)
 void TestLog::writeCompileInfo (const char* name, const char* description, bool compileOk, const char* infoLog)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_writeCompileInfo(m_log, name, description, compileOk ? DE_TRUE : DE_FALSE, infoLog) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -433,6 +446,7 @@ void TestLog::writeCompileInfo (const char* name, const char* description, bool 
 void TestLog::writeFloat (const char* name, const char* description, const char* unit, qpKeyValueTag tag, float value)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_writeFloat(m_log, name, description, unit, tag, value) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -440,6 +454,7 @@ void TestLog::writeFloat (const char* name, const char* description, const char*
 void TestLog::writeInteger (const char* name, const char* description, const char* unit, qpKeyValueTag tag, deInt64 value)
 {
 	if (m_logSupressed) return;
+	if (m_skipAdditionalDataInLog) return;
 	if (qpTestLog_writeInteger(m_log, name, description, unit, tag, value) == DE_FALSE)
 		throw LogWriteFailedError();
 }
@@ -470,6 +485,19 @@ void TestLog::startCase (const char* testCasePath, qpTestCaseType testCaseType)
 	if (m_logSupressed) return;
 	if (qpTestLog_startCase(m_log, testCasePath, testCaseType) == DE_FALSE)
 		throw LogWriteFailedError();
+	// Check if the test is one of those we want to print fully in the log
+	m_skipAdditionalDataInLog = false;
+	if (qpTestLog_isCompact(m_log))
+	{
+		const std::string testCasePathStr = testCasePath;
+		if (testCasePathStr.rfind("dEQP-VK.info.") != 0
+			&& testCasePathStr.rfind("dEQP-VK.api.info.") != 0
+			&& testCasePathStr.rfind("dEQP-VK.api.version_check.") != 0)
+		{
+			// We can skip writing text, numbers, imagesets, etc.
+			m_skipAdditionalDataInLog = true;
+		}
+	}
 }
 
 void TestLog::endCase (qpTestResult result, const char* description)

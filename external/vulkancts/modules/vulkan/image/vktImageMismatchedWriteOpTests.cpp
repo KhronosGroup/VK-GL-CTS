@@ -69,9 +69,8 @@ public:
 
 										MismatchedWriteOpTest		(tcu::TestContext&			testCtx,
 																	 const std::string&			name,
-																	 const std::string&			description,
 																	 const ParamsSp				params)
-	: TestCase	(testCtx, name, description)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 	{
 	}
@@ -92,10 +91,9 @@ class MismatchedVectorSizesTest : public MismatchedWriteOpTest
 public:
 										MismatchedVectorSizesTest	(tcu::TestContext&			testCtx,
 																	 const std::string&			name,
-																	 const std::string&			description,
 																	 const ParamsSp				params,
 																	 const int					sourceWidth)
-		: MismatchedWriteOpTest	(testCtx, name, description, params)
+		: MismatchedWriteOpTest	(testCtx, name, params)
 		, m_sourceWidth			(sourceWidth)
 	{
 		DE_ASSERT(getNumUsedChannels(params->vkFormat) <= sourceWidth);
@@ -113,9 +111,8 @@ class MismatchedSignednessAndTypeTest : public MismatchedWriteOpTest
 public:
 									MismatchedSignednessAndTypeTest	(tcu::TestContext&			testCtx,
 																	 const std::string&			name,
-																	 const std::string&			description,
 																	 const ParamsSp				params)
-		: MismatchedWriteOpTest	(testCtx, name, description, params)
+		: MismatchedWriteOpTest	(testCtx, name, params)
 	{
 	}
 
@@ -1007,8 +1004,10 @@ tcu::TestCaseGroup* createImageWriteOpTests (tcu::TestContext& testCtx)
 		return ss.str();
 	};
 
-	auto testGroup						= new tcu::TestCaseGroup(testCtx, "mismatched_write_op",			"Test image OpImageWrite operation in various aspects.");
-	auto testGroupMismatchedVectorSizes	= new tcu::TestCaseGroup(testCtx, "mismatched_vector_sizes",		"Case OpImageWrite operation on mismatched vector sizes.");
+	// Test image OpImageWrite operation in various aspects.
+	auto testGroup						= new tcu::TestCaseGroup(testCtx, "mismatched_write_op");
+	// Case OpImageWrite operation on mismatched vector sizes.
+	auto testGroupMismatchedVectorSizes	= new tcu::TestCaseGroup(testCtx, "mismatched_vector_sizes");
 	auto testGroupMismatchedSignedness	= new tcu::TestCaseGroup(testCtx, "mismatched_signedness_and_type",	"Case OpImageWrite operation on mismatched signedness and values.");
 
 	for (const VkFormat& f : allFormats)
@@ -1024,7 +1023,7 @@ tcu::TestCaseGroup* createImageWriteOpTests (tcu::TestContext& testCtx)
 
 			const std::string testName = de::toLower(getSpirvFormat(i[0])) + "_from_" + de::toLower(getSpirvFormat(f));
 			auto params	= new MismatchedWriteOpTest::Params { f, 12, 8*static_cast<int>(std::distance(begin,i)+1), i[0] };
-			testGroupMismatchedSignedness->addChild(new MismatchedSignednessAndTypeTest(testCtx, testName, {}, MismatchedVectorSizesTest::ParamsSp(params)));
+			testGroupMismatchedSignedness->addChild(new MismatchedSignednessAndTypeTest(testCtx, testName, MismatchedVectorSizesTest::ParamsSp(params)));
 		}
 
 		for (int sourceWidth = 4; sourceWidth > 0; --sourceWidth)
@@ -1033,7 +1032,7 @@ tcu::TestCaseGroup* createImageWriteOpTests (tcu::TestContext& testCtx)
 			{
 				auto params = new MismatchedWriteOpTest::Params { f, 12*sourceWidth, 8*(4-sourceWidth+1), f };
 				testGroupMismatchedVectorSizes->addChild(
-					new MismatchedVectorSizesTest(testCtx, genVectorSizesTestName(f, sourceWidth), {}, MismatchedVectorSizesTest::ParamsSp(params), sourceWidth));
+					new MismatchedVectorSizesTest(testCtx, genVectorSizesTestName(f, sourceWidth), MismatchedVectorSizesTest::ParamsSp(params), sourceWidth));
 			}
 		}
 	}

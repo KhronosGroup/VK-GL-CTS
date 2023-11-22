@@ -175,11 +175,28 @@ void checkSupport (Context& context, const TestParameters params)
 			context.getPhysicalDevice(),
 			params.format);
 
+		const bool					transferByViews = disjoint && (getPlanarFormatDescription(params.format).numPlanes > 1);
+
 		if (!disjoint && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Storage images are not supported for this format");
 
 		if (disjoint && ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Disjoint planes are not supported for this format");
+
+		if (disjoint && transferByViews)
+		{
+			const PlanarFormatDescription	formatDescription				= getPlanarFormatDescription(params.format);
+			for (deUint32 planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
+			{
+				const VkFormat				planeCompatibleFormat			= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
+				const VkFormatProperties	planeCompatibleFormatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+					context.getPhysicalDevice(),
+					planeCompatibleFormat);
+
+				if ((planeCompatibleFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
+					TCU_THROW(NotSupportedError, "Storage images are not supported for the plane compatible format");
+			}
+		}
 	}
 }
 
@@ -725,7 +742,7 @@ tcu::TestCaseGroup* populateStorageImageWriteFormatGroup (tcu::TestContext& test
 		const VkFormat					format				= (VkFormat)formatNdx;
 		tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(format);
 		std::string						formatName			= de::toLower(de::toString(format).substr(10));
-		de::MovePtr<tcu::TestCaseGroup> formatGroup			( new tcu::TestCaseGroup(testCtx, formatName.c_str(), "") );
+		de::MovePtr<tcu::TestCaseGroup> formatGroup			( new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 
 		for (size_t sizeNdx = 0; sizeNdx < availableSizes.size(); sizeNdx++)
 		{
@@ -739,10 +756,10 @@ tcu::TestCaseGroup* populateStorageImageWriteFormatGroup (tcu::TestContext& test
 
 			std::ostringstream stream;
 			stream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
-			de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, stream.str().c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, stream.str().c_str()));
 
-			addFunctionCaseWithPrograms(sizeGroup.get(), "joint", "", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, 0u));
-			addFunctionCaseWithPrograms(sizeGroup.get(), "disjoint", "", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, (VkImageCreateFlags)(VK_IMAGE_CREATE_DISJOINT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT)));
+			addFunctionCaseWithPrograms(sizeGroup.get(), "joint", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, 0u));
+			addFunctionCaseWithPrograms(sizeGroup.get(), "disjoint", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, (VkImageCreateFlags)(VK_IMAGE_CREATE_DISJOINT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT)));
 
 			formatGroup->addChild(sizeGroup.release());
 		}
@@ -766,7 +783,7 @@ tcu::TestCaseGroup* populateStorageImageWriteFormatGroup (tcu::TestContext& test
 
 tcu::TestCaseGroup* createStorageImageWriteTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "storage_image_write", "Writing to YCbCr storage images"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "storage_image_write"));
 	return populateStorageImageWriteFormatGroup(testCtx, testGroup);
 }
 

@@ -232,7 +232,6 @@ class UnusedAttachmentTest : public vkt::TestCase
 public:
 										UnusedAttachmentTest	(tcu::TestContext&	testContext,
 																 const std::string&	name,
-																 const std::string&	description,
 																 const TestParams&	testParams);
 	virtual								~UnusedAttachmentTest	(void);
 	virtual void						initPrograms			(SourceCollections&	sourceCollections) const;
@@ -297,9 +296,8 @@ private:
 
 UnusedAttachmentTest::UnusedAttachmentTest (tcu::TestContext&	testContext,
 											const std::string&	name,
-											const std::string&	description,
 											const TestParams&	testParams)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_testParams	(testParams)
 {
 }
@@ -969,7 +967,8 @@ std::string storeOpToString (VkAttachmentStoreOp storeOp)
 
 tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& testCtx, const RenderingType renderingType)
 {
-	de::MovePtr<tcu::TestCaseGroup>		unusedAttTests		(new tcu::TestCaseGroup(testCtx, "unused_attachment", "Unused attachment tests"));
+	// Unused attachment tests
+	de::MovePtr<tcu::TestCaseGroup>		unusedAttTests		(new tcu::TestCaseGroup(testCtx, "unused_attachment"));
 
 	const VkAttachmentLoadOp			loadOps[]			=
 	{
@@ -986,15 +985,15 @@ tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& tes
 
 	for (deUint32 loadOpIdx = 0; loadOpIdx < DE_LENGTH_OF_ARRAY(loadOps); loadOpIdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	loadOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("loadop") + loadOpToString(loadOps[loadOpIdx])).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup>	loadOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("loadop") + loadOpToString(loadOps[loadOpIdx])).c_str()));
 
 		for (deUint32 storeOpIdx = 0; storeOpIdx < DE_LENGTH_OF_ARRAY(storeOps); storeOpIdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	storeOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("storeop") + storeOpToString(storeOps[storeOpIdx])).c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	storeOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("storeop") + storeOpToString(storeOps[storeOpIdx])).c_str()));
 
 			for (deUint32 stencilLoadOpIdx = 0; stencilLoadOpIdx < DE_LENGTH_OF_ARRAY(loadOps); stencilLoadOpIdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	stencilLoadOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("stencilloadop") + loadOpToString(loadOps[stencilLoadOpIdx])).c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup>	stencilLoadOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("stencilloadop") + loadOpToString(loadOps[stencilLoadOpIdx])).c_str()));
 
 				for (deUint32 stencilStoreOpIdx = 0; stencilStoreOpIdx < DE_LENGTH_OF_ARRAY(storeOps); stencilStoreOpIdx++)
 				{
@@ -1007,7 +1006,7 @@ tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& tes
 					params.stencilStoreOp	= storeOps[stencilStoreOpIdx];
 					params.renderingType	= renderingType;
 
-					stencilLoadOpGroup->addChild(new UnusedAttachmentTest(testCtx, testName, "", params));
+					stencilLoadOpGroup->addChild(new UnusedAttachmentTest(testCtx, testName, params));
 				}
 				storeOpGroup->addChild(stencilLoadOpGroup.release());
 			}

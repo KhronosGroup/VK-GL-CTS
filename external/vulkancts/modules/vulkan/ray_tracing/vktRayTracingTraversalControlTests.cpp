@@ -387,7 +387,7 @@ VkClearValue SingleSquareConfiguration::getClearValue ()
 class TraversalControlTestCase : public TestCase
 {
 	public:
-							TraversalControlTestCase					(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
+							TraversalControlTestCase					(tcu::TestContext& context, const char* name, const TestParams data);
 							~TraversalControlTestCase					(void);
 
 	virtual void			checkSupport								(Context& context) const;
@@ -410,8 +410,8 @@ private:
 	TestParams														m_data;
 };
 
-TraversalControlTestCase::TraversalControlTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams data)
-	: vkt::TestCase	(context, name, desc)
+TraversalControlTestCase::TraversalControlTestCase (tcu::TestContext& context, const char* name, const TestParams data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -721,7 +721,8 @@ tcu::TestStatus TraversalControlTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createTraversalControlTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "traversal_control", "Tests verifying traversal control in RT hit shaders"));
+	// Tests verifying traversal control in RT hit shaders
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "traversal_control"));
 
 	struct HitShaderTestTypeData
 	{
@@ -750,7 +751,7 @@ tcu::TestCaseGroup*	createTraversalControlTests(tcu::TestContext& testCtx)
 
 	for (size_t shaderTestNdx = 0; shaderTestNdx < DE_LENGTH_OF_ARRAY(hitShaderTestTypes); ++shaderTestNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> testTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), hitShaderTestTypes[shaderTestNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> testTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), hitShaderTestTypes[shaderTestNdx].name));
 
 		for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
 		{
@@ -765,7 +766,7 @@ tcu::TestCaseGroup*	createTraversalControlTests(tcu::TestContext& testCtx)
 				bottomTestTypes[testTypeNdx].testType,
 				de::SharedPtr<TestConfiguration>(new SingleSquareConfiguration())
 			};
-			testTypeGroup->addChild(new TraversalControlTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, "", testParams));
+			testTypeGroup->addChild(new TraversalControlTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, testParams));
 		}
 		group->addChild(testTypeGroup.release());
 

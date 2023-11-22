@@ -516,9 +516,8 @@ class BufferViewTestCase : public vkt::TestCase
 public:
 									BufferViewTestCase					(tcu::TestContext&			testCtx,
 																		 const std::string&			name,
-																		 const std::string&			description,
 																		 BufferViewCaseParams		bufferViewTestInfo)
-									: vkt::TestCase						(testCtx, name, description)
+									: vkt::TestCase						(testCtx, name)
 									, m_bufferViewTestInfo				(bufferViewTestInfo)
 	{}
 
@@ -993,9 +992,8 @@ class BufferViewAllFormatsTestCase : public vkt::TestCase
 public:
 									BufferViewAllFormatsTestCase		(tcu::TestContext&			testCtx,
 																		 const std::string&			name,
-																		 const std::string&			description,
 																		 BufferViewCaseParams		bufferViewTestInfo)
-									: vkt::TestCase						(testCtx, name, description)
+									: vkt::TestCase						(testCtx, name)
 									, m_bufferViewTestInfo				(bufferViewTestInfo)
 	{}
 
@@ -1150,11 +1148,13 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 		"image_dedicated_alloc"
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests						(new tcu::TestCaseGroup(testCtx, "access", "BufferView Access Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests						(new tcu::TestCaseGroup(testCtx, "access"));
 	de::MovePtr<tcu::TestCaseGroup>	bufferViewAllocationGroupTests[]	=
 	{
-		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "suballocation", "BufferView Access Tests for Suballocated Objects")),
-		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "dedicated_alloc", "BufferView Access Tests for Dedicatedly Allocated Objects"))
+		// BufferView Access Tests for Suballocated Objects
+		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "suballocation")),
+		// BufferView Access Tests for Dedicatedly Allocated Objects
+		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "dedicated_alloc"))
 	};
 
 	for (deUint32 buffersAllocationNdx = 0u; buffersAllocationNdx < ALLOCATION_KIND_LAST; ++buffersAllocationNdx)
@@ -1176,9 +1176,7 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 			name << "buffer_view_memory_test_complete";
 			if (testCaseGroupNdx != 0)
 				name << "_with_" << bufferTexts[buffersAllocationNdx] << "_" << imageTexts[imageAllocationNdx];
-			std::ostringstream		description;
-			description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
-			currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), description.str(), info));
+			currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), info));
 		}
 
 		{
@@ -1194,9 +1192,7 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 			name << "buffer_view_memory_test_partial_offset0";
 			if (testCaseGroupNdx != 0)
 				name << "_with_" << bufferTexts[buffersAllocationNdx] << "_" << imageTexts[imageAllocationNdx];
-			std::ostringstream		description;
-			description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
-			currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), description.str(), info));
+			currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), info));
 		}
 
 		{
@@ -1212,9 +1208,7 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 			name << "buffer_view_memory_test_partial_offset1";
 			if (testCaseGroupNdx != 0)
 				name << "_with_" << bufferTexts[buffersAllocationNdx] << "_" << imageTexts[imageAllocationNdx];
-			std::ostringstream		description;
-			description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
-			currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), description.str(), info));
+			currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), info));
 		}
 	}
 
@@ -1365,10 +1359,7 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 					descType[usageNdx],										// VkDescriptorType			descType
 				};
 
-				std::ostringstream		description;
-				description << "bufferFormat: " << getFormatName(testFormats[formatIdx]) << " bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
-
-				usageGroup->addChild(new BufferViewAllFormatsTestCase(testCtx, fmtName.c_str(), description.str(), info));
+				usageGroup->addChild(new BufferViewAllFormatsTestCase(testCtx, fmtName.c_str(), info));
 			}
 
 			bufferViewTests->addChild(usageGroup.release());
@@ -1414,10 +1405,7 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 					descType[usageNdx],										// VkDescriptorType			descType
 				};
 
-				std::ostringstream		description;
-				description << "bufferFormat: " << getFormatName(testFormats[formatIdx]) << " bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
-
-				usageGroup->addChild(new BufferViewAllFormatsTestCase(testCtx, fmtName.c_str(), description.str(), info));
+				usageGroup->addChild(new BufferViewAllFormatsTestCase(testCtx, fmtName.c_str(), info));
 			}
 
 			uniformStorageGroup->addChild(usageGroup.release());

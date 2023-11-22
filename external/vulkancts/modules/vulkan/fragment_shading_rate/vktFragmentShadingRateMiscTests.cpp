@@ -699,13 +699,13 @@ void createFragmentShadingRateMiscTests (tcu::TestCaseGroup* group)
 {
 	{
 		const char* testName = "enable_disable_attachment";
-		const char* testDesc = "Test drawing with VRS enabled by an attachment and then disabled";
-		addFunctionCaseWithPrograms(group, testName, testDesc, checkEnableDisableSupport, initEnableDisableShaders, testEnableDisable);
+		// Test drawing with VRS enabled by an attachment and then disabled
+		addFunctionCaseWithPrograms(group, testName, checkEnableDisableSupport, initEnableDisableShaders, testEnableDisable);
 	}
 	{
 		const char* testName = "no_frag_shader";
-		const char* testDesc = "Test drawing with VRS enabled and no frag shader";
-		addFunctionCaseWithPrograms(group, testName, testDesc, checkNoFragSupport, initNoFragShaders, testNoFrag);
+		// Test drawing with VRS enabled and no frag shader
+		addFunctionCaseWithPrograms(group, testName, checkNoFragSupport, initNoFragShaders, testNoFrag);
 	}
 }
 

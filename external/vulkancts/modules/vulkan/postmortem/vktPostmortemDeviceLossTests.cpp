@@ -327,7 +327,7 @@ public:
 };
 
 DeviceLossCase::DeviceLossCase (TestContext& testCtx, const std::string& name)
-	: TestCase(testCtx, name, "")
+	: TestCase(testCtx, name)
 {
 }
 

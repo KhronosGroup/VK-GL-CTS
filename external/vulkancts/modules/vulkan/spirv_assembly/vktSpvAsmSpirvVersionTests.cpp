@@ -251,7 +251,7 @@ tcu::TestStatus SpvAsmComputeSpirvVersionsInstance::iterate (void)
 class SpvAsmSpirvVersionsCase : public TestCase
 {
 public:
-							SpvAsmSpirvVersionsCase	(tcu::TestContext& testCtx, const char* name, const char* description, const TestParameters& testParameters);
+							SpvAsmSpirvVersionsCase	(tcu::TestContext& testCtx, const char* name, const TestParameters& testParameters);
 	void					initPrograms			(vk::SourceCollections& programCollection) const;
 	TestInstance*			createInstance			(Context& context) const;
 
@@ -259,8 +259,8 @@ private:
 	const TestParameters	m_testParameters;
 };
 
-SpvAsmSpirvVersionsCase::SpvAsmSpirvVersionsCase (tcu::TestContext& testCtx, const char* name, const char* description, const TestParameters& testParameters)
-	: TestCase			(testCtx, name, description)
+SpvAsmSpirvVersionsCase::SpvAsmSpirvVersionsCase (tcu::TestContext& testCtx, const char* name, const TestParameters& testParameters)
+	: TestCase			(testCtx, name)
 	, m_testParameters	(testParameters)
 {
 }
@@ -375,7 +375,8 @@ tcu::TestCaseGroup* createSpivVersionCheckTests (tcu::TestContext& testCtx, cons
 		"fragment",
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "spirv_version", "Test SPIR-V version is supported"));
+	// Test SPIR-V version is supported
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "spirv_version"));
 
 	for (SpirvVersion spirvVersion = SPIRV_VERSION_1_0; spirvVersion < SPIRV_VERSION_LAST; ++spirvVersion)
 	{
@@ -394,7 +395,7 @@ tcu::TestCaseGroup* createSpivVersionCheckTests (tcu::TestContext& testCtx, cons
 					spirvVersion
 				};
 
-				group->addChild(new SpvAsmSpirvVersionsCase(testCtx, testName.c_str(), "", testParameters));
+				group->addChild(new SpvAsmSpirvVersionsCase(testCtx, testName.c_str(), testParameters));
 			}
 		}
 	}

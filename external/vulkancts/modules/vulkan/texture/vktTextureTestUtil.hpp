@@ -359,8 +359,8 @@ template <typename INSTANCE_TYPE>
 class TextureTestCase : public TestCase
 {
 public:
-										TextureTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, const typename INSTANCE_TYPE::ParameterType& testParameters)
-												: TestCase				(context, name, description)
+										TextureTestCase	(tcu::TestContext& context, const std::string& name, const typename INSTANCE_TYPE::ParameterType& testParameters)
+												: TestCase				(context, name)
 												, m_testsParameters		(testParameters)
 										{}
 

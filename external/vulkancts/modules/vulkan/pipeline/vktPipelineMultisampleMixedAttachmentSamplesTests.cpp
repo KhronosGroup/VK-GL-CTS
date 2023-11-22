@@ -1895,8 +1895,8 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, Pi
 
 	// Test 1: Per-sample expected value check
 	{
-		MovePtr<tcu::TestCaseGroup> standardLocationsGroup		(new tcu::TestCaseGroup(rootGroup->getTestContext(), "verify_standard_locations", ""));
-		MovePtr<tcu::TestCaseGroup> programmableLocationsGroup	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "verify_programmable_locations", ""));
+		MovePtr<tcu::TestCaseGroup> standardLocationsGroup		(new tcu::TestCaseGroup(rootGroup->getTestContext(), "verify_standard_locations"));
+		MovePtr<tcu::TestCaseGroup> programmableLocationsGroup	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "verify_programmable_locations"));
 
 		tcu::TestCaseGroup* locationsGroups[2] =
 		{
@@ -1932,7 +1932,6 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, Pi
 					addFunctionCaseWithPrograms(
 						sampleCaseGroup.get(),
 						getFormatCaseName(params.colorFormat, params.depthStencilFormat).c_str(),
-						"",
 						VerifySamples::checkRequirements,
 						VerifySamples::initPrograms,
 						VerifySamples::test, params);
@@ -1958,7 +1957,7 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, Pi
 					params.perSubpassSamples.push_back(samples);
 				}
 
-				MovePtr<tcu::TestCaseGroup> sampleCaseGroup(new tcu::TestCaseGroup(rootGroup->getTestContext(), subpassCases[caseNdx].caseName, ""));
+				MovePtr<tcu::TestCaseGroup> sampleCaseGroup(new tcu::TestCaseGroup(rootGroup->getTestContext(), subpassCases[caseNdx].caseName));
 
 				for (const VkFormat *pDepthStencilFormat = depthStencilReducedFormatRange;	pDepthStencilFormat != DE_ARRAY_END(depthStencilReducedFormatRange); ++pDepthStencilFormat)
 				for (const VkFormat *pColorFormat		 = colorFormatRange;				pColorFormat		!= DE_ARRAY_END(colorFormatRange);				 ++pColorFormat)
@@ -1969,7 +1968,6 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, Pi
 					addFunctionCaseWithPrograms(
 						sampleCaseGroup.get(),
 						getFormatCaseName(params.colorFormat, params.depthStencilFormat).c_str(),
-						"",
 						VerifySamples::checkRequirements,
 						VerifySamples::initPrograms,
 						VerifySamples::test, params);
@@ -1986,7 +1984,7 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, Pi
 	// Test 2: Shader built-ins check
 	if (!useFragmentShadingRate)
 	{
-		MovePtr<tcu::TestCaseGroup> builtinsGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), "shader_builtins", ""));
+		MovePtr<tcu::TestCaseGroup> builtinsGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), "shader_builtins"));
 
 		for (deUint32 caseNdx = 0u; caseNdx < DE_LENGTH_OF_ARRAY(singlePassCases); ++caseNdx)
 		{
@@ -2008,7 +2006,6 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, Pi
 				addFunctionCaseWithPrograms(
 					sampleCaseGroup.get(),
 					getFormatCaseName(params.colorFormat, params.depthStencilFormat).c_str(),
-					"",
 					ShaderBuiltins::checkRequirements,
 					ShaderBuiltins::initPrograms,
 					ShaderBuiltins::test,
@@ -2026,7 +2023,8 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, Pi
 
 tcu::TestCaseGroup* createMultisampleMixedAttachmentSamplesTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, bool useFragmentShadingRate)
 {
-	return createTestGroup(testCtx, "mixed_attachment_samples", "Test a graphics pipeline with varying sample count per color and depth/stencil attachments", createMixedAttachmentSamplesTestsInGroup, pipelineConstructionType, useFragmentShadingRate);
+	// Test a graphics pipeline with varying sample count per color and depth/stencil attachments
+	return createTestGroup(testCtx, "mixed_attachment_samples", createMixedAttachmentSamplesTestsInGroup, pipelineConstructionType, useFragmentShadingRate);
 }
 
 } // pipeline

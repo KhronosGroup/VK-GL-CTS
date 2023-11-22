@@ -845,8 +845,8 @@ template<class Instance>
 class QueryPoolConcurrentTest : public vkt::TestCase
 {
 public:
-	QueryPoolConcurrentTest (tcu::TestContext &context, const char *name, const char *description)
-		: TestCase			(context, name, description)
+	QueryPoolConcurrentTest (tcu::TestContext &context, const char *name)
+		: TestCase			(context, name)
 	{
 	}
 private:
@@ -882,7 +882,7 @@ private:
 } //anonymous
 
 QueryPoolConcurrentTests::QueryPoolConcurrentTests (tcu::TestContext &testCtx)
-	: TestCaseGroup(testCtx, "concurrent_queries", "Tests for concurrent queries")
+	: TestCaseGroup(testCtx, "concurrent_queries")
 {
 	/* Left blank on purpose */
 }
@@ -894,8 +894,8 @@ QueryPoolConcurrentTests::~QueryPoolConcurrentTests (void)
 
 void QueryPoolConcurrentTests::init (void)
 {
-	addChild(new QueryPoolConcurrentTest<PrimaryCommandBufferConcurrentTestInstance>(m_testCtx, "primary_command_buffer", ""));
-	addChild(new QueryPoolConcurrentTest<SecondaryCommandBufferConcurrentTestInstance>(m_testCtx, "secondary_command_buffer", ""));
+	addChild(new QueryPoolConcurrentTest<PrimaryCommandBufferConcurrentTestInstance>(m_testCtx, "primary_command_buffer"));
+	addChild(new QueryPoolConcurrentTest<SecondaryCommandBufferConcurrentTestInstance>(m_testCtx, "secondary_command_buffer"));
 }
 
 } //QueryPool

@@ -1111,7 +1111,8 @@ std::string getTestCaseName(const std::string base, size_t offset)
 
 tcu::TestCaseGroup* createBufferMarkerTestsInGroup(tcu::TestContext& testCtx)
 {
-	tcu::TestCaseGroup* root = (new tcu::TestCaseGroup(testCtx, "buffer_marker", "AMD_buffer_marker Tests"));
+	// AMD_buffer_marker Tests
+	tcu::TestCaseGroup* root = (new tcu::TestCaseGroup(testCtx, "buffer_marker"));
 
 	VkQueueFlagBits queues[] = { VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT };
 	const char* queueNames[] = { "graphics", "compute", "transfer" };
@@ -1121,7 +1122,8 @@ tcu::TestCaseGroup* createBufferMarkerTestsInGroup(tcu::TestContext& testCtx)
 
 	for (size_t queueNdx = 0; queueNdx < DE_LENGTH_OF_ARRAY(queues); ++queueNdx)
 	{
-		tcu::TestCaseGroup* queueGroup = (new tcu::TestCaseGroup(testCtx, queueNames[queueNdx], "Buffer marker tests for a specific queue family"));
+		// Buffer marker tests for a specific queue family
+		tcu::TestCaseGroup* queueGroup = (new tcu::TestCaseGroup(testCtx, queueNames[queueNdx]));
 
 		const char* memoryNames[] = { "external_host_mem", "default_mem" };
 		const bool memoryTypes[] = { true, false };
@@ -1149,25 +1151,30 @@ tcu::TestCaseGroup* createBufferMarkerTestsInGroup(tcu::TestContext& testCtx)
 					base.size = 4;
 					base.offset = 0;
 
-					addFunctionCase(sequentialGroup, "4", "Writes 4 sequential marker values into a buffer", checkBufferMarkerSupport, bufferMarkerSequential, base);
+					// Writes 4 sequential marker values into a buffer
+					addFunctionCase(sequentialGroup, "4", checkBufferMarkerSupport, bufferMarkerSequential, base);
 
 					base.size = 64;
 					base.offset = 0;
 
-					addFunctionCase(sequentialGroup, "64", "Writes 64 sequential marker values into a buffer", checkBufferMarkerSupport, bufferMarkerSequential, base);
+					// Writes 64 sequential marker values into a buffer
+					addFunctionCase(sequentialGroup, "64", checkBufferMarkerSupport, bufferMarkerSequential, base);
 
 					base.offset = 16;
 
-					addFunctionCase(sequentialGroup, getTestCaseName("64", base.offset), "Writes 64 sequential marker values into a buffer offset by 16", checkBufferMarkerSupport, bufferMarkerSequential, base);
+					// Writes 64 sequential marker values into a buffer offset by 16
+					addFunctionCase(sequentialGroup, getTestCaseName("64", base.offset), checkBufferMarkerSupport, bufferMarkerSequential, base);
 
 					base.size = 65536;
 					base.offset = 0;
 
-					addFunctionCase(sequentialGroup, "65536", "Writes 65536 sequential marker values into a buffer", checkBufferMarkerSupport, bufferMarkerSequential, base);
+					// Writes 65536 sequential marker values into a buffer
+					addFunctionCase(sequentialGroup, "65536", checkBufferMarkerSupport, bufferMarkerSequential, base);
 
 					base.offset = 1024;
 
-					addFunctionCase(sequentialGroup, getTestCaseName("65536", base.offset), "Writes 65536 sequential marker values into a buffer offset by 1024", checkBufferMarkerSupport, bufferMarkerSequential, base);
+					// Writes 65536 sequential marker values into a buffer offset by 1024
+					addFunctionCase(sequentialGroup, getTestCaseName("65536", base.offset), checkBufferMarkerSupport, bufferMarkerSequential, base);
 
 					base.offset = 0;
 					stageGroup->addChild(sequentialGroup);
@@ -1178,18 +1185,22 @@ tcu::TestCaseGroup* createBufferMarkerTestsInGroup(tcu::TestContext& testCtx)
 
 					base.size = 1;
 
-					addFunctionCase(overwriteGroup, "1", "Randomly overwrites marker values to a 1-size buffer", checkBufferMarkerSupport, bufferMarkerOverwrite, base);
+					// Randomly overwrites marker values to a 1-size buffer
+					addFunctionCase(overwriteGroup, "1", checkBufferMarkerSupport, bufferMarkerOverwrite, base);
 
 					base.size = 4;
 
-					addFunctionCase(overwriteGroup, "4", "Randomly overwrites marker values to a 4-size buffer", checkBufferMarkerSupport, bufferMarkerOverwrite, base);
+					// Randomly overwrites marker values to a 4-size buffer
+					addFunctionCase(overwriteGroup, "4", checkBufferMarkerSupport, bufferMarkerOverwrite, base);
 
 					base.size = 64;
 
-					addFunctionCase(overwriteGroup, "64", "Randomly overwrites markers values to a 64-size buffer", checkBufferMarkerSupport, bufferMarkerOverwrite, base);
+					// Randomly overwrites markers values to a 64-size buffer
+					addFunctionCase(overwriteGroup, "64", checkBufferMarkerSupport, bufferMarkerOverwrite, base);
 					base.offset = 24;
 
-					addFunctionCase(overwriteGroup, getTestCaseName("64", base.offset), "Randomly overwrites markers values to a 64-size buffer at offset 24", checkBufferMarkerSupport, bufferMarkerOverwrite, base);
+					// Randomly overwrites markers values to a 64-size buffer at offset 24
+					addFunctionCase(overwriteGroup, getTestCaseName("64", base.offset), checkBufferMarkerSupport, bufferMarkerOverwrite, base);
 
 					base.offset = 0;
 
@@ -1212,19 +1223,22 @@ tcu::TestCaseGroup* createBufferMarkerTestsInGroup(tcu::TestContext& testCtx)
 						{
 							params.method = MEMORY_DEP_DRAW;
 
-							addFunctionCaseWithPrograms(memoryDepGroup, getTestCaseName("draw", params.base.offset), "Test memory dependencies between marker writes and draws", checkBufferMarkerSupport, initMemoryDepPrograms, bufferMarkerMemoryDep, params);
+							// Test memory dependencies between marker writes and draws
+							addFunctionCaseWithPrograms(memoryDepGroup, getTestCaseName("draw", params.base.offset), checkBufferMarkerSupport, initMemoryDepPrograms, bufferMarkerMemoryDep, params);
 						}
 
 						if (params.base.testQueue != VK_QUEUE_TRANSFER_BIT)
 						{
 							params.method = MEMORY_DEP_DISPATCH;
 
-							addFunctionCaseWithPrograms(memoryDepGroup, getTestCaseName("dispatch", params.base.offset), "Test memory dependencies between marker writes and compute dispatches", checkBufferMarkerSupport, initMemoryDepPrograms, bufferMarkerMemoryDep, params);
+							// Test memory dependencies between marker writes and compute dispatches
+							addFunctionCaseWithPrograms(memoryDepGroup, getTestCaseName("dispatch", params.base.offset), checkBufferMarkerSupport, initMemoryDepPrograms, bufferMarkerMemoryDep, params);
 						}
 
 						params.method = MEMORY_DEP_COPY;
 
-						addFunctionCaseWithPrograms(memoryDepGroup, getTestCaseName("buffer_copy", params.base.offset), "Test memory dependencies between marker writes and buffer copies", checkBufferMarkerSupport, initMemoryDepPrograms, bufferMarkerMemoryDep, params);
+						// Test memory dependencies between marker writes and buffer copies
+						addFunctionCaseWithPrograms(memoryDepGroup, getTestCaseName("buffer_copy", params.base.offset), checkBufferMarkerSupport, initMemoryDepPrograms, bufferMarkerMemoryDep, params);
 					}
 
 					stageGroup->addChild(memoryDepGroup);

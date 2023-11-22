@@ -53,6 +53,8 @@ struct CaseDefinition
 	VkFormat			format;
 	de::SharedPtr<bool>	geometryPointSizeSupported;
 	deBool				requiredSubgroupSize;
+	deBool				requires8BitUniformBuffer;
+	deBool				requires16BitUniformBuffer;
 };
 
 static bool checkVertexPipelineStages (const void*			internalData,
@@ -213,6 +215,22 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 
 	if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
 		TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+
+	if (caseDef.requires16BitUniformBuffer)
+	{
+		if (!subgroups::is16BitUBOStorageSupported(context))
+		{
+			TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+		}
+	}
+
+	if (caseDef.requires8BitUniformBuffer)
+	{
+		if (!subgroups::is8BitUBOStorageSupported(context))
+		{
+			TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+		}
+	}
 
 	if ((caseDef.opType == OPTYPE_QUAD_BROADCAST_NONCONST) && !subgroups::isSubgroupBroadcastDynamicIdSupported(context))
 		TCU_THROW(NotSupportedError, "Device does not support SubgroupBroadcastDynamicId");
@@ -414,8 +432,10 @@ TestCaseGroup* createSubgroupsQuadTests (TestContext& testCtx)
 
 		for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
 		{
-			const VkFormat	format		= formats[formatIndex];
-			const string	formatName	= subgroups::getFormatNameForGLSL(format);
+			const VkFormat	format					= formats[formatIndex];
+			const string	formatName				= subgroups::getFormatNameForGLSL(format);
+			const bool		needs8BitUBOStorage		= isFormat8bitTy(format);
+			const bool		needs16BitUBOStorage	= isFormat16BitTy(format);
 
 			for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 			{
@@ -434,9 +454,11 @@ TestCaseGroup* createSubgroupsQuadTests (TestContext& testCtx)
 						format,							//  VkFormat			format;
 						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 						requiredSubgroupSize,			//  deBool				requiredSubgroupSize;
+						DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+						DE_FALSE						//  deBool				requires16BitUniformBuffer;
 					};
 
-					addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(computeGroup.get(), testName,supportedCheck, initPrograms, test, caseDef);
 				}
 
 #ifndef CTS_USES_VULKANSC
@@ -454,9 +476,11 @@ TestCaseGroup* createSubgroupsQuadTests (TestContext& testCtx)
 							format,							//  VkFormat			format;
 							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 							requiredSubgroupSize,			//  deBool				requiredSubgroupSize;
+							DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+							DE_FALSE						//  deBool				requires16BitUniformBuffer;
 						};
 
-						addFunctionCaseWithPrograms(meshGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+						addFunctionCaseWithPrograms(meshGroup.get(), testName,supportedCheck, initPrograms, test, caseDef);
 					}
 				}
 #endif // CTS_USES_VULKANSC
@@ -468,10 +492,12 @@ TestCaseGroup* createSubgroupsQuadTests (TestContext& testCtx)
 						VK_SHADER_STAGE_ALL_GRAPHICS,	//  VkShaderStageFlags	shaderStage;
 						format,							//  VkFormat			format;
 						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
-						DE_FALSE						//  deBool				requiredSubgroupSize;
+						DE_FALSE,						//  deBool				requiredSubgroupSize;
+						DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+						DE_FALSE						//  deBool				requires16BitUniformBuffer;
 					};
 
-					addFunctionCaseWithPrograms(graphicGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(graphicGroup.get(), name, supportedCheck, initPrograms, test, caseDef);
 				}
 
 				for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(fbStages); ++stageIndex)
@@ -482,11 +508,13 @@ TestCaseGroup* createSubgroupsQuadTests (TestContext& testCtx)
 						fbStages[stageIndex],			//  VkShaderStageFlags	shaderStage;
 						format,							//  VkFormat			format;
 						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
-						DE_FALSE						//  deBool				requiredSubgroupSize;
+						DE_FALSE,						//  deBool				requiredSubgroupSize;
+						deBool(needs8BitUBOStorage),	//  deBool				requires8BitUniformBuffer;
+						deBool(needs16BitUBOStorage)	//  deBool				requires16BitUniformBuffer;
 					};
 					const string			testName	= name + "_" + getShaderStageName(caseDef.shaderStage);
 
-					addFunctionCaseWithPrograms(framebufferGroup.get(), testName, "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+					addFunctionCaseWithPrograms(framebufferGroup.get(), testName,supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 				}
 			}
 		}
@@ -511,10 +539,12 @@ TestCaseGroup* createSubgroupsQuadTests (TestContext& testCtx)
 					SHADER_STAGE_ALL_RAY_TRACING,	//  VkShaderStageFlags	shaderStage;
 					format,							//  VkFormat			format;
 					de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
-					DE_FALSE						//  deBool				requiredSubgroupSize;
+					DE_FALSE,						//  deBool				requiredSubgroupSize;
+					DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+					DE_FALSE						//  deBool				requires16BitUniformBuffer;
 				};
 
-				addFunctionCaseWithPrograms(raytracingGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(raytracingGroup.get(), testName,supportedCheck, initPrograms, test, caseDef);
 			}
 		}
 	}

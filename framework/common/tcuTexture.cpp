@@ -763,6 +763,29 @@ int getNumUsedChannels (TextureFormat::ChannelOrder order)
 	}
 }
 
+bool hasAlphaChannel (TextureFormat::ChannelOrder order)
+{
+	// make sure this table is updated if type table is updated
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
+
+	switch (order)
+	{
+		case TextureFormat::A:
+		case TextureFormat::LA:
+		case TextureFormat::RG:
+		case TextureFormat::RA:
+		case TextureFormat::RGBA:
+		case TextureFormat::ARGB:
+		case TextureFormat::ABGR:
+		case TextureFormat::BGRA:
+		case TextureFormat::sRGBA:
+		case TextureFormat::sBGRA:
+			return true;
+		default:
+			return false;
+	}
+}
+
 int getChannelSize (TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
@@ -1413,10 +1436,8 @@ U64Vec4 ConstPixelBufferAccess::getPixelBitsAsUint64 (int x, int y, int z) const
 		case TextureFormat::SNORM_INT_1010102_REV:		// Fall-through
 		case TextureFormat::SSCALED_INT_1010102_REV:	// Fall-through
 		case TextureFormat::SIGNED_INT_1010102_REV:		return swizzleGe(U64Vec4(U32( 0, 10), U32(10, 10), U32(20, 10), U32(30, 2)), m_format.order, TextureFormat::RGBA);
+		case TextureFormat::UNORM_SHORT_1555:			return swizzleGe(U64Vec4(U16(15,  1), U16(10,  5), U16( 5,  5), U16( 0, 5)), m_format.order, TextureFormat::RGBA);
 
-		case TextureFormat::UNORM_SHORT_1555:
-			DE_ASSERT(m_format.order == TextureFormat::ARGB);
-			return U64Vec4(U16(15, 1), U16(10, 5), U16(5, 5), U16(0, 5)).swizzle(1,2,3,0); // ARGB -> RGBA
 
 		default:
 			break; // To generic path.

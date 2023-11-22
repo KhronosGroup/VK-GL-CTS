@@ -399,8 +399,7 @@ class GPQCase : public TestCase
 public:
 					GPQCase				(tcu::TestContext&	ctx,
 										 const std::string&	name,
-										 const TestConfig&	cfg,
-										 const std::string&	desc = {});
+										 const TestConfig&	cfg);
 	void			initPrograms		(SourceCollections&	programs)	const override;
 	TestInstance*	createInstance		(Context&			context)	const override;
 	void			checkSupport		(Context&			context)	const override;
@@ -416,9 +415,8 @@ deUint32 GPQCase::testValue = 113;
 
 GPQCase::GPQCase (tcu::TestContext&		ctx,
 				  const std::string&	name,
-				  const TestConfig&		cfg,
-				  const std::string&	desc)
-	: TestCase				(ctx, name, desc)
+				  const TestConfig&		cfg)
+	: TestCase				(ctx, name)
 	, m_config				(cfg)
 	, m_createInstanceMap	()
 {
@@ -944,19 +942,19 @@ tcu::TestCaseGroup* createGlobalPriorityQueueTests (tcu::TestContext& testCtx)
 	const uint32_t	dim1	= 25;
 	bool			swap	= true;
 
-	auto rootGroup = new tcu::TestCaseGroup(testCtx, "global_priority_transition", "Global Priority Queue Tests");
+	auto rootGroup = new tcu::TestCaseGroup(testCtx, "global_priority_transition");
 
 	for (const auto& prio : prios)
 	{
-		auto prioGroup = new tcu::TestCaseGroup(testCtx, prio.second, "");
+		auto prioGroup = new tcu::TestCaseGroup(testCtx, prio.second);
 
 		for (const auto& sync : syncs)
 		{
-			auto syncGroup = new tcu::TestCaseGroup(testCtx, sync.second, "");
+			auto syncGroup = new tcu::TestCaseGroup(testCtx, sync.second);
 
 			for (const auto& mod : modifiers)
 			{
-				auto modGroup = new tcu::TestCaseGroup(testCtx, mod.second, "");
+				auto modGroup = new tcu::TestCaseGroup(testCtx, mod.second);
 
 				for (const auto& transitionFrom : transitions)
 				{

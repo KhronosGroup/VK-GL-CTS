@@ -99,6 +99,7 @@ struct TestParams
 {
 	static constexpr uint32_t kMaxFragAttachments			= 8u;						// Based on real-world maxFragmentOutputAttachments values.
 	static constexpr uint32_t kMaxFramebufferAttachments	= 2u * kMaxFragAttachments;	// Slightly arbitrary, based on the previous number.
+	static constexpr uint32_t kExtraPipelineAttCount		= 4u;						// Used when largePipeAttCount is true.
 
 	const uint32_t	pipeFBAttachmentCount;		// Number of attachments specified in the pipeline and framebuffer (VUID-vkCmdDraw-colorAttachmentCount-06179).
 	const uint32_t	fragAttachmentCount;		// Frag shader outputs. Needs to be >= pipeFBAttachmentCount.
@@ -120,6 +121,7 @@ struct TestParams
 
 	const bool		useSecondaries;				// Use secondary command buffers inside the render pass.
 	const bool		wrongFormatWithNullViews;	// Use the wrong format value if the image view handle is VK_NULL_HANDLE.
+	const bool		largePipeAttCount;			// Ignore VUID-vkCmdDraw-colorAttachmentCount-06179 and make VkPipelineRenderingCreateInfo::colorAttachmentCount larger than VkRenderingInfo::colorAttachmentCount.
 
 	TestParams (uint32_t	pipeFBAttachmentCount_,
 				uint32_t	fragAttachmentCount_,
@@ -135,7 +137,8 @@ struct TestParams
 				bool		stencilDefined_,
 				bool		stencilValidHandle_,
 				bool		useSecondaries_,
-				bool		wrongFormatWithNullViews_)
+				bool		wrongFormatWithNullViews_,
+				bool		largePipeAttCount_)
 		: pipeFBAttachmentCount			(pipeFBAttachmentCount_)
 		, fragAttachmentCount			(fragAttachmentCount_)
 		, layerCount					(layerCount_)
@@ -151,6 +154,7 @@ struct TestParams
 		, stencilValidHandle			(stencilValidHandle_)
 		, useSecondaries				(useSecondaries_)
 		, wrongFormatWithNullViews		(wrongFormatWithNullViews_)
+		, largePipeAttCount				(largePipeAttCount_)
 	{
 		DE_ASSERT(fragAttachmentCount <= kMaxFragAttachments);
 		DE_ASSERT(pipeFBAttachmentCount <= kMaxFramebufferAttachments);
@@ -337,8 +341,8 @@ protected:
 class DynamicUnusedAttachmentsCase : public vkt::TestCase
 {
 public:
-					DynamicUnusedAttachmentsCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					DynamicUnusedAttachmentsCase	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 	TestInstance*	createInstance					(Context& context) const override { return new DynamicUnusedAttachmentsInstance(context, m_params); }
@@ -455,8 +459,21 @@ void DynamicUnusedAttachmentsCase::checkSupport (Context& context) const
 	context.requireDeviceFunctionality("VK_EXT_dynamic_rendering_unused_attachments");
 
 	const auto& properties = context.getDeviceProperties();
+
 	if (m_params.fragAttachmentCount > properties.limits.maxFragmentOutputAttachments)
-		TCU_THROW(NotSupportedError, "Unsupported number of attachments");
+		TCU_THROW(NotSupportedError, "Unsupported number of fragment output attachments");
+
+	if (m_params.pipeFBAttachmentCount > properties.limits.maxColorAttachments)
+		TCU_THROW(NotSupportedError, "Unsupported number of color attachments");
+
+	if (m_params.largePipeAttCount)
+	{
+		// In theory, there's no limit to the amount of attachments in the pipeline.
+		// In practice, many implementations limit these to maxFragmentOutputAttachments, so we check the limit here.
+		const auto pipelineAttCount = m_params.pipeFBAttachmentCount + TestParams::kExtraPipelineAttCount;
+		if (pipelineAttCount > properties.limits.maxFragmentOutputAttachments)
+			TCU_THROW(NotSupportedError, "Unsupported number of extra attachments");
+	}
 
 	if (m_params.vertExportsLayer())
 	{
@@ -616,6 +633,14 @@ tcu::TestStatus DynamicUnusedAttachmentsInstance::iterate (void)
 
 		if (stencilAttachmentPtr.get() && stencilAttachmentPtr->imageView == VK_NULL_HANDLE)
 			stencilPipelineFormat = badDSFormat;
+	}
+
+	if (m_params.largePipeAttCount)
+	{
+		// Make VkPipelineRenderingCreateInfo::colorAttachmentCount larger than VkRenderingInfo::colorAttachmentCount
+		colorPipelineFormats.reserve(colorPipelineFormats.size() + TestParams::kExtraPipelineAttCount);
+		for (uint32_t i = 0u; i < TestParams::kExtraPipelineAttCount; ++i)
+			colorPipelineFormats.push_back(kBadColorFormat);
 	}
 
 	const VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo =
@@ -985,13 +1010,16 @@ using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 tcu::TestCaseGroup* createDynamicRenderingUnusedAttachmentsTests (tcu::TestContext& testCtx, bool useSecondaries)
 {
-	GroupPtr group (new tcu::TestCaseGroup(testCtx, "unused_attachments", "Tests for VK_EXT_dynamic_rendering_unused_attachments"));
+	// Tests for VK_EXT_dynamic_rendering_unused_attachments
+	GroupPtr group (new tcu::TestCaseGroup(testCtx, "unused_attachments"));
 
 	// Add a combination subgroup just in case we want to add more test cases later to another subgroup.
-	GroupPtr combGroup	(new tcu::TestCaseGroup(testCtx, "comb", "VK_EXT_dynamic_rendering_unused_attachments with different combinations"));
-	GroupPtr colorGroup	(new tcu::TestCaseGroup(testCtx, "color", ""));
-	GroupPtr dsGroup	(new tcu::TestCaseGroup(testCtx, "depth_stencil", ""));
+	// VK_EXT_dynamic_rendering_unused_attachments with different combinations
+	GroupPtr combGroup	(new tcu::TestCaseGroup(testCtx, "comb"));
+	GroupPtr colorGroup	(new tcu::TestCaseGroup(testCtx, "color"));
+	GroupPtr dsGroup	(new tcu::TestCaseGroup(testCtx, "depth_stencil"));
 	GroupPtr badFmtGrp	(new tcu::TestCaseGroup(testCtx, "bad_formats", "Test using wrong formats when the handle is VK_NULL_HANDLE"));
+	GroupPtr moreAttGrp	(new tcu::TestCaseGroup(testCtx, "extra_att", "Test making the pipeline attachment count larger than the rendering info attachment count"));
 
 	const uint32_t attachmentCounts[]	= { 1u, 4u, 8u, };
 	const uint32_t layerCounts[]		= { 1u, 4u, };
@@ -1030,9 +1058,9 @@ tcu::TestCaseGroup* createDynamicRenderingUnusedAttachmentsTests (tcu::TestConte
 										formatMask, handleMask,
 										false, false, false,
 										false, false, false,
-										useSecondaries, false
+										useSecondaries, false, false
 									);
-									colorGroup->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), "", params));
+									colorGroup->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), params));
 								}
 							}
 					}
@@ -1089,9 +1117,9 @@ tcu::TestCaseGroup* createDynamicRenderingUnusedAttachmentsTests (tcu::TestConte
 												0xFFFFFFFFu, 0xFFFFFFFFu,
 												depthPresent, depthDefined, depthValidHandle,
 												stencilPresent, stencilDefined, stencilValidHandle,
-												useSecondaries, false
+												useSecondaries, false, false
 											);
-											dsGroup->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), "", params));
+											dsGroup->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), params));
 										}
 									}
 							}
@@ -1118,12 +1146,37 @@ tcu::TestCaseGroup* createDynamicRenderingUnusedAttachmentsTests (tcu::TestConte
 					formatMask, handleMask,
 					true, true, false,
 					true, true, false,
-					useSecondaries, true
+					useSecondaries, true, false
 				);
-				badFmtGrp->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), "", params));
+				badFmtGrp->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), params));
 			}
 	}
 	group->addChild(badFmtGrp.release());
+
+	// Extra attachments tests.
+	{
+		for (const auto& attCount : attachmentCounts)
+			for (const auto& formatMask : masksToTest)
+				for (const auto& handleMask : masksToTest)
+				{
+					if (handleMask == 0xFFFFFFFFu || formatMask == handleMask)
+						continue;
+
+					const TestParams params
+					(
+						attCount, attCount, 1u,
+						1u,
+						false,
+						formatMask, handleMask,
+						false, false, false,
+						false, false, false,
+						useSecondaries, false, true
+					);
+					moreAttGrp->addChild(new DynamicUnusedAttachmentsCase(testCtx, params.getTestName(), params));
+				}
+
+	}
+	group->addChild(moreAttGrp.release());
 
 	return group.release();
 }

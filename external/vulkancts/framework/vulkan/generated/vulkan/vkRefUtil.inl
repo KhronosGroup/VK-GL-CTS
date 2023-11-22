@@ -55,5 +55,7 @@ Move<VkVideoSessionParametersKHR>	createVideoSessionParametersKHR		(const Device
 Move<VkCuModuleNVX>					createCuModuleNVX					(const DeviceInterface& vk, VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkCuFunctionNVX>				createCuFunctionNVX					(const DeviceInterface& vk, VkDevice device, const VkCuFunctionCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkBufferCollectionFUCHSIA>		createBufferCollectionFUCHSIA		(const DeviceInterface& vk, VkDevice device, const VkBufferCollectionCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkCudaModuleNV>				createCudaModuleNV					(const DeviceInterface& vk, VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkCudaFunctionNV>				createCudaFunctionNV				(const DeviceInterface& vk, VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkMicromapEXT>					createMicromapEXT					(const DeviceInterface& vk, VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkOpticalFlowSessionNV>		createOpticalFlowSessionNV			(const DeviceInterface& vk, VkDevice device, const VkOpticalFlowSessionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);

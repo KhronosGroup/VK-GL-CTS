@@ -1396,6 +1396,10 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
 	{
 		// For the Output Coincide, the DPB and destination output resources are the same.
 		pPicParams->decodeFrameInfo.dstPictureResource = pPicParams->dpbSetupPictureResource;
+
+		// Also, when we are copying the output we need to know which layer is used for the current frame.
+		// This is if a multi-layered image is used for the DPB and the output (since they coincide).
+		cachedParameters->decodedPictureInfo.imageLayerIndex = pPicParams->dpbSetupPictureResource.baseArrayLayer;
 	}
 	else if (pOutputPictureResourceInfo)
 	{

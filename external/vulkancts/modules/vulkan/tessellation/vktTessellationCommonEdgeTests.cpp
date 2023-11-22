@@ -472,7 +472,8 @@ std::string getCaseName (const TessPrimitiveType primitiveType, const SpacingMod
 //! These tests correspond to dEQP-GLES31.functional.tessellation.common_edge.*
 tcu::TestCaseGroup* createCommonEdgeTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "common_edge", "Draw multiple adjacent shapes and check that no cracks appear between them"));
+	// Draw multiple adjacent shapes and check that no cracks appear between them
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "common_edge"));
 
 	static const TessPrimitiveType primitiveTypes[] =
 	{
@@ -489,7 +490,7 @@ tcu::TestCaseGroup* createCommonEdgeTests (tcu::TestContext& testCtx)
 		const SpacingMode		spacingMode   = static_cast<SpacingMode>(spacingModeNdx);
 		const CaseDefinition	caseDef		  = { primitiveType, spacingMode, caseType };
 
-		addFunctionCaseWithPrograms(group.get(), getCaseName(primitiveType, spacingMode, caseType), "", initPrograms, test, caseDef);
+		addFunctionCaseWithPrograms(group.get(), getCaseName(primitiveType, spacingMode, caseType), initPrograms, test, caseDef);
 	}
 
 	return group.release();

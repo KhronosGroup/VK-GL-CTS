@@ -368,8 +368,8 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate (void)
 class ShaderObjectMiscCase : public vkt::TestCase
 {
 public:
-							ShaderObjectMiscCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-													: vkt::TestCase		(testCtx, name, description)
+							ShaderObjectMiscCase	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+													: vkt::TestCase		(testCtx, name)
 													, m_params			(params)
 													{}
 	virtual					~ShaderObjectMiscCase	(void) {}
@@ -983,7 +983,7 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 		vk.cmdSetDepthBiasEnable(cmdBuffer, m_params.depthBiasEnable ? VK_TRUE : VK_FALSE);
 	if ((!m_params.pipeline && m_params.vertShader) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE))
 		vk.cmdSetPrimitiveRestartEnable(cmdBuffer, VK_FALSE);
-	if ((!m_params.pipeline && m_params.fragShader) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE))
+	if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE))
 		vk.cmdSetRasterizerDiscardEnable(cmdBuffer, m_params.rasterizerDiscardEnable ? VK_TRUE : VK_FALSE);
 	if ((!m_params.pipeline && m_params.vertShader) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
 		if (extensionEnabled(deviceExtensions, "VK_EXT_shader_object") || extensionEnabled(deviceExtensions, "VK_EXT_vertex_input_dynamic_state"))
@@ -1039,9 +1039,9 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 		vk.cmdSetDiscardRectangleModeEXT(cmdBuffer, vk::VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT);
 	if ((!m_params.pipeline && m_params.discardRectanglesEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT))
 		vk.cmdSetDiscardRectangleEXT(cmdBuffer, 0u, 1u, &scissor);
-	if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT))
+	if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT))
 		vk.cmdSetConservativeRasterizationModeEXT(cmdBuffer, m_params.conservativeRasterizationOverestimate ? vk::VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT : vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT);
-	if ((!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization && m_params.conservativeRasterizationOverestimate) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT))
+	if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.conservativeRasterization && m_params.conservativeRasterizationOverestimate) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT))
 		vk.cmdSetExtraPrimitiveOverestimationSizeEXT(cmdBuffer, de::min(1.0f, m_context.getConservativeRasterizationPropertiesEXT().maxExtraPrimitiveOverestimationSize));
 	if ((!m_params.pipeline && m_params.depthClip) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT))
 		vk.cmdSetDepthClipEnableEXT(cmdBuffer, VK_TRUE);
@@ -1061,7 +1061,7 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 		vk.cmdSetSampleLocationsEXT(cmdBuffer, &sampleLocationsInfo);
 	if ((!m_params.pipeline && m_params.provokingVertex) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT))
 		vk.cmdSetProvokingVertexModeEXT(cmdBuffer, vk::VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT);
-	if (m_params.pipeline || (m_params.fragShader && !m_params.rasterizerDiscardEnable && m_params.lineRasterization && m_params.lines))
+	if (m_params.pipeline || (!m_params.rasterizerDiscardEnable && m_params.lineRasterization && m_params.lines))
 	{
 		if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT))
 			vk.cmdSetLineRasterizationModeEXT(cmdBuffer, vk::VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT);
@@ -1748,8 +1748,8 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 class ShaderObjectStateCase : public vkt::TestCase
 {
 public:
-							ShaderObjectStateCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const StateTestParams& testParams)
-													: vkt::TestCase		(testCtx, name, description)
+							ShaderObjectStateCase	(tcu::TestContext& testCtx, const std::string& name, const StateTestParams& testParams)
+													: vkt::TestCase		(testCtx, name)
 													, m_params			(testParams)
 													{}
 	virtual					~ShaderObjectStateCase	(void) {}
@@ -2246,8 +2246,8 @@ tcu::TestStatus ShaderObjectUnusedBuiltinInstance::iterate (void)
 class ShaderObjectUnusedBuiltinCase : public vkt::TestCase
 {
 public:
-							ShaderObjectUnusedBuiltinCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const UnusedBuiltinParams& testParams)
-															: vkt::TestCase		(testCtx, name, description)
+							ShaderObjectUnusedBuiltinCase	(tcu::TestContext& testCtx, const std::string& name, const UnusedBuiltinParams& testParams)
+															: vkt::TestCase		(testCtx, name)
 															, m_params			(testParams)
 															{}
 	virtual					~ShaderObjectUnusedBuiltinCase	(void) {}
@@ -2611,8 +2611,8 @@ tcu::TestStatus ShaderObjectTessellationModesInstance::iterate (void)
 class ShaderObjectTessellationModesCase : public vkt::TestCase
 {
 public:
-							ShaderObjectTessellationModesCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessellationModesParams& testParams)
-																: vkt::TestCase		(testCtx, name, description)
+							ShaderObjectTessellationModesCase	(tcu::TestContext& testCtx, const std::string& name, const TessellationModesParams& testParams)
+																: vkt::TestCase		(testCtx, name)
 																, m_params			(testParams)
 																{}
 	virtual					~ShaderObjectTessellationModesCase	(void) {}
@@ -2703,7 +2703,7 @@ void ShaderObjectTessellationModesCase::initPrograms (vk::SourceCollections& pro
 
 tcu::TestCaseGroup* createShaderObjectMiscTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 
 	const struct
 	{
@@ -2720,22 +2720,22 @@ tcu::TestCaseGroup* createShaderObjectMiscTests(tcu::TestContext& testCtx)
 	for (deUint32 i = 0; i < 2; ++i)
 	{
 		bool blend1 = i == 0;
-		de::MovePtr<tcu::TestCaseGroup> blend1Group(new tcu::TestCaseGroup(testCtx, blend1 ? "on" : "off", ""));
+		de::MovePtr<tcu::TestCaseGroup> blend1Group(new tcu::TestCaseGroup(testCtx, blend1 ? "on" : "off"));
 		for (deUint32 j = 0; j < 2; ++j)
 		{
 			bool blend2 = j == 0;
-			de::MovePtr<tcu::TestCaseGroup> blend2Group(new tcu::TestCaseGroup(testCtx, blend2 ? "on" : "off", ""));
+			de::MovePtr<tcu::TestCaseGroup> blend2Group(new tcu::TestCaseGroup(testCtx, blend2 ? "on" : "off"));
 			for (deUint32 k = 0; k < 2; ++k)
 			{
 				bool vertexInputBefore = k == 0;
-				de::MovePtr<tcu::TestCaseGroup> vertexInputBeforeGroup(new tcu::TestCaseGroup(testCtx, vertexInputBefore ? "before" : "after", ""));
+				de::MovePtr<tcu::TestCaseGroup> vertexInputBeforeGroup(new tcu::TestCaseGroup(testCtx, vertexInputBefore ? "before" : "after"));
 				for (deUint32 l = 0; l < 2; ++l)
 				{
 					bool vertexBuffersNullStride = l == 0;
-					de::MovePtr<tcu::TestCaseGroup> vertexBuffersNullStrideGroup(new tcu::TestCaseGroup(testCtx, vertexBuffersNullStride ? "null" : "non_null", ""));
+					de::MovePtr<tcu::TestCaseGroup> vertexBuffersNullStrideGroup(new tcu::TestCaseGroup(testCtx, vertexBuffersNullStride ? "null" : "non_null"));
 					for (const auto& strideTest : strideTests)
 					{
-						de::MovePtr<tcu::TestCaseGroup> strideGroup(new tcu::TestCaseGroup(testCtx, strideTest.name, ""));
+						de::MovePtr<tcu::TestCaseGroup> strideGroup(new tcu::TestCaseGroup(testCtx, strideTest.name));
 						for (deUint32 m = 0; m < 2; ++m)
 						{
 							bool destroyDescriptorSetLayout = m == 1;
@@ -2748,7 +2748,7 @@ tcu::TestCaseGroup* createShaderObjectMiscTests(tcu::TestContext& testCtx)
 							params.vertexBuffersNullStride = vertexBuffersNullStride;
 							params.stride = strideTest.stride;
 							params.destroyDescriptorSetLayout = destroyDescriptorSetLayout;
-							strideGroup->addChild(new ShaderObjectMiscCase(testCtx, destroyName, "", params));
+							strideGroup->addChild(new ShaderObjectMiscCase(testCtx, destroyName, params));
 						}
 						vertexBuffersNullStrideGroup->addChild(strideGroup.release());
 					}
@@ -2962,13 +2962,13 @@ tcu::TestCaseGroup* createShaderObjectMiscTests(tcu::TestContext& testCtx)
 		{ true, true,	"true"		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> stateGroup(new tcu::TestCaseGroup(testCtx, "state", ""));
+	de::MovePtr<tcu::TestCaseGroup> stateGroup(new tcu::TestCaseGroup(testCtx, "state"));
 	for (const auto& pipelineTest : pipelineTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> pipelineGroup(new tcu::TestCaseGroup(testCtx, pipelineTest.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> pipelineGroup(new tcu::TestCaseGroup(testCtx, pipelineTest.name));
 		for (const auto shadersTest : shadersTests)
 		{
-			de::MovePtr<tcu::TestCaseGroup> shadersGroup(new tcu::TestCaseGroup(testCtx, shadersTest.name, ""));
+			de::MovePtr<tcu::TestCaseGroup> shadersGroup(new tcu::TestCaseGroup(testCtx, shadersTest.name));
 
 			StateTestParams params;
 			params.pipeline = pipelineTest.pipeline;
@@ -2979,16 +2979,16 @@ tcu::TestCaseGroup* createShaderObjectMiscTests(tcu::TestContext& testCtx)
 			params.fragShader = shadersTest.fragShader;
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> alphaToOneGroup(new tcu::TestCaseGroup(testCtx, "alphaToOne", ""));
+			de::MovePtr<tcu::TestCaseGroup> alphaToOneGroup(new tcu::TestCaseGroup(testCtx, "alphaToOne"));
 			for (const auto& alphaToOneTest : alphaToOneTests)
 			{
 				params.alphaToOne = alphaToOneTest.alphaToOne;
-				alphaToOneGroup->addChild(new ShaderObjectStateCase(testCtx, alphaToOneTest.name, "", params));
+				alphaToOneGroup->addChild(new ShaderObjectStateCase(testCtx, alphaToOneTest.name, params));
 			}
 			shadersGroup->addChild(alphaToOneGroup.release());
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> depthGroup(new tcu::TestCaseGroup(testCtx, "depth", ""));
+			de::MovePtr<tcu::TestCaseGroup> depthGroup(new tcu::TestCaseGroup(testCtx, "depth"));
 			for (const auto& depthTest : depthTests)
 			{
 				params.depthTestEnable = depthTest.depthTestEnable;
@@ -2998,134 +2998,134 @@ tcu::TestCaseGroup* createShaderObjectMiscTests(tcu::TestContext& testCtx)
 				params.depthClip = depthTest.depthClip;
 				params.depthClipControl = depthTest.depthClipControl;
 				params.depthBiasEnable = depthTest.depthBiasEnable;
-				depthGroup->addChild(new ShaderObjectStateCase(testCtx, depthTest.name, "", params));
+				depthGroup->addChild(new ShaderObjectStateCase(testCtx, depthTest.name, params));
 			}
 			shadersGroup->addChild(depthGroup.release());
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> discardRectanglesGroup(new tcu::TestCaseGroup(testCtx, "discard_rectangles", ""));
+			de::MovePtr<tcu::TestCaseGroup> discardRectanglesGroup(new tcu::TestCaseGroup(testCtx, "discard_rectangles"));
 			for (const auto& discardRectangles : discardRectanglesTests)
 			{
 				params.discardRectangles = discardRectangles.discardRectangles;
 				params.discardRectanglesEnable = discardRectangles.discardRectanglesEnabled;
-				discardRectanglesGroup->addChild(new ShaderObjectStateCase(testCtx, discardRectangles.name, "", params));
+				discardRectanglesGroup->addChild(new ShaderObjectStateCase(testCtx, discardRectangles.name, params));
 			}
 			shadersGroup->addChild(discardRectanglesGroup.release());
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> rasterizationDiscardEnableGroup(new tcu::TestCaseGroup(testCtx, "rasterization_discard", ""));
+			de::MovePtr<tcu::TestCaseGroup> rasterizationDiscardEnableGroup(new tcu::TestCaseGroup(testCtx, "rasterization_discard"));
 			for (const auto& rasterizationDiscardTest : rasterizationDiscardEnableTests)
 			{
 				params.rasterizerDiscardEnable = rasterizationDiscardTest.rasterizationDiscardEnable;
-				rasterizationDiscardEnableGroup->addChild(new ShaderObjectStateCase(testCtx, rasterizationDiscardTest.name, "", params));
+				rasterizationDiscardEnableGroup->addChild(new ShaderObjectStateCase(testCtx, rasterizationDiscardTest.name, params));
 			}
 			shadersGroup->addChild(rasterizationDiscardEnableGroup.release());
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> colorBlendGroup(new tcu::TestCaseGroup(testCtx, "color_blend", ""));
+			de::MovePtr<tcu::TestCaseGroup> colorBlendGroup(new tcu::TestCaseGroup(testCtx, "color_blend"));
 			for (const auto& colorBlendTest : colorBlendTests)
 			{
 				params.colorBlendEnable = colorBlendTest.colorBlendEnable;
-				colorBlendGroup->addChild(new ShaderObjectStateCase(testCtx, colorBlendTest.name, "", params));
+				colorBlendGroup->addChild(new ShaderObjectStateCase(testCtx, colorBlendTest.name, params));
 			}
 			shadersGroup->addChild(colorBlendGroup.release());
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> primitivesGroup(new tcu::TestCaseGroup(testCtx, "primitives", ""));
+			de::MovePtr<tcu::TestCaseGroup> primitivesGroup(new tcu::TestCaseGroup(testCtx, "primitives"));
 			for (const auto& primitivesTest : primitiveTests)
 			{
 				params.lines = primitivesTest.lines;
-				primitivesGroup->addChild(new ShaderObjectStateCase(testCtx, primitivesTest.name, "", params));
+				primitivesGroup->addChild(new ShaderObjectStateCase(testCtx, primitivesTest.name, params));
 			}
 			shadersGroup->addChild(primitivesGroup.release());
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> stencilGroup(new tcu::TestCaseGroup(testCtx, "stencil", ""));
+			de::MovePtr<tcu::TestCaseGroup> stencilGroup(new tcu::TestCaseGroup(testCtx, "stencil"));
 			for (const auto& stencilTest : stencilTests)
 			{
 				params.stencilTestEnable = stencilTest.stencilEnable;
-				stencilGroup->addChild(new ShaderObjectStateCase(testCtx, stencilTest.name, "", params));
+				stencilGroup->addChild(new ShaderObjectStateCase(testCtx, stencilTest.name, params));
 			}
 			shadersGroup->addChild(stencilGroup.release());
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> logicOpGroup(new tcu::TestCaseGroup(testCtx, "logic_op", ""));
+			de::MovePtr<tcu::TestCaseGroup> logicOpGroup(new tcu::TestCaseGroup(testCtx, "logic_op"));
 			for (const auto& logicOpTest : logicOpTests)
 			{
 				params.logicOp = logicOpTest.logicOp;
 				params.logicOpEnable = logicOpTest.logicOpEnable;
-				logicOpGroup->addChild(new ShaderObjectStateCase(testCtx, logicOpTest.name, "", params));
+				logicOpGroup->addChild(new ShaderObjectStateCase(testCtx, logicOpTest.name, params));
 			}
 			shadersGroup->addChild(logicOpGroup.release());
 			params.reset();
 
 			if (shadersTest.geomShader)
 			{
-				de::MovePtr<tcu::TestCaseGroup> geometryStreamsGroup(new tcu::TestCaseGroup(testCtx, "geometry_streams", ""));
+				de::MovePtr<tcu::TestCaseGroup> geometryStreamsGroup(new tcu::TestCaseGroup(testCtx, "geometry_streams"));
 				for (const auto& geometryStreamsTest : geometryStreamsTests)
 				{
 					params.geometryStreams = geometryStreamsTest.geometryStreams;
-					geometryStreamsGroup->addChild(new ShaderObjectStateCase(testCtx, geometryStreamsTest.name, "", params));
+					geometryStreamsGroup->addChild(new ShaderObjectStateCase(testCtx, geometryStreamsTest.name, params));
 				}
 				shadersGroup->addChild(geometryStreamsGroup.release());
 				params.reset();
 			}
 
-			de::MovePtr<tcu::TestCaseGroup> provokingVertexGroup(new tcu::TestCaseGroup(testCtx, "provoking_vertex", ""));
+			de::MovePtr<tcu::TestCaseGroup> provokingVertexGroup(new tcu::TestCaseGroup(testCtx, "provoking_vertex"));
 			for (const auto& provokingVertexTest : provokingVertexTests)
 			{
 				params.provokingVertex = provokingVertexTest.provokingVertex;
-				provokingVertexGroup->addChild(new ShaderObjectStateCase(testCtx, provokingVertexTest.name, "", params));
+				provokingVertexGroup->addChild(new ShaderObjectStateCase(testCtx, provokingVertexTest.name, params));
 			}
 			shadersGroup->addChild(provokingVertexGroup.release());
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> sampleLocationsGroup(new tcu::TestCaseGroup(testCtx, "sample_locations", ""));
+			de::MovePtr<tcu::TestCaseGroup> sampleLocationsGroup(new tcu::TestCaseGroup(testCtx, "sample_locations"));
 			for (const auto& sampleLocationsTest : sampleLocationsTests)
 			{
 				params.sampleLocations = sampleLocationsTest.sampleLocations;
 				params.sampleLocationsEnable = sampleLocationsTest.sampleLocationsEnable;
-				sampleLocationsGroup->addChild(new ShaderObjectStateCase(testCtx, sampleLocationsTest.name, "", params));
+				sampleLocationsGroup->addChild(new ShaderObjectStateCase(testCtx, sampleLocationsTest.name, params));
 			}
 			shadersGroup->addChild(sampleLocationsGroup.release());
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> linesGroup(new tcu::TestCaseGroup(testCtx, "lines", ""));
+			de::MovePtr<tcu::TestCaseGroup> linesGroup(new tcu::TestCaseGroup(testCtx, "lines"));
 			for (const auto& linesTest : linesTests)
 			{
 				params.lines = true;
 				params.stippledLineEnable = linesTest.stippledLineEnable;
 				params.lineRasterization = linesTest.lineRasterization;
-				linesGroup->addChild(new ShaderObjectStateCase(testCtx, linesTest.name, "", params));
+				linesGroup->addChild(new ShaderObjectStateCase(testCtx, linesTest.name, params));
 			}
 			shadersGroup->addChild(linesGroup.release());
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> cullGroup(new tcu::TestCaseGroup(testCtx, "cull", ""));
+			de::MovePtr<tcu::TestCaseGroup> cullGroup(new tcu::TestCaseGroup(testCtx, "cull"));
 			for (const auto& cullTest : cullTests)
 			{
 				params.cull = cullTest.cull;
-				cullGroup->addChild(new ShaderObjectStateCase(testCtx, cullTest.name, "", params));
+				cullGroup->addChild(new ShaderObjectStateCase(testCtx, cullTest.name, params));
 			}
 			shadersGroup->addChild(cullGroup.release());
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> conservativeRasterizationGroup(new tcu::TestCaseGroup(testCtx, "conservative_rasterization", ""));
+			de::MovePtr<tcu::TestCaseGroup> conservativeRasterizationGroup(new tcu::TestCaseGroup(testCtx, "conservative_rasterization"));
 			for (const auto& conservativeRasterizationTest : conservativeRasterizationTests)
 			{
 				params.conservativeRasterization = conservativeRasterizationTest.conservativeRasterization;
 				params.conservativeRasterizationOverestimate = conservativeRasterizationTest.conservativeRasterizationOverestimate;
-				conservativeRasterizationGroup->addChild(new ShaderObjectStateCase(testCtx, conservativeRasterizationTest.name, "", params));
+				conservativeRasterizationGroup->addChild(new ShaderObjectStateCase(testCtx, conservativeRasterizationTest.name, params));
 			}
 			shadersGroup->addChild(conservativeRasterizationGroup.release());
 			params.reset();
 
-			de::MovePtr<tcu::TestCaseGroup> colorWriteGroup(new tcu::TestCaseGroup(testCtx, "color_write", ""));
+			de::MovePtr<tcu::TestCaseGroup> colorWriteGroup(new tcu::TestCaseGroup(testCtx, "color_write"));
 			for (const auto& colorWriteEnableTest : colorWriteEnableTests)
 			{
 				params.colorWrite = colorWriteEnableTest.colorWrite;
 				params.colorWriteEnable = colorWriteEnableTest.colorWriteEnable;
-				colorWriteGroup->addChild(new ShaderObjectStateCase(testCtx, colorWriteEnableTest.name, "", params));
+				colorWriteGroup->addChild(new ShaderObjectStateCase(testCtx, colorWriteEnableTest.name, params));
 			}
 			shadersGroup->addChild(colorWriteGroup.release());
 			params.reset();
@@ -3168,20 +3168,20 @@ tcu::TestCaseGroup* createShaderObjectMiscTests(tcu::TestContext& testCtx)
 		{ true,		"builtin"	},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> unusedVariableGroup(new tcu::TestCaseGroup(testCtx, "unused_variable", ""));
+	de::MovePtr<tcu::TestCaseGroup> unusedVariableGroup(new tcu::TestCaseGroup(testCtx, "unused_variable"));
 	for (const auto& linkedTest : linkedTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> linkedGroup(new tcu::TestCaseGroup(testCtx, linkedTest.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> linkedGroup(new tcu::TestCaseGroup(testCtx, linkedTest.name));
 		for (const auto& typeTest : typeTests)
 		{
-			de::MovePtr<tcu::TestCaseGroup> typeGroup(new tcu::TestCaseGroup(testCtx, typeTest.name, ""));
+			de::MovePtr<tcu::TestCaseGroup> typeGroup(new tcu::TestCaseGroup(testCtx, typeTest.name));
 			for (const auto& shaderStageTest : shaderStageTests)
 			{
 				UnusedBuiltinParams params;
 				params.linked = linkedTest.linked;
 				params.stage = shaderStageTest.stage;
 				params.builtin = typeTest.builtin;
-				typeGroup->addChild(new ShaderObjectUnusedBuiltinCase(testCtx, shaderStageTest.name, "", params));
+				typeGroup->addChild(new ShaderObjectUnusedBuiltinCase(testCtx, shaderStageTest.name, params));
 			}
 			linkedGroup->addChild(typeGroup.release());
 		}
@@ -3210,17 +3210,17 @@ tcu::TestCaseGroup* createShaderObjectMiscTests(tcu::TestContext& testCtx)
 		{ ODD,		"odd"	},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> tessellationModesGroup(new tcu::TestCaseGroup(testCtx, "tessellation_modes", ""));
+	de::MovePtr<tcu::TestCaseGroup> tessellationModesGroup(new tcu::TestCaseGroup(testCtx, "tessellation_modes"));
 	for (const auto& subdivisionTest : subdivisionTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> subdivisionGroup(new tcu::TestCaseGroup(testCtx, subdivisionTest.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> subdivisionGroup(new tcu::TestCaseGroup(testCtx, subdivisionTest.name));
 
 		for (const auto& spacingTest : spacingTests)
 		{
 			TessellationModesParams params;
 			params.subdivision = subdivisionTest.subdivision;
 			params.spacing = spacingTest.spacing;
-			subdivisionGroup->addChild(new ShaderObjectTessellationModesCase(testCtx, spacingTest.name, "", params));
+			subdivisionGroup->addChild(new ShaderObjectTessellationModesCase(testCtx, spacingTest.name, params));
 		}
 		tessellationModesGroup->addChild(subdivisionGroup.release());
 	}

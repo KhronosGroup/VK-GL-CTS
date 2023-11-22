@@ -32,12 +32,14 @@
 #include "egluStrUtil.hpp"
 #include "egluUtil.hpp"
 #include "egluConfigFilter.hpp"
+#include "egluGLUtil.hpp"
 
 #include "eglwLibrary.hpp"
 #include "eglwEnums.hpp"
 
 #include "gluDefs.hpp"
 #include "gluRenderContext.hpp"
+#include "gluRenderConfig.hpp"
 #include "gluContextInfo.hpp"
 #include "gluShaderProgram.hpp"
 
@@ -378,38 +380,17 @@ void WideColorTest::checkCTA861_3 (void)
 void WideColorTest::check1010102Support (void)
 {
 	const Library&	egl	= m_eglTestCtx.getLibrary();
-	tcu::TestLog&	log	= m_testCtx.getLog();
 
-	const EGLint attribList[] =
-	{
-		EGL_SURFACE_TYPE,				EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,					10,
-		EGL_GREEN_SIZE,					10,
-		EGL_BLUE_SIZE,					10,
-		EGL_ALPHA_SIZE,					2,
-		EGL_NONE,						EGL_NONE
-	};
-	EGLint numConfigs = 0;
-	EGLConfig config;
+	glu::RenderConfig renderConfig = {};
+	renderConfig.type			= glu::ContextType(glu::ApiType::es(2, 0));
+	renderConfig.surfaceType	= glu::RenderConfig::SURFACETYPE_DONT_CARE;
+	renderConfig.redBits		= 10;
+	renderConfig.greenBits		= 10;
+	renderConfig.blueBits		= 10;
+	renderConfig.alphaBits		= 2;
 
-	// Query from EGL implementation
-	EGLU_CHECK_CALL(egl, chooseConfig(m_eglDisplay, &attribList[0], DE_NULL, 0, &numConfigs));
-
-	if (numConfigs <= 0)
-	{
-		log << tcu::TestLog::Message << "No configs returned." << tcu::TestLog::EndMessage;
-		TCU_THROW(NotSupportedError, "10:10:10:2 pixel format is not supported");
-	}
-
-	log << tcu::TestLog::Message << numConfigs << " configs returned" << tcu::TestLog::EndMessage;
-
-	EGLU_CHECK_CALL(egl, chooseConfig(m_eglDisplay, &attribList[0], &config, 1, &numConfigs));
-	if (numConfigs > 1)
-	{
-		log << tcu::TestLog::Message << "Fail, more configs returned than requested." << tcu::TestLog::EndMessage;
-		TCU_FAIL("Too many configs returned");
-	}
+	// Throws NotSupported if no EGL config matches given RenderConfig
+	EGLConfig config = eglu::chooseConfig(egl, m_eglDisplay, renderConfig);
 
 	EGLint components[4];
 
@@ -427,59 +408,25 @@ void WideColorTest::check1010102Support (void)
 void WideColorTest::checkFP16Support (void)
 {
 	const Library&	egl			= m_eglTestCtx.getLibrary();
-	tcu::TestLog&	log			= m_testCtx.getLog();
-	EGLint			numConfigs	= 0;
-	EGLConfig		config;
 
-	const EGLint attribList[] =
-	{
-		EGL_SURFACE_TYPE,			  EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE,		  EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,				  16,
-		EGL_GREEN_SIZE,				  16,
-		EGL_BLUE_SIZE,				  16,
-		EGL_ALPHA_SIZE,				  16,
-		EGL_COLOR_COMPONENT_TYPE_EXT, EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT,
-		EGL_NONE,					  EGL_NONE
-	};
+	glu::RenderConfig renderConfig = {};
+	renderConfig.type			= glu::ContextType(glu::ApiType::es(2, 0));
+	renderConfig.surfaceType	= glu::RenderConfig::SURFACETYPE_DONT_CARE;
+	renderConfig.componentType	= glu::RenderConfig::COMPONENT_TYPE_FLOAT;
+	renderConfig.redBits		= 16;
+	renderConfig.greenBits		= 16;
+	renderConfig.blueBits		= 16;
+	renderConfig.alphaBits		= 16;
 
-	// Query from EGL implementation
-	EGLU_CHECK_CALL(egl, chooseConfig(m_eglDisplay, &attribList[0], DE_NULL, 0, &numConfigs));
-
-	if (numConfigs <= 0)
-	{
-		log << tcu::TestLog::Message << "No configs returned." << tcu::TestLog::EndMessage;
-		TCU_THROW(NotSupportedError, "16:16:16:16 pixel format is not supported");
-	}
-
-	log << tcu::TestLog::Message << numConfigs << " configs returned" << tcu::TestLog::EndMessage;
-
-	EGLBoolean success = egl.chooseConfig(m_eglDisplay, &attribList[0], &config, 1, &numConfigs);
-	if (success != EGL_TRUE)
-	{
-		log << tcu::TestLog::Message << "Fail, eglChooseConfig returned an error." << tcu::TestLog::EndMessage;
-		TCU_FAIL("eglChooseConfig failed");
-	}
-	if (numConfigs > 1)
-	{
-		log << tcu::TestLog::Message << "Fail, more configs returned than requested." << tcu::TestLog::EndMessage;
-		TCU_FAIL("Too many configs returned");
-	}
+	// Throws NotSupported if no EGL config matches given RenderConfig
+	EGLConfig config = eglu::chooseConfig(egl, m_eglDisplay, renderConfig);
 
 	EGLint components[4];
 
-	success = egl.getConfigAttrib(m_eglDisplay, config, EGL_RED_SIZE, &components[0]);
-	TCU_CHECK_MSG(success == EGL_TRUE, "eglGetConfigAttrib failed");
-	EGLU_CHECK(egl);
-	success = egl.getConfigAttrib(m_eglDisplay, config, EGL_GREEN_SIZE, &components[1]);
-	TCU_CHECK_MSG(success == EGL_TRUE, "eglGetConfigAttrib failed");
-	EGLU_CHECK(egl);
-	success = egl.getConfigAttrib(m_eglDisplay, config, EGL_BLUE_SIZE, &components[2]);
-	TCU_CHECK_MSG(success == EGL_TRUE, "eglGetConfigAttrib failed");
-	EGLU_CHECK(egl);
-	success = egl.getConfigAttrib(m_eglDisplay, config, EGL_ALPHA_SIZE, &components[3]);
-	TCU_CHECK_MSG(success == EGL_TRUE, "eglGetConfigAttrib failed");
-	EGLU_CHECK(egl);
+	EGLU_CHECK_CALL(egl, getConfigAttrib(m_eglDisplay, config, EGL_RED_SIZE, &components[0]));
+	EGLU_CHECK_CALL(egl, getConfigAttrib(m_eglDisplay, config, EGL_GREEN_SIZE, &components[1]));
+	EGLU_CHECK_CALL(egl, getConfigAttrib(m_eglDisplay, config, EGL_BLUE_SIZE, &components[2]));
+	EGLU_CHECK_CALL(egl, getConfigAttrib(m_eglDisplay, config, EGL_ALPHA_SIZE, &components[3]));
 
 	TCU_CHECK_MSG(components[0] == 16, "Missing 16bit deep red channel");
 	TCU_CHECK_MSG(components[1] == 16, "Missing 16bit deep green channel");
@@ -577,7 +524,7 @@ public:
 						WideColorSurfaceTest	(EglTestContext&				eglTestCtx,
 												 const char*					name,
 												 const char*					description,
-												 const EGLint*					attribList,
+												 const glu::RenderConfig		config,
 												 EGLint							colorSpace,
 												 const std::vector<Iteration>&	iterations);
 
@@ -603,12 +550,9 @@ protected:
 	void				writeEglConfig					(EGLConfig config);
 
 private:
-	std::vector<EGLint>					m_attribList;
 	std::vector<EGLint>					m_testAttribList;
+	glu::RenderConfig					m_config;
 	EGLConfig							m_eglConfig;
-	EGLint								m_surfaceType;
-	EGLint								m_componentType;
-	EGLint								m_requestedRedSize;
 	EGLint								m_redSize;
 	EGLint								m_alphaSize;
 	EGLint								m_colorSpace;
@@ -616,36 +560,15 @@ private:
 	std::stringstream					m_debugLog;
 };
 
-WideColorSurfaceTest::WideColorSurfaceTest (EglTestContext& eglTestCtx, const char* name, const char* description, const EGLint* attribList, EGLint colorSpace, const std::vector<struct Iteration>& iterations)
+WideColorSurfaceTest::WideColorSurfaceTest (EglTestContext& eglTestCtx, const char* name, const char* description, const glu::RenderConfig config, EGLint colorSpace, const std::vector<struct Iteration>& iterations)
 	: WideColorTest			(eglTestCtx, name, description)
-	, m_surfaceType			(0)
-	, m_componentType		(EGL_COLOR_COMPONENT_TYPE_FIXED_EXT)
-	, m_requestedRedSize	(0)
+	, m_config				(config)
+	, m_eglConfig			(EGLConfig(0)) // EGL_NO_CONFIG
 	, m_redSize				(0)
 	, m_alphaSize			(0)
 	, m_colorSpace			(colorSpace)
 	, m_iterations			(iterations)
-{
-	deUint32 idx = 0;
-	while (attribList[idx] != EGL_NONE)
-	{
-		if (attribList[idx] == EGL_COLOR_COMPONENT_TYPE_EXT)
-		{
-			m_componentType = attribList[idx + 1];
-		}
-		else if (attribList[idx] == EGL_SURFACE_TYPE)
-		{
-			m_surfaceType = attribList[idx+1];
-		}
-		else if (attribList[idx] == EGL_RED_SIZE)
-		{
-			m_requestedRedSize = attribList[idx + 1];
-		}
-		m_attribList.push_back(attribList[idx++]);
-		m_attribList.push_back(attribList[idx++]);
-	}
-	m_attribList.push_back(EGL_NONE);
-}
+{}
 
 void WideColorSurfaceTest::addTestAttributes(const EGLint *attributes)
 {
@@ -662,13 +585,12 @@ void WideColorSurfaceTest::addTestAttributes(const EGLint *attributes)
 void WideColorSurfaceTest::init (void)
 {
 	const Library&	egl	= m_eglTestCtx.getLibrary();
-	tcu::TestLog&	log	= m_testCtx.getLog();
 
 	WideColorTest::init();
 
 	// Only check for pixel format required for this specific run
 	// If not available, check will abort test with "NotSupported"
-	switch (m_requestedRedSize)
+	switch (m_config.redBits)
 	{
 		case 10:
 			check1010102Support();
@@ -711,30 +633,8 @@ void WideColorSurfaceTest::init (void)
 			break;
 	}
 
-	EGLint numConfigs = 0;
-
-	// Query from EGL implementation
-	EGLU_CHECK_CALL(egl, chooseConfig(m_eglDisplay, &m_attribList[0], DE_NULL, 0, &numConfigs));
-
-	if (numConfigs <= 0)
-	{
-		log << tcu::TestLog::Message << "No configs returned." << tcu::TestLog::EndMessage;
-		TCU_THROW(NotSupportedError, "No configs available with the requested attributes");
-	}
-
-	log << tcu::TestLog::Message << numConfigs << " configs returned" << tcu::TestLog::EndMessage;
-
-	EGLBoolean success = egl.chooseConfig(m_eglDisplay, &m_attribList[0], &m_eglConfig, 1, &numConfigs);
-	if (success != EGL_TRUE)
-	{
-		log << tcu::TestLog::Message << "Fail, eglChooseConfig returned an error." << tcu::TestLog::EndMessage;
-		TCU_FAIL("eglChooseConfig failed");
-	}
-	if (numConfigs > 1)
-	{
-		log << tcu::TestLog::Message << "Fail, more configs returned than requested." << tcu::TestLog::EndMessage;
-		TCU_FAIL("Too many configs returned");
-	}
+	// Throws NotSupported if no EGL config matches given RenderConfig
+	m_eglConfig = eglu::chooseConfig(egl, m_eglDisplay, m_config);
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
@@ -985,7 +885,7 @@ void WideColorSurfaceTest::testPixels (float reference, float increment)
 {
 	tcu::TestLog&	log				= m_testCtx.getLog();
 
-	if (m_componentType == EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT)
+	if (m_config.componentType == glu::RenderConfig::COMPONENT_TYPE_FLOAT)
 	{
 		float pixels[16];
 		const float expected[4] =
@@ -1245,7 +1145,7 @@ void WideColorSurfaceTest::executeTest (void)
 	eglu::NativeDisplay&				nativeDisplay	= m_eglTestCtx.getNativeDisplay();
 	egl.bindAPI(EGL_OPENGL_ES_API);
 
-	if (m_surfaceType & EGL_PBUFFER_BIT)
+	if (m_config.surfaceType == glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC)
 	{
 		log << tcu::TestLog::Message << "Test Pbuffer" << tcu::TestLog::EndMessage;
 
@@ -1274,7 +1174,7 @@ void WideColorSurfaceTest::executeTest (void)
 		egl.destroySurface(m_eglDisplay, surface);
 		EGLU_CHECK_MSG(egl, "eglDestroySurface()");
 	}
-	else if (m_surfaceType & EGL_WINDOW_BIT)
+	else if (m_config.surfaceType == glu::RenderConfig::SURFACETYPE_WINDOW)
 	{
 		log << tcu::TestLog::Message << "Test Window" << tcu::TestLog::EndMessage;
 
@@ -1340,7 +1240,7 @@ void WideColorSurfaceTest::executeTest (void)
 		egl.destroySurface(m_eglDisplay, surface);
 		EGLU_CHECK_MSG(egl, "eglDestroySurface()");
 	}
-	else if (m_surfaceType & EGL_PIXMAP_BIT)
+	else if (m_config.surfaceType == glu::RenderConfig::SURFACETYPE_OFFSCREEN_NATIVE)
 	{
 		log << tcu::TestLog::Message << "Test Pixmap" << tcu::TestLog::EndMessage;
 
@@ -1394,141 +1294,117 @@ void WideColorTests::init (void)
 	// Values > 1.0 will be truncated to 1.0 with fixed point pixel formats
 	iterations.push_back(Iteration(1.0f - fp16Increment2 * 5.0f, fp16Increment2, 10));
 
-	const EGLint windowAttribListFP16[] =
-	{
-		EGL_SURFACE_TYPE,				EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,					16,
-		EGL_GREEN_SIZE,					16,
-		EGL_BLUE_SIZE,					16,
-		EGL_ALPHA_SIZE,					16,
-		EGL_COLOR_COMPONENT_TYPE_EXT,	EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT,
-		EGL_NONE,						EGL_NONE
-	};
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_default_colorspace", "FP16 window surface has FP16 pixels in it", windowAttribListFP16, EGL_NONE, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_srgb", "FP16 window surface, explicit sRGB colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_p3", "FP16 window surface, explicit Display-P3 colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_p3_passthrough", "FP16 window surface, explicit Display-P3 colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_scrgb", "FP16 window surface, explicit scRGB colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_SCRGB_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_scrgb_linear", "FP16 window surface, explicit scRGB linear colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_SCRGB_LINEAR_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_bt2020_hlg", "FP16 window surface, explicit BT2020 hlg colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_BT2020_HLG_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_bt2020_linear", "FP16 window surface, explicit BT2020 linear colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_BT2020_LINEAR_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_bt2020_pq", "FP16 window surface, explicit BT2020 PQ colorspace", windowAttribListFP16, EGL_GL_COLORSPACE_BT2020_PQ_EXT, iterations));
+	glu::RenderConfig configWindowFP16 = {};
+	configWindowFP16.surfaceType	= glu::RenderConfig::SURFACETYPE_WINDOW;
+	configWindowFP16.type			= glu::ContextType(glu::ApiType::es(2, 0));
+	configWindowFP16.redBits		= 16;
+	configWindowFP16.greenBits		= 16;
+	configWindowFP16.blueBits		= 16;
+	configWindowFP16.alphaBits		= 16;
+	configWindowFP16.componentType	= glu::RenderConfig::COMPONENT_TYPE_FLOAT;
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_default_colorspace", "FP16 window surface has FP16 pixels in it", configWindowFP16, EGL_NONE, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_srgb", "FP16 window surface, explicit sRGB colorspace", configWindowFP16, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_p3", "FP16 window surface, explicit Display-P3 colorspace", configWindowFP16, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_p3_passthrough", "FP16 window surface, explicit Display-P3 colorspace", configWindowFP16, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_scrgb", "FP16 window surface, explicit scRGB colorspace", configWindowFP16, EGL_GL_COLORSPACE_SCRGB_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_scrgb_linear", "FP16 window surface, explicit scRGB linear colorspace", configWindowFP16, EGL_GL_COLORSPACE_SCRGB_LINEAR_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_bt2020_hlg", "FP16 window surface, explicit BT2020 hlg colorspace", configWindowFP16, EGL_GL_COLORSPACE_BT2020_HLG_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_bt2020_linear", "FP16 window surface, explicit BT2020 linear colorspace", configWindowFP16, EGL_GL_COLORSPACE_BT2020_LINEAR_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_fp16_colorspace_bt2020_pq", "FP16 window surface, explicit BT2020 PQ colorspace", configWindowFP16, EGL_GL_COLORSPACE_BT2020_PQ_EXT, iterations));
 
-	const EGLint pbufferAttribListFP16[] =
-	{
-		EGL_SURFACE_TYPE,				EGL_PBUFFER_BIT,
-		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,					16,
-		EGL_GREEN_SIZE,					16,
-		EGL_BLUE_SIZE,					16,
-		EGL_ALPHA_SIZE,					16,
-		EGL_COLOR_COMPONENT_TYPE_EXT,	EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT,
-		EGL_NONE,						EGL_NONE
-	};
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_default_colorspace", "FP16 pbuffer surface has FP16 pixels in it", pbufferAttribListFP16, EGL_NONE, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_srgb", "FP16 pbuffer surface, explicit sRGB colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_p3", "FP16 pbuffer surface, explicit Display-P3 colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_p3_passthrough", "FP16 pbuffer surface, explicit Display-P3 colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_scrgb", "FP16 pbuffer surface, explicit scRGB colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_SCRGB_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_scrgb_linear", "FP16 pbuffer surface, explicit scRGB linear colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_SCRGB_LINEAR_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_bt2020_hlg", "FP16 pbuffer surface, explicit BT2020 hlg colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_BT2020_HLG_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_bt2020_linear", "FP16 pbuffer surface, explicit BT2020 linear colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_BT2020_LINEAR_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_bt2020_pq", "FP16 pbuffer surface, explicit BT2020 PQ colorspace", pbufferAttribListFP16, EGL_GL_COLORSPACE_BT2020_PQ_EXT, iterations));
+	glu::RenderConfig configPbufferFP16 = {};
+	configPbufferFP16.surfaceType	= glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
+	configPbufferFP16.type			= glu::ContextType(glu::ApiType::es(2, 0));
+	configPbufferFP16.redBits		= 16;
+	configPbufferFP16.greenBits		= 16;
+	configPbufferFP16.blueBits		= 16;
+	configPbufferFP16.alphaBits		= 16;
+	configPbufferFP16.componentType	= glu::RenderConfig::COMPONENT_TYPE_FLOAT;
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_default_colorspace", "FP16 pbuffer surface has FP16 pixels in it", configPbufferFP16, EGL_NONE, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_srgb", "FP16 pbuffer surface, explicit sRGB colorspace", configPbufferFP16, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_p3", "FP16 pbuffer surface, explicit Display-P3 colorspace", configPbufferFP16, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_p3_passthrough", "FP16 pbuffer surface, explicit Display-P3 colorspace", configPbufferFP16, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_scrgb", "FP16 pbuffer surface, explicit scRGB colorspace", configPbufferFP16, EGL_GL_COLORSPACE_SCRGB_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_scrgb_linear", "FP16 pbuffer surface, explicit scRGB linear colorspace", configPbufferFP16, EGL_GL_COLORSPACE_SCRGB_LINEAR_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_bt2020_hlg", "FP16 pbuffer surface, explicit BT2020 hlg colorspace", configPbufferFP16, EGL_GL_COLORSPACE_BT2020_HLG_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_bt2020_linear", "FP16 pbuffer surface, explicit BT2020 linear colorspace", configPbufferFP16, EGL_GL_COLORSPACE_BT2020_LINEAR_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_fp16_colorspace_bt2020_pq", "FP16 pbuffer surface, explicit BT2020 PQ colorspace", configPbufferFP16, EGL_GL_COLORSPACE_BT2020_PQ_EXT, iterations));
 
-	const EGLint windowAttribList1010102[] =
-	{
-		EGL_SURFACE_TYPE,				EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,					10,
-		EGL_GREEN_SIZE,					10,
-		EGL_BLUE_SIZE,					10,
-		EGL_ALPHA_SIZE,					2,
-		EGL_NONE,						EGL_NONE
-	};
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_default", "1010102 Window surface, default (sRGB) colorspace", windowAttribList1010102, EGL_NONE, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_srgb", "1010102 Window surface, explicit sRGB colorspace", windowAttribList1010102, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_p3", "1010102 Window surface, explicit Display-P3 colorspace", windowAttribList1010102, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_p3_passthrough", "1010102 Window surface, explicit Display-P3 colorspace", windowAttribList1010102, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_bt2020_hlg", "1010102 Window surface, explicit BT2020 hlg colorspace", windowAttribList1010102, EGL_GL_COLORSPACE_BT2020_HLG_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_bt2020_linear", "1010102 Window surface, explicit BT2020 linear colorspace", windowAttribList1010102, EGL_GL_COLORSPACE_BT2020_LINEAR_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_bt2020_pq", "1010102 Window surface, explicit BT2020 PQ colorspace", windowAttribList1010102, EGL_GL_COLORSPACE_BT2020_PQ_EXT, iterations));
+	glu::RenderConfig configWindow1010102 = {};
+	configWindow1010102.surfaceType	= glu::RenderConfig::SURFACETYPE_WINDOW;
+	configWindow1010102.type			= glu::ContextType(glu::ApiType::es(2, 0));
+	configWindow1010102.redBits			= 10;
+	configWindow1010102.greenBits		= 10;
+	configWindow1010102.blueBits		= 10;
+	configWindow1010102.alphaBits		= 2;
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_default", "1010102 Window surface, default (sRGB) colorspace", configWindow1010102, EGL_NONE, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_srgb", "1010102 Window surface, explicit sRGB colorspace", configWindow1010102, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_p3", "1010102 Window surface, explicit Display-P3 colorspace", configWindow1010102, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_p3_passthrough", "1010102 Window surface, explicit Display-P3 colorspace", configWindow1010102, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_bt2020_hlg", "1010102 Window surface, explicit BT2020 hlg colorspace", configWindow1010102, EGL_GL_COLORSPACE_BT2020_HLG_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_bt2020_linear", "1010102 Window surface, explicit BT2020 linear colorspace", configWindow1010102, EGL_GL_COLORSPACE_BT2020_LINEAR_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_1010102_colorspace_bt2020_pq", "1010102 Window surface, explicit BT2020 PQ colorspace", configWindow1010102, EGL_GL_COLORSPACE_BT2020_PQ_EXT, iterations));
 
-	const EGLint pbufferAttribList1010102[] =
-	{
-		EGL_SURFACE_TYPE,				EGL_PBUFFER_BIT,
-		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,					10,
-		EGL_GREEN_SIZE,					10,
-		EGL_BLUE_SIZE,					10,
-		EGL_ALPHA_SIZE,					2,
-		EGL_NONE,						EGL_NONE
-	};
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_default", "1010102 pbuffer surface, default (sRGB) colorspace", pbufferAttribList1010102, EGL_NONE, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_srgb", "1010102 pbuffer surface, explicit sRGB colorspace", pbufferAttribList1010102, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_p3", "1010102 pbuffer surface, explicit Display-P3 colorspace", pbufferAttribList1010102, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_p3_passthrough", "1010102 pbuffer surface, explicit Display-P3 colorspace", pbufferAttribList1010102, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_bt2020_hlg", "1010102 pbuffer surface, explicit BT2020 hlg colorspace", pbufferAttribList1010102, EGL_GL_COLORSPACE_BT2020_HLG_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_bt2020_linear", "1010102 pbuffer surface, explicit BT2020 linear colorspace", pbufferAttribList1010102, EGL_GL_COLORSPACE_BT2020_LINEAR_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_bt2020_pq", "1010102 pbuffer surface, explicit BT2020 PQ colorspace", pbufferAttribList1010102, EGL_GL_COLORSPACE_BT2020_PQ_EXT, iterations));
+	glu::RenderConfig configPbuffer1010102 = {};
+	configPbuffer1010102.surfaceType	= glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
+	configPbuffer1010102.type			= glu::ContextType(glu::ApiType::es(2, 0));
+	configPbuffer1010102.redBits		= 10;
+	configPbuffer1010102.greenBits		= 10;
+	configPbuffer1010102.blueBits		= 10;
+	configPbuffer1010102.alphaBits		= 2;
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_default", "1010102 pbuffer surface, default (sRGB) colorspace", configPbuffer1010102, EGL_NONE, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_srgb", "1010102 pbuffer surface, explicit sRGB colorspace", configPbuffer1010102, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_p3", "1010102 pbuffer surface, explicit Display-P3 colorspace", configPbuffer1010102, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_p3_passthrough", "1010102 pbuffer surface, explicit Display-P3 colorspace", configPbuffer1010102, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_bt2020_hlg", "1010102 pbuffer surface, explicit BT2020 hlg colorspace", configPbuffer1010102, EGL_GL_COLORSPACE_BT2020_HLG_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_bt2020_linear", "1010102 pbuffer surface, explicit BT2020 linear colorspace", configPbuffer1010102, EGL_GL_COLORSPACE_BT2020_LINEAR_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_bt2020_pq", "1010102 pbuffer surface, explicit BT2020 PQ colorspace", configPbuffer1010102, EGL_GL_COLORSPACE_BT2020_PQ_EXT, iterations));
 
-	const EGLint windowAttribList8888[] =
-	{
-		EGL_SURFACE_TYPE,				EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,					8,
-		EGL_GREEN_SIZE,					8,
-		EGL_BLUE_SIZE,					8,
-		EGL_ALPHA_SIZE,					8,
-		EGL_NONE,						EGL_NONE
-	};
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_8888_colorspace_default", "8888 window surface, default (sRGB) colorspace", windowAttribList8888, EGL_NONE, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_8888_colorspace_srgb", "8888 window surface, explicit sRGB colorspace", windowAttribList8888, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_8888_colorspace_p3", "8888 window surface, explicit Display-P3 colorspace", windowAttribList8888, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_8888_colorspace_p3_passthrough", "8888 window surface, explicit Display-P3 colorspace", windowAttribList8888, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
+	glu::RenderConfig configWindow8888 = {};
+	configWindow8888.surfaceType	= glu::RenderConfig::SURFACETYPE_WINDOW;
+	configWindow8888.type			= glu::ContextType(glu::ApiType::es(2, 0));
+	configWindow8888.redBits		= 8;
+	configWindow8888.greenBits		= 8;
+	configWindow8888.blueBits		= 8;
+	configWindow8888.alphaBits		= 8;
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_8888_colorspace_default", "8888 window surface, default (sRGB) colorspace", configWindow8888, EGL_NONE, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_8888_colorspace_srgb", "8888 window surface, explicit sRGB colorspace", configWindow8888, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_8888_colorspace_p3", "8888 window surface, explicit Display-P3 colorspace", configWindow8888, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_8888_colorspace_p3_passthrough", "8888 window surface, explicit Display-P3 colorspace", configWindow8888, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
 
-	const EGLint pbufferAttribList8888[] =
-	{
-		EGL_SURFACE_TYPE,				EGL_PBUFFER_BIT,
-		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,					8,
-		EGL_GREEN_SIZE,					8,
-		EGL_BLUE_SIZE,					8,
-		EGL_ALPHA_SIZE,					8,
-		EGL_NONE,						EGL_NONE
-	};
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_8888_colorspace_default", "8888 pbuffer surface, default (sRGB) colorspace", pbufferAttribList8888, EGL_NONE, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_8888_colorspace_srgb", "8888 pbuffer surface, explicit sRGB colorspace", pbufferAttribList8888, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_8888_colorspace_p3", "8888 pbuffer surface, explicit Display-P3 colorspace", pbufferAttribList8888, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_8888_colorspace_p3_passthrough", "8888 pbuffer surface, explicit Display-P3 colorspace", pbufferAttribList8888, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
+	glu::RenderConfig configPbuffer8888 = {};
+	configPbuffer8888.surfaceType	= glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
+	configPbuffer8888.type			= glu::ContextType(glu::ApiType::es(2, 0));
+	configPbuffer8888.redBits		= 8;
+	configPbuffer8888.greenBits		= 8;
+	configPbuffer8888.blueBits		= 8;
+	configPbuffer8888.alphaBits		= 8;
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_8888_colorspace_default", "8888 pbuffer surface, default (sRGB) colorspace", configPbuffer8888, EGL_NONE, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_8888_colorspace_srgb", "8888 pbuffer surface, explicit sRGB colorspace", configPbuffer8888, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_8888_colorspace_p3", "8888 pbuffer surface, explicit Display-P3 colorspace", configPbuffer8888, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_8888_colorspace_p3_passthrough", "8888 pbuffer surface, explicit Display-P3 colorspace", configPbuffer8888, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
 
-	const EGLint windowAttribList888[] =
-	{
-		EGL_SURFACE_TYPE,				EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,					8,
-		EGL_GREEN_SIZE,					8,
-		EGL_BLUE_SIZE,					8,
-		EGL_NONE,						EGL_NONE
-	};
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_888_colorspace_default", "888 window surface, default (sRGB) colorspace", windowAttribList888, EGL_NONE, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_888_colorspace_srgb", "888 window surface, explicit sRGB colorspace", windowAttribList888, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_888_colorspace_p3", "888 window surface, explicit Display-P3 colorspace", windowAttribList888, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_888_colorspace_p3_passthrough", "888 window surface, explicit Display-P3 colorspace", windowAttribList888, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
+	glu::RenderConfig configWindow888 = {};
+	configWindow888.surfaceType	= glu::RenderConfig::SURFACETYPE_WINDOW;
+	configWindow888.type		= glu::ContextType(glu::ApiType::es(2, 0));
+	configWindow888.redBits		= 8;
+	configWindow888.greenBits	= 8;
+	configWindow888.blueBits	= 8;
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_888_colorspace_default", "888 window surface, default (sRGB) colorspace", configWindow888, EGL_NONE, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_888_colorspace_srgb", "888 window surface, explicit sRGB colorspace", configWindow888, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_888_colorspace_p3", "888 window surface, explicit Display-P3 colorspace", configWindow888, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "window_888_colorspace_p3_passthrough", "888 window surface, explicit Display-P3 colorspace", configWindow888, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
 
-	const EGLint pbufferAttribList888[] =
-	{
-		EGL_SURFACE_TYPE,				EGL_PBUFFER_BIT,
-		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,					8,
-		EGL_GREEN_SIZE,					8,
-		EGL_BLUE_SIZE,					8,
-		EGL_NONE,						EGL_NONE
-	};
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_888_colorspace_default", "888 pbuffer surface, default (sRGB) colorspace", pbufferAttribList888, EGL_NONE, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_888_colorspace_srgb", "888 pbuffer surface, explicit sRGB colorspace", pbufferAttribList888, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_888_colorspace_p3", "888 pbuffer surface, explicit Display-P3 colorspace", pbufferAttribList888, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
-	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_888_colorspace_p3_passthrough", "888 pbuffer surface, explicit Display-P3 colorspace", pbufferAttribList888, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
+	glu::RenderConfig configPbuffer888 = {};
+	configPbuffer888.surfaceType	= glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
+	configPbuffer888.type			= glu::ContextType(glu::ApiType::es(2, 0));
+	configPbuffer888.redBits		= 8;
+	configPbuffer888.greenBits		= 8;
+	configPbuffer888.blueBits		= 8;
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_888_colorspace_default", "888 pbuffer surface, default (sRGB) colorspace", configPbuffer888, EGL_NONE, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_888_colorspace_srgb", "888 pbuffer surface, explicit sRGB colorspace", configPbuffer888, EGL_GL_COLORSPACE_SRGB_KHR, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_888_colorspace_p3", "888 pbuffer surface, explicit Display-P3 colorspace", configPbuffer888, EGL_GL_COLORSPACE_DISPLAY_P3_EXT, iterations));
+	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_888_colorspace_p3_passthrough", "888 pbuffer surface, explicit Display-P3 colorspace", configPbuffer888, EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT, iterations));
 
 }
 
@@ -1580,18 +1456,14 @@ void Smpte2086ColorTest::executeTest (void)
 	// Values > 1.0 will be truncated to 1.0 with fixed point pixel formats
 	int8888Iterations.push_back(Iteration(1.0f - fp16Increment2 * 5.0f, fp16Increment2, 10));
 
-	const EGLint windowAttribList8888[] =
-	{
-		EGL_SURFACE_TYPE,				EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,					8,
-		EGL_GREEN_SIZE,					8,
-		EGL_BLUE_SIZE,					8,
-		EGL_ALPHA_SIZE,					8,
-		EGL_NONE,						EGL_NONE
-	};
-
-	WideColorSurfaceTest testObj(m_eglTestCtx, "window_8888_colorspace_default", "8888 window surface, default (sRGB) colorspace", windowAttribList8888, EGL_NONE, int8888Iterations);
+	glu::RenderConfig configWindow8888 = {};
+	configWindow8888.surfaceType	= glu::RenderConfig::SURFACETYPE_WINDOW;
+	configWindow8888.type			= glu::ContextType(glu::ApiType::es(2, 0));
+	configWindow8888.redBits		= 8;
+	configWindow8888.greenBits		= 8;
+	configWindow8888.blueBits		= 8;
+	configWindow8888.alphaBits		= 8;
+	WideColorSurfaceTest testObj(m_eglTestCtx, "window_8888_colorspace_default", "8888 window surface, default (sRGB) colorspace", configWindow8888, EGL_NONE, int8888Iterations);
 
 	const EGLint testAttrs[] =
 	{
@@ -1663,18 +1535,14 @@ void Cta8613ColorTest::executeTest (void)
 	// Values > 1.0 will be truncated to 1.0 with fixed point pixel formats
 	int8888Iterations.push_back(Iteration(1.0f - fp16Increment2 * 5.0f, fp16Increment2, 10));
 
-	const EGLint windowAttribList8888[] =
-	{
-		EGL_SURFACE_TYPE,				EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,					8,
-		EGL_GREEN_SIZE,					8,
-		EGL_BLUE_SIZE,					8,
-		EGL_ALPHA_SIZE,					8,
-		EGL_NONE,						EGL_NONE
-	};
-
-	WideColorSurfaceTest testObj(m_eglTestCtx, "window_8888_colorspace_default", "8888 window surface, default (sRGB) colorspace", windowAttribList8888, EGL_NONE, int8888Iterations);
+	glu::RenderConfig configWindow8888 = {};
+	configWindow8888.surfaceType	= glu::RenderConfig::SURFACETYPE_WINDOW;
+	configWindow8888.type			= glu::ContextType(glu::ApiType::es(2, 0));
+	configWindow8888.redBits		= 8;
+	configWindow8888.greenBits		= 8;
+	configWindow8888.blueBits		= 8;
+	configWindow8888.alphaBits		= 8;
+	WideColorSurfaceTest testObj(m_eglTestCtx, "window_8888_colorspace_default", "8888 window surface, default (sRGB) colorspace", configWindow8888, EGL_NONE, int8888Iterations);
 
 	const EGLint testAttrs[] =
 	{

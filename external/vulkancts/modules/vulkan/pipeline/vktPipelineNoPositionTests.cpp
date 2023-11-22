@@ -102,7 +102,7 @@ std::vector<ShaderStageFlags> getWriteSubCases (ShaderStageFlags selectedStages)
 class NoPositionCase : public vkt::TestCase
 {
 public:
-							NoPositionCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							NoPositionCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~NoPositionCase		(void) {}
 
 	virtual void			initPrograms		(vk::SourceCollections& programCollection) const;
@@ -129,8 +129,8 @@ private:
 	TestParams					m_params;
 };
 
-NoPositionCase::NoPositionCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+NoPositionCase::NoPositionCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {
 	DE_ASSERT(params.numViews >= 1u);
@@ -769,19 +769,20 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 
 tcu::TestCaseGroup*	createNoPositionTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "no_position", "Tests with shaders that do not write to the Position built-in"));
+	// Tests with shaders that do not write to the Position built-in
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "no_position"));
 
 	for (int aux = 0; aux < 2; ++aux)
 	{
 		const bool						explicitDeclarations	= (aux == 1);
 		const std::string				declGroupName			(explicitDeclarations ? "explicit_declarations" : "implicit_declarations");
-		de::MovePtr<tcu::TestCaseGroup>	declGroup				(new tcu::TestCaseGroup(testCtx, declGroupName.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup>	declGroup				(new tcu::TestCaseGroup(testCtx, declGroupName.c_str()));
 
 		for (int aux2 = 0; aux2 < 2; ++aux2)
 		{
 			const bool useSSBO = (aux2 == 1);
 			const std::string ssboGroupName (useSSBO ? "ssbo_writes" : "basic");
-			de::MovePtr<tcu::TestCaseGroup> ssboGroup (new tcu::TestCaseGroup(testCtx, ssboGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> ssboGroup (new tcu::TestCaseGroup(testCtx, ssboGroupName.c_str()));
 
 			const uint32_t maxTestedViewCount = useSSBO ? 3u : 2u;
 			for (deUint32 viewCount = 1u; viewCount <= maxTestedViewCount; ++viewCount)
@@ -804,7 +805,7 @@ tcu::TestCaseGroup*	createNoPositionTests (tcu::TestContext& testCtx, vk::Pipeli
 				// Shader objects do not support multiview
 				if (viewCount != 1 && vk::isConstructionTypeShaderObject(pipelineConstructionType))
 					continue;
-				de::MovePtr<tcu::TestCaseGroup>	viewGroup(new tcu::TestCaseGroup(testCtx, viewGroupName.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup>	viewGroup(new tcu::TestCaseGroup(testCtx, viewGroupName.c_str()));
 
 				for (ShaderStageFlags stages = 0u; stages < STAGE_MASK_COUNT; ++stages)
 				{
@@ -834,7 +835,7 @@ tcu::TestCaseGroup*	createNoPositionTests (tcu::TestContext& testCtx, vk::Pipeli
 						params.useSSBO						= useSSBO;
 						params.useDeviceIndexAsViewIndex	= useDeviceIndexAsViewIndex;
 
-						viewGroup->addChild(new NoPositionCase(testCtx, testName, "", params));
+						viewGroup->addChild(new NoPositionCase(testCtx, testName, params));
 					}
 				}
 

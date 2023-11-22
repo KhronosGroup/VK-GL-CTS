@@ -228,7 +228,7 @@ void generateSharedMemoryWrites (std::ostream &src, const SharedStruct &object,
 
 		if (compare)
 		{
-			src << "\t" << "allOk" << " = " << "allOk" << " && compare_" << typeName << "(";
+			src << "\t" << "allOk = compare_" << typeName << "(";
 			// Comparison functions use 32-bit values. Convert 8/16-bit scalar and vector types if necessary.
 			// E.g. uint8_t becomes int.
 			if (basicType != promoteType || numElements > 1)
@@ -258,9 +258,9 @@ void generateSharedMemoryWrites (std::ostream &src, const SharedStruct &object,
 			if (basicType != promoteType)
 				src << ", " << glu::getDataTypeName(promoteType) << "(" << sharedObjectVarName
 					<< structMember
-					<< "))";
+					<< ")) && allOk";
 			else
-				src << ", " << sharedObjectVarName << structMember << ")";
+				src << ", " << sharedObjectVarName << structMember << ") && allOk";
 		}
 
 		src << ";\n";

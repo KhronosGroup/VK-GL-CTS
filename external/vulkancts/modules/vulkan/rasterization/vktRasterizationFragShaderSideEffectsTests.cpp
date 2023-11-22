@@ -123,7 +123,7 @@ vk::VkBool32 makeVkBool32 (bool value)
 class FragSideEffectsTestCase : public vkt::TestCase
 {
 public:
-							FragSideEffectsTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							FragSideEffectsTestCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~FragSideEffectsTestCase	(void) {}
 
 	virtual void			checkSupport				(Context& context) const;
@@ -146,8 +146,8 @@ private:
 	TestParams					m_params;
 };
 
-FragSideEffectsTestCase::FragSideEffectsTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+FragSideEffectsTestCase::FragSideEffectsTestCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -671,7 +671,7 @@ tcu::TestStatus FragSideEffectsInstance::iterate (void)
 
 tcu::TestCaseGroup* createFragSideEffectsTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> fragSideEffectsGroup(new tcu::TestCaseGroup(testCtx, "frag_side_effects", "Test fragment shader side effects are not removed by optimizations"));
+	de::MovePtr<tcu::TestCaseGroup> fragSideEffectsGroup(new tcu::TestCaseGroup(testCtx, "frag_side_effects"));
 
 	const tcu::Vec4		kDefaultClearColor			(0.0f, 0.0f, 0.0f, 1.0f);
 	const tcu::Vec4		kDefaultDrawColor			(0.0f, 0.0f, 1.0f, 1.0f);
@@ -681,61 +681,72 @@ tcu::TestCaseGroup* createFragSideEffectsTests (tcu::TestContext& testCtx)
 	{
 		bool		colorAtEnd;
 		std::string	name;
-		std::string	desc;
 	} kColorOrders[] =
 	{
-		{ false,	"color_at_beginning",	"Fragment shader output assignment at the beginning of the shader"	},
-		{ true,		"color_at_end",			"Fragment shader output assignment at the end of the shader"		},
+		// Fragment shader output assignment at the beginning of the shader
+		{ false,	"color_at_beginning"},
+		// Fragment shader output assignment at the end of the shader
+		{ true,		"color_at_end"},
 	};
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(kColorOrders); ++i)
 	{
-		de::MovePtr<tcu::TestCaseGroup> colorOrderGroup(new tcu::TestCaseGroup(testCtx, kColorOrders[i].name.c_str(), kColorOrders[i].desc.c_str()));
+		de::MovePtr<tcu::TestCaseGroup> colorOrderGroup(new tcu::TestCaseGroup(testCtx, kColorOrders[i].name.c_str()));
 		const bool colorAtEnd = kColorOrders[i].colorAtEnd;
 
 		{
 			TestParams params(CaseType::KILL, kDefaultClearColor, kDefaultDrawColor, colorAtEnd, kDefaultDepthBoundsParams);
-			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "kill", "OpKill after SSBO write", params));
+			// OpKill after SSBO write
+			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "kill", params));
 		}
 		{
 			TestParams params(CaseType::DEMOTE, kDefaultClearColor, kDefaultDrawColor, colorAtEnd, kDefaultDepthBoundsParams);
-			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "demote", "OpDemoteToHelperInvocation after SSBO write", params));
+			// OpDemoteToHelperInvocation after SSBO write
+			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "demote", params));
 		}
 		{
 			TestParams params(CaseType::TERMINATE_INVOCATION, kDefaultClearColor, kDefaultDrawColor, colorAtEnd, kDefaultDepthBoundsParams);
-			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "terminate_invocation", "OpTerminateInvocation after SSBO write", params));
+			// OpTerminateInvocation after SSBO write
+			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "terminate_invocation", params));
 		}
 		{
 			TestParams params(CaseType::SAMPLE_MASK_BEFORE, kDefaultClearColor, kDefaultDrawColor, colorAtEnd, kDefaultDepthBoundsParams);
-			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "sample_mask_before", "Set sample mask to zero before SSBO write", params));
+			// Set sample mask to zero before SSBO write
+			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "sample_mask_before", params));
 		}
 		{
 			TestParams params(CaseType::SAMPLE_MASK_AFTER, kDefaultClearColor, kDefaultDrawColor, colorAtEnd, kDefaultDepthBoundsParams);
-			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "sample_mask_after", "Set sample mask to zero after SSBO write", params));
+			// Set sample mask to zero after SSBO write
+			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "sample_mask_after", params));
 		}
 		{
 			TestParams params(CaseType::STENCIL_NEVER, kDefaultClearColor, kDefaultDrawColor, colorAtEnd, kDefaultDepthBoundsParams);
-			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "stencil_never", "SSBO write with stencil test never passes", params));
+			// SSBO write with stencil test never passes
+			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "stencil_never", params));
 		}
 		{
 			TestParams params(CaseType::DEPTH_NEVER, kDefaultClearColor, kDefaultDrawColor, colorAtEnd, kDefaultDepthBoundsParams);
-			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "depth_never", "SSBO write with depth test never passes", params));
+			// SSBO write with depth test never passes
+			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "depth_never", params));
 		}
 		{
 			const tcu::Vec4	drawColor(kDefaultDrawColor.x(), kDefaultDrawColor.y(), kDefaultDrawColor.z(), 0.0f);
 			{
 				TestParams params(CaseType::ALPHA_COVERAGE_BEFORE, kDefaultClearColor, drawColor, colorAtEnd, kDefaultDepthBoundsParams);
-				colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "alpha_coverage_before", "Enable alpha coverage and draw with alpha zero before SSBO write", params));
+				// Enable alpha coverage and draw with alpha zero before SSBO write
+				colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "alpha_coverage_before", params));
 			}
 			{
 				TestParams params(CaseType::ALPHA_COVERAGE_AFTER, kDefaultClearColor, drawColor, colorAtEnd, kDefaultDepthBoundsParams);
-				colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "alpha_coverage_after", "Enable alpha coverage and draw with alpha zero after SSBO write", params));
+				// Enable alpha coverage and draw with alpha zero after SSBO write
+				colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "alpha_coverage_after", params));
 			}
 		}
 		{
 			DepthBoundsParameters depthBoundsParams = {0.25f, 0.5f, 0.75f}; // min, max, draw depth.
 			TestParams params(CaseType::DEPTH_BOUNDS, kDefaultClearColor, kDefaultDrawColor, colorAtEnd, tcu::just(depthBoundsParams));
-			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "depth_bounds", "SSBO write with depth bounds test failing", params));
+			// SSBO write with depth bounds test failing
+			colorOrderGroup->addChild(new FragSideEffectsTestCase(testCtx, "depth_bounds", params));
 		}
 
 		fragSideEffectsGroup->addChild(colorOrderGroup.release());

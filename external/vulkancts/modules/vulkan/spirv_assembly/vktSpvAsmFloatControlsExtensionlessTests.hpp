@@ -36,7 +36,7 @@ namespace SpirVAssembly
 class SpvAsmFloatControlsExtensionlessCase : public TestCase
 {
 public:
-					SpvAsmFloatControlsExtensionlessCase	(tcu::TestContext& testCtx, const char* name, const char* description, const char* featureName, const int fpWideness, const bool spirv14);
+					SpvAsmFloatControlsExtensionlessCase	(tcu::TestContext& testCtx, const char* name, const char* featureName, const int fpWideness, const bool spirv14);
 	void			initPrograms							(vk::SourceCollections& programCollection) const;
 	TestInstance*	createInstance							(Context& context) const;
 	virtual void	checkSupport							(Context& context) const;

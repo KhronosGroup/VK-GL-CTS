@@ -60,7 +60,8 @@ void createChildren (tcu::TestCaseGroup* scTests)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "sc", "SC Device Creation Tests", createChildren);
+	// SC Device Creation Tests
+	return createTestGroup(testCtx, "sc", createChildren);
 }
 
 } // sc

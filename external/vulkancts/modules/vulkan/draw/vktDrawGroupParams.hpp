@@ -43,6 +43,11 @@ struct GroupParams
 	// commands are recorded to primary command buffer. This flag is checked only when
 	// useSecondaryCmdBuffer is true.
 	bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+
+	// When true the secondary command buffer with the renderpass is nested
+	// within another secondary command buffer. This flag is checked only when
+	// useSecondaryCmdBuffer is true.
+	bool nestedSecondaryCmdBuffer;
 };
 
 typedef de::SharedPtr<GroupParams> SharedGroupParams;

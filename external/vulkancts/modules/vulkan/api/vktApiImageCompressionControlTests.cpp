@@ -478,7 +478,7 @@ void addImageCompressionControlTests(tcu::TestCaseGroup* group, TestParams testP
 
 			const char* const enumName = getFormatName(testParams.format);
 			const string	  caseName = de::toLower(string(enumName).substr(10));
-			addFunctionCase(group, caseName, enumName, imageCreateTest, testParams);
+			addFunctionCase(group, caseName, imageCreateTest, testParams);
 		}
 	}
 }
@@ -723,21 +723,23 @@ void addAhbCompressionControlTests(tcu::TestCaseGroup *group, TestParams testPar
 		testParams.format = ahbFormats[index];
 		const char *const enumName = getFormatName(testParams.format);
 		const string caseName = de::toLower(string(enumName).substr(10));
-		addFunctionCase(group, caseName, enumName, ahbImageCreateTest, testParams);
+		addFunctionCase(group, caseName, ahbImageCreateTest, testParams);
 	}
 }
 
 tcu::TestCaseGroup* createImageCompressionControlTests(tcu::TestContext& testCtx)
 {
+	// Test for image compression control.
 	de::MovePtr<tcu::TestCaseGroup> group(
-		new tcu::TestCaseGroup(testCtx, "image_compression_control", "Test for image compression control."));
+		new tcu::TestCaseGroup(testCtx, "image_compression_control"));
 
 	TestParams			testParams{};
+	// Test creating images with compression control struct
 	tcu::TestCaseGroup* subgroup(
-		new tcu::TestCaseGroup(testCtx, "create_image", "Test creating images with compression control struct"));
+		new tcu::TestCaseGroup(testCtx, "create_image"));
 
+	// Queries images created without compression control struct.
 	subgroup->addChild(createTestGroup(testCtx, "no_compression_control",
-									   "Queries images created without compression control struct.",
 									   addImageCompressionControlTests, testParams));
 
 	testParams.useExtension	 = true;
@@ -758,37 +760,37 @@ tcu::TestCaseGroup* createImageCompressionControlTests(tcu::TestContext& testCtx
 	for (auto& flag : compression_flags)
 	{
 		testParams.control.flags = flag.flag;
+		// Queries images created with compression control struct.
 		subgroup->addChild(createTestGroup(testCtx, flag.name,
-										   "Queries images created with compression control struct.",
 										   addImageCompressionControlTests, testParams));
 	}
 	group->addChild(subgroup);
 
-	subgroup = new tcu::TestCaseGroup(testCtx, "android_hardware_buffer",
-									  "Test creating Android Hardware buffer with compression control struct");
+	// Test creating Android Hardware buffer with compression control struct
+	subgroup = new tcu::TestCaseGroup(testCtx, "android_hardware_buffer");
 
 	for (auto& flag : compression_flags)
 	{
 		testParams.control.flags = flag.flag;
+		// Queries images created with compression control struct.
 		subgroup->addChild(createTestGroup(testCtx, flag.name,
-										   "Queries images created with compression control struct.",
 										   addAhbCompressionControlTests, testParams));
 	}
 
 	group->addChild(subgroup);
 
-	subgroup = new tcu::TestCaseGroup(testCtx, "swapchain", "swapchain");
+	subgroup = new tcu::TestCaseGroup(testCtx, "swapchain");
 	for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
 	{
 		const vk::wsi::Type wsiType = (vk::wsi::Type)typeNdx;
 		testParams.wsiType			= wsiType;
 
-		tcu::TestCaseGroup* wsi_subgroup(new tcu::TestCaseGroup(testCtx, getName(wsiType), "Swapchain tests"));
+		tcu::TestCaseGroup* wsi_subgroup(new tcu::TestCaseGroup(testCtx, getName(wsiType)));
 
 		for (auto& flag : compression_flags)
 		{
 			testParams.control.flags = flag.flag;
-			addFunctionCase(wsi_subgroup, flag.name, flag.name, swapchainCreateTest, testParams);
+			addFunctionCase(wsi_subgroup, flag.name, swapchainCreateTest, testParams);
 		}
 		subgroup->addChild(wsi_subgroup);
 	}

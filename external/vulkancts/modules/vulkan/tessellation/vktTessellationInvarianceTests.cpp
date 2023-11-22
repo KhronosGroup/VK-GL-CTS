@@ -661,7 +661,7 @@ BaseTestInstance::DrawResult BaseTestInstance::draw (const deUint32 vertexCount,
 	}
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
-	beginRenderPassWithRasterizationDisabled(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer);
+	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(1, 1));
 
 	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 	vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
@@ -1025,8 +1025,8 @@ tcu::TestStatus SymmetricOuterEdgeTestInstance::iterate (void)
 class OuterEdgeDivisionTest : public TestCase
 {
 public:
-	OuterEdgeDivisionTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const CaseDefinition caseDef)
-		: TestCase	(testCtx, name, description)
+	OuterEdgeDivisionTest (tcu::TestContext& testCtx, const std::string& name, const CaseDefinition caseDef)
+		: TestCase	(testCtx, name)
 		, m_caseDef	(caseDef)
 	{
 	}
@@ -1058,8 +1058,8 @@ private:
 class OuterEdgeIndexIndependenceTest : public TestCase
 {
 public:
-	OuterEdgeIndexIndependenceTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const CaseDefinition caseDef)
-		: TestCase	(testCtx, name, description)
+	OuterEdgeIndexIndependenceTest (tcu::TestContext& testCtx, const std::string& name, const CaseDefinition caseDef)
+		: TestCase	(testCtx, name)
 		, m_caseDef	(caseDef)
 	{
 		DE_ASSERT(m_caseDef.primitiveType == TESSPRIMITIVETYPE_TRIANGLES || m_caseDef.primitiveType == TESSPRIMITIVETYPE_QUADS);
@@ -1087,8 +1087,8 @@ private:
 class SymmetricOuterEdgeTest : public TestCase
 {
 public:
-	SymmetricOuterEdgeTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const CaseDefinition caseDef)
-		: TestCase	(testCtx, name, description)
+	SymmetricOuterEdgeTest (tcu::TestContext& testCtx, const std::string& name, const CaseDefinition caseDef)
+		: TestCase	(testCtx, name)
 		, m_caseDef	(caseDef)
 	{
 	}
@@ -1113,22 +1113,22 @@ private:
 	const CaseDefinition m_caseDef;
 };
 
-tcu::TestCase* makeOuterEdgeDivisionTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
+tcu::TestCase* makeOuterEdgeDivisionTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
 {
 	const CaseDefinition caseDef = { primitiveType, spacingMode, WINDING_LAST, false };  // winding is ignored by this test
-	return new OuterEdgeDivisionTest(testCtx, name, description, caseDef);
+	return new OuterEdgeDivisionTest(testCtx, name, caseDef);
 }
 
-tcu::TestCase* makeOuterEdgeIndexIndependenceTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
+tcu::TestCase* makeOuterEdgeIndexIndependenceTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { primitiveType, spacingMode, winding, usePointMode };
-	return new OuterEdgeIndexIndependenceTest(testCtx, name, description, caseDef);
+	return new OuterEdgeIndexIndependenceTest(testCtx, name, caseDef);
 }
 
-tcu::TestCase* makeSymmetricOuterEdgeTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
+tcu::TestCase* makeSymmetricOuterEdgeTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { primitiveType, spacingMode, winding, usePointMode };
-	return new SymmetricOuterEdgeTest(testCtx, name, description, caseDef);
+	return new SymmetricOuterEdgeTest(testCtx, name, caseDef);
 }
 
 } // InvariantOuterEdge ns
@@ -1293,8 +1293,8 @@ bool comparePrimitivesExact (const PerPrimitive* const primitivesA, const PerPri
 class InvarianceTestCase : public TestCase
 {
 public:
-									InvarianceTestCase			(tcu::TestContext& context, const std::string& name, const std::string& description, const CaseDefinition& caseDef)
-										: TestCase	(context, name, description)
+									InvarianceTestCase			(tcu::TestContext& context, const std::string& name, const CaseDefinition& caseDef)
+										: TestCase	(context, name)
 										, m_caseDef	(caseDef) {}
 
 	virtual							~InvarianceTestCase			(void) {}
@@ -1490,7 +1490,7 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 				}
 
 				beginCommandBuffer(vk, *cmdBuffer);
-				beginRenderPassWithRasterizationDisabled(vk, *cmdBuffer, *renderPass, *framebuffer);
+				beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(1, 1));
 
 				vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 				vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
@@ -1854,31 +1854,31 @@ TestInstance* InvarianceTestCase::createInstance (Context& context) const
 	}
 }
 
-TestCase* makeInvariantPrimitiveSetTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
+TestCase* makeInvariantPrimitiveSetTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { CASETYPE_INVARIANT_PRIMITIVE_SET, primitiveType, spacingMode, getWindingUsage(winding), usePointMode };
-	return new InvarianceTestCase(testCtx, name, description, caseDef);
+	return new InvarianceTestCase(testCtx, name, caseDef);
 }
 
-TestCase* makeInvariantTriangleSetTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
+TestCase* makeInvariantTriangleSetTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
 {
 	DE_ASSERT(primitiveType == TESSPRIMITIVETYPE_TRIANGLES || primitiveType == TESSPRIMITIVETYPE_QUADS);
 	const CaseDefinition caseDef = { CASETYPE_INVARIANT_TRIANGLE_SET, primitiveType, spacingMode, WINDING_USAGE_VARY, false };
-	return new InvarianceTestCase(testCtx, name, description, caseDef);
+	return new InvarianceTestCase(testCtx, name, caseDef);
 }
 
-TestCase* makeInvariantInnerTriangleSetTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
+TestCase* makeInvariantInnerTriangleSetTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
 {
 	DE_ASSERT(primitiveType == TESSPRIMITIVETYPE_TRIANGLES || primitiveType == TESSPRIMITIVETYPE_QUADS);
 	const CaseDefinition caseDef = { CASETYPE_INVARIANT_INNER_TRIANGLE_SET, primitiveType, spacingMode, WINDING_USAGE_VARY, false };
-	return new InvarianceTestCase(testCtx, name, description, caseDef);
+	return new InvarianceTestCase(testCtx, name, caseDef);
 }
 
-TestCase* makeInvariantOuterTriangleSetTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
+TestCase* makeInvariantOuterTriangleSetTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
 {
 	DE_ASSERT(primitiveType == TESSPRIMITIVETYPE_TRIANGLES || primitiveType == TESSPRIMITIVETYPE_QUADS);
 	const CaseDefinition caseDef = { CASETYPE_INVARIANT_OUTER_TRIANGLE_SET, primitiveType, spacingMode, WINDING_USAGE_VARY, false };
-	return new InvarianceTestCase(testCtx, name, description, caseDef);
+	return new InvarianceTestCase(testCtx, name, caseDef);
 }
 
 } // PrimitiveSetInvariance ns
@@ -2132,7 +2132,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 		}
 
 		beginCommandBuffer(vk, *cmdBuffer);
-		beginRenderPassWithRasterizationDisabled(vk, *cmdBuffer, *renderPass, *framebuffer);
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(1, 1));
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
@@ -2189,16 +2189,16 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	return tcu::TestStatus::pass("OK");
 }
 
-tcu::TestCase* makeTessCoordRangeTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
+tcu::TestCase* makeTessCoordRangeTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { CASETYPE_TESS_COORD_RANGE, primitiveType, spacingMode, winding, usePointMode };
-	return createFunctionCaseWithPrograms(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, description, checkSupportCase, initPrograms, test, caseDef);
+	return createFunctionCaseWithPrograms(testCtx, name, checkSupportCase, initPrograms, test, caseDef);
 }
 
-tcu::TestCase* makeOneMinusTessCoordTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
+tcu::TestCase* makeOneMinusTessCoordTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { CASETYPE_ONE_MINUS_TESS_COORD, primitiveType, spacingMode, winding, usePointMode };
-	return createFunctionCaseWithPrograms(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, description, checkSupportCase, initPrograms, test, caseDef);
+	return createFunctionCaseWithPrograms(testCtx, name, checkSupportCase, initPrograms, test, caseDef);
 }
 
 } // TessCoordComponent ns
@@ -2211,17 +2211,17 @@ tcu::TestCase* makeOneMinusTessCoordTest (tcu::TestContext& testCtx, const std::
 //! invocation is undefined.
 tcu::TestCaseGroup* createInvarianceTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "invariance", "Test tessellation invariance rules"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "invariance"));
 
-	de::MovePtr<tcu::TestCaseGroup> invariantPrimitiveSetGroup				(new tcu::TestCaseGroup(testCtx, "primitive_set",					"Test invariance rule #1"));
-	de::MovePtr<tcu::TestCaseGroup> invariantOuterEdgeGroup					(new tcu::TestCaseGroup(testCtx, "outer_edge_division",				"Test invariance rule #2"));
-	de::MovePtr<tcu::TestCaseGroup> symmetricOuterEdgeGroup					(new tcu::TestCaseGroup(testCtx, "outer_edge_symmetry",				"Test invariance rule #3"));
-	de::MovePtr<tcu::TestCaseGroup> outerEdgeVertexSetIndexIndependenceGroup(new tcu::TestCaseGroup(testCtx, "outer_edge_index_independence",	"Test invariance rule #4"));
-	de::MovePtr<tcu::TestCaseGroup> invariantTriangleSetGroup				(new tcu::TestCaseGroup(testCtx, "triangle_set",					"Test invariance rule #5"));
-	de::MovePtr<tcu::TestCaseGroup> invariantInnerTriangleSetGroup			(new tcu::TestCaseGroup(testCtx, "inner_triangle_set",				"Test invariance rule #6"));
-	de::MovePtr<tcu::TestCaseGroup> invariantOuterTriangleSetGroup			(new tcu::TestCaseGroup(testCtx, "outer_triangle_set",				"Test invariance rule #7"));
-	de::MovePtr<tcu::TestCaseGroup> tessCoordComponentRangeGroup			(new tcu::TestCaseGroup(testCtx, "tess_coord_component_range",		"Test invariance rule #8, first part"));
-	de::MovePtr<tcu::TestCaseGroup> oneMinusTessCoordComponentGroup			(new tcu::TestCaseGroup(testCtx, "one_minus_tess_coord_component",	"Test invariance rule #8, second part"));
+	de::MovePtr<tcu::TestCaseGroup> invariantPrimitiveSetGroup				(new tcu::TestCaseGroup(testCtx, "primitive_set"));
+	de::MovePtr<tcu::TestCaseGroup> invariantOuterEdgeGroup					(new tcu::TestCaseGroup(testCtx, "outer_edge_division"));
+	de::MovePtr<tcu::TestCaseGroup> symmetricOuterEdgeGroup					(new tcu::TestCaseGroup(testCtx, "outer_edge_symmetry"));
+	de::MovePtr<tcu::TestCaseGroup> outerEdgeVertexSetIndexIndependenceGroup(new tcu::TestCaseGroup(testCtx, "outer_edge_index_independence"));
+	de::MovePtr<tcu::TestCaseGroup> invariantTriangleSetGroup				(new tcu::TestCaseGroup(testCtx, "triangle_set"));
+	de::MovePtr<tcu::TestCaseGroup> invariantInnerTriangleSetGroup			(new tcu::TestCaseGroup(testCtx, "inner_triangle_set"));
+	de::MovePtr<tcu::TestCaseGroup> invariantOuterTriangleSetGroup			(new tcu::TestCaseGroup(testCtx, "outer_triangle_set"));
+	de::MovePtr<tcu::TestCaseGroup> tessCoordComponentRangeGroup			(new tcu::TestCaseGroup(testCtx, "tess_coord_component_range"));
+	de::MovePtr<tcu::TestCaseGroup> oneMinusTessCoordComponentGroup			(new tcu::TestCaseGroup(testCtx, "one_minus_tess_coord_component"));
 
 	for (int primitiveTypeNdx = 0; primitiveTypeNdx < TESSPRIMITIVETYPE_LAST; ++primitiveTypeNdx)
 	for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; ++spacingModeNdx)
@@ -2234,10 +2234,10 @@ tcu::TestCaseGroup* createInvarianceTests (tcu::TestContext& testCtx)
 
 		if (triOrQuad)
 		{
-			invariantOuterEdgeGroup->addChild		(    InvariantOuterEdge::makeOuterEdgeDivisionTest			(testCtx, primSpacName, "", primitiveType, spacingMode));
-			invariantTriangleSetGroup->addChild		(PrimitiveSetInvariance::makeInvariantTriangleSetTest		(testCtx, primSpacName, "", primitiveType, spacingMode));
-			invariantInnerTriangleSetGroup->addChild(PrimitiveSetInvariance::makeInvariantInnerTriangleSetTest	(testCtx, primSpacName, "", primitiveType, spacingMode));
-			invariantOuterTriangleSetGroup->addChild(PrimitiveSetInvariance::makeInvariantOuterTriangleSetTest	(testCtx, primSpacName, "", primitiveType, spacingMode));
+			invariantOuterEdgeGroup->addChild		(    InvariantOuterEdge::makeOuterEdgeDivisionTest			(testCtx, primSpacName, primitiveType, spacingMode));
+			invariantTriangleSetGroup->addChild		(PrimitiveSetInvariance::makeInvariantTriangleSetTest		(testCtx, primSpacName, primitiveType, spacingMode));
+			invariantInnerTriangleSetGroup->addChild(PrimitiveSetInvariance::makeInvariantInnerTriangleSetTest	(testCtx, primSpacName, primitiveType, spacingMode));
+			invariantOuterTriangleSetGroup->addChild(PrimitiveSetInvariance::makeInvariantOuterTriangleSetTest	(testCtx, primSpacName, primitiveType, spacingMode));
 		}
 
 		for (int windingNdx = 0; windingNdx < WINDING_LAST; ++windingNdx)
@@ -2247,13 +2247,13 @@ tcu::TestCaseGroup* createInvarianceTests (tcu::TestContext& testCtx)
 			const bool			usePointMode			= (usePointModeNdx != 0);
 			const std::string	primSpacWindPointName	= primSpacName + "_" + getWindingShaderName(winding) + (usePointMode ? "_point_mode" : "");
 
-			invariantPrimitiveSetGroup->addChild		(PrimitiveSetInvariance::makeInvariantPrimitiveSetTest	(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
-			tessCoordComponentRangeGroup->addChild		(    TessCoordComponent::makeTessCoordRangeTest			(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
-			oneMinusTessCoordComponentGroup->addChild	(    TessCoordComponent::makeOneMinusTessCoordTest		(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
-			symmetricOuterEdgeGroup->addChild			(    InvariantOuterEdge::makeSymmetricOuterEdgeTest		(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
+			invariantPrimitiveSetGroup->addChild		(PrimitiveSetInvariance::makeInvariantPrimitiveSetTest	(testCtx, primSpacWindPointName, primitiveType, spacingMode, winding, usePointMode));
+			tessCoordComponentRangeGroup->addChild		(    TessCoordComponent::makeTessCoordRangeTest			(testCtx, primSpacWindPointName, primitiveType, spacingMode, winding, usePointMode));
+			oneMinusTessCoordComponentGroup->addChild	(    TessCoordComponent::makeOneMinusTessCoordTest		(testCtx, primSpacWindPointName, primitiveType, spacingMode, winding, usePointMode));
+			symmetricOuterEdgeGroup->addChild			(    InvariantOuterEdge::makeSymmetricOuterEdgeTest		(testCtx, primSpacWindPointName, primitiveType, spacingMode, winding, usePointMode));
 
 			if (triOrQuad)
-				outerEdgeVertexSetIndexIndependenceGroup->addChild(InvariantOuterEdge::makeOuterEdgeIndexIndependenceTest(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
+				outerEdgeVertexSetIndexIndependenceGroup->addChild(InvariantOuterEdge::makeOuterEdgeIndexIndependenceTest(testCtx, primSpacWindPointName, primitiveType, spacingMode, winding, usePointMode));
 		}
 	}
 

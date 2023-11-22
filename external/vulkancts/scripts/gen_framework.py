@@ -2595,9 +2595,9 @@ def writeDeviceFeatures2(api, filename):
 	# function to create tests
 	stream.append("void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)\n{")
 	for x in testedStructureDetail:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", "' + x.nameList[0] + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x.instanceName[len('device'):]) + '", testPhysicalDeviceFeature' + x.instanceName[len('device'):] + ');')
 	for x in promotedTests:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x) + '", "", ' + x + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x) + '", ' + x + ');')
 	stream.append('}\n')
 
 	# write out
@@ -2871,7 +2871,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 {
 """)
 	for x in testFunctions:
-		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x[len('createDeviceWithUnsupportedFeaturesTest'):]) + '", "' + x + '", ' + x + ');')
+		stream.append('\taddFunctionCase(testGroup, "' + camelToSnake(x[len('createDeviceWithUnsupportedFeaturesTest'):]) + '", ' + x + ');')
 	stream.append('}\n')
 
 	writeInlFile(filename, INL_HEADER, stream)
@@ -3209,8 +3209,12 @@ def writeMandatoryFeatures(api, filename):
 
 	structList = sorted(usedFeatureStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
 	apiStructs = list( filter(lambda x : structInAPI(x[0]), structList)) # remove items not defined in current API
+	varVariants = {} # Some variables are going to be declared only for specific variants.
 
 	for structName, extensions in apiStructs:
+		# The variable name will be the structure name without the Vk prefix and starting in lowercase.
+		newVar = structName[2].lower() + structName[3:]
+
 		metaCondition = ''
 		if structName in dictStructs:
 			mandatoryVariantList = dictStructs[structName][1]
@@ -3218,9 +3222,7 @@ def writeMandatoryFeatures(api, filename):
 				mandatoryVariant = mandatoryVariantList[0]
 				metaCondition = 'defined(CTS_USES_' + mandatoryVariant.upper() + ')'
 				stream.append('#if ' + metaCondition)
-
-		# The variable name will be the structure name without the Vk prefix and starting in lowercase.
-		newVar = structName[2].lower() + structName[3:]
+				varVariants[newVar] = mandatoryVariant
 
 		stream.extend(['\tvk::' + structName + ' ' + newVar + ';',
 					'\tdeMemset(&' + newVar + ', 0, sizeof(' + newVar + '));',
@@ -3263,8 +3265,8 @@ def writeMandatoryFeatures(api, filename):
 	for v in dictData:
 		if not structInAPI(v[0]): # remove items not defined in current API ( important for Vulkan SC )
 			continue
-		structType = v[0];
-		structName = 'coreFeatures.features';
+		structType = v[0]
+		structName = 'coreFeatures.features'
 		metaCondition = ''
 		if len(v) == 4 and v[3] != '':
 			# for x in v[3].split('_'):
@@ -3287,7 +3289,12 @@ def writeMandatoryFeatures(api, filename):
 			stream.append('\t' + condition)
 		stream.append('\t{')
 		# Don't need to support an AND case since that would just be another line in the .txt
+		reqMetaCondition = ''
 		if len(v[1]) == 1:
+			# If the req struct type has a mandatory variant we need to add an #ifdef block, unless we're already inside one.
+			if len(metaCondition) == 0 and structName in varVariants:
+				reqMetaCondition = 'defined(CTS_USES_' + varVariants[structName].upper() + ')'
+				stream.append('#if ' + reqMetaCondition)
 			stream.append('\t\tif ( ' + structName + '.' + v[1][0] + ' == VK_FALSE )')
 		else:
 			condition = 'if ( '
@@ -3301,8 +3308,10 @@ def writeMandatoryFeatures(api, filename):
 		stream.extend(['\t\t{',
 					   '\t\t\tlog << tcu::TestLog::Message << "Mandatory feature ' + featureSet + ' not supported" << tcu::TestLog::EndMessage;',
 					   '\t\t\tresult = false;',
-					   '\t\t}',
-					   '\t}'])
+					   '\t\t}'])
+		if reqMetaCondition != '':
+			stream.append('#endif // ' + reqMetaCondition)
+		stream.append('\t}')
 		if metaCondition != '':
 			stream.extend(['#endif // ' + metaCondition[4:],
 						  ''])
@@ -3688,7 +3697,7 @@ def writeGetDeviceProcAddr(api, filename):
 
 	# function to create tests
 	stream.append("void addGetDeviceProcAddrTests (tcu::TestCaseGroup* testGroup)\n{")
-	stream.append('\taddFunctionCase(testGroup, "non_enabled", "GetDeviceProcAddr", testGetDeviceProcAddr);')
+	stream.append('\taddFunctionCase(testGroup, "non_enabled", testGetDeviceProcAddr);')
 	stream.append('}\n')
 	stream.append('}\n')
 

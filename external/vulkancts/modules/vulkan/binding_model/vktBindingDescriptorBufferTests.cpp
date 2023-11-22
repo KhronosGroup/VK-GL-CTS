@@ -1243,10 +1243,9 @@ public:
 	DescriptorBufferTestCase(
 		tcu::TestContext& testCtx,
 		const std::string& name,
-		const std::string& description,
 		const TestParams& params)
 
-		: TestCase(testCtx, name, description)
+		: TestCase(testCtx, name)
 		, m_params(params)
 		, m_rng(params.hash)
 	{
@@ -4442,6 +4441,8 @@ tcu::TestStatus	DescriptorBufferTestInstance::iterate()
 	{
 		deUint32 currentSet = INDEX_INVALID;
 
+		deUint32 inlineUniformSize = 0u;
+
 		for (const auto& sb : m_simpleBindings)
 		{
 			if ((currentSet == INDEX_INVALID) || (currentSet < sb.set))
@@ -4467,6 +4468,7 @@ tcu::TestStatus	DescriptorBufferTestInstance::iterate()
 			if (sb.type == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
 			{
 				binding.descriptorCount = sizeof(deUint32) * ConstInlineBlockDwords;
+				inlineUniformSize += binding.descriptorCount;
 			}
 			else
 			{
@@ -4489,6 +4491,11 @@ tcu::TestStatus	DescriptorBufferTestInstance::iterate()
 			}
 
 			dsl.bindings.emplace_back(binding);
+		}
+
+		const VkPhysicalDeviceVulkan13Properties& vulkan13properties = m_context.getDeviceVulkan13Properties();
+		if (m_context.getUsedApiVersion() >= VK_API_VERSION_1_3 && inlineUniformSize > vulkan13properties.maxInlineUniformTotalSize) {
+			TCU_THROW(NotSupportedError, "Test require more inline uniform total size among all stages. Provided " + de::toString(vulkan13properties.maxInlineUniformTotalSize));
 		}
 	}
 
@@ -5227,9 +5234,9 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 	};
 
 	{
-		MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(testCtx, "basic", "Basic tests"));
+		MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(testCtx, "basic"));
 
-		addFunctionCase(subGroup.get(), "limits", "Check basic device properties and limits", testLimits);
+		addFunctionCase(subGroup.get(), "limits", testLimits);
 
 		topGroup->addChild(subGroup.release());
 	}
@@ -5238,7 +5245,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 		//
 		// Basic single descriptor cases -- a quick check.
 		//
-		MovePtr<tcu::TestCaseGroup>	subGroup		(new tcu::TestCaseGroup(testCtx, "single", "Single binding tests"));
+		MovePtr<tcu::TestCaseGroup>	subGroup		(new tcu::TestCaseGroup(testCtx, "single"));
 		const uint32_t				subGroupHash	= baseSeed ^ deStringHash(subGroup->getName());
 
 		// VK_DESCRIPTOR_TYPE_SAMPLER is tested implicitly by sampled image case.
@@ -5284,7 +5291,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.queue		= *pQueue;
 			params.descriptor	= *pDescriptor;
 
-			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), "", params));
+			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
 		}
 
 		params.stage			= VK_SHADER_STAGE_COMPUTE_BIT;
@@ -5292,7 +5299,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 		params.descriptor		= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		params.useMaintenance5	= true;
 
-		subGroup->addChild(new DescriptorBufferTestCase(testCtx, "compute_maintenance5", "", params));
+		subGroup->addChild(new DescriptorBufferTestCase(testCtx, "compute_maintenance5", params));
 		topGroup->addChild(subGroup.release());
 	}
 
@@ -5300,7 +5307,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 		//
 		// More complex cases. Multiple sets and bindings per buffer. Immutable samplers.
 		//
-		MovePtr<tcu::TestCaseGroup> subGroup		(new tcu::TestCaseGroup(testCtx, "multiple", "Multiple bindings tests"));
+		MovePtr<tcu::TestCaseGroup> subGroup		(new tcu::TestCaseGroup(testCtx, "multiple"));
 		const uint32_t				subGroupHash	= baseSeed ^ deStringHash(subGroup->getName());
 		const VkShaderStageFlags	longTestStages	= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
@@ -5345,7 +5352,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.descriptor					= VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR; // Optional, will be tested if supported
 			params.useMaintenance5				= false;
 
-			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), "", params));
+			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
 
 			if ((pOptions->setsPerBuffer != 1) && (pOptions->bufferBindingCount < 4))
 			{
@@ -5353,7 +5360,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 
 				params.subcase = SubCase::IMMUTABLE_SAMPLERS;
 
-				subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), "", params));
+				subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
 			}
 		}
 
@@ -5365,7 +5372,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 		// These cases exercise buffers of single usage (samplers only and resources only) and tries to use
 		// all available buffer bindings.
 		//
-		MovePtr<tcu::TestCaseGroup>	subGroup		(new tcu::TestCaseGroup(testCtx, "max", "Max sampler/resource bindings tests"));
+		MovePtr<tcu::TestCaseGroup>	subGroup		(new tcu::TestCaseGroup(testCtx, "max"));
 		const uint32_t				subGroupHash	= baseSeed ^ deStringHash(subGroup->getName());
 
 		const struct {
@@ -5413,7 +5420,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.descriptor				  = VK_DESCRIPTOR_TYPE_MAX_ENUM;
 			params.useMaintenance5			  = false;
 
-			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), "", params));
+			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
 		}
 
 		topGroup->addChild(subGroup.release());
@@ -5423,7 +5430,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 		//
 		// Check embedded immutable sampler buffers/bindings.
 		//
-		MovePtr<tcu::TestCaseGroup>	subGroup		(new tcu::TestCaseGroup(testCtx, "embedded_imm_samplers", "Max embedded immutable samplers tests"));
+		MovePtr<tcu::TestCaseGroup>	subGroup		(new tcu::TestCaseGroup(testCtx, "embedded_imm_samplers"));
 		const uint32_t				subGroupHash	= baseSeed ^ deStringHash(subGroup->getName());
 
 		const struct {
@@ -5467,7 +5474,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.descriptor									= VK_DESCRIPTOR_TYPE_MAX_ENUM;
 			params.useMaintenance5								= false;
 
-			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), "", params));
+			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
 		}
 
 		topGroup->addChild(subGroup.release());
@@ -5477,8 +5484,8 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 		//
 		// Check push descriptors and push descriptors with template updates
 		//
-		MovePtr<tcu::TestCaseGroup> subGroupPush				(new tcu::TestCaseGroup(testCtx, "push_descriptor", "Use push descriptors in addition to descriptor buffer"));
-		MovePtr<tcu::TestCaseGroup> subGroupPushTemplate		(new tcu::TestCaseGroup(testCtx, "push_template", "Use descriptor update template with push descriptors in addition to descriptor buffer"));
+		MovePtr<tcu::TestCaseGroup> subGroupPush				(new tcu::TestCaseGroup(testCtx, "push_descriptor"));
+		MovePtr<tcu::TestCaseGroup> subGroupPushTemplate		(new tcu::TestCaseGroup(testCtx, "push_template"));
 		const uint32_t				subGroupPushHash			= baseSeed ^ deStringHash(subGroupPush->getName());
 		const uint32_t				subGroupPushTemplateHash	= baseSeed ^ deStringHash(subGroupPushTemplate->getName());
 
@@ -5522,7 +5529,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.descriptor					= VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR; // Optional, will be tested if supported
 			params.useMaintenance5				= false;
 
-			subGroupPush->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupPushHash), "", params));
+			subGroupPush->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupPushHash), params));
 
 			if (pOptions->bufferBindingCount < 2)
 			{
@@ -5530,12 +5537,12 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 
 				paramsSingleBuffer.subcase = SubCase::SINGLE_BUFFER;
 
-				subGroupPush->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(paramsSingleBuffer, subGroupPushHash), "", paramsSingleBuffer));
+				subGroupPush->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(paramsSingleBuffer, subGroupPushHash), paramsSingleBuffer));
 			}
 
 			params.variant = TestVariant::PUSH_TEMPLATE;
 
-			subGroupPushTemplate->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupPushTemplateHash), "", params));
+			subGroupPushTemplate->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupPushTemplateHash), params));
 		}
 
 		topGroup->addChild(subGroupPush.release());
@@ -5546,9 +5553,9 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 		//
 		// Robustness tests
 		//
-		MovePtr<tcu::TestCaseGroup> subGroup					(new tcu::TestCaseGroup(testCtx, "robust", "Robustness tests"));
-		MovePtr<tcu::TestCaseGroup> subGroupBuffer				(new tcu::TestCaseGroup(testCtx, "buffer_access", "Robust buffer access"));
-		MovePtr<tcu::TestCaseGroup> subGroupNullDescriptor		(new tcu::TestCaseGroup(testCtx, "null_descriptor", "Null descriptor"));
+		MovePtr<tcu::TestCaseGroup> subGroup					(new tcu::TestCaseGroup(testCtx, "robust"));
+		MovePtr<tcu::TestCaseGroup> subGroupBuffer				(new tcu::TestCaseGroup(testCtx, "buffer_access"));
+		MovePtr<tcu::TestCaseGroup> subGroupNullDescriptor		(new tcu::TestCaseGroup(testCtx, "null_descriptor"));
 		const uint32_t				subGroupBufferHash			= baseSeed ^ deStringHash(subGroupBuffer->getName());
 		const uint32_t				subGroupNullDescriptorHash	= baseSeed ^ deStringHash(subGroupNullDescriptor->getName());
 
@@ -5587,7 +5594,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.setsPerBuffer		= 1;
 			params.useMaintenance5		= false;
 
-			subGroupBuffer->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupBufferHash), "", params));
+			subGroupBuffer->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupBufferHash), params));
 
 			for (auto pDescriptor = choiceNullDescriptors; pDescriptor < DE_ARRAY_END(choiceNullDescriptors); ++pDescriptor)
 			{
@@ -5600,7 +5607,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 				params.variant		= TestVariant::ROBUST_NULL_DESCRIPTOR;
 				params.descriptor	= *pDescriptor;
 
-				subGroupNullDescriptor->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupNullDescriptorHash), "", params));
+				subGroupNullDescriptor->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupNullDescriptorHash), params));
 			}
 		}
 
@@ -5613,7 +5620,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 		//
 		// Capture and replay
 		//
-		MovePtr<tcu::TestCaseGroup>	subGroup		(new tcu::TestCaseGroup(testCtx, "capture_replay", "Capture and replay tests"));
+		MovePtr<tcu::TestCaseGroup>	subGroup		(new tcu::TestCaseGroup(testCtx, "capture_replay"));
 		const uint32_t				subGroupHash	= baseSeed ^ deStringHash(subGroup->getName());
 
 		const VkDescriptorType choiceDescriptors[] {
@@ -5655,7 +5662,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			params.setsPerBuffer		= 1;
 			params.useMaintenance5		= false;
 
-			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), "", params));
+			subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
 
 			if ((*pDescriptor == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) ||
 				(*pDescriptor == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
@@ -5663,7 +5670,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 			{
 				params.subcase = SubCase::CAPTURE_REPLAY_CUSTOM_BORDER_COLOR;
 
-				subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), "", params));
+				subGroup->addChild(new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
 			}
 		}
 
@@ -5676,7 +5683,7 @@ void populateDescriptorBufferTests (tcu::TestCaseGroup* topGroup)
 
 tcu::TestCaseGroup* createDescriptorBufferTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "descriptor_buffer", "Descriptor buffer tests.", populateDescriptorBufferTests);
+	return createTestGroup(testCtx, "descriptor_buffer", populateDescriptorBufferTests);
 }
 
 } // BindingModel

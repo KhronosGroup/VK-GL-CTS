@@ -366,6 +366,12 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR",
 		"vkGetEncodedVideoSessionParametersKHR",
 		"vkCmdEncodeVideoKHR",
+		"vkCreateCudaModuleNV",
+		"vkGetCudaModuleCacheNV",
+		"vkCreateCudaFunctionNV",
+		"vkDestroyCudaModuleNV",
+		"vkDestroyCudaFunctionNV",
+		"vkCmdCudaLaunchKernelNV",
 		"vkExportMetalObjectsEXT",
 		"vkCmdSetEvent2KHR",
 		"vkCmdResetEvent2KHR",
@@ -552,6 +558,11 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdSetCoverageReductionModeNV",
 		"vkGetFramebufferTilePropertiesQCOM",
 		"vkGetDynamicRenderingTilePropertiesQCOM",
+		"vkSetLatencySleepModeNV",
+		"vkLatencySleepNV",
+		"vkSetLatencyMarkerNV",
+		"vkGetLatencyTimingsNV",
+		"vkQueueNotifyOutOfBandNV",
 		"vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR",
 		"vkCmdSetAttachmentFeedbackLoopEnableEXT",
 		"vkGetScreenBufferPropertiesQNX",
@@ -573,7 +584,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 
 void addGetDeviceProcAddrTests (tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "non_enabled", "GetDeviceProcAddr", testGetDeviceProcAddr);
+	addFunctionCase(testGroup, "non_enabled", testGetDeviceProcAddr);
 }
 
 }

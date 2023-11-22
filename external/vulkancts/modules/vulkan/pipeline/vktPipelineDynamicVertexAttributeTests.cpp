@@ -399,6 +399,7 @@ tcu::TestStatus NonSequentialInstance::iterate (void)
 	{
 		graphicsPipelines[i].setDefaultDepthStencilState()
 			.setDefaultColorBlendState()
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.setDynamicState(&pipelineDynamicStateNfo)
 			.setDefaultMultisampleState()
 			.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
@@ -417,6 +418,7 @@ tcu::TestStatus NonSequentialInstance::iterate (void)
 				DE_NULL,
 				DE_NULL)
 			.setupFragmentOutputState(*renderPass)
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 	}
 
@@ -523,11 +525,10 @@ class NonSequentialCase : public vkt::TestCase
 public:
 							NonSequentialCase	(tcu::TestContext&					testContext,
 												 const std::string&					name,
-												 const std::string&					description,
 												 const vk::PipelineConstructionType	pipelineConstructionType,
 												 const deUint32						numInstances,
 												 const std::vector<deUint32>		attributeLocations)
-							: vkt::TestCase					(testContext, name, description)
+							: vkt::TestCase					(testContext, name)
 							, m_pipelineConstructionType	(pipelineConstructionType)
 							, m_numInstances				(numInstances)
 							, m_attributeLocations			(attributeLocations)
@@ -616,9 +617,9 @@ TestInstance* NonSequentialCase::createInstance (Context& context) const
 
 tcu::TestCaseGroup* createDynamicVertexAttributeTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> nonSequentialTestsGroup(new tcu::TestCaseGroup(testCtx, "dynamic_vertex_attribute", "Dynamic vertex attribute group."));
+	de::MovePtr<tcu::TestCaseGroup> nonSequentialTestsGroup(new tcu::TestCaseGroup(testCtx, "dynamic_vertex_attribute"));
 
-	nonSequentialTestsGroup->addChild(new NonSequentialCase(testCtx, "nonsequential", "Sequential tests.", pipelineConstructionType, 16u, { 1u, 7u }));
+	nonSequentialTestsGroup->addChild(new NonSequentialCase(testCtx, "nonsequential", pipelineConstructionType, 16u, { 1u, 7u }));
 
 	return nonSequentialTestsGroup.release();
 }

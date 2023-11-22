@@ -912,7 +912,6 @@ class InvarianceCase : public vkt::TestCase
 public:
 							InvarianceCase	(tcu::TestContext&	testCtx,
 											 const std::string&	name,
-											 const std::string&	description,
 											 TestType			testType);
 	virtual					~InvarianceCase	(void) = default;
 
@@ -925,9 +924,8 @@ protected:
 
 InvarianceCase::InvarianceCase	(tcu::TestContext&	testCtx,
 								 const std::string&	name,
-								 const std::string&	description,
 								 TestType			testType)
-	: vkt::TestCase	(testCtx, name, description)
+	: vkt::TestCase	(testCtx, name)
 	, m_testType	(testType)
 {
 }
@@ -948,10 +946,10 @@ void InvarianceCase::checkSupport(Context& context) const
 
 tcu::TestCaseGroup* createMemoryRequirementInvarianceTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> invarianceTests(new tcu::TestCaseGroup(testCtx, "invariance", "Memory requirement invariance tests"));
+	de::MovePtr<tcu::TestCaseGroup> invarianceTests(new tcu::TestCaseGroup(testCtx, "invariance"));
 
-	invarianceTests->addChild(new InvarianceCase(testCtx, "random", "Random case", TT_BASIC_INVARIANCE));
-	invarianceTests->addChild(new InvarianceCase(testCtx, "memory_requirements_matching", "VK_KHR_maintenance4 case", TT_REQUIREMENTS_MATCHING));
+	invarianceTests->addChild(new InvarianceCase(testCtx, "random", TT_BASIC_INVARIANCE));
+	invarianceTests->addChild(new InvarianceCase(testCtx, "memory_requirements_matching", TT_REQUIREMENTS_MATCHING));
 
 	return invarianceTests.release();
 }

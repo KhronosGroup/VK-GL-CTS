@@ -375,8 +375,8 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate (void)
 class ShaderObjectBinaryQueryCase : public vkt::TestCase
 {
 public:
-					ShaderObjectBinaryQueryCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, TestParams params)
-													: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectBinaryQueryCase		(tcu::TestContext& testCtx, const std::string& name, TestParams params)
+													: vkt::TestCase		(testCtx, name)
 													, m_params			(params)
 													{}
 	virtual			~ShaderObjectBinaryQueryCase	(void) {}
@@ -523,8 +523,8 @@ tcu::TestStatus ShaderObjectIncompatibleBinaryInstance::iterate (void)
 class ShaderObjectIncompatibleBinaryCase : public vkt::TestCase
 {
 public:
-					ShaderObjectIncompatibleBinaryCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const vk::VkShaderStageFlagBits shaderStage, const IncompleteBinaryTestType testType)
-														: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectIncompatibleBinaryCase	(tcu::TestContext& testCtx, const std::string& name, const vk::VkShaderStageFlagBits shaderStage, const IncompleteBinaryTestType testType)
+														: vkt::TestCase		(testCtx, name)
 														, m_shaderStage		(shaderStage)
 														, m_testType		(testType)
 														{}
@@ -764,6 +764,10 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 	auto pipelineLibraryGroupHandlesFeatures		= m_context.getPipelineLibraryGroupHandlesFeaturesEXT();
 	auto multivewPerViewRenderAreasFeatures			= m_context.getMultiviewPerViewRenderAreasFeaturesQCOM();
 
+	// These features depend on other features being enabled
+	meshShaderFeatures.multiviewMeshShader = VK_FALSE;
+	meshShaderFeatures.primitiveFragmentShadingRateMeshShader = VK_FALSE;
+
 	std::vector<void*> pNextFeatures = {
 		&vulkan11features,
 		&vulkan12features,
@@ -996,8 +1000,8 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 class ShaderObjectDeviceFeaturesBinaryCase : public vkt::TestCase
 {
 public:
-					ShaderObjectDeviceFeaturesBinaryCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const bool linked, const vk::VkShaderStageFlagBits stage, const deUint32 index)
-															: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectDeviceFeaturesBinaryCase	(tcu::TestContext& testCtx, const std::string& name, const bool linked, const vk::VkShaderStageFlagBits stage, const deUint32 index)
+															: vkt::TestCase		(testCtx, name)
 															, m_linked			(linked)
 															, m_stage			(stage)
 															, m_index			(index)
@@ -1056,7 +1060,7 @@ std::string getName (QueryType queryType)
 
 tcu::TestCaseGroup* createShaderObjectBinaryTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> binaryGroup(new tcu::TestCaseGroup(testCtx, "binary", ""));
+	de::MovePtr<tcu::TestCaseGroup> binaryGroup(new tcu::TestCaseGroup(testCtx, "binary"));
 
 	const struct
 	{
@@ -1087,17 +1091,17 @@ tcu::TestCaseGroup* createShaderObjectBinaryTests (tcu::TestContext& testCtx)
 		DEVICE_NO_EXTS_FEATURES,
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> queryGroup(new tcu::TestCaseGroup(testCtx, "query", ""));
+	de::MovePtr<tcu::TestCaseGroup> queryGroup(new tcu::TestCaseGroup(testCtx, "query"));
 	for (const auto& stage : stageTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name));
 		for (const auto& linked : linkedTests)
 		{
 			if (linked && stage.stage == vk::VK_SHADER_STAGE_COMPUTE_BIT)
 				continue;
 
 			std::string linkedName = linked ? "linked" : "unlinked";
-			de::MovePtr<tcu::TestCaseGroup> linkedGroup(new tcu::TestCaseGroup(testCtx, linkedName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> linkedGroup(new tcu::TestCaseGroup(testCtx, linkedName.c_str()));
 			for (const auto& queryType : queryTypeTests)
 			{
 				TestParams params =
@@ -1106,7 +1110,7 @@ tcu::TestCaseGroup* createShaderObjectBinaryTests (tcu::TestContext& testCtx)
 					linked,
 					queryType,
 				};
-				linkedGroup->addChild(new ShaderObjectBinaryQueryCase(testCtx, getName(queryType), "", params));
+				linkedGroup->addChild(new ShaderObjectBinaryQueryCase(testCtx, getName(queryType), params));
 			}
 			stageGroup->addChild(linkedGroup.release());
 		}
@@ -1126,31 +1130,31 @@ tcu::TestCaseGroup* createShaderObjectBinaryTests (tcu::TestContext& testCtx)
 		{ CREATE_FROM_HALF_SIZE_GARBAGE,	"create_from_half_size_garbage"	},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> incompatibleGroup(new tcu::TestCaseGroup(testCtx, "incompatible", ""));
+	de::MovePtr<tcu::TestCaseGroup> incompatibleGroup(new tcu::TestCaseGroup(testCtx, "incompatible"));
 	for (const auto& stage : stageTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name));
 		for (const auto& testType : incompatibleTests)
 		{
-			stageGroup->addChild(new ShaderObjectIncompatibleBinaryCase(testCtx, testType.name, "", stage.stage, testType.type));
+			stageGroup->addChild(new ShaderObjectIncompatibleBinaryCase(testCtx, testType.name, stage.stage, testType.type));
 		}
 		incompatibleGroup->addChild(stageGroup.release());
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> deviceFeaturesGroup(new tcu::TestCaseGroup(testCtx, "device_features", ""));
+	de::MovePtr<tcu::TestCaseGroup> deviceFeaturesGroup(new tcu::TestCaseGroup(testCtx, "device_features"));
 	for (const auto& stage : stageTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name));
 		for (const auto& linked : linkedTests)
 		{
 			if (linked && stage.stage == vk::VK_SHADER_STAGE_COMPUTE_BIT)
 				continue;
 
 			std::string linkedName = linked ? "linked" : "unlinked";
-			de::MovePtr<tcu::TestCaseGroup> linkedGroup(new tcu::TestCaseGroup(testCtx, linkedName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> linkedGroup(new tcu::TestCaseGroup(testCtx, linkedName.c_str()));
 			for (deUint32 i = 0; i < 32; ++i)
 			{
-				linkedGroup->addChild(new ShaderObjectDeviceFeaturesBinaryCase(testCtx, std::to_string(i), "", linked, stage.stage, i));
+				linkedGroup->addChild(new ShaderObjectDeviceFeaturesBinaryCase(testCtx, std::to_string(i), linked, stage.stage, i));
 			}
 			stageGroup->addChild(linkedGroup.release());
 		}
@@ -1166,4 +1170,3 @@ tcu::TestCaseGroup* createShaderObjectBinaryTests (tcu::TestContext& testCtx)
 
 } // ShaderObject
 } // vkt
-

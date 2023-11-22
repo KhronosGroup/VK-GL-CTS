@@ -132,8 +132,8 @@ public:
 	void			checkSupport	(Context& context) const;
 	TestInstance*	createInstance	(Context& context) const;
 
-	IdentityGeometryShaderTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType)
-		: TestCase			(testCtx, name, description)
+	IdentityGeometryShaderTestCase (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType)
+		: TestCase			(testCtx, name)
 		, m_primitiveType	(primitiveType)
 	{
 	}
@@ -231,8 +231,8 @@ public:
 	void			checkSupport	(Context& context) const;
 	TestInstance*	createInstance	(Context& context) const;
 
-	IdentityTessellationShaderTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType)
-		: TestCase			(testCtx, name, description)
+	IdentityTessellationShaderTestCase (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType)
+		: TestCase			(testCtx, name)
 		, m_primitiveType	(primitiveType)
 	{
 	}
@@ -696,19 +696,19 @@ TestInstance* IdentityTessellationShaderTestCase::createInstance (Context& conte
 
 inline TestCase* makeIdentityGeometryShaderCase (tcu::TestContext& testCtx, const TessPrimitiveType primitiveType)
 {
+	// Passthrough geometry shader has no effect
 	return new IdentityGeometryShaderTestCase(
 		testCtx,
 		"tessellate_" + de::toString(getTessPrimitiveTypeShaderName(primitiveType)) + "_passthrough_geometry_no_change",
-		"Passthrough geometry shader has no effect",
 		primitiveType);
 }
 
 inline TestCase* makeIdentityTessellationShaderCase (tcu::TestContext& testCtx, const TessPrimitiveType primitiveType)
 {
+	// Passthrough tessellation shader has no effect
 	return new IdentityTessellationShaderTestCase(
 		testCtx,
 		"passthrough_tessellation_geometry_shade_" + de::toString(getTessPrimitiveTypeShaderName(primitiveType)) + "_no_change",
-		"Passthrough tessellation shader has no effect",
 		primitiveType);
 }
 
@@ -718,7 +718,8 @@ inline TestCase* makeIdentityTessellationShaderCase (tcu::TestContext& testCtx, 
 //! Ported from dEQP-GLES31.functional.tessellation_geometry_interaction.render.passthrough.*
 tcu::TestCaseGroup* createGeometryPassthroughTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "passthrough", "Render various types with either passthrough geometry or tessellation shader"));
+	// Render various types with either passthrough geometry or tessellation shader
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "passthrough"));
 
 	// Passthrough geometry shader
 	group->addChild(makeIdentityGeometryShaderCase(testCtx, TESSPRIMITIVETYPE_TRIANGLES));

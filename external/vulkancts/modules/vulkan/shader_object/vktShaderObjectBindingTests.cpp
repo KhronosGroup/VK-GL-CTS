@@ -590,8 +590,8 @@ tcu::TestStatus ShaderObjectBindingDrawInstance::iterate (void)
 class ShaderObjectBindingDrawCase : public vkt::TestCase
 {
 public:
-					ShaderObjectBindingDrawCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const BindingDrawParams& params)
-												: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectBindingDrawCase		(tcu::TestContext& testCtx, const std::string& name, const BindingDrawParams& params)
+												: vkt::TestCase		(testCtx, name)
 												, m_params			(params)
 												{}
 	virtual			~ShaderObjectBindingDrawCase	(void) {}
@@ -875,10 +875,10 @@ tcu::TestStatus ShaderObjectBindingInstance::iterate (void)
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
 	const auto&							binaries					= m_context.getBinaryCollection();
 
-	const vk::Unique<vk::VkDescriptorSetLayout> descriptorSetLayout(
-		vk::DescriptorSetLayoutBuilder()
-		.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
-		.build(vk, device));
+    const vk::Unique<vk::VkDescriptorSetLayout> descriptorSetLayout(
+        vk::DescriptorSetLayoutBuilder()
+        .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT | ((m_params.useMeshShaders && meshShaderFeatures.meshShader) ? vk::VkShaderStageFlags{ vk::VK_SHADER_STAGE_MESH_BIT_EXT } : vk::VkShaderStageFlags{ 0 }))
+        .build(vk, device));
 
 	vk::Move<vk::VkShaderEXT>			vertShader					= vk::createShader(vk, device, vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_VERTEX_BIT, binaries.get("vert"), tessellationSupported, geometrySupported));
 	vk::Move<vk::VkShaderEXT>			tescShader;
@@ -1110,10 +1110,12 @@ tcu::TestStatus MeshShaderObjectBindingInstance::iterate (void)
 	};
 	vk.cmdBindShadersEXT(*cmdBuffer, 3u, stages, shaders);
 	vk.cmdDrawMeshTasksEXT(*cmdBuffer, 1, 1, 1);
+	vk::endRendering(vk, *cmdBuffer);
 
 	vk::VkBufferMemoryBarrier shaderBufferBarrier = vk::makeBufferMemoryBarrier(vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_SHADER_WRITE_BIT, *outputBuffer, 0u, bufferSizeBytes);
 	vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (vk::VkDependencyFlags)0u, 0u, (const vk::VkMemoryBarrier*)DE_NULL, 1u, &shaderBufferBarrier, 0u, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
+	vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_LOAD);
 	if (m_params.stage == vk::VK_SHADER_STAGE_TASK_BIT_EXT)
 		vk.cmdBindShadersEXT(*cmdBuffer, 1u, &stages[0], &*taskShader2);
 	else if (m_params.stage == vk::VK_SHADER_STAGE_MESH_BIT_EXT)
@@ -1158,8 +1160,8 @@ tcu::TestStatus MeshShaderObjectBindingInstance::iterate (void)
 class MeshShaderObjectBindingCase : public vkt::TestCase
 {
 public:
-					MeshShaderObjectBindingCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const MeshBindingDrawParams& params)
-													: vkt::TestCase		(testCtx, name, description)
+					MeshShaderObjectBindingCase		(tcu::TestContext& testCtx, const std::string& name, const MeshBindingDrawParams& params)
+													: vkt::TestCase		(testCtx, name)
 													, m_params			(params)
 													{}
 	virtual			~MeshShaderObjectBindingCase	(void) {}
@@ -1275,8 +1277,8 @@ void MeshShaderObjectBindingCase::initPrograms (vk::SourceCollections& programCo
 class ShaderObjectBindingCase : public vkt::TestCase
 {
 public:
-					ShaderObjectBindingCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const BindingParams& params)
-												: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectBindingCase		(tcu::TestContext& testCtx, const std::string& name, const BindingParams& params)
+												: vkt::TestCase		(testCtx, name)
 												, m_params			(params)
 												{}
 	virtual			~ShaderObjectBindingCase	(void) {}
@@ -1345,7 +1347,7 @@ void ShaderObjectBindingCase::initPrograms (vk::SourceCollections& programCollec
 
 tcu::TestCaseGroup* createShaderObjectBindingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> bindingGroup(new tcu::TestCaseGroup(testCtx, "binding", ""));
+	de::MovePtr<tcu::TestCaseGroup> bindingGroup(new tcu::TestCaseGroup(testCtx, "binding"));
 
 	BindingDrawParams params;
 	params.testType = PASSTHROUGH_GEOM;
@@ -1356,7 +1358,7 @@ tcu::TestCaseGroup* createShaderObjectBindingTests (tcu::TestContext& testCtx)
 	params.setStateAfter = false;
 	params.unbindWithNullpShaders = false;
 
-	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "unbind_passthrough_geom", "", params));
+	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "unbind_passthrough_geom", params));
 
 	const struct
 	{
@@ -1378,7 +1380,7 @@ tcu::TestCaseGroup* createShaderObjectBindingTests (tcu::TestContext& testCtx)
 		params.binaryStage = vk::VK_SHADER_STAGE_ALL; // Unused
 		params.setStateAfter = false;
 		std::string name = "swap_" + std::string(stage.name);
-		bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, name.c_str(), "", params));
+		bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, name.c_str(), params));
 		for (const auto& unusedOutputs : stageTest)
 		{
 			for (const auto& binaryStage : stageTest)
@@ -1390,7 +1392,7 @@ tcu::TestCaseGroup* createShaderObjectBindingTests (tcu::TestContext& testCtx)
 					params.binaryStage = binaryStage.stage;
 					params.setStateAfter = (bool)i;
 					std::string name2 = "swap_" + std::string(stage.name) + "_unused_output_" + std::string(unusedOutputs.name) + "_binary_" + std::string(binaryStage.name) + "_" + ((i == 0) ? "before" : "after");
-					bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, name2.c_str(), "", params));
+					bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, name2.c_str(), params));
 				}
 			}
 		}
@@ -1417,7 +1419,7 @@ tcu::TestCaseGroup* createShaderObjectBindingTests (tcu::TestContext& testCtx)
 			params.stage = stage.stage;
 			params.unbindWithNullpShaders = (bool)i;
 			std::string name = "unbind_" + std::string(stage.name) + (params.unbindWithNullpShaders ? "_null_pshaders" : "_null_handle");
-			bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, name.c_str(), "", params));
+			bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, name.c_str(), params));
 		}
 	}
 
@@ -1436,29 +1438,29 @@ tcu::TestCaseGroup* createShaderObjectBindingTests (tcu::TestContext& testCtx)
 		MeshBindingDrawParams meshParams;
 		meshParams.stage = stage.stage;
 		std::string name = "mesh_swap_" + std::string(stage.name);
-		bindingGroup->addChild(new MeshShaderObjectBindingCase(testCtx, name.c_str(), "", meshParams));
+		bindingGroup->addChild(new MeshShaderObjectBindingCase(testCtx, name.c_str(), meshParams));
 	}
 
 	params.testType = DISABLED;
 	params.stage = vk::VK_SHADER_STAGE_GEOMETRY_BIT;
-	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "disabled_geom", "", params));
+	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "disabled_geom", params));
 	params.stage = vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "disabled_tess", "", params));
+	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "disabled_tess", params));
 	params.stage = vk::VK_SHADER_STAGE_GEOMETRY_BIT;
 	params.bindUnsupported = true;
-	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "disabled_geom_bind", "", params));
+	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "disabled_geom_bind", params));
 	params.stage = vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "disabled_tess_bind", "", params));
+	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "disabled_tess_bind", params));
 	params.testType = DRAW_DISPATCH_DRAW;
-	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "draw_dispatch_draw", "", params));
+	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "draw_dispatch_draw", params));
 	params.testType = DISPATCH_DRAW_DISPATCH;
-	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "dispatch_draw_dispatch", "", params));
+	bindingGroup->addChild(new ShaderObjectBindingDrawCase(testCtx, "dispatch_draw_dispatch", params));
 
 	BindingParams bindingParams;
 	bindingParams.useMeshShaders = false;
-	bindingGroup->addChild(new ShaderObjectBindingCase(testCtx, "bindings", "", bindingParams));
+	bindingGroup->addChild(new ShaderObjectBindingCase(testCtx, "bindings", bindingParams));
 	bindingParams.useMeshShaders = true;
-	bindingGroup->addChild(new ShaderObjectBindingCase(testCtx, "bindings_mesh_shaders", "", bindingParams));
+	bindingGroup->addChild(new ShaderObjectBindingCase(testCtx, "bindings_mesh_shaders", bindingParams));
 
 	return bindingGroup.release();
 }

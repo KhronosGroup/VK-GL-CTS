@@ -133,11 +133,12 @@ typedef enum qpImageFormat_e
 /* Test log flags. */
 typedef enum qpTestLogFlag_e
 {
-	QP_TEST_LOG_EXCLUDE_IMAGES			= (1<<0),		/*!< Do not log images. This reduces log size considerably.			*/
-	QP_TEST_LOG_EXCLUDE_SHADER_SOURCES	= (1<<1),		/*!< Do not log shader sources. Helps to reduce log size further.	*/
-	QP_TEST_LOG_NO_FLUSH				= (1<<2),		/*!< Do not do a fflush after writing the log.						*/
-	QP_TEST_LOG_EXCLUDE_EMPTY_LOGINFO	= (1<<3),		/*!< Do not log empty shader compile or link loginfo.				*/
-	QP_TEST_LOG_NO_INITIAL_OUTPUT		= (1<<4)		/*!< Do not push data to cout when initializing log.				*/
+	QP_TEST_LOG_EXCLUDE_IMAGES			= (1<<0)		/*!< Do not log images. This reduces log size considerably.			*/
+	,QP_TEST_LOG_EXCLUDE_SHADER_SOURCES	= (1<<1)		/*!< Do not log shader sources. Helps to reduce log size further.	*/
+	,QP_TEST_LOG_NO_FLUSH				= (1<<2)		/*!< Do not do a fflush after writing the log.						*/
+	,QP_TEST_LOG_EXCLUDE_EMPTY_LOGINFO	= (1<<3)		/*!< Do not log empty shader compile or link loginfo.				*/
+	,QP_TEST_LOG_NO_INITIAL_OUTPUT		= (1<<4)		/*!< Do not push data to cout when initializing log.				*/
+	,QP_TEST_LOG_COMPACT				= (1<<5)		/*!< Only write test case status.									*/
 } qpTestLogFlag;
 
 /* Shader type. */
@@ -203,6 +204,7 @@ typedef struct qpEglConfigInfo_s
 qpTestLog*		qpTestLog_createFileLog			(const char* fileName, deUint32 flags);
 deBool			qpTestLog_beginSession			(qpTestLog* log, const char* additionalSessionInfo);
 void			qpTestLog_destroy				(qpTestLog* log);
+deBool			qpTestLog_isCompact				(qpTestLog* log);
 
 deBool			qpTestLog_startCase				(qpTestLog* log, const char* testCasePath, qpTestCaseType testCaseType);
 deBool			qpTestLog_endCase				(qpTestLog* log, qpTestResult result, const char* description);

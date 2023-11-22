@@ -57,14 +57,6 @@ VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat fo
 	return imageInfo;
 }
 
-void beginRenderPassWithRasterizationDisabled (const DeviceInterface&	vk,
-											   const VkCommandBuffer	commandBuffer,
-											   const VkRenderPass		renderPass,
-											   const VkFramebuffer		framebuffer)
-{
-	beginRenderPass(vk, commandBuffer, renderPass, framebuffer, makeRect2D(0, 0, 0u, 0u));
-}
-
 Move<VkRenderPass> makeRenderPassWithoutAttachments (const DeviceInterface&	vk,
 													 const VkDevice			device)
 {

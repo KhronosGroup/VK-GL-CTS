@@ -245,7 +245,7 @@ VkImageCreateInfo makeImageCreateInfo (deUint32 width, deUint32 height, VkFormat
 class RayTracingPipelineLibraryTestCase : public TestCase
 {
 	public:
-							RayTracingPipelineLibraryTestCase	(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
+							RayTracingPipelineLibraryTestCase	(tcu::TestContext& context, const char* name, const TestParams data);
 							~RayTracingPipelineLibraryTestCase	(void);
 
 	virtual void			checkSupport								(Context& context) const;
@@ -274,8 +274,8 @@ private:
 };
 
 
-RayTracingPipelineLibraryTestCase::RayTracingPipelineLibraryTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams data)
-	: vkt::TestCase	(context, name, desc)
+RayTracingPipelineLibraryTestCase::RayTracingPipelineLibraryTestCase (tcu::TestContext& context, const char* name, const TestParams data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -286,10 +286,6 @@ RayTracingPipelineLibraryTestCase::~RayTracingPipelineLibraryTestCase	(void)
 
 void RayTracingPipelineLibraryTestCase::checkSupport(Context& context) const
 {
-	const auto&	vki					= context.getInstanceInterface();
-	const auto	physicalDevice		= context.getPhysicalDevice();
-	const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
-
 	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 	context.requireDeviceFunctionality("VK_KHR_pipeline_library");
 
@@ -999,7 +995,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 
 	for (size_t threadNdx = 0; threadNdx < DE_LENGTH_OF_ARRAY(threadData); ++threadNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> threadGroup(new tcu::TestCaseGroup(group->getTestContext(), threadData[threadNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> threadGroup(new tcu::TestCaseGroup(group->getTestContext(), threadData[threadNdx].name));
 
 		for (size_t libConfigNdx = 0; libConfigNdx < DE_LENGTH_OF_ARRAY(libraryConfigurationData); ++libConfigNdx)
 		{
@@ -1022,7 +1018,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 					};
 
 					const std::string testName = std::string(libraryConfigurationData[libConfigNdx].name) + geometryCase.suffix + testTypeCase.suffix;
-					threadGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), testName.c_str(), "", testParams));
+					threadGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), testName.c_str(), testParams));
 				}
 			}
 		}
@@ -1045,7 +1041,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 			RTPL_DEFAULT_SIZE,
 			RTPL_DEFAULT_SIZE
 		};
-		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "maintenance5", "", testParamsMaintenance5));
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "maintenance5", testParamsMaintenance5));
 
 		TestParams testParamsUseLinkTimeOpt
 		{
@@ -1060,7 +1056,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 			RTPL_DEFAULT_SIZE,
 			RTPL_DEFAULT_SIZE
 		};
-		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "use_link_time_optimizations", "", testParamsUseLinkTimeOpt));
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "use_link_time_optimizations", testParamsUseLinkTimeOpt));
 
 		TestParams testParamsRetainLinkTimeOpt
 		{
@@ -1075,7 +1071,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 			RTPL_DEFAULT_SIZE,
 			RTPL_DEFAULT_SIZE
 		};
-		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "retain_link_time_optimizations", "", testParamsRetainLinkTimeOpt));
+		miscGroup->addChild(new RayTracingPipelineLibraryTestCase(group->getTestContext(), "retain_link_time_optimizations", testParamsRetainLinkTimeOpt));
 
 		group->addChild(miscGroup.release());
 	}
@@ -1083,9 +1079,9 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup*	createPipelineLibraryTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "pipeline_library", "Tests verifying pipeline libraries"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "pipeline_library"));
 
-	addTestGroup(group.get(), "configurations", "Test different configurations of pipeline libraries", addPipelineLibraryConfigurationsTests);
+	addTestGroup(group.get(), "configurations", addPipelineLibraryConfigurationsTests);
 
 	return group.release();
 }

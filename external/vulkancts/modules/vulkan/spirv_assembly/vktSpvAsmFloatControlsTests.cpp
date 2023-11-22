@@ -21,6 +21,7 @@
  * \brief VK_KHR_shader_float_controls tests.
  *//*--------------------------------------------------------------------*/
 
+#define _USE_MATH_DEFINES
 
 #include "vktSpvAsmFloatControlsTests.hpp"
 #include "vktSpvAsmComputeShaderCase.hpp"
@@ -38,6 +39,8 @@
 #include <limits>
 #include <cstdint>
 #include <fenv.h>
+#include <cstdint>
+#include <cmath>
 
 namespace vkt
 {
@@ -121,7 +124,7 @@ typedef deUint32 BehaviorFlags;
 enum ValueId
 {
 	// common values used as both arguments and results
-	V_UNUSED = 0,		//  used to mark arguments that are not used in operation
+	V_UNUSED = 0,		// used to mark arguments that are not used in operation
 	V_MINUS_INF,		//    or results of tests cases that should be skipped
 	V_MINUS_ONE,		// -1.0
 	V_MINUS_ZERO,		// -0.0
@@ -479,15 +482,9 @@ public:
 	virtual BufferSp	constructInputBuffer	(const ValueId* twoArguments) const = 0;
 	virtual BufferSp	constructOutputBuffer	(ValueId result) const = 0;
 	virtual void		fillInputData			(const ValueId* twoArguments, vector<deUint8>& bufferData, deUint32& offset) const = 0;
-
-protected:
-	const double	pi;
 };
 
-TypeValuesBase::TypeValuesBase()
-	: pi(3.14159265358979323846)
-{
-}
+TypeValuesBase::TypeValuesBase() { }
 
 typedef de::SharedPtr<TypeValuesBase> TypeValuesSP;
 
@@ -733,7 +730,7 @@ TypeValues<deFloat16>::TypeValues()
 	vm[V_DENORM]			= 0x03f0; // this value should be the same as the result of denormBase - epsilon
 	vm[V_NAN]				= 0x7cf0;
 
-	vm[V_PI_DIV_2]			= 0x3e48;
+	vm[V_PI_DIV_2]			= deFloat32To16((float)M_PI_2);
 	vm[V_DENORM_TIMES_TWO]	= 0x07e0;
 	vm[V_DEGREES_DENORM]	= 0x1b0c;
 
@@ -866,7 +863,7 @@ TypeValues<float>::TypeValues()
 	vm[V_DENORM]			=  static_cast<float>(1.413e-42); // 0x000003f0
 	vm[V_NAN]				=  std::numeric_limits<float>::quiet_NaN();
 
-	vm[V_PI_DIV_2]			=  static_cast<float>(pi / 2);
+	vm[V_PI_DIV_2]			=  static_cast<float>(M_PI_2);
 	vm[V_DENORM_TIMES_TWO]	=  vm[V_DENORM] + vm[V_DENORM];
 	vm[V_DEGREES_DENORM]	=  deFloatDegrees(vm[V_DENORM]);
 
@@ -1001,7 +998,7 @@ TypeValues<double>::TypeValues()
 	vm[V_DENORM]			=  4.98e-321; // 0x00000000000003F0
 	vm[V_NAN]				=  std::numeric_limits<double>::quiet_NaN();
 
-	vm[V_PI_DIV_2]			=  pi / 2;
+	vm[V_PI_DIV_2]			=  M_PI_2;
 	vm[V_DENORM_TIMES_TWO]	=  vm[V_DENORM] + vm[V_DENORM];
 	vm[V_DEGREES_DENORM]	=  vm[V_UNUSED];
 
@@ -1960,7 +1957,7 @@ TypeTestResults<double>::TypeTestResults()
 // on given arguments, in some cases verification is also performed there.
 // All snipets stroed in this structure are generic and can be specialized for fp16, fp32 or fp64,
 // thanks to that this data can be shared by many OperationTestCase instances (testing diferent
-// float behaviours on diferent float widths).
+// float behaviors on diferent float widths).
 struct Operation
 {
 	// operation name is included in test case name
@@ -2597,7 +2594,7 @@ void TestCasesBuilder::init()
 											"%result             = OpExtInst %type_valueType %std450 Modf %arg1 %tmpVarPtr\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_MODF_ST]		= Op("modf_st",		FLOAT_ARITHMETIC,
-											"OpMemberDecorate %struct_ff 0 Offset ${float_width}\n"
+											"OpMemberDecorate %struct_ff 0 Offset 0\n"
 											"OpMemberDecorate %struct_ff 1 Offset ${float_width}\n",
 											"%struct_ff          = OpTypeStruct %type_valueType %type_valueType\n"
 											"%struct_ff_fptr     = OpTypePointer Function %struct_ff\n",
@@ -2618,8 +2615,8 @@ void TestCasesBuilder::init()
 											"%result             = OpExtInst %type_valueType %std450 Frexp %arg1 %tmpVarPtr\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_FREXP_ST]	= Op("frexp_st",	FLOAT_ARITHMETIC,
-											"OpMemberDecorate %struct_fi 0 Offset ${float_width}\n"
-											"OpMemberDecorate %struct_fi 1 Offset 32\n",
+											"OpMemberDecorate %struct_fi 0 Offset 0\n"
+											"OpMemberDecorate %struct_fi 1 Offset ${float_width}\n",
 											"%struct_fi          = OpTypeStruct %type_valueType %type_i32\n"
 											"%struct_fi_fptr     = OpTypePointer Function %struct_fi\n",
 											"",
@@ -3204,7 +3201,7 @@ bool isAcosResultCorrect(const TYPE& returnedFloat, TestLog& log)
 	// 1.0 /inversesqrt(), inversesqrt() is 2 ULP and rcp is another 2.5 ULP
 
 	double precision = 0;
-	const double piDiv2 = 3.14159265358979323846 / 2;
+	const double piDiv2 = M_PI_2;
 	if (returnedFloat.MANTISSA_BITS == 23)
 	{
 		FloatFormat fp32Format(-126, 127, 23, true, tcu::MAYBE, tcu::YES, tcu::MAYBE);
@@ -3575,12 +3572,10 @@ protected:
 											   string& capability,
 											   string& executionMode) const;
 
-	void setupVulkanFeatures(VariableType		inVariableType,
-							 VariableType		outVariableType,
-							 BehaviorFlags		behaviorFlags,
-							 bool				float64FeatureRequired,
-							 bool				int64FeatureRequired,
-							 VulkanFeatures&	features) const;
+	void setupFloatControlsProperties(VariableType									inVariableType,
+									  VariableType									outVariableType,
+									  BehaviorFlags									behaviorFlags,
+									  vk::VkPhysicalDeviceFloatControlsProperties&	props) const;
 
 protected:
 
@@ -3658,8 +3653,10 @@ void TestGroupBuilderBase::specializeOperation (const OperationTestCaseInfo&	tes
 	const string inTypePrefix	= string("_") + inTypeSnippets->getValueTypeString() + inTypeSnippets->bitWidth;
 	const string outTypePrefix	= string("_") + outTypeSnippets->getValueTypeString() + outTypeSnippets->bitWidth;
 
+	std::string byteWidthToken = std::to_string(std::stoi(outTypeSnippets->bitWidth) / 8);
+
 	specializedOperation.constants		= replace(operation.constants, typeToken, inTypePrefix);
-	specializedOperation.annotations	= replace(operation.annotations, widthToken, outTypeSnippets->bitWidth);
+	specializedOperation.annotations	= replace(operation.annotations, widthToken, byteWidthToken);
 	specializedOperation.types			= replace(operation.types, typeToken, outTypePrefix);
 	specializedOperation.variables		= replace(operation.variables, typeToken, outTypePrefix);
 	specializedOperation.functions		= replace(operation.functions, typeToken, outTypePrefix);
@@ -3732,19 +3729,11 @@ void TestGroupBuilderBase::getBehaviorCapabilityAndExecutionMode(BehaviorFlags b
 	DE_ASSERT(!capability.empty() && !executionMode.empty());
 }
 
-void TestGroupBuilderBase::setupVulkanFeatures(VariableType		inVariableType,
-											   VariableType		outVariableType,
-											   BehaviorFlags	behaviorFlags,
-											   bool				float64FeatureRequired,
-											   bool				int64FeatureRequired,
-											   VulkanFeatures&	features) const
+void TestGroupBuilderBase::setupFloatControlsProperties(VariableType									inVariableType,
+														VariableType									outVariableType,
+														BehaviorFlags									behaviorFlags,
+														vk::VkPhysicalDeviceFloatControlsProperties&	props) const
 {
-	features.coreFeatures.shaderFloat64 = float64FeatureRequired;
-	features.coreFeatures.shaderInt64 = int64FeatureRequired;
-
-	// request proper float controls features
-	vk::VkPhysicalDeviceFloatControlsProperties& floatControls = features.floatControlsProperties;
-
 	// rounding mode should obey the destination type
 	bool rteRounding = (behaviorFlags & B_RTE_ROUNDING) != 0;
 	bool rtzRounding = (behaviorFlags & B_RTZ_ROUNDING) != 0;
@@ -3753,16 +3742,16 @@ void TestGroupBuilderBase::setupVulkanFeatures(VariableType		inVariableType,
 		switch(outVariableType)
 		{
 		case FP16:
-			floatControls.shaderRoundingModeRTEFloat16 = rteRounding;
-			floatControls.shaderRoundingModeRTZFloat16 = rtzRounding;
+			props.shaderRoundingModeRTEFloat16 = rteRounding;
+			props.shaderRoundingModeRTZFloat16 = rtzRounding;
 			return;
 		case FP32:
-			floatControls.shaderRoundingModeRTEFloat32 = rteRounding;
-			floatControls.shaderRoundingModeRTZFloat32 = rtzRounding;
+			props.shaderRoundingModeRTEFloat32 = rteRounding;
+			props.shaderRoundingModeRTZFloat32 = rtzRounding;
 			return;
 		case FP64:
-			floatControls.shaderRoundingModeRTEFloat64 = rteRounding;
-			floatControls.shaderRoundingModeRTZFloat64 = rtzRounding;
+			props.shaderRoundingModeRTEFloat64 = rteRounding;
+			props.shaderRoundingModeRTZFloat64 = rtzRounding;
 			return;
 		case UINT32:
 		case INT32:
@@ -3775,19 +3764,19 @@ void TestGroupBuilderBase::setupVulkanFeatures(VariableType		inVariableType,
 	switch(inVariableType)
 	{
 	case FP16:
-		floatControls.shaderDenormPreserveFloat16			= behaviorFlags & B_DENORM_PRESERVE;
-		floatControls.shaderDenormFlushToZeroFloat16		= behaviorFlags & B_DENORM_FLUSH;
-		floatControls.shaderSignedZeroInfNanPreserveFloat16	= behaviorFlags & B_ZIN_PRESERVE;
+		props.shaderDenormPreserveFloat16			= behaviorFlags & B_DENORM_PRESERVE;
+		props.shaderDenormFlushToZeroFloat16		= behaviorFlags & B_DENORM_FLUSH;
+		props.shaderSignedZeroInfNanPreserveFloat16	= behaviorFlags & B_ZIN_PRESERVE;
 		return;
 	case FP32:
-		floatControls.shaderDenormPreserveFloat32			= behaviorFlags & B_DENORM_PRESERVE;
-		floatControls.shaderDenormFlushToZeroFloat32		= behaviorFlags & B_DENORM_FLUSH;
-		floatControls.shaderSignedZeroInfNanPreserveFloat32	= behaviorFlags & B_ZIN_PRESERVE;
+		props.shaderDenormPreserveFloat32			= behaviorFlags & B_DENORM_PRESERVE;
+		props.shaderDenormFlushToZeroFloat32		= behaviorFlags & B_DENORM_FLUSH;
+		props.shaderSignedZeroInfNanPreserveFloat32	= behaviorFlags & B_ZIN_PRESERVE;
 		return;
 	case FP64:
-		floatControls.shaderDenormPreserveFloat64			= behaviorFlags & B_DENORM_PRESERVE;
-		floatControls.shaderDenormFlushToZeroFloat64		= behaviorFlags & B_DENORM_FLUSH;
-		floatControls.shaderSignedZeroInfNanPreserveFloat64	= behaviorFlags & B_ZIN_PRESERVE;
+		props.shaderDenormPreserveFloat64			= behaviorFlags & B_DENORM_PRESERVE;
+		props.shaderDenormFlushToZeroFloat64		= behaviorFlags & B_DENORM_FLUSH;
+		props.shaderSignedZeroInfNanPreserveFloat64	= behaviorFlags & B_ZIN_PRESERVE;
 		return;
 	case UINT32:
 	case INT32:
@@ -4045,19 +4034,14 @@ void ComputeTestGroupBuilder::init()
 void ComputeTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, const char* groupName, VariableType variableType, bool argumentsFromInput)
 {
 	TestContext&	testCtx	= parentGroup->getTestContext();
-	TestCaseGroup*	group	= new TestCaseGroup(testCtx, groupName, "");
+	TestCaseGroup*	group	= new TestCaseGroup(testCtx, groupName);
 	parentGroup->addChild(group);
 
 	TestCaseVect testCases;
 	m_operationTestCaseBuilder.build(testCases, m_typeData[variableType].testResults, argumentsFromInput);
 
-	TestCaseVect::const_iterator currTestCase = testCases.begin();
-	TestCaseVect::const_iterator lastTestCase = testCases.end();
-	while(currTestCase != lastTestCase)
+	for(auto& testCase : testCases)
 	{
-		const OperationTestCase& testCase = *currTestCase;
-		++currTestCase;
-
 		// skip cases with undefined output
 		if (testCase.expectedOutput == V_UNUSED)
 			continue;
@@ -4076,14 +4060,14 @@ void ComputeTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, c
 		fillShaderSpec(testCaseInfo, csSpec);
 
 		string testName = replace(testCase.baseName, "op", testCaseInfo.operation.name);
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), "", csSpec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), csSpec));
 	}
 }
 
 void ComputeTestGroupBuilder::createSettingsTests(TestCaseGroup* parentGroup)
 {
 	TestContext&	testCtx	= parentGroup->getTestContext();
-	TestCaseGroup*	group	= new TestCaseGroup(testCtx, "independence_settings", "");
+	TestCaseGroup*	group	= new TestCaseGroup(testCtx, "independence_settings");
 	parentGroup->addChild(group);
 
 	using SFCI = VkShaderFloatControlsIndependence;
@@ -4180,10 +4164,10 @@ void ComputeTestGroupBuilder::createSettingsTests(TestCaseGroup* parentGroup)
 	{
 		ComputeShaderSpec	csSpec;
 		fillShaderSpec(testCase, csSpec);
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, testCase.name, "", csSpec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testCase.name, csSpec));
 	}
 
-	addFunctionCase(group, "independence_settings", "", verifyIndependenceSettings);
+	addFunctionCase(group, "independence_settings", verifyIndependenceSettings);
 }
 
 void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCaseInfo,
@@ -4340,37 +4324,24 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	csSpec.inputs.push_back(Resource(inBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	csSpec.outputs.push_back(Resource(outBufferSp));
 
-	// check which format features are needed
-	setupVulkanFeatures(inVariableTypeForCaps,		// usualy same as inVariableType - different only for UnpackHalf2x16
-						outVariableType,
-						testCase.behaviorFlags,
-						float64FeatureRequired,
-						int64FeatureRequired,
-						csSpec.requestedVulkanFeatures);
-
+	// check which features/properties are needed
 	csSpec.assembly			= shaderCode;
 	csSpec.numWorkGroups	= IVec3(1, 1, 1);
 	csSpec.verifyIO			= checkFloatsLUT[outVariableType];
 
 	csSpec.extensions.push_back("VK_KHR_shader_float_controls");
-	bool needShaderFloat16 = float16CapabilityAlreadyAdded;
 
-	if (float16FeatureRequired && !testCase.fp16Without16BitStorage)
-	{
-		csSpec.extensions.push_back("VK_KHR_16bit_storage");
-		csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
-		needShaderFloat16 |= testOperation.floatUsage == FLOAT_ARITHMETIC;
-	}
-	needShaderFloat16 |= usesFP16Constants;
-	if (needShaderFloat16)
-	{
-		csSpec.extensions.push_back("VK_KHR_shader_float16_int8");
-		csSpec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = true;
-	}
-	if (float64FeatureRequired)
-		csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
-	if (int64FeatureRequired)
-		csSpec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
+	csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = float64FeatureRequired;
+	csSpec.requestedVulkanFeatures.coreFeatures.shaderInt64 = int64FeatureRequired;
+	csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = float16FeatureRequired && !testCase.fp16Without16BitStorage;
+	csSpec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 =	float16CapabilityAlreadyAdded || usesFP16Constants ||
+																	(	float16FeatureRequired && !testCase.fp16Without16BitStorage &&
+																		testOperation.floatUsage == FLOAT_ARITHMETIC );
+
+	setupFloatControlsProperties(inVariableTypeForCaps,		// usualy same as inFloatType - different only for UnpackHalf2x16
+								 outVariableType,
+								 testCase.behaviorFlags,
+								 csSpec.requestedVulkanFeatures.floatControlsProperties);
 }
 
 void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCaseInfo,
@@ -4718,7 +4689,6 @@ void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
 		"OpReturn\n"
 		"OpFunctionEnd\n";
 
-
 	static const string fragmentTemplate =
 		"OpCapability Shader\n"
 		"${frag_capabilities}"
@@ -4845,20 +4815,15 @@ void GraphicsTestGroupBuilder::init()
 void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, const char* groupName, VariableType variableType, bool argumentsFromInput)
 {
 	TestContext&	testCtx	= parentGroup->getTestContext();
-	TestCaseGroup*	group	= new TestCaseGroup(testCtx, groupName, "");
+	TestCaseGroup*	group	= new TestCaseGroup(testCtx, groupName);
 	parentGroup->addChild(group);
 
 	// create test cases for vertex stage
 	TestCaseVect testCases;
 	m_testCaseBuilder.build(testCases, m_typeData[variableType].testResults, argumentsFromInput);
 
-	TestCaseVect::const_iterator currTestCase = testCases.begin();
-	TestCaseVect::const_iterator lastTestCase = testCases.end();
-	while(currTestCase != lastTestCase)
+	for(auto& testCase : testCases)
 	{
-		const OperationTestCase& testCase = *currTestCase;
-		++currTestCase;
-
 		// skip cases with undefined output
 		if (testCase.expectedOutput == V_UNUSED)
 			continue;
@@ -4882,20 +4847,15 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, 
 		InstanceContext ctxVertex	= createInstanceContext(testCaseInfo);
 		string			testName	= replace(testCase.baseName, "op", testCaseInfo.operation.name);
 
-		addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_vert", "", getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxVertex);
+		addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_vert", getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxVertex);
 	}
 
 	// create test cases for fragment stage
 	testCases.clear();
 	m_testCaseBuilder.build(testCases, m_typeData[variableType].testResults, argumentsFromInput);
 
-	currTestCase = testCases.begin();
-	lastTestCase = testCases.end();
-	while(currTestCase != lastTestCase)
+	for(auto& testCase : testCases)
 	{
-		const OperationTestCase& testCase = *currTestCase;
-		++currTestCase;
-
 		// skip cases with undefined output
 		if (testCase.expectedOutput == V_UNUSED)
 			continue;
@@ -4912,7 +4872,7 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, 
 		InstanceContext ctxFragment	= createInstanceContext(testCaseInfo);
 		string			testName	= replace(testCase.baseName, "op", testCaseInfo.operation.name);
 
-		addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_frag", "", getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxFragment);
+		addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_frag", getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxFragment);
 	}
 }
 
@@ -5275,26 +5235,18 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	GraphicsInterfaces		noInterfaces;
 
 	VulkanFeatures vulkanFeatures;
-	setupVulkanFeatures(inVariableTypeForCaps,		// usualy same as inVariableType - different only for UnpackHalf2x16
-						outVariableType,
-						testCase.behaviorFlags,
-						float64FeatureRequired,
-						int64FeatureRequired,
-						vulkanFeatures);
+	setupFloatControlsProperties(inVariableTypeForCaps,		// usualy same as inFloatType - different only for UnpackHalf2x16
+								 outVariableType,
+								 testCase.behaviorFlags,
+								 vulkanFeatures.floatControlsProperties);
 	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = true;
+	vulkanFeatures.coreFeatures.shaderFloat64 = float64FeatureRequired;
+	vulkanFeatures.coreFeatures.shaderInt64 = int64FeatureRequired;
+	vulkanFeatures.extFloat16Int8.shaderFloat16 = needsShaderFloat16;
+	vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = float16FeatureRequired && !testCase.fp16Without16BitStorage;
 
 	vector<string> extensions;
 	extensions.push_back("VK_KHR_shader_float_controls");
-	if (needsShaderFloat16)
-	{
-		extensions.push_back("VK_KHR_shader_float16_int8");
-		vulkanFeatures.extFloat16Int8.shaderFloat16 = true;
-	}
-	if (float16FeatureRequired && !testCase.fp16Without16BitStorage)
-	{
-		extensions.push_back("VK_KHR_16bit_storage");
-		vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
-	}
 
 	InstanceContext ctx(defaultColors,
 						defaultColors,
@@ -5338,7 +5290,7 @@ tcu::TestCaseGroup* createFloatControlsTestGroup (TestContext& testCtx, TestGrou
 	for (int i = 0 ; i < DE_LENGTH_OF_ARRAY(testGroups) ; ++i)
 	{
 		const TestGroup& testGroup = testGroups[i];
-		TestCaseGroup* typeGroup = new TestCaseGroup(testCtx, testGroup.groupName, "");
+		TestCaseGroup* typeGroup = new TestCaseGroup(testCtx, testGroup.groupName);
 		group->addChild(typeGroup);
 
 		groupBuilder->createOperationTests(typeGroup, "input_args", testGroup.variableType, true);

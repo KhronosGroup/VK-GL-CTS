@@ -131,7 +131,7 @@ class ShaderClockCase : public TestCase
 {
 public:
 	ShaderClockCase(tcu::TestContext& testCtx, testType operation, glu::ShaderType shaderType)
-		: TestCase(testCtx, operation.testName, operation.testName)
+		: TestCase(testCtx, operation.testName)
 		, m_operation(operation)
 		, m_shaderSpec()
 		, m_shaderType(shaderType)
@@ -249,7 +249,7 @@ void addShaderClockTests (tcu::TestCaseGroup* testGroup)
 								: (DE_NULL);
 
 		const std::string setName = std::string() + stageName;
-		de::MovePtr<tcu::TestCaseGroup> stageGroupTest(new tcu::TestCaseGroup(testCtx, setName.c_str(), "Shader Clock Tests"));
+		de::MovePtr<tcu::TestCaseGroup> stageGroupTest(new tcu::TestCaseGroup(testCtx, setName.c_str()));
 
 		for (size_t j = 0; j != DE_LENGTH_OF_ARRAY(operations); ++j)
 		{
@@ -264,7 +264,7 @@ void addShaderClockTests (tcu::TestCaseGroup* testGroup)
 
 tcu::TestCaseGroup* createShaderClockTests(tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "shader_clock", "Shader Clock Tests", addShaderClockTests);
+	return createTestGroup(testCtx, "shader_clock", addShaderClockTests);
 }
 
 } // shaderexecutor

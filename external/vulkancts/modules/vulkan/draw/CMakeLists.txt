@@ -65,6 +65,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawOutputLocationTests.hpp
 	vktDrawDepthBiasTests.cpp
 	vktDrawDepthBiasTests.hpp
+	vktDrawAhbExternalFormatResolveTests.cpp
+	vktDrawAhbExternalFormatResolveTests.hpp
 	vktDrawAhbTests.cpp
 	vktDrawAhbTests.hpp
 	vktDrawMultiExtTests.hpp

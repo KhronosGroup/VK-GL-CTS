@@ -5528,6 +5528,49 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorSetHostMappingF
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestNestedCommandBufferFeaturesEXT (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceNestedCommandBufferFeaturesEXT, nestedCommandBuffer),
+		FEATURE_ITEM (VkPhysicalDeviceNestedCommandBufferFeaturesEXT, nestedCommandBufferRendering),
+		FEATURE_ITEM (VkPhysicalDeviceNestedCommandBufferFeaturesEXT, nestedCommandBufferSimultaneousUse),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceNestedCommandBufferFeaturesEXT*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion());
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderModuleIdentifierFeaturesEXT (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
@@ -6561,6 +6604,47 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRayTracingInvocationReord
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedSparseAddressSpaceFeaturesNV (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExtendedSparseAddressSpaceFeaturesNV>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceExtendedSparseAddressSpaceFeaturesNV, extendedSparseAddressSpace),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExtendedSparseAddressSpaceFeaturesNV*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion());
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewPerViewViewportsFeaturesQCOM (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
@@ -7097,175 +7181,303 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorPoolOverallocat
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalFormatResolveFeaturesANDROID (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceExternalFormatResolveFeaturesANDROID>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceExternalFormatResolveFeaturesANDROID, externalFormatResolve),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExternalFormatResolveFeaturesANDROID*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion());
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCudaKernelLaunchFeaturesNV (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceCudaKernelLaunchFeaturesNV>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceCudaKernelLaunchFeaturesNV, cudaKernelLaunchFeatures),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceCudaKernelLaunchFeaturesNV*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion());
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSchedulingControlsFeaturesARM (Context& context)
+{
+	const PlatformInterface&				vkp						= context.getPlatformInterface();
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	tcu::ResultCollector					resultCollector			(log);
+	const CustomInstance					instance				(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const deUint32							queueFamilyIndex		= 0;
+	const deUint32							queueCount				= 1;
+	const float								queuePriority			= 1.0f;
+	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
+	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
+	int										numErrors				= 0;
+	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+
+
+	VkPhysicalDeviceFeatures emptyDeviceFeatures;
+	deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+	// Only non-core extensions will be used when creating the device.
+	const auto& extensionNames = context.getDeviceCreationExtensions();
+	DE_UNREF(extensionNames); // In some cases this is not used.
+
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceSchedulingControlsFeaturesARM>()))
+	{
+		static const Feature features[] =
+		{
+		FEATURE_ITEM (VkPhysicalDeviceSchedulingControlsFeaturesARM, schedulingControls),
+		};
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceSchedulingControlsFeaturesARM*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion());
+	}
+
+	if (numErrors > 0)
+		return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+	else
+		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 {
 
-	addFunctionCase(testGroup, "device_generated_commands_features_nv", "createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsFeaturesNV", createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsFeaturesNV);
-	addFunctionCase(testGroup, "device_generated_commands_compute_features_nv", "createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsComputeFeaturesNV", createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsComputeFeaturesNV);
-	addFunctionCase(testGroup, "private_data_features", "createDeviceWithUnsupportedFeaturesTestPrivateDataFeatures", createDeviceWithUnsupportedFeaturesTestPrivateDataFeatures);
-	addFunctionCase(testGroup, "variable_pointers_features", "createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures", createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures);
-	addFunctionCase(testGroup, "multiview_features", "createDeviceWithUnsupportedFeaturesTestMultiviewFeatures", createDeviceWithUnsupportedFeaturesTestMultiviewFeatures);
-	addFunctionCase(testGroup, "present_id_features_khr", "createDeviceWithUnsupportedFeaturesTestPresentIdFeaturesKHR", createDeviceWithUnsupportedFeaturesTestPresentIdFeaturesKHR);
-	addFunctionCase(testGroup, "present_wait_features_khr", "createDeviceWithUnsupportedFeaturesTestPresentWaitFeaturesKHR", createDeviceWithUnsupportedFeaturesTestPresentWaitFeaturesKHR);
-	addFunctionCase(testGroup, "16_bit_storage_features", "createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures", createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures);
-	addFunctionCase(testGroup, "shader_subgroup_extended_types_features", "createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTypesFeatures", createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTypesFeatures);
-	addFunctionCase(testGroup, "sampler_ycbcr_conversion_features", "createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFeatures", createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFeatures);
-	addFunctionCase(testGroup, "protected_memory_features", "createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures", createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures);
-	addFunctionCase(testGroup, "blend_operation_advanced_features_ext", "createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFeaturesEXT", createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFeaturesEXT);
-	addFunctionCase(testGroup, "multi_draw_features_ext", "createDeviceWithUnsupportedFeaturesTestMultiDrawFeaturesEXT", createDeviceWithUnsupportedFeaturesTestMultiDrawFeaturesEXT);
-	addFunctionCase(testGroup, "inline_uniform_block_features", "createDeviceWithUnsupportedFeaturesTestInlineUniformBlockFeatures", createDeviceWithUnsupportedFeaturesTestInlineUniformBlockFeatures);
-	addFunctionCase(testGroup, "maintenance4_features", "createDeviceWithUnsupportedFeaturesTestMaintenance4Features", createDeviceWithUnsupportedFeaturesTestMaintenance4Features);
-	addFunctionCase(testGroup, "maintenance5_features_khr", "createDeviceWithUnsupportedFeaturesTestMaintenance5FeaturesKHR", createDeviceWithUnsupportedFeaturesTestMaintenance5FeaturesKHR);
-	addFunctionCase(testGroup, "shader_draw_parameters_features", "createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatures", createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatures);
-	addFunctionCase(testGroup, "shader_float16_int8_features", "createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features", createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features);
-	addFunctionCase(testGroup, "host_query_reset_features", "createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures", createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures);
-	addFunctionCase(testGroup, "global_priority_query_features_khr", "createDeviceWithUnsupportedFeaturesTestGlobalPriorityQueryFeaturesKHR", createDeviceWithUnsupportedFeaturesTestGlobalPriorityQueryFeaturesKHR);
-	addFunctionCase(testGroup, "device_memory_report_features_ext", "createDeviceWithUnsupportedFeaturesTestDeviceMemoryReportFeaturesEXT", createDeviceWithUnsupportedFeaturesTestDeviceMemoryReportFeaturesEXT);
-	addFunctionCase(testGroup, "descriptor_indexing_features", "createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures", createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures);
-	addFunctionCase(testGroup, "timeline_semaphore_features", "createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures", createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures);
-	addFunctionCase(testGroup, "8_bit_storage_features", "createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures", createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures);
-	addFunctionCase(testGroup, "conditional_rendering_features_ext", "createDeviceWithUnsupportedFeaturesTestConditionalRenderingFeaturesEXT", createDeviceWithUnsupportedFeaturesTestConditionalRenderingFeaturesEXT);
-	addFunctionCase(testGroup, "vulkan_memory_model_features", "createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures", createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures);
-	addFunctionCase(testGroup, "shader_atomic_int64_features", "createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features", createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features);
-	addFunctionCase(testGroup, "shader_atomic_float_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT);
-	addFunctionCase(testGroup, "shader_atomic_float2_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderAtomicFloat2FeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderAtomicFloat2FeaturesEXT);
-	addFunctionCase(testGroup, "vertex_attribute_divisor_features_ext", "createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT", createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT);
-	addFunctionCase(testGroup, "astc_decode_features_ext", "createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT", createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT);
-	addFunctionCase(testGroup, "transform_feedback_features_ext", "createDeviceWithUnsupportedFeaturesTestTransformFeedbackFeaturesEXT", createDeviceWithUnsupportedFeaturesTestTransformFeedbackFeaturesEXT);
-	addFunctionCase(testGroup, "representative_fragment_test_features_nv", "createDeviceWithUnsupportedFeaturesTestRepresentativeFragmentTestFeaturesNV", createDeviceWithUnsupportedFeaturesTestRepresentativeFragmentTestFeaturesNV);
-	addFunctionCase(testGroup, "exclusive_scissor_features_nv", "createDeviceWithUnsupportedFeaturesTestExclusiveScissorFeaturesNV", createDeviceWithUnsupportedFeaturesTestExclusiveScissorFeaturesNV);
-	addFunctionCase(testGroup, "corner_sampled_image_features_nv", "createDeviceWithUnsupportedFeaturesTestCornerSampledImageFeaturesNV", createDeviceWithUnsupportedFeaturesTestCornerSampledImageFeaturesNV);
-	addFunctionCase(testGroup, "compute_shader_derivatives_features_nv", "createDeviceWithUnsupportedFeaturesTestComputeShaderDerivativesFeaturesNV", createDeviceWithUnsupportedFeaturesTestComputeShaderDerivativesFeaturesNV);
-	addFunctionCase(testGroup, "shader_image_footprint_features_nv", "createDeviceWithUnsupportedFeaturesTestShaderImageFootprintFeaturesNV", createDeviceWithUnsupportedFeaturesTestShaderImageFootprintFeaturesNV);
-	addFunctionCase(testGroup, "dedicated_allocation_image_aliasing_features_nv", "createDeviceWithUnsupportedFeaturesTestDedicatedAllocationImageAliasingFeaturesNV", createDeviceWithUnsupportedFeaturesTestDedicatedAllocationImageAliasingFeaturesNV);
-	addFunctionCase(testGroup, "copy_memory_indirect_features_nv", "createDeviceWithUnsupportedFeaturesTestCopyMemoryIndirectFeaturesNV", createDeviceWithUnsupportedFeaturesTestCopyMemoryIndirectFeaturesNV);
-	addFunctionCase(testGroup, "memory_decompression_features_nv", "createDeviceWithUnsupportedFeaturesTestMemoryDecompressionFeaturesNV", createDeviceWithUnsupportedFeaturesTestMemoryDecompressionFeaturesNV);
-	addFunctionCase(testGroup, "shading_rate_image_features_nv", "createDeviceWithUnsupportedFeaturesTestShadingRateImageFeaturesNV", createDeviceWithUnsupportedFeaturesTestShadingRateImageFeaturesNV);
-	addFunctionCase(testGroup, "invocation_mask_features_huawei", "createDeviceWithUnsupportedFeaturesTestInvocationMaskFeaturesHUAWEI", createDeviceWithUnsupportedFeaturesTestInvocationMaskFeaturesHUAWEI);
-	addFunctionCase(testGroup, "mesh_shader_features_nv", "createDeviceWithUnsupportedFeaturesTestMeshShaderFeaturesNV", createDeviceWithUnsupportedFeaturesTestMeshShaderFeaturesNV);
-	addFunctionCase(testGroup, "mesh_shader_features_ext", "createDeviceWithUnsupportedFeaturesTestMeshShaderFeaturesEXT", createDeviceWithUnsupportedFeaturesTestMeshShaderFeaturesEXT);
-	addFunctionCase(testGroup, "acceleration_structure_features_khr", "createDeviceWithUnsupportedFeaturesTestAccelerationStructureFeaturesKHR", createDeviceWithUnsupportedFeaturesTestAccelerationStructureFeaturesKHR);
-	addFunctionCase(testGroup, "ray_tracing_pipeline_features_khr", "createDeviceWithUnsupportedFeaturesTestRayTracingPipelineFeaturesKHR", createDeviceWithUnsupportedFeaturesTestRayTracingPipelineFeaturesKHR);
-	addFunctionCase(testGroup, "ray_query_features_khr", "createDeviceWithUnsupportedFeaturesTestRayQueryFeaturesKHR", createDeviceWithUnsupportedFeaturesTestRayQueryFeaturesKHR);
-	addFunctionCase(testGroup, "ray_tracing_maintenance1_features_khr", "createDeviceWithUnsupportedFeaturesTestRayTracingMaintenance1FeaturesKHR", createDeviceWithUnsupportedFeaturesTestRayTracingMaintenance1FeaturesKHR);
-	addFunctionCase(testGroup, "fragment_density_map_features_ext", "createDeviceWithUnsupportedFeaturesTestFragmentDensityMapFeaturesEXT", createDeviceWithUnsupportedFeaturesTestFragmentDensityMapFeaturesEXT);
-	addFunctionCase(testGroup, "fragment_density_map2_features_ext", "createDeviceWithUnsupportedFeaturesTestFragmentDensityMap2FeaturesEXT", createDeviceWithUnsupportedFeaturesTestFragmentDensityMap2FeaturesEXT);
-	addFunctionCase(testGroup, "fragment_density_map_offset_features_qcom", "createDeviceWithUnsupportedFeaturesTestFragmentDensityMapOffsetFeaturesQCOM", createDeviceWithUnsupportedFeaturesTestFragmentDensityMapOffsetFeaturesQCOM);
-	addFunctionCase(testGroup, "scalar_block_layout_features", "createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures", createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures);
-	addFunctionCase(testGroup, "uniform_buffer_standard_layout_features", "createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures", createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures);
-	addFunctionCase(testGroup, "depth_clip_enable_features_ext", "createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEXT", createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEXT);
-	addFunctionCase(testGroup, "memory_priority_features_ext", "createDeviceWithUnsupportedFeaturesTestMemoryPriorityFeaturesEXT", createDeviceWithUnsupportedFeaturesTestMemoryPriorityFeaturesEXT);
-	addFunctionCase(testGroup, "pageable_device_local_memory_features_ext", "createDeviceWithUnsupportedFeaturesTestPageableDeviceLocalMemoryFeaturesEXT", createDeviceWithUnsupportedFeaturesTestPageableDeviceLocalMemoryFeaturesEXT);
-	addFunctionCase(testGroup, "buffer_device_address_features", "createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatures", createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatures);
-	addFunctionCase(testGroup, "buffer_device_address_features_ext", "createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeaturesEXT", createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeaturesEXT);
-	addFunctionCase(testGroup, "imageless_framebuffer_features", "createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures", createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures);
-	addFunctionCase(testGroup, "texture_compression_astchdr_features", "createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDRFeatures", createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDRFeatures);
-	addFunctionCase(testGroup, "cooperative_matrix_features_nv", "createDeviceWithUnsupportedFeaturesTestCooperativeMatrixFeaturesNV", createDeviceWithUnsupportedFeaturesTestCooperativeMatrixFeaturesNV);
-	addFunctionCase(testGroup, "ycbcr_image_arrays_features_ext", "createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT", createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT);
-	addFunctionCase(testGroup, "present_barrier_features_nv", "createDeviceWithUnsupportedFeaturesTestPresentBarrierFeaturesNV", createDeviceWithUnsupportedFeaturesTestPresentBarrierFeaturesNV);
-	addFunctionCase(testGroup, "performance_query_features_khr", "createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR", createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR);
-	addFunctionCase(testGroup, "coverage_reduction_mode_features_nv", "createDeviceWithUnsupportedFeaturesTestCoverageReductionModeFeaturesNV", createDeviceWithUnsupportedFeaturesTestCoverageReductionModeFeaturesNV);
-	addFunctionCase(testGroup, "shader_integer_functions2_features_intel", "createDeviceWithUnsupportedFeaturesTestShaderIntegerFunctions2FeaturesINTEL", createDeviceWithUnsupportedFeaturesTestShaderIntegerFunctions2FeaturesINTEL);
-	addFunctionCase(testGroup, "shader_clock_features_khr", "createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR", createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR);
-	addFunctionCase(testGroup, "index_type_uint8_features_ext", "createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT", createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT);
-	addFunctionCase(testGroup, "shader_sm_builtins_features_nv", "createDeviceWithUnsupportedFeaturesTestShaderSMBuiltinsFeaturesNV", createDeviceWithUnsupportedFeaturesTestShaderSMBuiltinsFeaturesNV);
-	addFunctionCase(testGroup, "fragment_shader_interlock_features_ext", "createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT", createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT);
-	addFunctionCase(testGroup, "separate_depth_stencil_layouts_features", "createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures", createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures);
-	addFunctionCase(testGroup, "primitive_topology_list_restart_features_ext", "createDeviceWithUnsupportedFeaturesTestPrimitiveTopologyListRestartFeaturesEXT", createDeviceWithUnsupportedFeaturesTestPrimitiveTopologyListRestartFeaturesEXT);
-	addFunctionCase(testGroup, "pipeline_executable_properties_features_khr", "createDeviceWithUnsupportedFeaturesTestPipelineExecutablePropertiesFeaturesKHR", createDeviceWithUnsupportedFeaturesTestPipelineExecutablePropertiesFeaturesKHR);
-	addFunctionCase(testGroup, "shader_demote_to_helper_invocation_features", "createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeatures", createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeatures);
-	addFunctionCase(testGroup, "texel_buffer_alignment_features_ext", "createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeaturesEXT", createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeaturesEXT);
-	addFunctionCase(testGroup, "subgroup_size_control_features", "createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeatures", createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeatures);
-	addFunctionCase(testGroup, "line_rasterization_features_ext", "createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT", createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT);
-	addFunctionCase(testGroup, "pipeline_creation_cache_control_features", "createDeviceWithUnsupportedFeaturesTestPipelineCreationCacheControlFeatures", createDeviceWithUnsupportedFeaturesTestPipelineCreationCacheControlFeatures);
-	addFunctionCase(testGroup, "vulkan11_features", "createDeviceWithUnsupportedFeaturesTestVulkan11Features", createDeviceWithUnsupportedFeaturesTestVulkan11Features);
-	addFunctionCase(testGroup, "vulkan12_features", "createDeviceWithUnsupportedFeaturesTestVulkan12Features", createDeviceWithUnsupportedFeaturesTestVulkan12Features);
-	addFunctionCase(testGroup, "vulkan13_features", "createDeviceWithUnsupportedFeaturesTestVulkan13Features", createDeviceWithUnsupportedFeaturesTestVulkan13Features);
-	addFunctionCase(testGroup, "coherent_memory_features_amd", "createDeviceWithUnsupportedFeaturesTestCoherentMemoryFeaturesAMD", createDeviceWithUnsupportedFeaturesTestCoherentMemoryFeaturesAMD);
-	addFunctionCase(testGroup, "custom_border_color_features_ext", "createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeaturesEXT", createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeaturesEXT);
-	addFunctionCase(testGroup, "border_color_swizzle_features_ext", "createDeviceWithUnsupportedFeaturesTestBorderColorSwizzleFeaturesEXT", createDeviceWithUnsupportedFeaturesTestBorderColorSwizzleFeaturesEXT);
-	addFunctionCase(testGroup, "extended_dynamic_state_features_ext", "createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT", createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT);
-	addFunctionCase(testGroup, "extended_dynamic_state2_features_ext", "createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT", createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT);
-	addFunctionCase(testGroup, "extended_dynamic_state3_features_ext", "createDeviceWithUnsupportedFeaturesTestExtendedDynamicState3FeaturesEXT", createDeviceWithUnsupportedFeaturesTestExtendedDynamicState3FeaturesEXT);
-	addFunctionCase(testGroup, "diagnostics_config_features_nv", "createDeviceWithUnsupportedFeaturesTestDiagnosticsConfigFeaturesNV", createDeviceWithUnsupportedFeaturesTestDiagnosticsConfigFeaturesNV);
-	addFunctionCase(testGroup, "zero_initialize_workgroup_memory_features", "createDeviceWithUnsupportedFeaturesTestZeroInitializeWorkgroupMemoryFeatures", createDeviceWithUnsupportedFeaturesTestZeroInitializeWorkgroupMemoryFeatures);
-	addFunctionCase(testGroup, "shader_subgroup_uniform_control_flow_features_khr", "createDeviceWithUnsupportedFeaturesTestShaderSubgroupUniformControlFlowFeaturesKHR", createDeviceWithUnsupportedFeaturesTestShaderSubgroupUniformControlFlowFeaturesKHR);
-	addFunctionCase(testGroup, "robustness2_features_ext", "createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT", createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT);
-	addFunctionCase(testGroup, "image_robustness_features", "createDeviceWithUnsupportedFeaturesTestImageRobustnessFeatures", createDeviceWithUnsupportedFeaturesTestImageRobustnessFeatures);
-	addFunctionCase(testGroup, "workgroup_memory_explicit_layout_features_khr", "createDeviceWithUnsupportedFeaturesTestWorkgroupMemoryExplicitLayoutFeaturesKHR", createDeviceWithUnsupportedFeaturesTestWorkgroupMemoryExplicitLayoutFeaturesKHR);
-	addFunctionCase(testGroup, "portability_subset_features_khr", "createDeviceWithUnsupportedFeaturesTestPortabilitySubsetFeaturesKHR", createDeviceWithUnsupportedFeaturesTestPortabilitySubsetFeaturesKHR);
-	addFunctionCase(testGroup, "4444_formats_features_ext", "createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT", createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT);
-	addFunctionCase(testGroup, "subpass_shading_features_huawei", "createDeviceWithUnsupportedFeaturesTestSubpassShadingFeaturesHUAWEI", createDeviceWithUnsupportedFeaturesTestSubpassShadingFeaturesHUAWEI);
-	addFunctionCase(testGroup, "cluster_culling_shader_features_huawei", "createDeviceWithUnsupportedFeaturesTestClusterCullingShaderFeaturesHUAWEI", createDeviceWithUnsupportedFeaturesTestClusterCullingShaderFeaturesHUAWEI);
-	addFunctionCase(testGroup, "shader_image_atomic_int64_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT);
-	addFunctionCase(testGroup, "fragment_shading_rate_features_khr", "createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR", createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR);
-	addFunctionCase(testGroup, "shader_terminate_invocation_features", "createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeatures", createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeatures);
-	addFunctionCase(testGroup, "fragment_shading_rate_enums_features_nv", "createDeviceWithUnsupportedFeaturesTestFragmentShadingRateEnumsFeaturesNV", createDeviceWithUnsupportedFeaturesTestFragmentShadingRateEnumsFeaturesNV);
-	addFunctionCase(testGroup, "image_2d_view_of_3d_features_ext", "createDeviceWithUnsupportedFeaturesTestImage2DViewOf3DFeaturesEXT", createDeviceWithUnsupportedFeaturesTestImage2DViewOf3DFeaturesEXT);
-	addFunctionCase(testGroup, "image_sliced_view_of_3d_features_ext", "createDeviceWithUnsupportedFeaturesTestImageSlicedViewOf3DFeaturesEXT", createDeviceWithUnsupportedFeaturesTestImageSlicedViewOf3DFeaturesEXT);
-	addFunctionCase(testGroup, "attachment_feedback_loop_dynamic_state_features_ext", "createDeviceWithUnsupportedFeaturesTestAttachmentFeedbackLoopDynamicStateFeaturesEXT", createDeviceWithUnsupportedFeaturesTestAttachmentFeedbackLoopDynamicStateFeaturesEXT);
-	addFunctionCase(testGroup, "mutable_descriptor_type_features_ext", "createDeviceWithUnsupportedFeaturesTestMutableDescriptorTypeFeaturesEXT", createDeviceWithUnsupportedFeaturesTestMutableDescriptorTypeFeaturesEXT);
-	addFunctionCase(testGroup, "depth_clip_control_features_ext", "createDeviceWithUnsupportedFeaturesTestDepthClipControlFeaturesEXT", createDeviceWithUnsupportedFeaturesTestDepthClipControlFeaturesEXT);
-	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", "createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT", createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT);
-	addFunctionCase(testGroup, "external_memory_rdma_features_nv", "createDeviceWithUnsupportedFeaturesTestExternalMemoryRDMAFeaturesNV", createDeviceWithUnsupportedFeaturesTestExternalMemoryRDMAFeaturesNV);
-	addFunctionCase(testGroup, "color_write_enable_features_ext", "createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesEXT", createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesEXT);
-	addFunctionCase(testGroup, "synchronization2_features", "createDeviceWithUnsupportedFeaturesTestSynchronization2Features", createDeviceWithUnsupportedFeaturesTestSynchronization2Features);
-	addFunctionCase(testGroup, "host_image_copy_features_ext", "createDeviceWithUnsupportedFeaturesTestHostImageCopyFeaturesEXT", createDeviceWithUnsupportedFeaturesTestHostImageCopyFeaturesEXT);
-	addFunctionCase(testGroup, "primitives_generated_query_features_ext", "createDeviceWithUnsupportedFeaturesTestPrimitivesGeneratedQueryFeaturesEXT", createDeviceWithUnsupportedFeaturesTestPrimitivesGeneratedQueryFeaturesEXT);
-	addFunctionCase(testGroup, "legacy_dithering_features_ext", "createDeviceWithUnsupportedFeaturesTestLegacyDitheringFeaturesEXT", createDeviceWithUnsupportedFeaturesTestLegacyDitheringFeaturesEXT);
-	addFunctionCase(testGroup, "multisampled_render_to_single_sampled_features_ext", "createDeviceWithUnsupportedFeaturesTestMultisampledRenderToSingleSampledFeaturesEXT", createDeviceWithUnsupportedFeaturesTestMultisampledRenderToSingleSampledFeaturesEXT);
-	addFunctionCase(testGroup, "pipeline_protected_access_features_ext", "createDeviceWithUnsupportedFeaturesTestPipelineProtectedAccessFeaturesEXT", createDeviceWithUnsupportedFeaturesTestPipelineProtectedAccessFeaturesEXT);
-	addFunctionCase(testGroup, "inherited_viewport_scissor_features_nv", "createDeviceWithUnsupportedFeaturesTestInheritedViewportScissorFeaturesNV", createDeviceWithUnsupportedFeaturesTestInheritedViewportScissorFeaturesNV);
-	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", "createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT", createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT);
-	addFunctionCase(testGroup, "provoking_vertex_features_ext", "createDeviceWithUnsupportedFeaturesTestProvokingVertexFeaturesEXT", createDeviceWithUnsupportedFeaturesTestProvokingVertexFeaturesEXT);
-	addFunctionCase(testGroup, "descriptor_buffer_features_ext", "createDeviceWithUnsupportedFeaturesTestDescriptorBufferFeaturesEXT", createDeviceWithUnsupportedFeaturesTestDescriptorBufferFeaturesEXT);
-	addFunctionCase(testGroup, "shader_integer_dot_product_features", "createDeviceWithUnsupportedFeaturesTestShaderIntegerDotProductFeatures", createDeviceWithUnsupportedFeaturesTestShaderIntegerDotProductFeatures);
-	addFunctionCase(testGroup, "fragment_shader_barycentric_features_khr", "createDeviceWithUnsupportedFeaturesTestFragmentShaderBarycentricFeaturesKHR", createDeviceWithUnsupportedFeaturesTestFragmentShaderBarycentricFeaturesKHR);
-	addFunctionCase(testGroup, "ray_tracing_motion_blur_features_nv", "createDeviceWithUnsupportedFeaturesTestRayTracingMotionBlurFeaturesNV", createDeviceWithUnsupportedFeaturesTestRayTracingMotionBlurFeaturesNV);
-	addFunctionCase(testGroup, "rgba10_x6_formats_features_ext", "createDeviceWithUnsupportedFeaturesTestRGBA10X6FormatsFeaturesEXT", createDeviceWithUnsupportedFeaturesTestRGBA10X6FormatsFeaturesEXT);
-	addFunctionCase(testGroup, "dynamic_rendering_features", "createDeviceWithUnsupportedFeaturesTestDynamicRenderingFeatures", createDeviceWithUnsupportedFeaturesTestDynamicRenderingFeatures);
-	addFunctionCase(testGroup, "image_view_min_lod_features_ext", "createDeviceWithUnsupportedFeaturesTestImageViewMinLodFeaturesEXT", createDeviceWithUnsupportedFeaturesTestImageViewMinLodFeaturesEXT);
-	addFunctionCase(testGroup, "rasterization_order_attachment_access_features_ext", "createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachmentAccessFeaturesEXT", createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachmentAccessFeaturesEXT);
-	addFunctionCase(testGroup, "linear_color_attachment_features_nv", "createDeviceWithUnsupportedFeaturesTestLinearColorAttachmentFeaturesNV", createDeviceWithUnsupportedFeaturesTestLinearColorAttachmentFeaturesNV);
-	addFunctionCase(testGroup, "graphics_pipeline_library_features_ext", "createDeviceWithUnsupportedFeaturesTestGraphicsPipelineLibraryFeaturesEXT", createDeviceWithUnsupportedFeaturesTestGraphicsPipelineLibraryFeaturesEXT);
-	addFunctionCase(testGroup, "descriptor_set_host_mapping_features_valve", "createDeviceWithUnsupportedFeaturesTestDescriptorSetHostMappingFeaturesVALVE", createDeviceWithUnsupportedFeaturesTestDescriptorSetHostMappingFeaturesVALVE);
-	addFunctionCase(testGroup, "shader_module_identifier_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderModuleIdentifierFeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderModuleIdentifierFeaturesEXT);
-	addFunctionCase(testGroup, "image_compression_control_features_ext", "createDeviceWithUnsupportedFeaturesTestImageCompressionControlFeaturesEXT", createDeviceWithUnsupportedFeaturesTestImageCompressionControlFeaturesEXT);
-	addFunctionCase(testGroup, "image_compression_control_swapchain_features_ext", "createDeviceWithUnsupportedFeaturesTestImageCompressionControlSwapchainFeaturesEXT", createDeviceWithUnsupportedFeaturesTestImageCompressionControlSwapchainFeaturesEXT);
-	addFunctionCase(testGroup, "subpass_merge_feedback_features_ext", "createDeviceWithUnsupportedFeaturesTestSubpassMergeFeedbackFeaturesEXT", createDeviceWithUnsupportedFeaturesTestSubpassMergeFeedbackFeaturesEXT);
-	addFunctionCase(testGroup, "opacity_micromap_features_ext", "createDeviceWithUnsupportedFeaturesTestOpacityMicromapFeaturesEXT", createDeviceWithUnsupportedFeaturesTestOpacityMicromapFeaturesEXT);
-	addFunctionCase(testGroup, "displacement_micromap_features_nv", "createDeviceWithUnsupportedFeaturesTestDisplacementMicromapFeaturesNV", createDeviceWithUnsupportedFeaturesTestDisplacementMicromapFeaturesNV);
-	addFunctionCase(testGroup, "pipeline_properties_features_ext", "createDeviceWithUnsupportedFeaturesTestPipelinePropertiesFeaturesEXT", createDeviceWithUnsupportedFeaturesTestPipelinePropertiesFeaturesEXT);
-	addFunctionCase(testGroup, "shader_early_and_late_fragment_tests_features_amd", "createDeviceWithUnsupportedFeaturesTestShaderEarlyAndLateFragmentTestsFeaturesAMD", createDeviceWithUnsupportedFeaturesTestShaderEarlyAndLateFragmentTestsFeaturesAMD);
-	addFunctionCase(testGroup, "non_seamless_cube_map_features_ext", "createDeviceWithUnsupportedFeaturesTestNonSeamlessCubeMapFeaturesEXT", createDeviceWithUnsupportedFeaturesTestNonSeamlessCubeMapFeaturesEXT);
-	addFunctionCase(testGroup, "pipeline_robustness_features_ext", "createDeviceWithUnsupportedFeaturesTestPipelineRobustnessFeaturesEXT", createDeviceWithUnsupportedFeaturesTestPipelineRobustnessFeaturesEXT);
-	addFunctionCase(testGroup, "image_processing_features_qcom", "createDeviceWithUnsupportedFeaturesTestImageProcessingFeaturesQCOM", createDeviceWithUnsupportedFeaturesTestImageProcessingFeaturesQCOM);
-	addFunctionCase(testGroup, "tile_properties_features_qcom", "createDeviceWithUnsupportedFeaturesTestTilePropertiesFeaturesQCOM", createDeviceWithUnsupportedFeaturesTestTilePropertiesFeaturesQCOM);
-	addFunctionCase(testGroup, "amigo_profiling_features_sec", "createDeviceWithUnsupportedFeaturesTestAmigoProfilingFeaturesSEC", createDeviceWithUnsupportedFeaturesTestAmigoProfilingFeaturesSEC);
-	addFunctionCase(testGroup, "attachment_feedback_loop_layout_features_ext", "createDeviceWithUnsupportedFeaturesTestAttachmentFeedbackLoopLayoutFeaturesEXT", createDeviceWithUnsupportedFeaturesTestAttachmentFeedbackLoopLayoutFeaturesEXT);
-	addFunctionCase(testGroup, "depth_clamp_zero_one_features_ext", "createDeviceWithUnsupportedFeaturesTestDepthClampZeroOneFeaturesEXT", createDeviceWithUnsupportedFeaturesTestDepthClampZeroOneFeaturesEXT);
-	addFunctionCase(testGroup, "address_binding_report_features_ext", "createDeviceWithUnsupportedFeaturesTestAddressBindingReportFeaturesEXT", createDeviceWithUnsupportedFeaturesTestAddressBindingReportFeaturesEXT);
-	addFunctionCase(testGroup, "optical_flow_features_nv", "createDeviceWithUnsupportedFeaturesTestOpticalFlowFeaturesNV", createDeviceWithUnsupportedFeaturesTestOpticalFlowFeaturesNV);
-	addFunctionCase(testGroup, "fault_features_ext", "createDeviceWithUnsupportedFeaturesTestFaultFeaturesEXT", createDeviceWithUnsupportedFeaturesTestFaultFeaturesEXT);
-	addFunctionCase(testGroup, "pipeline_library_group_handles_features_ext", "createDeviceWithUnsupportedFeaturesTestPipelineLibraryGroupHandlesFeaturesEXT", createDeviceWithUnsupportedFeaturesTestPipelineLibraryGroupHandlesFeaturesEXT);
-	addFunctionCase(testGroup, "shader_core_builtins_features_arm", "createDeviceWithUnsupportedFeaturesTestShaderCoreBuiltinsFeaturesARM", createDeviceWithUnsupportedFeaturesTestShaderCoreBuiltinsFeaturesARM);
-	addFunctionCase(testGroup, "frame_boundary_features_ext", "createDeviceWithUnsupportedFeaturesTestFrameBoundaryFeaturesEXT", createDeviceWithUnsupportedFeaturesTestFrameBoundaryFeaturesEXT);
-	addFunctionCase(testGroup, "dynamic_rendering_unused_attachments_features_ext", "createDeviceWithUnsupportedFeaturesTestDynamicRenderingUnusedAttachmentsFeaturesEXT", createDeviceWithUnsupportedFeaturesTestDynamicRenderingUnusedAttachmentsFeaturesEXT);
-	addFunctionCase(testGroup, "swapchain_maintenance1_features_ext", "createDeviceWithUnsupportedFeaturesTestSwapchainMaintenance1FeaturesEXT", createDeviceWithUnsupportedFeaturesTestSwapchainMaintenance1FeaturesEXT);
-	addFunctionCase(testGroup, "depth_bias_control_features_ext", "createDeviceWithUnsupportedFeaturesTestDepthBiasControlFeaturesEXT", createDeviceWithUnsupportedFeaturesTestDepthBiasControlFeaturesEXT);
-	addFunctionCase(testGroup, "ray_tracing_invocation_reorder_features_nv", "createDeviceWithUnsupportedFeaturesTestRayTracingInvocationReorderFeaturesNV", createDeviceWithUnsupportedFeaturesTestRayTracingInvocationReorderFeaturesNV);
-	addFunctionCase(testGroup, "multiview_per_view_viewports_features_qcom", "createDeviceWithUnsupportedFeaturesTestMultiviewPerViewViewportsFeaturesQCOM", createDeviceWithUnsupportedFeaturesTestMultiviewPerViewViewportsFeaturesQCOM);
-	addFunctionCase(testGroup, "ray_tracing_position_fetch_features_khr", "createDeviceWithUnsupportedFeaturesTestRayTracingPositionFetchFeaturesKHR", createDeviceWithUnsupportedFeaturesTestRayTracingPositionFetchFeaturesKHR);
-	addFunctionCase(testGroup, "multiview_per_view_render_areas_features_qcom", "createDeviceWithUnsupportedFeaturesTestMultiviewPerViewRenderAreasFeaturesQCOM", createDeviceWithUnsupportedFeaturesTestMultiviewPerViewRenderAreasFeaturesQCOM);
-	addFunctionCase(testGroup, "shader_object_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderObjectFeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderObjectFeaturesEXT);
-	addFunctionCase(testGroup, "shader_tile_image_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderTileImageFeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderTileImageFeaturesEXT);
-	addFunctionCase(testGroup, "external_memory_screen_buffer_features_qnx", "createDeviceWithUnsupportedFeaturesTestExternalMemoryScreenBufferFeaturesQNX", createDeviceWithUnsupportedFeaturesTestExternalMemoryScreenBufferFeaturesQNX);
-	addFunctionCase(testGroup, "cooperative_matrix_features_khr", "createDeviceWithUnsupportedFeaturesTestCooperativeMatrixFeaturesKHR", createDeviceWithUnsupportedFeaturesTestCooperativeMatrixFeaturesKHR);
-	addFunctionCase(testGroup, "shader_enqueue_features_amdx", "createDeviceWithUnsupportedFeaturesTestShaderEnqueueFeaturesAMDX", createDeviceWithUnsupportedFeaturesTestShaderEnqueueFeaturesAMDX);
-	addFunctionCase(testGroup, "cubic_clamp_features_qcom", "createDeviceWithUnsupportedFeaturesTestCubicClampFeaturesQCOM", createDeviceWithUnsupportedFeaturesTestCubicClampFeaturesQCOM);
-	addFunctionCase(testGroup, "ycbcr_degamma_features_qcom", "createDeviceWithUnsupportedFeaturesTestYcbcrDegammaFeaturesQCOM", createDeviceWithUnsupportedFeaturesTestYcbcrDegammaFeaturesQCOM);
-	addFunctionCase(testGroup, "cubic_weights_features_qcom", "createDeviceWithUnsupportedFeaturesTestCubicWeightsFeaturesQCOM", createDeviceWithUnsupportedFeaturesTestCubicWeightsFeaturesQCOM);
-	addFunctionCase(testGroup, "image_processing2_features_qcom", "createDeviceWithUnsupportedFeaturesTestImageProcessing2FeaturesQCOM", createDeviceWithUnsupportedFeaturesTestImageProcessing2FeaturesQCOM);
-	addFunctionCase(testGroup, "descriptor_pool_overallocation_features_nv", "createDeviceWithUnsupportedFeaturesTestDescriptorPoolOverallocationFeaturesNV", createDeviceWithUnsupportedFeaturesTestDescriptorPoolOverallocationFeaturesNV);
+	addFunctionCase(testGroup, "device_generated_commands_features_nv", createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsFeaturesNV);
+	addFunctionCase(testGroup, "device_generated_commands_compute_features_nv", createDeviceWithUnsupportedFeaturesTestDeviceGeneratedCommandsComputeFeaturesNV);
+	addFunctionCase(testGroup, "private_data_features", createDeviceWithUnsupportedFeaturesTestPrivateDataFeatures);
+	addFunctionCase(testGroup, "variable_pointers_features", createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures);
+	addFunctionCase(testGroup, "multiview_features", createDeviceWithUnsupportedFeaturesTestMultiviewFeatures);
+	addFunctionCase(testGroup, "present_id_features_khr", createDeviceWithUnsupportedFeaturesTestPresentIdFeaturesKHR);
+	addFunctionCase(testGroup, "present_wait_features_khr", createDeviceWithUnsupportedFeaturesTestPresentWaitFeaturesKHR);
+	addFunctionCase(testGroup, "16_bit_storage_features", createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures);
+	addFunctionCase(testGroup, "shader_subgroup_extended_types_features", createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTypesFeatures);
+	addFunctionCase(testGroup, "sampler_ycbcr_conversion_features", createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFeatures);
+	addFunctionCase(testGroup, "protected_memory_features", createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures);
+	addFunctionCase(testGroup, "blend_operation_advanced_features_ext", createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFeaturesEXT);
+	addFunctionCase(testGroup, "multi_draw_features_ext", createDeviceWithUnsupportedFeaturesTestMultiDrawFeaturesEXT);
+	addFunctionCase(testGroup, "inline_uniform_block_features", createDeviceWithUnsupportedFeaturesTestInlineUniformBlockFeatures);
+	addFunctionCase(testGroup, "maintenance4_features", createDeviceWithUnsupportedFeaturesTestMaintenance4Features);
+	addFunctionCase(testGroup, "maintenance5_features_khr", createDeviceWithUnsupportedFeaturesTestMaintenance5FeaturesKHR);
+	addFunctionCase(testGroup, "shader_draw_parameters_features", createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatures);
+	addFunctionCase(testGroup, "shader_float16_int8_features", createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features);
+	addFunctionCase(testGroup, "host_query_reset_features", createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures);
+	addFunctionCase(testGroup, "global_priority_query_features_khr", createDeviceWithUnsupportedFeaturesTestGlobalPriorityQueryFeaturesKHR);
+	addFunctionCase(testGroup, "device_memory_report_features_ext", createDeviceWithUnsupportedFeaturesTestDeviceMemoryReportFeaturesEXT);
+	addFunctionCase(testGroup, "descriptor_indexing_features", createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures);
+	addFunctionCase(testGroup, "timeline_semaphore_features", createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures);
+	addFunctionCase(testGroup, "8_bit_storage_features", createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures);
+	addFunctionCase(testGroup, "conditional_rendering_features_ext", createDeviceWithUnsupportedFeaturesTestConditionalRenderingFeaturesEXT);
+	addFunctionCase(testGroup, "vulkan_memory_model_features", createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures);
+	addFunctionCase(testGroup, "shader_atomic_int64_features", createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features);
+	addFunctionCase(testGroup, "shader_atomic_float_features_ext", createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT);
+	addFunctionCase(testGroup, "shader_atomic_float2_features_ext", createDeviceWithUnsupportedFeaturesTestShaderAtomicFloat2FeaturesEXT);
+	addFunctionCase(testGroup, "vertex_attribute_divisor_features_ext", createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT);
+	addFunctionCase(testGroup, "astc_decode_features_ext", createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT);
+	addFunctionCase(testGroup, "transform_feedback_features_ext", createDeviceWithUnsupportedFeaturesTestTransformFeedbackFeaturesEXT);
+	addFunctionCase(testGroup, "representative_fragment_test_features_nv", createDeviceWithUnsupportedFeaturesTestRepresentativeFragmentTestFeaturesNV);
+	addFunctionCase(testGroup, "exclusive_scissor_features_nv", createDeviceWithUnsupportedFeaturesTestExclusiveScissorFeaturesNV);
+	addFunctionCase(testGroup, "corner_sampled_image_features_nv", createDeviceWithUnsupportedFeaturesTestCornerSampledImageFeaturesNV);
+	addFunctionCase(testGroup, "compute_shader_derivatives_features_nv", createDeviceWithUnsupportedFeaturesTestComputeShaderDerivativesFeaturesNV);
+	addFunctionCase(testGroup, "shader_image_footprint_features_nv", createDeviceWithUnsupportedFeaturesTestShaderImageFootprintFeaturesNV);
+	addFunctionCase(testGroup, "dedicated_allocation_image_aliasing_features_nv", createDeviceWithUnsupportedFeaturesTestDedicatedAllocationImageAliasingFeaturesNV);
+	addFunctionCase(testGroup, "copy_memory_indirect_features_nv", createDeviceWithUnsupportedFeaturesTestCopyMemoryIndirectFeaturesNV);
+	addFunctionCase(testGroup, "memory_decompression_features_nv", createDeviceWithUnsupportedFeaturesTestMemoryDecompressionFeaturesNV);
+	addFunctionCase(testGroup, "shading_rate_image_features_nv", createDeviceWithUnsupportedFeaturesTestShadingRateImageFeaturesNV);
+	addFunctionCase(testGroup, "invocation_mask_features_huawei", createDeviceWithUnsupportedFeaturesTestInvocationMaskFeaturesHUAWEI);
+	addFunctionCase(testGroup, "mesh_shader_features_nv", createDeviceWithUnsupportedFeaturesTestMeshShaderFeaturesNV);
+	addFunctionCase(testGroup, "mesh_shader_features_ext", createDeviceWithUnsupportedFeaturesTestMeshShaderFeaturesEXT);
+	addFunctionCase(testGroup, "acceleration_structure_features_khr", createDeviceWithUnsupportedFeaturesTestAccelerationStructureFeaturesKHR);
+	addFunctionCase(testGroup, "ray_tracing_pipeline_features_khr", createDeviceWithUnsupportedFeaturesTestRayTracingPipelineFeaturesKHR);
+	addFunctionCase(testGroup, "ray_query_features_khr", createDeviceWithUnsupportedFeaturesTestRayQueryFeaturesKHR);
+	addFunctionCase(testGroup, "ray_tracing_maintenance1_features_khr", createDeviceWithUnsupportedFeaturesTestRayTracingMaintenance1FeaturesKHR);
+	addFunctionCase(testGroup, "fragment_density_map_features_ext", createDeviceWithUnsupportedFeaturesTestFragmentDensityMapFeaturesEXT);
+	addFunctionCase(testGroup, "fragment_density_map2_features_ext", createDeviceWithUnsupportedFeaturesTestFragmentDensityMap2FeaturesEXT);
+	addFunctionCase(testGroup, "fragment_density_map_offset_features_qcom", createDeviceWithUnsupportedFeaturesTestFragmentDensityMapOffsetFeaturesQCOM);
+	addFunctionCase(testGroup, "scalar_block_layout_features", createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures);
+	addFunctionCase(testGroup, "uniform_buffer_standard_layout_features", createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures);
+	addFunctionCase(testGroup, "depth_clip_enable_features_ext", createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEXT);
+	addFunctionCase(testGroup, "memory_priority_features_ext", createDeviceWithUnsupportedFeaturesTestMemoryPriorityFeaturesEXT);
+	addFunctionCase(testGroup, "pageable_device_local_memory_features_ext", createDeviceWithUnsupportedFeaturesTestPageableDeviceLocalMemoryFeaturesEXT);
+	addFunctionCase(testGroup, "buffer_device_address_features", createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatures);
+	addFunctionCase(testGroup, "buffer_device_address_features_ext", createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeaturesEXT);
+	addFunctionCase(testGroup, "imageless_framebuffer_features", createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures);
+	addFunctionCase(testGroup, "texture_compression_astchdr_features", createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDRFeatures);
+	addFunctionCase(testGroup, "cooperative_matrix_features_nv", createDeviceWithUnsupportedFeaturesTestCooperativeMatrixFeaturesNV);
+	addFunctionCase(testGroup, "ycbcr_image_arrays_features_ext", createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT);
+	addFunctionCase(testGroup, "present_barrier_features_nv", createDeviceWithUnsupportedFeaturesTestPresentBarrierFeaturesNV);
+	addFunctionCase(testGroup, "performance_query_features_khr", createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR);
+	addFunctionCase(testGroup, "coverage_reduction_mode_features_nv", createDeviceWithUnsupportedFeaturesTestCoverageReductionModeFeaturesNV);
+	addFunctionCase(testGroup, "shader_integer_functions2_features_intel", createDeviceWithUnsupportedFeaturesTestShaderIntegerFunctions2FeaturesINTEL);
+	addFunctionCase(testGroup, "shader_clock_features_khr", createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR);
+	addFunctionCase(testGroup, "index_type_uint8_features_ext", createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT);
+	addFunctionCase(testGroup, "shader_sm_builtins_features_nv", createDeviceWithUnsupportedFeaturesTestShaderSMBuiltinsFeaturesNV);
+	addFunctionCase(testGroup, "fragment_shader_interlock_features_ext", createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT);
+	addFunctionCase(testGroup, "separate_depth_stencil_layouts_features", createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures);
+	addFunctionCase(testGroup, "primitive_topology_list_restart_features_ext", createDeviceWithUnsupportedFeaturesTestPrimitiveTopologyListRestartFeaturesEXT);
+	addFunctionCase(testGroup, "pipeline_executable_properties_features_khr", createDeviceWithUnsupportedFeaturesTestPipelineExecutablePropertiesFeaturesKHR);
+	addFunctionCase(testGroup, "shader_demote_to_helper_invocation_features", createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeatures);
+	addFunctionCase(testGroup, "texel_buffer_alignment_features_ext", createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeaturesEXT);
+	addFunctionCase(testGroup, "subgroup_size_control_features", createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeatures);
+	addFunctionCase(testGroup, "line_rasterization_features_ext", createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT);
+	addFunctionCase(testGroup, "pipeline_creation_cache_control_features", createDeviceWithUnsupportedFeaturesTestPipelineCreationCacheControlFeatures);
+	addFunctionCase(testGroup, "vulkan11_features", createDeviceWithUnsupportedFeaturesTestVulkan11Features);
+	addFunctionCase(testGroup, "vulkan12_features", createDeviceWithUnsupportedFeaturesTestVulkan12Features);
+	addFunctionCase(testGroup, "vulkan13_features", createDeviceWithUnsupportedFeaturesTestVulkan13Features);
+	addFunctionCase(testGroup, "coherent_memory_features_amd", createDeviceWithUnsupportedFeaturesTestCoherentMemoryFeaturesAMD);
+	addFunctionCase(testGroup, "custom_border_color_features_ext", createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeaturesEXT);
+	addFunctionCase(testGroup, "border_color_swizzle_features_ext", createDeviceWithUnsupportedFeaturesTestBorderColorSwizzleFeaturesEXT);
+	addFunctionCase(testGroup, "extended_dynamic_state_features_ext", createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT);
+	addFunctionCase(testGroup, "extended_dynamic_state2_features_ext", createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT);
+	addFunctionCase(testGroup, "extended_dynamic_state3_features_ext", createDeviceWithUnsupportedFeaturesTestExtendedDynamicState3FeaturesEXT);
+	addFunctionCase(testGroup, "diagnostics_config_features_nv", createDeviceWithUnsupportedFeaturesTestDiagnosticsConfigFeaturesNV);
+	addFunctionCase(testGroup, "zero_initialize_workgroup_memory_features", createDeviceWithUnsupportedFeaturesTestZeroInitializeWorkgroupMemoryFeatures);
+	addFunctionCase(testGroup, "shader_subgroup_uniform_control_flow_features_khr", createDeviceWithUnsupportedFeaturesTestShaderSubgroupUniformControlFlowFeaturesKHR);
+	addFunctionCase(testGroup, "robustness2_features_ext", createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT);
+	addFunctionCase(testGroup, "image_robustness_features", createDeviceWithUnsupportedFeaturesTestImageRobustnessFeatures);
+	addFunctionCase(testGroup, "workgroup_memory_explicit_layout_features_khr", createDeviceWithUnsupportedFeaturesTestWorkgroupMemoryExplicitLayoutFeaturesKHR);
+	addFunctionCase(testGroup, "portability_subset_features_khr", createDeviceWithUnsupportedFeaturesTestPortabilitySubsetFeaturesKHR);
+	addFunctionCase(testGroup, "4444_formats_features_ext", createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT);
+	addFunctionCase(testGroup, "subpass_shading_features_huawei", createDeviceWithUnsupportedFeaturesTestSubpassShadingFeaturesHUAWEI);
+	addFunctionCase(testGroup, "cluster_culling_shader_features_huawei", createDeviceWithUnsupportedFeaturesTestClusterCullingShaderFeaturesHUAWEI);
+	addFunctionCase(testGroup, "shader_image_atomic_int64_features_ext", createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT);
+	addFunctionCase(testGroup, "fragment_shading_rate_features_khr", createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR);
+	addFunctionCase(testGroup, "shader_terminate_invocation_features", createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeatures);
+	addFunctionCase(testGroup, "fragment_shading_rate_enums_features_nv", createDeviceWithUnsupportedFeaturesTestFragmentShadingRateEnumsFeaturesNV);
+	addFunctionCase(testGroup, "image_2d_view_of_3d_features_ext", createDeviceWithUnsupportedFeaturesTestImage2DViewOf3DFeaturesEXT);
+	addFunctionCase(testGroup, "image_sliced_view_of_3d_features_ext", createDeviceWithUnsupportedFeaturesTestImageSlicedViewOf3DFeaturesEXT);
+	addFunctionCase(testGroup, "attachment_feedback_loop_dynamic_state_features_ext", createDeviceWithUnsupportedFeaturesTestAttachmentFeedbackLoopDynamicStateFeaturesEXT);
+	addFunctionCase(testGroup, "mutable_descriptor_type_features_ext", createDeviceWithUnsupportedFeaturesTestMutableDescriptorTypeFeaturesEXT);
+	addFunctionCase(testGroup, "depth_clip_control_features_ext", createDeviceWithUnsupportedFeaturesTestDepthClipControlFeaturesEXT);
+	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT);
+	addFunctionCase(testGroup, "external_memory_rdma_features_nv", createDeviceWithUnsupportedFeaturesTestExternalMemoryRDMAFeaturesNV);
+	addFunctionCase(testGroup, "color_write_enable_features_ext", createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesEXT);
+	addFunctionCase(testGroup, "synchronization2_features", createDeviceWithUnsupportedFeaturesTestSynchronization2Features);
+	addFunctionCase(testGroup, "host_image_copy_features_ext", createDeviceWithUnsupportedFeaturesTestHostImageCopyFeaturesEXT);
+	addFunctionCase(testGroup, "primitives_generated_query_features_ext", createDeviceWithUnsupportedFeaturesTestPrimitivesGeneratedQueryFeaturesEXT);
+	addFunctionCase(testGroup, "legacy_dithering_features_ext", createDeviceWithUnsupportedFeaturesTestLegacyDitheringFeaturesEXT);
+	addFunctionCase(testGroup, "multisampled_render_to_single_sampled_features_ext", createDeviceWithUnsupportedFeaturesTestMultisampledRenderToSingleSampledFeaturesEXT);
+	addFunctionCase(testGroup, "pipeline_protected_access_features_ext", createDeviceWithUnsupportedFeaturesTestPipelineProtectedAccessFeaturesEXT);
+	addFunctionCase(testGroup, "inherited_viewport_scissor_features_nv", createDeviceWithUnsupportedFeaturesTestInheritedViewportScissorFeaturesNV);
+	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT);
+	addFunctionCase(testGroup, "provoking_vertex_features_ext", createDeviceWithUnsupportedFeaturesTestProvokingVertexFeaturesEXT);
+	addFunctionCase(testGroup, "descriptor_buffer_features_ext", createDeviceWithUnsupportedFeaturesTestDescriptorBufferFeaturesEXT);
+	addFunctionCase(testGroup, "shader_integer_dot_product_features", createDeviceWithUnsupportedFeaturesTestShaderIntegerDotProductFeatures);
+	addFunctionCase(testGroup, "fragment_shader_barycentric_features_khr", createDeviceWithUnsupportedFeaturesTestFragmentShaderBarycentricFeaturesKHR);
+	addFunctionCase(testGroup, "ray_tracing_motion_blur_features_nv", createDeviceWithUnsupportedFeaturesTestRayTracingMotionBlurFeaturesNV);
+	addFunctionCase(testGroup, "rgba10_x6_formats_features_ext", createDeviceWithUnsupportedFeaturesTestRGBA10X6FormatsFeaturesEXT);
+	addFunctionCase(testGroup, "dynamic_rendering_features", createDeviceWithUnsupportedFeaturesTestDynamicRenderingFeatures);
+	addFunctionCase(testGroup, "image_view_min_lod_features_ext", createDeviceWithUnsupportedFeaturesTestImageViewMinLodFeaturesEXT);
+	addFunctionCase(testGroup, "rasterization_order_attachment_access_features_ext", createDeviceWithUnsupportedFeaturesTestRasterizationOrderAttachmentAccessFeaturesEXT);
+	addFunctionCase(testGroup, "linear_color_attachment_features_nv", createDeviceWithUnsupportedFeaturesTestLinearColorAttachmentFeaturesNV);
+	addFunctionCase(testGroup, "graphics_pipeline_library_features_ext", createDeviceWithUnsupportedFeaturesTestGraphicsPipelineLibraryFeaturesEXT);
+	addFunctionCase(testGroup, "descriptor_set_host_mapping_features_valve", createDeviceWithUnsupportedFeaturesTestDescriptorSetHostMappingFeaturesVALVE);
+	addFunctionCase(testGroup, "nested_command_buffer_features_ext", createDeviceWithUnsupportedFeaturesTestNestedCommandBufferFeaturesEXT);
+	addFunctionCase(testGroup, "shader_module_identifier_features_ext", createDeviceWithUnsupportedFeaturesTestShaderModuleIdentifierFeaturesEXT);
+	addFunctionCase(testGroup, "image_compression_control_features_ext", createDeviceWithUnsupportedFeaturesTestImageCompressionControlFeaturesEXT);
+	addFunctionCase(testGroup, "image_compression_control_swapchain_features_ext", createDeviceWithUnsupportedFeaturesTestImageCompressionControlSwapchainFeaturesEXT);
+	addFunctionCase(testGroup, "subpass_merge_feedback_features_ext", createDeviceWithUnsupportedFeaturesTestSubpassMergeFeedbackFeaturesEXT);
+	addFunctionCase(testGroup, "opacity_micromap_features_ext", createDeviceWithUnsupportedFeaturesTestOpacityMicromapFeaturesEXT);
+	addFunctionCase(testGroup, "displacement_micromap_features_nv", createDeviceWithUnsupportedFeaturesTestDisplacementMicromapFeaturesNV);
+	addFunctionCase(testGroup, "pipeline_properties_features_ext", createDeviceWithUnsupportedFeaturesTestPipelinePropertiesFeaturesEXT);
+	addFunctionCase(testGroup, "shader_early_and_late_fragment_tests_features_amd", createDeviceWithUnsupportedFeaturesTestShaderEarlyAndLateFragmentTestsFeaturesAMD);
+	addFunctionCase(testGroup, "non_seamless_cube_map_features_ext", createDeviceWithUnsupportedFeaturesTestNonSeamlessCubeMapFeaturesEXT);
+	addFunctionCase(testGroup, "pipeline_robustness_features_ext", createDeviceWithUnsupportedFeaturesTestPipelineRobustnessFeaturesEXT);
+	addFunctionCase(testGroup, "image_processing_features_qcom", createDeviceWithUnsupportedFeaturesTestImageProcessingFeaturesQCOM);
+	addFunctionCase(testGroup, "tile_properties_features_qcom", createDeviceWithUnsupportedFeaturesTestTilePropertiesFeaturesQCOM);
+	addFunctionCase(testGroup, "amigo_profiling_features_sec", createDeviceWithUnsupportedFeaturesTestAmigoProfilingFeaturesSEC);
+	addFunctionCase(testGroup, "attachment_feedback_loop_layout_features_ext", createDeviceWithUnsupportedFeaturesTestAttachmentFeedbackLoopLayoutFeaturesEXT);
+	addFunctionCase(testGroup, "depth_clamp_zero_one_features_ext", createDeviceWithUnsupportedFeaturesTestDepthClampZeroOneFeaturesEXT);
+	addFunctionCase(testGroup, "address_binding_report_features_ext", createDeviceWithUnsupportedFeaturesTestAddressBindingReportFeaturesEXT);
+	addFunctionCase(testGroup, "optical_flow_features_nv", createDeviceWithUnsupportedFeaturesTestOpticalFlowFeaturesNV);
+	addFunctionCase(testGroup, "fault_features_ext", createDeviceWithUnsupportedFeaturesTestFaultFeaturesEXT);
+	addFunctionCase(testGroup, "pipeline_library_group_handles_features_ext", createDeviceWithUnsupportedFeaturesTestPipelineLibraryGroupHandlesFeaturesEXT);
+	addFunctionCase(testGroup, "shader_core_builtins_features_arm", createDeviceWithUnsupportedFeaturesTestShaderCoreBuiltinsFeaturesARM);
+	addFunctionCase(testGroup, "frame_boundary_features_ext", createDeviceWithUnsupportedFeaturesTestFrameBoundaryFeaturesEXT);
+	addFunctionCase(testGroup, "dynamic_rendering_unused_attachments_features_ext", createDeviceWithUnsupportedFeaturesTestDynamicRenderingUnusedAttachmentsFeaturesEXT);
+	addFunctionCase(testGroup, "swapchain_maintenance1_features_ext", createDeviceWithUnsupportedFeaturesTestSwapchainMaintenance1FeaturesEXT);
+	addFunctionCase(testGroup, "depth_bias_control_features_ext", createDeviceWithUnsupportedFeaturesTestDepthBiasControlFeaturesEXT);
+	addFunctionCase(testGroup, "ray_tracing_invocation_reorder_features_nv", createDeviceWithUnsupportedFeaturesTestRayTracingInvocationReorderFeaturesNV);
+	addFunctionCase(testGroup, "extended_sparse_address_space_features_nv", createDeviceWithUnsupportedFeaturesTestExtendedSparseAddressSpaceFeaturesNV);
+	addFunctionCase(testGroup, "multiview_per_view_viewports_features_qcom", createDeviceWithUnsupportedFeaturesTestMultiviewPerViewViewportsFeaturesQCOM);
+	addFunctionCase(testGroup, "ray_tracing_position_fetch_features_khr", createDeviceWithUnsupportedFeaturesTestRayTracingPositionFetchFeaturesKHR);
+	addFunctionCase(testGroup, "multiview_per_view_render_areas_features_qcom", createDeviceWithUnsupportedFeaturesTestMultiviewPerViewRenderAreasFeaturesQCOM);
+	addFunctionCase(testGroup, "shader_object_features_ext", createDeviceWithUnsupportedFeaturesTestShaderObjectFeaturesEXT);
+	addFunctionCase(testGroup, "shader_tile_image_features_ext", createDeviceWithUnsupportedFeaturesTestShaderTileImageFeaturesEXT);
+	addFunctionCase(testGroup, "external_memory_screen_buffer_features_qnx", createDeviceWithUnsupportedFeaturesTestExternalMemoryScreenBufferFeaturesQNX);
+	addFunctionCase(testGroup, "cooperative_matrix_features_khr", createDeviceWithUnsupportedFeaturesTestCooperativeMatrixFeaturesKHR);
+	addFunctionCase(testGroup, "shader_enqueue_features_amdx", createDeviceWithUnsupportedFeaturesTestShaderEnqueueFeaturesAMDX);
+	addFunctionCase(testGroup, "cubic_clamp_features_qcom", createDeviceWithUnsupportedFeaturesTestCubicClampFeaturesQCOM);
+	addFunctionCase(testGroup, "ycbcr_degamma_features_qcom", createDeviceWithUnsupportedFeaturesTestYcbcrDegammaFeaturesQCOM);
+	addFunctionCase(testGroup, "cubic_weights_features_qcom", createDeviceWithUnsupportedFeaturesTestCubicWeightsFeaturesQCOM);
+	addFunctionCase(testGroup, "image_processing2_features_qcom", createDeviceWithUnsupportedFeaturesTestImageProcessing2FeaturesQCOM);
+	addFunctionCase(testGroup, "descriptor_pool_overallocation_features_nv", createDeviceWithUnsupportedFeaturesTestDescriptorPoolOverallocationFeaturesNV);
+	addFunctionCase(testGroup, "external_format_resolve_features_android", createDeviceWithUnsupportedFeaturesTestExternalFormatResolveFeaturesANDROID);
+	addFunctionCase(testGroup, "cuda_kernel_launch_features_nv", createDeviceWithUnsupportedFeaturesTestCudaKernelLaunchFeaturesNV);
+	addFunctionCase(testGroup, "scheduling_controls_features_arm", createDeviceWithUnsupportedFeaturesTestSchedulingControlsFeaturesARM);
 }
 

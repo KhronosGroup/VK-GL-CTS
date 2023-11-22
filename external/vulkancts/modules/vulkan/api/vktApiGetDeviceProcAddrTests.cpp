@@ -38,7 +38,7 @@ namespace api
 tcu::TestCaseGroup* createGetDeviceProcAddrTests	(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(
-		new tcu::TestCaseGroup(testCtx, "get_device_proc_addr", "Test for vkGetDeviceProcAddr."));
+		new tcu::TestCaseGroup(testCtx, "get_device_proc_addr"));
 	addGetDeviceProcAddrTests(group.get());
 	return group.release();
 }

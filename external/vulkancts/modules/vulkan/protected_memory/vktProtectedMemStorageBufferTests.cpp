@@ -75,17 +75,6 @@ enum SSBOAtomicType {
 	ATOMIC_COMPSWAP
 };
 
-
-const char* getSSBOTestDescription (SSBOTestType type)
-{
-	switch (type) {
-		case SSBO_READ:		return "Test for read storage buffer on protected memory.";
-		case SSBO_WRITE:	return "Test for write storage buffer on protected memory.";
-		case SSBO_ATOMIC:	return "Test for atomic storage buffer on protected memory.";
-		default: DE_FATAL("Invalid SSBO test type"); return "";
-	}
-}
-
 const char* getSSBOTypeString (SSBOTestType type)
 {
 	switch (type) {
@@ -223,7 +212,7 @@ public:
 														 bool						pipelineProtectedAccess,
 														 vk::VkPipelineCreateFlags	pipelineFlags,
 														 const std::string&			extraShader = "")
-									: TestCase					(testctx, name, getSSBOTestDescription(testType))
+									: TestCase					(testctx, name)
 									, m_testType				(testType)
 									, m_shaderType				(shaderType)
 									, m_testInput				(testInput)
@@ -714,7 +703,7 @@ tcu::TestCaseGroup* createSpecifiedStorageBufferTests (tcu::TestContext&						te
 {
 	const std::string				testTypeStr		= getSSBOTypeString(testType);
 	const std::string				description		= "Storage buffer " + testTypeStr + " tests";
-	de::MovePtr<tcu::TestCaseGroup> testGroup		(new tcu::TestCaseGroup(testCtx, groupName.c_str(), description.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> testGroup		(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 	for (size_t ndx = 0; ndx < testCount; ++ndx)
 	{
@@ -765,12 +754,11 @@ struct
 
 tcu::TestCaseGroup* createRWStorageBufferTests (tcu::TestContext&							testCtx,
 												const std::string							groupName,
-												const std::string							groupDescription,
 												SSBOTestType								testType,
 												const ValidationDataStorage<tcu::UVec4>		testData[],
 												size_t										testCount)
 {
-	de::MovePtr<tcu::TestCaseGroup> ssboRWTestGroup (new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDescription.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> ssboRWTestGroup (new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 	glu::ShaderType					shaderTypes[] = {
 		glu::SHADERTYPE_FRAGMENT,
@@ -778,9 +766,9 @@ tcu::TestCaseGroup* createRWStorageBufferTests (tcu::TestContext&							testCtx,
 	};
 
 	for (int protectedAccessNdx = 0; protectedAccessNdx < DE_LENGTH_OF_ARRAY(protectedAccess); ++protectedAccessNdx) {
-		de::MovePtr<tcu::TestCaseGroup>		protectedAccessGroup(new tcu::TestCaseGroup(testCtx, protectedAccess[protectedAccessNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup>		protectedAccessGroup(new tcu::TestCaseGroup(testCtx, protectedAccess[protectedAccessNdx].name));
 		for (int flagsNdx = 0; flagsNdx < DE_LENGTH_OF_ARRAY(flags); ++flagsNdx) {
-			de::MovePtr<tcu::TestCaseGroup>		flagsGroup(new tcu::TestCaseGroup(testCtx, flags[flagsNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>		flagsGroup(new tcu::TestCaseGroup(testCtx, flags[flagsNdx].name));
 			if (!protectedAccess[protectedAccessNdx].pipelineProtectedAccess && flags[flagsNdx].pipelineFlags != 0u) continue;
 
 			for (int shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(shaderTypes); ++shaderNdx)
@@ -788,7 +776,7 @@ tcu::TestCaseGroup* createRWStorageBufferTests (tcu::TestContext&							testCtx,
 				const glu::ShaderType				shaderType = shaderTypes[shaderNdx];
 				const std::string					shaderName = glu::getShaderTypeName(shaderType);
 				const std::string					shaderGroupDesc = "Storage buffer tests for shader type: " + shaderName;
-				de::MovePtr<tcu::TestCaseGroup>		testShaderGroup(new tcu::TestCaseGroup(testCtx, shaderName.c_str(), shaderGroupDesc.c_str()));
+				de::MovePtr<tcu::TestCaseGroup>		testShaderGroup(new tcu::TestCaseGroup(testCtx, shaderName.c_str()));
 
 				testShaderGroup->addChild(createSpecifiedStorageBufferTests(testCtx, "static", testType, shaderType, testData, testCount, protectedAccess[protectedAccessNdx].pipelineProtectedAccess, flags[flagsNdx].pipelineFlags));
 				testShaderGroup->addChild(createRandomizedBufferTests(testCtx, testType, shaderType, RANDOM_TEST_COUNT, protectedAccess[protectedAccessNdx].pipelineProtectedAccess, flags[flagsNdx].pipelineFlags));
@@ -878,7 +866,8 @@ tcu::TestCaseGroup* createReadStorageBufferTests (tcu::TestContext& testCtx)
 		{ tcu::UVec4(0u, 0u, 0u, 1u) },	{ tcu::UVec4(1u, 1u, 1u, 1u) }
 	};
 
-	return createRWStorageBufferTests(testCtx, "ssbo_read", "Storage Buffer Read Tests", SSBO_READ, testData, DE_LENGTH_OF_ARRAY(testData));
+	// Storage Buffer Read Tests
+	return createRWStorageBufferTests(testCtx, "ssbo_read", SSBO_READ, testData, DE_LENGTH_OF_ARRAY(testData));
 }
 
 tcu::TestCaseGroup* createWriteStorageBufferTests (tcu::TestContext& testCtx)
@@ -889,7 +878,8 @@ tcu::TestCaseGroup* createWriteStorageBufferTests (tcu::TestContext& testCtx)
 		{ tcu::UVec4(0u, 0u, 0u, 1u) }, { tcu::UVec4(1u, 1u, 1u, 1u) }
 	};
 
-	return createRWStorageBufferTests(testCtx, "ssbo_write", "Storage Buffer Write Tests", SSBO_WRITE, testData, DE_LENGTH_OF_ARRAY(testData));
+	// Storage Buffer Write Tests
+	return createRWStorageBufferTests(testCtx, "ssbo_write", SSBO_WRITE, testData, DE_LENGTH_OF_ARRAY(testData));
 }
 
 tcu::TestCaseGroup* createAtomicStorageBufferTests (tcu::TestContext& testCtx)
@@ -922,19 +912,20 @@ tcu::TestCaseGroup* createAtomicStorageBufferTests (tcu::TestContext& testCtx)
 	};
 
 	de::Random						rnd				(testCtx.getCommandLine().getBaseSeed());
-	de::MovePtr<tcu::TestCaseGroup>	ssboAtomicTests (new tcu::TestCaseGroup(testCtx, "ssbo_atomic", "Storage Buffer Atomic Tests"));
+	// Storage Buffer Atomic Tests
+	de::MovePtr<tcu::TestCaseGroup>	ssboAtomicTests (new tcu::TestCaseGroup(testCtx, "ssbo_atomic"));
 
 	for (int shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(shaderTypes); ++shaderNdx)
 	{
 		const glu::ShaderType				shaderType			= shaderTypes[shaderNdx];
 		const std::string					shaderName			= glu::getShaderTypeName(shaderType);
 		const std::string					shaderDesc			= "Storage Buffer Atomic Tests for shader type: " + shaderName;
-		de::MovePtr<tcu::TestCaseGroup>		atomicShaderGroup	(new tcu::TestCaseGroup(testCtx, shaderName.c_str(), shaderDesc.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>		atomicShaderGroup	(new tcu::TestCaseGroup(testCtx, shaderName.c_str()));
 
 		for (int protectedAccessNdx = 0; protectedAccessNdx < DE_LENGTH_OF_ARRAY(protectedAccess); ++protectedAccessNdx) {
-			de::MovePtr<tcu::TestCaseGroup>		protectedAccessGroup(new tcu::TestCaseGroup(testCtx, protectedAccess[protectedAccessNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>		protectedAccessGroup(new tcu::TestCaseGroup(testCtx, protectedAccess[protectedAccessNdx].name));
 			for (int flagsNdx = 0; flagsNdx < DE_LENGTH_OF_ARRAY(flags); ++flagsNdx) {
-				de::MovePtr<tcu::TestCaseGroup>		flagsGroup(new tcu::TestCaseGroup(testCtx, flags[flagsNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>		flagsGroup(new tcu::TestCaseGroup(testCtx, flags[flagsNdx].name));
 				if (!protectedAccess[protectedAccessNdx].pipelineProtectedAccess && flags[flagsNdx].pipelineFlags != 0u) continue;
 
 				for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++typeNdx)
@@ -943,7 +934,7 @@ tcu::TestCaseGroup* createAtomicStorageBufferTests (tcu::TestContext& testCtx)
 					const std::string				atomicTypeStr = getSSBOAtomicTypeString(atomicType);
 					const std::string				atomicDesc = "Storage Buffer Atomic Tests: " + atomicTypeStr;
 
-					de::MovePtr<tcu::TestCaseGroup>	staticTests(new tcu::TestCaseGroup(testCtx, "static", (atomicDesc + " with static input").c_str()));
+					de::MovePtr<tcu::TestCaseGroup>	staticTests(new tcu::TestCaseGroup(testCtx, "static"));
 					for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 					{
 						const std::string	name = "atomic_" + atomicTypeStr + "_" + de::toString(ndx + 1);
@@ -958,7 +949,7 @@ tcu::TestCaseGroup* createAtomicStorageBufferTests (tcu::TestContext& testCtx)
 						staticTests->addChild(new StorageBufferTestCase<tcu::UVec4>(testCtx, SSBO_ATOMIC, shaderType, name.c_str(), inputValue, validationData, vk::VK_FORMAT_R32G32B32A32_UINT, protectedAccess[protectedAccessNdx].pipelineProtectedAccess, flags[flagsNdx].pipelineFlags, atomicCall));
 					}
 
-					de::MovePtr<tcu::TestCaseGroup>	randomTests(new tcu::TestCaseGroup(testCtx, "random", (atomicDesc + " with random input").c_str()));
+					de::MovePtr<tcu::TestCaseGroup>	randomTests(new tcu::TestCaseGroup(testCtx, "random"));
 					for (int ndx = 0; ndx < RANDOM_TEST_COUNT; ndx++)
 					{
 						const std::string					name = "atomic_" + atomicTypeStr + "_" + de::toString(ndx + 1);
@@ -977,7 +968,7 @@ tcu::TestCaseGroup* createAtomicStorageBufferTests (tcu::TestContext& testCtx)
 
 					}
 
-					de::MovePtr<tcu::TestCaseGroup>	atomicTests(new tcu::TestCaseGroup(testCtx, atomicTypeStr.c_str(), atomicDesc.c_str()));
+					de::MovePtr<tcu::TestCaseGroup>	atomicTests(new tcu::TestCaseGroup(testCtx, atomicTypeStr.c_str()));
 					atomicTests->addChild(staticTests.release());
 					atomicTests->addChild(randomTests.release());
 					flagsGroup->addChild(atomicTests.release());

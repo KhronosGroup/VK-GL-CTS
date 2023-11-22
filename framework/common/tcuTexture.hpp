@@ -153,6 +153,7 @@ public:
 bool	isValid				(TextureFormat format);
 int		getPixelSize		(TextureFormat format);
 int		getNumUsedChannels	(TextureFormat::ChannelOrder order);
+bool	hasAlphaChannel		(TextureFormat::ChannelOrder order);
 int		getChannelSize		(TextureFormat::ChannelType type);
 
 /*--------------------------------------------------------------------*//*!

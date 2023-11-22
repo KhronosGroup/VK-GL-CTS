@@ -206,7 +206,6 @@ public:
 
 											VertexInputTest				(tcu::TestContext&					testContext,
 																		 const std::string&					name,
-																		 const std::string&					description,
 																		 const PipelineConstructionType		pipelineConstructionType,
 																		 const std::vector<AttributeInfo>&	attributeInfos,
 																		 BindingMapping						bindingMapping,
@@ -401,7 +400,6 @@ deUint32 getConsumedLocations (const VertexInputTest::AttributeInfo& attributeIn
 
 VertexInputTest::VertexInputTest (tcu::TestContext&						testContext,
 								  const std::string&					name,
-								  const std::string&					description,
 								  const PipelineConstructionType		pipelineConstructionType,
 								  const std::vector<AttributeInfo>&		attributeInfos,
 								  BindingMapping						bindingMapping,
@@ -409,7 +407,7 @@ VertexInputTest::VertexInputTest (tcu::TestContext&						testContext,
 								  LayoutSkip							layoutSkip,
 								  LayoutOrder							layoutOrder,
 								  const bool							testMissingComponents)
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_attributeInfos				(attributeInfos)
 	, m_bindingMapping				(bindingMapping)
@@ -1771,32 +1769,6 @@ std::string getAttributeInfoCaseName (const VertexInputTest::AttributeInfo& attr
 	return caseName.str();
 }
 
-std::string getAttributeInfoDescription (const VertexInputTest::AttributeInfo& attributeInfo)
-{
-	std::ostringstream caseDesc;
-
-	caseDesc << std::string(VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].name) << " from type " << getFormatName(attributeInfo.vkType) <<  " with ";
-
-	if (attributeInfo.inputRate == VK_VERTEX_INPUT_RATE_VERTEX)
-		caseDesc <<  "vertex input rate ";
-	else
-		caseDesc <<  "instance input rate ";
-
-	return caseDesc.str();
-}
-
-std::string getAttributeInfosDescription (const std::vector<VertexInputTest::AttributeInfo>& attributeInfos)
-{
-	std::ostringstream caseDesc;
-
-	caseDesc << "Uses vertex attributes:\n";
-
-	for (size_t attributeNdx = 0; attributeNdx < attributeInfos.size(); attributeNdx++)
-		caseDesc << "\t- " << getAttributeInfoDescription (attributeInfos[attributeNdx]) << "\n";
-
-	return caseDesc.str();
-}
-
 struct CompatibleFormats
 {
 	VertexInputTest::GlslType	glslType;
@@ -1915,7 +1887,6 @@ void createSingleAttributeCases (tcu::TestCaseGroup* singleAttributeTests, Pipel
 
 				singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
 																getAttributeInfoCaseName(attributeInfo),
-																getAttributeInfoDescription(attributeInfo),
 																pipelineConstructionType,
 																std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
 																VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
@@ -1926,7 +1897,6 @@ void createSingleAttributeCases (tcu::TestCaseGroup* singleAttributeTests, Pipel
 
 				singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
 																getAttributeInfoCaseName(attributeInfo),
-																getAttributeInfoDescription(attributeInfo),
 																pipelineConstructionType,
 																std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
 																VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
@@ -1943,11 +1913,9 @@ void createSingleAttributeCases (tcu::TestCaseGroup* singleAttributeTests, Pipel
 				attributeInfo.glslType = glslType;
 				attributeInfo.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 				const auto nameSuffix = "_missing_components";
-				const auto descSuffix = " using missing components";
 
 				singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
 																getAttributeInfoCaseName(attributeInfo) + nameSuffix,
-																getAttributeInfoDescription(attributeInfo) + descSuffix,
 																pipelineConstructionType,
 																std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
 																VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
@@ -1961,7 +1929,6 @@ void createSingleAttributeCases (tcu::TestCaseGroup* singleAttributeTests, Pipel
 
 				singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
 																getAttributeInfoCaseName(attributeInfo) + nameSuffix,
-																getAttributeInfoDescription(attributeInfo) + descSuffix,
 																pipelineConstructionType,
 																std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
 																VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
@@ -1979,7 +1946,7 @@ void createSingleAttributeTests (tcu::TestCaseGroup* singleAttributeTests, Pipel
 	for (int glslTypeNdx = 0; glslTypeNdx < VertexInputTest::GLSL_TYPE_COUNT; glslTypeNdx++)
 	{
 		VertexInputTest::GlslType glslType = (VertexInputTest::GlslType)glslTypeNdx;
-		addTestGroup(singleAttributeTests, VertexInputTest::s_glslTypeDescriptions[glslType].name, "", createSingleAttributeCases, pipelineConstructionType, glslType);
+		addTestGroup(singleAttributeTests, VertexInputTest::s_glslTypeDescriptions[glslType].name, createSingleAttributeCases, pipelineConstructionType, glslType);
 	}
 }
 
@@ -2013,15 +1980,14 @@ void createMultipleAttributeCases (PipelineConstructionType pipelineConstruction
 			}
 
 			const std::string caseName = VertexInputTest::s_glslTypeDescriptions[currentNdx].name;
-			const std::string caseDesc = getAttributeInfosDescription(newAttributeInfos);
 
-			testGroup.addChild(new VertexInputTest(testCtx, caseName, caseDesc, pipelineConstructionType, newAttributeInfos, bindingMapping, attributeLayout, layoutSkip, layoutOrder));
+			testGroup.addChild(new VertexInputTest(testCtx, caseName, pipelineConstructionType, newAttributeInfos, bindingMapping, attributeLayout, layoutSkip, layoutOrder));
 		}
 		// Add test group
 		else
 		{
 			const std::string				name			= VertexInputTest::s_glslTypeDescriptions[currentNdx].name;
-			de::MovePtr<tcu::TestCaseGroup>	newTestGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	newTestGroup	(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 			createMultipleAttributeCases(pipelineConstructionType, depth - 1u, currentNdx + 1u, compatibleFormats, randomFunc, *newTestGroup, bindingMapping, attributeLayout, layoutSkip, layoutOrder, newAttributeInfos);
 			testGroup.addChild(newTestGroup.release());
@@ -2114,9 +2080,9 @@ void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests, P
 	{
 		const VertexInputTest::LayoutSkip	layoutSkip	= layoutSkips[layoutSkipNdx];
 		const VertexInputTest::LayoutOrder	layoutOrder	= layoutOrders[layoutOrderNdx];
-		de::MovePtr<tcu::TestCaseGroup> oneToOneAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes", ""));
-		de::MovePtr<tcu::TestCaseGroup> oneToManyAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes", ""));
-		de::MovePtr<tcu::TestCaseGroup> oneToManySequentialAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes_sequential", ""));
+		de::MovePtr<tcu::TestCaseGroup> oneToOneAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes"));
+		de::MovePtr<tcu::TestCaseGroup> oneToManyAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes"));
+		de::MovePtr<tcu::TestCaseGroup> oneToManySequentialAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes_sequential"));
 
 		if (layoutSkip == VertexInputTest::LAYOUT_SKIP_ENABLED && layoutOrder == VertexInputTest::LAYOUT_ORDER_OUT_OF_ORDER)
 			continue;
@@ -2127,9 +2093,11 @@ void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests, P
 
 		if (layoutSkip == VertexInputTest::LAYOUT_SKIP_ENABLED)
 		{
-			de::MovePtr<tcu::TestCaseGroup> layoutSkipTests(new tcu::TestCaseGroup(testCtx, "layout_skip", "Skip one layout after each attribute"));
+			// Skip one layout after each attribute
+			de::MovePtr<tcu::TestCaseGroup> layoutSkipTests(new tcu::TestCaseGroup(testCtx, "layout_skip"));
 
-			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
+			// Each attribute uses a unique binding
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one"));
 			bindingOneToOneTests->addChild(oneToOneAttributeTests.release());
 			layoutSkipTests->addChild(bindingOneToOneTests.release());
 
@@ -2242,7 +2210,7 @@ void createMaxAttributeTests (tcu::TestCaseGroup* maxAttributeTests, PipelineCon
 		const std::string							groupName = (attributeCount[attributeCountNdx] == 0 ? "query_max" : de::toString(attributeCount[attributeCountNdx])) + "_attributes";
 		const std::string							groupDesc = de::toString(attributeCount[attributeCountNdx]) + " vertex input attributes";
 
-		de::MovePtr<tcu::TestCaseGroup>				numAttributeTests(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>				numAttributeTests(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 		de::MovePtr<tcu::TestCaseGroup>				bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
 		de::MovePtr<tcu::TestCaseGroup>				bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
 
@@ -2260,9 +2228,12 @@ void createMaxAttributeTests (tcu::TestCaseGroup* maxAttributeTests, PipelineCon
 			attributeInfos[attributeNdx].vkType			= format;
 		}
 
-		bindingOneToOneTests->addChild(new VertexInputTest(testCtx, "interleaved", "Interleaved attribute layout", pipelineConstructionType, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_ONE, VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
-		bindingOneToManyTests->addChild(new VertexInputTest(testCtx, "interleaved", "Interleaved attribute layout", pipelineConstructionType, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY, VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
-		bindingOneToManyTests->addChild(new VertexInputTest(testCtx, "sequential", "Sequential attribute layout", pipelineConstructionType, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY, VertexInputTest::ATTRIBUTE_LAYOUT_SEQUENTIAL));
+		// Interleaved attribute layout
+		bindingOneToOneTests->addChild(new VertexInputTest(testCtx, "interleaved", pipelineConstructionType, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_ONE, VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
+		// Interleaved attribute layout
+		bindingOneToManyTests->addChild(new VertexInputTest(testCtx, "interleaved", pipelineConstructionType, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY, VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
+		// Sequential attribute layout
+		bindingOneToManyTests->addChild(new VertexInputTest(testCtx, "sequential", pipelineConstructionType, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY, VertexInputTest::ATTRIBUTE_LAYOUT_SEQUENTIAL));
 
 		numAttributeTests->addChild(bindingOneToOneTests.release());
 		numAttributeTests->addChild(bindingOneToManyTests.release());
@@ -2274,9 +2245,12 @@ void createMaxAttributeTests (tcu::TestCaseGroup* maxAttributeTests, PipelineCon
 
 void createVertexInputTests (tcu::TestCaseGroup* vertexInputTests, PipelineConstructionType pipelineConstructionType)
 {
-	addTestGroup(vertexInputTests, "single_attribute", "Uses one attribute", createSingleAttributeTests, pipelineConstructionType);
-	addTestGroup(vertexInputTests, "multiple_attributes", "Uses more than one attribute", createMultipleAttributeTests, pipelineConstructionType);
-	addTestGroup(vertexInputTests, "max_attributes", "Implementations can use as many vertex input attributes as they advertise", createMaxAttributeTests, pipelineConstructionType);
+	// Uses one attribute
+	addTestGroup(vertexInputTests, "single_attribute", createSingleAttributeTests, pipelineConstructionType);
+	// Uses more than one attribute
+	addTestGroup(vertexInputTests, "multiple_attributes", createMultipleAttributeTests, pipelineConstructionType);
+	// Implementations can use as many vertex input attributes as they advertise
+	addTestGroup(vertexInputTests, "max_attributes", createMaxAttributeTests, pipelineConstructionType);
 }
 
 } // pipeline

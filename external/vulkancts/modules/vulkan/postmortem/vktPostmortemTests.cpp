@@ -50,7 +50,7 @@ void createChildren(tcu::TestCaseGroup *postmortemTests)
 
 tcu::TestCaseGroup *createTests (tcu::TestContext &testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name.c_str(), "Crash postmortem tests", createChildren);
+	return createTestGroup(testCtx, name.c_str(), createChildren);
 }
 
 } // namespace postmortem

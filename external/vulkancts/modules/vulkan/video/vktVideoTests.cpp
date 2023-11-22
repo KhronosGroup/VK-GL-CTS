@@ -37,13 +37,13 @@ using namespace vk;
 
 tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name.c_str(), "Video encoding and decoding tests"));
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	group->addChild(createVideoCapabilitiesTests(testCtx));
 	group->addChild(createVideoDecodeTests(testCtx));
 
 	{
-		de::MovePtr<tcu::TestCaseGroup>	syncGroup(new tcu::TestCaseGroup(testCtx, "synchronization", ""));
+		de::MovePtr<tcu::TestCaseGroup>	syncGroup(new tcu::TestCaseGroup(testCtx, "synchronization"));
 
 		syncGroup->addChild(createSynchronizationTests(testCtx, "encode_h264", VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT));
 		syncGroup->addChild(createSynchronizationTests(testCtx, "encode_h265", VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT));
@@ -54,7 +54,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& n
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup>	syncGroup(new tcu::TestCaseGroup(testCtx, "synchronization2", ""));
+		de::MovePtr<tcu::TestCaseGroup>	syncGroup(new tcu::TestCaseGroup(testCtx, "synchronization2"));
 
 		syncGroup->addChild(createSynchronizationTests(testCtx, "encode_h264", VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT));
 		syncGroup->addChild(createSynchronizationTests(testCtx, "encode_h265", VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT));

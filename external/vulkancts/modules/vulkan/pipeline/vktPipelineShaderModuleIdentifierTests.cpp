@@ -1330,8 +1330,8 @@ void generateSources (SourceCollections& programCollection, const BaseParams* pa
 class SourcesAndSupportFromParamsBase : public vkt::TestCase
 {
 public:
-					SourcesAndSupportFromParamsBase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, BaseParamsPtr&& params)
-						: vkt::TestCase(testCtx, name, description)
+					SourcesAndSupportFromParamsBase		(tcu::TestContext& testCtx, const std::string& name, BaseParamsPtr&& params)
+						: vkt::TestCase(testCtx, name)
 						, m_params(std::move(params))
 						{}
 	virtual			~SourcesAndSupportFromParamsBase	(void) {}
@@ -1574,8 +1574,8 @@ public:
 	using Params	= ConstantModuleIdentifiersInstance::Params;
 	using ParamsPtr	= ConstantModuleIdentifiersInstance::ParamsPtr;
 
-					ConstantModuleIdentifiersCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr&& params)
-						: SourcesAndSupportFromParamsBase(testCtx, name, description, BaseParamsPtr(static_cast<BaseParams*>(params.release())))
+					ConstantModuleIdentifiersCase	(tcu::TestContext& testCtx, const std::string& name, ParamsPtr&& params)
+						: SourcesAndSupportFromParamsBase(testCtx, name, BaseParamsPtr(static_cast<BaseParams*>(params.release())))
 						{}
 	virtual			~ConstantModuleIdentifiersCase	(void) {}
 	TestInstance*	createInstance					(Context& context) const override;
@@ -1667,8 +1667,8 @@ protected:
 class CreateAndUseIdsCase : public SourcesAndSupportFromParamsBase
 {
 public:
-					CreateAndUseIdsCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, BaseParamsPtr&& params)
-						: SourcesAndSupportFromParamsBase	(testCtx, name, description, std::move(params))
+					CreateAndUseIdsCase		(tcu::TestContext& testCtx, const std::string& name, BaseParamsPtr&& params)
+						: SourcesAndSupportFromParamsBase	(testCtx, name, std::move(params))
 						, m_createAndUseIdsParams			(dynamic_cast<const CreateAndUseIdsInstance::Params*>(m_params.get()))
 						{
 							DE_ASSERT(m_createAndUseIdsParams);
@@ -2964,8 +2964,8 @@ protected:
 class HLSLTessellationCase : public vkt::TestCase
 {
 public:
-					HLSLTessellationCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, PipelineConstructionType constructionType)
-						: vkt::TestCase			(testCtx, name, description)
+					HLSLTessellationCase	(tcu::TestContext& testCtx, const std::string& name, PipelineConstructionType constructionType)
+						: vkt::TestCase			(testCtx, name)
 						, m_constructionType	(constructionType)
 						{}
 	virtual			~HLSLTessellationCase	(void) {}
@@ -3475,14 +3475,14 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx, vk::PipelineConstructionType constructionType)
 {
 	// No pipelines are actually constructed in some of these variants, so adding them to a single group is fine.
-	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "shader_module_identifier", "Tests for VK_EXT_shader_module_identifier"));
+	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "shader_module_identifier"));
 
 	if (constructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		// Property tests.
-		GroupPtr propertiesGroup (new tcu::TestCaseGroup(testCtx, "properties", "Test shader module identifier extension properties"));
+		// Test shader module identifier extension properties
+		GroupPtr propertiesGroup (new tcu::TestCaseGroup(testCtx, "properties"));
 
-		addFunctionCase(propertiesGroup.get(), "constant_algorithm_uuid", "", checkShaderModuleIdentifierSupport, constantAlgorithmUUIDCase);
+		addFunctionCase(propertiesGroup.get(), "constant_algorithm_uuid", checkShaderModuleIdentifierSupport, constantAlgorithmUUIDCase);
 
 		mainGroup->addChild(propertiesGroup.release());
 	}
@@ -3533,8 +3533,8 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 	// Tests checking the identifiers are constant.
 	if (constructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		// Constant and unique module identifier tests.
-		GroupPtr constantIdsGroup (new tcu::TestCaseGroup(testCtx, "constant_identifiers", "Test shader modules have constant and unique identifiers"));
+		// Test shader modules have constant and unique identifiers
+		GroupPtr constantIdsGroup (new tcu::TestCaseGroup(testCtx, "constant_identifiers"));
 
 		const struct
 		{
@@ -3563,25 +3563,25 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 			if (pipelineTypeCase.useRTLibraries)
 				continue;
 
-			GroupPtr pipelineTypeGroup (new tcu::TestCaseGroup(testCtx, pipelineTypeCase.name, ""));
+			GroupPtr pipelineTypeGroup (new tcu::TestCaseGroup(testCtx, pipelineTypeCase.name));
 
 			for (const auto& pipelineCountCase : pipelineCountCases)
 			{
 				const auto countGroupName = std::to_string(static_cast<int>(pipelineCountCase)) + "_variants";
 
-				GroupPtr pipelineCountGroup (new tcu::TestCaseGroup(testCtx, countGroupName.c_str(), ""));
+				GroupPtr pipelineCountGroup (new tcu::TestCaseGroup(testCtx, countGroupName.c_str()));
 
 				for (const auto& useSCCase : useSCCases)
 				{
-					GroupPtr useSCGroup (new tcu::TestCaseGroup(testCtx, useSCCase.name, ""));
+					GroupPtr useSCGroup (new tcu::TestCaseGroup(testCtx, useSCCase.name));
 
 					for (const auto& apiCallCase : apiCallCases)
 					{
-						GroupPtr apiCallGroup (new tcu::TestCaseGroup(testCtx, apiCallCase.name, ""));
+						GroupPtr apiCallGroup (new tcu::TestCaseGroup(testCtx, apiCallCase.name));
 
 						for (const auto& differentDeviceCase : differentDeviceCases)
 						{
-							GroupPtr differentDeviceGroup (new tcu::TestCaseGroup(testCtx, differentDeviceCase.name, ""));
+							GroupPtr differentDeviceGroup (new tcu::TestCaseGroup(testCtx, differentDeviceCase.name));
 
 							using Params = ConstantModuleIdentifiersInstance::Params;
 
@@ -3596,7 +3596,7 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 								{
 									std::unique_ptr<Params> params (new Params(commonParams));
 									params->graphicsShaders = graphicsShadersCase;
-									differentDeviceGroup->addChild(new ConstantModuleIdentifiersCase(testCtx, toString(graphicsShadersCase), "", std::move(params)));
+									differentDeviceGroup->addChild(new ConstantModuleIdentifiersCase(testCtx, toString(graphicsShadersCase), std::move(params)));
 								}
 							}
 							else if (pipelineTypeCase.pipelineType == PipelineType::RAY_TRACING)
@@ -3605,13 +3605,13 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 								{
 									std::unique_ptr<Params> params (new Params(commonParams));
 									params->rtShaders = rtShadersCase;
-									differentDeviceGroup->addChild(new ConstantModuleIdentifiersCase(testCtx, toString(rtShadersCase), "", std::move(params)));
+									differentDeviceGroup->addChild(new ConstantModuleIdentifiersCase(testCtx, toString(rtShadersCase), std::move(params)));
 								}
 							}
 							else	// Compute
 							{
 								std::unique_ptr<Params> params (new Params(commonParams));
-								differentDeviceGroup->addChild(new ConstantModuleIdentifiersCase(testCtx, "comp", "", std::move(params)));
+								differentDeviceGroup->addChild(new ConstantModuleIdentifiersCase(testCtx, "comp", std::move(params)));
 							}
 
 							apiCallGroup->addChild(differentDeviceGroup.release());
@@ -3672,33 +3672,33 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 
 		uint32_t rndSeed = 1651848014u;
 
-		// Tests using pipelines created using shader identifiers.
-		GroupPtr pipelineFromIdsGroup (new tcu::TestCaseGroup(testCtx, "pipeline_from_id", "Test creating and using pipelines from shader module identifiers"));
+		// Test creating and using pipelines from shader module identifiers
+		GroupPtr pipelineFromIdsGroup (new tcu::TestCaseGroup(testCtx, "pipeline_from_id"));
 
 		for (const auto& pipelineTypeCase : pipelineTypeCases)
 		{
 			if (pipelineTypeCase.pipelineType != PipelineType::GRAPHICS && constructionType != PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 				continue;
 
-			GroupPtr pipelineTypeGroup (new tcu::TestCaseGroup(testCtx, pipelineTypeCase.name, ""));
+			GroupPtr pipelineTypeGroup (new tcu::TestCaseGroup(testCtx, pipelineTypeCase.name));
 
 			for (const auto& pipelineCountCase : pipelineCountCases)
 			{
 				const auto countGroupName = std::to_string(static_cast<int>(pipelineCountCase)) + "_variants";
 
-				GroupPtr pipelineCountGroup (new tcu::TestCaseGroup(testCtx, countGroupName.c_str(), ""));
+				GroupPtr pipelineCountGroup (new tcu::TestCaseGroup(testCtx, countGroupName.c_str()));
 
 				for (const auto& useSCCase : useSCCases)
 				{
-					GroupPtr useSCGroup (new tcu::TestCaseGroup(testCtx, useSCCase.name, ""));
+					GroupPtr useSCGroup (new tcu::TestCaseGroup(testCtx, useSCCase.name));
 
 					for (const auto& pipelineCacheCase : pipelineCacheCases)
 					{
-						GroupPtr pipelineCacheGroup (new tcu::TestCaseGroup(testCtx, pipelineCacheCase.name, ""));
+						GroupPtr pipelineCacheGroup (new tcu::TestCaseGroup(testCtx, pipelineCacheCase.name));
 
 						for (const auto& moduleUsageCase : moduleUsageCases)
 						{
-							GroupPtr moduleUsageGroup (new tcu::TestCaseGroup(testCtx, moduleUsageCase.name, ""));
+							GroupPtr moduleUsageGroup (new tcu::TestCaseGroup(testCtx, moduleUsageCase.name));
 
 							for (const auto& capturingCase : capturingCases)
 							{
@@ -3707,7 +3707,7 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 									(pipelineCountCase > 1u || moduleUsageCase.moduleUse != UseModuleCase::ID))
 									continue;
 
-								GroupPtr captureGroup (new tcu::TestCaseGroup(testCtx, capturingCase.name, ""));
+								GroupPtr captureGroup (new tcu::TestCaseGroup(testCtx, capturingCase.name));
 
 								DE_ASSERT(pipelineCountCase > 0u);
 								const uint8_t pipelineToRun = (pipelineCountCase == 1u ? uint8_t{0} : static_cast<uint8_t>(pipelineCountCase - 2u));
@@ -3726,7 +3726,7 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 									{
 										BaseParamsPtr params = baseParams.copy(rndSeed++);
 										params->graphicsShaders = graphicsShadersCase;
-										captureGroup->addChild(new CreateAndUseIdsCase(testCtx, toString(graphicsShadersCase), "", std::move(params)));
+										captureGroup->addChild(new CreateAndUseIdsCase(testCtx, toString(graphicsShadersCase), std::move(params)));
 									}
 								}
 								else if (pipelineTypeCase.pipelineType == PipelineType::RAY_TRACING)
@@ -3735,13 +3735,13 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 									{
 										BaseParamsPtr params = baseParams.copy(rndSeed++);
 										params->rtShaders = rtShadersCase;
-										captureGroup->addChild(new CreateAndUseIdsCase(testCtx, toString(rtShadersCase), "", std::move(params)));
+										captureGroup->addChild(new CreateAndUseIdsCase(testCtx, toString(rtShadersCase), std::move(params)));
 									}
 								}
 								else	// Compute
 								{
 									BaseParamsPtr params = baseParams.copy(rndSeed++);
-									captureGroup->addChild(new CreateAndUseIdsCase(testCtx, "comp", "", std::move(params)));
+									captureGroup->addChild(new CreateAndUseIdsCase(testCtx, "comp", std::move(params)));
 								}
 
 								moduleUsageGroup->addChild(captureGroup.release());
@@ -3765,10 +3765,10 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 		mainGroup->addChild(pipelineFromIdsGroup.release());
 	}
 
-	// HLSL tessellation test.
+	// Tests checking HLSL tessellation shaders with module identifiers
 	{
-		GroupPtr hlslTessGroup (new tcu::TestCaseGroup(testCtx, "hlsl_tessellation", "Tests checking HLSL tessellation shaders with module identifiers"));
-		hlslTessGroup->addChild(new HLSLTessellationCase(testCtx, "test", "", constructionType));
+		GroupPtr hlslTessGroup (new tcu::TestCaseGroup(testCtx, "hlsl_tessellation"));
+		hlslTessGroup->addChild(new HLSLTessellationCase(testCtx, "test", constructionType));
 		mainGroup->addChild(hlslTessGroup.release());
 	}
 
@@ -3788,11 +3788,11 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 		GroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
 
 		BaseParamsPtr params = baseParams.copy(1);
-		miscGroup->addChild(new CreateAndUseIdsCase(testCtx, "capture_statistics_maintenance5", "", std::move(params)));
+		miscGroup->addChild(new CreateAndUseIdsCase(testCtx, "capture_statistics_maintenance5", std::move(params)));
 
 		baseParams.capturedProperties = static_cast<CapturedPropertiesFlags>(CapturedPropertiesBits::IRS);
 		params = baseParams.copy(2);
-		miscGroup->addChild(new CreateAndUseIdsCase(testCtx, "capture_internal_representations_maintenance5", "", std::move(params)));
+		miscGroup->addChild(new CreateAndUseIdsCase(testCtx, "capture_internal_representations_maintenance5", std::move(params)));
 
 		mainGroup->addChild(miscGroup.release());
 	}

@@ -489,7 +489,7 @@ public:
 						SpvAsmPhysicalStorageBufferTestCase		(tcu::TestContext&		testCtx,
 																 const std::string&		name,
 																 const TestParamsPtr	params)
-							: TestCase	(testCtx, name, std::string())
+							: TestCase	(testCtx, name)
 							, m_params	(params)
 						{
 						}
@@ -1247,7 +1247,7 @@ tcu::TestCaseGroup*	createPhysicalStorageBufferTestGroup (tcu::TestContext& test
 		{ PassMethod::ADDRESSES_IN_SSBO,		"addrs_in_ssbo"				},
 	};
 
-	tcu::TestCaseGroup* group		= new tcu::TestCaseGroup(testCtx, "physical_storage_buffer", "Various methods of PhysicalStorageBuffer passing");
+	tcu::TestCaseGroup* group		= new tcu::TestCaseGroup(testCtx, "physical_storage_buffer");
 
 	for (const auto& method : methods)
 	{
@@ -1259,4 +1259,3 @@ tcu::TestCaseGroup*	createPhysicalStorageBufferTestGroup (tcu::TestContext& test
 
 } // SpirVAssembly
 } // vkt
-

@@ -37,7 +37,7 @@ void checkShaderObjectRequirements (const InstanceInterface&		vki,
 	if (computePipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE)
 		return;
 
-	const auto supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const auto& supportedExtensions = enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_shader_object")))
 		TCU_THROW(NotSupportedError, "VK_EXT_shader_object not supported");
 }

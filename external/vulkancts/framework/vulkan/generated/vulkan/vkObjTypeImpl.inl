@@ -54,4 +54,6 @@ template<> inline VkObjectType	getObjectType<VkDebugReportCallbackEXT>			(void) 
 template<> inline VkObjectType	getObjectType<VkDebugUtilsMessengerEXT>			(void) { return VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT;		}
 template<> inline VkObjectType	getObjectType<VkVideoSessionKHR>				(void) { return VK_OBJECT_TYPE_VIDEO_SESSION_KHR;				}
 template<> inline VkObjectType	getObjectType<VkVideoSessionParametersKHR>		(void) { return VK_OBJECT_TYPE_VIDEO_SESSION_PARAMETERS_KHR;	}
+template<> inline VkObjectType	getObjectType<VkCudaModuleNV>					(void) { return VK_OBJECT_TYPE_CUDA_MODULE_NV;					}
+template<> inline VkObjectType	getObjectType<VkCudaFunctionNV>					(void) { return VK_OBJECT_TYPE_CUDA_FUNCTION_NV;				}
 }

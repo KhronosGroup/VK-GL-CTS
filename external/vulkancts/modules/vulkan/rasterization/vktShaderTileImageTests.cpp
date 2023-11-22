@@ -238,8 +238,7 @@ void transition2DImage(const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuf
 class ShaderTileImageTestCase : public TestCase
 {
 public:
-	ShaderTileImageTestCase(tcu::TestContext& context, const std::string& name, const std::string& description,
-							const TestParam& testParam);
+	ShaderTileImageTestCase(tcu::TestContext& context, const std::string& name, const TestParam& testParam);
 	~ShaderTileImageTestCase() override = default;
 	TestInstance* createInstance(Context& context) const override;
 
@@ -309,9 +308,8 @@ protected:
 	Move<VkImageView>				m_imageDepthStencilView;
 };
 
-ShaderTileImageTestCase::ShaderTileImageTestCase(tcu::TestContext& context, const std::string& name,
-												 const std::string& description, const TestParam& testParam)
-	: TestCase(context, name, description), m_testParam(testParam)
+ShaderTileImageTestCase::ShaderTileImageTestCase(tcu::TestContext& context, const std::string& name, const TestParam& testParam)
+	: TestCase(context, name), m_testParam(testParam)
 {
 }
 
@@ -2039,12 +2037,12 @@ void createShaderTileImageTestVariations(tcu::TestContext& testCtx, tcu::TestCas
 
 	for (const BoolParam& coherentParam : coherentParams)
 	{
-		subGroup = (new tcu::TestCaseGroup(testCtx, coherentParam.name, coherentParam.name));
+		subGroup = (new tcu::TestCaseGroup(testCtx, coherentParam.name));
 		testGroupStack.back()->addChild(subGroup);
 		testGroupStack.push_back(subGroup);
 		for (const TestTypeParam& testTypeParam : testTypeParams)
 		{
-			subGroup = new tcu::TestCaseGroup(testCtx, testTypeParam.name, testTypeParam.name);
+			subGroup = new tcu::TestCaseGroup(testCtx, testTypeParam.name);
 			testGroupStack.back()->addChild(subGroup);
 			testGroupStack.push_back(subGroup);
 
@@ -2060,7 +2058,7 @@ void createShaderTileImageTestVariations(tcu::TestContext& testCtx, tcu::TestCas
 					// HelperClass test designed for non msaa case
 					continue;
 				}
-				subGroup = new tcu::TestCaseGroup(testCtx, sampleCountParam.name, sampleCountParam.name);
+				subGroup = new tcu::TestCaseGroup(testCtx, sampleCountParam.name);
 				testGroupStack.back()->addChild(subGroup);
 				testGroupStack.push_back(subGroup);
 
@@ -2072,7 +2070,7 @@ void createShaderTileImageTestVariations(tcu::TestContext& testCtx, tcu::TestCas
 						continue;
 					}
 
-					subGroup = new tcu::TestCaseGroup(testCtx, multiDrawsParam.name, multiDrawsParam.name);
+					subGroup = new tcu::TestCaseGroup(testCtx, multiDrawsParam.name);
 					testGroupStack.back()->addChild(subGroup);
 					testGroupStack.push_back(subGroup);
 
@@ -2088,7 +2086,7 @@ void createShaderTileImageTestVariations(tcu::TestContext& testCtx, tcu::TestCas
 							continue;
 						}
 
-						subGroup = new tcu::TestCaseGroup(testCtx, multiPatchParam.name, multiPatchParam.name);
+						subGroup = new tcu::TestCaseGroup(testCtx, multiPatchParam.name);
 						testGroupStack.back()->addChild(subGroup);
 						testGroupStack.push_back(subGroup);
 
@@ -2114,7 +2112,7 @@ void createShaderTileImageTestVariations(tcu::TestContext& testCtx, tcu::TestCas
 								if (hasDepth)
 								{
 									testParam.depthStencilFormat = format;
-									curGroup->addChild(new ShaderTileImageTestCase(testCtx, name, name, testParam));
+									curGroup->addChild(new ShaderTileImageTestCase(testCtx, name, testParam));
 								}
 							}
 							else if (testTypeParam.value == TestType::Stencil ||
@@ -2123,7 +2121,7 @@ void createShaderTileImageTestVariations(tcu::TestContext& testCtx, tcu::TestCas
 								if (hasStencil)
 								{
 									testParam.depthStencilFormat = format;
-									curGroup->addChild(new ShaderTileImageTestCase(testCtx, name, name, testParam));
+									curGroup->addChild(new ShaderTileImageTestCase(testCtx, name, testParam));
 								}
 							}
 							else
@@ -2149,7 +2147,7 @@ void createShaderTileImageTestVariations(tcu::TestContext& testCtx, tcu::TestCas
 									if (static_cast<deUint32>(1 << (channelBitDepth.y() - 1)) > maxResultValue)
 									{
 										testParam.colorFormat = format;
-										curGroup->addChild(new ShaderTileImageTestCase(testCtx, name, name, testParam));
+										curGroup->addChild(new ShaderTileImageTestCase(testCtx, name, testParam));
 									}
 								}
 							}
@@ -2171,7 +2169,7 @@ void createShaderTileImageTestVariations(tcu::TestContext& testCtx, tcu::TestCas
 tcu::TestCaseGroup* createShaderTileImageTests(tcu::TestContext& testCtx)
 {
 	/* Add the color tests */
-	tcu::TestCaseGroup* gr = new tcu::TestCaseGroup(testCtx, "shader_tile_image", "Shader Tile Image tests");
+	tcu::TestCaseGroup* gr = new tcu::TestCaseGroup(testCtx, "shader_tile_image");
 	createShaderTileImageTestVariations(testCtx, gr);
 
 	return gr;

@@ -357,7 +357,6 @@ class DepthStencilWriteConditionsTest : public TestCase
 public:
 						DepthStencilWriteConditionsTest (tcu::TestContext&	testCtx,
 														 const std::string&	name,
-														 const std::string&	description,
 														 const BufferType	bufferType,
 														 const DiscardType	discardType,
 														 const MutationMode	mutationMode,
@@ -375,12 +374,11 @@ private:
 
 DepthStencilWriteConditionsTest::DepthStencilWriteConditionsTest (tcu::TestContext&		testCtx,
 																  const std::string&	name,
-																  const std::string&	description,
 																  const BufferType		bufferType,
 																  const DiscardType		discardType,
 																  const MutationMode	mutationMode,
 																  const VkFormat		bufferFormat)
-	: TestCase	(testCtx, name, description)
+	: TestCase	(testCtx, name)
 	, m_bufferType(bufferType)
 	, m_discardType(discardType)
 	, m_mutationMode(mutationMode)
@@ -582,7 +580,7 @@ TestInstance* DepthStencilWriteConditionsTest::createInstance (Context& context)
 
 tcu::TestCaseGroup* createDepthStencilWriteConditionsTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "depth_stencil_write_conditions", "Depth/Stencil Write conditions tests"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "depth_stencil_write_conditions"));
 
 	const VkFormat	depthFormats[4]		= {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT};
 	const VkFormat	stencilFormats[2]	= {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
@@ -598,15 +596,15 @@ tcu::TestCaseGroup* createDepthStencilWriteConditionsTests (tcu::TestContext& te
 		if (format == VK_FORMAT_D32_SFLOAT)
 			postfix = "_d32sf";
 
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_kill_write" + postfix, "", BufferType::DEPTH, DiscardType::KILL, MutationMode::WRITE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_kill_initialize" + postfix, "", BufferType::DEPTH, DiscardType::KILL, MutationMode::INITIALIZE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_kill_write_initialize" + postfix, "", BufferType::DEPTH, DiscardType::KILL, MutationMode::INITIALIZE_WRITE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_terminate_write" + postfix, "", BufferType::DEPTH, DiscardType::TERMINATE, MutationMode::WRITE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_terminate_initialize" + postfix, "", BufferType::DEPTH, DiscardType::TERMINATE, MutationMode::INITIALIZE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_terminate_write_initialize" + postfix, "", BufferType::DEPTH, DiscardType::TERMINATE, MutationMode::INITIALIZE_WRITE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_demote_write" + postfix, "", BufferType::DEPTH, DiscardType::DEMOTE, MutationMode::WRITE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_demote_initialize" + postfix, "", BufferType::DEPTH, DiscardType::DEMOTE, MutationMode::INITIALIZE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_demote_write_initialize" + postfix, "", BufferType::DEPTH, DiscardType::DEMOTE, MutationMode::INITIALIZE_WRITE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_kill_write" + postfix, BufferType::DEPTH, DiscardType::KILL, MutationMode::WRITE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_kill_initialize" + postfix, BufferType::DEPTH, DiscardType::KILL, MutationMode::INITIALIZE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_kill_write_initialize" + postfix, BufferType::DEPTH, DiscardType::KILL, MutationMode::INITIALIZE_WRITE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_terminate_write" + postfix, BufferType::DEPTH, DiscardType::TERMINATE, MutationMode::WRITE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_terminate_initialize" + postfix, BufferType::DEPTH, DiscardType::TERMINATE, MutationMode::INITIALIZE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_terminate_write_initialize" + postfix, BufferType::DEPTH, DiscardType::TERMINATE, MutationMode::INITIALIZE_WRITE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_demote_write" + postfix, BufferType::DEPTH, DiscardType::DEMOTE, MutationMode::WRITE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_demote_initialize" + postfix, BufferType::DEPTH, DiscardType::DEMOTE, MutationMode::INITIALIZE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "depth_demote_write_initialize" + postfix, BufferType::DEPTH, DiscardType::DEMOTE, MutationMode::INITIALIZE_WRITE, format));
 	}
 
 	for (int i = 0; i < 2; i++)
@@ -616,15 +614,15 @@ tcu::TestCaseGroup* createDepthStencilWriteConditionsTests (tcu::TestContext& te
 		if (format == VK_FORMAT_D24_UNORM_S8_UINT)
 			postfix = "_d24unorm_s8ui";
 
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_kill_write" + postfix, "", BufferType::STENCIL, DiscardType::KILL, MutationMode::WRITE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_kill_initialize" + postfix, "", BufferType::STENCIL, DiscardType::KILL, MutationMode::INITIALIZE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_kill_write_initialize" + postfix, "", BufferType::STENCIL, DiscardType::KILL, MutationMode::INITIALIZE_WRITE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_terminate_write" + postfix, "", BufferType::STENCIL, DiscardType::TERMINATE, MutationMode::WRITE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_terminate_initialize" + postfix, "", BufferType::STENCIL, DiscardType::TERMINATE, MutationMode::INITIALIZE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_terminate_write_initialize" + postfix, "", BufferType::STENCIL, DiscardType::TERMINATE, MutationMode::INITIALIZE_WRITE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_demote_write" + postfix, "", BufferType::STENCIL, DiscardType::DEMOTE, MutationMode::WRITE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_demote_initialize" + postfix, "", BufferType::STENCIL, DiscardType::DEMOTE, MutationMode::INITIALIZE, format));
-		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_demote_write_initialize" + postfix, "", BufferType::STENCIL, DiscardType::DEMOTE, MutationMode::INITIALIZE_WRITE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_kill_write" + postfix, BufferType::STENCIL, DiscardType::KILL, MutationMode::WRITE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_kill_initialize" + postfix, BufferType::STENCIL, DiscardType::KILL, MutationMode::INITIALIZE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_kill_write_initialize" + postfix, BufferType::STENCIL, DiscardType::KILL, MutationMode::INITIALIZE_WRITE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_terminate_write" + postfix, BufferType::STENCIL, DiscardType::TERMINATE, MutationMode::WRITE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_terminate_initialize" + postfix, BufferType::STENCIL, DiscardType::TERMINATE, MutationMode::INITIALIZE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_terminate_write_initialize" + postfix, BufferType::STENCIL, DiscardType::TERMINATE, MutationMode::INITIALIZE_WRITE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_demote_write" + postfix, BufferType::STENCIL, DiscardType::DEMOTE, MutationMode::WRITE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_demote_initialize" + postfix, BufferType::STENCIL, DiscardType::DEMOTE, MutationMode::INITIALIZE, format));
+		testGroup->addChild(new DepthStencilWriteConditionsTest(testCtx, "stencil_demote_write_initialize" + postfix, BufferType::STENCIL, DiscardType::DEMOTE, MutationMode::INITIALIZE_WRITE, format));
 	}
 
 	return testGroup.release();

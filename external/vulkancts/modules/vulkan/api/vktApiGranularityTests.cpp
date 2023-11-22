@@ -423,7 +423,6 @@ class GranularityCase : public vkt::TestCase
 public:
 										GranularityCase		(tcu::TestContext&					testCtx,
 															 const std::string&					name,
-															 const std::string&					description,
 															 const std::vector<AttachmentInfo>&	attachments,
 															 const TestMode						testMode);
 	virtual								~GranularityCase	(void) = default;
@@ -437,10 +436,9 @@ private:
 
 GranularityCase::GranularityCase (tcu::TestContext&						testCtx,
 								  const std::string&					name,
-								  const std::string&					description,
 								  const std::vector<AttachmentInfo>&	attachments,
 								  const TestMode						testMode = TestMode::NO_RENDER_PASS)
-	: vkt::TestCase		(testCtx, name, description)
+	: vkt::TestCase		(testCtx, name)
 	, m_attachments		(attachments)
 	, m_testMode		(testMode)
 {
@@ -473,16 +471,17 @@ TestInstance* GranularityCase::createInstance (Context& context) const
 
 tcu::TestCaseGroup* createGranularityQueryTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group				(new tcu::TestCaseGroup(testCtx, "granularity", "Granularity query tests"));
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "granularity"));
 	// Subgroups
-	de::MovePtr<tcu::TestCaseGroup>	single				(new tcu::TestCaseGroup(testCtx, "single", "Single texture granularity tests."));
-	de::MovePtr<tcu::TestCaseGroup>	multi				(new tcu::TestCaseGroup(testCtx, "multi", "Multiple textures with same format granularity tests."));
+	// Single texture granularity tests.
+	de::MovePtr<tcu::TestCaseGroup>	single				(new tcu::TestCaseGroup(testCtx, "single"));
+	// Multiple textures with same format granularity tests.
+	de::MovePtr<tcu::TestCaseGroup>	multi				(new tcu::TestCaseGroup(testCtx, "multi"));
 	de::MovePtr<tcu::TestCaseGroup>	random				(new tcu::TestCaseGroup(testCtx, "random", "Multiple textures with a guaranteed format occurence."));
 	de::MovePtr<tcu::TestCaseGroup>	inRenderPass		(new tcu::TestCaseGroup(testCtx, "in_render_pass", "Single texture granularity tests, inside render pass"));
 	de::MovePtr<tcu::TestCaseGroup>	inDynamicRenderPass	(new tcu::TestCaseGroup(testCtx, "in_dynamic_render_pass", "Single texture granularity tests, inside dynamic render pass"));
 
 	de::Random	rnd(215);
-	const char*	description	= "Granularity case.";
 
 	const VkFormat mandatoryFormats[] =
 	{
@@ -549,7 +548,7 @@ tcu::TestCaseGroup* createGranularityQueryTests (tcu::TestContext& testCtx)
 			const int					i0				= rnd.getInt(1, maxDimension);
 			const int					i1				= rnd.getInt(1, maxDimension);
 			attachments.push_back(AttachmentInfo(format, i0, i1, 1));
-			single->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments));
+			single->addChild(new GranularityCase(testCtx, name.c_str(), attachments));
 		}
 
 		{
@@ -559,7 +558,7 @@ tcu::TestCaseGroup* createGranularityQueryTests (tcu::TestContext& testCtx)
 			const int					i1				= rnd.getInt(1, maxDimension);
 			for (deUint32 idx = 0; idx < iterations; ++idx)
 				attachments.push_back(AttachmentInfo(VkFormat(formatIdx), i0, i1, 1));
-			multi->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments));
+			multi->addChild(new GranularityCase(testCtx, name.c_str(), attachments));
 		}
 
 		{
@@ -575,17 +574,17 @@ tcu::TestCaseGroup* createGranularityQueryTests (tcu::TestContext& testCtx)
 				const int	i4	= rnd.getInt(1, maxDimension);
 				attachments.push_back(AttachmentInfo(mandatoryFormats[i2], i3, i4, 1));
 			}
-			random->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments));
+			random->addChild(new GranularityCase(testCtx, name.c_str(), attachments));
 		}
 
 		{
 			const int					i0				= rnd.getInt(1, maxDimension);
 			const int					i1				= rnd.getInt(1, maxDimension);
 			std::vector<AttachmentInfo>	attachments		= { AttachmentInfo(format, i0, i1, 1) };
-			inRenderPass->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments, TestMode::USE_RENDER_PASS));
+			inRenderPass->addChild(new GranularityCase(testCtx, name.c_str(), attachments, TestMode::USE_RENDER_PASS));
 
 #ifndef CTS_USES_VULKANSC
-			inDynamicRenderPass->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments, TestMode::USE_DYNAMIC_RENDER_PASS));
+			inDynamicRenderPass->addChild(new GranularityCase(testCtx, name.c_str(), attachments, TestMode::USE_DYNAMIC_RENDER_PASS));
 #endif
 		}
 	}

@@ -207,7 +207,7 @@ void checkMeshShaderSupport (Context& context)
 } //anonymous
 
 DynamicStateCBTests::DynamicStateCBTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
-	: TestCaseGroup					(testCtx, "cb_state", "Tests for color blend state")
+	: TestCaseGroup					(testCtx, "cb_state")
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
@@ -225,13 +225,15 @@ void DynamicStateCBTests::init (void)
 	{
 		ShaderMap shaderPaths(pathsBase);
 		shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
-		addChild(new InstanceFactory<BlendConstantsTestInstance>(m_testCtx, "blend_constants", "Check if blend constants are working properly", m_pipelineConstructionType, shaderPaths));
+		// Check if blend constants are working properly
+		addChild(new InstanceFactory<BlendConstantsTestInstance>(m_testCtx, "blend_constants", m_pipelineConstructionType, shaderPaths));
 	}
 #ifndef CTS_USES_VULKANSC
 	{
 		ShaderMap shaderPaths(pathsBase);
 		shaderPaths[glu::SHADERTYPE_MESH] = "vulkan/dynamic_state/VertexFetch.mesh";
-		addChild(new InstanceFactory<BlendConstantsTestInstance, FunctionSupport0>(m_testCtx, "blend_constants_mesh", "Check if blend constants are working properly in mesh shaders", m_pipelineConstructionType, shaderPaths, checkMeshShaderSupport));
+		// Check if blend constants are working properly in mesh shaders
+		addChild(new InstanceFactory<BlendConstantsTestInstance, FunctionSupport0>(m_testCtx, "blend_constants_mesh", m_pipelineConstructionType, shaderPaths, checkMeshShaderSupport));
 	}
 #endif // CTS_USES_VULKANSC
 }

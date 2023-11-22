@@ -500,7 +500,7 @@ void checkSupport(Context& context, ConcurrentDraw::TestSpec testSpec)
 }	// anonymous
 
 ConcurrentDrawTests::ConcurrentDrawTests (tcu::TestContext &testCtx, const SharedGroupParams groupParams)
-	: TestCaseGroup			(testCtx, "concurrent", "concurrent drawing")
+	: TestCaseGroup			(testCtx, "concurrent")
 	, m_groupParams			(groupParams)
 {
 	/* Left blank on purpose */
@@ -519,7 +519,7 @@ void ConcurrentDrawTests::init (void)
 		m_groupParams
 	};
 
-	addChild(new InstanceFactory<ConcurrentDraw, FunctionSupport1<ConcurrentDraw::TestSpec>>(m_testCtx, "compute_and_triangle_list", "Draws triangle list while running a compute shader", testSpec, FunctionSupport1<ConcurrentDraw::TestSpec>::Args(checkSupport, testSpec)));
+	addChild(new InstanceFactory<ConcurrentDraw, FunctionSupport1<ConcurrentDraw::TestSpec>>(m_testCtx, "compute_and_triangle_list", testSpec, FunctionSupport1<ConcurrentDraw::TestSpec>::Args(checkSupport, testSpec)));
 }
 
 }	// DrawTests

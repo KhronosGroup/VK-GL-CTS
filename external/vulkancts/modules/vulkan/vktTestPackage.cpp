@@ -1016,41 +1016,37 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	static const struct
 	{
 		const char*		name;
-		const char*		description;
 	} s_es310Tests[] =
 	{
-		{ "arrays",						"Arrays"					},
-		{ "conditionals",				"Conditional statements"	},
-		{ "constant_expressions",		"Constant expressions"		},
-		{ "constants",					"Constants"					},
-		{ "conversions",				"Type conversions"			},
-		{ "functions",					"Functions"					},
-		{ "linkage",					"Linking"					},
-		{ "scoping",					"Scoping"					},
-		{ "swizzles",					"Swizzles"					},
+		{ "arrays"},
+		{ "conditionals"},
+		{ "constant_expressions"},
+		{ "constants"},
+		{ "conversions"},
+		{ "functions"},
+		{ "linkage"},
+		{ "scoping"},
+		{ "swizzles"},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_es310Tests); ndx++)
 		glslTests->addChild(createShaderLibraryGroup(testCtx,
 													 s_es310Tests[ndx].name,
-													 s_es310Tests[ndx].description,
 													 std::string("vulkan/glsl/es310/") + s_es310Tests[ndx].name + ".test").release());
 
 	static const struct
 	{
 		const char*		name;
-		const char*		description;
 	} s_440Tests[] =
 	{
-		{ "linkage",					"Linking"					},
+		{ "linkage"},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> glsl440Tests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "440", ""));
+	de::MovePtr<tcu::TestCaseGroup> glsl440Tests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "440"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_440Tests); ndx++)
 		glsl440Tests->addChild(createShaderLibraryGroup(testCtx,
 													 s_440Tests[ndx].name,
-													 s_440Tests[ndx].description,
 													 std::string("vulkan/glsl/440/") + s_440Tests[ndx].name + ".test").release());
 
 	glslTests->addChild(glsl440Tests.release());
@@ -1089,8 +1085,8 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 
 // TestPackage
 
-BaseTestPackage::BaseTestPackage (tcu::TestContext& testCtx, const char* name, const char* desc)
-	: tcu::TestPackage(testCtx, name, desc)
+BaseTestPackage::BaseTestPackage (tcu::TestContext& testCtx, const char* name)
+	: tcu::TestPackage(testCtx, name, "")
 {
 }
 
@@ -1101,7 +1097,7 @@ BaseTestPackage::~BaseTestPackage (void)
 #ifdef CTS_USES_VULKAN
 
 TestPackage::TestPackage (tcu::TestContext& testCtx)
-	: BaseTestPackage(testCtx, "dEQP-VK", "dEQP Vulkan Tests")
+	: BaseTestPackage(testCtx, "dEQP-VK")
 {
 }
 
@@ -1110,7 +1106,7 @@ TestPackage::~TestPackage (void)
 }
 
 ExperimentalTestPackage::ExperimentalTestPackage (tcu::TestContext& testCtx)
-	: BaseTestPackage(testCtx, "dEQP-VK-experimental", "dEQP Vulkan Experimental Tests")
+	: BaseTestPackage(testCtx, "dEQP-VK-experimental")
 {
 }
 
@@ -1123,7 +1119,7 @@ ExperimentalTestPackage::~ExperimentalTestPackage (void)
 #ifdef CTS_USES_VULKANSC
 
 TestPackageSC::TestPackageSC (tcu::TestContext& testCtx)
-	: BaseTestPackage(testCtx, "dEQP-VKSC", "dEQP Vulkan SC Tests")
+	: BaseTestPackage(testCtx, "dEQP-VKSC")
 {
 }
 
@@ -1140,7 +1136,7 @@ tcu::TestCaseExecutor* BaseTestPackage::createExecutor (void) const
 
 tcu::TestCaseGroup* createGlslTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name, "GLSL shader execution tests", createGlslTests);
+	return createTestGroup(testCtx, name, createGlslTests);
 }
 
 #ifdef CTS_USES_VULKAN

@@ -3372,9 +3372,9 @@ void addCases (tcu::TestCaseGroup *group, const CaseDescription<Object>& cases)
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; ++cur)
 	{
 		if(cases.supportFunction == DE_NULL)
-			addFunctionCase(group, cur->name, "", cases.function, cur->parameters);
+			addFunctionCase(group, cur->name, cases.function, cur->parameters);
 		else
-			addFunctionCase(group, cur->name, "", cases.supportFunction, cases.function, cur->parameters);
+			addFunctionCase(group, cur->name, cases.supportFunction, cases.function, cur->parameters);
 	}
 }
 
@@ -3409,9 +3409,9 @@ void addCasesWithProgs (tcu::TestCaseGroup *group, const CaseDescription<Object>
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; ++cur)
 	{
 		if (cases.supportFunction == DE_NULL)
-			addFunctionCaseWithPrograms(group, cur->name, "", Object::initPrograms, cases.function, cur->parameters);
+			addFunctionCaseWithPrograms(group, cur->name, Object::initPrograms, cases.function, cur->parameters);
 		else
-			addFunctionCaseWithPrograms(group, cur->name, "", cases.supportFunction, Object::initPrograms, cases.function, cur->parameters);
+			addFunctionCaseWithPrograms(group, cur->name, cases.supportFunction, Object::initPrograms, cases.function, cur->parameters);
 	}
 }
 
@@ -3459,9 +3459,9 @@ static void cleanupGroup (tcu::TestCaseGroup* group, CaseDescriptions cases)
 }
 #endif // CTS_USES_VULKANSC
 
-tcu::TestCaseGroup* createGroup (tcu::TestContext& testCtx, const char* name, const char* desc, const CaseDescriptions& cases)
+tcu::TestCaseGroup* createGroup (tcu::TestContext& testCtx, const char* name, const CaseDescriptions& cases)
 {
-	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
+	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name));
 	createTests(group.get(), cases);
 	return group.release();
 }
@@ -3470,7 +3470,7 @@ tcu::TestCaseGroup* createGroup (tcu::TestContext& testCtx, const char* name, co
 
 tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 {
-	MovePtr<tcu::TestCaseGroup>	objectMgmtTests	(new tcu::TestCaseGroup(testCtx, "object_management", "Object management tests"));
+	MovePtr<tcu::TestCaseGroup>	objectMgmtTests	(new tcu::TestCaseGroup(testCtx, "object_management"));
 
 	const Image::Parameters		img1D			(0u, VK_IMAGE_TYPE_1D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D(256,   1, 1), 1u,  4u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
 	const Image::Parameters		img2D			(0u, VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, makeExtent3D( 64,  64, 1), 1u, 12u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
@@ -3635,7 +3635,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createSingleTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
 		CASE_DESC(createSingleTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
-	objectMgmtTests->addChild(createGroup(testCtx, "single", "Create single object", s_createSingleGroup));
+	// Create single object
+	objectMgmtTests->addChild(createGroup(testCtx, "single", s_createSingleGroup));
 
 	const CaseDescriptions	s_createMultipleUniqueResourcesGroup	=
 	{
@@ -3670,7 +3671,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMultipleUniqueResourcesTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
 		CASE_DESC(createMultipleUniqueResourcesTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
-	objectMgmtTests->addChild(createGroup(testCtx, "multiple_unique_resources", "Multiple objects with per-object unique resources", s_createMultipleUniqueResourcesGroup));
+	// Multiple objects with per-object unique resources
+	objectMgmtTests->addChild(createGroup(testCtx, "multiple_unique_resources", s_createMultipleUniqueResourcesGroup));
 
 	const CaseDescriptions	s_createMultipleSharedResourcesGroup	=
 	{
@@ -3705,7 +3707,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMultipleSharedResourcesTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
 		CASE_DESC(createMultipleSharedResourcesTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
-	objectMgmtTests->addChild(createGroup(testCtx, "multiple_shared_resources", "Multiple objects with shared resources", s_createMultipleSharedResourcesGroup));
+	// Multiple objects with shared resources
+	objectMgmtTests->addChild(createGroup(testCtx, "multiple_shared_resources", s_createMultipleSharedResourcesGroup));
 
 #ifndef CTS_USES_VULKANSC
 // Removed from Vulkan SC test set: VkAllocationCallbacks is not supported and pointers to this type must be NULL
@@ -3737,7 +3740,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMaxConcurrentTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
 		CASE_DESC(createMaxConcurrentTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
-	objectMgmtTests->addChild(createGroup(testCtx, "max_concurrent", "Maximum number of concurrently live objects", s_createMaxConcurrentGroup));
+	// Maximum number of concurrently live objects
+	objectMgmtTests->addChild(createGroup(testCtx, "max_concurrent", s_createMaxConcurrentGroup));
 #endif // CTS_USES_VULKANSC
 
 	const CaseDescriptions	s_multithreadedCreatePerThreadDeviceGroup	=
@@ -3768,7 +3772,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
-	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_device", "Multithreaded object construction with per-thread device ", s_multithreadedCreatePerThreadDeviceGroup));
+	// Multithreaded object construction with per-thread device
+	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_device", s_multithreadedCreatePerThreadDeviceGroup));
 
 	const CaseDescriptions	s_multithreadedCreatePerThreadResourcesGroup	=
 	{
@@ -3798,7 +3803,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
-	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_resources", "Multithreaded object construction with per-thread resources", s_multithreadedCreatePerThreadResourcesGroup));
+	// Multithreaded object construction with per-thread resources
+	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_resources", s_multithreadedCreatePerThreadResourcesGroup));
 
 	const CaseDescriptions	s_multithreadedCreateSharedResourcesGroup	=
 	{
@@ -3833,7 +3839,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
 		EMPTY_CASE_DESC(CommandBuffer),			// \note Needs per-thread CommandPool
 	};
-	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_shared_resources", "Multithreaded object construction with shared resources", s_multithreadedCreateSharedResourcesGroup));
+	// Multithreaded object construction with shared resources
+	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_shared_resources", s_multithreadedCreateSharedResourcesGroup));
 
 #ifndef CTS_USES_VULKANSC
 
@@ -3866,7 +3873,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createSingleAllocCallbacksTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
 		CASE_DESC(createSingleAllocCallbacksTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
-	objectMgmtTests->addChild(createGroup(testCtx, "single_alloc_callbacks", "Create single object", s_createSingleAllocCallbacksGroup));
+	// Create single object
+	objectMgmtTests->addChild(createGroup(testCtx, "single_alloc_callbacks", s_createSingleAllocCallbacksGroup));
 #endif // CTS_USES_VULKANSC
 
 
@@ -3901,7 +3909,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(allocCallbackFailTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
 		EMPTY_CASE_DESC(CommandBuffer),
 	};
-	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail", "Allocation callback failure", s_allocCallbackFailGroup));
+	// Allocation callback failure
+	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail", s_allocCallbackFailGroup));
 #endif // CTS_USES_VULKANSC
 
 #ifndef CTS_USES_VULKANSC
@@ -3935,7 +3944,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		EMPTY_CASE_DESC(CommandPool),
 		CASE_DESC(allocCallbackFailMultipleObjectsTest <CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
-	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail_multiple", "Allocation callback failure creating multiple objects with one call", s_allocCallbackFailMultipleObjectsGroup));
+	// Allocation callback failure creating multiple objects with one call
+	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail_multiple", s_allocCallbackFailMultipleObjectsGroup));
 #endif // CTS_USES_VULKANSC
 
 #ifndef CTS_USES_VULKANSC
@@ -3968,7 +3978,8 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createPrivateDataTest	<CommandPool>,				s_commandPoolCases,			DE_NULL),
 		CASE_DESC(createPrivateDataTest	<CommandBuffer>,			s_commandBufferCases,		DE_NULL),
 	};
-	objectMgmtTests->addChild(createTestGroup(testCtx, "private_data", "Multiple objects with private data", createTests, s_privateDataResourcesGroup, cleanupGroup));
+	// Multiple objects with private data
+	objectMgmtTests->addChild(createTestGroup(testCtx, "private_data", createTests, s_privateDataResourcesGroup, cleanupGroup));
 #endif // CTS_USES_VULKANSC
 
 	return objectMgmtTests.release();

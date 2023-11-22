@@ -2564,7 +2564,7 @@ tcu::TestStatus DifferentAttachmentsTestInstance::iterate(void)
 class BaseTestCase : public TestCase
 {
 public:
-							BaseTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, const TestParameters& parameters);
+							BaseTestCase	(tcu::TestContext& context, const std::string& name, const TestParameters& parameters);
 	virtual					~BaseTestCase	(void);
 
 protected:
@@ -2575,8 +2575,8 @@ protected:
 	const TestParameters	m_parameters;
 };
 
-BaseTestCase::BaseTestCase (tcu::TestContext& context, const std::string& name, const std::string& description, const TestParameters& parameters)
-	: TestCase		(context, name, description)
+BaseTestCase::BaseTestCase (tcu::TestContext& context, const std::string& name, const TestParameters& parameters)
+	: TestCase		(context, name)
 	, m_parameters	(parameters)
 {
 }
@@ -2831,7 +2831,8 @@ tcu::TestNode*	imagelessColorTests (tcu::TestContext& testCtx)
 		VK_FORMAT_UNDEFINED,				//  VkFormat	dsFormat;
 	};
 
-	return new BaseTestCase(testCtx, "color", "Imageless color attachment test", parameters);
+	// Imageless color attachment test
+	return new BaseTestCase(testCtx, "color", parameters);
 }
 
 tcu::TestNode*	imagelessDepthStencilTests (tcu::TestContext& testCtx)
@@ -2843,7 +2844,8 @@ tcu::TestNode*	imagelessDepthStencilTests (tcu::TestContext& testCtx)
 		VK_FORMAT_D24_UNORM_S8_UINT,		//  VkFormat	dsFormat;
 	};
 
-	return new BaseTestCase(testCtx, "depth_stencil", "Imageless depth/stencil attachment test", parameters);
+	// Imageless depth/stencil attachment test
+	return new BaseTestCase(testCtx, "depth_stencil", parameters);
 }
 
 tcu::TestNode*	imagelessColorResolveTests (tcu::TestContext& testCtx)
@@ -2855,7 +2857,8 @@ tcu::TestNode*	imagelessColorResolveTests (tcu::TestContext& testCtx)
 		VK_FORMAT_UNDEFINED,				//  VkFormat	dsFormat;
 	};
 
-	return new BaseTestCase(testCtx, "color_resolve", "Imageless color attachment resolve test", parameters);
+	// Imageless color attachment resolve test
+	return new BaseTestCase(testCtx, "color_resolve", parameters);
 }
 
 tcu::TestNode*	imagelessDepthStencilResolveTests (tcu::TestContext& testCtx)
@@ -2867,7 +2870,8 @@ tcu::TestNode*	imagelessDepthStencilResolveTests (tcu::TestContext& testCtx)
 		VK_FORMAT_D24_UNORM_S8_UINT,		//  VkFormat	dsFormat;
 	};
 
-	return new BaseTestCase(testCtx, "depth_stencil_resolve", "Imageless color and depth/stencil attachment resolve test", parameters);
+	// Imageless color and depth/stencil attachment resolve test
+	return new BaseTestCase(testCtx, "depth_stencil_resolve", parameters);
 }
 
 tcu::TestNode* imagelessMultisubpass(tcu::TestContext& testCtx)
@@ -2879,7 +2883,8 @@ tcu::TestNode* imagelessMultisubpass(tcu::TestContext& testCtx)
 		VK_FORMAT_UNDEFINED,			//  VkFormat	dsFormat;
 	};
 
-	return new BaseTestCase(testCtx, "multisubpass", "Multi-subpass test", parameters);
+	// Multi-subpass test
+	return new BaseTestCase(testCtx, "multisubpass", parameters);
 }
 
 tcu::TestNode* imagelessDifferentAttachments(tcu::TestContext& testCtx)
@@ -2891,7 +2896,8 @@ tcu::TestNode* imagelessDifferentAttachments(tcu::TestContext& testCtx)
 		VK_FORMAT_UNDEFINED,				//  VkFormat	dsFormat;
 	};
 
-	return new BaseTestCase(testCtx, "different_attachments", "Different attachments in multiple render passes", parameters);
+	// Different attachments in multiple render passes
+	return new BaseTestCase(testCtx, "different_attachments", parameters);
 }
 
 }	// anonymous

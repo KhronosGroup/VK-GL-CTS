@@ -134,8 +134,8 @@ public:
 class SharedLayoutCase : public vkt::TestCase
 {
 public:
-							SharedLayoutCase	(tcu::TestContext& testCtx, const char* name, const char* description)
-								: TestCase(testCtx, name, description) {}
+							SharedLayoutCase	(tcu::TestContext& testCtx, const char* name)
+								: TestCase(testCtx, name) {}
 	virtual					~SharedLayoutCase	(void) {}
 	virtual	void			delayedInit			(void);
 	virtual	void			initPrograms		(vk::SourceCollections& programCollection) const;
@@ -154,7 +154,7 @@ private:
 class RandomSharedLayoutCase : public SharedLayoutCase
 {
 public:
-	RandomSharedLayoutCase		(tcu::TestContext& testCtx, const char* name, const char* description,
+	RandomSharedLayoutCase		(tcu::TestContext& testCtx, const char* name,
 								deUint32 features, deUint32 seed);
 
 private:

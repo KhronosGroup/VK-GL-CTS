@@ -205,7 +205,6 @@ public:
 
 								MemoryQualifierTestCase		(tcu::TestContext&			testCtx,
 															 const std::string&			name,
-															 const std::string&			description,
 															 const Qualifier			qualifier,
 															 const ImageType			imageType,
 															 const tcu::UVec3&			imageSize,
@@ -229,13 +228,12 @@ protected:
 
 MemoryQualifierTestCase::MemoryQualifierTestCase (tcu::TestContext&			testCtx,
 												  const std::string&		name,
-												  const std::string&		description,
 												  const Qualifier			qualifier,
 												  const ImageType			imageType,
 												  const tcu::UVec3&			imageSize,
 												  const tcu::TextureFormat&	format,
 												  const glu::GLSLVersion	glslVersion)
-	: vkt::TestCase(testCtx, name, description)
+	: vkt::TestCase(testCtx, name)
 	, m_qualifier(qualifier)
 	, m_imageType(imageType)
 	, m_imageSize(imageSize)
@@ -701,7 +699,8 @@ TestInstance* MemoryQualifierTestCase::createInstance (Context& context) const
 
 tcu::TestCaseGroup* createImageQualifiersTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> imageQualifiersTests(new tcu::TestCaseGroup(testCtx, "qualifiers", "Coherent, volatile and restrict"));
+	// Coherent, volatile and restrict
+	de::MovePtr<tcu::TestCaseGroup> imageQualifiersTests(new tcu::TestCaseGroup(testCtx, "qualifiers"));
 
 	struct ImageParams
 	{
@@ -742,7 +741,7 @@ tcu::TestCaseGroup* createImageQualifiersTests (tcu::TestContext& testCtx)
 			memoryQualifier == MemoryQualifierTestCase::QUALIFIER_RESTRICT ? "restrict" :
 			DE_NULL;
 
-		de::MovePtr<tcu::TestCaseGroup> qualifierGroup(new tcu::TestCaseGroup(testCtx, memoryQualifierName, ""));
+		de::MovePtr<tcu::TestCaseGroup> qualifierGroup(new tcu::TestCaseGroup(testCtx, memoryQualifierName));
 
 		for (deInt32 imageTypeNdx = 0; imageTypeNdx < DE_LENGTH_OF_ARRAY(imageParamsArray); imageTypeNdx++)
 		{
@@ -756,7 +755,7 @@ tcu::TestCaseGroup* createImageQualifiersTests (tcu::TestContext& testCtx)
 			}
 			else
 			{
-				de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str()));
 
 				for (deInt32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 				{
@@ -764,7 +763,7 @@ tcu::TestCaseGroup* createImageQualifiersTests (tcu::TestContext& testCtx)
 					const std::string			formatName	= getShaderImageFormatQualifier(formats[formatNdx]);
 
 					imageTypeGroup->addChild(
-						new MemoryQualifierTestCase(testCtx, formatName, "", memoryQualifier, imageType, imageSize, format, glu::GLSL_VERSION_440));
+						new MemoryQualifierTestCase(testCtx, formatName, memoryQualifier, imageType, imageSize, format, glu::GLSL_VERSION_440));
 				}
 
 				qualifierGroup->addChild(imageTypeGroup.release());

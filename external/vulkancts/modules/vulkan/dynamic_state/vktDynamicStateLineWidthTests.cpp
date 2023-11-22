@@ -420,10 +420,9 @@ struct LineWidthCase : public TestCase
 {
 					LineWidthCase	(tcu::TestContext&			testCtx,
 									 const std::string&			name,
-									 const std::string&			description,
 									 PipelineConstructionType	pipelineConstructionType,
 									 const TestLineWidthParams&	params)
-						: TestCase(testCtx, name, description)
+						: TestCase(testCtx, name)
 						, m_pipelineConstructionType	(pipelineConstructionType)
 						, m_params						(params) { /* Intentionally empty */ }
 
@@ -484,8 +483,9 @@ void LineWidthCase::checkSupport (Context& context) const
 
 } // anonymous namespace
 
+// Test for VK_DYNAMIC_STATE_LINE_WIDTH
 DynamicStateLWTests::DynamicStateLWTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
-	: tcu::TestCaseGroup	(testCtx, "line_width", "Test for VK_DYNAMIC_STATE_LINE_WIDTH")
+	: tcu::TestCaseGroup	(testCtx, "line_width")
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Consciously empty */
@@ -525,8 +525,8 @@ void DynamicStateLWTests::init (void)
 		{ VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, 0u, 0u, true,  VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128 },
 		{ VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, 0u, 0u, false, VK_FORMAT_R32G32B32A32_SFLOAT, 128, 128 },
 	};
-	de::MovePtr<tcu::TestCaseGroup>	dynaStatic(new tcu::TestCaseGroup(m_testCtx, "dyna_static", ""));
-	de::MovePtr<tcu::TestCaseGroup>	staticDyna(new tcu::TestCaseGroup(m_testCtx, "static_dyna", ""));
+	de::MovePtr<tcu::TestCaseGroup>	dynaStatic(new tcu::TestCaseGroup(m_testCtx, "dyna_static"));
+	de::MovePtr<tcu::TestCaseGroup>	staticDyna(new tcu::TestCaseGroup(m_testCtx, "static_dyna"));
 	deUint32 lineWidth = 0u;
 	for (const TestLineWidthParams& param : params)
 	{
@@ -534,9 +534,9 @@ void DynamicStateLWTests::init (void)
 		p.staticWidth	= ++lineWidth;
 		p.dynamicWidth	= ++lineWidth;
 		if (param.dynamicFirst)
-			dynaStatic->addChild(new LineWidthCase(m_testCtx, p.rep(), std::string(), m_pipelineConstructionType, p));
+			dynaStatic->addChild(new LineWidthCase(m_testCtx, p.rep(), m_pipelineConstructionType, p));
 		else
-			staticDyna->addChild(new LineWidthCase(m_testCtx, p.rep(), std::string(), m_pipelineConstructionType, p));
+			staticDyna->addChild(new LineWidthCase(m_testCtx, p.rep(), m_pipelineConstructionType, p));
 	}
 	addChild(dynaStatic.release());
 	addChild(staticDyna.release());

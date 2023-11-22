@@ -253,8 +253,8 @@ VertexVec generateVertices (uint32_t width, uint32_t height)
 class InputAttributeOffsetCase : public vkt::TestCase
 {
 public:
-					InputAttributeOffsetCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					InputAttributeOffsetCase	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 	virtual			~InputAttributeOffsetCase	(void) {}
@@ -493,17 +493,17 @@ tcu::TestStatus InputAttributeOffsetInstance::iterate (void)
 tcu::TestCaseGroup* createInputAttributeOffsetTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
 	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
-	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "input_attribute_offset", "Test input attribute offsets"));
+	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "input_attribute_offset"));
 
 	for (const auto dataType : { glu::TYPE_FLOAT_VEC2, glu::TYPE_FLOAT_VEC4 })
 	{
 		const auto typeSize = getTypeSize(dataType);
-		GroupPtr dataTypeGrp (new tcu::TestCaseGroup(testCtx, glu::getDataTypeName(dataType), ""));
+		GroupPtr dataTypeGrp (new tcu::TestCaseGroup(testCtx, glu::getDataTypeName(dataType)));
 
 		for (uint32_t offset = 0u; offset < typeSize; ++offset)
 		{
 			const auto offsetGrpName = "offset_" + std::to_string(offset);
-			GroupPtr offsetGrp (new tcu::TestCaseGroup(testCtx, offsetGrpName.c_str(), ""));
+			GroupPtr offsetGrp (new tcu::TestCaseGroup(testCtx, offsetGrpName.c_str()));
 
 			for (const auto strideCase : { StrideCase::PACKED, StrideCase::PADDED, StrideCase::OVERLAPPING })
 			{
@@ -511,12 +511,12 @@ tcu::TestCaseGroup* createInputAttributeOffsetTests (tcu::TestContext& testCtx, 
 					continue;
 
 				const std::array<const char*, 3> strideNames { "packed", "padded", "overlapping" };
-				GroupPtr strideGrp (new tcu::TestCaseGroup(testCtx, strideNames.at(static_cast<int>(strideCase)), ""));
+				GroupPtr strideGrp (new tcu::TestCaseGroup(testCtx, strideNames.at(static_cast<int>(strideCase))));
 
 				for (const auto useMemoryOffset : { false, true })
 				{
 					const std::array<const char*, 2> memoryOffsetGrpNames { "no_memory_offset", "with_memory_offset" };
-					GroupPtr memoryOffsetGrp (new tcu::TestCaseGroup(testCtx, memoryOffsetGrpNames.at(static_cast<int>(useMemoryOffset)), ""));
+					GroupPtr memoryOffsetGrp (new tcu::TestCaseGroup(testCtx, memoryOffsetGrpNames.at(static_cast<int>(useMemoryOffset))));
 
 					for (const auto& dynamic : { false, true })
 					{
@@ -530,7 +530,7 @@ tcu::TestCaseGroup* createInputAttributeOffsetTests (tcu::TestContext& testCtx, 
 							dynamic,
 						};
 						const auto testName = (dynamic ? "dynamic" : "static");
-						memoryOffsetGrp->addChild(new InputAttributeOffsetCase(testCtx, testName, "", params));
+						memoryOffsetGrp->addChild(new InputAttributeOffsetCase(testCtx, testName, params));
 					}
 
 					strideGrp->addChild(memoryOffsetGrp.release());

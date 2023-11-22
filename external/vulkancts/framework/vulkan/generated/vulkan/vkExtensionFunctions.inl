@@ -1035,6 +1035,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NV_cuda_kernel_launch")
+	{
+		return;
+	}
 	if (extName == "VK_NV_low_latency")
 	{
 		return;
@@ -1279,6 +1283,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_ARM_scheduling_controls")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_sliced_view_of_3d")
 	{
 		return;
@@ -1327,6 +1335,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_nested_command_buffer")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_external_memory_acquire_unmodified")
 	{
 		return;
@@ -1364,6 +1376,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_ANDROID_external_format_resolve")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_maintenance5")
 	{
 		return;
@@ -1392,6 +1408,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NV_extended_sparse_address_space")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_mutable_descriptor_type")
 	{
 		return;
@@ -1405,6 +1425,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_dynamic_rendering_unused_attachments")
+	{
+		return;
+	}
+	if (extName == "VK_NV_low_latency2")
 	{
 		return;
 	}
@@ -2678,6 +2702,16 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_NV_cuda_kernel_launch")
+	{
+		functions.push_back("vkCreateCudaModuleNV");
+		functions.push_back("vkGetCudaModuleCacheNV");
+		functions.push_back("vkCreateCudaFunctionNV");
+		functions.push_back("vkDestroyCudaModuleNV");
+		functions.push_back("vkDestroyCudaFunctionNV");
+		functions.push_back("vkCmdCudaLaunchKernelNV");
+		return;
+	}
 	if (extName == "VK_NV_low_latency")
 	{
 		return;
@@ -2992,6 +3026,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_ARM_scheduling_controls")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_sliced_view_of_3d")
 	{
 		return;
@@ -3046,6 +3084,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_QCOM_image_processing")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_nested_command_buffer")
 	{
 		return;
 	}
@@ -3109,6 +3151,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_pipeline_protected_access")
+	{
+		return;
+	}
+	if (extName == "VK_ANDROID_external_format_resolve")
 	{
 		return;
 	}
@@ -3189,6 +3235,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_NV_extended_sparse_address_space")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_mutable_descriptor_type")
 	{
 		return;
@@ -3203,6 +3253,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_dynamic_rendering_unused_attachments")
 	{
+		return;
+	}
+	if (extName == "VK_NV_low_latency2")
+	{
+		functions.push_back("vkSetLatencySleepModeNV");
+		functions.push_back("vkLatencySleepNV");
+		functions.push_back("vkSetLatencyMarkerNV");
+		functions.push_back("vkGetLatencyTimingsNV");
+		functions.push_back("vkQueueNotifyOutOfBandNV");
 		return;
 	}
 	if (extName == "VK_KHR_cooperative_matrix")
@@ -3527,6 +3586,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_video_encode_queue",
 	"VK_NV_device_diagnostics_config",
 	"VK_QCOM_render_pass_store_ops",
+	"VK_NV_cuda_kernel_launch",
 	"VK_NV_low_latency",
 	"VK_EXT_metal_objects",
 	"VK_KHR_synchronization2",
@@ -3585,6 +3645,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_pageable_device_local_memory",
 	"VK_KHR_maintenance4",
 	"VK_ARM_shader_core_properties",
+	"VK_ARM_scheduling_controls",
 	"VK_EXT_image_sliced_view_of_3d",
 	"VK_VALVE_descriptor_set_host_mapping",
 	"VK_EXT_depth_clamp_zero_one",
@@ -3596,6 +3657,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_linear_color_attachment",
 	"VK_EXT_image_compression_control_swapchain",
 	"VK_QCOM_image_processing",
+	"VK_EXT_nested_command_buffer",
 	"VK_EXT_external_memory_acquire_unmodified",
 	"VK_EXT_extended_dynamic_state3",
 	"VK_EXT_subpass_merge_feedback",
@@ -3604,6 +3666,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_optical_flow",
 	"VK_EXT_legacy_dithering",
 	"VK_EXT_pipeline_protected_access",
+	"VK_ANDROID_external_format_resolve",
 	"VK_KHR_maintenance5",
 	"VK_KHR_ray_tracing_position_fetch",
 	"VK_EXT_shader_object",
@@ -3611,10 +3674,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_SEC_amigo_profiling",
 	"VK_QCOM_multiview_per_view_viewports",
 	"VK_NV_ray_tracing_invocation_reorder",
+	"VK_NV_extended_sparse_address_space",
 	"VK_EXT_mutable_descriptor_type",
 	"VK_ARM_shader_core_builtins",
 	"VK_EXT_pipeline_library_group_handles",
 	"VK_EXT_dynamic_rendering_unused_attachments",
+	"VK_NV_low_latency2",
 	"VK_KHR_cooperative_matrix",
 	"VK_QCOM_multiview_per_view_render_areas",
 	"VK_QCOM_image_processing2",

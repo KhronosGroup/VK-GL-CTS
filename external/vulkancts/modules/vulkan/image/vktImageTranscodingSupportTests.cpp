@@ -719,7 +719,6 @@ class ImageTranscodingCase : public TestCase
 public:
 							ImageTranscodingCase		(TestContext&				testCtx,
 														 const std::string&			name,
-														 const std::string&			desc,
 														 const TestParameters&		parameters);
 	void					initPrograms				(SourceCollections&			programCollection) const;
 	TestInstance*			createInstance				(Context&					context) const;
@@ -732,8 +731,8 @@ protected:
 	const TestParameters	m_parameters;
 };
 
-ImageTranscodingCase::ImageTranscodingCase (TestContext& testCtx, const std::string& name, const std::string& desc, const TestParameters& parameters)
-	: TestCase				(testCtx, name, desc)
+ImageTranscodingCase::ImageTranscodingCase (TestContext& testCtx, const std::string& name, const TestParameters& parameters)
+	: TestCase				(testCtx, name)
 	, m_parameters			(parameters)
 {
 }
@@ -1142,11 +1141,11 @@ tcu::TestCaseGroup* createImageTranscodingSupportTests (tcu::TestContext& testCt
 	};
 	VkImageUsageFlags			baseFlagsAddOn							= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-	MovePtr<tcu::TestCaseGroup>	imageTranscodingTests	(new tcu::TestCaseGroup(testCtx, "extended_usage_bit", "Extended usage bit test cases"));
+	MovePtr<tcu::TestCaseGroup>	imageTranscodingTests	(new tcu::TestCaseGroup(testCtx, "extended_usage_bit"));
 
 	for (int operationNdx = OPERATION_ATTACHMENT_READ; operationNdx < OPERATION_LAST; ++operationNdx)
 	{
-		MovePtr<tcu::TestCaseGroup>	imageOperationGroup	(new tcu::TestCaseGroup(testCtx, operationName[operationNdx].c_str(), ""));
+		MovePtr<tcu::TestCaseGroup>	imageOperationGroup	(new tcu::TestCaseGroup(testCtx, operationName[operationNdx].c_str()));
 
 		for (deUint32 groupNdx = 0; groupNdx < DE_LENGTH_OF_ARRAY(compatibleFormatsList); groupNdx++)
 		{
@@ -1188,7 +1187,7 @@ tcu::TestCaseGroup* createImageTranscodingSupportTests (tcu::TestContext& testCt
 					compatibleFormatsList[groupNdx]							// const VkFormat*			compatibleFormats
 				};
 
-				imageOperationGroup->addChild(new ImageTranscodingCase(testCtx, testName, "", parameters));
+				imageOperationGroup->addChild(new ImageTranscodingCase(testCtx, testName, parameters));
 			}
 		}
 

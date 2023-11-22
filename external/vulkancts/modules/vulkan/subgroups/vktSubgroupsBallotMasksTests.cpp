@@ -415,7 +415,7 @@ TestCaseGroup* createSubgroupsBallotMasksTests (TestContext& testCtx)
 				requiredSubgroupSize,			//  deBool				requiredSubgroupSize;
 			};
 
-			addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(computeGroup.get(), testName,supportedCheck, initPrograms, test, caseDef);
 		}
 
 #ifndef CTS_USES_VULKANSC
@@ -433,7 +433,7 @@ TestCaseGroup* createSubgroupsBallotMasksTests (TestContext& testCtx)
 					requiredSubgroupSize,			//  deBool				requiredSubgroupSize;
 				};
 
-				addFunctionCaseWithPrograms(meshGroup.get(), testName + "_" + getShaderStageName(stage), "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(meshGroup.get(), testName + "_" + getShaderStageName(stage),  supportedCheck, initPrograms, test, caseDef);
 			}
 		}
 #endif // CTS_USES_VULKANSC
@@ -447,7 +447,7 @@ TestCaseGroup* createSubgroupsBallotMasksTests (TestContext& testCtx)
 				DE_FALSE						//  deBool				requiredSubgroupSize;
 			};
 
-			addFunctionCaseWithPrograms(graphicGroup.get(), mask, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(graphicGroup.get(), mask,  supportedCheck, initPrograms, test, caseDef);
 		}
 
 #ifndef CTS_USES_VULKANSC
@@ -460,7 +460,7 @@ TestCaseGroup* createSubgroupsBallotMasksTests (TestContext& testCtx)
 				DE_FALSE						//  deBool				requiredSubgroupSize;
 			};
 
-			addFunctionCaseWithPrograms(raytracingGroup.get(), mask, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(raytracingGroup.get(), mask,  supportedCheck, initPrograms, test, caseDef);
 		}
 #endif // CTS_USES_VULKANSC
 
@@ -475,7 +475,7 @@ TestCaseGroup* createSubgroupsBallotMasksTests (TestContext& testCtx)
 			};
 			const string			testName	= mask + "_" + getShaderStageName(caseDef.shaderStage);
 
-			addFunctionCaseWithPrograms(framebufferGroup.get(), testName, "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+			addFunctionCaseWithPrograms(framebufferGroup.get(), testName,supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
 	}
 

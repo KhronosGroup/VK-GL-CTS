@@ -667,8 +667,8 @@ tcu::TestStatus InvertedDepthRangesTestInstance::iterate (void)
 class InvertedDepthRangesTest : public TestCase
 {
 public:
-	InvertedDepthRangesTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-		: TestCase	(testCtx, name, description)
+	InvertedDepthRangesTest (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+		: TestCase	(testCtx, name)
 		, m_params	(params)
 	{
 	}
@@ -786,7 +786,7 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup, const SharedGroupParams g
 		};
 
 		std::string name = cDepthClamp.name + "_" + cDepthParams.name;
-		testGroup->addChild(new InvertedDepthRangesTest(testGroup->getTestContext(), name, "", params));
+		testGroup->addChild(new InvertedDepthRangesTest(testGroup->getTestContext(), name, params));
 	}
 }
 
@@ -794,7 +794,7 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup, const SharedGroupParams g
 
 tcu::TestCaseGroup*	createInvertedDepthRangesTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "inverted_depth_ranges", "Inverted depth ranges", populateTestGroup, groupParams);
+	return createTestGroup(testCtx, "inverted_depth_ranges", populateTestGroup, groupParams);
 }
 
 }	// Draw

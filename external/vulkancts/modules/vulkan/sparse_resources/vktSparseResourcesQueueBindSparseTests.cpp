@@ -308,8 +308,8 @@ private:
 class SparseQueueBindTest : public TestCase
 {
 public:
-					SparseQueueBindTest	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-		: TestCase	(testCtx, name, description)
+					SparseQueueBindTest	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+		: TestCase	(testCtx, name)
 		, m_params	(params)
 	{
 		DE_ASSERT(params.numQueues > 0u);
@@ -336,35 +336,34 @@ void populateTestGroup(tcu::TestCaseGroup* group)
 	{
 		std::string		name;
 		TestParams		params;
-		std::string		description;
 	} cases[] =
 	{
 		// case name									// numQueues, numWaitSems, numSignalSems, emptySubmission, checkFence
-		{ "no_dependency",								{	1u,	0u,	0u,	false,	false,	}, "submit without any semaphores", },
-		{ "no_dependency_fence",						{	1u,	0u,	0u,	false,	true,	}, "submit without any semaphores, signal a fence", },
+		{ "no_dependency",								{	1u,	0u,	0u,	false,	false,	}},
+		{ "no_dependency_fence",						{	1u,	0u,	0u,	false,	true,	}},
 
-		{ "single_queue_wait_one",						{	1u,	1u,	0u,	false,	true,	}, "only sparse queue, wait for semaphore(s)", },
-		{ "single_queue_wait_many",						{	1u,	3u,	0u,	false,	true,	}, "only sparse queue, wait for semaphore(s)", },
-		{ "single_queue_signal_one",					{	1u,	0u,	1u,	false,	true,	}, "only sparse queue, signal semaphore(s)", },
-		{ "single_queue_signal_many",					{	1u,	0u,	3u,	false,	true,	}, "only sparse queue, signal semaphore(s)", },
-		{ "single_queue_wait_one_signal_one",			{	1u,	1u,	1u,	false,	true,	}, "only sparse queue, wait for and signal semaphore(s)", },
-		{ "single_queue_wait_many_signal_many",			{	1u,	2u,	3u,	false,	true,	}, "only sparse queue, wait for and signal semaphore(s)", },
+		{ "single_queue_wait_one",						{	1u,	1u,	0u,	false,	true,	}},
+		{ "single_queue_wait_many",						{	1u,	3u,	0u,	false,	true,	}},
+		{ "single_queue_signal_one",					{	1u,	0u,	1u,	false,	true,	}},
+		{ "single_queue_signal_many",					{	1u,	0u,	3u,	false,	true,	}},
+		{ "single_queue_wait_one_signal_one",			{	1u,	1u,	1u,	false,	true,	}},
+		{ "single_queue_wait_many_signal_many",			{	1u,	2u,	3u,	false,	true,	}},
 
-		{ "multi_queue_wait_one",						{	2u,	1u,	0u,	false,	true,	}, "sparse and other queues, wait for semaphore(s)", },
-		{ "multi_queue_wait_many",						{	2u,	2u,	0u,	false,	true,	}, "sparse and other queues, wait for semaphore(s)", },
-		{ "multi_queue_signal_one",						{	2u,	0u,	1u,	false,	true,	}, "sparse and other queues, signal semaphore(s)", },
-		{ "multi_queue_signal_many",					{	2u,	0u,	2u,	false,	true,	}, "sparse and other queues, signal semaphore(s)", },
-		{ "multi_queue_wait_one_signal_one",			{	2u,	1u,	1u,	false,	true,	}, "sparse and other queues, wait for and signal semaphore(s)", },
-		{ "multi_queue_wait_many_signal_many",			{	2u,	2u,	2u,	false,	true,	}, "sparse and other queues, wait for and signal semaphore(s)", },
-		{ "multi_queue_wait_one_signal_one_other",		{	2u,	1u,	1u,	false,	true,	}, "sparse and other queues, wait for and signal semaphore(s) on other queues", },
-		{ "multi_queue_wait_many_signal_many_other",	{	3u,	2u,	2u,	false,	true,	}, "sparse and other queues, wait for and signal semaphore(s) on other queues", },
+		{ "multi_queue_wait_one",						{	2u,	1u,	0u,	false,	true,	}},
+		{ "multi_queue_wait_many",						{	2u,	2u,	0u,	false,	true,	}},
+		{ "multi_queue_signal_one",						{	2u,	0u,	1u,	false,	true,	}},
+		{ "multi_queue_signal_many",					{	2u,	0u,	2u,	false,	true,	}},
+		{ "multi_queue_wait_one_signal_one",			{	2u,	1u,	1u,	false,	true,	}},
+		{ "multi_queue_wait_many_signal_many",			{	2u,	2u,	2u,	false,	true,	}},
+		{ "multi_queue_wait_one_signal_one_other",		{	2u,	1u,	1u,	false,	true,	}},
+		{ "multi_queue_wait_many_signal_many_other",	{	3u,	2u,	2u,	false,	true,	}},
 
-		{ "empty",										{	1u,	0u,	0u,	true,	false,	}, "call vkQueueBindSparse with zero bindInfos", },
-		{ "empty_fence",								{	1u,	0u,	0u,	true,	true,	}, "call vkQueueBindSparse with zero bindInfos, signal a fence", },
+		{ "empty",										{	1u,	0u,	0u,	true,	false,	}},
+		{ "empty_fence",								{	1u,	0u,	0u,	true,	true,	}},
 	};
 
 	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
-		group->addChild(new SparseQueueBindTest(group->getTestContext(), cases[caseNdx].name, cases[caseNdx].description, cases[caseNdx].params));
+		group->addChild(new SparseQueueBindTest(group->getTestContext(), cases[caseNdx].name, cases[caseNdx].params));
 }
 
 } // anonymous ns
@@ -373,7 +372,7 @@ void populateTestGroup(tcu::TestCaseGroup* group)
 //! Actual binding and usage is tested by other test groups.
 tcu::TestCaseGroup* createQueueBindSparseTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "queue_bind", "Queue bind sparse tests", populateTestGroup);
+	return createTestGroup(testCtx, "queue_bind", populateTestGroup);
 }
 
 } // sparse

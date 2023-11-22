@@ -70,7 +70,7 @@ void createTextureTests (tcu::TestCaseGroup* textureTests)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name.c_str(), "Texture Tests", createTextureTests);
+	return createTestGroup(testCtx, name.c_str(), createTextureTests);
 }
 
 } // texture

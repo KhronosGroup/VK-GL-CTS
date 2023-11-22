@@ -928,7 +928,7 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 				TCU_THROW(InternalError, "Unknown allocation mode");
 		}
 	} ();
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, name, "Memory allocation tests."));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, name));
 
 	const VkDeviceSize	KiB	= 1024;
 	const VkDeviceSize	MiB	= 1024 * KiB;
@@ -971,20 +971,19 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 	};
 
 	{
-		de::MovePtr<tcu::TestCaseGroup>	basicGroup(new tcu::TestCaseGroup(testCtx, "basic", "Basic memory allocation and free tests"));
+		de::MovePtr<tcu::TestCaseGroup>	basicGroup(new tcu::TestCaseGroup(testCtx, "basic"));
 
 		for (size_t allocationSizeNdx = 0; allocationSizeNdx < DE_LENGTH_OF_ARRAY(allocationSizes); allocationSizeNdx++)
 		{
 			const VkDeviceSize				allocationSize		= allocationSizes[allocationSizeNdx].size;
 			const char* const				allocationSizeName	= allocationSizes[allocationSizeNdx].str;
-			de::MovePtr<tcu::TestCaseGroup>	sizeGroup			(new tcu::TestCaseGroup(testCtx, ("size_" + string(allocationSizeName)).c_str(), ("Test different allocation sizes " + de::toString(allocationSize)).c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	sizeGroup			(new tcu::TestCaseGroup(testCtx, ("size_" + string(allocationSizeName)).c_str()));
 
 			for (size_t orderNdx = 0; orderNdx < DE_LENGTH_OF_ARRAY(orders); orderNdx++)
 			{
 				const TestConfig::Order			order				= orders[orderNdx].order;
 				const char* const				orderName			= orders[orderNdx].str;
-				const char* const				orderDescription	= orderName;
-				de::MovePtr<tcu::TestCaseGroup>	orderGroup			(new tcu::TestCaseGroup(testCtx, orderName, orderDescription));
+				de::MovePtr<tcu::TestCaseGroup>	orderGroup			(new tcu::TestCaseGroup(testCtx, orderName));
 
 				for (size_t allocationCountNdx = 0; allocationCountNdx < DE_LENGTH_OF_ARRAY(allocationCounts); allocationCountNdx++)
 				{
@@ -1015,7 +1014,7 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 					else
 						config.memoryAllocationCount	= allocationCount;
 
-					orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "count_" + de::toString(config.memoryAllocationCount), "", config));
+					orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(testCtx, "count_" + de::toString(config.memoryAllocationCount), config));
 				}
 
 				sizeGroup->addChild(orderGroup.release());
@@ -1027,14 +1026,13 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 		for (size_t allocationPercentNdx = 0; allocationPercentNdx < DE_LENGTH_OF_ARRAY(allocationPercents); allocationPercentNdx++)
 		{
 			const int						allocationPercent	= allocationPercents[allocationPercentNdx];
-			de::MovePtr<tcu::TestCaseGroup>	percentGroup		(new tcu::TestCaseGroup(testCtx, ("percent_" + de::toString(allocationPercent)).c_str(), ("Test different allocation percents " + de::toString(allocationPercent)).c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	percentGroup		(new tcu::TestCaseGroup(testCtx, ("percent_" + de::toString(allocationPercent)).c_str()));
 
 			for (size_t orderNdx = 0; orderNdx < DE_LENGTH_OF_ARRAY(orders); orderNdx++)
 			{
 				const TestConfig::Order			order				= orders[orderNdx].order;
 				const char* const				orderName			= orders[orderNdx].str;
-				const char* const				orderDescription	= orderName;
-				de::MovePtr<tcu::TestCaseGroup>	orderGroup			(new tcu::TestCaseGroup(testCtx, orderName, orderDescription));
+				de::MovePtr<tcu::TestCaseGroup>	orderGroup			(new tcu::TestCaseGroup(testCtx, orderName));
 
 				for (size_t allocationCountNdx = 0; allocationCountNdx < DE_LENGTH_OF_ARRAY(allocationCounts); allocationCountNdx++)
 				{
@@ -1063,7 +1061,7 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 					else
 						config.memoryAllocationCount	= allocationCount;
 
-					orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "count_" + de::toString(config.memoryAllocationCount), "", config));
+					orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(testCtx, "count_" + de::toString(config.memoryAllocationCount), config));
 				}
 
 				percentGroup->addChild(orderGroup.release());
@@ -1079,13 +1077,13 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 // RandomAllocFreeTestInstance test uses VkAllocationCallbacks and in Vulkan SC VkAllocationCallbacks must be NULL
 	{
 		const deUint32					caseCount	= 100;
-		de::MovePtr<tcu::TestCaseGroup>	randomGroup	(new tcu::TestCaseGroup(testCtx, "random", "Random memory allocation tests."));
+		de::MovePtr<tcu::TestCaseGroup>	randomGroup	(new tcu::TestCaseGroup(testCtx, "random"));
 
 		for (deUint32 caseNdx = 0; caseNdx < caseCount; caseNdx++)
 		{
 			TestConfigRandom config(deInt32Hash(caseNdx ^ 32480), allocationMode);
-
-			randomGroup->addChild(new InstanceFactory1<RandomAllocFreeTestInstance, TestConfigRandom>(testCtx, tcu::NODETYPE_SELF_VALIDATE, de::toString(caseNdx), "Random case", config));
+			// Random case
+			randomGroup->addChild(new InstanceFactory1<RandomAllocFreeTestInstance, TestConfigRandom>(testCtx, de::toString(caseNdx), config));
 		}
 
 		group->addChild(randomGroup.release());

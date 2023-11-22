@@ -559,7 +559,6 @@ class GeometryOutputCountTest : public TestCase
 public:
 							GeometryOutputCountTest	(TestContext&		testCtx,
 													 const char*		name,
-													 const char*		description,
 													 const vector<int>	pattern);
 
 	void					initPrograms			(SourceCollections&	sourceCollections) const;
@@ -570,8 +569,8 @@ protected:
 	const vector<int> m_pattern;
 };
 
-GeometryOutputCountTest::GeometryOutputCountTest (TestContext& testCtx, const char* name, const char* description, const vector<int> pattern)
-	: TestCase	(testCtx, name, description)
+GeometryOutputCountTest::GeometryOutputCountTest (TestContext& testCtx, const char* name, const vector<int> pattern)
+	: TestCase	(testCtx, name)
 	, m_pattern	(pattern)
 {
 
@@ -660,7 +659,6 @@ class VaryingOutputCountCase : public TestCase
 public:
 							VaryingOutputCountCase	(TestContext&				testCtx,
 													 const char*				name,
-													 const char*				description,
 													 const VaryingSource		test,
 													 const ShaderInstancingMode	mode);
 	void					initPrograms			(SourceCollections&			sourceCollections) const;
@@ -671,8 +669,8 @@ protected:
 	const ShaderInstancingMode	m_mode;
 };
 
-VaryingOutputCountCase::VaryingOutputCountCase (TestContext& testCtx, const char* name, const char* description, const VaryingSource test, const ShaderInstancingMode mode)
-	: TestCase	(testCtx, name, description)
+VaryingOutputCountCase::VaryingOutputCountCase (TestContext& testCtx, const char* name, const VaryingSource test, const ShaderInstancingMode mode)
+	: TestCase	(testCtx, name)
 	, m_test	(test)
 	, m_mode	(mode)
 {
@@ -866,7 +864,6 @@ class BuiltinVariableRenderTest : public TestCase
 public:
 							BuiltinVariableRenderTest	(TestContext&		testCtx,
 														const char*			name,
-														const char*			desc,
 														const VariableTest	test,
 														const bool			flag = false);
 	void					initPrograms				(SourceCollections&	sourceCollections) const;
@@ -877,8 +874,8 @@ protected:
 	const bool			m_flag;
 };
 
-BuiltinVariableRenderTest::BuiltinVariableRenderTest (TestContext& testCtx, const char* name, const char* description, const VariableTest test, const bool flag)
-	: TestCase	(testCtx, name, description)
+BuiltinVariableRenderTest::BuiltinVariableRenderTest (TestContext& testCtx, const char* name, const VariableTest test, const bool flag)
+	: TestCase	(testCtx, name)
 	, m_test	(test)
 	, m_flag	(flag)
 {
@@ -1079,26 +1076,33 @@ inline vector<int> createPattern (int count0, int count1)
 
 TestCaseGroup* createBasicGeometryShaderTests (TestContext& testCtx)
 {
-	MovePtr<TestCaseGroup> basicGroup	(new tcu::TestCaseGroup(testCtx, "basic", "Basic tests."));
+	MovePtr<TestCaseGroup> basicGroup	(new tcu::TestCaseGroup(testCtx, "basic"));
 
-	basicGroup->addChild(new GeometryOutputCountTest	(testCtx,	"output_10",				"Output 10 vertices",								createPattern(10)));
-	basicGroup->addChild(new GeometryOutputCountTest	(testCtx,	"output_128",				"Output 128 vertices",								createPattern(128)));
-	basicGroup->addChild(new GeometryOutputCountTest	(testCtx,	"output_10_and_100",		"Output 10 and 100 vertices in two invocations",	createPattern(10, 100)));
-	basicGroup->addChild(new GeometryOutputCountTest	(testCtx,	"output_100_and_10",		"Output 100 and 10 vertices in two invocations",	createPattern(100, 10)));
-	basicGroup->addChild(new GeometryOutputCountTest	(testCtx,	"output_0_and_128",			"Output 0 and 128 vertices in two invocations",		createPattern(0, 128)));
-	basicGroup->addChild(new GeometryOutputCountTest	(testCtx,	"output_128_and_0",			"Output 128 and 0 vertices in two invocations",		createPattern(128, 0)));
+	// Output N vertices
+	basicGroup->addChild(new GeometryOutputCountTest	(testCtx,	"output_10",								createPattern(10)));
+	basicGroup->addChild(new GeometryOutputCountTest	(testCtx,	"output_128",								createPattern(128)));
+	// Output N, M vertices in two invocations
+	basicGroup->addChild(new GeometryOutputCountTest	(testCtx,	"output_10_and_100",	createPattern(10, 100)));
+	basicGroup->addChild(new GeometryOutputCountTest	(testCtx,	"output_100_and_10",	createPattern(100, 10)));
+	basicGroup->addChild(new GeometryOutputCountTest	(testCtx,	"output_0_and_128",		createPattern(0, 128)));
+	basicGroup->addChild(new GeometryOutputCountTest	(testCtx,	"output_128_and_0",		createPattern(128, 0)));
 
-	basicGroup->addChild(new VaryingOutputCountCase		(testCtx,	"output_vary_by_attribute",				"Output varying number of vertices",	READ_ATTRIBUTE,	MODE_WITHOUT_INSTANCING));
-	basicGroup->addChild(new VaryingOutputCountCase		(testCtx,	"output_vary_by_uniform",				"Output varying number of vertices",	READ_UNIFORM,	MODE_WITHOUT_INSTANCING));
-	basicGroup->addChild(new VaryingOutputCountCase		(testCtx,	"output_vary_by_texture",				"Output varying number of vertices",	READ_TEXTURE,	MODE_WITHOUT_INSTANCING));
-	basicGroup->addChild(new VaryingOutputCountCase		(testCtx,	"output_vary_by_attribute_instancing",	"Output varying number of vertices",	READ_ATTRIBUTE,	MODE_WITH_INSTANCING));
-	basicGroup->addChild(new VaryingOutputCountCase		(testCtx,	"output_vary_by_uniform_instancing",	"Output varying number of vertices",	READ_UNIFORM,	MODE_WITH_INSTANCING));
-	basicGroup->addChild(new VaryingOutputCountCase		(testCtx,	"output_vary_by_texture_instancing",	"Output varying number of vertices",	READ_TEXTURE,	MODE_WITH_INSTANCING));
+	// Output varying number of vertices
+	basicGroup->addChild(new VaryingOutputCountCase		(testCtx,	"output_vary_by_attribute",	READ_ATTRIBUTE,	MODE_WITHOUT_INSTANCING));
+	basicGroup->addChild(new VaryingOutputCountCase		(testCtx,	"output_vary_by_uniform",	READ_UNIFORM,	MODE_WITHOUT_INSTANCING));
+	basicGroup->addChild(new VaryingOutputCountCase		(testCtx,	"output_vary_by_texture",	READ_TEXTURE,	MODE_WITHOUT_INSTANCING));
+	basicGroup->addChild(new VaryingOutputCountCase		(testCtx,	"output_vary_by_attribute_instancing",	READ_ATTRIBUTE,	MODE_WITH_INSTANCING));
+	basicGroup->addChild(new VaryingOutputCountCase		(testCtx,	"output_vary_by_uniform_instancing",	READ_UNIFORM,	MODE_WITH_INSTANCING));
+	basicGroup->addChild(new VaryingOutputCountCase		(testCtx,	"output_vary_by_texture_instancing",	READ_TEXTURE,	MODE_WITH_INSTANCING));
 
-	basicGroup->addChild(new BuiltinVariableRenderTest	(testCtx,	"point_size",					"test gl_PointSize",								TEST_POINT_SIZE));
-	basicGroup->addChild(new BuiltinVariableRenderTest	(testCtx,	"primitive_id_in",				"test gl_PrimitiveIDIn",							TEST_PRIMITIVE_ID_IN));
-	basicGroup->addChild(new BuiltinVariableRenderTest	(testCtx,	"primitive_id_in_restarted",	"test gl_PrimitiveIDIn with primitive restart",		TEST_PRIMITIVE_ID_IN, true));
-	basicGroup->addChild(new BuiltinVariableRenderTest	(testCtx,	"primitive_id",					"test gl_PrimitiveID",								TEST_PRIMITIVE_ID));
+	// test gl_PointSize
+	basicGroup->addChild(new BuiltinVariableRenderTest	(testCtx,	"point_size", TEST_POINT_SIZE));
+	// test gl_PrimitiveIDIn
+	basicGroup->addChild(new BuiltinVariableRenderTest	(testCtx,	"primitive_id_in", TEST_PRIMITIVE_ID_IN));
+	// test gl_PrimitiveIDIn with primitive restart
+	basicGroup->addChild(new BuiltinVariableRenderTest	(testCtx,	"primitive_id_in_restarted", TEST_PRIMITIVE_ID_IN, true));
+	// test gl_PrimitiveID
+	basicGroup->addChild(new BuiltinVariableRenderTest	(testCtx,	"primitive_id", TEST_PRIMITIVE_ID));
 
 	return basicGroup.release();
 }

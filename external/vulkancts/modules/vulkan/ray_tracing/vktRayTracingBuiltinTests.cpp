@@ -287,7 +287,7 @@ RayTracingBuiltinLaunchTestInstance::~RayTracingBuiltinLaunchTestInstance (void)
 class RayTracingTestCase : public TestCase
 {
 	public:
-										RayTracingTestCase			(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+										RayTracingTestCase			(tcu::TestContext& context, const char* name, const CaseDef data);
 										~RayTracingTestCase			(void);
 
 	virtual	void						initPrograms				(SourceCollections& programCollection) const;
@@ -302,8 +302,8 @@ private:
 	CaseDef								m_data;
 };
 
-RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -2645,7 +2645,7 @@ RayTracingIndirectTestInstance::~RayTracingIndirectTestInstance(void)
 class RayTracingIndirectTestCase : public TestCase
 {
 	public:
-										RayTracingIndirectTestCase			(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+										RayTracingIndirectTestCase			(tcu::TestContext& context, const char* name, const CaseDef data);
 										~RayTracingIndirectTestCase			(void);
 
 	virtual	void						initPrograms				(SourceCollections& programCollection) const;
@@ -2660,8 +2660,8 @@ private:
 	CaseDef								m_data;
 };
 
-RayTracingIndirectTestCase::RayTracingIndirectTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+RayTracingIndirectTestCase::RayTracingIndirectTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -3936,7 +3936,7 @@ void createLaunchTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 		{     1,  1331,   111 },
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str(), ""));
+	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str()));
 
 	for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stages); ++stageNdx)
 	{
@@ -3983,7 +3983,7 @@ void createLaunchTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 			const std::string	suffix		= de::toString(caseDef.width) + '_' + de::toString(caseDef.height) + '_' + de::toString(caseDef.depth);
 			const std::string	testName	= string(stages[stageNdx].name) + '_' + suffix;
 
-			group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+			group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 		}
 	}
 
@@ -4018,7 +4018,7 @@ void createScalarTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 	const deUint32	imageDepth				= 1;
 	const deUint32	rayDepth				= 1;
 
-	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str(), ""));
+	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str()));
 
 	for (size_t geomTypesNdx = 0; geomTypesNdx < DE_LENGTH_OF_ARRAY(geomTypes); ++geomTypesNdx)
 	for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stages); ++stageNdx)
@@ -4085,7 +4085,7 @@ void createScalarTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 				generalTestsStarted = true;
 			}
 
-			group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+			group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 			testAdded = true;
 
 			if (specializedTest)
@@ -4150,16 +4150,16 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 		{ "pipelineskipaabbs",		VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR															},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str(), ""));
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str()));
 
 	for (size_t geomTypesNdx = 0; geomTypesNdx < DE_LENGTH_OF_ARRAY(geomTypes); ++geomTypesNdx)
 	{
 		const GeomType					geomType	= geomTypes[geomTypesNdx].geomType;
-		de::MovePtr<tcu::TestCaseGroup>	geomGroup	(new tcu::TestCaseGroup(testCtx, geomTypes[geomTypesNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup>	geomGroup	(new tcu::TestCaseGroup(testCtx, geomTypes[geomTypesNdx].name));
 
 		for (size_t skipRayFlagsNdx = 0; skipRayFlagsNdx < DE_LENGTH_OF_ARRAY(skipRayFlags); ++skipRayFlagsNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	rayFlagsGroup	(new tcu::TestCaseGroup(testCtx, skipRayFlags[skipRayFlagsNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>	rayFlagsGroup	(new tcu::TestCaseGroup(testCtx, skipRayFlags[skipRayFlagsNdx].name));
 
 			for (size_t pipelineFlagsNdx = 0; pipelineFlagsNdx < DE_LENGTH_OF_ARRAY(pipelineFlags); ++pipelineFlagsNdx)
 			{
@@ -4177,13 +4177,13 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 					continue;
 				}
 
-				de::MovePtr<tcu::TestCaseGroup>	pipelineFlagsGroup	(new tcu::TestCaseGroup(testCtx, pipelineFlags[pipelineFlagsNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	pipelineFlagsGroup	(new tcu::TestCaseGroup(testCtx, pipelineFlags[pipelineFlagsNdx].name));
 
 				for (size_t opaquesNdx = 0; opaquesNdx < DE_LENGTH_OF_ARRAY(opaques); ++opaquesNdx)
 				for (size_t facesNdx = 0; facesNdx < DE_LENGTH_OF_ARRAY(faces); ++facesNdx)
 				{
 					const std::string				geomPropertiesGroupName	= string(opaques[opaquesNdx].name) + '_' + string(faces[facesNdx].name);
-					de::MovePtr<tcu::TestCaseGroup>	geomPropertiesGroup		(new tcu::TestCaseGroup(testCtx, geomPropertiesGroupName.c_str(), ""));
+					de::MovePtr<tcu::TestCaseGroup>	geomPropertiesGroup		(new tcu::TestCaseGroup(testCtx, geomPropertiesGroupName.c_str()));
 
 					for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stages); ++stageNdx)
 					{
@@ -4224,7 +4224,7 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 						};
 						const std::string	testName				= string(stages[stageNdx].name) ;
 
-						geomPropertiesGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+						geomPropertiesGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 					}
 
 					pipelineFlagsGroup->addChild(geomPropertiesGroup.release());
@@ -4268,9 +4268,9 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 			true,														//	bool					useMaintenance5;
 		};
 
-		miscGroup->addChild(new RayTracingTestCase(testCtx, "pipelineskiptriangles_maintenance5", "", caseDef));
+		miscGroup->addChild(new RayTracingTestCase(testCtx, "pipelineskiptriangles_maintenance5", caseDef));
 		caseDef.pipelineCreateFlags = VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR;
-		miscGroup->addChild(new RayTracingTestCase(testCtx, "pipelineskipaabbs_maintenance5", "", caseDef));
+		miscGroup->addChild(new RayTracingTestCase(testCtx, "pipelineskipaabbs_maintenance5", caseDef));
 
 		group->addChild(miscGroup.release());
 	}
@@ -4293,7 +4293,7 @@ void createMultiOutputTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* buil
 											: 0;
 	const deUint32	rayDepth				= 1;
 
-	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str(), ""));
+	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str()));
 
 	DE_ASSERT(imageDepth != 0);
 
@@ -4342,7 +4342,7 @@ void createMultiOutputTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* buil
 		};
 		const std::string	testName				= string(stages[stageNdx].name) + '_' + geomTypes[geomTypesNdx].name;
 
-		group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+		group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 	}
 
 	builtinGroup->addChild(group.release());
@@ -4388,13 +4388,13 @@ void createIndirectTestCases(tcu::TestContext& testCtx, tcu::TestCaseGroup* indi
 		false,								//	bool					useMaintenance5;
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, name, ""));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, name));
 
 	for (size_t typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); ++typeNdx)
 	{
 		CaseDef params = caseDef;
 		params.stage = types[typeNdx].stage;
-		group->addChild(new RayTracingIndirectTestCase(testCtx, types[typeNdx].name, "", params));
+		group->addChild(new RayTracingIndirectTestCase(testCtx, types[typeNdx].name, params));
 	}
 	indirectGroup->addChild(group.release());
 }
@@ -4452,19 +4452,19 @@ void createIndirectFlagsTestCases(tcu::TestContext& testCtx, tcu::TestCaseGroup*
 		false,								//	bool					useMaintenance5;
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, name, ""));
+	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, name));
 
 	for (size_t typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); ++typeNdx)
 	{
 		CaseDef params = caseDef;
 		params.stage = types[typeNdx].stage;
-		de::MovePtr<tcu::TestCaseGroup> typeGroup (new tcu::TestCaseGroup(testCtx, types[typeNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> typeGroup (new tcu::TestCaseGroup(testCtx, types[typeNdx].name));
 
 		for (size_t flagsNdx = 0; flagsNdx < DE_LENGTH_OF_ARRAY(flags); ++flagsNdx)
 		{
 			params.opaque = flags[flagsNdx].opaque;
 			params.skipClosestHit = flags[flagsNdx].skipClosestHit;
-			typeGroup->addChild(new RayTracingIndirectTestCase(testCtx, flags[flagsNdx].name, "", params));
+			typeGroup->addChild(new RayTracingIndirectTestCase(testCtx, flags[flagsNdx].name, params));
 		}
 		testGroup->addChild(typeGroup.release());
 	}
@@ -4490,7 +4490,8 @@ void createIndirectTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 		{ TEST_ID_HIT_KIND_INDIRECT,			"hit_kind",		createIndirectTestCases			},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> indirectGroup (new tcu::TestCaseGroup(testCtx, "indirect", "Test builtins using indirect trace rays"));
+	// Test builtins using indirect trace rays
+	de::MovePtr<tcu::TestCaseGroup> indirectGroup (new tcu::TestCaseGroup(testCtx, "indirect"));
 
 	for (size_t testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(tests); ++testNdx)
 	{
@@ -4541,7 +4542,8 @@ tcu::TestCaseGroup*	createBuiltinTests (tcu::TestContext& testCtx)
 		{ TEST_ID_WORLD_TO_OBJECT_3X4_EXT,		"WorldToObject3x4EXT"	,			A	|	C	|	I					, createMultiOutputTests	},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> builtinGroup(new tcu::TestCaseGroup(testCtx, "builtin", "Ray tracing shader builtin tests"));
+	// Ray tracing shader builtin tests
+	de::MovePtr<tcu::TestCaseGroup> builtinGroup(new tcu::TestCaseGroup(testCtx, "builtin"));
 
 	for (size_t testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(tests); ++testNdx)
 	{
@@ -4607,7 +4609,7 @@ tcu::TestCaseGroup* createSpecConstantTests	(tcu::TestContext& testCtx)
 			false,					//	bool					useMaintenance5;
 		};
 
-		group->addChild(new RayTracingTestCase(testCtx, stages[stageNdx].name, "", caseDef));
+		group->addChild(new RayTracingTestCase(testCtx, stages[stageNdx].name, caseDef));
 	}
 
 	return group.release();

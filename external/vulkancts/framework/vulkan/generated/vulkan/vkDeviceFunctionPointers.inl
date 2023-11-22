@@ -437,6 +437,12 @@ SetBufferCollectionBufferConstraintsFUCHSIAFunc				setBufferCollectionBufferCons
 SetBufferCollectionImageConstraintsFUCHSIAFunc				setBufferCollectionImageConstraintsFUCHSIA;
 DestroyBufferCollectionFUCHSIAFunc							destroyBufferCollectionFUCHSIA;
 GetBufferCollectionPropertiesFUCHSIAFunc					getBufferCollectionPropertiesFUCHSIA;
+CreateCudaModuleNVFunc										createCudaModuleNV;
+GetCudaModuleCacheNVFunc									getCudaModuleCacheNV;
+CreateCudaFunctionNVFunc									createCudaFunctionNV;
+DestroyCudaModuleNVFunc										destroyCudaModuleNV;
+DestroyCudaFunctionNVFunc									destroyCudaFunctionNV;
+CmdCudaLaunchKernelNVFunc									cmdCudaLaunchKernelNV;
 CmdBeginRenderingFunc										cmdBeginRendering;
 CmdEndRenderingFunc											cmdEndRendering;
 GetDescriptorSetLayoutHostMappingInfoVALVEFunc				getDescriptorSetLayoutHostMappingInfoVALVE;
@@ -484,3 +490,8 @@ CmdInitializeGraphScratchMemoryAMDXFunc						cmdInitializeGraphScratchMemoryAMDX
 CmdDispatchGraphAMDXFunc									cmdDispatchGraphAMDX;
 CmdDispatchGraphIndirectAMDXFunc							cmdDispatchGraphIndirectAMDX;
 CmdDispatchGraphIndirectCountAMDXFunc						cmdDispatchGraphIndirectCountAMDX;
+SetLatencySleepModeNVFunc									setLatencySleepModeNV;
+LatencySleepNVFunc											latencySleepNV;
+SetLatencyMarkerNVFunc										setLatencyMarkerNV;
+GetLatencyTimingsNVFunc										getLatencyTimingsNV;
+QueueNotifyOutOfBandNVFunc									queueNotifyOutOfBandNV;
