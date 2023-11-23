@@ -281,7 +281,9 @@ static uint64_t MurmurHash64B ( const void * key, int len, uint64_t seed )
 	uint32_t h1 = uint32_t(seed) ^ len;
 	uint32_t h2 = uint32_t(seed >> 32);
 
-	const uint32_t * data = (const uint32_t *)key;
+	// Ensure that unaligned accesses to data are allowed.
+	typedef __attribute__((aligned(1))) uint32_t uint32_t_unaligned;
+	const uint32_t_unaligned * data = (const uint32_t_unaligned *)key;
 
 	while(len >= 8)
 	{
