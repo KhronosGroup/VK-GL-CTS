@@ -37,6 +37,7 @@
 #ifdef CTS_USES_VULKANSC
 #include "vkSafetyCriticalUtil.hpp"
 #endif // CTS_USES_VULKANSC
+#include "vkDeviceUtil.hpp"
 
 #include "deMath.h"
 
@@ -213,10 +214,17 @@ class ComputeQueueDeviceHelper : public DeviceHelper
 public:
 	ComputeQueueDeviceHelper (Context& context)
 	{
-		const auto&	vkp				= context.getPlatformInterface();
-		const auto&	vki				= context.getInstanceInterface();
-		const auto	instance		= context.getInstance();
+#ifdef CTS_USES_VULKANSC
+		m_customInstance		= createCustomInstanceFromContext(context);
+		VkInstance	instance	= m_customInstance;
+		const auto&	vki		= m_customInstance.getDriver();
+		const auto	physicalDevice	= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+#else
+		VkInstance	instance	= context.getInstance();
+		const auto&	vki		= context.getInstanceInterface();
 		const auto	physicalDevice	= context.getPhysicalDevice();
+#endif
+		const auto&	vkp		= context.getPlatformInterface();
 		const auto	queuePriority	= 1.0f;
 
 		// Queue index. Support for this type of queue needs to be checked first.
@@ -282,6 +290,9 @@ public:
 
 		addFeatures(&memReservationInfo);
 
+		VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+		addFeatures(&sc10Features);
+
 		VkPipelineCacheCreateInfo			pcCI;
 		std::vector<VkPipelinePoolSize>		poolSizes;
 
@@ -341,6 +352,9 @@ public:
 	const std::vector<std::string>&	getDeviceExtensions	(void) const override	{ return m_extensions;			}
 
 protected:
+#ifdef CTS_USES_VULKANSC
+	CustomInstance m_customInstance;
+#endif
 	Move<VkDevice>						m_device;
 	std::unique_ptr<DeviceDriver>		m_vkd;
 	deUint32							m_queueFamilyIndex;
