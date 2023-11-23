@@ -3739,8 +3739,8 @@ void SamplerInstance::createAndPopulateDescriptors					(IterateCommonVariables&	
 		tcu::Sampler::CLAMP_TO_BORDER,															// wrapS
 		tcu::Sampler::CLAMP_TO_BORDER,															// wrapT
 		tcu::Sampler::CLAMP_TO_BORDER,															// wrapR
-		m_testParams.usesMipMaps ? tcu::Sampler::LINEAR_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// minFilter
-		m_testParams.usesMipMaps ? tcu::Sampler::LINEAR_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// magFilter
+		m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// minFilter
+		m_testParams.usesMipMaps ? tcu::Sampler::NEAREST_MIPMAP_NEAREST : tcu::Sampler::NEAREST,	// magFilter
 		0.0f,																					// lodTreshold
 		true,																					// normalizeCoords
 		tcu::Sampler::COMPAREMODE_NONE,															// compare
