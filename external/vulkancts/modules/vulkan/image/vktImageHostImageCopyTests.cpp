@@ -42,6 +42,8 @@
 #include "ycbcr/vktYCbCrUtil.hpp"
 
 #include "tcuTestLog.hpp"
+#include "tcuVectorUtil.hpp"
+#include "tcuTextureUtil.hpp"
 
 namespace vkt
 {
@@ -105,7 +107,8 @@ deUint32 getNumChannels (vk::VkFormat format)
 	return 1;
 }
 
-void generateData(void* ptr, deUint32 size, vk::VkFormat format) {
+void generateData(void* ptr, deUint32 size, vk::VkFormat format)
+{
 	if (isDepthStencilFormat(format))
 	{
 		de::Random randomGen(deInt32Hash((deUint32)format) ^
@@ -1855,126 +1858,334 @@ private:
 	const vk::VkImageTiling		m_tiling;
 };
 
-tcu::TestStatus IdenticalMemoryLayoutTestInstance::iterate (void)
+void generateImageData (const DeviceInterface& vkd, VkDevice device, vk::Allocator& alloc, uint32_t qfIndex, VkQueue queue,
+						VkImage image, VkFormat format, const tcu::IVec3& extent)
 {
-	const InstanceInterface&			vki					= m_context.getInstanceInterface();
-	const DeviceInterface&				vk					= m_context.getDeviceInterface();
-	const vk::VkPhysicalDevice			physicalDevice		= m_context.getPhysicalDevice();
-	const vk::VkDevice					device				= m_context.getDevice();
-	const auto							memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
-	const deUint32						queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	const vk::VkQueue					queue				= m_context.getUniversalQueue();
-	auto&								alloc				= m_context.getDefaultAllocator();
-	tcu::TestLog&						log					= m_context.getTestContext().getLog();
+	const auto			tcuFormat	= mapVkFormat(format);
+	const auto			vkExtent	= makeExtent3D(extent);
+	tcu::TextureLevel	level		(tcuFormat, extent.x(), extent.y());
+	auto				access		= level.getAccess();
+	const auto			chClass		= tcu::getTextureChannelClass(tcuFormat.type);
+	const tcu::Vec4		minValue	(0.0f);
+	tcu::Vec4			maxValue	(1.0f);
 
-	const Move<vk::VkCommandPool>		cmdPool				(createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Move<vk::VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	//
+	// Generate image data on host memory.
+	//
 
-	const auto							aspect				= getAspectFlags(m_format);
-
-	vk::VkImageCreateInfo	imageCreateInfo =
+	if (tcuFormat.order == tcu::TextureFormat::S)
 	{
-		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType
-		DE_NULL,									// const void*				pNext
-		0u,											// VkImageCreateFlags		flags
-		vk::VK_IMAGE_TYPE_2D,						// VkImageType				imageType
-		m_format,									// VkFormat					format
-		{32u, 32u, 1u},								// VkExtent3D				extent
-		1u,											// uint32_t					mipLevels
-		1u,											// uint32_t					arrayLayers
-		vk::VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples
-		m_tiling,									// VkImageTiling			tiling
-		vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags		usage
-		vk::VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode
-		0,											// uint32_t					queueFamilyIndexCount
-		DE_NULL,									// const uint32_t*			pQueueFamilyIndices
-		vk::VK_IMAGE_LAYOUT_PREINITIALIZED			// VkImageLayout			initialLayout
-	};
-
-	const auto image = vk::createImage(vk, device, &imageCreateInfo, nullptr);
-
-	const auto memoryRequirements = vk::getImageMemoryRequirements(vk, device, *image);
-
-	vk::VkBufferCreateInfo	bufferCreateInfo = {
-		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		(vk::VkBufferCreateFlags)0u,				// VkBufferCreateFlags	flags;
-		memoryRequirements.size,					// VkDeviceSize			size;
-		vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,		// VkBufferUsageFlags	usage;
-		vk::VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-		0u,											// uint32_t				queueFamilyIndexCount;
-		DE_NULL,									// const uint32_t*		pQueueFamilyIndices;
-	};
-
-	const auto buffer = vk::createBuffer(vk, device, &bufferCreateInfo, nullptr);
-
-	uint32_t memoryIndex = selectMatchingMemoryType(memoryProperties, memoryRequirements.memoryTypeBits, MemoryRequirement::HostVisible);
-
-	vk::VkMemoryAllocateInfo memoryAllocateInfo =
+		// Stencil-only is stored in the first component. Stencil is always 8 bits.
+		maxValue.x() = 1 << 8;
+	}
+	else if (tcuFormat.order == tcu::TextureFormat::DS)
 	{
-		vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType	sType;
-		DE_NULL,									//	const void*		pNext;
-		memoryRequirements.size,					//	VkDeviceSize	allocationSize;
-		memoryIndex,								//	uint32_t		memoryTypeIndex;
-	};
-	const auto memory = vk::allocateMemory(vk, device, &memoryAllocateInfo, nullptr);
-
-	vk.bindImageMemory(device, *image, *memory, 0u);
-	vk.bindBufferMemory(device, *buffer, *memory, 0u);
-
-	de::MovePtr<BufferWithMemory>	fromBuffer			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, alloc, makeBufferCreateInfo(memoryRequirements.size, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible));
-	de::MovePtr<BufferWithMemory>	fromImage			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, alloc, makeBufferCreateInfo(memoryRequirements.size, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible));
-
-	auto ptr = vk::mapMemory(vk, device, *memory, 0u, memoryRequirements.size, 0u);
-
-	generateData(ptr, (deUint32)memoryRequirements.size, m_format);
-
-	vk::VkBufferCopy region =
+		// In a combined format, fillWithComponentGradients expects stencil in the fourth component.
+		maxValue.w() = 1 << 8;
+	}
+	else if (chClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER || chClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
 	{
-		0u,							// VkDeviceSize	srcOffset;
-		0u,							// VkDeviceSize	dstOffset;
-		memoryRequirements.size,	// VkDeviceSize	size;
-	};
+		// The tcu::Vectors we use as pixels are 32-bit, so clamp to that.
+		const tcu::IVec4	bits	= tcu::min(tcu::getTextureFormatBitDepth(tcuFormat), tcu::IVec4(32));
+		const int			signBit	= (chClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ? 1 : 0);
 
-	vk::beginCommandBuffer(vk, *cmdBuffer);
-	vk.cmdCopyBuffer(*cmdBuffer, *buffer, **fromBuffer, 1u, &region);
-	vk::endCommandBuffer(vk, *cmdBuffer);
-	vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-
-	vk::VkBufferImageCopy imageRegion =
-	{
-		0u,								// VkDeviceSize					bufferOffset;
-		0u,								// uint32_t						bufferRowLength;
-		0u,								// uint32_t						bufferImageHeight;
-		{aspect, 0u, 0u, 1u},			// VkImageSubresourceLayers		imageSubresource;
-		{0, 0, 0,},						// VkOffset3D					imageOffset;
-		imageCreateInfo.extent,			// VkExtent3D					imageExtent;
-	};
-
-	const vk::VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(aspect, 0u, 1u, 0u, 1u);
-
-	vk::beginCommandBuffer(vk, *cmdBuffer);
-	auto imageMemoryBarrier = makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_PREINITIALIZED, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *image, subresourceRange);
-	vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_NONE, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
-	vk.cmdCopyImageToBuffer(*cmdBuffer, *image, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **fromImage, 1u, &imageRegion);
-	vk::endCommandBuffer(vk, *cmdBuffer);
-	vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-
-	invalidateAlloc(vk, device, fromBuffer->getAllocation());
-	invalidateAlloc(vk, device, fromImage->getAllocation());
-
-	deUint8* fromBufferPtr = reinterpret_cast<deUint8*>(fromBuffer->getAllocation().getHostPtr());
-	deUint8* fromImagePtr = reinterpret_cast<deUint8*>(fromBuffer->getAllocation().getHostPtr());
-
-	for (deUint32 i = 0; i < memoryRequirements.size; ++i)
-	{
-		if (fromBufferPtr[i] != fromImagePtr[i]) {
-			log << tcu::TestLog::Message << "Copy from buffer at byte " << i << " is " << fromBufferPtr[i] << ", but copy from image at byte " << i << " is " << fromImagePtr[i] << tcu::TestLog::EndMessage;
-			return tcu::TestStatus::fail("fail");
+		for (int i = 0; i < 4; ++i)
+		{
+			if (bits[i] != 0)
+				maxValue[i] = static_cast<float>((deUint64(1) << (bits[i] - signBit)) - 1);
 		}
 	}
 
-	return tcu::TestStatus::pass("pass");
+	tcu::fillWithComponentGradients2(access, minValue, maxValue);
+
+	//
+	// Upload generated data to the image.
+	//
+
+	if (isDepthStencilFormat(format))
+	{
+		// Iteration index: 0 is depth, 1 is stencil
+		for (int i = 0; i < 2; ++i)
+		{
+			const auto hasComponent	= ((i == 0)
+									? tcu::hasDepthComponent(tcuFormat.order)
+									: tcu::hasStencilComponent(tcuFormat.order));
+			const auto origMode		= ((i == 0) ? tcu::Sampler::MODE_DEPTH : tcu::Sampler::MODE_STENCIL);
+			const auto layerAspect	= ((i == 0) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT);
+
+			if (hasComponent)
+			{
+				const auto			xferFormat	= ((i == 0) ? getDepthCopyFormat(format) : getStencilCopyFormat(format));
+				auto				origAccess	= tcu::getEffectiveDepthStencilAccess(access, origMode);
+				tcu::TextureLevel	copyLevel	(xferFormat, extent.x(), extent.y());
+				auto				copyAccess	= copyLevel.getAccess();
+				const auto			pixelSize	= tcu::getPixelSize(xferFormat);
+				const auto			bufferSize	= pixelSize * extent.x() * extent.y();
+
+				// Get a copy of the aspect.
+				tcu::copy(copyAccess, origAccess);
+
+				// Upload that copy to a buffer and then the image.
+				const auto			bufferInfo		= makeBufferCreateInfo(static_cast<VkDeviceSize>(bufferSize), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+				BufferWithMemory	srcBuffer		(vkd, device, alloc, bufferInfo, MemoryRequirement::HostVisible);
+				auto&				srcBufferAlloc	= srcBuffer.getAllocation();
+				void*				srcBufferData	= srcBufferAlloc.getHostPtr();
+
+				deMemcpy(srcBufferData, copyAccess.getDataPtr(), static_cast<size_t>(bufferSize));
+				flushAlloc(vkd, device, srcBufferAlloc);
+
+				const auto cmdPool		= makeCommandPool(vkd, device, qfIndex);
+				const auto cmdBuffer	= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+				beginCommandBuffer(vkd, *cmdBuffer);
+
+				const auto barrier		= makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT);
+				cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &barrier);
+
+				const auto copySRL		= makeImageSubresourceLayers(layerAspect, 0u, 0u, 1u);
+				const auto copyRegion	= makeBufferImageCopy(vkExtent, copySRL);
+				vkd.cmdCopyBufferToImage(*cmdBuffer, srcBuffer.get(), image, VK_IMAGE_LAYOUT_GENERAL, 1u, &copyRegion);
+
+				endCommandBuffer(vkd, *cmdBuffer);
+				submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
+			}
+		}
+	}
+	else
+	{
+		// Simplest case.
+		const auto pixelSize	= tcu::getPixelSize(tcuFormat);
+		const auto bufferSize	= pixelSize * extent.x() * extent.y();
+
+		// Upload pixels to host-visible buffer.
+		const auto			bufferInfo		= makeBufferCreateInfo(static_cast<VkDeviceSize>(bufferSize), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+		BufferWithMemory	srcBuffer		(vkd, device, alloc, bufferInfo, MemoryRequirement::HostVisible);
+		auto&				srcBufferAlloc	= srcBuffer.getAllocation();
+		void*				srcBufferData	= srcBufferAlloc.getHostPtr();
+
+		deMemcpy(srcBufferData, access.getDataPtr(), static_cast<size_t>(bufferSize));
+		flushAlloc(vkd, device, srcBufferAlloc);
+
+		const auto cmdPool		= makeCommandPool(vkd, device, qfIndex);
+		const auto cmdBuffer	= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+		beginCommandBuffer(vkd, *cmdBuffer);
+		const auto copySRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+		const auto copyRegion	= makeBufferImageCopy(vkExtent, copySRL);
+		vkd.cmdCopyBufferToImage(*cmdBuffer, srcBuffer.get(), image, VK_IMAGE_LAYOUT_GENERAL, 1u, &copyRegion);
+
+		endCommandBuffer(vkd, *cmdBuffer);
+		submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
+	}
+}
+
+// This is slightly special.
+void generateCompressedImageData (const DeviceInterface& vkd, VkDevice device, vk::Allocator& alloc, uint32_t qfIndex, VkQueue queue,
+								  VkImage image, VkFormat format, const tcu::IVec3& extent)
+{
+	const auto				vkExtent	= makeExtent3D(extent);
+	const auto				tcuFormat	= mapVkCompressedFormat(format);
+	tcu::CompressedTexture	texture		(tcuFormat, extent.x(), extent.y());
+	const auto				dataSize	= texture.getDataSize();
+	auto					dataPtr		= reinterpret_cast<uint8_t*>(texture.getData());
+
+	// This is supposed to be safe for the compressed formats we're using (no ASTC, no ETC, no SFLOAT formats).
+	de::Random rnd (static_cast<uint32_t>(format));
+	for (int i = 0; i < dataSize; ++i)
+		dataPtr[i] = rnd.getUint8();
+
+	// Upload pixels to host-visible buffer.
+	const auto			bufferInfo		= makeBufferCreateInfo(static_cast<VkDeviceSize>(dataSize), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+	BufferWithMemory	srcBuffer		(vkd, device, alloc, bufferInfo, MemoryRequirement::HostVisible);
+	auto&				srcBufferAlloc	= srcBuffer.getAllocation();
+	void*				srcBufferData	= srcBufferAlloc.getHostPtr();
+
+	deMemcpy(srcBufferData, texture.getData(), static_cast<size_t>(dataSize));
+	flushAlloc(vkd, device, srcBufferAlloc);
+
+	// Transfer buffer to compressed image.
+	const auto cmdPool		= makeCommandPool(vkd, device, qfIndex);
+	const auto cmdBuffer	= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vkd, *cmdBuffer);
+	const auto copySRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const auto copyRegion	= makeBufferImageCopy(vkExtent, copySRL);
+	vkd.cmdCopyBufferToImage(*cmdBuffer, srcBuffer.get(), image, VK_IMAGE_LAYOUT_GENERAL, 1u, &copyRegion);
+
+	endCommandBuffer(vkd, *cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
+}
+
+tcu::TestStatus IdenticalMemoryLayoutTestInstance::iterate (void)
+{
+	const InstanceInterface&		vki					= m_context.getInstanceInterface();
+	const DeviceInterface&			vk					= m_context.getDeviceInterface();
+	const VkPhysicalDevice			physicalDevice		= m_context.getPhysicalDevice();
+	const VkDevice					device				= m_context.getDevice();
+	const auto						memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue					queue				= m_context.getUniversalQueue();
+	auto&							alloc				= m_context.getDefaultAllocator();
+	const tcu::IVec3				extent				(32, 32, 1);
+	const auto						vkExtent			= makeExtent3D(extent);
+	const auto						baseUsageFlags		= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	const auto						extendedUsageFlags	= (baseUsageFlags | VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT);
+
+	// Create two images, one with the host transfer usage bit and another one without it, to check identicalMemoryLayout.
+	VkImageCreateInfo imageCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType
+		nullptr,									// const void*				pNext
+		0u,											// VkImageCreateFlags		flags
+		VK_IMAGE_TYPE_2D,							// VkImageType				imageType
+		m_format,									// VkFormat					format
+		vkExtent,									// VkExtent3D				extent
+		1u,											// uint32_t					mipLevels
+		1u,											// uint32_t					arrayLayers
+		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples
+		m_tiling,									// VkImageTiling			tiling
+		baseUsageFlags,								// VkImageUsageFlags		usage
+		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode
+		0u,											// uint32_t					queueFamilyIndexCount
+		nullptr,									// const uint32_t*			pQueueFamilyIndices
+		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			initialLayout
+	};
+	const auto baseImage		= createImage(vk, device, &imageCreateInfo);
+	imageCreateInfo.usage		= extendedUsageFlags;
+	const auto hostXferImage	= createImage(vk, device, &imageCreateInfo);
+
+	// Check memory requirements for both (size must match).
+	const auto baseMemReqs		= getImageMemoryRequirements(vk, device, *baseImage);
+	const auto hostXferReqs		= getImageMemoryRequirements(vk, device, *hostXferImage);
+
+	if (baseMemReqs.size != hostXferReqs.size)
+		TCU_FAIL("Different memory sizes for normal and host-transfer image");
+
+	const auto imageMemSize		= baseMemReqs.size;
+	const auto imageMemSizeSz	= static_cast<size_t>(imageMemSize);
+
+	// Create two buffers that will share memory with the previous images.
+	const auto bufferCreateInfo	= makeBufferCreateInfo(imageMemSize, (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+	const auto baseBuffer		= createBuffer(vk, device, &bufferCreateInfo);
+	const auto hostXferBuffer	= createBuffer(vk, device, &bufferCreateInfo);
+
+	// Find common memory types for images and buffers and allocate memory.
+	const auto baseBufferMemReqs			= getBufferMemoryRequirements(vk, device, *baseBuffer);
+	const auto baseCommonMemoryTypes		= (baseMemReqs.memoryTypeBits & baseBufferMemReqs.memoryTypeBits);
+
+	// Very unlikely.
+	if (baseCommonMemoryTypes == 0u)
+		TCU_THROW(NotSupportedError, "Base buffer and image do not have any memory types in common");
+
+	const auto baseSelectedMemType			= selectMatchingMemoryType(memoryProperties, baseCommonMemoryTypes, MemoryRequirement::Any);
+
+	const auto hostXferBufferMemReqs		= getBufferMemoryRequirements(vk, device, *hostXferBuffer);
+	const auto hostXferCommonMemoryTypes	= (hostXferReqs.memoryTypeBits & hostXferBufferMemReqs.memoryTypeBits);
+
+	// Very unlikely.
+	if (hostXferCommonMemoryTypes == 0u)
+		TCU_THROW(NotSupportedError, "Host transfer buffer and image do not have any memory types in common");
+
+	const auto hostXferSelectedMemType		= selectMatchingMemoryType(memoryProperties, hostXferCommonMemoryTypes, MemoryRequirement::Any);
+
+	VkMemoryAllocateInfo memoryAllocateInfo =
+	{
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType	sType;
+		nullptr,								//	const void*		pNext;
+		imageMemSize,							//	VkDeviceSize	allocationSize;
+		baseSelectedMemType,					//	uint32_t		memoryTypeIndex;
+	};
+	const auto baseMemory				= allocateMemory(vk, device, &memoryAllocateInfo, nullptr);
+	memoryAllocateInfo.memoryTypeIndex	= hostXferSelectedMemType;
+	const auto hostXferMemory			= allocateMemory(vk, device, &memoryAllocateInfo, nullptr);
+
+	// Map allocations to images and buffers.
+	vk.bindImageMemory(device, *baseImage, *baseMemory, 0u);
+	vk.bindBufferMemory(device, *baseBuffer, *baseMemory, 0u);
+
+	vk.bindImageMemory(device, *hostXferImage, *hostXferMemory, 0u);
+	vk.bindBufferMemory(device, *hostXferBuffer, *hostXferMemory, 0u);
+
+	// Clear both image memories to zero (via the memory-sharing buffers above) before filling images with data.
+	{
+		const auto cmdPool		= makeCommandPool(vk, device, queueFamilyIndex);
+		const auto cmdbuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+		// Transition both images to the general layout for subsequent operations.
+		const auto isDepthStencil	= isDepthStencilFormat(m_format);
+		const auto tcuFormat		= (isCompressedFormat(m_format) ? tcu::TextureFormat() : mapVkFormat(m_format));
+		const auto hasDepth			= isDepthStencil && tcu::hasDepthComponent(tcuFormat.order);
+		const auto hasStencil		= isDepthStencil && tcu::hasStencilComponent(tcuFormat.order);
+		const auto aspectMask		= (isDepthStencil
+									? ((hasDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : 0) | (hasStencil ? VK_IMAGE_ASPECT_STENCIL_BIT : 0))
+									: VK_IMAGE_ASPECT_COLOR_BIT);
+		const auto imageSRR			= makeImageSubresourceRange(aspectMask, 0u, 1u, 0u, 1u);
+
+		beginCommandBuffer(vk, *cmdbuffer);
+		vk.cmdFillBuffer(*cmdbuffer, *baseBuffer, 0ull, VK_WHOLE_SIZE, 0u);
+		vk.cmdFillBuffer(*cmdbuffer, *hostXferBuffer, 0ull, VK_WHOLE_SIZE, 0u);
+		const std::vector<VkImageMemoryBarrier> transitionBarriers
+		{
+			makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *baseImage, imageSRR),
+			makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *hostXferImage, imageSRR),
+		};
+		vk.cmdPipelineBarrier(*cmdbuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, de::sizeU32(transitionBarriers), de::dataOrNull(transitionBarriers));
+		endCommandBuffer(vk, *cmdbuffer);
+		submitCommandsAndWait(vk, device, queue, *cmdbuffer);
+	}
+
+	// Generate data for both images.
+	if (isCompressedFormat(m_format))
+	{
+		generateCompressedImageData(vk, device, alloc, queueFamilyIndex, queue, *baseImage, m_format, extent);
+		generateCompressedImageData(vk, device, alloc, queueFamilyIndex, queue, *hostXferImage, m_format, extent);
+	}
+	else
+	{
+		generateImageData(vk, device, alloc, queueFamilyIndex, queue, *baseImage, m_format, extent);
+		generateImageData(vk, device, alloc, queueFamilyIndex, queue, *hostXferImage, m_format, extent);
+	}
+
+	// Create a couple of host-visible buffers for verification.
+	const auto			verifBufferCreateInfo	= makeBufferCreateInfo(imageMemSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	BufferWithMemory	baseVerifBuffer			(vk, device, alloc, verifBufferCreateInfo, MemoryRequirement::HostVisible);
+	BufferWithMemory	hostXferVerifBuffer		(vk, device, alloc, verifBufferCreateInfo, MemoryRequirement::HostVisible);
+
+	// Copy data from shared-memory buffers to verification buffers.
+	const auto cmdPool			= makeCommandPool(vk, device, queueFamilyIndex);
+	const auto cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto copyRegion		= makeBufferCopy(0ull, 0ull, imageMemSize);
+	const auto preCopyBarrier	= makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+	const auto postCopyBarrier	= makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	cmdPipelineMemoryBarrier(vk, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preCopyBarrier);
+	vk.cmdCopyBuffer(*cmdBuffer, *baseBuffer, *baseVerifBuffer, 1u, &copyRegion);
+	vk.cmdCopyBuffer(*cmdBuffer, *hostXferBuffer, *hostXferVerifBuffer, 1u, &copyRegion);
+	cmdPipelineMemoryBarrier(vk, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &postCopyBarrier);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	invalidateAlloc(vk, device, baseVerifBuffer.getAllocation());
+	invalidateAlloc(vk, device, hostXferVerifBuffer.getAllocation());
+
+	const auto baseVerifData		= reinterpret_cast<const uint8_t*>(baseVerifBuffer.getAllocation().getHostPtr());
+	const auto hostXferVerifData	= reinterpret_cast<const uint8_t*>(hostXferVerifBuffer.getAllocation().getHostPtr());
+
+	for (size_t i = 0; i < imageMemSizeSz; ++i)
+	{
+		if (baseVerifData[i] != hostXferVerifData[i])
+		{
+			std::ostringstream msg;
+			msg << "Base image and host copy image data differs at byte " << i << ": 0x"
+				<< std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(baseVerifData[i])
+				<< " vs 0x"
+				<< std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hostXferVerifData[i]);
+			TCU_FAIL(msg.str());
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
 }
 
 class IdenticalMemoryLayoutTestCase : public vkt::TestCase
@@ -1994,35 +2205,45 @@ private:
 	const vk::VkImageTiling		m_tiling;
 };
 
-void IdenticalMemoryLayoutTestCase::checkSupport (vkt::Context& context) const {
-	const InstanceInterface&				vki				= context.getInstanceInterface();
-
+void IdenticalMemoryLayoutTestCase::checkSupport (vkt::Context& context) const
+{
 	context.requireDeviceFunctionality("VK_EXT_host_image_copy");
 
-	vk::VkFormatProperties3 formatProperties3 = vk::initVulkanStructure();
-	vk::VkFormatProperties2 formatProperties2 = vk::initVulkanStructure(&formatProperties3);
+	const InstanceInterface&	vki					= context.getInstanceInterface();
+	VkFormatProperties3			formatProperties3	= initVulkanStructure();
+	VkFormatProperties2			formatProperties2	= initVulkanStructure(&formatProperties3);
+	const auto					requiredFeatures	= (VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT | VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT);
+	const auto					imageUsage			= (VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
 	vki.getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(), m_format, &formatProperties2);
-	if (m_tiling == VK_IMAGE_TILING_OPTIMAL && (formatProperties3.optimalTilingFeatures & (vk::VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT | vk::VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT)) == 0)
+
+	if (m_tiling == VK_IMAGE_TILING_OPTIMAL && (formatProperties3.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
 		TCU_THROW(NotSupportedError, "Required format feature not supported for optimal tiling.");
-	if (m_tiling == VK_IMAGE_TILING_LINEAR && (formatProperties3.linearTilingFeatures & (vk::VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT | vk::VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT)) == 0)
+
+	if (m_tiling == VK_IMAGE_TILING_LINEAR && (formatProperties3.linearTilingFeatures & requiredFeatures) != requiredFeatures)
 		TCU_THROW(NotSupportedError, "Required format feature not supported for linear tiling.");
 
-	vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo =
+	VkPhysicalDeviceImageFormatInfo2 imageFormatInfo =
 	{
-		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,							// VkStructureType		sType;
-		DE_NULL,																			// const void*			pNext;
-		m_format,																			// VkFormat				format;
-		vk::VK_IMAGE_TYPE_2D,																// VkImageType			type;
-		m_tiling,																			// VkImageTiling		tiling;
-		vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,		// VkImageUsageFlags	usage;
-		(vk::VkImageCreateFlags)0u															// VkImageCreateFlags	flags;
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// VkStructureType		sType;
+		nullptr,												// const void*			pNext;
+		m_format,												// VkFormat				format;
+		VK_IMAGE_TYPE_2D,										// VkImageType			type;
+		m_tiling,												// VkImageTiling		tiling;
+		imageUsage,												// VkImageUsageFlags	usage;
+		0u,														// VkImageCreateFlags	flags;
 	};
 
-	vk::VkHostImageCopyDevicePerformanceQueryEXT	hostImageCopyDevicePerformanceQuery = vk::initVulkanStructure();
-	vk::VkImageFormatProperties2					imageFormatProperties				= vk::initVulkanStructure(&hostImageCopyDevicePerformanceQuery);
-	vk::VkResult res = vki.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties);
+	VkHostImageCopyDevicePerformanceQueryEXT	hostImageCopyDevicePerformanceQuery = initVulkanStructure();
+	VkImageFormatProperties2					imageFormatProperties				= initVulkanStructure(&hostImageCopyDevicePerformanceQuery);
+
+	VkResult res = vki.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties);
+
 	if (res == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		TCU_THROW(NotSupportedError, "Format not supported.");
+		TCU_THROW(NotSupportedError, "Format not supported");
+
+	if (!hostImageCopyDevicePerformanceQuery.identicalMemoryLayout)
+		TCU_THROW(NotSupportedError, "identicalMemoryLayout not supported for this format");
 }
 
 void testGenerator(tcu::TestCaseGroup* group)
@@ -2390,6 +2611,7 @@ void testGenerator(tcu::TestCaseGroup* group)
 		{ vk::VK_FORMAT_B8G8R8A8_SINT		},
 		{ vk::VK_FORMAT_R16_SFLOAT			},
 		{ vk::VK_FORMAT_D24_UNORM_S8_UINT	},
+		{ vk::VK_FORMAT_D32_SFLOAT			},
 		{ vk::VK_FORMAT_BC7_UNORM_BLOCK		},
 		{ vk::VK_FORMAT_BC5_SNORM_BLOCK		},
 	};
