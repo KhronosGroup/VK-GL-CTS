@@ -761,6 +761,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderFloat16Int8Features.pNext;
 	}
 
+	vk::VkPhysicalDeviceShaderFloatControls2FeaturesKHR physicalDeviceShaderFloatControls2FeaturesKHR;
+	deMemset(&physicalDeviceShaderFloatControls2FeaturesKHR, 0, sizeof(physicalDeviceShaderFloatControls2FeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_float_controls2") )
+	{
+		physicalDeviceShaderFloatControls2FeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderFloatControls2FeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderFloatControls2FeaturesKHR;
+		nextPtr  = &physicalDeviceShaderFloatControls2FeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT physicalDeviceShaderImageAtomicInt64FeaturesEXT;
 	deMemset(&physicalDeviceShaderImageAtomicInt64FeaturesEXT, 0, sizeof(physicalDeviceShaderImageAtomicInt64FeaturesEXT));
 
@@ -2228,6 +2238,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( ( physicalDeviceShaderFloat16Int8Features.shaderFloat16 == VK_FALSE ) && ( physicalDeviceShaderFloat16Int8Features.shaderInt8 == VK_FALSE ) )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderFloat16 or shaderInt8 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_float_controls2")) )
+	{
+		if ( physicalDeviceShaderFloatControls2FeaturesKHR.shaderFloatControls2 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderFloatControls2 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
