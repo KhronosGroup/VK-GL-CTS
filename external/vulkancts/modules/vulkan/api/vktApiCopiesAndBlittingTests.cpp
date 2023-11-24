@@ -3336,6 +3336,9 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 			// Issue a a copy command per region defined by the test.
 			for (deUint32 i = 0; i < bufferImageCopies.size(); i++)
 			{
+				if (i > 0)
+					vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
+
 				vk.cmdCopyBufferToImage(*m_cmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopies[i]);
 			}
 		}
@@ -3365,6 +3368,9 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 			// Issue a a copy command per region defined by the test.
 			for (deUint32 i = 0; i < bufferImageCopies2KHR.size(); i++)
 			{
+				if (i > 0)
+					vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
+
 				const VkCopyBufferToImageInfo2KHR copyBufferToImageInfo2KHR =
 				{
 					VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR,	// VkStructureType				sType;

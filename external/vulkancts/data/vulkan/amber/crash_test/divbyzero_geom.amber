@@ -23,6 +23,7 @@ SHADER geometry geom_shader GLSL
 
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 3) out;
+in gl_PerVertex { vec4 gl_Position; float gl_PointSize; float gl_ClipDistance[]; } gl_in[];
 
 layout(set = 0, binding = 0) buffer block0
 {
