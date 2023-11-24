@@ -1002,13 +1002,24 @@ public:
 	virtual	void					initPrograms						(SourceCollections&			programCollection) const;
 	virtual void					checkSupport						(Context&					context) const
 	{
+		const InstanceInterface&	vki				= context.getInstanceInterface();
+		const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+
 #ifndef CTS_USES_VULKANSC
 		if ((m_bufferViewTestInfo.format == VK_FORMAT_A8_UNORM_KHR) ||
 			(m_bufferViewTestInfo.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR))
 			context.requireDeviceFunctionality("VK_KHR_maintenance5");
-#else
-		DE_UNREF(context);
 #endif // CTS_USES_VULKANSC
+
+		if ((m_bufferViewTestInfo.createUsage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) != 0)
+		{
+			VkFormatProperties					properties;
+			properties = getPhysicalDeviceFormatProperties(vki, physicalDevice, m_bufferViewTestInfo.format);
+			if ((properties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT) == 0)
+			{
+				TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT not supported for format");
+			}
+		}
 	}
 
 	virtual TestInstance*			createInstance						(Context&					context) const

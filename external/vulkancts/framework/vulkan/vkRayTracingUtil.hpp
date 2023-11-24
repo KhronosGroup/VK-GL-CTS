@@ -41,6 +41,7 @@
 #include "tcuVector.hpp"
 #include "tcuVectorType.hpp"
 #include "tcuTexture.hpp"
+#include "qpWatchDog.h"
 
 #include <vector>
 #include <map>
@@ -715,7 +716,8 @@ public:
 	void		batchBuild			(const DeviceInterface&		vk,
 									 const VkDevice				device,
 									 VkCommandPool				cmdPool,
-									 VkQueue					queue);
+									 VkQueue					queue,
+									 qpWatchDog*				watchDog);
 	size_t		getAllocationCount	() const;
 	size_t		getAllocationCount	(const DeviceInterface&		vk,
 									 const VkDevice				device,

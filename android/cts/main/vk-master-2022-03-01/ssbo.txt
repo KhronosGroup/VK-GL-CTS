@@ -64,11 +64,14 @@ dEQP-VK.ssbo.layout.random.all_shared_buffer.20
 dEQP-VK.ssbo.layout.random.scalar.19
 dEQP-VK.ssbo.layout.random.scalar.26
 dEQP-VK.ssbo.layout.random.scalar.38
+dEQP-VK.ssbo.layout.random.16bit.all_per_block_buffers.47
 dEQP-VK.ssbo.layout.random.16bit.all_shared_buffer.31
 dEQP-VK.ssbo.layout.random.16bit.all_shared_buffer.45
 dEQP-VK.ssbo.layout.random.16bit.scalar.15
 dEQP-VK.ssbo.layout.random.16bit.scalar.22
+dEQP-VK.ssbo.layout.random.16bit.scalar.70
 dEQP-VK.ssbo.layout.random.16bit.scalar.80
+dEQP-VK.ssbo.layout.random.16bit.scalar.93
 dEQP-VK.ssbo.readonly.layout.single_basic_type.std140.lowp_float
 dEQP-VK.ssbo.readonly.layout.single_basic_type.std140.mediump_float
 dEQP-VK.ssbo.readonly.layout.single_basic_type.std140.highp_float
@@ -1934,6 +1937,7 @@ dEQP-VK.ssbo.phys.layout.random.all_shared_buffer.47
 dEQP-VK.ssbo.phys.layout.random.scalar.3
 dEQP-VK.ssbo.phys.layout.random.scalar.6
 dEQP-VK.ssbo.phys.layout.random.scalar.26
+dEQP-VK.ssbo.phys.layout.random.scalar.30
 dEQP-VK.ssbo.phys.layout.random.scalar.62
 dEQP-VK.ssbo.phys.layout.random.scalar.81
 dEQP-VK.ssbo.phys.layout.random.scalar.84
@@ -1959,6 +1963,9 @@ dEQP-VK.ssbo.phys.layout.random.16bit.scalar.4
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.15
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.19
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.66
+dEQP-VK.ssbo.phys.layout.random.16bit.scalar.67
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.76
 dEQP-VK.ssbo.phys.layout.random.16bit.scalar.80
+dEQP-VK.ssbo.phys.layout.random.16bit.scalar.85
+dEQP-VK.ssbo.phys.layout.random.16bit.scalar.93
 dEQP-VK.ssbo.corner_case.long_shader_bitwise_and
