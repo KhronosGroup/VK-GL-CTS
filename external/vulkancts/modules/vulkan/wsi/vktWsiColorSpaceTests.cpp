@@ -781,6 +781,7 @@ tcu::TestStatus surfaceFormatRenderTests (Context& context, Type wsiType)
 	for (vector<VkSurfaceFormatKHR>::const_iterator curFmt = formats.begin(); curFmt != formats.end(); ++curFmt)
 	{
 		surfaceFormatRenderTest(context, wsiType, instHelper, devHelper, *surface, *curFmt);
+		context.getTestContext().touchWatchdog();
 	}
 	return tcu::TestStatus::pass("Rendering tests succeeded");
 }
@@ -802,6 +803,7 @@ tcu::TestStatus surfaceFormatRenderWithHdrTests (Context& context, Type wsiType)
 	for (vector<VkSurfaceFormatKHR>::const_iterator curFmt = formats.begin(); curFmt != formats.end(); ++curFmt)
 	{
 		surfaceFormatRenderTest(context, wsiType, instHelper, devHelper, *surface, *curFmt, true);
+		context.getTestContext().touchWatchdog();
 	}
 	return tcu::TestStatus::pass("Rendering tests succeeded");
 }

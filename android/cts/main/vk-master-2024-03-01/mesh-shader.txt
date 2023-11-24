@@ -1,0 +1,1 @@
+dEQP-VK.mesh_shader.ext.misc.single_point_default_size

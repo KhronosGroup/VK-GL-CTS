@@ -48,6 +48,7 @@
 #include "tcuCommandLine.hpp"
 
 #include <set>
+#include <unordered_map>
 
 namespace vkt
 {
@@ -362,10 +363,11 @@ public:
 
 	static SharedPtr<MultiQueues> getInstance(Context& context, SynchronizationType type, bool timelineSemaphore)
 	{
-		if (!m_multiQueues)
-			m_multiQueues = SharedPtr<MultiQueues>(new MultiQueues(context, type, timelineSemaphore));
+		deUint32 index = (deUint32)type << 1 | timelineSemaphore;
+		if (!m_multiQueues[index])
+			m_multiQueues[index] = SharedPtr<MultiQueues>(new MultiQueues(context, type, timelineSemaphore));
 
-		return m_multiQueues;
+		return m_multiQueues[index];
 	}
 	static void destroy()
 	{
@@ -386,9 +388,9 @@ private:
 	std::map<deUint32, QueueData>	m_queues;
 	deUint32						m_queueCount;
 
-	static SharedPtr<MultiQueues>	m_multiQueues;
+	static std::unordered_map<deUint32, SharedPtr<MultiQueues>>	m_multiQueues;
 };
-SharedPtr<MultiQueues>				MultiQueues::m_multiQueues;
+std::unordered_map<deUint32, SharedPtr<MultiQueues>>				MultiQueues::m_multiQueues;
 
 void createBarrierMultiQueue (SynchronizationWrapperPtr synchronizationWrapper,
 							  const VkCommandBuffer&	cmdBuffer,

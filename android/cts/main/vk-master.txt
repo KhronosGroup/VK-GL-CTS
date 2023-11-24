@@ -76,7 +76,6 @@ vk-master/reconvergence.txt
 vk-master/mesh-shader.txt
 vk-master/fragment-shading-barycentric.txt
 vk-master/depth.txt
-vk-master/video.txt
 vk-master/shader-object/api.txt
 vk-master/shader-object/create.txt
 vk-master/shader-object/link.txt

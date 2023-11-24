@@ -16254,17 +16254,8 @@ dEQP-VK.texture.conversion.snorm_clamp.r8g8_snorm
 dEQP-VK.texture.conversion.snorm_clamp.r8_snorm
 dEQP-VK.texture.conversion.snorm_clamp_linear.a2b10g10r10_snorm_pack32
 dEQP-VK.texture.conversion.snorm_clamp_linear.a2r10g10b10_snorm_pack32
-dEQP-VK.texture.conversion.snorm_clamp_linear.a8b8g8r8_snorm_pack32
-dEQP-VK.texture.conversion.snorm_clamp_linear.b8g8r8a8_snorm
 dEQP-VK.texture.conversion.snorm_clamp_linear.b8g8r8_snorm
-dEQP-VK.texture.conversion.snorm_clamp_linear.r16g16b16a16_snorm
-dEQP-VK.texture.conversion.snorm_clamp_linear.r16g16b16_snorm
-dEQP-VK.texture.conversion.snorm_clamp_linear.r16g16_snorm
-dEQP-VK.texture.conversion.snorm_clamp_linear.r16_snorm
-dEQP-VK.texture.conversion.snorm_clamp_linear.r8g8b8a8_snorm
 dEQP-VK.texture.conversion.snorm_clamp_linear.r8g8b8_snorm
-dEQP-VK.texture.conversion.snorm_clamp_linear.r8g8_snorm
-dEQP-VK.texture.conversion.snorm_clamp_linear.r8_snorm
 dEQP-VK.texture.texel_buffer.uniform.srgb.r8g8b8a8_srgb
 dEQP-VK.texture.texel_buffer.uniform.srgb.b8g8r8a8_srgb
 dEQP-VK.texture.texel_buffer.uniform.srgb.b8g8r8_srgb

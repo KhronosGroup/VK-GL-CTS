@@ -5941,6 +5941,13 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	};
 
+	const VkImageLayout initialAndFinalColorLayoutsLazy[] =
+	{
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+	};
+
 	const VkImageLayout initialAndFinalDepthStencilLayouts[] =
 	{
 		VK_IMAGE_LAYOUT_GENERAL,
@@ -6056,6 +6063,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 
 		for (size_t testCaseNdx = 0; testCaseNdx < testCaseCount; testCaseNdx++)
 		{
+			const TestConfig::ImageMemory	imageMemory	= rng.choose<TestConfig::ImageMemory>(DE_ARRAY_BEGIN(imageMemories), DE_ARRAY_END(imageMemories));
 			if (allocationType == ALLOCATIONTYPE_IO_GENERIC)
 			{
 				const deUint32		attachmentCount	= 4u + rng.getUint32() % 31u;
@@ -6077,10 +6085,14 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 
 					const VkImageLayout			initialLayout				= isDepthStencilAttachment
 																			? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts))
-																			: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts));
+																			: (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+																				? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts))
+																				: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayoutsLazy), DE_ARRAY_END(initialAndFinalColorLayoutsLazy));
 					const VkImageLayout			finalizeLayout				= isDepthStencilAttachment
 																			? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts))
-																			: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts));
+																			: (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+																				? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts))
+																				: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayoutsLazy), DE_ARRAY_END(initialAndFinalColorLayoutsLazy));
 
 					const VkAttachmentLoadOp	stencilLoadOp				= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 					const VkAttachmentStoreOp	stencilStoreOp				= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
@@ -6349,7 +6361,6 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 				{
 					const TestConfig::RenderTypes			render			= rng.choose<TestConfig::RenderTypes>(DE_ARRAY_BEGIN(renderCommands), DE_ARRAY_END(renderCommands));
 					const TestConfig::CommandBufferTypes	commandBuffer	= rng.choose<TestConfig::CommandBufferTypes>(DE_ARRAY_BEGIN(commandBuffers), DE_ARRAY_END(commandBuffers));
-					const TestConfig::ImageMemory			imageMemory		= rng.choose<TestConfig::ImageMemory>(DE_ARRAY_BEGIN(imageMemories), DE_ARRAY_END(imageMemories));
 
 					const string							testCaseName	= de::toString(testCaseNdx);
 					const UVec2								targetSize		= rng.choose<UVec2>(DE_ARRAY_BEGIN(targetSizes), DE_ARRAY_END(targetSizes));
@@ -6386,8 +6397,13 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 					const VkAttachmentLoadOp	loadOp			= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 					const VkAttachmentStoreOp	storeOp			= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
 
-					const VkImageLayout			initialLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts));
-					const VkImageLayout			finalizeLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts));
+					const VkImageLayout			initialLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+																? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts))
+																: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayoutsLazy), DE_ARRAY_END(initialAndFinalColorLayoutsLazy));
+
+					const VkImageLayout			finalizeLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+																? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts))
+																: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayoutsLazy), DE_ARRAY_END(initialAndFinalColorLayoutsLazy));
 
 					const VkAttachmentLoadOp	stencilLoadOp	= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 					const VkAttachmentStoreOp	stencilStoreOp	= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
@@ -6523,7 +6539,6 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 				{
 					const TestConfig::RenderTypes			render			= rng.choose<TestConfig::RenderTypes>(DE_ARRAY_BEGIN(renderCommands), DE_ARRAY_END(renderCommands));
 					const TestConfig::CommandBufferTypes	commandBuffer	= rng.choose<TestConfig::CommandBufferTypes>(DE_ARRAY_BEGIN(commandBuffers), DE_ARRAY_END(commandBuffers));
-					const TestConfig::ImageMemory			imageMemory		= rng.choose<TestConfig::ImageMemory>(DE_ARRAY_BEGIN(imageMemories), DE_ARRAY_END(imageMemories));
 
 					const string							testCaseName	= de::toString(testCaseNdx);
 					const UVec2								targetSize		= rng.choose<UVec2>(DE_ARRAY_BEGIN(targetSizes), DE_ARRAY_END(targetSizes));

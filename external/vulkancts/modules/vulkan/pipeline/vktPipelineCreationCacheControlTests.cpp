@@ -880,8 +880,9 @@ TestStatus testInstance(Context& context, const TestParams& testParameter)
 	const auto	pipelineCache = createPipelineCache(vk, device, testParameter);
 	const auto	layout		  = createPipelineLayout(vk, device, testParameter);
 	const auto	renderPass	  = createRenderPass(vk, device, testParameter);
-	const auto	modules		  = createShaderModules(vk, device, context.getBinaryCollection(), {"vertex", "fragment"});
-	const auto	shaderStages  = createShaderStages(modules, {VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT});
+	// No fragment due to rasterizationDiscardEnabled
+	const auto	modules		  = createShaderModules(vk, device, context.getBinaryCollection(), std::vector<const char*>{"vertex"});
+	const auto	shaderStages  = createShaderStages(modules, std::vector<VkShaderStageFlagBits>{VK_SHADER_STAGE_VERTEX_BIT});
 
 	// Placeholder for base pipeline if using cacheType == DERIVATIVE_HANDLE
 	auto basePipeline = UniquePipeline{};

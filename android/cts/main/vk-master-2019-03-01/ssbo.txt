@@ -3053,7 +3053,6 @@ dEQP-VK.ssbo.layout.random.16bit.all_per_block_buffers.43
 dEQP-VK.ssbo.layout.random.16bit.all_per_block_buffers.44
 dEQP-VK.ssbo.layout.random.16bit.all_per_block_buffers.45
 dEQP-VK.ssbo.layout.random.16bit.all_per_block_buffers.46
-dEQP-VK.ssbo.layout.random.16bit.all_per_block_buffers.47
 dEQP-VK.ssbo.layout.random.16bit.all_per_block_buffers.48
 dEQP-VK.ssbo.layout.random.16bit.all_per_block_buffers.49
 dEQP-VK.ssbo.layout.random.16bit.all_shared_buffer.0
@@ -3272,7 +3271,6 @@ dEQP-VK.ssbo.layout.random.16bit.scalar.66
 dEQP-VK.ssbo.layout.random.16bit.scalar.67
 dEQP-VK.ssbo.layout.random.16bit.scalar.68
 dEQP-VK.ssbo.layout.random.16bit.scalar.69
-dEQP-VK.ssbo.layout.random.16bit.scalar.70
 dEQP-VK.ssbo.layout.random.16bit.scalar.71
 dEQP-VK.ssbo.layout.random.16bit.scalar.72
 dEQP-VK.ssbo.layout.random.16bit.scalar.73
@@ -3294,7 +3292,6 @@ dEQP-VK.ssbo.layout.random.16bit.scalar.89
 dEQP-VK.ssbo.layout.random.16bit.scalar.90
 dEQP-VK.ssbo.layout.random.16bit.scalar.91
 dEQP-VK.ssbo.layout.random.16bit.scalar.92
-dEQP-VK.ssbo.layout.random.16bit.scalar.93
 dEQP-VK.ssbo.layout.random.16bit.scalar.94
 dEQP-VK.ssbo.layout.random.16bit.scalar.95
 dEQP-VK.ssbo.layout.random.16bit.scalar.96
