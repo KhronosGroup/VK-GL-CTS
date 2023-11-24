@@ -1364,7 +1364,11 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
 {
 	const VkBool32												checkAlways							= VK_TRUE;
 #ifndef CTS_USES_VULKANSC
-	const auto													vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorProperties();
+	const InstanceInterface&									vki									= context.getInstanceInterface();
+	const VkPhysicalDevice										physicalDevice						= context.getPhysicalDevice();
+	vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT		vertexAttributeDivisorProperties	= vk::initVulkanStructure();
+	vk::VkPhysicalDeviceProperties2								properties2							= vk::initVulkanStructure(&vertexAttributeDivisorProperties);
+	vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 #else
 	const auto													vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorPropertiesEXT();
 #endif

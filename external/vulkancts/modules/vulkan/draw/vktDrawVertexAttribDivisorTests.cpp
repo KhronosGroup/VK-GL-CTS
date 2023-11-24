@@ -782,7 +782,7 @@ void VertexAttributeDivisorInstance::draw (vk::VkCommandBuffer cmdBuffer, vk::Vk
 	else
 	{
 #ifndef CTS_USES_VULKANSC
-		vk::bindGraphicsShaders(m_vk, cmdBuffer, m_vertexShader.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, m_fragmentShader.get());
+		vk::bindGraphicsShaders(m_vk, cmdBuffer, m_vertexShader.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, m_fragmentShader.get(), m_context.getMeshShaderFeatures().taskShader, m_context.getMeshShaderFeatures().meshShader);
 		vk::setDefaultShaderObjectDynamicStates(m_vk, cmdBuffer, m_context.getDeviceExtensions());
 		vk::bindNullMeshShaders(m_vk, cmdBuffer, m_context.getMeshShaderFeaturesEXT());
 
