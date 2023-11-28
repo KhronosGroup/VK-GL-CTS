@@ -2312,6 +2312,7 @@ void testGenerator(tcu::TestCaseGroup* group)
 		vk::VkFormat	output;
 	} formatsAndCommands[] = {
 		{ DRAW,		vk::VK_FORMAT_R8G8B8A8_UNORM,				vk::VK_FORMAT_R8G8B8A8_UNORM		},
+		{ DRAW,		vk::VK_FORMAT_R8G8_UNORM,					vk::VK_FORMAT_R8G8_UNORM			},
 		{ DRAW,		vk::VK_FORMAT_R32G32B32A32_SFLOAT,			vk::VK_FORMAT_R32G32B32A32_SFLOAT	},
 		{ DRAW,		vk::VK_FORMAT_R16_UNORM,					vk::VK_FORMAT_R16_UNORM				},
 		{ DRAW,		vk::VK_FORMAT_D16_UNORM,					vk::VK_FORMAT_R16_UNORM				},
@@ -2370,11 +2371,11 @@ void testGenerator(tcu::TestCaseGroup* group)
 		const char* desc;
 	} mipLevelRegionCountPaddingTests[] =
 	{
-		{	0u,		1,		0u,		"0_1_0",	""	},
-		{	1u,		1,		0u,		"1_1_0",	""	},
-		{	4u,		1,		0u,		"4_1_0",	""	},
-		{	0u,		4,		4u,		"0_4_4",	""	},
-		{	0u,		16,		64u,	"0_16_64",	""	},
+		{	0u,		1u,		0u,		"0_1_0",	""	},
+		{	1u,		1u,		0u,		"1_1_0",	""	},
+		{	4u,		1u,		0u,		"4_1_0",	""	},
+		{	0u,		4u,		4u,		"0_4_4",	""	},
+		{	0u,		16u,	64u,	"0_16_64",	""	},
 	};
 
 	tcu::TestContext& testCtx = group->getTestContext();
@@ -2438,6 +2439,30 @@ void testGenerator(tcu::TestCaseGroup* group)
 											if (sparseImage && isCompressedFormat(formatAndCommand.sampled))
 												continue;
 
+											// This format was added later, with restricted combinations interesting for the HW.
+											if (formatAndCommand.sampled == VK_FORMAT_R8G8_UNORM)
+											{
+												// Layouts are not that important.
+												if (!transition.host)
+													continue;
+												if (layouts.srcLayout == VK_IMAGE_LAYOUT_GENERAL)
+													continue;
+												if (intermediateLayout.layout != VK_IMAGE_LAYOUT_GENERAL)
+													continue;
+
+												// Linear tiling covered by R16.
+												if (tiling.tiling != VK_IMAGE_TILING_OPTIMAL)
+													continue;
+
+												// Mip levels covered by other formats.
+												if (mipLevelRegionCountPaddingTest.mipLevel != 0u ||
+													mipLevelRegionCountPaddingTest.regionsCount != 1u ||
+													mipLevelRegionCountPaddingTest.padding != 0u)
+												{
+													continue;
+												}
+											}
+
 											const TestParameters parameters =
 											{
 												copy.copyMemoryToImage,							// bool				copyMemoryToImage
@@ -2479,6 +2504,63 @@ void testGenerator(tcu::TestCaseGroup* group)
 			formatGroup->addChild(copyTestGroup);
 		}
 		group->addChild(formatGroup);
+	}
+
+	{
+		using FormatPair = std::pair<VkFormat, VkFormat>; // .first = sampled, .second = output
+
+		const std::vector<FormatPair> formatCases
+		{
+			std::make_pair(VK_FORMAT_R8G8B8A8_UNORM,		VK_FORMAT_R8G8B8A8_UNORM),
+			std::make_pair(VK_FORMAT_R8G8_UNORM,			VK_FORMAT_R8G8_UNORM),
+			std::make_pair(VK_FORMAT_R32_SFLOAT,			VK_FORMAT_R32_SFLOAT),
+			std::make_pair(VK_FORMAT_D32_SFLOAT,			VK_FORMAT_R32_SFLOAT),
+			std::make_pair(VK_FORMAT_R10X6_UNORM_PACK16,	VK_FORMAT_R10X6_UNORM_PACK16),
+		};
+
+		const std::vector<VkExtent3D> extentCases
+		{
+			makeExtent3D(128u,  128u,  1u),
+			makeExtent3D(512u,  512u,  1u),
+			makeExtent3D(4096u, 4096u, 1u),
+		};
+
+		de::MovePtr<tcu::TestCaseGroup> largeImages (new tcu::TestCaseGroup(testCtx, "large_images"));
+		for (const auto& format : formatCases)
+		{
+			const auto& sampledFormat	= format.first;
+			const auto& outputFormat	= format.second;
+
+			for (const auto& extent : extentCases)
+			{
+				const TestParameters parameters =
+				{
+					true,									// bool				copyMemoryToImage
+					true,									// bool				hostCopyImageToMemory
+					true,									// bool				hostTransferLayout
+					true,									// bool				outputImageHostTransition
+					false,									// bool				memcpyFlag
+					false,									// bool				dynamicRendering
+					DRAW,									// Command			command
+					sampledFormat,							// VkFormat			imageSampledFormat
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	// VkImageLayout	srcLayout
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout	dstLayout
+					VK_IMAGE_LAYOUT_GENERAL,				// VkImageLayout	intermediateLayout
+					VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling	sampledTiling;
+					outputFormat,							// VkFormat			imageOutputFormat
+					extent,									// VkExtent3D		imageSize
+					false,									// bool				sparse
+					0u,										// deUint32			mipLevel
+					1u,										// deUint32			regionsCount
+					0u,										// deUint32			padding
+				};
+
+				const std::string testName = getFormatShortString(sampledFormat) + "_" + std::to_string(extent.height) + "_" + std::to_string(extent.height);
+				largeImages->addChild(new HostImageCopyTestCase(testCtx, testName.c_str(), parameters));
+			}
+		}
+
+		group->addChild(largeImages.release());
 	}
 
 	const struct PreinitializedFormats {
