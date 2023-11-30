@@ -946,6 +946,11 @@ bool intThresholdCompare (TestLog& log, const char* imageSetName, const char* im
 	Vec4				pixelBias			(0.0f, 0.0f, 0.0f, 0.0f);
 	Vec4				pixelScale			(1.0f, 1.0f, 1.0f, 1.0f);
 
+	I64Vec4	refPix64;
+	I64Vec4	cmpPix64;
+	IVec4	refPix;
+	IVec4	cmpPix;
+
 	TCU_CHECK_INTERNAL(result.getWidth() == width && result.getHeight() == height && result.getDepth() == depth);
 
 	for (int z = 0; z < depth; z++)
@@ -956,21 +961,24 @@ bool intThresholdCompare (TestLog& log, const char* imageSetName, const char* im
 			{
 				if (use64Bits)
 				{
-					I64Vec4	refPix	= reference.getPixelInt64(x, y, z);
-					I64Vec4	cmpPix	= result.getPixelInt64(x, y, z);
-					diff			= abs(refPix - cmpPix).cast<deUint64>();
+					refPix64	= reference.getPixelInt64(x, y, z);
+					cmpPix64	= result.getPixelInt64(x, y, z);
+					diff		= abs(refPix64 - cmpPix64).cast<deUint64>();
 				}
 				else
 				{
-					IVec4	refPix	= reference.getPixelInt(x, y, z);
-					IVec4	cmpPix	= result.getPixelInt(x, y, z);
-					diff			= abs(refPix - cmpPix).cast<deUint64>();
+					refPix	= reference.getPixelInt(x, y, z);
+					cmpPix	= result.getPixelInt(x, y, z);
+					diff	= abs(refPix - cmpPix).cast<deUint64>();
 				}
 
 				maxDiff = max(maxDiff, diff);
 
 				const bool isOk = boolAll(lessThanEqual(diff, threshold64));
-				errorMask.setPixel(isOk ? IVec4(0, 0xff, 0, 0xff) : IVec4(0xff, 0, 0, 0xff), x, y, z);
+				if (isOk)
+					errorMask.setPixel(IVec4(0, 0xff, 0, 0xff), x, y, z);
+				else
+					errorMask.setPixel(IVec4(0xff, 0, 0, 0xff), x, y, z);
 			}
 		}
 	}
