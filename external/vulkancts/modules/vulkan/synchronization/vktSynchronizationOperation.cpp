@@ -1798,6 +1798,8 @@ public:
 		setHostBufferData(m_context, *m_hostBuffer, data);
 	}
 
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
+
 private:
 	OperationContext&			m_context;
 	Resource&					m_resource;
@@ -2050,6 +2052,8 @@ public:
 		DE_ASSERT(m_mode == ACCESS_MODE_WRITE);
 		setHostBufferData(m_context, *m_hostBuffer, data);
 	}
+
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
 
 private:
 	OperationContext&			m_context;
@@ -2306,6 +2310,8 @@ public:
 		return de::MovePtr<Operation>();
 	}
 
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
+
 private:
 	const ResourceDescription	m_resourceDesc;
 	const BufferType			m_bufferType;
@@ -2392,6 +2398,8 @@ public:
 		DE_ASSERT(0);
 		return de::MovePtr<Operation>();
 	}
+
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
 
 private:
 	const ResourceDescription	m_resourceDesc;
@@ -2494,6 +2502,8 @@ public:
 		DE_ASSERT(0);
 	}
 
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
+
 private:
 	OperationContext&			m_context;
 	Resource&					m_inResource;
@@ -2582,6 +2592,8 @@ public:
 		else
 			return de::MovePtr<Operation>(new BufferCopyImplementation(context, inResource, outResource, m_stage, m_bufferType, m_shaderPrefix, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
 	}
+
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
 
 private:
 	const ResourceDescription	m_resourceDesc;
@@ -2724,6 +2736,8 @@ public:
 		DE_ASSERT(0);
 	}
 
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
+
 private:
 	OperationContext&			m_context;
 	Resource&					m_inResource;
@@ -2813,6 +2827,8 @@ public:
 		else
 			return de::MovePtr<Operation>(new CopyImageImplementation(context, inResource, outResource, m_stage, m_shaderPrefix, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
 	}
+
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
 
 private:
 	const ResourceDescription	m_resourceDesc;
@@ -4619,6 +4635,8 @@ public:
 		DE_ASSERT(0);
 	}
 
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
+
 private:
 	OperationContext&			m_context;
 	Resource&					m_resource;
@@ -5649,6 +5667,26 @@ de::MovePtr<OperationSupport> makeOperationSupport (const OperationName opName, 
 			DE_ASSERT(0);
 			return de::MovePtr<OperationSupport>();
 	}
+}
+
+bool isStageSupported (const vk::VkShaderStageFlagBits stage, const vk::VkQueueFlags queueFlags) {
+	switch (stage) {
+	case vk::VK_SHADER_STAGE_VERTEX_BIT:
+	case vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+	case vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+	case vk::VK_SHADER_STAGE_GEOMETRY_BIT:
+	case vk::VK_SHADER_STAGE_FRAGMENT_BIT:
+		if ((queueFlags & (vk::VK_QUEUE_GRAPHICS_BIT)) == 0)
+			return false;
+		break;
+	case vk::VK_SHADER_STAGE_COMPUTE_BIT:
+		if ((queueFlags & (vk::VK_QUEUE_COMPUTE_BIT)) == 0)
+			return false;
+		break;
+	default:
+		break;
+	}
+	return true;
 }
 
 } // synchronization
