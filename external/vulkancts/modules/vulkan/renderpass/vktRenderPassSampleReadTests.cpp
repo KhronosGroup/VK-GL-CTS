@@ -484,116 +484,6 @@ Move<VkFramebuffer> createFramebuffer (const DeviceInterface&	vkd,
 	return createFramebuffer(vkd, device, &createInfo);
 }
 
-Move<VkPipelineLayout> createRenderPipelineLayout (const DeviceInterface&	vkd,
-												   VkDevice					device)
-{
-	const VkPipelineLayoutCreateInfo	createInfo	=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineLayoutCreateFlags)0,
-
-		0u,
-		DE_NULL,
-
-		0u,
-		DE_NULL
-	};
-
-	return createPipelineLayout(vkd, device, &createInfo);
-}
-
-Move<VkPipeline> createRenderPipeline (const DeviceInterface&		vkd,
-									   VkDevice						device,
-									   VkRenderPass					renderPass,
-									   VkPipelineLayout				pipelineLayout,
-									   const vk::BinaryCollection&	binaryCollection,
-									   deUint32						width,
-									   deUint32						height,
-									   deUint32						sampleCount)
-{
-	const Unique<VkShaderModule>					vertexShaderModule				(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
-	const Unique<VkShaderModule>					fragmentShaderModule			(createShaderModule(vkd, device, binaryCollection.get("quad-frag"), 0u));
-	const VkPipelineVertexInputStateCreateInfo		vertexInputState				=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineVertexInputStateCreateFlags)0u,
-
-		0u,
-		DE_NULL,
-
-		0u,
-		DE_NULL
-	};
-	const std::vector<VkViewport>					viewports						(1, makeViewport(tcu::UVec2(width, height)));
-	const std::vector<VkRect2D>						scissors						(1, makeRect2D(tcu::UVec2(width, height)));
-
-	const VkPipelineMultisampleStateCreateInfo		multisampleState				=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineMultisampleStateCreateFlags)0u,
-
-		sampleCountBitFromSampleCount(sampleCount),
-		VK_TRUE,
-		1.0f,
-		DE_NULL,
-		VK_FALSE,
-		VK_FALSE,
-	};
-
-	VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
-	deMemset(&colorBlendAttachmentState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
-	colorBlendAttachmentState.colorWriteMask = 0xF;
-
-	const std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(deUint32(renderPass == DE_NULL) + 1u, colorBlendAttachmentState);
-	VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoDefault = initVulkanStructure();
-	colorBlendStateCreateInfoDefault.attachmentCount	= deUint32(colorBlendAttachmentStates.size());
-	colorBlendStateCreateInfoDefault.pAttachments		= colorBlendAttachmentStates.data();
-
-	void* pNext = DE_NULL;
-#ifndef CTS_USES_VULKANSC
-	VkFormat colorAttachmentFormats[] = { VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT };
-	VkPipelineRenderingCreateInfo renderingCreateInfo
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-		DE_NULL,
-		0u,
-		2u,
-		colorAttachmentFormats,
-		VK_FORMAT_UNDEFINED,
-		VK_FORMAT_UNDEFINED
-	};
-
-	if (renderPass == DE_NULL)
-		pNext = &renderingCreateInfo;
-#endif // CTS_USES_VULKANSC
-
-	return makeGraphicsPipeline(vkd,									// const DeviceInterface&                        vk
-								device,									// const VkDevice                                device
-								pipelineLayout,							// const VkPipelineLayout                        pipelineLayout
-								*vertexShaderModule,					// const VkShaderModule                          vertexShaderModule
-								DE_NULL,								// const VkShaderModule                          tessellationControlShaderModule
-								DE_NULL,								// const VkShaderModule                          tessellationEvalShaderModule
-								DE_NULL,								// const VkShaderModule                          geometryShaderModule
-								*fragmentShaderModule,					// const VkShaderModule                          fragmentShaderModule
-								renderPass,								// const VkRenderPass                            renderPass
-								viewports,								// const std::vector<VkViewport>&                viewports
-								scissors,								// const std::vector<VkRect2D>&                  scissors
-								VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
-								0u,										// const deUint32                                subpass
-								0u,										// const deUint32                                patchControlPoints
-								&vertexInputState,						// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-								DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-								&multisampleState,						// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-								DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-								&colorBlendStateCreateInfoDefault,		// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
-								DE_NULL,								// const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
-								pNext);									// const void*                                   pNext
-
-}
-
 Move<VkDescriptorSetLayout> createSubpassDescriptorSetLayout (const DeviceInterface&	vkd,
 															  VkDevice					device)
 {
@@ -625,128 +515,6 @@ Move<VkDescriptorSetLayout> createSubpassDescriptorSetLayout (const DeviceInterf
 	};
 
 	return createDescriptorSetLayout(vkd, device, &createInfo);
-}
-
-Move<VkPipelineLayout> createSubpassPipelineLayout (const DeviceInterface&	vkd,
-												  VkDevice					device,
-												  VkDescriptorSetLayout		descriptorSetLayout)
-{
-	const VkPipelineLayoutCreateInfo	createInfo	=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineLayoutCreateFlags)0,
-
-		1u,
-		&descriptorSetLayout,
-
-		0u,
-		DE_NULL
-	};
-
-	return createPipelineLayout(vkd, device, &createInfo);
-}
-
-Move<VkPipeline> createSubpassPipeline(const DeviceInterface&		vkd,
-									   VkDevice						device,
-									   VkRenderPass					renderPass,
-									   VkPipelineLayout				pipelineLayout,
-									   const vk::BinaryCollection&	binaryCollection,
-									   deUint32						width,
-									   deUint32						height,
-									   deUint32						sampleCount)
-{
-	const Unique<VkShaderModule>					vertexShaderModule(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
-	const Unique<VkShaderModule>					fragmentShaderModule(createShaderModule(vkd, device, binaryCollection.get("quad-subpass-frag"), 0u));
-
-	const VkPipelineVertexInputStateCreateInfo		vertexInputState =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineVertexInputStateCreateFlags)0u,
-
-		0u,
-		DE_NULL,
-
-		0u,
-		DE_NULL
-	};
-
-	const std::vector<VkViewport>					viewports(1, makeViewport(tcu::UVec2(width, height)));
-	const std::vector<VkRect2D>						scissors(1, makeRect2D(tcu::UVec2(width, height)));
-
-	const VkPipelineMultisampleStateCreateInfo		multisampleState =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineMultisampleStateCreateFlags)0u,
-
-		sampleCountBitFromSampleCount(sampleCount),
-		VK_FALSE,
-		0.0f,
-		DE_NULL,
-		VK_FALSE,
-		VK_FALSE,
-	};
-
-	VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
-	deMemset(&colorBlendAttachmentState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
-	colorBlendAttachmentState.colorWriteMask = 0xF;
-
-	const std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(deUint32(renderPass == DE_NULL) + 1u, colorBlendAttachmentState);
-	VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoDefault = initVulkanStructure();
-	colorBlendStateCreateInfoDefault.attachmentCount	= deUint32(colorBlendAttachmentStates.size());
-	colorBlendStateCreateInfoDefault.pAttachments		= colorBlendAttachmentStates.data();
-
-	void* pNext = DE_NULL;
-#ifndef CTS_USES_VULKANSC
-	deUint32 colorAttachmentLocations[] = { VK_ATTACHMENT_UNUSED, 0 };
-	VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocation = initVulkanStructure();
-	renderingAttachmentLocation.colorAttachmentCount		= 2u;
-	renderingAttachmentLocation.pColorAttachmentLocations	= colorAttachmentLocations;
-
-	deUint32 colorAttachmentInputIndices[]{ 0, VK_ATTACHMENT_UNUSED };
-	VkRenderingInputAttachmentIndexInfoKHR renderingInputAttachmentIndexInfo = initVulkanStructure(&renderingAttachmentLocation);
-	renderingInputAttachmentIndexInfo.colorAttachmentCount = 2u;
-	renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices = colorAttachmentInputIndices;
-
-	VkFormat colorAttachmentFormats[] = { VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT };
-	VkPipelineRenderingCreateInfo renderingCreateInfo
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-		&renderingInputAttachmentIndexInfo,
-		0u,
-		2u,
-		colorAttachmentFormats,
-		VK_FORMAT_UNDEFINED,
-		VK_FORMAT_UNDEFINED
-	};
-
-	if (renderPass == DE_NULL)
-		pNext = &renderingCreateInfo;
-#endif // CTS_USES_VULKANSC
-
-	return makeGraphicsPipeline(vkd,									// const DeviceInterface&                        vk
-								device,									// const VkDevice                                device
-								pipelineLayout,							// const VkPipelineLayout                        pipelineLayout
-								*vertexShaderModule,					// const VkShaderModule                          vertexShaderModule
-								DE_NULL,								// const VkShaderModule                          tessellationControlShaderModule
-								DE_NULL,								// const VkShaderModule                          tessellationEvalShaderModule
-								DE_NULL,								// const VkShaderModule                          geometryShaderModule
-								*fragmentShaderModule,					// const VkShaderModule                          fragmentShaderModule
-								renderPass,								// const VkRenderPass                            renderPass
-								viewports,								// const std::vector<VkViewport>&                viewports
-								scissors,								// const std::vector<VkRect2D>&                  scissors
-								VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
-								1u,										// const deUint32                                subpass
-								0u,										// const deUint32                                patchControlPoints
-								&vertexInputState,						// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-								DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-								&multisampleState,						// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-								DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-								&colorBlendStateCreateInfoDefault,		// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
-								DE_NULL,								// const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
-								pNext);									// const void*                                   pNext
 }
 
 Move<VkDescriptorPool> createSubpassDescriptorPool (const DeviceInterface&	vkd,
@@ -893,6 +661,9 @@ protected:
 	tcu::TestStatus							iterateInternal					(void);
 	tcu::TestStatus							iterateInternalDynamicRendering	(void);
 
+	void									createRenderPipeline			(void);
+	void									createSubpassPipeline			(void);
+
 #ifndef CTS_USES_VULKANSC
 	void									preRenderCommands				(const DeviceInterface& vk, VkCommandBuffer cmdBuffer);
 	void									inbetweenRenderCommands			(const DeviceInterface& vk, VkCommandBuffer cmdBuffer);
@@ -932,12 +703,12 @@ private:
 	const Unique<VkRenderPass>				m_renderPass;
 	const Unique<VkFramebuffer>				m_framebuffer;
 
-	const Unique<VkPipelineLayout>			m_renderPipelineLayout;
-	const Unique<VkPipeline>				m_renderPipeline;
+	PipelineLayoutWrapper					m_renderPipelineLayout;
+	GraphicsPipelineWrapper					m_renderPipeline;
 
 	const Unique<VkDescriptorSetLayout>		m_subpassDescriptorSetLayout;
-	const Unique<VkPipelineLayout>			m_subpassPipelineLayout;
-	const Unique<VkPipeline>				m_subpassPipeline;
+	PipelineLayoutWrapper					m_subpassPipelineLayout;
+	GraphicsPipelineWrapper					m_subpassPipeline;
 	const Unique<VkDescriptorPool>			m_subpassDescriptorPool;
 	const Unique<VkDescriptorSet>			m_subpassDescriptorSet;
 
@@ -968,15 +739,17 @@ SampleReadTestInstance::SampleReadTestInstance (Context& context, TestConfig con
 	, m_dstBufferMemory				(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_dstBuffer))
 	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT, m_sampleCount, m_groupParams->renderingType))
 	, m_framebuffer					(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_srcImageView, *m_dstMultisampleImageView, *m_dstSinglesampleImageView, m_width, m_height))
-	, m_renderPipelineLayout		(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
-	, m_renderPipeline				(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height, m_sampleCount))
+	, m_renderPipelineLayout		(m_groupParams->pipelineConstructionType, context.getDeviceInterface(), context.getDevice())
+	, m_renderPipeline				(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), m_groupParams->pipelineConstructionType)
 	, m_subpassDescriptorSetLayout	(createSubpassDescriptorSetLayout(context.getDeviceInterface(), context.getDevice()))
-	, m_subpassPipelineLayout		(createSubpassPipelineLayout(context.getDeviceInterface(), context.getDevice(), *m_subpassDescriptorSetLayout))
-	, m_subpassPipeline				(createSubpassPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_subpassPipelineLayout, context.getBinaryCollection(), m_width, m_height, m_sampleCount))
+	, m_subpassPipelineLayout		(m_groupParams->pipelineConstructionType, context.getDeviceInterface(), context.getDevice(), 1u, &*m_subpassDescriptorSetLayout)
+	, m_subpassPipeline				(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), m_groupParams->pipelineConstructionType)
 	, m_subpassDescriptorPool		(createSubpassDescriptorPool(context.getDeviceInterface(), context.getDevice()))
 	, m_subpassDescriptorSet		(createSubpassDescriptorSet(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_subpassDescriptorPool, *m_subpassDescriptorSetLayout, *m_srcInputImageView, m_srcInputImageReadLayout))
 	, m_commandPool					(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 {
+	createRenderPipeline();
+	createSubpassPipeline();
 }
 
 SampleReadTestInstance::~SampleReadTestInstance (void)
@@ -1153,6 +926,165 @@ tcu::TestStatus SampleReadTestInstance::iterateInternalDynamicRendering()
 	return tcu::TestStatus(m_resultCollector.getResult(), m_resultCollector.getMessage());
 }
 
+void SampleReadTestInstance::createRenderPipeline()
+{
+	const DeviceInterface&			vk					(m_context.getDeviceInterface());
+	const VkDevice					device				(m_context.getDevice());
+	vk::BinaryCollection&			binaryCollection	(m_context.getBinaryCollection());
+	const std::vector<VkViewport>	viewports			{ makeViewport(tcu::UVec2(m_width, m_height)) };
+	const std::vector<VkRect2D>		scissors			{ makeRect2D(tcu::UVec2(m_width, m_height)) };
+	ShaderWrapper					vertexShaderModule	(vk, device, binaryCollection.get("quad-vert"), 0);
+	ShaderWrapper					fragmentShaderModule(vk, device, binaryCollection.get("quad-frag"), 0);
+
+	PipelineRenderingCreateInfoWrapper			renderingCreateInfoWrapper;
+	const VkPipelineVertexInputStateCreateInfo	vertexInputState = initVulkanStructure();
+	const VkPipelineMultisampleStateCreateInfo	multisampleState
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+		DE_NULL,
+		(VkPipelineMultisampleStateCreateFlags)0u,
+
+		sampleCountBitFromSampleCount(m_sampleCount),
+		VK_TRUE,
+		1.0f,
+		DE_NULL,
+		VK_FALSE,
+		VK_FALSE,
+	};
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
+	deMemset(&colorBlendAttachmentState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
+	colorBlendAttachmentState.colorWriteMask = 0xF;
+
+	const std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(deUint32(*m_renderPass == DE_NULL) + 1u, colorBlendAttachmentState);
+	VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
+	colorBlendStateCreateInfo.attachmentCount = deUint32(colorBlendAttachmentStates.size());
+	colorBlendStateCreateInfo.pAttachments = colorBlendAttachmentStates.data();
+
+#ifndef CTS_USES_VULKANSC
+	VkFormat colorAttachmentFormats[] = { VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT };
+	VkPipelineRenderingCreateInfo renderingCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+		DE_NULL,
+		0u,
+		2u,
+		colorAttachmentFormats,
+		VK_FORMAT_UNDEFINED,
+		VK_FORMAT_UNDEFINED
+	};
+
+	if (*m_renderPass == DE_NULL)
+		renderingCreateInfoWrapper.ptr = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
+
+	m_renderPipeline.setDefaultDepthStencilState()
+		.setDefaultRasterizationState()
+		.setupVertexInputState(&vertexInputState)
+		.setupPreRasterizationShaderState(viewports,
+			scissors,
+			m_renderPipelineLayout,
+			*m_renderPass,
+			0u,
+			vertexShaderModule,
+			0u,
+			ShaderWrapper(),
+			ShaderWrapper(),
+			ShaderWrapper(),
+			DE_NULL,
+			DE_NULL,
+			renderingCreateInfoWrapper)
+		.setupFragmentShaderState(m_renderPipelineLayout, *m_renderPass, 0u, fragmentShaderModule, 0u, &multisampleState)
+		.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo, &multisampleState)
+		.setMonolithicPipelineLayout(m_renderPipelineLayout)
+		.buildPipeline();
+}
+
+void SampleReadTestInstance::createSubpassPipeline ()
+{
+	const DeviceInterface&			vk					(m_context.getDeviceInterface());
+	const VkDevice					device				(m_context.getDevice());
+	vk::BinaryCollection&			binaryCollection	(m_context.getBinaryCollection());
+	const std::vector<VkViewport>	viewports			{ makeViewport(tcu::UVec2(m_width, m_height)) };
+	const std::vector<VkRect2D>		scissors			{ makeRect2D(tcu::UVec2(m_width, m_height)) };
+	ShaderWrapper					vertexShaderModule	(vk, device, binaryCollection.get("quad-vert"), 0u);
+	ShaderWrapper					fragmentShaderModule(vk, device, binaryCollection.get("quad-subpass-frag"), 0u);
+
+	PipelineRenderingCreateInfoWrapper			renderingCreateInfoWrapper;
+	RenderingAttachmentLocationInfoWrapper		renderingAttachmentLocationInfoWrapper;
+	RenderingInputAttachmentIndexInfoWrapper	renderingInputAttachmentIndexInfoWrapper;
+	const VkPipelineVertexInputStateCreateInfo	vertexInputState = initVulkanStructure();
+	const VkPipelineMultisampleStateCreateInfo	multisampleState
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+		DE_NULL,
+		(VkPipelineMultisampleStateCreateFlags)0u,
+
+		sampleCountBitFromSampleCount(m_sampleCount),
+		VK_FALSE,
+		0.0f,
+		DE_NULL,
+		VK_FALSE,
+		VK_FALSE,
+	};
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
+	deMemset(&colorBlendAttachmentState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
+	colorBlendAttachmentState.colorWriteMask = 0xF;
+
+	const std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(deUint32(*m_renderPass == DE_NULL) + 1u, colorBlendAttachmentState);
+	VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
+	colorBlendStateCreateInfo.attachmentCount	= deUint32(colorBlendAttachmentStates.size());
+	colorBlendStateCreateInfo.pAttachments		= colorBlendAttachmentStates.data();
+
+#ifndef CTS_USES_VULKANSC
+	deUint32 colorAttachmentLocations[] = { VK_ATTACHMENT_UNUSED, 0 };
+	VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocation = initVulkanStructure();
+	renderingAttachmentLocation.colorAttachmentCount		= 2u;
+	renderingAttachmentLocation.pColorAttachmentLocations	= colorAttachmentLocations;
+
+	deUint32 colorAttachmentInputIndices[]{ 0, VK_ATTACHMENT_UNUSED };
+	VkRenderingInputAttachmentIndexInfoKHR renderingInputAttachmentIndexInfo = initVulkanStructure();
+	renderingInputAttachmentIndexInfo.colorAttachmentCount = 2u;
+	renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices = colorAttachmentInputIndices;
+
+	VkFormat colorAttachmentFormats[] = { VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT };
+	VkPipelineRenderingCreateInfo renderingCreateInfo = initVulkanStructure();
+	renderingCreateInfo.colorAttachmentCount = 2u;
+	renderingCreateInfo.pColorAttachmentFormats = colorAttachmentFormats;
+
+	if (*m_renderPass == DE_NULL)
+	{
+		renderingCreateInfoWrapper.ptr				= &renderingCreateInfo;
+		renderingAttachmentLocationInfoWrapper		= &renderingAttachmentLocation;
+		renderingInputAttachmentIndexInfoWrapper	= &renderingInputAttachmentIndexInfo;
+	}
+#endif // CTS_USES_VULKANSC
+
+	m_subpassPipeline.setDefaultDepthStencilState()
+		.setDefaultRasterizationState()
+		.setupVertexInputState(&vertexInputState)
+		.setupPreRasterizationShaderState(viewports,
+			scissors,
+			m_subpassPipelineLayout,
+			*m_renderPass,
+			1u,
+			vertexShaderModule,
+			0u,
+			ShaderWrapper(),
+			ShaderWrapper(),
+			ShaderWrapper(),
+			DE_NULL,
+			DE_NULL,
+			renderingCreateInfoWrapper,
+			renderingAttachmentLocationInfoWrapper,
+			renderingInputAttachmentIndexInfoWrapper)
+		.setupFragmentShaderState(m_subpassPipelineLayout, *m_renderPass, 1u, fragmentShaderModule, 0u, &multisampleState)
+		.setupFragmentOutputState(*m_renderPass, 1u, &colorBlendStateCreateInfo, &multisampleState)
+		.setMonolithicPipelineLayout(m_subpassPipelineLayout)
+		.buildPipeline();
+}
+
 #ifndef CTS_USES_VULKANSC
 void SampleReadTestInstance::preRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
 {
@@ -1164,7 +1096,7 @@ void SampleReadTestInstance::preRenderCommands(const DeviceInterface& vk, VkComm
 		makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *m_dstSinglesampleImage, subresourceRange),
 	};
 
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 3u, imageBarriers);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 3u, imageBarriers);
 }
 
 void SampleReadTestInstance::inbetweenRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
@@ -1185,21 +1117,25 @@ void SampleReadTestInstance::inbetweenRenderCommands(const DeviceInterface& vk, 
 
 void SampleReadTestInstance::drawFirstSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
 {
-	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_renderPipeline.getPipeline());
 	vk.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
 }
 
 void SampleReadTestInstance::drawSecondSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
 {
-	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpassPipeline);
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_subpassPipeline.getPipeline());
 	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpassPipelineLayout, 0u, 1u, &*m_subpassDescriptorSet, 0u, DE_NULL);
 	vk.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
 }
 
 void SampleReadTestInstance::postRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
 {
+	auto srcStageMask = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	if (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+		srcStageMask = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 	copyImageToBuffer(vk, cmdBuffer, *m_dstSinglesampleImage, *m_dstBuffer, tcu::IVec2(m_width, m_height),
-					  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+					  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, srcStageMask);
 }
 
 void SampleReadTestInstance::verifyResult()
@@ -1290,6 +1226,7 @@ struct Programs
 
 void checkSupport(vkt::Context& context, TestConfig config)
 {
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), config.groupParams->pipelineConstructionType);
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 
 	if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
@@ -1305,6 +1242,10 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 
 	for (deUint32 sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountNdx++)
 	{
+		// limit number of repeated tests for non monolithic pipelines
+		if ((groupParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) && (sampleCountNdx > 1))
+			continue;
+
 		const deUint32		sampleCount	(sampleCounts[sampleCountNdx]);
 		{
 			const TestConfig	testConfig	(sampleCount, TESTMODE_ADD, 0, groupParams);

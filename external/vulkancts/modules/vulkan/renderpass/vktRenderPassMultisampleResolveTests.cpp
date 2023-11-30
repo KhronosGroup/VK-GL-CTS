@@ -1934,9 +1934,9 @@ private:
 
 	template<typename RenderPassTrait>
 	Move<VkRenderPass>		createRenderPass			(void);
-	Move<VkRenderPass>		createRenderPassSwitch		(const RenderingType renderingType);
-	Move<VkPipelineLayout>	createRenderPipelineLayout	(bool secondSubpass);
-	Move<VkPipeline>		createRenderPipeline		(bool secondSubpass);
+	Move<VkRenderPass>		createRenderPassSwitch		(const RenderingType		renderingType);
+	void					createRenderPipeline		(GraphicsPipelineWrapper&	graphicsPipeline,
+														 bool						secondSubpass);
 
 private:
 
@@ -1955,10 +1955,10 @@ private:
 	const Unique<VkRenderPass>				m_renderPass;
 	const Unique<VkFramebuffer>				m_framebuffer;
 
-	const Unique<VkPipelineLayout>			m_pipelineLayoutPass0;
-	const Unique<VkPipeline>				m_pipelinePass0;
-	const Unique<VkPipelineLayout>			m_pipelineLayoutPass1;
-	const Unique<VkPipeline>				m_pipelinePass1;
+	PipelineLayoutWrapper					m_pipelineLayoutPass0;
+	GraphicsPipelineWrapper					m_pipelinePass0;
+	PipelineLayoutWrapper					m_pipelineLayoutPass1;
+	GraphicsPipelineWrapper					m_pipelinePass1;
 
 	const std::vector<VkBufferSp>			m_buffers;
 	const std::vector<AllocationSp>			m_bufferMemory;
@@ -1985,16 +1985,18 @@ MaxAttachmenstsRenderPassTestInstance::MaxAttachmenstsRenderPassTestInstance (Co
 	, m_renderPass				(createRenderPassSwitch(config.groupParams->renderingType))
 	, m_framebuffer				(createFramebuffer(m_multisampleImageViews, m_singlesampleImageViews, *m_renderPass))
 
-	, m_pipelineLayoutPass0		(createRenderPipelineLayout(0))
-	, m_pipelinePass0			(createRenderPipeline(0))
-	, m_pipelineLayoutPass1		(createRenderPipelineLayout(1))
-	, m_pipelinePass1			(createRenderPipeline(1))
+	, m_pipelineLayoutPass0		(config.groupParams->pipelineConstructionType, context.getDeviceInterface(), context.getDevice())
+	, m_pipelinePass0			(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), m_groupParams->pipelineConstructionType)
+	, m_pipelineLayoutPass1		(config.groupParams->pipelineConstructionType, context.getDeviceInterface(), context.getDevice(), *m_descriptorSetLayout)
+	, m_pipelinePass1			(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), m_groupParams->pipelineConstructionType)
 
 	, m_buffers					(createBuffers())
 	, m_bufferMemory			(createBufferMemory(m_buffers))
 
 	, m_commandPool				(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 {
+	createRenderPipeline(m_pipelinePass0, 0);
+	createRenderPipeline(m_pipelinePass1, 1);
 }
 
 template<typename RenderpassSubpass>
@@ -2251,13 +2253,13 @@ void MaxAttachmenstsRenderPassTestInstance::inbetweenRenderCommands(const Device
 
 void MaxAttachmenstsRenderPassTestInstance::drawFirstSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
 {
-	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelinePass0);
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelinePass0.getPipeline());
 	vk.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
 }
 
 void MaxAttachmenstsRenderPassTestInstance::drawSecondSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
 {
-	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelinePass1);
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelinePass1.getPipeline());
 	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutPass1, 0, 1u, &*m_descriptorSet, 0, NULL);
 	vk.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
 }
@@ -2778,28 +2780,7 @@ Move<VkRenderPass> MaxAttachmenstsRenderPassTestInstance::createRenderPassSwitch
 	}
 }
 
-Move<VkPipelineLayout> MaxAttachmenstsRenderPassTestInstance::createRenderPipelineLayout(bool secondSubpass)
-{
-	const DeviceInterface&	vkd		= m_context.getDeviceInterface();
-	VkDevice				device	= m_context.getDevice();
-
-	const VkPipelineLayoutCreateInfo createInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineLayoutCreateFlags)0,
-
-		secondSubpass ? 1u : 0u,
-		secondSubpass ? &*m_descriptorSetLayout : DE_NULL,
-
-		0u,
-		DE_NULL
-	};
-
-	return createPipelineLayout(vkd, device, &createInfo);
-}
-
-Move<VkPipeline> MaxAttachmenstsRenderPassTestInstance::createRenderPipeline(bool secondSubpass)
+void MaxAttachmenstsRenderPassTestInstance::createRenderPipeline(GraphicsPipelineWrapper& graphicsPipeline, bool secondSubpass)
 {
 	const DeviceInterface&			vkd						= m_context.getDeviceInterface();
 	VkDevice						device					= m_context.getDevice();
@@ -2818,10 +2799,13 @@ Move<VkPipeline> MaxAttachmenstsRenderPassTestInstance::createRenderPipeline(boo
 	if (*m_renderPass == DE_NULL)
 		blendStatesCount = m_attachmentsCount;
 
-	std::string						fragShaderName			= fragShaderNameBase + de::toString(m_attachmentsCount);
-	const Unique<VkShaderModule>	vertexShaderModule		(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
-	const Unique<VkShaderModule>	fragmentShaderModule	(createShaderModule(vkd, device, binaryCollection.get(fragShaderName), 0u));
-	const Move<VkShaderModule>		geometryShaderModule	(m_layerCount == 1 ? Move<VkShaderModule>() : createShaderModule(vkd, device, binaryCollection.get("geom"), 0u));
+	std::string			fragShaderName			= fragShaderNameBase + de::toString(m_attachmentsCount);
+	ShaderWrapper		vertexShaderModule		(vkd, device, binaryCollection.get("quad-vert"), 0u);
+	ShaderWrapper		fragmentShaderModule	(vkd, device, binaryCollection.get(fragShaderName), 0u);
+	ShaderWrapper		geometryShaderModule;
+
+	if (m_layerCount != 1)
+		geometryShaderModule = ShaderWrapper(vkd, device, binaryCollection.get("geom"), 0u);
 
 	// Disable blending
 	const VkPipelineColorBlendAttachmentState attachmentBlendState
@@ -2836,21 +2820,14 @@ Move<VkPipeline> MaxAttachmenstsRenderPassTestInstance::createRenderPipeline(boo
 		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
 	};
 	std::vector<VkPipelineColorBlendAttachmentState>	attachmentBlendStates(blendStatesCount, attachmentBlendState);
-	const VkPipelineVertexInputStateCreateInfo			vertexInputState =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineVertexInputStateCreateFlags)0u,
+	const VkPipelineVertexInputStateCreateInfo			vertexInputState = initVulkanStructure();
 
-		0u,
-		DE_NULL,
-
-		0u,
-		DE_NULL
-	};
-	const tcu::UVec2				renderArea	(m_width, m_height);
-	const std::vector<VkViewport>	viewports	(1, makeViewport(renderArea));
-	const std::vector<VkRect2D>		scissors	(1, makeRect2D(renderArea));
+	PipelineRenderingCreateInfoWrapper			renderingCreateInfoWrapper;
+	RenderingAttachmentLocationInfoWrapper		renderingAttachmentLocationInfoWrapper;
+	RenderingInputAttachmentIndexInfoWrapper	renderingInputAttachmentIndexInfoWrapper;
+	const tcu::UVec2							renderArea	(m_width, m_height);
+	const std::vector<VkViewport>				viewports	{ makeViewport(renderArea) };
+	const std::vector<VkRect2D>					scissors	{ makeRect2D(renderArea) };
 
 	const VkPipelineMultisampleStateCreateInfo multisampleState =
 	{
@@ -2911,7 +2888,6 @@ Move<VkPipeline> MaxAttachmenstsRenderPassTestInstance::createRenderPipeline(boo
 		{ 0.0f, 0.0f, 0.0f, 0.0f }
 	};
 
-	void* pNext = DE_NULL;
 #ifndef CTS_USES_VULKANSC
 	const std::vector<VkFormat> colorAttachmentFormats(m_attachmentsCount, m_format);
 	VkPipelineRenderingCreateInfo renderingCreateInfo
@@ -2938,34 +2914,35 @@ Move<VkPipeline> MaxAttachmenstsRenderPassTestInstance::createRenderPipeline(boo
 
 	if (*m_renderPass == DE_NULL)
 	{
-		pNext = &renderingCreateInfo;
+		renderingCreateInfoWrapper.ptr = &renderingCreateInfo;
+		renderingAttachmentLocationInfoWrapper.ptr = &renderingAttachmentLocationInfo;
 		if (secondSubpass)
-			renderingCreateInfo.pNext = &renderingInputAttachmentIndexInfo;
+			renderingInputAttachmentIndexInfoWrapper.ptr = &renderingInputAttachmentIndexInfo;
 	}
 #endif // CTS_USES_VULKANSC
 
-	return makeGraphicsPipeline(vkd,																// vk
-								device,																// device
-								secondSubpass ? *m_pipelineLayoutPass1 : *m_pipelineLayoutPass0,	// pipelineLayout
-								*vertexShaderModule,												// vertexShaderModule
-								DE_NULL,															// tessellationControlShaderModule
-								DE_NULL,															// tessellationEvalShaderModule
-								m_layerCount != 1 ? *geometryShaderModule : DE_NULL,				// geometryShaderModule
-								*fragmentShaderModule,												// fragmentShaderModule
-								*m_renderPass,														// renderPass
-								viewports,															// viewports
-								scissors,															// scissors
-								VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,								// topology
-								secondSubpass,														// subpass
-								0u,																	// patchControlPoints
-								&vertexInputState,													// vertexInputStateCreateInfo
-								DE_NULL,															// rasterizationStateCreateInfo
-								&multisampleState,													// multisampleStateCreateInfo
-								&depthStencilState,													// depthStencilStateCreateInfo
-								&blendState,														// colorBlendStateCreateInfo
-								DE_NULL,															// dynamicStateCreateInfo
-								pNext);																// pNext
-
+	PipelineLayoutWrapper& pipelineLayout(secondSubpass ? m_pipelineLayoutPass1 : m_pipelineLayoutPass0);
+	graphicsPipeline.setDefaultRasterizationState()
+		.setupVertexInputState(&vertexInputState)
+		.setupPreRasterizationShaderState(viewports,
+			scissors,
+			pipelineLayout,
+			*m_renderPass,
+			secondSubpass,
+			vertexShaderModule,
+			0u,
+			ShaderWrapper(),
+			ShaderWrapper(),
+			geometryShaderModule,
+			DE_NULL,
+			DE_NULL,
+			renderingCreateInfoWrapper,
+			renderingAttachmentLocationInfoWrapper,
+			renderingInputAttachmentIndexInfoWrapper)
+		.setupFragmentShaderState(pipelineLayout, *m_renderPass, secondSubpass, fragmentShaderModule, &depthStencilState, &multisampleState)
+		.setupFragmentOutputState(*m_renderPass, secondSubpass, &blendState, &multisampleState)
+		.setMonolithicPipelineLayout(pipelineLayout)
+		.buildPipeline();
 }
 
 class MultisampleRenderPassResolveLevelTestInstance : public MultisampleRenderPassTestInstance
@@ -3180,6 +3157,7 @@ void checkSupport(Context& context, TestConfigType config)
 	vk::VkPhysicalDevice					physicalDevice	= context.getPhysicalDevice();
 	const vk::VkPhysicalDeviceProperties	properties		= vk::getPhysicalDeviceProperties(vki, physicalDevice);
 
+	checkPipelineConstructionRequirements(vki, physicalDevice, config.groupParams->pipelineConstructionType);
 	if (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
@@ -3309,10 +3287,10 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 					continue;
 
 				// Reduce number of tests for dynamic rendering cases where secondary command buffer is used
-				if (groupParams->useSecondaryCmdBuffer && ( (sampleCount > 2u) || (layerCount > 3u) ))
+				if (groupParams->useSecondaryCmdBuffer && ((sampleCount > 2u) || (layerCount > 3u)))
 					continue;
 
-				std::string			testName	("samples_" + de::toString(sampleCount));
+				std::string			testName("samples_" + de::toString(sampleCount));
 				const TestConfig	testConfig
 				{
 					RESOLVE,
@@ -3326,35 +3304,39 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 					groupParams
 				};
 
-				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
-
-				const TestConfig	testConfigBaseLayer
+				// repeat only dynamic_rendering_local_read tests for GPL
+				if (groupParams->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 				{
-					RESOLVE,
-					format,
-					sampleCount,
-					layerCount,
-					1,
-					4u,
-					32u,
-					32u,
-					groupParams
-				};
-				std::string			testNameBaseLayer	("samples_" + de::toString(sampleCount) + "_baseLayer1");
+					formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
 
-				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, testNameBaseLayer.c_str(), testConfigBaseLayer, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfigBaseLayer)));
+					const TestConfig	testConfigBaseLayer
+					{
+						RESOLVE,
+						format,
+						sampleCount,
+						layerCount,
+						1,
+						4u,
+						32u,
+						32u,
+						groupParams
+					};
+					std::string			testNameBaseLayer("samples_" + de::toString(sampleCount) + "_baseLayer1");
 
-				for (deUint32 resolveLevel : resolveLevels)
-				{
-					const TestConfig2 testConfig2(testConfig, resolveLevel);
-					std::string resolveLevelTestNameStr(testName + "_resolve_level_" + de::toString(resolveLevel));
-					const char* resolveLevelTestName = resolveLevelTestNameStr.c_str();
+					formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, testNameBaseLayer.c_str(), testConfigBaseLayer, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfigBaseLayer)));
 
-					formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassResolveLevelTestInstance, TestConfig2, FunctionSupport1<TestConfig2>, Programs>(testCtx, resolveLevelTestName, testConfig2, typename FunctionSupport1<TestConfig2>::Args(checkSupport, testConfig2)));
+					for (deUint32 resolveLevel : resolveLevels)
+					{
+						const TestConfig2 testConfig2(testConfig, resolveLevel);
+						std::string resolveLevelTestNameStr(testName + "_resolve_level_" + de::toString(resolveLevel));
+						const char* resolveLevelTestName = resolveLevelTestNameStr.c_str();
 
-					// Reduce number of tests for dynamic rendering cases where secondary command buffer is used
-					if (groupParams->useSecondaryCmdBuffer)
-						break;
+						formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassResolveLevelTestInstance, TestConfig2, FunctionSupport1<TestConfig2>, Programs>(testCtx, resolveLevelTestName, testConfig2, typename FunctionSupport1<TestConfig2>::Args(checkSupport, testConfig2)));
+
+						// Reduce number of tests for dynamic rendering cases where secondary command buffer is used
+						if (groupParams->useSecondaryCmdBuffer)
+							break;
+					}
 				}
 
 				// MaxAttachmenstsRenderPassTest is ment to test extreme cases where applications might consume all available on-chip

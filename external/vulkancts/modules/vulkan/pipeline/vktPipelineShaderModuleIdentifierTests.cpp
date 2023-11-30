@@ -2225,7 +2225,9 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 						teseSpecInfo.get(),
 						geomSpecInfo.get(),
 						nullptr,
-						PipelineRenderingCreateInfoWrapper(),
+						nullptr,
+						nullptr,
+						nullptr,
 						pipelineCache.get())
 					.setupFragmentShaderState(
 						pipelineLayout,
@@ -2311,6 +2313,8 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 							geomToRun.getSpecInfo(),
 							nullptr,
 							PipelineRenderingCreateInfoWrapper(),
+							nullptr,
+							nullptr,
 							pipelineCache.get())
 						.setupFragmentShaderState2(
 							pipelineLayout,
@@ -3316,7 +3320,9 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 							nullptr,
 							nullptr,
 							nullptr,
-							PipelineRenderingCreateInfoWrapper(),
+							nullptr,
+							nullptr,
+							nullptr,
 							pipelineCache.get())
 						.setupFragmentShaderState(
 							pipelineLayout,
@@ -3391,6 +3397,8 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 						nullptr,
 						nullptr,
 						PipelineRenderingCreateInfoWrapper(),
+						nullptr,
+						nullptr,
 						pipelineCache.get())
 					.setupFragmentShaderState2(
 						pipelineLayout,

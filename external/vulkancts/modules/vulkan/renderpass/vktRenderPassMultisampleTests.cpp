@@ -835,191 +835,6 @@ Move<VkFramebuffer> createFramebuffer (const DeviceInterface&				vkd,
 	return createFramebuffer(vkd, device, &createInfo);
 }
 
-Move<VkPipelineLayout> createRenderPipelineLayout (const DeviceInterface&	vkd,
-												   VkDevice					device)
-{
-	const VkPushConstantRange			pushConstant			=
-	{
-		VK_SHADER_STAGE_FRAGMENT_BIT,
-		0u,
-		4u
-	};
-	const VkPipelineLayoutCreateInfo	createInfo	=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineLayoutCreateFlags)0,
-
-		0u,
-		DE_NULL,
-
-		1u,
-		&pushConstant
-	};
-
-	return createPipelineLayout(vkd, device, &createInfo);
-}
-
-Move<VkPipeline> createRenderPipeline (const DeviceInterface&		vkd,
-									   VkDevice						device,
-									   VkFormat						srcFormat,
-									   VkFormat						dstFormat,
-									   VkRenderPass					renderPass,
-									   VkPipelineLayout				pipelineLayout,
-									   const vk::BinaryCollection&	binaryCollection,
-									   deUint32						width,
-									   deUint32						height,
-									   deUint32						sampleCount)
-{
-	const tcu::TextureFormat		format						(mapVkFormat(srcFormat));
-	const bool						isDepthFormat				(tcu::hasDepthComponent(format.order));
-	const bool						isStencilFormat				(tcu::hasStencilComponent(format.order));
-	const bool						isDepthStencilFormat		(isDepthFormat || isStencilFormat);
-	const Unique<VkShaderModule>	vertexShaderModule			(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
-	const Unique<VkShaderModule>	fragmentShaderModule		(createShaderModule(vkd, device, binaryCollection.get("quad-frag"), 0u));
-	deUint32						colorAttachmentCount		(!isDepthStencilFormat);
-
-	if (renderPass == DE_NULL)
-	{
-		const deUint32 splitSubpassCount(deDivRoundUp32(sampleCount, MAX_COLOR_ATTACHMENT_COUNT));
-		for (deUint32 splitSubpassIndex = 0; splitSubpassIndex < splitSubpassCount; splitSubpassIndex++)
-			colorAttachmentCount += de::min((deUint32)MAX_COLOR_ATTACHMENT_COUNT, sampleCount - splitSubpassIndex * MAX_COLOR_ATTACHMENT_COUNT);
-	}
-
-	// Disable blending
-	const std::vector<VkPipelineColorBlendAttachmentState> attachmentBlendStates(colorAttachmentCount,
-	{
-		VK_FALSE,
-		VK_BLEND_FACTOR_SRC_ALPHA,
-		VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-		VK_BLEND_OP_ADD,
-		VK_BLEND_FACTOR_ONE,
-		VK_BLEND_FACTOR_ONE,
-		VK_BLEND_OP_ADD,
-		VK_COLOR_COMPONENT_R_BIT|VK_COLOR_COMPONENT_G_BIT|VK_COLOR_COMPONENT_B_BIT|VK_COLOR_COMPONENT_A_BIT
-	});
-	const VkPipelineVertexInputStateCreateInfo vertexInputState =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineVertexInputStateCreateFlags)0u,
-
-		0u,
-		DE_NULL,
-
-		0u,
-		DE_NULL
-	};
-	const std::vector<VkViewport>	viewports	(1, makeViewport(tcu::UVec2(width, height)));
-	const std::vector<VkRect2D>		scissors	(1, makeRect2D(tcu::UVec2(width, height)));
-
-	const VkPipelineMultisampleStateCreateInfo multisampleState =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineMultisampleStateCreateFlags)0u,
-
-		sampleCountBitFromomSampleCount(sampleCount),
-		VK_FALSE,
-		0.0f,
-		DE_NULL,
-		VK_FALSE,
-		VK_FALSE,
-	};
-	const VkPipelineDepthStencilStateCreateInfo depthStencilState =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineDepthStencilStateCreateFlags)0u,
-
-		VK_TRUE,
-		VK_TRUE,
-		VK_COMPARE_OP_ALWAYS,
-		VK_FALSE,
-		VK_TRUE,
-		{
-			VK_STENCIL_OP_KEEP,
-			VK_STENCIL_OP_INCREMENT_AND_WRAP,
-			VK_STENCIL_OP_KEEP,
-			VK_COMPARE_OP_ALWAYS,
-			~0u,
-			~0u,
-			0xFFu / (sampleCount + 1)
-		},
-		{
-			VK_STENCIL_OP_KEEP,
-			VK_STENCIL_OP_INCREMENT_AND_WRAP,
-			VK_STENCIL_OP_KEEP,
-			VK_COMPARE_OP_ALWAYS,
-			~0u,
-			~0u,
-			0xFFu / (sampleCount + 1)
-		},
-
-		0.0f,
-		1.0f
-	};
-
-	const VkPipelineColorBlendStateCreateInfo blendState =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineColorBlendStateCreateFlags)0u,
-
-		VK_FALSE,
-		VK_LOGIC_OP_COPY,
-		colorAttachmentCount,
-		((isDepthStencilFormat && !!renderPass) ? DE_NULL : attachmentBlendStates.data()),
-		{ 0.0f, 0.0f, 0.0f, 0.0f }
-	};
-
-	void* pNext = DE_NULL;
-#ifndef CTS_USES_VULKANSC
-
-	std::vector<VkFormat> colorAttachmentFormats(colorAttachmentCount, dstFormat);
-	if (!isDepthStencilFormat)
-		colorAttachmentFormats[0] = srcFormat;
-
-	VkPipelineRenderingCreateInfo renderingCreateInfo
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-		DE_NULL,
-		0u,
-		(deUint32)colorAttachmentFormats.size(),
-		colorAttachmentFormats.data(),
-		(isDepthFormat ? srcFormat : VK_FORMAT_UNDEFINED),
-		(isStencilFormat ? srcFormat : VK_FORMAT_UNDEFINED)
-	};
-
-	if (renderPass == DE_NULL)
-		pNext = &renderingCreateInfo;
-#else
-	DE_UNREF(dstFormat);
-#endif // CTS_USES_VULKANSC
-
-	return makeGraphicsPipeline(vkd,									// const DeviceInterface&                        vk
-								device,									// const VkDevice                                device
-								pipelineLayout,							// const VkPipelineLayout                        pipelineLayout
-								*vertexShaderModule,					// const VkShaderModule                          vertexShaderModule
-								DE_NULL,								// const VkShaderModule                          tessellationControlShaderModule
-								DE_NULL,								// const VkShaderModule                          tessellationEvalShaderModule
-								DE_NULL,								// const VkShaderModule                          geometryShaderModule
-								*fragmentShaderModule,					// const VkShaderModule                          fragmentShaderModule
-								renderPass,								// const VkRenderPass                            renderPass
-								viewports,								// const std::vector<VkViewport>&                viewports
-								scissors,								// const std::vector<VkRect2D>&                  scissors
-								VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
-								0u,										// const deUint32                                subpass
-								0u,										// const deUint32                                patchControlPoints
-								&vertexInputState,						// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-								DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-								&multisampleState,						// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-								&depthStencilState,						// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-								&blendState,							// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
-								DE_NULL,								// const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
-								pNext);									// const void*                                   pNext
-}
-
 Move<VkDescriptorSetLayout> createSplitDescriptorSetLayout (const DeviceInterface&	vkd,
 															VkDevice				device,
 															VkFormat				vkFormat)
@@ -1055,32 +870,6 @@ Move<VkDescriptorSetLayout> createSplitDescriptorSetLayout (const DeviceInterfac
 	};
 
 	return createDescriptorSetLayout(vkd, device, &createInfo);
-}
-
-Move<VkPipelineLayout> createSplitPipelineLayout (const DeviceInterface&	vkd,
-												  VkDevice					device,
-												  VkDescriptorSetLayout		descriptorSetLayout)
-{
-	const VkPushConstantRange			pushConstant			=
-	{
-		VK_SHADER_STAGE_FRAGMENT_BIT,
-		0u,
-		4u
-	};
-	const VkPipelineLayoutCreateInfo	createInfo	=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineLayoutCreateFlags)0,
-
-		1u,
-		&descriptorSetLayout,
-
-		1u,
-		&pushConstant
-	};
-
-	return createPipelineLayout(vkd, device, &createInfo);
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -1126,155 +915,6 @@ VkRenderingInputAttachmentIndexInfoKHR getRenderingInputAttachmentIndexInfo(std:
 	};
 }
 #endif
-
-Move<VkPipeline> createSplitPipeline (const DeviceInterface&		vkd,
-									  VkDevice						device,
-									  VkFormat						srcFormat,
-									  VkFormat						dstFormat,
-									  VkRenderPass					renderPass,
-									  deUint32						subpassIndex,
-									  VkPipelineLayout				pipelineLayout,
-									  const vk::BinaryCollection&	binaryCollection,
-									  deUint32						width,
-									  deUint32						height,
-									  deUint32						sampleCount)
-{
-	const tcu::TextureFormat		format					(mapVkFormat(srcFormat));
-	const bool						isDepthFormat			(tcu::hasDepthComponent(format.order));
-	const bool						isStencilFormat			(tcu::hasStencilComponent(format.order));
-	const bool						isDepthStencilFormat	(isDepthFormat || isStencilFormat);
-	const deUint32					splitSubpassCount		(deDivRoundUp32(sampleCount, MAX_COLOR_ATTACHMENT_COUNT));
-	deUint32						colorAttachmentCount	(de::min((deUint32)MAX_COLOR_ATTACHMENT_COUNT, sampleCount));
-	const Unique<VkShaderModule>	vertexShaderModule		(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
-	const Unique<VkShaderModule>	fragmentShaderModule	(createShaderModule(vkd, device, binaryCollection.get("quad-split-frag"), 0u));
-
-	if (renderPass == DE_NULL)
-		colorAttachmentCount = !isDepthStencilFormat + splitSubpassCount * de::min((deUint32)MAX_COLOR_ATTACHMENT_COUNT, sampleCount - (subpassIndex - 1) * MAX_COLOR_ATTACHMENT_COUNT);
-
-	// Disable blending
-	const VkPipelineColorBlendAttachmentState attachmentBlendState =
-	{
-		VK_FALSE,
-		VK_BLEND_FACTOR_SRC_ALPHA,
-		VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-		VK_BLEND_OP_ADD,
-		VK_BLEND_FACTOR_ONE,
-		VK_BLEND_FACTOR_ONE,
-		VK_BLEND_OP_ADD,
-		VK_COLOR_COMPONENT_R_BIT|VK_COLOR_COMPONENT_G_BIT|VK_COLOR_COMPONENT_B_BIT|VK_COLOR_COMPONENT_A_BIT
-	};
-	const std::vector<VkPipelineColorBlendAttachmentState> attachmentBlendStates (colorAttachmentCount, attachmentBlendState);
-	const VkPipelineVertexInputStateCreateInfo vertexInputState =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineVertexInputStateCreateFlags)0u,
-
-		0u,
-		DE_NULL,
-
-		0u,
-		DE_NULL
-	};
-	const std::vector<VkViewport>	viewports	(1, makeViewport(tcu::UVec2(width, height)));
-	const std::vector<VkRect2D>		scissors	(1, makeRect2D(tcu::UVec2(width, height)));
-
-	VkPipelineMultisampleStateCreateInfo multisampleState = initVulkanStructure();
-	multisampleState.rasterizationSamples = sampleCountBitFromomSampleCount(sampleCount);
-
-	const VkPipelineColorBlendStateCreateInfo blendState
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineColorBlendStateCreateFlags)0u,
-
-		VK_FALSE,
-		VK_LOGIC_OP_COPY,
-
-		colorAttachmentCount,
-		attachmentBlendStates.data(),
-
-		{ 0.0f, 0.0f, 0.0f, 0.0f }
-	};
-
-	void* pNext = DE_NULL;
-#ifndef CTS_USES_VULKANSC
-	deUint32								depthAttachmentInputIndex			(0);
-	deUint32								stencilAttachmentInputIndex			(0);
-	std::vector<VkFormat>					colorAttachmentFormats				(colorAttachmentCount, dstFormat);
-	std::vector<deUint32>					colorAttachmentLocations			(colorAttachmentCount, VK_ATTACHMENT_UNUSED);
-	std::vector<deUint32>					colorAttachmentInputIndices			(colorAttachmentCount, VK_ATTACHMENT_UNUSED);
-	VkRenderingAttachmentLocationInfoKHR	renderingAttachmentLocation;
-	VkRenderingInputAttachmentIndexInfoKHR	renderingInputAttachmentIndexInfo;
-
-	if (!isDepthStencilFormat)
-		colorAttachmentFormats[0] = srcFormat;
-
-	VkPipelineRenderingCreateInfo renderingCreateInfo
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-		&renderingInputAttachmentIndexInfo,
-		0u,
-		(deUint32)colorAttachmentFormats.size(),
-		colorAttachmentFormats.data(),
-		(isDepthFormat ? srcFormat : VK_FORMAT_UNDEFINED),
-		(isStencilFormat ? srcFormat : VK_FORMAT_UNDEFINED)
-	};
-
-	if (renderPass == DE_NULL)
-	{
-		renderingAttachmentLocation			= getRenderingAttachmentLocationInfo(colorAttachmentLocations, isDepthStencilFormat, sampleCount, subpassIndex - 1);
-		renderingInputAttachmentIndexInfo	= getRenderingInputAttachmentIndexInfo(colorAttachmentInputIndices, depthAttachmentInputIndex, stencilAttachmentInputIndex,
-																				   isDepthFormat, isStencilFormat, &renderingAttachmentLocation);
-		pNext								= &renderingCreateInfo;
-	}
-
-#else
-	DE_UNREF(srcFormat);
-	DE_UNREF(dstFormat);
-#endif // CTS_USES_VULKANSC
-
-	return makeGraphicsPipeline(vkd,									// const DeviceInterface&                        vk
-								device,									// const VkDevice                                device
-								pipelineLayout,							// const VkPipelineLayout                        pipelineLayout
-								*vertexShaderModule,					// const VkShaderModule                          vertexShaderModule
-								DE_NULL,								// const VkShaderModule                          tessellationControlShaderModule
-								DE_NULL,								// const VkShaderModule                          tessellationEvalShaderModule
-								DE_NULL,								// const VkShaderModule                          geometryShaderModule
-								*fragmentShaderModule,					// const VkShaderModule                          fragmentShaderModule
-								renderPass,								// const VkRenderPass                            renderPass
-								viewports,								// const std::vector<VkViewport>&                viewports
-								scissors,								// const std::vector<VkRect2D>&                  scissors
-								VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
-								subpassIndex,							// const deUint32                                subpass
-								0u,										// const deUint32                                patchControlPoints
-								&vertexInputState,						// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-								DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-								&multisampleState,						// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-								DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-								&blendState,							// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
-								DE_NULL,								// const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
-								pNext);									// const void*                                   pNext
-}
-
-vector<VkPipelineSp> createSplitPipelines (const DeviceInterface&		vkd,
-										 VkDevice						device,
-										 VkFormat						srcFormat,
-										 VkFormat						dstFormat,
-										 VkRenderPass					renderPass,
-										 VkPipelineLayout				pipelineLayout,
-										 const vk::BinaryCollection&	binaryCollection,
-										 deUint32						width,
-										 deUint32						height,
-										 deUint32						sampleCount)
-{
-	std::vector<VkPipelineSp> pipelines (deDivRoundUp32(sampleCount, MAX_COLOR_ATTACHMENT_COUNT), (VkPipelineSp)0u);
-
-	for (size_t ndx = 0; ndx < pipelines.size(); ndx++)
-		pipelines[ndx] = safeSharedPtr(new Unique<VkPipeline>(createSplitPipeline(vkd, device, srcFormat, dstFormat, renderPass, (deUint32)(ndx + 1), pipelineLayout, binaryCollection, width, height, sampleCount)));
-
-	return pipelines;
-}
 
 Move<VkDescriptorPool> createSplitDescriptorPool (const DeviceInterface&	vkd,
 												  VkDevice					device)
@@ -1484,9 +1124,13 @@ class MultisampleRenderPassTestInstance : public TestInstance
 {
 public:
 					MultisampleRenderPassTestInstance	(Context& context, TestConfig config);
-					~MultisampleRenderPassTestInstance	(void);
+					~MultisampleRenderPassTestInstance	(void) = default;
 
 	tcu::TestStatus	iterate								(void);
+
+protected:
+	void			createRenderPipeline				(void);
+	void			createSplitPipelines				(void);
 
 	template<typename RenderpassSubpass>
 	tcu::TestStatus	iterateInternal						(void);
@@ -1518,6 +1162,7 @@ private:
 	const deUint32									m_sampleCount;
 	const deUint32									m_width;
 	const deUint32									m_height;
+	const VkPushConstantRange						m_pushConstantRange;
 
 	const VkImageAspectFlags						m_srcImageAspect;
 	const VkImageUsageFlags							m_srcImageUsage;
@@ -1542,12 +1187,12 @@ private:
 	const Unique<VkRenderPass>						m_renderPass;
 	const Unique<VkFramebuffer>						m_framebuffer;
 
-	const Unique<VkPipelineLayout>					m_renderPipelineLayout;
-	const Unique<VkPipeline>						m_renderPipeline;
+	const PipelineLayoutWrapper						m_renderPipelineLayout;
+	GraphicsPipelineWrapper							m_renderPipeline;
 
 	const Unique<VkDescriptorSetLayout>				m_splitDescriptorSetLayout;
-	const Unique<VkPipelineLayout>					m_splitPipelineLayout;
-	const std::vector<VkPipelineSp>					m_splitPipelines;
+	const PipelineLayoutWrapper						m_splitPipelineLayout;
+	std::vector<GraphicsPipelineWrapper>			m_splitPipelines;
 	const Unique<VkDescriptorPool>					m_splitDescriptorPool;
 	const Unique<VkDescriptorSet>					m_splitDescriptorSet;
 
@@ -1564,6 +1209,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_sampleCount					(config.sampleCount)
 	, m_width						(32u)
 	, m_height						(32u)
+	, m_pushConstantRange			{ VK_SHADER_STAGE_FRAGMENT_BIT, 0u, 4u }
 
 	, m_srcImageAspect				(getImageAspectFlags(m_srcFormat))
 	, m_srcImageUsage				(getSrcImageUsage(m_srcFormat))
@@ -1588,20 +1234,17 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_srcFormat, m_dstFormat, m_sampleCount, m_groupParams->renderingType, m_separateStencilUsage))
 	, m_framebuffer					(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_srcImageView, m_dstMultisampleImageViews, m_dstSinglesampleImageViews, m_width, m_height))
 
-	, m_renderPipelineLayout		(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
-	, m_renderPipeline				(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), m_srcFormat, m_dstFormat, *m_renderPass, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height, m_sampleCount))
+	, m_renderPipelineLayout		(m_groupParams->pipelineConstructionType, context.getDeviceInterface(), context.getDevice(), 0, &m_pushConstantRange)
+	, m_renderPipeline				(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), m_groupParams->pipelineConstructionType)
 
 	, m_splitDescriptorSetLayout	(createSplitDescriptorSetLayout(context.getDeviceInterface(), context.getDevice(), m_srcFormat))
-	, m_splitPipelineLayout			(createSplitPipelineLayout(context.getDeviceInterface(), context.getDevice(), *m_splitDescriptorSetLayout))
-	, m_splitPipelines				(createSplitPipelines(context.getDeviceInterface(), context.getDevice(), m_srcFormat, m_dstFormat, *m_renderPass, *m_splitPipelineLayout, context.getBinaryCollection(), m_width, m_height, m_sampleCount))
+	, m_splitPipelineLayout			(m_groupParams->pipelineConstructionType, context.getDeviceInterface(), context.getDevice(), *m_splitDescriptorSetLayout, &m_pushConstantRange)
 	, m_splitDescriptorPool			(createSplitDescriptorPool(context.getDeviceInterface(), context.getDevice()))
 	, m_splitDescriptorSet			(createSplitDescriptorSet(context.getDeviceInterface(), context.getDevice(), *m_splitDescriptorPool, *m_splitDescriptorSetLayout, *m_renderPass, *m_srcPrimaryInputImageView, *m_srcSecondaryInputImageView, m_srcInputImageReadLayout))
 	, m_commandPool					(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 {
-}
-
-MultisampleRenderPassTestInstance::~MultisampleRenderPassTestInstance (void)
-{
+	createRenderPipeline();
+	createSplitPipelines();
 }
 
 tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
@@ -1616,6 +1259,272 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 			return iterateInternalDynamicRendering();
 		default:
 			TCU_THROW(InternalError, "Impossible");
+	}
+}
+
+void MultisampleRenderPassTestInstance::createRenderPipeline(void)
+{
+	const DeviceInterface&						vkd							(m_context.getDeviceInterface());
+	VkDevice									device						(m_context.getDevice());
+	const tcu::TextureFormat					format						(mapVkFormat(m_srcFormat));
+	const bool									isDepthFormat				(tcu::hasDepthComponent(format.order));
+	const bool									isStencilFormat				(tcu::hasStencilComponent(format.order));
+	const bool									isDepthStencilFormat		(isDepthFormat || isStencilFormat);
+	const BinaryCollection&						binaryCollection			(m_context.getBinaryCollection());
+	ShaderWrapper								vertexShaderModule			(vkd, device, binaryCollection.get("quad-vert"), 0u);
+	ShaderWrapper								fragmentShaderModule		(vkd, device, binaryCollection.get("quad-frag"), 0u);
+	deUint32									colorAttachmentCount		(!isDepthStencilFormat);
+	const VkPipelineVertexInputStateCreateInfo	vertexInputState			= initVulkanStructure();
+	const std::vector<VkViewport>				viewports					{ makeViewport(m_width, m_height) };
+	const std::vector<VkRect2D>					scissors					{ makeRect2D(m_width, m_height) };
+	PipelineRenderingCreateInfoWrapper			renderingCreateInfoWrapper;
+
+	if (*m_renderPass == DE_NULL)
+	{
+		const deUint32 splitSubpassCount(deDivRoundUp32(m_sampleCount, MAX_COLOR_ATTACHMENT_COUNT));
+		for (deUint32 splitSubpassIndex = 0; splitSubpassIndex < splitSubpassCount; splitSubpassIndex++)
+			colorAttachmentCount += de::min((deUint32)MAX_COLOR_ATTACHMENT_COUNT, m_sampleCount - splitSubpassIndex * MAX_COLOR_ATTACHMENT_COUNT);
+	}
+
+	// Disable blending
+	const std::vector<VkPipelineColorBlendAttachmentState> attachmentBlendStates(colorAttachmentCount,
+	{
+		VK_FALSE,
+		VK_BLEND_FACTOR_SRC_ALPHA,
+		VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+		VK_BLEND_OP_ADD,
+		VK_BLEND_FACTOR_ONE,
+		VK_BLEND_FACTOR_ONE,
+		VK_BLEND_OP_ADD,
+		VK_COLOR_COMPONENT_R_BIT|VK_COLOR_COMPONENT_G_BIT|VK_COLOR_COMPONENT_B_BIT|VK_COLOR_COMPONENT_A_BIT
+	});
+	const VkPipelineMultisampleStateCreateInfo multisampleState
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+		DE_NULL,
+		(VkPipelineMultisampleStateCreateFlags)0u,
+
+		sampleCountBitFromomSampleCount(m_sampleCount),
+		VK_FALSE,
+		0.0f,
+		DE_NULL,
+		VK_FALSE,
+		VK_FALSE,
+	};
+	const VkPipelineDepthStencilStateCreateInfo depthStencilState
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+		DE_NULL,
+		(VkPipelineDepthStencilStateCreateFlags)0u,
+
+		VK_TRUE,
+		VK_TRUE,
+		VK_COMPARE_OP_ALWAYS,
+		VK_FALSE,
+		VK_TRUE,
+		{
+			VK_STENCIL_OP_KEEP,
+			VK_STENCIL_OP_INCREMENT_AND_WRAP,
+			VK_STENCIL_OP_KEEP,
+			VK_COMPARE_OP_ALWAYS,
+			~0u,
+			~0u,
+			0xFFu / (m_sampleCount + 1)
+		},
+		{
+			VK_STENCIL_OP_KEEP,
+			VK_STENCIL_OP_INCREMENT_AND_WRAP,
+			VK_STENCIL_OP_KEEP,
+			VK_COMPARE_OP_ALWAYS,
+			~0u,
+			~0u,
+			0xFFu / (m_sampleCount + 1)
+		},
+
+		0.0f,
+		1.0f
+	};
+
+	const VkPipelineColorBlendStateCreateInfo blendState
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+		DE_NULL,
+		(VkPipelineColorBlendStateCreateFlags)0u,
+		VK_FALSE,
+		VK_LOGIC_OP_COPY,
+		colorAttachmentCount,
+		((isDepthStencilFormat && !!*m_renderPass) ? DE_NULL : attachmentBlendStates.data()),
+		{ 0.0f, 0.0f, 0.0f, 0.0f }
+	};
+
+#ifndef CTS_USES_VULKANSC
+	std::vector<VkFormat> colorAttachmentFormats(colorAttachmentCount, m_dstFormat);
+	if (!isDepthStencilFormat)
+		colorAttachmentFormats[0] = m_srcFormat;
+
+	VkPipelineRenderingCreateInfo renderingCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		DE_NULL,
+		0u,
+		(deUint32)colorAttachmentFormats.size(),
+		colorAttachmentFormats.data(),
+		(isDepthFormat ? m_srcFormat : VK_FORMAT_UNDEFINED),
+		(isStencilFormat ? m_srcFormat : VK_FORMAT_UNDEFINED)
+	};
+
+	if (*m_renderPass == DE_NULL)
+		renderingCreateInfoWrapper.ptr = &renderingCreateInfo;
+#endif // CTS_USES_VULKANSC
+
+	m_renderPipeline.setDefaultRasterizationState()
+		.setupVertexInputState(&vertexInputState)
+		.setupPreRasterizationShaderState(viewports,
+			scissors,
+			m_renderPipelineLayout,
+			*m_renderPass,
+			0u,
+			vertexShaderModule,
+			0u,
+			ShaderWrapper(),
+			ShaderWrapper(),
+			ShaderWrapper(),
+			nullptr,
+			nullptr,
+			renderingCreateInfoWrapper)
+		.setupFragmentShaderState(m_renderPipelineLayout, *m_renderPass, 0u, fragmentShaderModule, &depthStencilState, &multisampleState)
+		.setupFragmentOutputState(*m_renderPass, 0u, &blendState, &multisampleState)
+		.setMonolithicPipelineLayout(m_renderPipelineLayout)
+		.buildPipeline();
+}
+
+void MultisampleRenderPassTestInstance::createSplitPipelines(void)
+{
+	const InstanceInterface&	vki						(m_context.getInstanceInterface());
+	const DeviceInterface&		vkd						(m_context.getDeviceInterface());
+	const VkPhysicalDevice		physicalDevice			(m_context.getPhysicalDevice());
+	const VkDevice				device					(m_context.getDevice());
+	const std::vector<string>&	deviceExtensions		(m_context.getDeviceExtensions());
+
+	const tcu::TextureFormat	format					(mapVkFormat(m_srcFormat));
+	const bool					isDepthFormat			(tcu::hasDepthComponent(format.order));
+	const bool					isStencilFormat			(tcu::hasStencilComponent(format.order));
+	const bool					isDepthStencilFormat	(isDepthFormat || isStencilFormat);
+	const deUint32				splitSubpassCount		(deDivRoundUp32(m_sampleCount, MAX_COLOR_ATTACHMENT_COUNT));
+	deUint32					colorAttachmentCount	(de::min((deUint32)MAX_COLOR_ATTACHMENT_COUNT, m_sampleCount));
+	const BinaryCollection&		binaryCollection		(m_context.getBinaryCollection());
+	ShaderWrapper				vertexShaderModule		(vkd, device, binaryCollection.get("quad-vert"), 0u);
+	ShaderWrapper				fragmentShaderModule	(vkd, device, binaryCollection.get("quad-split-frag"), 0u);
+
+	DE_UNREF(isDepthStencilFormat);
+
+	PipelineRenderingCreateInfoWrapper			renderingCreateInfoWrapper;
+	RenderingAttachmentLocationInfoWrapper		renderingAttachmentLocationInfoWrapper;
+	RenderingInputAttachmentIndexInfoWrapper	renderingInputAttachmentIndexInfoWrapper;
+	const std::vector<VkViewport>				viewports	{ makeViewport(m_width, m_height) };
+	const std::vector<VkRect2D>					scissors	{ makeRect2D(m_width, m_height) };
+
+	const VkPipelineVertexInputStateCreateInfo	vertexInputState = initVulkanStructure();
+	VkPipelineMultisampleStateCreateInfo		multisampleState = initVulkanStructure();
+	multisampleState.rasterizationSamples = sampleCountBitFromomSampleCount(m_sampleCount);
+
+	// Disable blending
+	const VkPipelineColorBlendAttachmentState attachmentBlendState
+	{
+		VK_FALSE,
+		VK_BLEND_FACTOR_SRC_ALPHA,
+		VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+		VK_BLEND_OP_ADD,
+		VK_BLEND_FACTOR_ONE,
+		VK_BLEND_FACTOR_ONE,
+		VK_BLEND_OP_ADD,
+		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+	};
+
+	const deUint32 maximalNumberOfAttachments = 1 + splitSubpassCount * MAX_COLOR_ATTACHMENT_COUNT;
+	const std::vector<VkPipelineColorBlendAttachmentState> attachmentBlendStates(maximalNumberOfAttachments, attachmentBlendState);
+
+	VkPipelineColorBlendStateCreateInfo blendState
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+		DE_NULL,
+		(VkPipelineColorBlendStateCreateFlags)0u,
+		VK_FALSE,
+		VK_LOGIC_OP_COPY,
+		colorAttachmentCount,
+		attachmentBlendStates.data(),
+		{ 0.0f, 0.0f, 0.0f, 0.0f }
+	};
+
+#ifndef CTS_USES_VULKANSC
+	deUint32								depthAttachmentInputIndex		(0);
+	deUint32								stencilAttachmentInputIndex		(0);
+	std::vector<VkFormat>					colorAttachmentFormats			(maximalNumberOfAttachments, m_dstFormat);
+	std::vector<deUint32>					colorAttachmentLocations;
+	std::vector<deUint32>					colorAttachmentInputIndices;
+	VkRenderingAttachmentLocationInfoKHR	renderingAttachmentLocation;
+	VkRenderingInputAttachmentIndexInfoKHR	renderingInputAttachmentIndexInfo;
+
+	if (!isDepthStencilFormat)
+		colorAttachmentFormats[0] = m_srcFormat;
+
+	VkPipelineRenderingCreateInfo renderingCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+		&renderingInputAttachmentIndexInfo,
+		0u,
+		0u,
+		colorAttachmentFormats.data(),
+		(isDepthFormat ? m_srcFormat : VK_FORMAT_UNDEFINED),
+		(isStencilFormat ? m_srcFormat : VK_FORMAT_UNDEFINED)
+	};
+#endif // CTS_USES_VULKANSC
+
+	m_splitPipelines.reserve(splitSubpassCount);
+	for (deUint32 ndx = 0; ndx < splitSubpassCount; ndx++)
+	{
+#ifndef CTS_USES_VULKANSC
+		if (*m_renderPass == DE_NULL)
+		{
+			colorAttachmentCount						= !isDepthStencilFormat + splitSubpassCount * de::min((deUint32)MAX_COLOR_ATTACHMENT_COUNT, m_sampleCount - ndx * MAX_COLOR_ATTACHMENT_COUNT);
+			blendState.attachmentCount					= colorAttachmentCount;
+			renderingCreateInfo.colorAttachmentCount	= colorAttachmentCount;
+
+			colorAttachmentLocations.resize(colorAttachmentCount);
+			colorAttachmentInputIndices.resize(colorAttachmentCount);
+
+			renderingAttachmentLocation			= getRenderingAttachmentLocationInfo(colorAttachmentLocations, isDepthStencilFormat, m_sampleCount, ndx);
+			renderingInputAttachmentIndexInfo	= getRenderingInputAttachmentIndexInfo(colorAttachmentInputIndices, depthAttachmentInputIndex, stencilAttachmentInputIndex,
+																						isDepthFormat, isStencilFormat);
+			renderingCreateInfoWrapper.ptr					= &renderingCreateInfo;
+			renderingAttachmentLocationInfoWrapper.ptr		= &renderingAttachmentLocation;
+			renderingInputAttachmentIndexInfoWrapper.ptr	= &renderingInputAttachmentIndexInfo;
+		}
+#endif // CTS_USES_VULKANSC
+
+		m_splitPipelines.emplace_back(vki, vkd, physicalDevice, device, deviceExtensions, m_groupParams->pipelineConstructionType);
+		m_splitPipelines[ndx].setDefaultDepthStencilState()
+			.setDefaultRasterizationState()
+			.setupVertexInputState(&vertexInputState)
+			.setupPreRasterizationShaderState(viewports,
+				scissors,
+				m_splitPipelineLayout,
+				*m_renderPass,
+				ndx + 1u,
+				vertexShaderModule,
+				0u,
+				ShaderWrapper(),
+				ShaderWrapper(),
+				ShaderWrapper(),
+				nullptr,
+				nullptr,
+				renderingCreateInfoWrapper,
+				renderingAttachmentLocationInfoWrapper,
+				renderingInputAttachmentIndexInfoWrapper)
+			.setupFragmentShaderState(m_splitPipelineLayout, *m_renderPass, ndx + 1u, fragmentShaderModule, 0u, &multisampleState)
+			.setupFragmentOutputState(*m_renderPass, ndx + 1u, &blendState, &multisampleState)
+			.setMonolithicPipelineLayout(m_splitPipelineLayout)
+			.buildPipeline();
 	}
 }
 
@@ -1850,20 +1759,18 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternalDynamicRenderi
 #ifndef CTS_USES_VULKANSC
 void MultisampleRenderPassTestInstance::preRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer, VkImageAspectFlags aspectMask)
 {
-	const tcu::TextureFormat	format			(mapVkFormat(m_srcFormat));
-	const bool					isDepthFormat	(tcu::hasDepthComponent(format.order));
-	const bool					isStencilFormat	(tcu::hasStencilComponent(format.order));
-
-	const VkImageSubresourceRange srcSubresourceRange(makeImageSubresourceRange(aspectMask, 0, 1, 0, 1));
-	const VkImageSubresourceRange dstSubresourceRange(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1));
+	const tcu::TextureFormat		format				(mapVkFormat(m_srcFormat));
+	const VkImageSubresourceRange	srcSubresourceRange	(makeImageSubresourceRange(aspectMask, 0, 1, 0, 1));
+	const VkImageSubresourceRange	dstSubresourceRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1));
 
 	// Memory barrier to set singlesamepled image layout to COLOR_ATTACHMENT_OPTIMAL
 	VkPipelineStageFlags	dstStageMaskForSourceImage	= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	VkImageMemoryBarrier	srcImageBarrier				(makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, m_srcInputImageReadLayout,
 														 *m_srcImage, srcSubresourceRange));
-	if (isDepthFormat || isStencilFormat)
+
+	if (tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order))
 	{
-		dstStageMaskForSourceImage		= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		dstStageMaskForSourceImage		= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		srcImageBarrier.dstAccessMask	= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 	}
 
@@ -1905,7 +1812,7 @@ void MultisampleRenderPassTestInstance::inbetweenRenderCommands(const DeviceInte
 
 void MultisampleRenderPassTestInstance::drawFirstSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
 {
-	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_renderPipeline.getPipeline());
 	for (deUint32 sampleNdx = 0; sampleNdx < m_sampleCount; sampleNdx++)
 	{
 		vk.cmdPushConstants(cmdBuffer, *m_renderPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(sampleNdx), &sampleNdx);
@@ -1915,7 +1822,7 @@ void MultisampleRenderPassTestInstance::drawFirstSubpass(const DeviceInterface& 
 
 void MultisampleRenderPassTestInstance::drawNextSubpass(const DeviceInterface& vk, VkCommandBuffer cmdBuffer, deUint32 splitPipelineNdx)
 {
-	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **m_splitPipelines[splitPipelineNdx]);
+	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_splitPipelines[splitPipelineNdx].getPipeline());
 	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_splitPipelineLayout, 0u, 1u, &*m_splitDescriptorSet, 0u, DE_NULL);
 	vk.cmdPushConstants(cmdBuffer, *m_splitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(splitPipelineNdx), &splitPipelineNdx);
 	vk.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
@@ -1923,8 +1830,12 @@ void MultisampleRenderPassTestInstance::drawNextSubpass(const DeviceInterface& v
 
 void MultisampleRenderPassTestInstance::postRenderCommands(const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
 {
+	VkImageLayout oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	if (m_groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+		oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
 	for (size_t dstNdx = 0; dstNdx < m_dstSinglesampleImages.size(); dstNdx++)
-		copyImageToBuffer(vk, cmdBuffer, **m_dstSinglesampleImages[dstNdx], **m_dstBuffers[dstNdx], tcu::IVec2(m_width, m_height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		copyImageToBuffer(vk, cmdBuffer, **m_dstSinglesampleImages[dstNdx], **m_dstBuffers[dstNdx], tcu::IVec2(m_width, m_height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, oldLayout);
 }
 
 tcu::TestStatus MultisampleRenderPassTestInstance::verifyResult(void)
@@ -2550,13 +2461,15 @@ struct Programs
 
 void checkSupport(Context& context, TestConfig config)
 {
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	vk::VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+
+	checkPipelineConstructionRequirements(vki, physicalDevice, config.groupParams->pipelineConstructionType);
 	if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
 	if (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
-		const InstanceInterface&				vki					= context.getInstanceInterface();
-		vk::VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 		const vk::VkPhysicalDeviceProperties	properties			= vk::getPhysicalDeviceProperties(vki, physicalDevice);
 		const deUint32							splitSubpassCount	(deDivRoundUp32(config.sampleCount, MAX_COLOR_ATTACHMENT_COUNT));
 		const tcu::TextureFormat				format				(mapVkFormat(config.format));
@@ -2675,6 +2588,10 @@ void initTests (tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 
 		for (size_t sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountNdx++)
 		{
+			// limit number of repeated tests for non monolithic pipelines
+			if ((groupParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) && (sampleCountNdx > 2))
+				continue;
+
 			const deUint32		sampleCount	(sampleCounts[sampleCountNdx]);
 			const TestConfig	testConfig	(format, sampleCount, groupParams);
 			const std::string	testName	("samples_" + de::toString(sampleCount));

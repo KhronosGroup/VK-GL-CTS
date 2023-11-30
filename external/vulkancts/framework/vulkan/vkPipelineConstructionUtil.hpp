@@ -87,6 +87,8 @@ public:
 #ifndef CTS_USES_VULKANSC
 typedef PointerWrapper<VkPipelineViewportDepthClipControlCreateInfoEXT> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineRenderingCreateInfoKHR> PipelineRenderingCreateInfoWrapper;
+typedef PointerWrapper<VkRenderingAttachmentLocationInfoKHR> RenderingAttachmentLocationInfoWrapper;
+typedef PointerWrapper<VkRenderingInputAttachmentIndexInfoKHR> RenderingInputAttachmentIndexInfoWrapper;
 typedef PointerWrapper<VkPipelineCreationFeedbackCreateInfoEXT> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV> PipelineRepresentativeFragmentTestCreateInfoWrapper;
@@ -94,6 +96,8 @@ typedef VkPipelineCreateFlags2KHR PipelineCreateFlags2;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
+typedef PointerWrapper<void> RenderingAttachmentLocationInfoWrapper;
+typedef PointerWrapper<void> RenderingInputAttachmentIndexInfoWrapper;
 typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
@@ -429,6 +433,8 @@ public:
 																	 const VkSpecializationInfo*						specializationInfo = DE_NULL,
 																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState = nullptr,
 																	 PipelineRenderingCreateInfoWrapper					rendering = PipelineRenderingCreateInfoWrapper(),
+																	 RenderingAttachmentLocationInfoWrapper				renderingAttachmentLocationInfo = RenderingAttachmentLocationInfoWrapper(),
+																	 RenderingInputAttachmentIndexInfoWrapper			renderingInputAttachmentIndexInfo = RenderingInputAttachmentIndexInfoWrapper(),
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
@@ -448,6 +454,8 @@ public:
 																	 const VkSpecializationInfo*						geomSpecializationInfo = nullptr,
 																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState = nullptr,
 																	 PipelineRenderingCreateInfoWrapper					rendering = PipelineRenderingCreateInfoWrapper(),
+																	 RenderingAttachmentLocationInfoWrapper				renderingAttachmentLocationInfo = RenderingAttachmentLocationInfoWrapper(),
+																	 RenderingInputAttachmentIndexInfoWrapper			renderingInputAttachmentIndexInfo = RenderingInputAttachmentIndexInfoWrapper(),
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
@@ -472,6 +480,8 @@ public:
 																	 const VkSpecializationInfo*								geomSpecializationInfo = nullptr,
 																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*			fragmentShadingRateState = nullptr,
 																	 PipelineRenderingCreateInfoWrapper							rendering = PipelineRenderingCreateInfoWrapper(),
+																	 RenderingAttachmentLocationInfoWrapper						renderingAttachmentLocationInfo = RenderingAttachmentLocationInfoWrapper(),
+																	 RenderingInputAttachmentIndexInfoWrapper					renderingInputAttachmentIndexInfo = RenderingInputAttachmentIndexInfoWrapper(),
 																	 const VkPipelineCache										partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 

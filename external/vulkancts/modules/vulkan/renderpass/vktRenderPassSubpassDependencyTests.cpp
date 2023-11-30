@@ -2334,8 +2334,10 @@ public:
 protected:
 
 	void					setup							(void);
+#ifndef CTS_USES_VULKANSC
 	void					startDynamicRendering			(VkCommandBuffer			cmdBuffer,
 															 VkRenderingFlagsKHR		renderingFlags = 0u);
+#endif // CTS_USES_VULKANSC
 	void					draw							(VkCommandBuffer			cmdBuffer);
 	void					postRenderCommands				(VkCommandBuffer			cmdBuffer);
 	tcu::TestStatus			verifyResults					(void);
@@ -2361,8 +2363,8 @@ private:
 	de::MovePtr<Allocation>		m_dsImageAllocation;
 	Move<VkImageView>			m_imageView;
 	Move<VkImageView>			m_dsImageView;
-	Move<VkPipelineLayout>		m_pipelineLayout;
-	Move<VkPipeline>			m_renderPipeline;
+	PipelineLayoutWrapper		m_pipelineLayout;
+	GraphicsPipelineWrapper		m_renderPipeline;
 	Move<VkFramebuffer>			m_framebuffer;
 	Move<VkRenderPass>			m_renderPass;
 	Move<VkBuffer>				m_resultBuffer0;
@@ -2387,6 +2389,7 @@ SeparateChannelsTestInstance::SeparateChannelsTestInstance (Context& context, Se
 	, m_colorInitValues		{ tcu::Vec4(0.2f, 0.4f, 0.1f, 1.0f), tcu::Vec4(0.5f, 0.4f, 0.7f, 1.0f) }
 	, m_depthInitValues		{ 0.3f, 0.7f }
 	, m_stencilInitValues	{ 2u, 100u }
+	, m_renderPipeline		(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), m_groupParams->pipelineConstructionType)
 {
 }
 
@@ -2579,20 +2582,7 @@ void SeparateChannelsTestInstance::setup(void)
 	}
 
 	// Create render pipeline layout.
-	{
-		const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType
-			DE_NULL,										// const void*					pNext
-			(vk::VkPipelineLayoutCreateFlags)0,				// VkPipelineLayoutCreateFlags	flags
-			1u,												// deUint32						setLayoutCount
-			&*m_descriptorSetLayout,						// const VkDescriptorSetLayout*	pSetLayouts
-			0u,												// deUint32						pushConstantRangeCount
-			DE_NULL											// const VkPushConstantRange*	pPushConstantRanges
-		};
-
-		m_pipelineLayout = createPipelineLayout(vkd, device, &pipelineLayoutCreateInfo);
-	}
+	m_pipelineLayout = PipelineLayoutWrapper(m_groupParams->pipelineConstructionType, vkd, device, *m_descriptorSetLayout);
 
 	if (m_groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
@@ -2653,8 +2643,8 @@ void SeparateChannelsTestInstance::setup(void)
 
 	// Create render pipeline.
 	{
-		const Unique<VkShaderModule>				vertexShaderModule			(createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u));
-		const Unique<VkShaderModule>				fragmentShaderModule		(createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u));
+		const ShaderWrapper		vertexShaderModule	(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+		const ShaderWrapper		fragmentShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 
 		const VkVertexInputBindingDescription		vertexBinding0
 		{
@@ -2735,13 +2725,14 @@ void SeparateChannelsTestInstance::setup(void)
 			1.0f														// float									maxDepthBounds
 		};
 
-		const std::vector<VkViewport>				viewports					(1, makeViewport(tcu::UVec2(m_width, m_height)));
-		const std::vector<VkRect2D>					scissors					(1, makeRect2D(tcu::UVec2(m_width, m_height)));
+		PipelineRenderingCreateInfoWrapper			renderingCreateInfoWrapper;
+		RenderingInputAttachmentIndexInfoWrapper	renderingInputAttachmentIndexInfoWrapper;
+		const std::vector<VkViewport>				viewports	{ makeViewport(m_width, m_height) };
+		const std::vector<VkRect2D>					scissors	{ makeRect2D(m_width, m_height) };
 
-		void* pNext = DE_NULL;
 #ifndef CTS_USES_VULKANSC
-		const deUint32 inputAttachmentIndex		= 0;
-		const deUint32 dsInputAttachmentIndex	= VK_ATTACHMENT_UNUSED;
+		const deUint32 inputAttachmentIndex = 0;
+		const deUint32 dsInputAttachmentIndex = VK_ATTACHMENT_UNUSED;
 		VkRenderingInputAttachmentIndexInfoKHR renderingInputAttachmentIndexInfo
 		{
 			VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR,
@@ -2754,7 +2745,7 @@ void SeparateChannelsTestInstance::setup(void)
 		VkPipelineRenderingCreateInfo renderingCreateInfo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-			(isDSFormat ? DE_NULL : &renderingInputAttachmentIndexInfo),
+			DE_NULL,
 			0u,
 			1u,
 			&colorFormat,
@@ -2762,30 +2753,40 @@ void SeparateChannelsTestInstance::setup(void)
 			(isDSFormat ? m_format : VK_FORMAT_UNDEFINED)
 		};
 		if (*m_renderPass == DE_NULL)
-			pNext = &renderingCreateInfo;
+		{
+			renderingCreateInfoWrapper.ptr = &renderingCreateInfo;
+			if (!isDSFormat)
+				renderingInputAttachmentIndexInfoWrapper.ptr = &renderingInputAttachmentIndexInfo;
+		}
 #endif
+		if (isDSFormat)
+			m_renderPipeline.setDefaultColorBlendState();
+		else
+			m_renderPipeline.setDefaultDepthStencilState();
 
-		m_renderPipeline = makeGraphicsPipeline(vkd,		// const DeviceInterface&							vk
-				device,										// const VkDevice									device
-				*m_pipelineLayout,							// const VkPipelineLayout							pipelineLayout
-				*vertexShaderModule,						// const VkShaderModule								vertexShaderModule
-				DE_NULL,									// const VkShaderModule								tessellationControlShaderModule
-				DE_NULL,									// const VkShaderModule								tessellationEvalShaderModule
-				DE_NULL,									// const VkShaderModule								geometryShaderModule
-				*fragmentShaderModule,						// const VkShaderModule								fragmentShaderModule
-				*m_renderPass,								// const VkRenderPass								renderPass
-				viewports,									// const std::vector<VkViewport>&					viewports
-				scissors,									// const std::vector<VkRect2D>&						scissors
-				VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,		// const VkPrimitiveTopology						topology
-				0u,											// const deUint32									subpass
-				0u,											// const deUint32									patchControlPoints
-				&vertexInputState,							// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
-				DE_NULL,									// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
-				DE_NULL,									// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
-				isDSFormat ? &depthStencilState : DE_NULL,	// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
-				isDSFormat ? DE_NULL : &colorBlendState,	// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo
-				DE_NULL,									// const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo
-				pNext);										// const void*										pNext
+		m_renderPipeline.setDefaultMultisampleState()
+			.setDefaultRasterizationState()
+			.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+			.setupVertexInputState(&vertexInputState)
+			.setupPreRasterizationShaderState(viewports,
+				scissors,
+				m_pipelineLayout,
+				*m_renderPass,
+				0u,
+				vertexShaderModule,
+				0u,
+				ShaderWrapper(),
+				ShaderWrapper(),
+				ShaderWrapper(),
+				DE_NULL,
+				DE_NULL,
+				renderingCreateInfoWrapper,
+				DE_NULL,
+				renderingInputAttachmentIndexInfoWrapper)
+			.setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragmentShaderModule, (isDSFormat ? &depthStencilState : DE_NULL))
+			.setupFragmentOutputState(*m_renderPass, 0u, (isDSFormat ? DE_NULL : &colorBlendState))
+			.setMonolithicPipelineLayout(m_pipelineLayout)
+			.buildPipeline();
 	}
 
 	// Generate quad vertices
@@ -2821,12 +2822,9 @@ void SeparateChannelsTestInstance::setup(void)
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
 void SeparateChannelsTestInstance::startDynamicRendering(VkCommandBuffer cmdBuffer, VkRenderingFlagsKHR renderingFlags)
 {
-	DE_UNREF(cmdBuffer);
-	DE_UNREF(renderingFlags);
-
-#ifndef CTS_USES_VULKANSC
 	const DeviceInterface&	vkd			(m_context.getDeviceInterface());
 	const bool				isDSFormat	= isDepthStencilFormat(m_format);
 	const VkClearValue		clearValue	= makeClearValueColor(Vec4(0.0f));
@@ -2842,8 +2840,8 @@ void SeparateChannelsTestInstance::startDynamicRendering(VkCommandBuffer cmdBuff
 		beginRendering(vkd, cmdBuffer, *m_imageView, renderArea, clearValue,
 			VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR, VK_ATTACHMENT_LOAD_OP_LOAD, renderingFlags);
 	}
-#endif
 }
+#endif
 
 void SeparateChannelsTestInstance::draw(VkCommandBuffer cmdBuffer)
 {
@@ -2851,7 +2849,7 @@ void SeparateChannelsTestInstance::draw(VkCommandBuffer cmdBuffer)
 	const bool				isDSFormat		= isDepthStencilFormat(m_format);
 	const VkDeviceSize		bindingOffset	= 0;
 
-	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
+	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_renderPipeline.getPipeline());
 	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &bindingOffset);
 	if (!isDSFormat)
 	{
@@ -3082,7 +3080,10 @@ protected:
 	void					iterateInternal					(void);
 	void					iterateInternalDynamicRendering	(void);
 
+#ifndef CTS_USES_VULKANSC
 	void					preRenderCommands				(VkCommandBuffer			cmdBuffer);
+#endif // CTS_USES_VULKANSC
+
 	void					drawThatUsesInputAttachment		(VkCommandBuffer			cmdBuffer);
 	void					inbetweenDrawsRenderBarriers	(VkCommandBuffer			cmdBuffer);
 	void					drawThatSamplesPreviousResult	(VkCommandBuffer			cmdBuffer);
@@ -3101,11 +3102,11 @@ private:
 	de::MovePtr<Allocation>		m_resultImageAllocation;
 	Move<VkImageView>			m_imageViewInput;
 	Move<VkImageView>			m_imageViewResult;
-	Move<VkPipelineLayout>		m_pipelineLayoutInput;
-	Move<VkPipelineLayout>		m_pipelineLayoutImageSampler;
-	Move<VkPipeline>			m_pipelineSolidColor;
-	Move<VkPipeline>			m_pipelineInputAtt;
-	Move<VkPipeline>			m_pipelineImageSampler;
+	PipelineLayoutWrapper		m_pipelineLayoutInput;
+	PipelineLayoutWrapper		m_pipelineLayoutImageSampler;
+	GraphicsPipelineWrapper		m_pipelineSolidColor;
+	GraphicsPipelineWrapper		m_pipelineInputAtt;
+	GraphicsPipelineWrapper		m_pipelineImageSampler;
 	Move<VkFramebuffer>			m_framebuffer1;
 	Move<VkFramebuffer>			m_framebuffer0;
 	Move<VkRenderPass>			m_renderPass0;
@@ -3123,11 +3124,14 @@ private:
 };
 
 SingleAttachmentTestInstance::SingleAttachmentTestInstance (Context& context, SingleAttachmentTestConfig testConfig)
-	: TestInstance			(context)
-	, m_groupParams			(testConfig.groupParams)
-	, m_width				(256u)
-	, m_height				(256u)
-	, m_format				(testConfig.format)
+	: TestInstance				(context)
+	, m_groupParams				(testConfig.groupParams)
+	, m_width					(256u)
+	, m_height					(256u)
+	, m_format					(testConfig.format)
+	, m_pipelineSolidColor		(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), m_groupParams->pipelineConstructionType)
+	, m_pipelineInputAtt		(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), m_groupParams->pipelineConstructionType)
+	, m_pipelineImageSampler	(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), m_groupParams->pipelineConstructionType)
 {
 }
 
@@ -3325,34 +3329,8 @@ void SingleAttachmentTestInstance::setup(void)
 		.update(vkd, device);
 
 	// Create pipeline layouts.
-	{
-		const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType
-			DE_NULL,										// const void*					pNext
-			(vk::VkPipelineLayoutCreateFlags)0,				// VkPipelineLayoutCreateFlags	flags
-			1u,												// deUint32						setLayoutCount
-			&m_descriptorSetLayoutInput.get(),				// const VkDescriptorSetLayout*	pSetLayouts
-			0u,												// deUint32						pushConstantRangeCount
-			DE_NULL											// const VkPushConstantRange*	pPushConstantRanges
-		};
-
-		m_pipelineLayoutInput = createPipelineLayout(vkd, device, &pipelineLayoutCreateInfo);
-	}
-	{
-		const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType
-			DE_NULL,										// const void*					pNext
-			(vk::VkPipelineLayoutCreateFlags)0,				// VkPipelineLayoutCreateFlags	flags
-			1u,												// deUint32						setLayoutCount
-			&m_descriptorSetLayoutImageSampler.get(),		// const VkDescriptorSetLayout*	pSetLayouts
-			0u,												// deUint32						pushConstantRangeCount
-			DE_NULL											// const VkPushConstantRange*	pPushConstantRanges
-		};
-
-		m_pipelineLayoutImageSampler = createPipelineLayout(vkd, device, &pipelineLayoutCreateInfo);
-	}
+	m_pipelineLayoutInput			= PipelineLayoutWrapper(m_groupParams->pipelineConstructionType, vkd, device, *m_descriptorSetLayoutInput);
+	m_pipelineLayoutImageSampler	= PipelineLayoutWrapper(m_groupParams->pipelineConstructionType, vkd, device, *m_descriptorSetLayoutImageSampler);
 
 	if (m_groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
@@ -3416,19 +3394,19 @@ void SingleAttachmentTestInstance::setup(void)
 
 	// Create pipelines.
 	{
-		const Unique<VkShaderModule>				vertexShaderModule				(createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u));
-		const Unique<VkShaderModule>				fragmentShaderModuleInputAtt	(createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag_input_attachment"), 0u));
-		const Unique<VkShaderModule>				fragmentShaderModuleSolidColor	(createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag_solid_color"), 0u));
-		const Unique<VkShaderModule>				fragmentShaderModuleSampler		(createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag_combined_image_sampler"), 0u));
+		const ShaderWrapper	vertexShaderModule				(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+		const ShaderWrapper	fragmentShaderModuleInputAtt	(vkd, device, m_context.getBinaryCollection().get("frag_input_attachment"), 0u);
+		const ShaderWrapper	fragmentShaderModuleSolidColor	(vkd, device, m_context.getBinaryCollection().get("frag_solid_color"), 0u);
+		const ShaderWrapper	fragmentShaderModuleSampler		(vkd, device, m_context.getBinaryCollection().get("frag_combined_image_sampler"), 0u);
 
-		const VkVertexInputBindingDescription		vertexBinding0					=
+		const VkVertexInputBindingDescription		vertexBinding0 =
 		{
 			0u,							// deUint32					binding
 			sizeof(Vec4),				// deUint32					strideInBytes
 			VK_VERTEX_INPUT_RATE_VERTEX	// VkVertexInputStepRate	stepRate
 		};
 
-		const VkVertexInputAttributeDescription		attr0							=
+		const VkVertexInputAttributeDescription		attr0 =
 		{
 			0u,								// deUint32	location
 			0u,								// deUint32	binding
@@ -3436,7 +3414,7 @@ void SingleAttachmentTestInstance::setup(void)
 			0u								// deUint32	offsetInBytes
 		};
 
-		const VkPipelineVertexInputStateCreateInfo	vertexInputState				=
+		const VkPipelineVertexInputStateCreateInfo	vertexInputState =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType
 			DE_NULL,													// const void*								pNext
@@ -3447,10 +3425,11 @@ void SingleAttachmentTestInstance::setup(void)
 			&attr0														// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions
 		};
 
-		const std::vector<VkViewport>				viewports						(1, makeViewport(tcu::UVec2(m_width, m_height)));
-		const std::vector<VkRect2D>					scissors						(1, makeRect2D(tcu::UVec2(m_width, m_height)));
+		PipelineRenderingCreateInfoWrapper	renderingCreateInfoWrapper;
+		const std::vector<VkViewport>		viewports	{ makeViewport(m_width, m_height) };
+		const std::vector<VkRect2D>			scissors	{ makeRect2D(m_width, m_height) };
 
-		const VkPipelineColorBlendAttachmentState		colorBlendAttachmentState	=
+		const VkPipelineColorBlendAttachmentState		colorBlendAttachmentState =
 		{
 			VK_TRUE,								// VkBool32					blendEnable
 			VK_BLEND_FACTOR_ONE,					// VkBlendFactor			srcColorBlendFactor
@@ -3465,7 +3444,7 @@ void SingleAttachmentTestInstance::setup(void)
 				| VK_COLOR_COMPONENT_A_BIT
 		};
 
-		const VkPipelineColorBlendStateCreateInfo		colorBlendState				=
+		const VkPipelineColorBlendStateCreateInfo		colorBlendState =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType
 			DE_NULL,													// const void*									pNext
@@ -3477,7 +3456,6 @@ void SingleAttachmentTestInstance::setup(void)
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4]
 		};
 
-		void* pNext = DE_NULL;
 #ifndef CTS_USES_VULKANSC
 		VkPipelineRenderingCreateInfo renderingCreateInfo
 		{
@@ -3490,74 +3468,76 @@ void SingleAttachmentTestInstance::setup(void)
 			VK_FORMAT_UNDEFINED
 		};
 		if (*m_renderPass0 == DE_NULL)
-			pNext = &renderingCreateInfo;
+			renderingCreateInfoWrapper.ptr = &renderingCreateInfo;
 #endif
+		m_pipelineSolidColor.setDefaultMultisampleState()
+			.setDefaultDepthStencilState()
+			.setDefaultRasterizationState()
+			.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+			.setupVertexInputState(&vertexInputState)
+			.setupPreRasterizationShaderState(viewports,
+				scissors,
+				m_pipelineLayoutInput,
+				*m_renderPass0,
+				0u,
+				vertexShaderModule,
+				0u,
+				ShaderWrapper(),
+				ShaderWrapper(),
+				ShaderWrapper(),
+				DE_NULL,
+				DE_NULL,
+				renderingCreateInfoWrapper)
+			.setupFragmentShaderState(m_pipelineLayoutInput, *m_renderPass0, 0u, fragmentShaderModuleSolidColor)
+			.setupFragmentOutputState(*m_renderPass0, 0u, &colorBlendState)
+			.setMonolithicPipelineLayout(m_pipelineLayoutInput)
+			.buildPipeline();
 
-		m_pipelineSolidColor = makeGraphicsPipeline(vkd,	// const DeviceInterface&							vk
-				device,										// const VkDevice									device
-				*m_pipelineLayoutInput,						// const VkPipelineLayout							pipelineLayout
-				*vertexShaderModule,						// const VkShaderModule								vertexShaderModule
-				DE_NULL,									// const VkShaderModule								tessellationControlShaderModule
-				DE_NULL,									// const VkShaderModule								tessellationEvalShaderModule
-				DE_NULL,									// const VkShaderModule								geometryShaderModule
-				*fragmentShaderModuleSolidColor,			// const VkShaderModule								fragmentShaderModule
-				*m_renderPass0,								// const VkRenderPass								renderPass
-				viewports,									// const std::vector<VkViewport>&					viewports
-				scissors,									// const std::vector<VkRect2D>&						scissors
-				VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,		// const VkPrimitiveTopology						topology
-				0u,											// const deUint32									subpass
-				0u,											// const deUint32									patchControlPoints
-				&vertexInputState,							// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
-				DE_NULL,									// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
-				DE_NULL,									// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
-				DE_NULL,									// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
-				&colorBlendState,							// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo
-				DE_NULL,									// const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo
-				pNext);										// const void*										pNext
+		m_pipelineInputAtt.setDefaultMultisampleState()
+			.setDefaultDepthStencilState()
+			.setDefaultRasterizationState()
+			.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+			.setupVertexInputState(&vertexInputState)
+			.setupPreRasterizationShaderState(viewports,
+				scissors,
+				m_pipelineLayoutInput,
+				*m_renderPass0,
+				0u,
+				vertexShaderModule,
+				0u,
+				ShaderWrapper(),
+				ShaderWrapper(),
+				ShaderWrapper(),
+				DE_NULL,
+				DE_NULL,
+				renderingCreateInfoWrapper)
+			.setupFragmentShaderState(m_pipelineLayoutInput, *m_renderPass0, 0u, fragmentShaderModuleInputAtt)
+			.setupFragmentOutputState(*m_renderPass0, 0u, &colorBlendState)
+			.setMonolithicPipelineLayout(m_pipelineLayoutInput)
+			.buildPipeline();
 
-		m_pipelineInputAtt = makeGraphicsPipeline(vkd,		// const DeviceInterface&							vk
-				device,										// const VkDevice									device
-				*m_pipelineLayoutInput,						// const VkPipelineLayout							pipelineLayout
-				*vertexShaderModule,						// const VkShaderModule								vertexShaderModule
-				DE_NULL,									// const VkShaderModule								tessellationControlShaderModule
-				DE_NULL,									// const VkShaderModule								tessellationEvalShaderModule
-				DE_NULL,									// const VkShaderModule								geometryShaderModule
-				*fragmentShaderModuleInputAtt,				// const VkShaderModule								fragmentShaderModule
-				*m_renderPass0,								// const VkRenderPass								renderPass
-				viewports,									// const std::vector<VkViewport>&					viewports
-				scissors,									// const std::vector<VkRect2D>&						scissors
-				VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,		// const VkPrimitiveTopology						topology
-				0u,											// const deUint32									subpass
-				0u,											// const deUint32									patchControlPoints
-				&vertexInputState,							// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
-				DE_NULL,									// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
-				DE_NULL,									// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
-				DE_NULL,									// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
-				&colorBlendState,							// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo
-				DE_NULL,									// const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo
-				pNext);										// const void*										pNext
-
-		m_pipelineImageSampler = makeGraphicsPipeline(vkd,	// const DeviceInterface&							vk
-				device,										// const VkDevice									device
-				*m_pipelineLayoutImageSampler,				// const VkPipelineLayout							pipelineLayout
-				*vertexShaderModule,						// const VkShaderModule								vertexShaderModule
-				DE_NULL,									// const VkShaderModule								tessellationControlShaderModule
-				DE_NULL,									// const VkShaderModule								tessellationEvalShaderModule
-				DE_NULL,									// const VkShaderModule								geometryShaderModule
-				*fragmentShaderModuleSampler,				// const VkShaderModule								fragmentShaderModule
-				*m_renderPass1,								// const VkRenderPass								renderPass
-				viewports,									// const std::vector<VkViewport>&					viewports
-				scissors,									// const std::vector<VkRect2D>&						scissors
-				VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,		// const VkPrimitiveTopology						topology
-				0u,											// const deUint32									subpass
-				0u,											// const deUint32									patchControlPoints
-				&vertexInputState,							// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
-				DE_NULL,									// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
-				DE_NULL,									// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
-				DE_NULL,									// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
-				&colorBlendState,							// const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo
-				DE_NULL,									// const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo
-				pNext);										// const void*										pNext
+		m_pipelineImageSampler.setDefaultMultisampleState()
+			.setDefaultDepthStencilState()
+			.setDefaultRasterizationState()
+			.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+			.setupVertexInputState(&vertexInputState)
+			.setupPreRasterizationShaderState(viewports,
+				scissors,
+				m_pipelineLayoutImageSampler,
+				*m_renderPass1,
+				0u,
+				vertexShaderModule,
+				0u,
+				ShaderWrapper(),
+				ShaderWrapper(),
+				ShaderWrapper(),
+				DE_NULL,
+				DE_NULL,
+				renderingCreateInfoWrapper)
+			.setupFragmentShaderState(m_pipelineLayoutImageSampler, *m_renderPass1, 0u, fragmentShaderModuleSampler)
+			.setupFragmentOutputState(*m_renderPass1, 0u, &colorBlendState)
+			.setMonolithicPipelineLayout(m_pipelineLayoutImageSampler)
+			.buildPipeline();
 	}
 
 	// Generate quad vertices.
@@ -3795,10 +3775,9 @@ void SingleAttachmentTestInstance::iterateInternalDynamicRendering(void)
 #endif
 }
 
+#ifndef CTS_USES_VULKANSC
 void SingleAttachmentTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer)
 {
-	DE_UNREF(cmdBuffer);
-#ifndef CTS_USES_VULKANSC
 	const DeviceInterface&			vkd					(m_context.getDeviceInterface());
 	const VkImageSubresourceRange	subresourceRange	{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u };
 	VkImageMemoryBarrier			imageBarrier		= makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -3806,8 +3785,8 @@ void SingleAttachmentTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer)
 
 	// Transition color attachment to proper layout.
 	vkd.cmdPipelineBarrier(cmdBuffer, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
-#endif // CTS_USES_VULKANSC
 }
+#endif // CTS_USES_VULKANSC
 
 void SingleAttachmentTestInstance::drawThatUsesInputAttachment(VkCommandBuffer cmdBuffer)
 {
@@ -3818,7 +3797,7 @@ void SingleAttachmentTestInstance::drawThatUsesInputAttachment(VkCommandBuffer c
 																				 VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 																				 *m_colorImage, subresourceRange);
 	// Bind pipeline.
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineSolidColor);
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineSolidColor.getPipeline());
 
 	// Bind vertex buffer.
 	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &bindingOffset);
@@ -3840,7 +3819,7 @@ void SingleAttachmentTestInstance::drawThatUsesInputAttachment(VkCommandBuffer c
 	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
 
 	// Bind pipeline.
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineInputAtt);
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineInputAtt.getPipeline());
 
 	// Bind descriptor set.
 	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutInput, 0u, 1u, &*m_descriptorSetInput, 0u, DE_NULL);
@@ -3879,7 +3858,7 @@ void SingleAttachmentTestInstance::drawThatSamplesPreviousResult(VkCommandBuffer
 	const VkDeviceSize		bindingOffset	(0);
 
 	// Bind pipeline.
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineImageSampler);
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineImageSampler.getPipeline());
 
 	// Bind vertex buffer.
 	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &bindingOffset);
@@ -3993,6 +3972,10 @@ struct ExternalPrograms
 template <typename TestConfig>
 void checkSupport(Context& context, TestConfig config)
 {
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	vk::VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+
+	checkPipelineConstructionRequirements(vki, physicalDevice, config.groupParams->pipelineConstructionType);
 	if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 	else if (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)

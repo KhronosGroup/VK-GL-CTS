@@ -3186,9 +3186,10 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 				VK_FORMAT_R8G8_UNORM,					// VkFormat					densityMapFormat;
 				SharedGroupParams(new GroupParams		// SharedGroupParams		groupParams;
 				{
-					groupParams->renderingType,			//		RenderingType		renderingType;
-					cmdBuffType.useSecondaryCmdBuffer,	//		bool				useSecondaryCmdBuffer;
-					false,								//		bool				secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+					groupParams->renderingType,				// RenderingType	renderingType;
+					cmdBuffType.useSecondaryCmdBuffer,		// bool				useSecondaryCmdBuffer;
+					false,									// bool				secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+					PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC,	// bool				useGraphicsPipelineLibrary;
 				})
 			};
 			std::string namePrefix = cmdBuffType.name;

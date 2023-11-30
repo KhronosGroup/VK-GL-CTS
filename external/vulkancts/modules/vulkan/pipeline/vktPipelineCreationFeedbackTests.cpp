@@ -657,7 +657,9 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 			geomShaderModule,
 			DE_NULL,
 			nullptr,
-			PipelineRenderingCreateInfoWrapper(),
+			nullptr,
+			nullptr,
+			nullptr,
 			*m_cache,
 			pipelineCreationFeedbackWrapper[1])
 	   .setupFragmentShaderState(

@@ -1811,6 +1811,8 @@ struct GraphicsPipelineWrapper::InternalData
 	VkPipelineTessellationStateCreateInfo				tessellationState;
 	VkPipelineFragmentShadingRateStateCreateInfoKHR*	pFragmentShadingRateState;
 	PipelineRenderingCreateInfoWrapper					pRenderingState;
+	RenderingAttachmentLocationInfoWrapper				pRenderingAttachmentLocation;
+	RenderingInputAttachmentIndexInfoWrapper			pRenderingInputAttachmentIndex;
 	const VkPipelineDynamicStateCreateInfo*				pDynamicState;
 	PipelineRepresentativeFragmentTestCreateInfoWrapper	pRepresentativeFragmentTestState;
 
@@ -2452,6 +2454,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 																				   const VkSpecializationInfo						*specializationInfo,
 																				   VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState,
 																				   PipelineRenderingCreateInfoWrapper				rendering,
+																				   RenderingAttachmentLocationInfoWrapper			renderingAttachmentLocationInfo,
+																				   RenderingInputAttachmentIndexInfoWrapper			renderingInputAttachmentIndexInfo,
 																				   const VkPipelineCache							partPipelineCache,
 																				   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback)
 {
@@ -2472,6 +2476,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 											 specializationInfo,
 											 fragmentShadingRateState,
 											 rendering,
+											 renderingAttachmentLocationInfo,
+											 renderingInputAttachmentIndexInfo,
 											 partPipelineCache,
 											 partCreationFeedback);
 }
@@ -2492,6 +2498,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 																					const VkSpecializationInfo*						geomSpecializationInfo,
 																					VkPipelineFragmentShadingRateStateCreateInfoKHR*fragmentShadingRateState,
 																					PipelineRenderingCreateInfoWrapper				rendering,
+																					RenderingAttachmentLocationInfoWrapper			renderingAttachmentLocationInfo,
+																					RenderingInputAttachmentIndexInfoWrapper		renderingInputAttachmentIndexInfo,
 																					const VkPipelineCache							partPipelineCache,
 																					PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback)
 {
@@ -2515,6 +2523,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 											 geomSpecializationInfo,
 											 fragmentShadingRateState,
 											 rendering,
+											 renderingAttachmentLocationInfo,
+											 renderingInputAttachmentIndexInfo,
 											 partPipelineCache,
 											 partCreationFeedback);
 }
@@ -2539,6 +2549,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 																					const VkSpecializationInfo*									geomSpecializationInfo,
 																					VkPipelineFragmentShadingRateStateCreateInfoKHR*			fragmentShadingRateState,
 																					PipelineRenderingCreateInfoWrapper							rendering,
+																					RenderingAttachmentLocationInfoWrapper						renderingAttachmentLocationInfo,
+																					RenderingInputAttachmentIndexInfoWrapper					renderingInputAttachmentIndexInfo,
 																					const VkPipelineCache										partPipelineCache,
 																					PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback)
 {
@@ -2559,6 +2571,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 	m_internalData->setupState |= PSS_PRE_RASTERIZATION_SHADERS;
 	m_internalData->pFragmentShadingRateState = fragmentShadingRateState;
 	m_internalData->pRenderingState.ptr = rendering.ptr;
+	m_internalData->pRenderingAttachmentLocation.ptr = renderingAttachmentLocationInfo.ptr;
+	m_internalData->pRenderingInputAttachmentIndex.ptr = renderingInputAttachmentIndexInfo.ptr;
 
 	const bool hasTesc = (tessellationControlShader.isSet() || tescShaderModuleId.ptr);
 	const bool hasTese = (tessellationEvalShader.isSet() || teseShaderModuleId.ptr);
@@ -2714,6 +2728,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 		void*	firstStructInChain	= reinterpret_cast<void*>(&libraryCreateInfo);
 		addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
 		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
+		addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
+		addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 
 		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
@@ -3026,6 +3042,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 		void*	firstStructInChain	= reinterpret_cast<void*>(&libraryCreateInfo);
 		addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
 		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
+		addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
+		addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 		addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
 
@@ -3098,6 +3116,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 
 #ifndef CTS_USES_VULKANSC
 	addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
+	addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
+	addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
 #endif // CTS_USES_VULKANSC
 
 	const auto pColorBlendState		= colorBlendState ? colorBlendState
@@ -3122,7 +3142,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 		addToChain(&firstStructInChain, &libraryCreateInfo);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 
-
 		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
 		std::vector<VkDynamicState> states;
 
@@ -3133,7 +3152,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 			pickedDynamicStateInfo.pDynamicStates = states.data();
 			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
 		}
-
 
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
