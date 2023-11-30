@@ -40,6 +40,7 @@
 #include "vkImageWithMemory.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuImageCompare.hpp"
 #include "vktApiCommandBuffersTests.hpp"
 #include "vktApiBufferComputeInstance.hpp"
 #include "vktApiComputeInstanceResultBuffer.hpp"
@@ -5451,6 +5452,283 @@ tcu::TestStatus ManyDrawsInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+void initManyIndirectDrawsPrograms (SourceCollections& dst)
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "layout (location=0) in vec4 inPos;\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = inPos;\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus manyIndirectDrawsTest (Context& context)
+{
+	const auto&			ctx			= context.getContextCommonData();
+	const tcu::IVec3	fbExtent	(64, 64, 1);
+	const auto			vkExtent	= makeExtent3D(fbExtent);
+	const auto			floatExt	= fbExtent.cast<float>();
+	const auto			pixelCount	= vkExtent.width * vkExtent.height;
+	const auto			fbFormat	= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat	= mapVkFormat(fbFormat);
+	const auto			fbUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const tcu::Vec4		clearColor	(0.0f, 0.0f, 0.0f, 1.0f);
+	const tcu::Vec4		geomColor	(0.0f, 0.0f, 1.0f, 1.0f); // Must match fragment shader.
+	const tcu::Vec4		threshold	(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+	const auto			bindPoint	= VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+	// Color buffer with verification buffer.
+	ImageWithBuffer colorBuffer (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		vkExtent,
+		fbFormat,
+		fbUsage,
+		VK_IMAGE_TYPE_2D);
+
+	// Vertices for each point.
+	std::vector<tcu::Vec4> vertices;
+	vertices.reserve(pixelCount);
+	for (int y = 0; y < fbExtent.y(); ++y)
+		for (int x = 0; x < fbExtent.x(); ++x)
+		{
+			const auto xCoord = ((static_cast<float>(x) + 0.5f) / floatExt.x()) * 2.0f - 1.0f;
+			const auto yCoord = ((static_cast<float>(y) + 0.5f) / floatExt.y()) * 2.0f - 1.0f;
+			vertices.push_back(tcu::Vec4(xCoord, yCoord, 0.0f, 1.0f));
+		};
+
+	// Vertex buffer
+	const auto			vbSize			= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vbInfo			= makeBufferCreateInfo(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	BufferWithMemory	vertexBuffer	(ctx.vkd, ctx.device, ctx.allocator, vbInfo, MemoryRequirement::HostVisible);
+	const auto			vbAlloc			= vertexBuffer.getAllocation();
+	void*				vbData			= vbAlloc.getHostPtr();
+	const auto			vbOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(vbData, de::dataOrNull(vertices), de::dataSize(vertices));
+	flushAlloc(ctx.vkd, ctx.device, vbAlloc);
+
+	std::vector<VkDrawIndirectCommand> indirectCommands;
+	indirectCommands.reserve(pixelCount);
+	const auto indirectCmdSize = static_cast<uint32_t>(sizeof(decltype(indirectCommands)::value_type));
+
+	for (uint32_t i = 0u; i < pixelCount; ++i)
+	{
+		indirectCommands.push_back({
+			1u,	//	uint32_t	vertexCount;
+			1u,	//	uint32_t	instanceCount;
+			i,	//	uint32_t	firstVertex;
+			0u,	//	uint32_t	firstInstance;
+		});
+	}
+
+	// Indirect draw buffer.
+	const auto			ibSize			= static_cast<VkDeviceSize>(de::dataSize(indirectCommands));
+	const auto			ibInfo			= makeBufferCreateInfo(ibSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+	BufferWithMemory	indirectBuffer	(ctx.vkd, ctx.device, ctx.allocator, ibInfo, MemoryRequirement::HostVisible);
+	const auto			ibAlloc			= indirectBuffer.getAllocation();
+	void*				ibData			= ibAlloc.getHostPtr();
+
+	deMemcpy(ibData, de::dataOrNull(indirectCommands), de::dataSize(indirectCommands));
+	flushAlloc(ctx.vkd, ctx.device, ibAlloc);
+
+	const auto pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device);
+	const auto renderPass		= makeRenderPass(ctx.vkd, ctx.device, fbFormat);
+	const auto framebuffer		= makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
+
+	// Modules.
+	const auto&	binaries		= context.getBinaryCollection();
+	const auto	vertModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	// Other default values work for the current setup, including the vertex input data format.
+	const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout,
+		*vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule,
+		*renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+
+	CommandPoolWithBuffer	cmd				(ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto				cmdBuffer		= *cmd.cmdBuffer;
+	const auto				secCmdBuffer	= allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+	beginSecondaryCommandBuffer(ctx.vkd, *secCmdBuffer, *renderPass, *framebuffer);
+	ctx.vkd.cmdBindVertexBuffers(*secCmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+	ctx.vkd.cmdBindPipeline(*secCmdBuffer, bindPoint, *pipeline);
+	for (uint32_t i = 0; i < pixelCount; ++i)
+		ctx.vkd.cmdDrawIndirect(*secCmdBuffer, indirectBuffer.get(), static_cast<VkDeviceSize>(i * indirectCmdSize), 1u, indirectCmdSize);
+	endCommandBuffer(ctx.vkd, *secCmdBuffer);
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), clearColor, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+	ctx.vkd.cmdExecuteCommands(cmdBuffer, 1u, &(*secCmdBuffer));
+	endRenderPass(ctx.vkd, cmdBuffer);
+	copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(),
+		fbExtent.swizzle(0, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+		VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color output.
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+	tcu::PixelBufferAccess resultAccess (tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+	tcu::TextureLevel	referenceLevel	(tcuFormat, fbExtent.x(), fbExtent.y());
+	auto				referenceAccess	= referenceLevel.getAccess();
+	tcu::clear(referenceAccess, geomColor);
+
+	auto& log = context.getTestContext().getLog();
+	if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+constexpr uint32_t kIndirectDispatchValueOffset = 1000000u;
+
+void initManyIndirectDispatchesPrograms (SourceCollections& dst)
+{
+	std::ostringstream comp;
+	comp
+		<< "#version 460\n"
+		<< "layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
+		<< "layout (push_constant, std430) uniform PushConstantBlock { uint index; } pc;\n"
+		<< "layout (set=0, binding=0, std430) buffer OutputBlock { uint data[]; } outputValues;\n"
+		<< "void main (void) {\n"
+		<< "    outputValues.data[pc.index] += pc.index + " << kIndirectDispatchValueOffset << "u;\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+void checkManyIndirectDispatchesSupport (Context& context)
+{
+	// The device must have support for a compute queue.
+	// getComputeQueue() will throw NotSupportedError if the device doesn't have one.
+	context.getComputeQueue();
+}
+
+tcu::TestStatus manyIndirectDispatchesTest (Context& context)
+{
+	const auto&			ctx			= context.getContextCommonData();
+	const auto			descType	= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	const auto			bindPoint	= VK_PIPELINE_BIND_POINT_COMPUTE;
+	const auto			dataStages	= VK_SHADER_STAGE_COMPUTE_BIT;
+	const auto			valueCount	= 4096u;
+	const auto			qfIndex		= context.getComputeQueueFamilyIndex();
+	const auto			queue		= context.getComputeQueue();
+
+	// Host-side buffer values.
+	std::vector<uint32_t> bufferValues (valueCount, 0u);
+
+	// Storage buffer.
+	const auto			sbSize			= static_cast<VkDeviceSize>(de::dataSize(bufferValues));
+	const auto			sbInfo			= makeBufferCreateInfo(sbSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	BufferWithMemory	storageBuffer	(ctx.vkd, ctx.device, ctx.allocator, sbInfo, MemoryRequirement::HostVisible);
+	const auto			sbAlloc			= storageBuffer.getAllocation();
+	void*				sbData			= sbAlloc.getHostPtr();
+	const auto			sbOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(sbData, de::dataOrNull(bufferValues), de::dataSize(bufferValues));
+	flushAlloc(ctx.vkd, ctx.device, sbAlloc);
+
+	// Indirect dispatch buffer. We'll pretend to have 4096 indirect commands but all of them will launch 1 group with 1 invocation.
+	const VkDispatchIndirectCommand					defaultCommand		{ 1u, 1u, 1u };
+	const std::vector<VkDispatchIndirectCommand>	indirectCommands	(valueCount, defaultCommand);
+
+	const auto			ibSize			= static_cast<VkDeviceSize>(de::dataSize(indirectCommands));
+	const auto			ibInfo			= makeBufferCreateInfo(ibSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+	BufferWithMemory	indirectBuffer	(ctx.vkd, ctx.device, ctx.allocator, ibInfo, MemoryRequirement::HostVisible);
+	const auto			ibAlloc			= indirectBuffer.getAllocation();
+	void*				ibData			= ibAlloc.getHostPtr();
+
+	deMemcpy(ibData, de::dataOrNull(indirectCommands), de::dataSize(indirectCommands));
+	flushAlloc(ctx.vkd, ctx.device, ibAlloc);
+
+	// Descriptor pool, set, layout, etc.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(descType);
+	const auto descriptorPool	= poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+	DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(descType, dataStages);
+	const auto setLayout		= layoutBuilder.build(ctx.vkd, ctx.device);
+	const auto descriptorSet	= makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+	DescriptorSetUpdateBuilder updateBuilder;
+	const auto dbDescInfo = makeDescriptorBufferInfo(storageBuffer.get(), sbOffset, sbSize);
+	updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType, &dbDescInfo);
+	updateBuilder.update(ctx.vkd, ctx.device);
+
+	// Push constants.
+	const auto pcSize	= static_cast<uint32_t>(sizeof(uint32_t));
+	const auto pcRange	= makePushConstantRange(dataStages, 0u, pcSize);
+
+	// Layout and pipeline.
+	const auto	pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device, *setLayout, &pcRange);
+	const auto&	binaries		= context.getBinaryCollection();
+	const auto	compModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
+	const auto	pipeline		= makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compModule);
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+	const auto secCmdBufferPtr = allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+	const auto secCmdBuffer = *secCmdBufferPtr;
+
+	beginSecondaryCommandBuffer(ctx.vkd, secCmdBuffer);
+	ctx.vkd.cmdBindPipeline(secCmdBuffer, bindPoint, *pipeline);
+	ctx.vkd.cmdBindDescriptorSets(secCmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	for (uint32_t i = 0; i < valueCount; ++i)
+	{
+		ctx.vkd.cmdPushConstants(secCmdBuffer, *pipelineLayout, dataStages, 0u, pcSize, &i);
+		const auto dispatchOffset = static_cast<VkDeviceSize>(i * sizeof(VkDispatchIndirectCommand));
+		ctx.vkd.cmdDispatchIndirect(secCmdBuffer, indirectBuffer.get(), dispatchOffset);
+	}
+	endCommandBuffer(ctx.vkd, secCmdBuffer);
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	ctx.vkd.cmdExecuteCommands(cmdBuffer, 1u, &secCmdBuffer);
+	{
+		const auto compute2Host = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+		cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &compute2Host);
+	}
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, queue, cmdBuffer);
+
+	// Verify values.
+	std::vector<uint32_t> outputValues (valueCount, 0u);
+	invalidateAlloc(ctx.vkd, ctx.device, sbAlloc);
+	deMemcpy(outputValues.data(), sbData, de::dataSize(outputValues));
+
+	for (uint32_t i = 0u; i < valueCount; ++i)
+	{
+		const auto refValue = bufferValues[i] + i + kIndirectDispatchValueOffset;
+		if (outputValues[i] != refValue)
+		{
+			std::ostringstream msg;
+			msg << "Unexpected value found at position " << i << ": expected " << refValue << " but found " << outputValues[i];
+			TCU_FAIL(msg.str());
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
@@ -5535,6 +5813,8 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCase				(commandBuffersTests.get(), "executable_to_ininitial",			executeStateTransitionTest, STT_EXECUTABLE_TO_INITIAL);
 	addFunctionCase				(commandBuffersTests.get(), "recording_to_invalid",				executeStateTransitionTest, STT_RECORDING_TO_INVALID);
 	addFunctionCase				(commandBuffersTests.get(), "executable_to_invalid",			executeStateTransitionTest, STT_EXECUTABLE_TO_INVALID);
+	addFunctionCaseWithPrograms	(commandBuffersTests.get(), "many_indirect_draws_on_secondary",	initManyIndirectDrawsPrograms, manyIndirectDrawsTest);
+	addFunctionCaseWithPrograms	(commandBuffersTests.get(), "many_indirect_disps_on_secondary",	checkManyIndirectDispatchesSupport, initManyIndirectDispatchesPrograms, manyIndirectDispatchesTest);
 
 	addFunctionCase				(commandBuffersTests.get(), "nested_execute",					checkNestedCommandBufferSupport, executeNestedBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "nested_execute_multiple_levels",	checkNestedCommandBufferDepthSupport, executeMultipleLevelsNestedBufferTest);

@@ -669,7 +669,7 @@ VkQueue DefaultDevice::getSparseQueue (void) const
 
 VkQueue DefaultDevice::getComputeQueue (void) const
 {
-	if (m_transferQueueFamilyIndex == -1)
+	if (m_computeQueueFamilyIndex == -1)
 		TCU_THROW(NotSupportedError, "Exclusive compute queue not supported.");
 
 	return getDeviceQueue(*m_deviceInterface, *m_device, m_computeQueueFamilyIndex, 0);
