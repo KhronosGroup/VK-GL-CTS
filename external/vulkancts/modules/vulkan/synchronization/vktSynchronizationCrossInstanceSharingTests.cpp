@@ -1142,6 +1142,18 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 		SynchronizationWrapperPtr				synchronizationWrapperA = getSynchronizationWrapper(m_config.type, m_vkdA, isTimelineSemaphore);
 		SynchronizationWrapperPtr				synchronizationWrapperB = getSynchronizationWrapper(m_config.type, m_vkdB, isTimelineSemaphore);
 
+		const vk::VkPipelineStageFlags2			graphicsFlags = vk::VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | vk::VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT | vk::VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT |
+																vk::VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT | vk::VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+
+		if ((writeSync.stageMask & graphicsFlags) != 0 || (readSync.stageMask) != 0)
+		{
+			if (!checkQueueFlags(m_queueFamiliesA[m_queueANdx].queueFlags, VK_QUEUE_GRAPHICS_BIT))
+				TCU_THROW(NotSupportedError, "Operation not supported by the source queue");
+
+			if (!checkQueueFlags(m_queueFamiliesB[m_queueBNdx].queueFlags, VK_QUEUE_GRAPHICS_BIT))
+				TCU_THROW(NotSupportedError, "Operation not supported by the destination queue");
+		}
+
 		beginCommandBuffer(m_vkdA, *commandBufferA);
 		writeOp->recordCommands(*commandBufferA);
 		recordWriteBarrier(synchronizationWrapperA, *commandBufferA, *resourceA, writeSync, queueFamilyA, readSync);

@@ -1493,6 +1493,10 @@ public:
 						if ((copyOpQueueFlags & queueFamilyProperties[familyIdx].queueFlags) != copyOpQueueFlags)
 							continue;
 
+						// Barriers use VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT pipeline stage so queue must have VK_QUEUE_GRAPHICS_BIT
+						if ((copyOpQueueFlags & VK_QUEUE_GRAPHICS_BIT) == 0u)
+							continue;
+
 						m_iterations.push_back(makeSharedPtr(new QueueTimelineIteration(copyOpSupport, m_iterations.back()->timelineValue,
 																						getDeviceQueue(vk, device, familyIdx, instanceIdx),
 																						familyIdx, rng)));
@@ -1922,6 +1926,15 @@ public:
 
 						if ((copyOpQueueFlags & queueFamilyProperties[familyIdx].queueFlags) != copyOpQueueFlags)
 							continue;
+
+						VkShaderStageFlagBits writeStage = writeOp->getShaderStage();
+						if (writeStage != VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM && !isStageSupported(writeStage, copyOpQueueFlags)) {
+							continue;
+						}
+						VkShaderStageFlagBits readStage = readOp->getShaderStage();
+						if (readStage != VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM && !isStageSupported(readStage, copyOpQueueFlags)) {
+							continue;
+						}
 
 						m_copyIterations.push_back(makeSharedPtr(new QueueTimelineIteration(copyOpSupport, lastSubmitValue,
 																							getDeviceQueue(vk, device, familyIdx, instanceIdx),
