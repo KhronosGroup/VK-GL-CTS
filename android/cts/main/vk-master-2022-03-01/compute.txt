@@ -1,4 +1,7 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e230a2c79a6e620d4a17e655f8e9c301d32ffa8d
 dEQP-VK.compute.pipeline.basic.empty_workgroup_x
 dEQP-VK.compute.pipeline.basic.empty_workgroup_y
 dEQP-VK.compute.pipeline.basic.empty_workgroup_z
@@ -26739,6 +26742,7 @@ dEQP-VK.compute.shader_object_binary.workgroup_memory_explicit_layout.copy_memor
 dEQP-VK.compute.shader_object_binary.workgroup_memory_explicit_layout.zero_ext.block
 dEQP-VK.compute.shader_object_binary.workgroup_memory_explicit_layout.zero_ext.other_block
 dEQP-VK.compute.shader_object_binary.workgroup_memory_explicit_layout.zero_ext.block_with_offset
+<<<<<<< HEAD
 =======
 dEQP-VK.compute.basic.empty_workgroup_x
 dEQP-VK.compute.basic.empty_workgroup_y
@@ -26748,3 +26752,5 @@ dEQP-VK.compute.workgroup_memory_explicit_layout.zero_ext.block
 dEQP-VK.compute.workgroup_memory_explicit_layout.zero_ext.other_block
 dEQP-VK.compute.workgroup_memory_explicit_layout.zero_ext.block_with_offset
 >>>>>>> 4b8f45ccf696cceaed1a545fe2160e6744a20aae
+=======
+>>>>>>> e230a2c79a6e620d4a17e655f8e9c301d32ffa8d

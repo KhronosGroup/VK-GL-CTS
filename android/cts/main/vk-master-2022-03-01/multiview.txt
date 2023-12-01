@@ -161,6 +161,7 @@ dEQP-VK.multiview.view_mask_iteration.15_15_15_15
 dEQP-VK.multiview.view_mask_iteration.8_1_1_8
 dEQP-VK.multiview.view_mask_iteration.5_10_5_10
 dEQP-VK.multiview.view_mask_iteration.1_2_4_8_16_32
+<<<<<<< HEAD
 dEQP-VK.multiview.nested_cmd_buffer.get_query_pool_results.15
 dEQP-VK.multiview.nested_cmd_buffer.get_query_pool_results.8
 dEQP-VK.multiview.nested_cmd_buffer.get_query_pool_results.1_2_4_8
@@ -177,6 +178,8 @@ dEQP-VK.multiview.nested_cmd_buffer.cmd_copy_query_pool_results.8_1_1_8
 dEQP-VK.multiview.nested_cmd_buffer.cmd_copy_query_pool_results.5_10_5_10
 dEQP-VK.multiview.nested_cmd_buffer.cmd_copy_query_pool_results.1_2_4_8_16_32
 dEQP-VK.multiview.nested_cmd_buffer.cmd_copy_query_pool_results.max_multi_view_view_count
+=======
+>>>>>>> e230a2c79a6e620d4a17e655f8e9c301d32ffa8d
 dEQP-VK.multiview.index.vertex_shader.cmd_copy_query_pool_results.15
 dEQP-VK.multiview.index.vertex_shader.cmd_copy_query_pool_results.8
 dEQP-VK.multiview.index.vertex_shader.cmd_copy_query_pool_results.1_2_4_8
