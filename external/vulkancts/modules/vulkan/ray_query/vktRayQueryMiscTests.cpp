@@ -943,7 +943,8 @@ TestStatus HelperInvocationsInstance::iterate (void)
 	struct PushConstants
 	{
 		int fun_x, fun_y;
-	} const                                 pushConstants				{ m_params.mode.types.first, m_params.mode.types.second };
+		float width, height;
+	} const                                 pushConstants				{ m_params.mode.types.first, m_params.mode.types.second, (float)m_params.screen.first, (float)m_params.screen.second };
 	const VkPushConstantRange				pushConstantRange			{ VK_SHADER_STAGE_FRAGMENT_BIT, 0u, uint32_t(sizeof(pushConstants)) };
 	const std::vector<Vec3>					vertices					= createSurface(Points::Vertices, m_params.model.first, m_params.model.second, funcs);
 	const std::vector<Vec3>					coords						= createSurface(Points::Coords, m_params.model.first, m_params.model.second, funcs);

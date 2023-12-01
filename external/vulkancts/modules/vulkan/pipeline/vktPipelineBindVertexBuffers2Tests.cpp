@@ -1296,13 +1296,15 @@ TestInstance* BindVertexBuffers2Case::createInstance (Context& context) const
 		vk::VkPhysicalDeviceFeatures2							features2				= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features		= vk::initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
+		vk::VkPhysicalDeviceMaintenance5FeaturesKHR				maintenance5Features	= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures				= vk::initVulkanStructure();
-		vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures = vk::initVulkanStructure();
+		vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures	= vk::initVulkanStructure();
 #endif // CTS_USES_VULKANSC
 
 		features2.features.robustBufferAccess		= VK_TRUE;
 		robustness2Features.robustBufferAccess2		= VK_TRUE;
 #ifndef CTS_USES_VULKANSC
+		maintenance5Features.maintenance5			= VK_TRUE;
 		gplFeatures.graphicsPipelineLibrary			= VK_TRUE;
 		shaderObjectFeatures.shaderObject			= VK_TRUE;
 #endif // CTS_USES_VULKANSC
@@ -1311,6 +1313,7 @@ TestInstance* BindVertexBuffers2Case::createInstance (Context& context) const
 		addFeatures(&robustness2Features);
 
 #ifndef CTS_USES_VULKANSC
+		addFeatures(&maintenance5Features);
 		if (vk::isConstructionTypeLibrary(m_pipelineConstructionType))
 			addFeatures(&gplFeatures);
 		else if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
