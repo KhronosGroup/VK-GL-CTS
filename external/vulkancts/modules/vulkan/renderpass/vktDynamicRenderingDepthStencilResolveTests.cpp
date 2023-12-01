@@ -517,9 +517,9 @@ Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline(VkFormat format, 
 		VK_FORMAT_UNDEFINED												// VkFormat           stencilAttachmentFormat;
 	};
 	const tcu::TextureFormat deFormat(mapVkFormat(format));
-	if (tcu::hasDepthComponent(deFormat.order))
+	if (tcu::hasDepthComponent(deFormat.order) && m_config.verifyBuffer == VB_DEPTH)
 		dynamicRenderingInfo.depthAttachmentFormat = format;
-	if (tcu::hasStencilComponent(deFormat.order))
+	if (tcu::hasStencilComponent(deFormat.order) && m_config.verifyBuffer != VB_DEPTH)
 		dynamicRenderingInfo.stencilAttachmentFormat = format;
 
 	return makeGraphicsPipeline(m_vkd,									// const DeviceInterface&                        vk
