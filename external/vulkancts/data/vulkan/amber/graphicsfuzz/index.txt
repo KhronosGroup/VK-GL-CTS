@@ -347,7 +347,6 @@
 {	"cov-loop-condition-logical-or-never-iterated.amber",										"cov-loop-condition-logical-or-never-iterated",										"A fragment shader that covers specific LLVM code paths"							},
 {	"cov-loop-decrease-integer-never-break.amber",												"cov-loop-decrease-integer-never-break",											"A fragment shader that covers specific LLVM code paths"							},
 {	"cov-loop-construct-vec4-from-vec4-clamp-same-min-max.amber",								"cov-loop-construct-vec4-from-vec4-clamp-same-min-max",								"A fragment shader that covers specific LLVM code paths"							},
-{	"cov-loop-copy-previous-array-element-first-undefined.amber",								"cov-loop-copy-previous-array-element-first-undefined",								"A fragment shader that covers specific LLVM code paths"							},
 {	"cov-loop-decrease-vector-components-assign-multiple-times.amber",							"cov-loop-decrease-vector-components-assign-multiple-times",						"A fragment shader that covers specific LLVM code paths"							},
 {	"cov-loop-decrease-vector-component-only-first-iteration.amber",							"cov-loop-decrease-vector-component-only-first-iteration",							"A fragment shader that covers specific LLVM code paths"							},
 {	"cov-loop-dfdx-constant-divide.amber",														"cov-loop-dfdx-constant-divide",													"A fragment shader that covers specific patch optimization code paths"				},

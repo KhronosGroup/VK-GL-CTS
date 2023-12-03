@@ -187,7 +187,6 @@ dEQP-VK.graphicsfuzz.cov-loop-condition-filter-some-iterations-never-discard
 dEQP-VK.graphicsfuzz.cov-loop-condition-increment-integer-fallback-global-counter
 dEQP-VK.graphicsfuzz.cov-loop-condition-logical-or-never-iterated
 dEQP-VK.graphicsfuzz.cov-loop-construct-vec4-from-vec4-clamp-same-min-max
-dEQP-VK.graphicsfuzz.cov-loop-copy-previous-array-element-first-undefined
 dEQP-VK.graphicsfuzz.cov-loop-decrease-integer-never-break
 dEQP-VK.graphicsfuzz.cov-loop-decrease-vector-component-only-first-iteration
 dEQP-VK.graphicsfuzz.cov-loop-decrease-vector-components-assign-multiple-times
