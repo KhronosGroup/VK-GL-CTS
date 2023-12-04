@@ -1227,6 +1227,7 @@ public:
 
             {OID_MODF_ST_WH, V_MINUS_INF, V_UNUSED, V_MINUS_INF, FP::NotInf},
             {OID_MODF_ST_FR, V_MINUS_INF, V_UNUSED, V_MINUS_ZERO, FP::NSZ | FP::NotInf},
+            {OID_MODF_ST_FR, V_MINUS_ONE, V_UNUSED, V_MINUS_ZERO, FP::NSZ},
 
             {OID_LENGTH, V_MINUS_INF, V_UNUSED, V_INF, FP::NotInf},
 
