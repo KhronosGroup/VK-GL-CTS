@@ -619,6 +619,7 @@ deUint32 getIterations(std::vector<VkPresentModeKHR> presentModes,
 			break;
 		case VK_PRESENT_MODE_IMMEDIATE_KHR:
 		case VK_PRESENT_MODE_MAILBOX_KHR:
+		case VK_PRESENT_MODE_FIFO_LATEST_READY_EXT:
 		default:
 			hasNoVsync = true;
 			break;
@@ -1095,12 +1096,13 @@ void populatePresentFenceGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 		const char*			name;
 	} presentModes[] =
 	{
-		{ VK_PRESENT_MODE_IMMEDIATE_KHR,					"immediate"		},
-		{ VK_PRESENT_MODE_MAILBOX_KHR,						"mailbox"		},
-		{ VK_PRESENT_MODE_FIFO_KHR,							"fifo"			},
-		{ VK_PRESENT_MODE_FIFO_RELAXED_KHR,					"fifo_relaxed"	},
-		{ VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,		"demand"		},
-		{ VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,	"continuous"	},
+		{ VK_PRESENT_MODE_IMMEDIATE_KHR,					"immediate"			},
+		{ VK_PRESENT_MODE_MAILBOX_KHR,						"mailbox"			},
+		{ VK_PRESENT_MODE_FIFO_KHR,							"fifo"				},
+		{ VK_PRESENT_MODE_FIFO_RELAXED_KHR,					"fifo_relaxed"		},
+		{ VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,		"demand"			},
+		{ VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,	"continuous"		},
+		{ VK_PRESENT_MODE_FIFO_LATEST_READY_EXT,			"fifo_latest_ready"	},
 	};
 
 	for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
@@ -1306,12 +1308,13 @@ void populatePresentModesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 		const char*			name;
 	} presentModes[] =
 	{
-		{ VK_PRESENT_MODE_IMMEDIATE_KHR,					"immediate"		},
-		{ VK_PRESENT_MODE_MAILBOX_KHR,						"mailbox"		},
-		{ VK_PRESENT_MODE_FIFO_KHR,							"fifo"			},
-		{ VK_PRESENT_MODE_FIFO_RELAXED_KHR,					"fifo_relaxed"	},
-		{ VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,		"demand"		},
-		{ VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,	"continuous"	},
+		{ VK_PRESENT_MODE_IMMEDIATE_KHR,					"immediate"			},
+		{ VK_PRESENT_MODE_MAILBOX_KHR,						"mailbox"			},
+		{ VK_PRESENT_MODE_FIFO_KHR,							"fifo"				},
+		{ VK_PRESENT_MODE_FIFO_RELAXED_KHR,					"fifo_relaxed"		},
+		{ VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,		"demand"			},
+		{ VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,	"continuous"		},
+		{ VK_PRESENT_MODE_FIFO_LATEST_READY_EXT,			"fifo_latest_ready"	},
 	};
 
 	for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
@@ -1784,12 +1787,13 @@ void populateScalingTests (tcu::TestCaseGroup *testGroup, Type wsiType, bool res
 		const char*			name;
 	} presentModes[] =
 	{
-		{ VK_PRESENT_MODE_IMMEDIATE_KHR,					"immediate"		},
-		{ VK_PRESENT_MODE_MAILBOX_KHR,						"mailbox"		},
-		{ VK_PRESENT_MODE_FIFO_KHR,							"fifo"			},
-		{ VK_PRESENT_MODE_FIFO_RELAXED_KHR,					"fifo_relaxed"	},
-		{ VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,		"demand"		},
-		{ VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,	"continuous"	},
+		{ VK_PRESENT_MODE_IMMEDIATE_KHR,					"immediate"			},
+		{ VK_PRESENT_MODE_MAILBOX_KHR,						"mailbox"			},
+		{ VK_PRESENT_MODE_FIFO_KHR,							"fifo"				},
+		{ VK_PRESENT_MODE_FIFO_RELAXED_KHR,					"fifo_relaxed"		},
+		{ VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,		"demand"			},
+		{ VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,	"continuous"		},
+		{ VK_PRESENT_MODE_FIFO_LATEST_READY_EXT,			"fifo_latest_ready"	},
 	};
 
 	const struct
@@ -1936,12 +1940,13 @@ void populateDeferredAllocGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 		const char*			name;
 	} presentModes[] =
 	{
-		{ VK_PRESENT_MODE_IMMEDIATE_KHR,					"immediate"		},
-		{ VK_PRESENT_MODE_MAILBOX_KHR,						"mailbox"		},
-		{ VK_PRESENT_MODE_FIFO_KHR,							"fifo"			},
-		{ VK_PRESENT_MODE_FIFO_RELAXED_KHR,					"fifo_relaxed"	},
-		{ VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,		"demand"		},
-		{ VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,	"continuous"	},
+		{ VK_PRESENT_MODE_IMMEDIATE_KHR,					"immediate"			},
+		{ VK_PRESENT_MODE_MAILBOX_KHR,						"mailbox"			},
+		{ VK_PRESENT_MODE_FIFO_KHR,							"fifo"				},
+		{ VK_PRESENT_MODE_FIFO_RELAXED_KHR,					"fifo_relaxed"		},
+		{ VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,		"demand"			},
+		{ VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,	"continuous"		},
+		{ VK_PRESENT_MODE_FIFO_LATEST_READY_EXT,			"fifo_latest_ready"	},
 	};
 
 	for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
@@ -2314,12 +2319,13 @@ void populateReleaseImagesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 		const char*			name;
 	} presentModes[] =
 	{
-		{ VK_PRESENT_MODE_IMMEDIATE_KHR,					"immediate"		},
-		{ VK_PRESENT_MODE_MAILBOX_KHR,						"mailbox"		},
-		{ VK_PRESENT_MODE_FIFO_KHR,							"fifo"			},
-		{ VK_PRESENT_MODE_FIFO_RELAXED_KHR,					"fifo_relaxed"	},
-		{ VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,		"demand"		},
-		{ VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,	"continuous"	},
+		{ VK_PRESENT_MODE_IMMEDIATE_KHR,					"immediate"			},
+		{ VK_PRESENT_MODE_MAILBOX_KHR,						"mailbox"			},
+		{ VK_PRESENT_MODE_FIFO_KHR,							"fifo"				},
+		{ VK_PRESENT_MODE_FIFO_RELAXED_KHR,					"fifo_relaxed"		},
+		{ VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,		"demand"			},
+		{ VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,	"continuous"		},
+		{ VK_PRESENT_MODE_FIFO_LATEST_READY_EXT,			"fifo_latest_ready"	},
 	};
 
 	const struct
