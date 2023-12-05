@@ -2114,7 +2114,7 @@ void ShaderDerivateTests::init (void)
 		// .texture
 		if (!isSubgroupFunc(function))
 		{
-			de::MovePtr<tcu::TestCaseGroup>		textureGroup	(new tcu::TestCaseGroup(m_testCtx, "texture", "Derivate of texture lookup result"));
+			de::MovePtr<tcu::TestCaseGroup>		textureGroup	(new tcu::TestCaseGroup(m_testCtx, "texture"));
 
 			for (int texCaseNdx = 0; texCaseNdx < DE_LENGTH_OF_ARRAY(s_textureConfigs); texCaseNdx++)
 			{

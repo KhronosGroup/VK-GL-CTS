@@ -116,7 +116,7 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, const
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> mainGroup						(new tcu::TestCaseGroup(testCtx, name.c_str(), "Simple Draw tests"));
+	de::MovePtr<tcu::TestCaseGroup> mainGroup						(new tcu::TestCaseGroup(testCtx, name.c_str()));
 	// Draw using renderpass object
 	de::MovePtr<tcu::TestCaseGroup> renderpassGroup					(new tcu::TestCaseGroup(testCtx, "renderpass"));
 
@@ -136,11 +136,11 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 #ifndef CTS_USES_VULKANSC
 	// Draw using VK_KHR_dynamic_rendering
 	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup			(new tcu::TestCaseGroup(testCtx, "dynamic_rendering"));
-	de::MovePtr<tcu::TestCaseGroup> drPrimaryCmdBuffGroup			(new tcu::TestCaseGroup(testCtx, "primary_cmd_buff", ""));
-	de::MovePtr<tcu::TestCaseGroup> drPartialSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "partial_secondary_cmd_buff", "Secondary command buffer doesn't include begin/endRendering"));
-	de::MovePtr<tcu::TestCaseGroup> drCompleteSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "complete_secondary_cmd_buff", "Secondary command buffer contains completely dynamic renderpass"));
-	de::MovePtr<tcu::TestCaseGroup> drNestedPartialSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "nested_partial_secondary_cmd_buff", "Secondary command buffer doesn't include begin/endRendering and is nested"));
-	de::MovePtr<tcu::TestCaseGroup> drNestedCompleteSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "nested_complete_secondary_cmd_buff", "Secondary command buffer contains completely dynamic renderpass and is nested"));
+	de::MovePtr<tcu::TestCaseGroup> drPrimaryCmdBuffGroup			(new tcu::TestCaseGroup(testCtx, "primary_cmd_buff"));
+	de::MovePtr<tcu::TestCaseGroup> drPartialSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "partial_secondary_cmd_buff"));
+	de::MovePtr<tcu::TestCaseGroup> drCompleteSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "complete_secondary_cmd_buff"));
+	de::MovePtr<tcu::TestCaseGroup> drNestedPartialSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "nested_partial_secondary_cmd_buff"));
+	de::MovePtr<tcu::TestCaseGroup> drNestedCompleteSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "nested_complete_secondary_cmd_buff"));
 
 	createChildren(testCtx, drPrimaryCmdBuffGroup.get(), SharedGroupParams(
 		new GroupParams

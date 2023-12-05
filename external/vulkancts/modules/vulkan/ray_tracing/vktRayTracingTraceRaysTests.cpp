@@ -1432,7 +1432,7 @@ tcu::TestCaseGroup* createTraceRaysMaintenance1Tests(tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup*	createTraceRays2Tests(tcu::TestContext& testCtx)
 {
-	auto group	= new tcu::TestCaseGroup(testCtx, "trace_rays_indirect2", "Tests veryfying vkCmdTraceRaysIndirect2KHR command");
+	auto group	= new tcu::TestCaseGroup(testCtx, "trace_rays_indirect2");
 
 	std::pair<TraceType, const char*> const	bufferSources[]
 	{

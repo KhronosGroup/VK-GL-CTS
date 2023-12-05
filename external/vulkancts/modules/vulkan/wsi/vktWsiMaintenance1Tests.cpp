@@ -1923,7 +1923,7 @@ void populateScalingGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 {
 	populateScalingTests(testGroup, wsiType, false);
 
-	de::MovePtr<tcu::TestCaseGroup>	resizeWindowGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), "resize_window", "Resize the window instead of creating the swapchain with a different size"));
+	de::MovePtr<tcu::TestCaseGroup>	resizeWindowGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), "resize_window"));
 	populateScalingTests(&*resizeWindowGroup, wsiType, true);
 	testGroup->addChild(resizeWindowGroup.release());
 }

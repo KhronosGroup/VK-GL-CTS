@@ -1132,7 +1132,7 @@ tcu::TestCaseGroup* createBufferMarkerTestsInGroup(tcu::TestContext& testCtx)
 
 		for (size_t memNdx = 0; memNdx < DE_LENGTH_OF_ARRAY(memoryTypes); ++memNdx)
 		{
-			tcu::TestCaseGroup* memoryGroup = (new tcu::TestCaseGroup(testCtx, memoryNames[memNdx], "Buffer marker tests for different kinds of backing memory"));
+			tcu::TestCaseGroup* memoryGroup = (new tcu::TestCaseGroup(testCtx, memoryNames[memNdx]));
 
 			base.useHostPtr = memoryTypes[memNdx];
 
@@ -1141,12 +1141,12 @@ tcu::TestCaseGroup* createBufferMarkerTestsInGroup(tcu::TestContext& testCtx)
 
 			for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stages); ++stageNdx)
 			{
-				tcu::TestCaseGroup* stageGroup = (new tcu::TestCaseGroup(testCtx, stageNames[stageNdx], "Buffer marker tests for a specific pipeline stage"));
+				tcu::TestCaseGroup* stageGroup = (new tcu::TestCaseGroup(testCtx, stageNames[stageNdx]));
 
 				base.stage = stages[stageNdx];
 
 				{
-					tcu::TestCaseGroup* sequentialGroup = (new tcu::TestCaseGroup(testCtx, "sequential", "Buffer marker tests for sequentially writing"));
+					tcu::TestCaseGroup* sequentialGroup = (new tcu::TestCaseGroup(testCtx, "sequential"));
 
 					base.size = 4;
 					base.offset = 0;
@@ -1181,7 +1181,7 @@ tcu::TestCaseGroup* createBufferMarkerTestsInGroup(tcu::TestContext& testCtx)
 				}
 
 				{
-					tcu::TestCaseGroup* overwriteGroup = (new tcu::TestCaseGroup(testCtx, "overwrite", "Buffer marker tests for overwriting values with implicit synchronization"));
+					tcu::TestCaseGroup* overwriteGroup = (new tcu::TestCaseGroup(testCtx, "overwrite"));
 
 					base.size = 1;
 
@@ -1208,7 +1208,7 @@ tcu::TestCaseGroup* createBufferMarkerTestsInGroup(tcu::TestContext& testCtx)
 				}
 
 				{
-					tcu::TestCaseGroup* memoryDepGroup = (new tcu::TestCaseGroup(testCtx, "memory_dep", "Buffer marker tests for memory dependencies between marker writes and other operations"));
+					tcu::TestCaseGroup* memoryDepGroup = (new tcu::TestCaseGroup(testCtx, "memory_dep"));
 
 					MemoryDepParams params;
 					size_t offsets[] = { 0, 24 };

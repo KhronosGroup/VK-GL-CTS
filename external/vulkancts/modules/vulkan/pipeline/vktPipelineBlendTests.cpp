@@ -2128,9 +2128,9 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 	de::MovePtr<tcu::TestCaseGroup>				blendTests				(new tcu::TestCaseGroup(testCtx, "blend"));
 	// Uses different blend formats
 	de::MovePtr<tcu::TestCaseGroup>				formatTests				(new tcu::TestCaseGroup(testCtx, "format"));
-	de::MovePtr<tcu::TestCaseGroup>				clampTests				(new tcu::TestCaseGroup(testCtx, "clamp", "Verifies clamping for normalized formats"));
-	de::MovePtr<tcu::TestCaseGroup>				dualSourceBlendTests	(new tcu::TestCaseGroup(testCtx, "dual_source", "Blend tests taking into account dual-source blend factors"));
-	de::MovePtr<tcu::TestCaseGroup>				dualSourceFormatTests	(new tcu::TestCaseGroup(testCtx, "format", "Uses different blend formats"));
+	de::MovePtr<tcu::TestCaseGroup>				clampTests				(new tcu::TestCaseGroup(testCtx, "clamp"));
+	de::MovePtr<tcu::TestCaseGroup>				dualSourceBlendTests	(new tcu::TestCaseGroup(testCtx, "dual_source"));
+	de::MovePtr<tcu::TestCaseGroup>				dualSourceFormatTests	(new tcu::TestCaseGroup(testCtx, "format"));
 
 
 	BlendStateUniqueRandomIterator				blendStateItr			(blendStatesPerFormat, 123);
@@ -2143,8 +2143,7 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 		// Blend tests
 		{
 			de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-																					getFormatCaseName(format).c_str(),
-																					(std::string("Uses format ") + getFormatName(format)).c_str()));
+																					getFormatCaseName(format).c_str()));
 			de::MovePtr<tcu::TestCaseGroup>	blendStateTests;
 			{
 				std::ostringstream blendStateDescription;
@@ -2177,8 +2176,7 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 		// Dual-Source blending tests
 		{
 			de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-																					getFormatCaseName(format).c_str(),
-																					(std::string("Uses format ") + getFormatName(format)).c_str()));
+																					getFormatCaseName(format).c_str()));
 			de::MovePtr<tcu::TestCaseGroup>	blendStateTests;
 			{
 				std::ostringstream blendStateDescription;

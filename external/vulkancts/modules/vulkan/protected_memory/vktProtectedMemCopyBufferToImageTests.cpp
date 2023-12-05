@@ -423,7 +423,7 @@ tcu::TestCaseGroup*	createCopyBufferToImageTests (tcu::TestContext& testCtx, Cmd
 
 tcu::TestCaseGroup*	createCopyBufferToImageTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, "copy_buffer_to_image", "Copy Buffer To Image Tests"));
+	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, "copy_buffer_to_image"));
 
 	clearTests->addChild(createCopyBufferToImageTests(testCtx, CMD_BUFFER_PRIMARY));
 	clearTests->addChild(createCopyBufferToImageTests(testCtx, CMD_BUFFER_SECONDARY));

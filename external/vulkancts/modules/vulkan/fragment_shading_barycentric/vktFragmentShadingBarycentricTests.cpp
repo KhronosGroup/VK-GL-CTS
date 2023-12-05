@@ -1921,7 +1921,7 @@ void FragmentShadingBarycentricTestCase::initWeightPrograms (SourceCollections& 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
 	const bool					notused			= false;
-	MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, name.c_str(), "Tests fragment shading barycentric extension"));
+	MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, name.c_str()));
 	// Tests using graphics pipeline libraries
 	MovePtr<tcu::TestCaseGroup>	libGroup		(new tcu::TestCaseGroup(testCtx, "pipeline_library"));
 	// Tests using graphics pipeline libraries with fast linking
@@ -2107,20 +2107,20 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 		}
 
 		{
-			MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, "shader_combos", ""));
+			MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, "shader_combos"));
 			for (uint32_t testSubType = (uint32_t) TEST_SUBTYPE_TESS_SHADER; testSubType <= (uint32_t) TEST_SUBTYPE_TESSGEOM_SHADER; testSubType++)
 			{
 				VkPrimitiveTopology	primitiveType	=	(((TestSubtype) testSubType) == TEST_SUBTYPE_GEOMETRY_SHADER) ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST: VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
 				const std::string	shaderComboName	=	getShaderComboName(testSubType);
 
-				MovePtr<tcu::TestCaseGroup> scSubGroup(new tcu::TestCaseGroup(testCtx, shaderComboName.c_str(), ""));
+				MovePtr<tcu::TestCaseGroup> scSubGroup(new tcu::TestCaseGroup(testCtx, shaderComboName.c_str()));
 
 				for (size_t aggregateNdx = 0; aggregateNdx < 3; ++aggregateNdx)
 				{
 					const string				aggregateName	= aggregateNdx == 0 ? "type"
 																: aggregateNdx == 1 ? "struct"
 																: "array" + de::toString(aggregateNdx);
-					MovePtr<tcu::TestCaseGroup>	aggregateGroup	(new tcu::TestCaseGroup(testCtx, aggregateName.c_str(), ""));
+					MovePtr<tcu::TestCaseGroup>	aggregateGroup	(new tcu::TestCaseGroup(testCtx, aggregateName.c_str()));
 
 					for (size_t dataTypeNdx = 0; dataTypeNdx < DE_LENGTH_OF_ARRAY(dataTypes); ++dataTypeNdx)
 					{

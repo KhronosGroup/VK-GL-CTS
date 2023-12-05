@@ -7950,7 +7950,7 @@ de::MovePtr<tcu::TestCaseGroup> createSuballocationTests(tcu::TestContext& testC
 
 de::MovePtr<tcu::TestCaseGroup> createDedicatedAllocationTests(tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	de::MovePtr<tcu::TestCaseGroup>	dedicatedAllocationTestsGroup(new tcu::TestCaseGroup(testCtx, "dedicated_allocation", "RenderPass Tests For Dedicated Allocation"));
+	de::MovePtr<tcu::TestCaseGroup>	dedicatedAllocationTestsGroup(new tcu::TestCaseGroup(testCtx, "dedicated_allocation"));
 
 	addRenderPassTests(dedicatedAllocationTestsGroup.get(), ALLOCATION_KIND_DEDICATED, groupParams);
 
@@ -7962,7 +7962,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 	de::MovePtr<tcu::TestCaseGroup>	renderingTests					(new tcu::TestCaseGroup(testCtx, groupName));
 	de::MovePtr<tcu::TestCaseGroup>	suballocationTestGroup			= createSuballocationTests(testCtx, groupParams);
 	de::MovePtr<tcu::TestCaseGroup>	dedicatedAllocationTestGroup	= createDedicatedAllocationTests(testCtx, groupParams);
-	de::MovePtr<tcu::TestCaseGroup> noDrawGroup {new tcu::TestCaseGroup{testCtx, "no_draws", ""}};
+	de::MovePtr<tcu::TestCaseGroup> noDrawGroup {new tcu::TestCaseGroup{testCtx, "no_draws"}};
 
 	const RenderingType renderingType = groupParams->renderingType;
 

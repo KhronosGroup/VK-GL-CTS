@@ -1411,19 +1411,19 @@ tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& t
 	AddZeroTests(zero, computePipelineConstructionType);
 	tests->addChild(zero);
 
-	tcu::TestCaseGroup* padding = new tcu::TestCaseGroup(testCtx, "padding", "Padding as part of the explicit layout");
+	tcu::TestCaseGroup* padding = new tcu::TestCaseGroup(testCtx, "padding");
 	AddPaddingTests(padding, computePipelineConstructionType);
 	tests->addChild(padding);
 
-	tcu::TestCaseGroup* size = new tcu::TestCaseGroup(testCtx, "size", "Test blocks of various sizes");
+	tcu::TestCaseGroup* size = new tcu::TestCaseGroup(testCtx, "size");
 	AddSizeTests(size, computePipelineConstructionType);
 	tests->addChild(size);
 
-	tcu::TestCaseGroup* copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory", "Test OpCopyMemory with Workgroup memory");
+	tcu::TestCaseGroup* copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory");
 	AddCopyMemoryTests(copy_memory, computePipelineConstructionType);
 	tests->addChild(copy_memory);
 
-	tcu::TestCaseGroup* zero_ext = new tcu::TestCaseGroup(testCtx, "zero_ext", "Test interaction with VK_KHR_zero_initialize_workgroup_memory");
+	tcu::TestCaseGroup* zero_ext = new tcu::TestCaseGroup(testCtx, "zero_ext");
 	AddZeroInitializeExtensionTests(zero_ext, computePipelineConstructionType);
 	tests->addChild(zero_ext);
 

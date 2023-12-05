@@ -1018,8 +1018,8 @@ tcu::TestCaseGroup* createDynamicRenderingUnusedAttachmentsTests (tcu::TestConte
 	GroupPtr combGroup	(new tcu::TestCaseGroup(testCtx, "comb"));
 	GroupPtr colorGroup	(new tcu::TestCaseGroup(testCtx, "color"));
 	GroupPtr dsGroup	(new tcu::TestCaseGroup(testCtx, "depth_stencil"));
-	GroupPtr badFmtGrp	(new tcu::TestCaseGroup(testCtx, "bad_formats", "Test using wrong formats when the handle is VK_NULL_HANDLE"));
-	GroupPtr moreAttGrp	(new tcu::TestCaseGroup(testCtx, "extra_att", "Test making the pipeline attachment count larger than the rendering info attachment count"));
+	GroupPtr badFmtGrp	(new tcu::TestCaseGroup(testCtx, "bad_formats"));
+	GroupPtr moreAttGrp	(new tcu::TestCaseGroup(testCtx, "extra_att"));
 
 	const uint32_t attachmentCounts[]	= { 1u, 4u, 8u, };
 	const uint32_t layerCounts[]		= { 1u, 4u, };

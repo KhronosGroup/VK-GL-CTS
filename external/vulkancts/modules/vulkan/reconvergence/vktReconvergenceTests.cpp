@@ -1973,8 +1973,7 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& name, bool createExperimental)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, name.c_str(), "reconvergence tests"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	typedef struct
 	{

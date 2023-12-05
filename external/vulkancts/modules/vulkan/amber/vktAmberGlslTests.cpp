@@ -43,7 +43,7 @@ tcu::TestCaseGroup*	createCombinedOperationsGroup (tcu::TestContext& testCtx)
 		{ "negintdivand",	"Bitwise and of a negative value that was divided"	},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str(), "Combined operations test group"}};
+	de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str()}};
 	for (const auto& test : combinedOperationsTests)
 	{
 		group->addChild(createAmberTestCase(testCtx, test.first.c_str(), test.second.c_str(), kGroupName.c_str(), test.first + ".amber"));
@@ -70,7 +70,7 @@ tcu::TestCaseGroup*	createCrashTestGroup (tcu::TestContext& testCtx)
 		{ "divbyzero_comp",		"Compute shader division by zero tests",					{}								},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>				group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str(), "Crash test group"}};
+	de::MovePtr<tcu::TestCaseGroup>				group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str()}};
 	for (const auto& params : crashTestParameters)
 	{
 		group->addChild(createAmberTestCase(testCtx, params.name.c_str(), params.description.c_str(), kGroupName.c_str(), params.name + ".amber", params.requirements));

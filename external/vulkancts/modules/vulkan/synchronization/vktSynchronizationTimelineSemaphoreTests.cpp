@@ -1233,7 +1233,7 @@ public:
 	{
 		initCommonTests();
 
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc", ""));
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc"));
 		// Timeline semaphore properties test
 		addFunctionCase(miscGroup.get(), "max_difference_value", checkSupport, maxDifferenceValueCase, m_type);
 		// Timeline semaphore initial value test
@@ -1254,7 +1254,7 @@ public:
 	{
 		initCommonTests();
 
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc", ""));
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc"));
 		// Timeline semaphore properties test
 		addFunctionCase(miscGroup.get(), "max_difference_value", checkSupport, maxDifferenceValueCase, m_type);
 		addChild(miscGroup.release());

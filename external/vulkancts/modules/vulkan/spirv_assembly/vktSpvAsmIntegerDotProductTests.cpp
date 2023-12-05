@@ -1091,7 +1091,7 @@ tcu::TestCaseGroup* createOpUDotKHRComputeGroup(tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createOpSUDotKHRComputeGroup(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opsudotkhr", "Test the OpSUDotKHR instruction"));
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opsudotkhr"));
 	de::Random						rnd		(deStringHash(group->getName()));
 
 	add8bitOpSUDotKHRComputeTests(testCtx, group.get(), rnd, string("all"),   std::numeric_limits<deInt8>::min(), std::numeric_limits<deInt8>::max(), std::numeric_limits<deUint8>::min(), std::numeric_limits<deUint8>::max());
@@ -1104,7 +1104,7 @@ tcu::TestCaseGroup* createOpSUDotKHRComputeGroup(tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createOpSDotAccSatKHRComputeGroup(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opsdotaccsatkhr", "Test the OpSDotAccSatKHR instruction"));
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opsdotaccsatkhr"));
 	de::Random						rnd		(deStringHash(group->getName()));
 
 	add8bitOpSDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),         std::numeric_limits<deInt8>::min(), std::numeric_limits<deInt8>::max());
@@ -1124,7 +1124,7 @@ tcu::TestCaseGroup* createOpSDotAccSatKHRComputeGroup(tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createOpUDotAccSatKHRComputeGroup(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opudotaccsatkhr", "Test the OpUDotAccSatKHR instruction"));
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opudotaccsatkhr"));
 	de::Random						rnd		(deStringHash(group->getName()));
 
 	add8bitOpUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),         std::numeric_limits<deUint8>::min(), std::numeric_limits<deUint8>::max());
@@ -1143,7 +1143,7 @@ tcu::TestCaseGroup* createOpUDotAccSatKHRComputeGroup(tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createOpSUDotAccSatKHRComputeGroup(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opsudotaccsatkhr", "Test the OpSUDotAccSatKHR instruction"));
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opsudotaccsatkhr"));
 	de::Random						rnd		(deStringHash(group->getName()));
 
 	add8bitOpSUDotAccSatKHRComputeTests(testCtx, group.get(), rnd, string("all"),         std::numeric_limits<deInt8>::min(), std::numeric_limits<deInt8>::max(), std::numeric_limits<deUint8>::min(), std::numeric_limits<deUint8>::max());

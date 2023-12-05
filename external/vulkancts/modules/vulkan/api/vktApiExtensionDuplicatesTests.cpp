@@ -360,7 +360,7 @@ tcu::TestCaseGroup* createExtensionDuplicatesTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	rootGroup(new tcu::TestCaseGroup(testCtx, "extension_duplicates"));
 	for (const item_t& type : types)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	typeGroup(new tcu::TestCaseGroup(testCtx, type.first, ""));
+		de::MovePtr<tcu::TestCaseGroup>	typeGroup(new tcu::TestCaseGroup(testCtx, type.first));
 		for (const item_t& meth : methods)
 		{
 			typeGroup->addChild(new ExtensionDuplicatesCase(testCtx, meth.first, type.second, meth.second));

@@ -1495,7 +1495,7 @@ tcu::TestCaseGroup*	createPipelineFlagsTests (tcu::TestContext& testCtx)
 		group->addChild(processorGroup);
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 
 	p.onHhost			= false;
 	p.geomTypes			= GeometryTypes::Box;

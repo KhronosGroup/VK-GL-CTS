@@ -1424,21 +1424,21 @@ tcu::TestCaseGroup* createCmdBindVertexBuffers2Tests (tcu::TestContext& testCtx,
 	const deUint32 defaultWidth = 32;
 	const deUint32 defaultHeight = 32;
 
-	de::MovePtr<tcu::TestCaseGroup> rootGroup(new tcu::TestCaseGroup(testCtx, "maintenance5", ""));
+	de::MovePtr<tcu::TestCaseGroup> rootGroup(new tcu::TestCaseGroup(testCtx, "maintenance5"));
 
 	for (const auto& topo : topos)
 	{
-		de::MovePtr<tcu::TestCaseGroup> topoGroup(new tcu::TestCaseGroup(testCtx, topo.second, ""));
+		de::MovePtr<tcu::TestCaseGroup> topoGroup(new tcu::TestCaseGroup(testCtx, topo.second));
 
 		for (deUint32 count : counts)
 		{
 			name = "buffers" + std::to_string(count);
-			de::MovePtr<tcu::TestCaseGroup> countGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> countGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 			for (deUint32 random : randoms)
 			{
 				name = "stride_offset_rnd" + std::to_string(random);
-				de::MovePtr<tcu::TestCaseGroup> randomGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> randomGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 				for (const auto& size : sizes)
 				{
@@ -1460,24 +1460,24 @@ tcu::TestCaseGroup* createCmdBindVertexBuffers2Tests (tcu::TestContext& testCtx,
 		rootGroup->addChild(topoGroup.release());
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> robustGroup(new tcu::TestCaseGroup(testCtx, "robustness2", ""));
+	de::MovePtr<tcu::TestCaseGroup> robustGroup(new tcu::TestCaseGroup(testCtx, "robustness2"));
 	for (const auto& topo : topos)
 	{
-		de::MovePtr<tcu::TestCaseGroup> topoGroup(new tcu::TestCaseGroup(testCtx, topo.second, ""));
+		de::MovePtr<tcu::TestCaseGroup> topoGroup(new tcu::TestCaseGroup(testCtx, topo.second));
 
 		for (deUint32 count : counts)
 		{
 			name = "buffers" + std::to_string(count);
-			de::MovePtr<tcu::TestCaseGroup> countGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> countGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 			for (deUint32 random : robustRandoms)
 			{
 				name = "stride_offset_rnd" + std::to_string(random);
-				de::MovePtr<tcu::TestCaseGroup> randomGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> randomGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 				for (const auto& size : sizes)
 				{
-					de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, size.second, ""));
+					de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, size.second));
 
 					TestParamsMaint5 p;
 					p.width			= defaultWidth;

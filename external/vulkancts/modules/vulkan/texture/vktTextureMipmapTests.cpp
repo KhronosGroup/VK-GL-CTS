@@ -3078,15 +3078,15 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 
 		// User-supplied bias value
 		de::MovePtr<tcu::TestCaseGroup>	biasGroup2D			(new tcu::TestCaseGroup(testCtx, "bias"));
-		de::MovePtr<tcu::TestCaseGroup>	minLodGroup2D		(new tcu::TestCaseGroup(testCtx, "min_lod", "Lod control: min lod"));
-		de::MovePtr<tcu::TestCaseGroup>	maxLodGroup2D		(new tcu::TestCaseGroup(testCtx, "max_lod", "Lod control: max lod"));
-		de::MovePtr<tcu::TestCaseGroup>	baseLevelGroup2D	(new tcu::TestCaseGroup(testCtx, "base_level", "Base level"));
-		de::MovePtr<tcu::TestCaseGroup>	maxLevelGroup2D		(new tcu::TestCaseGroup(testCtx, "max_level", "Max level"));
+		de::MovePtr<tcu::TestCaseGroup>	minLodGroup2D		(new tcu::TestCaseGroup(testCtx, "min_lod"));
+		de::MovePtr<tcu::TestCaseGroup>	maxLodGroup2D		(new tcu::TestCaseGroup(testCtx, "max_lod"));
+		de::MovePtr<tcu::TestCaseGroup>	baseLevelGroup2D	(new tcu::TestCaseGroup(testCtx, "base_level"));
+		de::MovePtr<tcu::TestCaseGroup>	maxLevelGroup2D		(new tcu::TestCaseGroup(testCtx, "max_level"));
 
 #ifndef CTS_USES_VULKANSC
-		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroup2D	(new tcu::TestCaseGroup(testCtx, "image_view_min_lod", "VK_EXT_image_view_min_lod tests"));
-		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodGroup2D	(new tcu::TestCaseGroup(testCtx, "min_lod", "ImageView's minLod"));
-		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodBaseLevelGroup2D	(new tcu::TestCaseGroup(testCtx, "base_level", "ImageView's minLod with base level different than one"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroup2D	(new tcu::TestCaseGroup(testCtx, "image_view_min_lod"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodGroup2D	(new tcu::TestCaseGroup(testCtx, "min_lod"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodBaseLevelGroup2D	(new tcu::TestCaseGroup(testCtx, "base_level"));
 #endif // CTS_USES_VULKANSC
 
 		for (int coordType = 0; coordType < DE_LENGTH_OF_ARRAY(coordTypes); coordType++)
@@ -3261,17 +3261,17 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 
 	// Cubemap cases.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	groupCube			(new tcu::TestCaseGroup(testCtx, "cubemap", "Cube Mipmap Filtering"));
+		de::MovePtr<tcu::TestCaseGroup>	groupCube			(new tcu::TestCaseGroup(testCtx, "cubemap"));
 
-		de::MovePtr<tcu::TestCaseGroup>	minLodGroupCube		(new tcu::TestCaseGroup(testCtx, "min_lod", "Lod control: min lod"));
-		de::MovePtr<tcu::TestCaseGroup>	maxLodGroupCube		(new tcu::TestCaseGroup(testCtx, "max_lod", "Lod control: max lod"));
-		de::MovePtr<tcu::TestCaseGroup>	baseLevelGroupCube	(new tcu::TestCaseGroup(testCtx, "base_level", "Base level"));
-		de::MovePtr<tcu::TestCaseGroup>	maxLevelGroupCube	(new tcu::TestCaseGroup(testCtx, "max_level", "Max level"));
+		de::MovePtr<tcu::TestCaseGroup>	minLodGroupCube		(new tcu::TestCaseGroup(testCtx, "min_lod"));
+		de::MovePtr<tcu::TestCaseGroup>	maxLodGroupCube		(new tcu::TestCaseGroup(testCtx, "max_lod"));
+		de::MovePtr<tcu::TestCaseGroup>	baseLevelGroupCube	(new tcu::TestCaseGroup(testCtx, "base_level"));
+		de::MovePtr<tcu::TestCaseGroup>	maxLevelGroupCube	(new tcu::TestCaseGroup(testCtx, "max_level"));
 
 #ifndef CTS_USES_VULKANSC
-		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroupCube	(new tcu::TestCaseGroup(testCtx, "image_view_min_lod", "VK_EXT_image_view_min_lod tests"));
-		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodGroupCube	(new tcu::TestCaseGroup(testCtx, "min_lod", "ImageView's minLod"));
-		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodBaseLevelGroupCube	(new tcu::TestCaseGroup(testCtx, "base_level", "ImageView's minLod with base level different than one"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroupCube	(new tcu::TestCaseGroup(testCtx, "image_view_min_lod"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodGroupCube	(new tcu::TestCaseGroup(testCtx, "min_lod"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodBaseLevelGroupCube	(new tcu::TestCaseGroup(testCtx, "base_level"));
 #endif // CTS_USES_VULKANSC
 
 		for (int coordType = 0; coordType < DE_LENGTH_OF_ARRAY(cubeCoordTypes); coordType++)
@@ -3411,18 +3411,18 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 
 	// 3D cases.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	group3D				(new tcu::TestCaseGroup(testCtx, "3d", "3D Mipmap Filtering"));
+		de::MovePtr<tcu::TestCaseGroup>	group3D				(new tcu::TestCaseGroup(testCtx, "3d"));
 
-		de::MovePtr<tcu::TestCaseGroup>	biasGroup3D			(new tcu::TestCaseGroup(testCtx, "bias", "User-supplied bias value"));
-		de::MovePtr<tcu::TestCaseGroup>	minLodGroup3D		(new tcu::TestCaseGroup(testCtx, "min_lod", "Lod control: min lod"));
-		de::MovePtr<tcu::TestCaseGroup>	maxLodGroup3D		(new tcu::TestCaseGroup(testCtx, "max_lod", "Lod control: max lod"));
-		de::MovePtr<tcu::TestCaseGroup>	baseLevelGroup3D	(new tcu::TestCaseGroup(testCtx, "base_level", "Base level"));
-		de::MovePtr<tcu::TestCaseGroup>	maxLevelGroup3D		(new tcu::TestCaseGroup(testCtx, "max_level", "Max level"));
+		de::MovePtr<tcu::TestCaseGroup>	biasGroup3D			(new tcu::TestCaseGroup(testCtx, "bias"));
+		de::MovePtr<tcu::TestCaseGroup>	minLodGroup3D		(new tcu::TestCaseGroup(testCtx, "min_lod"));
+		de::MovePtr<tcu::TestCaseGroup>	maxLodGroup3D		(new tcu::TestCaseGroup(testCtx, "max_lod"));
+		de::MovePtr<tcu::TestCaseGroup>	baseLevelGroup3D	(new tcu::TestCaseGroup(testCtx, "base_level"));
+		de::MovePtr<tcu::TestCaseGroup>	maxLevelGroup3D		(new tcu::TestCaseGroup(testCtx, "max_level"));
 
 #ifndef CTS_USES_VULKANSC
-		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroup3D	(new tcu::TestCaseGroup(testCtx, "image_view_min_lod", "VK_EXT_image_view_min_lod tests"));
-		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodGroup3D	(new tcu::TestCaseGroup(testCtx, "min_lod", "ImageView's minLod"));
-		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodBaseLevelGroup3D	(new tcu::TestCaseGroup(testCtx, "base_level", "ImageView's minLod with base level different than one"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroup3D	(new tcu::TestCaseGroup(testCtx, "image_view_min_lod"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodGroup3D	(new tcu::TestCaseGroup(testCtx, "min_lod"));
+		de::MovePtr<tcu::TestCaseGroup> imageViewMinLodBaseLevelGroup3D	(new tcu::TestCaseGroup(testCtx, "base_level"));
 #endif // CTS_USES_VULKANSC
 
 		for (int coordType = 0; coordType < DE_LENGTH_OF_ARRAY(coordTypes); coordType++)

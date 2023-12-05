@@ -1047,7 +1047,7 @@ TestCaseGroup* addHelperInvocationsTests(TestContext& testCtx)
 		return std::to_string(d.first) + "x" + std::to_string(d.second);
 	};
 
-	auto rootGroup = new TestCaseGroup(testCtx, "helper_invocations", "Ray query helper invocation tests");
+	auto rootGroup = new TestCaseGroup(testCtx, "helper_invocations");
 	for (auto& build : builds)
 	{
 		auto buildGroup = new tcu::TestCaseGroup(testCtx, build.second);

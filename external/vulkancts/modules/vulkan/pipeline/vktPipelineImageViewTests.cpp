@@ -872,8 +872,7 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx, PipelineCon
 			}
 
 			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx,
-																				getFormatCaseName(format).c_str(),
-																				(std::string("Samples a texture of format ") + getFormatName(format)).c_str()));
+																				getFormatCaseName(format).c_str()));
 
 			de::MovePtr<tcu::TestCaseGroup>	subresourceRangeTests	= createSubresourceRangeTests(testCtx, pipelineConstructionType, viewType, format);
 			de::MovePtr<tcu::TestCaseGroup>	componentSwizzleTests	= createComponentSwizzleTests(testCtx, pipelineConstructionType, viewType, format);

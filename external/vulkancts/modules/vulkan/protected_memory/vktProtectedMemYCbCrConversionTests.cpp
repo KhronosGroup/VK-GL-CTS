@@ -1433,7 +1433,7 @@ tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx)
 	{
 		const vk::VkFormat				format		(testFormats[formatNdx]);
 		const std::string				formatName	(de::toLower(std::string(getFormatName(format)).substr(10)));
-		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ("Tests for color conversion using format " + formatName).c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 
 		for (size_t shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(shaderTypes); shaderNdx++)
 		{
@@ -1465,7 +1465,7 @@ tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx)
 							continue;
 					}
 
-					de::MovePtr<tcu::TestCaseGroup>		colorRangeGroup	(new tcu::TestCaseGroup(testCtx, colorRangeName, ("Tests for color range " + std::string(colorRangeName)).c_str()));
+					de::MovePtr<tcu::TestCaseGroup>		colorRangeGroup	(new tcu::TestCaseGroup(testCtx, colorRangeName));
 
 					for (size_t chromaOffsetNdx = 0; chromaOffsetNdx < DE_LENGTH_OF_ARRAY(chromaLocations); chromaOffsetNdx++)
 					{

@@ -460,7 +460,7 @@ tcu::TestCaseGroup*	createCopyImageTests (tcu::TestContext& testCtx, CmdBufferTy
 
 tcu::TestCaseGroup*	createCopyImageTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, "copy", "Copy Image Tests"));
+	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, "copy"));
 
 	copyTests->addChild(createCopyImageTests(testCtx, CMD_BUFFER_PRIMARY));
 	copyTests->addChild(createCopyImageTests(testCtx, CMD_BUFFER_SECONDARY));

@@ -380,7 +380,6 @@ tcu::TestCaseGroup*	createAttachmentClearTests (tcu::TestContext& testCtx, CmdBu
 	}
 
 	std::string groupName = getCmdBufferTypeStr(cmdBufferType);
-	std::string groupDesc = "Attachment Clear Op Tests with " + groupName + " command buffer";
 	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 	clearTests->addChild(clearStaticTests.release());
 	clearTests->addChild(clearRandomTests.release());
@@ -391,7 +390,7 @@ tcu::TestCaseGroup*	createAttachmentClearTests (tcu::TestContext& testCtx, CmdBu
 
 tcu::TestCaseGroup*	createAttachmentClearTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, "clear_op", "Attachment Clear Op Tests"));
+	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, "clear_op"));
 
 	clearTests->addChild(createAttachmentClearTests(testCtx, CMD_BUFFER_PRIMARY));
 	clearTests->addChild(createAttachmentClearTests(testCtx, CMD_BUFFER_SECONDARY));

@@ -1543,7 +1543,7 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 //! Specify compute shader work group size through specialization constants.
 tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "local_size", "work group size specialization"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "local_size"));
 
 	const deUint32 ssboSize = 16;
 	const std::string ssboDecl =
@@ -1659,7 +1659,7 @@ tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 //! Override a built-in variable with specialization constant value.
 tcu::TestCaseGroup* createBuiltInOverrideTests (tcu::TestContext& testCtx, const PipelineConstructionType pipelineType, const VkShaderStageFlagBits shaderStage)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "builtin", "built-in override"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "builtin"));
 
 	const CaseDefinition defs[] =
 	{
@@ -1696,7 +1696,7 @@ tcu::TestCaseGroup* createBuiltInOverrideTests (tcu::TestContext& testCtx, const
 //! Specialization constants used in expressions.
 tcu::TestCaseGroup* createExpressionTests (tcu::TestContext& testCtx, const PipelineConstructionType pipelineType, const VkShaderStageFlagBits shaderStage)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "expression", "specialization constants usage in expressions"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "expression"));
 
 	const CaseDefinition defs[] =
 	{
@@ -2181,7 +2181,7 @@ CaseDefinition makeStructCompositeCaseDefinition (const glu::DataType memberType
 //! Specialization constants used in composites.
 tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const PipelineConstructionType pipelineType, const VkShaderStageFlagBits shaderStage)
 {
-	de::MovePtr<tcu::TestCaseGroup> compositeTests (new tcu::TestCaseGroup(testCtx, "composite", "specialization constants usage in composite types"));
+	de::MovePtr<tcu::TestCaseGroup> compositeTests (new tcu::TestCaseGroup(testCtx, "composite"));
 
 	// Vectors
 	{
@@ -2439,7 +2439,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const Pipel
 
 tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineType)
 {
-	de::MovePtr<tcu::TestCaseGroup> allTests (new tcu::TestCaseGroup(testCtx, "spec_constant", "Specialization constants tests"));
+	de::MovePtr<tcu::TestCaseGroup> allTests (new tcu::TestCaseGroup(testCtx, "spec_constant"));
 	de::MovePtr<tcu::TestCaseGroup> graphicsGroup (new tcu::TestCaseGroup(testCtx, "graphics"));
 
 	struct StageDef

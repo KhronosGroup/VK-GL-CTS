@@ -674,7 +674,7 @@ struct AddProgramsDraw
 }	// anonymous
 
 ConditionalTransformFeedbackTests::ConditionalTransformFeedbackTests (tcu::TestContext &testCtx)
-	: TestCaseGroup	(testCtx, "transform_feedback", "Conditional Rendering With Transform Feedback")
+	: TestCaseGroup	(testCtx, "transform_feedback")
 {
 }
 

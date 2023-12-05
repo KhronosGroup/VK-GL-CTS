@@ -1866,7 +1866,7 @@ private:
 };
 
 DeviceGroupTestRendering::DeviceGroupTestRendering (tcu::TestContext& testCtx, const std::string& name)
-	: TestCaseGroup (testCtx, name.c_str(), "Testing device group test cases")
+	: TestCaseGroup (testCtx, name.c_str())
 {
 	// Left blank on purpose
 }

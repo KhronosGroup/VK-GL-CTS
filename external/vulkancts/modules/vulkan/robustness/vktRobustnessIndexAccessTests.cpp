@@ -908,10 +908,10 @@ tcu::TestCaseGroup* createCmdBindIndexBuffer2Tests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> gRoot(new tcu::TestCaseGroup(testCtx, "bind_index_buffer2"));
 	for (deUint32 offset : offsets)
 	{
-		de::MovePtr<tcu::TestCaseGroup> gOffset(new tcu::TestCaseGroup(testCtx, ("offset_" + std::to_string(offset)).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> gOffset(new tcu::TestCaseGroup(testCtx, ("offset_" + std::to_string(offset)).c_str()));
 		for (const auto& mode : modes)
 		{
-			de::MovePtr<tcu::TestCaseGroup> gMode(new tcu::TestCaseGroup(testCtx, mode.first, ""));
+			de::MovePtr<tcu::TestCaseGroup> gMode(new tcu::TestCaseGroup(testCtx, mode.first));
 			for (const auto& ooType : OutOfTypes)
 			{
 				TestParams p;

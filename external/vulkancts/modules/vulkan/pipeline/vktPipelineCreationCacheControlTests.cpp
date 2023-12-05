@@ -1404,8 +1404,7 @@ void addGraphicsPipelineTests(TestCaseGroup& group)
 {
 	using namespace graphics_tests;
 
-	auto tests = newMovePtr<TestCaseGroup>(
-		group.getTestContext(), "graphics_pipelines", "Test pipeline creation cache control with graphics pipelines");
+	auto tests = newMovePtr<TestCaseGroup>(group.getTestContext(), "graphics_pipelines");
 
 	for (const auto& params : TEST_CASES)
 	{
@@ -1423,8 +1422,7 @@ void addComputePipelineTests(TestCaseGroup& group)
 {
 	using namespace compute_tests;
 
-	auto tests = newMovePtr<TestCaseGroup>(
-		group.getTestContext(), "compute_pipelines", "Test pipeline creation cache control with compute pipelines");
+	auto tests = newMovePtr<TestCaseGroup>(group.getTestContext(), "compute_pipelines");
 
 	for (const auto& params : TEST_CASES)
 	{

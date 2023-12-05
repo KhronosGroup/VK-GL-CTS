@@ -5232,17 +5232,17 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 		for (const VkFormat depthStencilFormat	: depthStencilFormatRange)
 		{
 			MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(
-				rootGroup->getTestContext(), getFormatCaseName(color1Format, color2Format, color3Format, depthStencilFormat).c_str(), "Combination of framebuffer attachment formats"));
+				rootGroup->getTestContext(), getFormatCaseName(color1Format, color2Format, color3Format, depthStencilFormat).c_str()));
 
 			for (const VkSampleCountFlagBits sampleCount : sampleRange)
 			{
 				MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(
-					rootGroup->getTestContext(), getSampleCountCaseName(sampleCount).c_str(), "Sample count"));
+					rootGroup->getTestContext(), getSampleCountCaseName(sampleCount).c_str()));
 
 				for (const VkResolveModeFlagBits resolveMode : depthStencilResolveModeRange)
 				{
 					MovePtr<tcu::TestCaseGroup> resolveGroup(new tcu::TestCaseGroup(
-						rootGroup->getTestContext(), getResolveModeCaseName(resolveMode).c_str(), "Depth/stencil resolve mode"));
+						rootGroup->getTestContext(), getResolveModeCaseName(resolveMode).c_str()));
 
 					for (const bool renderToWholeFramebuffer : boolRange)
 					{
@@ -5292,17 +5292,17 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 		for (const VkFormat depthStencilFormat	: depthStencilFormatRange)
 		{
 			MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(
-				rootGroup->getTestContext(), getFormatCaseName(color1Format, color2Format, color3Format, depthStencilFormat).c_str(), "Combination of framebuffer attachment formats"));
+				rootGroup->getTestContext(), getFormatCaseName(color1Format, color2Format, color3Format, depthStencilFormat).c_str()));
 
 			for (const VkSampleCountFlagBits sampleCount : sampleRange)
 			{
 				MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(
-					rootGroup->getTestContext(), getSampleCountCaseName(sampleCount).c_str(), "Sample count"));
+					rootGroup->getTestContext(), getSampleCountCaseName(sampleCount).c_str()));
 
 				for (const VkResolveModeFlagBits resolveMode : depthStencilResolveModeRange)
 				{
 					MovePtr<tcu::TestCaseGroup> resolveGroup(new tcu::TestCaseGroup(
-						rootGroup->getTestContext(), getResolveModeCaseName(resolveMode).c_str(), "Depth/stencil resolve mode"));
+						rootGroup->getTestContext(), getResolveModeCaseName(resolveMode).c_str()));
 
 					for (const bool renderToWholeFramebuffer : boolRange)
 					{
@@ -5356,8 +5356,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 					rootGroup->getTestContext(), getFormatCaseName(color1FormatRange[color1FormatNdx],
 																   color2FormatRange[color2FormatNdx],
 																   color3FormatRange[color3FormatNdx],
-																   depthStencilFormatRange[depthStencilFormatNdx]).c_str(),
-					"Combination of framebuffer attachment formats"));
+																   depthStencilFormatRange[depthStencilFormatNdx]).c_str()));
 		}
 
 		de::Random	rng(0x12345678);
@@ -5421,8 +5420,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 					rootGroup->getTestContext(), getFormatCaseName(color1FormatRange[color1FormatNdx],
 																   color2FormatRange[color2FormatNdx],
 																   color3FormatRange[color3FormatNdx],
-																   depthStencilFormatRange[depthStencilFormatNdx]).c_str(),
-					"Combination of framebuffer attachment formats"));
+																   depthStencilFormatRange[depthStencilFormatNdx]).c_str()));
 		}
 
 		de::Random	rng(0x87654321);
@@ -5494,18 +5492,19 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 			for (const VkFormat color3Format		: color3FormatRange)
 			for (const VkFormat depthStencilFormat	: depthStencilFormatRange)
 			{
+				// Combination of framebuffer attachment formats
 				MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(
-					rootGroup->getTestContext(), getFormatCaseName(color1Format, color2Format, color3Format, depthStencilFormat).c_str(), "Combination of framebuffer attachment formats"));
+					rootGroup->getTestContext(), getFormatCaseName(color1Format, color2Format, color3Format, depthStencilFormat).c_str()));
 
 				for (const VkSampleCountFlagBits sampleCount : sampleRange)
 				{
 					MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(
-						rootGroup->getTestContext(), getSampleCountCaseName(sampleCount).c_str(), "Sample count"));
+						rootGroup->getTestContext(), getSampleCountCaseName(sampleCount).c_str()));
 
 					for (const VkResolveModeFlagBits resolveMode : depthStencilResolveModeRange)
 					{
 						MovePtr<tcu::TestCaseGroup> resolveGroup(new tcu::TestCaseGroup(
-							rootGroup->getTestContext(), getResolveModeCaseName(resolveMode).c_str(), "Depth/stencil resolve mode"));
+							rootGroup->getTestContext(), getResolveModeCaseName(resolveMode).c_str()));
 
 						for (const bool renderToWholeFramebuffer : boolRange)
 						{
@@ -5549,7 +5548,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 	// Efficiency query tests don't need to be tested with different pipeline construction types and with dynamic rendering.
 	if (isMultisampledRenderToSingleSampled && pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC && !dynamicRendering)
 	{
-		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "subpass_resolve_efficiency_query", "Tests that subpass resolve efficiency performance query works"));
+		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "subpass_resolve_efficiency_query"));
 
 		for (const VkFormat format		: color1FormatRange)
 		{
@@ -5597,7 +5596,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 	// Test 7: Test that work with garbage color attachments
 	if (dynamicRendering && pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "garbage_color_attachment", "Tests that work with garbage color attachments"));
+		MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "garbage_color_attachment"));
 
 		de::Random	rng(0x12348765);
 
@@ -5639,7 +5638,7 @@ void createMultisampledRenderToSingleSampledTestsInGroup (tcu::TestCaseGroup* ro
 {
 	createMultisampledTestsInGroup(rootGroup, true, pipelineConstructionType, false);
 
-	MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "dynamic_rendering", "Multisampled rendering to single-sampled tests with dynamic rendering"));
+	MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "dynamic_rendering"));
 	createMultisampledTestsInGroup(dynamicRenderingGroup.get(), true, pipelineConstructionType, true);
 	rootGroup->addChild(dynamicRenderingGroup.release());
 }
@@ -5648,7 +5647,7 @@ void createMultisampledMiscTestsInGroup (tcu::TestCaseGroup* rootGroup, Pipeline
 {
 	createMultisampledTestsInGroup(rootGroup, false, pipelineConstructionType, false);
 
-	MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "dynamic_rendering", "Miscellaneous multisampled rendering tests with dynamic rendering"));
+	MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "dynamic_rendering"));
 	createMultisampledTestsInGroup(dynamicRenderingGroup.get(), false, pipelineConstructionType, true);
 	rootGroup->addChild(dynamicRenderingGroup.release());
 }

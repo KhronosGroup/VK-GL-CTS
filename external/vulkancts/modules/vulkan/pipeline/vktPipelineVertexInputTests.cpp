@@ -2102,7 +2102,7 @@ void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests, P
 			bindingOneToOneTests->addChild(oneToOneAttributeTests.release());
 			layoutSkipTests->addChild(bindingOneToOneTests.release());
 
-			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many"));
 			bindingOneToManyTests->addChild(oneToManyAttributeTests.release());
 			bindingOneToManyTests->addChild(oneToManySequentialAttributeTests.release());
 			layoutSkipTests->addChild(bindingOneToManyTests.release());
@@ -2110,13 +2110,13 @@ void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests, P
 		}
 		else if (layoutOrder == VertexInputTest::LAYOUT_ORDER_OUT_OF_ORDER)
 		{
-			de::MovePtr<tcu::TestCaseGroup> layoutOutOfOrderTests(new tcu::TestCaseGroup(testCtx, "out_of_order", "Layout slots out of order"));
+			de::MovePtr<tcu::TestCaseGroup> layoutOutOfOrderTests(new tcu::TestCaseGroup(testCtx, "out_of_order"));
 
-			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one"));
 			bindingOneToOneTests->addChild(oneToOneAttributeTests.release());
 			layoutOutOfOrderTests->addChild(bindingOneToOneTests.release());
 
-			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many"));
 			bindingOneToManyTests->addChild(oneToManyAttributeTests.release());
 			bindingOneToManyTests->addChild(oneToManySequentialAttributeTests.release());
 			layoutOutOfOrderTests->addChild(bindingOneToManyTests.release());
@@ -2124,11 +2124,11 @@ void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests, P
 		}
 		else
 		{
-			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one"));
 			bindingOneToOneTests->addChild(oneToOneAttributeTests.release());
 			multipleAttributeTests->addChild(bindingOneToOneTests.release());
 
-			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many"));
 			bindingOneToManyTests->addChild(oneToManyAttributeTests.release());
 			bindingOneToManyTests->addChild(oneToManySequentialAttributeTests.release());
 			multipleAttributeTests->addChild(bindingOneToManyTests.release());
@@ -2212,8 +2212,8 @@ void createMaxAttributeTests (tcu::TestCaseGroup* maxAttributeTests, PipelineCon
 		const std::string							groupDesc = de::toString(attributeCount[attributeCountNdx]) + " vertex input attributes";
 
 		de::MovePtr<tcu::TestCaseGroup>				numAttributeTests(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
-		de::MovePtr<tcu::TestCaseGroup>				bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
-		de::MovePtr<tcu::TestCaseGroup>				bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
+		de::MovePtr<tcu::TestCaseGroup>				bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one"));
+		de::MovePtr<tcu::TestCaseGroup>				bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many"));
 
 		std::vector<VertexInputTest::AttributeInfo>	attributeInfos(attributeCount[attributeCountNdx]);
 

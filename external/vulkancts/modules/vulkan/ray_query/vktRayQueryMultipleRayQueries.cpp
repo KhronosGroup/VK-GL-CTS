@@ -435,7 +435,7 @@ tcu::TestCaseGroup* createMultipleRayQueryTests(tcu::TestContext& testCtx)
 		{ RayQueryShaderSourceType::CALLABLE,				RayQueryShaderSourcePipeline::RAYTRACING,	"call_shader",				},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "multiple_ray_queries", "Multiple Ray query tests"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "multiple_ray_queries"));
 
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
 	{

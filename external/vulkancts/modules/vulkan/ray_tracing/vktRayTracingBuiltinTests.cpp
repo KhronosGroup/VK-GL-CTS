@@ -4240,7 +4240,7 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 		CaseDef caseDef
 		{
 			TEST_ID_INCOMING_RAY_FLAGS_EXT,								//  TestId					id;
@@ -4559,7 +4559,7 @@ tcu::TestCaseGroup*	createBuiltinTests (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createSpecConstantTests	(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "spec_constants", "Test using spec constants in ray tracing shader stages"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "spec_constants"));
 
 	const VkShaderStageFlags	stageFlags				= VK_SHADER_STAGE_RAYGEN_BIT_KHR
 														| VK_SHADER_STAGE_ANY_HIT_BIT_KHR

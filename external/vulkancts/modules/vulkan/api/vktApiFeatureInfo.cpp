@@ -6911,7 +6911,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "get_physical_device_properties2"));
 
 		{
-			de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, "features", ""));
+			de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, "features"));
 			// Extended Device Features
 			addFunctionCase(subgroup.get(), "core", deviceFeatures2);
 			addSeparateFeatureTests(subgroup.get());
@@ -6954,7 +6954,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 #endif // CTS_USES_VULKANSC
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests (new tcu::TestCaseGroup(testCtx, "vulkan1p2_limits_validation", "Vulkan 1.2 and core extensions limits validation"));
+		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests (new tcu::TestCaseGroup(testCtx, "vulkan1p2_limits_validation"));
 
 		addFunctionCase(limitsValidationTests.get(), "general",							checkApiVersionSupport<1, 2>,				validateLimits12);
 #ifndef CTS_USES_VULKANSC
@@ -6989,7 +6989,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests(new tcu::TestCaseGroup(testCtx, "vulkan1p3_limits_validation", "Vulkan 1.3 and core extensions limits validation"));
+		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests(new tcu::TestCaseGroup(testCtx, "vulkan1p3_limits_validation"));
 
 #ifndef CTS_USES_VULKANSC
 		addFunctionCase(limitsValidationTests.get(), "khr_maintenance4",				checkSupportKhrMaintenance4,				validateLimitsKhrMaintenance4);
@@ -7014,7 +7014,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 #endif // CTS_USES_VULKANSC
 
 	{
-		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
+		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android"));
 
 		// Test that all mandatory extensions are supported
 		addFunctionCase(androidTests.get(),	"mandatory_extensions", android::checkSupportAndroid,	android::testMandatoryExtensions);
