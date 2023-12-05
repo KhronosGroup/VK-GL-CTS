@@ -8698,6 +8698,7 @@ typedef enum VkPresentModeKHR {
     VK_PRESENT_MODE_FIFO_RELAXED_KHR = 3,
     VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR = 1000111000,
     VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR = 1000111001,
+    VK_PRESENT_MODE_FIFO_LATEST_READY_EXT = 1000361000,
     VK_PRESENT_MODE_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkPresentModeKHR;
 
@@ -16932,6 +16933,12 @@ typedef struct VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT {
     VkBool32           primitiveTopologyPatchListRestart;
 } VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT;
 
+
+
+// VK_EXT_present_mode_fifo_latest_ready is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_present_mode_fifo_latest_ready 1
+#define VK_EXT_PRESENT_MODE_FIFO_LATEST_READY_SPEC_VERSION 1
+#define VK_EXT_PRESENT_MODE_FIFO_LATEST_READY_EXTENSION_NAME "VK_EXT_present_mode_fifo_latest_ready"
 
 
 // VK_HUAWEI_subpass_shading is a preprocessor guard. Do not pass it to API calls.

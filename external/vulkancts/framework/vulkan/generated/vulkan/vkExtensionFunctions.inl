@@ -1169,6 +1169,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_present_mode_fifo_latest_ready")
+	{
+		return;
+	}
 	if (extName == "VK_FUCHSIA_external_memory")
 	{
 		return;
@@ -2871,6 +2875,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_present_mode_fifo_latest_ready")
+	{
+		return;
+	}
 	if (extName == "VK_FUCHSIA_external_memory")
 	{
 		functions.push_back("vkGetMemoryZirconHandleFUCHSIA");
@@ -3619,6 +3627,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_depth_clip_control",
 	"VK_EXT_primitive_topology_list_restart",
 	"VK_KHR_format_feature_flags2",
+	"VK_EXT_present_mode_fifo_latest_ready",
 	"VK_FUCHSIA_external_memory",
 	"VK_FUCHSIA_external_semaphore",
 	"VK_FUCHSIA_buffer_collection",
