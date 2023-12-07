@@ -831,14 +831,15 @@ void DrawIndirectBase::ReadPixelsFloat<test_api::GL>(int x, int y, int width, in
 template <>
 void DrawIndirectBase::ReadPixelsFloat<test_api::ES3>(int x, int y, int width, int height, void* data)
 {
-	// Use 1010102 pixel buffer for RGB10_A2 FBO to preserve precision during pixel transfer
+	// Use 1010102/101010 pixel buffer for RGB10_A2/RGB10 FBO to preserve precision during pixel transfer
 	std::vector<GLuint>     uData(width * height);
 	const tcu::PixelFormat& pixelFormat = m_context.getRenderContext().getRenderTarget().getPixelFormat();
 	GLfloat*                fData       = reinterpret_cast<GLfloat*>(data);
 	GLenum                  type        = ((pixelFormat.redBits   == 10) &&
 	                                       (pixelFormat.greenBits == 10) &&
 	                                       (pixelFormat.blueBits  == 10) &&
-	                                       (pixelFormat.alphaBits == 2)) ?
+	                                       (pixelFormat.alphaBits == 2 ||
+						pixelFormat.alphaBits == 0)) ?
 	                                      GL_UNSIGNED_INT_2_10_10_10_REV :
 	                                      GL_UNSIGNED_BYTE;
 
