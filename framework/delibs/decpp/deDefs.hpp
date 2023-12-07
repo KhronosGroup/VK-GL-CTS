@@ -31,6 +31,7 @@
 #endif
 
 #include <type_traits>
+#include <utility>
 
 namespace de
 {
