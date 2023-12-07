@@ -26,6 +26,8 @@
 #include "es3cCopyTexImageConversionsTests.hpp"
 #include "es3cNumberParsingTests.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
+#include "glcClipDistance.hpp"
+#include "glcCullDistance.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcFramebufferBlitTests.hpp"
@@ -196,6 +198,8 @@ void ES30TestPackage::init(void)
 		addChild(new glcts::PackedDepthStencilTests(getContext()));
 		addChild(new glcts::FramebufferCompletenessTests(getContext()));
 		addChild(new glcts::TextureLodBasicTests(getContext()));
+		addChild(new glcts::ClipDistance::Tests(getContext()));
+		addChild(new glcts::CullDistance::Tests(getContext()));
 		addChild(new es3cts::CopyTexImageConversionsTests(getContext()));
 		addChild(new es3cts::NumberParsingTests(getContext()));
 		addChild(new glcts::FramebufferBlitTests(getContext()));

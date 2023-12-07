@@ -1,5 +1,5 @@
-#ifndef _GL3CCULLDISTANCETESTS_HPP
-#define _GL3CCULLDISTANCETESTS_HPP
+#ifndef _GLCCULLDISTANCE_HPP
+#define _GLCCULLDISTANCE_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
@@ -31,7 +31,8 @@
 
 #include "glcTestCase.hpp"
 #include "glwDefs.hpp"
-#include "tcuDefs.hpp"
+
+#include <map>
 
 namespace glcts
 {
@@ -57,6 +58,30 @@ public:
 	static std::string intToString(glw::GLint integer);
 };
 
+/** @class CullDistanceTestBase
+ *
+ *  @brief Cull distance test cases base class.
+ */
+class CullDistanceTestBase : public deqp::TestCase
+{
+public:
+	/* Public member functions */
+	CullDistanceTestBase(deqp::Context& context, const char* name, const char* description);
+
+	tcu::TestNode::IterateResult iterate() override;
+
+protected:
+	/* Protected methods */
+	virtual void test(void) = DE_NULL;
+
+protected:
+	/* Protected constants */
+	std::map<std::string, std::string> specializationMap;
+
+	bool m_extensionSupported;
+	bool m_isContextES;
+};
+
 /** @brief Cull Distance API Coverage Test class
  *
  *  This class contains basic API coverage test,
@@ -78,7 +103,7 @@ public:
  *     links successfully and that the value of the built-in constant is at
  *     least 8.
  */
-class APICoverageTest : public deqp::TestCase
+class APICoverageTest : public CullDistanceTestBase
 {
 public:
 	/* Public methods */
@@ -86,8 +111,9 @@ public:
 
 protected:
 	/* Protected methods */
-	void						 deinit();
-	tcu::TestNode::IterateResult iterate();
+	void deinit() override;
+
+	void test(void) override;
 
 private:
 	/* Private fields */
@@ -147,7 +173,7 @@ private:
  *      fragment matches the expected interpolated values of the written cull
  *      distances.
  * */
-class FunctionalTest : public deqp::TestCase
+class FunctionalTest : public CullDistanceTestBase
 {
 public:
 	/* Public methods */
@@ -155,8 +181,9 @@ public:
 
 protected:
 	/* Protected methods */
-	void						 deinit();
-	tcu::TestNode::IterateResult iterate();
+	void deinit() override;
+
+	void test(void) override;
 
 private:
 	/* Private type definitions */
@@ -182,7 +209,7 @@ private:
 	void executeRenderTest(glw::GLuint clipdistances_array_size, glw::GLuint culldistances_array_size,
 						   _primitive_mode primitive_mode, bool use_tesselation, bool fetch_culldistance_from_fs);
 
-	glw::GLint readRedPixelValue(glw::GLint x, glw::GLint y);
+	glw::GLfloat readRedPixelValue(glw::GLint x, glw::GLint y);
 
 	void readTexturePixels();
 
@@ -200,7 +227,7 @@ private:
 	const glw::GLuint		   m_to_height;
 	const glw::GLuint		   m_to_width;
 	static const glw::GLuint   m_to_pixel_data_cache_color_components = 4;
-	std::vector<glw::GLushort> m_to_pixel_data_cache;
+	std::vector<glw::GLfloat>  m_to_pixel_data_cache;
 };
 
 /** @brief Cull Distance Negative Test class
@@ -222,7 +249,7 @@ private:
  *      gl_CullDistance with a size and use dynamic indexing when writing their
  *      elements. Expect a compile-time or link-time error.
  */
-class NegativeTest : public deqp::TestCase
+class NegativeTest : public CullDistanceTestBase
 {
 public:
 	/* Public methods */
@@ -230,8 +257,9 @@ public:
 
 protected:
 	/* Protected methods */
-	void						 deinit();
-	tcu::TestNode::IterateResult iterate();
+	void deinit() override;
+
+	void test(void) override;
 
 private:
 	/* Private methods */
@@ -262,4 +290,4 @@ private:
 /* CullDistance namespace */
 } /* glcts namespace */
 
-#endif // _GL3CCULLDISTANCETESTS_HPP
+#endif // _GLCCULLDISTANCE_HPP

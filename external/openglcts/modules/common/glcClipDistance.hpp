@@ -1,5 +1,5 @@
-#ifndef _GL3CCLIPDISTANCE_HPP
-#define _GL3CCLIPDISTANCE_HPP
+#ifndef _GLCCLIPDISTANCE_HPP
+#define _GLCCLIPDISTANCE_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
@@ -32,7 +32,6 @@
 #include "glcTestCase.hpp"
 #include "gluDefs.hpp"
 #include "glwDefs.hpp"
-#include "tcuDefs.hpp"
 
 /* Includes. */
 #include <cstring>
@@ -43,7 +42,7 @@
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
 
-namespace gl3cts
+namespace glcts
 {
 namespace ClipDistance
 {
@@ -170,7 +169,7 @@ public:
 
 	bool bind();
 	bool useAsShaderInput(Program program, std::string input_attribute_name, glw::GLint number_of_components);
-	std::vector<T> readBuffer();
+	std::vector<T> readBuffer(bool);
 
 private:
 	const glw::Functions& m_gl;
@@ -204,17 +203,43 @@ private:
 	Tests& operator=(const Tests& other);
 };
 
+/** @class ClipDistanceTestBase
+ *
+ *  @brief Clip distance test cases base class.
+ */
+class ClipDistanceTestBase : public deqp::TestCase
+{
+public:
+	/* Public member functions */
+	ClipDistanceTestBase(deqp::Context& context, const char* name, const char* description);
+
+	tcu::TestNode::IterateResult iterate() override;
+
+protected:
+	/* Protected methods */
+	virtual void test(void) = DE_NULL;
+
+protected:
+	/* Protected constants */
+	std::map<std::string, std::string> specializationMap;
+
+	bool m_extensionSupported;
+	bool m_isContextES;
+};
+
 /** @class CoverageTest
  *
  *  @brief Clip distance API Coverage test cases.
  */
-class CoverageTest : public deqp::TestCase
+class CoverageTest : public ClipDistanceTestBase
 {
 public:
 	/* Public member functions */
 	CoverageTest(deqp::Context& context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+protected:
+	/* Protected methods */
+	void test(void) override;
 
 private:
 	/* Private member functions */
@@ -245,25 +270,26 @@ private:
  *
  *  @brief Clip distance Functional test cases.
  */
-class FunctionalTest : public deqp::TestCase
+class FunctionalTest : public ClipDistanceTestBase
 {
 public:
 	/* Public member functions */
 	FunctionalTest(deqp::Context& context);
 
-	virtual void						 init();
-	virtual tcu::TestNode::IterateResult iterate();
+protected:
+	/* Protected methods */
+	void test(void) override;
 
 private:
 	/* Private member functions */
 	FunctionalTest(const FunctionalTest& other);
 	FunctionalTest& operator=(const FunctionalTest& other);
 
-	std::string prepareVertexShaderCode(bool explicit_redeclaration, bool dynamic_setter, glw::GLuint clip_count,
-										glw::GLuint clip_function, glw::GLenum primitive_type);
+	void prepareShaderCode(bool explicit_redeclaration, bool dynamic_setter, glw::GLuint clip_count,
+						   glw::GLuint clip_function, glw::GLenum primitive_type, std::string& vs, std::string& fs);
 
-	gl3cts::ClipDistance::Utility::VertexBufferObject<glw::GLfloat>* prepareGeometry(const glw::Functions& gl,
-																					 const glw::GLenum primitive_type);
+	ClipDistance::Utility::VertexBufferObject<glw::GLfloat>* prepareGeometry(const glw::Functions& gl,
+																			 const glw::GLenum	   primitive_type);
 
 	bool checkResults(glw::GLenum primitive_type, glw::GLuint clip_function, std::vector<glw::GLfloat>& results);
 
@@ -290,13 +316,15 @@ private:
  *
  *  @brief Clip distance API Negative test cases.
  */
-class NegativeTest : public deqp::TestCase
+class NegativeTest : public ClipDistanceTestBase
 {
 public:
 	/* Public member functions */
 	NegativeTest(deqp::Context& context);
 
-	virtual tcu::TestNode::IterateResult iterate();
+protected:
+	/* Protected methods */
+	void test(void) override;
 
 private:
 	/* Private member functions */
@@ -314,7 +342,7 @@ private:
 	static const glw::GLchar* m_fragment_shader_code;
 };
 } /* ClipDistance namespace */
-} /* gl3cts namespace */
+} /* glcts namespace */
 
 /* Template classes' implementation */
 
@@ -327,7 +355,7 @@ private:
  *  @param [in] data             Data of the buffer (may be empty).
  */
 template <class T>
-gl3cts::ClipDistance::Utility::VertexBufferObject<T>::VertexBufferObject(const glw::Functions& gl,
+glcts::ClipDistance::Utility::VertexBufferObject<T>::VertexBufferObject(const glw::Functions& gl,
 																		 const glw::GLenum target, std::vector<T> data)
 	: m_gl(gl), m_vertex_buffer_object_id(0), m_target(target), m_size(0)
 {
@@ -347,7 +375,7 @@ gl3cts::ClipDistance::Utility::VertexBufferObject<T>::VertexBufferObject(const g
 
 /** @brief Vertex Buffer Object destructor. */
 template <class T>
-gl3cts::ClipDistance::Utility::VertexBufferObject<T>::~VertexBufferObject()
+glcts::ClipDistance::Utility::VertexBufferObject<T>::~VertexBufferObject()
 {
 	m_gl.deleteBuffers(1, &m_vertex_buffer_object_id); /* Delete silently unbinds the buffer. */
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDeleteBuffers call failed.");
@@ -364,7 +392,7 @@ gl3cts::ClipDistance::Utility::VertexBufferObject<T>::~VertexBufferObject()
  *  @note It binds also to indexed binding point for GL_TRANSFORM_FEEDBACK_BUFFER target.
  */
 template <class T>
-bool gl3cts::ClipDistance::Utility::VertexBufferObject<T>::bind()
+bool glcts::ClipDistance::Utility::VertexBufferObject<T>::bind()
 {
 	if (m_vertex_buffer_object_id)
 	{
@@ -394,7 +422,7 @@ bool gl3cts::ClipDistance::Utility::VertexBufferObject<T>::bind()
  *  @return True on success, false otherwise.
  */
 template <class T>
-bool gl3cts::ClipDistance::Utility::VertexBufferObject<T>::useAsShaderInput(Program		program,
+bool glcts::ClipDistance::Utility::VertexBufferObject<T>::useAsShaderInput(Program		program,
 																			std::string input_attribute_name,
 																			glw::GLint  number_of_components)
 {
@@ -442,13 +470,18 @@ bool gl3cts::ClipDistance::Utility::VertexBufferObject<T>::useAsShaderInput(Prog
  *  @return Content of VBO.
  */
 template <class T>
-std::vector<T> gl3cts::ClipDistance::Utility::VertexBufferObject<T>::readBuffer()
+std::vector<T> glcts::ClipDistance::Utility::VertexBufferObject<T>::readBuffer(bool isGlesContext)
 {
 	std::vector<T> buffer_data(m_size / sizeof(T));
 
 	bind();
 
-	glw::GLvoid* results = m_gl.mapBuffer(m_target, GL_READ_ONLY);
+	glw::GLvoid* results = nullptr;
+
+	if (!isGlesContext)
+		results = m_gl.mapBuffer(m_target, GL_READ_ONLY);
+	else
+		results = m_gl.mapBufferRange(m_target, 0, m_size, GL_MAP_READ_BIT);
 
 	if (results)
 	{
@@ -459,4 +492,4 @@ std::vector<T> gl3cts::ClipDistance::Utility::VertexBufferObject<T>::readBuffer(
 
 	return buffer_data;
 }
-#endif // _GL3CCLIPDISTANCE_HPP
+#endif // _GLCCLIPDISTANCE_HPP

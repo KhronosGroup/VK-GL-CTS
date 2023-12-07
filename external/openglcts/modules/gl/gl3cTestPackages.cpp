@@ -23,9 +23,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "gl3cTestPackages.hpp"
-#include "gl3cClipDistance.hpp"
 #include "gl3cCommonBugsTests.hpp"
-#include "gl3cCullDistanceTests.hpp"
 #include "gl3cGLSLnoperspectiveTests.hpp"
 #include "gl3cGPUShader5Tests.hpp"
 #include "gl3cTextureSizePromotion.hpp"
@@ -34,6 +32,8 @@
 #include "gl3cTransformFeedbackTests.hpp"
 #include "gl3cTransformFeedback3Tests.hpp"
 #include "gl4cPipelineStatisticsQueryTests.hpp"
+#include "glcClipDistance.hpp"
+#include "glcCullDistance.hpp"
 #include "glcBufferObjectsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcFramebufferBlitTests.hpp"
@@ -172,7 +172,7 @@ void GL30TestPackage::init(void)
 	try
 	{
 		addChild(new deqp::InfoTests(getContext()));
-		addChild(new gl3cts::ClipDistance::Tests(getContext()));
+		addChild(new glcts::ClipDistance::Tests(getContext()));
 		addChild(new gl3cts::GLSLnoperspectiveTests(getContext()));
 		addChild(new gl3cts::TransformFeedback::Tests(getContext()));
 		addChild(new gl3cts::TransformFeedback3Tests(getContext()));

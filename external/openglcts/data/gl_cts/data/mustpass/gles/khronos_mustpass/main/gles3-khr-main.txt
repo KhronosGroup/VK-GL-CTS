@@ -3936,6 +3936,12 @@ KHR-GLES3.framebuffer_completeness.status_tracking
 KHR-GLES3.framebuffer_completeness.mutable_texture_missing_attachment_level
 KHR-GLES3.framebuffer_completeness.immutable_texture_any_level_as_attachment
 KHR-GLES3.texture_lod_basic.lod_selection
+KHR-GLES3.clip_distance.coverage
+KHR-GLES3.clip_distance.functional
+KHR-GLES3.clip_distance.negative
+KHR-GLES3.cull_distance.coverage
+KHR-GLES3.cull_distance.functional
+KHR-GLES3.cull_distance.negative
 KHR-GLES3.copy_tex_image_conversions.forbidden.texture2d_texture2d
 KHR-GLES3.copy_tex_image_conversions.forbidden.texture2d_cubemap_negx
 KHR-GLES3.copy_tex_image_conversions.forbidden.texture2d_cubemap_negy

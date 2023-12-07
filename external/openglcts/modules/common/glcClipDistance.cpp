@@ -22,11 +22,13 @@
  */ /*-------------------------------------------------------------------*/
 
 /* Includes. */
-#include "gl3cClipDistance.hpp"
+#include "glcClipDistance.hpp"
 #include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "gluRenderContext.hpp"
+#include "gluShaderUtil.hpp"
 #include "gluStrUtil.hpp"
+#include "tcuStringTemplate.hpp"
 #include "tcuTestLog.hpp"
 
 #include <cmath>
@@ -52,18 +54,86 @@
  *
  *  @param [in] context     OpenGL context.
  */
-gl3cts::ClipDistance::Tests::Tests(deqp::Context& context)
+glcts::ClipDistance::Tests::Tests(deqp::Context& context)
 	: TestCaseGroup(context, "clip_distance", "Clip Distance Test Suite")
 {
 	/* Intentionally left blank */
 }
 
 /** @brief Clip distances tests initializer. */
-void gl3cts::ClipDistance::Tests::init()
+void glcts::ClipDistance::Tests::init()
 {
-	addChild(new gl3cts::ClipDistance::CoverageTest(m_context));
-	addChild(new gl3cts::ClipDistance::FunctionalTest(m_context));
-	addChild(new gl3cts::ClipDistance::NegativeTest(m_context));
+	addChild(new glcts::ClipDistance::CoverageTest(m_context));
+	addChild(new glcts::ClipDistance::FunctionalTest(m_context));
+	addChild(new glcts::ClipDistance::NegativeTest(m_context));
+}
+
+/****************************** Coverage Tests Base Implementation   *****************************/
+
+/** @brief API base tests constructor.
+*
+*  @param context Rendering context
+*  @param name Test name
+*  @param description Test description
+*/
+glcts::ClipDistance::ClipDistanceTestBase::ClipDistanceTestBase(deqp::Context& context, const char* name,
+																const char* description)
+	: TestCase(context, name, description), m_extensionSupported(false), m_isContextES(false)
+{
+	const glu::RenderContext& renderContext = m_context.getRenderContext();
+	glu::GLSLVersion		  glslVersion	= glu::getContextTypeGLSLVersion(renderContext.getType());
+	m_isContextES							= glu::isContextTypeES(renderContext.getType());
+
+	specializationMap["VERSION"] = glu::getGLSLVersionDeclaration(glslVersion);
+	if (m_isContextES)
+	{
+		specializationMap["EXTENSION"] = "#extension GL_EXT_clip_cull_distance : enable";
+		specializationMap["PRECISION"] = "precision highp float;";
+	}
+	else
+	{
+		specializationMap["EXTENSION"] = "";
+		specializationMap["PRECISION"] = "";
+	}
+
+	auto contextType = m_context.getRenderContext().getType();
+	if (m_isContextES)
+	{
+		if (glu::contextSupports(contextType, glu::ApiType::es(3, 0)))
+		{
+			m_extensionSupported = context.getContextInfo().isExtensionSupported("GL_EXT_clip_cull_distance");
+		}
+	}
+	else
+	{
+		/* This test should only be executed if we're running a GL>=3.0 context */
+		if (glu::contextSupports(contextType, glu::ApiType::core(3, 0)))
+		{
+			m_extensionSupported = true;
+		}
+	}
+}
+
+tcu::TestNode::IterateResult glcts::ClipDistance::ClipDistanceTestBase::iterate()
+{
+	if (!m_extensionSupported)
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+		if (!m_isContextES)
+		{
+			/* This test should only be executed if we're running a GL3.0 context */
+			throw tcu::NotSupportedError("GL_ARB_clip_distance is not supported");
+		}
+		else
+		{
+			throw tcu::NotSupportedError("GL_EXT_clip_cull_distance is not supported");
+		}
+		return STOP;
+	}
+
+	test();
+
+	return STOP;
 }
 
 /******************************** Coverage Tests Implementation   ********************************/
@@ -72,26 +142,19 @@ void gl3cts::ClipDistance::Tests::init()
  *
  *  @param [in] context     OpenGL context.
  */
-gl3cts::ClipDistance::CoverageTest::CoverageTest(deqp::Context& context)
-	: deqp::TestCase(context, "coverage", "Clip Distance API Coverage Test"), m_gl_max_clip_distances_value(0)
+glcts::ClipDistance::CoverageTest::CoverageTest(deqp::Context& context)
+	: ClipDistanceTestBase(context, "coverage", "Clip Distance API Coverage Test"), m_gl_max_clip_distances_value(0)
 {
 	/* Intentionally left blank. */
 }
 
-/** @brief Iterate API coverage tests.
+/** @brief API coverage tests.
  *
- *  @return Iteration result.
  */
-tcu::TestNode::IterateResult gl3cts::ClipDistance::CoverageTest::iterate()
+void glcts::ClipDistance::CoverageTest::test()
 {
 	/* Shortcut for GL functionality */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* This test should only be executed if we're running a GL3.0 context */
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType(3, 0, glu::PROFILE_CORE)))
-	{
-		throw tcu::NotSupportedError("GL_ARB_clip_distance is not supported");
-	}
 
 	/* Running tests. */
 	bool is_ok = true;
@@ -111,8 +174,6 @@ tcu::TestNode::IterateResult gl3cts::ClipDistance::CoverageTest::iterate()
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
-
-	return STOP;
 }
 
 /* @brief glGet GL_MAX_CLIP_DISTANCES limit coverage test.
@@ -121,11 +182,11 @@ tcu::TestNode::IterateResult gl3cts::ClipDistance::CoverageTest::iterate()
  *
  *  @return True if passed, false otherwise.
  */
-bool gl3cts::ClipDistance::CoverageTest::MaxClipDistancesValueTest(const glw::Functions& gl)
+bool glcts::ClipDistance::CoverageTest::MaxClipDistancesValueTest(const glw::Functions& gl)
 {
 	/*  Check that calling GetIntegerv with GL_MAX_CLIP_DISTANCES doesn't
-	 generate any errors and returns a value at least 6 in OpenGL 3.0
-	 or 8 in OpenGL 3.1 and higher (see issues). */
+     generate any errors and returns a value at least 6 in OpenGL 3.0
+     or 8 in OpenGL 3.1 or OpenGL ES 3.2 and higher (see issues). */
 
 	glw::GLint error_code = GL_NO_ERROR;
 
@@ -145,9 +206,10 @@ bool gl3cts::ClipDistance::CoverageTest::MaxClipDistancesValueTest(const glw::Fu
 	{
 		glw::GLint gl_max_clip_distances_minimum_value = 6; /* OpenGL 3.0 Specification minimum value */
 
-		if (glu::contextSupports(
-				m_context.getRenderContext().getType(),
-				glu::ApiType(3, 1, glu::PROFILE_CORE))) /* OpenGL 3.1 Specification minimum value, see bug #4803 */
+		auto contextType = m_context.getRenderContext().getType();
+		/* OpenGL 3.1 specification minimum value, see bug #4803 */
+		/* or OpenGL 3.0 ES and extension GL_EXT_clip_cull_distance minimum value */
+		if (glu::contextSupports(contextType, glu::ApiType(3, 1, glu::PROFILE_CORE)) || m_isContextES)
 		{
 			gl_max_clip_distances_minimum_value = 8;
 		}
@@ -171,7 +233,7 @@ bool gl3cts::ClipDistance::CoverageTest::MaxClipDistancesValueTest(const glw::Fu
  *
  *  @return True if passed, false otherwise.
  */
-bool gl3cts::ClipDistance::CoverageTest::EnableDisableTest(const glw::Functions& gl)
+bool glcts::ClipDistance::CoverageTest::EnableDisableTest(const glw::Functions& gl)
 {
 	/*  Check that calling Enable and Disable with GL_CLIP_DISTANCEi for all
 	 available clip distances does not generate errors.
@@ -222,7 +284,7 @@ bool gl3cts::ClipDistance::CoverageTest::EnableDisableTest(const glw::Functions&
  *
  *  @return True if passed, false otherwise.
  */
-bool gl3cts::ClipDistance::CoverageTest::MaxClipDistancesValueInVertexShaderTest(const glw::Functions& gl)
+bool glcts::ClipDistance::CoverageTest::MaxClipDistancesValueInVertexShaderTest(const glw::Functions& gl)
 {
 	/*  Make a program that consist of vertex and fragment shader stages. A
 	 vertex shader shall assign the value of gl_MaxClipDistances to transform
@@ -234,22 +296,23 @@ bool gl3cts::ClipDistance::CoverageTest::MaxClipDistancesValueInVertexShaderTest
 	 GL_MAX_CLIP_DISTANCES. Expect that both values are equal. */
 
 	/* Building program. */
-	const std::string vertex_shader					  = m_vertex_shader_code_case_0;
-	const std::string fragment_shader				  = m_fragment_shader_code_case_0;
+	std::string vertex_shader	= tcu::StringTemplate(m_vertex_shader_code_case_0).specialize(specializationMap);
+	std::string fragment_shader = tcu::StringTemplate(m_fragment_shader_code_case_0).specialize(specializationMap);
+
 	std::string		  transform_feedback_varying_name = "max_value";
 
 	std::vector<std::string> transform_feedback_varyings(1, transform_feedback_varying_name);
 
-	gl3cts::ClipDistance::Utility::Program program(gl, vertex_shader, fragment_shader, transform_feedback_varyings);
+	glcts::ClipDistance::Utility::Program program(gl, vertex_shader, fragment_shader, transform_feedback_varyings);
 
 	if (program.ProgramStatus().program_id == 0)
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "Program failed to build.\n Vertex Shader:\n"
-						   << m_vertex_shader_code_case_0 << "\nVertex Shader compilation log:\n"
+						   << vertex_shader << "\nWith Vertex Shader compilation log:\n"
 						   << program.VertexShaderStatus().shader_log << "\nWith Fragment Shader:\n"
-						   << m_fragment_shader_code_case_0 << "\nWith Fragment Shader compilation log:\n"
+						   << fragment_shader << "\nWith Fragment Shader compilation log:\n"
 						   << program.FragmentShaderStatus().shader_log << "\nWith Program linkage log:\n"
-						   << program.FragmentShaderStatus().shader_log << "\n"
+						   << program.ProgramStatus().program_linkage_log << "\n"
 						   << tcu::TestLog::EndMessage;
 		return false;
 	}
@@ -257,17 +320,17 @@ bool gl3cts::ClipDistance::CoverageTest::MaxClipDistancesValueInVertexShaderTest
 	program.UseProgram();
 
 	/* Creating and binding empty VAO. */
-	gl3cts::ClipDistance::Utility::VertexArrayObject vertex_array_object(gl, GL_POINTS);
+	glcts::ClipDistance::Utility::VertexArrayObject vertex_array_object(gl, GL_POINTS);
 
 	/* Creating and binding output VBO */
-	gl3cts::ClipDistance::Utility::VertexBufferObject<glw::GLint> vertex_buffer_object(gl, GL_TRANSFORM_FEEDBACK_BUFFER,
-																					   std::vector<glw::GLint>(1, 0));
+	glcts::ClipDistance::Utility::VertexBufferObject<glw::GLint> vertex_buffer_object(gl, GL_TRANSFORM_FEEDBACK_BUFFER,
+																					  std::vector<glw::GLint>(1, 0));
 
 	/* Draw test. */
 	vertex_array_object.drawWithTransformFeedback(0, 1, true);
 
 	/* Check results. */
-	std::vector<glw::GLint> results = vertex_buffer_object.readBuffer();
+	std::vector<glw::GLint> results = vertex_buffer_object.readBuffer(m_isContextES);
 
 	if (results.size() < 1)
 	{
@@ -294,7 +357,7 @@ bool gl3cts::ClipDistance::CoverageTest::MaxClipDistancesValueInVertexShaderTest
  *
  *  @return True if passed, false otherwise.
  */
-bool gl3cts::ClipDistance::CoverageTest::MaxClipDistancesValueInFragmentShaderTest(const glw::Functions& gl)
+bool glcts::ClipDistance::CoverageTest::MaxClipDistancesValueInFragmentShaderTest(const glw::Functions& gl)
 {
 	/*  Make a program that consist of vertex and fragment shader stages. In
 	 vertex shader setup gl_Position with passed in attribute. Check in
@@ -307,7 +370,7 @@ bool gl3cts::ClipDistance::CoverageTest::MaxClipDistancesValueInFragmentShaderTe
 	 check that point's fragments were not discarded. */
 
 	/* Creating red-color-only frambuffer. */
-	gl3cts::ClipDistance::Utility::Framebuffer framebuffer(gl, 1, 1);
+	glcts::ClipDistance::Utility::Framebuffer framebuffer(gl, 1, 1);
 
 	if (!framebuffer.isValid())
 	{
@@ -320,27 +383,28 @@ bool gl3cts::ClipDistance::CoverageTest::MaxClipDistancesValueInFragmentShaderTe
 	framebuffer.clear();
 
 	/* Building program. */
-	const std::string vertex_shader   = m_vertex_shader_code_case_1;
-	const std::string fragment_shader = m_fragment_shader_code_case_1;
+	std::string vertex_shader	= tcu::StringTemplate(m_vertex_shader_code_case_1).specialize(specializationMap);
+	std::string fragment_shader = tcu::StringTemplate(m_fragment_shader_code_case_1).specialize(specializationMap);
 
-	gl3cts::ClipDistance::Utility::Program program(gl, vertex_shader, fragment_shader);
+	glcts::ClipDistance::Utility::Program program(gl, vertex_shader, fragment_shader);
 
 	if (program.ProgramStatus().program_id == 0)
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "Program failed to build.\n Vertex Shader:\n"
-						   << m_vertex_shader_code_case_1 << "\nVertex Shader compilation log:\n"
+						   << vertex_shader << "\nWith Vertex Shader compilation log:\n"
 						   << program.VertexShaderStatus().shader_log << "\nWith Fragment Shader:\n"
-						   << m_fragment_shader_code_case_1 << "\nWith Fragment Shader compilation log:\n"
+						   << fragment_shader << "\nWith Fragment Shader compilation log:\n"
 						   << program.FragmentShaderStatus().shader_log << "\nWith Program linkage log:\n"
-						   << program.FragmentShaderStatus().shader_log << "\n"
+						   << program.ProgramStatus().program_linkage_log << "\n"
 						   << tcu::TestLog::EndMessage;
+
 		return false;
 	}
 
 	program.UseProgram();
 
 	/* Creating empty VAO. */
-	gl3cts::ClipDistance::Utility::VertexArrayObject vertex_array_object(gl, GL_POINTS);
+	glcts::ClipDistance::Utility::VertexArrayObject vertex_array_object(gl, GL_POINTS);
 
 	/* Draw test. */
 	vertex_array_object.draw(0, 1);
@@ -376,7 +440,7 @@ bool gl3cts::ClipDistance::CoverageTest::MaxClipDistancesValueInFragmentShaderTe
  *
  *  @return True if passed, false otherwise.
  */
-bool gl3cts::ClipDistance::CoverageTest::ClipDistancesValuePassing(const glw::Functions& gl)
+bool glcts::ClipDistance::CoverageTest::ClipDistancesValuePassing(const glw::Functions& gl)
 {
 	/*  Make a program that consist of vertex and fragment shader stages.
 	 Redeclare gl_ClipDistance with size equal to GL_MAX_CLIP_DISTANCES in
@@ -395,7 +459,7 @@ bool gl3cts::ClipDistance::CoverageTest::ClipDistancesValuePassing(const glw::Fu
 	 glReadPixels function, check that point's fragments were not discarded. */
 
 	/* Creating red-color-only frambuffer. */
-	gl3cts::ClipDistance::Utility::Framebuffer framebuffer(gl, 1, 1);
+	glcts::ClipDistance::Utility::Framebuffer framebuffer(gl, 1, 1);
 
 	if (!framebuffer.isValid())
 	{
@@ -408,19 +472,19 @@ bool gl3cts::ClipDistance::CoverageTest::ClipDistancesValuePassing(const glw::Fu
 	framebuffer.clear();
 
 	/* Building program. */
-	const std::string vertex_shader   = m_vertex_shader_code_case_2;
-	const std::string fragment_shader = m_fragment_shader_code_case_2;
+	std::string vertex_shader	= tcu::StringTemplate(m_vertex_shader_code_case_2).specialize(specializationMap);
+	std::string fragment_shader = tcu::StringTemplate(m_fragment_shader_code_case_2).specialize(specializationMap);
 
-	gl3cts::ClipDistance::Utility::Program program(gl, vertex_shader, fragment_shader);
+	glcts::ClipDistance::Utility::Program program(gl, vertex_shader, fragment_shader);
 
 	if (program.ProgramStatus().program_id == 0)
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "Program failed to build.\n Vertex Shader:\n"
-						   << m_vertex_shader_code_case_2 << "\nVertex Shader compilation log:\n"
+						   << vertex_shader << "\nWith Vertex Shader compilation log:\n"
 						   << program.VertexShaderStatus().shader_log << "\nWith Fragment Shader:\n"
-						   << m_fragment_shader_code_case_2 << "\nWith Fragment Shader compilation log:\n"
+						   << fragment_shader << "\nWith Fragment Shader compilation log:\n"
 						   << program.FragmentShaderStatus().shader_log << "\nWith Program linkage log:\n"
-						   << program.FragmentShaderStatus().shader_log << "\n"
+						   << program.ProgramStatus().program_linkage_log << "\n"
 						   << tcu::TestLog::EndMessage;
 		return false;
 	}
@@ -428,7 +492,7 @@ bool gl3cts::ClipDistance::CoverageTest::ClipDistancesValuePassing(const glw::Fu
 	program.UseProgram();
 
 	/* Creating empty VAO. */
-	gl3cts::ClipDistance::Utility::VertexArrayObject vertex_array_object(gl, GL_POINTS);
+	glcts::ClipDistance::Utility::VertexArrayObject vertex_array_object(gl, GL_POINTS);
 
 	/* Draw test. */
 	vertex_array_object.draw(0, 1);
@@ -458,10 +522,10 @@ bool gl3cts::ClipDistance::CoverageTest::ClipDistancesValuePassing(const glw::Fu
 }
 
 /** @brief Vertex shader source code to test gl_MaxClipDistances limit value in vertex shader (API Coverage Test). */
-const glw::GLchar* gl3cts::ClipDistance::CoverageTest::m_vertex_shader_code_case_0 =
-	"#version 130\n"
-	"\n"
-	"out int max_value;\n"
+const glw::GLchar* glcts::ClipDistance::CoverageTest::m_vertex_shader_code_case_0 =
+	"${VERSION}\n"
+	"${EXTENSION}\n"
+	"flat out int max_value;\n"
 	"\n"
 	"void main()\n"
 	"{\n"
@@ -470,9 +534,9 @@ const glw::GLchar* gl3cts::ClipDistance::CoverageTest::m_vertex_shader_code_case
 	"}\n";
 
 /** @brief Fragment shader source code to test gl_MaxClipDistances limit value in vertex shader (API Coverage Test). */
-const glw::GLchar* gl3cts::ClipDistance::CoverageTest::m_fragment_shader_code_case_0 =
-	"#version 130\n"
-	"\n"
+const glw::GLchar* glcts::ClipDistance::CoverageTest::m_fragment_shader_code_case_0 =
+	"${VERSION}\n"
+	"${PRECISION}\n"
 	"out vec4 color;\n"
 	"\n"
 	"void main()\n"
@@ -481,8 +545,8 @@ const glw::GLchar* gl3cts::ClipDistance::CoverageTest::m_fragment_shader_code_ca
 	"}\n";
 
 /** @brief Vertex shader source code to test gl_MaxClipDistances limit value in fragment shader (API Coverage Test). */
-const glw::GLchar* gl3cts::ClipDistance::CoverageTest::m_vertex_shader_code_case_1 =
-	"#version 130\n"
+const glw::GLchar* glcts::ClipDistance::CoverageTest::m_vertex_shader_code_case_1 =
+	"${VERSION}\n"
 	"\n"
 	"void main()\n"
 	"{\n"
@@ -490,8 +554,10 @@ const glw::GLchar* gl3cts::ClipDistance::CoverageTest::m_vertex_shader_code_case
 	"}\n";
 
 /** @brief Fragment shader source code to test gl_MaxClipDistances limit value in fragment shader (API Coverage Test). */
-const glw::GLchar* gl3cts::ClipDistance::CoverageTest::m_fragment_shader_code_case_1 =
-	"#version 130\n"
+const glw::GLchar* glcts::ClipDistance::CoverageTest::m_fragment_shader_code_case_1 =
+	"${VERSION}\n"
+	"${EXTENSION}\n"
+	"${PRECISION}\n"
 	"\n"
 	"out highp vec4 color;\n"
 	"\n"
@@ -501,8 +567,9 @@ const glw::GLchar* gl3cts::ClipDistance::CoverageTest::m_fragment_shader_code_ca
 	"}\n";
 
 /** @brief Vertex shader source code to test if the gl_ClipDistance[] are passed properly to the fragment shader from vertex shader (API Coverage Test). */
-const glw::GLchar* gl3cts::ClipDistance::CoverageTest::m_vertex_shader_code_case_2 =
-	"#version 130\n"
+const glw::GLchar* glcts::ClipDistance::CoverageTest::m_vertex_shader_code_case_2 =
+	"${VERSION}\n"
+	"${EXTENSION}\n"
 	"\n"
 	"out float gl_ClipDistance[gl_MaxClipDistances];\n"
 	"\n"
@@ -517,8 +584,10 @@ const glw::GLchar* gl3cts::ClipDistance::CoverageTest::m_vertex_shader_code_case
 	"}\n";
 
 /** @brief Fragment shader source code to test if the gl_ClipDistance[] are passed properly to the fragment shader from vertex shader (API Coverage Test). */
-const glw::GLchar* gl3cts::ClipDistance::CoverageTest::m_fragment_shader_code_case_2 =
-	"#version 130\n"
+const glw::GLchar* glcts::ClipDistance::CoverageTest::m_fragment_shader_code_case_2 =
+	"${VERSION}\n"
+	"${EXTENSION}\n"
+	"${PRECISION}\n"
 	"\n"
 	"in float gl_ClipDistance[gl_MaxClipDistances];\n"
 	"\n"
@@ -543,15 +612,16 @@ const glw::GLchar* gl3cts::ClipDistance::CoverageTest::m_fragment_shader_code_ca
  *
  *  @param [in] context     OpenGL context.
  */
-gl3cts::ClipDistance::FunctionalTest::FunctionalTest(deqp::Context& context)
-	: deqp::TestCase(context, "functional", "Clip Distance Functional Test")
+glcts::ClipDistance::FunctionalTest::FunctionalTest(deqp::Context& context)
+	: ClipDistanceTestBase(context, "functional", "Clip Distance Functional Test")
 	, m_gl_max_clip_distances_value(8) /* Specification minimum required */
 {
 	/* Intentionally left blank */
 }
 
-/** @brief Initialize functional test. */
-void gl3cts::ClipDistance::FunctionalTest::init()
+/** @brief functional test cases.
+ */
+void glcts::ClipDistance::FunctionalTest::test()
 {
 	/* Shortcut for GL functionality */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -559,22 +629,6 @@ void gl3cts::ClipDistance::FunctionalTest::init()
 	gl.getIntegerv(GL_MAX_CLIP_DISTANCES, &m_gl_max_clip_distances_value);
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv call failed.");
-}
-
-/** @brief Iterate functional test cases.
- *
- *  @return Iteration result.
- */
-tcu::TestNode::IterateResult gl3cts::ClipDistance::FunctionalTest::iterate()
-{
-	/* Shortcut for GL functionality */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* This test should only be executed if we're running a GL>=3.0 context */
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(3, 0)))
-	{
-		throw tcu::NotSupportedError("GL_ARB_clip_distance is not supported");
-	}
 
 	/* Functional test */
 
@@ -587,8 +641,8 @@ tcu::TestNode::IterateResult gl3cts::ClipDistance::FunctionalTest::iterate()
 		/* Framebuffer setup. */
 		glw::GLuint framebuffer_size = (primitive_type == GL_POINTS) ? 1 : 32;
 
-		gl3cts::ClipDistance::Utility::Framebuffer framebuffer(gl, framebuffer_size,
-															   framebuffer_size); /* Framebuffer shall be square */
+		glcts::ClipDistance::Utility::Framebuffer framebuffer(gl, framebuffer_size,
+															  framebuffer_size); /* Framebuffer shall be square */
 
 		framebuffer.bind();
 
@@ -609,10 +663,11 @@ tcu::TestNode::IterateResult gl3cts::ClipDistance::FunctionalTest::iterate()
 					 ++i_clip_count)
 				{
 					/* Create and build program. */
-					std::string vertex_shader_code = gl3cts::ClipDistance::FunctionalTest::prepareVertexShaderCode(
-						redeclaration, redeclaration, i_clip_count, i_clip_function, primitive_type);
+					std::string vs_code, fs_code;
+					glcts::ClipDistance::FunctionalTest::prepareShaderCode(
+						redeclaration, redeclaration, i_clip_count, i_clip_function, primitive_type, vs_code, fs_code);
 
-					gl3cts::ClipDistance::Utility::Program program(gl, vertex_shader_code, m_fragment_shader_code);
+					glcts::ClipDistance::Utility::Program program(gl, vs_code, fs_code);
 
 					if (program.ProgramStatus().program_id == GL_NONE)
 					{
@@ -620,13 +675,16 @@ tcu::TestNode::IterateResult gl3cts::ClipDistance::FunctionalTest::iterate()
 						m_testCtx.getLog()
 							<< tcu::TestLog::Message
 							<< "Functional test have failed when building program.\nVertex shader code:\n"
-							<< vertex_shader_code << "\nFragment shader code:\n"
-							<< m_fragment_shader_code << "\n"
+							<< vs_code << "\nWith Vertex Shader compilation log:\n"
+							<< program.VertexShaderStatus().shader_log << "\nWith Fragment Shader:\n"
+							<< fs_code << "\nWith Fragment Shader compilation log:\n"
+							<< program.FragmentShaderStatus().shader_log << "\nWith Program linkage log:\n"
+							<< program.FragmentShaderStatus().shader_log << "\n"
 							<< tcu::TestLog::EndMessage;
 
 						m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 
-						return STOP;
+						return;
 					}
 
 					program.UseProgram();
@@ -638,9 +696,9 @@ tcu::TestNode::IterateResult gl3cts::ClipDistance::FunctionalTest::iterate()
 					gl.enable(GL_CLIP_DISTANCE0 + i_clip_count - 1);
 
 					/* Geometry Setup */
-					gl3cts::ClipDistance::Utility::VertexArrayObject vertex_array_object(gl, primitive_type);
+					glcts::ClipDistance::Utility::VertexArrayObject vertex_array_object(gl, primitive_type);
 
-					gl3cts::ClipDistance::Utility::VertexBufferObject<glw::GLfloat>* vertex_buffer_object =
+					glcts::ClipDistance::Utility::VertexBufferObject<glw::GLfloat>* vertex_buffer_object =
 						prepareGeometry(gl, primitive_type);
 
 					if (!vertex_buffer_object->useAsShaderInput(program, "position", 4))
@@ -653,7 +711,7 @@ tcu::TestNode::IterateResult gl3cts::ClipDistance::FunctionalTest::iterate()
 						m_testCtx.setTestResult(QP_TEST_RESULT_INTERNAL_ERROR, "Error");
 
 						delete vertex_buffer_object;
-						return STOP;
+						return;
 					}
 
 					/* Draw geometry to the framebuffer */
@@ -675,7 +733,7 @@ tcu::TestNode::IterateResult gl3cts::ClipDistance::FunctionalTest::iterate()
 						m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 
 						delete vertex_buffer_object;
-						return STOP;
+						return;
 					}
 
 					delete vertex_buffer_object;
@@ -694,8 +752,6 @@ tcu::TestNode::IterateResult gl3cts::ClipDistance::FunctionalTest::iterate()
 	/* Result's setup. */
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-
-	return STOP;
 }
 
 /** @brief Prepare vertex shader code for functional test.
@@ -705,30 +761,31 @@ tcu::TestNode::IterateResult gl3cts::ClipDistance::FunctionalTest::iterate()
  *  @param [in] clip_count                  Set all first # of gl_ClipDistance-s.
  *  @param [in] clip_function               Use #th clip function for gl_ClipDistance[] setup (see m_clip_function[]).
  *  @param [in] primitive_type              Primitive mode.
- *
- *  @return Compilation ready vertex shader source code.
+ *  @param [out] vertex_shader              Compilation ready vertex shader source code.
+ *  @param [out] fragment_shader            Compilation ready fragment shader source code.
  */
-std::string gl3cts::ClipDistance::FunctionalTest::prepareVertexShaderCode(bool explicit_redeclaration,
-																		  bool dynamic_setter, glw::GLuint clip_count,
-																		  glw::GLuint clip_function,
-																		  glw::GLenum primitive_type)
+void glcts::ClipDistance::FunctionalTest::prepareShaderCode(bool explicit_redeclaration, bool dynamic_setter,
+															glw::GLuint clip_count, glw::GLuint clip_function,
+															glw::GLenum primitive_type, std::string& vertex_shader,
+															std::string& fragment_shader)
 {
-	std::string vertex_shader = m_vertex_shader_code;
+	vertex_shader	= m_vertex_shader_code;
+	fragment_shader = m_fragment_shader_code;
 
 	if (explicit_redeclaration)
 	{
-		vertex_shader = gl3cts::ClipDistance::Utility::preprocessCode(vertex_shader, "CLIP_DISTANCE_REDECLARATION",
-																	  m_explicit_redeclaration);
+		vertex_shader = glcts::ClipDistance::Utility::preprocessCode(vertex_shader, "CLIP_DISTANCE_REDECLARATION",
+																	 m_explicit_redeclaration);
 	}
 	else
 	{
-		vertex_shader = gl3cts::ClipDistance::Utility::preprocessCode(vertex_shader, "CLIP_DISTANCE_REDECLARATION", "");
+		vertex_shader = glcts::ClipDistance::Utility::preprocessCode(vertex_shader, "CLIP_DISTANCE_REDECLARATION", "");
 	}
 
 	if (dynamic_setter)
 	{
 		vertex_shader =
-			gl3cts::ClipDistance::Utility::preprocessCode(vertex_shader, "CLIP_DISTANCE_SETUP", m_dynamic_array_setter);
+			glcts::ClipDistance::Utility::preprocessCode(vertex_shader, "CLIP_DISTANCE_SETUP", m_dynamic_array_setter);
 	}
 	else
 	{
@@ -737,37 +794,34 @@ std::string gl3cts::ClipDistance::FunctionalTest::prepareVertexShaderCode(bool e
 		for (glw::GLuint i = 0; i < clip_count; ++i)
 		{
 			std::string i_setter = m_static_array_setter;
-
-			i_setter = gl3cts::ClipDistance::Utility::preprocessCode(i_setter, "CLIP_INDEX",
-																	 gl3cts::ClipDistance::Utility::itoa(i));
-
+			i_setter			 = glcts::ClipDistance::Utility::preprocessCode(i_setter, "CLIP_INDEX",
+																				glcts::ClipDistance::Utility::itoa(i));
 			static_setters.append(i_setter);
 		}
 
 		vertex_shader =
-			gl3cts::ClipDistance::Utility::preprocessCode(vertex_shader, "CLIP_DISTANCE_SETUP", static_setters);
+			glcts::ClipDistance::Utility::preprocessCode(vertex_shader, "CLIP_DISTANCE_SETUP", static_setters);
 	}
 
 	vertex_shader =
-		gl3cts::ClipDistance::Utility::preprocessCode(vertex_shader, "CLIP_FUNCTION", m_clip_function[clip_function]);
-
-	vertex_shader = gl3cts::ClipDistance::Utility::preprocessCode(vertex_shader, "CLIP_COUNT",
-																  gl3cts::ClipDistance::Utility::itoa(clip_count));
-
+		glcts::ClipDistance::Utility::preprocessCode(vertex_shader, "CLIP_FUNCTION", m_clip_function[clip_function]);
+	vertex_shader = glcts::ClipDistance::Utility::preprocessCode(vertex_shader, "CLIP_COUNT",
+																 glcts::ClipDistance::Utility::itoa(clip_count));
 	switch (primitive_type)
 	{
 	case GL_POINTS:
-		vertex_shader = gl3cts::ClipDistance::Utility::preprocessCode(vertex_shader, "VERTEX_COUNT", "1");
+		vertex_shader = glcts::ClipDistance::Utility::preprocessCode(vertex_shader, "VERTEX_COUNT", "1");
 		break;
 	case GL_LINES:
-		vertex_shader = gl3cts::ClipDistance::Utility::preprocessCode(vertex_shader, "VERTEX_COUNT", "2");
+		vertex_shader = glcts::ClipDistance::Utility::preprocessCode(vertex_shader, "VERTEX_COUNT", "2");
 		break;
 	case GL_TRIANGLES:
-		vertex_shader = gl3cts::ClipDistance::Utility::preprocessCode(vertex_shader, "VERTEX_COUNT", "3");
+		vertex_shader = glcts::ClipDistance::Utility::preprocessCode(vertex_shader, "VERTEX_COUNT", "3");
 		break;
 	}
 
-	return vertex_shader;
+	vertex_shader = tcu::StringTemplate(vertex_shader).specialize(specializationMap);
+	fragment_shader = tcu::StringTemplate(fragment_shader).specialize(specializationMap);
 }
 
 /** @brief Prepare geometry for functional test.
@@ -777,7 +831,7 @@ std::string gl3cts::ClipDistance::FunctionalTest::prepareVertexShaderCode(bool e
  *
  *  @return Vertex Buffer Object pointer.
  */
-gl3cts::ClipDistance::Utility::VertexBufferObject<glw::GLfloat>* gl3cts::ClipDistance::FunctionalTest::prepareGeometry(
+glcts::ClipDistance::Utility::VertexBufferObject<glw::GLfloat>* glcts::ClipDistance::FunctionalTest::prepareGeometry(
 	const glw::Functions& gl, const glw::GLenum primitive_type)
 {
 	std::vector<glw::GLfloat> data;
@@ -818,7 +872,7 @@ gl3cts::ClipDistance::Utility::VertexBufferObject<glw::GLfloat>* gl3cts::ClipDis
 		return NULL;
 	}
 
-	return new gl3cts::ClipDistance::Utility::VertexBufferObject<glw::GLfloat>(gl, GL_ARRAY_BUFFER, data);
+	return new glcts::ClipDistance::Utility::VertexBufferObject<glw::GLfloat>(gl, GL_ARRAY_BUFFER, data);
 }
 
 /** @brief Check results fetched from framebuffer of functional test.
@@ -829,7 +883,7 @@ gl3cts::ClipDistance::Utility::VertexBufferObject<glw::GLfloat>* gl3cts::ClipDis
  *
  *  @return True if proper result, false otherwise.
  */
-bool gl3cts::ClipDistance::FunctionalTest::checkResults(glw::GLenum primitive_type, glw::GLuint clip_function,
+bool glcts::ClipDistance::FunctionalTest::checkResults(glw::GLenum primitive_type, glw::GLuint clip_function,
 														std::vector<glw::GLfloat>& results)
 {
 	/* Check for errors */
@@ -868,38 +922,40 @@ bool gl3cts::ClipDistance::FunctionalTest::checkResults(glw::GLenum primitive_ty
 }
 
 /* @brief Vertex Shader template for functional tests. */
-const glw::GLchar* gl3cts::ClipDistance::FunctionalTest::m_vertex_shader_code = "#version 130\n"
-																				"\n"
-																				"CLIP_DISTANCE_REDECLARATION"
-																				"\n"
-																				"CLIP_FUNCTION"
-																				"\n"
-																				"in vec4 position;\n"
-																				"\n"
-																				"void main()\n"
-																				"{\n"
-																				"CLIP_DISTANCE_SETUP"
-																				"\n"
-																				"    gl_Position  = position;\n"
-																				"}\n";
+const glw::GLchar* glcts::ClipDistance::FunctionalTest::m_vertex_shader_code =
+	"${VERSION}\n"
+	"${EXTENSION}\n"
+	"\n"
+	"CLIP_DISTANCE_REDECLARATION"
+	"\n"
+	"CLIP_FUNCTION"
+	"\n"
+	"in vec4 position;\n"
+	"\n"
+	"void main()\n"
+	"{\n"
+	"CLIP_DISTANCE_SETUP"
+	"\n"
+	"    gl_Position  = position;\n"
+	"}\n";
 
 /* @brief Explicit redeclaration key value to preprocess the Vertex Shader template for functional tests. */
-const glw::GLchar* gl3cts::ClipDistance::FunctionalTest::m_explicit_redeclaration =
+const glw::GLchar* glcts::ClipDistance::FunctionalTest::m_explicit_redeclaration =
 	"out float gl_ClipDistance[CLIP_COUNT];\n";
 
 /* @brief Dynamic array setter key value to preprocess the Vertex Shader template for functional tests. */
-const glw::GLchar* gl3cts::ClipDistance::FunctionalTest::m_dynamic_array_setter =
+const glw::GLchar* glcts::ClipDistance::FunctionalTest::m_dynamic_array_setter =
 	"    for(int i = 0; i < CLIP_COUNT; i++)\n"
 	"    {\n"
 	"        gl_ClipDistance[i] = f(i);\n"
 	"    }\n";
 
 /* @brief Static array setter key value to preprocess the Vertex Shader template for functional tests. */
-const glw::GLchar* gl3cts::ClipDistance::FunctionalTest::m_static_array_setter =
+const glw::GLchar* glcts::ClipDistance::FunctionalTest::m_static_array_setter =
 	"    gl_ClipDistance[CLIP_INDEX] = f(CLIP_INDEX);\n";
 
 /* @brief Clip Distance functions to preprocess the Vertex Shader template for functional tests. */
-const glw::GLchar* gl3cts::ClipDistance::FunctionalTest::m_clip_function[] = {
+const glw::GLchar* glcts::ClipDistance::FunctionalTest::m_clip_function[] = {
 	"float f(int i)\n"
 	"{\n"
 	"    return 0.0;\n"
@@ -929,7 +985,7 @@ const glw::GLchar* gl3cts::ClipDistance::FunctionalTest::m_clip_function[] = {
 	 1.0,  0.0, -1.0        -  for VERTEX_COUNT == 3 aka GL_TRIANGLES
 	 and if needed in future:
 	 1.0,  0.0, -1.0,  0.0  -  for VERTEX_COUNT == 4 aka GL_QUADS */
-	"        return cos( gl_VertexID * PI / ceil( float(VERTEX_COUNT)/2.0 ) );\n"
+	"        return cos( float(gl_VertexID) * PI / ceil( float(VERTEX_COUNT)/2.0 ) );\n"
 	"    }\n"
 	"\n"
 	"    return 0.25 + 0.75 * (float(i) + 1.0) * (float(gl_VertexID) + 1.0) / (float(CLIP_COUNT) * "
@@ -938,12 +994,13 @@ const glw::GLchar* gl3cts::ClipDistance::FunctionalTest::m_clip_function[] = {
 };
 
 /* @brief Count of Clip Distance functions. */
-const glw::GLuint gl3cts::ClipDistance::FunctionalTest::m_clip_function_count =
+const glw::GLuint glcts::ClipDistance::FunctionalTest::m_clip_function_count =
 	static_cast<glw::GLuint>(sizeof(m_clip_function) / sizeof(m_clip_function[0]));
 
 /* @brief Fragment shader source code for functional tests. */
-const glw::GLchar* gl3cts::ClipDistance::FunctionalTest::m_fragment_shader_code =
-	"#version 130\n"
+const glw::GLchar* glcts::ClipDistance::FunctionalTest::m_fragment_shader_code =
+	"${VERSION}\n"
+	"${PRECISION}\n"
 	"\n"
 	"out highp vec4 color;\n"
 	"\n"
@@ -953,18 +1010,18 @@ const glw::GLchar* gl3cts::ClipDistance::FunctionalTest::m_fragment_shader_code 
 	"}\n";
 
 /* @brief Primitive modes to be tested in functional test. */
-const glw::GLenum gl3cts::ClipDistance::FunctionalTest::m_primitive_types[] = { GL_POINTS, GL_LINES, GL_TRIANGLES };
+const glw::GLenum glcts::ClipDistance::FunctionalTest::m_primitive_types[] = { GL_POINTS, GL_LINES, GL_TRIANGLES };
 
 /* @brief Number of primitive indices for each primitive mode. */
-const glw::GLenum gl3cts::ClipDistance::FunctionalTest::m_primitive_indices[] = { 1, 2, 3 };
+const glw::GLenum glcts::ClipDistance::FunctionalTest::m_primitive_indices[] = { 1, 2, 3 };
 
 /* @brief Primitive modes count. */
-const glw::GLuint gl3cts::ClipDistance::FunctionalTest::m_primitive_types_count =
+const glw::GLuint glcts::ClipDistance::FunctionalTest::m_primitive_types_count =
 	static_cast<glw::GLuint>(sizeof(m_primitive_types) / sizeof(m_primitive_types[0]));
 
 /* @brief Expected results of testing integral for functional test. */
 const glw::GLfloat
-	gl3cts::ClipDistance::FunctionalTest::m_expected_integral[m_primitive_types_count * m_clip_function_count] = {
+    glcts::ClipDistance::FunctionalTest::m_expected_integral[m_primitive_types_count * m_clip_function_count] = {
 		1.0, 1.0, 0.0, 0.0, /* for GL_POINTS    */
 		1.0, 1.0, 0.0, 0.5, /* for GL_LINES     */
 		0.5, 0.5, 0.0, 0.25 /* for GL_TRIANGLES */
@@ -976,8 +1033,8 @@ const glw::GLfloat
  *
  *  @param [in] context     OpenGL context.
  */
-gl3cts::ClipDistance::NegativeTest::NegativeTest(deqp::Context& context)
-	: deqp::TestCase(context, "negative", "Clip Distance Negative Tests")
+glcts::ClipDistance::NegativeTest::NegativeTest(deqp::Context& context)
+	: ClipDistanceTestBase(context, "negative", "Clip Distance Negative Tests")
 {
 	/* Intentionally left blank */
 }
@@ -986,7 +1043,7 @@ gl3cts::ClipDistance::NegativeTest::NegativeTest(deqp::Context& context)
  *
  *  @return Iteration result.
  */
-tcu::TestNode::IterateResult gl3cts::ClipDistance::NegativeTest::iterate()
+void glcts::ClipDistance::NegativeTest::test()
 {
 	/* Shortcut for GL functionality */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -1015,8 +1072,6 @@ tcu::TestNode::IterateResult gl3cts::ClipDistance::NegativeTest::iterate()
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
-
-	return STOP;
 }
 
 /** @brief Clip Distance / Clip Vertex negative test sub-case.
@@ -1025,7 +1080,7 @@ tcu::TestNode::IterateResult gl3cts::ClipDistance::NegativeTest::iterate()
  *
  *  @return True if passed, false otherwise.
  */
-bool gl3cts::ClipDistance::NegativeTest::testClipVertexBuildingErrors(const glw::Functions& gl)
+bool glcts::ClipDistance::NegativeTest::testClipVertexBuildingErrors(const glw::Functions& gl)
 {
 	/* If OpenGL version < 3.1 is available, check that building shader program
 	 fails when vertex shader statically writes to both gl_ClipVertex and
@@ -1033,13 +1088,18 @@ bool gl3cts::ClipDistance::NegativeTest::testClipVertexBuildingErrors(const glw:
 	 writes to only the gl_ClipVertex or to the gl_ClipDistance[0] builds
 	 without fail. */
 
-	/* This test should only be executed if we're running a GL3.0 or less context */
-	if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType(3, 1, glu::PROFILE_CORE)))
+	/* This test should only be executed if we're running a GL3.0 or less context,
+	   the output variable gl_ClipVertex was removed from OpenGL ES Shading Language. */
+	if (m_isContextES ||
+		!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType(3, 1, glu::PROFILE_CORE)))
 	{
 		return true;
 	}
 
-	gl3cts::ClipDistance::Utility::Program program(gl, m_vertex_shader_code_case_0, m_fragment_shader_code);
+	std::string vertex_shader = tcu::StringTemplate(m_vertex_shader_code_case_0).specialize(specializationMap);
+	std::string fragment_shader = tcu::StringTemplate(m_fragment_shader_code).specialize(specializationMap);
+
+	glcts::ClipDistance::Utility::Program program(gl, vertex_shader, fragment_shader);
 
 	if (program.ProgramStatus().program_id)
 	{
@@ -1060,12 +1120,15 @@ bool gl3cts::ClipDistance::NegativeTest::testClipVertexBuildingErrors(const glw:
  *
  *  @return True if passed, false otherwise.
  */
-bool gl3cts::ClipDistance::NegativeTest::testMaxClipDistancesBuildingErrors(const glw::Functions& gl)
+bool glcts::ClipDistance::NegativeTest::testMaxClipDistancesBuildingErrors(const glw::Functions& gl)
 {
 	/* Check that building shader program fails when gl_ClipDistance is
 	 redeclared in the shader with size higher than GL_MAX_CLIP_DISTANCES. */
 
-	gl3cts::ClipDistance::Utility::Program program(gl, m_vertex_shader_code_case_1, m_fragment_shader_code);
+	std::string vertex_shader	= tcu::StringTemplate(m_vertex_shader_code_case_1).specialize(specializationMap);
+	std::string fragment_shader = tcu::StringTemplate(m_fragment_shader_code).specialize(specializationMap);
+
+	glcts::ClipDistance::Utility::Program program(gl, vertex_shader, fragment_shader);
 
 	if (program.ProgramStatus().program_id)
 	{
@@ -1087,12 +1150,15 @@ bool gl3cts::ClipDistance::NegativeTest::testMaxClipDistancesBuildingErrors(cons
  *
  *  @return True if passed, false when quality warning occured.
  */
-bool gl3cts::ClipDistance::NegativeTest::testClipDistancesRedeclarationBuildingErrors(const glw::Functions& gl)
+bool glcts::ClipDistance::NegativeTest::testClipDistancesRedeclarationBuildingErrors(const glw::Functions& gl)
 {
 	/* Check that building shader program fails when gl_ClipDistance is not
 	 redeclared with explicit size and dynamic indexing is used.*/
 
-	gl3cts::ClipDistance::Utility::Program program(gl, m_vertex_shader_code_case_2, m_fragment_shader_code);
+	std::string vertex_shader	= tcu::StringTemplate(m_vertex_shader_code_case_2).specialize(specializationMap);
+	std::string fragment_shader = tcu::StringTemplate(m_fragment_shader_code).specialize(specializationMap);
+
+	glcts::ClipDistance::Utility::Program program(gl, vertex_shader, fragment_shader);
 
 	if (program.ProgramStatus().program_id)
 	{
@@ -1110,8 +1176,9 @@ bool gl3cts::ClipDistance::NegativeTest::testClipDistancesRedeclarationBuildingE
 }
 
 /** @brief Vertex shader source code for gl_ClipVertex negative test. */
-const glw::GLchar* gl3cts::ClipDistance::NegativeTest::m_vertex_shader_code_case_0 =
-	"#version 130\n"
+const glw::GLchar* glcts::ClipDistance::NegativeTest::m_vertex_shader_code_case_0 =
+	"${VERSION}\n"
+	"${EXTENSION}\n"
 	"\n"
 	"void main()\n"
 	"{\n"
@@ -1121,8 +1188,9 @@ const glw::GLchar* gl3cts::ClipDistance::NegativeTest::m_vertex_shader_code_case
 	"}\n";
 
 /** @brief Vertex shader source code for explicit redeclaration negative test. */
-const glw::GLchar* gl3cts::ClipDistance::NegativeTest::m_vertex_shader_code_case_1 =
-	"#version 130\n"
+const glw::GLchar* glcts::ClipDistance::NegativeTest::m_vertex_shader_code_case_1 =
+	"${VERSION}\n"
+	"${EXTENSION}\n"
 	"\n"
 	"out float gl_ClipDistance[gl_MaxClipDistances + 1];\n"
 	"\n"
@@ -1133,8 +1201,9 @@ const glw::GLchar* gl3cts::ClipDistance::NegativeTest::m_vertex_shader_code_case
 	"}\n";
 
 /** @brief Vertex shader source code for impilicit redeclaration negative test. */
-const glw::GLchar* gl3cts::ClipDistance::NegativeTest::m_vertex_shader_code_case_2 =
-	"#version 130\n"
+const glw::GLchar* glcts::ClipDistance::NegativeTest::m_vertex_shader_code_case_2 =
+	"${VERSION}\n"
+	"${EXTENSION}\n"
 	"\n"
 	"in int count;\n"
 	"\n"
@@ -1149,8 +1218,9 @@ const glw::GLchar* gl3cts::ClipDistance::NegativeTest::m_vertex_shader_code_case
 	"}\n";
 
 /** @brief Simple passthrough fragment shader source code for negative tests. */
-const glw::GLchar* gl3cts::ClipDistance::NegativeTest::m_fragment_shader_code =
-	"#version 130\n"
+const glw::GLchar* glcts::ClipDistance::NegativeTest::m_fragment_shader_code =
+	"${VERSION}\n"
+	"${PRECISION}\n"
 	"\n"
 	"out vec4 color;\n"
 	"\n"
@@ -1168,7 +1238,7 @@ const glw::GLchar* gl3cts::ClipDistance::NegativeTest::m_fragment_shader_code =
  *  @param [in] fragment_shader_code            Fragment shader source code.
  *  @param [in] transform_feedback_varyings     Transform feedback varying names.
  */
-gl3cts::ClipDistance::Utility::Program::Program(const glw::Functions& gl, const std::string& vertex_shader_code,
+glcts::ClipDistance::Utility::Program::Program(const glw::Functions& gl, const std::string& vertex_shader_code,
 												const std::string&		 fragment_shader_code,
 												std::vector<std::string> transform_feedback_varyings)
 	: m_gl(gl)
@@ -1204,7 +1274,7 @@ gl3cts::ClipDistance::Utility::Program::Program(const glw::Functions& gl, const 
 }
 
 /** @brief Program destructor. */
-gl3cts::ClipDistance::Utility::Program::~Program()
+glcts::ClipDistance::Utility::Program::~Program()
 {
 	if (m_vertex_shader_status.shader_id)
 	{
@@ -1232,7 +1302,7 @@ gl3cts::ClipDistance::Utility::Program::~Program()
  *
  *  @return Vertex shader compilation status.
  */
-const gl3cts::ClipDistance::Utility::Program::CompilationStatus& gl3cts::ClipDistance::Utility::Program::
+const glcts::ClipDistance::Utility::Program::CompilationStatus& glcts::ClipDistance::Utility::Program::
 	VertexShaderStatus() const
 {
 	return m_vertex_shader_status;
@@ -1242,7 +1312,7 @@ const gl3cts::ClipDistance::Utility::Program::CompilationStatus& gl3cts::ClipDis
  *
  *  @return Fragment shader compilation status.
  */
-const gl3cts::ClipDistance::Utility::Program::CompilationStatus& gl3cts::ClipDistance::Utility::Program::
+const glcts::ClipDistance::Utility::Program::CompilationStatus& glcts::ClipDistance::Utility::Program::
 	FragmentShaderStatus() const
 {
 	return m_fragment_shader_status;
@@ -1252,7 +1322,7 @@ const gl3cts::ClipDistance::Utility::Program::CompilationStatus& gl3cts::ClipDis
  *
  *  @return Program linkage status.
  */
-const gl3cts::ClipDistance::Utility::Program::LinkageStatus& gl3cts::ClipDistance::Utility::Program::ProgramStatus()
+const glcts::ClipDistance::Utility::Program::LinkageStatus& glcts::ClipDistance::Utility::Program::ProgramStatus()
 	const
 {
 	return m_program_status;
@@ -1265,7 +1335,7 @@ const gl3cts::ClipDistance::Utility::Program::LinkageStatus& gl3cts::ClipDistanc
  *
  *  @return Compilation status.
  */
-gl3cts::ClipDistance::Utility::Program::CompilationStatus gl3cts::ClipDistance::Utility::Program::compileShader(
+glcts::ClipDistance::Utility::Program::CompilationStatus glcts::ClipDistance::Utility::Program::compileShader(
 	const glw::GLenum shader_type, const glw::GLchar* const* shader_code)
 {
 	CompilationStatus shader = { 0, GL_NONE, "" };
@@ -1343,7 +1413,7 @@ gl3cts::ClipDistance::Utility::Program::CompilationStatus gl3cts::ClipDistance::
  *
  *  @return Linkage status.
  */
-gl3cts::ClipDistance::Utility::Program::LinkageStatus gl3cts::ClipDistance::Utility::Program::linkShaders(
+glcts::ClipDistance::Utility::Program::LinkageStatus glcts::ClipDistance::Utility::Program::linkShaders(
 	const CompilationStatus& vertex_shader, const CompilationStatus& fragment_shader,
 	std::vector<std::string>& transform_feedback_varyings)
 {
@@ -1449,7 +1519,7 @@ gl3cts::ClipDistance::Utility::Program::LinkageStatus gl3cts::ClipDistance::Util
 }
 
 /** @brief Use program for drawing. */
-void gl3cts::ClipDistance::Utility::Program::UseProgram() const
+void glcts::ClipDistance::Utility::Program::UseProgram() const
 {
 	m_gl.useProgram(ProgramStatus().program_id);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUseProgram call failed.");
@@ -1461,7 +1531,7 @@ void gl3cts::ClipDistance::Utility::Program::UseProgram() const
  * @param [in] size_x       X size of framebuffer.
  * @param [in] size_y       Y size of framebuffer.
  */
-gl3cts::ClipDistance::Utility::Framebuffer::Framebuffer(const glw::Functions& gl, const glw::GLsizei size_x,
+glcts::ClipDistance::Utility::Framebuffer::Framebuffer(const glw::Functions& gl, const glw::GLsizei size_x,
 														const glw::GLsizei size_y)
 	: m_gl(gl), m_size_x(size_x), m_size_y(size_y), m_framebuffer_id(0), m_renderbuffer_id(0)
 {
@@ -1496,7 +1566,7 @@ gl3cts::ClipDistance::Utility::Framebuffer::Framebuffer(const glw::Functions& gl
 }
 
 /** @brief Framebuffer destructor */
-gl3cts::ClipDistance::Utility::Framebuffer::~Framebuffer()
+glcts::ClipDistance::Utility::Framebuffer::~Framebuffer()
 {
 	if (m_framebuffer_id)
 	{
@@ -1517,7 +1587,7 @@ gl3cts::ClipDistance::Utility::Framebuffer::~Framebuffer()
  *
  *  @return True if valid, false otherwise.
  */
-bool gl3cts::ClipDistance::Utility::Framebuffer::isValid()
+bool glcts::ClipDistance::Utility::Framebuffer::isValid()
 {
 	if (m_framebuffer_id)
 	{
@@ -1528,7 +1598,7 @@ bool gl3cts::ClipDistance::Utility::Framebuffer::isValid()
 }
 
 /** @brief Bind framebuffer and setup viewport. */
-void gl3cts::ClipDistance::Utility::Framebuffer::bind()
+void glcts::ClipDistance::Utility::Framebuffer::bind()
 {
 	m_gl.bindFramebuffer(GL_FRAMEBUFFER, m_framebuffer_id);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindFramebuffer call failed.");
@@ -1541,7 +1611,7 @@ void gl3cts::ClipDistance::Utility::Framebuffer::bind()
  *
  *  @return Vector of read pixels.
  */
-std::vector<glw::GLfloat> gl3cts::ClipDistance::Utility::Framebuffer::readPixels()
+std::vector<glw::GLfloat> glcts::ClipDistance::Utility::Framebuffer::readPixels()
 {
 	std::vector<glw::GLfloat> pixels(m_size_x * m_size_y);
 
@@ -1555,7 +1625,7 @@ std::vector<glw::GLfloat> gl3cts::ClipDistance::Utility::Framebuffer::readPixels
 }
 
 /** @brief Clear framebuffer. */
-void gl3cts::ClipDistance::Utility::Framebuffer::clear()
+void glcts::ClipDistance::Utility::Framebuffer::clear()
 {
 	if (isValid())
 	{
@@ -1574,7 +1644,7 @@ void gl3cts::ClipDistance::Utility::Framebuffer::clear()
  *  @param [in] gl               OpenGL functions access.
  *  @param [in] primitive_type   Primitive mode.
  */
-gl3cts::ClipDistance::Utility::VertexArrayObject::VertexArrayObject(const glw::Functions& gl,
+glcts::ClipDistance::Utility::VertexArrayObject::VertexArrayObject(const glw::Functions& gl,
 																	const glw::GLenum	 primitive_type)
 	: m_gl(gl), m_vertex_array_object_id(0), m_primitive_type(primitive_type)
 {
@@ -1586,7 +1656,7 @@ gl3cts::ClipDistance::Utility::VertexArrayObject::VertexArrayObject(const glw::F
 }
 
 /** @brief Vertex array object destructor. */
-gl3cts::ClipDistance::Utility::VertexArrayObject::~VertexArrayObject()
+glcts::ClipDistance::Utility::VertexArrayObject::~VertexArrayObject()
 {
 	if (m_vertex_array_object_id)
 	{
@@ -1596,7 +1666,7 @@ gl3cts::ClipDistance::Utility::VertexArrayObject::~VertexArrayObject()
 }
 
 /** @brief Bind vertex array object. */
-void gl3cts::ClipDistance::Utility::VertexArrayObject::bind()
+void glcts::ClipDistance::Utility::VertexArrayObject::bind()
 {
 	if (m_vertex_array_object_id)
 	{
@@ -1610,7 +1680,7 @@ void gl3cts::ClipDistance::Utility::VertexArrayObject::bind()
  *  @param [in] first       First index to be drawn.
  *  @param [in] count       Count of indices to be drawn.
  */
-void gl3cts::ClipDistance::Utility::VertexArrayObject::draw(glw::GLuint first, glw::GLuint count)
+void glcts::ClipDistance::Utility::VertexArrayObject::draw(glw::GLuint first, glw::GLuint count)
 {
 	m_gl.drawArrays(m_primitive_type, first, count);
 	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawArrays() call failed.");
@@ -1622,7 +1692,7 @@ void gl3cts::ClipDistance::Utility::VertexArrayObject::draw(glw::GLuint first, g
  *  @param [in] count                   Count of indices to be drawn.
  *  @param [in] discard_rasterizer      Shall we discard rasterizer?
  */
-void gl3cts::ClipDistance::Utility::VertexArrayObject::drawWithTransformFeedback(glw::GLuint first, glw::GLuint count,
+void glcts::ClipDistance::Utility::VertexArrayObject::drawWithTransformFeedback(glw::GLuint first, glw::GLuint count,
 																				 bool discard_rasterizer)
 {
 	if (discard_rasterizer)
@@ -1654,7 +1724,7 @@ void gl3cts::ClipDistance::Utility::VertexArrayObject::drawWithTransformFeedback
  *
  *  @return Resulting string.
  */
-std::string gl3cts::ClipDistance::Utility::preprocessCode(std::string source, std::string key, std::string value)
+std::string glcts::ClipDistance::Utility::preprocessCode(std::string source, std::string key, std::string value)
 {
 	std::string destination = source;
 
@@ -1682,7 +1752,7 @@ std::string gl3cts::ClipDistance::Utility::preprocessCode(std::string source, st
  *
  *  @return String representing integer.
  */
-std::string gl3cts::ClipDistance::Utility::itoa(glw::GLint i)
+std::string glcts::ClipDistance::Utility::itoa(glw::GLint i)
 {
 	std::stringstream stream;
 
