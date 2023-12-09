@@ -321,19 +321,35 @@ void submitCommands (const DeviceInterface&			vk,
 					 const VkSemaphore*				pWaitSemaphores,
 					 const VkPipelineStageFlags*	pWaitDstStageMask,
 					 const deUint32					signalSemaphoreCount,
-					 const VkSemaphore*				pSignalSemaphores)
+					 const VkSemaphore*				pSignalSemaphores,
+					 const bool						useDeviceGroups,
+					 const deUint32					physicalDeviceID)
 {
+	const deUint32			deviceMask				= 1 << physicalDeviceID;
+	std::vector<deUint32>	deviceIndices			(waitSemaphoreCount, physicalDeviceID);
+	VkDeviceGroupSubmitInfo deviceGroupSubmitInfo	=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,			//VkStructureType		sType
+		DE_NULL,											// const void*			pNext
+		waitSemaphoreCount,									// uint32_t				waitSemaphoreCount
+		deviceIndices.size() ? &deviceIndices[0] : DE_NULL,	// const uint32_t*		pWaitSemaphoreDeviceIndices
+		1u,													// uint32_t				commandBufferCount
+		&deviceMask,										// const uint32_t*		pCommandBufferDeviceMasks
+		0u,													// uint32_t				signalSemaphoreCount
+		DE_NULL,											// const uint32_t*		pSignalSemaphoreDeviceIndices
+	};
+
 	const VkSubmitInfo submitInfo =
 	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-		DE_NULL,						// const void*					pNext;
-		waitSemaphoreCount,				// deUint32						waitSemaphoreCount;
-		pWaitSemaphores,				// const VkSemaphore*			pWaitSemaphores;
-		pWaitDstStageMask,				// const VkPipelineStageFlags*	pWaitDstStageMask;
-		1u,								// deUint32						commandBufferCount;
-		&commandBuffer,					// const VkCommandBuffer*		pCommandBuffers;
-		signalSemaphoreCount,			// deUint32						signalSemaphoreCount;
-		pSignalSemaphores,				// const VkSemaphore*			pSignalSemaphores;
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,						// VkStructureType				sType;
+		useDeviceGroups ? &deviceGroupSubmitInfo : DE_NULL,	// const void*					pNext;
+		waitSemaphoreCount,									// deUint32						waitSemaphoreCount;
+		pWaitSemaphores,									// const VkSemaphore*			pWaitSemaphores;
+		pWaitDstStageMask,									// const VkPipelineStageFlags*	pWaitDstStageMask;
+		1u,													// deUint32						commandBufferCount;
+		&commandBuffer,										// const VkCommandBuffer*		pCommandBuffers;
+		signalSemaphoreCount,								// deUint32						signalSemaphoreCount;
+		pSignalSemaphores,									// const VkSemaphore*			pSignalSemaphores;
 	};
 
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, DE_NULL));

@@ -29,6 +29,7 @@
 #include "vktSparseResourcesMipmapSparseResidency.hpp"
 #include "vktSparseResourcesImageMemoryAliasing.hpp"
 #include "vktSparseResourcesShaderIntrinsics.hpp"
+#include "vktSparseResourcesImageRebind.hpp"
 #include "vktSparseResourcesQueueBindSparseTests.hpp"
 #include "vktSparseResourcesBufferTests.hpp"
 #include "vktSparseResourcesTransferQueueTests.hpp"
@@ -55,6 +56,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 	sparseTests->addChild(createImageSparseMemoryAliasingTests				(testCtx));
 	sparseTests->addChild(createDeviceGroupImageSparseMemoryAliasingTests	(testCtx));
 	sparseTests->addChild(createSparseResourcesShaderIntrinsicsTests		(testCtx));
+	sparseTests->addChild(createImageSparseRebindTests						(testCtx));
 	sparseTests->addChild(createQueueBindSparseTests						(testCtx));
 	sparseTests->addChild(createTransferQueueTests							(testCtx));
 
