@@ -566,6 +566,8 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR",
 		"vkCmdSetAttachmentFeedbackLoopEnableEXT",
 		"vkGetScreenBufferPropertiesQNX",
+		"vkGetPhysicalDeviceCalibrateableTimeDomainsKHR",
+		"vkGetCalibratedTimestampsKHR",
 	};
 
 	bool fail = false;

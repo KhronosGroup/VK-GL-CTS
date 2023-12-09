@@ -60,6 +60,8 @@ set(DEQP_VK_VKSC_DRAW_SRCS
 	vktDrawSampleAttributeTests.hpp
 	vktDrawPointClampTests.cpp
 	vktDrawPointClampTests.hpp
+	vktDrawVertexAttribDivisorTests.cpp
+	vktDrawVertexAttribDivisorTests.hpp
 )
 
 set(DEQP_VK_DRAW_SRCS

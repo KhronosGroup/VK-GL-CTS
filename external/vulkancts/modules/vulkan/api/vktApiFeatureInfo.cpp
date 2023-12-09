@@ -1351,24 +1351,37 @@ tcu::TestStatus validateLimitsExtInlineUniformBlock (Context& context)
 #endif // CTS_USES_VULKANSC
 
 
-void checkSupportExtVertexAttributeDivisor (Context& context)
+void checkSupportExtVertexAttributeDivisorEXT (Context& context)
 {
 	context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
+}
+
+void checkSupportExtVertexAttributeDivisorKHR (Context& context)
+{
+	context.requireDeviceFunctionality("VK_KHR_vertex_attribute_divisor");
 }
 
 tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
 {
 	const VkBool32												checkAlways							= VK_TRUE;
-	const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&	vertexAttributeDivisorPropertiesEXT	= context.getVertexAttributeDivisorPropertiesEXT();
+#ifndef CTS_USES_VULKANSC
+	const InstanceInterface&									vki									= context.getInstanceInterface();
+	const VkPhysicalDevice										physicalDevice						= context.getPhysicalDevice();
+	vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT		vertexAttributeDivisorProperties	= vk::initVulkanStructure();
+	vk::VkPhysicalDeviceProperties2								properties2							= vk::initVulkanStructure(&vertexAttributeDivisorProperties);
+	vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+#else
+	const auto													vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorPropertiesEXT();
+#endif
 	TestLog&													log									= context.getTestContext().getLog();
 	bool														limitsOk							= true;
 
 	FeatureLimitTableItem featureLimitTable[] =
 	{
-		{ PN(checkAlways),	PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),	LIM_MIN_UINT32((1<<16) - 1) },
+		{ PN(checkAlways),	PN(vertexAttributeDivisorProperties.maxVertexAttribDivisor),	LIM_MIN_UINT32((1<<16) - 1) },
 	};
 
-	log << TestLog::Message << vertexAttributeDivisorPropertiesEXT << TestLog::EndMessage;
+	log << TestLog::Message << vertexAttributeDivisorProperties << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
 		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
@@ -6973,7 +6986,8 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		// Removed from Vulkan SC test set: VK_EXT_inline_uniform_block extension removed from Vulkan SC
 		addFunctionCase(limitsValidationTests.get(), "ext_inline_uniform_block",		checkSupportExtInlineUniformBlock,			validateLimitsExtInlineUniformBlock);
 #endif // CTS_USES_VULKANSC
-		addFunctionCase(limitsValidationTests.get(), "ext_vertex_attribute_divisor",	checkSupportExtVertexAttributeDivisor,		validateLimitsExtVertexAttributeDivisor);
+		addFunctionCase(limitsValidationTests.get(), "ext_vertex_attribute_divisor",	checkSupportExtVertexAttributeDivisorEXT,	validateLimitsExtVertexAttributeDivisor);
+		addFunctionCase(limitsValidationTests.get(), "khr_vertex_attribute_divisor",	checkSupportExtVertexAttributeDivisorKHR,	validateLimitsExtVertexAttributeDivisor);
 #ifndef CTS_USES_VULKANSC
 		// Removed from Vulkan SC test set: extensions VK_NV_mesh_shader, VK_EXT_transform_feedback, VK_EXT_fragment_density_map, VK_NV_ray_tracing extension removed from Vulkan SC
 		addFunctionCase(limitsValidationTests.get(), "nv_mesh_shader",					checkSupportNvMeshShader,					validateLimitsNvMeshShader);

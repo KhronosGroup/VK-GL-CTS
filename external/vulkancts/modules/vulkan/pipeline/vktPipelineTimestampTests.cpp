@@ -1047,7 +1047,7 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance (Context& conte
 	m_timestampPeriod = getPhysicalDeviceProperties(vki, physDevice).limits.timestampPeriod;
 
 	deUint32 domainCount;
-	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsEXT(physDevice, &domainCount, DE_NULL));
+	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, DE_NULL));
 	if (domainCount == 0)
 	{
 		throw tcu::NotSupportedError("No calibrateable time domains found");
@@ -1055,7 +1055,7 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance (Context& conte
 
 	std::vector<VkTimeDomainEXT> domains;
 	domains.resize(domainCount);
-	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsEXT(physDevice, &domainCount, domains.data()));
+	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, domains.data()));
 
 	// Find the dev domain.
 	std::vector<VkTimeDomainEXT> preferredDevDomains;
@@ -1263,7 +1263,7 @@ std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTime
 	const DeviceInterface&      vk          = m_context.getDeviceInterface();
 	const VkDevice              vkDevice    = m_context.getDevice();
 
-	VK_CHECK(vk.getCalibratedTimestampsEXT(vkDevice, static_cast<deUint32>(domains.size()), infos.data(), timestamps.data(), &deviation));
+	VK_CHECK(vk.getCalibratedTimestampsKHR(vkDevice, static_cast<deUint32>(domains.size()), infos.data(), timestamps.data(), &deviation));
 
 	if (deviation > kDeviationErrorLimitNanos)
 	{
