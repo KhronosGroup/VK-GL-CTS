@@ -6238,3 +6238,12 @@ dEQP-VK.reconvergence.maximal.compute.nesting6.7.6
 dEQP-VK.reconvergence.maximal.compute.nesting6.7.7
 dEQP-VK.reconvergence.maximal.compute.nesting6.7.8
 dEQP-VK.reconvergence.maximal.compute.nesting6.7.9
+dEQP-VK.reconvergence.maximal.fragment.terminate_invocation
+dEQP-VK.reconvergence.maximal.fragment.demote_invocation
+dEQP-VK.reconvergence.maximal.fragment.demote_entire_quad
+dEQP-VK.reconvergence.maximal.fragment.demote_half_quad_top
+dEQP-VK.reconvergence.maximal.fragment.demote_half_quad_right
+dEQP-VK.reconvergence.maximal.fragment.demote_half_quad_bottom
+dEQP-VK.reconvergence.maximal.fragment.demote_half_quad_left
+dEQP-VK.reconvergence.maximal.fragment.demote_half_quad_slash
+dEQP-VK.reconvergence.maximal.fragment.demote_half_quad_backslash

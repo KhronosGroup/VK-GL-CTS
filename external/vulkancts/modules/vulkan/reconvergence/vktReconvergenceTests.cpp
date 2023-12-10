@@ -33,6 +33,7 @@
 
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "deDefs.h"
 #include "deFloat16.h"
@@ -57,6 +58,7 @@
 #include <vector>
 #include <memory>
 #include <cmath>
+#include <initializer_list>
 
 #include <iostream>
 
@@ -118,6 +120,8 @@ static auto makeStdBeginEnd(void* p, uint32_t n) -> std::pair<R, R>
 
 template<class R> using add_ref = typename std::add_lvalue_reference<R>::type;
 template<class R> using add_cref = typename std::add_lvalue_reference<typename std::add_const<R>::type>::type;
+template<class X> using add_ptr = std::add_pointer_t<X>;
+template<class X> using add_cptr = std::add_pointer_t<std::add_const_t<X>>;
 
 template<class RndIter>
 RndIter max_element(RndIter first, RndIter last) {
@@ -7629,6 +7633,8 @@ qpTestResult_e ReconvergenceTestGeometryInstance::calculateAndLogResultEx	(add_r
 	return res;
 }
 
+void createAmberFragmentTestCases (add_ref<tcu::TestContext> testCtx, add_ptr<tcu::TestCaseGroup> group);
+
 tcu::TestCaseGroup* createTests(tcu::TestContext & testCtx, const std::string & name, bool createExperimental)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str(), "reconvergence tests"));
@@ -7652,8 +7658,8 @@ tcu::TestCaseGroup* createTests(tcu::TestContext & testCtx, const std::string & 
 	std::pair<VkShaderStageFlagBits, const char*> const stTypes[]
 	{
 		{ VK_SHADER_STAGE_COMPUTE_BIT,					"compute"	},
-#ifdef INCLUDE_GRAPHICS_TESTS
 		{ VK_SHADER_STAGE_FRAGMENT_BIT,					"fragment"	},
+#ifdef INCLUDE_GRAPHICS_TESTS
 		{ VK_SHADER_STAGE_VERTEX_BIT,					"vertex"	},
 		{ VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		"tessctrl"	},
 		{ VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	"tesseval"	},
@@ -7673,7 +7679,15 @@ tcu::TestCaseGroup* createTests(tcu::TestContext & testCtx, const std::string & 
 
 			de::MovePtr<tcu::TestCaseGroup> shaderGroup(new tcu::TestCaseGroup(testCtx, stTypes[stNdx].second, ""));
 
-			for (deUint32 nNdx = 2; nNdx <= 6; nNdx++)
+			deUint32 nNdx = 2;
+
+			if (stTypes[stNdx].first == VK_SHADER_STAGE_FRAGMENT_BIT)
+			{
+				nNdx = 7;
+				createAmberFragmentTestCases(testCtx, shaderGroup.get());
+			}
+
+			for (/*deUint32 nNdx = 2*/; nNdx <= 6; nNdx++)
 			{
 				de::MovePtr<tcu::TestCaseGroup> nestGroup(new tcu::TestCaseGroup(testCtx, ("nesting" + de::toString(nNdx)).c_str(), ""));
 
@@ -7778,6 +7792,101 @@ tcu::TestCaseGroup* createTests(tcu::TestContext & testCtx, const std::string & 
 	}
 
 	return group.release();
+}
+
+void createAmberFragmentTestCases (add_ref<tcu::TestContext> testCtx, add_ptr<tcu::TestCaseGroup> group)
+{
+	using namespace cts_amber;
+
+	enum Tests
+	{
+		TERMINATE_INVOCATION,
+		DEMOTE_INVOCATION,
+		DEMOTE_ENTIRE_QUAD,
+		DEMOTE_HALF_QUAD_TOP,
+		DEMOTE_HALF_QUAD_RIGHT,
+		DEMOTE_HALF_QUAD_BOTTOM,
+		DEMOTE_HALF_QUAD_LEFT,
+		DEMOTE_HALF_QUAD_SLASH,
+		DEMOTE_HALF_QUAD_BACKSLASH
+	};
+
+	struct Case {
+		Tests			test;
+		add_cptr<char>	name;
+		add_cptr<char>	desc;
+		std::size_t		hname;
+		Case (Tests aTest, add_cptr<char> aName, add_cptr<char>	aDesc)
+			: test	(aTest)
+			, name	(aName)
+			, desc	(aDesc)
+			, hname	(std::hash<std::string>()(std::string(aName)))
+		{
+		}
+		bool matches (add_cref<std::string> aName) const
+		{
+			return hname == std::hash<std::string>()(aName);
+		}
+		static bool matches (add_cref<std::string> aName, std::initializer_list<Case> aList)
+		{
+			for (auto i = aList.begin(); i != aList.end(); ++i)
+			{
+				if (i->matches(aName)) return true;
+			}
+			return false;
+		}
+		std::string makeFileName () const
+		{
+			return (std::string(name) + ".amber");
+		}
+	}
+	static const cases[]
+	{
+		Case(TERMINATE_INVOCATION,       "terminate_invocation",       "Verifies that terminated invocation is no longer included in the ballot"),
+		Case(DEMOTE_INVOCATION,          "demote_invocation",          "Verifies that the demoted invocation is not present in the ballot"),
+		Case(DEMOTE_ENTIRE_QUAD,         "demote_entire_quad",         "Verifies that the demoted quad is not present in the ballot"),
+		Case(DEMOTE_HALF_QUAD_TOP,       "demote_half_quad_top",       "Verifies that the demoted part of the quad is not present in the ballot"),
+		Case(DEMOTE_HALF_QUAD_RIGHT,     "demote_half_quad_right",     "Verifies that the demoted part of the quad is not present in the ballot"),
+		Case(DEMOTE_HALF_QUAD_BOTTOM,    "demote_half_quad_bottom",    "Verifies that the demoted part of the quad is not present in the ballot"),
+		Case(DEMOTE_HALF_QUAD_LEFT,      "demote_half_quad_left",      "Verifies that the demoted part of the quad is not present in the ballot"),
+		Case(DEMOTE_HALF_QUAD_SLASH,     "demote_half_quad_slash",     "Verifies that the demoted part of the quad is not present in the ballot"),
+		Case(DEMOTE_HALF_QUAD_BACKSLASH, "demote_half_quad_backslash", "Verifies that the demoted part of the quad is not present in the ballot"),
+	};
+
+	auto testSupports = [](Context& context, std::string testName) -> void
+	{
+		if (!(context.getSubgroupProperties().supportedStages & VK_SHADER_STAGE_FRAGMENT_BIT))
+			TCU_THROW(NotSupportedError, "Subgroup operations not supported in fragment stage");
+
+		if (!context.getShaderMaximalReconvergenceFeatures().shaderMaximalReconvergence)
+			TCU_THROW(NotSupportedError, "shaderMaximalReconvergence not supported");
+
+		if ( ! Case::matches(testName, { cases[TERMINATE_INVOCATION] }))
+		{
+	#ifndef CTS_USES_VULKANSC
+			if (!context.getShaderDemoteToHelperInvocationFeatures().shaderDemoteToHelperInvocation)
+				TCU_THROW(NotSupportedError, "demoteToHelperInvocation not supported.");
+	#else
+			if (!context.getShaderDemoteToHelperInvocationFeaturesEXT().shaderDemoteToHelperInvocation)
+				TCU_THROW(NotSupportedError, "demoteToHelperInvocation not supported.");
+	#endif
+			if (!context.isDeviceFunctionalitySupported("VK_EXT_shader_demote_to_helper_invocation"))
+				TCU_THROW(NotSupportedError, "VK_EXT_shader_demote_to_helper_invocation not supported.");
+		}
+	};
+
+	auto updateTest = [&](add_ptr<AmberTestCase> theTest) -> add_ptr<AmberTestCase>
+	{
+		theTest->setCheckSupportCallback(testSupports);
+		return theTest;
+	};
+
+	const std::string testsFolder(std::string("reconvergence/maximal/") + group->getName());
+
+	for (add_cref<Case> aCase : cases)
+	{
+		group->addChild(updateTest(createAmberTestCase(testCtx, aCase.name, aCase.desc, testsFolder.c_str(), aCase.makeFileName())));
+	}
 }
 
 }	// anonymous
