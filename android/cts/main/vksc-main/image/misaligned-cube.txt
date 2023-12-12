@@ -1,5 +1,0 @@
-dEQP-VKSC.image.misaligned_cube.7
-dEQP-VKSC.image.misaligned_cube.8
-dEQP-VKSC.image.misaligned_cube.9
-dEQP-VKSC.image.misaligned_cube.10
-dEQP-VKSC.image.misaligned_cube.11
