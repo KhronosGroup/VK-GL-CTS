@@ -651,7 +651,7 @@ tcu::TestStatus framebufferCompatibleRenderPassTest (Context& context)
 																					VK_ATTACHMENT_STORE_OP_STORE,
 																					VK_IMAGE_LAYOUT_GENERAL));
 
-	beginRenderPass(vk, commandBuffer.get(), renderPassB.get(), frameBuffer.get(), makeRect2D(0, 0, 0u, 0u));
+	beginRenderPass(vk, commandBuffer.get(), renderPassB.get(), frameBuffer.get(), makeRect2D(0, 0, 1u, 1u));
 	endRenderPass(vk, commandBuffer.get());
 
 	VK_CHECK(vk.endCommandBuffer(commandBuffer.get()));
@@ -1803,30 +1803,32 @@ tcu::TestStatus pipelineInvalidPointersUnusedStructsComputeTest (Context& contex
 
 tcu::TestCaseGroup* createrenderpassTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> renderPassTests(new tcu::TestCaseGroup(testCtx, "renderpass", "Renderpass tests"));
+	de::MovePtr<tcu::TestCaseGroup> renderPassTests(new tcu::TestCaseGroup(testCtx, "renderpass"));
 
-	addFunctionCaseWithPrograms(renderPassTests.get(), "destroy_pipeline_renderpass", "Draw after destroying the renderpass used to create a pipeline", checkSupport, createDrawTriangleSource, renderpassLifetimeTest);
-	addFunctionCase(renderPassTests.get(), "framebuffer_compatible_renderpass", "Use a render pass with a framebuffer that was created using another compatible render pass", checkSupport, framebufferCompatibleRenderPassTest);
+	// Draw after destroying the renderpass used to create a pipeline
+	addFunctionCaseWithPrograms(renderPassTests.get(), "destroy_pipeline_renderpass", checkSupport, createDrawTriangleSource, renderpassLifetimeTest);
+	// Use a render pass with a framebuffer that was created using another compatible render pass
+	addFunctionCase(renderPassTests.get(), "framebuffer_compatible_renderpass", checkSupport, framebufferCompatibleRenderPassTest);
 
 	return renderPassTests.release();
 }
 
 tcu::TestCaseGroup* createPipelineLayoutLifetimeTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> pipelineLayoutLifetimeTests(new tcu::TestCaseGroup(testCtx, "lifetime", "Pipeline layout lifetime tests"));
+	de::MovePtr<tcu::TestCaseGroup> pipelineLayoutLifetimeTests(new tcu::TestCaseGroup(testCtx, "lifetime"));
 
-	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "graphics", "Test pipeline layout lifetime in graphics pipeline", checkSupport, createPipelineLayoutLifetimeGraphicsSource, pipelineLayoutLifetimeGraphicsTest);
-	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "compute", "Test pipeline layout lifetime in compute pipeline", checkSupport, createPipelineLayoutLifetimeComputeSource, pipelineLayoutLifetimeComputeTest);
-	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "destroy_after_end", "Test destroying the pipeline layout after vkEndCommandBuffer", destroyEarlyComputeSource, destroyAfterEndCommndBufferTest);
-	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "destroy_after_compute_pipeline_construction", "Test destroying the pipeline layout after compute pipeline creation", checkMaintenance4Support, destroyEarlyComputeSource, destroyAfterCreateComputePipelineTest);
-	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "destroy_after_graphics_pipeline_construction", "Test destroying the pipeline layout after graphics pipeline creation", checkMaintenance4Support, createDrawTriangleSource, destroyAfterCreateGraphicsPipelineTest);
+	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "graphics", checkSupport, createPipelineLayoutLifetimeGraphicsSource, pipelineLayoutLifetimeGraphicsTest);
+	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "compute", checkSupport, createPipelineLayoutLifetimeComputeSource, pipelineLayoutLifetimeComputeTest);
+	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "destroy_after_end", destroyEarlyComputeSource, destroyAfterEndCommndBufferTest);
+	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "destroy_after_compute_pipeline_construction", checkMaintenance4Support, destroyEarlyComputeSource, destroyAfterCreateComputePipelineTest);
+	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "destroy_after_graphics_pipeline_construction", checkMaintenance4Support, createDrawTriangleSource, destroyAfterCreateGraphicsPipelineTest);
 
 	return pipelineLayoutLifetimeTests.release();
 }
 
 tcu::TestCaseGroup* createPipelineLayoutTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> pipelineLayoutTests(new tcu::TestCaseGroup(testCtx, "pipeline_layout", "Pipeline layout tests"));
+	de::MovePtr<tcu::TestCaseGroup> pipelineLayoutTests(new tcu::TestCaseGroup(testCtx, "pipeline_layout"));
 
 	pipelineLayoutTests->addChild(createPipelineLayoutLifetimeTests(testCtx));
 
@@ -1836,10 +1838,10 @@ tcu::TestCaseGroup* createPipelineLayoutTests (tcu::TestContext& testCtx)
 #ifndef CTS_USES_VULKANSC
 tcu::TestCaseGroup* createPipelineInvalidPointersUnusedStructsTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> pipelineInvalidPointersUnusedStructsTests(new tcu::TestCaseGroup(testCtx, "pipeline_invalid_pointers_unused_structs", "Create pipelines with invalid pointers for unused structs"));
+	de::MovePtr<tcu::TestCaseGroup> pipelineInvalidPointersUnusedStructsTests(new tcu::TestCaseGroup(testCtx, "pipeline_invalid_pointers_unused_structs"));
 
-	addFunctionCaseWithPrograms(pipelineInvalidPointersUnusedStructsTests.get(), "graphics", "Test structs when creating a graphics pipeline", checkSupport, createPipelineInvalidPointersUnusedStructsGraphicsSource, pipelineInvalidPointersUnusedStructsGraphicsTest);
-	addFunctionCaseWithPrograms(pipelineInvalidPointersUnusedStructsTests.get(), "compute", "Test structs when creating a compute pipeline", checkSupport, createPipelineInvalidPointersUnusedStructsComputeSource, pipelineInvalidPointersUnusedStructsComputeTest);
+	addFunctionCaseWithPrograms(pipelineInvalidPointersUnusedStructsTests.get(), "graphics", checkSupport, createPipelineInvalidPointersUnusedStructsGraphicsSource, pipelineInvalidPointersUnusedStructsGraphicsTest);
+	addFunctionCaseWithPrograms(pipelineInvalidPointersUnusedStructsTests.get(), "compute", checkSupport, createPipelineInvalidPointersUnusedStructsComputeSource, pipelineInvalidPointersUnusedStructsComputeTest);
 
 	return pipelineInvalidPointersUnusedStructsTests.release();
 }
@@ -1849,7 +1851,7 @@ tcu::TestCaseGroup* createPipelineInvalidPointersUnusedStructsTests (tcu::TestCo
 
 tcu::TestCaseGroup* createPipelineTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> pipelineTests(new tcu::TestCaseGroup(testCtx, "pipeline", "Pipeline tests"));
+	de::MovePtr<tcu::TestCaseGroup> pipelineTests(new tcu::TestCaseGroup(testCtx, "pipeline"));
 
 	pipelineTests->addChild(createrenderpassTests(testCtx));
 	pipelineTests->addChild(createPipelineLayoutTests(testCtx));

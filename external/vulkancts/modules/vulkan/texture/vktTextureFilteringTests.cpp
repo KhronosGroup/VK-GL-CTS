@@ -1235,17 +1235,19 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 	// 2D texture filtering.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	group2D				(new tcu::TestCaseGroup(testCtx, "2d", "2D Texture Filtering"));
+		// 2D Texture Filtering
+		de::MovePtr<tcu::TestCaseGroup>	group2D				(new tcu::TestCaseGroup(testCtx, "2d"));
 
-		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats", "2D Texture Formats"));
-		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes", "Texture Sizes"));
-		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup	(new tcu::TestCaseGroup(testCtx, "combinations", "Filter and wrap mode combinations"));
+		// 2D Texture Formats
+		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats"));
+		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes"));
+		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup	(new tcu::TestCaseGroup(testCtx, "combinations"));
 
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
 		{
 			const string					filterGroupName	= filterableFormatsByType[fmtNdx].name;
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str()));
 
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes2D); filterNdx++)
 			{
@@ -1270,7 +1272,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				// Some combinations of the tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
 				{
-					filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+					filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 				}
 			}
 			formatsGroup->addChild(filterGroup.release());
@@ -1280,7 +1282,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2D); sizeNdx++)
 		{
 			const string					filterGroupName = de::toString(sizes2D[sizeNdx].width) + "x" + de::toString(sizes2D[sizeNdx].height);
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str()));
 
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes2D); filterNdx++)
 			{
@@ -1302,7 +1304,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
-				filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+				filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 			}
 			sizesGroup->addChild(filterGroup.release());
 		}
@@ -1310,15 +1312,15 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		// Wrap modes.
 		for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(minFilterModes2D); minFilterNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	minFilterGroup(new tcu::TestCaseGroup(testCtx, minFilterModes2D[minFilterNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>	minFilterGroup(new tcu::TestCaseGroup(testCtx, minFilterModes2D[minFilterNdx].name));
 
 			for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilterModes2D); magFilterNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	magFilterGroup(new tcu::TestCaseGroup(testCtx, magFilterModes2D[magFilterNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	magFilterGroup(new tcu::TestCaseGroup(testCtx, magFilterModes2D[magFilterNdx].name));
 
 				for (int wrapSNdx = 0; wrapSNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapSNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup>	wrapSGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapSNdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup>	wrapSGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapSNdx].name));
 
 					for (int wrapTNdx = 0; wrapTNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapTNdx++)
 					{
@@ -1338,7 +1340,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 						testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 						testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
-						wrapSGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+						wrapSGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 					}
 					magFilterGroup->addChild(wrapSGroup.release());
 				}
@@ -1356,16 +1358,16 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 	// Unnormalized texture filtering.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	groupUnnormal		(new tcu::TestCaseGroup(testCtx, "unnormal", "Unnormalized Texture Filtering"));
+		de::MovePtr<tcu::TestCaseGroup>	groupUnnormal		(new tcu::TestCaseGroup(testCtx, "unnormal"));
 
-		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats", "2D Texture Formats"));
-		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes", "Texture Sizes"));
+		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats"));
+		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes"));
 
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
 		{
 			const string					filterGroupName	= filterableFormatsByType[fmtNdx].name;
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str()));
 
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(magFilterModes2D); filterNdx++)
 			{
@@ -1391,7 +1393,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				// Some combinations of the tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
 				{
-					filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+					filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 				}
 			}
 			formatsGroup->addChild(filterGroup.release());
@@ -1401,7 +1403,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2D); sizeNdx++)
 		{
 			const string					filterGroupName = de::toString(sizes2D[sizeNdx].width) + "x" + de::toString(sizes2D[sizeNdx].height);
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str()));
 
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(magFilterModes2D); filterNdx++)
 			{
@@ -1423,7 +1425,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
-				filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+				filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 			}
 			sizesGroup->addChild(filterGroup.release());
 		}
@@ -1436,18 +1438,18 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 	// Cube map texture filtering.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	groupCube				(new tcu::TestCaseGroup(testCtx, "cube", "Cube Map Texture Filtering"));
+		de::MovePtr<tcu::TestCaseGroup>	groupCube				(new tcu::TestCaseGroup(testCtx, "cube"));
 
-		de::MovePtr<tcu::TestCaseGroup>	formatsGroup			(new tcu::TestCaseGroup(testCtx, "formats", "2D Texture Formats"));
-		de::MovePtr<tcu::TestCaseGroup>	sizesGroup				(new tcu::TestCaseGroup(testCtx, "sizes", "Texture Sizes"));
-		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup		(new tcu::TestCaseGroup(testCtx, "combinations", "Filter and wrap mode combinations"));
-		de::MovePtr<tcu::TestCaseGroup>	onlyFaceInteriorGroup	(new tcu::TestCaseGroup(testCtx, "no_edges_visible", "Don't sample anywhere near a face's edges"));
+		de::MovePtr<tcu::TestCaseGroup>	formatsGroup			(new tcu::TestCaseGroup(testCtx, "formats"));
+		de::MovePtr<tcu::TestCaseGroup>	sizesGroup				(new tcu::TestCaseGroup(testCtx, "sizes"));
+		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup		(new tcu::TestCaseGroup(testCtx, "combinations"));
+		de::MovePtr<tcu::TestCaseGroup>	onlyFaceInteriorGroup	(new tcu::TestCaseGroup(testCtx, "no_edges_visible"));
 
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
 		{
 			const string					filterGroupName = filterableFormatsByType[fmtNdx].name;
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str()));
 
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
@@ -1471,7 +1473,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				// Some tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
 				{
-					filterGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+					filterGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 				}
 			}
 			formatsGroup->addChild(filterGroup.release());
@@ -1481,7 +1483,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizesCube); sizeNdx++)
 		{
 			const string					filterGroupName = de::toString(sizesCube[sizeNdx].size) + "x" + de::toString(sizesCube[sizeNdx].size);
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str()));
 
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
@@ -1501,7 +1503,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.aspectMask				= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
-				filterGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+				filterGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 
 			}
 			sizesGroup->addChild(filterGroup.release());
@@ -1510,15 +1512,15 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		// Filter/wrap mode combinations.
 		for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); minFilterNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	minFilterGroup(new tcu::TestCaseGroup(testCtx, minFilterModes[minFilterNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>	minFilterGroup(new tcu::TestCaseGroup(testCtx, minFilterModes[minFilterNdx].name));
 
 			for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilterModes); magFilterNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	magFilterGroup(new tcu::TestCaseGroup(testCtx, magFilterModes[magFilterNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	magFilterGroup(new tcu::TestCaseGroup(testCtx, magFilterModes[magFilterNdx].name));
 
 				for (int wrapSNdx = 0; wrapSNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapSNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup>	wrapSGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapSNdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup>	wrapSGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapSNdx].name));
 
 					for (int wrapTNdx = 0; wrapTNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapTNdx++)
 					{
@@ -1536,7 +1538,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 						testParameters.aspectMask				= VK_IMAGE_ASPECT_COLOR_BIT;
 						testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
-						wrapSGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+						wrapSGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 					}
 					magFilterGroup->addChild(wrapSGroup.release());
 				}
@@ -1563,7 +1565,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 			testParameters.aspectMask				= VK_IMAGE_ASPECT_COLOR_BIT;
 			testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
-			onlyFaceInteriorGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+			onlyFaceInteriorGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 		}
 
 		groupCube->addChild(formatsGroup.release());
@@ -1576,17 +1578,17 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 	// 2D array texture filtering.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	group2DArray		(new tcu::TestCaseGroup(testCtx, "2d_array", "2D Array Texture Filtering"));
+		de::MovePtr<tcu::TestCaseGroup>	group2DArray		(new tcu::TestCaseGroup(testCtx, "2d_array"));
 
-		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats", "2D Array Texture Formats"));
-		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes", "Texture Sizes"));
-		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup	(new tcu::TestCaseGroup(testCtx, "combinations", "Filter and wrap mode combinations"));
+		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats"));
+		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes"));
+		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup	(new tcu::TestCaseGroup(testCtx, "combinations"));
 
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
 		{
 			const string					filterGroupName = filterableFormatsByType[fmtNdx].name;
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str()));
 
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
@@ -1613,7 +1615,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				// Some tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
 				{
-					filterGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+					filterGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 				}
 			}
 			formatsGroup->addChild(filterGroup.release());
@@ -1623,7 +1625,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2DArray); sizeNdx++)
 		{
 			const string					filterGroupName = de::toString(sizes2DArray[sizeNdx].width) + "x" + de::toString(sizes2DArray[sizeNdx].height) + "x" + de::toString(sizes2DArray[sizeNdx].numLayers);
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str()));
 
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
@@ -1645,7 +1647,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_2D_ARRAY_FLOAT);
 
-				filterGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+				filterGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 			}
 			sizesGroup->addChild(filterGroup.release());
 		}
@@ -1653,15 +1655,15 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		// Wrap modes.
 		for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); minFilterNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	minFilterGroup(new tcu::TestCaseGroup(testCtx, minFilterModes[minFilterNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>	minFilterGroup(new tcu::TestCaseGroup(testCtx, minFilterModes[minFilterNdx].name));
 
 			for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilterModes); magFilterNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	magFilterGroup(new tcu::TestCaseGroup(testCtx, magFilterModes[magFilterNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	magFilterGroup(new tcu::TestCaseGroup(testCtx, magFilterModes[magFilterNdx].name));
 
 				for (int wrapSNdx = 0; wrapSNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapSNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup>	wrapSGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapSNdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup>	wrapSGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapSNdx].name));
 
 					for (int wrapTNdx = 0; wrapTNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapTNdx++)
 					{
@@ -1680,7 +1682,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 						testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 						testParameters.programs.push_back(PROGRAM_2D_ARRAY_FLOAT);
 
-						wrapSGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+						wrapSGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 					}
 					magFilterGroup->addChild(wrapSGroup.release());
 				}
@@ -1698,17 +1700,17 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 	// 3D texture filtering.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	group3D				(new tcu::TestCaseGroup(testCtx, "3d", "3D Texture Filtering"));
+		de::MovePtr<tcu::TestCaseGroup>	group3D				(new tcu::TestCaseGroup(testCtx, "3d"));
 
-		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats", "3D Texture Formats"));
-		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes", "Texture Sizes"));
-		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup	(new tcu::TestCaseGroup(testCtx, "combinations", "Filter and wrap mode combinations"));
+		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats"));
+		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes"));
+		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup	(new tcu::TestCaseGroup(testCtx, "combinations"));
 
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
 		{
 			const string					filterGroupName = filterableFormatsByType[fmtNdx].name;
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str()));
 
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
@@ -1736,7 +1738,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				// Some tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
 				{
-					filterGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+					filterGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 				}
 			}
 			formatsGroup->addChild(filterGroup.release());
@@ -1746,7 +1748,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes3D); sizeNdx++)
 		{
 			const string					filterGroupName = de::toString(sizes3D[sizeNdx].width) + "x" + de::toString(sizes3D[sizeNdx].height) + "x" + de::toString(sizes3D[sizeNdx].depth);
-			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str()));
 
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
@@ -1769,7 +1771,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 
-				filterGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+				filterGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 			}
 			sizesGroup->addChild(filterGroup.release());
 		}
@@ -1777,19 +1779,19 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		// Wrap modes.
 		for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); minFilterNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	minFilterGroup(new tcu::TestCaseGroup(testCtx, minFilterModes[minFilterNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>	minFilterGroup(new tcu::TestCaseGroup(testCtx, minFilterModes[minFilterNdx].name));
 
 			for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilterModes); magFilterNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	magFilterGroup(new tcu::TestCaseGroup(testCtx, magFilterModes[magFilterNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	magFilterGroup(new tcu::TestCaseGroup(testCtx, magFilterModes[magFilterNdx].name));
 
 				for (int wrapSNdx = 0; wrapSNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapSNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup>	wrapSGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapSNdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup>	wrapSGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapSNdx].name));
 
 					for (int wrapTNdx = 0; wrapTNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapTNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup>	wrapTGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapTNdx].name, ""));
+						de::MovePtr<tcu::TestCaseGroup>	wrapTGroup(new tcu::TestCaseGroup(testCtx, wrapModes[wrapTNdx].name));
 
 						for (int wrapRNdx = 0; wrapRNdx < DE_LENGTH_OF_ARRAY(wrapModes); wrapRNdx++)
 						{
@@ -1809,7 +1811,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 							testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 							testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 
-							wrapTGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+							wrapTGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
 						}
 						wrapSGroup->addChild(wrapTGroup.release());
 					}
@@ -1830,7 +1832,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 tcu::TestCaseGroup*	createTextureFilteringTests	(tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "filtering", "Texture filtering tests.", populateTextureFilteringTests);
+	return createTestGroup(testCtx, "filtering", populateTextureFilteringTests);
 }
 
 } // texture

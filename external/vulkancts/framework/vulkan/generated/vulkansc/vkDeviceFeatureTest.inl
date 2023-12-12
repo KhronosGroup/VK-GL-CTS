@@ -37,7 +37,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeatu
 		FEATURE_ITEM (VkPhysicalDeviceExternalMemorySciBufFeaturesNV, sciBufExport),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExternalMemorySciBufFeaturesNV*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -79,7 +79,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures 
 		FEATURE_ITEM (VkPhysicalDeviceVariablePointersFeatures, variablePointers),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVariablePointersFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -123,7 +123,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV
 		FEATURE_ITEM (VkPhysicalDeviceExternalSciSyncFeaturesNV, sciSyncExport),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExternalSciSyncFeaturesNV*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -167,7 +167,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesN
 		FEATURE_ITEM (VkPhysicalDeviceExternalSciSync2FeaturesNV, sciSyncExport),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExternalSciSync2FeaturesNV*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -210,7 +210,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewFeatures (Contex
 		FEATURE_ITEM (VkPhysicalDeviceMultiviewFeatures, multiviewTessellationShader),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceMultiviewFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -254,7 +254,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures (Con
 		FEATURE_ITEM (VkPhysicalDevice16BitStorageFeatures, storageInputOutput16),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevice16BitStorageFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 4, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -295,7 +295,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTyp
 		FEATURE_ITEM (VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures, shaderSubgroupExtendedTypes),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -336,7 +336,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFea
 		FEATURE_ITEM (VkPhysicalDeviceSamplerYcbcrConversionFeatures, samplerYcbcrConversion),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceSamplerYcbcrConversionFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -377,7 +377,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures (
 		FEATURE_ITEM (VkPhysicalDeviceProtectedMemoryFeatures, protectedMemory),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceProtectedMemoryFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -418,7 +418,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFea
 		FEATURE_ITEM (VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT, advancedBlendCoherentOperations),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -459,7 +459,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatu
 		FEATURE_ITEM (VkPhysicalDeviceShaderDrawParametersFeatures, shaderDrawParameters),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderDrawParametersFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -501,7 +501,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features
 		FEATURE_ITEM (VkPhysicalDeviceShaderFloat16Int8Features, shaderInt8),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderFloat16Int8Features*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -542,7 +542,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures (C
 		FEATURE_ITEM (VkPhysicalDeviceHostQueryResetFeatures, hostQueryReset),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceHostQueryResetFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -602,7 +602,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeature
 		FEATURE_ITEM (VkPhysicalDeviceDescriptorIndexingFeatures, runtimeDescriptorArray),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceDescriptorIndexingFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 20, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 20, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -643,7 +643,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures
 		FEATURE_ITEM (VkPhysicalDeviceTimelineSemaphoreFeatures, timelineSemaphore),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceTimelineSemaphoreFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -686,7 +686,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures (Cont
 		FEATURE_ITEM (VkPhysicalDevice8BitStorageFeatures, storagePushConstant8),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevice8BitStorageFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -729,7 +729,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures
 		FEATURE_ITEM (VkPhysicalDeviceVulkanMemoryModelFeatures, vulkanMemoryModelAvailabilityVisibilityChains),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkanMemoryModelFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -771,7 +771,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features
 		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicInt64Features, shaderSharedInt64Atomics),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderAtomicInt64Features*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -823,7 +823,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeatures
 		FEATURE_ITEM (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT, sparseImageFloat32AtomicAdd),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 12, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 12, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -833,7 +833,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeatures
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesKHR (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -857,15 +857,15 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFea
 	const auto& extensionNames = context.getDeviceCreationExtensions();
 	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT, vertexAttributeInstanceRateDivisor),
-		FEATURE_ITEM (VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT, vertexAttributeInstanceRateZeroDivisor),
+		FEATURE_ITEM (VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR, vertexAttributeInstanceRateDivisor),
+		FEATURE_ITEM (VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR, vertexAttributeInstanceRateZeroDivisor),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR*>(featuresStruct);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -906,7 +906,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT (Co
 		FEATURE_ITEM (VkPhysicalDeviceASTCDecodeFeaturesEXT, decodeModeSharedExponent),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceASTCDecodeFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -947,7 +947,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures
 		FEATURE_ITEM (VkPhysicalDeviceScalarBlockLayoutFeatures, scalarBlockLayout),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceScalarBlockLayoutFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -988,7 +988,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayo
 		FEATURE_ITEM (VkPhysicalDeviceUniformBufferStandardLayoutFeatures, uniformBufferStandardLayout),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceUniformBufferStandardLayoutFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1029,7 +1029,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEX
 		FEATURE_ITEM (VkPhysicalDeviceDepthClipEnableFeaturesEXT, depthClipEnable),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceDepthClipEnableFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1072,7 +1072,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatur
 		FEATURE_ITEM (VkPhysicalDeviceBufferDeviceAddressFeatures, bufferDeviceAddressMultiDevice),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceBufferDeviceAddressFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1113,7 +1113,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatu
 		FEATURE_ITEM (VkPhysicalDeviceImagelessFramebufferFeatures, imagelessFramebuffer),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceImagelessFramebufferFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1154,7 +1154,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDR
 		FEATURE_ITEM (VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT, textureCompressionASTC_HDR),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1195,7 +1195,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesE
 		FEATURE_ITEM (VkPhysicalDeviceYcbcrImageArraysFeaturesEXT, ycbcrImageArrays),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceYcbcrImageArraysFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1237,7 +1237,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesK
 		FEATURE_ITEM (VkPhysicalDevicePerformanceQueryFeaturesKHR, performanceCounterMultipleQueryPools),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevicePerformanceQueryFeaturesKHR*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1279,7 +1279,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR (C
 		FEATURE_ITEM (VkPhysicalDeviceShaderClockFeaturesKHR, shaderDeviceClock),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderClockFeaturesKHR*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1320,7 +1320,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT
 		FEATURE_ITEM (VkPhysicalDeviceIndexTypeUint8FeaturesEXT, indexTypeUint8),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceIndexTypeUint8FeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1363,7 +1363,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFe
 		FEATURE_ITEM (VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT, fragmentShaderShadingRateInterlock),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1404,7 +1404,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayou
 		FEATURE_ITEM (VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures, separateDepthStencilLayouts),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1445,7 +1445,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvoc
 		FEATURE_ITEM (VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, shaderDemoteToHelperInvocation),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1486,7 +1486,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeatu
 		FEATURE_ITEM (VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT, texelBufferAlignment),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1528,7 +1528,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeatur
 		FEATURE_ITEM (VkPhysicalDeviceSubgroupSizeControlFeaturesEXT, computeFullSubgroups),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1574,7 +1574,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLineRasterizationFeatures
 		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, stippledSmoothLines),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceLineRasterizationFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 6, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 6, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1626,7 +1626,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan11Features (Context
 		FEATURE_ITEM (VkPhysicalDeviceVulkan11Features, shaderDrawParameters),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkan11Features*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 12, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, DE_NULL, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 12, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, DE_NULL, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1713,7 +1713,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan12Features (Context
 		FEATURE_ITEM (VkPhysicalDeviceVulkan12Features, subgroupBroadcastDynamicId),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkan12Features*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 47, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, DE_NULL, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 47, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, DE_NULL, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1768,7 +1768,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan13Features (Context
 		FEATURE_ITEM (VkPhysicalDeviceVulkan13Features, maintenance4),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkan13Features*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 15, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, DE_NULL, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 15, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, DE_NULL, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1810,7 +1810,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeatures
 		FEATURE_ITEM (VkPhysicalDeviceCustomBorderColorFeaturesEXT, customBorderColorWithoutFormat),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceCustomBorderColorFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1851,7 +1851,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeatu
 		FEATURE_ITEM (VkPhysicalDeviceExtendedDynamicStateFeaturesEXT, extendedDynamicState),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExtendedDynamicStateFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1894,7 +1894,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2Feat
 		FEATURE_ITEM (VkPhysicalDeviceExtendedDynamicState2FeaturesEXT, extendedDynamicState2PatchControlPoints),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExtendedDynamicState2FeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1937,7 +1937,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT (C
 		FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesEXT, nullDescriptor),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceRobustness2FeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -1978,7 +1978,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageRobustnessFeaturesEX
 		FEATURE_ITEM (VkPhysicalDeviceImageRobustnessFeaturesEXT, robustImageAccess),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceImageRobustnessFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -2020,7 +2020,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT (C
 		FEATURE_ITEM (VkPhysicalDevice4444FormatsFeaturesEXT, formatA4B4G4R4),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDevice4444FormatsFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -2062,7 +2062,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64Fea
 		FEATURE_ITEM (VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT, sparseImageInt64Atomics),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -2105,7 +2105,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeatur
 		FEATURE_ITEM (VkPhysicalDeviceFragmentShadingRateFeaturesKHR, attachmentFragmentShadingRate),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceFragmentShadingRateFeaturesKHR*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -2146,7 +2146,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocation
 		FEATURE_ITEM (VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR, shaderTerminateInvocation),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -2187,7 +2187,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFe
 		FEATURE_ITEM (VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT, vertexInputDynamicState),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -2228,7 +2228,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesE
 		FEATURE_ITEM (VkPhysicalDeviceColorWriteEnableFeaturesEXT, colorWriteEnable),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceColorWriteEnableFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -2269,7 +2269,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSynchronization2FeaturesK
 		FEATURE_ITEM (VkPhysicalDeviceSynchronization2FeaturesKHR, synchronization2),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceSynchronization2FeaturesKHR*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -2310,7 +2310,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkanSC10Features (Conte
 		FEATURE_ITEM (VkPhysicalDeviceVulkanSC10Features, shaderAtomicInstructions),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVulkanSC10Features*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -2351,7 +2351,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeat
 		FEATURE_ITEM (VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT, ycbcr2plane444Formats),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -2392,7 +2392,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemoryScreenBuffe
 		FEATURE_ITEM (VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX, screenBufferImport),
 		};
 		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess);
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion());
 	}
 
 	if (numErrors > 0)
@@ -2405,60 +2405,60 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemoryScreenBuffe
 void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 {
 
-	addFunctionCase(testGroup, "external_memory_sci_buf_features_nv", "createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeaturesNV", createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeaturesNV);
-	addFunctionCase(testGroup, "variable_pointers_features", "createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures", createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures);
-	addFunctionCase(testGroup, "external_sci_sync_features_nv", "createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV", createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV);
-	addFunctionCase(testGroup, "external_sci_sync2_features_nv", "createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesNV", createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesNV);
-	addFunctionCase(testGroup, "multiview_features", "createDeviceWithUnsupportedFeaturesTestMultiviewFeatures", createDeviceWithUnsupportedFeaturesTestMultiviewFeatures);
-	addFunctionCase(testGroup, "16_bit_storage_features", "createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures", createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures);
-	addFunctionCase(testGroup, "shader_subgroup_extended_types_features", "createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTypesFeatures", createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTypesFeatures);
-	addFunctionCase(testGroup, "sampler_ycbcr_conversion_features", "createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFeatures", createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFeatures);
-	addFunctionCase(testGroup, "protected_memory_features", "createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures", createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures);
-	addFunctionCase(testGroup, "blend_operation_advanced_features_ext", "createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFeaturesEXT", createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFeaturesEXT);
-	addFunctionCase(testGroup, "shader_draw_parameters_features", "createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatures", createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatures);
-	addFunctionCase(testGroup, "shader_float16_int8_features", "createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features", createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features);
-	addFunctionCase(testGroup, "host_query_reset_features", "createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures", createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures);
-	addFunctionCase(testGroup, "descriptor_indexing_features", "createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures", createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures);
-	addFunctionCase(testGroup, "timeline_semaphore_features", "createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures", createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures);
-	addFunctionCase(testGroup, "8_bit_storage_features", "createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures", createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures);
-	addFunctionCase(testGroup, "vulkan_memory_model_features", "createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures", createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures);
-	addFunctionCase(testGroup, "shader_atomic_int64_features", "createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features", createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features);
-	addFunctionCase(testGroup, "shader_atomic_float_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT);
-	addFunctionCase(testGroup, "vertex_attribute_divisor_features_ext", "createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT", createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesEXT);
-	addFunctionCase(testGroup, "astc_decode_features_ext", "createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT", createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT);
-	addFunctionCase(testGroup, "scalar_block_layout_features", "createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures", createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures);
-	addFunctionCase(testGroup, "uniform_buffer_standard_layout_features", "createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures", createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures);
-	addFunctionCase(testGroup, "depth_clip_enable_features_ext", "createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEXT", createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEXT);
-	addFunctionCase(testGroup, "buffer_device_address_features", "createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatures", createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatures);
-	addFunctionCase(testGroup, "imageless_framebuffer_features", "createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures", createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures);
-	addFunctionCase(testGroup, "texture_compression_astchdr_features_ext", "createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDRFeaturesEXT", createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDRFeaturesEXT);
-	addFunctionCase(testGroup, "ycbcr_image_arrays_features_ext", "createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT", createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT);
-	addFunctionCase(testGroup, "performance_query_features_khr", "createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR", createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR);
-	addFunctionCase(testGroup, "shader_clock_features_khr", "createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR", createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR);
-	addFunctionCase(testGroup, "index_type_uint8_features_ext", "createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT", createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT);
-	addFunctionCase(testGroup, "fragment_shader_interlock_features_ext", "createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT", createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT);
-	addFunctionCase(testGroup, "separate_depth_stencil_layouts_features", "createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures", createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures);
-	addFunctionCase(testGroup, "shader_demote_to_helper_invocation_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeaturesEXT);
-	addFunctionCase(testGroup, "texel_buffer_alignment_features_ext", "createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeaturesEXT", createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeaturesEXT);
-	addFunctionCase(testGroup, "subgroup_size_control_features_ext", "createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeaturesEXT", createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeaturesEXT);
-	addFunctionCase(testGroup, "line_rasterization_features_ext", "createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT", createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT);
-	addFunctionCase(testGroup, "vulkan11_features", "createDeviceWithUnsupportedFeaturesTestVulkan11Features", createDeviceWithUnsupportedFeaturesTestVulkan11Features);
-	addFunctionCase(testGroup, "vulkan12_features", "createDeviceWithUnsupportedFeaturesTestVulkan12Features", createDeviceWithUnsupportedFeaturesTestVulkan12Features);
-	addFunctionCase(testGroup, "vulkan13_features", "createDeviceWithUnsupportedFeaturesTestVulkan13Features", createDeviceWithUnsupportedFeaturesTestVulkan13Features);
-	addFunctionCase(testGroup, "custom_border_color_features_ext", "createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeaturesEXT", createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeaturesEXT);
-	addFunctionCase(testGroup, "extended_dynamic_state_features_ext", "createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT", createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT);
-	addFunctionCase(testGroup, "extended_dynamic_state2_features_ext", "createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT", createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT);
-	addFunctionCase(testGroup, "robustness2_features_ext", "createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT", createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT);
-	addFunctionCase(testGroup, "image_robustness_features_ext", "createDeviceWithUnsupportedFeaturesTestImageRobustnessFeaturesEXT", createDeviceWithUnsupportedFeaturesTestImageRobustnessFeaturesEXT);
-	addFunctionCase(testGroup, "4444_formats_features_ext", "createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT", createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT);
-	addFunctionCase(testGroup, "shader_image_atomic_int64_features_ext", "createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT", createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT);
-	addFunctionCase(testGroup, "fragment_shading_rate_features_khr", "createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR", createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR);
-	addFunctionCase(testGroup, "shader_terminate_invocation_features_khr", "createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeaturesKHR", createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeaturesKHR);
-	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", "createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT", createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT);
-	addFunctionCase(testGroup, "color_write_enable_features_ext", "createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesEXT", createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesEXT);
-	addFunctionCase(testGroup, "synchronization2_features_khr", "createDeviceWithUnsupportedFeaturesTestSynchronization2FeaturesKHR", createDeviceWithUnsupportedFeaturesTestSynchronization2FeaturesKHR);
-	addFunctionCase(testGroup, "vulkan_sc10_features", "createDeviceWithUnsupportedFeaturesTestVulkanSC10Features", createDeviceWithUnsupportedFeaturesTestVulkanSC10Features);
-	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", "createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT", createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT);
-	addFunctionCase(testGroup, "external_memory_screen_buffer_features_qnx", "createDeviceWithUnsupportedFeaturesTestExternalMemoryScreenBufferFeaturesQNX", createDeviceWithUnsupportedFeaturesTestExternalMemoryScreenBufferFeaturesQNX);
+	addFunctionCase(testGroup, "external_memory_sci_buf_features_nv", createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeaturesNV);
+	addFunctionCase(testGroup, "variable_pointers_features", createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures);
+	addFunctionCase(testGroup, "external_sci_sync_features_nv", createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV);
+	addFunctionCase(testGroup, "external_sci_sync2_features_nv", createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesNV);
+	addFunctionCase(testGroup, "multiview_features", createDeviceWithUnsupportedFeaturesTestMultiviewFeatures);
+	addFunctionCase(testGroup, "16_bit_storage_features", createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures);
+	addFunctionCase(testGroup, "shader_subgroup_extended_types_features", createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTypesFeatures);
+	addFunctionCase(testGroup, "sampler_ycbcr_conversion_features", createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFeatures);
+	addFunctionCase(testGroup, "protected_memory_features", createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures);
+	addFunctionCase(testGroup, "blend_operation_advanced_features_ext", createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFeaturesEXT);
+	addFunctionCase(testGroup, "shader_draw_parameters_features", createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatures);
+	addFunctionCase(testGroup, "shader_float16_int8_features", createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features);
+	addFunctionCase(testGroup, "host_query_reset_features", createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures);
+	addFunctionCase(testGroup, "descriptor_indexing_features", createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures);
+	addFunctionCase(testGroup, "timeline_semaphore_features", createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures);
+	addFunctionCase(testGroup, "8_bit_storage_features", createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures);
+	addFunctionCase(testGroup, "vulkan_memory_model_features", createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures);
+	addFunctionCase(testGroup, "shader_atomic_int64_features", createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features);
+	addFunctionCase(testGroup, "shader_atomic_float_features_ext", createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeaturesEXT);
+	addFunctionCase(testGroup, "vertex_attribute_divisor_features_khr", createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeaturesKHR);
+	addFunctionCase(testGroup, "astc_decode_features_ext", createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT);
+	addFunctionCase(testGroup, "scalar_block_layout_features", createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures);
+	addFunctionCase(testGroup, "uniform_buffer_standard_layout_features", createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures);
+	addFunctionCase(testGroup, "depth_clip_enable_features_ext", createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEXT);
+	addFunctionCase(testGroup, "buffer_device_address_features", createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatures);
+	addFunctionCase(testGroup, "imageless_framebuffer_features", createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatures);
+	addFunctionCase(testGroup, "texture_compression_astchdr_features_ext", createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDRFeaturesEXT);
+	addFunctionCase(testGroup, "ycbcr_image_arrays_features_ext", createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT);
+	addFunctionCase(testGroup, "performance_query_features_khr", createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR);
+	addFunctionCase(testGroup, "shader_clock_features_khr", createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR);
+	addFunctionCase(testGroup, "index_type_uint8_features_ext", createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT);
+	addFunctionCase(testGroup, "fragment_shader_interlock_features_ext", createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT);
+	addFunctionCase(testGroup, "separate_depth_stencil_layouts_features", createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures);
+	addFunctionCase(testGroup, "shader_demote_to_helper_invocation_features_ext", createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeaturesEXT);
+	addFunctionCase(testGroup, "texel_buffer_alignment_features_ext", createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeaturesEXT);
+	addFunctionCase(testGroup, "subgroup_size_control_features_ext", createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeaturesEXT);
+	addFunctionCase(testGroup, "line_rasterization_features_ext", createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT);
+	addFunctionCase(testGroup, "vulkan11_features", createDeviceWithUnsupportedFeaturesTestVulkan11Features);
+	addFunctionCase(testGroup, "vulkan12_features", createDeviceWithUnsupportedFeaturesTestVulkan12Features);
+	addFunctionCase(testGroup, "vulkan13_features", createDeviceWithUnsupportedFeaturesTestVulkan13Features);
+	addFunctionCase(testGroup, "custom_border_color_features_ext", createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeaturesEXT);
+	addFunctionCase(testGroup, "extended_dynamic_state_features_ext", createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT);
+	addFunctionCase(testGroup, "extended_dynamic_state2_features_ext", createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT);
+	addFunctionCase(testGroup, "robustness2_features_ext", createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT);
+	addFunctionCase(testGroup, "image_robustness_features_ext", createDeviceWithUnsupportedFeaturesTestImageRobustnessFeaturesEXT);
+	addFunctionCase(testGroup, "4444_formats_features_ext", createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT);
+	addFunctionCase(testGroup, "shader_image_atomic_int64_features_ext", createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT);
+	addFunctionCase(testGroup, "fragment_shading_rate_features_khr", createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeaturesKHR);
+	addFunctionCase(testGroup, "shader_terminate_invocation_features_khr", createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocationFeaturesKHR);
+	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT);
+	addFunctionCase(testGroup, "color_write_enable_features_ext", createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesEXT);
+	addFunctionCase(testGroup, "synchronization2_features_khr", createDeviceWithUnsupportedFeaturesTestSynchronization2FeaturesKHR);
+	addFunctionCase(testGroup, "vulkan_sc10_features", createDeviceWithUnsupportedFeaturesTestVulkanSC10Features);
+	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeaturesEXT);
+	addFunctionCase(testGroup, "external_memory_screen_buffer_features_qnx", createDeviceWithUnsupportedFeaturesTestExternalMemoryScreenBufferFeaturesQNX);
 }
 

@@ -79,7 +79,6 @@ public:
 
 								RobustBufferAccessTest		(tcu::TestContext&		testContext,
 															 const std::string&		name,
-															 const std::string&		description,
 															 VkShaderStageFlags		shaderStage,
 															 ShaderType				shaderType,
 															 VkFormat				bufferFormat,
@@ -127,7 +126,6 @@ class RobustBufferReadTest : public RobustBufferAccessTest
 public:
 								RobustBufferReadTest		(tcu::TestContext&		testContext,
 															 const std::string&		name,
-															 const std::string&		description,
 															 VkShaderStageFlags		shaderStage,
 															 ShaderType				shaderType,
 															 VkFormat				bufferFormat,
@@ -152,7 +150,6 @@ class RobustBufferWriteTest : public RobustBufferAccessTest
 public:
 								RobustBufferWriteTest		(tcu::TestContext&		testContext,
 															 const std::string&		name,
-															 const std::string&		description,
 															 VkShaderStageFlags		shaderStage,
 															 ShaderType				shaderType,
 															 VkFormat				bufferFormat,
@@ -178,6 +175,7 @@ public:
 #ifndef CTS_USES_VULKANSC
 																	 de::MovePtr<vk::DeviceDriver>	deviceDriver,
 #else
+																	 de::MovePtr<CustomInstance>	customInstance,
 																	 de::MovePtr<vk::DeviceDriverSC,vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 																	 ShaderType			shaderType,
@@ -200,12 +198,17 @@ private:
 	bool							isOutBufferValueUnchanged		(VkDeviceSize offsetInBytes, VkDeviceSize valueSize);
 
 protected:
-	Move<VkDevice>					m_device;
+
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
+	Move<VkDevice>						m_device;
+	de::MovePtr<vk::DeviceDriver>		m_deviceDriver;
 #else
+	// Construction needs to happen in this exact order to ensure proper resource destruction
+	de::MovePtr<CustomInstance>			m_customInstance;
+	Move<VkDevice>						m_device;
 	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
 #endif // CTS_USES_VULKANSC
+
 	de::MovePtr<TestEnvironment>	m_testEnvironment;
 
 	const ShaderType				m_shaderType;
@@ -256,6 +259,7 @@ public:
 #ifndef CTS_USES_VULKANSC
 																 de::MovePtr<vk::DeviceDriver>		deviceDriver,
 #else
+																 de::MovePtr<CustomInstance>	customInstance,
 																 de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 																 ShaderType				shaderType,
@@ -279,6 +283,7 @@ public:
 #ifndef CTS_USES_VULKANSC
 																 de::MovePtr<vk::DeviceDriver>		deviceDriver,
 #else
+																 de::MovePtr<CustomInstance>	customInstance,
 																 de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 																 ShaderType				shaderType,
@@ -300,12 +305,11 @@ const deUint32 RobustBufferAccessTest::s_numberOfVectorBytesAccessed = (deUint32
 
 RobustBufferAccessTest::RobustBufferAccessTest (tcu::TestContext&		testContext,
 												const std::string&		name,
-												const std::string&		description,
 												VkShaderStageFlags		shaderStage,
 												ShaderType				shaderType,
 												VkFormat				bufferFormat,
 												bool					testPipelineRobustness)
-	: vkt::TestCase		(testContext, name, description)
+	: vkt::TestCase		(testContext, name)
 	, m_shaderStage		(shaderStage)
 	, m_shaderType		(shaderType)
 	, m_bufferFormat	(bufferFormat)
@@ -717,7 +721,6 @@ void RobustBufferAccessTest::initBufferAccessPrograms (SourceCollections&	progra
 
 RobustBufferReadTest::RobustBufferReadTest (tcu::TestContext&	testContext,
 											const std::string&	name,
-											const std::string&	description,
 											VkShaderStageFlags	shaderStage,
 											ShaderType			shaderType,
 											VkFormat			bufferFormat,
@@ -725,7 +728,7 @@ RobustBufferReadTest::RobustBufferReadTest (tcu::TestContext&	testContext,
 											VkDeviceSize		readAccessRange,
 											bool				readFromStorage,
 											bool				accessOutOfBackingMemory)
-	: RobustBufferAccessTest		(testContext, name, description, shaderStage, shaderType, bufferFormat, testPipelineRobustness)
+	: RobustBufferAccessTest		(testContext, name, shaderStage, shaderType, bufferFormat, testPipelineRobustness)
 	, m_readFromStorage				(readFromStorage)
 	, m_readAccessRange				(readAccessRange)
 	, m_accessOutOfBackingMemory	(accessOutOfBackingMemory)
@@ -772,21 +775,26 @@ TestInstance* RobustBufferReadTest::createInstance (Context& context) const
 
 	const bool useFeatures2 = (m_testPipelineRobustness || is64BitsTest_ || isVertexTest_ || isFragmentTest_);
 
-	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, (useFeatures2 ? &features2 : nullptr));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device));
+	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, (useFeatures2 ? &features2 : nullptr));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
+	de::MovePtr<CustomInstance> customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
+	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, *customInstance, (useFeatures2 ? &features2 : nullptr));
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
 #endif // CTS_USES_VULKANSC
 
-	return new BufferReadInstance(context, device, deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_readFromStorage, m_readAccessRange, m_accessOutOfBackingMemory, m_testPipelineRobustness);
+	return new BufferReadInstance(context, device,
+#ifdef CTS_USES_VULKANSC
+								  customInstance,
+#endif // CTS_USES_VULKANSC
+								  deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_readFromStorage, m_readAccessRange, m_accessOutOfBackingMemory, m_testPipelineRobustness);
 }
 
 // RobustBufferWriteTest
 
 RobustBufferWriteTest::RobustBufferWriteTest (tcu::TestContext&		testContext,
 											  const std::string&	name,
-											  const std::string&	description,
 											  VkShaderStageFlags	shaderStage,
 											  ShaderType			shaderType,
 											  VkFormat				bufferFormat,
@@ -794,7 +802,7 @@ RobustBufferWriteTest::RobustBufferWriteTest (tcu::TestContext&		testContext,
 											  VkDeviceSize			writeAccessRange,
 											  bool					accessOutOfBackingMemory)
 
-	: RobustBufferAccessTest		(testContext, name, description, shaderStage, shaderType, bufferFormat, testPipelineRobustness)
+	: RobustBufferAccessTest		(testContext, name, shaderStage, shaderType, bufferFormat, testPipelineRobustness)
 	, m_writeAccessRange			(writeAccessRange)
 	, m_accessOutOfBackingMemory	(accessOutOfBackingMemory)
 {
@@ -843,14 +851,20 @@ TestInstance* RobustBufferWriteTest::createInstance (Context& context) const
 
 	const bool useFeatures2 = (m_testPipelineRobustness || is64BitsTest_ || isVertexTest_ || isFragmentTest_);
 
-	Move<VkDevice>	device = createRobustBufferAccessDevice(context, (useFeatures2 ? &features2 : nullptr));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device));
+	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, (useFeatures2 ? &features2 : nullptr));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC,DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
+	de::MovePtr<CustomInstance> customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
+	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, *customInstance, (useFeatures2 ? &features2 : nullptr));
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
 #endif // CTS_USES_VULKANSC
 
-	return new BufferWriteInstance(context, device, deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_writeAccessRange, m_accessOutOfBackingMemory, m_testPipelineRobustness);
+	return new BufferWriteInstance(context, device,
+#ifdef CTS_USES_VULKANSC
+								   customInstance,
+#endif // CTS_USES_VULKANSC
+								   deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_writeAccessRange, m_accessOutOfBackingMemory, m_testPipelineRobustness);
 }
 
 // BufferAccessInstance
@@ -860,6 +874,7 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 #ifndef CTS_USES_VULKANSC
 											de::MovePtr<vk::DeviceDriver>	deviceDriver,
 #else
+											de::MovePtr<CustomInstance>	customInstance,
 											de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 											ShaderType			shaderType,
@@ -871,6 +886,9 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 											bool				accessOutOfBackingMemory,
 											bool				testPipelineRobustness)
 	: vkt::TestInstance				(context)
+#ifdef CTS_USES_VULKANSC
+	, m_customInstance				(customInstance)
+#endif // CTS_USES_VULKANSC
 	, m_device						(device)
 	, m_deviceDriver				(deviceDriver)
 	, m_shaderType					(shaderType)
@@ -1566,6 +1584,7 @@ BufferReadInstance::BufferReadInstance (Context&			context,
 #ifndef CTS_USES_VULKANSC
 										de::MovePtr<vk::DeviceDriver>	deviceDriver,
 #else
+										de::MovePtr<CustomInstance>	customInstance,
 										de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 										ShaderType			shaderType,
@@ -1576,7 +1595,11 @@ BufferReadInstance::BufferReadInstance (Context&			context,
 										bool				accessOutOfBackingMemory,
 										bool				testPipelineRobustness)
 
-	: BufferAccessInstance	(context, device, deviceDriver, shaderType, shaderStage, bufferFormat,
+	: BufferAccessInstance	(context, device,
+#ifdef CTS_USES_VULKANSC
+							 customInstance,
+#endif // CTS_USES_VULKANSC
+							 deviceDriver, shaderType, shaderStage, bufferFormat,
 							 readFromStorage ? BUFFER_ACCESS_TYPE_READ_FROM_STORAGE : BUFFER_ACCESS_TYPE_READ,
 							 inBufferAccessRange,
 							 RobustBufferAccessTest::getNumberOfBytesAccesssed(shaderType),	// outBufferAccessRange
@@ -1592,6 +1615,7 @@ BufferWriteInstance::BufferWriteInstance (Context&				context,
 #ifndef CTS_USES_VULKANSC
 										  de::MovePtr<vk::DeviceDriver>		deviceDriver,
 #else
+										  de::MovePtr<CustomInstance>	customInstance,
 										  de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 										  ShaderType			shaderType,
@@ -1601,7 +1625,11 @@ BufferWriteInstance::BufferWriteInstance (Context&				context,
 										  bool					accessOutOfBackingMemory,
 										  bool					testPipelineRobustness)
 
-	: BufferAccessInstance	(context, device, deviceDriver, shaderType, shaderStage, bufferFormat,
+	: BufferAccessInstance	(context, device,
+#ifdef CTS_USES_VULKANSC
+							 customInstance,
+#endif // CTS_USES_VULKANSC
+							 deviceDriver, shaderType, shaderStage, bufferFormat,
 							 BUFFER_ACCESS_TYPE_WRITE,
 							 RobustBufferAccessTest::getNumberOfBytesAccesssed(shaderType),	// inBufferAccessRange
 							 writeBufferAccessRange,
@@ -1689,7 +1717,7 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 	for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(bufferAccessStages); stageNdx++)
 	{
 		const VkShaderStageFlagBits			stage			= bufferAccessStages[stageNdx];
-		de::MovePtr<tcu::TestCaseGroup>		stageTests		(new tcu::TestCaseGroup(testCtx, getShaderStageName(stage), ""));
+		de::MovePtr<tcu::TestCaseGroup>		stageTests		(new tcu::TestCaseGroup(testCtx, getShaderStageName(stage)));
 
 		for (int shaderTypeNdx = 0; shaderTypeNdx < SHADER_TYPE_COUNT; shaderTypeNdx++)
 		{
@@ -1698,7 +1726,7 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 			const BufferRangeConfig*		ranges;
 			size_t							rangesLength;
 			deUint32						rangeMultiplier;
-			de::MovePtr<tcu::TestCaseGroup> shaderTypeTests	(new tcu::TestCaseGroup(testCtx, shaderTypeNames[shaderTypeNdx], ""));
+			de::MovePtr<tcu::TestCaseGroup> shaderTypeTests	(new tcu::TestCaseGroup(testCtx, shaderTypeNames[shaderTypeNdx]));
 
 			if ((ShaderType)shaderTypeNdx == SHADER_TYPE_TEXEL_COPY)
 			{
@@ -1737,11 +1765,11 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 				}
 
 				const std::string				formatName		= getFormatName(bufferFormat);
-				de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, de::toLower(formatName.substr(10)).c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, de::toLower(formatName.substr(10)).c_str()));
 
-				de::MovePtr<tcu::TestCaseGroup> uboReadTests		(new tcu::TestCaseGroup(testCtx, "oob_uniform_read", ""));
-				de::MovePtr<tcu::TestCaseGroup> ssboReadTests		(new tcu::TestCaseGroup(testCtx, "oob_storage_read", ""));
-				de::MovePtr<tcu::TestCaseGroup> ssboWriteTests		(new tcu::TestCaseGroup(testCtx, "oob_storage_write", ""));
+				de::MovePtr<tcu::TestCaseGroup> uboReadTests		(new tcu::TestCaseGroup(testCtx, "oob_uniform_read"));
+				de::MovePtr<tcu::TestCaseGroup> ssboReadTests		(new tcu::TestCaseGroup(testCtx, "oob_storage_read"));
+				de::MovePtr<tcu::TestCaseGroup> ssboWriteTests		(new tcu::TestCaseGroup(testCtx, "oob_storage_write"));
 
 				for (size_t rangeNdx = 0; rangeNdx < rangesLength; rangeNdx++)
 				{
@@ -1752,13 +1780,13 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 						continue;
 					}
 
-					uboReadTests->addChild(new RobustBufferReadTest(testCtx, rangeConfig.name, "", stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, false, false));
+					uboReadTests->addChild(new RobustBufferReadTest(testCtx, rangeConfig.name,  stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, false, false));
 
 					// Avoid too much duplication by excluding certain test cases
 					if (!testPipelineRobustness)
-						ssboReadTests->addChild(new RobustBufferReadTest(testCtx, rangeConfig.name, "", stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, true, false));
+						ssboReadTests->addChild(new RobustBufferReadTest(testCtx, rangeConfig.name,  stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, true, false));
 
-					ssboWriteTests->addChild(new RobustBufferWriteTest(testCtx, rangeConfig.name, "", stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, false));
+					ssboWriteTests->addChild(new RobustBufferWriteTest(testCtx, rangeConfig.name,  stage, (ShaderType)shaderTypeNdx, bufferFormat, testPipelineRobustness, rangeInBytes, false));
 
 				}
 
@@ -1771,19 +1799,19 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 
 			// Read/write out of the memory that backs the buffer
 			{
-				de::MovePtr<tcu::TestCaseGroup>	outOfAllocTests		(new tcu::TestCaseGroup(testCtx, "out_of_alloc", ""));
+				de::MovePtr<tcu::TestCaseGroup>	outOfAllocTests		(new tcu::TestCaseGroup(testCtx, "out_of_alloc"));
 
 				const VkFormat format = (((ShaderType)shaderTypeNdx == SHADER_TYPE_TEXEL_COPY ) ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R32_SFLOAT);
 
 				const VkDeviceSize writeAccessRange = ((ShaderType)shaderTypeNdx == SHADER_TYPE_VECTOR_MEMBER_COPY) ? 8 : 16;
 
-				outOfAllocTests->addChild(new RobustBufferReadTest(testCtx, "oob_uniform_read", "", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, false, true));
+				outOfAllocTests->addChild(new RobustBufferReadTest(testCtx, "oob_uniform_read", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, false, true));
 
 				// Avoid too much duplication by excluding certain test cases
 				if (!testPipelineRobustness)
-					outOfAllocTests->addChild(new RobustBufferReadTest(testCtx, "oob_storage_read", "", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, true, true));
+					outOfAllocTests->addChild(new RobustBufferReadTest(testCtx, "oob_storage_read", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, true, true));
 
-				outOfAllocTests->addChild(new RobustBufferWriteTest(testCtx, "oob_storage_write", "", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, true));
+				outOfAllocTests->addChild(new RobustBufferWriteTest(testCtx, "oob_storage_write", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness, writeAccessRange, true));
 
 				shaderTypeTests->addChild(outOfAllocTests.release());
 			}
@@ -1796,7 +1824,7 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 
 tcu::TestCaseGroup* createBufferAccessTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> bufferAccessTests	(new tcu::TestCaseGroup(testCtx, "buffer_access", ""));
+	de::MovePtr<tcu::TestCaseGroup> bufferAccessTests	(new tcu::TestCaseGroup(testCtx, "buffer_access"));
 
 	addBufferAccessTests(testCtx, bufferAccessTests.get(), false);
 
@@ -1806,7 +1834,7 @@ tcu::TestCaseGroup* createBufferAccessTests (tcu::TestContext& testCtx)
 #ifndef CTS_USES_VULKANSC
 tcu::TestCaseGroup* createPipelineRobustnessBufferAccessTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> bufferAccessTests	(new tcu::TestCaseGroup(testCtx, "pipeline_robustness_buffer_access", ""));
+	de::MovePtr<tcu::TestCaseGroup> bufferAccessTests	(new tcu::TestCaseGroup(testCtx, "pipeline_robustness_buffer_access"));
 	addBufferAccessTests(testCtx, bufferAccessTests.get(), true);
 
 	return bufferAccessTests.release();

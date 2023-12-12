@@ -56,15 +56,15 @@ template<typename Instance, typename Support = NoSupport0>
 class InstanceFactory : public TestCase
 {
 public:
-	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc, typename Instance::TestSpec testSpec)
-		: TestCase		(testCtx, name, desc)
+	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, typename Instance::TestSpec testSpec)
+		: TestCase		(testCtx, name)
 		, m_testSpec	(testSpec)
 		, m_support		()
 	{
 	}
 
-	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc, typename Instance::TestSpec testSpec, const Support& support)
-		: TestCase		(testCtx, name, desc)
+	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, typename Instance::TestSpec testSpec, const Support& support)
+		: TestCase		(testCtx, name)
 		, m_testSpec	(testSpec)
 		, m_support		(support)
 	{

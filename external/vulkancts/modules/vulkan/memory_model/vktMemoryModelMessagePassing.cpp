@@ -154,7 +154,7 @@ MemoryModelTestInstance::~MemoryModelTestInstance (void)
 class MemoryModelTestCase : public TestCase
 {
 	public:
-								MemoryModelTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+								MemoryModelTestCase		(tcu::TestContext& context, const char* name, const CaseDef data);
 								~MemoryModelTestCase	(void);
 	virtual	void				initPrograms		(SourceCollections& programCollection) const;
 	virtual	void				initProgramsTransitive(SourceCollections& programCollection) const;
@@ -165,8 +165,8 @@ private:
 	CaseDef					m_data;
 };
 
-MemoryModelTestCase::MemoryModelTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+MemoryModelTestCase::MemoryModelTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -1780,7 +1780,7 @@ void checkPermutedIndexTestSupport (Context& context, std::string testName)
 
 tcu::TestCaseGroup* createPermutedIndexTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> permutedIndex (new tcu::TestCaseGroup(testCtx, "permuted_index", "Permuted index"));
+	de::MovePtr<tcu::TestCaseGroup> permutedIndex (new tcu::TestCaseGroup(testCtx, "permuted_index"));
 	static const char			dataDir[]	= "memory_model/message_passing/permuted_index";
 	static const std::string	cases[]		=
 	{
@@ -1791,7 +1791,7 @@ tcu::TestCaseGroup* createPermutedIndexTests (tcu::TestContext& testCtx)
 
 	for (const auto& test : cases)
 	{
-		cts_amber::AmberTestCase* testCase = cts_amber::createAmberTestCase(testCtx, test.c_str(), "", dataDir, (test + ".amber").c_str());
+		cts_amber::AmberTestCase* testCase = cts_amber::createAmberTestCase(testCtx, test.c_str(), dataDir, (test + ".amber").c_str());
 		testCase->setCheckSupportCallback(checkPermutedIndexTestSupport);
 
 		permutedIndex->addChild(testCase);
@@ -1803,106 +1803,130 @@ tcu::TestCaseGroup* createPermutedIndexTests (tcu::TestContext& testCtx)
 
 }	// anonymous
 
-tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "memory_model", "Memory model tests"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	typedef struct
 	{
 		deUint32				value;
 		const char*				name;
-		const char*				description;
 	} TestGroupCase;
 
 	TestGroupCase ttCases[] =
 	{
-		{ TT_MP,	"message_passing",	"message passing"		},
-		{ TT_WAR,	"write_after_read",	"write after read"		},
+		{ TT_MP,	"message_passing"},
+		{ TT_WAR,	"write_after_read"},
 	};
 
 	TestGroupCase core11Cases[] =
 	{
-		{ 1,	"core11",	"Supported by Vulkan1.1"							},
-		{ 0,	"ext",		"Requires VK_KHR_vulkan_memory_model extension"		},
+		// Supported by Vulkan1.1
+		{ 1,	"core11"},
+		// Requires VK_KHR_vulkan_memory_model extension
+		{ 0,	"ext"},
 	};
 
 	TestGroupCase dtCases[] =
 	{
-		{ DATA_TYPE_UINT,		"u32",	"uint32_t atomics"		},
-		{ DATA_TYPE_UINT64,		"u64",	"uint64_t atomics"		},
-		{ DATA_TYPE_FLOAT32,	"f32",	"float32 atomics"		},
-		{ DATA_TYPE_FLOAT64,	"f64",	"float64 atomics"		},
+		// uint32_t atomics
+		{ DATA_TYPE_UINT,		"u32"},
+		// uint64_t atomics
+		{ DATA_TYPE_UINT64,		"u64"},
+		// float32 atomics
+		{ DATA_TYPE_FLOAT32,	"f32"},
+		// float64 atomics
+		{ DATA_TYPE_FLOAT64,	"f64"},
 	};
 
 	TestGroupCase cohCases[] =
 	{
-		{ 1,	"coherent",		"coherent payload variable"			},
-		{ 0,	"noncoherent",	"noncoherent payload variable"		},
+		// coherent payload variable
+		{ 1,	"coherent"},
+		// noncoherent payload variable
+		{ 0,	"noncoherent"},
 	};
 
 	TestGroupCase stCases[] =
 	{
-		{ ST_FENCE_FENCE,					"fence_fence",					"release fence, acquire fence"			},
-		{ ST_FENCE_ATOMIC,					"fence_atomic",					"release fence, atomic acquire"			},
-		{ ST_ATOMIC_FENCE,					"atomic_fence",					"atomic release, acquire fence"			},
-		{ ST_ATOMIC_ATOMIC,					"atomic_atomic",				"atomic release, atomic acquire"		},
-		{ ST_CONTROL_BARRIER,				"control_barrier",				"control barrier"						},
-		{ ST_CONTROL_AND_MEMORY_BARRIER,	"control_and_memory_barrier",	"control barrier with release/acquire"	},
+		// release fence, acquire fence
+		{ ST_FENCE_FENCE,					"fence_fence"},
+		// release fence, atomic acquire
+		{ ST_FENCE_ATOMIC,					"fence_atomic"},
+		// atomic release, acquire fence
+		{ ST_ATOMIC_FENCE,					"atomic_fence"},
+		// atomic release, atomic acquire
+		{ ST_ATOMIC_ATOMIC,					"atomic_atomic"},
+		// control barrier
+		{ ST_CONTROL_BARRIER,				"control_barrier"},
+		// control barrier with release/acquire
+		{ ST_CONTROL_AND_MEMORY_BARRIER,	"control_and_memory_barrier"},
 	};
 
 	TestGroupCase rmwCases[] =
 	{
-		{ 0,	"atomicwrite",		"atomic write"		},
-		{ 1,	"atomicrmw",		"atomic rmw"		},
+		{ 0,	"atomicwrite"},
+		{ 1,	"atomicrmw"},
 	};
 
 	TestGroupCase scopeCases[] =
 	{
-		{ SCOPE_DEVICE,			"device",		"device scope"			},
-		{ SCOPE_QUEUEFAMILY,	"queuefamily",	"queuefamily scope"		},
-		{ SCOPE_WORKGROUP,		"workgroup",	"workgroup scope"		},
-		{ SCOPE_SUBGROUP,		"subgroup",		"subgroup scope"		},
+		{ SCOPE_DEVICE,			"device"},
+		{ SCOPE_QUEUEFAMILY,	"queuefamily"},
+		{ SCOPE_WORKGROUP,		"workgroup"},
+		{ SCOPE_SUBGROUP,		"subgroup"},
 	};
 
 	TestGroupCase plCases[] =
 	{
-		{ 0,	"payload_nonlocal",		"payload variable in non-local memory"		},
-		{ 1,	"payload_local",		"payload variable in local memory"			},
+		// payload variable in non-local memory
+		{ 0,	"payload_nonlocal"},
+		// payload variable in local memory
+		{ 1,	"payload_local"},
 	};
 
 	TestGroupCase pscCases[] =
 	{
-		{ SC_BUFFER,	"buffer",		"payload variable in buffer memory"			},
-		{ SC_IMAGE,		"image",		"payload variable in image memory"			},
-		{ SC_WORKGROUP,	"workgroup",	"payload variable in workgroup memory"		},
-		{ SC_PHYSBUFFER,"physbuffer",	"payload variable in physical storage buffer memory"	},
+		// payload variable in buffer memory
+		{ SC_BUFFER,	"buffer"},
+		// payload variable in image memory
+		{ SC_IMAGE,		"image"},
+		// payload variable in workgroup memory
+		{ SC_WORKGROUP,	"workgroup"},
+		// payload variable in physical storage buffer memory
+		{ SC_PHYSBUFFER,"physbuffer"},
 	};
 
 	TestGroupCase glCases[] =
 	{
-		{ 0,	"guard_nonlocal",		"guard variable in non-local memory"		},
-		{ 1,	"guard_local",			"guard variable in local memory"			},
+		// guard variable in non-local memory
+		{ 0,	"guard_nonlocal"},
+		// guard variable in local memory
+		{ 1,	"guard_local"},
 	};
 
 	TestGroupCase gscCases[] =
 	{
-		{ SC_BUFFER,	"buffer",		"guard variable in buffer memory"			},
-		{ SC_IMAGE,		"image",		"guard variable in image memory"			},
-		{ SC_WORKGROUP,	"workgroup",	"guard variable in workgroup memory"		},
-		{ SC_PHYSBUFFER,"physbuffer",	"guard variable in physical storage buffer memory"	},
+		// guard variable in buffer memory
+		{ SC_BUFFER,	"buffer"},
+		// guard variable in image memory
+		{ SC_IMAGE,		"image"},
+		// guard variable in workgroup memory
+		{ SC_WORKGROUP,	"workgroup"},
+		// guard variable in physical storage buffer memory
+		{ SC_PHYSBUFFER,"physbuffer"},
 	};
 
 	TestGroupCase stageCases[] =
 	{
-		{ STAGE_COMPUTE,	"comp",		"compute shader"			},
-		{ STAGE_VERTEX,		"vert",		"vertex shader"				},
-		{ STAGE_FRAGMENT,	"frag",		"fragment shader"			},
+		{ STAGE_COMPUTE,	"comp"},
+		{ STAGE_VERTEX,		"vert"},
+		{ STAGE_FRAGMENT,	"frag"},
 	};
 
 	for (int ttNdx = 0; ttNdx < DE_LENGTH_OF_ARRAY(ttCases); ttNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, ttCases[ttNdx].name, ttCases[ttNdx].description));
+		de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, ttCases[ttNdx].name));
 
 #ifndef CTS_USES_VULKANSC
 		// Permuted index tests for message passing.
@@ -1912,34 +1936,34 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 
 		for (int core11Ndx = 0; core11Ndx < DE_LENGTH_OF_ARRAY(core11Cases); core11Ndx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> core11Group(new tcu::TestCaseGroup(testCtx, core11Cases[core11Ndx].name, core11Cases[core11Ndx].description));
+			de::MovePtr<tcu::TestCaseGroup> core11Group(new tcu::TestCaseGroup(testCtx, core11Cases[core11Ndx].name));
 			for (int dtNdx = 0; dtNdx < DE_LENGTH_OF_ARRAY(dtCases); dtNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, dtCases[dtNdx].name, dtCases[dtNdx].description));
+				de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, dtCases[dtNdx].name));
 				for (int cohNdx = 0; cohNdx < DE_LENGTH_OF_ARRAY(cohCases); cohNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup> cohGroup(new tcu::TestCaseGroup(testCtx, cohCases[cohNdx].name, cohCases[cohNdx].description));
+					de::MovePtr<tcu::TestCaseGroup> cohGroup(new tcu::TestCaseGroup(testCtx, cohCases[cohNdx].name));
 					for (int stNdx = 0; stNdx < DE_LENGTH_OF_ARRAY(stCases); stNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup> stGroup(new tcu::TestCaseGroup(testCtx, stCases[stNdx].name, stCases[stNdx].description));
+						de::MovePtr<tcu::TestCaseGroup> stGroup(new tcu::TestCaseGroup(testCtx, stCases[stNdx].name));
 						for (int rmwNdx = 0; rmwNdx < DE_LENGTH_OF_ARRAY(rmwCases); rmwNdx++)
 						{
-							de::MovePtr<tcu::TestCaseGroup> rmwGroup(new tcu::TestCaseGroup(testCtx, rmwCases[rmwNdx].name, rmwCases[rmwNdx].description));
+							de::MovePtr<tcu::TestCaseGroup> rmwGroup(new tcu::TestCaseGroup(testCtx, rmwCases[rmwNdx].name));
 							for (int scopeNdx = 0; scopeNdx < DE_LENGTH_OF_ARRAY(scopeCases); scopeNdx++)
 							{
-								de::MovePtr<tcu::TestCaseGroup> scopeGroup(new tcu::TestCaseGroup(testCtx, scopeCases[scopeNdx].name, scopeCases[scopeNdx].description));
+								de::MovePtr<tcu::TestCaseGroup> scopeGroup(new tcu::TestCaseGroup(testCtx, scopeCases[scopeNdx].name));
 								for (int plNdx = 0; plNdx < DE_LENGTH_OF_ARRAY(plCases); plNdx++)
 								{
-									de::MovePtr<tcu::TestCaseGroup> plGroup(new tcu::TestCaseGroup(testCtx, plCases[plNdx].name, plCases[plNdx].description));
+									de::MovePtr<tcu::TestCaseGroup> plGroup(new tcu::TestCaseGroup(testCtx, plCases[plNdx].name));
 									for (int pscNdx = 0; pscNdx < DE_LENGTH_OF_ARRAY(pscCases); pscNdx++)
 									{
-										de::MovePtr<tcu::TestCaseGroup> pscGroup(new tcu::TestCaseGroup(testCtx, pscCases[pscNdx].name, pscCases[pscNdx].description));
+										de::MovePtr<tcu::TestCaseGroup> pscGroup(new tcu::TestCaseGroup(testCtx, pscCases[pscNdx].name));
 										for (int glNdx = 0; glNdx < DE_LENGTH_OF_ARRAY(glCases); glNdx++)
 										{
-											de::MovePtr<tcu::TestCaseGroup> glGroup(new tcu::TestCaseGroup(testCtx, glCases[glNdx].name, glCases[glNdx].description));
+											de::MovePtr<tcu::TestCaseGroup> glGroup(new tcu::TestCaseGroup(testCtx, glCases[glNdx].name));
 											for (int gscNdx = 0; gscNdx < DE_LENGTH_OF_ARRAY(gscCases); gscNdx++)
 											{
-												de::MovePtr<tcu::TestCaseGroup> gscGroup(new tcu::TestCaseGroup(testCtx, gscCases[gscNdx].name, gscCases[gscNdx].description));
+												de::MovePtr<tcu::TestCaseGroup> gscGroup(new tcu::TestCaseGroup(testCtx, gscCases[gscNdx].name));
 												for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
 												{
 													CaseDef c =
@@ -2034,7 +2058,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 														continue;
 													}
 
-													gscGroup->addChild(new MemoryModelTestCase(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].description, c));
+													gscGroup->addChild(new MemoryModelTestCase(testCtx, stageCases[stageNdx].name, c));
 												}
 												glGroup->addChild(gscGroup.release());
 											}
@@ -2061,29 +2085,31 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 
 	TestGroupCase transVisCases[] =
 	{
-		{ 0,	"nontransvis",		"destination invocation acquires"		},
-		{ 1,	"transvis",			"invocation 0,0 acquires"				},
+		// destination invocation acquires
+		{ 0,	"nontransvis"},
+		// invocation 0,0 acquires
+		{ 1,	"transvis"},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> transGroup(new tcu::TestCaseGroup(testCtx, "transitive", "transitive"));
+	de::MovePtr<tcu::TestCaseGroup> transGroup(new tcu::TestCaseGroup(testCtx, "transitive"));
 	for (int cohNdx = 0; cohNdx < DE_LENGTH_OF_ARRAY(cohCases); cohNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> cohGroup(new tcu::TestCaseGroup(testCtx, cohCases[cohNdx].name, cohCases[cohNdx].description));
+		de::MovePtr<tcu::TestCaseGroup> cohGroup(new tcu::TestCaseGroup(testCtx, cohCases[cohNdx].name));
 		for (int stNdx = 0; stNdx < DE_LENGTH_OF_ARRAY(stCases); stNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> stGroup(new tcu::TestCaseGroup(testCtx, stCases[stNdx].name, stCases[stNdx].description));
+			de::MovePtr<tcu::TestCaseGroup> stGroup(new tcu::TestCaseGroup(testCtx, stCases[stNdx].name));
 			for (int plNdx = 0; plNdx < DE_LENGTH_OF_ARRAY(plCases); plNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup> plGroup(new tcu::TestCaseGroup(testCtx, plCases[plNdx].name, plCases[plNdx].description));
+				de::MovePtr<tcu::TestCaseGroup> plGroup(new tcu::TestCaseGroup(testCtx, plCases[plNdx].name));
 				for (int pscNdx = 0; pscNdx < DE_LENGTH_OF_ARRAY(pscCases); pscNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup> pscGroup(new tcu::TestCaseGroup(testCtx, pscCases[pscNdx].name, pscCases[pscNdx].description));
+					de::MovePtr<tcu::TestCaseGroup> pscGroup(new tcu::TestCaseGroup(testCtx, pscCases[pscNdx].name));
 					for (int glNdx = 0; glNdx < DE_LENGTH_OF_ARRAY(glCases); glNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup> glGroup(new tcu::TestCaseGroup(testCtx, glCases[glNdx].name, glCases[glNdx].description));
+						de::MovePtr<tcu::TestCaseGroup> glGroup(new tcu::TestCaseGroup(testCtx, glCases[glNdx].name));
 						for (int gscNdx = 0; gscNdx < DE_LENGTH_OF_ARRAY(gscCases); gscNdx++)
 						{
-							de::MovePtr<tcu::TestCaseGroup> gscGroup(new tcu::TestCaseGroup(testCtx, gscCases[gscNdx].name, gscCases[gscNdx].description));
+							de::MovePtr<tcu::TestCaseGroup> gscGroup(new tcu::TestCaseGroup(testCtx, gscCases[gscNdx].name));
 							for (int visNdx = 0; visNdx < DE_LENGTH_OF_ARRAY(transVisCases); visNdx++)
 							{
 								CaseDef c =
@@ -2111,7 +2137,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 								{
 									continue;
 								}
-								gscGroup->addChild(new MemoryModelTestCase(testCtx, transVisCases[visNdx].name, transVisCases[visNdx].description, c));
+								gscGroup->addChild(new MemoryModelTestCase(testCtx, transVisCases[visNdx].name, c));
 							}
 							glGroup->addChild(gscGroup.release());
 						}

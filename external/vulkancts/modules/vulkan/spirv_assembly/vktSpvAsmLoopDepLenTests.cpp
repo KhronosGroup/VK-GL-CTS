@@ -208,8 +208,8 @@ SpvAsmLoopControlDependencyLengthInstance::SpvAsmLoopControlDependencyLengthInst
 {
 }
 
-SpvAsmLoopControlDependencyLengthCase::SpvAsmLoopControlDependencyLengthCase (tcu::TestContext& testCtx, const char* name, const char* description)
-	: TestCase			(testCtx, name, description)
+SpvAsmLoopControlDependencyLengthCase::SpvAsmLoopControlDependencyLengthCase (tcu::TestContext& testCtx, const char* name)
+	: TestCase			(testCtx, name)
 {
 }
 

@@ -700,7 +700,7 @@ DisplayTimingTestInstance::DisplayTimingTestInstance (Context& context, const Te
 	, m_queueFamilyIndex		(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
 	, m_deviceExtensions		(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
 	, m_device					(createDeviceWithWsi(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, testConfig.useDisplayTiming, context.getTestContext().getCommandLine().isValidationEnabled()))
-	, m_vkd						(m_vkp, m_instance, *m_device)
+	, m_vkd						(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
 	, m_commandPool				(createCommandPool(m_vkd, *m_device, m_queueFamilyIndex))
@@ -1184,7 +1184,7 @@ void createDisplayTimingTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiT
 
 	for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name, presentModes[presentModeNdx].name));
+		de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name));
 
 		for (size_t ref = 0; ref < 2; ref++)
 		{
@@ -1196,7 +1196,7 @@ void createDisplayTimingTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiT
 			config.useDisplayTiming			= !isReference;
 			config.presentMode				= presentModes[presentModeNdx].mode;
 
-			presentModeGroup->addChild(new vkt::InstanceFactory1<DisplayTimingTestInstance, TestConfig, Programs>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, name, Programs(), config));
+			presentModeGroup->addChild(new vkt::InstanceFactory1<DisplayTimingTestInstance, TestConfig, Programs>(testGroup->getTestContext(), name, Programs(), config));
 		}
 
 		testGroup->addChild(presentModeGroup.release());

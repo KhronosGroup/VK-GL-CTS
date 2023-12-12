@@ -83,10 +83,10 @@ void createChildren(tcu::TestCaseGroup* subgroupsTests)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests(tcu::TestContext& testCtx, const std::string& name)
 {
 	return createTestGroup(
-			   testCtx, "subgroups", "Subgroups tests", createChildren);
+			   testCtx, name.c_str(), createChildren);
 }
 
 } // subgroups

@@ -9,7 +9,7 @@ const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					getDepthClipEnableFeat
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					getPerformanceQueryFeatures						(void) const;
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			getBlendOperationAdvancedFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						getShaderClockFeatures							(void) const;
-const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&			getVertexAttributeDivisorFeaturesEXT			(void) const;
+const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR&			getVertexAttributeDivisorFeatures				(void) const;
 const vk::VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR&			getShaderTerminateInvocationFeatures			(void) const;
 const vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&				getSubgroupSizeControlFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				getFragmentShadingRateFeatures					(void) const;
@@ -29,11 +29,11 @@ const vk::VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT&				getYcbcr2Plane444
 const vk::VkPhysicalDeviceImageRobustnessFeaturesEXT&					getImageRobustnessFeaturesEXT					(void) const;
 const vk::VkPhysicalDevice4444FormatsFeaturesEXT&						get4444FormatsFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&			getVertexInputDynamicStateFeaturesEXT			(void) const;
-const vk::VkPhysicalDeviceExternalSciSyncFeaturesNV&					getExternalSciSyncFeatures						(void) const;
-const vk::VkPhysicalDeviceExternalMemorySciBufFeaturesNV&				getExternalMemorySciBufFeatures					(void) const;
+const vk::VkPhysicalDeviceExternalSciSyncFeaturesNV&					getExternalSciSyncFeaturesNV					(void) const;
+const vk::VkPhysicalDeviceExternalMemorySciBufFeaturesNV&				getExternalMemorySciBufFeaturesNV				(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&				getExtendedDynamicState2FeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT&					getColorWriteEnableFeaturesEXT					(void) const;
-const vk::VkPhysicalDeviceExternalSciSync2FeaturesNV&					getExternalSciSync2Features						(void) const;
+const vk::VkPhysicalDeviceExternalSciSync2FeaturesNV&					getExternalSciSync2FeaturesNV					(void) const;
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&		getExternalMemoryScreenBufferFeaturesQNX		(void) const;
 const vk::VkPhysicalDeviceVariablePointersFeatures&						getVariablePointersFeatures						(void) const;
 const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures							(void) const;

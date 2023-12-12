@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 ARM Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +93,6 @@ public:
 															 VkPipelineCacheCreateFlags		pipelineCacheCreateFlags = 0u);
 	virtual						~CacheTestParam				(void) = default;
 	virtual const std::string	generateTestName			(void)	const;
-	virtual const std::string	generateTestDescription		(void)	const;
 	PipelineConstructionType	getPipelineConstructionType	(void)	const	{ return m_pipelineConstructionType; }
 	VkShaderStageFlags			getShaderFlags				(void)	const	{ return m_shaders; }
 	VkPipelineCacheCreateFlags	getPipelineCacheCreateFlags	(void)  const   { return m_pipelineCacheCreateFlags; }
@@ -122,22 +123,12 @@ const std::string CacheTestParam::generateTestName (void) const
 	return name;
 }
 
-const std::string CacheTestParam::generateTestDescription (void) const
-{
-	std::string description = getShaderFlagStr(m_shaders, true);
-	if (m_pipelineCacheCreateFlags == VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT) {
-		description += "with externally synchronized bit";
-	}
-	return description;
-}
-
 template <class Test>
 vkt::TestCase* newTestCase (tcu::TestContext&		testContext,
 							const CacheTestParam*	testParam)
 {
 	return new Test(testContext,
 					testParam->generateTestName().c_str(),
-					testParam->generateTestDescription().c_str(),
 					testParam);
 }
 
@@ -212,9 +203,8 @@ class CacheTest : public vkt::TestCase
 public:
 							CacheTest	(tcu::TestContext&		testContext,
 										 const std::string&		name,
-										 const std::string&		description,
 										 const CacheTestParam*	param)
-							  : vkt::TestCase (testContext, name, description)
+							  : vkt::TestCase (testContext, name)
 							  , m_param (*param)
 							  { }
 	virtual					~CacheTest (void) { }
@@ -297,9 +287,8 @@ class GraphicsCacheTest : public CacheTest
 public:
 							GraphicsCacheTest	(tcu::TestContext&		testContext,
 												 const std::string&		name,
-												 const std::string&		description,
 												 const CacheTestParam*	param)
-								: CacheTest (testContext, name, description, param)
+								: CacheTest (testContext, name, param)
 								{ }
 	virtual					~GraphicsCacheTest	(void) { }
 	virtual void			initPrograms		(SourceCollections&		programCollection) const;
@@ -319,7 +308,7 @@ protected:
 														 VkPipelineCache			cache,
 														 bool						useMissShaders);
 	virtual void			preparePipelines			(void);
-			void			prepareRenderPass			(VkFramebuffer framebuffer, VkPipeline pipeline);
+			void			prepareRenderPass			(const RenderPassWrapper& renderPassFramebuffer, GraphicsPipelineWrapper& pipeline);
 	virtual void			prepareCommandBuffer		(void);
 	virtual tcu::TestStatus	verifyTestResult			(void);
 
@@ -327,7 +316,7 @@ protected:
 	const tcu::UVec2				m_renderSize;
 	const VkFormat					m_colorFormat;
 	const VkFormat					m_depthFormat;
-	Move<VkPipelineLayout>			m_pipelineLayout;
+	PipelineLayoutWrapper			m_pipelineLayout;
 
 	Move<VkImage>					m_depthImage;
 	de::MovePtr<Allocation>			m_depthImageAlloc;
@@ -340,11 +329,10 @@ protected:
 	std::vector<Vertex4RGBA>		m_vertices;
 
 	GraphicsPipelineWrapper			m_pipeline[PIPELINE_CACHE_NDX_COUNT];
-	Move<VkRenderPass>				m_renderPass;
 
 	Move<VkImage>					m_colorImage[PIPELINE_CACHE_NDX_COUNT];
 	Move<VkImageView>				m_colorAttachmentView[PIPELINE_CACHE_NDX_COUNT];
-	Move<VkFramebuffer>				m_framebuffer[PIPELINE_CACHE_NDX_COUNT];
+	RenderPassWrapper				m_renderPassFramebuffer[PIPELINE_CACHE_NDX_COUNT];
 };
 
 void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) const
@@ -468,7 +456,7 @@ void GraphicsCacheTest::checkSupport (Context& context) const
 		(m_param.getShaderFlags() & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT))
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.getPipelineConstructionType());
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.getPipelineConstructionType());
 }
 
 TestInstance* GraphicsCacheTest::createInstance (Context& context) const
@@ -484,8 +472,8 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 	, m_depthFormat			(VK_FORMAT_D16_UNORM)
 	, m_pipeline
 	{
-		{ context.getDeviceInterface(), context.getDevice(), param->getPipelineConstructionType() },
-		{ context.getDeviceInterface(), context.getDevice(), param->getPipelineConstructionType() },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), param->getPipelineConstructionType() },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), param->getPipelineConstructionType() },
 	}
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
@@ -502,7 +490,8 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_depthFormat);
+	m_renderPassFramebuffer[PIPELINE_CACHE_NDX_NO_CACHE] = RenderPassWrapper(m_param->getPipelineConstructionType(), vk, vkDevice, m_colorFormat, m_depthFormat);
+	m_renderPassFramebuffer[PIPELINE_CACHE_NDX_CACHED] = RenderPassWrapper(m_param->getPipelineConstructionType(), vk, vkDevice, m_colorFormat, m_depthFormat);
 
 	const VkComponentMapping ComponentMappingRGBA = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 	// Create color image
@@ -610,29 +599,35 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 
 	// Create framebuffer
 	{
+		std::vector<VkImage> images = {
+			*m_colorImage[PIPELINE_CACHE_NDX_NO_CACHE],
+			*m_depthImage,
+		};
 		VkImageView attachmentBindInfos[2] =
 		{
 			*m_colorAttachmentView[PIPELINE_CACHE_NDX_NO_CACHE],
 			*m_depthAttachmentView,
 		};
 
-		const VkFramebufferCreateInfo framebufferParams =
+		VkFramebufferCreateInfo framebufferParams =
 		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType              sType;
-			DE_NULL,									// const void*                  pNext;
-			0u,											// VkFramebufferCreateFlags     flags;
-			*m_renderPass,								// VkRenderPass                 renderPass;
-			2u,											// deUint32                     attachmentCount;
-			attachmentBindInfos,						// const VkImageView*           pAttachments;
-			(deUint32)m_renderSize.x(),					// deUint32                     width;
-			(deUint32)m_renderSize.y(),					// deUint32                     height;
-			1u,											// deUint32                     layers;
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,				// VkStructureType              sType;
+			DE_NULL,												// const void*                  pNext;
+			0u,														// VkFramebufferCreateFlags     flags;
+			*m_renderPassFramebuffer[PIPELINE_CACHE_NDX_CACHED],	// VkRenderPass                 renderPass;
+			2u,														// deUint32                     attachmentCount;
+			attachmentBindInfos,									// const VkImageView*           pAttachments;
+			(deUint32)m_renderSize.x(),								// deUint32                     width;
+			(deUint32)m_renderSize.y(),								// deUint32                     height;
+			1u,														// deUint32                     layers;
 		};
 
-		m_framebuffer[PIPELINE_CACHE_NDX_NO_CACHE] = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPassFramebuffer[PIPELINE_CACHE_NDX_NO_CACHE].createFramebuffer(vk, vkDevice, &framebufferParams, images);
 
+		framebufferParams.renderPass = *m_renderPassFramebuffer[PIPELINE_CACHE_NDX_CACHED];
+		images[0] = *m_colorImage[PIPELINE_CACHE_NDX_CACHED];
 		attachmentBindInfos[0] = *m_colorAttachmentView[PIPELINE_CACHE_NDX_CACHED];
-		m_framebuffer[PIPELINE_CACHE_NDX_CACHED] = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPassFramebuffer[PIPELINE_CACHE_NDX_CACHED].createFramebuffer(vk, vkDevice, &framebufferParams, images);
 	}
 
 	// Create pipeline layout
@@ -648,7 +643,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 			DE_NULL											// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(m_param->getPipelineConstructionType(), vk, vkDevice, &pipelineLayoutParams);
 	}
 }
 
@@ -732,15 +727,15 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper&	
 
 	auto createModule = [&vk, vkDevice, &postfix](Context& context, std::string shaderName)
 	{
-		return createShaderModule(vk, vkDevice, context.getBinaryCollection().get(shaderName + postfix), 0);
+		return ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get(shaderName + postfix), 0);
 	};
 
 	// Bind shader stages
-	Move<VkShaderModule> vertShaderModule = createModule(m_context, "color_vert");
-	Move<VkShaderModule> fragShaderModule = createModule(m_context, "color_frag");
-	Move<VkShaderModule> tescShaderModule;
-	Move<VkShaderModule> teseShaderModule;
-	Move<VkShaderModule> geomShaderModule;
+	ShaderWrapper vertShaderModule = createModule(m_context, "color_vert");
+	ShaderWrapper fragShaderModule = createModule(m_context, "color_frag");
+	ShaderWrapper tescShaderModule;
+	ShaderWrapper teseShaderModule;
+	ShaderWrapper geomShaderModule;
 
 	if (m_param->getShaderFlags() & VK_SHADER_STAGE_GEOMETRY_BIT)
 		geomShaderModule = createModule(m_context, "unused_geo");
@@ -760,17 +755,17 @@ void GraphicsCacheTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper&	
 		.setupVertexInputState(&defaultVertexInputStateParams)
 		.setupPreRasterizationShaderState(viewport,
 										  scissor,
-										  *m_pipelineLayout,
-										  *m_renderPass,
+										  m_pipelineLayout,
+										  *m_renderPassFramebuffer[0],
 										  0u,
-										  *vertShaderModule,
+										  vertShaderModule,
 										  DE_NULL,
-										  *tescShaderModule,
-										  *teseShaderModule,
-										  *geomShaderModule)
-		.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fragShaderModule, &defaultDepthStencilState)
-		.setupFragmentOutputState(*m_renderPass)
-		.setMonolithicPipelineLayout(*m_pipelineLayout)
+										  tescShaderModule,
+										  teseShaderModule,
+										  geomShaderModule)
+		.setupFragmentShaderState(m_pipelineLayout, *m_renderPassFramebuffer[0], 0u, fragShaderModule, &defaultDepthStencilState)
+		.setupFragmentOutputState(*m_renderPassFramebuffer[0])
+		.setMonolithicPipelineLayout(m_pipelineLayout)
 		.buildPipeline(cache);
 }
 
@@ -780,7 +775,7 @@ void GraphicsCacheTestInstance::preparePipelines (void)
 	preparePipelineWrapper(m_pipeline[PIPELINE_CACHE_NDX_CACHED], *m_cache);
 }
 
-void GraphicsCacheTestInstance::prepareRenderPass (VkFramebuffer framebuffer, VkPipeline pipeline)
+void GraphicsCacheTestInstance::prepareRenderPass (const RenderPassWrapper& renderPassFramebuffer, GraphicsPipelineWrapper& pipeline)
 {
 	const DeviceInterface&	vk							= m_context.getDeviceInterface();
 
@@ -790,14 +785,14 @@ void GraphicsCacheTestInstance::prepareRenderPass (VkFramebuffer framebuffer, Vk
 		defaultClearValue(m_depthFormat),
 	};
 
-	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
+	renderPassFramebuffer.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	pipeline.bind(*m_cmdBuffer);
 	VkDeviceSize offsets = 0u;
 	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
 	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1u, 0u, 0u);
 
-	endRenderPass(vk, *m_cmdBuffer);
+	renderPassFramebuffer.end(vk, *m_cmdBuffer);
 }
 
 void GraphicsCacheTestInstance::prepareCommandBuffer (void)
@@ -811,11 +806,11 @@ void GraphicsCacheTestInstance::prepareCommandBuffer (void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
-	prepareRenderPass(*m_framebuffer[PIPELINE_CACHE_NDX_NO_CACHE], m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE].getPipeline());
+	prepareRenderPass(m_renderPassFramebuffer[PIPELINE_CACHE_NDX_NO_CACHE], m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE]);
 
 	// After the first render pass, the images are in correct layouts
 
-	prepareRenderPass(*m_framebuffer[PIPELINE_CACHE_NDX_CACHED], m_pipeline[PIPELINE_CACHE_NDX_CACHED].getPipeline());
+	prepareRenderPass(m_renderPassFramebuffer[PIPELINE_CACHE_NDX_CACHED], m_pipeline[PIPELINE_CACHE_NDX_CACHED]);
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
@@ -863,9 +858,8 @@ class ComputeCacheTest : public CacheTest
 public:
 							ComputeCacheTest	(tcu::TestContext&		testContext,
 												 const std::string&		name,
-												 const std::string&		description,
 												 const CacheTestParam*	param)
-								: CacheTest (testContext, name, description, param)
+								: CacheTest (testContext, name, param)
 								{ }
 	virtual					~ComputeCacheTest	(void) { }
 	virtual void			initPrograms		(SourceCollections&		programCollection) const;
@@ -1128,13 +1122,13 @@ tcu::TestStatus ComputeCacheTestInstance::verifyTestResult (void)
 class PipelineFromCacheTest : public GraphicsCacheTest
 {
 public:
-							PipelineFromCacheTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+							PipelineFromCacheTest		(tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param);
 	virtual					~PipelineFromCacheTest		(void) { }
 	virtual TestInstance*	createInstance				(Context& context) const;
 };
 
-PipelineFromCacheTest::PipelineFromCacheTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
-	: GraphicsCacheTest(testContext, name, description, param)
+PipelineFromCacheTest::PipelineFromCacheTest (tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, param)
 {
 }
 
@@ -1200,13 +1194,13 @@ void PipelineFromCacheTestInstance::preparePipelines (void)
 class PipelineFromIncompleteCacheTest : public GraphicsCacheTest
 {
 public:
-							PipelineFromIncompleteCacheTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+							PipelineFromIncompleteCacheTest		(tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param);
 	virtual					~PipelineFromIncompleteCacheTest	(void) {}
 	virtual TestInstance*	createInstance						(Context& context) const;
 };
 
-PipelineFromIncompleteCacheTest::PipelineFromIncompleteCacheTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
-	: GraphicsCacheTest(testContext, name, description, param)
+PipelineFromIncompleteCacheTest::PipelineFromIncompleteCacheTest (tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, param)
 {
 }
 
@@ -1329,10 +1323,9 @@ class MergeCacheTest : public GraphicsCacheTest
 public:
 								MergeCacheTest	(tcu::TestContext&			testContext,
 												 const std::string&			name,
-												 const std::string&			description,
 												 const CacheTestParam*		param,
 												 const MergeCacheTestParam* mergeCacheParam)
-									: GraphicsCacheTest (testContext, name, description, param)
+									: GraphicsCacheTest (testContext, name, param)
 									, m_mergeCacheParam	(*mergeCacheParam)
 									{ }
 	virtual						~MergeCacheTest	(void) { }
@@ -1348,7 +1341,7 @@ public:
 													 const CacheTestParam*		param,
 													 const MergeCacheTestParam* mergeCacheParam);
 private:
-	Move<VkPipelineCache>	createPipelineCache		(const DeviceInterface& vk, VkDevice device, MergeCacheType type);
+	Move<VkPipelineCache>	createPipelineCache		(const InstanceInterface& vki, const DeviceInterface& vk, VkPhysicalDevice physicalDevice, VkDevice device, MergeCacheType type);
 
 protected:
 	void					preparePipelines		(void);
@@ -1365,11 +1358,13 @@ TestInstance* MergeCacheTest::createInstance (Context& context) const
 MergeCacheTestInstance::MergeCacheTestInstance (Context& context, const CacheTestParam* param, const MergeCacheTestParam* mergeCacheParam)
 	: GraphicsCacheTestInstance (context, param)
 {
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= m_context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const VkDevice				vkDevice		= m_context.getDevice();
 
 	// Create a merge destination cache
-	m_cacheMerged = createPipelineCache(vk, vkDevice, mergeCacheParam->destCacheType);
+	m_cacheMerged = createPipelineCache(vki, vk, physicalDevice, vkDevice, mergeCacheParam->destCacheType);
 
 	// Create more pipeline caches
 	std::vector<VkPipelineCache>	sourceCaches	(mergeCacheParam->srcCacheTypes.size());
@@ -1380,7 +1375,7 @@ MergeCacheTestInstance::MergeCacheTestInstance (Context& context, const CacheTes
 		{
 			// vk::Move is not copyable, so create it on heap and wrap into de::SharedPtr
 			PipelineCachePtr	pipelineCachePtr	(new Move<VkPipelineCache>());
-			*pipelineCachePtr = createPipelineCache(vk, vkDevice, mergeCacheParam->srcCacheTypes[sourceIdx]);
+			*pipelineCachePtr = createPipelineCache(vki, vk, physicalDevice, vkDevice, mergeCacheParam->srcCacheTypes[sourceIdx]);
 
 			sourceCachePtrs[sourceIdx]	= pipelineCachePtr;
 			sourceCaches[sourceIdx]		= **pipelineCachePtr;
@@ -1391,7 +1386,7 @@ MergeCacheTestInstance::MergeCacheTestInstance (Context& context, const CacheTes
 	VK_CHECK(vk.mergePipelineCaches(vkDevice, *m_cacheMerged, static_cast<deUint32>(sourceCaches.size()), &sourceCaches[0]));
 }
 
-Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceInterface& vk, VkDevice device, MergeCacheType type)
+Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const InstanceInterface& vki, const DeviceInterface& vk, VkPhysicalDevice physicalDevice, VkDevice device, MergeCacheType type)
 {
 	VkPipelineCacheCreateInfo pipelineCacheCreateInfo =
 	{
@@ -1402,8 +1397,8 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 		DE_NULL,										// const void*                 pInitialData;
 	};
 
-	GraphicsPipelineWrapper localPipeline		(vk, device, m_param->getPipelineConstructionType());
-	GraphicsPipelineWrapper localMissPipeline	(vk, device, m_param->getPipelineConstructionType());
+	GraphicsPipelineWrapper localPipeline		(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_param->getPipelineConstructionType());
+	GraphicsPipelineWrapper localMissPipeline	(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_param->getPipelineConstructionType());
 
 	switch (type)
 	{
@@ -1426,7 +1421,7 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 		}
 		case MERGE_CACHE_HIT:
 		{
-			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
+			Move<VkPipelineCache> ret = createPipelineCache(vki, vk, physicalDevice, device, MERGE_CACHE_EMPTY);
 
 			preparePipelineWrapper(localPipeline, *ret);
 
@@ -1434,7 +1429,7 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 		}
 		case MERGE_CACHE_MISS:
 		{
-			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
+			Move<VkPipelineCache> ret = createPipelineCache(vki, vk, physicalDevice, device, MERGE_CACHE_EMPTY);
 
 			preparePipelineWrapper(localMissPipeline, *ret, true);
 
@@ -1442,7 +1437,7 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 		}
 		case MERGE_CACHE_MISS_AND_HIT:
 		{
-			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
+			Move<VkPipelineCache> ret = createPipelineCache(vki, vk, physicalDevice, device, MERGE_CACHE_EMPTY);
 
 			preparePipelineWrapper(localPipeline, *ret);
 			preparePipelineWrapper(localMissPipeline, *ret, true);
@@ -1451,9 +1446,9 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 		}
 		case MERGE_CACHE_MERGED:
 		{
-			Move<VkPipelineCache>	cache1			= createPipelineCache(vk, device, MERGE_CACHE_FROM_DATA);
-			Move<VkPipelineCache>	cache2			= createPipelineCache(vk, device, MERGE_CACHE_HIT);
-			Move<VkPipelineCache>	cache3			= createPipelineCache(vk, device, MERGE_CACHE_MISS);
+			Move<VkPipelineCache>	cache1			= createPipelineCache(vki, vk, physicalDevice, device, MERGE_CACHE_FROM_DATA);
+			Move<VkPipelineCache>	cache2			= createPipelineCache(vki, vk, physicalDevice, device, MERGE_CACHE_HIT);
+			Move<VkPipelineCache>	cache3			= createPipelineCache(vki, vk, physicalDevice, device, MERGE_CACHE_MISS);
 
 			const VkPipelineCache	sourceCaches[]	=
 			{
@@ -1462,7 +1457,7 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 				*cache3
 			};
 
-			Move<VkPipelineCache>	ret				= createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
+			Move<VkPipelineCache>	ret				= createPipelineCache(vki, vk, physicalDevice, device, MERGE_CACHE_EMPTY);
 
 			// Merge the caches
 			VK_CHECK(vk.mergePipelineCaches(device, *ret, DE_LENGTH_OF_ARRAY(sourceCaches), sourceCaches));
@@ -1486,9 +1481,8 @@ class CacheHeaderTest : public GraphicsCacheTest
 public:
 			CacheHeaderTest		(tcu::TestContext&		testContext,
 								 const std::string&		name,
-								 const std::string&		description,
 								 const CacheTestParam*	param)
-								: GraphicsCacheTest(testContext, name, description, param)
+								: GraphicsCacheTest(testContext, name, param)
 	{ }
 	virtual	~CacheHeaderTest	(void) { }
 	virtual	TestInstance*		createInstance(Context& context) const;
@@ -1564,13 +1558,13 @@ CacheHeaderTestInstance::~CacheHeaderTestInstance (void)
 class InvalidSizeTest : public GraphicsCacheTest
 {
 public:
-							InvalidSizeTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+							InvalidSizeTest		(tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param);
 	virtual					~InvalidSizeTest	(void) {}
 	virtual TestInstance*	createInstance		(Context& context) const;
 };
 
-InvalidSizeTest::InvalidSizeTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
-	: GraphicsCacheTest(testContext, name, description, param)
+InvalidSizeTest::InvalidSizeTest (tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, param)
 {
 }
 
@@ -1651,13 +1645,13 @@ InvalidSizeTestInstance::~InvalidSizeTestInstance (void)
 class ZeroSizeTest : public GraphicsCacheTest
 {
 public:
-							ZeroSizeTest	(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+							ZeroSizeTest	(tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param);
 	virtual					~ZeroSizeTest	(void) {}
 	virtual TestInstance*	createInstance	(Context& context) const;
 };
 
-ZeroSizeTest::ZeroSizeTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
-	: GraphicsCacheTest(testContext, name, description, param)
+ZeroSizeTest::ZeroSizeTest (tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, param)
 {
 }
 
@@ -1729,13 +1723,13 @@ ZeroSizeTestInstance::~ZeroSizeTestInstance (void)
 class InvalidBlobTest : public GraphicsCacheTest
 {
 public:
-							InvalidBlobTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+							InvalidBlobTest		(tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param);
 	virtual					~InvalidBlobTest	(void) {}
 	virtual TestInstance*	createInstance		(Context& context) const;
 };
 
-InvalidBlobTest::InvalidBlobTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
-	: GraphicsCacheTest(testContext, name, description, param)
+InvalidBlobTest::InvalidBlobTest (tcu::TestContext& testContext, const std::string& name, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, param)
 {
 }
 
@@ -1825,7 +1819,7 @@ InvalidBlobTestInstance::~InvalidBlobTestInstance (void)
 
 tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> cacheTests (new tcu::TestCaseGroup(testCtx, "cache", "pipeline cache tests"));
+	de::MovePtr<tcu::TestCaseGroup> cacheTests (new tcu::TestCaseGroup(testCtx, "cache"));
 
 	const VkShaderStageFlags vertFragStages			= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	const VkShaderStageFlags vertGeomFragStages		= vertFragStages | VK_SHADER_STAGE_GEOMETRY_BIT;
@@ -1833,7 +1827,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 
 	// Graphics Pipeline Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics_tests", "Test pipeline cache with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics_tests"));
 
 		const CacheTestParam testParams[] =
 		{
@@ -1853,7 +1847,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 
 	// Graphics Pipeline Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_get_data", "Test pipeline cache with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_get_data"));
 
 		const CacheTestParam testParams[] =
 		{
@@ -1870,7 +1864,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 
 	// Graphics Pipeline Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_incomplete_get_data", "Test pipeline cache with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_incomplete_get_data"));
 
 		const CacheTestParam testParams[] =
 		{
@@ -1888,7 +1882,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 	// Compute Pipeline Tests - don't repeat those tests for graphics pipeline library
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute_tests", "Test pipeline cache with compute pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute_tests"));
 
 		const CacheTestParam testParams[] =
 		{
@@ -1903,7 +1897,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 
 	// Merge cache Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> mergeTests (new tcu::TestCaseGroup(testCtx, "merge", "Cache merging tests"));
+		de::MovePtr<tcu::TestCaseGroup> mergeTests (new tcu::TestCaseGroup(testCtx, "merge"));
 
 		const CacheTestParam testParams[] =
 		{
@@ -1915,7 +1909,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
 		{
 
-			de::MovePtr<tcu::TestCaseGroup> mergeStagesTests(new tcu::TestCaseGroup(testCtx, testParams[i].generateTestName().c_str(), testParams[i].generateTestDescription().c_str()));
+			de::MovePtr<tcu::TestCaseGroup> mergeStagesTests(new tcu::TestCaseGroup(testCtx, testParams[i].generateTestName().c_str()));
 
 			for (deUint32 destTypeIdx = 0u; destTypeIdx <= MERGE_CACHE_TYPE_LAST; destTypeIdx++)
 			for (deUint32 srcType1Idx = 0u; srcType1Idx <= MERGE_CACHE_TYPE_LAST; srcType1Idx++)
@@ -1930,7 +1924,6 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 					std::string testName = "src_" + getMergeCacheTypesStr(cacheTestParam.srcCacheTypes) + "_dst_" + getMergeCacheTypeStr(cacheTestParam.destCacheType);
 					mergeStagesTests->addChild(new MergeCacheTest(testCtx,
 															testName.c_str(),
-															"Merge the caches test.",
 															&testParams[i],
 															&cacheTestParam));
 				}
@@ -1945,7 +1938,6 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 					std::string testName = "src_" + getMergeCacheTypesStr(cacheTestParamTwoCaches.srcCacheTypes) + "_dst_" + getMergeCacheTypeStr(cacheTestParamTwoCaches.destCacheType);
 					mergeStagesTests->addChild(new MergeCacheTest(testCtx,
 														   testName.c_str(),
-														   "Merge the caches test.",
 														   &testParams[i],
 														   &cacheTestParamTwoCaches));
 				}
@@ -1957,28 +1949,24 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx, PipelineConstru
 
 	// Misc Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc_tests", "Misc tests that can not be categorized to other group."));
+		de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc_tests"));
 
 		const CacheTestParam testParam(pipelineConstructionType, vertFragStages, false);
 
 		miscTests->addChild(new CacheHeaderTest(testCtx,
 											   "cache_header_test",
-											   "Cache header test.",
 											   &testParam));
 
 		miscTests->addChild(new InvalidSizeTest(testCtx,
 												"invalid_size_test",
-												"Invalid size test.",
 												&testParam));
 
 		miscTests->addChild(new ZeroSizeTest(testCtx,
 											 "zero_size_test",
-											 "Zero size test.",
 											 &testParam));
 
 		miscTests->addChild(new InvalidBlobTest(testCtx,
 												"invalid_blob_test",
-												"Invalid cache blob test.",
 												&testParam));
 
 		cacheTests->addChild(miscTests.release());

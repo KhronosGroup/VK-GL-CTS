@@ -48,9 +48,9 @@ void createChildren (tcu::TestCaseGroup* spirVAssemblyTests)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "spirv_assembly", "SPIR-V Assembly tests", createChildren);
+	return createTestGroup(testCtx, name, createChildren);
 }
 
 } // SpirVAssembly

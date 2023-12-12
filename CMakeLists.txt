@@ -6,6 +6,12 @@ cmake_minimum_required(VERSION 3.20.0)
 
 option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" OFF)
 
+# Target selection:
+# SELECTED_BUILD_TARGETS is a CMake option that can be set to a list of targets
+# that will be built. If the variable is empty (as is the default), all targets
+# will be built normally.
+set(SELECTED_BUILD_TARGETS "" CACHE STRING "Select some specific targets to build, separated by spaces")
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/framework/delibs/cmake")
 find_package(Git)
 find_package(PythonInterp 3)
@@ -58,6 +64,21 @@ include_directories(
 # Include target-specific definitions
 include(targets/${DEQP_TARGET}/${DEQP_TARGET}.cmake)
 
+# Handle target selection list.
+string(STRIP "${SELECTED_BUILD_TARGETS}" TARGET_SELECTION_STRIPPED)
+if ("${TARGET_SELECTION_STRIPPED}" STREQUAL "" OR (NOT (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)))
+	set(MAYBE_EXCLUDE_FROM_ALL)
+else ()
+	# If a non-empty target selection list is provided, exclude all subdirectories by default.
+	set(MAYBE_EXCLUDE_FROM_ALL EXCLUDE_FROM_ALL)
+
+	# Each target in the target selection list will be added as a dependency of a new fake target.
+	# The new fake target will be added as a dependency of the default build target.
+	string(REGEX REPLACE "[ \t\r\n]+" ";" TARGET_SELECTION_LIST "${TARGET_SELECTION_STRIPPED}")
+	add_custom_target(target_selection_list_target ALL)
+	add_dependencies(target_selection_list_target ${TARGET_SELECTION_LIST})
+endif ()
+
 # zlib
 find_package(ZLIB)
 # dEQP CMake compatibility (as for libpng)
@@ -66,7 +87,7 @@ set(ZLIB_LIBRARY ${ZLIB_LIBRARIES})
 
 if (NOT ZLIB_INCLUDE_PATH OR NOT ZLIB_LIBRARY)
 	message(STATUS "System version of zlib not found, using external/zlib")
-	add_subdirectory(external/zlib)
+	add_subdirectory(external/zlib EXCLUDE_FROM_ALL)
 	# \note ZLIB_LIBRARY and ZLIB_INCLUDE_PATH are promoted from external/zlib/CMakeLists.txt
 endif ()
 
@@ -91,15 +112,15 @@ set(PNG_LIBRARY ${PNG_LIBRARIES})
 
 if (NOT PNG_INCLUDE_PATH OR NOT PNG_LIBRARY)
 	message(STATUS "System version of libpng not found, using external/libpng")
-	add_subdirectory(external/libpng)
+	add_subdirectory(external/libpng EXCLUDE_FROM_ALL)
 	# \note PNG_LIBRARY and PNG_INCLUDE_PATH are promoted from external/libpng/CMakeLists.txt
 endif ()
 
-# glslang
-add_subdirectory(external/glslang)
-
 # spirv-tools
-add_subdirectory(external/spirv-tools)
+add_subdirectory(external/spirv-tools EXCLUDE_FROM_ALL)
+
+# glslang
+add_subdirectory(external/glslang EXCLUDE_FROM_ALL)
 
 # spirv-headers
 set(SPIRV_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/spirv-headers/src/include")
@@ -109,11 +130,11 @@ endif()
 include_directories(${SPIRV_INCLUDE_PATH})
 
 # Amber
-add_subdirectory(external/amber)
+add_subdirectory(external/amber EXCLUDE_FROM_ALL)
 include_directories(external/amber)
 
 # jsoncpp
-add_subdirectory(external/jsoncpp)
+add_subdirectory(external/jsoncpp EXCLUDE_FROM_ALL)
 include_directories(external/jsoncpp/src/include)
 
 # RenderDoc API
@@ -122,9 +143,9 @@ include_directories(external/renderdoc/src)
 # Vulkan video support libraries
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
 	# Used for elementary stream demuxing
-	add_subdirectory(external/ESExtractor)
+	add_subdirectory(external/ESExtractor EXCLUDE_FROM_ALL)
 	# Used for the heavy lifting in video decoding, depends on ESExtrator at runtime.
-	add_subdirectory(external/nvidia-video-samples)
+	add_subdirectory(external/nvidia-video-samples EXCLUDE_FROM_ALL)
 endif()
 
 include_directories(${PNG_INCLUDE_PATH})
@@ -221,19 +242,19 @@ macro(PCH SRCS PCHCPP)
 endmacro(PCH)
 
 # delibs projects
-add_subdirectory(framework/delibs/debase)
-add_subdirectory(framework/delibs/depool)
-add_subdirectory(framework/delibs/dethread)
-add_subdirectory(framework/delibs/destream)
-add_subdirectory(framework/delibs/deutil)
-add_subdirectory(framework/delibs/decpp)
+add_subdirectory(framework/delibs/debase ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/depool ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/dethread ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/destream ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/deutil ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(framework/delibs/decpp ${MAYBE_EXCLUDE_FROM_ALL})
 
 # ExecServer
-add_subdirectory(execserver)
+add_subdirectory(execserver ${MAYBE_EXCLUDE_FROM_ALL})
 
 # Executor framework and tools
 if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/executor)
-	add_subdirectory(executor)
+	add_subdirectory(executor ${MAYBE_EXCLUDE_FROM_ALL})
 endif ()
 
 # Test framework include directories
@@ -355,18 +376,18 @@ macro (add_data_file MODULE_NAME SRC_FILE DST_FILE)
 	endif ()
 endmacro (add_data_file)
 
-add_subdirectory(framework)
-add_subdirectory(external/vulkancts/framework/vulkan)
+add_subdirectory(framework ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/vulkancts/framework/vulkan ${MAYBE_EXCLUDE_FROM_ALL})
 
 if (DE_COMPILER_IS_MSC)
 	add_compile_options(/bigobj) # Required by glsBuiltinPrecisionTests.cpp
 endif ()
 
-add_subdirectory(modules)
-add_subdirectory(external/vulkancts/modules/vulkan)
-add_subdirectory(external/vulkancts/vkscserver)
-add_subdirectory(external/vulkancts/vkscpc)
-add_subdirectory(external/openglcts)
+add_subdirectory(modules ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/vulkancts/modules/vulkan ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/vulkancts/vkscserver ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/vulkancts/vkscpc ${MAYBE_EXCLUDE_FROM_ALL})
+add_subdirectory(external/openglcts ${MAYBE_EXCLUDE_FROM_ALL})
 
 # Single-binary targets
 if (DE_OS_IS_ANDROID)

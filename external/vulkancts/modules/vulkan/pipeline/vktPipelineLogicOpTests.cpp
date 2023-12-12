@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2020 The Khronos Group Inc.
  * Copyright (c) 2020 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,7 +138,6 @@ class LogicOpTest : public vkt::TestCase
 public:
 									LogicOpTest			(tcu::TestContext&  testCtx,
 														 const std::string& name,
-														 const std::string& description,
 														 const TestParams &testParams);
 	virtual							~LogicOpTest		(void);
 	virtual		  void				initPrograms		(SourceCollections& sourceCollections) const;
@@ -149,9 +150,8 @@ private:
 
 LogicOpTest::LogicOpTest (tcu::TestContext& testCtx,
 						  const std::string& name,
-						  const std::string& description,
 						  const TestParams& testParams)
-	: vkt::TestCase	(testCtx, name, description)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(testParams)
 {
 	DE_ASSERT(m_params.format != VK_FORMAT_UNDEFINED);
@@ -168,7 +168,7 @@ void LogicOpTest::checkSupport (Context &ctx) const
 	if (!features.logicOp)
 		TCU_THROW(NotSupportedError, "Logic operations not supported");
 
-	checkPipelineLibraryRequirements(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), m_params.pipelineConstructionType);
 
 	if (!isSupportedColorAttachmentFormat(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), m_params.format))
 		TCU_THROW(NotSupportedError, "Unsupported color attachment format: " + std::string(getFormatName(m_params.format)));
@@ -225,14 +225,14 @@ private:
 	de::MovePtr<ImageWithMemory>		m_colorImage;
 	Move<VkImageView>					m_colorAttachmentView;
 
-	Move<VkRenderPass>					m_renderPass;
+	RenderPassWrapper					m_renderPass;
 	Move<VkFramebuffer>					m_framebuffer;
 
-	Move<VkShaderModule>				m_vertexShaderModule;
-	Move<VkShaderModule>				m_fragmentShaderModule;
+	ShaderWrapper						m_vertexShaderModule;
+	ShaderWrapper						m_fragmentShaderModule;
 
-	Move<VkPipelineLayout>				m_preRasterizationStatePipelineLayout;
-	Move<VkPipelineLayout>				m_fragmentStatePipelineLayout;
+	PipelineLayoutWrapper				m_preRasterizationStatePipelineLayout;
+	PipelineLayoutWrapper				m_fragmentStatePipelineLayout;
 	GraphicsPipelineWrapper				m_graphicsPipeline;
 
 	Move<VkCommandPool>					m_cmdPool;
@@ -247,7 +247,7 @@ LogicOpTestInstance::LogicOpTestInstance (Context &ctx, const TestParams &testPa
 	, m_channelSize			(tcu::getChannelSize(m_tcuFormat.type))
 	, m_channelMask			(getChannelMask(m_channelSize))
 	, m_renderSize			(32u, 32u)
-	, m_graphicsPipeline	(m_context.getDeviceInterface(), m_context.getDevice(), testParams.pipelineConstructionType)
+	, m_graphicsPipeline	(m_context.getInstanceInterface(), m_context.getDeviceInterface(), m_context.getPhysicalDevice(), m_context.getDevice(), m_context.getDeviceExtensions(), testParams.pipelineConstructionType)
 {
 	DE_ASSERT(isUintFormat(m_params.format));
 
@@ -300,8 +300,8 @@ LogicOpTestInstance::LogicOpTestInstance (Context &ctx, const TestParams &testPa
 		m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
 	}
 
-	m_renderPass	= makeRenderPass(vk, vkDevice, m_params.format);
-	m_framebuffer	= makeFramebuffer(vk, vkDevice, *m_renderPass, m_colorAttachmentView.get(), m_renderSize.x(), m_renderSize.y());
+	m_renderPass	= RenderPassWrapper(m_params.pipelineConstructionType, vk, vkDevice, m_params.format);
+	m_renderPass.createFramebuffer(vk, vkDevice, **m_colorImage, *m_colorAttachmentView, m_renderSize.x(), m_renderSize.y());
 
 	// create pipeline layout
 	{
@@ -329,14 +329,14 @@ LogicOpTestInstance::LogicOpTestInstance (Context &ctx, const TestParams &testPa
 			DE_NULL,											// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_preRasterizationStatePipelineLayout		= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout		= PipelineLayoutWrapper(m_params.pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 		pipelineLayoutParams.pushConstantRangeCount = 1u;
 		pipelineLayoutParams.pPushConstantRanges	= &pcRange;
-		m_fragmentStatePipelineLayout				= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_fragmentStatePipelineLayout				= PipelineLayoutWrapper(m_params.pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
-	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
-	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
+	m_vertexShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+	m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
 
 	// create pipeline
 	{
@@ -378,15 +378,15 @@ LogicOpTestInstance::LogicOpTestInstance (Context &ctx, const TestParams &testPa
 						  .setDefaultDepthStencilState()
 						  .setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
-						  .setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
+						  .setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
 						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 															scissors,
-															*m_preRasterizationStatePipelineLayout,
+															m_preRasterizationStatePipelineLayout,
 															*m_renderPass,
 															0u,
-															*m_vertexShaderModule)
-						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+															m_vertexShaderModule)
+						  .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
 						  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
 						  .buildPipeline();
 	}
@@ -410,14 +410,14 @@ LogicOpTestInstance::LogicOpTestInstance (Context &ctx, const TestParams &testPa
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+		m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
 
 		// Update push constant values
 		vk.cmdPushConstants(*m_cmdBuffer, *m_fragmentStatePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, kPushConstantSize, &quadColor);
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+		m_graphicsPipeline.bind(*m_cmdBuffer);
 		vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
@@ -488,7 +488,7 @@ std::string getSimpleFormatName (VkFormat format)
 
 tcu::TestCaseGroup* createLogicOpTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineType)
 {
-	de::MovePtr<tcu::TestCaseGroup>	logicOpTests (new tcu::TestCaseGroup(testCtx, "logic_op", "Logical Operations tests"));
+	de::MovePtr<tcu::TestCaseGroup>	logicOpTests (new tcu::TestCaseGroup(testCtx, "logic_op"));
 
 	// 4 bits are enough to check all possible combinations of logical operation inputs at once, for example s AND d:
 	//
@@ -553,12 +553,12 @@ tcu::TestCaseGroup* createLogicOpTests (tcu::TestContext& testCtx, PipelineConst
 		const auto	formatName	= getSimpleFormatName(format);
 		const auto	formatDesc	= "Logical operator tests with format " + formatName;
 
-		de::MovePtr<tcu::TestCaseGroup> formatGroup (new tcu::TestCaseGroup(testCtx, formatName.c_str(), formatDesc.c_str()));
+		de::MovePtr<tcu::TestCaseGroup> formatGroup (new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 
 		for (auto& params : logicOpTestParams)
 		{
 			params.format = format;
-			formatGroup->addChild(new LogicOpTest(testCtx, params.name, "Tests the " + params.name + " logical operator", params));
+			formatGroup->addChild(new LogicOpTest(testCtx, params.name, params));
 		}
 
 		logicOpTests->addChild(formatGroup.release());

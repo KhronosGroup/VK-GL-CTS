@@ -33,6 +33,7 @@ namespace robustness
 {
 
 tcu::TestCaseGroup* createIndexAccessTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createCmdBindIndexBuffer2Tests (tcu::TestContext& testCtx);
 
 } // robustness
 } // vkt

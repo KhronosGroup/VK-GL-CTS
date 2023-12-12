@@ -52,6 +52,12 @@ static const int	QUAD_GRID_SIZE	= 8;
 static const int	WIDTH			= 128;
 static const int	HEIGHT			= 128;
 
+enum AttributeDivisor {
+	ATTRIBUTE_DIVISOR_NONE,
+	ATTRIBUTE_DIVISOR_EXT,
+	ATTRIBUTE_DIVISOR_KHR,
+};
+
 struct TestParams
 {
 	enum DrawFunction
@@ -68,12 +74,19 @@ struct TestParams
 	vk::VkPrimitiveTopology	topology;
 	const SharedGroupParams	groupParams;
 
-	deBool					testAttribDivisor;
+	AttributeDivisor		testAttribDivisor;
 	deUint32				attribDivisor;
 
 	deBool					testMultiview;
 
 	deBool					dynamicState;
+
+	deBool					useMaintenance5Ext;
+
+	bool isIndirectDraw (void) const
+	{
+		return (function == FUNCTION_DRAW_INDIRECT || function == FUNCTION_DRAW_INDEXED_INDIRECT);
+	}
 };
 
 struct VertexPositionAndColor
@@ -115,8 +128,10 @@ std::ostream & operator<<(std::ostream & str, TestParams const & v)
 
 	string << "_" << de::toString(v.topology);
 
-	if (v.testAttribDivisor)
+	if (v.testAttribDivisor == ATTRIBUTE_DIVISOR_EXT)
 		string << "_attrib_divisor_" << v.attribDivisor;
+	else if (v.testAttribDivisor == ATTRIBUTE_DIVISOR_KHR)
+		string << "_khr_attrib_divisor_" << v.attribDivisor;
 
 	if (v.testMultiview)
 		string << "_multiview";
@@ -233,7 +248,13 @@ private:
 	void										draw					(vk::VkCommandBuffer cmdBuffer,
 																		 vk::VkBuffer vertexBuffer, vk::VkBuffer instancedVertexBuffer,
 																		 de::SharedPtr<Buffer> indexBuffer, de::SharedPtr<Buffer> indirectBuffer,
-																		 deUint32 firstInstance, deUint32 instanceCount);
+																		 vk::VkDeviceSize indexBufferSize, deUint32 firstInstance, deUint32 instanceCount);
+	void										cmdBindIndexBufferImpl	(vk::VkCommandBuffer	commandBuffer,
+																		 vk::VkBuffer			indexBuffer,
+																		 vk::VkDeviceSize		offset,
+																		 vk::VkDeviceSize		size,
+																		 vk::VkIndexType		indexType);
+
 
 #ifndef CTS_USES_VULKANSC
 	void										beginSecondaryCmdBuffer	(vk::VkRenderingFlagsKHR renderingFlags = 0u);
@@ -272,9 +293,8 @@ class InstancedDrawCase : public TestCase
 public:
 	InstancedDrawCase (tcu::TestContext&	testCtx,
 					   const std::string&	name,
-					   const std::string&	desc,
 					   TestParams			params)
-		: TestCase	(testCtx, name, desc)
+		: TestCase	(testCtx, name)
 		, m_params	(params)
 	{
 		m_vertexShader = "#version 430\n"
@@ -313,11 +333,24 @@ public:
 			if (!physicalVertexInputDynamicState.vertexInputDynamicState)
 				TCU_THROW(NotSupportedError, "Implementation does not support vertexInputDynamicState");
 		}
-		if (m_params.testAttribDivisor)
+		if (m_params.testAttribDivisor == ATTRIBUTE_DIVISOR_EXT)
 		{
 			context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
 
-			const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeaturesEXT();
+			const auto& vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
+			if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
+				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");
+
+			if (m_params.attribDivisor == 0 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateZeroDivisor)
+				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisorZero");
+
+		}
+#ifndef CTS_USES_VULKANSC
+		else if (m_params.testAttribDivisor == ATTRIBUTE_DIVISOR_KHR)
+		{
+			context.requireDeviceFunctionality("VK_KHR_vertex_attribute_divisor");
+
+			const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR& vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
 
 			if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
 				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");
@@ -325,15 +358,21 @@ public:
 			if (m_params.attribDivisor == 0 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateZeroDivisor)
 				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisorZero");
 
-			if (m_params.testMultiview)
-			{
-				context.requireDeviceFunctionality("VK_KHR_multiview");
+			const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR& vertexAttributeDivisorProperties = context.getVertexAttributeDivisorProperties();
 
-				const vk::VkPhysicalDeviceMultiviewFeatures& multiviewFeatures = context.getMultiviewFeatures();
+			if (!vertexAttributeDivisorProperties.supportsNonZeroFirstInstance)
+				TCU_THROW(NotSupportedError, "Implementation does not support supportsNonZeroFirstInstance");
+		}
+#endif
 
-				if (!multiviewFeatures.multiview)
-					TCU_THROW(NotSupportedError, "Implementation does not support multiview feature");
-			}
+		if (m_params.testMultiview)
+		{
+			context.requireDeviceFunctionality("VK_KHR_multiview");
+
+			const vk::VkPhysicalDeviceMultiviewFeatures& multiviewFeatures = context.getMultiviewFeatures();
+
+			if (!multiviewFeatures.multiview)
+				TCU_THROW(NotSupportedError, "Implementation does not support multiview feature");
 		}
 
 #ifndef CTS_USES_VULKANSC
@@ -345,6 +384,11 @@ public:
 			!context.getPortabilitySubsetFeatures().triangleFans)
 		{
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+		}
+
+		if (m_params.useMaintenance5Ext)
+		{
+			context.requireDeviceFunctionality(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
 		}
 #endif // CTS_USES_VULKANSC
 	}
@@ -508,7 +552,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 		m_params.attribDivisor,
 	};
 
-	if (m_params.testAttribDivisor)
+	if (m_params.testAttribDivisor != ATTRIBUTE_DIVISOR_NONE)
 		m_vertexInputState.addDivisors(1, &vertexInputBindingDivisorDescription);
 
 	const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
@@ -596,7 +640,8 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 	int firstInstanceIndicesCount = DE_LENGTH_OF_ARRAY(firstInstanceIndices);
 
 	// Require 'drawIndirectFirstInstance' feature to run non-zero firstInstance indirect draw tests.
-	if (m_params.function == TestParams::FUNCTION_DRAW_INDIRECT && !m_context.getDeviceFeatures().drawIndirectFirstInstance)
+	const auto& deviceFeatures = m_context.getDeviceFeatures();
+	if (m_params.isIndirectDraw() && !deviceFeatures.drawIndirectFirstInstance)
 	{
 		firstInstanceIndicesCount = 1;
 	}
@@ -610,7 +655,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			const deUint32				prepareCount			= de::max(instanceCount, 1u);
 			const deUint32				firstInstance			= firstInstanceIndices[firstInstanceIndexNdx];
 
-			prepareVertexData(prepareCount, firstInstance, m_params.testAttribDivisor ? m_params.attribDivisor : 1);
+			prepareVertexData(prepareCount, firstInstance, (m_params.testAttribDivisor != ATTRIBUTE_DIVISOR_NONE) ? m_params.attribDivisor : 1);
 			const de::SharedPtr<Buffer>	vertexBuffer			= createAndUploadBuffer(m_data, m_vk, m_context, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 			const de::SharedPtr<Buffer>	instancedVertexBuffer	= createAndUploadBuffer(m_instancedColor, m_vk, m_context, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
@@ -658,7 +703,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 				else
 					beginSecondaryCmdBuffer();
 
-				draw(*m_secCmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, firstInstance, instanceCount);
+				draw(*m_secCmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, (m_indexes.size() * sizeof(deUint32)), firstInstance, instanceCount);
 
 				if (m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 					endRendering(m_vk, *m_secCmdBuffer);
@@ -690,7 +735,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 
 				beginRendering(m_vk, *m_cmdBuffer, *m_colorTargetView, renderArea, clearColor, vk::VK_IMAGE_LAYOUT_GENERAL,
 							   vk::VK_ATTACHMENT_LOAD_OP_LOAD, 0u, layerCount, viewMask);
-				draw(*m_cmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, firstInstance, instanceCount);
+				draw(*m_cmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, (m_indexes.size() * sizeof(deUint32)), firstInstance, instanceCount);
 				endRendering(m_vk, *m_cmdBuffer);
 
 				endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -703,7 +748,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 				preRenderCommands(clearColor, numLayers);
 
 				beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
-				draw(*m_cmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, firstInstance, instanceCount);
+				draw(*m_cmdBuffer, vertexBuffer->object(), instancedVertexBuffer->object(), indexBuffer, indirectBuffer, (m_indexes.size() * sizeof(deUint32)), firstInstance, instanceCount);
 				endRenderPass(m_vk, *m_cmdBuffer);
 
 				endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -748,7 +793,7 @@ void InstancedDrawInstance::beginRender(vk::VkCommandBuffer cmdBuffer, const vk:
 				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0, &vetrices[0]),
 				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0, &colors[0]),
 				// The reference renderer treats a divisor of 0 as meaning per-vertex.  Use INT_MAX instead; it should work just as well.
-				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), m_params.testAttribDivisor ? (m_params.attribDivisor == 0 ? INT_MAX : m_params.attribDivisor) : 1, &m_instancedColor[0])
+				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), (m_params.testAttribDivisor != ATTRIBUTE_DIVISOR_NONE) ? (m_params.attribDivisor == 0 ? INT_MAX : m_params.attribDivisor) : 1, &m_instancedColor[0])
 			};
 
 			if (m_params.function == TestParams::FUNCTION_DRAW || m_params.function == TestParams::FUNCTION_DRAW_INDIRECT)
@@ -919,13 +964,30 @@ void InstancedDrawInstance::preRenderCommands(const vk::VkClearValue& clearColor
 							0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 }
 
+void InstancedDrawInstance::cmdBindIndexBufferImpl	(vk::VkCommandBuffer	commandBuffer,
+													 vk::VkBuffer			indexBuffer,
+													 vk::VkDeviceSize		offset,
+													 vk::VkDeviceSize		size,
+													 vk::VkIndexType		indexType)
+{
+#ifndef CTS_USES_VULKANSC
+	if (m_params.useMaintenance5Ext)
+		m_vk.cmdBindIndexBuffer2KHR(commandBuffer, indexBuffer, offset, size, indexType);
+	else
+#endif
+	{
+		DE_UNREF(size);
+		m_vk.cmdBindIndexBuffer(commandBuffer, indexBuffer, offset, indexType);
+	}
+}
+
 void InstancedDrawInstance::draw(vk::VkCommandBuffer cmdBuffer,
 								 vk::VkBuffer vertexBuffer, vk::VkBuffer instancedVertexBuffer,
 								 de::SharedPtr<Buffer> indexBuffer, de::SharedPtr<Buffer> indirectBuffer,
-								 deUint32 firstInstance, deUint32 instanceCount)
+								 vk::VkDeviceSize indexBufferSize, deUint32 firstInstance, deUint32 instanceCount)
 {
 	if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED || m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
-		m_vk.cmdBindIndexBuffer(cmdBuffer, indexBuffer->object(), 0, vk::VK_INDEX_TYPE_UINT32);
+		cmdBindIndexBufferImpl(cmdBuffer, indexBuffer->object(), 0, indexBufferSize, vk::VK_INDEX_TYPE_UINT32);
 
 	const vk::VkBuffer		vertexBuffers[]			{ vertexBuffer,		instancedVertexBuffer	};
 	const vk::VkDeviceSize	vertexBufferOffsets[]	{ 0,				0 };
@@ -1059,7 +1121,7 @@ void InstancedDrawInstance::beginSecondaryCmdBuffer(vk::VkRenderingFlagsKHR rend
 } // anonymus
 
 InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParams groupParams)
-	: TestCaseGroup		(testCtx, "instanced", "Instanced drawing tests")
+	: TestCaseGroup		(testCtx, "instanced")
 	, m_groupParams		(groupParams)
 {
 	static const vk::VkPrimitiveTopology	topologies[]			=
@@ -1078,6 +1140,12 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 		TestParams::FUNCTION_DRAW_INDIRECT,
 		TestParams::FUNCTION_DRAW_INDEXED_INDIRECT,
 	};
+	static const AttributeDivisor			attribDivisors[]		=
+	{
+		ATTRIBUTE_DIVISOR_NONE,
+		ATTRIBUTE_DIVISOR_EXT,
+		ATTRIBUTE_DIVISOR_KHR,
+	};
 
 	static const deBool multiviews[] = { DE_FALSE, DE_TRUE };
 
@@ -1092,8 +1160,9 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 
 			for (int functionNdx = 0; functionNdx < DE_LENGTH_OF_ARRAY(functions); functionNdx++)
 			{
-				for (int testAttribDivisor = 0; testAttribDivisor < 2; testAttribDivisor++)
+				for (int testAttribDivisor = 0; testAttribDivisor < DE_LENGTH_OF_ARRAY(attribDivisors); testAttribDivisor++)
 				{
+					AttributeDivisor attribDivisor = attribDivisors[testAttribDivisor];
 					for (int divisorNdx = 0; divisorNdx < DE_LENGTH_OF_ARRAY(divisors); divisorNdx++)
 					{
 						// reduce number of tests for dynamic rendering cases where secondary command buffer is used
@@ -1102,8 +1171,8 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 
 						for (int multiviewNdx = 0; multiviewNdx < DE_LENGTH_OF_ARRAY(multiviews); multiviewNdx++)
 						{
-							// If we don't have VK_EXT_vertex_attribute_divisor, we only get a divisor or 1.
-							if (!testAttribDivisor && divisors[divisorNdx] != 1)
+							// If we don't have VK_EXT_vertex_attribute_divisor or VK_KHR_vertex_attribute_divisor, we only get a divisor or 1.
+							if (attribDivisor == ATTRIBUTE_DIVISOR_NONE && divisors[divisorNdx] != 1)
 								continue;
 
 							TestParams param
@@ -1111,10 +1180,11 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 								functions[functionNdx],						// DrawFunction				function;
 								topologies[topologyNdx],					// vk::VkPrimitiveTopology	topology;
 								groupParams,								// const SharedGroupParams	groupParams;
-								testAttribDivisor ? DE_TRUE : DE_FALSE,		// deBool					testAttribDivisor;
+								attribDivisor,								// AttributeDivisor			testAttribDivisor;
 								divisors[divisorNdx],						// deUint32					attribDivisor;
 								multiviews[multiviewNdx],					// deBool					testMultiview;
-								dynState == 0 ? false : true				// deBool					dynamicState;
+								dynState == 0 ? false : true,				// deBool					dynamicState;
+								false										// deBool					useMaintenance5Ext;
 							};
 
 							// Add multiview tests only when vertex attribute divisor is enabled.
@@ -1123,7 +1193,17 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 
 							std::string testName = de::toString(param);
 
-							addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), "Instanced drawing test", param));
+							addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), param));
+
+#ifndef CTS_USES_VULKANSC
+							if (TestParams::FUNCTION_DRAW_INDEXED == functions[functionNdx] || TestParams::FUNCTION_DRAW_INDEXED_INDIRECT == functions[functionNdx])
+							{
+								param.useMaintenance5Ext = true;
+								testName += "_maintenance_5";
+								// Instanced drawing test using vkCmdBindIndexBuffer2KHR() introduced in VK_KHR_maintenance5
+								addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), param));
+							}
+#endif // CTS_USES_VULKANSC
 						}
 					}
 				}

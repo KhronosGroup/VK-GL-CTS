@@ -84,11 +84,10 @@ static void splitPath (const char* path, std::vector<std::string>& components)
 
 // TestNode
 
-TestNode::TestNode (TestGroup* parent, TestNodeType nodeType, const char* name, const char* desc)
+TestNode::TestNode (TestGroup* parent, TestNodeType nodeType, const char* name)
 	: m_parent		(parent)
 	, m_nodeType	(nodeType)
 	, m_name		(name)
-	, m_description	(desc)
 {
 	if (m_parent)
 	{
@@ -177,8 +176,8 @@ TestNode* TestNode::find (const char* path)
 
 // TestGroup
 
-TestGroup::TestGroup (TestGroup* parent, TestNodeType nodeType, const char* name, const char* description)
-	: TestNode(parent, nodeType, name, description)
+TestGroup::TestGroup (TestGroup* parent, TestNodeType nodeType, const char* name)
+	: TestNode(parent, nodeType, name)
 {
 	DE_ASSERT(nodeType == TESTNODETYPE_GROUP || nodeType == TESTNODETYPE_ROOT);
 	DE_ASSERT(!parent == (nodeType == TESTNODETYPE_ROOT));
@@ -190,14 +189,14 @@ TestGroup::~TestGroup (void)
 		delete *i;
 }
 
-TestGroup* TestGroup::createGroup (const char* name, const char* description)
+TestGroup* TestGroup::createGroup (const char* name)
 {
-	return new TestGroup(this, TESTNODETYPE_GROUP, name, description);
+	return new TestGroup(this, TESTNODETYPE_GROUP, name);
 }
 
-TestCase* TestGroup::createCase (TestCaseType caseType, const char* name, const char* description)
+TestCase* TestGroup::createCase (TestCaseType caseType, const char* name)
 {
-	return TestCase::createAsChild(this, caseType, name, description);
+	return TestCase::createAsChild(this, caseType, name);
 }
 
 const TestNode* TestGroup::findChildNode (const char* path) const
@@ -232,19 +231,19 @@ const TestNode* TestGroup::findChildNode (const char* path) const
 // TestRoot
 
 TestRoot::TestRoot (void)
-	: TestGroup(DE_NULL, TESTNODETYPE_ROOT, "", "")
+	: TestGroup(DE_NULL, TESTNODETYPE_ROOT, "")
 {
 }
 
 // TestCase
 
-TestCase* TestCase::createAsChild(TestGroup* parent, TestCaseType caseType, const char *name, const char *description)
+TestCase* TestCase::createAsChild(TestGroup* parent, TestCaseType caseType, const char *name)
 {
-	return new TestCase(parent, caseType, name, description);
+	return new TestCase(parent, caseType, name);
 }
 
-TestCase::TestCase (TestGroup* parent, TestCaseType caseType, const char* name, const char* description)
-	: TestNode		(parent, TESTNODETYPE_TEST_CASE, name, description)
+TestCase::TestCase (TestGroup* parent, TestCaseType caseType, const char* name)
+	: TestNode		(parent, TESTNODETYPE_TEST_CASE, name)
 	, m_caseType	(caseType)
 {
 }
@@ -303,7 +302,7 @@ TestCase* TestHierarchyBuilder::createCase (const char* path, TestCaseType caseT
 		std::map<std::string, TestGroup*>::const_iterator groupPos = m_groupMap.find(curGroupPath);
 		if (groupPos == m_groupMap.end())
 		{
-			TestGroup* newGroup = curGroup->createGroup(components[ndx].c_str(), "" /* description */);
+			TestGroup* newGroup = curGroup->createGroup(components[ndx].c_str());
 			m_groupMap.insert(std::make_pair(curGroupPath, newGroup));
 			curGroup = newGroup;
 		}
@@ -311,7 +310,7 @@ TestCase* TestHierarchyBuilder::createCase (const char* path, TestCaseType caseT
 			curGroup = groupPos->second;
 	}
 
-	return curGroup->createCase(caseType, components.back().c_str(), "" /* description */);
+	return curGroup->createCase(caseType, components.back().c_str());
 }
 
 // TestSet helpers

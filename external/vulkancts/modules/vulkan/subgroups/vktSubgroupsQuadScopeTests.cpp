@@ -460,7 +460,7 @@ protected:
 DrawWithQuadScopeTestCase::DrawWithQuadScopeTestCase(tcu::TestContext&		testContext,
 													 const std::string&		name,
 													 TestMode				mode)
-	: vkt::TestCase		(testContext, name, "")
+	: vkt::TestCase		(testContext, name)
 	, m_testMode		(mode)
 {}
 
@@ -520,13 +520,10 @@ void DrawWithQuadScopeTestCase::initPrograms(SourceCollections& sourceCollection
 			"OpCapability Shader\n"
 			"OpCapability GroupNonUniform\n"
 			"OpCapability GroupNonUniformVote\n"
-			"OpCapability QuadScopeKHR\n"				// this was added to code generated from glsl above
-			"OpExtension \"SPV_KHR_quad_scope\"\n"			// this was added
 			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
 			"OpMemoryModel Logical GLSL450\n"
 			"OpEntryPoint Fragment %4 \"main\" %12 %41 %49\n"
 			"OpExecutionMode %4 OriginUpperLeft\n"
-			"OpExecutionMode %4 QuadDerivativesKHR\n"		// this was added too
 			"OpDecorate %12 BuiltIn FragCoord\n"
 			"OpDecorate %41 Location 0\n"
 			"OpDecorate %45 DescriptorSet 0\n"
@@ -548,7 +545,7 @@ void DrawWithQuadScopeTestCase::initPrograms(SourceCollections& sourceCollection
 			"%25 = OpConstant %13 0\n"
 			"%28 = OpConstant %9 3.5\n"
 			"%30 = OpConstant %9 6\n"
-			"%36 = OpConstant %13 7\n"							// this line was changed (7 replaced 3)
+			"%36 = OpConstant %13 3\n"
 			"%40 = OpTypePointer Output %10\n"
 			"%41 = OpVariable %40 Output\n"
 			"%42 = OpTypeImage %9 2D 0 0 0 1 Unknown\n"
@@ -629,14 +626,10 @@ void DrawWithQuadScopeTestCase::initPrograms(SourceCollections& sourceCollection
 			"OpCapability GroupNonUniform\n"
 			"OpCapability GroupNonUniformVote\n"
 			"OpCapability GroupNonUniformBallot\n"
-			"OpCapability QuadScopeKHR\n"				// this was added to code generated from glsl above
-			"OpExtension \"SPV_KHR_quad_scope\"\n"			// this was added
 			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
 			"OpMemoryModel Logical GLSL450\n"
 			"OpEntryPoint Fragment %4 \"main\" %17 %31 %40\n"
 			"OpExecutionMode %4 OriginUpperLeft\n"
-			//"OpExecutionMode %4 MaximallyReconvergesKHR\n"	// this was added		// TODO this should be uncommented when VK_KHR_shader_maximal_reconvergence is available
-			"OpExecutionMode %4 RequireFullQuadsKHR\n"		// this was added too
 			"OpDecorate %17 Location 0\n"
 			"OpDecorate %31 BuiltIn HelperInvocation\n"
 			"OpDecorate %40 Location 0\n"
@@ -649,7 +642,7 @@ void DrawWithQuadScopeTestCase::initPrograms(SourceCollections& sourceCollection
 			"%8 = OpTypePointer Function %7\n"
 			"%10 = OpTypeBool\n"
 			"%11 = OpConstantTrue %10\n"
-			"%12 = OpConstant %6 7\n"							// 3 was changed to 7 (Quad scope has id 7)
+			"%12 = OpConstant %6 3\n"
 			"%14 = OpTypeFloat 32\n"
 			"%15 = OpTypeVector %14 4\n"
 			"%16 = OpTypePointer Output %15\n"

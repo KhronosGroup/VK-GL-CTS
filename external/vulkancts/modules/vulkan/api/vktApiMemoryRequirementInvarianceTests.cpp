@@ -270,6 +270,9 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	const deBool							isYcbcrSupported				= m_context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion");
 	const deBool							isYcbcrExtensionSupported		= m_context.isDeviceFunctionalitySupported("VK_EXT_ycbcr_2plane_444_formats");
 	const deBool							isPvrtcSupported				= m_context.isDeviceFunctionalitySupported("VK_IMG_format_pvrtc");
+#ifndef CTS_USES_VULKANSC
+	const bool								isMaintenance5Supported			= m_context.isDeviceFunctionalitySupported("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
 	std::vector<int>						optimalFormats;
 	std::vector<int>						linearFormats;
 	std::vector<int>						memoryTypes;
@@ -286,6 +289,9 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
@@ -293,6 +299,9 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,
@@ -528,6 +537,15 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 		if (isPvrtcFormat((VkFormat)formatlist[i]) && !isPvrtcSupported)
 			continue;
 
+#ifndef CTS_USES_VULKANSC
+		if (!isMaintenance5Supported)
+		{
+			if (formatlist[i] == VK_FORMAT_A8_UNORM_KHR ||
+				formatlist[i] == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+				continue;
+		}
+#endif // CTS_USES_VULKANSC
+
 		vk::VkImageFormatProperties imageformatprops;
 
 		// Check for support in linear tiling mode
@@ -627,7 +645,7 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	{
 		int a = deRandom_getUint32(&m_random) % testCycles;
 		int b = deRandom_getUint32(&m_random) % testCycles;
-		DE_SWAP(int, order[a], order[b]);
+		std::swap(order[a], order[b]);
 	}
 
 	// Allocate objects in shuffled order
@@ -894,7 +912,6 @@ class InvarianceCase : public vkt::TestCase
 public:
 							InvarianceCase	(tcu::TestContext&	testCtx,
 											 const std::string&	name,
-											 const std::string&	description,
 											 TestType			testType);
 	virtual					~InvarianceCase	(void) = default;
 
@@ -907,9 +924,8 @@ protected:
 
 InvarianceCase::InvarianceCase	(tcu::TestContext&	testCtx,
 								 const std::string&	name,
-								 const std::string&	description,
 								 TestType			testType)
-	: vkt::TestCase	(testCtx, name, description)
+	: vkt::TestCase	(testCtx, name)
 	, m_testType	(testType)
 {
 }
@@ -930,10 +946,10 @@ void InvarianceCase::checkSupport(Context& context) const
 
 tcu::TestCaseGroup* createMemoryRequirementInvarianceTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> invarianceTests(new tcu::TestCaseGroup(testCtx, "invariance", "Memory requirement invariance tests"));
+	de::MovePtr<tcu::TestCaseGroup> invarianceTests(new tcu::TestCaseGroup(testCtx, "invariance"));
 
-	invarianceTests->addChild(new InvarianceCase(testCtx, "random", "Random case", TT_BASIC_INVARIANCE));
-	invarianceTests->addChild(new InvarianceCase(testCtx, "memory_requirements_matching", "VK_KHR_maintenance4 case", TT_REQUIREMENTS_MATCHING));
+	invarianceTests->addChild(new InvarianceCase(testCtx, "random", TT_BASIC_INVARIANCE));
+	invarianceTests->addChild(new InvarianceCase(testCtx, "memory_requirements_matching", TT_REQUIREMENTS_MATCHING));
 
 	return invarianceTests.release();
 }

@@ -1,0 +1,9 @@
+# Excluded dEQP test cases when testing ANGLE
+
+# http://b/290050838
+dEQP-EGL.functional.get_frame_timestamps#rgb565_no_depth_no_stencil
+dEQP-EGL.functional.get_frame_timestamps#rgb565_depth_no_stencil
+dEQP-EGL.functional.get_frame_timestamps#rgb565_no_depth_stencil
+dEQP-EGL.functional.get_frame_timestamps#rgb565_depth_stencil
+dEQP-EGL.functional.get_frame_timestamps#other
+

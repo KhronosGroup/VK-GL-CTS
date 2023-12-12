@@ -235,15 +235,21 @@ tcu::TestStatus createSurfaceTest (Context& context, Type wsiType)
 
 tcu::TestStatus querySurfaceCounterTest (Context& context, Type wsiType)
 {
-	const InstanceHelper			instHelper		(context, wsiType);
+	const InstanceHelper			instHelper		(context, wsiType, {"VK_KHR_display", "VK_EXT_display_surface_counter"});
 	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType);
 	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow(), context.getTestContext().getCommandLine()));
-	const vk::InstanceInterface&	vki				= context.getInstanceInterface();
-	const vk::VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const vk::InstanceInterface&	vki				= instHelper.vki;
+	const tcu::CommandLine&			cmdLine			= context.getTestContext().getCommandLine();
+	const vk::VkPhysicalDevice		physicalDevice	= chooseDevice(vki, instHelper.instance, cmdLine);
 	const bool						isDisplay		= isDisplaySurface(wsiType);
 
 	if (!isInstanceExtensionSupported(context.getUsedApiVersion(), context.getInstanceExtensions(), "VK_EXT_display_surface_counter"))
 		TCU_THROW(NotSupportedError, "VK_EXT_display_surface_counter not supported");
+
+	VkBool32 surfaceSupported;
+	vki.getPhysicalDeviceSurfaceSupportKHR(physicalDevice, 0u, surface.get(), &surfaceSupported);
+	if (!surfaceSupported)
+		TCU_THROW(NotSupportedError, "Surface is not supported by physical device");
 
 	const vk::VkSurfaceCapabilities2EXT	capsExt = getPhysicalDeviceSurfaceCapabilities2EXT	(vki, physicalDevice, surface.get());
 	const vk::VkSurfaceCapabilitiesKHR	capsKhr = getPhysicalDeviceSurfaceCapabilities		(vki, physicalDevice, surface.get());
@@ -1339,7 +1345,7 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 	};
 
 	Move<VkDevice>		deviceGroup = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instHelper.instance, instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
-	const DeviceDriver	vk	(context.getPlatformInterface(), instHelper.instance, *deviceGroup);
+	const DeviceDriver	vk	(context.getPlatformInterface(), instHelper.instance, *deviceGroup, context.getUsedApiVersion());
 
 
 	presentCapabilities = reinterpret_cast<VkDeviceGroupPresentCapabilitiesKHR*>(buffer);
@@ -1449,7 +1455,7 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 	};
 
 	Move<VkDevice>		deviceGroup = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instHelper.instance, instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
-	const DeviceDriver	vk	(context.getPlatformInterface(), instHelper.instance, *deviceGroup);
+	const DeviceDriver	vk	(context.getPlatformInterface(), instHelper.instance, *deviceGroup, context.getUsedApiVersion());
 	presentModeFlags = reinterpret_cast<VkDeviceGroupPresentModeFlagsKHR*>(buffer);
 	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
 
@@ -1652,33 +1658,55 @@ void createSurfaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
 	const PlatformProperties&	platformProperties	= getPlatformProperties(wsiType);
 
-	addFunctionCase(testGroup, "create",								"Create surface",											createSurfaceTest,							wsiType);
-	addFunctionCase(testGroup, "create_custom_allocator",				"Create surface with custom allocator",						createSurfaceCustomAllocatorTest,			wsiType);
-	addFunctionCase(testGroup, "create_simulate_oom",					"Create surface with simulating OOM",						createSurfaceSimulateOOMTest,				wsiType);
-	addFunctionCase(testGroup, "query_support",							"Query surface support",									querySurfaceSupportTest,					wsiType);
-	addFunctionCase(testGroup, "query_presentation_support",			"Query native presentation support",						queryPresentationSupportTest,				wsiType);
-	addFunctionCase(testGroup, "query_capabilities",					"Query surface capabilities",								querySurfaceCapabilitiesTest,				wsiType);
-	addFunctionCase(testGroup, "query_capabilities2",					"Query extended surface capabilities",						querySurfaceCapabilities2Test,				wsiType);
-	addFunctionCase(testGroup, "query_protected_capabilities",			"Query protected surface capabilities",						querySurfaceProtectedCapabilitiesTest,		wsiType);
-	addFunctionCase(testGroup, "query_surface_counters",				"Query and check available surface counters",				querySurfaceCounterTest,					wsiType);
-	addFunctionCase(testGroup, "query_formats",							"Query surface formats",									querySurfaceFormatsTest,					wsiType);
-	addFunctionCase(testGroup, "query_formats2",						"Query extended surface formats",							querySurfaceFormats2Test,					wsiType);
-	addFunctionCase(testGroup, "query_present_modes",					"Query surface present modes",								querySurfacePresentModesTest,				wsiType);
-	addFunctionCase(testGroup, "query_present_modes2",					"Query extended surface present modes",						querySurfacePresentModes2Test,				wsiType);
-	addFunctionCase(testGroup, "query_devgroup_present_capabilities",	"Query surface present modes capabilities in device groups",queryDevGroupSurfacePresentCapabilitiesTest,wsiType);
-	addFunctionCase(testGroup, "query_devgroup_present_modes",			"Query surface present modes for device groups",			queryDevGroupSurfacePresentModesTest,		wsiType);
-	addFunctionCase(testGroup, "destroy_null_handle",					"Destroy VK_NULL_HANDLE surface",							destroyNullHandleSurfaceTest,				wsiType);
+	// Create surface
+	addFunctionCase(testGroup, "create", createSurfaceTest,							wsiType);
+	// Create surface with custom allocator
+	addFunctionCase(testGroup, "create_custom_allocator", createSurfaceCustomAllocatorTest,			wsiType);
+	// Create surface with simulating OOM
+	addFunctionCase(testGroup, "create_simulate_oom", createSurfaceSimulateOOMTest,				wsiType);
+	// Query surface support
+	addFunctionCase(testGroup, "query_support", querySurfaceSupportTest,					wsiType);
+	// Query native presentation support
+	addFunctionCase(testGroup, "query_presentation_support", queryPresentationSupportTest,				wsiType);
+	// Query surface capabilities
+	addFunctionCase(testGroup, "query_capabilities", querySurfaceCapabilitiesTest,				wsiType);
+	// Query extended surface capabilities
+	addFunctionCase(testGroup, "query_capabilities2", querySurfaceCapabilities2Test,				wsiType);
+	// Query protected surface capabilities
+	addFunctionCase(testGroup, "query_protected_capabilities", querySurfaceProtectedCapabilitiesTest,		wsiType);
+	// Query and check available surface counters
+	addFunctionCase(testGroup, "query_surface_counters", querySurfaceCounterTest,					wsiType);
+	// Query surface formats
+	addFunctionCase(testGroup, "query_formats", querySurfaceFormatsTest,					wsiType);
+	// Query extended surface formats
+	addFunctionCase(testGroup, "query_formats2", querySurfaceFormats2Test,					wsiType);
+	// Query surface present modes
+	addFunctionCase(testGroup, "query_present_modes", querySurfacePresentModesTest,				wsiType);
+	// Query extended surface present modes
+	addFunctionCase(testGroup, "query_present_modes2", querySurfacePresentModes2Test,				wsiType);
+	// Query surface present modes capabilities in device groups
+	addFunctionCase(testGroup, "query_devgroup_present_capabilities", queryDevGroupSurfacePresentCapabilitiesTest,wsiType);
+	// Query surface present modes for device groups
+	addFunctionCase(testGroup, "query_devgroup_present_modes", queryDevGroupSurfacePresentModesTest,		wsiType);
+	// Destroy VK_NULL_HANDLE surface
+	addFunctionCase(testGroup, "destroy_null_handle", destroyNullHandleSurfaceTest,				wsiType);
 
 	if ((platformProperties.features & PlatformProperties::FEATURE_INITIAL_WINDOW_SIZE) != 0)
-		addFunctionCase(testGroup, "initial_size",	"Create surface with initial window size set",	createSurfaceInitialSizeTest,	wsiType);
+		// Create surface with initial window size set
+		addFunctionCase(testGroup, "initial_size", createSurfaceInitialSizeTest,	wsiType);
 
 	if ((platformProperties.features & PlatformProperties::FEATURE_RESIZE_WINDOW) != 0)
-		addFunctionCase(testGroup, "resize",		"Resize window and surface",					resizeSurfaceTest,				wsiType);
+		// Resize window and surface
+		addFunctionCase(testGroup, "resize", resizeSurfaceTest,				wsiType);
 
-	addFunctionCase(testGroup, "query_formats_surfaceless", "Query surface formats without surface", querySurfaceFormatsTestSurfaceless, wsiType);
-	addFunctionCase(testGroup, "query_present_modes_surfaceless", "Query surface present modes without surface", querySurfacePresentModesTestSurfaceless, wsiType);
-	addFunctionCase(testGroup, "query_present_modes2_surfaceless", "Query extended surface present modes without surface", querySurfacePresentModes2TestSurfaceless, wsiType);
-	addFunctionCase(testGroup, "query_formats2_surfaceless", "Query extended surface formats without surface", querySurfaceFormats2TestSurfaceless, wsiType);
+	// Query surface formats without surface
+	addFunctionCase(testGroup, "query_formats_surfaceless", querySurfaceFormatsTestSurfaceless, wsiType);
+	// Query surface present modes without surface
+	addFunctionCase(testGroup, "query_present_modes_surfaceless", querySurfacePresentModesTestSurfaceless, wsiType);
+	// Query extended surface present modes without surface
+	addFunctionCase(testGroup, "query_present_modes2_surfaceless", querySurfacePresentModes2TestSurfaceless, wsiType);
+	// Query extended surface formats without surface
+	addFunctionCase(testGroup, "query_formats2_surfaceless", querySurfaceFormats2TestSurfaceless, wsiType);
 }
 
 } // wsi

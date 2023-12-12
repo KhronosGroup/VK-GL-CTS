@@ -9934,7 +9934,7 @@ struct AddPrograms
 				const char* const vertexShader =
 					"#version 450\n"
 					"precision highp float;\n"
-					"layout(set=0, binding=0, rgba8) uniform image2D u_image;\n"
+					"layout(set=0, binding=0, rgba8) uniform readonly image2D u_image;\n"
 					"out gl_PerVertex {\n"
 					"\tvec4 gl_Position;\n"
 					"\tfloat gl_PointSize;\n"
@@ -9959,7 +9959,7 @@ struct AddPrograms
 					"#version 450\n"
 					"#extension GL_EXT_texture_buffer : require\n"
 					"precision highp float;\n"
-					"layout(set=0, binding=0, rgba8) uniform image2D u_image;\n"
+					"layout(set=0, binding=0, rgba8) uniform readonly image2D u_image;\n"
 					"layout(location = 0) out highp vec4 o_color;\n"
 					"void main (void) {\n"
 					"\thighp uvec2 size = uvec2(imageSize(u_image).x, imageSize(u_image).y);\n"
@@ -10077,7 +10077,7 @@ void checkSupport(vkt::Context& context, TestConfig config)
 
 tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "pipeline_barrier", "Pipeline barrier tests."));
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "pipeline_barrier"));
 	const vk::VkDeviceSize			sizes[]			=
 	{
 		1024,			// 1K
@@ -10135,7 +10135,7 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 			const Usage						readUsage		= readUsages[readUsageNdx];
 			const Usage						usage			= writeUsage | readUsage;
 			const string					usageGroupName	(usageToName(usage));
-			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageGroupName.c_str(), usageGroupName.c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageGroupName.c_str()));
 
 			for (size_t sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes); sizeNdx++)
 			{
@@ -10157,12 +10157,12 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 						const string	finalTestName	= testName + "_vertex_buffer_stride_" + de::toString(stride);
 
 						config.vertexBufferStride = stride;
-						usageGroup->addChild(new InstanceFactory1WithSupport<MemoryTestInstance, TestConfig, FunctionSupport1<TestConfig>, AddPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, finalTestName, finalTestName, config, typename FunctionSupport1<TestConfig>::Args(checkSupport, config)));
+						usageGroup->addChild(new InstanceFactory1WithSupport<MemoryTestInstance, TestConfig, FunctionSupport1<TestConfig>, AddPrograms>(testCtx, finalTestName, config, typename FunctionSupport1<TestConfig>::Args(checkSupport, config)));
 					}
 				}
 				else
 				{
-					usageGroup->addChild(new InstanceFactory1<MemoryTestInstance, TestConfig, AddPrograms>(testCtx,tcu::NODETYPE_SELF_VALIDATE, testName, testName, AddPrograms(), config));
+					usageGroup->addChild(new InstanceFactory1<MemoryTestInstance, TestConfig, AddPrograms>(testCtx, testName, AddPrograms(), config));
 				}
 			}
 
@@ -10179,7 +10179,7 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 
 		{
 			const string					usageGroupName	("all");
-			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageGroupName.c_str(), usageGroupName.c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageGroupName.c_str()));
 
 			for (size_t sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes); sizeNdx++)
 			{
@@ -10197,7 +10197,7 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 						vk::VK_SHARING_MODE_EXCLUSIVE
 					};
 
-					usageGroup->addChild(new InstanceFactory1WithSupport<MemoryTestInstance, vkt::memory::TestConfig, FunctionSupport1<TestConfig>, AddPrograms>(testCtx,tcu::NODETYPE_SELF_VALIDATE, testName, testName, config, typename FunctionSupport1<TestConfig>::Args(checkSupport, config)));
+					usageGroup->addChild(new InstanceFactory1WithSupport<MemoryTestInstance, vkt::memory::TestConfig, FunctionSupport1<TestConfig>, AddPrograms>(testCtx, testName, config, typename FunctionSupport1<TestConfig>::Args(checkSupport, config)));
 				}
 			}
 
@@ -10207,7 +10207,7 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 
 		{
 			const string					usageGroupName	("all_device");
-			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageGroupName.c_str(), usageGroupName.c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageGroupName.c_str()));
 
 			for (size_t sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes); sizeNdx++)
 			{
@@ -10225,7 +10225,7 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 						vk::VK_SHARING_MODE_EXCLUSIVE
 					};
 
-					usageGroup->addChild(new InstanceFactory1WithSupport<MemoryTestInstance, TestConfig, FunctionSupport1<TestConfig>, AddPrograms>(testCtx,tcu::NODETYPE_SELF_VALIDATE, testName, testName, config, typename FunctionSupport1<TestConfig>::Args(checkSupport, config)));
+					usageGroup->addChild(new InstanceFactory1WithSupport<MemoryTestInstance, TestConfig, FunctionSupport1<TestConfig>, AddPrograms>(testCtx, testName, config, typename FunctionSupport1<TestConfig>::Args(checkSupport, config)));
 				}
 			}
 

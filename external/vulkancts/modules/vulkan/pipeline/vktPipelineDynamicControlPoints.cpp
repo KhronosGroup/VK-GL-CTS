@@ -4,6 +4,8 @@
 *
 * Copyright (c) 2022 The Khronos Group Inc.
 * Copyright (c) 2022 Valve Corporation.
+* Copyright (c) 2023 LunarG, Inc.
+* Copyright (c) 2023 Nintendo
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -84,7 +86,7 @@ struct TestConfig {
 class DynamicControlPointsTestCase : public vkt::TestCase
 {
 public:
-	DynamicControlPointsTestCase(tcu::TestContext& context, const std::string& name, const std::string& description, TestConfig config);
+	DynamicControlPointsTestCase(tcu::TestContext& context, const std::string& name, TestConfig config);
 	void            initPrograms            (vk::SourceCollections& programCollection) const override;
 	TestInstance*   createInstance          (Context& context) const override;
 	void            checkSupport            (Context& context) const override;
@@ -104,15 +106,15 @@ private:
 };
 
 
-DynamicControlPointsTestCase::DynamicControlPointsTestCase(tcu::TestContext& context, const std::string& name, const std::string& description,
-	TestConfig config) : vkt::TestCase (context, name, description), m_config(config)
+DynamicControlPointsTestCase::DynamicControlPointsTestCase(tcu::TestContext& context, const std::string& name,
+	TestConfig config) : vkt::TestCase (context, name), m_config(config)
 {
 }
 
 void DynamicControlPointsTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_config.constructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_config.constructionType);
 	const auto& eds2Features  = context.getExtendedDynamicState2FeaturesEXT();
 	if (!eds2Features.extendedDynamicState2PatchControlPoints) {
 		TCU_THROW(NotSupportedError, "Dynamic patch control points aren't supported");
@@ -246,20 +248,22 @@ std::unique_ptr<vk::BufferWithMemory> makeBufferForImage(const vk::DeviceInterfa
 
 tcu::TestStatus DynamicControlPointsTestInstance::iterate(void)
 {
-	const auto& vkd			= m_context.getDeviceInterface();
-	const auto  device		= m_context.getDevice();
-	auto& alloc				= m_context.getDefaultAllocator();
-	auto imageFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
-	auto imageExtent		= vk::makeExtent3D(4, 4, 1u);
-	auto mappedFormat		= mapVkFormat(imageFormat);
+	const auto& vki				= m_context.getInstanceInterface();
+	const auto& vkd				= m_context.getDeviceInterface();
+	const auto physicalDevice	= m_context.getPhysicalDevice();
+	const auto  device			= m_context.getDevice();
+	auto& alloc					= m_context.getDefaultAllocator();
+	auto imageFormat			= vk::VK_FORMAT_R8G8B8A8_UNORM;
+	auto imageExtent			= vk::makeExtent3D(4, 4, 1u);
+	auto mappedFormat			= mapVkFormat(imageFormat);
 
 	const tcu::IVec3 imageDim	(static_cast<int>(imageExtent.width), static_cast<int>(imageExtent.height), static_cast<int>(imageExtent.depth));
 	const tcu::IVec2 imageSize	(imageDim.x(), imageDim.y());
 
 	de::MovePtr<vk::ImageWithMemory>  colorAttachment;
 
-	vk::GraphicsPipelineWrapper pipeline1(vkd, device, m_config.constructionType);
-	vk::GraphicsPipelineWrapper pipeline2(vkd, device, m_config.constructionType);
+	vk::GraphicsPipelineWrapper pipeline1(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_config.constructionType);
+	vk::GraphicsPipelineWrapper pipeline2(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_config.constructionType);
 	const auto  qIndex      = m_context.getUniversalQueueFamilyIndex();
 
 	const auto  imageUsage      = static_cast<vk::VkImageUsageFlags>(vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
@@ -282,12 +286,12 @@ tcu::TestStatus DynamicControlPointsTestInstance::iterate(void)
 		vk::VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout				initialLayout;
 	};
 
-	const auto subresourceRange		= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	colorAttachment               = de::MovePtr<vk::ImageWithMemory>(new vk::ImageWithMemory(vkd, device, alloc, imageCreateInfo, vk::MemoryRequirement::Any));
-	auto colorAttachmentView      = vk::makeImageView(vkd, device, colorAttachment->get(), vk::VK_IMAGE_VIEW_TYPE_2D, imageFormat, subresourceRange);
+	const auto subresourceRange			= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	colorAttachment						= de::MovePtr<vk::ImageWithMemory>(new vk::ImageWithMemory(vkd, device, alloc, imageCreateInfo, vk::MemoryRequirement::Any));
+	auto colorAttachmentView			= vk::makeImageView(vkd, device, colorAttachment->get(), vk::VK_IMAGE_VIEW_TYPE_2D, imageFormat, subresourceRange);
 
-	auto renderPass   = makeRenderPass(vkd, device, imageFormat);
-	auto framebuffer  = makeFramebuffer(vkd, device, renderPass.get(), colorAttachmentView.get(), imageExtent.width, imageExtent.height);
+	vk::RenderPassWrapper renderPass	(m_config.constructionType, vkd, device, imageFormat);
+	renderPass.createFramebuffer(vkd, device, **colorAttachment, colorAttachmentView.get(), imageExtent.width, imageExtent.height);
 
 	//buffer to read the output image
 	auto outBuffer = makeBufferForImage(vkd, device, alloc, mappedFormat, imageExtent);
@@ -300,15 +304,15 @@ tcu::TestStatus DynamicControlPointsTestInstance::iterate(void)
 	const std::vector<vk::VkViewport>	viewport_right  { vk::makeViewport((float)imageExtent.width / 2, 0.0f, (float)imageExtent.width / 2, (float)imageExtent.height, 0.0f, 1.0f) };
 	const std::vector<vk::VkRect2D>		scissors_left	{ vk::makeRect2D(0.0f, 0.0f, imageExtent.width / 2, imageExtent.height) };
 	const std::vector<vk::VkRect2D>		scissors_right	{ vk::makeRect2D(imageExtent.width / 2, 0.0, imageExtent.width / 2, imageExtent.height) };
-	auto graphicsPipelineLayout = vk::makePipelineLayout(vkd, device);
+	const vk::PipelineLayoutWrapper		graphicsPipelineLayout (m_config.constructionType, vkd, device);
 
-	auto vtxshader  = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"));
-	auto frgshader  = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"));
-	auto tscshader1 = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("tesc"));
-	auto tscshader2 = vk::createShaderModule(vkd, device,
+	auto vtxshader  = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"));
+	auto frgshader  = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"));
+	auto tscshader1 = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("tesc"));
+	auto tscshader2 = vk::ShaderWrapper(vkd, device,
 		m_config.changeOutput ? m_context.getBinaryCollection().get("tesc2") : m_context.getBinaryCollection().get("tesc"));
-	auto tseshader1 = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("tese"));
-	auto tseshader2 = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("tese2"));
+	auto tseshader1 = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("tese"));
+	auto tseshader2 = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("tese2"));
 
 	vk::VkPipelineRasterizationStateCreateInfo raster = {
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType								sType
@@ -345,15 +349,15 @@ tcu::TestStatus DynamicControlPointsTestInstance::iterate(void)
 		.setupPreRasterizationShaderState(
 			viewport_left,
 			scissors_left,
-			*graphicsPipelineLayout,
+			graphicsPipelineLayout,
 			*renderPass,
 			0u,
-			*vtxshader, &raster,
-			*tscshader1, *tseshader1)
-		.setupFragmentShaderState(*graphicsPipelineLayout, *renderPass, 0u,
-			*frgshader, 0)
+			vtxshader, &raster,
+			tscshader1, tseshader1)
+		.setupFragmentShaderState(graphicsPipelineLayout, *renderPass, 0u,
+			frgshader, 0)
 		.setupFragmentOutputState(*renderPass, 0u)
-		.setMonolithicPipelineLayout(*graphicsPipelineLayout).buildPipeline();
+		.setMonolithicPipelineLayout(graphicsPipelineLayout).buildPipeline();
 
 	pipeline2.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
 		.setDynamicState(&dynamicInfo)
@@ -365,15 +369,15 @@ tcu::TestStatus DynamicControlPointsTestInstance::iterate(void)
 		.setupPreRasterizationShaderState(
 			viewport_right,
 			scissors_right,
-			*graphicsPipelineLayout,
+			graphicsPipelineLayout,
 			*renderPass,
 			0u,
-			*vtxshader, &raster,
-			*tscshader2, *tseshader2)
-		.setupFragmentShaderState(*graphicsPipelineLayout, *renderPass, 0u,
-			*frgshader, 0)
+			vtxshader, &raster,
+			tscshader2, tseshader2)
+		.setupFragmentShaderState(graphicsPipelineLayout, *renderPass, 0u,
+			frgshader, 0)
 		.setupFragmentOutputState(*renderPass, 0u)
-		.setMonolithicPipelineLayout(*graphicsPipelineLayout).buildPipeline();
+		.setMonolithicPipelineLayout(graphicsPipelineLayout).buildPipeline();
 
 	auto commandPool = createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, qIndex);
 	auto commandBuffer = vk::allocateCommandBuffer(vkd, device, commandPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -389,13 +393,13 @@ tcu::TestStatus DynamicControlPointsTestInstance::iterate(void)
 	//render 2 triangles with each pipeline, covering the entire screen
 	//depending on the test settings one of them might be culled
 	vk::beginCommandBuffer(vkd, commandBuffer.get());
-	vk::beginRenderPass(vkd, *commandBuffer, *renderPass, *framebuffer, renderArea, clearColor);
+	renderPass.begin(vkd, *commandBuffer, renderArea, clearColor);
 	vkd.cmdSetPatchControlPointsEXT(commandBuffer.get(), 3);
-	vkd.cmdBindPipeline(commandBuffer.get(), vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline1.getPipeline());
+	pipeline1.bind(commandBuffer.get());
 	vkd.cmdDraw(commandBuffer.get(), 6, 1, 0, 0);
-	vkd.cmdBindPipeline(commandBuffer.get(), vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline2.getPipeline());
+	pipeline2.bind(commandBuffer.get());
 	vkd.cmdDraw(commandBuffer.get(), 6, 1, 0, 0);
-	vk::endRenderPass(vkd, commandBuffer.get());
+	renderPass.end(vkd, commandBuffer.get());
 	vk::copyImageToBuffer(vkd, commandBuffer.get(), colorAttachment.get()->get(), (*outBuffer).get(), imageSize);
 	vk::endCommandBuffer(vkd, commandBuffer.get());
 	vk::submitCommandsAndWait(vkd, device, m_context.getUniversalQueue(), commandBuffer.get());
@@ -419,10 +423,11 @@ tcu::TestStatus DynamicControlPointsTestInstance::iterate(void)
 
 tcu::TestCaseGroup* createDynamicControlPointTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "dynamic_control_points", "Tests checking dynamic bind points and switching pipelines"));
+	// Tests checking dynamic bind points and switching pipelines
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "dynamic_control_points"));
 
-	group->addChild(new DynamicControlPointsTestCase(testCtx, "change_output", "test switching pipelines with dynamic control points while changing the number of tcs invocations",
-		TestConfig {
+	// test switching pipelines with dynamic control points while changing the number of tcs invocations
+	group->addChild(new DynamicControlPointsTestCase(testCtx, "change_output", TestConfig {
 			pipelineConstructionType,
 			true,
 			false,
@@ -432,8 +437,8 @@ tcu::TestCaseGroup* createDynamicControlPointTests (tcu::TestContext& testCtx, v
 			tcu::Vec4(1.0, 0.0, 1.0, 1.0),
 	}));
 
-	group->addChild(new DynamicControlPointsTestCase(testCtx, "change_winding", "test switching pipelines with dynamic control points while switching winding",
-		TestConfig {
+	// test switching pipelines with dynamic control points while switching winding
+	group->addChild(new DynamicControlPointsTestCase(testCtx, "change_winding", TestConfig {
 			pipelineConstructionType,
 			false,
 			true,
@@ -443,8 +448,8 @@ tcu::TestCaseGroup* createDynamicControlPointTests (tcu::TestContext& testCtx, v
 			tcu::Vec4(1.0, 0.0, 1.0, 1.0)
 	}));
 
-	group->addChild(new DynamicControlPointsTestCase(testCtx, "change_output_winding", "test switching pipelines with dynamic control points while switching winding and number of tcs invocations",
-		TestConfig {
+	// test switching pipelines with dynamic control points while switching winding and number of tcs invocations
+	group->addChild(new DynamicControlPointsTestCase(testCtx, "change_output_winding", TestConfig {
 			pipelineConstructionType,
 			true,
 			true,

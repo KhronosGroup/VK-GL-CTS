@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Intel Corporation
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +31,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 namespace vkt
 {
@@ -42,15 +45,16 @@ DynamicStateBaseClass::DynamicStateBaseClass (Context& context,
 											  const char* vertexShaderName,
 											  const char* fragmentShaderName,
 											  const char* meshShaderName)
-	: TestInstance				(context)
-	, m_colorAttachmentFormat	(vk::VK_FORMAT_R8G8B8A8_UNORM)
-	, m_topology				(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
-	, m_vk						(context.getDeviceInterface())
-	, m_pipeline				(context.getDeviceInterface(), context.getDevice(), pipelineConstructionType)
-	, m_vertexShaderName		(vertexShaderName ? vertexShaderName : "")
-	, m_fragmentShaderName		(fragmentShaderName)
-	, m_meshShaderName			(meshShaderName ? meshShaderName : "")
-	, m_isMesh					(meshShaderName != nullptr)
+	: TestInstance					(context)
+	, m_pipelineConstructionType	(pipelineConstructionType)
+	, m_colorAttachmentFormat		(vk::VK_FORMAT_R8G8B8A8_UNORM)
+	, m_topology					(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+	, m_vk							(context.getDeviceInterface())
+	, m_pipeline					(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType)
+	, m_vertexShaderName			(vertexShaderName ? vertexShaderName : "")
+	, m_fragmentShaderName			(fragmentShaderName)
+	, m_meshShaderName				(meshShaderName ? meshShaderName : "")
+	, m_isMesh						(meshShaderName != nullptr)
 {
 	// We must provide either the mesh shader or the vertex shader.
 	DE_ASSERT(static_cast<bool>(vertexShaderName) != static_cast<bool>(meshShaderName));
@@ -89,7 +93,7 @@ void DynamicStateBaseClass::initialize (void)
 	if (m_otherSetLayout)
 		rawSetLayouts.push_back(m_otherSetLayout.get());
 
-	m_pipelineLayout = vk::makePipelineLayout(m_vk, device, de::sizeU32(rawSetLayouts), de::dataOrNull(rawSetLayouts), de::sizeU32(pcRanges), de::dataOrNull(pcRanges));
+	m_pipelineLayout = vk::PipelineLayoutWrapper(m_pipelineConstructionType, m_vk, device, de::sizeU32(rawSetLayouts), de::dataOrNull(rawSetLayouts), de::sizeU32(pcRanges), de::dataOrNull(pcRanges));
 
 	const vk::VkExtent3D targetImageExtent = { WIDTH, HEIGHT, 1 };
 	const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
@@ -201,7 +205,7 @@ void DynamicStateBaseClass::initRenderPass (const vk::VkDevice device)
 	)
 	);
 
-	m_renderPass = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
+	m_renderPass = vk::RenderPassWrapper(m_pipelineConstructionType, m_vk, device, &renderPassCreateInfo);
 }
 
 void DynamicStateBaseClass::initFramebuffer (const vk::VkDevice device)
@@ -211,7 +215,7 @@ void DynamicStateBaseClass::initFramebuffer (const vk::VkDevice device)
 
 	const FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, colorAttachments, WIDTH, HEIGHT, 1);
 
-	m_framebuffer = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
+	m_renderPass.createFramebuffer(m_vk, device, &framebufferCreateInfo, m_colorTargetImage->object());
 }
 
 void DynamicStateBaseClass::initPipeline (const vk::VkDevice device)
@@ -223,9 +227,9 @@ void DynamicStateBaseClass::initPipeline (const vk::VkDevice device)
 	const PipelineCreateInfo::MultiSampleState				multisampleState;
 
 	const auto&							binaries	= m_context.getBinaryCollection();
-	const vk::Move<vk::VkShaderModule>	ms			(m_isMesh ? createShaderModule(m_vk, device, binaries.get(m_meshShaderName), 0) : vk::Move<vk::VkShaderModule>());
-	const vk::Move<vk::VkShaderModule>	vs			(m_isMesh ? vk::Move<vk::VkShaderModule>() : createShaderModule(m_vk, device, binaries.get(m_vertexShaderName), 0));
-	const vk::Move<vk::VkShaderModule>	fs			(createShaderModule(m_vk, device, binaries.get(m_fragmentShaderName), 0));
+	const vk::ShaderWrapper				ms			(m_isMesh ? vk::ShaderWrapper(m_vk, device, binaries.get(m_meshShaderName), 0) : vk::ShaderWrapper());
+	const vk::ShaderWrapper				vs			(m_isMesh ? vk::ShaderWrapper() : vk::ShaderWrapper(m_vk, device, binaries.get(m_vertexShaderName), 0));
+	const vk::ShaderWrapper				fs			(vk::ShaderWrapper(m_vk, device, binaries.get(m_fragmentShaderName), 0));
 	std::vector<vk::VkViewport>			viewports	{ { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } };
 	std::vector<vk::VkRect2D>			scissors	{ { { 0u, 0u }, { 0u, 0u } }};
 
@@ -238,11 +242,11 @@ void DynamicStateBaseClass::initPipeline (const vk::VkDevice device)
 		m_pipeline
 			  .setupPreRasterizationMeshShaderState(viewports,
 													scissors,
-													*m_pipelineLayout,
+													m_pipelineLayout,
 													*m_renderPass,
 													0u,
-													DE_NULL,
-													*ms,
+													vk::ShaderWrapper(),
+													ms,
 													static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState));
 	}
 	else
@@ -252,16 +256,16 @@ void DynamicStateBaseClass::initPipeline (const vk::VkDevice device)
 			  .setupVertexInputState(&m_vertexInputState)
 			  .setupPreRasterizationShaderState(viewports,
 												scissors,
-												*m_pipelineLayout,
+												m_pipelineLayout,
 												*m_renderPass,
 												0u,
-												*vs,
+												vs,
 												static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState));
 	}
 
-	m_pipeline.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState), &multisampleState)
+	m_pipeline.setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState), &multisampleState)
 			  .setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState), &multisampleState)
-			  .setMonolithicPipelineLayout(*m_pipelineLayout)
+			  .setMonolithicPipelineLayout(m_pipelineLayout)
 			  .buildPipeline();
 }
 
@@ -277,15 +281,23 @@ void DynamicStateBaseClass::beginRenderPass (void)
 	beginRenderPassWithClearColor(clearColor);
 }
 
-void DynamicStateBaseClass::beginRenderPassWithClearColor(const vk::VkClearColorValue& clearColor, const bool skipBeginCmdBuffer)
+void DynamicStateBaseClass::beginRenderPassWithClearColor(const vk::VkClearColorValue& clearColor, const bool skipBeginCmdBuffer, const bool previousTransfer)
 {
 	if (!skipBeginCmdBuffer)
 	{
 		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 	}
 
-	initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
-								  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
+	if (previousTransfer)
+	{
+		const auto transfer2Transfer = vk::makeMemoryBarrier(vk::VK_ACCESS_TRANSFER_WRITE_BIT, (vk::VK_ACCESS_TRANSFER_WRITE_BIT | vk::VK_ACCESS_TRANSFER_READ_BIT));
+		vk::cmdPipelineMemoryBarrier(m_vk, *m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, &transfer2Transfer);
+	}
+	else
+	{
+		initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
+									  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
+	}
 
 	const ImageSubresourceRange subresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT);
 	m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),
@@ -303,22 +315,47 @@ void DynamicStateBaseClass::beginRenderPassWithClearColor(const vk::VkClearColor
 		vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
-	vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, vk::makeRect2D(0, 0, WIDTH, HEIGHT));
+	m_renderPass.begin(m_vk, *m_cmdBuffer, vk::makeRect2D(0, 0, WIDTH, HEIGHT));
 }
 
 void DynamicStateBaseClass::setDynamicViewportState (const deUint32 width, const deUint32 height)
 {
 	vk::VkViewport viewport = vk::makeViewport(tcu::UVec2(width, height));
-	m_vk.cmdSetViewport(*m_cmdBuffer, 0, 1, &viewport);
-
 	vk::VkRect2D scissor = vk::makeRect2D(tcu::UVec2(width, height));
-	m_vk.cmdSetScissor(*m_cmdBuffer, 0, 1, &scissor);
+	if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
+	{
+#ifndef CTS_USES_VULKANSC
+		m_vk.cmdSetViewportWithCount(*m_cmdBuffer, 1, &viewport);
+		m_vk.cmdSetScissorWithCount(*m_cmdBuffer, 1, &scissor);
+#else
+		m_vk.cmdSetViewportWithCountEXT(*m_cmdBuffer, 1, &viewport);
+		m_vk.cmdSetScissorWithCountEXT(*m_cmdBuffer, 1, &scissor);
+#endif
+	}
+	else
+	{
+		m_vk.cmdSetViewport(*m_cmdBuffer, 0, 1, &viewport);
+		m_vk.cmdSetScissor(*m_cmdBuffer, 0, 1, &scissor);
+	}
 }
 
 void DynamicStateBaseClass::setDynamicViewportState (deUint32 viewportCount, const vk::VkViewport* pViewports, const vk::VkRect2D* pScissors)
 {
-	m_vk.cmdSetViewport(*m_cmdBuffer, 0, viewportCount, pViewports);
-	m_vk.cmdSetScissor(*m_cmdBuffer, 0, viewportCount, pScissors);
+	if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
+	{
+#ifndef CTS_USES_VULKANSC
+		m_vk.cmdSetViewportWithCount(*m_cmdBuffer, viewportCount, pViewports);
+		m_vk.cmdSetScissorWithCount(*m_cmdBuffer, viewportCount, pScissors);
+#else
+		m_vk.cmdSetViewportWithCountEXT(*m_cmdBuffer, viewportCount, pViewports);
+		m_vk.cmdSetScissorWithCountEXT(*m_cmdBuffer, viewportCount, pScissors);
+#endif
+	}
+	else
+	{
+		m_vk.cmdSetViewport(*m_cmdBuffer, 0, viewportCount, pViewports);
+		m_vk.cmdSetScissor(*m_cmdBuffer, 0, viewportCount, pScissors);
+	}
 }
 
 void DynamicStateBaseClass::setDynamicRasterizationState (const float lineWidth,

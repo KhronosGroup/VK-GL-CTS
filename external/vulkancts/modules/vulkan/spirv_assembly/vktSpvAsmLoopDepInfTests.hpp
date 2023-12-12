@@ -36,7 +36,7 @@ namespace SpirVAssembly
 class SpvAsmLoopControlDependencyInfiniteCase : public TestCase
 {
 public:
-							SpvAsmLoopControlDependencyInfiniteCase	(tcu::TestContext& testCtx, const char* name, const char* description);
+							SpvAsmLoopControlDependencyInfiniteCase	(tcu::TestContext& testCtx, const char* name);
 	void					initPrograms							(vk::SourceCollections& programCollection) const;
 	TestInstance*			createInstance							(Context& context) const;
 };

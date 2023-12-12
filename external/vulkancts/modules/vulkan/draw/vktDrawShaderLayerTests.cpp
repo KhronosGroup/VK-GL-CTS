@@ -1003,7 +1003,7 @@ tcu::TestStatus testTessellationShader (Context& context, const TestParams param
 
 tcu::TestCaseGroup* createShaderLayerTests	(tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_layer", ""));
+	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_layer"));
 
 	int numLayersToTest[] =
 	{
@@ -1031,7 +1031,7 @@ tcu::TestCaseGroup* createShaderLayerTests	(tcu::TestContext& testCtx, const Sha
 			continue;
 
 		parmas.numLayers = numLayersToTest[i];
-		addFunctionCaseWithPrograms<TestParams>(group.get(), "vertex_shader_" + de::toString(parmas.numLayers), "", checkRequirements, initVertexTestPrograms, testVertexShader, parmas);
+		addFunctionCaseWithPrograms<TestParams>(group.get(), "vertex_shader_" + de::toString(parmas.numLayers), checkRequirements, initVertexTestPrograms, testVertexShader, parmas);
 	}
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(numLayersToTest); ++i)
@@ -1041,7 +1041,7 @@ tcu::TestCaseGroup* createShaderLayerTests	(tcu::TestContext& testCtx, const Sha
 			continue;
 
 		parmas.numLayers = numLayersToTest[i];
-		addFunctionCaseWithPrograms<TestParams>(group.get(), "tessellation_shader_" + de::toString(parmas.numLayers), "", checkRequirements, initTessellationTestPrograms, testTessellationShader, parmas);
+		addFunctionCaseWithPrograms<TestParams>(group.get(), "tessellation_shader_" + de::toString(parmas.numLayers), checkRequirements, initTessellationTestPrograms, testTessellationShader, parmas);
 	}
 
 	return group.release();

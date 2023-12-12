@@ -674,8 +674,8 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testReleaseDisplayEXT (void)
 class AcquireDrmDisplayTestsCase : public vkt::TestCase
 {
 public:
-	AcquireDrmDisplayTestsCase (tcu::TestContext &context, const char *name, const char *description, const DrmTestIndex testId)
-		: TestCase	(context, name, description)
+	AcquireDrmDisplayTestsCase (tcu::TestContext &context, const char *name, const DrmTestIndex testId)
+		: TestCase	(context, name)
 		, m_testId	(testId)
 	{
 	}
@@ -692,11 +692,11 @@ private:
 /*--------------------------------------------------------------------*//*!
  * \brief Adds a test into group
  *//*--------------------------------------------------------------------*/
-static void addTest (tcu::TestCaseGroup* group, const DrmTestIndex testId, const char* name, const char* description)
+static void addTest (tcu::TestCaseGroup* group, const DrmTestIndex testId, const char* name)
 {
 	tcu::TestContext&	testCtx	= group->getTestContext();
 
-	group->addChild(new AcquireDrmDisplayTestsCase(testCtx, name, description, testId));
+	group->addChild(new AcquireDrmDisplayTestsCase(testCtx, name, testId));
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -705,20 +705,29 @@ static void addTest (tcu::TestCaseGroup* group, const DrmTestIndex testId, const
 void createAcquireDrmDisplayTests (tcu::TestCaseGroup* group)
 {
 	// VK_EXT_acquire_drm_display extension tests
-	addTest(group, DRM_TEST_INDEX_GET_DRM_DISPLAY,							"get_drm_display",							"Get Drm display test");
-	addTest(group, DRM_TEST_INDEX_GET_DRM_DISPLAY_INVALID_FD,				"get_drm_display_invalid_fd",				"Get Drm display with invalid fd test");
-	addTest(group, DRM_TEST_INDEX_GET_DRM_DISPLAY_INVALID_CONNECTOR_ID,		"get_drm_display_invalid_connector_id",		"Get Drm display with invalid connector id test");
-	addTest(group, DRM_TEST_INDEX_GET_DRM_DISPLAY_NOT_MASTER,				"get_drm_display_not_master",				"Get Drm display with not master test");
-	addTest(group, DRM_TEST_INDEX_GET_DRM_DISPLAY_UNOWNED_CONNECTOR_ID,		"get_drm_display_unowned_connector_id",		"Get Drm display with unowned connector id test");
-	addTest(group, DRM_TEST_INDEX_ACQUIRE_DRM_DISPLAY,						"acquire_drm_display",						"Acquire Drm display test");
-	addTest(group, DRM_TEST_INDEX_ACQUIRE_DRM_DISPLAY_INVALID_FD,			"acquire_drm_display_invalid_fd",			"Acquire Drm display with invalid fd test");
-	addTest(group, DRM_TEST_INDEX_ACQUIRE_DRM_DISPLAY_NOT_MASTER,			"acquire_drm_display_not_master",			"Acquire Drm display with not master test");
-	addTest(group, DRM_TEST_INDEX_ACQUIRE_DRM_DISPLAY_UNOWNED_CONNECTOR_ID,	"acquire_drm_display_unowned_connector_id",	"Acquire Drm display with unowned connector id test");
+	// Get Drm display test
+	addTest(group, DRM_TEST_INDEX_GET_DRM_DISPLAY,							"get_drm_display");
+	// Get Drm display with invalid fd test
+	addTest(group, DRM_TEST_INDEX_GET_DRM_DISPLAY_INVALID_FD,				"get_drm_display_invalid_fd");
+	// Get Drm display with invalid connector id test
+	addTest(group, DRM_TEST_INDEX_GET_DRM_DISPLAY_INVALID_CONNECTOR_ID,		"get_drm_display_invalid_connector_id");
+	// Get Drm display with not master test
+	addTest(group, DRM_TEST_INDEX_GET_DRM_DISPLAY_NOT_MASTER,				"get_drm_display_not_master");
+	// Get Drm display with unowned connector id test
+	addTest(group, DRM_TEST_INDEX_GET_DRM_DISPLAY_UNOWNED_CONNECTOR_ID,		"get_drm_display_unowned_connector_id");
+	// Acquire Drm display test
+	addTest(group, DRM_TEST_INDEX_ACQUIRE_DRM_DISPLAY,						"acquire_drm_display");
+	// Acquire Drm display with invalid fd test
+	addTest(group, DRM_TEST_INDEX_ACQUIRE_DRM_DISPLAY_INVALID_FD,			"acquire_drm_display_invalid_fd");
+	// Acquire Drm display with not master test
+	addTest(group, DRM_TEST_INDEX_ACQUIRE_DRM_DISPLAY_NOT_MASTER,			"acquire_drm_display_not_master");
+	// Acquire Drm display with unowned connector id test
+	addTest(group, DRM_TEST_INDEX_ACQUIRE_DRM_DISPLAY_UNOWNED_CONNECTOR_ID,	"acquire_drm_display_unowned_connector_id");
 
 	// VK_EXT_direct_mode_display extension tests
-	addTest(group, DRM_TEST_INDEX_RELEASE_DISPLAY,						"release_display",						"Release Drm display test");
+	// Release Drm display test
+	addTest(group, DRM_TEST_INDEX_RELEASE_DISPLAY,						"release_display");
 }
 
 } //wsi
 } //vkt
-

@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2019 The Khronos Group Inc.
  * Copyright (c) 2019 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,12 +93,6 @@ const std::string generateTestName (struct MaxVaryingsParam param)
 	result << getShaderStageName(param.outputStage) << "_";
 	result << getShaderStageName(param.inputStage);
 	return result.str();
-}
-
-const std::string generateTestDescription ()
-{
-	std::string result("Tests to check max varyings per stage");
-	return result;
 }
 
 void initPrograms (SourceCollections& programCollection, MaxVaryingsParam param)
@@ -788,7 +784,7 @@ void supportedCheck (Context& context, MaxVaryingsParam param)
 		}
 	}
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), param.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), param.pipelineConstructionType);
 }
 
 VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat format, const VkImageUsageFlags usage)
@@ -954,6 +950,7 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 {
 	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const DeviceInterface&		vk					= context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
 	const VkDevice				device				= context.getDevice();
 	const VkQueue				queue				= context.getUniversalQueue();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
@@ -1022,9 +1019,9 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 
 	// Pipeline
 
-	const Unique<VkRenderPass>		renderPass		(makeRenderPass	(vk, device, imageFormat));
-	const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer	(vk, device, *renderPass, 1u, &colorImageView.get(), static_cast<deUint32>(renderSize.x()), static_cast<deUint32>(renderSize.y())));
-	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device));
+	RenderPassWrapper				renderPass		(param.pipelineConstructionType, vk, device, imageFormat);
+	renderPass.createFramebuffer(vk, device, 1u, &colorImage.get(), &colorImageView.get(), static_cast<deUint32>(renderSize.x()), static_cast<deUint32>(renderSize.y()));
+	const PipelineLayoutWrapper		pipelineLayout	(param.pipelineConstructionType, vk, device);
 	const Unique<VkCommandPool>		cmdPool			(createCommandPool (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer (vk, device, *cmdPool));
 
@@ -1033,23 +1030,23 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 	const std::vector<VkViewport>	viewport		{ makeViewport(renderSize) };
 	const std::vector<VkRect2D>		scissor			{ makeRect2D(renderSize) };
 
-	Move<VkShaderModule> vertShaderModule	= createShaderModule(vk, device, binaryCollection.get("vert"), 0u);
-	Move<VkShaderModule> tescShaderModule;
-	Move<VkShaderModule> teseShaderModule;
-	Move<VkShaderModule> geomShaderModule;
-	Move<VkShaderModule> fragShaderModule	= createShaderModule(vk, device, binaryCollection.get("frag"), 0u);
+	ShaderWrapper vertShaderModule	= ShaderWrapper(vk, device, binaryCollection.get("vert"), 0u);
+	ShaderWrapper tescShaderModule;
+	ShaderWrapper teseShaderModule;
+	ShaderWrapper geomShaderModule;
+	ShaderWrapper fragShaderModule	= ShaderWrapper(vk, device, binaryCollection.get("frag"), 0u);
 
 	if (param.inputStage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT || param.outputStage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
 		param.inputStage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT || param.outputStage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 	{
-		tescShaderModule	= createShaderModule(vk, device, binaryCollection.get("tcs"), 0u);
-		teseShaderModule	= createShaderModule(vk, device, binaryCollection.get("tes"), 0u);
+		tescShaderModule	= ShaderWrapper(vk, device, binaryCollection.get("tcs"), 0u);
+		teseShaderModule	= ShaderWrapper(vk, device, binaryCollection.get("tes"), 0u);
 		topology			= VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
 	}
 	if (param.inputStage == VK_SHADER_STAGE_GEOMETRY_BIT || param.outputStage == VK_SHADER_STAGE_GEOMETRY_BIT)
-		geomShaderModule = createShaderModule(vk, device, binaryCollection.get("geom"), 0u);
+		geomShaderModule = ShaderWrapper(vk, device, binaryCollection.get("geom"), 0u);
 
-	GraphicsPipelineWrapper graphicsPipeline(vk, device, param.pipelineConstructionType);
+	GraphicsPipelineWrapper graphicsPipeline(vki, vk, physicalDevice, device, context.getDeviceExtensions(), param.pipelineConstructionType);
 	graphicsPipeline.setDefaultTopology(topology)
 					.setDefaultRasterizationState()
 					.setDefaultDepthStencilState()
@@ -1058,18 +1055,18 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 					.setupVertexInputState()
 					.setupPreRasterizationShaderState(viewport,
 													scissor,
-													*pipelineLayout,
+													pipelineLayout,
 													*renderPass,
 													0u,
-													*vertShaderModule,
+													vertShaderModule,
 													0u,
-													*tescShaderModule,
-													*teseShaderModule,
-													*geomShaderModule,
+													tescShaderModule,
+													teseShaderModule,
+													geomShaderModule,
 													&pSpecInfo)
-					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragShaderModule, DE_NULL, DE_NULL, &pSpecInfo)
+					.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShaderModule, DE_NULL, DE_NULL, &pSpecInfo)
 					.setupFragmentOutputState(*renderPass)
-					.setMonolithicPipelineLayout(*pipelineLayout)
+					.setMonolithicPipelineLayout(pipelineLayout)
 					.buildPipeline();
 
 	// Draw commands
@@ -1090,15 +1087,15 @@ tcu::TestStatus test(Context& context, const MaxVaryingsParam param)
 			0u, DE_NULL, 0u, DE_NULL, 1u, &barrierColorAttachmentSetInitialLayout);
 	}
 
-	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
+	renderPass.begin(vk, *cmdBuffer, renderArea, clearColor);
 
-	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
+	graphicsPipeline.bind(*cmdBuffer);
 	const VkDeviceSize vertexBufferOffset = 0ull;
 	vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 
 	// Draw one vertex
 	vk.cmdDraw(*cmdBuffer, (deUint32)vertices.size(), 1u, 0u, 0u);
-	endRenderPass(vk, *cmdBuffer);
+	renderPass.end(vk, *cmdBuffer);
 	// Resolve image -> host buffer
 	recordImageBarrier(vk, *cmdBuffer, *colorImage,
 						VK_IMAGE_ASPECT_COLOR_BIT,								// VkImageAspectFlags	aspect,
@@ -1140,11 +1137,11 @@ tcu::TestCaseGroup* createMaxVaryingsTests (tcu::TestContext& testCtx, PipelineC
 		{ pipelineConstructionType, VK_SHADER_STAGE_GEOMETRY_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_FRAGMENT_BIT },									// Test fragment inputs: VS-GS-FS
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "max_varyings", "Max Varyings tests"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "max_varyings"));
 
 	for (const auto& testParams : tests)
 	{
-		addFunctionCaseWithPrograms(group.get(), generateTestName(testParams), generateTestDescription(),
+		addFunctionCaseWithPrograms(group.get(), generateTestName(testParams),
 									supportedCheck, initPrograms, test, testParams);
 	}
 

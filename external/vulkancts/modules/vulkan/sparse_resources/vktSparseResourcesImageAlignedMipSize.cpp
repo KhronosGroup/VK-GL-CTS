@@ -58,7 +58,6 @@ class ImageAlignedMipSizeCase : public TestCase
 public:
 	ImageAlignedMipSizeCase			(tcu::TestContext&	testCtx,
 									 const std::string&	name,
-									 const std::string&	description,
 									 const ImageType	imageType,
 									 const tcu::UVec3&	imageSize,
 									 const VkFormat		format);
@@ -75,11 +74,10 @@ private:
 
 ImageAlignedMipSizeCase::ImageAlignedMipSizeCase	(tcu::TestContext&	testCtx,
 													 const std::string&	name,
-													 const std::string&	description,
 													 const ImageType	imageType,
 													 const tcu::UVec3&	imageSize,
 													 const VkFormat		format)
-	: TestCase		(testCtx, name, description)
+	: TestCase		(testCtx, name)
 	, m_imageType	(imageType)
 	, m_imageSize	(imageSize)
 	, m_format		(format)
@@ -261,7 +259,7 @@ TestInstance* ImageAlignedMipSizeCase::createInstance (Context& context) const
 
 tcu::TestCaseGroup* createImageAlignedMipSizeTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "aligned_mip_size", "Aligned mip size"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "aligned_mip_size"));
 
 	const std::vector<TestImageParameters> imageParameters
 	{
@@ -275,7 +273,7 @@ tcu::TestCaseGroup* createImageAlignedMipSizeTests (tcu::TestContext& testCtx)
 	for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
 	{
 		const ImageType					imageType = imageParameters[imageTypeNdx].imageType;
-		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str()));
 
 		for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
 		{
@@ -290,7 +288,7 @@ tcu::TestCaseGroup* createImageAlignedMipSizeTests (tcu::TestContext& testCtx)
 			if ((imageSize.y() % imageSizeAlignment.y()) != 0)
 				continue;
 
-			imageTypeGroup->addChild(new ImageAlignedMipSizeCase(testCtx, name.c_str(), "", imageType, imageSize, format));
+			imageTypeGroup->addChild(new ImageAlignedMipSizeCase(testCtx, name.c_str(), imageType, imageSize, format));
 		}
 		testGroup->addChild(imageTypeGroup.release());
 	}

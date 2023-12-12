@@ -93,7 +93,7 @@ static constexpr deUint32 kNumThreadsAtOnce = 1024;
 class PositionFetchCase : public TestCase
 {
 public:
-							PositionFetchCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							PositionFetchCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~PositionFetchCase	(void) {}
 
 	virtual void			checkSupport				(Context& context) const;
@@ -116,8 +116,8 @@ protected:
 	TestParams					m_params;
 };
 
-PositionFetchCase::PositionFetchCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: TestCase	(testCtx, name, description)
+PositionFetchCase::PositionFetchCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {}
 
@@ -272,7 +272,6 @@ static Move<VkRenderPass> makeEmptyRenderPass(const DeviceInterface& vk,
 	const VkDevice				device)
 {
 	std::vector<VkSubpassDescription>	subpassDescriptions;
-	std::vector<VkSubpassDependency>	subpassDependencies;
 
 	const VkSubpassDescription	description =
 	{
@@ -289,18 +288,6 @@ static Move<VkRenderPass> makeEmptyRenderPass(const DeviceInterface& vk,
 	};
 	subpassDescriptions.push_back(description);
 
-	const VkSubpassDependency	dependency =
-	{
-		0u,													//  deUint32				srcSubpass;
-		0u,													//  deUint32				dstSubpass;
-		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,				//  VkPipelineStageFlags	srcStageMask;
-		VK_PIPELINE_STAGE_HOST_BIT,							//  VkPipelineStageFlags	dstStageMask;
-		VK_ACCESS_SHADER_WRITE_BIT,							//  VkAccessFlags			srcAccessMask;
-		VK_ACCESS_HOST_READ_BIT,							//  VkAccessFlags			dstAccessMask;
-		0u													//  VkDependencyFlags		dependencyFlags;
-	};
-	subpassDependencies.push_back(dependency);
-
 	const VkRenderPassCreateInfo renderPassInfo =
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,							//  VkStructureType					sType;
@@ -310,11 +297,29 @@ static Move<VkRenderPass> makeEmptyRenderPass(const DeviceInterface& vk,
 		DE_NULL,															//  const VkAttachmentDescription*	pAttachments;
 		static_cast<deUint32>(subpassDescriptions.size()),					//  deUint32						subpassCount;
 		&subpassDescriptions[0],											//  const VkSubpassDescription*		pSubpasses;
-		static_cast<deUint32>(subpassDependencies.size()),					//  deUint32						dependencyCount;
-		subpassDependencies.size() > 0 ? &subpassDependencies[0] : DE_NULL	//  const VkSubpassDependency*		pDependencies;
+		0u,																	//  deUint32						dependencyCount;
+		DE_NULL																//  const VkSubpassDependency*		pDependencies;
 	};
 
 	return createRenderPass(vk, device, &renderPassInfo);
+}
+
+static Move<VkFramebuffer> makeFramebuffer (const DeviceInterface& vk, const VkDevice device, VkRenderPass renderPass, uint32_t width, uint32_t height)
+{
+	const vk::VkFramebufferCreateInfo	framebufferParams =
+	{
+		vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,					// sType
+		DE_NULL,														// pNext
+		(vk::VkFramebufferCreateFlags)0,
+		renderPass,														// renderPass
+		0u,																// attachmentCount
+		DE_NULL,														// pAttachments
+		width,															// width
+		height,															// height
+		1u,																// layers
+	};
+
+	return createFramebuffer(vk, device, &framebufferParams);
 }
 
 Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface& vk,
@@ -522,18 +527,36 @@ tcu::TestStatus PositionFetchInstance::iterate (void)
 	Move<VkPipeline>				pipeline;
 	de::MovePtr<BufferWithMemory>	raygenSBT;
 	Move<VkRenderPass>				renderPass;
+	Move<VkFramebuffer>				framebuffer;
 
 	if (m_params.shaderSourceType == SST_VERTEX_SHADER)
 	{
 		auto vertexModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0);
 
+		const uint32_t width = 32u;
+		const uint32_t height = 32u;
 		renderPass = makeEmptyRenderPass(vkd, device);
+		framebuffer = makeFramebuffer(vkd, device, *renderPass, width, height);
 		pipeline = makeGraphicsPipeline(vkd, device, *pipelineLayout, *renderPass, *vertexModule, 0);
 
+		const VkRenderPassBeginInfo			renderPassBeginInfo =
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,							// VkStructureType								sType;
+			DE_NULL,															// const void*									pNext;
+			*renderPass,														// VkRenderPass									renderPass;
+			*framebuffer,														// VkFramebuffer								framebuffer;
+			makeRect2D(width, height),											// VkRect2D										renderArea;
+			0u,																	// uint32_t										clearValueCount;
+			DE_NULL																// const VkClearValue*							pClearValues;
+		};
+
+		vkd.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
 		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 		vkd.cmdDraw(cmdBuffer, kNumThreadsAtOnce, 1, 0, 0);
-	} else if (m_params.shaderSourceType == SST_RAY_GENERATION_SHADER)
+		vkd.cmdEndRenderPass(cmdBuffer);
+	}
+	else if (m_params.shaderSourceType == SST_RAY_GENERATION_SHADER)
 	{
 		const auto& vki = m_context.getInstanceInterface();
 		const auto	physDev = m_context.getPhysicalDevice();
@@ -651,7 +674,7 @@ tcu::TestStatus PositionFetchInstance::iterate (void)
 
 tcu::TestCaseGroup*	createPositionFetchTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "position_fetch", "Test ray pipeline shaders using position fetch"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "position_fetch"));
 
 	struct
 	{
@@ -700,18 +723,18 @@ tcu::TestCaseGroup*	createPositionFetchTests (tcu::TestContext& testCtx)
 
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name.c_str()));
 
 		for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
 
 			for (size_t vertexFormatNdx = 0; vertexFormatNdx < DE_LENGTH_OF_ARRAY(vertexFormats); ++vertexFormatNdx)
 			{
 				const auto format = vertexFormats[vertexFormatNdx];
 				const auto formatName = getFormatSimpleName(format);
 
-				de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(new tcu::TestCaseGroup(group->getTestContext(), formatName.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(new tcu::TestCaseGroup(group->getTestContext(), formatName.c_str()));
 
 				for (deUint32 testFlagMask = 0; testFlagMask < TEST_FLAG_BIT_LAST; testFlagMask++)
 				{
@@ -729,7 +752,7 @@ tcu::TestCaseGroup*	createPositionFetchTests (tcu::TestContext& testCtx)
 					if (maskName == "")
 						maskName = "NoFlags";
 
-					de::MovePtr<tcu::TestCaseGroup> testFlagGroup(new tcu::TestCaseGroup(group->getTestContext(), maskName.c_str(), ""));
+					de::MovePtr<tcu::TestCaseGroup> testFlagGroup(new tcu::TestCaseGroup(group->getTestContext(), maskName.c_str()));
 
 					TestParams testParams
 					{
@@ -740,7 +763,7 @@ tcu::TestCaseGroup*	createPositionFetchTests (tcu::TestContext& testCtx)
 						testFlagMask,
 					};
 
-					vertexFormatGroup->addChild(new PositionFetchCase(testCtx, maskName, "", testParams));
+					vertexFormatGroup->addChild(new PositionFetchCase(testCtx, maskName, testParams));
 				}
 				buildGroup->addChild(vertexFormatGroup.release());
 			}
@@ -753,4 +776,3 @@ tcu::TestCaseGroup*	createPositionFetchTests (tcu::TestContext& testCtx)
 }
 } // RayQuery
 } // vkt
-

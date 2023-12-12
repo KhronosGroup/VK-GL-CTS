@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2020 The Khronos Group Inc.
  * Copyright (c) 2020 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +83,7 @@ struct TestParams
 	deUint32						numViews;					// Number of views for multiview.
 	bool							explicitDeclarations;		// Explicitly declare the input and output blocks or not.
 	bool							useSSBO;					// Write to an SSBO from the selected stages.
+	bool							useDeviceIndexAsViewIndex;	// Treat gl_DeviceIndex shader input variable like gl_ViewIndex.
 
 	// Commonly used checks.
 	bool tessellation	(void) const { return (selectedStages & (STAGE_TESS_CONTROL | STAGE_TESS_EVALUATION));	}
@@ -99,7 +102,7 @@ std::vector<ShaderStageFlags> getWriteSubCases (ShaderStageFlags selectedStages)
 class NoPositionCase : public vkt::TestCase
 {
 public:
-							NoPositionCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							NoPositionCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~NoPositionCase		(void) {}
 
 	virtual void			initPrograms		(vk::SourceCollections& programCollection) const;
@@ -126,8 +129,8 @@ private:
 	TestParams					m_params;
 };
 
-NoPositionCase::NoPositionCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+NoPositionCase::NoPositionCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {
 	DE_ASSERT(params.numViews >= 1u);
@@ -147,18 +150,33 @@ void NoPositionCase::initPrograms (vk::SourceCollections& programCollection) con
 
 	const bool multiview = (m_params.numViews > 1u);
 
-	if (multiview)
+	if (m_params.useDeviceIndexAsViewIndex)
+		extensions = "#extension GL_EXT_device_group : require\n";
+	else if (multiview)
 		extensions = "#extension GL_EXT_multiview : require\n";
 
 	if (m_params.useSSBO)
 	{
-		const auto stageCountStr	= de::toString(kStageCount);
 		const auto ssboElementCount	= kStageCount * m_params.numViews;
 		ssboDecl = "layout (set=0, binding=0, std430) buffer StorageBlock { uint counters[" + de::toString(ssboElementCount) + "]; } ssbo;\n";
 
 		const std::array<std::string*, kStageCount> writeStrings = {{ &vertSSBOWrite, &tescSSBOWrite, &teseSSBOWrite, &geomSSBOWrite }};
-		for (size_t i = 0; i < writeStrings.size(); ++i)
-			*writeStrings[i] = "    atomicAdd(ssbo.counters[" + de::toString(i) + (multiview ? (" + uint(gl_ViewIndex) * " + stageCountStr) : "") + "], 1u);\n";
+		for (size_t stageNum = 0; stageNum < writeStrings.size(); ++stageNum)
+		{
+			std::ostringstream s;
+			s << "    atomicAdd(ssbo.counters[" << stageNum;
+			if (multiview || m_params.useDeviceIndexAsViewIndex)
+			{
+				s << " * " << m_params.numViews << " + ";
+				if (m_params.useDeviceIndexAsViewIndex)
+					s << "gl_DeviceIndex";
+				else
+					s << "gl_ViewIndex";
+			}
+			s << "], 1);\n";
+			s.flush();
+			*writeStrings[stageNum] = s.str();
+		}
 	}
 
 	if (m_params.selectedStages & STAGE_VERTEX)
@@ -366,7 +384,7 @@ void NoPositionCase::checkSupport (Context& context) const
 		if (!features.vertexPipelineStoresAndAtomics)
 			TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 	}
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 NoPositionInstance::NoPositionInstance (Context& context, const TestParams& params)
@@ -376,48 +394,50 @@ NoPositionInstance::NoPositionInstance (Context& context, const TestParams& para
 
 tcu::TestStatus NoPositionInstance::iterate (void)
 {
-	const	auto&				vkd			= m_context.getDeviceInterface();
-	const	auto				device		= m_context.getDevice();
-	const	auto				queue		= m_context.getUniversalQueue();
-	const	auto				qIndex		= m_context.getUniversalQueueFamilyIndex();
-			auto&				alloc		= m_context.getDefaultAllocator();
-	const	auto				format		= NoPositionCase::getImageFormat();
-	const	auto				extent		= NoPositionCase::getImageExtent();
-	const	auto				color		= NoPositionCase::getBackGroundColor();
-	const	VkImageUsageFlags	usage		= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-	const	auto				viewType	= (m_params.numViews > 1u ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
-	const	bool				tess		= m_params.tessellation();
-			VkShaderStageFlags	stageFlags	= 0u;
+	const	auto&				vki				= m_context.getInstanceInterface();
+	const	auto&				vkd				= m_context.getDeviceInterface();
+	const	auto				physicalDevice	= m_context.getPhysicalDevice();
+	const	auto				device			= m_context.getDevice();
+	const	auto				queue			= m_context.getUniversalQueue();
+	const	auto				qIndex			= m_context.getUniversalQueueFamilyIndex();
+			auto&				alloc			= m_context.getDefaultAllocator();
+	const	auto				format			= NoPositionCase::getImageFormat();
+	const	auto				extent			= NoPositionCase::getImageExtent();
+	const	auto				color			= NoPositionCase::getBackGroundColor();
+	const	VkImageUsageFlags	usage			= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	const	auto				viewType		= (m_params.numViews > 1u ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
+	const	bool				tess			= m_params.tessellation();
+			VkShaderStageFlags	stageFlags		= 0u;
 
 	// Shader modules.
-	Move<VkShaderModule> vert;
-	Move<VkShaderModule> tesc;
-	Move<VkShaderModule> tese;
-	Move<VkShaderModule> geom;
-	Move<VkShaderModule> frag;
+	ShaderWrapper vert;
+	ShaderWrapper tesc;
+	ShaderWrapper tese;
+	ShaderWrapper geom;
+	ShaderWrapper frag;
 
 	if (m_params.selectedStages & STAGE_VERTEX)
 	{
-		vert = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+		vert = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
 		stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
 	}
 	if (m_params.selectedStages & STAGE_TESS_CONTROL)
 	{
-		tesc = createShaderModule(vkd, device, m_context.getBinaryCollection().get("tesc"), 0u);
+		tesc = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("tesc"), 0u);
 		stageFlags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 	}
 	if (m_params.selectedStages & STAGE_TESS_EVALUATION)
 	{
-		tese = createShaderModule(vkd, device, m_context.getBinaryCollection().get("tese"), 0u);
+		tese = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("tese"), 0u);
 		stageFlags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 	}
 	if (m_params.selectedStages & STAGE_GEOMETRY)
 	{
-		geom = createShaderModule(vkd, device, m_context.getBinaryCollection().get("geom"), 0u);
+		geom = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("geom"), 0u);
 		stageFlags |= VK_SHADER_STAGE_GEOMETRY_BIT;
 	}
 
-	frag = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	frag = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 	stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	// Color attachment.
@@ -524,7 +544,9 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 	const VkRenderPassCreateInfo renderPassInfo =
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	//	VkStructureType					sType;
-		multiviewInfo.get(),						//	const void*						pNext;
+		(m_params.numViews > 1u)
+			? multiviewInfo.get()
+			: nullptr,								//	const void*						pNext;
 		0u,											//	VkRenderPassCreateFlags			flags;
 		1u,											//	deUint32						attachmentCount;
 		&colorAttachment,							//	const VkAttachmentDescription*	pAttachments;
@@ -534,10 +556,10 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 		nullptr,									//	const VkSubpassDependency*		pDependencies;
 	};
 
-	const auto renderPass = createRenderPass(vkd, device, &renderPassInfo);
+	RenderPassWrapper renderPass (m_params.pipelineConstructionType, vkd, device, &renderPassInfo);
 
 	// Framebuffer.
-	const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), colorImageView.get(), extent.width, extent.height);
+	renderPass.createFramebuffer(vkd, device, *colorImage, colorImageView.get(), extent.width, extent.height);
 
 	// Descriptor set layout and pipeline layout.
 	DescriptorSetLayoutBuilder layoutBuilder;
@@ -546,14 +568,16 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 		layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stageFlags);
 	}
 	const auto descriptorSetLayout	= layoutBuilder.build(vkd, device);
-	const auto pipelineLayout		= makePipelineLayout(vkd, device, descriptorSetLayout.get());
+	const PipelineLayoutWrapper pipelineLayout		(m_params.pipelineConstructionType, vkd, device, descriptorSetLayout.get());
 
 	// Pipeline.
 	const std::vector<VkViewport>	viewports		{ makeViewport(extent) };
 	const std::vector<VkRect2D>		scissors		{ makeRect2D(extent) };
 
-	const auto				primitiveTopology	(tess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	GraphicsPipelineWrapper	pipeline			(vkd, device, m_params.pipelineConstructionType);
+	const auto						primitiveTopology	(tess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	const VkPipelineCreateFlags		createFlags		=	m_params.useDeviceIndexAsViewIndex ? VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT : VkPipelineCreateFlagBits(0u);
+	GraphicsPipelineWrapper			pipeline		(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(),
+													 m_params.pipelineConstructionType, createFlags);
 	pipeline.setDefaultTopology(primitiveTopology)
 			.setDefaultRasterizationState()
 			.setDefaultMultisampleState()
@@ -562,17 +586,17 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 			.setupVertexInputState()
 			.setupPreRasterizationShaderState(viewports,
 				scissors,
-				*pipelineLayout,
+				pipelineLayout,
 				*renderPass,
 				0u,
-				*vert,
+				vert,
 				DE_NULL,
-				*tesc,
-				*tese,
-				*geom)
-			.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *frag)
+				tesc,
+				tese,
+				geom)
+			.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, frag)
 			.setupFragmentOutputState(*renderPass)
-			.setMonolithicPipelineLayout(*pipelineLayout)
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 
 	// Descriptor set and output SSBO if needed.
@@ -610,8 +634,7 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 	const auto pixelSize	= static_cast<deUint32>(tcu::getPixelSize(tcuFormat));
 	const auto layerPixels	= extent.width * extent.height;
 	const auto layerBytes	= layerPixels * pixelSize;
-	const auto totalPixels	= layerPixels * m_params.numViews;
-	const auto totalBytes	= totalPixels * pixelSize;
+	const auto totalBytes	= layerBytes * m_params.numViews;
 
 	const auto verificationBufferInfo = makeBufferCreateInfo(totalBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	BufferWithMemory verificationBuffer(vkd, device, alloc, verificationBufferInfo, MemoryRequirement::HostVisible);
@@ -623,13 +646,13 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 
 	// Render triangle.
 	beginCommandBuffer(vkd, cmdBuffer);
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.front(), color);
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
+	renderPass.begin(vkd, cmdBuffer, scissors.front(), color);
+	pipeline.bind(cmdBuffer);
 	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 	if (m_params.useSSBO)
 		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 	vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
-	endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 
 	// Copy output image to verification buffer.
 	const auto preTransferBarrier = makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorImage.get(), subresourceRange);
@@ -699,31 +722,34 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 		auto&		ssboAlloc			= ssboBuffer->getAllocation();
 		invalidateAlloc(vkd, device, ssboAlloc);
 
-		std::vector<deUint32> ssboCounters;
-		ssboCounters.resize(ssboElementCount);
+		std::vector<deUint32> ssboCounters(ssboElementCount);
 		DE_ASSERT(ssboBufferSizeSz == ssboCounters.size() * sizeof(decltype(ssboCounters)::value_type));
 		deMemcpy(ssboCounters.data(), ssboAlloc.getHostPtr(), ssboBufferSizeSz);
 
 		// Minimum accepted counter values.
-		// Vertex, Tesellation Evaluation, Tessellation Control, Geometry.
+		// Vertex, Tessellation Control, Tesellation Evaluation, Geometry.
 		deUint32 expectedCounters[kStageCount] = { 3u, 3u, 3u, 1u };
 
 		// Verify.
-		for (deUint32 viewIdx = 0u; viewIdx < m_params.numViews; ++viewIdx)
 		for (deUint32 stageIdx = 0u; stageIdx < kStageCount; ++stageIdx)
+		for (deUint32 viewIdx = 0u; viewIdx < m_params.numViews; ++viewIdx)
 		{
 			// If the stage is not selected, the expected value is exactly zero. Otherwise, it must be at least as expectedCounters.
 			const deUint32	minVal		= ((m_params.selectedStages & (1u << stageIdx)) ? expectedCounters[stageIdx] : 0u);
-			const deUint32	storedVal	= ssboCounters[stageIdx + viewIdx * kStageCount];
-			const bool		ok			= ((minVal == 0u) ? (storedVal == minVal) : (storedVal >= minVal));
-
+			const deUint32	storedVal	= ssboCounters[stageIdx * m_params.numViews + viewIdx];
+			const bool		ok			= ((minVal == 0u)
+										   ? true /* continue */
+										   : (storedVal == minVal)
+											 ? true
+											 // All shaders must process at least gl_ViewIndex|gl_DeviceIndex times.
+											 : ((storedVal % minVal) == 0u));
 			if (!ok)
 			{
 				const char* stageNames[kStageCount] =
 				{
 					"vertex",
-					"tessellation evaluation",
 					"tessellation control",
+					"tessellation evaluation",
 					"geometry",
 				};
 
@@ -743,24 +769,43 @@ tcu::TestStatus NoPositionInstance::iterate (void)
 
 tcu::TestCaseGroup*	createNoPositionTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "no_position", "Tests with shaders that do not write to the Position built-in"));
+	// Tests with shaders that do not write to the Position built-in
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "no_position"));
 
 	for (int aux = 0; aux < 2; ++aux)
 	{
 		const bool						explicitDeclarations	= (aux == 1);
 		const std::string				declGroupName			(explicitDeclarations ? "explicit_declarations" : "implicit_declarations");
-		de::MovePtr<tcu::TestCaseGroup>	declGroup				(new tcu::TestCaseGroup(testCtx, declGroupName.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup>	declGroup				(new tcu::TestCaseGroup(testCtx, declGroupName.c_str()));
 
 		for (int aux2 = 0; aux2 < 2; ++aux2)
 		{
 			const bool useSSBO = (aux2 == 1);
 			const std::string ssboGroupName (useSSBO ? "ssbo_writes" : "basic");
-			de::MovePtr<tcu::TestCaseGroup> ssboGroup (new tcu::TestCaseGroup(testCtx, ssboGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> ssboGroup (new tcu::TestCaseGroup(testCtx, ssboGroupName.c_str()));
 
-			for (deUint32 viewCount = 1u; viewCount <= 2u; ++viewCount)
+			const uint32_t maxTestedViewCount = useSSBO ? 3u : 2u;
+			for (deUint32 viewCount = 1u; viewCount <= maxTestedViewCount; ++viewCount)
 			{
-				const std::string				viewGroupName	((viewCount == 1u) ? "single_view" : "multiview");
-				de::MovePtr<tcu::TestCaseGroup>	viewGroup		(new tcu::TestCaseGroup(testCtx, viewGroupName.c_str(), ""));
+				auto makeViewGroupName = [&]() -> std::string
+				{
+					switch (viewCount)
+					{
+						case 1u: return "single_view";
+						case 2u: return "multiview";
+						case 3u: return "device_index_as_view_index";
+					}
+					DE_ASSERT(false);
+					return std::string();
+				};
+
+				const std::string	viewGroupName				= makeViewGroupName();
+				const bool			useDeviceIndexAsViewIndex	= (3u == viewCount);
+
+				// Shader objects do not support multiview
+				if (viewCount != 1 && vk::isConstructionTypeShaderObject(pipelineConstructionType))
+					continue;
+				de::MovePtr<tcu::TestCaseGroup>	viewGroup(new tcu::TestCaseGroup(testCtx, viewGroupName.c_str()));
 
 				for (ShaderStageFlags stages = 0u; stages < STAGE_MASK_COUNT; ++stages)
 				{
@@ -781,8 +826,16 @@ tcu::TestCaseGroup*	createNoPositionTests (tcu::TestContext& testCtx, vk::Pipeli
 						if (stages & STAGE_TESS_EVALUATION)	testName += (testName.empty() ? "" : "_") + std::string("e") + ((writeMask & STAGE_TESS_EVALUATION)	? "1" : "0");
 						if (stages & STAGE_GEOMETRY)		testName += (testName.empty() ? "" : "_") + std::string("g") + ((writeMask & STAGE_GEOMETRY)		? "1" : "0");
 
-						TestParams params = { pipelineConstructionType, stages, writeMask, viewCount, explicitDeclarations, true };
-						viewGroup->addChild(new NoPositionCase(testCtx, testName, "", params));
+						TestParams params{};
+						params.pipelineConstructionType		= pipelineConstructionType;
+						params.selectedStages				= stages;
+						params.writeStages					= writeMask;
+						params.numViews						= viewCount;
+						params.explicitDeclarations			= explicitDeclarations;
+						params.useSSBO						= useSSBO;
+						params.useDeviceIndexAsViewIndex	= useDeviceIndexAsViewIndex;
+
+						viewGroup->addChild(new NoPositionCase(testCtx, testName, params));
 					}
 				}
 

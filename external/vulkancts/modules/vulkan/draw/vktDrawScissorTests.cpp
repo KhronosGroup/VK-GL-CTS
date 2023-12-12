@@ -289,7 +289,7 @@ ScissorTestInstance::~ScissorTestInstance (void)
 class ScissorTestCase : public TestCase
 {
 	public:
-							ScissorTestCase		(TestContext& context, const char* name, const char* desc, const TestParams params);
+							ScissorTestCase		(TestContext& context, const char* name, const TestParams params);
 							~ScissorTestCase	(void);
 	virtual	void			initPrograms		(SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance		(Context& context) const;
@@ -299,8 +299,8 @@ private:
 	TestParams				m_params;
 };
 
-ScissorTestCase::ScissorTestCase (TestContext& context, const char* name, const char* desc, const TestParams params)
-: vkt::TestCase	(context, name, desc)
+ScissorTestCase::ScissorTestCase (TestContext& context, const char* name, const TestParams params)
+: vkt::TestCase	(context, name)
 , m_params		(params)
 {
 	m_params.usesMultipleScissors = params.staticScissors.size() > 1;
@@ -718,7 +718,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(10, 10, 50, 50, red)));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(WIDTH - 80, HEIGHT - 100, 30, 40, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_two_quads", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_two_quads", params));
 	}
 
 	// Two clears with a single static scissor
@@ -729,7 +729,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new RectClearTestCommand(10, 10, 50, 50, red)));
 		params.commands.push_back(TestCommandSp(new RectClearTestCommand(WIDTH - 80, HEIGHT - 100, 30, 40, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_two_clears", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_two_clears", params));
 	}
 
 	// One quad with two static scissors
@@ -740,7 +740,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.staticScissors.push_back(makeRect2D(40, 50, WIDTH - 60, HEIGHT - 70));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(10, 10, WIDTH - 10, HEIGHT - 10, red)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "two_static_scissors_one_quad", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "two_static_scissors_one_quad", params));
 	}
 
 	// Static scissor extending outside viewport
@@ -750,7 +750,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.staticScissors.push_back(makeRect2D(30, 40, WIDTH, HEIGHT));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH, HEIGHT + 30, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_partially_outside_viewport", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_partially_outside_viewport", params));
 	}
 
 	// Static scissor completely outside viewport
@@ -760,7 +760,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.staticScissors.push_back(makeRect2D(WIDTH + 30, HEIGHT + 40, WIDTH, HEIGHT));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(100, 100, 20, 30, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_outside_viewport", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_outside_viewport", params));
 	}
 
 	// Static scissor outside viewport and touching right border of viewport
@@ -770,7 +770,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.staticScissors.push_back(makeRect2D(WIDTH, 0, WIDTH, HEIGHT));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(100, 100, 20, 30, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_viewport_border", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_viewport_border", params));
 	}
 
 	// Static scissor with offset + extent equal to largest positive int32
@@ -780,7 +780,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.staticScissors.push_back(makeRect2D(100, 100, 0x7fffffff - 100, 0x7fffffff - 100));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH, HEIGHT, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_max_int32", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_max_int32", params));
 	}
 
 	// 16 static scissors (minimum number required when multiViewport supported)
@@ -793,7 +793,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(5, 6, WIDTH - 10, HEIGHT - 2, red)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "16_static_scissors", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "16_static_scissors", params));
 	}
 
 	// Two quads with an empty scissor
@@ -804,7 +804,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(10, 10, 50, 50, red)));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(WIDTH - 80, HEIGHT - 100, 30, 40, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "empty_static_scissor", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "empty_static_scissor", params));
 	}
 
 	// Two quads with a single dynamic scissor
@@ -815,7 +815,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(10, 10, 50, 50, red)));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(WIDTH - 80, HEIGHT - 100, 30, 40, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_two_quads", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_two_quads", params));
 	}
 
 	// Empty scissor for the first draw
@@ -827,7 +827,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(30, 40, WIDTH - 60, HEIGHT - 80)))));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(WIDTH - 80, HEIGHT - 100, 30, 40, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "empty_dynamic_scissor_first_draw", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "empty_dynamic_scissor_first_draw", params));
 	}
 
 	// Two quads with three scissors updated in between
@@ -855,7 +855,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, scissors)));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(8, 12, WIDTH - 2, HEIGHT - 19, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_updates_between_draws", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_updates_between_draws", params));
 	}
 
 	// Scissor updates out of order
@@ -887,7 +887,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(2, vector<VkRect2D>(1, scissors[2]))));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(8, 12, WIDTH - 2, HEIGHT - 19, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_out_of_order_updates", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_out_of_order_updates", params));
 	}
 
 	// Dynamic scissor extending outside viewport
@@ -897,7 +897,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(30, 40, WIDTH, HEIGHT)))));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH + 50, HEIGHT + 20, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_partially_outside_viewport", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_partially_outside_viewport", params));
 	}
 
 	// Dynamic scissor completely outside viewport
@@ -907,7 +907,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(WIDTH + 30, HEIGHT + 40, WIDTH, HEIGHT)))));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(100, 100, 20, 30, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_outside_viewport", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_outside_viewport", params));
 	}
 
 	// Dynamic scissor outside viewport and touching right border of viewport
@@ -917,7 +917,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(WIDTH, 0, WIDTH, HEIGHT)))));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(100, 100, 20, 30, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_viewport_border", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_viewport_border", params));
 	}
 
 	// Dynamic scissor with offset + extent equal to largest positive int32
@@ -927,7 +927,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, vector<VkRect2D>(1, makeRect2D(100, 100, 0x7fffffff - 100, 0x7fffffff - 100)))));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH, HEIGHT, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_max_int32", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_max_int32", params));
 	}
 
 	// 16 dynamic scissors (minimum number required when multiViewport supported)
@@ -942,7 +942,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, scissors)));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(5, 6, WIDTH - 10, HEIGHT - 2, red)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "16_dynamic_scissors", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "16_dynamic_scissors", params));
 	}
 
 	// Two clears with a single dynamic scissor
@@ -953,7 +953,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new RectClearTestCommand(10, 10, 50, 50, red)));
 		params.commands.push_back(TestCommandSp(new RectClearTestCommand(WIDTH - 80, HEIGHT - 100, 30, 40, green)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_two_clears", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_two_clears", params));
 	}
 
 	// Mixture of quad draws and clears with dynamic scissor updates
@@ -975,7 +975,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(70, 70, 50, 50, blue)));
 		params.commands.push_back(TestCommandSp(new RectClearTestCommand(75, 77, 50, 50, yellow)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_mix", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_mix", params));
 	}
 
 	// Static scissor off by one, inside frame buffer border
@@ -993,7 +993,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.staticScissors.push_back(makeRect2D(1, 1, size.width - 2, size.height - 2));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_framebuffer_border_in", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_framebuffer_border_in", params));
 	}
 
 	// Dynamic scissor off by one, inside frame buffer border
@@ -1014,7 +1014,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, scissors)));
 		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
 
-		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_framebuffer_border_in", "", params));
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_framebuffer_border_in", params));
 	}
 }
 
@@ -1022,7 +1022,7 @@ void createTests (TestCaseGroup* testGroup, const SharedGroupParams groupParams)
 
 TestCaseGroup*	createScissorTests (TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "scissor", "Scissor tests", createTests, groupParams);
+	return createTestGroup(testCtx, "scissor", createTests, groupParams);
 }
 
 }	// Draw

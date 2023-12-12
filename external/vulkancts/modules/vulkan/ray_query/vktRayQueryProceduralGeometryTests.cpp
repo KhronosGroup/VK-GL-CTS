@@ -380,7 +380,7 @@ protected:
 };
 
 RayQueryProceduralGeometryTestCase::RayQueryProceduralGeometryTestCase(tcu::TestContext& context, const char* name, TestType testType)
-	: TestCase		(context, name, "")
+	: TestCase		(context, name)
 	, m_testType	(testType)
 {
 }
@@ -482,7 +482,8 @@ TestInstance* RayQueryProceduralGeometryTestCase::createInstance(Context& contex
 
 tcu::TestCaseGroup*	createProceduralGeometryTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "procedural_geometry", "Test procedural geometry with complex bouding box sets"));
+	// Test procedural geometry with complex bouding box sets
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "procedural_geometry"));
 
 	group->addChild(new RayQueryProceduralGeometryTestCase(testCtx, "object_behind_bounding_boxes",	TestType::OBJECT_BEHIND_BOUNDING_BOX));
 	group->addChild(new RayQueryProceduralGeometryTestCase(testCtx, "triangle_in_between",			TestType::TRIANGLE_IN_BETWEEN));

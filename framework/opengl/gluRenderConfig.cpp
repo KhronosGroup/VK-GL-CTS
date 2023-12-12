@@ -24,6 +24,7 @@
 #include "gluRenderConfig.hpp"
 #include "tcuCommandLine.hpp"
 #include "deString.h"
+#include "eglwEnums.hpp"
 
 namespace glu
 {
@@ -177,6 +178,31 @@ RenderConfig::Visibility parseWindowVisibility (const tcu::CommandLine& cmdLine)
 		case tcu::WINDOWVISIBILITY_FULLSCREEN:	return RenderConfig::VISIBILITY_FULLSCREEN;
 		default:
 			throw tcu::InternalError("Unsupported window visibility");
+	}
+}
+
+RenderConfig::ComponentType fromEGLComponentType (int eglComponentType)
+{
+	switch (eglComponentType)
+	{
+		case EGL_NONE:								return glu::RenderConfig::COMPONENT_TYPE_DONT_CARE;
+		case EGL_DONT_CARE:							return glu::RenderConfig::COMPONENT_TYPE_DONT_CARE;
+		case EGL_COLOR_COMPONENT_TYPE_FIXED_EXT:	return glu::RenderConfig::COMPONENT_TYPE_FIXED;
+		case EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT:	return glu::RenderConfig::COMPONENT_TYPE_FLOAT;
+		default:
+			throw tcu::InternalError("Unsupported color component type");
+	}
+}
+
+int toEGLComponentType (RenderConfig::ComponentType gluComponentType)
+{
+	switch (gluComponentType)
+	{
+		case glu::RenderConfig::COMPONENT_TYPE_DONT_CARE:	return EGL_DONT_CARE;
+		case glu::RenderConfig::COMPONENT_TYPE_FIXED:		return EGL_COLOR_COMPONENT_TYPE_FIXED_EXT;
+		case glu::RenderConfig::COMPONENT_TYPE_FLOAT:		return EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT;
+		default:
+			throw tcu::InternalError("Unsupported color component type");
 	}
 }
 

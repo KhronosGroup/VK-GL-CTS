@@ -611,7 +611,6 @@ class ShaderOperatorCase : public ShaderRenderCase
 public:
 								ShaderOperatorCase		(tcu::TestContext&		testCtx,
 														 const char*			caseName,
-														 const char*			description,
 														 const bool				isVertexCase,
 														 const ShaderEvalFunc	evalFunc,
 														 const std::string&		shaderOp,
@@ -633,14 +632,12 @@ private:
 
 ShaderOperatorCase::ShaderOperatorCase (tcu::TestContext&		testCtx,
 										const char*				caseName,
-										const char*				description,
 										const bool				isVertexCase,
 										const ShaderEvalFunc	evalFunc,
 										const std::string&		shaderOp,
 										const ShaderDataSpec&	spec)
 	: ShaderRenderCase	(testCtx,
 						 caseName,
-						 description,
 						 isVertexCase,
 						 new OperatorShaderEvaluator(evalFunc, spec.referenceScale, spec.referenceBias, getDataTypeScalarSize(spec.output)),
 						 DE_NULL,
@@ -1243,7 +1240,7 @@ private:
 };
 
 ShaderOperatorTests::ShaderOperatorTests(tcu::TestContext& testCtx)
-	: TestCaseGroup(testCtx, "operator", "Operator tests.")
+	: TestCaseGroup(testCtx, "operator")
 {
 }
 
@@ -1677,7 +1674,7 @@ void ShaderOperatorTests::init (void)
 	{
 		// Create outer group.
 		const BuiltinFuncGroup& outerGroupInfo = funcInfoGroups[outerGroupNdx];
-		TestCaseGroup* outerGroup = new TestCaseGroup(m_testCtx, outerGroupInfo.name, outerGroupInfo.description);
+		TestCaseGroup* outerGroup = new TestCaseGroup(m_testCtx, outerGroupInfo.name);
 		addChild(outerGroup);
 
 		// Only create new group if name differs from previous one.
@@ -1696,7 +1693,7 @@ void ShaderOperatorTests::init (void)
 			if (!innerGroup || (std::string(innerGroup->getName()) != funcInfo.caseName))
 			{
 				std::string groupDesc = std::string("Built-in function ") + shaderFuncName + "() tests.";
-				innerGroup = new TestCaseGroup(m_testCtx, funcInfo.caseName, groupDesc.c_str());
+				innerGroup = new TestCaseGroup(m_testCtx, funcInfo.caseName);
 				outerGroup->addChild(innerGroup);
 			}
 
@@ -1747,8 +1744,7 @@ void ShaderOperatorTests::init (void)
 							const bool			isVertexCase	= (ShaderType)shaderType == SHADERTYPE_VERTEX;
 							const bool			isUnaryOp		= (funcInfo.input1.valueType == VALUE_NONE);
 
-							// \note Data type names will be added to description and name in a following loop.
-							std::string			desc			= std::string("Built-in function ") + shaderFuncName + "(";
+							// \note Data type names will be added to name in a following loop.
 							std::string			name			= precisionPrefix;
 
 							// Generate shader op.
@@ -1796,18 +1792,11 @@ void ShaderOperatorTests::init (void)
 																	: isBoolType(v.valueType)	? s_boolTypes[curInScalarSize - 1]
 																	: TYPE_LAST;
 
-								// Write input type(s) to case description and name.
-
-								if (inputNdx > 0)
-									desc += ", ";
-
-								desc += getDataTypeName(curInDataType);
-
+								// Write input type(s) to name.
 								if (inputNdx == 0 || prevInDataType != curInDataType) // \note Only write input type to case name if different from previous input type (avoid overly long names).
 									name += std::string("") + getDataTypeName(curInDataType) + "_";
 
 								// Generate op input source.
-
 								if (funcInfo.type == OPERATOR || funcInfo.type == FUNCTION)
 								{
 									if (inputNdx != 0)
@@ -1845,11 +1834,10 @@ void ShaderOperatorTests::init (void)
 
 							shaderOp += ";";
 
-							desc += ").";
 							name += shaderTypeName;
 
 							// Create the test case.
-							innerGroup->addChild(new ShaderOperatorCase(m_testCtx, name.c_str(), desc.c_str(), isVertexCase, evalFunc, shaderOp, shaderSpec));
+							innerGroup->addChild(new ShaderOperatorCase(m_testCtx, name.c_str(), isVertexCase, evalFunc, shaderOp, shaderSpec));
 						}
 					}
 				}
@@ -1883,7 +1871,7 @@ void ShaderOperatorTests::init (void)
 		{ TYPE_BOOL_VEC4,	eval_selection_bvec4	}
 	};
 
-	TestCaseGroup* selectionGroup = new TestCaseGroup(m_testCtx, "selection", "Selection operator tests");
+	TestCaseGroup* selectionGroup = new TestCaseGroup(m_testCtx, "selection");
 	addChild(selectionGroup);
 
 	for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_selectionInfo); typeNdx++)
@@ -1931,18 +1919,18 @@ void ShaderOperatorTests::init (void)
 				shaderSpec.inputs[1] = ShaderValue(curType, rangeMin, rangeMax);
 				shaderSpec.inputs[2] = ShaderValue(curType, rangeMin, rangeMax);
 
-				selectionGroup->addChild(new ShaderOperatorCase(m_testCtx, name.c_str(), "", isVertexCase, evalFunc, "res = in0 ? in1 : in2;", shaderSpec));
+				selectionGroup->addChild(new ShaderOperatorCase(m_testCtx, name.c_str(), isVertexCase, evalFunc, "res = in0 ? in1 : in2;", shaderSpec));
 			}
 		}
 	}
 
 	// The sequence operator (comma).
 
-	TestCaseGroup* sequenceGroup = new TestCaseGroup(m_testCtx, "sequence", "Sequence operator tests");
+	TestCaseGroup* sequenceGroup = new TestCaseGroup(m_testCtx, "sequence");
 	addChild(sequenceGroup);
 
-	TestCaseGroup* sequenceNoSideEffGroup = new TestCaseGroup(m_testCtx, "no_side_effects", "Sequence tests without side-effects");
-	TestCaseGroup* sequenceSideEffGroup = new TestCaseGroup(m_testCtx, "side_effects", "Sequence tests with side-effects");
+	TestCaseGroup* sequenceNoSideEffGroup = new TestCaseGroup(m_testCtx, "no_side_effects");
+	TestCaseGroup* sequenceSideEffGroup = new TestCaseGroup(m_testCtx, "side_effects");
 	sequenceGroup->addChild(sequenceNoSideEffGroup);
 	sequenceGroup->addChild(sequenceSideEffGroup);
 
@@ -2001,7 +1989,7 @@ void ShaderOperatorTests::init (void)
 				const std::string expression = std::string("") + "res = (" + s_sequenceCases[caseNdx].expressionStr + ");";
 
 				TestCaseGroup* group = s_sequenceCases[caseNdx].containsSideEffects ? sequenceSideEffGroup : sequenceNoSideEffGroup;
-				group->addChild(new ShaderOperatorCase(m_testCtx, name.c_str(), "", isVertexCase, s_sequenceCases[caseNdx].evalFunc, expression.c_str(), shaderSpec));
+				group->addChild(new ShaderOperatorCase(m_testCtx, name.c_str(), isVertexCase, s_sequenceCases[caseNdx].evalFunc, expression.c_str(), shaderSpec));
 			}
 		}
 	}

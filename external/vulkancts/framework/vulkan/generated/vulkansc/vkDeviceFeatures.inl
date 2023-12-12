@@ -7,26 +7,26 @@
 
 namespace vk
 {
-#define DECL_VARIABLE_POINTERS_EXTENSION_NAME "not_existent_feature"
-#define DECL_MULTIVIEW_EXTENSION_NAME "not_existent_feature"
-#define DECL_16BIT_STORAGE_EXTENSION_NAME "not_existent_feature"
-#define DECL_SHADER_SUBGROUP_EXTENDED_TYPES_EXTENSION_NAME "not_existent_feature"
-#define DECL_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME "not_existent_feature"
-#define DECL_PROTECTED_MEMORY_EXTENSION_NAME "not_existent_feature"
-#define DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME "not_existent_feature"
-#define DECL_SHADER_FLOAT16_INT8_EXTENSION_NAME "not_existent_feature"
-#define DECL_HOST_QUERY_RESET_EXTENSION_NAME "not_existent_feature"
-#define DECL_DESCRIPTOR_INDEXING_EXTENSION_NAME "not_existent_feature"
-#define DECL_TIMELINE_SEMAPHORE_EXTENSION_NAME "not_existent_feature"
-#define DECL_8BIT_STORAGE_EXTENSION_NAME "not_existent_feature"
-#define DECL_VULKAN_MEMORY_MODEL_EXTENSION_NAME "not_existent_feature"
-#define DECL_SHADER_ATOMIC_INT64_EXTENSION_NAME "not_existent_feature"
-#define DECL_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME "not_existent_feature"
-#define DECL_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME "not_existent_feature"
-#define DECL_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME "not_existent_feature"
-#define DECL_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME "not_existent_feature"
-#define DECL_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME "not_existent_feature"
-#define DECL_VULKAN_SC_1_0_EXTENSION_NAME "not_existent_feature"
+#define DECL_VARIABLE_POINTERS_EXTENSION_NAME "core_feature"
+#define DECL_MULTIVIEW_EXTENSION_NAME "core_feature"
+#define DECL_16BIT_STORAGE_EXTENSION_NAME "core_feature"
+#define DECL_SHADER_SUBGROUP_EXTENDED_TYPES_EXTENSION_NAME "core_feature"
+#define DECL_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME "core_feature"
+#define DECL_PROTECTED_MEMORY_EXTENSION_NAME "core_feature"
+#define DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME "core_feature"
+#define DECL_SHADER_FLOAT16_INT8_EXTENSION_NAME "core_feature"
+#define DECL_HOST_QUERY_RESET_EXTENSION_NAME "core_feature"
+#define DECL_DESCRIPTOR_INDEXING_EXTENSION_NAME "core_feature"
+#define DECL_TIMELINE_SEMAPHORE_EXTENSION_NAME "core_feature"
+#define DECL_8BIT_STORAGE_EXTENSION_NAME "core_feature"
+#define DECL_VULKAN_MEMORY_MODEL_EXTENSION_NAME "core_feature"
+#define DECL_SHADER_ATOMIC_INT64_EXTENSION_NAME "core_feature"
+#define DECL_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME "core_feature"
+#define DECL_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME "core_feature"
+#define DECL_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME "core_feature"
+#define DECL_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME "core_feature"
+#define DECL_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME "core_feature"
+#define DECL_VULKAN_SC_1_0_EXTENSION_NAME "core_feature"
 
 
 template<> void initFeatureFromBlob<VkPhysicalDeviceVariablePointersFeatures>(VkPhysicalDeviceVariablePointersFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
@@ -145,7 +145,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceExternalSciSyncFeaturesNV>(V
 template<> void initFeatureFromBlob<VkPhysicalDeviceExternalSciSync2FeaturesNV>(VkPhysicalDeviceExternalSciSync2FeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT>(VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT>(VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&, const AllFeaturesBlobs&) {}
-template<> void initFeatureFromBlob<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>(VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR>(VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceASTCDecodeFeaturesEXT>(VkPhysicalDeviceASTCDecodeFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDepthClipEnableFeaturesEXT>(VkPhysicalDeviceDepthClipEnableFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT>(VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -181,7 +181,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDepthClipEnableFeaturesEX
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePerformanceQueryFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME, VK_KHR_PERFORMANCE_QUERY_SPEC_VERSION, 49}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BLEND_OPERATION_ADVANCED_FEATURES_EXT, VK_EXT_BLEND_OPERATION_ADVANCED_EXTENSION_NAME, VK_EXT_BLEND_OPERATION_ADVANCED_SPEC_VERSION, 48}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderClockFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR, VK_KHR_SHADER_CLOCK_EXTENSION_NAME, VK_KHR_SHADER_CLOCK_SPEC_VERSION, 47}; }
-template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_SPEC_VERSION, 46}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_SPEC_VERSION, 46}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TERMINATE_INVOCATION_FEATURES_KHR, VK_KHR_SHADER_TERMINATE_INVOCATION_EXTENSION_NAME, VK_KHR_SHADER_TERMINATE_INVOCATION_SPEC_VERSION, 45}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceSubgroupSizeControlFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT, VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME, VK_EXT_SUBGROUP_SIZE_CONTROL_SPEC_VERSION, 44}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, VK_KHR_FRAGMENT_SHADING_RATE_SPEC_VERSION, 43}; }
@@ -237,7 +237,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDevicePerformanceQueryFeaturesKHR>, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME, VK_KHR_PERFORMANCE_QUERY_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT>, VK_EXT_BLEND_OPERATION_ADVANCED_EXTENSION_NAME, VK_EXT_BLEND_OPERATION_ADVANCED_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderClockFeaturesKHR>, VK_KHR_SHADER_CLOCK_EXTENSION_NAME, VK_KHR_SHADER_CLOCK_SPEC_VERSION },
-	{ createFeatureStructWrapper<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR>, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME, VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR>, VK_KHR_SHADER_TERMINATE_INVOCATION_EXTENSION_NAME, VK_KHR_SHADER_TERMINATE_INVOCATION_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceSubgroupSizeControlFeaturesEXT>, VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME, VK_EXT_SUBGROUP_SIZE_CONTROL_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, VK_KHR_FRAGMENT_SHADING_RATE_SPEC_VERSION },

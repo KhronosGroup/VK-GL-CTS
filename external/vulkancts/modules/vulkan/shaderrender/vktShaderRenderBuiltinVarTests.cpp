@@ -203,7 +203,7 @@ TestStatus BuiltinGlFrontFacingCaseInstance::iterate (void)
 class BuiltinGlFrontFacingCase : public TestCase
 {
 public:
-								BuiltinGlFrontFacingCase	(TestContext& testCtx, VkPrimitiveTopology topology, const char* name, const char* description);
+								BuiltinGlFrontFacingCase	(TestContext& testCtx, VkPrimitiveTopology topology, const char* name);
 	virtual						~BuiltinGlFrontFacingCase	(void);
 
 	void						initPrograms				(SourceCollections& dst) const;
@@ -217,8 +217,8 @@ private:
 	const VkPrimitiveTopology	m_topology;
 };
 
-BuiltinGlFrontFacingCase::BuiltinGlFrontFacingCase (TestContext& testCtx, VkPrimitiveTopology topology, const char* name, const char* description)
-	: TestCase					(testCtx, name, description)
+BuiltinGlFrontFacingCase::BuiltinGlFrontFacingCase (TestContext& testCtx, VkPrimitiveTopology topology, const char* name)
+	: TestCase					(testCtx, name)
 	, m_topology				(topology)
 {
 }
@@ -1463,7 +1463,7 @@ bool BuiltinFragCoordMsaaCaseInstance::validateSampleLocations (const ConstPixel
 class BuiltinFragCoordMsaaTestCase : public TestCase
 {
 public:
-					BuiltinFragCoordMsaaTestCase	(TestContext& testCtx, const char* name, const char* description, VkSampleCountFlagBits sampleCount, bool sampleShading, std::vector<uint32_t> sampleMaskArray, bool useCentroid, bool useEnable);
+					BuiltinFragCoordMsaaTestCase	(TestContext& testCtx, const char* name, VkSampleCountFlagBits sampleCount, bool sampleShading, std::vector<uint32_t> sampleMaskArray, bool useCentroid, bool useEnable);
 	virtual			~BuiltinFragCoordMsaaTestCase	(void);
 	void			initPrograms					(SourceCollections& sourceCollections) const;
 	TestInstance*	createInstance					(Context& context) const;
@@ -1475,8 +1475,8 @@ private:
 	const bool						m_useEnable;
 };
 
-BuiltinFragCoordMsaaTestCase::BuiltinFragCoordMsaaTestCase (TestContext& testCtx, const char* name, const char* description, VkSampleCountFlagBits sampleCount, bool sampleShading, std::vector<uint32_t> sampleMaskArray, bool useCentroid, bool useEnable)
-	: TestCase			(testCtx, name, description)
+BuiltinFragCoordMsaaTestCase::BuiltinFragCoordMsaaTestCase (TestContext& testCtx, const char* name, VkSampleCountFlagBits sampleCount, bool sampleShading, std::vector<uint32_t> sampleMaskArray, bool useCentroid, bool useEnable)
+	: TestCase			(testCtx, name)
 	, m_sampleCount		(sampleCount)
 	, m_sampleShading	(sampleShading)
 	, m_sampleMaskArray	(sampleMaskArray)
@@ -1618,7 +1618,7 @@ TestInstance* BuiltinFragCoordMsaaTestCase::createInstance (Context& context) co
 class BuiltinFragDepthCase : public TestCase
 {
 public:
-					BuiltinFragDepthCase		(TestContext& testCtx, const char* name, const char* description, VkPrimitiveTopology topology,  VkFormat format, bool largeDepthEnable, bool depthClampEnable, const VkSampleCountFlagBits samples);
+					BuiltinFragDepthCase		(TestContext& testCtx, const char* name, VkPrimitiveTopology topology,  VkFormat format, bool largeDepthEnable, bool depthClampEnable, const VkSampleCountFlagBits samples);
 	virtual			~BuiltinFragDepthCase		(void);
 
 	void			initPrograms				(SourceCollections& dst) const;
@@ -1633,8 +1633,8 @@ private:
 	const VkSampleCountFlagBits		m_samples;
 };
 
-BuiltinFragDepthCase::BuiltinFragDepthCase (TestContext& testCtx, const char* name, const char* description, VkPrimitiveTopology topology, VkFormat format, bool largeDepthEnable, bool depthClampEnable, const VkSampleCountFlagBits  samples)
-	: TestCase				(testCtx, name, description)
+BuiltinFragDepthCase::BuiltinFragDepthCase (TestContext& testCtx, const char* name, VkPrimitiveTopology topology, VkFormat format, bool largeDepthEnable, bool depthClampEnable, const VkSampleCountFlagBits  samples)
+	: TestCase				(testCtx, name)
 	, m_topology			(topology)
 	, m_format				(format)
 	, m_largeDepthEnable	(largeDepthEnable)
@@ -1821,7 +1821,7 @@ void BuiltinGlFragCoordXYZCaseInstance::setupDefaultInputs (void)
 class BuiltinGlFragCoordXYZCase : public TestCase
 {
 public:
-								BuiltinGlFragCoordXYZCase	(TestContext& testCtx, const string& name, const string& description);
+								BuiltinGlFragCoordXYZCase	(TestContext& testCtx, const string& name);
 	virtual						~BuiltinGlFragCoordXYZCase	(void);
 
 	void						initPrograms				(SourceCollections& dst) const;
@@ -1832,8 +1832,8 @@ private:
 	BuiltinGlFragCoordXYZCase&	operator=					(const BuiltinGlFragCoordXYZCase&);	// not allowed!
 };
 
-BuiltinGlFragCoordXYZCase::BuiltinGlFragCoordXYZCase (TestContext& testCtx, const string& name, const string& description)
-	: TestCase(testCtx, name, description)
+BuiltinGlFragCoordXYZCase::BuiltinGlFragCoordXYZCase (TestContext& testCtx, const string& name)
+	: TestCase(testCtx, name)
 {
 }
 
@@ -1946,7 +1946,7 @@ void BuiltinGlFragCoordWCaseInstance::setupDefaultInputs (void)
 class BuiltinGlFragCoordWCase : public TestCase
 {
 public:
-								BuiltinGlFragCoordWCase		(TestContext& testCtx, const string& name, const string& description);
+								BuiltinGlFragCoordWCase		(TestContext& testCtx, const string& name);
 	virtual						~BuiltinGlFragCoordWCase	(void);
 
 	void						initPrograms				(SourceCollections& dst) const;
@@ -1957,8 +1957,8 @@ private:
 	BuiltinGlFragCoordWCase&	operator=					(const BuiltinGlFragCoordWCase&);	// not allowed!
 };
 
-BuiltinGlFragCoordWCase::BuiltinGlFragCoordWCase (TestContext& testCtx, const string& name, const string& description)
-	: TestCase(testCtx, name, description)
+BuiltinGlFragCoordWCase::BuiltinGlFragCoordWCase (TestContext& testCtx, const string& name)
+	: TestCase(testCtx, name)
 {
 }
 
@@ -2117,7 +2117,7 @@ void BuiltinGlPointCoordCaseInstance::setupDefaultInputs (void)
 class BuiltinGlPointCoordCase : public TestCase
 {
 public:
-								BuiltinGlPointCoordCase	(TestContext& testCtx, const string& name, const string& description, int testVariant);
+								BuiltinGlPointCoordCase	(TestContext& testCtx, const string& name, int testVariant);
 	virtual						~BuiltinGlPointCoordCase	(void);
 
 	void						initPrograms				(SourceCollections& dst) const;
@@ -2129,8 +2129,8 @@ private:
 	BuiltinGlPointCoordCase&	operator=					(const BuiltinGlPointCoordCase&);	// not allowed!
 };
 
-BuiltinGlPointCoordCase::BuiltinGlPointCoordCase (TestContext& testCtx, const string& name, const string& description, int testVariant)
-	: TestCase(testCtx, name, description),
+BuiltinGlPointCoordCase::BuiltinGlPointCoordCase (TestContext& testCtx, const string& name, int testVariant)
+	: TestCase(testCtx, name),
 	  variant(testVariant)
 {
 }
@@ -2361,7 +2361,7 @@ void BuiltinInputVariationsCaseInstance::updatePushConstants (vk::VkCommandBuffe
 class BuiltinInputVariationsCase : public TestCase
 {
 public:
-								BuiltinInputVariationsCase	(TestContext& testCtx, const string& name, const string& description, const ShaderInputTypes shaderInputTypes);
+								BuiltinInputVariationsCase	(TestContext& testCtx, const string& name, const ShaderInputTypes shaderInputTypes);
 	virtual						~BuiltinInputVariationsCase	(void);
 
 	void						initPrograms				(SourceCollections& dst) const;
@@ -2373,8 +2373,8 @@ private:
 	const ShaderInputTypes		m_shaderInputTypes;
 };
 
-BuiltinInputVariationsCase::BuiltinInputVariationsCase (TestContext& testCtx, const string& name, const string& description, ShaderInputTypes shaderInputTypes)
-	: TestCase				(testCtx, name, description)
+BuiltinInputVariationsCase::BuiltinInputVariationsCase (TestContext& testCtx, const string& name, ShaderInputTypes shaderInputTypes)
+	: TestCase				(testCtx, name)
 	, m_shaderInputTypes	(shaderInputTypes)
 {
 }
@@ -2458,36 +2458,40 @@ TestInstance* BuiltinInputVariationsCase::createInstance (Context& context) cons
 
 TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup> builtinGroup			(new TestCaseGroup(testCtx, "builtin_var", "Shader builtin variable tests."));
-	de::MovePtr<TestCaseGroup> simpleGroup			(new TestCaseGroup(testCtx, "simple", "Simple cases."));
-	de::MovePtr<TestCaseGroup> inputVariationsGroup	(new TestCaseGroup(testCtx, "input_variations", "Input type variation tests."));
-	de::MovePtr<TestCaseGroup> frontFacingGroup		(new TestCaseGroup(testCtx, "frontfacing", "Test gl_Frontfacing keyword."));
-	de::MovePtr<TestCaseGroup> fragDepthGroup		(new TestCaseGroup(testCtx, "fragdepth", "Test gl_FragDepth keyword."));
-	de::MovePtr<TestCaseGroup> fragCoordMsaaGroup	(new TestCaseGroup(testCtx, "fragcoord_msaa", "Test interation between gl_FragCoord and msaa"));
-	de::MovePtr<TestCaseGroup> fragCoordMsaaInputGroup	(new TestCaseGroup(testCtx, "fragcoord_msaa_input", "Test interation between gl_FragCoord and msaa"));
+	de::MovePtr<TestCaseGroup> builtinGroup			(new TestCaseGroup(testCtx, "builtin_var"));
+	de::MovePtr<TestCaseGroup> simpleGroup			(new TestCaseGroup(testCtx, "simple"));
+	de::MovePtr<TestCaseGroup> inputVariationsGroup	(new TestCaseGroup(testCtx, "input_variations"));
+	de::MovePtr<TestCaseGroup> frontFacingGroup		(new TestCaseGroup(testCtx, "frontfacing"));
+	de::MovePtr<TestCaseGroup> fragDepthGroup		(new TestCaseGroup(testCtx, "fragdepth"));
+	de::MovePtr<TestCaseGroup> fragCoordMsaaGroup	(new TestCaseGroup(testCtx, "fragcoord_msaa"));
+	de::MovePtr<TestCaseGroup> fragCoordMsaaInputGroup	(new TestCaseGroup(testCtx, "fragcoord_msaa_input"));
 
-	simpleGroup->addChild(new BuiltinGlFragCoordXYZCase(testCtx, "fragcoord_xyz", "FragCoord xyz test"));
-	simpleGroup->addChild(new BuiltinGlFragCoordWCase(testCtx, "fragcoord_w", "FragCoord w test"));
-	simpleGroup->addChild(new BuiltinGlPointCoordCase(testCtx, "pointcoord", "PointCoord test", POINTCOORD_VARIANT_DEFAULT));
-	simpleGroup->addChild(new BuiltinGlPointCoordCase(testCtx, "pointcoord_uniform_frag", "PointCoord test with fragment uniform", POINTCOORD_VARIANT_UNIFORM_FRAGMENT));
-	simpleGroup->addChild(new BuiltinGlPointCoordCase(testCtx, "pointcoord_uniform_vert", "PointCoord test with vertex uniform", POINTCOORD_VARIANT_UNIFORM_VERTEX));
+	// FragCoord xyz test
+	simpleGroup->addChild(new BuiltinGlFragCoordXYZCase(testCtx, "fragcoord_xyz"));
+	// FragCoord w test
+	simpleGroup->addChild(new BuiltinGlFragCoordWCase(testCtx, "fragcoord_w"));
+	// PointCoord test
+	simpleGroup->addChild(new BuiltinGlPointCoordCase(testCtx, "pointcoord", POINTCOORD_VARIANT_DEFAULT));
+	// PointCoord test with fragment uniform
+	simpleGroup->addChild(new BuiltinGlPointCoordCase(testCtx, "pointcoord_uniform_frag", POINTCOORD_VARIANT_UNIFORM_FRAGMENT));
+	// PointCoord test with vertex uniform
+	simpleGroup->addChild(new BuiltinGlPointCoordCase(testCtx, "pointcoord_uniform_vert", POINTCOORD_VARIANT_UNIFORM_VERTEX));
 
 	// FragCoord_msaa
 	{
 		static const struct FragCoordMsaaCaseList
 		{
 			const char*				name;
-			const char*				description;
 			VkSampleCountFlagBits	sampleCount;
 		} fragCoordMsaaCaseList[] =
 		{
-			{ "1_bit",	"Test FragCoord locations with 1 sample",	VK_SAMPLE_COUNT_1_BIT },
-			{ "2_bit",	"Test FragCoord locations with 2 samples",	VK_SAMPLE_COUNT_2_BIT },
-			{ "4_bit",	"Test FragCoord locations with 4 samples",	VK_SAMPLE_COUNT_4_BIT },
-			{ "8_bit",	"Test FragCoord locations with 8 samples",	VK_SAMPLE_COUNT_8_BIT },
-			{ "16_bit",	"Test FragCoord locations with 16 samples",	VK_SAMPLE_COUNT_16_BIT },
-			{ "32_bit",	"Test FragCoord locations with 32 samples",	VK_SAMPLE_COUNT_32_BIT },
-			{ "64_bit",	"Test FragCoord locaitons with 64 samples",	VK_SAMPLE_COUNT_64_BIT },
+			{ "1_bit",	VK_SAMPLE_COUNT_1_BIT },
+			{ "2_bit",	VK_SAMPLE_COUNT_2_BIT },
+			{ "4_bit",	VK_SAMPLE_COUNT_4_BIT },
+			{ "8_bit",	VK_SAMPLE_COUNT_8_BIT },
+			{ "16_bit",	VK_SAMPLE_COUNT_16_BIT },
+			{ "32_bit",	VK_SAMPLE_COUNT_32_BIT },
+			{ "64_bit",	VK_SAMPLE_COUNT_64_BIT },
 		};
 
 		// Standard sample tests
@@ -2495,8 +2499,8 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 
 		for (deUint32 caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(fragCoordMsaaCaseList); caseNdx++)
 		{
-			fragCoordMsaaGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, fragCoordMsaaCaseList[caseNdx].name, fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount, true, sampleMaskArray, false, true));
-			fragCoordMsaaInputGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, fragCoordMsaaCaseList[caseNdx].name, fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount, true, sampleMaskArray, false, false));
+			fragCoordMsaaGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, fragCoordMsaaCaseList[caseNdx].name, fragCoordMsaaCaseList[caseNdx].sampleCount, true, sampleMaskArray, false, true));
+			fragCoordMsaaInputGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, fragCoordMsaaCaseList[caseNdx].name, fragCoordMsaaCaseList[caseNdx].sampleCount, true, sampleMaskArray, false, false));
 		}
 
 		sampleMaskArray.push_back(1u);
@@ -2504,13 +2508,13 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 		// No sample shading tests
 		for (deUint32 caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(fragCoordMsaaCaseList); caseNdx++)
 		{
-			fragCoordMsaaInputGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, (std::string(fragCoordMsaaCaseList[caseNdx].name) + "_no_sample_shading").c_str(), fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount, false, sampleMaskArray, false, false));
+			fragCoordMsaaInputGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, (std::string(fragCoordMsaaCaseList[caseNdx].name) + "_no_sample_shading").c_str(), fragCoordMsaaCaseList[caseNdx].sampleCount, false, sampleMaskArray, false, false));
 		}
 
 		// No sample shading tests with centroid interpolation decoration
 		for (deUint32 caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(fragCoordMsaaCaseList); caseNdx++)
 		{
-			fragCoordMsaaInputGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, (std::string(fragCoordMsaaCaseList[caseNdx].name) + "_no_sample_shading_centroid_interpolation").c_str(), fragCoordMsaaCaseList[caseNdx].description, fragCoordMsaaCaseList[caseNdx].sampleCount, false, sampleMaskArray, true, false));
+			fragCoordMsaaInputGroup->addChild(new BuiltinFragCoordMsaaTestCase(testCtx, (std::string(fragCoordMsaaCaseList[caseNdx].name) + "_no_sample_shading_centroid_interpolation").c_str(), fragCoordMsaaCaseList[caseNdx].sampleCount, false, sampleMaskArray, true, false));
 		}
 	}
 
@@ -2519,19 +2523,23 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 		static const struct PrimitiveTable
 		{
 			const char*				name;
-			const char*				desc;
 			VkPrimitiveTopology		primitive;
 		} frontfacingCases[] =
 		{
-			{ "point_list",		"Test that points are frontfacing",							VK_PRIMITIVE_TOPOLOGY_POINT_LIST },
-			{ "line_list",		"Test that lines are frontfacing",							VK_PRIMITIVE_TOPOLOGY_LINE_LIST },
-			{ "triangle_list",	"Test that triangles can be frontfacing or backfacing",		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST },
-			{ "triangle_strip",	"Test that traiangle strips can be front or back facing",	VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP },
-			{ "triangle_fan",	"Test that triangle fans can be front or back facing",		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN },
+			// Test that points are frontfacing
+			{ "point_list",							VK_PRIMITIVE_TOPOLOGY_POINT_LIST },
+			// Test that lines are frontfacing
+			{ "line_list",							VK_PRIMITIVE_TOPOLOGY_LINE_LIST },
+			// Test that triangles can be frontfacing or backfacing
+			{ "triangle_list",						VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST },
+			// Test that traiangle strips can be front or back facing
+			{ "triangle_strip",						VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP },
+			// Test that triangle fans can be front or back facing
+			{ "triangle_fan",						VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN },
 		};
 
 		for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(frontfacingCases); ndx++)
-			frontFacingGroup->addChild(new BuiltinGlFrontFacingCase(testCtx, frontfacingCases[ndx].primitive, frontfacingCases[ndx].name, frontfacingCases[ndx].desc));
+			frontFacingGroup->addChild(new BuiltinGlFrontFacingCase(testCtx, frontfacingCases[ndx].primitive, frontfacingCases[ndx].name));
 	}
 
 	// gl_FragDepth
@@ -2539,13 +2547,15 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 		static const struct PrimitiveTopologyTable
 		{
 			std::string			name;
-			std::string			desc;
 			VkPrimitiveTopology	prim;
 		} primitiveTopologyTable[] =
 		{
-			{ "point_list",		"test that points respect gl_fragdepth", VK_PRIMITIVE_TOPOLOGY_POINT_LIST },
-			{ "line_list",		"test taht lines respect gl_fragdepth", VK_PRIMITIVE_TOPOLOGY_LINE_LIST },
-			{ "triangle_list",	"test that triangles respect gl_fragdepth", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP },
+			// test that points respect gl_fragdepth
+			{ "point_list", VK_PRIMITIVE_TOPOLOGY_POINT_LIST },
+			// test taht lines respect gl_fragdepth
+			{ "line_list", VK_PRIMITIVE_TOPOLOGY_LINE_LIST },
+			// test that triangles respect gl_fragdepth
+			{ "triangle_list", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP },
 		};
 
 		static const struct TestCaseTable
@@ -2577,7 +2587,7 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 		for (deUint32 primNdx = 0;  primNdx < DE_LENGTH_OF_ARRAY(primitiveTopologyTable); primNdx++)
 		{
 			for (deUint32 caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(testCaseTable); caseNdx++)
-				fragDepthGroup->addChild(new BuiltinFragDepthCase(testCtx, (primitiveTopologyTable[primNdx].name+"_" + testCaseTable[caseNdx].name).c_str(), primitiveTopologyTable[primNdx].desc.c_str(),
+				fragDepthGroup->addChild(new BuiltinFragDepthCase(testCtx, (primitiveTopologyTable[primNdx].name+"_" + testCaseTable[caseNdx].name).c_str(),
 							primitiveTopologyTable[primNdx].prim, testCaseTable[caseNdx].format, testCaseTable[caseNdx].largeDepthEnable, testCaseTable[caseNdx].depthClampEnable, testCaseTable[caseNdx].samples));
 
 		}
@@ -2591,7 +2601,7 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 
 	for (deUint16 shaderType = 0; shaderType <= (SHADER_INPUT_BUILTIN_BIT | SHADER_INPUT_VARYING_BIT | SHADER_INPUT_CONSTANT_BIT); ++shaderType)
 	{
-		inputVariationsGroup->addChild(new BuiltinInputVariationsCase(testCtx, shaderInputTypeToString(shaderType), "Input variation test", shaderType));
+		inputVariationsGroup->addChild(new BuiltinInputVariationsCase(testCtx, shaderInputTypeToString(shaderType), shaderType));
 	}
 
 	builtinGroup->addChild(inputVariationsGroup.release());

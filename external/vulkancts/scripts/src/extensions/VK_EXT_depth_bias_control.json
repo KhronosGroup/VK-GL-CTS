@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceDepthBiasControlFeaturesEXT":
+		[
+			{ "features": ["depthBiasControl"], "requirements": ["VK_EXT_depth_bias_control"], "mandatory_variant": ["vulkan"] }
+		]
+	}
+}

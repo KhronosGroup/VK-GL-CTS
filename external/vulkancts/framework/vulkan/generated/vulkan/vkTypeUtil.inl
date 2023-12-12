@@ -412,6 +412,17 @@ inline VkSurfaceFormatKHR makeSurfaceFormatKHR (VkFormat format, VkColorSpaceKHR
 	return res;
 }
 
+inline VkLayerSettingEXT makeLayerSettingEXT (const char* pLayerName, const char* pSettingName, VkLayerSettingTypeEXT type, uint32_t valueCount, const void* pValues)
+{
+	VkLayerSettingEXT res;
+	res.pLayerName		= pLayerName;
+	res.pSettingName	= pSettingName;
+	res.type			= type;
+	res.valueCount		= valueCount;
+	res.pValues			= pValues;
+	return res;
+}
+
 inline VkBindShaderGroupIndirectCommandNV makeBindShaderGroupIndirectCommandNV (uint32_t groupIndex)
 {
 	VkBindShaderGroupIndirectCommandNV res;
@@ -449,6 +460,13 @@ inline VkIndirectCommandsStreamNV makeIndirectCommandsStreamNV (VkBuffer buffer,
 	VkIndirectCommandsStreamNV res;
 	res.buffer	= buffer;
 	res.offset	= offset;
+	return res;
+}
+
+inline VkBindPipelineIndirectCommandNV makeBindPipelineIndirectCommandNV (VkDeviceAddress pipelineAddress)
+{
+	VkBindPipelineIndirectCommandNV res;
+	res.pipelineAddress	= pipelineAddress;
 	return res;
 }
 
@@ -571,9 +589,9 @@ inline VkShaderResourceUsageAMD makeShaderResourceUsageAMD (uint32_t numUsedVgpr
 	return res;
 }
 
-inline VkVertexInputBindingDivisorDescriptionEXT makeVertexInputBindingDivisorDescriptionEXT (uint32_t binding, uint32_t divisor)
+inline VkVertexInputBindingDivisorDescriptionKHR makeVertexInputBindingDivisorDescriptionKHR (uint32_t binding, uint32_t divisor)
 {
-	VkVertexInputBindingDivisorDescriptionEXT res;
+	VkVertexInputBindingDivisorDescriptionKHR res;
 	res.binding	= binding;
 	res.divisor	= divisor;
 	return res;
@@ -862,14 +880,14 @@ inline StdVideoEncodeH264RefListModEntry makeStdVideoEncodeH264RefListModEntry (
 	return res;
 }
 
-inline StdVideoEncodeH264RefPicMarkingEntry makeStdVideoEncodeH264RefPicMarkingEntry (StdVideoH264MemMgmtControlOp operation, uint16_t difference_of_pic_nums_minus1, uint16_t long_term_pic_num, uint16_t long_term_frame_idx, uint16_t max_long_term_frame_idx_plus1)
+inline StdVideoEncodeH264RefPicMarkingEntry makeStdVideoEncodeH264RefPicMarkingEntry (StdVideoH264MemMgmtControlOp memory_management_control_operation, uint16_t difference_of_pic_nums_minus1, uint16_t long_term_pic_num, uint16_t long_term_frame_idx, uint16_t max_long_term_frame_idx_plus1)
 {
 	StdVideoEncodeH264RefPicMarkingEntry res;
-	res.operation						= operation;
-	res.difference_of_pic_nums_minus1	= difference_of_pic_nums_minus1;
-	res.long_term_pic_num				= long_term_pic_num;
-	res.long_term_frame_idx				= long_term_frame_idx;
-	res.max_long_term_frame_idx_plus1	= max_long_term_frame_idx_plus1;
+	res.memory_management_control_operation	= memory_management_control_operation;
+	res.difference_of_pic_nums_minus1		= difference_of_pic_nums_minus1;
+	res.long_term_pic_num					= long_term_pic_num;
+	res.long_term_frame_idx					= long_term_frame_idx;
+	res.max_long_term_frame_idx_plus1		= max_long_term_frame_idx_plus1;
 	return res;
 }
 

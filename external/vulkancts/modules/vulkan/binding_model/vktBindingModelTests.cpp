@@ -65,9 +65,9 @@ void createChildren (tcu::TestCaseGroup* group)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "binding_model", "Resource binding tests", createChildren);
+	return createTestGroup(testCtx, name, createChildren);
 }
 
 } // BindingModel

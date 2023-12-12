@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderObjectFeaturesEXT":
+		[
+			{ "features": ["shaderObject"],		"requirements": ["VK_EXT_shader_object"] }
+		]
+	}
+}

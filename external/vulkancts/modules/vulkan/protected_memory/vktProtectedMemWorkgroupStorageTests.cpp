@@ -110,9 +110,8 @@ class WorkgroupStorageTestCase : public TestCase
 public:
 								WorkgroupStorageTestCase	(tcu::TestContext&		testCtx,
 															 const std::string&		name,
-															 const std::string&		description,
 															 const Params&			params)
-									: TestCase		(testCtx, name, description)
+									: TestCase		(testCtx, name)
 									, m_validator	(vk::VK_FORMAT_R8G8B8A8_UNORM)
 									, m_params		(params)
 								{
@@ -364,14 +363,14 @@ tcu::TestStatus WorkgroupStorageTestInstance::validateResult (vk::VkImage image,
 
 tcu::TestCaseGroup*	createWorkgroupStorageTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> workgroupGroup (new tcu::TestCaseGroup(testCtx, "workgroupstorage", "Workgroup storage tests"));
+	de::MovePtr<tcu::TestCaseGroup> workgroupGroup (new tcu::TestCaseGroup(testCtx, "workgroupstorage"));
 
 	static const deUint32 sharedMemSizes[] = { 1, 4, 5, 60, 101, 503 };
 
 	for (int sharedMemSizeIdx = 0; sharedMemSizeIdx < DE_LENGTH_OF_ARRAY(sharedMemSizes); ++sharedMemSizeIdx)
 	{
 		std::string testName = std::string("memsize_") + de::toString(sharedMemSizes[sharedMemSizeIdx]);
-		workgroupGroup->addChild(new WorkgroupStorageTestCase(testCtx, testName, "", Params(sharedMemSizes[sharedMemSizeIdx])));
+		workgroupGroup->addChild(new WorkgroupStorageTestCase(testCtx, testName, Params(sharedMemSizes[sharedMemSizeIdx])));
 	}
 
 	return workgroupGroup.release();

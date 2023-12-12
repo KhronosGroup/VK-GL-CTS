@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2019 Google LLC
  * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,7 +97,6 @@ void addMonolithicAmberTests (tcu::TestCaseGroup* tests)
 	// Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/pipeline/<basename>.amber
 	struct Case {
 		const char*			basename;
-		const char*			description;
 		AmberFeatureFlags	flags;
 	};
 
@@ -103,20 +104,23 @@ void addMonolithicAmberTests (tcu::TestCaseGroup* tests)
 	{
 		{
 			"position_to_ssbo",
-			"Write position data into ssbo using only the vertex shader in a pipeline",
 			(AMBER_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS),
 		},
 		{
 			"primitive_id_from_tess",
-			"Read primitive id from tessellation shaders without a geometry shader",
 			(AMBER_FEATURE_TESSELATION_SHADER | AMBER_FEATURE_GEOMETRY_SHADER),
+		},
+		// Read gl_layer from fragment shaders without previous writes
+		{
+			"layer_read_from_frag",
+			(AMBER_FEATURE_GEOMETRY_SHADER),
 		},
 	};
 	for (unsigned i = 0; i < DE_LENGTH_OF_ARRAY(cases) ; ++i)
 	{
 		std::string					file			= std::string(cases[i].basename) + ".amber";
 		std::vector<std::string>	requirements	= getFeatureList(cases[i].flags);
-		cts_amber::AmberTestCase	*testCase		= cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, "pipeline", file, requirements);
+		cts_amber::AmberTestCase	*testCase		= cts_amber::createAmberTestCase(testCtx, cases[i].basename, "pipeline", file, requirements);
 
 		tests->addChild(testCase);
 	}
@@ -130,10 +134,9 @@ class ImplicitPrimitiveIDPassthroughCase : public vkt::TestCase
 public:
 	ImplicitPrimitiveIDPassthroughCase		(tcu::TestContext&                  testCtx,
 											 const std::string&                 name,
-											 const std::string&                 description,
 											 const PipelineConstructionType		pipelineConstructionType,
 											 bool withTessellation)
-		: vkt::TestCase(testCtx, name, description)
+		: vkt::TestCase(testCtx, name)
 		, m_pipelineConstructionType(pipelineConstructionType)
 		, m_withTessellationPassthrough(withTessellation)
 	{
@@ -154,18 +157,19 @@ public:
 	ImplicitPrimitiveIDPassthroughInstance	(Context&                           context,
 											 const PipelineConstructionType		pipelineConstructionType,
 											 bool withTessellation)
-		:
-		vkt::TestInstance(context)
-		, m_renderSize		        (2, 2)
-		, m_extent(makeExtent3D(m_renderSize.x(), m_renderSize.y(), 1u))
-		, m_graphicsPipeline		(context.getDeviceInterface(), context.getDevice(), pipelineConstructionType)
-		, m_withTessellationPassthrough(withTessellation)
+		: vkt::TestInstance				(context)
+		, m_pipelineConstructionType	(pipelineConstructionType)
+		, m_renderSize					(2, 2)
+		, m_extent(makeExtent3D			(m_renderSize.x(), m_renderSize.y(), 1u))
+		, m_graphicsPipeline			(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType)
+		, m_withTessellationPassthrough	(withTessellation)
 	{
 	}
 	~ImplicitPrimitiveIDPassthroughInstance	(void) {}
 	tcu::TestStatus		iterate				(void) override;
 
 private:
+	PipelineConstructionType	m_pipelineConstructionType;
 	const tcu::UVec2            m_renderSize;
 	const VkExtent3D		    m_extent;
 	const VkFormat		        m_format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -185,7 +189,7 @@ void ImplicitPrimitiveIDPassthroughCase::checkSupport (Context &context) const
 
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 void ImplicitPrimitiveIDPassthroughCase::initPrograms(SourceCollections& sources) const
@@ -314,19 +318,19 @@ tcu::TestStatus ImplicitPrimitiveIDPassthroughInstance::iterate ()
 	auto&				verifBufferAlloc	= verifBuffer.getAllocation();
 
 	// Render pass and framebuffer.
-	const auto renderPass	= makeRenderPass(vkd, device, m_format);
-	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorBufferView.get(), m_extent.width, m_extent.height);
+	RenderPassWrapper	renderPass			(m_pipelineConstructionType, vkd, device, m_format);
+	renderPass.createFramebuffer(vkd, device, colorBuffer.get(), colorBufferView.get(), m_extent.width, m_extent.height);
 
 	// Shader modules.
 	const auto&		binaries		= m_context.getBinaryCollection();
-	const auto		vertModule		= createShaderModule(vkd, device, binaries.get("vert"));
-	const auto		fragModule		= createShaderModule(vkd, device, binaries.get("frag"));
-	Move<VkShaderModule> tscModule;
-	Move<VkShaderModule> tseModule;
+	const auto		vertModule		= ShaderWrapper(vkd, device, binaries.get("vert"));
+	const auto		fragModule		= ShaderWrapper(vkd, device, binaries.get("frag"));
+	ShaderWrapper tscModule;
+	ShaderWrapper tseModule;
 
 	if (m_withTessellationPassthrough) {
-		tscModule = createShaderModule(vkd, device, binaries.get("tsc"));
-		tseModule = createShaderModule(vkd, device, binaries.get("tse"));
+		tscModule = ShaderWrapper(vkd, device, binaries.get("tsc"));
+		tseModule = ShaderWrapper(vkd, device, binaries.get("tse"));
 	}
 
 	// Viewports and scissors.
@@ -352,7 +356,7 @@ tcu::TestStatus ImplicitPrimitiveIDPassthroughInstance::iterate ()
 	};
 
 	// Pipeline layout and graphics pipeline.
-	const auto pipelineLayout	= makePipelineLayout(vkd, device);
+	const PipelineLayoutWrapper pipelineLayout	(m_pipelineConstructionType, vkd, device);
 
 	const auto topology = m_withTessellationPassthrough ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	m_graphicsPipeline.setDefaultRasterizationState()
@@ -361,10 +365,10 @@ tcu::TestStatus ImplicitPrimitiveIDPassthroughInstance::iterate ()
 		.setDefaultDepthStencilState()
 		.setDefaultMultisampleState()
 		.setDefaultColorBlendState()
-		.setupPreRasterizationShaderState(viewports, scissors, *pipelineLayout, *renderPass, 0u, *vertModule, &rasterizationState, *tscModule, *tseModule)
-		.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
+		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertModule, &rasterizationState, tscModule, tseModule)
+		.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
 		.setupFragmentOutputState(*renderPass)
-		.setMonolithicPipelineLayout(*pipelineLayout)
+		.setMonolithicPipelineLayout(pipelineLayout)
 		.buildPipeline();
 
 	// Command pool and buffer.
@@ -375,10 +379,10 @@ tcu::TestStatus ImplicitPrimitiveIDPassthroughInstance::iterate ()
 	beginCommandBuffer(vkd, cmdBuffer);
 
 	// Draw.
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+	renderPass.begin(vkd, cmdBuffer, scissors.at(0u), clearColor);
+	m_graphicsPipeline.bind(cmdBuffer);
 	vkd.cmdDraw(cmdBuffer, 6, 1u, 0u, 0u);
-	endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 
 	// Copy to verification buffer.
 	const auto copyRegion		= makeBufferImageCopy(m_extent, colorSRL);
@@ -432,8 +436,8 @@ struct UnusedShaderStageParams
 class UnusedShaderStagesCase : public vkt::TestCase
 {
 public:
-					UnusedShaderStagesCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const UnusedShaderStageParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					UnusedShaderStagesCase	(tcu::TestContext& testCtx, const std::string& name, const UnusedShaderStageParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 	virtual			~UnusedShaderStagesCase	(void) {}
@@ -639,7 +643,7 @@ TestInstance* UnusedShaderStagesCase::createInstance (Context &context) const
 
 void UnusedShaderStagesCase::checkSupport (Context &context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 
 	if (m_params.useTessShaders)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
@@ -725,8 +729,8 @@ tcu::TestStatus UnusedShaderStagesInstance::iterate ()
 	auto&				verificationBufferAlloc			= verificationBuffer.getAllocation();
 
 	// Render pass and framebuffer.
-	const auto renderPass	= makeRenderPass(vkd, device, colorFormat);
-	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorAttachmentView.get(), colorExtent.width, colorExtent.height);
+	RenderPassWrapper	renderPass						(m_params.pipelineConstructionType, vkd, device, colorFormat);
+	renderPass.createFramebuffer(vkd, device, *colorAttachment, colorAttachmentView.get(), colorExtent.width, colorExtent.height);
 
 	// Pipeline layout.
 	const auto pipelineLayout = makePipelineLayout(vkd, device);
@@ -983,10 +987,10 @@ tcu::TestStatus UnusedShaderStagesInstance::iterate ()
 	const auto cmdBuffer	= cmdBufferPtr.get();
 
 	beginCommandBuffer(vkd, cmdBuffer);
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
+	renderPass.begin(vkd, cmdBuffer, scissors.at(0u), clearColor);
 	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
 	vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
-	endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 
 	// Copy color attachment to verification buffer.
 	const auto preCopyBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -1031,7 +1035,7 @@ tcu::TestStatus UnusedShaderStagesInstance::iterate ()
 class PipelineLibraryInterpolateAtSampleTestCase : public vkt::TestCase
 {
 public:
-	PipelineLibraryInterpolateAtSampleTestCase(tcu::TestContext& context, const std::string& name, const std::string& description);
+	PipelineLibraryInterpolateAtSampleTestCase(tcu::TestContext& context, const std::string& name);
 	void            initPrograms            (vk::SourceCollections& programCollection) const override;
 	TestInstance*   createInstance          (Context& context) const override;
 	void            checkSupport            (Context& context) const override;
@@ -1051,14 +1055,14 @@ public:
 	virtual tcu::TestStatus iterate(void);
 };
 
-PipelineLibraryInterpolateAtSampleTestCase::PipelineLibraryInterpolateAtSampleTestCase(tcu::TestContext& context, const std::string& name, const std::string& description):
-	vkt::TestCase(context, name, description) { }
+PipelineLibraryInterpolateAtSampleTestCase::PipelineLibraryInterpolateAtSampleTestCase(tcu::TestContext& context, const std::string& name):
+	vkt::TestCase(context, name) { }
 
 void PipelineLibraryInterpolateAtSampleTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY);
 }
 
 void PipelineLibraryInterpolateAtSampleTestCase::initPrograms(vk::SourceCollections& collection) const
@@ -1120,7 +1124,9 @@ PipelineLibraryInterpolateAtSampleTestInstance::PipelineLibraryInterpolateAtSamp
 
 void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& index, BufferWithMemory& values, size_t bufferSize, PipelineConstructionType type)
 {
+	const auto& vki			= m_context.getInstanceInterface();
 	const auto& vkd			= m_context.getDeviceInterface();
+	const auto  physDevice	= m_context.getPhysicalDevice();
 	const auto  device		= m_context.getDevice();
 	auto& alloc				= m_context.getDefaultAllocator();
 	auto imageFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
@@ -1131,7 +1137,7 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& i
 
 	de::MovePtr<vk::ImageWithMemory>  colorAttachment;
 
-	vk::GraphicsPipelineWrapper pipeline1(vkd, device, type);
+	vk::GraphicsPipelineWrapper pipeline1(vki, vkd, physDevice, device, m_context.getDeviceExtensions(), type);
 	const auto  qIndex	= m_context.getUniversalQueueFamilyIndex();
 
 	const auto  subresourceRange	= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -1163,7 +1169,7 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& i
 	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	auto descriptorSetLayout    = layoutBuilder.build(vkd, device);
-	auto graphicsPipelineLayout = vk::makePipelineLayout(vkd, device, descriptorSetLayout.get());
+	vk::PipelineLayoutWrapper	graphicsPipelineLayout (type, vkd, device, descriptorSetLayout.get());
 
 	DescriptorPoolBuilder poolBuilder;
 	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -1181,8 +1187,8 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& i
 
 	updater.update(vkd, device);
 
-	auto vtxshader  = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"));
-	auto frgshader  = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"));
+	auto vtxshader  = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"));
+	auto frgshader  = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"));
 
 	const vk::VkPipelineVertexInputStateCreateInfo vertexInputState =
 	{
@@ -1211,14 +1217,14 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& i
 		.setupPreRasterizationShaderState(
 			viewports,
 			scissors,
-			*graphicsPipelineLayout,
+			graphicsPipelineLayout,
 			DE_NULL,
 			0u,
-			*vtxshader)
-		.setupFragmentShaderState(*graphicsPipelineLayout, DE_NULL, 0u,
-			*frgshader)
+			vtxshader)
+		.setupFragmentShaderState(graphicsPipelineLayout, DE_NULL, 0u,
+			frgshader)
 		.setupFragmentOutputState(DE_NULL, 0u, DE_NULL, &multisampling)
-		.setMonolithicPipelineLayout(*graphicsPipelineLayout).buildPipeline();
+		.setMonolithicPipelineLayout(graphicsPipelineLayout).buildPipeline();
 
 	auto commandPool = createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, qIndex);
 	auto commandBuffer = vk::allocateCommandBuffer(vkd, device, commandPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -1264,7 +1270,8 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory& i
 	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout.get(), 0u, 1, &descriptorSetBuffer.get(), 0u, nullptr);
 
 	vkd.cmdBeginRendering(*commandBuffer, &render_info);
-	vkd.cmdBindPipeline(commandBuffer.get(), vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline1.getPipeline());
+	pipeline1.bind(commandBuffer.get());
+	vkd.cmdSetPatchControlPointsEXT(commandBuffer.get(), 3);
 	vkd.cmdDraw(commandBuffer.get(), 6, 1, 0, 0);
 	vkd.cmdEndRendering(*commandBuffer);
 
@@ -1378,9 +1385,8 @@ class PipelineLayoutBindingTestCases : public vkt::TestCase
 public:
 	PipelineLayoutBindingTestCases		(tcu::TestContext&                  testCtx,
 											 const std::string&                 name,
-											 const std::string&                 description,
 											 const BindingTestConfig&			config)
-		: vkt::TestCase(testCtx, name, description)
+		: vkt::TestCase(testCtx, name)
 		, m_config(config)
 	{
 	}
@@ -1397,12 +1403,12 @@ class PipelineLayoutBindingTestInstance : public vkt::TestInstance
 public:
 	PipelineLayoutBindingTestInstance	(Context& context,
 										 const BindingTestConfig& config)
-		: vkt::TestInstance(context)
-		, m_renderSize		        (2, 2)
-		, m_extent(makeExtent3D(m_renderSize.x(), m_renderSize.y(), 1u))
-		, m_format					(VK_FORMAT_R8G8B8A8_UNORM)
-		, m_graphicsPipeline		(context.getDeviceInterface(), context.getDevice(), config.construction)
-		, m_config					(config)
+		: vkt::TestInstance				(context)
+		, m_renderSize					(2, 2)
+		, m_extent						(makeExtent3D(m_renderSize.x(), m_renderSize.y(), 1u))
+		, m_format						(VK_FORMAT_R8G8B8A8_UNORM)
+		, m_graphicsPipeline			(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), config.construction)
+		, m_config						(config)
 	{
 	}
 	~PipelineLayoutBindingTestInstance	(void) {}
@@ -1423,7 +1429,7 @@ TestInstance* PipelineLayoutBindingTestCases::createInstance (Context& context) 
 
 void PipelineLayoutBindingTestCases::checkSupport (Context &context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_config.construction);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_config.construction);
 }
 
 void PipelineLayoutBindingTestCases::initPrograms(SourceCollections& sources) const
@@ -1519,13 +1525,13 @@ tcu::TestStatus PipelineLayoutBindingTestInstance::iterate ()
 	auto&				verifBufferAlloc	= verifBuffer.getAllocation();
 
 	// Render pass and framebuffer.
-	const auto renderPass	= makeRenderPass(vkd, device, m_format);
-	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorBufferView.get(), m_extent.width, m_extent.height);
+	RenderPassWrapper	renderPass			(m_config.construction, vkd, device, m_format);
+	renderPass.createFramebuffer(vkd, device, colorBuffer.get(), colorBufferView.get(), m_extent.width, m_extent.height);
 
 	// Shader modules.
 	const auto&		binaries		= m_context.getBinaryCollection();
-	const auto		vertModule		= createShaderModule(vkd, device, binaries.get("vert"));
-	const auto		fragModule		= createShaderModule(vkd, device, binaries.get("frag"));
+	const auto		vertModule		= ShaderWrapper(vkd, device, binaries.get("vert"));
+	const auto		fragModule		= ShaderWrapper(vkd, device, binaries.get("frag"));
 
 	// Viewports and scissors.
 	const std::vector<VkViewport>	viewports	(1u, makeViewport(m_extent));
@@ -1569,7 +1575,7 @@ tcu::TestStatus PipelineLayoutBindingTestInstance::iterate ()
 
 	// Pipeline layout and graphics pipeline.
 	uint32_t setAndDescriptorCount = de::sizeU32(indices);
-	const auto pipelineLayout	= makePipelineLayout(vkd, device, descriptorSetLayouts);
+	const vk::PipelineLayoutWrapper pipelineLayout	(m_config.construction, vkd, device, descriptorSetLayouts);
 	DescriptorPoolBuilder poolBuilder;
 	poolBuilder.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, setAndDescriptorCount);
 	const auto descriptorPool = poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, setAndDescriptorCount);
@@ -1612,10 +1618,10 @@ tcu::TestStatus PipelineLayoutBindingTestInstance::iterate ()
 		.setDefaultDepthStencilState()
 		.setDefaultMultisampleState()
 		.setDefaultColorBlendState()
-		.setupPreRasterizationShaderState(viewports, scissors, *pipelineLayout, *renderPass, 0u, *vertModule, &rasterizationState)
-		.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
+		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertModule, &rasterizationState)
+		.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
 		.setupFragmentOutputState(*renderPass)
-		.setMonolithicPipelineLayout(*pipelineLayout)
+		.setMonolithicPipelineLayout(pipelineLayout)
 		.buildPipeline();
 
 	// Command pool and buffer.
@@ -1626,16 +1632,16 @@ tcu::TestStatus PipelineLayoutBindingTestInstance::iterate ()
 	beginCommandBuffer(vkd, cmdBuffer);
 
 	// Draw.
-	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
+	renderPass.begin(vkd, cmdBuffer, scissors.at(0u), clearColor);
 	for (auto i : indices) {
 		if (m_config.holes && ((i == 1) || (i == 2))) {
 			continue;
 		}
 		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), i, 1, &descriptorSets[i], 0u, nullptr);
 	}
-	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+	m_graphicsPipeline.bind(cmdBuffer);
 	vkd.cmdDraw(cmdBuffer, 3, 1u, 0u, 0u);
-	endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 
 	// Copy to verification buffer.
 	const auto copyRegion		= makeBufferImageCopy(m_extent, colorSRL);
@@ -1670,26 +1676,165 @@ tcu::TestStatus PipelineLayoutBindingTestInstance::iterate ()
 	return tcu::TestStatus::pass("Pass");
 }
 
+void initCompatibleRenderPassPrograms (SourceCollections& dst, PipelineConstructionType)
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "vec2 positions[] = vec2[](\n"
+		<< "    vec2(-1.0, -1.0),\n"
+		<< "    vec2( 3.0, -1.0),\n"
+		<< "    vec2(-1.0,  3.0)\n"
+		<< ");\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = vec4(positions[gl_VertexIndex % 3], 0.0, 1.0);\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+void checkCompatibleRenderPassSupport (Context& context, PipelineConstructionType pipelineConstructionType)
+{
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	checkPipelineConstructionRequirements(vki, physicalDevice, pipelineConstructionType);
+}
+
+tcu::TestStatus compatibleRenderPassTest (Context& context, PipelineConstructionType pipelineConstructionType)
+{
+	const auto&			ctx			= context.getContextCommonData();
+	const tcu::IVec3	fbExtent	(1, 1, 1);
+	const auto			vkExtent	= makeExtent3D(fbExtent);
+	const auto			fbFormat	= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat	= mapVkFormat(fbFormat);
+	const auto			fbUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const tcu::Vec4		clearColor	(0.0f, 0.0f, 0.0f, 1.0f);
+	const tcu::Vec4		geomColor	(0.0f, 0.0f, 1.0f, 1.0f); // Must match frag shader.
+	const tcu::Vec4		threshold	(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+
+	// Color buffer with verification buffer.
+	ImageWithBuffer colorBuffer (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		vkExtent,
+		fbFormat,
+		fbUsage,
+		VK_IMAGE_TYPE_2D);
+
+	const PipelineLayoutWrapper	pipelineLayout	(pipelineConstructionType, ctx.vkd, ctx.device);
+	auto						renderPass		= makeRenderPass(ctx.vkd, ctx.device, fbFormat);
+	const auto					compatibleRP	= makeRenderPass(ctx.vkd, ctx.device, fbFormat);
+	const auto					framebuffer		= makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
+
+	// Modules.
+	const auto&			binaries	= context.getBinaryCollection();
+	const ShaderWrapper	vertModule	(ctx.vkd, ctx.device, binaries.get("vert"));
+	const ShaderWrapper	fragModule	(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	// Empty vertex input state.
+	const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
+
+	GraphicsPipelineWrapper pipelineWrapper (ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(), pipelineConstructionType);
+
+	pipelineWrapper
+		.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+		.setDefaultRasterizationState()
+		.setDefaultColorBlendState()
+		.setDefaultMultisampleState()
+		.setDefaultDepthStencilState()
+		.setupVertexInputState(&vertexInputStateCreateInfo)
+		.setupPreRasterizationShaderState(viewports,
+										  scissors,
+										  pipelineLayout,
+										  *renderPass,
+										  0u,
+										  vertModule)
+		.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
+		.setupFragmentOutputState(*renderPass);
+
+	// Important: at this point, the 4 libraries should have been created. Now we destroy the original render pass to make sure it's
+	// no longer used, and use the compatible one for the remainder of the test.
+	renderPass = Move<VkRenderPass>();
+
+	// Finally, we link the complete pipeline and use the compatible render pass in the command buffer.
+	DE_ASSERT(isConstructionTypeLibrary(pipelineConstructionType));
+	pipelineWrapper
+		.setMonolithicPipelineLayout(pipelineLayout)
+		.buildPipeline();
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	beginRenderPass(ctx.vkd, cmdBuffer, *compatibleRP, *framebuffer, scissors.at(0u), clearColor);
+	pipelineWrapper.bind(cmdBuffer);
+	ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+	endRenderPass(ctx.vkd, cmdBuffer);
+	copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(),
+		fbExtent.swizzle(0, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+		VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color output.
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+	tcu::PixelBufferAccess resultAccess (tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+	tcu::TextureLevel	referenceLevel	(tcuFormat, fbExtent.x(), fbExtent.y());
+	auto				referenceAccess	= referenceLevel.getAccess();
+	tcu::clear(referenceAccess, geomColor);
+
+	auto& log = context.getTestContext().getLog();
+	if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> miscTests (new tcu::TestCaseGroup(testCtx, "misc", ""));
+	de::MovePtr<tcu::TestCaseGroup> miscTests (new tcu::TestCaseGroup(testCtx, "misc"));
 
 	// Location of the Amber script files under the data/vulkan/amber source tree.
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 		addMonolithicAmberTests(miscTests.get());
 
-	miscTests->addChild(new ImplicitPrimitiveIDPassthroughCase(testCtx, "implicit_primitive_id", "Verify implicit access to gl_PrimtiveID works", pipelineConstructionType, false));
-	miscTests->addChild(new ImplicitPrimitiveIDPassthroughCase(testCtx, "implicit_primitive_id_with_tessellation", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", pipelineConstructionType, true));
-	#ifndef CTS_USES_VULKANSC
-	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY) {
-		miscTests->addChild(new PipelineLibraryInterpolateAtSampleTestCase(testCtx, "interpolate_at_sample_no_sample_shading", "Check if interpolateAtSample works as expected when using a pipeline library and null MSAA state in the fragment shader"));
+	// Verify implicit access to gl_PrimtiveID works
+	miscTests->addChild(new ImplicitPrimitiveIDPassthroughCase(testCtx, "implicit_primitive_id", pipelineConstructionType, false));
+	// Verify implicit access to gl_PrimtiveID works with a tessellation shader
+	miscTests->addChild(new ImplicitPrimitiveIDPassthroughCase(testCtx, "implicit_primitive_id_with_tessellation", pipelineConstructionType, true));
+
+	if (isConstructionTypeLibrary(pipelineConstructionType))
+	{
+		addFunctionCaseWithPrograms(miscTests.get(), "compatible_render_pass", checkCompatibleRenderPassSupport, initCompatibleRenderPassPrograms, compatibleRenderPassTest, pipelineConstructionType);
 	}
-	#endif
 
 #ifndef CTS_USES_VULKANSC
-	if (pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY) {
+		// Check if interpolateAtSample works as expected when using a pipeline library and null MSAA state in the fragment shader"
+		miscTests->addChild(new PipelineLibraryInterpolateAtSampleTestCase(testCtx, "interpolate_at_sample_no_sample_shading"));
+	}
+#endif
+
+#ifndef CTS_USES_VULKANSC
+	if (isConstructionTypeLibrary(pipelineConstructionType))
 	{
 		for (int useTessIdx = 0; useTessIdx < 2; ++useTessIdx)
 			for (int useGeomIdx = 0; useGeomIdx < 2; ++useGeomIdx)
@@ -1706,7 +1851,7 @@ tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstruc
 					testName += "_include_geom";
 
 				const UnusedShaderStageParams params { pipelineConstructionType, useTess, useGeom };
-				miscTests->addChild(new UnusedShaderStagesCase(testCtx, testName, "", params));
+				miscTests->addChild(new UnusedShaderStagesCase(testCtx, testName, params));
 			}
 	}
 #endif // CTS_USES_VULKANSC
@@ -1715,9 +1860,12 @@ tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstruc
 	BindingTestConfig config1 = {pipelineConstructionType, false, true};
 	BindingTestConfig config2 = {pipelineConstructionType, true, true};
 
-	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", config0));
-	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_holes", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", config1));
-	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards_holes", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", config2));
+	// Verify implicit access to gl_PrimtiveID works with a tessellation shader
+	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards", config0));
+	// Verify implicit access to gl_PrimtiveID works with a tessellation shader
+	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_holes", config1));
+	// Verify implicit access to gl_PrimtiveID works with a tessellation shader
+	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards_holes", config2));
 
 	return miscTests.release();
 }

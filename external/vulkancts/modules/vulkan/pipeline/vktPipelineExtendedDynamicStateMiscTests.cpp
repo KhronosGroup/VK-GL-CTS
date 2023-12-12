@@ -64,7 +64,7 @@ void checkDynamicRasterizationSamplesSupport (Context& context)
 
 void sampleShadingWithDynamicSampleCountSupport (Context& context, PipelineConstructionType pipelineConstructionType)
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), pipelineConstructionType);
 	checkDynamicRasterizationSamplesSupport(context);
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
@@ -96,6 +96,7 @@ void initBlueAndAtomicCounterFragmentProgram (vk::SourceCollections& programColl
 		<< "layout (location=0) out vec4 outColor;\n"
 		<< "layout (set=0, binding=0) buffer InvocationCounterBlock { uint invocations; } counterBuffer;\n"
 		<< "void main (void) {\n"
+		<< "    uint sampleId = gl_SampleID;\n" // Enable sample shading for shader objects by reading gl_SampleID
 		<< "    atomicAdd(counterBuffer.invocations, 1u);\n"
 		<< "    outColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
 		<< "}\n"
@@ -238,15 +239,16 @@ tcu::TestStatus sampleShadingWithDynamicSampleCount (Context& context, PipelineC
 		0u,											//	uint32_t						dependencyCount;
 		nullptr,									//	const VkSubpassDependency*		pDependencies;
 	};
-	const auto renderPass = createRenderPass(ctx.vkd, ctx.device, &renderPassCreateInfo);
+	auto renderPass = RenderPassWrapper(constructionType, ctx.vkd, ctx.device, &renderPassCreateInfo);
 
+	const std::vector<VkImage>		images		{ colorBuffer.getImage(), resolveBuffer.getImage() };
 	const std::vector<VkImageView>	imageViews	{ colorBuffer.getImageView(), resolveBuffer.getImageView() };
-	const auto						framebuffer	= makeFramebuffer(ctx.vkd, ctx.device, *renderPass, de::sizeU32(imageViews), de::dataOrNull(imageViews), vkExtent.width, vkExtent.height);
+	renderPass.createFramebuffer(ctx.vkd, ctx.device, de::sizeU32(imageViews), de::dataOrNull(images), de::dataOrNull(imageViews), vkExtent.width, vkExtent.height);
 
 	// Pipelines.
 	const auto& binaries		= context.getBinaryCollection();
-	const auto& vertModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
-	const auto& fragModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+	const auto& vertModule		= ShaderWrapper(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto& fragModule		= ShaderWrapper(ctx.vkd, ctx.device, binaries.get("frag"));
 
 	const std::vector<VkDynamicState>		dynamicStates		{
 #ifndef CTS_USES_VULKANSC
@@ -282,7 +284,7 @@ tcu::TestStatus sampleShadingWithDynamicSampleCount (Context& context, PipelineC
 
 	const std::vector<VkViewport>	staticViewports		(1u, makeViewport(0u, 0u));
 	const std::vector<VkRect2D>		staticScissors		(1u, makeRect2D(0u, 0u));
-	const auto						pipelineLayout		= makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+	const PipelineLayoutWrapper		pipelineLayout		(constructionType, ctx.vkd, ctx.device, *setLayout);
 	const auto						renderArea			= makeRect2D(fbExtent);
 	const int						halfWidth			= fbExtent.x() / 2;
 	const uint32_t					halfWidthU			= static_cast<uint32_t>(halfWidth);
@@ -304,7 +306,7 @@ tcu::TestStatus sampleShadingWithDynamicSampleCount (Context& context, PipelineC
 	{
 		multisampleStateCreateInfo.sampleShadingEnable = sampleShadingEnable;
 
-		WrapperPtr pipelineWrapper(new GraphicsPipelineWrapper(ctx.vkd, ctx.device, constructionType));
+		WrapperPtr pipelineWrapper(new GraphicsPipelineWrapper(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(), constructionType));
 		pipelineWrapper->setDefaultTopology(topology)
 						.setDefaultRasterizationState()
 						.setDefaultColorBlendState()
@@ -313,15 +315,15 @@ tcu::TestStatus sampleShadingWithDynamicSampleCount (Context& context, PipelineC
 						.setupPreRasterizationShaderState(
 							staticViewports,
 							staticScissors,
-							*pipelineLayout,
+							pipelineLayout,
 							*renderPass,
 							0u,
-							*vertModule)
+							vertModule)
 						.setupFragmentShaderState(
-							*pipelineLayout,
+							pipelineLayout,
 							*renderPass,
 							0u,
-							*fragModule,
+							fragModule,
 							nullptr,
 							&multisampleStateCreateInfo)
 						.setupFragmentOutputState(
@@ -329,7 +331,7 @@ tcu::TestStatus sampleShadingWithDynamicSampleCount (Context& context, PipelineC
 							0u,
 							nullptr,
 							&multisampleStateCreateInfo)
-						.setMonolithicPipelineLayout(*pipelineLayout)
+						.setMonolithicPipelineLayout(pipelineLayout)
 						.buildPipeline();
 
 		wrappers.emplace_back(std::move(pipelineWrapper));
@@ -339,10 +341,10 @@ tcu::TestStatus sampleShadingWithDynamicSampleCount (Context& context, PipelineC
 	const auto cmdBuffer = cmd.cmdBuffer.get();
 
 	beginCommandBuffer(ctx.vkd, cmdBuffer);
-	beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
+	renderPass.begin(ctx.vkd, cmdBuffer, renderArea, clearColor);
 	for (uint32_t drawIdx = 0u; drawIdx < kNumDraws; ++drawIdx)
 	{
-		ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, wrappers.at(drawIdx)->getPipeline());
+		wrappers.at(drawIdx)->bind(cmdBuffer);
 		if (drawIdx == 0u)
 		{
 #ifndef CTS_USES_VULKANSC
@@ -351,12 +353,22 @@ tcu::TestStatus sampleShadingWithDynamicSampleCount (Context& context, PipelineC
 			DE_ASSERT(false);
 #endif // CTS_USES_VULKANSC
 		}
-		ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &dynamicScissors.at(drawIdx));
-		ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 1, &dynamicViewports.at(drawIdx));
+#ifndef CTS_USES_VULKANSC
+		if (isConstructionTypeShaderObject(constructionType))
+		{
+			ctx.vkd.cmdSetScissorWithCount(cmdBuffer, 1u, &dynamicScissors.at(drawIdx));
+			ctx.vkd.cmdSetViewportWithCount(cmdBuffer, 1u, &dynamicViewports.at(drawIdx));
+		}
+		else
+#endif // CTS_USES_VULKANSC
+		{
+			ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &dynamicScissors.at(drawIdx));
+			ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 1u, &dynamicViewports.at(drawIdx));
+		}
 		ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSets.at(drawIdx).get(), 0u, nullptr);
 		ctx.vkd.cmdDraw(cmdBuffer, kVertexCount, 1u, 0u, 0u);
 	}
-	endRenderPass(ctx.vkd, cmdBuffer);
+	renderPass.end(ctx.vkd, cmdBuffer);
 	copyImageToBuffer(
 		ctx.vkd,
 		cmdBuffer,
@@ -414,8 +426,8 @@ using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 tcu::TestCaseGroup* createExtendedDynamicStateMiscTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	GroupPtr miscGroup (new tcu::TestCaseGroup(testCtx, "misc", "Extended dynamic state misc tests"));
-	addFunctionCaseWithPrograms(miscGroup.get(), "sample_shading_dynamic_sample_count", "", sampleShadingWithDynamicSampleCountSupport, sampleShadingWithDynamicSampleCountPrograms, sampleShadingWithDynamicSampleCount, pipelineConstructionType);
+	GroupPtr miscGroup (new tcu::TestCaseGroup(testCtx, "misc"));
+	addFunctionCaseWithPrograms(miscGroup.get(), "sample_shading_dynamic_sample_count", sampleShadingWithDynamicSampleCountSupport, sampleShadingWithDynamicSampleCountPrograms, sampleShadingWithDynamicSampleCount, pipelineConstructionType);
 	return miscGroup.release();
 }
 

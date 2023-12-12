@@ -137,7 +137,7 @@ void addComputePointerParamToParamTest (tcu::TestCaseGroup* group)
 	spec.assembly				= shaderSource;
 	spec.numWorkGroups			= IVec3(numFloats, 1, 1);
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "param_to_param", "", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "param_to_param", spec));
 }
 
 void addComputePointerParamToGlobalTest (tcu::TestCaseGroup* group)
@@ -253,7 +253,7 @@ void addComputePointerParamToGlobalTest (tcu::TestCaseGroup* group)
 	spec.assembly				= shaderSource;
 	spec.numWorkGroups			= IVec3(numFloats, 1, 1);
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "param_to_global", "", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "param_to_global", spec));
 }
 
 void addComputePointerBufferMemoryTest (tcu::TestCaseGroup* group)
@@ -382,7 +382,7 @@ void addComputePointerBufferMemoryTest (tcu::TestCaseGroup* group)
 	spec.requestedVulkanFeatures	= requiredFeatures;
 	spec.extensions.push_back("VK_KHR_variable_pointers");
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "buffer_memory", "", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "buffer_memory", spec));
 }
 
 void addComputePointerBufferMemoryVariablePointersTest (tcu::TestCaseGroup* group)
@@ -510,7 +510,7 @@ void addComputePointerBufferMemoryVariablePointersTest (tcu::TestCaseGroup* grou
 	spec.numWorkGroups				= IVec3(16, 1, 1);
 	spec.requestedVulkanFeatures	= requiredFeatures;
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "buffer_memory_variable_pointers", "", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "buffer_memory_variable_pointers", spec));
 }
 
 void addComputePointerWorkgroupMemoryVariablePointersTest (tcu::TestCaseGroup* group)
@@ -681,7 +681,7 @@ void addComputePointerWorkgroupMemoryVariablePointersTest (tcu::TestCaseGroup* g
 	spec.numWorkGroups				= IVec3(1, 1, 1);
 	spec.requestedVulkanFeatures	= requiredFeatures;
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "workgroup_memory_variable_pointers", "", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "workgroup_memory_variable_pointers", spec));
 }
 
 void addGraphicsPointerParamToParamTest (tcu::TestCaseGroup* group)
@@ -1084,7 +1084,8 @@ void addGraphicsPointerBufferMemoryVariablePointersTest (tcu::TestCaseGroup* gro
 
 tcu::TestCaseGroup* createPointerParameterComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "pointer_parameter", "Compute tests for pointer as function parameter."));
+	// Compute tests for pointer as function parameter.
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "pointer_parameter"));
 	addComputePointerParamToParamTest(group.get());
 	addComputePointerParamToGlobalTest(group.get());
 	addComputePointerBufferMemoryTest(group.get());
@@ -1096,7 +1097,8 @@ tcu::TestCaseGroup* createPointerParameterComputeGroup (tcu::TestContext& testCt
 
 tcu::TestCaseGroup* createPointerParameterGraphicsGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "pointer_parameter", "Graphics tests for pointer as function parameter."));
+	// Graphics tests for pointer as function parameter.
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "pointer_parameter"));
 	addGraphicsPointerParamToParamTest(group.get());
 	addGraphicsPointerParamToGlobalTest(group.get());
 	addGraphicsPointerBufferMemoryTest(group.get());

@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +56,6 @@ class ImageViewTest : public vkt::TestCase
 public:
 								ImageViewTest					(tcu::TestContext&				testContext,
 																 const char*					name,
-																 const char*					description,
 																 PipelineConstructionType		pipelineConstructionType,
 																 VkImageViewType				imageViewType,
 																 VkFormat						imageFormat,
@@ -91,7 +92,6 @@ private:
 
 ImageViewTest::ImageViewTest (tcu::TestContext&					testContext,
 							  const char*						name,
-							  const char*						description,
 							  PipelineConstructionType			pipelineConstructionType,
 							  VkImageViewType					imageViewType,
 							  VkFormat							imageFormat,
@@ -99,7 +99,7 @@ ImageViewTest::ImageViewTest (tcu::TestContext&					testContext,
 							  const VkComponentMapping&			componentMapping,
 							  const VkImageSubresourceRange&	subresourceRange)
 
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_imageViewType				(imageViewType)
 	, m_imageFormat					(imageFormat)
@@ -147,7 +147,13 @@ ImageSamplingInstanceParams ImageViewTest::getImageSamplingInstanceParams (VkIma
 
 void ImageViewTest::checkSupport (Context& context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+
+#ifndef CTS_USES_VULKANSC
+	if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR || m_imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_samplerLod, m_componentMapping, m_subresourceRange));
 }
 
@@ -369,16 +375,14 @@ static de::MovePtr<tcu::TestCaseGroup> createSubresourceRangeTests(tcu::TestCont
 	const VkImageAspectFlags	imageAspectFlags		= VK_IMAGE_ASPECT_COLOR_BIT;
 	const VkComponentMapping	componentMapping		= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
-	de::MovePtr<tcu::TestCaseGroup> rangeTests (new tcu::TestCaseGroup(testCtx, "subresource_range", ""));
+	de::MovePtr<tcu::TestCaseGroup> rangeTests (new tcu::TestCaseGroup(testCtx, "subresource_range"));
 
 #define ADD_SUBRESOURCE_RANGE_TESTS(TEST_CASES)															\
 	do {																								\
 		for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(TEST_CASES); configNdx++)				\
 		{																								\
-			std::ostringstream		desc;																\
 			const TestCaseConfig	config	= (TEST_CASES)[configNdx];									\
-			desc << "Samples level " << config.samplerLod << " with :\n" << config.subresourceRange;	\
-			rangeTests->addChild(new ImageViewTest(testCtx, config.name, desc.str().c_str(),			\
+			rangeTests->addChild(new ImageViewTest(testCtx, config.name,			\
 												   pipelineConstructionType,viewType, imageFormat,		\
 												   config.samplerLod, componentMapping,					\
 												   config.subresourceRange));							\
@@ -661,13 +665,12 @@ static de::MovePtr<tcu::TestCaseGroup> createComponentSwizzleTests (tcu::TestCon
 
 	const VkComponentMapping				baseMapping			= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 	const std::vector<VkComponentMapping>	componentMappings	= getComponentMappingPermutations(baseMapping);
-	de::MovePtr<tcu::TestCaseGroup>			swizzleTests		(new tcu::TestCaseGroup(testCtx, "component_swizzle", ""));
+	de::MovePtr<tcu::TestCaseGroup>			swizzleTests		(new tcu::TestCaseGroup(testCtx, "component_swizzle"));
 
 	for (size_t mappingNdx = 0; mappingNdx < componentMappings.size(); mappingNdx++)
 	{
 		swizzleTests->addChild(new ImageViewTest(testCtx,
 												 getComponentMappingCaseName(componentMappings[mappingNdx]).c_str(),
-												 "",
 												 pipelineConstructionType,
 												 viewType,
 												 imageFormat,
@@ -705,6 +708,9 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx, PipelineCon
 		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
 		VK_FORMAT_R5G6B5_UNORM_PACK16,
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
@@ -712,6 +718,9 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx, PipelineCon
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,
@@ -841,14 +850,15 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx, PipelineCon
 		VK_FORMAT_BC5_SNORM_BLOCK,
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> imageTests			(new tcu::TestCaseGroup(testCtx, "image_view", "Image tests"));
-	de::MovePtr<tcu::TestCaseGroup> viewTypeTests		(new tcu::TestCaseGroup(testCtx, "view_type", ""));
+	de::MovePtr<tcu::TestCaseGroup> imageTests			(new tcu::TestCaseGroup(testCtx, "image_view"));
+	de::MovePtr<tcu::TestCaseGroup> viewTypeTests		(new tcu::TestCaseGroup(testCtx, "view_type"));
 
 	for (int viewTypeNdx = 0; viewTypeNdx < DE_LENGTH_OF_ARRAY(imageViewTypes); viewTypeNdx++)
 	{
 		const VkImageViewType			viewType		= imageViewTypes[viewTypeNdx].type;
-		de::MovePtr<tcu::TestCaseGroup>	viewTypeGroup	(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name, (std::string("Uses a ") + imageViewTypes[viewTypeNdx].name + " view").c_str()));
-		de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, "format", "Uses samplable formats"));
+		de::MovePtr<tcu::TestCaseGroup>	viewTypeGroup	(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name));
+		// Uses samplable formats
+		de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, "format"));
 
 		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
@@ -862,8 +872,7 @@ tcu::TestCaseGroup* createImageViewTests (tcu::TestContext& testCtx, PipelineCon
 			}
 
 			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx,
-																				getFormatCaseName(format).c_str(),
-																				(std::string("Samples a texture of format ") + getFormatName(format)).c_str()));
+																				getFormatCaseName(format).c_str()));
 
 			de::MovePtr<tcu::TestCaseGroup>	subresourceRangeTests	= createSubresourceRangeTests(testCtx, pipelineConstructionType, viewType, format);
 			de::MovePtr<tcu::TestCaseGroup>	componentSwizzleTests	= createComponentSwizzleTests(testCtx, pipelineConstructionType, viewType, format);

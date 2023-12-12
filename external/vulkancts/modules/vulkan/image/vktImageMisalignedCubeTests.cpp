@@ -286,7 +286,6 @@ class MisalignedCubeTest : public TestCase
 public:
 						MisalignedCubeTest	(tcu::TestContext&	testCtx,
 											 const std::string&	name,
-											 const std::string&	description,
 											 const tcu::IVec3&	size,
 											 const VkFormat		format);
 
@@ -300,10 +299,9 @@ private:
 
 MisalignedCubeTest::MisalignedCubeTest (tcu::TestContext&	testCtx,
 										const std::string&	name,
-										const std::string&	description,
 										const tcu::IVec3&	size,
 										const VkFormat		format)
-	: TestCase	(testCtx, name, description)
+	: TestCase	(testCtx, name)
 	, m_size	(size)
 	, m_format	(format)
 {
@@ -373,7 +371,8 @@ static const tcu::IVec3 s_baseImageSizes[] =
 
 tcu::TestCaseGroup* createMisalignedCubeTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "misaligned_cube", "Cube image with misaligned baseArrayLayer test cases"));
+	// Cube image with misaligned baseArrayLayer test cases
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "misaligned_cube"));
 
 	const VkFormat	format	= VK_FORMAT_R8G8B8A8_UNORM;
 
@@ -381,7 +380,7 @@ tcu::TestCaseGroup* createMisalignedCubeTests (tcu::TestContext& testCtx)
 	{
 		const tcu::IVec3	size	= s_baseImageSizes[imageSizeNdx];
 
-		testGroup->addChild(new MisalignedCubeTest(testCtx, de::toString(size.z()), "", size, format));
+		testGroup->addChild(new MisalignedCubeTest(testCtx, de::toString(size.z()), size, format));
 	}
 
 	return testGroup.release();

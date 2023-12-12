@@ -1319,7 +1319,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO:									return "VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES";
 		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO:						return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO";
-		case VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_RESERVED_OFFSET_0_NV:						return "VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_RESERVED_OFFSET_0_NV";
+		case VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_PLACEHOLDER_OFFSET_0_NV:						return "VK_STRUCTURE_TYPE_PRIVATE_VENDOR_INFO_PLACEHOLDER_OFFSET_0_NV";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO:								return "VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES";
@@ -1875,14 +1875,14 @@ const char* getQueueGlobalPriorityKHRName (VkQueueGlobalPriorityKHR value)
 	}
 }
 
-const char* getTimeDomainEXTName (VkTimeDomainEXT value)
+const char* getTimeDomainKHRName (VkTimeDomainKHR value)
 {
 	switch (value)
 	{
-		case VK_TIME_DOMAIN_DEVICE_EXT:						return "VK_TIME_DOMAIN_DEVICE_EXT";
-		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT:			return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT";
-		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT:		return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT";
-		case VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT:	return "VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT";
+		case VK_TIME_DOMAIN_DEVICE_KHR:						return "VK_TIME_DOMAIN_DEVICE_KHR";
+		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR:			return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR";
+		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR:		return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR";
+		case VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR:	return "VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR";
 		default:											return DE_NULL;
 	}
 }
@@ -2706,6 +2706,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_MESA_DOZEN:					return "VK_DRIVER_ID_MESA_DOZEN";
 		case VK_DRIVER_ID_MESA_NVK:						return "VK_DRIVER_ID_MESA_NVK";
 		case VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA:	return "VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA";
+		case VK_DRIVER_ID_MESA_AGXV:					return "VK_DRIVER_ID_MESA_AGXV";
 		default:										return DE_NULL;
 	}
 }
@@ -2885,6 +2886,16 @@ tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLo
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
+tcu::Format::Bitfield<64> getPipelineCreateFlags2KHRStr (VkPipelineCreateFlags2KHR value)
+{
+	return tcu::Format::Bitfield<64>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<64> getBufferUsageFlags2KHRStr (VkBufferUsageFlags2KHR value)
+{
+	return tcu::Format::Bitfield<64>(value, DE_NULL, DE_NULL);
+}
+
 tcu::Format::Bitfield<32> getDisplayModeCreateFlagsKHRStr (VkDisplayModeCreateFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
@@ -3060,6 +3071,11 @@ tcu::Format::Bitfield<32> getImageFormatConstraintsFlagsFUCHSIAStr (VkImageForma
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
+tcu::Format::Bitfield<32> getHostImageCopyFlagsEXTStr (VkHostImageCopyFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
 tcu::Format::Bitfield<32> getImageConstraintsInfoFlagsFUCHSIAStr (VkImageConstraintsInfoFlagsFUCHSIA value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
@@ -3110,6 +3126,11 @@ tcu::Format::Bitfield<32> getOpticalFlowExecuteFlagsNVStr (VkOpticalFlowExecuteF
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
+tcu::Format::Bitfield<32> getFrameBoundaryFlagsEXTStr (VkFrameBoundaryFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
 tcu::Format::Bitfield<32> getPresentScalingFlagsEXTStr (VkPresentScalingFlagsEXT value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
@@ -3123,6 +3144,11 @@ tcu::Format::Bitfield<32> getPresentGravityFlagsEXTStr (VkPresentGravityFlagsEXT
 tcu::Format::Bitfield<32> getShaderCreateFlagsEXTStr (VkShaderCreateFlagsEXT value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<64> getPhysicalDeviceSchedulingControlsFlagsARMStr (VkPhysicalDeviceSchedulingControlsFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, DE_NULL, DE_NULL);
 }
 
 tcu::Format::Bitfield<32> getVideoCodecOperationFlagsKHRStr (VkVideoCodecOperationFlagsKHR value)
@@ -6711,9 +6737,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceConservativeRas
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkCalibratedTimestampInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkCalibratedTimestampInfoKHR& value)
 {
-	s << "VkCalibratedTimestampInfoEXT = {\n";
+	s << "VkCalibratedTimestampInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\ttimeDomain = " << value.timeDomain << '\n';
@@ -6998,18 +7024,18 @@ std::ostream& operator<< (std::ostream& s, const VkSemaphoreSignalInfo& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVertexInputBindingDivisorDescriptionEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVertexInputBindingDivisorDescriptionKHR& value)
 {
-	s << "VkVertexInputBindingDivisorDescriptionEXT = {\n";
+	s << "VkVertexInputBindingDivisorDescriptionKHR = {\n";
 	s << "\tbinding = " << value.binding << '\n';
 	s << "\tdivisor = " << value.divisor << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoKHR& value)
 {
-	s << "VkPipelineVertexInputDivisorStateCreateInfoEXT = {\n";
+	s << "VkPipelineVertexInputDivisorStateCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvertexBindingDivisorCount = " << value.vertexBindingDivisorCount << '\n';
@@ -7097,9 +7123,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAtomicFlo
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT = {\n";
+	s << "VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvertexAttributeInstanceRateDivisor = " << value.vertexAttributeInstanceRateDivisor << '\n';

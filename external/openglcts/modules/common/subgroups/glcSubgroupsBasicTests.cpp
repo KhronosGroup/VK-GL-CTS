@@ -336,7 +336,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			const string controlSourceGLSL =
 				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
-				"#extension GL_EXT_tessellation_shader : require\n"
+				"${TESS_EXTENSION}\n"
 				"layout(vertices = 2) out;\n"
 				"void main (void)\n"
 				"{\n"
@@ -353,7 +353,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			const string evaluationSourceGLSL =
 				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
-				"#extension GL_EXT_tessellation_shader : require\n"
+				"${TESS_EXTENSION}\n"
 				"layout(isolines, equal_spacing, ccw ) in;\n"
 				"layout(location = 0) out vec4 out_color;\n"
 				"\n"
@@ -379,7 +379,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			const string  controlSourceGLSL =
 				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
-				"#extension GL_EXT_tessellation_shader : require\n"
+				"${TESS_EXTENSION}\n"
 				"layout(vertices = 2) out;\n"
 				"layout(location = 0) out vec4 out_color[];\n"
 				"void main (void)\n"
@@ -407,7 +407,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			const string evaluationSourceGLSL =
 				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
-				"#extension GL_EXT_tessellation_shader : require\n"
+				"${TESS_EXTENSION}\n"
 				"layout(isolines, equal_spacing, ccw ) in;\n"
 				"layout(location = 0) in vec4 in_color[];\n"
 				"layout(location = 0) out vec4 out_color;\n"
@@ -594,7 +594,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			std::ostringstream evaluationSource;
 
 			controlSource << "${VERSION_DECL}\n"
-				<< "#extension GL_EXT_tessellation_shader : require\n"
+				<< "${TESS_EXTENSION}\n"
 				<< "layout(vertices = 2) out;\n"
 				<< "void main (void)\n"
 				<< "{\n"
@@ -609,7 +609,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			evaluationSource << "${VERSION_DECL}\n"
 				<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
 				<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
-				<< "#extension GL_EXT_tessellation_shader : require\n"
+				<< "${TESS_EXTENSION}\n"
 				<< "layout(isolines, equal_spacing, ccw ) in;\n"
 				<< "layout(location = 0) out vec4 out_color;\n"
 				<< "layout(binding = 0, std140) uniform Buffer1\n"
@@ -651,7 +651,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			controlSource  << "${VERSION_DECL}\n"
 				<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
 				<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
-				<< "#extension GL_EXT_tessellation_shader : require\n"
+				<< "${TESS_EXTENSION}\n"
 				<< "layout(vertices = 2) out;\n"
 				<< "layout(location = 0) out vec4 out_color[];\n"
 				<< "layout(binding = 0, std140) uniform Buffer1\n"
@@ -689,7 +689,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 
 			evaluationSource << "${VERSION_DECL}\n"
 				<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
-				<< "#extension GL_EXT_tessellation_shader : require\n"
+				<< "${TESS_EXTENSION}\n"
 				<< "layout(isolines, equal_spacing, ccw ) in;\n"
 				<< "layout(location = 0) in vec4 in_color[];\n"
 				<< "layout(location = 0) out vec4 out_color;\n"

@@ -165,8 +165,8 @@ SpvAsmFloatControlsExtensionlessInstance::SpvAsmFloatControlsExtensionlessInstan
 {
 }
 
-SpvAsmFloatControlsExtensionlessCase::SpvAsmFloatControlsExtensionlessCase (tcu::TestContext& testCtx, const char* name, const char* description, const char* featureName, const int fpWideness, const bool spirv14)
-	: TestCase		(testCtx, name, description)
+SpvAsmFloatControlsExtensionlessCase::SpvAsmFloatControlsExtensionlessCase (tcu::TestContext& testCtx, const char* name, const char* featureName, const int fpWideness, const bool spirv14)
+	: TestCase		(testCtx, name)
 	, m_featureName	(featureName)
 	, m_fpWideness	(fpWideness)
 	, m_spirv14		(spirv14)
@@ -234,12 +234,13 @@ tcu::TestCaseGroup* createFloatControlsExtensionlessGroup (tcu::TestContext& tes
 		{ "rounding_mode_rte",				TEST_FEATURE_ROUNDING_MODE_RTE				},
 		{ "rounding_mode_rtz",				TEST_FEATURE_ROUNDING_MODE_RTZ				},
 	};
-	de::MovePtr<tcu::TestCaseGroup>	group					(new tcu::TestCaseGroup(testCtx, "float_controls_extensionless", "Tests float controls without extension"));
+	// Tests float controls without extension
+	de::MovePtr<tcu::TestCaseGroup>	group					(new tcu::TestCaseGroup(testCtx, "float_controls_extensionless"));
 
 	for (int spirVersionsNdx = 0; spirVersionsNdx < DE_LENGTH_OF_ARRAY(spirVersions); ++spirVersionsNdx)
 	{
 		const bool						spirv14				= (spirVersionsNdx == 0);
-		de::MovePtr<tcu::TestCaseGroup>	spirVersionGroup	(new tcu::TestCaseGroup(testCtx, spirVersions[spirVersionsNdx], ""));
+		de::MovePtr<tcu::TestCaseGroup>	spirVersionGroup	(new tcu::TestCaseGroup(testCtx, spirVersions[spirVersionsNdx]));
 
 		for (int fpWidenessNdx = 0; fpWidenessNdx < DE_LENGTH_OF_ARRAY(floatingPointWideness); ++fpWidenessNdx)
 		for (int execModeNdx = 0; execModeNdx < DE_LENGTH_OF_ARRAY(fpFeatures); ++execModeNdx)
@@ -249,7 +250,7 @@ tcu::TestCaseGroup* createFloatControlsExtensionlessGroup (tcu::TestContext& tes
 			const char*			featureName		= fpFeatures[execModeNdx].featureName;
 			const std::string	fullTestName	= "fp" + de::toString(fpWideness) + "_" + testName;
 
-			spirVersionGroup->addChild(new SpvAsmFloatControlsExtensionlessCase(testCtx, fullTestName.c_str(), "", featureName, fpWideness, spirv14));
+			spirVersionGroup->addChild(new SpvAsmFloatControlsExtensionlessCase(testCtx, fullTestName.c_str(), featureName, fpWideness, spirv14));
 		}
 
 		group->addChild(spirVersionGroup.release());

@@ -553,7 +553,8 @@ tcu::TestStatus testComputePipelineIdentifier (Context& context, TestParams test
 
 tcu::TestCaseGroup*	createPipelineIdentifierTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "pipeline_identifier", "Tests verifying Vulkan SC pipeline identifier structure"));
+	// Tests verifying Vulkan SC pipeline identifier structure
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "pipeline_identifier"));
 
 	const struct
 	{
@@ -599,21 +600,21 @@ tcu::TestCaseGroup*	createPipelineIdentifierTests (tcu::TestContext& testCtx)
 
 	for (int pipelineIdx = 0; pipelineIdx < DE_LENGTH_OF_ARRAY(pipelineTypes); ++pipelineIdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> pipelineGroup(new tcu::TestCaseGroup(testCtx, pipelineTypes[pipelineIdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> pipelineGroup(new tcu::TestCaseGroup(testCtx, pipelineTypes[pipelineIdx].name));
 
 		for (int typeIdx = 0; typeIdx < DE_LENGTH_OF_ARRAY(testTypes); ++typeIdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> typeGroup(new tcu::TestCaseGroup(testCtx, testTypes[typeIdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> typeGroup(new tcu::TestCaseGroup(testCtx, testTypes[typeIdx].name));
 
 			for (int matchIdx = 0; matchIdx < DE_LENGTH_OF_ARRAY(matchControls); ++matchIdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup> matchGroup(new tcu::TestCaseGroup(testCtx, matchControls[matchIdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup> matchGroup(new tcu::TestCaseGroup(testCtx, matchControls[matchIdx].name));
 
 				for (int cardIdx = 0; cardIdx < DE_LENGTH_OF_ARRAY(cardinalities); ++cardIdx)
 				{
 					TestParams testParams{ testTypes[typeIdx].type, matchControls[matchIdx].control, cardinalities[cardIdx].single };
 
-					addFunctionCaseWithPrograms(matchGroup.get(), cardinalities[cardIdx].name, "", pipelineTypes[pipelineIdx].initPrograms, pipelineTypes[pipelineIdx].testFunction, testParams);
+					addFunctionCaseWithPrograms(matchGroup.get(), cardinalities[cardIdx].name, pipelineTypes[pipelineIdx].initPrograms, pipelineTypes[pipelineIdx].testFunction, testParams);
 				}
 				typeGroup->addChild(matchGroup.release());
 			}

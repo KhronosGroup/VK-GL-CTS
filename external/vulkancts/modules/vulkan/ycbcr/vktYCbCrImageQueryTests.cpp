@@ -805,7 +805,6 @@ void addImageQueryCase (tcu::TestCaseGroup* group, const TestParameters& params)
 
 	addFunctionCaseWithPrograms(group,
 								name,
-								"",
 								checkSupport,
 								isLod ? initImageQueryLodPrograms : initImageQueryPrograms,
 								isLod ? testImageQueryLod : testImageQuery,
@@ -866,22 +865,25 @@ void populateQueryGroup (tcu::TestCaseGroup* group, QueryType query)
 		if (!executorSupported(shaderType))
 			continue;
 
-		addTestGroup(group, glu::getShaderTypeName(shaderType), "", populateQueryInShaderGroup, QueryGroupParams(query, shaderType));
+		addTestGroup(group, glu::getShaderTypeName(shaderType), populateQueryInShaderGroup, QueryGroupParams(query, shaderType));
 	}
 }
 
 void populateImageQueryGroup (tcu::TestCaseGroup* group)
 {
-	addTestGroup(group, "size_lod",	"OpImageQuerySizeLod",	populateQueryGroup, QUERY_TYPE_IMAGE_SIZE_LOD);
-	addTestGroup(group, "lod",		"OpImageQueryLod",		populateQueryGroup, QUERY_TYPE_IMAGE_LOD);
-	addTestGroup(group, "levels",	"OpImageQueryLevels",	populateQueryGroup, QUERY_TYPE_IMAGE_LEVELS);
+	// OpImageQuerySizeLod
+	addTestGroup(group, "size_lod", populateQueryGroup, QUERY_TYPE_IMAGE_SIZE_LOD);
+	// OpImageQueryLod
+	addTestGroup(group, "lod", populateQueryGroup, QUERY_TYPE_IMAGE_LOD);
+	// OpImageQueryLevels
+	addTestGroup(group, "levels", populateQueryGroup, QUERY_TYPE_IMAGE_LEVELS);
 }
 
 } // namespace
 
 tcu::TestCaseGroup* createImageQueryTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "query", "Image Query Tests", populateImageQueryGroup);
+	return createTestGroup(testCtx, "query", populateImageQueryGroup);
 }
 
 } // ycbcr

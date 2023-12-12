@@ -692,9 +692,9 @@ tcu::TestStatus basicMultiQueueCase (Context& context, TestConfig config)
 	logicalDevice = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instance, instanceInterface, physicalDevice, &deviceInfo);
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>								deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *logicalDevice));
+	de::MovePtr<vk::DeviceDriver>								deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *logicalDevice, context.getUsedApiVersion()));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver	= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *logicalDevice));
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver	= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *logicalDevice));
 	const DeviceInterface&										vk				= *deviceDriver;
 #endif // CTS_USES_VULKANSC
 
@@ -852,7 +852,7 @@ void checkCommandBufferSimultaneousUseSupport (Context& context, TestConfig conf
 
 tcu::TestCaseGroup* createBasicBinarySemaphoreTests (tcu::TestContext& testCtx, SynchronizationType type, VideoCodecOperationFlags videoCodecOperationFlags)
 {
-	de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "binary_semaphore", "Basic semaphore tests"));
+	de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "binary_semaphore"));
 
 	TestConfig config =
 	{
@@ -866,21 +866,26 @@ tcu::TestCaseGroup* createBasicBinarySemaphoreTests (tcu::TestContext& testCtx, 
 		config.useTypeCreate = (typedCreate != 0);
 		const std::string createName = config.useTypeCreate ? "_typed" : "";
 
-		addFunctionCase(basicTests.get(), "one_queue" + createName,		"Basic binary semaphore tests with one queue",		checkCommandBufferSimultaneousUseSupport,	basicOneQueueCase, config);
-		addFunctionCase(basicTests.get(), "multi_queue" + createName,	"Basic binary semaphore tests with multi queue",	checkCommandBufferSimultaneousUseSupport,	basicMultiQueueCase, config);
+		// Basic binary semaphore tests with one queue
+		addFunctionCase(basicTests.get(), "one_queue" + createName, checkCommandBufferSimultaneousUseSupport,	basicOneQueueCase, config);
+		// Basic binary semaphore tests with multi queue
+		addFunctionCase(basicTests.get(), "multi_queue" + createName, checkCommandBufferSimultaneousUseSupport,	basicMultiQueueCase, config);
 	}
 
 	if (type == SynchronizationType::SYNCHRONIZATION2)
-		addFunctionCase(basicTests.get(), "none_wait_submit", "Test waiting on the none pipeline stage",	checkCommandBufferSimultaneousUseSupport, noneWaitSubmitTest, config);
+		// Test waiting on the none pipeline stage
+		addFunctionCase(basicTests.get(), "none_wait_submit", checkCommandBufferSimultaneousUseSupport, noneWaitSubmitTest, config);
 
-	addFunctionCase(basicTests.get(), "chain", "Binary semaphore chain test", checkSupport, basicChainCase, config);
+	// Binary semaphore chain test
+	addFunctionCase(basicTests.get(), "chain", checkSupport, basicChainCase, config);
 
 	return basicTests.release();
 }
 
 tcu::TestCaseGroup* createBasicTimelineSemaphoreTests (tcu::TestContext& testCtx, SynchronizationType type, VideoCodecOperationFlags videoCodecOperationFlags)
 {
-	de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "timeline_semaphore", "Basic timeline semaphore tests"));
+	// Basic timeline semaphore tests
+	de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "timeline_semaphore"));
 	const TestConfig				config =
 	{
 		true,
@@ -889,17 +894,25 @@ tcu::TestCaseGroup* createBasicTimelineSemaphoreTests (tcu::TestContext& testCtx
 		videoCodecOperationFlags,
 	};
 
-	addFunctionCase(basicTests.get(), "one_queue",		"Basic timeline semaphore tests with one queue",	checkCommandBufferSimultaneousUseSupport,	basicOneQueueCase, config);
-	addFunctionCase(basicTests.get(), "multi_queue",	"Basic timeline semaphore tests with multi queue",	checkCommandBufferSimultaneousUseSupport,	basicMultiQueueCase, config);
-	addFunctionCase(basicTests.get(), "chain",			"Timeline semaphore chain test",					checkSupport, basicChainTimelineCase, config);
+	// Basic timeline semaphore tests with one queue
+	addFunctionCase(basicTests.get(), "one_queue", checkCommandBufferSimultaneousUseSupport,	basicOneQueueCase, config);
+	// Basic timeline semaphore tests with multi queue
+	addFunctionCase(basicTests.get(), "multi_queue", checkCommandBufferSimultaneousUseSupport,	basicMultiQueueCase, config);
+	// Timeline semaphore chain test
+	addFunctionCase(basicTests.get(), "chain", checkSupport, basicChainTimelineCase, config);
 
 	// dont repeat this test for synchronization2
 	if (type == SynchronizationType::LEGACY) {
-		addFunctionCase(basicTests.get(), "two_threads","Timeline semaphore used by two threads",			checkSupport, basicThreadTimelineCase, config);
-		addFunctionCase(basicTests.get(), "wait_for_any_current_value","Wait for the currently signalled timeline semaphore value (wait for any)", checkSupport, basicWaitForAnyCurrentTimelineValueCase, config);
-		addFunctionCase(basicTests.get(), "wait_for_any_lesser_value","Wait for a value less than the currently signalled timeline semaphore value (wait for any)", checkSupport, basicWaitForAnyLesserTimelineValueCase, config);
-		addFunctionCase(basicTests.get(), "wait_for_all_current_value","Wait for the currently signalled timeline semaphore value (wait for all)", checkSupport, basicWaitForAllCurrentTimelineValueCase, config);
-		addFunctionCase(basicTests.get(), "wait_for_all_lesser_value","Wait for a value less than the currently signalled timeline semaphore value (wait for all)", checkSupport, basicWaitForAllLesserTimelineValueCase, config);
+		// Timeline semaphore used by two threads
+		addFunctionCase(basicTests.get(), "two_threads", checkSupport, basicThreadTimelineCase, config);
+		// Wait for the currently signalled timeline semaphore value (wait for any)
+		addFunctionCase(basicTests.get(), "wait_for_any_current_value", checkSupport, basicWaitForAnyCurrentTimelineValueCase, config);
+		// Wait for a value less than the currently signalled timeline semaphore value (wait for any)
+		addFunctionCase(basicTests.get(), "wait_for_any_lesser_value", checkSupport, basicWaitForAnyLesserTimelineValueCase, config);
+		// Wait for the currently signalled timeline semaphore value (wait for all)
+		addFunctionCase(basicTests.get(), "wait_for_all_current_value", checkSupport, basicWaitForAllCurrentTimelineValueCase, config);
+		// Wait for a value less than the currently signalled timeline semaphore value (wait for all)
+		addFunctionCase(basicTests.get(), "wait_for_all_lesser_value", checkSupport, basicWaitForAllLesserTimelineValueCase, config);
     }
 
 	return basicTests.release();

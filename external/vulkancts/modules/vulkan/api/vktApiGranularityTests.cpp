@@ -35,6 +35,7 @@
 #include "vkRefUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vktTestCase.hpp"
 
 #include "tcuTestLog.hpp"
@@ -52,6 +53,13 @@ using namespace vk;
 
 namespace
 {
+
+enum class TestMode
+{
+	NO_RENDER_PASS = 0,
+	USE_RENDER_PASS,
+	USE_DYNAMIC_RENDER_PASS,
+};
 
 struct AttachmentInfo
 {
@@ -82,18 +90,15 @@ class GranularityInstance : public vkt::TestInstance
 public:
 											GranularityInstance			(Context&							context,
 																		 const std::vector<AttachmentInfo>&	attachments,
-																		 const bool							useRenderPass);
-	virtual									~GranularityInstance		(void);
-	void									checkFormatSupport			(const VkFormat format);
+																		 const TestMode						testMode);
+	virtual									~GranularityInstance		(void) = default;
 	void									initAttachmentDescriptions	(void);
 	void									initImages					(void);
-	void									initRenderPass				(void);
-	void									beginRenderPass				(void);
-	void									endRenderPass				(void);
+	void									initObjects					(void);
 	virtual	tcu::TestStatus					iterate						(void);
 private:
 	const std::vector<AttachmentInfo>		m_attachments;
-	const bool								m_useRenderPass;
+	const TestMode							m_testMode;
 
 	Move<VkRenderPass>						m_renderPass;
 	Move<VkFramebuffer>						m_frameBuffer;
@@ -107,31 +112,12 @@ private:
 
 GranularityInstance::GranularityInstance (Context&								context,
 										  const std::vector<AttachmentInfo>&	attachments,
-										  const bool							useRenderPass)
+										  const TestMode						testMode)
 	: vkt::TestInstance	(context)
 	, m_attachments		(attachments)
-	, m_useRenderPass	(useRenderPass)
+	, m_testMode		(testMode)
 {
 	initAttachmentDescriptions();
-}
-
-GranularityInstance::~GranularityInstance (void)
-{
-}
-
-void GranularityInstance::checkFormatSupport (const VkFormat format)
-{
-	VkImageFormatProperties	properties;
-
-	VkResult result = m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(),
-																							  format, VK_IMAGE_TYPE_2D,
-																							  VK_IMAGE_TILING_OPTIMAL,
-																							  VK_IMAGE_USAGE_SAMPLED_BIT,
-																							  0,
-																							  &properties);
-
-	if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		TCU_THROW(NotSupportedError, "Format not supported");
 }
 
 void GranularityInstance::initAttachmentDescriptions (void)
@@ -151,7 +137,6 @@ void GranularityInstance::initAttachmentDescriptions (void)
 
 	for (std::vector<AttachmentInfo>::const_iterator it = m_attachments.begin(); it != m_attachments.end(); ++it)
 	{
-		checkFormatSupport(it->format);
 		attachmentDescription.format = it->format;
 		m_attachmentDescriptions.push_back(attachmentDescription);
 	}
@@ -159,14 +144,38 @@ void GranularityInstance::initAttachmentDescriptions (void)
 
 void GranularityInstance::initImages (void)
 {
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const VkDevice			device				= m_context.getDevice();
-	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	SimpleAllocator			memAlloc			(vk, device, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const InstanceInterface&	vki					= m_context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
+	const VkDevice				device				= m_context.getDevice();
+	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	SimpleAllocator				memAlloc			(vk, device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
 
 	for (std::vector<AttachmentInfo>::const_iterator it = m_attachments.begin(); it != m_attachments.end(); ++it)
 	{
-		const VkImageCreateInfo		imageInfo	=
+		VkImageAspectFlags			aspectFlags	= 0;
+		VkImageUsageFlags			usage		= 0u;
+		const tcu::TextureFormat	tcuFormat	= mapVkFormat(it->format);
+
+		if (tcu::hasDepthComponent(tcuFormat.order))
+		{
+			aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
+			usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		}
+
+		if (tcu::hasStencilComponent(tcuFormat.order))
+		{
+			aspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+			usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		}
+
+		if (!aspectFlags)
+		{
+			aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+			usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		}
+
+		const VkImageCreateInfo imageInfo
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
@@ -178,7 +187,7 @@ void GranularityInstance::initImages (void)
 			1u,										// deUint32				arrayLayers;
 			VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
 			VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
-			VK_IMAGE_USAGE_SAMPLED_BIT,				// VkImageUsageFlags	usage;
+			usage,									// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
 			1u,										// deUint32				queueFamilyCount;
 			&queueFamilyIndex,						// const deUint32*		pQueueFamilyIndices;
@@ -189,26 +198,6 @@ void GranularityInstance::initImages (void)
 		Move<VkImage>			image		= createImage(vk, device, &imageInfo);
 		de::MovePtr<Allocation>	imageAlloc	= memAlloc.allocate(getImageMemoryRequirements(vk, device, *image), MemoryRequirement::Any);
 		VK_CHECK(vk.bindImageMemory(device, *image, imageAlloc->getMemory(), imageAlloc->getOffset()));
-
-		VkImageAspectFlags			aspectFlags = 0;
-		const tcu::TextureFormat	tcuFormat	= mapVkFormat(it->format);
-
-		if (tcu::hasDepthComponent(tcuFormat.order))
-			aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
-
-		if (tcu::hasStencilComponent(tcuFormat.order))
-			aspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
-
-		if (!aspectFlags)
-			aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
-
-		VkFormatProperties formatProperties;
-		m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(),
-										   it->format, &formatProperties);
-
-		if ((formatProperties.optimalTilingFeatures & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT |
-							       VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) == 0)
-			throw tcu::NotSupportedError("Format not supported as attachment");
 
 		const VkImageViewCreateInfo		createInfo	=
 		{
@@ -237,14 +226,18 @@ void GranularityInstance::initImages (void)
 	}
 }
 
-void GranularityInstance::initRenderPass (void)
+void GranularityInstance::initObjects (void)
 {
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
 	const VkDevice				device				= m_context.getDevice();
 	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
-	{	// Create RenderPass
-		const VkSubpassDescription	subpassDesc =
+	initImages();
+
+	// Create RenderPass and Framebuffer
+	if (m_testMode != TestMode::USE_DYNAMIC_RENDER_PASS)
+	{
+		const VkSubpassDescription subpassDesc
 		{
 			(VkSubpassDescriptionFlags)0u,		// VkSubpassDescriptionFlags		flags;
 			VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint				pipelineBindPoint;
@@ -258,7 +251,7 @@ void GranularityInstance::initRenderPass (void)
 			DE_NULL								// const VkAttachmentReference*		pPreserveAttachments;
 		};
 
-		const VkRenderPassCreateInfo	renderPassParams =
+		const VkRenderPassCreateInfo renderPassParams
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType					sType;
 			DE_NULL,									// const void*						pNext;
@@ -272,17 +265,12 @@ void GranularityInstance::initRenderPass (void)
 		};
 
 		m_renderPass	= createRenderPass(vk, device, &renderPassParams);
-	}
 
-	initImages();
-
-	{	// Create Framebuffer
 		std::vector<VkImageView>	imageViews;
-
 		for (std::vector<VkImageViewSp>::const_iterator it = m_imageViews.begin(); it != m_imageViews.end(); ++it)
 			imageViews.push_back(it->get()->get());
 
-		const VkFramebufferCreateInfo	framebufferParams	=
+		const VkFramebufferCreateInfo framebufferParams
 		{
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;
@@ -302,50 +290,129 @@ void GranularityInstance::initRenderPass (void)
 
 	// Create CommandBuffer
 	m_cmdBuffer	= allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-	// Begin CommandBuffer
-	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
-}
-
-void GranularityInstance::beginRenderPass (void)
-{
-	const DeviceInterface&	vk	= m_context.getDeviceInterface();
-
-	const VkRect2D	renderArea	= makeRect2D(1u, 1u);
-
-	vk::beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_frameBuffer, renderArea);
-}
-
-void GranularityInstance::endRenderPass (void)
-{
-	const DeviceInterface&	vk	= m_context.getDeviceInterface();
-
-	vk::endRenderPass(vk, *m_cmdBuffer);
-	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
 tcu::TestStatus GranularityInstance::iterate (void)
 {
-	const DeviceInterface&	vk		= m_context.getDeviceInterface();
-	const VkDevice			device	= m_context.getDevice();
-	tcu::TestLog&			log		= m_context.getTestContext().getLog();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			device		= m_context.getDevice();
+	tcu::TestLog&			log			= m_context.getTestContext().getLog();
+	const VkRect2D			renderArea	= makeRect2D(1u, 1u);
 
-	initRenderPass();
+	VkExtent2D	prePassGranularity	= { ~0u, ~0u };
+	VkExtent2D	granularity			= { 0u, 0u };
 
-	VkExtent2D prePassGranularity = { ~0u, ~0u };
-	vk.getRenderAreaGranularity(device, *m_renderPass, &prePassGranularity);
+	initObjects();
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-	if(m_useRenderPass)
-		beginRenderPass();
+#ifndef CTS_USES_VULKANSC
+	if (m_testMode == TestMode::USE_DYNAMIC_RENDER_PASS)
+	{
+		VkImageSubresourceRange subresourceRange(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
+		std::vector<VkFormat> colorAttachmentFormats;
+		VkFormat depthAttachmentFormat		= VK_FORMAT_UNDEFINED;
+		VkFormat stencilAttachmentFormat	= VK_FORMAT_UNDEFINED;
 
-	VkExtent2D	granularity = { 0u, 0u };
-	vk.getRenderAreaGranularity(device, *m_renderPass, &granularity);
+		VkRenderingAttachmentInfoKHR defaultAttachment = initVulkanStructure();
+		defaultAttachment.imageLayout	= VK_IMAGE_LAYOUT_GENERAL;
+		defaultAttachment.loadOp		= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		defaultAttachment.storeOp		= VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+		std::vector<VkRenderingAttachmentInfoKHR> colorAttachmentInfo;
+		VkRenderingAttachmentInfoKHR depthAttachmentInfo = defaultAttachment;
+		VkRenderingAttachmentInfoKHR stencilAttachmentInfo = defaultAttachment;
+
+		for (deUint32 i = 0 ; i < m_attachments.size() ; ++i)
+		{
+			const auto	format			= m_attachments[i].format;
+			const auto	tcuFormat		= mapVkFormat(format);
+			bool		isColorFormat	= true;
+
+			subresourceRange.aspectMask = 0;
+
+			if (tcu::hasDepthComponent(tcuFormat.order))
+			{
+				subresourceRange.aspectMask		= VK_IMAGE_ASPECT_DEPTH_BIT;
+				depthAttachmentFormat			= format;
+				depthAttachmentInfo.imageView	= **m_imageViews[i];
+				isColorFormat					= false;
+			}
+			if (tcu::hasStencilComponent(tcuFormat.order))
+			{
+				subresourceRange.aspectMask		|= VK_IMAGE_ASPECT_STENCIL_BIT;
+				stencilAttachmentFormat			= format;
+				stencilAttachmentInfo.imageView	= **m_imageViews[i];
+				isColorFormat					= false;
+			}
+			if (isColorFormat)
+			{
+				subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				colorAttachmentFormats.push_back(format);
+				colorAttachmentInfo.push_back(defaultAttachment);
+				colorAttachmentInfo.back().imageView = **m_imageViews[i];
+			}
+
+			// transition layout
+			const VkImageMemoryBarrier layoutBarrier(makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, **m_images[i], subresourceRange));
+			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, DE_NULL, 0, DE_NULL, 1, &layoutBarrier);
+		}
+
+		VkRenderingAreaInfoKHR renderingAreaInfo
+		{
+			VK_STRUCTURE_TYPE_RENDERING_AREA_INFO_KHR,	// VkStructureType		sType;
+			nullptr,									// const void*			pNext;
+			0,											// uint32_t				viewMask;
+			(deUint32)colorAttachmentFormats.size(),	// uint32_t				colorAttachmentCount;
+			colorAttachmentFormats.data(),				// const VkFormat*		pColorAttachmentFormats;
+			depthAttachmentFormat,						// VkFormat				depthAttachmentFormat;
+			stencilAttachmentFormat						// VkFormat				stencilAttachmentFormat;
+		};
+
+		vk.getRenderingAreaGranularityKHR(device, &renderingAreaInfo, &prePassGranularity);
+
+		// start dynamic render pass
+		VkRenderingInfoKHR renderingInfo
+		{
+			VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+			DE_NULL,
+			0u,															// VkRenderingFlagsKHR					flags;
+			renderArea,													// VkRect2D								renderArea;
+			1u,															// deUint32								layerCount;
+			0u,															// deUint32								viewMask;
+			(deUint32)colorAttachmentInfo.size(),						// deUint32								colorAttachmentCount;
+			colorAttachmentInfo.data(),									// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+			depthAttachmentFormat ? &depthAttachmentInfo : DE_NULL,		// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
+			stencilAttachmentFormat ? &stencilAttachmentInfo : DE_NULL,	// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
+		};
+		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
+
+		vk.getRenderingAreaGranularityKHR(device, &renderingAreaInfo, &granularity);
+	}
+#endif
+
+	if (m_testMode != TestMode::USE_DYNAMIC_RENDER_PASS)
+	{
+		vk.getRenderAreaGranularity(device, *m_renderPass, &prePassGranularity);
+
+		if (m_testMode == TestMode::USE_RENDER_PASS)
+			beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_frameBuffer, renderArea);
+
+		vk.getRenderAreaGranularity(device, *m_renderPass, &granularity);
+	}
+
 	TCU_CHECK(granularity.width >= 1 && granularity.height >= 1);
 	TCU_CHECK(prePassGranularity.width == granularity.width && prePassGranularity.height == granularity.height);
 	TCU_CHECK(granularity.width <= m_context.getDeviceProperties().limits.maxFramebufferWidth && granularity.height <= m_context.getDeviceProperties().limits.maxFramebufferHeight);
 
-	if(m_useRenderPass)
-		endRenderPass();
+	if(m_testMode == TestMode::USE_RENDER_PASS)
+		endRenderPass(vk, *m_cmdBuffer);
+
+#ifndef CTS_USES_VULKANSC
+	if (m_testMode == TestMode::USE_DYNAMIC_RENDER_PASS)
+		endRendering(vk, *m_cmdBuffer);
+#endif
+
+	endCommandBuffer(vk, *m_cmdBuffer);
 
 	log << tcu::TestLog::Message << "Horizontal granularity: " << granularity.width << " Vertical granularity: " << granularity.height << tcu::TestLog::EndMessage;
 	return tcu::TestStatus::pass("Granularity test");
@@ -356,50 +423,65 @@ class GranularityCase : public vkt::TestCase
 public:
 										GranularityCase		(tcu::TestContext&					testCtx,
 															 const std::string&					name,
-															 const std::string&					description,
 															 const std::vector<AttachmentInfo>&	attachments,
-															 const bool							useRenderPass);
-	virtual								~GranularityCase	(void);
+															 const TestMode						testMode);
+	virtual								~GranularityCase	(void) = default;
 
+	void								checkSupport		(Context&	context) const;
 	virtual TestInstance*				createInstance		(Context&	context) const;
 private:
 	const std::vector<AttachmentInfo>	m_attachments;
-	const bool							m_useRenderPass;
+	const TestMode						m_testMode;
 };
 
 GranularityCase::GranularityCase (tcu::TestContext&						testCtx,
 								  const std::string&					name,
-								  const std::string&					description,
 								  const std::vector<AttachmentInfo>&	attachments,
-								  const bool							useRenderPass = false)
-	: vkt::TestCase		(testCtx, name, description)
+								  const TestMode						testMode = TestMode::NO_RENDER_PASS)
+	: vkt::TestCase		(testCtx, name)
 	, m_attachments		(attachments)
-	, m_useRenderPass	(useRenderPass)
+	, m_testMode		(testMode)
 {
 }
 
-GranularityCase::~GranularityCase (void)
+void GranularityCase::checkSupport(Context& context) const
 {
+	const InstanceInterface&	vki					= context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
+	const VkFormatFeatureFlags	requiredFeatures	= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	VkFormatProperties			formatProperties;
+
+	for (const AttachmentInfo& attachmentInfo : m_attachments)
+	{
+		vki.getPhysicalDeviceFormatProperties(physicalDevice, attachmentInfo.format, &formatProperties);
+		if ((formatProperties.optimalTilingFeatures & requiredFeatures) == 0)
+			TCU_THROW(NotSupportedError, "Format not supported");
+	}
+
+	if (m_testMode == TestMode::USE_DYNAMIC_RENDER_PASS)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
 
 TestInstance* GranularityCase::createInstance (Context& context) const
 {
-	return new GranularityInstance(context, m_attachments, m_useRenderPass);
+	return new GranularityInstance(context, m_attachments, m_testMode);
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createGranularityQueryTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "granularity", "Granularity query tests"));
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "granularity"));
 	// Subgroups
-	de::MovePtr<tcu::TestCaseGroup>	single			(new tcu::TestCaseGroup(testCtx, "single", "Single texture granularity tests."));
-	de::MovePtr<tcu::TestCaseGroup>	multi			(new tcu::TestCaseGroup(testCtx, "multi", "Multiple textures with same format granularity tests."));
-	de::MovePtr<tcu::TestCaseGroup>	random			(new tcu::TestCaseGroup(testCtx, "random", "Multiple textures with a guaranteed format occurence."));
-	de::MovePtr<tcu::TestCaseGroup>	inRenderPass	(new tcu::TestCaseGroup(testCtx, "in_render_pass", "Single texture granularity tests, inside render pass"));
+	// Single texture granularity tests.
+	de::MovePtr<tcu::TestCaseGroup>	single				(new tcu::TestCaseGroup(testCtx, "single"));
+	// Multiple textures with same format granularity tests.
+	de::MovePtr<tcu::TestCaseGroup>	multi				(new tcu::TestCaseGroup(testCtx, "multi"));
+	de::MovePtr<tcu::TestCaseGroup>	random				(new tcu::TestCaseGroup(testCtx, "random"));
+	de::MovePtr<tcu::TestCaseGroup>	inRenderPass		(new tcu::TestCaseGroup(testCtx, "in_render_pass"));
+	de::MovePtr<tcu::TestCaseGroup>	inDynamicRenderPass	(new tcu::TestCaseGroup(testCtx, "in_dynamic_render_pass"));
 
 	de::Random	rnd(215);
-	const char*	description	= "Granularity case.";
 
 	const VkFormat mandatoryFormats[] =
 	{
@@ -466,7 +548,7 @@ tcu::TestCaseGroup* createGranularityQueryTests (tcu::TestContext& testCtx)
 			const int					i0				= rnd.getInt(1, maxDimension);
 			const int					i1				= rnd.getInt(1, maxDimension);
 			attachments.push_back(AttachmentInfo(format, i0, i1, 1));
-			single->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments));
+			single->addChild(new GranularityCase(testCtx, name.c_str(), attachments));
 		}
 
 		{
@@ -476,7 +558,7 @@ tcu::TestCaseGroup* createGranularityQueryTests (tcu::TestContext& testCtx)
 			const int					i1				= rnd.getInt(1, maxDimension);
 			for (deUint32 idx = 0; idx < iterations; ++idx)
 				attachments.push_back(AttachmentInfo(VkFormat(formatIdx), i0, i1, 1));
-			multi->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments));
+			multi->addChild(new GranularityCase(testCtx, name.c_str(), attachments));
 		}
 
 		{
@@ -492,15 +574,18 @@ tcu::TestCaseGroup* createGranularityQueryTests (tcu::TestContext& testCtx)
 				const int	i4	= rnd.getInt(1, maxDimension);
 				attachments.push_back(AttachmentInfo(mandatoryFormats[i2], i3, i4, 1));
 			}
-			random->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments));
+			random->addChild(new GranularityCase(testCtx, name.c_str(), attachments));
 		}
 
 		{
-			std::vector<AttachmentInfo>	attachments;
 			const int					i0				= rnd.getInt(1, maxDimension);
 			const int					i1				= rnd.getInt(1, maxDimension);
-			attachments.push_back(AttachmentInfo(format, i0, i1, 1));
-			inRenderPass->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments, true));
+			std::vector<AttachmentInfo>	attachments		= { AttachmentInfo(format, i0, i1, 1) };
+			inRenderPass->addChild(new GranularityCase(testCtx, name.c_str(), attachments, TestMode::USE_RENDER_PASS));
+
+#ifndef CTS_USES_VULKANSC
+			inDynamicRenderPass->addChild(new GranularityCase(testCtx, name.c_str(), attachments, TestMode::USE_DYNAMIC_RENDER_PASS));
+#endif
 		}
 	}
 
@@ -508,6 +593,10 @@ tcu::TestCaseGroup* createGranularityQueryTests (tcu::TestContext& testCtx)
 	group->addChild(multi.release());
 	group->addChild(random.release());
 	group->addChild(inRenderPass.release());
+
+#ifndef CTS_USES_VULKANSC
+	group->addChild(inDynamicRenderPass.release());
+#endif
 
 	return group.release();
 }

@@ -58,6 +58,10 @@ set(DEQP_VK_VKSC_DRAW_SRCS
 	vktDrawMultipleClearsWithinRenderPass.hpp
 	vktDrawSampleAttributeTests.cpp
 	vktDrawSampleAttributeTests.hpp
+	vktDrawPointClampTests.cpp
+	vktDrawPointClampTests.hpp
+	vktDrawVertexAttribDivisorTests.cpp
+	vktDrawVertexAttribDivisorTests.hpp
 )
 
 set(DEQP_VK_DRAW_SRCS
@@ -65,6 +69,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawOutputLocationTests.hpp
 	vktDrawDepthBiasTests.cpp
 	vktDrawDepthBiasTests.hpp
+	vktDrawAhbExternalFormatResolveTests.cpp
+	vktDrawAhbExternalFormatResolveTests.hpp
 	vktDrawAhbTests.cpp
 	vktDrawAhbTests.hpp
 	vktDrawMultiExtTests.hpp

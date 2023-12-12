@@ -135,7 +135,7 @@ tcu::TestStatus forbiddenCoreExtensions (Context& context)
 
 	vk::VkPhysicalDevice							physicalDevice		= context.getPhysicalDevice();
 	const vk::InstanceInterface&					vki					= context.getInstanceInterface();
-	const std::vector<vk::VkExtensionProperties>	deviceExtensions	= vk::enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const std::vector<vk::VkExtensionProperties>&	deviceExtensions	= vk::enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 
 	for (const auto& extension : deviceExtensions)
 	{
@@ -322,7 +322,7 @@ tcu::TestStatus allowedExtensions (Context& context)
 
 	vk::VkPhysicalDevice							physicalDevice		= context.getPhysicalDevice();
 	const vk::InstanceInterface&					vki					= context.getInstanceInterface();
-	const std::vector<vk::VkExtensionProperties>	deviceExtensions	= vk::enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const std::vector<vk::VkExtensionProperties>&	deviceExtensions	= vk::enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 
 	for (const auto& extension : deviceExtensions)
 	{
@@ -343,14 +343,21 @@ tcu::TestStatus allowedExtensions (Context& context)
 
 tcu::TestCaseGroup*	createSafetyCriticalAPITests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "api", "Tests verifying Vulkan SC specific API"));
+	// Tests verifying Vulkan SC specific API
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "api"));
 
-	addFunctionCase(group.get(), "forbidden_core_commands",		"Verify existence of functions removed from Vulkan",				forbiddenCoreCommands);
-	addFunctionCase(group.get(), "forbidden_core_extensions",	"Verify existence of extensions removed from Vulkan",				forbiddenCoreExtensions);
-	addFunctionCase(group.get(), "forbidden_promoted_commands",	"Verify existence of promoted functions removed from Vulkan",		forbiddenPromotedCommands);
-	addFunctionCase(group.get(), "forbidden_features",			"Verify if specific device features are forbidden for Vulkan SC",	forbiddenDeviceFeatures);
-	addFunctionCase(group.get(), "forbidden_properties",		"Verify if specific device properties are forbidden for Vulkan SC", forbiddenDeviceProperties);
-	addFunctionCase(group.get(), "allowed_extensions",			"Verify if extensions are allowed for Vulkan SC",					allowedExtensions);
+	// Verify existence of functions removed from Vulkan
+	addFunctionCase(group.get(), "forbidden_core_commands", forbiddenCoreCommands);
+	// Verify existence of extensions removed from Vulkan
+	addFunctionCase(group.get(), "forbidden_core_extensions", forbiddenCoreExtensions);
+	// Verify existence of promoted functions removed from Vulkan
+	addFunctionCase(group.get(), "forbidden_promoted_commands", forbiddenPromotedCommands);
+	// Verify if specific device features are forbidden for Vulkan SC
+	addFunctionCase(group.get(), "forbidden_features", forbiddenDeviceFeatures);
+	// Verify if specific device properties are forbidden for Vulkan SC
+	addFunctionCase(group.get(), "forbidden_properties", forbiddenDeviceProperties);
+	// Verify if extensions are allowed for Vulkan SC
+	addFunctionCase(group.get(), "allowed_extensions", allowedExtensions);
 
 	return group.release();
 }

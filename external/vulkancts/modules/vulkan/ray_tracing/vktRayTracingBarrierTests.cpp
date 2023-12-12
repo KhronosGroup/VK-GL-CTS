@@ -341,7 +341,7 @@ bool needsAccelerationStructure (Stage stage)
 class BarrierTestCase : public vkt::TestCase
 {
 public:
-							BarrierTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& testParams);
+							BarrierTestCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& testParams);
 	virtual					~BarrierTestCase	(void) {}
 
 	virtual void			initPrograms		(SourceCollections& programCollection) const;
@@ -364,8 +364,8 @@ private:
 	TestParams					m_params;
 };
 
-BarrierTestCase::BarrierTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& testParams)
-	: vkt::TestCase	(testCtx, name, description)
+BarrierTestCase::BarrierTestCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& testParams)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(testParams)
 {
 }
@@ -1642,7 +1642,8 @@ tcu::TestStatus BarrierTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createBarrierTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "barrier", "Tests involving pipeline barriers and ray tracing"));
+	// Tests involving pipeline barriers and ray tracing
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "barrier"));
 
 	const struct
 	{
@@ -1685,11 +1686,11 @@ tcu::TestCaseGroup*	createBarrierTests(tcu::TestContext& testCtx)
 
 	for (int resourceTypeIdx = 0; resourceTypeIdx < DE_LENGTH_OF_ARRAY(resourceTypes); ++resourceTypeIdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> resourceTypeGroup(new tcu::TestCaseGroup(testCtx, resourceTypes[resourceTypeIdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> resourceTypeGroup(new tcu::TestCaseGroup(testCtx, resourceTypes[resourceTypeIdx].name));
 
 		for (int barrierTypeIdx = 0; barrierTypeIdx < DE_LENGTH_OF_ARRAY(barrierTypes); ++barrierTypeIdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> barrierTypeGroup(new tcu::TestCaseGroup(testCtx, barrierTypes[barrierTypeIdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> barrierTypeGroup(new tcu::TestCaseGroup(testCtx, barrierTypes[barrierTypeIdx].name));
 
 			for (int writerStageIdx = 0; writerStageIdx < DE_LENGTH_OF_ARRAY(stageList); ++writerStageIdx)
 			for (int readerStageIdx = 0; readerStageIdx < DE_LENGTH_OF_ARRAY(stageList); ++readerStageIdx)
@@ -1712,7 +1713,7 @@ tcu::TestCaseGroup*	createBarrierTests(tcu::TestContext& testCtx)
 					continue;
 
 				const std::string testName = std::string("from_") + stageList[writerStageIdx].name + "_to_" + stageList[readerStageIdx].name;
-				barrierTypeGroup->addChild(new BarrierTestCase(testCtx, testName, "", TestParams(resourceType, writerStage, readerStage, barrierType)));
+				barrierTypeGroup->addChild(new BarrierTestCase(testCtx, testName, TestParams(resourceType, writerStage, readerStage, barrierType)));
 			}
 			resourceTypeGroup->addChild(barrierTypeGroup.release());
 		}

@@ -6,6 +6,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Intel Corporation
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,20 +60,20 @@ template<typename Instance, typename Support = NoSupport0>
 class InstanceFactory : public TestCase
 {
 public:
-	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc,
+	InstanceFactory (tcu::TestContext& testCtx, const std::string& name,
 		const vk::PipelineConstructionType pipelineConstructionType,
 		const ShaderMap& shaderPaths)
-		: TestCase						(testCtx, name, desc)
+		: TestCase						(testCtx, name)
 		, m_pipelineConstructionType	(pipelineConstructionType)
 		, m_shaderPaths					(shaderPaths)
 		, m_support						()
 	{
 	}
 
-	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc,
+	InstanceFactory (tcu::TestContext& testCtx, const std::string& name,
 		const vk::PipelineConstructionType pipelineConstructionType,
 		const ShaderMap& shaderPaths, const Support& support)
-		: TestCase						(testCtx, name, desc)
+		: TestCase						(testCtx, name)
 		, m_pipelineConstructionType	(pipelineConstructionType)
 		, m_shaderPaths					(shaderPaths)
 		, m_support						(support)
@@ -101,7 +103,7 @@ public:
 
 	virtual void	checkSupport	(Context& context) const
 	{
-		checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+		checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
 		m_support.checkSupport(context);
 	}

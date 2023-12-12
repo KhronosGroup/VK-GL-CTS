@@ -35,9 +35,12 @@
 #include "vkBarrierUtil.hpp"
 
 #include "tcuTestLog.hpp"
+#include "tcuTextureUtil.hpp"
+#include "tcuImageCompare.hpp"
 
 #include <functional>
 #include <map>
+#include <set>
 
 namespace vkt
 {
@@ -149,6 +152,7 @@ struct TestParameters
 	const uint32_t		queryCount;
 	QueryOrder			queryOrder;
 	OutsideDraw			outsideDraw;
+	const bool			availabilityBit;
 
 	bool		pgqDefault					(void)	const	{ return pgqStream == VERTEX_STREAM_DEFAULT;						}
 	bool		xfbDefault					(void)	const	{ return xfbStream == VERTEX_STREAM_DEFAULT;						}
@@ -393,14 +397,17 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 														   m_parameters.queryResultType == QUERY_RESULT_TYPE_PGQ_64_XFB_32);
 	const bool						xfb64				= (m_parameters.queryResultType == QUERY_RESULT_TYPE_64_BIT ||
 														   m_parameters.queryResultType == QUERY_RESULT_TYPE_PGQ_32_XFB_64);
-	const size_t					pgqResultSize		= pgq64 ? sizeof(deUint64) : sizeof(deUint32);
-	const size_t					xfbResultSize		= xfb64 ? sizeof(deUint64) * 2 : sizeof(deUint32) * 2;
+	const VkQueryResultFlags		availabilityFlags	= (m_parameters.availabilityBit ? VK_QUERY_RESULT_WITH_AVAILABILITY_BIT : 0);
+	const size_t					pgqValuesPerQuery	= (m_parameters.availabilityBit ? 2 : 1);
+	const size_t					xfbValuesPerQuery	= (m_parameters.availabilityBit ? 3 : 2);
+	const size_t					pgqResultSize		= (pgq64 ? sizeof(deUint64) : sizeof(deUint32)) * pgqValuesPerQuery;
+	const size_t					xfbResultSize		= (xfb64 ? sizeof(deUint64) : sizeof(deUint32)) * xfbValuesPerQuery;
 	const size_t					pgqResultBufferSize	= pgqResultSize * m_parameters.queryCount;
 	const size_t					xfbResultBufferSize	= xfbResultSize * m_parameters.queryCount;
 	const VkQueryResultFlags		pgqResultWidthBit	= pgq64 ? VK_QUERY_RESULT_64_BIT : 0;
 	const VkQueryResultFlags		xfbResultWidthBit	= xfb64 ? VK_QUERY_RESULT_64_BIT : 0;
-	const VkQueryResultFlags		pgqResultFlags		= VK_QUERY_RESULT_WAIT_BIT | pgqResultWidthBit;
-	const VkQueryResultFlags		xfbResultFlags		= VK_QUERY_RESULT_WAIT_BIT | xfbResultWidthBit;
+	const VkQueryResultFlags		pgqResultFlags		= VK_QUERY_RESULT_WAIT_BIT | pgqResultWidthBit | availabilityFlags;
+	const VkQueryResultFlags		xfbResultFlags		= VK_QUERY_RESULT_WAIT_BIT | xfbResultWidthBit | availabilityFlags;
 
 	std::vector<deUint8>			pgqResults			(pgqResultBufferSize, 255u);
 	std::vector<deUint8>			xfbResults			(xfbResultBufferSize, 255u);
@@ -669,8 +676,8 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 	{
 		union QueryResults
 		{
-			deUint32	elements32[2];
-			deUint64	elements64[2];
+			deUint32	elements32[3];
+			deUint64	elements64[3];
 		};
 
 		const QueryResults*	pgqCounters		= reinterpret_cast<QueryResults*>(pgqResults.data() + queryIdx * pgqResultSize);
@@ -679,6 +686,8 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 		const deUint64		xfbWritten		= xfb64 ? xfbCounters->elements64[0] : static_cast<deUint64>(xfbCounters->elements32[0]);
 		const deUint64		xfbGenerated	= xfb64 ? xfbCounters->elements64[1] : static_cast<deUint64>(xfbCounters->elements32[1]);
 		const deUint32		drawCount		= (m_parameters.cmdBufCase == CMD_BUF_CASE_TWO_DRAWS) ? 2u : 1u;
+		const uint64_t		pgqAvailability	= (m_parameters.availabilityBit ? (pgq64 ? pgqCounters->elements64[1] : static_cast<deUint64>(pgqCounters->elements32[1])) : 1);
+		const uint64_t		xfbAvailability	= (m_parameters.availabilityBit ? (xfb64 ? xfbCounters->elements64[2] : static_cast<deUint64>(xfbCounters->elements32[2])) : 1);
 		tcu::TestLog&		log				= m_context.getTestContext().getLog();
 
 		if (queryIdx == 0u)
@@ -704,6 +713,12 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 			return tcu::TestStatus::fail(message);
 		}
 
+		if (pgqAvailability != 1)
+		{
+			const std::string message = logPrefix + "pgqAvailability == " + de::toString(pgqAvailability) + ", expected 1";
+			return tcu::TestStatus::fail(message);
+		}
+
 		if (m_parameters.transformFeedback)
 		{
 			if (xfbGenerated != primitivesGenerated * drawCount)
@@ -721,6 +736,12 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate (void)
 			if (xfbWritten != (primitivesGenerated - 3))
 			{
 				const std::string message = logPrefix + "xfbWritten == " + de::toString(xfbWritten) + ", expected " + de::toString(primitivesGenerated - 3);
+				return tcu::TestStatus::fail(message);
+			}
+
+			if (xfbAvailability != 1)
+			{
+				const std::string message = logPrefix + "xfbAvailability == " + de::toString(xfbAvailability) + ", expected 1";
 				return tcu::TestStatus::fail(message);
 			}
 		}
@@ -1106,8 +1127,8 @@ void PrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2* vertices,
 class PrimitivesGeneratedQueryTestCase : public vkt::TestCase
 {
 public:
-							PrimitivesGeneratedQueryTestCase	(tcu::TestContext &context, const char *name, const char *description, const TestParameters& parameters)
-								: TestCase		(context, name, description)
+							PrimitivesGeneratedQueryTestCase	(tcu::TestContext &context, const char *name, const TestParameters& parameters)
+								: TestCase		(context, name)
 								, m_parameters	(parameters)
 							{
 							}
@@ -1342,6 +1363,66 @@ private:
 	const deUint32					firstInstance	= 0u;
 };
 
+// Create a render pass with an initial and final layout of VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL.
+// The load operation will clear the attachment.
+Move<VkRenderPass> makeConstantLayoutRenderPass (const DeviceInterface&				vk,
+												 const VkDevice						device,
+												 const VkFormat						colorFormat)
+{
+	const auto constantLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	const VkAttachmentDescription colorAttachmentDescription =
+	{
+		0u,									// VkAttachmentDescriptionFlags    flags
+		colorFormat,						// VkFormat                        format
+		VK_SAMPLE_COUNT_1_BIT,				// VkSampleCountFlagBits           samples
+		VK_ATTACHMENT_LOAD_OP_CLEAR,		// VkAttachmentLoadOp              loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,		// VkAttachmentStoreOp             storeOp
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,	// VkAttachmentLoadOp              stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,	// VkAttachmentStoreOp             stencilStoreOp
+		constantLayout,						// VkImageLayout                   initialLayout
+		constantLayout						// VkImageLayout                   finalLayout
+	};
+
+	const VkAttachmentReference colorAttachmentRef = makeAttachmentReference(0u, constantLayout);
+
+	const VkSubpassDescription subpassDescription =
+	{
+		0u,									// VkSubpassDescriptionFlags       flags
+		VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint             pipelineBindPoint
+		0u,									// deUint32                        inputAttachmentCount
+		nullptr,							// const VkAttachmentReference*    pInputAttachments
+		1u,									// deUint32                        colorAttachmentCount
+		&colorAttachmentRef,				// const VkAttachmentReference*    pColorAttachments
+		nullptr,							// const VkAttachmentReference*    pResolveAttachments
+		nullptr,							// const VkAttachmentReference*    pDepthStencilAttachment
+		0u,									// deUint32                        preserveAttachmentCount
+		nullptr								// const deUint32*                 pPreserveAttachments
+	};
+
+	const VkRenderPassCreateInfo renderPassInfo =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType                   sType
+		nullptr,									// const void*                       pNext
+		0u,											// VkRenderPassCreateFlags           flags
+		1u,											// deUint32                          attachmentCount
+		&colorAttachmentDescription,				// const VkAttachmentDescription*    pAttachments
+		1u,											// deUint32                          subpassCount
+		&subpassDescription,						// const VkSubpassDescription*       pSubpasses
+		0u,											// deUint32                          dependencyCount
+		nullptr										// const VkSubpassDependency*        pDependencies
+	};
+
+	return createRenderPass(vk, device, &renderPassInfo);
+}
+
+// Transitions the selected subresource range to color attachment optimal.
+void prepareColorAttachment (const DeviceInterface& vkd, const VkCommandBuffer cmdBuffer, const VkImage image, const VkImageSubresourceRange imageSRR)
+{
+	const auto barrier = makeImageMemoryBarrier(0u, 0u, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, image, imageSRR);
+	cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, 0u, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, &barrier);
+}
+
 tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 {
 	const DeviceInterface&			vk					= m_context.getDeviceInterface();
@@ -1385,7 +1466,8 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 	de::MovePtr<Allocation>			colorImageAllocation	= bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any);
 	Move<VkImageView>				colorImageView			= makeImageView(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange);
 
-	const Unique<VkRenderPass>		renderPass			(makeRenderPass(vk, device, colorFormat, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_CLEAR));
+	// By using a constant-layout render pass, we can begin and end the render pass multiple times without layout transition hazards.
+	const Unique<VkRenderPass>		renderPass			(makeConstantLayoutRenderPass(vk, device, colorFormat));
 	const vk::VkClearValue			clearColor			= { { { 0.0f, 0.0f, 0.0f, 0.0f } } };
 	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer(vk, device, *renderPass, *colorImageView, m_imageWidth, m_imageHeight));
 	const Unique<VkPipeline>		pipeline			(ConcurrentPrimitivesGeneratedQueryTestInstance::makeGraphicsPipeline(vk, device, *renderPass));
@@ -1533,16 +1615,37 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 	{
 		cmdBuffer = *primaryCmdBuffer;
 		beginCommandBuffer(vk, cmdBuffer);
+		prepareColorAttachment(vk, cmdBuffer, *colorImage, colorSubresourceRange);
 	}
 
 	if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
 	{
-		beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, *renderPass, *framebuffer);
-		vk.cmdBeginQuery(*secondaryCmdBuffer, *psqPool, 0, queryControlFlags);
+		const VkCommandBufferInheritanceInfo inheritanceInfo =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,	//	VkStructureType					sType;
+			nullptr,											//	const void*						pNext;
+			*renderPass,										//	VkRenderPass					renderPass;
+			0u,													//	deUint32						subpass;
+			*framebuffer,										//	VkFramebuffer					framebuffer;
+			VK_FALSE,											//	VkBool32						occlusionQueryEnable;
+			queryControlFlags,									//	VkQueryControlFlags				queryFlags;
+			psCreateInfo.pipelineStatistics,					//	VkQueryPipelineStatisticFlags	pipelineStatistics;
+		};
+
+		const VkCommandBufferBeginInfo beginInfo =
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,		//	VkStructureType							sType;
+			nullptr,											//	const void*								pNext;
+			VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,	//	VkCommandBufferUsageFlags				flags;
+			&inheritanceInfo,									//	const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+		};
+
+		vk.beginCommandBuffer(*secondaryCmdBuffer, &beginInfo);
+		vk.cmdBeginQueryIndexedEXT(*secondaryCmdBuffer, *pgqPool, 0, queryControlFlags, m_parameters.pgqStreamIndex());
 		vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdBindVertexBuffers(*secondaryCmdBuffer, 0, 1, &vtxBuffer.get(), &vertexBufferOffset);
 		draw(vk, *secondaryCmdBuffer, vertexCount, indirectBuffer->get());
-		vk.cmdEndQuery(*secondaryCmdBuffer, *psqPool, 0);
+		vk.cmdEndQueryIndexedEXT(*secondaryCmdBuffer, *pgqPool, 0, m_parameters.pgqStreamIndex());
 		vk.endCommandBuffer(*secondaryCmdBuffer);
 	}
 
@@ -1664,7 +1767,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 			}
 			else if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
 			{
-				vk.cmdBeginQueryIndexedEXT(cmdBuffer, *pgqPool, 0, queryControlFlags, m_parameters.pgqStreamIndex());
+				vk.cmdBeginQuery(cmdBuffer, *psqPool, 0, queryControlFlags);
 
 				beginRenderPass(vk, cmdBuffer, *renderPass, *framebuffer, makeRect2D(makeExtent2D(m_imageWidth, m_imageHeight)), clearColor, vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 				vk.cmdExecuteCommands(cmdBuffer, 1u, &*secondaryCmdBuffer);
@@ -1674,7 +1777,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 				draw(vk, cmdBuffer, vertexCount, indirectBuffer->get());
 				endRenderPass(vk, cmdBuffer);
 
-				vk.cmdEndQueryIndexedEXT(cmdBuffer, *pgqPool, 0, m_parameters.pgqStreamIndex());
+				vk.cmdEndQuery(cmdBuffer, *psqPool, 0);
 			}
 		}
 	}
@@ -1687,6 +1790,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 	if (secondaryCmdBufferUsed)
 	{
 		vk::beginCommandBuffer(vk, *primaryCmdBuffer);
+		prepareColorAttachment(vk, *primaryCmdBuffer, *colorImage, colorSubresourceRange);
 		vk.cmdResetQueryPool(*primaryCmdBuffer, *pgqPool, 0, pgqQueryCount);
 		if (xfbQueryCount > 0)
 			vk.cmdResetQueryPool(*primaryCmdBuffer, *xfbPool, 0, xfbQueryCount);
@@ -1712,7 +1816,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 		deUint32 pgqDrawCount = 1;
 		if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_TWO_XFB_INSIDE_PGQ)
 			pgqDrawCount = 5;
-		else if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_2 || m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
+		else if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_2)
 			pgqDrawCount = 2;
 		const deUint32 totalPrimitivesGenerated = static_cast<deUint32>(primitivesGenerated * pgqDrawCount);
 
@@ -1779,7 +1883,9 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 			const QueryResults*			psqCounters					= reinterpret_cast<QueryResults*>(psqResults[0].data());
 			const deUint64				inputAssemblyPrimitives		= psqCounters->elements32[0];
 
-			deUint32 drawCount = (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_1) ? 2 : 1;
+			deUint32 drawCount = (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_1 ||
+								  m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
+								 ? 2 : 1;
 
 			if (inputAssemblyPrimitives != primitivesGenerated * drawCount)
 			{
@@ -1789,33 +1895,25 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 		}
 	}
 
-	tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(vk::mapVkFormat(colorFormat), m_imageWidth, m_imageHeight, 1, (const void*)colorOutputBuffer->getAllocation().getHostPtr());
-	for (deUint32 j = 0; j < m_imageHeight; ++j)
-	{
-		for (deUint32 i = 0; i < m_imageWidth; ++i)
-		{
-			const tcu::Vec4 color = resultBuffer.getPixel(i, j).asFloat();
-			bool hasColor = j == 7;
-			if (hasColor)
-			{
-				if (color != tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f))
-				{
-					log << tcu::TestLog::Message << "Color at (" << i << ", " << j << ") is expected to be (0.0, 1.0, 0.0, 1.0), but was (" << color << ")" << tcu::TestLog::EndMessage;
-					return tcu::TestStatus::fail("Fail");
-				}
-			}
-			else
-			{
-				if (color != tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f))
-				{
-					log << tcu::TestLog::Message << "Color at (" << i << ", " << j << ") is expected to be (0.0, 0.0, 0.0, 0.0), but was (" << color << ")" << tcu::TestLog::EndMessage;
-					return tcu::TestStatus::fail("Fail");
-				}
-			}
-		}
-	}
+	const auto tcuFormat	= vk::mapVkFormat(colorFormat);
+	const auto iWidth		= static_cast<int>(m_imageWidth);
+	const auto iHeight		= static_cast<int>(m_imageHeight);
 
-	return tcu::TestStatus::pass("Counters OK");
+	tcu::ConstPixelBufferAccess	resultBuffer	= tcu::ConstPixelBufferAccess(tcuFormat, iWidth, iHeight, 1, colorOutputBuffer->getAllocation().getHostPtr());
+	tcu::TextureLevel			referenceLevel	(tcuFormat, iWidth, iHeight);
+	const auto					referenceAccess	= referenceLevel.getAccess();
+	const tcu::Vec4				bgColor			(0.0f, 0.0f, 0.0f, 0.0f);
+	const tcu::Vec4				geomColor		(0.0f, 1.0f, 0.0f, 1.0f);
+	const tcu::Vec4				threshold		(0.0f, 0.0f, 0.0f, 0.0f);
+	const int					colorRow		= 7;
+
+	tcu::clear(referenceAccess, bgColor);
+	const auto subregion = tcu::getSubregion(referenceAccess, 0, colorRow, iWidth, 1);
+	tcu::clear(subregion, geomColor);
+
+	if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultBuffer, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Color buffer contains unexpected results; check log for details");
+	return tcu::TestStatus::pass("Pass");
 }
 
 void ConcurrentPrimitivesGeneratedQueryTestInstance::draw (const DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, deUint32 vertexCount, vk::VkBuffer indirectBuffer)
@@ -2053,25 +2151,28 @@ void ConcurrentPrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2*
 		}
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
 		{
-			vertices[0] = tcu::Vec2(-1.0f, -0.01f);
-			vertices[1] = tcu::Vec2(-1.0f, -0.01f);
-			vertices[2] = tcu::Vec2(-1.0f, -0.02f);
-			vertices[3] = tcu::Vec2(-1.0f, -0.02f);
-			vertices[4] = tcu::Vec2(-1.0f + 2.0f * step, -0.02f);
-			vertices[5] = tcu::Vec2(-1.0f + 2.0f * step, -0.02f);
+			// A strip of triangles, each pair of them forming a quad, crossing the image from left to right.
+			const auto	quarterRow	= 2.0f / (static_cast<float>(m_imageHeight) * 4.0f);		// In height.
+			const auto	threeQRow	= 3.0f * quarterRow;										// In height.
+			const auto	quadStep	= 2.0f / (static_cast<float>(primitivesGenerated) / 2.0f);	// In width.
+			const float	yCoords[2]	= { -threeQRow, -quarterRow };
 
-			for (deUint32 prim = 1; prim < primitivesGenerated; ++prim)
+			// The first two points on the left edge of the image.
+			vertices[0] = tcu::Vec2(-1.0f, yCoords[0]);
+			vertices[1] = tcu::Vec2(-1.0f, yCoords[0]);
+			vertices[2] = tcu::Vec2(-1.0f, yCoords[1]);
+			vertices[3] = tcu::Vec2(-1.0f, yCoords[1]);
+
+			for (uint32_t primIdx = 0u; primIdx < static_cast<uint32_t>(primitivesGenerated); ++primIdx)
 			{
-				if (prim % 2 == 0)
-				{
-					vertices[5 + prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -0.02f);
-					vertices[5 + prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -0.02f);
-				}
-				else
-				{
-					vertices[5 + prim + 0] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -0.01f);
-					vertices[5 + prim + 1] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, -0.01f);
-				}
+				const auto edgeIdx	= primIdx / 2u;
+				const auto yIDx		= primIdx % 2u;
+				const auto xCoord	= -1.0f + (static_cast<float>(edgeIdx) + 1.0f) * quadStep;
+				const auto yCoord	= yCoords[yIDx];
+				const auto vertIdx	= primIdx + 2u;
+
+				vertices[vertIdx * 2u + 0u] = tcu::Vec2(xCoord, yCoord);	// Vertex.
+				vertices[vertIdx * 2u + 1u] = tcu::Vec2(xCoord, yCoord);	// Adjacency point.
 			}
 			break;
 		}
@@ -2094,8 +2195,8 @@ void ConcurrentPrimitivesGeneratedQueryTestInstance::copyColorImageToBuffer (con
 class ConcurrentPrimitivesGeneratedQueryTestCase : public vkt::TestCase
 {
 public:
-							ConcurrentPrimitivesGeneratedQueryTestCase	(tcu::TestContext &context, const char *name, const char *description, const ConcurrentTestParameters& parameters)
-								: TestCase		(context, name, description)
+							ConcurrentPrimitivesGeneratedQueryTestCase	(tcu::TestContext &context, const char *name, const ConcurrentTestParameters& parameters)
+								: TestCase		(context, name)
 								, m_parameters	(parameters)
 							{
 							}
@@ -2189,10 +2290,27 @@ void ConcurrentPrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollect
 		const std::string	pgqEndCommand	= m_parameters.nonZeroStreams() ? std::string("EndStreamPrimitive(") + de::toString(m_parameters.pgqStreamIndex()) + ")" : "EndPrimitive()";
 		const std::string	xfbEndCommand	= m_parameters.nonZeroStreams() ? std::string("EndStreamPrimitive(") + de::toString(m_parameters.xfbStreamIndex()) + ")" : "EndPrimitive()";
 		std::string			output;
-		if (m_parameters.primitiveTopology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN)
-			output = std::string("    gl_Position = gl_in[0].gl_Position; \n") + (outputPoints ? std::string("    gl_PointSize = 1.0; \n") : std::string());
+
+		if (m_parameters.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY)
+		{
+			output =
+				// Each point will be in the middle X and Y coordinates of each triangle.
+				"    const vec3 xCoords = vec3(gl_in[0].gl_Position.x, gl_in[2].gl_Position.x, gl_in[4].gl_Position.x);\n"
+				"    const vec3 yCoords = vec3(gl_in[0].gl_Position.y, gl_in[2].gl_Position.y, gl_in[4].gl_Position.y);\n"
+				"    const float maxX = max(max(xCoords.x, xCoords.y), xCoords.z);\n"
+				"    const float minX = min(min(xCoords.x, xCoords.y), xCoords.z);\n"
+				"    const float maxY = max(max(yCoords.x, yCoords.y), yCoords.z);\n"
+				"    const float minY = min(min(yCoords.x, yCoords.y), yCoords.z);\n"
+				"    gl_Position = vec4((maxX + minX) / 2.0, (maxY + minY) / 2.0, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);\n"
+				;
+		}
+		else if (m_parameters.primitiveTopology != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN)
+			output = "    gl_Position = gl_in[0].gl_Position;\n";
 		else
-			output = "gl_Position = abs(gl_in[0].gl_Position.y) < abs(gl_in[1].gl_Position.y) ? gl_in[0].gl_Position : gl_in[1].gl_Position; \n";
+			output = "    gl_Position = abs(gl_in[0].gl_Position.y) < abs(gl_in[1].gl_Position.y) ? gl_in[0].gl_Position : gl_in[1].gl_Position;\n";
+
+		if (outputPoints)
+			output += "    gl_PointSize = 1.0;\n";
 
 		std::ostringstream	src;
 
@@ -2263,11 +2381,12 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 	{
 		QueryReadType	type;
 		const char*		name;
-		const char*		desc;
 	} readTypes[] =
 	{
-		{ QUERY_READ_TYPE_GET,	"get",	"Tests for vkGetQueryPoolResults"		},
-		{ QUERY_READ_TYPE_COPY,	"copy",	"Tests for vkCmdCopyQueryPoolResults"	},
+		// Tests for vkGetQueryPoolResults
+		{ QUERY_READ_TYPE_GET,	"get"},
+		// Tests for vkCmdCopyQueryPoolResults
+		{ QUERY_READ_TYPE_COPY,	"copy"},
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(readTypes) == QUERY_READ_TYPE_LAST);
 
@@ -2275,11 +2394,12 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 	{
 		QueryResetType	type;
 		const char*		name;
-		const char*		desc;
 	} resetTypes[] =
 	{
-		{ QUERY_RESET_TYPE_QUEUE,	"queue_reset",	"Tests for vkCmdResetQueryPool"	},
-		{ QUERY_RESET_TYPE_HOST,	"host_reset",	"Tests for vkResetQueryPool"	},
+		// Tests for vkCmdResetQueryPool
+		{ QUERY_RESET_TYPE_QUEUE,	"queue_reset"},
+		// Tests for vkResetQueryPool
+		{ QUERY_RESET_TYPE_HOST,	"host_reset"},
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(resetTypes) == QUERY_RESET_TYPE_LAST);
 
@@ -2287,13 +2407,16 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 	{
 		QueryResultType	type;
 		const char*		name;
-		const char*		desc;
 	} resultTypes[] =
 	{
-		{ QUERY_RESULT_TYPE_32_BIT,			"32bit",				"Tests for default query result size"							},
-		{ QUERY_RESULT_TYPE_64_BIT,			"64bit",				"Tests for VK_QUERY_RESULT_64_BIT"								},
-		{ QUERY_RESULT_TYPE_PGQ_32_XFB_64,	"pgq_32bit_xfb_64bit",	"Tests for PGQ without and XFBQ with VK_QUERY_RESULT_64_BIT"	},
-		{ QUERY_RESULT_TYPE_PGQ_64_XFB_32,	"pgq_64bit_xfb_32bit",	"Tests for PGQ with and XFBQ without VK_QUERY_RESULT_64_BIT"	},
+		// Tests for default query result size
+		{ QUERY_RESULT_TYPE_32_BIT,			"32bit"},
+		// Tests for VK_QUERY_RESULT_64_BIT
+		{ QUERY_RESULT_TYPE_64_BIT,			"64bit"},
+		// Tests for PGQ without and XFBQ with VK_QUERY_RESULT_64_BIT
+		{ QUERY_RESULT_TYPE_PGQ_32_XFB_64,	"pgq_32bit_xfb_64bit"},
+		// Tests for PGQ with and XFBQ without VK_QUERY_RESULT_64_BIT
+		{ QUERY_RESULT_TYPE_PGQ_64_XFB_32,	"pgq_64bit_xfb_32bit"},
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(resultTypes) == QUERY_RESULT_TYPE_LAST);
 
@@ -2301,12 +2424,14 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 	{
 		ShaderStage	stage;
 		const char*	name;
-		const char*	desc;
 	} shaderStages[] =
 	{
-		{ SHADER_STAGE_VERTEX,					"vert",	"Vertex shader tests"					},
-		{ SHADER_STAGE_TESSELLATION_EVALUATION,	"tese",	"Tessellation evaluation shader tests"	},
-		{ SHADER_STAGE_GEOMETRY,				"geom",	"Geometry shader tests"					},
+		// Vertex shader tests
+		{ SHADER_STAGE_VERTEX,					"vert"},
+		// Tessellation evaluation shader tests
+		{ SHADER_STAGE_TESSELLATION_EVALUATION,	"tese"},
+		// Geometry shader tests
+		{ SHADER_STAGE_GEOMETRY,				"geom"},
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(shaderStages) == SHADER_STAGE_LAST);
 
@@ -2314,11 +2439,12 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 	{
 		deBool		enable;
 		const char*	name;
-		const char*	desc;
 	} transformFeedbackStates[] =
 	{
-		{ DE_FALSE,	"no_xfb",	"Tests without transform feedback"											},
-		{ DE_TRUE,	"xfb",		"Tests for comparing PGQ results against transform feedback query results"	},
+		// Tests without transform feedback
+		{ DE_FALSE,	"no_xfb"},
+		// Tests for comparing PGQ results against transform feedback query results
+		{ DE_TRUE,	"xfb"},
 	};
 
 	constexpr struct RastCase
@@ -2326,37 +2452,68 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 		RasterizationCase	type;
 		deBool				dsAttachment;
 		const char*			name;
-		const char*			desc;
 	} rastCases[] =
 	{
-		{ RAST_CASE_DISCARD,						DE_FALSE,	"no_rast",							"Tests with rasterizer discard"																			},
-		{ RAST_CASE_DEFAULT,						DE_FALSE,	"rast",								"Tests without rasterizer discard"																		},
-		{ RAST_CASE_EMPTY_FRAG,						DE_FALSE,	"empty_frag",						"Tests with an empty fragment shader"																	},
-		{ RAST_CASE_NO_ATTACHMENT,					DE_FALSE,	"no_attachment",					"Tests with an attachmentless render pass"																},
-		{ RAST_CASE_COLOR_WRITE_DISABLE_STATIC,		DE_FALSE,	"color_write_disable_static",		"Tests disabling color output using VkPipelineColorWriteCreateInfoEXT"									},
-		{ RAST_CASE_COLOR_WRITE_DISABLE_STATIC,		DE_TRUE,	"color_write_disable_static_ds",	"Tests disabling color output using VkPipelineColorWriteCreateInfoEXT with a depth stencil attachment"	},
-		{ RAST_CASE_COLOR_WRITE_DISABLE_DYNAMIC,	DE_FALSE,	"color_write_disable_dynamic",		"Tests disabling color output using vkCmdSetColorWriteEnableEXT"										},
-		{ RAST_CASE_COLOR_WRITE_DISABLE_DYNAMIC,	DE_TRUE,	"color_write_disable_dynamic_ds",	"Tests disabling color output using vkCmdSetColorWriteEnableEXT with a depth stencil attachment"		},
+		// Tests with rasterizer discard
+		{ RAST_CASE_DISCARD,						DE_FALSE,	"no_rast"},
+		// Tests without rasterizer discard
+		{ RAST_CASE_DEFAULT,						DE_FALSE,	"rast"},
+		// Tests with an empty fragment shader
+		{ RAST_CASE_EMPTY_FRAG,						DE_FALSE,	"empty_frag"},
+		// Tests with an attachmentless render pass
+		{ RAST_CASE_NO_ATTACHMENT,					DE_FALSE,	"no_attachment"},
+		// Tests disabling color output using VkPipelineColorWriteCreateInfoEXT
+		{ RAST_CASE_COLOR_WRITE_DISABLE_STATIC,		DE_FALSE,	"color_write_disable_static"},
+		// Tests disabling color output using VkPipelineColorWriteCreateInfoEXT with a depth stencil attachment
+		{ RAST_CASE_COLOR_WRITE_DISABLE_STATIC,		DE_TRUE,	"color_write_disable_static_ds"},
+		// Tests disabling color output using vkCmdSetColorWriteEnableEXT
+		{ RAST_CASE_COLOR_WRITE_DISABLE_DYNAMIC,	DE_FALSE,	"color_write_disable_dynamic"},
+		// Tests disabling color output using vkCmdSetColorWriteEnableEXT with a depth stencil attachment
+		{ RAST_CASE_COLOR_WRITE_DISABLE_DYNAMIC,	DE_TRUE,	"color_write_disable_dynamic_ds"},
+	};
+
+	static const std::set<RasterizationCase> rasterizationCasesWithAvailability
+	{
+		RAST_CASE_DISCARD,
+		RAST_CASE_DEFAULT,
+		RAST_CASE_NO_ATTACHMENT,
 	};
 
 	constexpr struct Topology
 	{
 		VkPrimitiveTopology	type;
 		const char*			name;
-		const char*			desc;
 	} topologies[] =
 	{
-		{ VK_PRIMITIVE_TOPOLOGY_POINT_LIST,						"point_list",						"Tests for separate point primitives"																		},
-		{ VK_PRIMITIVE_TOPOLOGY_LINE_LIST,						"line_list",						"Tests for separate line primitives"																		},
-		{ VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,						"line_strip",						"Tests for connected line primitives with consecutive lines sharing a vertex"								},
-		{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,					"triangle_list",					"Tests for separate triangle primitives"																	},
-		{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,					"triangle_strip",					"Tests for connected triangle primitives with consecutive triangles sharing an edge"						},
-		{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,					"triangle_fan",						"Tests for connected triangle primitives with all triangles sharing a common vertex"						},
-		{ VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,		"line_list_with_adjacency",			"Tests for separate line primitives with adjacency"															},
-		{ VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY,		"line_strip_with_adjacency",		"Tests for connected line primitives with adjacency, with consecutive primitives sharing three vertices"	},
-		{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,	"triangle_list_with_adjacency",		"Tests for separate triangle primitives with adjacency"														},
-		{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,	"triangle_strip_with_adjacency",	"Tests for connected triangle primitives with adjacency, with consecutive triangles sharing an edge"		},
-		{ VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,						"patch_list",						"Tests for separate patch primitives"																		},
+		// Tests for separate point primitives
+		{ VK_PRIMITIVE_TOPOLOGY_POINT_LIST,						"point_list"},
+		// Tests for separate line primitives
+		{ VK_PRIMITIVE_TOPOLOGY_LINE_LIST,						"line_list"},
+		// Tests for connected line primitives with consecutive lines sharing a vertex
+		{ VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,						"line_strip"},
+		// Tests for separate triangle primitives
+		{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,					"triangle_list"},
+		// Tests for connected triangle primitives with consecutive triangles sharing an edge
+		{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,					"triangle_strip"},
+		// Tests for connected triangle primitives with all triangles sharing a common vertex
+		{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,					"triangle_fan"},
+		// Tests for separate line primitives with adjacency
+		{ VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,		"line_list_with_adjacency"},
+		// Tests for connected line primitives with adjacency, with consecutive primitives sharing three vertices
+		{ VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY,		"line_strip_with_adjacency"},
+		// Tests for separate triangle primitives with adjacency
+		{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,	"triangle_list_with_adjacency"},
+		// Tests for connected triangle primitives with adjacency, with consecutive triangles sharing an edge
+		{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,	"triangle_strip_with_adjacency"},
+		// Tests for separate patch primitives
+		{ VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,						"patch_list"},
+	};
+
+	static const std::set<VkPrimitiveTopology> topologiesWithAvailability
+	{
+		VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+		VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
 	};
 
 	// Tests for vkCmdBeginQueryIndexedEXT and vkCmdEndQueryIndexedEXT.
@@ -2375,11 +2532,12 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 	{
 		CommandBufferCase	type;
 		const char*			name;
-		const char*			desc;
 	} cmdBufCases[] =
 	{
-		{ CMD_BUF_CASE_SINGLE_DRAW,	"single_draw",	"Test single draw call"	},
-		{ CMD_BUF_CASE_TWO_DRAWS,	"two_draws",	"Test two draw calls"	},
+		// Test single draw call
+		{ CMD_BUF_CASE_SINGLE_DRAW,	"single_draw"},
+		// Test two draw calls
+		{ CMD_BUF_CASE_TWO_DRAWS,	"two_draws"},
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(cmdBufCases) == CMD_BUF_CASE_LAST);
 
@@ -2387,22 +2545,23 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 	{
 		uint32_t			queryCount;
 		const char*			nameSuffix;
-		const char*			descSuffix;
 	} queryCountCases[] =
 	{
-		{ 1u,	"",				""					},
-		{ 2u,	"_2_queries",	" using 2 queries"	},
+		{ 1u,	""},
+		//  using 2 queries
+		{ 2u,	"_2_queries"},
 	};
 
 	constexpr struct QueryOrderCase
 	{
 		QueryOrder			order;
 		const char*			name;
-		const char*			desc;
 	} queryOrderCases[] =
 	{
-		{ QUERY_ORDER_PGQ_FIRST,	"pqg_first",	"Test starting primitives generated query first"	},
-		{ QUERY_ORDER_XFBQ_FIRST,	"xfbq_first",	"Test starting transform feedback query first"		},
+		// Test starting primitives generated query first
+		{ QUERY_ORDER_PGQ_FIRST,	"pqg_first"},
+		// Test starting transform feedback query first
+		{ QUERY_ORDER_XFBQ_FIRST,	"xfbq_first"},
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(queryOrderCases) == QUERY_ORDER_LAST);
 
@@ -2410,12 +2569,14 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 	{
 		OutsideDraw			outsideDraw;
 		const char*			name;
-		const char*			desc;
 	} outsideDrawCases[] =
 	{
-		{ OUTSIDE_DRAW_NONE,		"none",			"Test without draws outside of active queries" },
-		{ OUTSIDE_DRAW_BEFORE,		"before",		"Test with draws before active queries" },
-		{ OUTSIDE_DRAW_AFTER,		"after",		"Test with draw after active queries" },
+		// Test without draws outside of active queries
+		{ OUTSIDE_DRAW_NONE,		"none"},
+		// Test with draws before active queries
+		{ OUTSIDE_DRAW_BEFORE,		"before"},
+		// Test with draw after active queries
+		{ OUTSIDE_DRAW_AFTER,		"after"},
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(outsideDrawCases) == OUTSIDE_DRAW_LAST);
 
@@ -2423,23 +2584,23 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 
 	for (const ReadType& read : readTypes)
 	{
-		de::MovePtr<tcu::TestCaseGroup> readGroup(new tcu::TestCaseGroup(testCtx, read.name, read.desc));
+		de::MovePtr<tcu::TestCaseGroup> readGroup(new tcu::TestCaseGroup(testCtx, read.name));
 
 		for (const ResetType& reset : resetTypes)
 		{
-			de::MovePtr<tcu::TestCaseGroup> resetGroup(new tcu::TestCaseGroup(testCtx, reset.name, reset.desc));
+			de::MovePtr<tcu::TestCaseGroup> resetGroup(new tcu::TestCaseGroup(testCtx, reset.name));
 
 			for (const ResultTypes& result : resultTypes)
 			{
-				de::MovePtr<tcu::TestCaseGroup> resultGroup(new tcu::TestCaseGroup(testCtx, result.name, result.desc));
+				de::MovePtr<tcu::TestCaseGroup> resultGroup(new tcu::TestCaseGroup(testCtx, result.name));
 
 				for (const Shader& shader : shaderStages)
 				{
-					de::MovePtr<tcu::TestCaseGroup> shaderGroup(new tcu::TestCaseGroup(testCtx, shader.name, shader.desc));
+					de::MovePtr<tcu::TestCaseGroup> shaderGroup(new tcu::TestCaseGroup(testCtx, shader.name));
 
 					for (const TransformFeedbackState& xfbState : transformFeedbackStates)
 					{
-						de::MovePtr<tcu::TestCaseGroup> xfbGroup(new tcu::TestCaseGroup(testCtx, xfbState.name, xfbState.desc));
+						de::MovePtr<tcu::TestCaseGroup> xfbGroup(new tcu::TestCaseGroup(testCtx, xfbState.name));
 
 						// Only test multiple result types with XFB enabled.
 						if ((result.type == QUERY_RESULT_TYPE_PGQ_32_XFB_64 || result.type == QUERY_RESULT_TYPE_PGQ_64_XFB_32) && !xfbState.enable)
@@ -2447,7 +2608,7 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 
 						for (const RastCase& rastCase : rastCases)
 						{
-							de::MovePtr<tcu::TestCaseGroup> rastGroup(new tcu::TestCaseGroup(testCtx, rastCase.name, rastCase.desc));
+							de::MovePtr<tcu::TestCaseGroup> rastGroup(new tcu::TestCaseGroup(testCtx, rastCase.name));
 
 							// Skip uninteresting cases
 							if ((rastCase.type > RAST_CASE_DISCARD)
@@ -2460,7 +2621,7 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 
 							for (const Topology& topology : topologies)
 							{
-								de::MovePtr<tcu::TestCaseGroup> topologyGroup(new tcu::TestCaseGroup(testCtx, topology.name, topology.desc));
+								de::MovePtr<tcu::TestCaseGroup> topologyGroup(new tcu::TestCaseGroup(testCtx, topology.name));
 
 								// Only test patch lists with tessellation shaders.
 								if ((topology.type == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST && shader.stage != SHADER_STAGE_TESSELLATION_EVALUATION) ||
@@ -2483,7 +2644,7 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 										const std::string			pgqDescStr		= std::string("PGQ on ") + (pgqDefault ? "default " : "") + std::string("vertex stream ") + (pgqDefault ? "" : pgqStream.name);
 										const std::string			xfbDescStr		= std::string("XFB on ") + (xfbDefault ? "default " : "") + std::string("vertex stream ") + (xfbDefault ? "" : xfbStream.name);
 										const std::string			streamGroupDesc	= std::string("Tests for ") + pgqDescStr + (xfbState.enable ? (std::string(" and ") + xfbDescStr) : "");
-										de::MovePtr<tcu::TestCaseGroup>	streamGroup(new tcu::TestCaseGroup(testCtx, streamGroupName.c_str(), streamGroupDesc.c_str()));
+										de::MovePtr<tcu::TestCaseGroup>	streamGroup(new tcu::TestCaseGroup(testCtx, streamGroupName.c_str()));
 
 										// Only test nondefault vertex streams with geometry shaders.
 										if ((pgqStream.index != VERTEX_STREAM_DEFAULT || xfbStream.index != VERTEX_STREAM_DEFAULT) && shader.stage != SHADER_STAGE_GEOMETRY)
@@ -2495,40 +2656,53 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 
 										for (const CmdBufCase& cmdBufCase : cmdBufCases)
 										{
-											de::MovePtr<tcu::TestCaseGroup>	cmdBufGroup(new tcu::TestCaseGroup(testCtx, cmdBufCase.name, cmdBufCase.desc));
+											de::MovePtr<tcu::TestCaseGroup>	cmdBufGroup(new tcu::TestCaseGroup(testCtx, cmdBufCase.name));
 
 											for (const QueryOrderCase& queryOrderCase : queryOrderCases)
 											{
 												if (queryOrderCase.order == QUERY_ORDER_XFBQ_FIRST && xfbState.enable == DE_FALSE)
 													continue;
 
-												de::MovePtr<tcu::TestCaseGroup>	queryOrderGroup(new tcu::TestCaseGroup(testCtx, queryOrderCase.name, queryOrderCase.desc));
+												de::MovePtr<tcu::TestCaseGroup>	queryOrderGroup(new tcu::TestCaseGroup(testCtx, queryOrderCase.name));
 												for (const OutsideDrawCase& outSideDrawCase : outsideDrawCases)
 												{
 													for (const auto& countCase : queryCountCases)
 													{
-														const TestParameters	parameters =
+														for (const auto availabilityBit : { false, true})
 														{
-															read.type,						// QueryReadType		queryReadType
-															reset.type,						// QueryResetType		queryResetType
-															result.type,					// QueryResultType		queryResultType
-															shader.stage,					// ShaderStage			shaderStage
-															xfbState.enable,				// deBool				transformFeedback
-															rastCase.type,					// RasterizationCase	rastCase
-															rastCase.dsAttachment,			// deBool				depthStencilAttachment
-															topology.type,					// VkPrimitiveTopology	primitiveTopology
-															pgqStream.index,				// VertexStreamIndex	pgqStreamIndex
-															xfbStream.index,				// VertexStreamIndex	xfbStreamIndex
-															cmdBufCase.type,				// CommandBufferCase	cmdBufCase
-															countCase.queryCount,			// const uint32_t		queryCount
-															queryOrderCase.order,			// QueryOrder			queryOrder
-															outSideDrawCase.outsideDraw,	// OutsideDraw			outsideDraw
-														};
+															if (availabilityBit && topologiesWithAvailability.count(topology.type) == 0)
+																continue;
 
-														const auto name = std::string(outSideDrawCase.name) + countCase.nameSuffix;
-														const auto desc = std::string(outSideDrawCase.desc) + countCase.descSuffix;
+															if (availabilityBit && rasterizationCasesWithAvailability.count(rastCase.type) == 0)
+																continue;
 
-														queryOrderGroup->addChild(new PrimitivesGeneratedQueryTestCase(testCtx, name.c_str(), desc.c_str(), parameters));
+															if (availabilityBit && cmdBufCase.type != CMD_BUF_CASE_SINGLE_DRAW)
+																continue;
+
+															const TestParameters	parameters =
+															{
+																read.type,						// QueryReadType		queryReadType
+																reset.type,						// QueryResetType		queryResetType
+																result.type,					// QueryResultType		queryResultType
+																shader.stage,					// ShaderStage			shaderStage
+																xfbState.enable,				// deBool				transformFeedback
+																rastCase.type,					// RasterizationCase	rastCase
+																rastCase.dsAttachment,			// deBool				depthStencilAttachment
+																topology.type,					// VkPrimitiveTopology	primitiveTopology
+																pgqStream.index,				// VertexStreamIndex	pgqStreamIndex
+																xfbStream.index,				// VertexStreamIndex	xfbStreamIndex
+																cmdBufCase.type,				// CommandBufferCase	cmdBufCase
+																countCase.queryCount,			// const uint32_t		queryCount
+																queryOrderCase.order,			// QueryOrder			queryOrder
+																outSideDrawCase.outsideDraw,	// OutsideDraw			outsideDraw
+																availabilityBit,				// const bool			availabilityBit
+															};
+
+															const auto availabilityNameSuffix = (availabilityBit ? "_with_availability" : "");
+															const auto name = std::string(outSideDrawCase.name) + countCase.nameSuffix + availabilityNameSuffix;
+
+															queryOrderGroup->addChild(new PrimitivesGeneratedQueryTestCase(testCtx, name.c_str(), parameters));
+														}
 													}
 												}
 
@@ -2567,15 +2741,14 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 	{
 		ConcurrentTestType	type;
 		const char*			name;
-		const char*			desc;
 	}
 	concurrentTestTypeCases[] =
 	{
-		{ CONCURRENT_TEST_TYPE_TWO_XFB_INSIDE_PGQ,			"two_xfbq_inside_pgq",			"Test two transfer feedback queries inside a primitive generated query" },
-		{ CONCURRENT_TEST_TYPE_PGQ_SECONDARY_CMD_BUFFER,	"pgq_secondary_cmd_buffers",	"Test primitive generated query in secondary command buffers"			},
-		{ CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_1,		"pipeline_statistics_1",		"Test primitive generated query with pipeline statistics query"			},
-		{ CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_2,		"pipeline_statistics_2",		"Test primitive generated query with pipeline statistics query"			},
-		{ CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3,		"pipeline_statistics_3",		"Test primitive generated query with pipeline statistics query"			},
+		{ CONCURRENT_TEST_TYPE_TWO_XFB_INSIDE_PGQ,			"two_xfbq_inside_pgq"},
+		{ CONCURRENT_TEST_TYPE_PGQ_SECONDARY_CMD_BUFFER,	"pgq_secondary_cmd_buffers"},
+		{ CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_1,		"pipeline_statistics_1"},
+		{ CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_2,		"pipeline_statistics_2"},
+		{ CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3,		"pipeline_statistics_3"},
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(concurrentTestTypeCases) == CONCURRENT_TEST_TYPE_LAST);
 
@@ -2584,22 +2757,21 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 	{
 		bool		indirect;
 		const char* name;
-		const char* desc;
 	}
 	drawTypeCases[] =
 	{
-		{ false,	"draw",		"cmdDraw"			},
-		{ true,		"indirect",	"cmdDrawIndirect"	},
+		{ false,	"draw"},
+		{ true,		"indirect"},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> concurrentGroup(new tcu::TestCaseGroup(testCtx, "concurrent", "Test running concurrent queries"));
+	de::MovePtr<tcu::TestCaseGroup> concurrentGroup(new tcu::TestCaseGroup(testCtx, "concurrent"));
 
 	for (const ConcurrentTestTypeCase& concurrentTestType : concurrentTestTypeCases)
 	{
-		de::MovePtr<tcu::TestCaseGroup> concurrentTypeGroup(new tcu::TestCaseGroup(testCtx, concurrentTestType.name, concurrentTestType.desc));
+		de::MovePtr<tcu::TestCaseGroup> concurrentTypeGroup(new tcu::TestCaseGroup(testCtx, concurrentTestType.name));
 		for (const ResultTypes& result : resultTypes)
 		{
-			de::MovePtr<tcu::TestCaseGroup> resultGroup(new tcu::TestCaseGroup(testCtx, result.name, result.desc));
+			de::MovePtr<tcu::TestCaseGroup> resultGroup(new tcu::TestCaseGroup(testCtx, result.name));
 
 			for (const Topology& topology : topologies)
 			{
@@ -2607,7 +2779,7 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 				if (topology.type == vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
 					continue;
 
-				de::MovePtr<tcu::TestCaseGroup> topologyGroup(new tcu::TestCaseGroup(testCtx, topology.name, topology.desc));
+				de::MovePtr<tcu::TestCaseGroup> topologyGroup(new tcu::TestCaseGroup(testCtx, topology.name));
 
 				for (const DrawTypeCase& draw : drawTypeCases)
 				{
@@ -2627,7 +2799,7 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 						draw.indirect,					// bool					indirect
 					};
 
-					topologyGroup->addChild(new ConcurrentPrimitivesGeneratedQueryTestCase(testCtx, draw.name, draw.desc, parameters));
+					topologyGroup->addChild(new ConcurrentPrimitivesGeneratedQueryTestCase(testCtx, draw.name, parameters));
 				}
 
 				resultGroup->addChild(topologyGroup.release());
@@ -2645,7 +2817,7 @@ void testGenerator (tcu::TestCaseGroup* pgqGroup)
 
 tcu::TestCaseGroup* createPrimitivesGeneratedQueryTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "primitives_generated_query", "Primitives Generated Query Tests", testGenerator);
+	return createTestGroup(testCtx, "primitives_generated_query", testGenerator);
 }
 
 } // TransformFeedback

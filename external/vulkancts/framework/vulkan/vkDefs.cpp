@@ -40,6 +40,12 @@ static bool isOutOfMemoryError (VkResult result)
 		   result == VK_ERROR_OUT_OF_HOST_MEMORY;
 }
 
+Error::Error (VkResult error, const char* message, const char* expr, const char* file, int line, qpTestResult result)
+        : tcu::TestError	(message, expr, file, line, result)
+        , m_error			(error)
+{
+}
+
 Error::Error (VkResult error, const char* message, const char* expr, const char* file, int line)
 	: tcu::TestError	(message, expr, file, line)
 	, m_error			(error)
@@ -103,6 +109,8 @@ static void checkResult (VkResult result, const char* msg, const char* file, int
 
 		if (isOutOfMemoryError(result))
 			throw OutOfMemoryError(result, msgStr.str().c_str(), DE_NULL, file, line);
+		else if (result == VK_ERROR_DEVICE_LOST)
+			throw Error(result, msgStr.str().c_str(), DE_NULL, file, line, QP_TEST_RESULT_DEVICE_LOST);
 		else
 			throw ERROR(result, msgStr.str().c_str(), DE_NULL, file, line);
 	}

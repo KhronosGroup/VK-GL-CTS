@@ -224,7 +224,7 @@ struct DeviceHelper
 														 requireSwapchainMaintenance1,
 														 requireDeviceGroup,
 														 context.getTestContext().getCommandLine().isValidationEnabled()))
-		, vkd						(context.getPlatformInterface(), instance, *device)
+		, vkd						(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
 		, queue						(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}
@@ -625,17 +625,17 @@ deUint32 getIterations(std::vector<VkPresentModeKHR> presentModes,
 		}
 	}
 
-	// Return an iteration count that is as high as possible while keeping the test time reasonable.
+	// Return an iteration count that is as high as possible while keeping the test time and memory usage reasonable.
 	//
 	// - If FIFO is used, limit to 120 (~2s on 60Hz)
-	// - Else, if immediate/mailbox is used, limit to 3000
-	// - Else, if shared is used, limit to 5000
+	// - Else, limit to 1000
 
 	if (hasFifo)
 		return testResizesWindowsFrequently ? 60 : 120;
 
 	(void)hasShared;
-	deUint32 iterations = hasNoVsync ? 3000 : 5000;
+	(void)hasNoVsync;
+	deUint32 iterations = 1000;
 
 	// If the test resizes windows frequently, reduce the testing time as that's a very slow operation.
 	if (testResizesWindowsFrequently)
@@ -1046,7 +1046,7 @@ tcu::TestStatus presentFenceTest(Context& context, const PresentFenceTestConfig 
 				// Check previous presents; if any is signaled, immediatey destroy its wait semaphore
 				while (nextUnfinishedPresent[j] < i)
 				{
-					if (vkd.getFenceStatus(device, **presentFences[nextUnfinishedPresent[j] * surfaceCount + j]) != VK_NOT_READY)
+					if (vkd.getFenceStatus(device, **presentFences[nextUnfinishedPresent[j] * surfaceCount + j]) == VK_NOT_READY)
 						break;
 
 					presentSems[nextUnfinishedPresent[j]].clear();
@@ -1105,7 +1105,7 @@ void populatePresentFenceGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 
 	for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name, presentModes[presentModeNdx].name));
+		de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name));
 
 		PresentFenceTestConfig			config;
 		config.wsiType					= wsiType;
@@ -1115,19 +1115,23 @@ void populatePresentFenceGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 		config.changePresentModes		= false;
 		config.verifyFenceOrdering		= false;
 
-		addFunctionCase(&*presentModeGroup, "basic", "Basic present fence test", presentFenceTest, config);
+		// Basic present fence test
+		addFunctionCase(&*presentModeGroup, "basic", presentFenceTest, config);
 
 		config.verifyFenceOrdering		= true;
-		addFunctionCase(&*presentModeGroup, "ordering", "Test ordering guarantee of present fence signals", presentFenceTest, config);
+		// Test ordering guarantee of present fence signals
+		addFunctionCase(&*presentModeGroup, "ordering", presentFenceTest, config);
 
 		if (canDoMultiSwapchainPresent(wsiType))
 		{
 			config.verifyFenceOrdering		= false;
 			config.modes					= std::vector<VkPresentModeKHR>(3, presentModes[presentModeNdx].mode);
-			addFunctionCase(&*presentModeGroup, "multi_swapchain", "Present fence test with multiple swapchains", presentFenceTest, config);
+			// Present fence test with multiple swapchains
+			addFunctionCase(&*presentModeGroup, "multi_swapchain", presentFenceTest, config);
 
 			config.verifyFenceOrdering		= true;
-			addFunctionCase(&*presentModeGroup, "mult_swapchain_ordering", "Test ordering guarantee of present fence signals with multiple swapchains", presentFenceTest, config);
+			// Test ordering guarantee of present fence signals with multiple swapchains
+			addFunctionCase(&*presentModeGroup, "mult_swapchain_ordering", presentFenceTest, config);
 		}
 
 		testGroup->addChild(presentModeGroup.release());
@@ -1312,14 +1316,15 @@ void populatePresentModesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 
 	for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name, presentModes[presentModeNdx].name));
+		de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name));
 
 		{
 			PresentModesTestConfig		config;
 			config.wsiType				= wsiType;
 			config.mode					= presentModes[presentModeNdx].mode;
 
-			addFunctionCase(&*presentModeGroup, "query", "Query compatible present modes", presentModesQueryTest, config);
+			// Query compatible present modes
+			addFunctionCase(&*presentModeGroup, "query", presentModesQueryTest, config);
 		}
 
 		{
@@ -1331,18 +1336,21 @@ void populatePresentModesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 			config.changePresentModes		= true;
 			config.verifyFenceOrdering		= false;
 
-			addFunctionCase(&*presentModeGroup, "change_modes", "Switch between compatible modes", presentFenceTest, config);
+			// Switch between compatible modes
+			addFunctionCase(&*presentModeGroup, "change_modes", presentFenceTest, config);
 
 			if (canDoMultiSwapchainPresent(wsiType))
 			{
 				config.modes					= std::vector<VkPresentModeKHR>(4, presentModes[presentModeNdx].mode);
 
-				addFunctionCase(&*presentModeGroup, "change_modes_multi_swapchain", "Switch between compatible modes with multiple swapchains", presentFenceTest, config);
+				// Switch between compatible modes with multiple swapchains
+				addFunctionCase(&*presentModeGroup, "change_modes_multi_swapchain", presentFenceTest, config);
 
 				config.modes					= std::vector<VkPresentModeKHR>(2, presentModes[presentModeNdx].mode);
 				config.deferMemoryAllocation	= true;
 
-				addFunctionCase(&*presentModeGroup, "change_modes_with_deferred_alloc", "Switch between compatible modes while swapchain uses deferred allocation", presentFenceTest, config);
+				// Switch between compatible modes while swapchain uses deferred allocation
+				addFunctionCase(&*presentModeGroup, "change_modes_with_deferred_alloc", presentFenceTest, config);
 			}
 		}
 
@@ -1351,7 +1359,8 @@ void populatePresentModesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 
 	if (canDoMultiSwapchainPresent(wsiType))
 	{
-		de::MovePtr<tcu::TestCaseGroup>	heterogenousGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), "heterogenous", "Switch between compatible modes with multiple swapchains in different modes"));
+		// Switch between compatible modes with multiple swapchains in different modes
+		de::MovePtr<tcu::TestCaseGroup>	heterogenousGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), "heterogenous"));
 
 		std::vector<VkPresentModeKHR>	modes(3);
 		for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(presentModes); i++)
@@ -1382,7 +1391,7 @@ void populatePresentModesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 					config.changePresentModes		= true;
 					config.verifyFenceOrdering		= false;
 
-					addFunctionCase(&*heterogenousGroup, testName, testName, presentFenceTest, config);
+					addFunctionCase(&*heterogenousGroup, testName, presentFenceTest, config);
 				}
 			}
 		}
@@ -1807,22 +1816,25 @@ void populateScalingTests (tcu::TestCaseGroup *testGroup, Type wsiType, bool res
 
 	for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name, presentModes[presentModeNdx].name));
+		de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name));
 
 		{
 			ScalingQueryTestConfig	config;
 			config.wsiType			= wsiType;
 			config.mode				= presentModes[presentModeNdx].mode;
 
-			de::MovePtr<tcu::TestCaseGroup>	queryGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), "query", "Query supported scaling modes"));
-			addFunctionCase(&*queryGroup, "basic", "Basic test", scalingQueryTest, config);
-			addFunctionCase(&*queryGroup, "verify_compatible_present_modes", "Verify compatible present modes have the same scaling capabilities", scalingQueryCompatibleModesTest, config);
+			// Query supported scaling modes
+			de::MovePtr<tcu::TestCaseGroup>	queryGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), "query"));
+			// Basic test
+			addFunctionCase(&*queryGroup, "basic", scalingQueryTest, config);
+			// Verify compatible present modes have the same scaling capabilities
+			addFunctionCase(&*queryGroup, "verify_compatible_present_modes", scalingQueryCompatibleModesTest, config);
 			presentModeGroup->addChild(queryGroup.release());
 		}
 
 		for (size_t scalingFlagNdx = 0; scalingFlagNdx < DE_LENGTH_OF_ARRAY(scalingFlags); scalingFlagNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	scalingFlagGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), scalingFlags[scalingFlagNdx].name, scalingFlags[scalingFlagNdx].name));
+			de::MovePtr<tcu::TestCaseGroup>	scalingFlagGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), scalingFlags[scalingFlagNdx].name));
 
 			const bool isStretch = scalingFlags[scalingFlagNdx].scaling == VK_PRESENT_SCALING_STRETCH_BIT_EXT;
 
@@ -1834,7 +1846,7 @@ void populateScalingTests (tcu::TestCaseGroup *testGroup, Type wsiType, bool res
 					testName									+= "_";
 					testName									+= gravityFlags[gravityFlagYNdx].name;
 
-					de::MovePtr<tcu::TestCaseGroup>	gravityFlagsGroup	(new tcu::TestCaseGroup(scalingFlagGroup->getTestContext(), testName.c_str(), testName.c_str()));
+					de::MovePtr<tcu::TestCaseGroup>	gravityFlagsGroup	(new tcu::TestCaseGroup(scalingFlagGroup->getTestContext(), testName.c_str()));
 
 					ScalingTestConfig		config;
 					config.wsiType			= wsiType;
@@ -1849,33 +1861,42 @@ void populateScalingTests (tcu::TestCaseGroup *testGroup, Type wsiType, bool res
 					// Gravity does not apply to stretch
 					de::MovePtr<tcu::TestCaseGroup> *group = isStretch ? &scalingFlagGroup : &gravityFlagsGroup;
 
-					addFunctionCase(&**group, "same_size_and_aspect", "Basic test without actual scaling", scalingTest, config);
+					// Basic test without actual scaling
+					addFunctionCase(&**group, "same_size_and_aspect", scalingTest, config);
 
 					config.size				= SwapchainWindowSize::SwapchainBigger;
-					addFunctionCase(&**group, "swapchain_bigger_same_aspect", "Swapchain is bigger than window, but has same aspect", scalingTest, config);
+					// Swapchain is bigger than window, but has same aspect
+					addFunctionCase(&**group, "swapchain_bigger_same_aspect", scalingTest, config);
 
 					config.size				= SwapchainWindowSize::SwapchainSmaller;
-					addFunctionCase(&**group, "swapchain_smaller_same_aspect", "Swapchain is smaller than window, but has same aspect", scalingTest, config);
+					// Swapchain is smaller than window, but has same aspect
+					addFunctionCase(&**group, "swapchain_smaller_same_aspect", scalingTest, config);
 
 					config.size				= SwapchainWindowSize::Identical;
 					config.aspect			= SwapchainWindowAspect::SwapchainTaller;
-					addFunctionCase(&**group, "swapchain_taller", "Swapchain has same width, but is taller than window", scalingTest, config);
+					// Swapchain has same width, but is taller than window
+					addFunctionCase(&**group, "swapchain_taller", scalingTest, config);
 
 					config.size				= SwapchainWindowSize::SwapchainBigger;
-					addFunctionCase(&**group, "swapchain_bigger_taller_aspect", "Swapchain is bigger than window, and is taller in aspect ratio", scalingTest, config);
+					// Swapchain is bigger than window, and is taller in aspect ratio
+					addFunctionCase(&**group, "swapchain_bigger_taller_aspect", scalingTest, config);
 
 					config.size				= SwapchainWindowSize::SwapchainSmaller;
-					addFunctionCase(&**group, "swapchain_smaller_taller_aspect", "Swapchain is smaller than window, but is taller in aspect ratio", scalingTest, config);
+					// Swapchain is smaller than window, but is taller in aspect ratio
+					addFunctionCase(&**group, "swapchain_smaller_taller_aspect", scalingTest, config);
 
 					config.size				= SwapchainWindowSize::Identical;
 					config.aspect			= SwapchainWindowAspect::SwapchainWider;
-					addFunctionCase(&**group, "swapchain_wider", "Swapchain has same height, but is wider than window", scalingTest, config);
+					// Swapchain has same height, but is wider than window
+					addFunctionCase(&**group, "swapchain_wider", scalingTest, config);
 
 					config.size				= SwapchainWindowSize::SwapchainBigger;
-					addFunctionCase(&**group, "swapchain_bigger_wider_aspect", "Swapchain is bigger than window, and is wider in aspect ratio", scalingTest, config);
+					// Swapchain is bigger than window, and is wider in aspect ratio
+					addFunctionCase(&**group, "swapchain_bigger_wider_aspect", scalingTest, config);
 
 					config.size				= SwapchainWindowSize::SwapchainSmaller;
-					addFunctionCase(&**group, "swapchain_smaller_wider_aspect", "Swapchain is smaller than window, but is wider in aspect ratio", scalingTest, config);
+					// Swapchain is smaller than window, but is wider in aspect ratio
+					addFunctionCase(&**group, "swapchain_smaller_wider_aspect", scalingTest, config);
 
 					if (isStretch)
 					{
@@ -1902,7 +1923,7 @@ void populateScalingGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 {
 	populateScalingTests(testGroup, wsiType, false);
 
-	de::MovePtr<tcu::TestCaseGroup>	resizeWindowGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), "resize_window", "Resize the window instead of creating the swapchain with a different size"));
+	de::MovePtr<tcu::TestCaseGroup>	resizeWindowGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), "resize_window"));
 	populateScalingTests(&*resizeWindowGroup, wsiType, true);
 	testGroup->addChild(resizeWindowGroup.release());
 }
@@ -1925,7 +1946,7 @@ void populateDeferredAllocGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 
 	for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name, presentModes[presentModeNdx].name));
+		de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name));
 
 		PresentFenceTestConfig			config;
 		config.wsiType					= wsiType;
@@ -1935,21 +1956,24 @@ void populateDeferredAllocGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 		config.changePresentModes		= false;
 		config.verifyFenceOrdering		= false;
 
-		addFunctionCase(&*presentModeGroup, "basic", "Basic deferred allocation test", presentFenceTest, config);
+		// Basic deferred allocation test
+		addFunctionCase(&*presentModeGroup, "basic", presentFenceTest, config);
 
 		config.bindImageMemory			= true;
 
 		// Bind image memory + shared present mode crashing on some drivers for unrelated reasons to VK_EXT_swapchain_maintenance1.  Will enable this test separately.
 		if (presentModes[presentModeNdx].mode != VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR && presentModes[presentModeNdx].mode != VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR)
 		{
-			addFunctionCase(&*presentModeGroup, "bind_image", "Bind image with VkBindImageMemorySwapchainInfoKHR", presentFenceTest, config);
+			// Bind image with VkBindImageMemorySwapchainInfoKHR
+			addFunctionCase(&*presentModeGroup, "bind_image", presentFenceTest, config);
 		}
 
 		if (canDoMultiSwapchainPresent(wsiType))
 		{
 			config.modes					= std::vector<VkPresentModeKHR>(2, presentModes[presentModeNdx].mode);
 
-			addFunctionCase(&*presentModeGroup, "bind_image_multi_swapchain", "Bind image with VkBindImageMemorySwapchainInfoKHR with multiple swapchains", presentFenceTest, config);
+			// Bind image with VkBindImageMemorySwapchainInfoKHR with multiple swapchains
+			addFunctionCase(&*presentModeGroup, "bind_image_multi_swapchain", presentFenceTest, config);
 		}
 
 		testGroup->addChild(presentModeGroup.release());
@@ -2310,11 +2334,11 @@ void populateReleaseImagesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 
 	for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name, presentModes[presentModeNdx].name));
+		de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name));
 
 		for (size_t scalingFlagNdx = 0; scalingFlagNdx < DE_LENGTH_OF_ARRAY(scalingFlags); scalingFlagNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	scalingFlagGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), scalingFlags[scalingFlagNdx].name, scalingFlags[scalingFlagNdx].name));
+			de::MovePtr<tcu::TestCaseGroup>	scalingFlagGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), scalingFlags[scalingFlagNdx].name));
 
 			ReleaseImagesTestConfig			config;
 			config.wsiType					= wsiType;
@@ -2324,20 +2348,25 @@ void populateReleaseImagesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 			config.releaseBeforePresent		= false;
 			config.releaseBeforeRetire		= false;
 
-			addFunctionCase(&*scalingFlagGroup, "basic", "Basic release acquired images test", releaseImagesTest, config);
+			// Basic release acquired images test
+			addFunctionCase(&*scalingFlagGroup, "basic", releaseImagesTest, config);
 
 			config.releaseBeforePresent		= true;
-			addFunctionCase(&*scalingFlagGroup, "release_before_present", "Basic release acquired images test where release happens before presenting an image", releaseImagesTest, config);
+			// Basic release acquired images test where release happens before presenting an image
+			addFunctionCase(&*scalingFlagGroup, "release_before_present", releaseImagesTest, config);
 
 			config.releaseBeforePresent		= false;
 			config.resizeWindow				= ResizeWindow::BeforeAcquire;
-			addFunctionCase(&*scalingFlagGroup, "resize_window", "Release acquired images after a window resize before acquire", releaseImagesTest, config);
+			// Release acquired images after a window resize before acquire
+			addFunctionCase(&*scalingFlagGroup, "resize_window", releaseImagesTest, config);
 
 			config.resizeWindow				= ResizeWindow::BeforePresent;
-			addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire", "Release acquired images after a window resize after acquire", releaseImagesTest, config);
+			// Release acquired images after a window resize after acquire
+			addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire", releaseImagesTest, config);
 
 			config.releaseBeforeRetire		= true;
-			addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire_release_before_retire", "Release acquired images after a window resize after acquire, but release the images before retiring the swapchain", releaseImagesTest, config);
+			// Release acquired images after a window resize after acquire, but release the images before retiring the swapchain
+			addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire_release_before_retire", releaseImagesTest, config);
 
 			presentModeGroup->addChild(scalingFlagGroup.release());
 		}
@@ -2350,11 +2379,16 @@ void populateReleaseImagesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 
 void createMaintenance1Tests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	addTestGroup(testGroup, "present_fence",			"Present fence",				populatePresentFenceGroup,	wsiType);
-	addTestGroup(testGroup, "present_modes",			"Change present modes",			populatePresentModesGroup,	wsiType);
-	addTestGroup(testGroup, "scaling",					"Scaling and gravity",			populateScalingGroup,		wsiType);
-	addTestGroup(testGroup, "deferred_alloc",			"Deferred allocation",			populateDeferredAllocGroup,	wsiType);
-	addTestGroup(testGroup, "release_images",			"Release acquired images",		populateReleaseImagesGroup,	wsiType);
+	// Present fence
+	addTestGroup(testGroup, "present_fence", populatePresentFenceGroup,	wsiType);
+	// Change present modes
+	addTestGroup(testGroup, "present_modes", populatePresentModesGroup,	wsiType);
+	// Scaling and gravity
+	addTestGroup(testGroup, "scaling", populateScalingGroup,		wsiType);
+	// Deferred allocation
+	addTestGroup(testGroup, "deferred_alloc", populateDeferredAllocGroup,	wsiType);
+	// Release acquired images
+	addTestGroup(testGroup, "release_images", populateReleaseImagesGroup,	wsiType);
 }
 
 } // wsi

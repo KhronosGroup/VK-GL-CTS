@@ -277,6 +277,9 @@ public:
 	//! Should the run be terminated on first failure (--deqp-terminate-on-fail)
 	bool							isTerminateOnFailEnabled	(void) const;
 
+	//! Should the run be terminated on first device lost (--deqp-terminate-on-device-lost)
+	bool							isTerminateOnDeviceLostEnabled	(void) const;
+
 	//! Start as subprocess ( Vulkan SC )
 	bool							isSubProcess				(void) const;
 

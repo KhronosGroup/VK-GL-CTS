@@ -5,6 +5,8 @@
  * ------------------------
  *
  * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +93,7 @@ public:
 	MultisampleCaseBase	(tcu::TestContext&		testCtx,
 						 const std::string&		name,
 						 const ImageMSParams&	imageMSParams)
-		: TestCase(testCtx, name, "")
+		: TestCase(testCtx, name)
 		, m_imageMSParams(imageMSParams)
 	{}
 	virtual void checkSupport (Context& context) const
@@ -103,7 +105,7 @@ protected:
 
 	void checkGraphicsPipelineLibrarySupport(Context& context) const
 	{
-		checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageMSParams.pipelineConstructionType);
+		checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageMSParams.pipelineConstructionType);
 	}
 
 protected:
@@ -173,7 +175,7 @@ tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
 								 const multisample::ComponentData&			componentData = multisample::ComponentData{},
 								 const float								shadingRate = 1.0f)
 {
-	de::MovePtr<tcu::TestCaseGroup> caseGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
+	de::MovePtr<tcu::TestCaseGroup> caseGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 	for (deUint32 imageSizeNdx = 0u; imageSizeNdx < imageSizesElemCount; ++imageSizeNdx)
 	{
@@ -182,7 +184,7 @@ tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
 
 		imageSizeStream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
 
-		de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, imageSizeStream.str().c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, imageSizeStream.str().c_str()));
 
 		for (deUint32 imageSamplesNdx = 0u; imageSamplesNdx < imageSamplesElemCount; ++imageSamplesNdx)
 		{

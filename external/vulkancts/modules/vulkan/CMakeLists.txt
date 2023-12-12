@@ -50,6 +50,7 @@ add_subdirectory(mesh_shader)
 add_subdirectory(fragment_shading_barycentric)
 add_subdirectory(sc)
 add_subdirectory(video)
+add_subdirectory(shader_object)
 
 include_directories(
 	api
@@ -101,6 +102,8 @@ include_directories(
 	video
 	${DEQP_INL_DIR}
 	sc
+	video
+	shader_object
 	)
 
 set(DEQP_VK_SRCS
@@ -171,6 +174,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-mesh-shader
 	deqp-vk-fragment-shading-barycentric
 	deqp-vk-video
+	deqp-vk-shader-object
 	)
 
 set(DEQP_VKSC_LIBS
@@ -252,3 +256,7 @@ if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
 	add_executable(vk-build-programs vktBuildPrograms.cpp)
 	target_link_libraries(vk-build-programs deqp-vk${MODULE_LIB_TARGET_POSTFIX})
 endif ()
+
+if(DE_OS_IS_ANDROID)
+	add_definitions(-DDEQP_EXCLUDE_VK_VIDEO_TESTS)
+endif()

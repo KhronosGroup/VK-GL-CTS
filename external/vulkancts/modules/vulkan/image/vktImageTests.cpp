@@ -41,6 +41,9 @@
 #include "vktImageSampleCompressedTextureTests.hpp"
 #include "vktImageExtendedUsageBitTests.hpp"
 #include "vktImageTransfer.hpp"
+#ifndef CTS_USES_VULKANSC
+#include "vktImageHostImageCopyTests.hpp"
+#endif
 
 namespace vkt
 {
@@ -80,13 +83,16 @@ void createChildren (tcu::TestCaseGroup* imageTests)
 	imageTests->addChild(createImageSampleDrawnTextureTests(testCtx));
 	imageTests->addChild(createImageExtendedUsageBitTests(testCtx));
 	imageTests->addChild(createTransferQueueImageTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+	imageTests->addChild(createImageHostImageCopyTests(testCtx));
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "image", "Image tests", createChildren);
+	return createTestGroup(testCtx, name.c_str(), createChildren);
 }
 
 } // image

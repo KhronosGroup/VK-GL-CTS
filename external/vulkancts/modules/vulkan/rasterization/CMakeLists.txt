@@ -16,6 +16,8 @@ set(DEQP_VK_RASTERIZATION_SRCS
 	vktRasterizationProvokingVertexTests.hpp
 	vktRasterizationOrderAttachmentAccessTests.cpp
 	vktRasterizationOrderAttachmentAccessTests.hpp
+	vktRasterizationDepthBiasControlTests.cpp
+	vktRasterizationDepthBiasControlTests.hpp
 	vktShaderTileImageTests.cpp
 	vktShaderTileImageTests.hpp
 	)

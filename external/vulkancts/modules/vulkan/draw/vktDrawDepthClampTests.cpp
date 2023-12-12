@@ -460,7 +460,7 @@ DepthClampTestInstance::DepthClampTestInstance (Context& context, const TestPara
 		0u,
 		DE_NULL,
 		m_format,
-		m_format
+		VK_FORMAT_UNDEFINED
 	};
 
 	if (m_groupParams->useDynamicRendering)
@@ -712,8 +712,8 @@ tcu::TestStatus DepthClampTestInstance::iterate (void)
 class DepthClampTest : public TestCase
 {
 public:
-	DepthClampTest (tcu::TestContext &testCtx, const string& name, const string& description, const TestParams &params, const VkFormat format, const float epsilon, const SharedGroupParams groupParams)
-		: TestCase		(testCtx, name, description)
+	DepthClampTest (tcu::TestContext &testCtx, const string& name, const TestParams &params, const VkFormat format, const float epsilon, const SharedGroupParams groupParams)
+		: TestCase		(testCtx, name)
 		, m_params		(params)
 		, m_format		(format)
 		, m_epsilon		(epsilon)
@@ -828,7 +828,7 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 			if ((params.skipSNorm && vk::isSnormFormat(format)) || (params.skipUNorm && isUnormDepthFormat(format)))
 				continue;
 			const auto	testCaseName	= formatCaseName + params.testNameSuffix;
-			testGroup->addChild(new DepthClampTest(testGroup->getTestContext(), testCaseName, "Depth clamp", params, format, epsilon, groupParams));
+			testGroup->addChild(new DepthClampTest(testGroup->getTestContext(), testCaseName, params, format, epsilon, groupParams));
 		}
 	}
 }
@@ -836,7 +836,7 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 
 tcu::TestCaseGroup*	createDepthClampTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "depth_clamp", "Depth Clamp Tests", createTests, groupParams);
+	return createTestGroup(testCtx, "depth_clamp", createTests, groupParams);
 }
 }	// Draw
 }	// vkt

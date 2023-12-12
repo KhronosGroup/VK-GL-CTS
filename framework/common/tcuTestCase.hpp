@@ -88,6 +88,9 @@ inline bool isValidTestCaseNameChar (char c)
 		   c == '_' || c == '-';
 }
 
+class TestCaseGroup;
+class CaseListFilter;
+
 /*--------------------------------------------------------------------*//*!
  * \brief Test case hierarchy node
  *
@@ -111,15 +114,15 @@ public:
 	};
 
 	// Methods.
-							TestNode				(TestContext& testCtx, TestNodeType nodeType, const char* name, const char* description);
-							TestNode				(TestContext& testCtx, TestNodeType nodeType, const char* name, const char* description, const std::vector<TestNode*>& children);
+							TestNode				(TestContext& testCtx, TestNodeType nodeType, const char* name);
+							TestNode				(TestContext& testCtx, TestNodeType nodeType, const char* name, const std::vector<TestNode*>& children);
 	virtual					~TestNode				(void);
 
 	TestNodeType			getNodeType				(void) const	{ return m_nodeType;			}
 	TestContext&			getTestContext			(void) const	{ return m_testCtx;				}
 	const char*				getName					(void) const	{ return m_name.c_str();		}
-	const char*				getDescription			(void) const	{ return m_description.c_str(); }
 	void					getChildren				(std::vector<TestNode*>& children) const;
+	void					addRootChild			(const std::string& groupName, const CaseListFilter* caseListFilter, TestCaseGroup* (*createTestGroup)(tcu::TestContext& testCtx, const std::string& name));
 	void					addChild				(TestNode* node);
 	bool					empty					() const		{ return m_children.empty();	}
 
@@ -131,7 +134,6 @@ public:
 protected:
 	TestContext&			m_testCtx;
 	std::string				m_name;
-	std::string				m_description;
 
 private:
 	const TestNodeType		m_nodeType;
@@ -150,8 +152,13 @@ private:
 class TestCaseGroup : public TestNode
 {
 public:
+							TestCaseGroup	(TestContext& testCtx, const char* name);
+							TestCaseGroup	(TestContext& testCtx, const char* name, const std::vector<TestNode*>& children);
+
+							// Deprecated constructors
 							TestCaseGroup	(TestContext& testCtx, const char* name, const char* description);
 							TestCaseGroup	(TestContext& testCtx, const char* name, const char* description, const std::vector<TestNode*>& children);
+
 	virtual					~TestCaseGroup	(void);
 
 	virtual IterateResult	iterate			(void);
@@ -180,8 +187,13 @@ public:
 class TestCase : public TestNode
 {
 public:
+					TestCase			(TestContext& testCtx, const char* name);
+					TestCase			(TestContext& testCtx, TestNodeType nodeType, const char* name);
+
+					// Deprecated constructors
 					TestCase			(TestContext& testCtx, const char* name, const char* description);
 					TestCase			(TestContext& testCtx, TestNodeType nodeType, const char* name, const char* description);
+
 	virtual			~TestCase			(void);
 };
 

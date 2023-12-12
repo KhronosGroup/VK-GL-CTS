@@ -3993,7 +3993,7 @@ namespace vkt
 				// Check if the physical device supports VK_EXT_robustness2 and the nullDescriptor feature.
 				const auto&	vki					= context.getInstanceInterface();
 				const auto	physicalDevice		= context.getPhysicalDevice();
-				const auto	supportedExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+				const auto&	supportedExtensions	= enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 
 				if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_robustness2")))
 					TCU_THROW(NotSupportedError, "VK_EXT_robustness2 not supported");
@@ -4101,7 +4101,7 @@ namespace vkt
 				};
 
 				m_device			= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-				m_vkd				= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, m_device.get()));
+				m_vkd				= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion()));
 				const auto queue	= getDeviceQueue(*m_vkd, *m_device, queueFamilyIndex, 0u);
 				m_allocator			= de::MovePtr<SimpleAllocator>(new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 
@@ -5740,7 +5740,7 @@ namespace vkt
 			class RayQueryBuiltinTestCase : public TestCase
 			{
 			public:
-				RayQueryBuiltinTestCase(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
+				RayQueryBuiltinTestCase(tcu::TestContext& context, const char* name, const TestParams data);
 				~RayQueryBuiltinTestCase(void);
 
 				virtual void			checkSupport(Context& context) const;
@@ -5751,8 +5751,8 @@ namespace vkt
 				TestParams				m_data;
 			};
 
-			RayQueryBuiltinTestCase::RayQueryBuiltinTestCase(tcu::TestContext& context, const char* name, const char* desc, const TestParams data)
-				: vkt::TestCase(context, name, desc)
+			RayQueryBuiltinTestCase::RayQueryBuiltinTestCase(tcu::TestContext& context, const char* name, const TestParams data)
+				: vkt::TestCase(context, name)
 				, m_data(data)
 			{
 			}
@@ -5927,7 +5927,8 @@ namespace vkt
 
 		tcu::TestCaseGroup* createBuiltinTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		group(new tcu::TestCaseGroup(testCtx, "builtin", "Tests verifying builtins provided by ray query"));
+			// Tests verifying builtins provided by ray query
+			de::MovePtr<tcu::TestCaseGroup>		group(new tcu::TestCaseGroup(testCtx, "builtin"));
 
 			const struct TestTypes
 			{
@@ -5965,7 +5966,7 @@ namespace vkt
 
 			for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	testTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), testTypes[testTypeNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	testTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), testTypes[testTypeNdx].name));
 				const TestType					testType = testTypes[testTypeNdx].testType;
 				const ShaderBodyTextFunc		testConfigShaderBodyTextFunc = getShaderBodyTextFunc(testType);
 				const bool						fixedPointVectorOutput = testType == TEST_TYPE_OBJECT_RAY_ORIGIN_KHR
@@ -6000,7 +6001,7 @@ namespace vkt
 
 				for (size_t pipelineStageNdx = 0; pipelineStageNdx < DE_LENGTH_OF_ARRAY(pipelineStages); ++pipelineStageNdx)
 				{
-					de::MovePtr<tcu::TestCaseGroup>	sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), pipelineStages[pipelineStageNdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup>	sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), pipelineStages[pipelineStageNdx].name));
 					const VkShaderStageFlagBits		stage = pipelineStages[pipelineStageNdx].stage;
 					const CheckSupportFunc			pipelineCheckSupport = getPipelineCheckSupport(stage);
 					const InitProgramsFunc			pipelineInitPrograms = getPipelineInitPrograms(stage);
@@ -6047,7 +6048,7 @@ namespace vkt
 							continue;
 						}
 
-						sourceTypeGroup->addChild(new RayQueryBuiltinTestCase(group->getTestContext(), geomTypes[geomTypeNdx].name, "", testParams));
+						sourceTypeGroup->addChild(new RayQueryBuiltinTestCase(group->getTestContext(), geomTypes[geomTypeNdx].name, testParams));
 					}
 
 					testTypeGroup->addChild(sourceTypeGroup.release());
@@ -6061,7 +6062,7 @@ namespace vkt
 
 		tcu::TestCaseGroup* createAdvancedTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		group(new tcu::TestCaseGroup(testCtx, "advanced", "Advanced ray query tests"));
+			de::MovePtr<tcu::TestCaseGroup>		group(new tcu::TestCaseGroup(testCtx, "advanced"));
 
 			const struct TestTypes
 			{
@@ -6076,7 +6077,7 @@ namespace vkt
 
 			for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	testTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), testTypes[testTypeNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	testTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), testTypes[testTypeNdx].name));
 				const TestType					testType = testTypes[testTypeNdx].testType;
 				const ShaderBodyTextFunc		testConfigShaderBodyTextFunc = getShaderBodyTextFunc(testType);
 				const CheckSupportFunc			testConfigCheckSupport = getTestConfigCheckSupport(testType);
@@ -6095,7 +6096,7 @@ namespace vkt
 						useSPIRV = true;
 					}
 
-					de::MovePtr<tcu::TestCaseGroup>	sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), pipelineStages[pipelineStageNdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup>	sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), pipelineStages[pipelineStageNdx].name));
 					const CheckSupportFunc			pipelineCheckSupport = getPipelineCheckSupport(stage);
 					const InitProgramsFunc			pipelineInitPrograms = getPipelineInitPrograms(stage);
 					const deUint32					instancesGroupCount = 1;
@@ -6126,7 +6127,7 @@ namespace vkt
 							testConfigCheckSupport,			//  CheckSupportFunc		testConfigCheckSupport;
 						};
 
-						sourceTypeGroup->addChild(new RayQueryBuiltinTestCase(group->getTestContext(), geomTypes[geomTypeNdx].name, "", testParams));
+						sourceTypeGroup->addChild(new RayQueryBuiltinTestCase(group->getTestContext(), geomTypes[geomTypeNdx].name, testParams));
 					}
 
 					testTypeGroup->addChild(sourceTypeGroup.release());

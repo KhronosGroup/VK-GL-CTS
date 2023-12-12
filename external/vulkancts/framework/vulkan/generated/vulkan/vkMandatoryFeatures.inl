@@ -76,6 +76,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT;
+	deMemset(&physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT, 0, sizeof(physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_attachment_feedback_loop_dynamic_state") )
+	{
+		physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT.sType = getStructureType<VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT>();
+		*nextPtr = &physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT;
+		nextPtr  = &physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT;
 	deMemset(&physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT, 0, sizeof(physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT));
 
@@ -141,6 +153,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT physicalDeviceDepthBiasControlFeaturesEXT;
+	deMemset(&physicalDeviceDepthBiasControlFeaturesEXT, 0, sizeof(physicalDeviceDepthBiasControlFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_depth_bias_control") )
+	{
+		physicalDeviceDepthBiasControlFeaturesEXT.sType = getStructureType<VkPhysicalDeviceDepthBiasControlFeaturesEXT>();
+		*nextPtr = &physicalDeviceDepthBiasControlFeaturesEXT;
+		nextPtr  = &physicalDeviceDepthBiasControlFeaturesEXT.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
 	vk::VkPhysicalDeviceDepthClampZeroOneFeaturesEXT physicalDeviceDepthClampZeroOneFeaturesEXT;
 	deMemset(&physicalDeviceDepthClampZeroOneFeaturesEXT, 0, sizeof(physicalDeviceDepthClampZeroOneFeaturesEXT));
 
@@ -191,6 +215,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDescriptorIndexingFeatures.pNext;
 	}
 
+	vk::VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT;
+	deMemset(&physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT, 0, sizeof(physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_dynamic_rendering_unused_attachments") )
+	{
+		physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT.sType = getStructureType<VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT>();
+		*nextPtr = &physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT;
+		nextPtr  = &physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT physicalDeviceExtendedDynamicState2FeaturesEXT;
 	deMemset(&physicalDeviceExtendedDynamicState2FeaturesEXT, 0, sizeof(physicalDeviceExtendedDynamicState2FeaturesEXT));
 
@@ -209,6 +243,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceExtendedDynamicState3FeaturesEXT.sType = getStructureType<VkPhysicalDeviceExtendedDynamicState3FeaturesEXT>();
 		*nextPtr = &physicalDeviceExtendedDynamicState3FeaturesEXT;
 		nextPtr  = &physicalDeviceExtendedDynamicState3FeaturesEXT.pNext;
+	}
+
+	vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID physicalDeviceExternalFormatResolveFeaturesANDROID;
+	deMemset(&physicalDeviceExternalFormatResolveFeaturesANDROID, 0, sizeof(physicalDeviceExternalFormatResolveFeaturesANDROID));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_ANDROID_external_format_resolve") )
+	{
+		physicalDeviceExternalFormatResolveFeaturesANDROID.sType = getStructureType<VkPhysicalDeviceExternalFormatResolveFeaturesANDROID>();
+		*nextPtr = &physicalDeviceExternalFormatResolveFeaturesANDROID;
+		nextPtr  = &physicalDeviceExternalFormatResolveFeaturesANDROID.pNext;
 	}
 
 	vk::VkPhysicalDeviceFaultFeaturesEXT physicalDeviceFaultFeaturesEXT;
@@ -252,6 +296,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceFragmentShadingRateFeaturesKHR.pNext;
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	vk::VkPhysicalDeviceFrameBoundaryFeaturesEXT physicalDeviceFrameBoundaryFeaturesEXT;
+	deMemset(&physicalDeviceFrameBoundaryFeaturesEXT, 0, sizeof(physicalDeviceFrameBoundaryFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_frame_boundary") )
+	{
+		physicalDeviceFrameBoundaryFeaturesEXT.sType = getStructureType<VkPhysicalDeviceFrameBoundaryFeaturesEXT>();
+		*nextPtr = &physicalDeviceFrameBoundaryFeaturesEXT;
+		nextPtr  = &physicalDeviceFrameBoundaryFeaturesEXT.pNext;
+	}
 
 	vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR physicalDeviceGlobalPriorityQueryFeaturesKHR;
 	deMemset(&physicalDeviceGlobalPriorityQueryFeaturesKHR, 0, sizeof(physicalDeviceGlobalPriorityQueryFeaturesKHR));
@@ -749,6 +803,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderModuleIdentifierFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceShaderObjectFeaturesEXT physicalDeviceShaderObjectFeaturesEXT;
+	deMemset(&physicalDeviceShaderObjectFeaturesEXT, 0, sizeof(physicalDeviceShaderObjectFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_object") )
+	{
+		physicalDeviceShaderObjectFeaturesEXT.sType = getStructureType<VkPhysicalDeviceShaderObjectFeaturesEXT>();
+		*nextPtr = &physicalDeviceShaderObjectFeaturesEXT;
+		nextPtr  = &physicalDeviceShaderObjectFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures physicalDeviceShaderSubgroupExtendedTypesFeatures;
 	deMemset(&physicalDeviceShaderSubgroupExtendedTypesFeatures, 0, sizeof(physicalDeviceShaderSubgroupExtendedTypesFeatures));
 
@@ -888,11 +952,21 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT physicalDeviceVertexAttributeDivisorFeaturesEXT;
 	deMemset(&physicalDeviceVertexAttributeDivisorFeaturesEXT, 0, sizeof(physicalDeviceVertexAttributeDivisorFeaturesEXT));
 
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_vertex_attribute_divisor") )
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_vertex_attribute_divisor") || canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_vertex_attribute_divisor") )
 	{
 		physicalDeviceVertexAttributeDivisorFeaturesEXT.sType = getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>();
 		*nextPtr = &physicalDeviceVertexAttributeDivisorFeaturesEXT;
 		nextPtr  = &physicalDeviceVertexAttributeDivisorFeaturesEXT.pNext;
+	}
+
+	vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR physicalDeviceVertexAttributeDivisorFeaturesKHR;
+	deMemset(&physicalDeviceVertexAttributeDivisorFeaturesKHR, 0, sizeof(physicalDeviceVertexAttributeDivisorFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_vertex_attribute_divisor") || canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_vertex_attribute_divisor") )
+	{
+		physicalDeviceVertexAttributeDivisorFeaturesKHR.sType = getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR>();
+		*nextPtr = &physicalDeviceVertexAttributeDivisorFeaturesKHR;
+		nextPtr  = &physicalDeviceVertexAttributeDivisorFeaturesKHR.pNext;
 	}
 
 	vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT physicalDeviceVertexInputDynamicStateFeaturesEXT;
@@ -1001,6 +1075,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_ANDROID_external_format_resolve")) )
+	{
+		if ( physicalDeviceExternalFormatResolveFeaturesANDROID.externalFormatResolve == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature externalFormatResolve not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_4444_formats")) )
 	{
 		if ( physicalDevice4444FormatsFeaturesEXT.formatA4R4G4B4 == VK_FALSE )
@@ -1009,6 +1092,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_attachment_feedback_loop_dynamic_state")) )
+	{
+		if ( physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT.attachmentFeedbackLoopDynamicState == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature attachmentFeedbackLoopDynamicState not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_attachment_feedback_loop_layout")) )
@@ -1049,6 +1143,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_bias_control")) )
+	{
+		if ( physicalDeviceDepthBiasControlFeaturesEXT.depthBiasControl == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature depthBiasControl not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clamp_zero_one")) )
 	{
@@ -1374,6 +1479,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_dynamic_rendering_unused_attachments")) )
+	{
+		if ( physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT.dynamicRenderingUnusedAttachments == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature dynamicRenderingUnusedAttachments not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_extended_dynamic_state2")) )
 	{
 		if ( physicalDeviceExtendedDynamicState2FeaturesEXT.extendedDynamicState2 == VK_FALSE )
@@ -1518,6 +1632,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderSampleInterlock == VK_FALSE ) && ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderPixelInterlock == VK_FALSE ) && ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderShadingRateInterlock == VK_FALSE ) )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature fragmentShaderSampleInterlock or fragmentShaderPixelInterlock or fragmentShaderShadingRateInterlock not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_frame_boundary")) )
+	{
+		if ( physicalDeviceFrameBoundaryFeaturesEXT.frameBoundary == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature frameBoundary not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -1819,6 +1942,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_object")) )
+	{
+		if ( physicalDeviceShaderObjectFeaturesEXT.shaderObject == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderObject not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_subgroup_size_control")) )
 	{
 		if ( physicalDeviceSubgroupSizeControlFeaturesEXT.subgroupSizeControl == VK_FALSE )
@@ -1866,11 +1998,13 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_transform_feedback")) )
 	{
+#if defined(CTS_USES_VULKAN)
 		if ( physicalDeviceTransformFeedbackFeaturesEXT.transformFeedback == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature transformFeedback not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
+#endif // defined(CTS_USES_VULKAN)
 	}
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_vertex_attribute_divisor")) )
@@ -2201,6 +2335,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceVariablePointersFeatures.variablePointersStorageBuffer == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature variablePointersStorageBuffer not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_vertex_attribute_divisor")) )
+	{
+		if ( physicalDeviceVertexAttributeDivisorFeaturesKHR.vertexAttributeInstanceRateDivisor == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature vertexAttributeInstanceRateDivisor not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

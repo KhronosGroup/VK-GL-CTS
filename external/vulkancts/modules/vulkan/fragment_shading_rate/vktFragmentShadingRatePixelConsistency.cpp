@@ -191,7 +191,7 @@ FSRPixelConsistencyInstance::~FSRPixelConsistencyInstance(void)
 class FSRPixelConsistencyTestCase : public TestCase
 {
 	public:
-								FSRPixelConsistencyTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+								FSRPixelConsistencyTestCase		(tcu::TestContext& context, const char* name, const CaseDef data);
 								~FSRPixelConsistencyTestCase	(void);
 	virtual	void				initPrograms					(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance					(Context& context) const;
@@ -202,8 +202,8 @@ private:
 	CaseDef											m_data;
 };
 
-FSRPixelConsistencyTestCase::FSRPixelConsistencyTestCase(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+FSRPixelConsistencyTestCase::FSRPixelConsistencyTestCase(tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -487,9 +487,9 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate (void)
 	Move<VkDevice>				vkd					= createImageRobustnessDevice(m_context, instance, instanceDriver);
 	const VkDevice				device				= *vkd;
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), device));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), device, m_context.getUsedApiVersion()));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), device));
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), device));
 #endif // CTS_USES_VULKANSC
 	const DeviceInterface&		vk					= *deviceDriver;
 	const VkQueue				queue				= getDeviceQueue(vk, device, m_context.getUniversalQueueFamilyIndex(), 0);
@@ -1363,56 +1363,54 @@ void createPixelConsistencyTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* 
 	{
 		deUint32				count;
 		const char*				name;
-		const char*				description;
 	} TestGroupCase;
 
 	typedef struct
 	{
 		VkExtent2D				count;
 		const char*				name;
-		const char*				description;
 	} TestGroupCase2D;
 
 	TestGroupCase2D shadingRateCases[] =
 	{
-		{ {1, 1},	"rate_1x1",	"1x1 shading rate"	},
-		{ {1, 2},	"rate_1x2",	"1x2 shading rate"	},
-		{ {1, 4},	"rate_1x4",	"1x4 shading rate"	},
-		{ {2, 1},	"rate_2x1",	"2x1 shading rate"	},
-		{ {2, 2},	"rate_2x2",	"2x2 shading rate"	},
-		{ {2, 4},	"rate_2x4",	"2x4 shading rate"	},
-		{ {4, 1},	"rate_4x1",	"4x1 shading rate"	},
-		{ {4, 2},	"rate_4x2",	"4x2 shading rate"	},
-		{ {4, 4},	"rate_4x4",	"4x4 shading rate"	},
+		{ {1, 1},	"rate_1x1"},
+		{ {1, 2},	"rate_1x2"},
+		{ {1, 4},	"rate_1x4"},
+		{ {2, 1},	"rate_2x1"},
+		{ {2, 2},	"rate_2x2"},
+		{ {2, 4},	"rate_2x4",},
+		{ {4, 1},	"rate_4x1",},
+		{ {4, 2},	"rate_4x2",},
+		{ {4, 4},	"rate_4x4",},
 	};
 
 	TestGroupCase sampCases[] =
 	{
-		{ VK_SAMPLE_COUNT_1_BIT,	"samples_1",	"1 raster sample"	},
-		{ VK_SAMPLE_COUNT_2_BIT,	"samples_2",	"2 raster samples"	},
-		{ VK_SAMPLE_COUNT_4_BIT,	"samples_4",	"4 raster samples"	},
-		{ VK_SAMPLE_COUNT_8_BIT,	"samples_8",	"8 raster samples"	},
-		{ VK_SAMPLE_COUNT_16_BIT,	"samples_16",	"16 raster samples"	},
+		{ VK_SAMPLE_COUNT_1_BIT,	"samples_1"},
+		{ VK_SAMPLE_COUNT_2_BIT,	"samples_2"},
+		{ VK_SAMPLE_COUNT_4_BIT,	"samples_4"},
+		{ VK_SAMPLE_COUNT_8_BIT,	"samples_8"},
+		{ VK_SAMPLE_COUNT_16_BIT,	"samples_16"},
 	};
 
 	TestGroupCase2D extentCases[] =
 	{
-		{ {1,   1},		"extent_1x1",		"framebuffer size 1x1"		},
-		{ {4,   4},		"extent_4x4",		"framebuffer size 4x4"		},
-		{ {33,  35},	"extent_33x35",		"framebuffer size 33x35"	},
-		{ {151, 431},	"extent_151x431",	"framebuffer size 151x431"	},
-		{ {256, 256},	"extent_256x256",	"framebuffer size 256x256"	},
+		{ {1,   1},		"extent_1x1"},
+		{ {4,   4},		"extent_4x4"},
+		{ {33,  35},	"extent_33x35"},
+		{ {151, 431},	"extent_151x431"},
+		{ {256, 256},	"extent_256x256"},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> pixelGroup(new tcu::TestCaseGroup(testCtx, "pixel_consistency", "Pixel selection consistency"));
+	de::MovePtr<tcu::TestCaseGroup> pixelGroup(new tcu::TestCaseGroup(testCtx, "pixel_consistency"));
 
 	for (int rateNdx = 0; rateNdx < DE_LENGTH_OF_ARRAY(shadingRateCases); rateNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> rateGroup(new tcu::TestCaseGroup(testCtx, shadingRateCases[rateNdx].name, shadingRateCases[rateNdx].description));
+		de::MovePtr<tcu::TestCaseGroup> rateGroup(new tcu::TestCaseGroup(testCtx, shadingRateCases[rateNdx].name));
 
 		for (int sampNdx = 0; sampNdx < DE_LENGTH_OF_ARRAY(sampCases); sampNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name, sampCases[sampNdx].description));
+			de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name));
 			for (int extNdx = 0; extNdx < DE_LENGTH_OF_ARRAY(extentCases); extNdx++)
 			{
 				VkSampleCountFlagBits samples = static_cast<VkSampleCountFlagBits>(sampCases[sampNdx].count);
@@ -1423,14 +1421,14 @@ void createPixelConsistencyTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* 
 					samples,
 					framebufferExtent,
 					false};
-				sampleGroup->addChild(new FSRPixelConsistencyTestCase(testCtx, extentCases[extNdx].name, extentCases[extNdx].description, caseParams));
+				sampleGroup->addChild(new FSRPixelConsistencyTestCase(testCtx, extentCases[extNdx].name, caseParams));
 
 				// test FragCoord.zw but to avoid duplication limit tests to extent_151x431/256x256 and 1 or 4 samples
 				if ((framebufferExtent.width > 150) && (samples & (VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_4_BIT)))
 				{
 					std::string caseName = std::string(extentCases[extNdx].name) + "_zw_coord";
 					caseParams.zwCoord = true;
-					sampleGroup->addChild(new FSRPixelConsistencyTestCase(testCtx, caseName.c_str(), extentCases[extNdx].description, caseParams));
+					sampleGroup->addChild(new FSRPixelConsistencyTestCase(testCtx, caseName.c_str(), caseParams));
 				}
 			}
 			rateGroup->addChild(sampleGroup.release());

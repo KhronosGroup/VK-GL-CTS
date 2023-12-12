@@ -220,7 +220,6 @@ class MismatchedFormatTest : public TestCase
 public:
 						MismatchedFormatTest (tcu::TestContext&		testCtx,
 											  const std::string&	name,
-											  const std::string&	description,
 											  const TestType		type,
 											  const VkFormat		format,
 											  const std::string&	spirvFormat);
@@ -237,11 +236,10 @@ private:
 
 MismatchedFormatTest::MismatchedFormatTest (tcu::TestContext&	testCtx,
 											const std::string&	name,
-											const std::string&	description,
 											const TestType		type,
 											const VkFormat		format,
 											const std::string&	spirvFormat)
-	: TestCase						(testCtx, name, description)
+	: TestCase						(testCtx, name)
 	, m_type						(type)
 	, m_format						(format)
 	, m_spirvFormat					(spirvFormat)
@@ -463,15 +461,20 @@ TestInstance* MismatchedFormatTest::createInstance (Context& context) const
 
 tcu::TestCaseGroup* createImageMismatchedFormatsTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "mismatched_formats", "Test image load/store operations on mismatched formats"));
-	de::MovePtr<tcu::TestCaseGroup> testGroupOpRead(new tcu::TestCaseGroup(testCtx, "image_read", "perform OpImageRead"));
-	de::MovePtr<tcu::TestCaseGroup> testGroupOpWrite(new tcu::TestCaseGroup(testCtx, "image_write", "perform OpImageWrite"));
+	// Test image load/store operations on mismatched formats
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "mismatched_formats"));
+	// perform OpImageRead
+	de::MovePtr<tcu::TestCaseGroup> testGroupOpRead(new tcu::TestCaseGroup(testCtx, "image_read"));
+	de::MovePtr<tcu::TestCaseGroup> testGroupOpWrite(new tcu::TestCaseGroup(testCtx, "image_write"));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<tcu::TestCaseGroup> testGroupOpSparseRead(new tcu::TestCaseGroup(testCtx, "sparse_image_read", "perform OpSparseImageRead"));
+	de::MovePtr<tcu::TestCaseGroup> testGroupOpSparseRead(new tcu::TestCaseGroup(testCtx, "sparse_image_read"));
 #endif // CTS_USES_VULKANSC
 
 	for (VkFormat format = VK_FORMAT_R4G4_UNORM_PACK8; format < VK_CORE_FORMAT_LAST; format = static_cast<VkFormat>(format+1))
 	{
+		if (isCompressedFormat(format))
+			continue;
+
 		for (auto& pair : SpirvFormats)
 		{
 			const std::string&	spirvFormat = pair.first;
@@ -481,15 +484,15 @@ tcu::TestCaseGroup* createImageMismatchedFormatsTests (tcu::TestContext& testCtx
 				const std::string	enumName	= getFormatName(format);
 				const std::string	testName	= de::toLower( enumName.substr(10) + "_with_" + spirvFormat );
 
-				testGroupOpRead->addChild(new MismatchedFormatTest(	testCtx, testName, "",
+				testGroupOpRead->addChild(new MismatchedFormatTest(	testCtx, testName,
 																	TestType::READ,
 																	format, spirvFormat) );
 
-				testGroupOpWrite->addChild(new MismatchedFormatTest(testCtx, testName, "",
+				testGroupOpWrite->addChild(new MismatchedFormatTest(testCtx, testName,
 																	TestType::WRITE,
 																	format, spirvFormat) );
 #ifndef CTS_USES_VULKANSC
-				testGroupOpSparseRead->addChild(new MismatchedFormatTest(	testCtx, testName, "",
+				testGroupOpSparseRead->addChild(new MismatchedFormatTest(	testCtx, testName,
 																			TestType::SPARSE_READ,
 																			format, spirvFormat) );
 #endif // CTS_USES_VULKANSC

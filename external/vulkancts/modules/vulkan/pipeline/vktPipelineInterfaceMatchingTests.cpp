@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2021 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,16 +155,16 @@ private:
 	Move<VkImage>				m_colorImage;
 	de::MovePtr<Allocation>		m_colorImageAlloc;
 	Move<VkImageView>			m_colorAttachmentView;
-	Move<VkRenderPass>			m_renderPass;
+	RenderPassWrapper			m_renderPass;
 	Move<VkFramebuffer>			m_framebuffer;
 
-	Move<VkShaderModule>		m_vertShaderModule;
-	Move<VkShaderModule>		m_tescShaderModule;
-	Move<VkShaderModule>		m_teseShaderModule;
-	Move<VkShaderModule>		m_geomShaderModule;
-	Move<VkShaderModule>		m_fragShaderModule;
+	ShaderWrapper				m_vertShaderModule;
+	ShaderWrapper				m_tescShaderModule;
+	ShaderWrapper				m_teseShaderModule;
+	ShaderWrapper				m_geomShaderModule;
+	ShaderWrapper				m_fragShaderModule;
 
-	Move<VkPipelineLayout>		m_pipelineLayout;
+	PipelineLayoutWrapper		m_pipelineLayout;
 	GraphicsPipelineWrapper		m_graphicsPipeline;
 
 	Move<VkCommandPool>			m_cmdPool;
@@ -174,7 +176,7 @@ InterfaceMatchingTestInstance::InterfaceMatchingTestInstance(Context& context, c
 	, m_params(params)
 	, m_alloc(context.getDeviceInterface(), context.getDevice(),
 			  getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
-	, m_graphicsPipeline(context.getDeviceInterface(), context.getDevice(), params->pipelineConstructionType)
+	, m_graphicsPipeline(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), params->pipelineConstructionType)
 {
 }
 
@@ -238,7 +240,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 	}
 
 	// create render pass
-	m_renderPass = makeRenderPass(vk, device, colorFormat);
+	m_renderPass = RenderPassWrapper(m_params->pipelineConstructionType, vk, device, colorFormat);
 
 	// create framebuffer
 	{
@@ -255,7 +257,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 			1u																			// deUint32					layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, device, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, device, &framebufferParams, *m_colorImage);
 	}
 
 	// create pipeline layout
@@ -271,7 +273,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 			DE_NULL																		// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(m_params->pipelineConstructionType, vk, device, &pipelineLayoutParams);
 	}
 
 	// create pipeline
@@ -283,12 +285,12 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 		PipelineType::VERT_TESC_TESE_OUT_GEOM_IN_FRAG,
 		PipelineType::VERT_TESC_TESE_GEOM_OUT_FRAG_IN });
 
-	m_vertShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
-	m_fragShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0);
+	m_vertShaderModule = ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"), 0);
+	m_fragShaderModule = ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"), 0);
 	if (useTess)
 	{
-		m_tescShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("tesc"), 0);
-		m_teseShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("tese"), 0);
+		m_tescShaderModule = ShaderWrapper(vk, device, m_context.getBinaryCollection().get("tesc"), 0);
+		m_teseShaderModule = ShaderWrapper(vk, device, m_context.getBinaryCollection().get("tese"), 0);
 	}
 
 	if (isPipelineOneOf(m_params->pipelineType, {
@@ -298,7 +300,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 		PipelineType::VERT_TESC_TESE_OUT_GEOM_IN_FRAG,
 		PipelineType::VERT_TESC_TESE_GEOM_OUT_FRAG_IN }))
 	{
-		m_geomShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("geom"), 0);
+		m_geomShaderModule = ShaderWrapper(vk, device, m_context.getBinaryCollection().get("geom"), 0);
 	}
 
 	const std::vector<VkViewport>	viewports	{ makeViewport(renderSize) };
@@ -312,17 +314,17 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 					  .setupVertexInputState()
 					  .setupPreRasterizationShaderState(viewports,
 														scissors,
-														*m_pipelineLayout,
+														m_pipelineLayout,
 														*m_renderPass,
 														0u,
-														*m_vertShaderModule,
+														m_vertShaderModule,
 														DE_NULL,
-														*m_tescShaderModule,
-														*m_teseShaderModule,
-														*m_geomShaderModule)
-					  .setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragShaderModule)
+														m_tescShaderModule,
+														m_teseShaderModule,
+														m_geomShaderModule)
+					  .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, m_fragShaderModule)
 					  .setupFragmentOutputState(*m_renderPass)
-					  .setMonolithicPipelineLayout(*m_pipelineLayout)
+					  .setMonolithicPipelineLayout(m_pipelineLayout)
 					  .buildPipeline();
 
 	// create vertex buffer
@@ -368,13 +370,13 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 							0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &attachmentLayoutBarrier);
 
 	// render single triangle
-	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(renderSize), Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(renderSize), Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+	m_graphicsPipeline.bind(*m_cmdBuffer);
 	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &*m_vertexBuffer, &vertexBufferOffset);
 	vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
 
-	endRenderPass(vk, *m_cmdBuffer);
+	m_renderPass.end(vk, *m_cmdBuffer);
 
 	copyImageToBuffer(vk, *m_cmdBuffer, *m_colorImage, *m_resultBuffer, tcu::IVec2(renderSize.x(), renderSize.y()));
 
@@ -462,7 +464,7 @@ private:
 
 InterfaceMatchingTestCase::InterfaceMatchingTestCase(tcu::TestContext&	testContext,
 													 TestParamsSp		params)
-	: vkt::TestCase	(testContext, generateName(*params), "")
+	: vkt::TestCase	(testContext, generateName(*params))
 	, m_params		(params)
 {
 }
@@ -877,7 +879,7 @@ void InterfaceMatchingTestCase::checkSupport(Context& context) const
 {
 	if (m_params->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params->pipelineConstructionType);
+		checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params->pipelineConstructionType);
 
 		// if graphicsPipelineLibraryIndependentInterpolationDecoration is VK_FALSE then interface mismatch
 		// tests involving the Flat or NoPerspective qualifiers should be skipped for pipeline library tests
@@ -1065,9 +1067,9 @@ tcu::TestCaseGroup* createInterfaceMatchingTests(tcu::TestContext& testCtx, Pipe
 		DefinitionType::MEMBER_OF_ARRAY_OF_STRUCTURES_IN_BLOCK,
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "interface_matching", ""));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "interface_matching"));
 
-	de::MovePtr<tcu::TestCaseGroup> vectorMatching(new tcu::TestCaseGroup(testCtx, "vector_length", "Tests vector matching"));
+	de::MovePtr<tcu::TestCaseGroup> vectorMatching(new tcu::TestCaseGroup(testCtx, "vector_length"));
 	for (PipelineType pipelineType : pipelineTypeList)
 		for (DefinitionType defType : definitionsTypeList)
 		{
@@ -1116,7 +1118,7 @@ tcu::TestCaseGroup* createInterfaceMatchingTests(tcu::TestContext& testCtx, Pipe
 		{ DecorationType::NONE,				DecorationType::COMPONENT0 },
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> decorationMismatching(new tcu::TestCaseGroup(testCtx, "decoration_mismatch", "Decoration mismatch tests"));
+	de::MovePtr<tcu::TestCaseGroup> decorationMismatching(new tcu::TestCaseGroup(testCtx, "decoration_mismatch"));
 	for (PipelineType stageType : pipelineTypeList)
 		for (DefinitionType defType : definitionsTypeList)
 			for (const auto& decoration : decorationPairs)

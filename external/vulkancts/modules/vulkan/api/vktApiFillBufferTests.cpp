@@ -37,6 +37,7 @@
 #include "vkRefUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkSafetyCriticalUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuTexture.hpp"
@@ -72,10 +73,20 @@ struct TestParams
 };
 
 // Creates a device that has transfer only operations
-Move<VkDevice> createCustomDevice(Context& context, uint32_t& queueFamilyIndex)
+Move<VkDevice> createCustomDevice(Context& context,
+#ifdef CTS_USES_VULKANSC
+								  const vkt::CustomInstance& customInstance,
+#endif // CTS_USES_VULKANSC
+								  uint32_t& queueFamilyIndex)
 {
-	const InstanceInterface&	instanceDriver = context.getInstanceInterface();
-	const VkPhysicalDevice		physicalDevice = context.getPhysicalDevice();
+#ifdef CTS_USES_VULKANSC
+	const vk::InstanceInterface&	instanceDriver		= customInstance.getDriver();
+	const vk::VkPhysicalDevice		physicalDevice		= chooseDevice(instanceDriver, customInstance, context.getTestContext().getCommandLine());
+#else
+	const vk::VkInstance			customInstance		= context.getInstance();
+	const vk::InstanceInterface&	instanceDriver		= context.getInstanceInterface();
+	const vk::VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
+#endif // CTS_USES_VULKANSC
 
 	queueFamilyIndex = findQueueFamilyIndexWithCaps(instanceDriver, physicalDevice, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
@@ -105,8 +116,11 @@ Move<VkDevice> createCustomDevice(Context& context, uint32_t& queueFamilyIndex)
 
 	if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
 	{
-		synchronization2Features.pNext = &deviceFeatures2;
-		pNext = &synchronization2Features;
+		if (context.getUsedApiVersion() < VK_API_VERSION_1_3)
+		{
+			synchronization2Features.pNext = &deviceFeatures2;
+			pNext = &synchronization2Features;
+		}
 	}
 
 #ifdef CTS_USES_VULKANSC
@@ -155,7 +169,7 @@ Move<VkDevice> createCustomDevice(Context& context, uint32_t& queueFamilyIndex)
 		DE_NULL,										// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instanceDriver, physicalDevice, &deviceCreateInfo);
+	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), customInstance, instanceDriver, physicalDevice, &deviceCreateInfo);
 }
 
 class FillWholeBufferTestInstance : public vkt::TestInstance
@@ -173,6 +187,9 @@ protected:
 	de::MovePtr<Allocator>	m_customAllocator;
 
 	VkDevice				m_device;
+#ifdef CTS_USES_VULKANSC
+	const CustomInstance	m_customInstance;
+#endif // CTS_USES_VULKANSC
 	Allocator*				m_allocator;
 	uint32_t				m_queueFamilyIndex;
 
@@ -184,15 +201,28 @@ protected:
 };
 
 FillWholeBufferTestInstance::FillWholeBufferTestInstance(Context& context, const TestParams& testParams)
-	: vkt::TestInstance(context), m_params(testParams)
+	: vkt::TestInstance(context)
+	, m_params(testParams)
+#ifdef CTS_USES_VULKANSC
+	, m_customInstance(createCustomInstanceFromContext(context))
+#endif // CTS_USES_VULKANSC
 {
-	const InstanceInterface&	vki			= m_context.getInstanceInterface();
-	const DeviceInterface&		vk			= m_context.getDeviceInterface();
-	const VkPhysicalDevice		physDevice	= m_context.getPhysicalDevice();
+#ifdef CTS_USES_VULKANSC
+	const vk::InstanceInterface&	vki				= m_customInstance.getDriver();
+	const VkPhysicalDevice			physDevice		= vk::chooseDevice(vki, m_customInstance, m_context.getTestContext().getCommandLine());
+#else
+	const vk::InstanceInterface&	vki				= m_context.getInstanceInterface();
+	const VkPhysicalDevice			physDevice		= m_context.getPhysicalDevice();
+#endif // CTS_USES_VULKANSC
+const DeviceInterface&				vk				= m_context.getDeviceInterface();
 
 	if (testParams.useTransferOnlyQueue)
 	{
-		m_customDevice		= createCustomDevice(context, m_queueFamilyIndex);
+		m_customDevice		= createCustomDevice(context,
+#ifdef CTS_USES_VULKANSC
+												 m_customInstance,
+#endif
+												 m_queueFamilyIndex);
 		m_customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(vk, *m_customDevice, getPhysicalDeviceMemoryProperties(vki, physDevice)));
 
 		m_device			= *m_customDevice;
@@ -328,9 +358,8 @@ class FillWholeBufferTestCase : public vkt::TestCase
 public:
 							FillWholeBufferTestCase	(tcu::TestContext&	testCtx,
 													 const std::string&	name,
-													 const std::string&	description,
 													 const TestParams	params)
-		: vkt::TestCase(testCtx, name, description), m_params(params)
+		: vkt::TestCase(testCtx, name), m_params(params)
 	{}
 
 	virtual TestInstance*	createInstance			(Context&			context) const override
@@ -355,6 +384,9 @@ protected:
 	de::MovePtr<Allocator>			m_customAllocator;
 
 	VkDevice						m_device;
+#ifdef CTS_USES_VULKANSC
+	const CustomInstance			m_customInstance;
+#endif // CTS_USES_VULKANSC
 	Allocator*						m_allocator;
 	uint32_t						m_queueFamilyIndex;
 
@@ -390,6 +422,9 @@ protected:
 																		 TestParams					testParams)
 									: vkt::TestInstance					(context)
 									, m_params							(testParams)
+#ifdef CTS_USES_VULKANSC
+									, m_customInstance(createCustomInstanceFromContext(context))
+#endif // CTS_USES_VULKANSC
 {
 	const InstanceInterface&	vki			= m_context.getInstanceInterface();
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
@@ -397,7 +432,11 @@ protected:
 
 	if (testParams.useTransferOnlyQueue)
 	{
-		m_customDevice		= createCustomDevice(context, m_queueFamilyIndex);
+		m_customDevice		= createCustomDevice(context,
+#ifdef CTS_USES_VULKANSC
+												m_customInstance,
+#endif // CTS_USES_VULKANSC
+												m_queueFamilyIndex);
 		m_customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(vk, *m_customDevice, getPhysicalDeviceMemoryProperties(vki, physDevice)));
 
 		m_device			= *m_customDevice;
@@ -530,9 +569,8 @@ class FillBufferTestCase : public vkt::TestCase
 public:
 									FillBufferTestCase					(tcu::TestContext&			testCtx,
 																		 const std::string&			name,
-																		 const std::string&			description,
 																		 const TestParams			params)
-									: vkt::TestCase						(testCtx, name, description)
+									: vkt::TestCase						(testCtx, name)
 									, m_params							(params)
 	{}
 
@@ -620,9 +658,8 @@ class UpdateBufferTestCase : public vkt::TestCase
 public:
 									UpdateBufferTestCase				(tcu::TestContext&			testCtx,
 																		 const std::string&			name,
-																		 const std::string&			description,
 																		 const TestParams			params)
-									: vkt::TestCase						(testCtx, name, description)
+									: vkt::TestCase						(testCtx, name)
 									, m_params							(params)
 	{}
 
@@ -644,26 +681,28 @@ tcu::TestCaseGroup*					createFillAndUpdateBufferTests	(tcu::TestContext&			test
 		de::SharedPtr<BufferDedicatedAllocation>(new BufferDedicatedAllocation())
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> fillAndUpdateBufferTests(new tcu::TestCaseGroup(testCtx, "fill_and_update_buffer", "Fill and Update Buffer Tests"));
+	de::MovePtr<tcu::TestCaseGroup> fillAndUpdateBufferTests(new tcu::TestCaseGroup(testCtx, "fill_and_update_buffer"));
 
 	struct TestGroupData
 	{
 		const char*		name;
-		const char*		description;
 		bool			useDedicatedAllocation;
 		bool			useTransferOnlyQueue;
 	};
 	const TestGroupData testGroupData[]
 	{
-		{ "suballocation",					"BufferView Fill and Update Tests for Suballocated Objects",						false,	false },
-		{ "suballocation_transfer_queue",	"BufferView Fill and Update Tests for Suballocated Objects on transfer only queue",	false,	true },
-		{ "dedicated_alloc",				"BufferView Fill and Update Tests for Dedicatedly Allocated Objects",				true,	false },
+		// BufferView Fill and Update Tests for Suballocated Objects
+		{ "suballocation",false,	false },
+		// BufferView Fill and Update Tests for Suballocated Objects on transfer only queue
+		{ "suballocation_transfer_queue",false,	true },
+		// BufferView Fill and Update Tests for Dedicatedly Allocated Objects
+		{ "dedicated_alloc",true,	false },
 	};
 
 	TestParams params;
 	for (const auto& groupData : testGroupData)
 	{
-		de::MovePtr<tcu::TestCaseGroup> currentTestsGroup(new tcu::TestCaseGroup(testCtx, groupData.name, groupData.description));
+		de::MovePtr<tcu::TestCaseGroup> currentTestsGroup(new tcu::TestCaseGroup(testCtx, groupData.name));
 
 		params.dstSize				= TestParams::TEST_DATA_SIZE;
 		params.bufferAllocator		= bufferAllocators[groupData.useDedicatedAllocation];
@@ -674,47 +713,43 @@ tcu::TestCaseGroup*					createFillAndUpdateBufferTests	(tcu::TestContext&			test
 			data[b] = (deUint8) (b % 255);
 
 		{
-			const std::string		description							("whole buffer");
 			const std::string		testName							("buffer_whole");
 
 			params.dstOffset = 0;
 			params.size = params.dstSize;
 
-			currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_" + testName, "Fill " + description, params));
-			currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, "Update " + description, params));
+			currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_" + testName, params));
+			currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, params));
 		}
 
 		{
-			const std::string		description							("first word in buffer");
 			const std::string		testName							("buffer_first_one");
 
 			params.dstOffset = 0;
 			params.size = 4;
 
-			currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_" + testName, "Fill " + description, params));
-			currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, "Update " + description, params));
+			currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_" + testName, params));
+			currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, params));
 		}
 
 		{
-			const std::string		description							("second word in buffer");
 			const std::string		testName							("buffer_second_one");
 
 			params.dstOffset = 4;
 			params.size = 4;
 
-			currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_" + testName, "Fill " + description, params));
-			currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, "Update " + description, params));
+			currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_" + testName, params));
+			currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, params));
 		}
 
 		{
-			const std::string		description							("buffer second part");
 			const std::string		testName							("buffer_second_part");
 
 			params.dstOffset = params.dstSize / 2;
 			params.size = params.dstSize / 2;
 
-			currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_" + testName, "Fill " + description, params));
-			currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, "Update " + description, params));
+			currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_" + testName, params));
+			currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, params));
 		}
 
 		// VK_WHOLE_SIZE tests.
@@ -729,9 +764,8 @@ tcu::TestCaseGroup*					createFillAndUpdateBufferTests	(tcu::TestContext&			test
 
 					const VkDeviceSize	extraBytes	= params.dstSize % sizeof(deUint32);
 					const std::string	name		= "fill_buffer_vk_whole_size_" + de::toString(extraBytes) + "_extra_bytes_offset_" + de::toString(params.dstOffset);
-					const std::string	description	= "vkCmdFillBuffer with VK_WHOLE_SIZE, " + de::toString(extraBytes) + " extra bytes and offset " + de::toString(params.dstOffset);
 
-					currentTestsGroup->addChild(new FillWholeBufferTestCase{testCtx, name, description, params});
+					currentTestsGroup->addChild(new FillWholeBufferTestCase{testCtx, name, params});
 				}
 			}
 		}

@@ -253,7 +253,7 @@ struct DeviceHelper
 												 queueFamilyIndex,
 												 context.getTestContext().getCommandLine().isValidationEnabled(),
 												 pAllocator))
-		, vkd				(context.getPlatformInterface(), instance, *device)
+		, vkd				(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
 		, queue				(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}
@@ -1037,7 +1037,7 @@ template <class T>	// T is the test instance class.
 class PresentIdWaitCase : public TestCase
 {
 public:
-							PresentIdWaitCase	(vk::wsi::Type wsiType, tcu::TestContext& ctx, const std::string& name, const std::string& description);
+							PresentIdWaitCase	(vk::wsi::Type wsiType, tcu::TestContext& ctx, const std::string& name);
 	virtual					~PresentIdWaitCase	(void) {}
 	virtual void			initPrograms		(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance		(Context& context) const;
@@ -1048,8 +1048,8 @@ protected:
 };
 
 template <class T>
-PresentIdWaitCase<T>::PresentIdWaitCase (vk::wsi::Type wsiType, tcu::TestContext& ctx, const std::string& name, const std::string& description)
-	: TestCase(ctx, name, description), m_wsiType(wsiType)
+PresentIdWaitCase<T>::PresentIdWaitCase (vk::wsi::Type wsiType, tcu::TestContext& ctx, const std::string& name)
+	: TestCase(ctx, name), m_wsiType(wsiType)
 {
 }
 
@@ -1095,27 +1095,38 @@ void PresentIdWaitCase<T>::checkSupport (Context& context) const
 
 void createPresentIdTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	testGroup->addChild(new PresentIdWaitCase<PresentIdZeroInstance>		(wsiType, testGroup->getTestContext(), "zero",			"Use present id zero"));
-	testGroup->addChild(new PresentIdWaitCase<PresentIdIncreasingInstance>	(wsiType, testGroup->getTestContext(), "increasing",	"Use increasing present ids"));
-	testGroup->addChild(new PresentIdWaitCase<PresentIdInterleavedInstance>	(wsiType, testGroup->getTestContext(), "interleaved",	"Use increasing present ids interleaved with no ids"));
+	// Use present id zero
+	testGroup->addChild(new PresentIdWaitCase<PresentIdZeroInstance>		(wsiType, testGroup->getTestContext(), "zero"));
+	// Use increasing present ids
+	testGroup->addChild(new PresentIdWaitCase<PresentIdIncreasingInstance>	(wsiType, testGroup->getTestContext(), "increasing"));
+	// Use increasing present ids interleaved with no ids
+	testGroup->addChild(new PresentIdWaitCase<PresentIdInterleavedInstance>	(wsiType, testGroup->getTestContext(), "interleaved"));
 }
 
 void createPresentWaitTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	testGroup->addChild(new PresentIdWaitCase<PresentWaitSingleFrameInstance>	(wsiType, testGroup->getTestContext(), "single_no_timeout",	"Present single frame with no expected timeout"));
-	testGroup->addChild(new PresentIdWaitCase<PresentWaitPastFrameInstance>		(wsiType, testGroup->getTestContext(), "past_no_timeout",	"Wait for past frame with no expected timeout"));
-	testGroup->addChild(new PresentIdWaitCase<PresentWaitNoFramesInstance>		(wsiType, testGroup->getTestContext(), "no_frames",			"Expect timeout before submitting any frame"));
-	testGroup->addChild(new PresentIdWaitCase<PresentWaitNoFrameIdInstance>		(wsiType, testGroup->getTestContext(), "no_frame_id",		"Expect timeout after submitting frames with no id"));
-	testGroup->addChild(new PresentIdWaitCase<PresentWaitFutureFrameInstance>	(wsiType, testGroup->getTestContext(), "future_frame",		"Expect timeout when waiting for a future frame"));
-	testGroup->addChild(new PresentIdWaitCase<PresentWaitDualInstance>			(wsiType, testGroup->getTestContext(), "two_swapchains",	"Smoke test using two windows, surfaces and swapchains"));
+	// Present single frame with no expected timeout
+	testGroup->addChild(new PresentIdWaitCase<PresentWaitSingleFrameInstance>	(wsiType, testGroup->getTestContext(), "single_no_timeout"));
+	// Wait for past frame with no expected timeout
+	testGroup->addChild(new PresentIdWaitCase<PresentWaitPastFrameInstance>		(wsiType, testGroup->getTestContext(), "past_no_timeout"));
+	// Expect timeout before submitting any frame
+	testGroup->addChild(new PresentIdWaitCase<PresentWaitNoFramesInstance>		(wsiType, testGroup->getTestContext(), "no_frames"));
+	// Expect timeout after submitting frames with no id
+	testGroup->addChild(new PresentIdWaitCase<PresentWaitNoFrameIdInstance>		(wsiType, testGroup->getTestContext(), "no_frame_id"));
+	// Expect timeout when waiting for a future frame
+	testGroup->addChild(new PresentIdWaitCase<PresentWaitFutureFrameInstance>	(wsiType, testGroup->getTestContext(), "future_frame"));
+	// Smoke test using two windows, surfaces and swapchains
+	testGroup->addChild(new PresentIdWaitCase<PresentWaitDualInstance>			(wsiType, testGroup->getTestContext(), "two_swapchains"));
 }
 
 } // anonymous
 
 void createPresentIdWaitTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	de::MovePtr<tcu::TestCaseGroup>	idGroup		(new tcu::TestCaseGroup(testGroup->getTestContext(), "id",		"VK_KHR_present_id tests"));
-	de::MovePtr<tcu::TestCaseGroup>	waitGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), "wait",	"VK_KHR_present_wait tests"));
+	// VK_KHR_present_id tests
+	de::MovePtr<tcu::TestCaseGroup>	idGroup		(new tcu::TestCaseGroup(testGroup->getTestContext(), "id"));
+	// VK_KHR_present_wait tests
+	de::MovePtr<tcu::TestCaseGroup>	waitGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), "wait"));
 
 	createPresentIdTests	(idGroup.get(),		wsiType);
 	createPresentWaitTests	(waitGroup.get(),	wsiType);
@@ -1126,4 +1137,3 @@ void createPresentIdWaitTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiT
 
 } // wsi
 } // vkt
-

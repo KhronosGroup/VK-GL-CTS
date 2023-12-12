@@ -354,7 +354,7 @@ tcu::TextureFormat getColorFormat (const tcu::PixelFormat& colorBits)
 		case PACK_FMT(4,4,4,4):		return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_SHORT_4444);
 		case PACK_FMT(5,5,5,1):		return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_SHORT_5551);
 		case PACK_FMT(5,6,5,0):		return TextureFormat(TextureFormat::RGB,	TextureFormat::UNORM_SHORT_565);
-
+		case PACK_FMT(10,10,10,2):	return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_INT_1010102_REV);
 		// \note Defaults to RGBA8
 		default:					return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_INT8);
 	}

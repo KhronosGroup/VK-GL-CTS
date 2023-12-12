@@ -6,6 +6,8 @@
 *
 * Copyright (c) 2015 The Khronos Group Inc.
 * Copyright (c) 2015 Intel Corporation
+* Copyright (c) 2023 LunarG, Inc.
+* Copyright (c) 2023 Nintendo
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -59,7 +61,8 @@ protected:
 	void					beginRenderPass					(void);
 
 	void					beginRenderPassWithClearColor	(const vk::VkClearColorValue&	clearColor,
-															 const bool						skipBeginCmdBuffer	= false);
+															 const bool						skipBeginCmdBuffer	= false,
+															 const bool						previousTransfer = false);
 
 	void					setDynamicViewportState			(const deUint32					width,
 															const deUint32					height);
@@ -97,6 +100,7 @@ protected:
 		HEIGHT      = 128
 	};
 
+	vk::PipelineConstructionType							m_pipelineConstructionType;
 	vk::VkFormat											m_colorAttachmentFormat;
 
 	vk::VkPrimitiveTopology									m_topology;
@@ -106,7 +110,7 @@ protected:
 	vk::Move<vk::VkDescriptorPool>							m_descriptorPool;
 	vk::Move<vk::VkDescriptorSetLayout>						m_meshSetLayout;
 	vk::Move<vk::VkDescriptorSetLayout>						m_otherSetLayout;
-	vk::Move<vk::VkPipelineLayout>							m_pipelineLayout;
+	vk::PipelineLayoutWrapper								m_pipelineLayout;
 	vk::Move<vk::VkDescriptorSet>							m_descriptorSet;
 	vk::GraphicsPipelineWrapper								m_pipeline;
 
@@ -119,8 +123,7 @@ protected:
 	vk::Move<vk::VkCommandPool>								m_cmdPool;
 	vk::Move<vk::VkCommandBuffer>							m_cmdBuffer;
 
-	vk::Move<vk::VkFramebuffer>								m_framebuffer;
-	vk::Move<vk::VkRenderPass>								m_renderPass;
+	vk::RenderPassWrapper									m_renderPass;
 
 	const std::string										m_vertexShaderName;
 	const std::string										m_fragmentShaderName;

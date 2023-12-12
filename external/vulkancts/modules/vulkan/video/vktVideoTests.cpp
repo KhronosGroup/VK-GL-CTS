@@ -35,31 +35,31 @@ namespace video
 
 using namespace vk;
 
-tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "video", "Video encoding and decoding tests"));
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	group->addChild(createVideoCapabilitiesTests(testCtx));
 	group->addChild(createVideoDecodeTests(testCtx));
 
 	{
-		de::MovePtr<tcu::TestCaseGroup>	syncGroup(new tcu::TestCaseGroup(testCtx, "synchronization", ""));
+		de::MovePtr<tcu::TestCaseGroup>	syncGroup(new tcu::TestCaseGroup(testCtx, "synchronization"));
 
-		syncGroup->addChild(createSynchronizationTests(testCtx, VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT));
-		syncGroup->addChild(createSynchronizationTests(testCtx, VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT));
-		syncGroup->addChild(createSynchronizationTests(testCtx, VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR));
-		syncGroup->addChild(createSynchronizationTests(testCtx, VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR));
+		syncGroup->addChild(createSynchronizationTests(testCtx, "encode_h264", VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT));
+		syncGroup->addChild(createSynchronizationTests(testCtx, "encode_h265", VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT));
+		syncGroup->addChild(createSynchronizationTests(testCtx, "decode_h264", VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR));
+		syncGroup->addChild(createSynchronizationTests(testCtx, "decode_h265", VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR));
 
 		group->addChild(syncGroup.release());
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup>	syncGroup(new tcu::TestCaseGroup(testCtx, "synchronization2", ""));
+		de::MovePtr<tcu::TestCaseGroup>	syncGroup(new tcu::TestCaseGroup(testCtx, "synchronization2"));
 
-		syncGroup->addChild(createSynchronizationTests(testCtx, VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT));
-		syncGroup->addChild(createSynchronizationTests(testCtx, VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT));
-		syncGroup->addChild(createSynchronizationTests(testCtx, VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR));
-		syncGroup->addChild(createSynchronizationTests(testCtx, VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR));
+		syncGroup->addChild(createSynchronizationTests(testCtx, "encode_h264", VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT));
+		syncGroup->addChild(createSynchronizationTests(testCtx, "encode_h265", VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT));
+		syncGroup->addChild(createSynchronizationTests(testCtx, "decode_h264", VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR));
+		syncGroup->addChild(createSynchronizationTests(testCtx, "decode_h265", VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR));
 
 		group->addChild(syncGroup.release());
 	}

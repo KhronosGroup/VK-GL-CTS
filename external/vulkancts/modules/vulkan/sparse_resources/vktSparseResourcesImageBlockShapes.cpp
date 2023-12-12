@@ -58,7 +58,6 @@ class ImageBlockShapesCase : public TestCase
 public:
 	ImageBlockShapesCase			(tcu::TestContext&	testCtx,
 									 const std::string&	name,
-									 const std::string&	description,
 									 const ImageType	imageType,
 									 const tcu::UVec3&	imageSize,
 									 const VkFormat		format,
@@ -77,12 +76,11 @@ private:
 
 ImageBlockShapesCase::ImageBlockShapesCase (tcu::TestContext&	testCtx,
 											const std::string&	name,
-											const std::string&	description,
 											const ImageType		imageType,
 											const tcu::UVec3&	imageSize,
 											const VkFormat		format,
 											deUint32			numSamples)
-	: TestCase		(testCtx, name, description)
+	: TestCase		(testCtx, name)
 	, m_imageType	(imageType)
 	, m_imageSize	(imageSize)
 	, m_format		(format)
@@ -166,8 +164,7 @@ tcu::TestStatus ImageBlockShapesInstance::iterate (void)
 	imageCreateInfo.samples					= static_cast<VkSampleCountFlagBits>(m_numSamples);
 	imageCreateInfo.tiling					= VK_IMAGE_TILING_OPTIMAL;
 	imageCreateInfo.initialLayout			= VK_IMAGE_LAYOUT_UNDEFINED;
-	imageCreateInfo.usage					= VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-											  VK_IMAGE_USAGE_STORAGE_BIT;
+	imageCreateInfo.usage					= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	imageCreateInfo.sharingMode				= VK_SHARING_MODE_EXCLUSIVE;
 	imageCreateInfo.queueFamilyIndexCount	= 0u;
 	imageCreateInfo.pQueueFamilyIndices		= DE_NULL;
@@ -447,7 +444,7 @@ TestInstance* ImageBlockShapesCase::createInstance (Context& context) const
 
 tcu::TestCaseGroup* createImageBlockShapesTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_block_shapes", "Standard block shape"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_block_shapes"));
 
 	const std::vector<TestImageParameters> imageParameters
 	{
@@ -463,13 +460,13 @@ tcu::TestCaseGroup* createImageBlockShapesTests (tcu::TestContext& testCtx)
 	for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
 	{
 		const ImageType					imageType = imageParameters[imageTypeNdx].imageType;
-		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str()));
 
 		for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
 		{
 			VkFormat						format				= imageParameters[imageTypeNdx].formats[formatNdx].format;
 			tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(format);
-			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str()));
 
 			for (deInt32 sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); ++sampleCountNdx)
 			{
@@ -486,7 +483,7 @@ tcu::TestCaseGroup* createImageBlockShapesTests (tcu::TestContext& testCtx)
 					const deUint32		sampleCount = sampleCounts[sampleCountNdx];
 					const std::string	name = std::string("samples_") + de::toString(sampleCount);
 
-					formatGroup->addChild(new ImageBlockShapesCase(testCtx, name.c_str(), "", imageType, imageSize, format, sampleCount));
+					formatGroup->addChild(new ImageBlockShapesCase(testCtx, name.c_str(), imageType, imageSize, format, sampleCount));
 				}
 			}
 			imageTypeGroup->addChild(formatGroup.release());

@@ -46,6 +46,7 @@
 #include "vktApiMemoryRequirementInvarianceTests.hpp"
 #include "vktApiBufferMemoryRequirementsTests.hpp"
 #include "vktApiGetDeviceProcAddrTests.hpp"
+#include "vktApiExtensionDuplicatesTests.hpp"
 
 #ifndef CTS_USES_VULKANSC
 #include "vktApiSmokeTests.hpp"
@@ -55,6 +56,8 @@
 #include "vktApiToolingInfoTests.hpp"
 #include "vktApiFormatPropertiesExtendedKHRtests.hpp"
 #include "vktApiImageCompressionControlTests.hpp"
+#include "vktApiFrameBoundaryTests.hpp"
+#include "vktApiPhysicalDeviceFormatPropertiesMaint5Tests.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vkt
@@ -92,7 +95,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 #ifndef CTS_USES_VULKANSC
 	apiTests->addChild(createBufferMarkerTests					(testCtx));
 #endif // CTS_USES_VULKANSC
-	apiTests->addChild(createTestGroup							(testCtx, "buffer_view",	"BufferView tests",		createBufferViewTests));
+	apiTests->addChild(createTestGroup							(testCtx, "buffer_view",		createBufferViewTests));
 	apiTests->addChild(createCommandBuffersTests				(testCtx));
 	apiTests->addChild(createCopiesAndBlittingTests				(testCtx));
 	apiTests->addChild(createImageClearingTests					(testCtx));
@@ -116,14 +119,17 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 #ifndef CTS_USES_VULKANSC
 	apiTests->addChild(createImageCompressionControlTests		(testCtx));
 	apiTests->addChild(createGetDeviceProcAddrTests				(testCtx));
+	apiTests->addChild(createFrameBoundaryTests					(testCtx));
+	apiTests->addChild(createMaintenance5Tests					(testCtx));
 #endif
+	apiTests->addChild(createExtensionDuplicatesTests			(testCtx));
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "api", "API Tests", createApiTests);
+	return createTestGroup(testCtx, name, createApiTests);
 }
 
 } // api

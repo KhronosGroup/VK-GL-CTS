@@ -3,6 +3,8 @@
  * --------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,6 +154,16 @@ void freeHandle (Handle handle, const VkAllocationCallbacks* pAllocator)
 }
 
 template<typename Object, typename BaseObject, typename Handle, typename Parent, typename CreateInfo>
+void allocateNonDispHandleArray (Parent parent, VkPipelineCache pipelineCache, uint32_t createInfoCount, const CreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, Handle* pHandles)
+{
+	(void)pipelineCache;
+	for (uint32_t i = 0; i < createInfoCount; i++) {
+		Object* const	obj		= allocateHandle<Object, Object*>(parent, &pCreateInfos[i], pAllocator);
+		pHandles[i] = Handle((deUint64)(deUintptr)obj);
+	}
+}
+
+template<typename Object, typename BaseObject, typename Handle, typename Parent, typename CreateInfo>
 Handle allocateNonDispHandle (Parent parent, const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	Object* const	obj		= allocateHandle<Object, Object*>(parent, pCreateInfo, pAllocator);
@@ -230,6 +242,8 @@ VK_NULL_DEFINE_DEVICE_OBJ(PrivateDataSlot);
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkInstance, DebugReportCallback, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CuModule, NVX)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CuFunction, NVX)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CudaModule, NV)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CudaFunction, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Micromap, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, OpticalFlowSession, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, NV)
@@ -303,6 +317,7 @@ public:
 #ifndef CTS_USES_VULKANSC
 	Pipeline (VkDevice, const VkRayTracingPipelineCreateInfoNV*) {}
 	Pipeline (VkDevice, const VkRayTracingPipelineCreateInfoKHR*) {}
+	Pipeline (VkDevice, const VkExecutionGraphPipelineCreateInfoAMDX*) {}
 #endif // CTS_USES_VULKANSC
 };
 
@@ -797,7 +812,7 @@ VKAPI_ATTR VkResult VKAPI_CALL createRayTracingPipelinesKHR (VkDevice device, Vk
 	}
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL createShadersEXT(VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders)
+VKAPI_ATTR VkResult VKAPI_CALL createShadersEXT (VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders)
 {
 	deUint32 allocNdx;
 	try

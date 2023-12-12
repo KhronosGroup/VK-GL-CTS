@@ -133,7 +133,7 @@ protected:
 };
 
 GeometryExpanderRenderTest::GeometryExpanderRenderTest (TestContext& testCtx, const PrimitiveTestSpec& inputPrimitives)
-	: TestCase			(testCtx, inputPrimitives.name, inputPrimitives.name)
+	: TestCase			(testCtx, inputPrimitives.name)
 	, m_primitiveType	(inputPrimitives.primitiveType)
 	, m_outputType		(inputPrimitives.outputType)
 {
@@ -262,10 +262,10 @@ TestInstance* TriangleStripAdjacencyVertexCountTest::createInstance (Context& co
 
 TestCaseGroup* createInputGeometryShaderTests (TestContext& testCtx)
 {
-	MovePtr<TestCaseGroup> inputPrimitiveGroup		(new TestCaseGroup(testCtx, "input", "Different input primitives."));
-	MovePtr<TestCaseGroup> basicPrimitiveGroup		(new TestCaseGroup(testCtx, "basic_primitive", "Basic Primitive geometry tests"));
-	MovePtr<TestCaseGroup> triStripAdjacencyGroup	(new TestCaseGroup(testCtx, "triangle_strip_adjacency",	"Different triangle_strip_adjacency vertex counts."));
-	MovePtr<TestCaseGroup> conversionPrimitiveGroup	(new TestCaseGroup(testCtx, "conversion", "Different input and output primitives."));
+	MovePtr<TestCaseGroup> inputPrimitiveGroup		(new TestCaseGroup(testCtx, "input"));
+	MovePtr<TestCaseGroup> basicPrimitiveGroup		(new TestCaseGroup(testCtx, "basic_primitive"));
+	MovePtr<TestCaseGroup> triStripAdjacencyGroup	(new TestCaseGroup(testCtx, "triangle_strip_adjacency"));
+	MovePtr<TestCaseGroup> conversionPrimitiveGroup	(new TestCaseGroup(testCtx, "conversion"));
 
 	const PrimitiveTestSpec inputPrimitives[] =
 	{

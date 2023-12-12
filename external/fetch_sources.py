@@ -140,7 +140,7 @@ class SourcePackage (Source):
 			raise Exception("Checksum mismatch for %s, expected %s, got %s" % (self.filename, self.checksum, checksum))
 
 		if not os.path.exists(os.path.dirname(dstPath)):
-			os.mkdir(os.path.dirname(dstPath))
+			os.makedirs(os.path.dirname(dstPath))
 
 		writeBinaryFile(dstPath, data)
 
@@ -304,25 +304,25 @@ PACKAGES = [
 		"e7b5f0aa5b1b0eadc63a1c624c0ca7f5af133aa857d6a4271b0ef3d0bdb6868e",
 		"renderdoc"),
 	GitRepo(
-		"https://gitlab.khronos.org/spirv/spirv-tools.git",
-		"git@gitlab.khronos.org:spirv/spirv-tools.git",
-		"9d49450ce544983944db9891b0e7bc10b420a5af",
+		"https://github.com/KhronosGroup/SPIRV-Tools.git",
+		"git@github.com:KhronosGroup/SPIRV-Tools.git",
+		"4f014aff9c653e5e16de1cc5f7130e99e02982e5",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"0bbec2e8f6eca92e925bc589725b108788fc0733",
+		"8fa46582ec517911d053d7c49c8087d8717e191a",
 		"glslang",
 		removeTags = ["main-tot"]),
 	GitRepo(
-		"https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
-		"git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
-		"edb8fb758ece7faefb0515ebc4ff4f4e2275d9e2",
+		"https://github.com/KhronosGroup/SPIRV-Headers.git",
+		"git@github.com:KhronosGroup/SPIRV-Headers.git",
+		"88bc5e321c2839707df8b1ab534e243e00744177",
 		"spirv-headers"),
 	GitRepo(
-		"https://gitlab.khronos.org/vulkan/vulkan.git",
-		"git@gitlab.khronos.org:vulkan/vulkan.git",
-		"1594a56e4781cfbc1c572954451eeb011b303863",
+		"https://github.com/KhronosGroup/Vulkan-Docs.git",
+		"git@github.com:KhronosGroup/Vulkan-Docs.git",
+		"f8d76125ca22ec65dfcaedc7177e204f11ad7c7b",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
@@ -340,7 +340,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/vk_video_samples.git",
 		"git@github.com:Igalia/vk_video_samples.git",
-		"cts-integration-0.9.9-1",
+		"138bbe048221d315962ddf8413aa6a08cc62a381",
 		"nvidia-video-samples"),
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",

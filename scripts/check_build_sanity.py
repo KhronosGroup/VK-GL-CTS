@@ -31,9 +31,10 @@ from ctsbuild.build import *
 pythonExecutable = sys.executable or "python"
 
 class Environment:
-	def __init__ (self, srcDir, tmpDir):
+	def __init__ (self, srcDir, tmpDir, verbose):
 		self.srcDir	= srcDir
 		self.tmpDir	= tmpDir
+		self.verbose = verbose
 
 class BuildTestStep:
 	def getName (self):
@@ -192,18 +193,18 @@ EARLY_SPECIAL_RECIPES	= [
 			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py")),
 			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py"), lambda env: ["--api", "SC"] ),
 			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py"), lambda env: ["--api", "SC"] ),
-			RunScript(os.path.join("scripts", "gen_android_mk.py"))
+			RunScript(os.path.join("scripts", "gen_android_bp.py"))
 		]),
 ]
 
 LATE_SPECIAL_RECIPES	= [
 	('android-mustpass', [
 			RunScript(os.path.join("scripts", "build_android_mustpass.py"),
-					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "android-mustpass")]),
+					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "android-mustpass")] + (["--verbose"] if env.verbose else [])),
 		]),
 	('vulkan-mustpass', [
 			RunScript(os.path.join("external", "vulkancts", "scripts", "build_mustpass.py"),
-					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "vulkan-mustpass")]),
+					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "vulkan-mustpass")] + (["--verbose"] if env.verbose else [])),
 		]),
 	('spirv-binaries', [
 			RunScript(os.path.join("external", "vulkancts", "scripts", "build_spirv_binaries.py"),
@@ -275,12 +276,17 @@ def parseArgs ():
 						dest="skipPostCheck",
 						action="store_true",
 						help="Skip post recipe checks")
+	parser.add_argument("-v", "--verbose",
+						dest="verbose",
+						action="store_true",
+						help="Enable verbose logging")
 
 	return parser.parse_args()
 
 if __name__ == "__main__":
 	args	= parseArgs()
-	env		= Environment(args.srcDir, args.tmpDir)
+	env		= Environment(args.srcDir, args.tmpDir, args.verbose)
+	initializeLogger(args.verbose)
 
 	if args.dumpRecipes:
 		for name, steps in RECIPES:

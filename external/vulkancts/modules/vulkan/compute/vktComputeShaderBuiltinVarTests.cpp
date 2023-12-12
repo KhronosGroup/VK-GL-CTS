@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2016 The Khronos Group Inc.
  * Copyright (c) 2016 The Android Open Source Project
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,33 +129,39 @@ private:
 class ComputeBuiltinVarInstance : public vkt::TestInstance
 {
 public:
-									ComputeBuiltinVarInstance	(Context&						context,
-																 const vector<SubCase>&			subCases,
-																 const glu::DataType			varType,
-																 const ComputeBuiltinVarCase*	builtinVarCase);
+									ComputeBuiltinVarInstance	(Context&									context,
+																 const vector<SubCase>&						subCases,
+																 const glu::DataType						varType,
+																 const ComputeBuiltinVarCase*				builtinVarCase,
+																 const vk::ComputePipelineConstructionType	computePipelineConstructionType);
 
 	virtual tcu::TestStatus			iterate						(void);
 
 private:
-	const VkDevice					m_device;
-	const DeviceInterface&			m_vki;
-	const VkQueue					m_queue;
-	const deUint32					m_queueFamilyIndex;
-	vector<SubCase>					m_subCases;
-	const ComputeBuiltinVarCase*	m_builtin_var_case;
-	int								m_subCaseNdx;
-	const glu::DataType				m_varType;
+	const VkDevice						m_device;
+	const DeviceInterface&				m_vki;
+	const VkQueue						m_queue;
+	const deUint32						m_queueFamilyIndex;
+	vector<SubCase>						m_subCases;
+	const ComputeBuiltinVarCase*		m_builtin_var_case;
+	int									m_subCaseNdx;
+	const glu::DataType					m_varType;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
 class ComputeBuiltinVarCase : public vkt::TestCase
 {
 public:
-							ComputeBuiltinVarCase	(tcu::TestContext& context, const string& name, const char* varName, glu::DataType varType, bool readByComponent);
+							ComputeBuiltinVarCase	(tcu::TestContext& context, const string& name, const char* varName, glu::DataType varType, bool readByComponent, const vk::ComputePipelineConstructionType computePipelineConstructionType);
 							~ComputeBuiltinVarCase	(void);
 
+	virtual void			checkSupport			(Context& context) const
+	{
+		checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_computePipelineConstructionType);
+	}
 	TestInstance*			createInstance			(Context& context) const
 	{
-		return new ComputeBuiltinVarInstance(context, m_subCases, m_varType, this);
+		return new ComputeBuiltinVarInstance(context, m_subCases, m_varType, this, m_computePipelineConstructionType);
 	}
 
 	virtual void			initPrograms			(SourceCollections& programCollection) const;
@@ -166,21 +174,23 @@ protected:
 private:
 	deUint32				getProgram				(const tcu::UVec3& localSize);
 
-	const string			m_varName;
-	const glu::DataType		m_varType;
-	int						m_subCaseNdx;
-	bool					m_readByComponent;
+	const string						m_varName;
+	const glu::DataType					m_varType;
+	int									m_subCaseNdx;
+	bool								m_readByComponent;
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 
 	ComputeBuiltinVarCase (const ComputeBuiltinVarCase& other);
 	ComputeBuiltinVarCase& operator= (const ComputeBuiltinVarCase& other);
 };
 
-ComputeBuiltinVarCase::ComputeBuiltinVarCase (tcu::TestContext& context, const string& name, const char* varName, glu::DataType varType, bool readByComponent)
-	: TestCase			(context, name + (readByComponent ? "_component" : ""), varName)
-	, m_varName			(varName)
-	, m_varType			(varType)
-	, m_subCaseNdx		(0)
-	, m_readByComponent	(readByComponent)
+ComputeBuiltinVarCase::ComputeBuiltinVarCase (tcu::TestContext& context, const string& name, const char* varName, glu::DataType varType, bool readByComponent, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestCase							(context, name + (readByComponent ? "_component" : ""))
+	, m_varName							(varName)
+	, m_varType							(varType)
+	, m_subCaseNdx						(0)
+	, m_readByComponent					(readByComponent)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -253,8 +263,8 @@ string ComputeBuiltinVarCase::genBuiltinVarSource (const string& varName, glu::D
 class NumWorkGroupsCase : public ComputeBuiltinVarCase
 {
 public:
-	NumWorkGroupsCase (tcu::TestContext& context, bool readByCompnent)
-		: ComputeBuiltinVarCase(context, "num_work_groups", "gl_NumWorkGroups", glu::TYPE_UINT_VEC3, readByCompnent)
+	NumWorkGroupsCase (tcu::TestContext& context, bool readByCompnent, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: ComputeBuiltinVarCase(context, "num_work_groups", "gl_NumWorkGroups", glu::TYPE_UINT_VEC3, readByCompnent, computePipelineConstructionType)
 	{
 		m_subCases.push_back(SubCase(UVec3(1, 1, 1), UVec3(1, 1, 1)));
 		m_subCases.push_back(SubCase(UVec3(1, 1, 1), UVec3(52, 1, 1)));
@@ -277,8 +287,8 @@ public:
 class WorkGroupSizeCase : public ComputeBuiltinVarCase
 {
 public:
-	WorkGroupSizeCase (tcu::TestContext& context, bool readByComponent)
-		: ComputeBuiltinVarCase(context, "work_group_size", "gl_WorkGroupSize", glu::TYPE_UINT_VEC3, readByComponent)
+	WorkGroupSizeCase (tcu::TestContext& context, bool readByComponent, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: ComputeBuiltinVarCase(context, "work_group_size", "gl_WorkGroupSize", glu::TYPE_UINT_VEC3, readByComponent, computePipelineConstructionType)
 	{
 		m_subCases.push_back(SubCase(UVec3(1, 1, 1), UVec3(1, 1, 1)));
 		m_subCases.push_back(SubCase(UVec3(1, 1, 1), UVec3(2, 7, 3)));
@@ -304,8 +314,8 @@ public:
 class WorkGroupIDCase : public ComputeBuiltinVarCase
 {
 public:
-	WorkGroupIDCase (tcu::TestContext& context, bool readbyComponent)
-		: ComputeBuiltinVarCase(context, "work_group_id", "gl_WorkGroupID", glu::TYPE_UINT_VEC3, readbyComponent)
+	WorkGroupIDCase (tcu::TestContext& context, bool readbyComponent, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: ComputeBuiltinVarCase(context, "work_group_id", "gl_WorkGroupID", glu::TYPE_UINT_VEC3, readbyComponent, computePipelineConstructionType)
 	{
 		m_subCases.push_back(SubCase(UVec3(1, 1, 1), UVec3(1, 1, 1)));
 		m_subCases.push_back(SubCase(UVec3(1, 1, 1), UVec3(52, 1, 1)));
@@ -327,8 +337,8 @@ public:
 class LocalInvocationIDCase : public ComputeBuiltinVarCase
 {
 public:
-	LocalInvocationIDCase (tcu::TestContext& context, bool readByComponent)
-		: ComputeBuiltinVarCase(context, "local_invocation_id", "gl_LocalInvocationID", glu::TYPE_UINT_VEC3, readByComponent)
+	LocalInvocationIDCase (tcu::TestContext& context, bool readByComponent, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: ComputeBuiltinVarCase(context, "local_invocation_id", "gl_LocalInvocationID", glu::TYPE_UINT_VEC3, readByComponent, computePipelineConstructionType)
 	{
 		m_subCases.push_back(SubCase(UVec3(1, 1, 1), UVec3(1, 1, 1)));
 		m_subCases.push_back(SubCase(UVec3(1, 1, 1), UVec3(2, 7, 3)));
@@ -353,8 +363,8 @@ public:
 class GlobalInvocationIDCase : public ComputeBuiltinVarCase
 {
 public:
-	GlobalInvocationIDCase (tcu::TestContext& context, bool readByComponent)
-		: ComputeBuiltinVarCase(context, "global_invocation_id", "gl_GlobalInvocationID", glu::TYPE_UINT_VEC3, readByComponent)
+	GlobalInvocationIDCase (tcu::TestContext& context, bool readByComponent, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: ComputeBuiltinVarCase(context, "global_invocation_id", "gl_GlobalInvocationID", glu::TYPE_UINT_VEC3, readByComponent, computePipelineConstructionType)
 	{
 		m_subCases.push_back(SubCase(UVec3(1, 1, 1), UVec3(1, 1, 1)));
 		m_subCases.push_back(SubCase(UVec3(1, 1, 1), UVec3(52, 1, 1)));
@@ -376,8 +386,8 @@ public:
 class LocalInvocationIndexCase : public ComputeBuiltinVarCase
 {
 public:
-	LocalInvocationIndexCase (tcu::TestContext& context, bool readByComponent)
-		: ComputeBuiltinVarCase(context, "local_invocation_index", "gl_LocalInvocationIndex", glu::TYPE_UINT, readByComponent)
+	LocalInvocationIndexCase (tcu::TestContext& context, bool readByComponent, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+		: ComputeBuiltinVarCase(context, "local_invocation_index", "gl_LocalInvocationIndex", glu::TYPE_UINT, readByComponent, computePipelineConstructionType)
 	{
 		m_subCases.push_back(SubCase(UVec3(1, 1, 1), UVec3(1, 1, 1)));
 		m_subCases.push_back(SubCase(UVec3(1, 1, 1), UVec3(1, 39, 1)));
@@ -395,19 +405,21 @@ public:
 	}
 };
 
-ComputeBuiltinVarInstance::ComputeBuiltinVarInstance (Context&						context,
-													  const vector<SubCase>&		subCases,
-													  const glu::DataType			varType,
-													  const ComputeBuiltinVarCase*	builtinVarCase)
-	: vkt::TestInstance		(context)
-	, m_device				(m_context.getDevice())
-	, m_vki					(m_context.getDeviceInterface())
-	, m_queue				(context.getUniversalQueue())
-	, m_queueFamilyIndex	(context.getUniversalQueueFamilyIndex())
-	, m_subCases			(subCases)
-	, m_builtin_var_case	(builtinVarCase)
-	, m_subCaseNdx			(0)
-	, m_varType				(varType)
+ComputeBuiltinVarInstance::ComputeBuiltinVarInstance (Context&									context,
+													  const vector<SubCase>&					subCases,
+													  const glu::DataType						varType,
+													  const ComputeBuiltinVarCase*				builtinVarCase,
+													  const vk::ComputePipelineConstructionType	computePipelineConstructionType)
+	: vkt::TestInstance					(context)
+	, m_device							(m_context.getDevice())
+	, m_vki								(m_context.getDeviceInterface())
+	, m_queue							(context.getUniversalQueue())
+	, m_queueFamilyIndex				(context.getUniversalQueueFamilyIndex())
+	, m_subCases						(subCases)
+	, m_builtin_var_case				(builtinVarCase)
+	, m_subCaseNdx						(0)
+	, m_varType							(varType)
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -459,9 +471,9 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
 		.build(m_vki, m_device));
 
-	const Unique<VkShaderModule> shaderModule(createShaderModule(m_vki, m_device, m_context.getBinaryCollection().get(program_name.str()), 0u));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(m_vki, m_device, *descriptorSetLayout));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(m_vki, m_device, *pipelineLayout, *shaderModule));
+	ComputePipelineWrapper			pipeline(m_vki, m_device, m_computePipelineConstructionType, m_context.getBinaryCollection().get(program_name.str()));
+	pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+	pipeline.buildPipeline();
 
 	const Unique<VkDescriptorPool> descriptorPool(
 		DescriptorPoolBuilder()
@@ -478,7 +490,7 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 	// Start recording commands
 	beginCommandBuffer(m_vki, *cmdBuffer);
 
-	m_vki.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+	pipeline.bind(*cmdBuffer);
 
 	// Create descriptor set
 	const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(m_vki, m_device, *descriptorPool, *descriptorSetLayout));
@@ -491,7 +503,7 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDescriptorInfo)
 		.update(m_vki, m_device);
 
-	m_vki.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
+	m_vki.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	// Dispatch indirect compute command
 	m_vki.cmdDispatch(*cmdBuffer, subCase.numWorkGroups()[0], subCase.numWorkGroups()[1], subCase.numWorkGroups()[2]);
@@ -568,17 +580,20 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 class ComputeShaderBuiltinVarTests : public tcu::TestCaseGroup
 {
 public:
-			ComputeShaderBuiltinVarTests	(tcu::TestContext& context);
+			ComputeShaderBuiltinVarTests	(tcu::TestContext& context, vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 	void	init							(void);
 
 private:
 	ComputeShaderBuiltinVarTests (const ComputeShaderBuiltinVarTests& other);
 	ComputeShaderBuiltinVarTests& operator= (const ComputeShaderBuiltinVarTests& other);
+
+	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
 
-ComputeShaderBuiltinVarTests::ComputeShaderBuiltinVarTests (tcu::TestContext& context)
-	: TestCaseGroup(context, "builtin_var", "Shader builtin var tests")
+ComputeShaderBuiltinVarTests::ComputeShaderBuiltinVarTests (tcu::TestContext& context, vk::ComputePipelineConstructionType computePipelineConstructionType)
+	: TestCaseGroup						(context, "builtin_var")
+	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }
 
@@ -588,21 +603,21 @@ void ComputeShaderBuiltinVarTests::init (void)
 	for (int i = 0; i < 2; i++)
 	{
 		const bool readByComponent = (i != 0);
-		addChild(new NumWorkGroupsCase(this->getTestContext(), readByComponent));
-		addChild(new WorkGroupSizeCase(this->getTestContext(), readByComponent));
-		addChild(new WorkGroupIDCase(this->getTestContext(), readByComponent));
-		addChild(new LocalInvocationIDCase(this->getTestContext(), readByComponent));
-		addChild(new GlobalInvocationIDCase(this->getTestContext(), readByComponent));
+		addChild(new NumWorkGroupsCase(this->getTestContext(), readByComponent, m_computePipelineConstructionType));
+		addChild(new WorkGroupSizeCase(this->getTestContext(), readByComponent, m_computePipelineConstructionType));
+		addChild(new WorkGroupIDCase(this->getTestContext(), readByComponent, m_computePipelineConstructionType));
+		addChild(new LocalInvocationIDCase(this->getTestContext(), readByComponent, m_computePipelineConstructionType));
+		addChild(new GlobalInvocationIDCase(this->getTestContext(), readByComponent, m_computePipelineConstructionType));
 	}
 	// Local invocation index is already just a scalar.
-	addChild(new LocalInvocationIndexCase(this->getTestContext(), false));
+	addChild(new LocalInvocationIndexCase(this->getTestContext(), false, m_computePipelineConstructionType));
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createComputeShaderBuiltinVarTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createComputeShaderBuiltinVarTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	return new ComputeShaderBuiltinVarTests(testCtx);
+	return new ComputeShaderBuiltinVarTests(testCtx, computePipelineConstructionType);
 }
 
 } // compute

@@ -132,8 +132,8 @@ struct TestParams
 class MeshApiCase : public vkt::TestCase
 {
 public:
-					MeshApiCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					MeshApiCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 	virtual			~MeshApiCase	(void) {}
@@ -695,7 +695,7 @@ tcu::TestStatus MeshApiInstance::iterate (void)
 
 tcu::TestCaseGroup* createMeshShaderApiTestsEXT (tcu::TestContext& testCtx)
 {
-	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "api", "Mesh Shader API tests"));
+	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "api"));
 
 	const DrawType drawCases[] =
 	{
@@ -781,12 +781,12 @@ tcu::TestCaseGroup* createMeshShaderApiTestsEXT (tcu::TestContext& testCtx)
 		const bool isIndirectNoCount	= (drawCase == DrawType::DRAW_INDIRECT);
 		const bool isIndirectCount		= (drawCase == DrawType::DRAW_INDIRECT_COUNT);
 
-		GroupPtr drawGroup(new tcu::TestCaseGroup(testCtx, drawCaseName.c_str(), ""));
+		GroupPtr drawGroup(new tcu::TestCaseGroup(testCtx, drawCaseName.c_str()));
 
 		for (const auto& drawCountCase : drawCountCases)
 		{
 			const auto drawCountName = "draw_count_" + de::toString(drawCountCase);
-			GroupPtr drawCountGroup(new tcu::TestCaseGroup(testCtx, drawCountName.c_str(), ""));
+			GroupPtr drawCountGroup(new tcu::TestCaseGroup(testCtx, drawCountName.c_str()));
 
 			for (const auto& indirectArgsCase : indirectArgsCases)
 			{
@@ -799,7 +799,7 @@ tcu::TestCaseGroup* createMeshShaderApiTestsEXT (tcu::TestContext& testCtx)
 				if (((isIndirectNoCount && drawCountCase > 1u) || isIndirectCount) && strideZero)
 					continue;
 
-				GroupPtr indirectArgsGroup(new tcu::TestCaseGroup(testCtx, indirectArgsCase.name, ""));
+				GroupPtr indirectArgsGroup(new tcu::TestCaseGroup(testCtx, indirectArgsCase.name));
 
 				for (const auto& countLimitCase : countLimitCases)
 				{
@@ -808,7 +808,7 @@ tcu::TestCaseGroup* createMeshShaderApiTestsEXT (tcu::TestContext& testCtx)
 					if (isIndirectCount != hasCountLimit)
 						continue;
 
-					GroupPtr countLimitGroup(new tcu::TestCaseGroup(testCtx, countLimitCase.name, ""));
+					GroupPtr countLimitGroup(new tcu::TestCaseGroup(testCtx, countLimitCase.name));
 
 					for (const auto& countOffsetCase : countOffsetCases)
 					{
@@ -817,7 +817,7 @@ tcu::TestCaseGroup* createMeshShaderApiTestsEXT (tcu::TestContext& testCtx)
 						if (isIndirectCount != hasCountOffsetType)
 							continue;
 
-						GroupPtr countOffsetGroup(new tcu::TestCaseGroup(testCtx, countOffsetCase.name, ""));
+						GroupPtr countOffsetGroup(new tcu::TestCaseGroup(testCtx, countOffsetCase.name));
 
 						for (const auto& taskCase : taskCases)
 						{
@@ -836,7 +836,7 @@ tcu::TestCaseGroup* createMeshShaderApiTestsEXT (tcu::TestContext& testCtx)
 									cmdBufferCase.secondaryCmd,		//	bool								useSecondaryCmdBuffer;
 								};
 
-								countOffsetGroup->addChild(new MeshApiCase(testCtx, testName, "", params));
+								countOffsetGroup->addChild(new MeshApiCase(testCtx, testName, params));
 							}
 						}
 

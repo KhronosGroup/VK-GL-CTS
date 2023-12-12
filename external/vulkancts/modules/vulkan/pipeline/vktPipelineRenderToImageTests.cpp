@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -229,17 +231,17 @@ de::MovePtr<Allocation> bindImage (const InstanceInterface&		vki,
 }
 
 // This is very test specific, so be careful if you want to reuse this code.
-void preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
-							const VkPipeline			basePipeline,		// for derivatives
-							const VkPipelineLayout		pipelineLayout,
-							const VkRenderPass			renderPass,
-							const VkShaderModule		vertexModule,
-							const VkShaderModule		fragmentModule,
-							const IVec2&				renderSize,
-							const VkPrimitiveTopology	topology,
-							const deUint32				subpass,
-							const bool					useDepth,
-							const bool					useStencil)
+void preparePipelineWrapper(GraphicsPipelineWrapper&		gpw,
+							const VkPipeline				basePipeline,		// for derivatives
+							const PipelineLayoutWrapper&	pipelineLayout,
+							const VkRenderPass				renderPass,
+							const ShaderWrapper				vertexModule,
+							const ShaderWrapper				fragmentModule,
+							const IVec2&					renderSize,
+							const VkPrimitiveTopology		topology,
+							const deUint32					subpass,
+							const bool						useDepth,
+							const bool						useStencil)
 {
 	const VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
@@ -346,13 +348,14 @@ void preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
 }
 
 //! Make a render pass with one subpass per color attachment and depth/stencil attachment (if used).
-Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
-								   const VkDevice				device,
-								   const VkFormat				colorFormat,
-								   const VkFormat				depthStencilFormat,
-								   const deUint32				numLayers,
-								   const VkImageLayout			initialColorImageLayout			= VK_IMAGE_LAYOUT_UNDEFINED,
-								   const VkImageLayout			initialDepthStencilImageLayout	= VK_IMAGE_LAYOUT_UNDEFINED)
+RenderPassWrapper makeRenderPass (const DeviceInterface&			vk,
+								  const VkDevice					device,
+								  const PipelineConstructionType	pipelineConstructionType,
+								  const VkFormat					colorFormat,
+								  const VkFormat					depthStencilFormat,
+								  const deUint32					numLayers,
+								  const VkImageLayout				initialColorImageLayout			= VK_IMAGE_LAYOUT_UNDEFINED,
+								  const VkImageLayout				initialDepthStencilImageLayout	= VK_IMAGE_LAYOUT_UNDEFINED)
 {
 	const VkAttachmentDescription colorAttachmentDescription =
 	{
@@ -436,7 +439,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 		DE_NULL													// const VkSubpassDependency*		pDependencies;
 	};
 
-	return createRenderPass(vk, device, &renderPassInfo);
+	return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
 }
 
 Move<VkImage> makeImage (const DeviceInterface&		vk,
@@ -883,12 +886,12 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 		flushAlloc(vk, device, *colorBufferAlloc);
 	}
 
-	const Unique<VkShaderModule>	vertexModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>	fragmentModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("frag"), 0u));
-	const Unique<VkRenderPass>		renderPass		(makeRenderPass				(vk, device, caseDef.colorFormat, caseDef.depthStencilFormat, static_cast<deUint32>(numSlices),
+	const ShaderWrapper				vertexModule	(ShaderWrapper				(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper				fragmentModule	(ShaderWrapper				(vk, device, context.getBinaryCollection().get("frag"), 0u));
+	RenderPassWrapper				renderPass		(makeRenderPass				(vk, device, caseDef.pipelineConstructionType, caseDef.colorFormat, caseDef.depthStencilFormat, static_cast<deUint32>(numSlices),
 																				 (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 																															 : VK_IMAGE_LAYOUT_UNDEFINED));
-	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout			(vk, device));
+	const PipelineLayoutWrapper		pipelineLayout	(caseDef.pipelineConstructionType, vk, device);
 	vector<GraphicsPipelineWrapper>	pipelines;
 
 	Move<VkImage>					colorImage;
@@ -897,10 +900,10 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 	Move<VkImage>					depthStencilImage;
 	MovePtr<Allocation>				depthStencilImageAlloc;
 	vector<SharedPtrVkImageView>	depthStencilAttachments;
+	vector<VkImage>					images;
 	vector<VkImageView>				attachmentHandles;			// all attachments (color and d/s)
 	Move<VkBuffer>					vertexBuffer;
 	MovePtr<Allocation>				vertexBufferAlloc;
-	Move<VkFramebuffer>				framebuffer;
 
 	// Create a color image
 	{
@@ -982,19 +985,21 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 		{
 			colorAttachments.push_back(makeSharedPtr(
 				makeImageView(vk, device, *colorImage, getImageViewSliceType(caseDef.viewType), caseDef.colorFormat, makeColorSubresourceRange(subpassNdx, 1))));
+			images.push_back(*colorImage);
 			attachmentHandles.push_back(**colorAttachments.back());
 
 #ifndef CTS_USES_VULKANSC  // Pipeline derivatives are forbidden in Vulkan SC
 			// We also have to create pipelines for each subpass
-			pipelines.emplace_back(vk, device, caseDef.pipelineConstructionType, (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
+			pipelines.emplace_back(vki, vk, physDevice, device, context.getDeviceExtensions(), caseDef.pipelineConstructionType, (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
 																										  : VK_PIPELINE_CREATE_DERIVATIVE_BIT));
 #else
-			pipelines.emplace_back(vk, device, caseDef.pipelineConstructionType, 0u);
+			pipelines.emplace_back(vki, vk, physDevice, device, context.getDeviceExtensions(), caseDef.pipelineConstructionType, 0u);
 #endif // CTS_USES_VULKANSC
-			preparePipelineWrapper(pipelines.back(), basePipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+			preparePipelineWrapper(pipelines.back(), basePipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule,
 								   imageSize.swizzle(0, 1), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, static_cast<deUint32>(subpassNdx), useDepth, useStencil);
 
-			basePipeline = pipelines.front().getPipeline();
+			if (pipelines.front().wasBuild())
+				basePipeline = pipelines.front().getPipeline();
 		}
 
 		// Then D/S attachments, if any
@@ -1003,11 +1008,12 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 		{
 			depthStencilAttachments.push_back(makeSharedPtr(
 				makeImageView(vk, device, *depthStencilImage, VK_IMAGE_VIEW_TYPE_2D, caseDef.depthStencilFormat, makeImageSubresourceRange(depthStencilAspect, 0u, 1u, subpassNdx, 1u))));
+			images.push_back(*depthStencilImage);
 			attachmentHandles.push_back(**depthStencilAttachments.back());
 		}
 	}
 
-	framebuffer = makeFramebuffer(vk, device, *renderPass, static_cast<deUint32>(attachmentHandles.size()), &attachmentHandles[0], static_cast<deUint32>(imageSize.x()), static_cast<deUint32>(imageSize.y()));
+	renderPass.createFramebuffer(vk, device, static_cast<deUint32>(attachmentHandles.size()), &images[0], &attachmentHandles[0], static_cast<deUint32>(imageSize.x()), static_cast<deUint32>(imageSize.y()));
 
 	{
 		const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -1022,7 +1028,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 
 			const VkDeviceSize		vertexBufferOffset	= 0ull;
 
-			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, imageSize.x(), imageSize.y()), (deUint32)clearValues.size(), &clearValues[0]);
+			renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, imageSize.x(), imageSize.y()), (deUint32)clearValues.size(), &clearValues[0]);
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 		}
 
@@ -1030,13 +1036,13 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 		for (deUint32 subpassNdx = 0; subpassNdx < static_cast<deUint32>(numSlices); ++subpassNdx)
 		{
 			if (subpassNdx != 0)
-				vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+				renderPass.nextSubpass(vk, *cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[subpassNdx].getPipeline());
+			pipelines[subpassNdx].bind(*cmdBuffer);
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, subpassNdx*4u, 0u);
 		}
 
-		endRenderPass(vk, *cmdBuffer);
+		renderPass.end(vk, *cmdBuffer);
 
 		// Copy colorImage -> host visible colorBuffer
 		{
@@ -1155,7 +1161,7 @@ void checkSupportAttachmentSize (Context& context, const CaseDef caseDef)
 	if (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED  && !isDepthStencilFormatSupported(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.depthStencilFormat))
 		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 }
 
 //! A test that can exercise very big color and depth/stencil attachment sizes.
@@ -1195,31 +1201,34 @@ vector<VkDeviceSize> getPerMipLevelStorageSize (const vector<IVec4>& mipLevelSiz
 	return storageSizes;
 }
 
-void drawToMipLevel (const Context&				context,
-					 const CaseDef&				caseDef,
-					 const int					mipLevel,
-					 const IVec4&				mipSize,
-					 const int					numSlices,
-					 const VkImage				colorImage,
-					 const VkImage				depthStencilImage,
-					 const VkBuffer				vertexBuffer,
-					 const VkPipelineLayout		pipelineLayout,
-					 const VkShaderModule		vertexModule,
-					 const VkShaderModule		fragmentModule)
+void drawToMipLevel (const Context&					context,
+					 const CaseDef&					caseDef,
+					 const int						mipLevel,
+					 const IVec4&					mipSize,
+					 const int						numSlices,
+					 const VkImage					colorImage,
+					 const VkImage					depthStencilImage,
+					 const VkBuffer					vertexBuffer,
+					 const PipelineLayoutWrapper&	pipelineLayout,
+					 const ShaderWrapper			vertexModule,
+					 const ShaderWrapper			fragmentModule)
 {
+	const InstanceInterface&		vki					= context.getInstanceInterface();
 	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkPhysicalDevice			physDevice			= context.getPhysicalDevice();
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	const VkImageAspectFlags		depthStencilAspect	= getFormatAspectFlags(caseDef.depthStencilFormat);
 	const bool						useDepth			= (depthStencilAspect & VK_IMAGE_ASPECT_DEPTH_BIT)   != 0;
 	const bool						useStencil			= (depthStencilAspect & VK_IMAGE_ASPECT_STENCIL_BIT) != 0;
-	const Unique<VkRenderPass>		renderPass			(makeRenderPass(vk, device, caseDef.colorFormat, caseDef.depthStencilFormat, static_cast<deUint32>(numSlices),
+	RenderPassWrapper				renderPass			(makeRenderPass(vk, device, caseDef.pipelineConstructionType,  caseDef.colorFormat, caseDef.depthStencilFormat, static_cast<deUint32>(numSlices),
 																		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 																		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
 	vector<GraphicsPipelineWrapper>	pipelines;
 	vector<SharedPtrVkImageView>	colorAttachments;
 	vector<SharedPtrVkImageView>	depthStencilAttachments;
+	vector<VkImage>					images;
 	vector<VkImageView>				attachmentHandles;			// all attachments (color and d/s)
 
 	// For each image layer or slice (3D), create an attachment and a pipeline
@@ -1233,19 +1242,21 @@ void drawToMipLevel (const Context&				context,
 			colorAttachments.push_back(makeSharedPtr(makeImageView(
 				vk, device, colorImage, getImageViewSliceType(caseDef.viewType), caseDef.colorFormat,
 				makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevel, 1u, subpassNdx, 1u))));
+			images.push_back(colorImage);
 			attachmentHandles.push_back(**colorAttachments.back());
 
 		// We also have to create pipelines for each subpass
 #ifndef CTS_USES_VULKANSC // Pipeline derivatives are forbidden in Vulkan SC
-			pipelines.emplace_back(vk, device, caseDef.pipelineConstructionType, (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
+			pipelines.emplace_back(vki, vk, physDevice, device, context.getDeviceExtensions(), caseDef.pipelineConstructionType, (basePipeline == DE_NULL ? VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT
 																										  : VK_PIPELINE_CREATE_DERIVATIVE_BIT));
 #else
-			pipelines.emplace_back(vk, device, caseDef.pipelineConstructionType, 0u);
+			pipelines.emplace_back(vki, vk, physDevice, device, context.getDeviceExtensions(), caseDef.pipelineConstructionType, 0u);
 #endif // CTS_USES_VULKANSC
 			preparePipelineWrapper(pipelines.back(), basePipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule,
 								   mipSize.swizzle(0, 1), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, static_cast<deUint32>(subpassNdx), useDepth, useStencil);
 
-			basePipeline = pipelines.front().getPipeline();
+			if (pipelines.front().wasBuild())
+				basePipeline = pipelines.front().getPipeline();
 		}
 
 		// Then D/S attachments, if any
@@ -1255,12 +1266,13 @@ void drawToMipLevel (const Context&				context,
 			depthStencilAttachments.push_back(makeSharedPtr(makeImageView(
 				vk, device, depthStencilImage, VK_IMAGE_VIEW_TYPE_2D, caseDef.depthStencilFormat,
 				makeImageSubresourceRange(depthStencilAspect, mipLevel, 1u, subpassNdx, 1u))));
+			images.push_back(depthStencilImage);
 			attachmentHandles.push_back(**depthStencilAttachments.back());
 		}
 	}
 
-	const Unique<VkFramebuffer>			framebuffer (makeFramebuffer(vk, device, *renderPass, static_cast<deUint32>(attachmentHandles.size()), &attachmentHandles[0],
-																	 static_cast<deUint32>(mipSize.x()), static_cast<deUint32>(mipSize.y())));
+	renderPass.createFramebuffer(vk, device, static_cast<deUint32>(attachmentHandles.size()), &images[0], &attachmentHandles[0],
+																	 static_cast<deUint32>(mipSize.x()), static_cast<deUint32>(mipSize.y()));
 
 	{
 		const Unique<VkCommandPool>		cmdPool		(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -1275,7 +1287,7 @@ void drawToMipLevel (const Context&				context,
 
 			const VkDeviceSize		vertexBufferOffset	= 0ull;
 
-			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, mipSize.x(), mipSize.y()), (deUint32)clearValues.size(), &clearValues[0]);
+			renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, mipSize.x(), mipSize.y()), (deUint32)clearValues.size(), &clearValues[0]);
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		}
 
@@ -1283,13 +1295,13 @@ void drawToMipLevel (const Context&				context,
 		for (deUint32 subpassNdx = 0; subpassNdx < static_cast<deUint32>(numSlices); ++subpassNdx)
 		{
 			if (subpassNdx != 0)
-				vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+				renderPass.nextSubpass(vk, *cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[subpassNdx].getPipeline());
+			pipelines[subpassNdx].bind(*cmdBuffer);
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, subpassNdx*4u, 0u);
 		}
 
-		endRenderPass(vk, *cmdBuffer);
+		renderPass.end(vk, *cmdBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -1306,7 +1318,7 @@ void checkSupportRenderToMipMaps (Context& context, const CaseDef caseDef)
 	if (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED  && !isDepthStencilFormatSupported(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.depthStencilFormat))
 		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 }
 
 //! Use image mip levels as attachments
@@ -1337,9 +1349,9 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 		flushAlloc(vk, device, *colorBufferAlloc);
 	}
 
-	const Unique<VkShaderModule>	vertexModule		(createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>	fragmentModule		(createShaderModule	(vk, device, context.getBinaryCollection().get("frag"), 0u));
-	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout	(vk, device));
+	const ShaderWrapper				vertexModule		(ShaderWrapper			(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper				fragmentModule		(ShaderWrapper			(vk, device, context.getBinaryCollection().get("frag"), 0u));
+	const PipelineLayoutWrapper		pipelineLayout		(caseDef.pipelineConstructionType, vk, device);
 
 	Move<VkImage>					colorImage;
 	MovePtr<Allocation>				colorImageAlloc;
@@ -1441,8 +1453,8 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 		const IVec4&	mipSize		= mipLevelSizes[mipLevel];
 		const int		levelSlices	= maxLayersOrDepth(mipSize);
 
-		drawToMipLevel (context, caseDef, mipLevel, mipSize, levelSlices, *colorImage, *depthStencilImage, *vertexBuffer, *pipelineLayout,
-						*vertexModule, *fragmentModule);
+		drawToMipLevel (context, caseDef, mipLevel, mipSize, levelSlices, *colorImage, *depthStencilImage, *vertexBuffer, pipelineLayout,
+						vertexModule, fragmentModule);
 	}
 
 	// Copy results: colorImage -> host visible colorBuffer
@@ -1682,7 +1694,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 
 	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(testCase); ++caseNdx)
 	{
-		MovePtr<tcu::TestCaseGroup>	imageGroup(new tcu::TestCaseGroup(group->getTestContext(), getShortImageViewTypeName(testCase[caseNdx].viewType).c_str(), ""));
+		MovePtr<tcu::TestCaseGroup>	imageGroup(new tcu::TestCaseGroup(group->getTestContext(), getShortImageViewTypeName(testCase[caseNdx].viewType).c_str()));
 
 		// Generate attachment size cases
 		{
@@ -1693,8 +1705,8 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 			sizes.erase(std::remove_if(begin(sizes), end(sizes), [&](const IVec4& v) { return v.x() == MAX_SIZE && v.y() == MAX_SIZE; }), end(sizes));
 #endif // CTS_USES_VULKANSC
 
-			MovePtr<tcu::TestCaseGroup>	smallGroup(new tcu::TestCaseGroup(group->getTestContext(), "small", ""));
-			MovePtr<tcu::TestCaseGroup>	hugeGroup (new tcu::TestCaseGroup(group->getTestContext(), "huge",  ""));
+			MovePtr<tcu::TestCaseGroup>	smallGroup(new tcu::TestCaseGroup(group->getTestContext(), "small"));
+			MovePtr<tcu::TestCaseGroup>	hugeGroup (new tcu::TestCaseGroup(group->getTestContext(), "huge"));
 
 			imageGroup->addChild(smallGroup.get());
 			imageGroup->addChild(hugeGroup.get());
@@ -1716,14 +1728,14 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 							depthStencilFormat[dsFormatNdx],	// VkFormat						depthStencilFormat;
 							allocationKind						// AllocationKind				allocationKind;
 						};
-						addFunctionCaseWithPrograms(smallGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
+						addFunctionCaseWithPrograms(smallGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
 					}
 				}
 				else // All huge cases go into a separate group
 				{
 					if (allocationKind != ALLOCATION_KIND_DEDICATED)
 					{
-						MovePtr<tcu::TestCaseGroup>	sizeGroup	(new tcu::TestCaseGroup(group->getTestContext(), getSizeDescription(*sizeIter).c_str(), ""));
+						MovePtr<tcu::TestCaseGroup>	sizeGroup	(new tcu::TestCaseGroup(group->getTestContext(), getSizeDescription(*sizeIter).c_str()));
 						const VkFormat				colorFormat	= VK_FORMAT_R8G8B8A8_UNORM;
 
 						// Use the same color format for all cases, to reduce the number of permutations
@@ -1738,7 +1750,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 								depthStencilFormat[dsFormatNdx],	// VkFormat						depthStencilFormat;
 								allocationKind						// AllocationKind				allocationKind;
 							};
-							addFunctionCaseWithPrograms(sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]), "", checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
+							addFunctionCaseWithPrograms(sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]), checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
 						}
 						hugeGroup->addChild(sizeGroup.release());
 					}
@@ -1750,7 +1762,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 
 		// Generate mip map cases
 		{
-			MovePtr<tcu::TestCaseGroup>	mipmapGroup(new tcu::TestCaseGroup(group->getTestContext(), "mipmap", ""));
+			MovePtr<tcu::TestCaseGroup>	mipmapGroup(new tcu::TestCaseGroup(group->getTestContext(), "mipmap"));
 
 			for (int dsFormatNdx = 0; dsFormatNdx < DE_LENGTH_OF_ARRAY(depthStencilFormat); ++dsFormatNdx)
 			for (int formatNdx   = 0; formatNdx   < DE_LENGTH_OF_ARRAY(format);             ++formatNdx)
@@ -1764,7 +1776,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 					depthStencilFormat[dsFormatNdx],	// VkFormat						depthStencilFormat;
 					allocationKind						// AllocationKind				allocationKind;
 				};
-				addFunctionCaseWithPrograms(mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", checkSupportRenderToMipMaps, initPrograms, testRenderToMipMaps, caseDef);
+				addFunctionCaseWithPrograms(mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), checkSupportRenderToMipMaps, initPrograms, testRenderToMipMaps, caseDef);
 			}
 			imageGroup->addChild(mipmapGroup.release());
 		}
@@ -1787,10 +1799,12 @@ void addDedicatedAllocationRenderToImageTests (tcu::TestCaseGroup* group, Pipeli
 
 tcu::TestCaseGroup* createRenderToImageTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup>	renderToImageTests	(new tcu::TestCaseGroup(testCtx, "render_to_image", "Render to image tests"));
+	de::MovePtr<tcu::TestCaseGroup>	renderToImageTests	(new tcu::TestCaseGroup(testCtx, "render_to_image"));
 
-	renderToImageTests->addChild(createTestGroup(testCtx, "core",					"Core render to image tests",								addCoreRenderToImageTests, pipelineConstructionType));
-	renderToImageTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Render to image tests for dedicated memory allocation",	addDedicatedAllocationRenderToImageTests, pipelineConstructionType));
+	// Core render to image tests
+	renderToImageTests->addChild(createTestGroup(testCtx, "core", addCoreRenderToImageTests, pipelineConstructionType));
+	// Render to image tests for dedicated memory allocation
+	renderToImageTests->addChild(createTestGroup(testCtx, "dedicated_allocation", addDedicatedAllocationRenderToImageTests, pipelineConstructionType));
 
 	return renderToImageTests.release();
 }

@@ -31,6 +31,7 @@
 #include "vktSparseResourcesShaderIntrinsics.hpp"
 #include "vktSparseResourcesQueueBindSparseTests.hpp"
 #include "vktSparseResourcesBufferTests.hpp"
+#include "vktSparseResourcesTransferQueueTests.hpp"
 #include "deUniquePtr.hpp"
 
 namespace vkt
@@ -38,9 +39,9 @@ namespace vkt
 namespace sparse
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> sparseTests (new tcu::TestCaseGroup(testCtx, "sparse_resources", "Sparse Resources Tests"));
+	de::MovePtr<tcu::TestCaseGroup> sparseTests (new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	sparseTests->addChild(createSparseBufferTests							(testCtx));
 	sparseTests->addChild(createImageSparseBindingTests						(testCtx));
@@ -55,6 +56,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	sparseTests->addChild(createDeviceGroupImageSparseMemoryAliasingTests	(testCtx));
 	sparseTests->addChild(createSparseResourcesShaderIntrinsicsTests		(testCtx));
 	sparseTests->addChild(createQueueBindSparseTests						(testCtx));
+	sparseTests->addChild(createTransferQueueTests							(testCtx));
 
 	return sparseTests.release();
 }

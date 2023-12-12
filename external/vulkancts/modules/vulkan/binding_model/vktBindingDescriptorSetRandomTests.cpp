@@ -305,7 +305,7 @@ DescriptorSetRandomTestInstance::~DescriptorSetRandomTestInstance (void)
 class DescriptorSetRandomTestCase : public TestCase
 {
 	public:
-								DescriptorSetRandomTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef& data);
+								DescriptorSetRandomTestCase		(tcu::TestContext& context, const char* name, const CaseDef& data);
 								~DescriptorSetRandomTestCase	(void);
 	virtual	void				initPrograms					(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance					(Context& context) const;
@@ -317,8 +317,8 @@ private:
 	CaseDef&					m_data;
 };
 
-DescriptorSetRandomTestCase::DescriptorSetRandomTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef& data)
-	: vkt::TestCase	(context, name, desc)
+DescriptorSetRandomTestCase::DescriptorSetRandomTestCase (tcu::TestContext& context, const char* name, const CaseDef& data)
+	: vkt::TestCase	(context, name)
 	, m_data_ptr	(std::make_shared<CaseDef>(data))
 	, m_data		(*reinterpret_cast<CaseDef*>(m_data_ptr.get()))
 {
@@ -3080,7 +3080,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "descriptorset_random", "Randomly-generated desciptor set layouts"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "descriptorset_random"));
 
 	deUint32 seed = 0;
 
@@ -3088,52 +3088,72 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 	{
 		deUint32				count;
 		const char*				name;
-		const char*				description;
 	} TestGroupCase;
 
 	TestGroupCase setsCases[] =
 	{
-		{ 4,	"sets4",	"4 descriptor sets"		},
-		{ 8,	"sets8",	"8 descriptor sets"		},
-		{ 16,	"sets16",	"16 descriptor sets"	},
-		{ 32,	"sets32",	"32 descriptor sets"	},
+		// 4 descriptor sets
+		{ 4,	"sets4"},
+		// 8 descriptor sets
+		{ 8,	"sets8"},
+		// 16 descriptor sets
+		{ 16,	"sets16"},
+		// 32 descriptor sets
+		{ 32,	"sets32"},
 	};
 
 	TestGroupCase indexCases[] =
 	{
-		{ INDEX_TYPE_NONE,			"noarray",		"all descriptor declarations are not arrays"		},
-		{ INDEX_TYPE_CONSTANT,		"constant",		"constant indexing of descriptor arrays"			},
-		{ INDEX_TYPE_PUSHCONSTANT,	"unifindexed",	"indexing descriptor arrays with push constants"	},
-		{ INDEX_TYPE_DEPENDENT,		"dynindexed",	"dynamically uniform indexing descriptor arrays"	},
-		{ INDEX_TYPE_RUNTIME_SIZE,	"runtimesize",	"runtime-size declarations of descriptor arrays"	},
+		// all descriptor declarations are not arrays
+		{ INDEX_TYPE_NONE,			"noarray"},
+		// constant indexing of descriptor arrays
+		{ INDEX_TYPE_CONSTANT,		"constant"},
+		// indexing descriptor arrays with push constants
+		{ INDEX_TYPE_PUSHCONSTANT,	"unifindexed"},
+		// dynamically uniform indexing descriptor arrays
+		{ INDEX_TYPE_DEPENDENT,		"dynindexed"},
+		// runtime-size declarations of descriptor arrays
+		{ INDEX_TYPE_RUNTIME_SIZE,	"runtimesize"},
 	};
 
 	TestGroupCase uboCases[] =
 	{
-		{ 0,			"noubo",			"no ubos"					},
-		{ 12,			"ubolimitlow",		"spec minmax ubo limit"		},
-		{ 4096,			"ubolimithigh",		"high ubo limit"			},
+		// no ubos
+		{ 0,			"noubo"},
+		// spec minmax ubo limit
+		{ 12,			"ubolimitlow"},
+		// high ubo limit
+		{ 4096,			"ubolimithigh"},
 	};
 
 	TestGroupCase sboCases[] =
 	{
-		{ 0,			"nosbo",			"no ssbos"					},
-		{ 4,			"sbolimitlow",		"spec minmax ssbo limit"	},
-		{ 4096,			"sbolimithigh",		"high ssbo limit"			},
+		// no ssbos
+		{ 0,			"nosbo"},
+		// spec minmax ssbo limit
+		{ 4,			"sbolimitlow"},
+		// high ssbo limit
+		{ 4096,			"sbolimithigh"},
 	};
 
 	TestGroupCase iaCases[] =
 	{
-		{ 0,			"noia",				"no input attachments"					},
-		{ 4,			"ialimitlow",		"spec minmax input attachment limit"	},
-		{ 64,			"ialimithigh",		"high input attachment limit"			},
+		// no input attachments
+		{ 0,			"noia"},
+		// spec minmax input attachment limit
+		{ 4,			"ialimitlow"},
+		// high input attachment limit
+		{ 64,			"ialimithigh"},
 	};
 
 	TestGroupCase sampledImgCases[] =
 	{
-		{ 0,			"nosampledimg",		"no sampled images"			},
-		{ 16,			"sampledimglow",	"spec minmax image limit"	},
-		{ 4096,			"sampledimghigh",	"high image limit"			},
+		// no sampled images
+		{ 0,			"nosampledimg"},
+		// spec minmax image limit
+		{ 16,			"sampledimglow"},
+		// high image limit
+		{ 4096,			"sampledimghigh"},
 	};
 
 	const struct
@@ -3141,14 +3161,18 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 		deUint32	sImgCount;
 		deUint32	sTexCount;
 		const char* name;
-		const char* description;
 	} sImgTexCases[] =
 	{
-		{ 1,		0,		"outimgonly",		"output storage image only"							},
-		{ 1,		3,		"outimgtexlow",		"output image low storage tex limit"				},
-		{ 4,		0,		"lowimgnotex",		"minmax storage images and no storage tex"			},
-		{ 3,		1,		"lowimgsingletex",	"low storage image single storage texel"			},
-		{ 2048,		2048,	"storageimghigh",	"high limit of storage images and texel buffers"	},
+		// output storage image only
+		{ 1,		0,		"outimgonly"},
+		// output image low storage tex limit
+		{ 1,		3,		"outimgtexlow"},
+		// minmax storage images and no storage tex
+		{ 4,		0,		"lowimgnotex"},
+		// low storage image single storage texel
+		{ 3,		1,		"lowimgsingletex"},
+		// high limit of storage images and texel buffers
+		{ 2048,		2048,	"storageimghigh"},
 	};
 
 	const struct
@@ -3156,69 +3180,85 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 		deUint32				iubCount;
 		deUint32				iubSize;
 		const char*				name;
-		const char*				description;
 	} iubCases[] =
 	{
-		{ 0, 0,		"noiub",			"no inline uniform blocks"			},
-		{ 4, 256,	"iublimitlow",		"inline uniform blocks low limit"	},
-		{ 8, 4096,	"iublimithigh",		"inline uniform blocks high limit"	},
+		// no inline uniform blocks
+		{ 0, 0,		"noiub"},
+		// inline uniform blocks low limit
+		{ 4, 256,	"iublimitlow"},
+		// inline uniform blocks high limit
+		{ 8, 4096,	"iublimithigh"},
 	};
 
 	TestGroupCase stageCases[] =
 	{
-		{ STAGE_COMPUTE,	"comp",		"compute"		},
-		{ STAGE_FRAGMENT,	"frag",		"fragment"		},
-		{ STAGE_VERTEX,		"vert",		"vertex"		},
+		// compute
+		{ STAGE_COMPUTE,	"comp"},
+		// fragment
+		{ STAGE_FRAGMENT,	"frag"},
+		// vertex
+		{ STAGE_VERTEX,		"vert"},
 #ifndef CTS_USES_VULKANSC
-		{ STAGE_RAYGEN_NV,	"rgnv",		"raygen_nv"		},
-		{ STAGE_RAYGEN,		"rgen",		"raygen"		},
-		{ STAGE_INTERSECT,	"sect",		"intersect"		},
-		{ STAGE_ANY_HIT,	"ahit",		"any_hit"		},
-		{ STAGE_CLOSEST_HIT,"chit",		"closest_hit"	},
-		{ STAGE_MISS,		"miss",		"miss"			},
-		{ STAGE_CALLABLE,	"call",		"callable"		},
-		{ STAGE_TASK,		"task",		"task"			},
-		{ STAGE_MESH,		"mesh",		"mesh"			},
+		// raygen_nv
+		{ STAGE_RAYGEN_NV,	"rgnv"},
+		// raygen
+		{ STAGE_RAYGEN,		"rgen"},
+		// intersect
+		{ STAGE_INTERSECT,	"sect"},
+		// any_hit
+		{ STAGE_ANY_HIT,	"ahit"},
+		// closest_hit
+		{ STAGE_CLOSEST_HIT,"chit"},
+		// miss
+		{ STAGE_MISS,		"miss"},
+		// callable
+		{ STAGE_CALLABLE,	"call"},
+		// task
+		{ STAGE_TASK,		"task"},
+		// mesh
+		{ STAGE_MESH,		"mesh"},
 #endif
 	};
 
 	TestGroupCase uabCases[] =
 	{
-		{ UPDATE_AFTER_BIND_DISABLED,	"nouab",	"no update after bind"		},
-		{ UPDATE_AFTER_BIND_ENABLED,	"uab",		"enable update after bind"	},
+		// no update after bind
+		{ UPDATE_AFTER_BIND_DISABLED,	"nouab"},
+		// enable update after bind
+		{ UPDATE_AFTER_BIND_ENABLED,	"uab"},
 	};
 
 	for (int setsNdx = 0; setsNdx < DE_LENGTH_OF_ARRAY(setsCases); setsNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> setsGroup(new tcu::TestCaseGroup(testCtx, setsCases[setsNdx].name, setsCases[setsNdx].description));
+		de::MovePtr<tcu::TestCaseGroup> setsGroup(new tcu::TestCaseGroup(testCtx, setsCases[setsNdx].name));
 		for (int indexNdx = 0; indexNdx < DE_LENGTH_OF_ARRAY(indexCases); indexNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> indexGroup(new tcu::TestCaseGroup(testCtx, indexCases[indexNdx].name, indexCases[indexNdx].description));
+			de::MovePtr<tcu::TestCaseGroup> indexGroup(new tcu::TestCaseGroup(testCtx, indexCases[indexNdx].name));
 			for (int uboNdx = 0; uboNdx < DE_LENGTH_OF_ARRAY(uboCases); uboNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup> uboGroup(new tcu::TestCaseGroup(testCtx, uboCases[uboNdx].name, uboCases[uboNdx].description));
+				de::MovePtr<tcu::TestCaseGroup> uboGroup(new tcu::TestCaseGroup(testCtx, uboCases[uboNdx].name));
 				for (int sboNdx = 0; sboNdx < DE_LENGTH_OF_ARRAY(sboCases); sboNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup> sboGroup(new tcu::TestCaseGroup(testCtx, sboCases[sboNdx].name, sboCases[sboNdx].description));
+					de::MovePtr<tcu::TestCaseGroup> sboGroup(new tcu::TestCaseGroup(testCtx, sboCases[sboNdx].name));
 					for (int sampledImgNdx = 0; sampledImgNdx < DE_LENGTH_OF_ARRAY(sampledImgCases); sampledImgNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup> sampledImgGroup(new tcu::TestCaseGroup(testCtx, sampledImgCases[sampledImgNdx].name, sampledImgCases[sampledImgNdx].description));
+						de::MovePtr<tcu::TestCaseGroup> sampledImgGroup(new tcu::TestCaseGroup(testCtx, sampledImgCases[sampledImgNdx].name));
 						for (int storageImgNdx = 0; storageImgNdx < DE_LENGTH_OF_ARRAY(sImgTexCases); ++storageImgNdx)
 						{
-							de::MovePtr<tcu::TestCaseGroup> storageImgGroup(new tcu::TestCaseGroup(testCtx, sImgTexCases[storageImgNdx].name, sImgTexCases[storageImgNdx].description));
+							de::MovePtr<tcu::TestCaseGroup> storageImgGroup(new tcu::TestCaseGroup(testCtx, sImgTexCases[storageImgNdx].name));
 							for (int iubNdx = 0; iubNdx < DE_LENGTH_OF_ARRAY(iubCases); iubNdx++)
 							{
-								de::MovePtr<tcu::TestCaseGroup> iubGroup(new tcu::TestCaseGroup(testCtx, iubCases[iubNdx].name, iubCases[iubNdx].description));
+								de::MovePtr<tcu::TestCaseGroup> iubGroup(new tcu::TestCaseGroup(testCtx, iubCases[iubNdx].name));
 								for (int uabNdx = 0; uabNdx < DE_LENGTH_OF_ARRAY(uabCases); uabNdx++)
 								{
-									de::MovePtr<tcu::TestCaseGroup> uabGroup(new tcu::TestCaseGroup(testCtx, uabCases[uabNdx].name, uabCases[uabNdx].description));
+									de::MovePtr<tcu::TestCaseGroup> uabGroup(new tcu::TestCaseGroup(testCtx, uabCases[uabNdx].name));
 									for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
 									{
 										const Stage		currentStage			= static_cast<Stage>(stageCases[stageNdx].count);
 										const auto		shaderStages			= getAllShaderStagesFor(currentStage);
 										const auto		pipelineStages			= getAllPipelineStagesFor(currentStage);
 
-										de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].description));
+										de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stageCases[stageNdx].name));
 										for (int iaNdx = 0; iaNdx < DE_LENGTH_OF_ARRAY(iaCases); ++iaNdx)
 										{
 											// Input attachments can only be used in the fragment stage.
@@ -3255,7 +3295,7 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 											if ((uboNdx == 0 || sboNdx == 0 || sampledImgNdx == 0) && indexNdx < 2)
 												continue;
 
-											de::MovePtr<tcu::TestCaseGroup> iaGroup(new tcu::TestCaseGroup(testCtx, iaCases[iaNdx].name, iaCases[iaNdx].description));
+											de::MovePtr<tcu::TestCaseGroup> iaGroup(new tcu::TestCaseGroup(testCtx, iaCases[iaNdx].name));
 
 											// Generate 10 random cases when working with only 4 sets and the number of descriptors is low. Otherwise just one case.
 											// Exception: the case of no descriptors of any kind only needs one case.
@@ -3287,7 +3327,7 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 												};
 
 												string name = de::toString(rnd);
-												iaGroup->addChild(new DescriptorSetRandomTestCase(testCtx, name.c_str(), "test", c));
+												iaGroup->addChild(new DescriptorSetRandomTestCase(testCtx, name.c_str(), c));
 											}
 											stageGroup->addChild(iaGroup.release());
 										}

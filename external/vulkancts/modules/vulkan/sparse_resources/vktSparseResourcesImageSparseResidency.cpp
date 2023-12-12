@@ -64,21 +64,21 @@ namespace
 std::string getFormatValueString	(const std::vector<std::pair<deUint32, deUint32>>& channelsOnPlane,
 									 const std::vector<std::string>& formatValueStrings)
 {
-	std::string result = "( ";
-	deUint32 i;
-	for (i=0; i<channelsOnPlane.size(); ++i)
+	std::vector<std::string> usedValues { "0", "0", "0", "0" }; // Default values.
+
+	for (const auto& channel : channelsOnPlane)
 	{
-		result += formatValueStrings[channelsOnPlane[i].first];
-		if (i < 3)
-			result += ", ";
+		const auto channelIdx = channel.first;
+		usedValues[channelIdx] = formatValueStrings[channelIdx];
 	}
-	for (; i < 4; ++i)
+
+	std::string result;
+	for (const auto& value : usedValues)
 	{
-		result += "0";
-		if (i < 3)
-			result += ", ";
+		const auto prefix = (result.empty() ? "" : ", ");
+		result += prefix + value;
 	}
-	result += " )";
+	result = "(" + result + ")";
 	return result;
 }
 
@@ -126,7 +126,6 @@ class ImageSparseResidencyCase : public TestCase
 public:
 	ImageSparseResidencyCase		(tcu::TestContext&		testCtx,
 									 const std::string&		name,
-									 const std::string&		description,
 									 const ImageType		imageType,
 									 const tcu::UVec3&		imageSize,
 									 const VkFormat			format,
@@ -147,13 +146,12 @@ private:
 
 ImageSparseResidencyCase::ImageSparseResidencyCase	(tcu::TestContext&		testCtx,
 													 const std::string&		name,
-													 const std::string&		description,
 													 const ImageType		imageType,
 													 const tcu::UVec3&		imageSize,
 													 const VkFormat			format,
 													 const glu::GLSLVersion	glslVersion,
 													 const bool				useDeviceGroups)
-	: TestCase			(testCtx, name, description)
+	: TestCase			(testCtx, name)
 	, m_useDeviceGroups	(useDeviceGroups)
 	, m_imageType		(imageType)
 	, m_imageSize		(imageSize)
@@ -170,9 +168,10 @@ void ImageSparseResidencyCase::initPrograms (SourceCollections&	sourceCollection
 	const std::string				imageTypeStr		= getShaderImageType(formatDescription, m_imageType);
 	const std::string				formatDataStr		= getShaderImageDataType(formatDescription);
 	const tcu::UVec3				shaderGridSize		= getShaderGridSize(m_imageType, m_imageSize);
+	const auto						isAlphaOnly			= isAlphaOnlyFormat(m_format);
 
 	std::vector<std::string>		formatValueStrings;
-	switch (formatDescription.channels[0].type)
+	switch (formatDescription.channels[isAlphaOnly ? 3 : 0].type)
 	{
 		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
 		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
@@ -186,11 +185,12 @@ void ImageSparseResidencyCase::initPrograms (SourceCollections&	sourceCollection
 		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+			// For A8_UNORM, exchange the red and alpha channels.
 			formatValueStrings = {
-				"float(int(gl_GlobalInvocationID.x) % 127) / 127.0" ,
+				(isAlphaOnly ? "1.0" : "float(int(gl_GlobalInvocationID.x) % 127) / 127.0") ,
 				"float(int(gl_GlobalInvocationID.y) % 127) / 127.0",
 				"float(int(gl_GlobalInvocationID.z) % 127) / 127.0",
-				"1.0"
+				(isAlphaOnly ? "float(int(gl_GlobalInvocationID.x) % 127) / 127.0" : "1.0"),
 			};
 			break;
 		default:	DE_ASSERT(false);	break;
@@ -216,7 +216,7 @@ void ImageSparseResidencyCase::initPrograms (SourceCollections&	sourceCollection
 			std::sort(begin(channelsOnPlane), end(channelsOnPlane), [](const std::pair<deUint32, deUint32>& lhs, const std::pair<deUint32, deUint32>& rhs) { return lhs.second < rhs.second; });
 		std::string			formatValueStr		= getFormatValueString(channelsOnPlane, formatValueStrings);
 		VkExtent3D			shaderExtent		= getPlaneExtent(compatibleFormatDescription, compatibleShaderGridSize, planeNdx, 0);
-		const std::string	formatQualifierStr	= getShaderImageFormatQualifier(planeCompatibleFormat);
+		const std::string	formatQualifierStr	= (isAlphaOnly ? "" : ", " + getShaderImageFormatQualifier(planeCompatibleFormat));
 		const tcu::UVec3	workGroupSize		= computeWorkGroupSize(shaderExtent);
 
 		std::ostringstream src;
@@ -226,8 +226,12 @@ void ImageSparseResidencyCase::initPrograms (SourceCollections&	sourceCollection
 			src << "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
 				<< "#extension GL_EXT_shader_image_int64 : require\n";
 		}
+		if (isAlphaOnly)
+		{
+			src << "#extension GL_EXT_shader_image_load_formatted : require\n";
+		}
 		src << "layout (local_size_x = " << workGroupSize.x() << ", local_size_y = " << workGroupSize.y() << ", local_size_z = " << workGroupSize.z() << ") in; \n"
-			<< "layout (binding = 0, " << formatQualifierStr << ") writeonly uniform highp " << imageTypeStr << " u_image;\n"
+			<< "layout (binding = 0" << formatQualifierStr << ") writeonly uniform highp " << imageTypeStr << " u_image;\n"
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	if( gl_GlobalInvocationID.x < " << shaderExtent.width << " ) \n"
@@ -249,6 +253,16 @@ void ImageSparseResidencyCase::checkSupport(Context& context) const
 {
 	const InstanceInterface&	instance = context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice = context.getPhysicalDevice();
+
+#ifndef CTS_USES_VULKANSC
+	if (m_format == VK_FORMAT_A8_UNORM_KHR)
+	{
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+		const auto properties = context.getFormatProperties(m_format);
+		if ((properties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR) == 0u)
+			TCU_THROW(NotSupportedError, "Format does not support writes without format");
+	}
+#endif // CTS_USES_VULKANSC
 
 	// Check if image size does not exceed device limits
 	if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
@@ -313,6 +327,7 @@ ImageSparseResidencyInstance::ImageSparseResidencyInstance	(Context&			context,
 
 tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 {
+	const auto					isAlphaOnly			= isAlphaOnlyFormat(m_format);
 	const float					epsilon				= 1e-5f;
 	const InstanceInterface&	instance			= m_context.getInstanceInterface();
 
@@ -322,7 +337,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 		queueRequirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
 		queueRequirements.push_back(QueueRequirements(VK_QUEUE_COMPUTE_BIT, 1u));
 
-		createDeviceSupportingQueues(queueRequirements, formatIsR64(m_format));
+		createDeviceSupportingQueues(queueRequirements, formatIsR64(m_format), isAlphaOnly);
 	}
 
 	VkImageCreateInfo			imageCreateInfo;
@@ -845,8 +860,9 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 										fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
 										break;
 									case 3:
-										iReferenceValue = 1u;
-										fReferenceValue = 1.f;
+										// For A8_UNORM we use the same values as the normal red channel, as per the shader.
+										iReferenceValue = (isAlphaOnly ? offsetX % 127u : 1u);
+										fReferenceValue = (isAlphaOnly ? static_cast<float>(iReferenceValue) / 127.f : 1.f);
 										break;
 									default:	DE_FATAL("Unexpected channel index");	break;
 								}
@@ -868,7 +884,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 									case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 									case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 									{
-                                        float fixedPointError = tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
+										float fixedPointError = tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
 										acceptableError += fixedPointError;
 										const tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), offsetZ * pixelDivider.z());
 
@@ -961,8 +977,8 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 							fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
 							break;
 						case 3:
-							iReferenceValue = 1u;
-							fReferenceValue = 1.f;
+							iReferenceValue = (isAlphaOnly ? offsetX % 127u : 1u);
+							fReferenceValue = (isAlphaOnly ? static_cast<float>(iReferenceValue) / 127.f : 1.f);
 							break;
 						default:	DE_FATAL("Unexpected channel index");	break;
 					}
@@ -1016,29 +1032,39 @@ TestInstance* ImageSparseResidencyCase::createInstance (Context& context) const
 	return new ImageSparseResidencyInstance(context, m_imageType, m_imageSize, m_format, m_useDeviceGroups);
 }
 
+std::vector<TestFormat> getSparseResidencyTestFormats (ImageType imageType, bool addExtraFormat)
+{
+	auto formats = getTestFormats(imageType);
+#ifndef CTS_USES_VULKANSC
+	if (addExtraFormat)
+		formats.push_back(TestFormat{ VK_FORMAT_A8_UNORM_KHR });
+#endif // CTS_USES_VULKANSC
+	return formats;
+}
+
 } // anonymous ns
 
 tcu::TestCaseGroup* createImageSparseResidencyTestsCommon (tcu::TestContext& testCtx, de::MovePtr<tcu::TestCaseGroup> testGroup, const bool useDeviceGroup = false)
 {
 	const std::vector<TestImageParameters> imageParameters
 	{
-		{ IMAGE_TYPE_2D,			{ tcu::UVec3(512u, 256u,  1u),	tcu::UVec3(1024u, 128u, 1u),	tcu::UVec3(11u,  137u, 1u) },	getTestFormats(IMAGE_TYPE_2D) },
-		{ IMAGE_TYPE_2D_ARRAY,		{ tcu::UVec3(512u, 256u,  6u),	tcu::UVec3(1024u, 128u, 8u),	tcu::UVec3(11u,  137u, 3u) },	getTestFormats(IMAGE_TYPE_2D_ARRAY) },
-		{ IMAGE_TYPE_CUBE,			{ tcu::UVec3(256u, 256u,  1u),	tcu::UVec3(128u,  128u, 1u),	tcu::UVec3(137u, 137u, 1u) },	getTestFormats(IMAGE_TYPE_CUBE) },
-		{ IMAGE_TYPE_CUBE_ARRAY,	{ tcu::UVec3(256u, 256u,  6u),	tcu::UVec3(128u,  128u, 8u),	tcu::UVec3(137u, 137u, 3u) },	getTestFormats(IMAGE_TYPE_CUBE_ARRAY) },
-		{ IMAGE_TYPE_3D,			{ tcu::UVec3(512u, 256u, 16u),	tcu::UVec3(1024u, 128u, 8u),	tcu::UVec3(11u,  137u, 3u) },	getTestFormats(IMAGE_TYPE_3D) }
+		{ IMAGE_TYPE_2D,			{ tcu::UVec3(512u, 256u,  1u),	tcu::UVec3(1024u, 128u, 1u),	tcu::UVec3(11u,  137u, 1u) },	getSparseResidencyTestFormats(IMAGE_TYPE_2D, !useDeviceGroup) },
+		{ IMAGE_TYPE_2D_ARRAY,		{ tcu::UVec3(512u, 256u,  6u),	tcu::UVec3(1024u, 128u, 8u),	tcu::UVec3(11u,  137u, 3u) },	getSparseResidencyTestFormats(IMAGE_TYPE_2D_ARRAY, !useDeviceGroup) },
+		{ IMAGE_TYPE_CUBE,			{ tcu::UVec3(256u, 256u,  1u),	tcu::UVec3(128u,  128u, 1u),	tcu::UVec3(137u, 137u, 1u) },	getSparseResidencyTestFormats(IMAGE_TYPE_CUBE, !useDeviceGroup) },
+		{ IMAGE_TYPE_CUBE_ARRAY,	{ tcu::UVec3(256u, 256u,  6u),	tcu::UVec3(128u,  128u, 8u),	tcu::UVec3(137u, 137u, 3u) },	getSparseResidencyTestFormats(IMAGE_TYPE_CUBE_ARRAY, !useDeviceGroup) },
+		{ IMAGE_TYPE_3D,			{ tcu::UVec3(512u, 256u, 16u),	tcu::UVec3(1024u, 128u, 8u),	tcu::UVec3(11u,  137u, 3u) },	getSparseResidencyTestFormats(IMAGE_TYPE_3D, !useDeviceGroup) },
 	};
 
 	for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
 	{
 		const ImageType					imageType = imageParameters[imageTypeNdx].imageType;
-		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str()));
 
 		for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
 		{
 			const VkFormat					format				= imageParameters[imageTypeNdx].formats[formatNdx].format;
 			tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(format);
-			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str()));
 
 			for (size_t imageSizeNdx = 0; imageSizeNdx < imageParameters[imageTypeNdx].imageSizes.size(); ++imageSizeNdx)
 			{
@@ -1053,7 +1079,7 @@ tcu::TestCaseGroup* createImageSparseResidencyTestsCommon (tcu::TestContext& tes
 				std::ostringstream stream;
 				stream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
 
-				formatGroup->addChild(new ImageSparseResidencyCase(testCtx, stream.str(), "", imageType, imageSize, format, glu::GLSL_VERSION_440, useDeviceGroup));
+				formatGroup->addChild(new ImageSparseResidencyCase(testCtx, stream.str(), imageType, imageSize, format, glu::GLSL_VERSION_440, useDeviceGroup));
 			}
 			imageTypeGroup->addChild(formatGroup.release());
 		}
@@ -1065,13 +1091,13 @@ tcu::TestCaseGroup* createImageSparseResidencyTestsCommon (tcu::TestContext& tes
 
 tcu::TestCaseGroup* createImageSparseResidencyTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_sparse_residency", "Image Sparse Residency"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_sparse_residency"));
 	return createImageSparseResidencyTestsCommon(testCtx, testGroup);
 }
 
 tcu::TestCaseGroup* createDeviceGroupImageSparseResidencyTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "device_group_image_sparse_residency", "Image Sparse Residency"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "device_group_image_sparse_residency"));
 	return createImageSparseResidencyTestsCommon(testCtx, testGroup, true);
 }
 

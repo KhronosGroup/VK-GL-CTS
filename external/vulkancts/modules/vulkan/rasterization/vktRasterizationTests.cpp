@@ -58,6 +58,7 @@
 #include "vkBufferWithMemory.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktRasterizationOrderAttachmentAccessTests.hpp"
+#include "vktRasterizationDepthBiasControlTests.hpp"
 #include "vktShaderTileImageTests.hpp"
 #endif // CTS_USES_VULKANSC
 
@@ -155,7 +156,7 @@ enum PrimitiveStrictness
 class BaseRenderingTestCase : public TestCase
 {
 public:
-								BaseRenderingTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT, deBool flatshade = DE_FALSE);
+								BaseRenderingTestCase	(tcu::TestContext& context, const std::string& name, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT, deBool flatshade = DE_FALSE);
 	virtual						~BaseRenderingTestCase	(void);
 
 	virtual void				initPrograms			(vk::SourceCollections& programCollection) const;
@@ -165,8 +166,8 @@ protected:
 	const deBool				m_flatshade;
 };
 
-BaseRenderingTestCase::BaseRenderingTestCase (tcu::TestContext& context, const std::string& name, const std::string& description, VkSampleCountFlagBits sampleCount, deBool flatshade)
-	: TestCase(context, name, description)
+BaseRenderingTestCase::BaseRenderingTestCase (tcu::TestContext& context, const std::string& name, VkSampleCountFlagBits sampleCount, deBool flatshade)
+	: TestCase(context, name)
 	, m_sampleCount	(sampleCount)
 	, m_flatshade	(flatshade)
 {
@@ -194,6 +195,8 @@ public:
 													BaseRenderingTestInstance		(Context& context, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT, deUint32 renderSize = RESOLUTION_POT, VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM, deUint32 additionalRenderSize = 0);
 													~BaseRenderingTestInstance		(void);
 
+	const tcu::TextureFormat&						getTextureFormat				(void) const;
+
 protected:
 	void											addImageTransitionBarrier		(VkCommandBuffer commandBuffer, VkImage image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout) const;
 	virtual void									drawPrimitives					(tcu::Surface& result, const std::vector<tcu::Vec4>& vertexData, VkPrimitiveTopology primitiveTopology);
@@ -219,8 +222,6 @@ protected:
 
 	virtual
 	const VkPipelineColorBlendStateCreateInfo*		getColorBlendStateCreateInfo	(void) const;
-
-	const tcu::TextureFormat&						getTextureFormat				(void) const;
 
 	const deUint32									m_renderSize;
 	const VkSampleCountFlagBits						m_sampleCount;
@@ -1832,11 +1833,10 @@ class PointSizeTestCase : public BaseRenderingTestCase
 public:
 							PointSizeTestCase	(tcu::TestContext&		context,
 												 std::string&			name,
-												 std::string&			description,
 												 deUint32				renderSize,
 												 float					pointSize,
 												 VkSampleCountFlagBits	sampleCount = VK_SAMPLE_COUNT_1_BIT)
-								: BaseRenderingTestCase (context, name, description, sampleCount)
+								: BaseRenderingTestCase (context, name, sampleCount)
 								, m_pointSize	(pointSize)
 								, m_renderSize	(renderSize)
 							{}
@@ -1866,20 +1866,22 @@ protected:
 class PointSizeTestInstance : public BaseRenderingTestInstance
 {
 public:
-							PointSizeTestInstance	(Context& context, deUint32 renderSize, float pointSize);
-	virtual tcu::TestStatus	iterate					(void);
-	virtual float			getPointSize			(void) const;
+								PointSizeTestInstance	(Context& context, deUint32 renderSize, float pointSize);
+	virtual tcu::TestStatus		iterate					(void);
+	virtual float				getPointSize			(void) const;
 
-private:
-	void					generatePointData		(PointSceneSpec::ScenePoint& outPoint);
-	void					drawPoint				(tcu::PixelBufferAccess& result, tcu::PointSceneSpec::ScenePoint& point);
-	bool					verifyPoint				(tcu::TestLog& log, tcu::PixelBufferAccess& access, float pointSize);
-	bool					isPointSizeClamped		(float pointSize, float maxPointSizeLimit);
+protected:
+	void						generatePointData		(PointSceneSpec::ScenePoint& outPoint);
+	virtual Move<VkPipeline>	createPipeline			(void);
+	virtual void				bindDrawData			(VkCommandBuffer commandBuffer, VkPipeline graphicsPipeline, VkBuffer vertexBuffer);
+	void						drawPoint				(tcu::PixelBufferAccess& result, tcu::PointSceneSpec::ScenePoint& point);
+	bool						verifyPoint				(tcu::TestLog& log, tcu::PixelBufferAccess& access, float pointSize);
+	bool						isPointSizeClamped		(float pointSize, float maxPointSizeLimit);
 
-	const float				m_pointSize;
-	const float				m_maxPointSize;
-	const deUint32			m_renderSize;
-	const VkFormat			m_format;
+	const float					m_pointSize;
+	const float					m_maxPointSize;
+	const deUint32				m_renderSize;
+	const VkFormat				m_format;
 };
 
 PointSizeTestInstance::PointSizeTestInstance (Context& context, deUint32 renderSize, float pointSize)
@@ -1949,6 +1951,87 @@ void PointSizeTestInstance::generatePointData (PointSceneSpec::ScenePoint& outPo
 	}
 }
 
+Move<VkPipeline> PointSizeTestInstance::createPipeline (void)
+{
+	const DeviceInterface&						vkd									(m_context.getDeviceInterface());
+	const VkDevice								vkDevice							(m_context.getDevice());
+	const std::vector<VkViewport>				viewports							(1, makeViewport(tcu::UVec2(m_renderSize)));
+	const std::vector<VkRect2D>					scissors							(1, makeRect2D(tcu::UVec2(m_renderSize)));
+
+	const VkVertexInputBindingDescription		vertexInputBindingDescription		=
+	{
+		0u,									// deUint32					binding;
+		(deUint32)(2 * sizeof(tcu::Vec4)),	// deUint32					strideInBytes;
+		VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	stepRate;
+	};
+
+	const VkVertexInputAttributeDescription		vertexInputAttributeDescriptions[2]	=
+	{
+		{
+			0u,								// deUint32	location;
+			0u,								// deUint32	binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
+			0u								// deUint32	offsetInBytes;
+		},
+		{
+			1u,								// deUint32	location;
+			0u,								// deUint32	binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
+			(deUint32)sizeof(tcu::Vec4)		// deUint32	offsetInBytes;
+		}
+	};
+
+	const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,													// const void*								pNext;
+		0,															// VkPipelineVertexInputStateCreateFlags	flags;
+		1u,															// deUint32									bindingCount;
+		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
+		2u,															// deUint32									attributeCount;
+		vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	return makeGraphicsPipeline(vkd,									// const DeviceInterface&							 vk
+								vkDevice,								// const VkDevice									 device
+								*m_pipelineLayout,						// const VkPipelineLayout							 pipelineLayout
+								*m_vertexShaderModule,					// const VkShaderModule								 vertexShaderModule
+								DE_NULL,								// const VkShaderModule								 tessellationControlShaderModule
+								DE_NULL,								// const VkShaderModule								 tessellationEvalShaderModule
+								DE_NULL,								// const VkShaderModule								 geometryShaderModule
+								*m_fragmentShaderModule,				// const VkShaderModule								 fragmentShaderModule
+								*m_renderPass,							// const VkRenderPass								 renderPass
+								viewports,								// const std::vector<VkViewport>&					 viewports
+								scissors,								// const std::vector<VkRect2D>&						 scissors
+								VK_PRIMITIVE_TOPOLOGY_POINT_LIST,		// const VkPrimitiveTopology						 topology
+								0u,										// const deUint32									 subpass
+								0u,										// const deUint32									 patchControlPoints
+								&vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*		 vertexInputStateCreateInfo
+								getRasterizationStateCreateInfo(),		// const VkPipelineRasterizationStateCreateInfo*	 rasterizationStateCreateInfo
+								DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*		 multisampleStateCreateInfo
+								DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*		 depthStencilStateCreateInfo,
+								getColorBlendStateCreateInfo());		// const VkPipelineColorBlendStateCreateInfo*		 colorBlendStateCreateInfo
+}
+
+void PointSizeTestInstance::bindDrawData (VkCommandBuffer commandBuffer, VkPipeline graphicsPipeline, VkBuffer vertexBuffer)
+{
+	const DeviceInterface&	vkd					(m_context.getDeviceInterface());
+	const VkDevice			vkDevice			(m_context.getDevice());
+	const VkDeviceSize		vertexBufferOffset	= 0;
+
+	vkd.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	vkd.cmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &m_descriptorSet.get(), 0u, DE_NULL);
+	vkd.cmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+
+	// Set Point Size
+	{
+		float pointSize = getPointSize();
+
+		deMemcpy(m_uniformBufferMemory->getHostPtr(), &pointSize, (size_t)m_uniformBufferSize);
+		flushAlloc(vkd, vkDevice, *m_uniformBufferMemory);
+	}
+}
+
 void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointSceneSpec::ScenePoint& point)
 {
 	const tcu::Vec4			positionData		(point.position);
@@ -1967,64 +2050,7 @@ void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointScen
 	de::MovePtr<Allocation>	vertexBufferMemory;
 
 	// Create Graphics Pipeline
-	{
-		const std::vector<VkViewport>				viewports							(1, makeViewport(tcu::UVec2(m_renderSize)));
-		const std::vector<VkRect2D>					scissors							(1, makeRect2D(tcu::UVec2(m_renderSize)));
-
-		const VkVertexInputBindingDescription		vertexInputBindingDescription		=
-		{
-			0u,									// deUint32					binding;
-			(deUint32)(2 * sizeof(tcu::Vec4)),	// deUint32					strideInBytes;
-			VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	stepRate;
-		};
-
-		const VkVertexInputAttributeDescription		vertexInputAttributeDescriptions[2]	=
-		{
-			{
-				0u,								// deUint32	location;
-				0u,								// deUint32	binding;
-				VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
-				0u								// deUint32	offsetInBytes;
-			},
-			{
-				1u,								// deUint32	location;
-				0u,								// deUint32	binding;
-				VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
-				(deUint32)sizeof(tcu::Vec4)		// deUint32	offsetInBytes;
-			}
-		};
-
-		const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
-			DE_NULL,													// const void*								pNext;
-			0,															// VkPipelineVertexInputStateCreateFlags	flags;
-			1u,															// deUint32									bindingCount;
-			&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-			2u,															// deUint32									attributeCount;
-			vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
-		};
-
-		graphicsPipeline = makeGraphicsPipeline(vkd,								// const DeviceInterface&							 vk
-												vkDevice,							// const VkDevice									 device
-												*m_pipelineLayout,					// const VkPipelineLayout							 pipelineLayout
-												*m_vertexShaderModule,				// const VkShaderModule								 vertexShaderModule
-												DE_NULL,							// const VkShaderModule								 tessellationControlShaderModule
-												DE_NULL,							// const VkShaderModule								 tessellationEvalShaderModule
-												DE_NULL,							// const VkShaderModule								 geometryShaderModule
-												*m_fragmentShaderModule,			// const VkShaderModule								 fragmentShaderModule
-												*m_renderPass,						// const VkRenderPass								 renderPass
-												viewports,							// const std::vector<VkViewport>&					 viewports
-												scissors,							// const std::vector<VkRect2D>&						 scissors
-												VK_PRIMITIVE_TOPOLOGY_POINT_LIST,	// const VkPrimitiveTopology						 topology
-												0u,									// const deUint32									 subpass
-												0u,									// const deUint32									 patchControlPoints
-												&vertexInputStateParams,			// const VkPipelineVertexInputStateCreateInfo*		 vertexInputStateCreateInfo
-												getRasterizationStateCreateInfo(),	// const VkPipelineRasterizationStateCreateInfo*	 rasterizationStateCreateInfo
-												DE_NULL,							// const VkPipelineMultisampleStateCreateInfo*		 multisampleStateCreateInfo
-												DE_NULL,							// const VkPipelineDepthStencilStateCreateInfo*		 depthStencilStateCreateInfo,
-												getColorBlendStateCreateInfo());	// const VkPipelineColorBlendStateCreateInfo*		 colorBlendStateCreateInfo
-	}
+	graphicsPipeline = createPipeline();
 
 	// Create Vertex Buffer
 	{
@@ -2068,11 +2094,7 @@ void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointScen
 	// Begin Render Pass
 	beginRenderPass(vkd, *commandBuffer, *m_renderPass, *m_frameBuffer, vk::makeRect2D(0, 0, m_renderSize, m_renderSize), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
-	const VkDeviceSize vertexBufferOffset = 0;
-
-	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
-	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &m_descriptorSet.get(), 0u, DE_NULL);
-	vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
+	bindDrawData(commandBuffer.get(), graphicsPipeline.get(), vertexBuffer.get());
 	vkd.cmdDraw(*commandBuffer, 1, 1, 0, 0);
 	endRenderPass(vkd, *commandBuffer);
 
@@ -2080,14 +2102,6 @@ void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointScen
 	copyImageToBuffer(vkd, *commandBuffer, *m_image, *m_resultBuffer, tcu::IVec2(m_renderSize, m_renderSize));
 
 	endCommandBuffer(vkd, *commandBuffer);
-
-	// Set Point Size
-	{
-		float pointSize = getPointSize();
-
-		deMemcpy(m_uniformBufferMemory->getHostPtr(), &pointSize, (size_t)m_uniformBufferSize);
-		flushAlloc(vkd, vkDevice, *m_uniformBufferMemory);
-	}
 
 	// Submit
 	submitCommandsAndWait(vkd, vkDevice, queue, commandBuffer.get());
@@ -2159,12 +2173,249 @@ bool PointSizeTestInstance::isPointSizeClamped (float pointSize, float maxPointS
 	return (pointSize == maxPointSizeLimit);
 }
 
+class PointDefaultSizeTestInstance : public PointSizeTestInstance
+{
+public:
+								PointDefaultSizeTestInstance	(Context& context, deUint32 renderSize, VkShaderStageFlags stage);
+
+protected:
+	Move<VkPipeline>			createPipeline					(void) override;
+	void						bindDrawData					(VkCommandBuffer commandBuffer, VkPipeline graphicsPipeline, VkBuffer vertexBuffer) override;
+
+	const VkShaderStageFlags	m_tessellationBits				= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	const VkShaderStageFlags	m_geometryBits					= VK_SHADER_STAGE_GEOMETRY_BIT;
+
+	Move<VkShaderModule>		m_tessellationControlShaderModule;
+	Move<VkShaderModule>		m_tessellationEvaluationShaderModule;
+	Move<VkShaderModule>		m_geometryShaderModule;
+
+	bool						m_hasTessellationStage;
+	bool						m_hasGeometryStage;
+};
+
+PointDefaultSizeTestInstance::PointDefaultSizeTestInstance	(Context& context, deUint32 renderSize, VkShaderStageFlags stage)
+	: PointSizeTestInstance(context, renderSize, 1.0f)
+	, m_hasTessellationStage(stage & m_tessellationBits)
+	, m_hasGeometryStage(stage & m_geometryBits)
+{
+	const DeviceInterface&		vkd					= m_context.getDeviceInterface();
+	const VkDevice				vkDevice			= m_context.getDevice();
+
+	if (m_hasTessellationStage)
+	{
+		m_tessellationControlShaderModule			= createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("tessellation_control_shader"), 0);
+		m_tessellationEvaluationShaderModule		= createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("tessellation_evaluation_shader"), 0);
+	}
+
+	if (m_hasGeometryStage)
+	{
+		m_geometryShaderModule						= createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("geometry_shader"), 0);
+	}
+}
+
+Move<VkPipeline> PointDefaultSizeTestInstance::createPipeline (void)
+{
+	const DeviceInterface&						vkd									(m_context.getDeviceInterface());
+	const VkDevice								vkDevice							(m_context.getDevice());
+	const std::vector<VkViewport>				viewports							(1, makeViewport(tcu::UVec2(m_renderSize)));
+	const std::vector<VkRect2D>					scissors							(1, makeRect2D(tcu::UVec2(m_renderSize)));
+	const VkPrimitiveTopology					topology							= m_hasTessellationStage ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+	const deUint32								patchCount							= m_hasTessellationStage ? 1u : 0u;
+
+	const VkVertexInputBindingDescription		vertexInputBindingDescription		=
+	{
+		0u,									// deUint32					binding;
+		(deUint32)(2 * sizeof(tcu::Vec4)),	// deUint32					strideInBytes;
+		VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	stepRate;
+	};
+
+	const VkVertexInputAttributeDescription		vertexInputAttributeDescriptions	=
+	{
+		0u,								// deUint32	location;
+		0u,								// deUint32	binding;
+		VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
+		0u								// deUint32	offsetInBytes;
+	};
+
+	const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,													// const void*								pNext;
+		0,															// VkPipelineVertexInputStateCreateFlags	flags;
+		1u,															// deUint32									bindingCount;
+		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
+		1u,															// deUint32									attributeCount;
+		&vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	return makeGraphicsPipeline(vkd,									// const DeviceInterface&							 vk
+								vkDevice,								// const VkDevice									 device
+								*m_pipelineLayout,						// const VkPipelineLayout							 pipelineLayout
+								*m_vertexShaderModule,					// const VkShaderModule								 vertexShaderModule
+								*m_tessellationControlShaderModule,		// const VkShaderModule								 tessellationControlShaderModule
+								*m_tessellationEvaluationShaderModule,	// const VkShaderModule								 tessellationEvalShaderModule
+								*m_geometryShaderModule,				// const VkShaderModule								 geometryShaderModule
+								*m_fragmentShaderModule,				// const VkShaderModule								 fragmentShaderModule
+								*m_renderPass,							// const VkRenderPass								 renderPass
+								viewports,								// const std::vector<VkViewport>&					 viewports
+								scissors,								// const std::vector<VkRect2D>&						 scissors
+								topology,								// const VkPrimitiveTopology						 topology
+								0u,										// const deUint32									 subpass
+								patchCount,								// const deUint32									 patchControlPoints
+								&vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*		 vertexInputStateCreateInfo
+								getRasterizationStateCreateInfo(),		// const VkPipelineRasterizationStateCreateInfo*	 rasterizationStateCreateInfo
+								DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*		 multisampleStateCreateInfo
+								DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*		 depthStencilStateCreateInfo,
+								getColorBlendStateCreateInfo());		// const VkPipelineColorBlendStateCreateInfo*		 colorBlendStateCreateInfo
+}
+
+void PointDefaultSizeTestInstance::bindDrawData (VkCommandBuffer commandBuffer, VkPipeline graphicsPipeline, VkBuffer vertexBuffer)
+{
+	const DeviceInterface&	vkd					(m_context.getDeviceInterface());
+	const VkDeviceSize		vertexBufferOffset	= 0;
+
+	vkd.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	vkd.cmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+}
+
+class PointDefaultSizeTestCase : public BaseRenderingTestCase
+{
+public:
+					PointDefaultSizeTestCase	(tcu::TestContext&		context,
+												 std::string			name,
+												 deUint32				renderSize,
+												 VkShaderStageFlags		stage,
+												 VkSampleCountFlagBits	sampleCount = VK_SAMPLE_COUNT_1_BIT);
+
+	void			initPrograms				(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance				(Context& context) const override;
+	void			checkSupport				(Context& context) const override;
+
+protected:
+	const deUint32				m_renderSize;
+	const VkShaderStageFlags	m_stage;
+};
+
+PointDefaultSizeTestCase::PointDefaultSizeTestCase	(tcu::TestContext&		context,
+													 std::string			name,
+													 deUint32				renderSize,
+													 VkShaderStageFlags		stage,
+													 VkSampleCountFlagBits	sampleCount)
+	: BaseRenderingTestCase	(context, name, sampleCount)
+	, m_renderSize			(renderSize)
+	, m_stage				(stage)
+{
+}
+
+void PointDefaultSizeTestCase::initPrograms			(vk::SourceCollections& programCollection) const
+{
+	std::ostringstream vert;
+	std::ostringstream tesc;
+	std::ostringstream tese;
+	std::ostringstream geom;
+	std::ostringstream frag;
+
+	vert
+		<< "#version 450\n"
+		<< "layout(location = 0) in highp vec4 a_position;\n"
+		<< "void main()"
+		<< "{\n"
+		<< "	gl_Position = a_position;\n"
+		<< "}\n"
+		;
+
+	tesc
+		<< "#version 450\n"
+		<< "layout(vertices = 1) out;\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "	gl_TessLevelOuter[0] = 1.0;\n"
+		<< "	gl_TessLevelOuter[1] = 1.0;\n"
+		<< "	gl_TessLevelOuter[2] = 1.0;\n"
+		<< "	gl_TessLevelOuter[3] = 1.0;\n"
+		<< "	gl_TessLevelInner[0] = 1.0;\n"
+		<< "	gl_TessLevelInner[1] = 1.0;\n"
+		<< "\n"
+		<< "	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+		<< "}\n"
+		;
+
+	tese
+		<< "#version 450\n"
+		<< "layout(isolines, point_mode) in;\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "	gl_Position = gl_in[0].gl_Position;\n"
+		<< "}\n"
+		;
+
+	geom
+		<< "#version 450\n"
+		<< "layout(points) in;\n"
+		<< "layout(points, max_vertices=1) out;\n"
+		<< "void main()\n"
+		<< "{\n"
+		<< "	gl_Position = gl_in[0].gl_Position;\n"
+		<< "	EmitVertex();\n"
+		<< "	EndPrimitive();\n"
+		<< "}\n"
+		;
+
+	frag
+		<< "#version 450\n"
+		<< "layout(location = 0) out highp vec4 fragColor;\n"
+		<< "void main()"
+		<< "{\n"
+		<< "	fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);\n"
+		<< "}\n"
+		;
+
+	programCollection.glslSources.add("vertext_shader") << glu::VertexSource(vert.str());
+	programCollection.glslSources.add("tessellation_control_shader") << glu::TessellationControlSource(tesc.str());
+	programCollection.glslSources.add("tessellation_evaluation_shader") << glu::TessellationEvaluationSource(tese.str());
+	programCollection.glslSources.add("geometry_shader") << glu::GeometrySource(geom.str());
+	programCollection.glslSources.add("fragment_shader") << glu::FragmentSource(frag.str());
+}
+
+TestInstance* PointDefaultSizeTestCase::createInstance	(Context& context) const
+{
+	VkPhysicalDeviceProperties	properties	(context.getDeviceProperties());
+
+	if (m_renderSize > properties.limits.maxViewportDimensions[0] || m_renderSize > properties.limits.maxViewportDimensions[1])
+		TCU_THROW(NotSupportedError , "Viewport dimensions not supported");
+
+	if (m_renderSize > properties.limits.maxFramebufferWidth || m_renderSize > properties.limits.maxFramebufferHeight)
+		TCU_THROW(NotSupportedError , "Framebuffer width/height not supported");
+
+	return new PointDefaultSizeTestInstance(context, m_renderSize, m_stage);
+}
+
+void PointDefaultSizeTestCase::checkSupport				(Context& context) const
+{
+	const VkShaderStageFlags	tessellationBits	= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	const VkShaderStageFlags	geometryBits		= VK_SHADER_STAGE_GEOMETRY_BIT;
+
+	if (m_stage & tessellationBits)
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+	}
+
+	if (m_stage & geometryBits)
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+	}
+
+	context.requireDeviceFunctionality("VK_KHR_maintenance5");
+}
+
 template <typename ConcreteTestInstance>
 class BaseTestCase : public BaseRenderingTestCase
 {
 public:
-							BaseTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
-								: BaseRenderingTestCase(context, name, description, sampleCount)
+							BaseTestCase	(tcu::TestContext& context, const std::string& name, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
+								: BaseRenderingTestCase(context, name, sampleCount)
 							{}
 
 	virtual TestInstance*	createInstance	(Context& context) const
@@ -2409,10 +2660,9 @@ class ConservativeTestCase : public BaseRenderingTestCase
 public:
 									ConservativeTestCase		(tcu::TestContext&					context,
 																 const std::string&					name,
-																 const std::string&					description,
 																 const ConservativeTestConfig&		conservativeTestConfig,
 																 VkSampleCountFlagBits				sampleCount = VK_SAMPLE_COUNT_1_BIT)
-										: BaseRenderingTestCase		(context, name, description, sampleCount)
+										: BaseRenderingTestCase		(context, name, sampleCount)
 										, m_conservativeTestConfig	(conservativeTestConfig)
 									{}
 
@@ -4523,14 +4773,12 @@ const VkPipelineRasterizationLineStateCreateInfoEXT* ConservativePointTestInstan
 	return DE_NULL;
 }
 
-
 template <typename ConcreteTestInstance>
 class WidenessTestCase : public BaseRenderingTestCase
 {
 public:
 								WidenessTestCase	(tcu::TestContext&			context,
 													 const std::string&			name,
-													 const std::string&			description,
 													 PrimitiveWideness			wideness,
 													 PrimitiveStrictness		strictness,
 													 bool						isLineTest,
@@ -4539,7 +4787,7 @@ public:
 													 VkLineRasterizationModeEXT	lineRasterizationMode,
 													 LineStippleFactorCase		stippleFactor = LineStippleFactorCase::DEFAULT,
 													 deUint32					additionalRenderSize	= 0)
-									: BaseRenderingTestCase		(context, name, description, sampleCount)
+									: BaseRenderingTestCase		(context, name, sampleCount)
 									, m_wideness				(wideness)
 									, m_strictness				(strictness)
 									, m_isLineTest				(isLineTest)
@@ -5072,8 +5320,8 @@ const VkPipelineColorBlendStateCreateInfo* FillRuleTestInstance::getColorBlendSt
 class FillRuleTestCase : public BaseRenderingTestCase
 {
 public:
-								FillRuleTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, FillRuleTestInstance::FillRuleCaseType type, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
-									: BaseRenderingTestCase	(context, name, description, sampleCount)
+								FillRuleTestCase	(tcu::TestContext& context, const std::string& name, FillRuleTestInstance::FillRuleCaseType type, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
+									: BaseRenderingTestCase	(context, name, sampleCount)
 									, m_type				(type)
 								{}
 
@@ -5365,8 +5613,8 @@ const VkPipelineRasterizationStateCreateInfo* CullingTestInstance::getRasterizat
 class CullingTestCase : public BaseRenderingTestCase
 {
 public:
-								CullingTestCase		(tcu::TestContext& context, const std::string& name, const std::string& description, VkCullModeFlags cullMode, VkPrimitiveTopology primitiveTopology, VkFrontFace frontFace, VkPolygonMode polygonMode, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
-									: BaseRenderingTestCase	(context, name, description, sampleCount)
+								CullingTestCase		(tcu::TestContext& context, const std::string& name, VkCullModeFlags cullMode, VkPrimitiveTopology primitiveTopology, VkFrontFace frontFace, VkPolygonMode polygonMode, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
+									: BaseRenderingTestCase	(context, name, sampleCount)
 									, m_cullMode			(cullMode)
 									, m_primitiveTopology	(primitiveTopology)
 									, m_frontFace			(frontFace)
@@ -5859,8 +6107,8 @@ void DiscardTestInstance::drawPrimitivesDiscard (tcu::Surface& result, const std
 class DiscardTestCase : public BaseRenderingTestCase
 {
 public:
-								DiscardTestCase					(tcu::TestContext& context, const std::string& name, const std::string& description, VkPrimitiveTopology primitiveTopology, deBool queryFragmentShaderInvocations, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
-									: BaseRenderingTestCase				(context, name, description, sampleCount)
+								DiscardTestCase					(tcu::TestContext& context, const std::string& name, VkPrimitiveTopology primitiveTopology, deBool queryFragmentShaderInvocations, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
+									: BaseRenderingTestCase				(context, name, sampleCount)
 									, m_primitiveTopology				(primitiveTopology)
 									, m_queryFragmentShaderInvocations	(queryFragmentShaderInvocations)
 								{}
@@ -6110,8 +6358,8 @@ void TriangleInterpolationTestInstance::extractTriangles (std::vector<TriangleSc
 class TriangleInterpolationTestCase : public BaseRenderingTestCase
 {
 public:
-								TriangleInterpolationTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, VkPrimitiveTopology primitiveTopology, int flags, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
-									: BaseRenderingTestCase		(context, name, description, sampleCount, (flags & INTERPOLATIONFLAGS_FLATSHADE) != 0)
+								TriangleInterpolationTestCase	(tcu::TestContext& context, const std::string& name, VkPrimitiveTopology primitiveTopology, int flags, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
+									: BaseRenderingTestCase		(context, name, sampleCount, (flags & INTERPOLATIONFLAGS_FLATSHADE) != 0)
 									, m_primitiveTopology		(primitiveTopology)
 									, m_flags					(flags)
 								{}
@@ -6389,13 +6637,12 @@ class LineInterpolationTestCase : public BaseRenderingTestCase
 public:
 								LineInterpolationTestCase		(tcu::TestContext&		context,
 																 const std::string&		name,
-																 const std::string&		description,
 																 VkPrimitiveTopology	primitiveTopology,
 																 int					flags,
 																 PrimitiveWideness		wideness,
 																 PrimitiveStrictness	strictness,
 																 VkSampleCountFlagBits	sampleCount = VK_SAMPLE_COUNT_1_BIT)
-									: BaseRenderingTestCase		(context, name, description, sampleCount, (flags & INTERPOLATIONFLAGS_FLATSHADE) != 0)
+									: BaseRenderingTestCase		(context, name, sampleCount, (flags & INTERPOLATIONFLAGS_FLATSHADE) != 0)
 									, m_primitiveTopology		(primitiveTopology)
 									, m_flags					(flags)
 									, m_wideness				(wideness)
@@ -6432,8 +6679,8 @@ public:
 		deUint32				drawVertexCount;
 	};
 
-							StrideZeroCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params)
-								: vkt::TestCase	(testCtx, name, description)
+							StrideZeroCase		(tcu::TestContext& testCtx, const std::string& name, const Params& params)
+								: vkt::TestCase	(testCtx, name)
 								, m_params		(params)
 								{}
 
@@ -6681,8 +6928,8 @@ tcu::TestStatus StrideZeroInstance::iterate (void)
 class CullAndPrimitiveIdCase : public vkt::TestCase
 {
 public:
-					CullAndPrimitiveIdCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: vkt::TestCase(testCtx, name, description)
+					CullAndPrimitiveIdCase		(tcu::TestContext& testCtx, const std::string& name)
+						: vkt::TestCase(testCtx, name)
 						{}
 					~CullAndPrimitiveIdCase		(void) {}
 	void			initPrograms				(vk::SourceCollections& programCollection) const override;
@@ -6918,6 +7165,733 @@ tcu::TestStatus CullAndPrimitiveIdInstance::iterate ()
 	return tcu::TestStatus::pass("Pass");
 }
 
+struct PolygonModeLargePointsConfig
+{
+	const float	pointSize;
+	const bool	meshShader;
+	const bool	tessellationShaders;
+	const bool	geometryShader;
+	const bool	dynamicPolygonMode;
+	const bool	defaultSize;
+
+	PolygonModeLargePointsConfig (float pointSize_, bool meshShader_, bool tessellationShaders_, bool geometryShader_, bool dynamicPolygonMode_, bool defaultSize_ = false)
+		: pointSize				(pointSize_)
+		, meshShader			(meshShader_)
+		, tessellationShaders	(tessellationShaders_)
+		, geometryShader		(geometryShader_)
+		, dynamicPolygonMode	(dynamicPolygonMode_)
+		, defaultSize			(defaultSize_)
+	{
+		if (meshShader)
+		{
+			DE_ASSERT(!tessellationShaders && !geometryShader);
+		}
+	}
+};
+
+class PolygonModeLargePointsCase : public vkt::TestCase
+{
+public:
+					PolygonModeLargePointsCase	(tcu::TestContext& testCtx, const std::string& name, const PolygonModeLargePointsConfig& config)
+						: vkt::TestCase	(testCtx, name)
+						, m_config		(config)
+						{}
+	virtual			~PolygonModeLargePointsCase	(void) {}
+
+	void			checkSupport				(Context& context) const override;
+	void			initPrograms				(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance				(Context& context) const override;
+
+	static const tcu::Vec4		geometryColor;
+	static constexpr uint32_t	kNumTriangles	= 2u;
+	static constexpr uint32_t	kNumPoints		= kNumTriangles * 3u;
+
+protected:
+	const PolygonModeLargePointsConfig	m_config;
+};
+
+const tcu::Vec4 PolygonModeLargePointsCase::geometryColor (0.0f, 0.0f, 1.0f, 1.0f);
+
+class PolygonModeLargePointsInstance : public vkt::TestInstance
+{
+public:
+						PolygonModeLargePointsInstance	(Context& context, const PolygonModeLargePointsConfig& config)
+							: vkt::TestInstance(context)
+							, m_config(config)
+							{}
+	virtual				~PolygonModeLargePointsInstance	(void) {}
+
+	tcu::TestStatus		iterate							(void) override;
+
+protected:
+	const PolygonModeLargePointsConfig	m_config;
+};
+
+void PolygonModeLargePointsCase::checkSupport (Context &context) const
+{
+#ifndef CTS_USES_VULKANSC
+	context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FILL_MODE_NON_SOLID);
+
+#ifndef CTS_USES_VULKANSC
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().pointPolygons)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Point polygons are not supported by this implementation");
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+
+	const auto& limits = context.getDeviceProperties().limits;
+	if (!limits.standardSampleLocations)
+		TCU_THROW(NotSupportedError, "standardSampleLocations not supported");
+
+	if (m_config.meshShader)
+		context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+
+	if (m_config.tessellationShaders || m_config.geometryShader)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
+
+	if (m_config.tessellationShaders)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+
+	if (m_config.geometryShader)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+	if (m_config.pointSize != 1.0f)
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_LARGE_POINTS);
+
+		const auto& validRange = limits.pointSizeRange;
+		if (validRange[0] > m_config.pointSize || validRange[1] < m_config.pointSize)
+		{
+			std::ostringstream msg;
+			msg << "Required point size " << m_config.pointSize << " outside valid range [" << validRange[0] << ", " << validRange[1] << "]";
+			TCU_THROW(NotSupportedError, msg.str());
+		}
+	}
+
+#ifndef CTS_USES_VULKANSC
+	if (m_config.dynamicPolygonMode)
+	{
+		const auto eds3Features = context.getExtendedDynamicState3FeaturesEXT();
+		if (!eds3Features.extendedDynamicState3PolygonMode)
+			TCU_THROW(NotSupportedError, "extendedDynamicState3PolygonMode not supported");
+	}
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+}
+
+void PolygonModeLargePointsCase::initPrograms (vk::SourceCollections &programCollection) const
+{
+	if (!m_config.meshShader)
+	{
+		std::ostringstream vert;
+		vert
+			<< "#version 460\n"
+			<< "layout (location=0) in vec4 inPosition;\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "};\n"
+			<< "void main (void) {\n"
+			<< "    gl_Position  = inPosition;\n";
+		if (!m_config.defaultSize)
+		{
+		vert
+			<< "    gl_PointSize = " << std::fixed << m_config.pointSize << ";\n";
+		}
+		vert
+			<< "}\n"
+			;
+		programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+	}
+	else
+	{
+		std::ostringstream mesh;
+		mesh
+			<< "#version 450\n"
+			<< "#extension GL_EXT_mesh_shader : enable\n"
+			<< "\n"
+			<< "layout (local_size_x=" << kNumPoints << ", local_size_y=1, local_size_z=1) in;\n"
+			<< "layout (triangles) out;\n"
+			<< "layout (max_vertices=" << kNumPoints << ", max_primitives=" << kNumTriangles << ") out;\n"
+			<< "\n"
+			<< "out gl_MeshPerVertexEXT {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_MeshVerticesEXT[];\n"
+			<< "\n"
+			<< "layout (set=0, binding=0, std430) readonly buffer VertexData {\n"
+			<< "    vec4 vertices[];\n"
+			<< "} vertexBuffer;\n"
+			<< "\n"
+			<< "void main (void) {\n"
+			<< "    SetMeshOutputsEXT(" << kNumPoints << ", " << kNumTriangles << ");\n"
+			<< "    gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_Position = vertexBuffer.vertices[gl_LocalInvocationIndex];\n";
+		if (!m_config.defaultSize)
+		{
+		mesh
+			<< "    gl_MeshVerticesEXT[gl_LocalInvocationIndex].gl_PointSize = " << std::fixed << m_config.pointSize << ";\n";
+		}
+		mesh
+			<< "    if (gl_LocalInvocationIndex < " << kNumTriangles << ") {\n"
+			<< "        const uint baseIndex = gl_LocalInvocationIndex * 3u;\n"
+			<< "        gl_PrimitiveTriangleIndicesEXT[gl_LocalInvocationIndex] = uvec3(baseIndex, baseIndex + 1u, baseIndex + 2u);\n"
+			<< "    }\n"
+			<< "}\n"
+			;
+		const vk::ShaderBuildOptions buildOptions (programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+		programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+	}
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = vec4" << geometryColor << ";\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+	if (m_config.tessellationShaders)
+	{
+		std::ostringstream tesc;
+		tesc
+			<< "#version 460\n"
+			<< "layout (vertices=3) out;\n"
+			<< "in gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_out[];\n"
+			<< "void main (void) {\n"
+			<< "  gl_TessLevelInner[0] = 1.0;\n"
+			<< "  gl_TessLevelInner[1] = 1.0;\n"
+			<< "  gl_TessLevelOuter[0] = 1.0;\n"
+			<< "  gl_TessLevelOuter[1] = 1.0;\n"
+			<< "  gl_TessLevelOuter[2] = 1.0;\n"
+			<< "  gl_TessLevelOuter[3] = 1.0;\n"
+			<< "  gl_out[gl_InvocationID].gl_Position  = gl_in[gl_InvocationID].gl_Position;\n";
+		if (!m_config.defaultSize)
+		{
+		tesc
+			<< "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n";
+		}
+		tesc
+			<< "}\n"
+			;
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tesc.str());
+
+
+		std::ostringstream tese;
+		tese
+			<< "#version 460\n"
+			<< "layout (triangles, fractional_odd_spacing, cw) in;\n"
+			<< "in gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "};\n"
+			<< "void main (void) {\n"
+			<< "    gl_Position  = (gl_TessCoord.x * gl_in[0].gl_Position) +\n"
+			<< "                   (gl_TessCoord.y * gl_in[1].gl_Position) +\n"
+			<< "                   (gl_TessCoord.z * gl_in[2].gl_Position);\n";
+		if (!m_config.defaultSize)
+		{
+		tese
+			<< "    gl_PointSize = gl_in[0].gl_PointSize;\n";
+		}
+		tese
+			<< "}\n"
+			;
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(tese.str());
+	}
+
+	if (m_config.geometryShader)
+	{
+		std::ostringstream geom;
+		geom
+			<< "#version 460\n"
+			<< "layout (triangles) in;\n"
+			<< "layout (triangle_strip, max_vertices=3) out;\n"
+			<< "in gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "} gl_in[3];\n"
+			<< "out gl_PerVertex {\n"
+			<< "    vec4  gl_Position;\n"
+			<< "    float gl_PointSize;\n"
+			<< "};\n"
+			<< "void main (void) {\n"
+			<< "    for (uint i = 0u; i < 3u; ++i) {\n"
+			<< "        gl_Position  = gl_in[i].gl_Position;\n";
+		if (!m_config.defaultSize)
+		{
+		geom
+			<< "        gl_PointSize = gl_in[i].gl_PointSize;\n";
+		}
+		geom
+			<< "        EmitVertex();\n"
+			<< "    }\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("geom") << glu::GeometrySource(geom.str());
+	}
+}
+
+TestInstance* PolygonModeLargePointsCase::createInstance (Context& context) const
+{
+	return new PolygonModeLargePointsInstance(context, m_config);
+}
+
+/*
+ * The test will create a 4x4 framebuffer and will draw a quad in the middle of it, roughly covering the 4 center pixels. Instead of
+ * making the quad have the exact size to cover the whole center area, the quad will be slightly inside the 4 center pixels, with a
+ * margin of 0.125 units (1/4 of a pixel in unnormalized coordinates). This means a point size of 1.0 will not reach the sampling
+ * points at the pixel center of the edge pixels, but a point size of 2.0 will.
+*/
+/*
+    +----------+----------+----------+----------+
+    |          |          |          |          |
+    |          |          |          |          |
+    |     x    |     x    |     x    |     x    |
+    |          |          |          |          |
+    |          |          |          |          |
+    +----------+----------+----------+----------+
+    |          |          |          |          |
+    |          | +--------+--------+ |          |
+    |     x    | |        |        | |     x    |
+    |          | |        |        | |          |
+    |          | |        |        | |          |
+    +----------+-+--------+--------+-+----------+
+    |          | |        |        | |          |
+    |          | |        |        | |          |
+    |     x    | |        |        | |     x    |
+    |          | +--------+--------+ |          |
+    |          |          |          |          |
+    +----------+----------+----------+----------+
+    |          |          |          |          |
+    |          |          |          |          |
+    |     x    |     x    |     x    |     x    |
+    |          |          |          |          |
+    |          |          |          |          |
+    +----------+----------+----------+----------+
+*/
+tcu::TestStatus PolygonModeLargePointsInstance::iterate (void)
+{
+	const auto&			vkd				= m_context.getDeviceInterface();
+	const auto			device			= m_context.getDevice();
+	auto&				alloc			= m_context.getDefaultAllocator();
+	const auto			queue			= m_context.getUniversalQueue();
+	const auto			qfIndex			= m_context.getUniversalQueueFamilyIndex();
+
+	const auto			colorFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat		= mapVkFormat(colorFormat);
+	const auto			colorExtent		= makeExtent3D(4u, 4u, 1u);
+	const tcu::IVec3	colorIExtent	(static_cast<int>(colorExtent.width), static_cast<int>(colorExtent.height), static_cast<int>(colorExtent.depth));
+	const auto			colorUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto			colorSRR		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto			colorSRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const tcu::Vec4		clearColor		(0.0f, 0.0f, 0.0f, 1.0f);
+
+	// Color buffer.
+	const VkImageCreateInfo colorBufferCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		colorFormat,							//	VkFormat				format;
+		colorExtent,							//	VkExtent3D				extent;
+		1u,										//	uint32_t				mipLevels;
+		1u,										//	uint32_t				arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		colorUsage,								//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	ImageWithMemory colorBuffer (vkd, device, alloc, colorBufferCreateInfo, MemoryRequirement::Any);
+
+	const auto colorBufferView = makeImageView(vkd, device, colorBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
+
+	// Verification buffer.
+	const auto			pixelSize				= static_cast<VkDeviceSize>(tcuFormat.getPixelSize());
+	const auto			verificationBufferSize	= pixelSize * colorExtent.width * colorExtent.height * colorExtent.depth;
+	const auto			verificationBufferInfo	= makeBufferCreateInfo(verificationBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	BufferWithMemory	verificationBuffer		(vkd, device, alloc, verificationBufferInfo, MemoryRequirement::HostVisible);
+	auto&				verificationBufferAlloc	= verificationBuffer.getAllocation();
+
+	// Vertex buffer.
+	const float			insideMargin	= 0.125f;
+	const tcu::Vec4		topLeft			(-0.5f, -0.5f, 0.0f, 1.0f);
+	const tcu::Vec4		topRight		( 0.5f, -0.5f, 0.0f, 1.0f);
+	const tcu::Vec4		bottomLeft		(-0.5f,  0.5f, 0.0f, 1.0f);
+	const tcu::Vec4		bottomRight		( 0.5f,  0.5f, 0.0f, 1.0f);
+
+	const tcu::Vec4		actualTL		= topLeft + tcu::Vec4(insideMargin, insideMargin, 0.0f, 0.0f);
+	const tcu::Vec4		actualTR		= topRight + tcu::Vec4(-insideMargin, insideMargin, 0.0f, 0.0f);
+	const tcu::Vec4		actualBL		= bottomLeft + tcu::Vec4(insideMargin, -insideMargin, 0.0f, 0.0f);
+	const tcu::Vec4		actualBR		= bottomRight + tcu::Vec4(-insideMargin, -insideMargin, 0.0f, 0.0f);
+
+	const std::vector<tcu::Vec4> vertices
+	{
+		actualTL, actualTR, actualBL,
+		actualTR, actualBR, actualBL,
+	};
+
+	DE_ASSERT(de::sizeU32(vertices) == PolygonModeLargePointsCase::kNumPoints);
+
+	const auto			vertexBufferSize	= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vertexBufferUsage	= (m_config.meshShader ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	const auto			vertexBufferInfo	= makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+	BufferWithMemory	vertexBuffer		(vkd, device, alloc, vertexBufferInfo, MemoryRequirement::HostVisible);
+	auto&				vertexBufferAlloc	= vertexBuffer.getAllocation();
+	void*				vertexBufferData	= vertexBufferAlloc.getHostPtr();
+	const VkDeviceSize	vertexBufferOffset	= 0ull;
+
+	deMemcpy(vertexBufferData, vertices.data(), static_cast<size_t>(vertexBufferSize));
+	flushAlloc(vkd, device, vertexBufferAlloc);
+
+	// Pipeline layout.
+	DescriptorSetLayoutBuilder setLayoutBuilder;
+	if (m_config.meshShader)
+	{
+#ifndef CTS_USES_VULKANSC
+		setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_MESH_BIT_EXT);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+	const auto setLayout		= setLayoutBuilder.build(vkd, device);
+	const auto pipelineLayout	= makePipelineLayout(vkd, device, setLayout.get());
+
+	// Descriptor pool and set if needed.
+	Move<VkDescriptorPool>	descriptorPool;
+	Move<VkDescriptorSet>	descriptorSet;
+	if (m_config.meshShader)
+	{
+		DescriptorPoolBuilder poolBuilder;
+		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+		descriptorPool	= poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+		descriptorSet	= makeDescriptorSet(vkd, device, descriptorPool.get(), setLayout.get());
+
+		DescriptorSetUpdateBuilder updateBuilder;
+		const auto vertexBufferDescInfo = makeDescriptorBufferInfo(vertexBuffer.get(), 0ull, vertexBufferSize);
+		updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &vertexBufferDescInfo);
+		updateBuilder.update(vkd, device);
+	}
+
+	// Render pass and framebuffer.
+	const auto renderPass	= makeRenderPass(vkd, device, colorFormat);
+	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorBufferView.get(), colorExtent.width, colorExtent.height);
+
+	// Shader modules.
+	const auto&	binaries	= m_context.getBinaryCollection();
+	const auto	vertModule	= (!m_config.meshShader ? createShaderModule(vkd, device, binaries.get("vert")) : Move<VkShaderModule>());
+	const auto	meshModule	= (m_config.meshShader ? createShaderModule(vkd, device, binaries.get("mesh")) : Move<VkShaderModule>());
+	const auto	fragModule	= createShaderModule(vkd, device, binaries.get("frag"));
+	const auto	tescModule	= (m_config.tessellationShaders ? createShaderModule(vkd, device, binaries.get("tesc")) : Move<VkShaderModule>());
+	const auto	teseModule	= (m_config.tessellationShaders ? createShaderModule(vkd, device, binaries.get("tese")) : Move<VkShaderModule>());
+	const auto	geomModule	= (m_config.geometryShader ? createShaderModule(vkd, device, binaries.get("geom")) : Move<VkShaderModule>());
+
+	// Viewports and scissors.
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(colorExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(colorExtent));
+
+	// Rasterization state: key for the test. Rendering triangles as points.
+	const auto polygonMode = (m_config.dynamicPolygonMode ? VK_POLYGON_MODE_FILL : VK_POLYGON_MODE_POINT);
+	const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,													//	const void*								pNext;
+		0u,															//	VkPipelineRasterizationStateCreateFlags	flags;
+		VK_FALSE,													//	VkBool32								depthClampEnable;
+		VK_FALSE,													//	VkBool32								rasterizerDiscardEnable;
+		polygonMode,												//	VkPolygonMode							polygonMode;
+		VK_CULL_MODE_NONE,											//	VkCullModeFlags							cullMode;
+		VK_FRONT_FACE_CLOCKWISE,									//	VkFrontFace								frontFace;
+		VK_FALSE,													//	VkBool32								depthBiasEnable;
+		0.0f,														//	float									depthBiasConstantFactor;
+		0.0f,														//	float									depthBiasClamp;
+		0.0f,														//	float									depthBiasSlopeFactor;
+		1.0f,														//	float									lineWidth;
+	};
+
+	std::vector<VkDynamicState> dynamicStates;
+
+#ifndef CTS_USES_VULKANSC
+	if (m_config.dynamicPolygonMode)
+		dynamicStates.push_back(VK_DYNAMIC_STATE_POLYGON_MODE_EXT);
+#else
+	DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+
+	const VkPipelineDynamicStateCreateInfo dynamicStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,												//	const void*							pNext;
+		0u,														//	VkPipelineDynamicStateCreateFlags	flags;
+		de::sizeU32(dynamicStates),								//	uint32_t							dynamicStateCount;
+		de::dataOrNull(dynamicStates),							//	const VkDynamicState*				pDynamicStates;
+	};
+
+	const auto primitiveTopology	= (m_config.tessellationShaders ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	const auto patchControlPoints	= (m_config.tessellationShaders ? 3u : 0u);
+
+	// Pipeline.
+	Move<VkPipeline> pipeline;
+
+	if (m_config.meshShader)
+	{
+#ifndef CTS_USES_VULKANSC
+		pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+			VK_NULL_HANDLE, meshModule.get(), fragModule.get(),
+			renderPass.get(), viewports, scissors, 0u,
+			&rasterizationStateInfo, nullptr, nullptr, nullptr, &dynamicStateInfo);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+	else
+	{
+		pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+			vertModule.get(), tescModule.get(), teseModule.get(), geomModule.get(), fragModule.get(),
+			renderPass.get(), viewports, scissors, primitiveTopology, 0u, patchControlPoints,
+			nullptr, &rasterizationStateInfo, nullptr, nullptr, nullptr, &dynamicStateInfo);
+	}
+
+	// Command pool and buffer, render and verify results.
+	const auto cmdPool = makeCommandPool(vkd, device, qfIndex);
+	const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer = cmdBufferPtr.get();
+
+	beginCommandBuffer(vkd, cmdBuffer);
+	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+
+	if (m_config.meshShader)
+		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	else
+		vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+
+	if (m_config.dynamicPolygonMode)
+	{
+#ifndef CTS_USES_VULKANSC
+		vkd.cmdSetPolygonModeEXT(cmdBuffer, VK_POLYGON_MODE_POINT);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+
+	if (m_config.meshShader)
+#ifndef CTS_USES_VULKANSC
+		vkd.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	else
+		vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+
+	endRenderPass(vkd, cmdBuffer);
+
+	// Copy image to verification buffer.
+	const auto preTransferBarrier = makeImageMemoryBarrier(
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		colorBuffer.get(), colorSRR);
+
+	cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preTransferBarrier);
+
+	const auto copyRegion = makeBufferImageCopy(colorExtent, colorSRL);
+	vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, verificationBuffer.get(), 1u, &copyRegion);
+
+	const auto preHostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+	cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &preHostBarrier);
+
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Check results.
+	invalidateAlloc(vkd, device, verificationBufferAlloc);
+
+	const tcu::PixelBufferAccess	resultAccess	(tcuFormat, colorIExtent, verificationBufferAlloc.getHostPtr());
+	tcu::TextureLevel				referenceLevel	(tcuFormat, colorIExtent.x(), colorIExtent.y(), colorIExtent.z());
+	const tcu::PixelBufferAccess	referenceAccess	= referenceLevel.getAccess();
+	const tcu::Vec4					threshold		(0.0f, 0.0f, 0.0f, 0.0f);
+#ifndef CTS_USES_VULKANSC
+	const auto&						m5Properties	= m_context.getMaintenance5Properties();
+	// If testing default size means we are not setting the point size in shaders, and therefore we don't care about m5Properties.polygonModePointSize
+	// Default size is 1.0f, so we should only take the border into account
+	const bool						pointSizeUsed	= m_config.defaultSize ? false : m5Properties.polygonModePointSize;
+#else
+	const bool						pointSizeUsed	= false;
+#endif // CTS_USES_VULKANSC
+
+	// Prepare reference color image, which depends on VkPhysicalDeviceMaintenance5PropertiesKHR::polygonModePointSize.
+	DE_ASSERT(referenceAccess.getDepth() == 1);
+	for (int y = 0; y < referenceAccess.getHeight(); ++y)
+		for (int x = 0; x < referenceAccess.getWidth(); ++x)
+		{
+			const bool border	= (x == 0 || y == 0 || x == referenceAccess.getWidth() - 1 || y == referenceAccess.getHeight() - 1);
+			const auto color	= ((border && !pointSizeUsed) ? clearColor : PolygonModeLargePointsCase::geometryColor);
+			referenceAccess.setPixel(color, x, y);
+		}
+
+	if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Color buffer contents do not match expected result -- check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+template <typename ConcreteTestInstance>
+class NonStrictLinesMaintenance5TestCase : public BaseRenderingTestCase
+{
+public:
+					NonStrictLinesMaintenance5TestCase	(tcu::TestContext&		context,
+														 const std::string&		name,
+														 PrimitiveWideness		wideness)
+						: BaseRenderingTestCase	(context, name, VK_SAMPLE_COUNT_1_BIT)
+						, m_wideness			(wideness) {}
+	virtual auto	createInstance						(Context& context) const -> TestInstance* override
+														{
+															return new ConcreteTestInstance(context, m_wideness, 0);
+														}
+	virtual	auto	checkSupport						(Context& context) const -> void override
+														{
+															context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
+															if (context.getDeviceProperties().limits.strictLines)
+																TCU_THROW(NotSupportedError, "Nonstrict rasterization is not supported");
+
+															if (m_wideness == PRIMITIVEWIDENESS_WIDE)
+																context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
+														}
+protected:
+	const PrimitiveWideness		m_wideness;
+
+	friend class NonStrictLinesMaintenance5TestInstance;
+	friend class NonStrictLineStripMaintenance5TestInstance;
+	static bool		compareAndVerify					(Context&								context,
+														 BaseLineTestInstance*					lineInstance,
+														 bool									isStrip,
+														 bool									isWide,
+														 std::vector<LineSceneSpec::SceneLine>&	lines,
+														 tcu::Surface&							resultImage,
+														 std::vector<tcu::Vec4>&				/* drawBuffer */);
+};
+
+template<class X>
+bool NonStrictLinesMaintenance5TestCase<X>::compareAndVerify (Context&									context,
+															  BaseLineTestInstance*						lineInstance,
+															  bool										isStrip,
+															  bool										isWide,
+															  std::vector<LineSceneSpec::SceneLine>&	lines,
+															  tcu::Surface&								resultImage,
+															  std::vector<tcu::Vec4>&)
+{
+	const tcu::IVec4		colorBits	= tcu::getTextureFormatBitDepth(lineInstance->getTextureFormat());
+
+	RasterizationArguments	args;
+	args.numSamples		= 0;
+	args.subpixelBits	= context.getDeviceProperties().limits.subPixelPrecisionBits;
+	args.redBits		= colorBits[0];
+	args.greenBits		= colorBits[1];
+	args.blueBits		= colorBits[2];
+
+	LineSceneSpec			scene;
+	scene.lines.swap(lines);
+	scene.lineWidth			= lineInstance->getLineWidth();
+	scene.stippleEnable		= false;
+	scene.stippleFactor		= 1;
+	scene.stipplePattern	= 0xFFFF;
+	scene.isStrip			= isStrip;
+	scene.isSmooth			= false;
+	scene.isRectangular		= false;
+	scene.verificationMode	= tcu::VERIFICATIONMODE_STRICT;
+
+	bool			result				= false;
+	const bool		strict				= false;
+	tcu::TestLog&	log					= context.getTestContext().getLog();
+	const bool		algoBresenhan		= verifyLineGroupRasterization(resultImage, scene, args, log);
+	const bool		algoParallelogram	= verifyRelaxedLineGroupRasterization(resultImage, scene, args, log, true, strict);
+
+#ifndef CTS_USES_VULKANSC
+	const VkPhysicalDeviceMaintenance5PropertiesKHR& p = context.getMaintenance5Properties();
+	if (isWide)
+	{
+		// nonStrictWideLinesUseParallelogram is a boolean value indicating whether non-strict lines
+		// with a width greater than 1.0 are rasterized as parallelograms or using Bresenham's algorithm.
+		result = p.nonStrictWideLinesUseParallelogram ? algoParallelogram : algoBresenhan;
+	}
+	else
+	{
+		// nonStrictSinglePixelWideLinesUseParallelogram is a boolean value indicating whether
+		// non-strict lines with a width of 1.0 are rasterized as parallelograms or using Bresenham's algorithm.
+		result = p.nonStrictSinglePixelWideLinesUseParallelogram ? algoParallelogram : algoBresenhan;
+	}
+#else
+	DE_UNREF(isWide);
+	DE_UNREF(algoBresenhan);
+	DE_UNREF(algoParallelogram);
+#endif
+
+	return result;
+}
+
+
+class NonStrictLinesMaintenance5TestInstance : public LinesTestInstance
+{
+public:
+					NonStrictLinesMaintenance5TestInstance (Context& context, PrimitiveWideness wideness, deUint32 additionalRenderSize)
+						: LinesTestInstance	(context, wideness, PRIMITIVESTRICTNESS_NONSTRICT, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST, LineStippleFactorCase::DEFAULT, additionalRenderSize)
+						, m_amIWide			(PRIMITIVEWIDENESS_WIDE == wideness)
+					{}
+protected:
+	virtual bool	compareAndVerify						(std::vector<LineSceneSpec::SceneLine>&	lines,
+															 tcu::Surface&							resultImage,
+															 std::vector<tcu::Vec4>&				drawBuffer)
+					{
+						return NonStrictLinesMaintenance5TestCase<NonStrictLinesMaintenance5TestInstance>::compareAndVerify(
+							m_context, this, false, m_amIWide, lines, resultImage, drawBuffer);
+					}
+private:
+	const bool	m_amIWide;
+};
+
+class NonStrictLineStripMaintenance5TestInstance : public LineStripTestInstance
+{
+public:
+					NonStrictLineStripMaintenance5TestInstance	(Context& context, PrimitiveWideness wideness, deUint32 additionalRenderSize)
+						: LineStripTestInstance	(context, wideness, PRIMITIVESTRICTNESS_NONSTRICT, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST, LineStippleFactorCase::DEFAULT, additionalRenderSize)
+						, m_amIWide				(PRIMITIVEWIDENESS_WIDE == wideness)
+					{}
+protected:
+	virtual bool	compareAndVerify							(std::vector<LineSceneSpec::SceneLine>&	lines,
+																 tcu::Surface&							resultImage,
+																 std::vector<tcu::Vec4>&				drawBuffer)
+					{
+						return NonStrictLinesMaintenance5TestCase<NonStrictLineStripMaintenance5TestInstance>::compareAndVerify(
+							m_context, this, true, m_amIWide, lines, resultImage, drawBuffer);
+					}
+private:
+	const bool	m_amIWide;
+};
+
 void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 {
 	tcu::TestContext&	testCtx		=	rasterizationTests->getTestContext();
@@ -6926,27 +7900,28 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	{
 		LineStippleFactorCase	stippleFactor;
 		const std::string		nameSuffix;
-		const std::string		descSuffix;
 	} stippleFactorCases[] =
 	{
-		{ LineStippleFactorCase::DEFAULT,	"",					""														},
-		{ LineStippleFactorCase::ZERO,		"_factor_0",		" and use zero as the line stipple factor"				},
-		{ LineStippleFactorCase::LARGE,		"_factor_large",	" and use a large number as the line stipple factor"	},
+		{ LineStippleFactorCase::DEFAULT,	""},
+		//  and use zero as the line stipple factor
+		{ LineStippleFactorCase::ZERO,		"_factor_0"},
+		//  and use a large number as the line stipple factor
+		{ LineStippleFactorCase::LARGE,		"_factor_large"},
 	};
 
 	// .primitives
 	{
-		tcu::TestCaseGroup* const primitives = new tcu::TestCaseGroup(testCtx, "primitives", "Primitive rasterization");
+		tcu::TestCaseGroup* const primitives = new tcu::TestCaseGroup(testCtx, "primitives");
 
 		rasterizationTests->addChild(primitives);
 
-		tcu::TestCaseGroup* const nostippleTests = new tcu::TestCaseGroup(testCtx, "no_stipple", "No stipple");
-		tcu::TestCaseGroup* const stippleStaticTests = new tcu::TestCaseGroup(testCtx, "static_stipple", "Line stipple static");
-		tcu::TestCaseGroup* const stippleDynamicTests = new tcu::TestCaseGroup(testCtx, "dynamic_stipple", "Line stipple dynamic");
+		tcu::TestCaseGroup* const nostippleTests = new tcu::TestCaseGroup(testCtx, "no_stipple");
+		tcu::TestCaseGroup* const stippleStaticTests = new tcu::TestCaseGroup(testCtx, "static_stipple");
+		tcu::TestCaseGroup* const stippleDynamicTests = new tcu::TestCaseGroup(testCtx, "dynamic_stipple");
 #ifndef CTS_USES_VULKANSC
-		tcu::TestCaseGroup* const stippleDynamicTopoTests = new tcu::TestCaseGroup(testCtx, "dynamic_stipple_and_topology", "Dynamic line stipple and topology");
+		tcu::TestCaseGroup* const stippleDynamicTopoTests = new tcu::TestCaseGroup(testCtx, "dynamic_stipple_and_topology");
 #endif // CTS_USES_VULKANSC
-		tcu::TestCaseGroup* const strideZeroTests = new tcu::TestCaseGroup(testCtx, "stride_zero", "Test input assembly with stride zero");
+		tcu::TestCaseGroup* const strideZeroTests = new tcu::TestCaseGroup(testCtx, "stride_zero");
 
 		primitives->addChild(nostippleTests);
 		primitives->addChild(stippleStaticTests);
@@ -6962,7 +7937,8 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 				StrideZeroCase::Params params;
 				params.bufferData.emplace_back(-StrideZeroCase::kCornerDelta, -StrideZeroCase::kCornerDelta);
 				params.drawVertexCount = 1u;
-				strideZeroTests->addChild(new StrideZeroCase(testCtx, "single_point", "Attempt to draw 1 point with stride 0", params));
+				// Attempt to draw 1 point with stride 0
+				strideZeroTests->addChild(new StrideZeroCase(testCtx, "single_point", params));
 			}
 			{
 				StrideZeroCase::Params params;
@@ -6971,30 +7947,44 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 				params.bufferData.emplace_back(-StrideZeroCase::kCornerDelta,  StrideZeroCase::kCornerDelta);
 				params.bufferData.emplace_back( StrideZeroCase::kCornerDelta,  StrideZeroCase::kCornerDelta);
 				params.drawVertexCount = static_cast<deUint32>(params.bufferData.size());
-				strideZeroTests->addChild(new StrideZeroCase(testCtx, "four_points", "Attempt to draw 4 points with stride 0 and 4 points in the buffer", params));
+				// Attempt to draw 4 points with stride 0 and 4 points in the buffer
+				strideZeroTests->addChild(new StrideZeroCase(testCtx, "four_points", params));
 			}
 			{
 				StrideZeroCase::Params params;
 				params.bufferData.emplace_back(-StrideZeroCase::kCornerDelta, -StrideZeroCase::kCornerDelta);
 				params.drawVertexCount = 100000u;
-				strideZeroTests->addChild(new StrideZeroCase(testCtx, "many_points", "Attempt to draw many points with stride 0 with one point in the buffer", params));
+				// Attempt to draw many points with stride 0 with one point in the buffer
+				strideZeroTests->addChild(new StrideZeroCase(testCtx, "many_points", params));
 			}
 		}
 
-		nostippleTests->addChild(new BaseTestCase<TrianglesTestInstance>		(testCtx, "triangles",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, verify rasterization result"));
-		nostippleTests->addChild(new BaseTestCase<TriangleStripTestInstance>	(testCtx, "triangle_strip",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, verify rasterization result"));
-		nostippleTests->addChild(new BaseTestCase<TriangleFanTestInstance>		(testCtx, "triangle_fan",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, verify rasterization result"));
-		nostippleTests->addChild(new WidenessTestCase<PointTestInstance>		(testCtx, "points",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_POINT_LIST, verify rasterization result",					PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, false, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, verify rasterization result
+		nostippleTests->addChild(new BaseTestCase<TrianglesTestInstance>		(testCtx, "triangles"));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, verify rasterization result
+		nostippleTests->addChild(new BaseTestCase<TriangleStripTestInstance>	(testCtx, "triangle_strip"));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, verify rasterization result
+		nostippleTests->addChild(new BaseTestCase<TriangleFanTestInstance>		(testCtx, "triangle_fan"));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_POINT_LIST, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<PointTestInstance>		(testCtx, "points", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, false, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT));
 
-		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "strict_lines",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
-		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "strict_line_strip",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in strict mode, verify rasterization result",					PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
-		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "strict_lines_wide",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
-		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "strict_line_strip_wide",	"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in strict mode with wide lines, verify rasterization result",	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "strict_lines", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in strict mode, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "strict_line_strip", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode with wide lines, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "strict_lines_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in strict mode with wide lines, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "strict_line_strip_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
 
-		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "non_strict_lines",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result",					PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
-		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "non_strict_line_strip",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode, verify rasterization result",					PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
-		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "non_strict_lines_wide",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode with wide lines, verify rasterization result",	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
-		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "non_strict_line_strip_wide",	"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode with wide lines, verify rasterization result",	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "non_strict_lines", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "non_strict_line_strip", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode with wide lines, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "non_strict_lines_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode with wide lines, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "non_strict_line_strip_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
 
 		for (int i = 0; i < static_cast<int>(LINESTIPPLE_LAST); ++i) {
 
@@ -7024,39 +8014,54 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 				const auto& factor		= sfCase.stippleFactor;
 				const auto& suffix		= sfCase.nameSuffix;
-				const auto& descSuffix	= sfCase.descSuffix;
 
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines" + suffix,							"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result" + descSuffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor, i == 0 ? RESOLUTION_NPOT : 0));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip" + suffix,					"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result" + descSuffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor));
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines_wide" + suffix,					"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result" + descSuffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip_wide" + suffix,				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result" + descSuffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor, i == 0 ? RESOLUTION_NPOT : 0));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor));
 
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "rectangular_lines" + suffix,				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result" + descSuffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "rectangular_line_strip" + suffix,		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result" + descSuffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "rectangular_lines_wide" + suffix,		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result" + descSuffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "rectangular_line_strip_wide" + suffix,	"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result" + descSuffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "rectangular_lines" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "rectangular_line_strip" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "rectangular_lines_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "rectangular_line_strip_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
 
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "bresenham_lines" + suffix,				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result" + descSuffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "bresenham_line_strip" + suffix,			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result" + descSuffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "bresenham_lines_wide" + suffix,			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result" + descSuffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "bresenham_line_strip_wide" + suffix,		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result" + descSuffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "bresenham_lines" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "bresenham_line_strip" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "bresenham_lines_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "bresenham_line_strip_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
 
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "smooth_lines" + suffix,					"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result" + descSuffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "smooth_line_strip" + suffix,				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result" + descSuffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "smooth_lines_wide" + suffix,				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result" + descSuffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "smooth_line_strip_wide" + suffix,		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result" + descSuffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "smooth_lines" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "smooth_line_strip" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "smooth_lines_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "smooth_line_strip_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
 			}
 		}
 	}
 
 	// .primitive_size
 	{
-		tcu::TestCaseGroup* const primitiveSize = new tcu::TestCaseGroup(testCtx, "primitive_size", "Primitive size");
+		tcu::TestCaseGroup* const primitiveSize = new tcu::TestCaseGroup(testCtx, "primitive_size");
 		rasterizationTests->addChild(primitiveSize);
 
 		// .points
 		{
-			tcu::TestCaseGroup* const points = new tcu::TestCaseGroup(testCtx, "points", "Point size");
+			tcu::TestCaseGroup* const points = new tcu::TestCaseGroup(testCtx, "points");
 
 			static const struct TestCombinations
 			{
@@ -7080,24 +8085,140 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 				deUint32	renderSize		= testCombinations[testCombNdx].renderSize;
 				float		pointSize		= testCombinations[testCombNdx].pointSize;
 
-				points->addChild(new PointSizeTestCase<PointSizeTestInstance>	(testCtx, testCaseName,	testCaseName, renderSize, pointSize));
+				points->addChild(new PointSizeTestCase<PointSizeTestInstance>	(testCtx, testCaseName, renderSize, pointSize));
 			}
 
 			primitiveSize->addChild(points);
 		}
+
+		// .default_size
+		{
+			// Default size
+			tcu::TestCaseGroup* const defaultSize	= new tcu::TestCaseGroup(testCtx, "default_size");
+
+			// .points
+			{
+				// Default point size
+				tcu::TestCaseGroup* const points						= new tcu::TestCaseGroup(testCtx, "points");
+				static const VkShaderStageFlags vertexStageBits			= VK_SHADER_STAGE_VERTEX_BIT;
+				static const VkShaderStageFlags tessellationStageBits	= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+				static const VkShaderStageFlags geometryStageBits		= VK_SHADER_STAGE_GEOMETRY_BIT;
+				static const struct PointDefaultSizeCombination
+				{
+					const VkShaderStageFlags stageFlags;
+					const std::string stageName;
+				} pointDefaultSizeCombinations[] =
+				{
+					{ vertexStageBits, "vertex" },
+					{ vertexStageBits | tessellationStageBits, "tessellation" },
+					{ vertexStageBits | geometryStageBits, "geometry" },
+					{ vertexStageBits | tessellationStageBits | geometryStageBits, "all" },
+				};
+
+				for (size_t testCombNdx = 0u; testCombNdx < DE_LENGTH_OF_ARRAY(pointDefaultSizeCombinations); testCombNdx++)
+				{
+					const std::string			testCaseName		= pointDefaultSizeCombinations[testCombNdx].stageName;
+					const VkShaderStageFlags	testStageFlags		= pointDefaultSizeCombinations[testCombNdx].stageFlags;
+					const deUint32				renderSize			= 3u;	// Odd number so only the center pixel is rendered
+
+					points->addChild(new PointDefaultSizeTestCase(testCtx, testCaseName, renderSize, testStageFlags));
+				}
+
+				defaultSize->addChild(points);
+			}
+
+#ifndef CTS_USES_VULKANSC
+			// .polygons_as_points
+			{
+				tcu::TestCaseGroup* const polygonsAsPoints = new tcu::TestCaseGroup(testCtx, "polygon_as_points");
+				for (int k = 0; k < 2; ++k)
+				{
+					for (int j = 0; j < 2; ++j)
+					{
+						for (int i = 0; i < 2; ++i)
+						{
+							for (int m = 0; m < 2; ++m)
+							{
+								const bool	meshShader		= (m > 0);
+								const bool	tessellation	= (i > 0);
+								const bool	geometryShader	= (j > 0);
+								const bool	dynamicPolyMode	= (k > 0);
+
+								if (meshShader && (tessellation || geometryShader))
+									continue;
+
+								std::string	testName		(meshShader ? "mesh" : "vert");
+
+								if (tessellation)
+									testName += "_tess";
+
+								if (geometryShader)
+									testName += "_geom";
+
+								testName += (dynamicPolyMode ? "_dynamic_polygon_mode" : "_static_polygon_mode");
+
+								PolygonModeLargePointsConfig config(1.0f, meshShader, tessellation, geometryShader, dynamicPolyMode, true);
+								polygonsAsPoints->addChild(new PolygonModeLargePointsCase(testCtx, testName, config));
+							}
+						}
+					}
+				}
+
+				defaultSize->addChild(polygonsAsPoints);
+			}
+#endif
+
+			primitiveSize->addChild(defaultSize);
+		}
 	}
+
+#ifndef CTS_USES_VULKANSC
+	// .polygon_as_large_points
+	{
+		de::MovePtr<tcu::TestCaseGroup> polygonModeLargePointsGroup (new tcu::TestCaseGroup(testCtx, "polygon_as_large_points"));
+
+		for (int k = 0; k < 2; ++k)
+			for (int j = 0; j < 2; ++j)
+				for (int i = 0; i < 2; ++i)
+					for (int m = 0; m < 2; ++m)
+					{
+						const bool	meshShader		= (m > 0);
+						const bool	tessellation	= (i > 0);
+						const bool	geometryShader	= (j > 0);
+						const bool	dynamicPolyMode	= (k > 0);
+
+						if (meshShader && (tessellation || geometryShader))
+							continue;
+
+						std::string	testName		(meshShader ? "mesh" : "vert");
+
+						if (tessellation)
+							testName += "_tess";
+
+						if (geometryShader)
+							testName += "_geom";
+
+						testName += (dynamicPolyMode ? "_dynamic_polygon_mode" : "_static_polygon_mode");
+
+						PolygonModeLargePointsConfig config(2.0f, meshShader, tessellation, geometryShader, dynamicPolyMode);
+						polygonModeLargePointsGroup->addChild(new PolygonModeLargePointsCase(testCtx, testName, config));
+					}
+
+		rasterizationTests->addChild(polygonModeLargePointsGroup.release());
+	}
+#endif // CTS_USES_VULKANSC
 
 	// .fill_rules
 	{
-		tcu::TestCaseGroup* const fillRules = new tcu::TestCaseGroup(testCtx, "fill_rules", "Primitive fill rules");
+		tcu::TestCaseGroup* const fillRules = new tcu::TestCaseGroup(testCtx, "fill_rules");
 
 		rasterizationTests->addChild(fillRules);
 
-		fillRules->addChild(new FillRuleTestCase(testCtx,	"basic_quad",			"Verify fill rules",	FillRuleTestInstance::FILLRULECASE_BASIC));
-		fillRules->addChild(new FillRuleTestCase(testCtx,	"basic_quad_reverse",	"Verify fill rules",	FillRuleTestInstance::FILLRULECASE_REVERSED));
-		fillRules->addChild(new FillRuleTestCase(testCtx,	"clipped_full",			"Verify fill rules",	FillRuleTestInstance::FILLRULECASE_CLIPPED_FULL));
-		fillRules->addChild(new FillRuleTestCase(testCtx,	"clipped_partly",		"Verify fill rules",	FillRuleTestInstance::FILLRULECASE_CLIPPED_PARTIAL));
-		fillRules->addChild(new FillRuleTestCase(testCtx,	"projected",			"Verify fill rules",	FillRuleTestInstance::FILLRULECASE_PROJECTED));
+		fillRules->addChild(new FillRuleTestCase(testCtx,	"basic_quad",	FillRuleTestInstance::FILLRULECASE_BASIC));
+		fillRules->addChild(new FillRuleTestCase(testCtx,	"basic_quad_reverse",	FillRuleTestInstance::FILLRULECASE_REVERSED));
+		fillRules->addChild(new FillRuleTestCase(testCtx,	"clipped_full",	FillRuleTestInstance::FILLRULECASE_CLIPPED_FULL));
+		fillRules->addChild(new FillRuleTestCase(testCtx,	"clipped_partly",	FillRuleTestInstance::FILLRULECASE_CLIPPED_PARTIAL));
+		fillRules->addChild(new FillRuleTestCase(testCtx,	"projected",	FillRuleTestInstance::FILLRULECASE_PROJECTED));
 	}
 
 	// .culling
@@ -7143,7 +8264,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			{ VK_POLYGON_MODE_POINT,	"_point"	}
 		};
 
-		tcu::TestCaseGroup* const culling = new tcu::TestCaseGroup(testCtx, "culling", "Culling");
+		tcu::TestCaseGroup* const culling = new tcu::TestCaseGroup(testCtx, "culling");
 
 		rasterizationTests->addChild(culling);
 
@@ -7155,11 +8276,13 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			if (!(cullModes[cullModeNdx].mode == VK_CULL_MODE_FRONT_AND_BACK && polygonModes[polygonModeNdx].mode != VK_POLYGON_MODE_FILL))
 			{
 				const std::string name = std::string(cullModes[cullModeNdx].prefix) + primitiveTypes[primitiveNdx].name + frontOrders[frontOrderNdx].postfix + polygonModes[polygonModeNdx].name;
-				culling->addChild(new CullingTestCase(testCtx, name, "Test primitive culling.", cullModes[cullModeNdx].mode, primitiveTypes[primitiveNdx].type, frontOrders[frontOrderNdx].mode, polygonModes[polygonModeNdx].mode));
+				// Test primitive culling.
+				culling->addChild(new CullingTestCase(testCtx, name, cullModes[cullModeNdx].mode, primitiveTypes[primitiveNdx].type, frontOrders[frontOrderNdx].mode, polygonModes[polygonModeNdx].mode));
 			}
 		}
 
-		culling->addChild(new CullAndPrimitiveIdCase(testCtx, "primitive_id", "Cull some triangles and check primitive ID works"));
+		// Cull some triangles and check primitive ID works
+		culling->addChild(new CullAndPrimitiveIdCase(testCtx, "primitive_id"));
 	}
 
 	// .discard
@@ -7188,17 +8311,17 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			{ DE_TRUE,	"query_pipeline_true"	},
 		};
 
-		tcu::TestCaseGroup* const discard = new tcu::TestCaseGroup(testCtx, "discard", "Rasterizer discard");
+		tcu::TestCaseGroup* const discard = new tcu::TestCaseGroup(testCtx, "discard");
 
 		for (int primitiveNdx = 0; primitiveNdx < DE_LENGTH_OF_ARRAY(primitiveTypes); ++primitiveNdx)
 		{
-			tcu::TestCaseGroup* const primitive = new tcu::TestCaseGroup(testCtx, primitiveTypes[primitiveNdx].name, "Rasterizer discard");
+			tcu::TestCaseGroup* const primitive = new tcu::TestCaseGroup(testCtx, primitiveTypes[primitiveNdx].name);
 
 			for (int useQueryNdx = 0; useQueryNdx < DE_LENGTH_OF_ARRAY(queryPipeline); useQueryNdx++)
 			{
 				const std::string name = std::string(queryPipeline[useQueryNdx].name);
-
-				primitive->addChild(new DiscardTestCase(testCtx, name, "Test primitive discarding.", primitiveTypes[primitiveNdx].type, queryPipeline[useQueryNdx].useQuery));
+				// Test primitive discarding.
+				primitive->addChild(new DiscardTestCase(testCtx, name, primitiveTypes[primitiveNdx].type, queryPipeline[useQueryNdx].useQuery));
 			}
 
 			discard->addChild(primitive);
@@ -7271,12 +8394,12 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			VK_SAMPLE_COUNT_64_BIT
 		};
 
-		tcu::TestCaseGroup* const conservative = new tcu::TestCaseGroup(testCtx, "conservative", "Conservative rasterization tests");
+		tcu::TestCaseGroup* const conservative = new tcu::TestCaseGroup(testCtx, "conservative");
 
 		rasterizationTests->addChild(conservative);
 
 		{
-			tcu::TestCaseGroup* const overestimate = new tcu::TestCaseGroup(testCtx, "overestimate", "Overestimate tests");
+			tcu::TestCaseGroup* const overestimate = new tcu::TestCaseGroup(testCtx, "overestimate");
 
 			conservative->addChild(overestimate);
 
@@ -7284,18 +8407,18 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			{
 				const std::string samplesGroupName = "samples_" + de::toString(samples[samplesNdx]);
 
-				tcu::TestCaseGroup* const samplesGroup = new tcu::TestCaseGroup(testCtx, samplesGroupName.c_str(), "Samples tests");
+				tcu::TestCaseGroup* const samplesGroup = new tcu::TestCaseGroup(testCtx, samplesGroupName.c_str());
 
 				overestimate->addChild(samplesGroup);
 
 				for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitiveTypes); ++primitiveTypeNdx)
 				{
-					tcu::TestCaseGroup* const primitiveGroup = new tcu::TestCaseGroup(testCtx, primitiveTypes[primitiveTypeNdx].name, "Primitive tests");
+					tcu::TestCaseGroup* const primitiveGroup = new tcu::TestCaseGroup(testCtx, primitiveTypes[primitiveTypeNdx].name);
 
 					samplesGroup->addChild(primitiveGroup);
 
 					{
-						tcu::TestCaseGroup* const normal = new tcu::TestCaseGroup(testCtx, "normal", "Normal conservative rasterization tests");
+						tcu::TestCaseGroup* const normal = new tcu::TestCaseGroup(testCtx, "normal");
 
 						primitiveGroup->addChild(normal);
 
@@ -7311,31 +8434,30 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 								RESOLUTION_POT,											//  deUint32							resolution;
 							};
 
+							// Overestimate tests, verify rasterization result
+
 							if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 								normal->addChild(new ConservativeTestCase<ConservativeTraingleTestInstance>	(testCtx,
 																											 overestimateNormalSizes[overestimateSizesNdx].name,
-																											 "Overestimate test, verify rasterization result",
 																											 config,
 																											 samples[samplesNdx]));
 
 							if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
 								normal->addChild(new ConservativeTestCase<ConservativeLineTestInstance>		(testCtx,
 																											 overestimateNormalSizes[overestimateSizesNdx].name,
-																											 "Overestimate test, verify rasterization result",
 																											 config,
 																											 samples[samplesNdx]));
 
 							if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
 								normal->addChild(new ConservativeTestCase<ConservativePointTestInstance>	(testCtx,
 																											 overestimateNormalSizes[overestimateSizesNdx].name,
-																											 "Overestimate test, verify rasterization result",
 																											 config,
 																											 samples[samplesNdx]));
 						}
 					}
 
 					{
-						tcu::TestCaseGroup* const degenerate = new tcu::TestCaseGroup(testCtx, "degenerate", "Degenerate primitives conservative rasterization tests");
+						tcu::TestCaseGroup* const degenerate = new tcu::TestCaseGroup(testCtx, "degenerate");
 
 						primitiveGroup->addChild(degenerate);
 
@@ -7351,17 +8473,17 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 								64u,													//  deUint32							resolution;
 							};
 
+							// Overestimate triangle test, verify rasterization result
+
 							if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 								degenerate->addChild(new ConservativeTestCase<ConservativeTraingleTestInstance>	(testCtx,
 																												 overestimateDegenerate[overestimateSizesNdx].name,
-																												 "Overestimate triangle test, verify rasterization result",
 																												 config,
 																												 samples[samplesNdx]));
 
 							if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
 								degenerate->addChild(new ConservativeTestCase<ConservativeLineTestInstance>		(testCtx,
 																												 overestimateDegenerate[overestimateSizesNdx].name,
-																												 "Overestimate line test, verify rasterization result",
 																												 config,
 																												 samples[samplesNdx]));
 						}
@@ -7371,7 +8493,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 		}
 
 		{
-			tcu::TestCaseGroup* const underestimate = new tcu::TestCaseGroup(testCtx, "underestimate", "Underestimate tests");
+			tcu::TestCaseGroup* const underestimate = new tcu::TestCaseGroup(testCtx, "underestimate");
 
 			conservative->addChild(underestimate);
 
@@ -7379,18 +8501,18 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			{
 				const std::string samplesGroupName = "samples_" + de::toString(samples[samplesNdx]);
 
-				tcu::TestCaseGroup* const samplesGroup = new tcu::TestCaseGroup(testCtx, samplesGroupName.c_str(), "Samples tests");
+				tcu::TestCaseGroup* const samplesGroup = new tcu::TestCaseGroup(testCtx, samplesGroupName.c_str());
 
 				underestimate->addChild(samplesGroup);
 
 				for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitiveTypes); ++primitiveTypeNdx)
 				{
-					tcu::TestCaseGroup* const primitiveGroup = new tcu::TestCaseGroup(testCtx, primitiveTypes[primitiveTypeNdx].name, "Primitive tests");
+					tcu::TestCaseGroup* const primitiveGroup = new tcu::TestCaseGroup(testCtx, primitiveTypes[primitiveTypeNdx].name);
 
 					samplesGroup->addChild(primitiveGroup);
 
 					{
-						tcu::TestCaseGroup* const normal = new tcu::TestCaseGroup(testCtx, "normal", "Normal conservative rasterization tests");
+						tcu::TestCaseGroup* const normal = new tcu::TestCaseGroup(testCtx, "normal");
 
 						primitiveGroup->addChild(normal);
 
@@ -7404,10 +8526,11 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 							64u,													//  deUint32							resolution;
 						};
 
+						// Underestimate test, verify rasterization result
+
 						if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 							normal->addChild(new ConservativeTestCase<ConservativeTraingleTestInstance>	(testCtx,
 																										 "test",
-																										 "Underestimate test, verify rasterization result",
 																										 config,
 																										 samples[samplesNdx]));
 
@@ -7418,7 +8541,6 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 								config.lineWidth = underestimateLineWidths[underestimateWidthNdx].size;
 								normal->addChild(new ConservativeTestCase<ConservativeLineTestInstance>		(testCtx,
 																											 underestimateLineWidths[underestimateWidthNdx].name,
-																											 "Underestimate test, verify rasterization result",
 																											 config,
 																											 samples[samplesNdx]));
 							}
@@ -7431,15 +8553,14 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 								config.lineWidth = underestimatePointSizes[underestimatePointSizeNdx].size;
 								normal->addChild(new ConservativeTestCase<ConservativePointTestInstance>	(testCtx,
 																											 underestimatePointSizes[underestimatePointSizeNdx].name,
-																											 "Underestimate test, verify rasterization result",
 																											 config,
 																											 samples[samplesNdx]));
 							}
 						}
 					}
 
-					{
-						tcu::TestCaseGroup* const degenerate = new tcu::TestCaseGroup(testCtx, "degenerate", "Degenerate primitives conservative rasterization tests");
+					{	// Degenerate primitives conservative rasterization tests
+						tcu::TestCaseGroup* const degenerate = new tcu::TestCaseGroup(testCtx, "degenerate");
 
 						primitiveGroup->addChild(degenerate);
 
@@ -7454,10 +8575,9 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 						};
 
 						if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+							// Underestimate triangle test, verify rasterization result
 							degenerate->addChild(new ConservativeTestCase<ConservativeTraingleTestInstance>	(testCtx,
-																											 "test",
-																											 "Underestimate triangle test, verify rasterization result",
-																											 config,
+																											 "test", config,
 																											 samples[samplesNdx]));
 
 						if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
@@ -7465,9 +8585,9 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 							for (int underestimateWidthNdx = 0; underestimateWidthNdx < DE_LENGTH_OF_ARRAY(underestimateLineWidths); ++underestimateWidthNdx)
 							{
 								config.lineWidth = underestimateLineWidths[underestimateWidthNdx].size;
+								// Underestimate line test, verify rasterization result
 								degenerate->addChild(new ConservativeTestCase<ConservativeLineTestInstance>		(testCtx,
 																												 underestimateLineWidths[underestimateWidthNdx].name,
-																												 "Underestimate line test, verify rasterization result",
 																												 config,
 																												 samples[samplesNdx]));
 							}
@@ -7480,84 +8600,129 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 	// .interpolation
 	{
-		tcu::TestCaseGroup* const interpolation = new tcu::TestCaseGroup(testCtx, "interpolation", "Test interpolation");
+		tcu::TestCaseGroup* const interpolation = new tcu::TestCaseGroup(testCtx, "interpolation");
 
 		rasterizationTests->addChild(interpolation);
 
 		// .basic
 		{
-			tcu::TestCaseGroup* const basic = new tcu::TestCaseGroup(testCtx, "basic", "Non-projective interpolation");
+			tcu::TestCaseGroup* const basic = new tcu::TestCaseGroup(testCtx, "basic");
 
 			interpolation->addChild(basic);
 
-			basic->addChild(new TriangleInterpolationTestCase		(testCtx, "triangles",		"Verify triangle interpolation",		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	INTERPOLATIONFLAGS_NONE));
-			basic->addChild(new TriangleInterpolationTestCase		(testCtx, "triangle_strip",	"Verify triangle strip interpolation",	VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	INTERPOLATIONFLAGS_NONE));
-			basic->addChild(new TriangleInterpolationTestCase		(testCtx, "triangle_fan",	"Verify triangle fan interpolation",	VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,		INTERPOLATIONFLAGS_NONE));
-			basic->addChild(new LineInterpolationTestCase			(testCtx, "lines",			"Verify line interpolation",			VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE));
-			basic->addChild(new LineInterpolationTestCase			(testCtx, "line_strip",		"Verify line strip interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE));
-			basic->addChild(new LineInterpolationTestCase			(testCtx, "lines_wide",		"Verify wide line interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE));
-			basic->addChild(new LineInterpolationTestCase			(testCtx, "line_strip_wide","Verify wide line strip interpolation",	VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE));
+			// Verify triangle interpolation
+			basic->addChild(new TriangleInterpolationTestCase		(testCtx, "triangles", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	INTERPOLATIONFLAGS_NONE));
+			// Verify triangle strip interpolation
+			basic->addChild(new TriangleInterpolationTestCase		(testCtx, "triangle_strip", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	INTERPOLATIONFLAGS_NONE));
+			// Verify triangle fan interpolation
+			basic->addChild(new TriangleInterpolationTestCase		(testCtx, "triangle_fan", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,		INTERPOLATIONFLAGS_NONE));
+			// Verify line interpolation
+			basic->addChild(new LineInterpolationTestCase			(testCtx, "lines", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE));
+			// Verify line strip interpolation
+			basic->addChild(new LineInterpolationTestCase			(testCtx, "line_strip", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE));
+			// Verify wide line interpolation
+			basic->addChild(new LineInterpolationTestCase			(testCtx, "lines_wide", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE));
+			// Verify wide line strip interpolation
+			basic->addChild(new LineInterpolationTestCase			(testCtx, "line_strip_wide", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE));
 
-			basic->addChild(new LineInterpolationTestCase			(testCtx, "strict_lines",			"Verify strict line interpolation",				VK_PRIMITIVE_TOPOLOGY_LINE_LIST,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT));
-			basic->addChild(new LineInterpolationTestCase			(testCtx, "strict_line_strip",		"Verify strict line strip interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT));
-			basic->addChild(new LineInterpolationTestCase			(testCtx, "strict_lines_wide",		"Verify strict wide line interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_LIST,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT));
-			basic->addChild(new LineInterpolationTestCase			(testCtx, "strict_line_strip_wide",	"Verify strict wide line strip interpolation",	VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT));
+			// Verify strict line interpolation
+			basic->addChild(new LineInterpolationTestCase			(testCtx, "strict_lines", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT));
+			// Verify strict line strip interpolation
+			basic->addChild(new LineInterpolationTestCase			(testCtx, "strict_line_strip", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT));
+			// Verify strict wide line interpolation
+			basic->addChild(new LineInterpolationTestCase			(testCtx, "strict_lines_wide", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT));
+			// Verify strict wide line strip interpolation
+			basic->addChild(new LineInterpolationTestCase			(testCtx, "strict_line_strip_wide", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT));
 
-			basic->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_lines",			"Verify non-strict line interpolation",				VK_PRIMITIVE_TOPOLOGY_LINE_LIST,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT));
-			basic->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_line_strip",		"Verify non-strict line strip interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT));
-			basic->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_lines_wide",		"Verify non-strict wide line interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_LIST,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT));
-			basic->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_line_strip_wide",	"Verify non-strict wide line strip interpolation",	VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT));
+			// Verify non-strict line interpolation
+			basic->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_lines", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT));
+			// Verify non-strict line strip interpolation
+			basic->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_line_strip", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT));
+			// Verify non-strict wide line interpolation
+			basic->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_lines_wide", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT));
+			// Verify non-strict wide line strip interpolation
+			basic->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_line_strip_wide", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,	INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT));
 		}
 
 		// .projected
 		{
-			tcu::TestCaseGroup* const projected = new tcu::TestCaseGroup(testCtx, "projected", "Projective interpolation");
+			tcu::TestCaseGroup* const projected = new tcu::TestCaseGroup(testCtx, "projected");
 
 			interpolation->addChild(projected);
 
-			projected->addChild(new TriangleInterpolationTestCase	(testCtx, "triangles",		"Verify triangle interpolation",		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	INTERPOLATIONFLAGS_PROJECTED));
-			projected->addChild(new TriangleInterpolationTestCase	(testCtx, "triangle_strip",	"Verify triangle strip interpolation",	VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	INTERPOLATIONFLAGS_PROJECTED));
-			projected->addChild(new TriangleInterpolationTestCase	(testCtx, "triangle_fan",	"Verify triangle fan interpolation",	VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,		INTERPOLATIONFLAGS_PROJECTED));
-			projected->addChild(new LineInterpolationTestCase		(testCtx, "lines",			"Verify line interpolation",			VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE));
-			projected->addChild(new LineInterpolationTestCase		(testCtx, "line_strip",		"Verify line strip interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE));
-			projected->addChild(new LineInterpolationTestCase		(testCtx, "lines_wide",		"Verify wide line interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE));
-			projected->addChild(new LineInterpolationTestCase		(testCtx, "line_strip_wide","Verify wide line strip interpolation",	VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE));
+			// Verify triangle interpolation
+			projected->addChild(new TriangleInterpolationTestCase	(testCtx, "triangles", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	INTERPOLATIONFLAGS_PROJECTED));
+			// Verify triangle strip interpolation
+			projected->addChild(new TriangleInterpolationTestCase	(testCtx, "triangle_strip", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	INTERPOLATIONFLAGS_PROJECTED));
+			// Verify triangle fan interpolation
+			projected->addChild(new TriangleInterpolationTestCase	(testCtx, "triangle_fan", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,		INTERPOLATIONFLAGS_PROJECTED));
+			// Verify line interpolation
+			projected->addChild(new LineInterpolationTestCase		(testCtx, "lines", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE));
+			// Verify line strip interpolation
+			projected->addChild(new LineInterpolationTestCase		(testCtx, "line_strip", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE));
+			// Verify wide line interpolation
+			projected->addChild(new LineInterpolationTestCase		(testCtx, "lines_wide", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE));
+			// Verify wide line strip interpolation
+			projected->addChild(new LineInterpolationTestCase		(testCtx, "line_strip_wide", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE));
 
-			projected->addChild(new LineInterpolationTestCase		(testCtx, "strict_lines",			"Verify strict line interpolation",				VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT));
-			projected->addChild(new LineInterpolationTestCase		(testCtx, "strict_line_strip",		"Verify strict line strip interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT));
-			projected->addChild(new LineInterpolationTestCase		(testCtx, "strict_lines_wide",		"Verify strict wide line interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT));
-			projected->addChild(new LineInterpolationTestCase		(testCtx, "strict_line_strip_wide",	"Verify strict wide line strip interpolation",	VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT));
+			// Verify strict line interpolation
+			projected->addChild(new LineInterpolationTestCase		(testCtx, "strict_lines", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT));
+			// Verify strict line strip interpolation
+			projected->addChild(new LineInterpolationTestCase		(testCtx, "strict_line_strip", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT));
+			// Verify strict wide line interpolation
+			projected->addChild(new LineInterpolationTestCase		(testCtx, "strict_lines_wide", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT));
+			// Verify strict wide line strip interpolation
+			projected->addChild(new LineInterpolationTestCase		(testCtx, "strict_line_strip_wide", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT));
 
-			projected->addChild(new LineInterpolationTestCase		(testCtx, "non_strict_lines",			"Verify non-strict line interpolation",				VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT));
-			projected->addChild(new LineInterpolationTestCase		(testCtx, "non_strict_line_strip",		"Verify non-strict line strip interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT));
-			projected->addChild(new LineInterpolationTestCase		(testCtx, "non_strict_lines_wide",		"Verify non-strict wide line interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT));
-			projected->addChild(new LineInterpolationTestCase		(testCtx, "non_strict_line_strip_wide",	"Verify non-strict wide line strip interpolation",	VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT));
+			// Verify non-strict line interpolation
+			projected->addChild(new LineInterpolationTestCase		(testCtx, "non_strict_lines", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT));
+			// Verify non-strict line strip interpolation
+			projected->addChild(new LineInterpolationTestCase		(testCtx, "non_strict_line_strip", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT));
+			// Verify non-strict wide line interpolation
+			projected->addChild(new LineInterpolationTestCase		(testCtx, "non_strict_lines_wide", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT));
+			// Verify non-strict wide line strip interpolation
+			projected->addChild(new LineInterpolationTestCase		(testCtx, "non_strict_line_strip_wide", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_PROJECTED,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT));
 		}
 	}
 
 	// .flatshading
 	{
-		tcu::TestCaseGroup* const flatshading = new tcu::TestCaseGroup(testCtx, "flatshading", "Test flatshading");
+		tcu::TestCaseGroup* const flatshading = new tcu::TestCaseGroup(testCtx, "flatshading");
 
 		rasterizationTests->addChild(flatshading);
 
-		flatshading->addChild(new TriangleInterpolationTestCase		(testCtx, "triangles",		"Verify triangle flatshading",			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	INTERPOLATIONFLAGS_FLATSHADE));
-		flatshading->addChild(new TriangleInterpolationTestCase		(testCtx, "triangle_strip",	"Verify triangle strip flatshading",	VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	INTERPOLATIONFLAGS_FLATSHADE));
-		flatshading->addChild(new TriangleInterpolationTestCase		(testCtx, "triangle_fan",	"Verify triangle fan flatshading",		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,		INTERPOLATIONFLAGS_FLATSHADE));
-		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "lines",			"Verify line flatshading",				VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE));
-		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "line_strip",		"Verify line strip flatshading",		VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE));
-		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "lines_wide",		"Verify wide line flatshading",			VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE));
-		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "line_strip_wide","Verify wide line strip flatshading",	VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE));
+		// Verify triangle flatshading
+		flatshading->addChild(new TriangleInterpolationTestCase		(testCtx, "triangles", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	INTERPOLATIONFLAGS_FLATSHADE));
+		// Verify triangle strip flatshading
+		flatshading->addChild(new TriangleInterpolationTestCase		(testCtx, "triangle_strip", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	INTERPOLATIONFLAGS_FLATSHADE));
+		// Verify triangle fan flatshading
+		flatshading->addChild(new TriangleInterpolationTestCase		(testCtx, "triangle_fan", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,		INTERPOLATIONFLAGS_FLATSHADE));
+		// Verify line flatshading
+		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "lines", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE));
+		// Verify line strip flatshading
+		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "line_strip", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE));
+		// Verify wide line flatshading
+		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "lines_wide", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE));
+		// Verify wide line strip flatshading
+		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "line_strip_wide", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE));
 
-		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "strict_lines",			"Verify strict line flatshading",				VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT));
-		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "strict_line_strip",		"Verify strict line strip flatshading",			VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT));
-		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "strict_lines_wide",		"Verify strict wide line flatshading",			VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT));
-		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "strict_line_strip_wide",	"Verify strict wide line strip flatshading",	VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT));
+		// Verify strict line flatshading
+		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "strict_lines", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT));
+		// Verify strict line strip flatshading
+		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "strict_line_strip", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT));
+		// Verify strict wide line flatshading
+		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "strict_lines_wide", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT));
+		// Verify strict wide line strip flatshading
+		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "strict_line_strip_wide", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT));
 
-		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_lines",			"Verify non-strict line flatshading",				VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT));
-		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_line_strip",		"Verify non-strict line strip flatshading",			VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT));
-		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_lines_wide",		"Verify non-strict wide line flatshading",			VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT));
-		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_line_strip_wide",	"Verify non-strict wide line strip flatshading",	VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT));
+		// Verify non-strict line flatshading
+		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_lines", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT));
+		// Verify non-strict line strip flatshading
+		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_line_strip", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT));
+		// Verify non-strict wide line flatshading
+		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_lines_wide", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT));
+		// Verify non-strict wide line strip flatshading
+		flatshading->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_line_strip_wide", VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,		INTERPOLATIONFLAGS_FLATSHADE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT));
 	}
 
 	const VkSampleCountFlagBits samples[] =
@@ -7578,26 +8743,32 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 		// .primitives
 		{
-			tcu::TestCaseGroup* const primitives = new tcu::TestCaseGroup(testCtx, ("primitives" + caseName.str()).c_str(), "Primitive rasterization");
+			tcu::TestCaseGroup* const primitives = new tcu::TestCaseGroup(testCtx, ("primitives" + caseName.str()).c_str());
 
 			rasterizationTests->addChild(primitives);
 
-			tcu::TestCaseGroup* const nostippleTests = new tcu::TestCaseGroup(testCtx, "no_stipple", "No stipple");
-			tcu::TestCaseGroup* const stippleStaticTests = new tcu::TestCaseGroup(testCtx, "static_stipple", "Line stipple static");
-			tcu::TestCaseGroup* const stippleDynamicTests = new tcu::TestCaseGroup(testCtx, "dynamic_stipple", "Line stipple dynamic");
+			tcu::TestCaseGroup* const nostippleTests = new tcu::TestCaseGroup(testCtx, "no_stipple");
+			tcu::TestCaseGroup* const stippleStaticTests = new tcu::TestCaseGroup(testCtx, "static_stipple");
+			tcu::TestCaseGroup* const stippleDynamicTests = new tcu::TestCaseGroup(testCtx, "dynamic_stipple");
 
 			primitives->addChild(nostippleTests);
 			primitives->addChild(stippleStaticTests);
 			primitives->addChild(stippleDynamicTests);
 
-			nostippleTests->addChild(new BaseTestCase<TrianglesTestInstance>		(testCtx, "triangles",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, verify rasterization result",					samples[samplesNdx]));
-			nostippleTests->addChild(new WidenessTestCase<PointTestInstance>		(testCtx, "points",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_POINT_LIST, verify rasterization result",						PRIMITIVEWIDENESS_WIDE,	PRIMITIVESTRICTNESS_IGNORE,	false, samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT));
+			// Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, verify rasterization result
+			nostippleTests->addChild(new BaseTestCase<TrianglesTestInstance>		(testCtx, "triangles", samples[samplesNdx]));
+			// Render primitives as VK_PRIMITIVE_TOPOLOGY_POINT_LIST, verify rasterization result
+			nostippleTests->addChild(new WidenessTestCase<PointTestInstance>		(testCtx, "points", PRIMITIVEWIDENESS_WIDE,	PRIMITIVESTRICTNESS_IGNORE,	false, samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT));
 
-			nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "strict_lines",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT,	true, samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
-			nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "strict_lines_wide",	"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT,	true, samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
+			// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode, verify rasterization result
+			nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "strict_lines", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT,	true, samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
+			// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode with wide lines, verify rasterization result
+			nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "strict_lines_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT,	true, samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
 
-			nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "non_strict_lines",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT,	true, samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
-			nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "non_strict_lines_wide",	"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT,	true, samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
+			// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result
+			nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "non_strict_lines", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT,	true, samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
+			// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode with wide lines, verify rasterization result
+			nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "non_strict_lines_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT,	true, samples[samplesNdx], LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_EXT_LAST));
 
 			for (int i = 0; i < static_cast<int>(LINESTIPPLE_LAST); ++i) {
 
@@ -7613,56 +8784,84 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 										? stippleStaticTests
 										: nostippleTests;
 
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines",						"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, LineStippleFactorCase::DEFAULT, i == 0 ? RESOLUTION_NPOT : 0));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip",					"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT));
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines_wide",					"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip_wide",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, LineStippleFactorCase::DEFAULT, i == 0 ? RESOLUTION_NPOT : 0));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT));
 
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "rectangular_lines",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "rectangular_line_strip",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT));
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "rectangular_lines_wide",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "rectangular_line_strip_wide","Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "rectangular_lines", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "rectangular_line_strip", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "rectangular_lines_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "rectangular_line_strip_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT));
 
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "bresenham_lines",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "bresenham_line_strip",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT));
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "bresenham_lines_wide",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "bresenham_line_strip_wide",	"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "bresenham_lines", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "bresenham_line_strip", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "bresenham_lines_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "bresenham_line_strip_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT));
 
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "smooth_lines",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "smooth_line_strip",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT));
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "smooth_lines_wide",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT));
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "smooth_line_strip_wide",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "smooth_lines", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "smooth_line_strip", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "smooth_lines_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "smooth_line_strip_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, samples[samplesNdx], stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT));
 			}
 		}
 
 		// .fill_rules
 		{
-			tcu::TestCaseGroup* const fillRules = new tcu::TestCaseGroup(testCtx, ("fill_rules" + caseName.str()).c_str(), "Primitive fill rules");
+			tcu::TestCaseGroup* const fillRules = new tcu::TestCaseGroup(testCtx, ("fill_rules" + caseName.str()).c_str());
 
 			rasterizationTests->addChild(fillRules);
 
-			fillRules->addChild(new FillRuleTestCase(testCtx,	"basic_quad",			"Verify fill rules",	FillRuleTestInstance::FILLRULECASE_BASIC,			samples[samplesNdx]));
-			fillRules->addChild(new FillRuleTestCase(testCtx,	"basic_quad_reverse",	"Verify fill rules",	FillRuleTestInstance::FILLRULECASE_REVERSED,		samples[samplesNdx]));
-			fillRules->addChild(new FillRuleTestCase(testCtx,	"clipped_full",			"Verify fill rules",	FillRuleTestInstance::FILLRULECASE_CLIPPED_FULL,	samples[samplesNdx]));
-			fillRules->addChild(new FillRuleTestCase(testCtx,	"clipped_partly",		"Verify fill rules",	FillRuleTestInstance::FILLRULECASE_CLIPPED_PARTIAL,	samples[samplesNdx]));
-			fillRules->addChild(new FillRuleTestCase(testCtx,	"projected",			"Verify fill rules",	FillRuleTestInstance::FILLRULECASE_PROJECTED,		samples[samplesNdx]));
+			// Verify fill rules
+			fillRules->addChild(new FillRuleTestCase(testCtx,	"basic_quad", FillRuleTestInstance::FILLRULECASE_BASIC,			samples[samplesNdx]));
+			// Verify fill rules
+			fillRules->addChild(new FillRuleTestCase(testCtx,	"basic_quad_reverse", FillRuleTestInstance::FILLRULECASE_REVERSED,		samples[samplesNdx]));
+			// Verify fill rules
+			fillRules->addChild(new FillRuleTestCase(testCtx,	"clipped_full", FillRuleTestInstance::FILLRULECASE_CLIPPED_FULL,	samples[samplesNdx]));
+			// Verify fill rules
+			fillRules->addChild(new FillRuleTestCase(testCtx,	"clipped_partly", FillRuleTestInstance::FILLRULECASE_CLIPPED_PARTIAL,	samples[samplesNdx]));
+			// Verify fill rules
+			fillRules->addChild(new FillRuleTestCase(testCtx,	"projected", FillRuleTestInstance::FILLRULECASE_PROJECTED,		samples[samplesNdx]));
 		}
 
 		// .interpolation
 		{
-			tcu::TestCaseGroup* const interpolation = new tcu::TestCaseGroup(testCtx, ("interpolation" + caseName.str()).c_str(), "Test interpolation");
+			tcu::TestCaseGroup* const interpolation = new tcu::TestCaseGroup(testCtx, ("interpolation" + caseName.str()).c_str());
 
 			rasterizationTests->addChild(interpolation);
 
-			interpolation->addChild(new TriangleInterpolationTestCase		(testCtx, "triangles",		"Verify triangle interpolation",		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	INTERPOLATIONFLAGS_NONE,															samples[samplesNdx]));
-			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "lines",			"Verify line interpolation",			VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE,	samples[samplesNdx]));
-			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "lines_wide",		"Verify wide line interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE,	samples[samplesNdx]));
+			// Verify triangle interpolation
+			interpolation->addChild(new TriangleInterpolationTestCase		(testCtx, "triangles", VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	INTERPOLATIONFLAGS_NONE,															samples[samplesNdx]));
+			// Verify line interpolation
+			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "lines", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE,	samples[samplesNdx]));
+			// Verify wide line interpolation
+			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "lines_wide", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE,	samples[samplesNdx]));
 
-			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "strict_lines",			"Verify strict line interpolation",			VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT,	samples[samplesNdx]));
-			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "strict_lines_wide",		"Verify strict wide line interpolation",	VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT,	samples[samplesNdx]));
+			// Verify strict line interpolation
+			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "strict_lines", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT,	samples[samplesNdx]));
+			// Verify strict wide line interpolation
+			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "strict_lines_wide", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT,	samples[samplesNdx]));
 
-			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_lines",			"Verify non-strict line interpolation",			VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT,	samples[samplesNdx]));
-			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_lines_wide",		"Verify non-strict wide line interpolation",	VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT,	samples[samplesNdx]));
+			// Verify non-strict line interpolation
+			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_lines", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT,	samples[samplesNdx]));
+			// Verify non-strict wide line interpolation
+			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "non_strict_lines_wide", VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT,	samples[samplesNdx]));
 		}
 	}
 
@@ -7676,20 +8875,21 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	// .line_continuity
 #ifndef CTS_USES_VULKANSC
 	{
-		tcu::TestCaseGroup* const	lineContinuity	= new tcu::TestCaseGroup(testCtx, "line_continuity", "Test line continuity");
+		tcu::TestCaseGroup* const	lineContinuity	= new tcu::TestCaseGroup(testCtx, "line_continuity");
 		static const char			dataDir[]		= "rasterization/line_continuity";
 
 		struct Case
 		{
 			std::string	name;
-			std::string	desc;
 			bool		requireFillModeNonSolid;
 		};
 
 		static const Case cases[] =
 		{
-			{	"line-strip",			"Test line strip drawing produces continuous lines",	false	},
-			{	"polygon-mode-lines",	"Test triangles drawn with lines are continuous",		true	}
+			// Test line strip drawing produces continuous lines
+			{	"line-strip",false	},
+			// Test triangles drawn with lines are continuous
+			{	"polygon-mode-lines",true	}
 		};
 
 		rasterizationTests->addChild(lineContinuity);
@@ -7697,7 +8897,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
 		{
 			const std::string			fileName	= cases[i].name + ".amber";
-			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].name.c_str(), cases[i].desc.c_str(), dataDir, fileName);
+			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].name.c_str(), dataDir, fileName);
 
 			if (cases[i].requireFillModeNonSolid)
 			{
@@ -7712,29 +8912,41 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	// .depth bias
 #ifndef CTS_USES_VULKANSC
 	{
-		tcu::TestCaseGroup* const	depthBias	= new tcu::TestCaseGroup(testCtx, "depth_bias", "Test depth bias");
+		tcu::TestCaseGroup* const	depthBias	= new tcu::TestCaseGroup(testCtx, "depth_bias");
 		static const char			dataDir[]	= "rasterization/depth_bias";
 
 		static const struct
 		{
 			std::string name;
 			vk::VkFormat format;
-			std::string description;
 		} cases [] =
 		{
-			{"d16_unorm",						vk::VK_FORMAT_D16_UNORM,			"Test depth bias with format D16_UNORM"},
-			{"d32_sfloat",						vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias with format D32_SFLOAT"},
-			{"d24_unorm",						vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias with format D24_UNORM_S8_UINT"},
-			{"d16_unorm_constant_one",			vk::VK_FORMAT_D16_UNORM,			"Test depth bias constant 1 and -1 with format D16_UNORM"},
-			{"d32_sfloat_constant_one",			vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias constant 1 and -1 with format D32_SFLOAT"},
-			{"d24_unorm_constant_one",			vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias constant 1 and -1 with format D24_UNORM_S8_UINT"},
-			{"d16_unorm_slope",					vk::VK_FORMAT_D16_UNORM,			"Test depth bias slope with format D16_UNORM"},
-			{"d16_unorm_constant_one_less",		vk::VK_FORMAT_D16_UNORM,			"Test depth bias constant 1 and -1 with format D16_UNORM"},
-			{"d16_unorm_constant_one_greater",	vk::VK_FORMAT_D16_UNORM,			"Test depth bias constant 1 and -1 with format D16_UNORM"},
-			{"d24_unorm_constant_one_less",		vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias constant 1 and -1 with format D24_UNORM_S8_UINT"},
-			{"d24_unorm_constant_one_greater",	vk::VK_FORMAT_D24_UNORM_S8_UINT,	"Test depth bias constant 1 and -1 with format D24_UNORM_S8_UINT"},
-			{"d32_sfloat_constant_one_less",	vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias constant 1 and -1 with format D32_SFLOAT"},
-			{"d32_sfloat_constant_one_greater",	vk::VK_FORMAT_D32_SFLOAT,			"Test depth bias constant 1 and -1 with format D32_SFLOAT"},
+			// Test depth bias with format D16_UNORM
+			{"d16_unorm",						vk::VK_FORMAT_D16_UNORM},
+			// Test depth bias with format D32_SFLOAT
+			{"d32_sfloat",						vk::VK_FORMAT_D32_SFLOAT},
+			// Test depth bias with format D24_UNORM_S8_UINT
+			{"d24_unorm",						vk::VK_FORMAT_D24_UNORM_S8_UINT},
+			// Test depth bias constant 1 and -1 with format D16_UNORM
+			{"d16_unorm_constant_one",			vk::VK_FORMAT_D16_UNORM},
+			// Test depth bias constant 1 and -1 with format D32_SFLOAT
+			{"d32_sfloat_constant_one",			vk::VK_FORMAT_D32_SFLOAT},
+			// Test depth bias constant 1 and -1 with format D24_UNORM_S8_UINT
+			{"d24_unorm_constant_one",			vk::VK_FORMAT_D24_UNORM_S8_UINT},
+			// Test depth bias slope with format D16_UNORM
+			{"d16_unorm_slope",					vk::VK_FORMAT_D16_UNORM},
+			// Test depth bias constant 1 and -1 with format D16_UNORM
+			{"d16_unorm_constant_one_less",		vk::VK_FORMAT_D16_UNORM},
+			// Test depth bias constant 1 and -1 with format D16_UNORM
+			{"d16_unorm_constant_one_greater",	vk::VK_FORMAT_D16_UNORM},
+			// Test depth bias constant 1 and -1 with format D24_UNORM_S8_UINT
+			{"d24_unorm_constant_one_less",		vk::VK_FORMAT_D24_UNORM_S8_UINT},
+			// Test depth bias constant 1 and -1 with format D24_UNORM_S8_UINT
+			{"d24_unorm_constant_one_greater",	vk::VK_FORMAT_D24_UNORM_S8_UINT},
+			// Test depth bias constant 1 and -1 with format D32_SFLOAT
+			{"d32_sfloat_constant_one_less",	vk::VK_FORMAT_D32_SFLOAT},
+			// Test depth bias constant 1 and -1 with format D32_SFLOAT
+			{"d32_sfloat_constant_one_greater",	vk::VK_FORMAT_D32_SFLOAT},
 		};
 
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
@@ -7761,13 +8973,18 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			std::vector<VkImageCreateInfo>	imageRequirements;
 			imageRequirements.push_back(vkImageCreateInfo);
 			const std::string			fileName	= cases[i].name + ".amber";
-			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].name.c_str(), cases[i].description.c_str(), dataDir, fileName, requirements, imageRequirements);
+			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].name.c_str(), dataDir, fileName, requirements, imageRequirements);
 
 			depthBias->addChild(testCase);
 		}
 
 		rasterizationTests->addChild(depthBias);
 	}
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+	// Depth bias control.
+	rasterizationTests->addChild(createDepthBiasControlTests(testCtx));
 #endif // CTS_USES_VULKANSC
 
 	// Fragment shader side effects.
@@ -7786,13 +9003,30 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 		rasterizationTests->addChild(createShaderTileImageTests(testCtx));
 	}
 #endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+	// .maintenance5
+	{
+		//NonStrictLineStripMaintenance5TestInstance
+		tcu::TestCaseGroup* const maintenance5tests = new tcu::TestCaseGroup(testCtx, "maintenance5");
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result
+		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLinesMaintenance5TestInstance>(testCtx, "non_strict_lines_narrow", PRIMITIVEWIDENESS_NARROW));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result
+		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLinesMaintenance5TestInstance>(testCtx, "non_strict_lines_wide", PRIMITIVEWIDENESS_WIDE));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode, verify rasterization result
+		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLineStripMaintenance5TestInstance>(testCtx, "non_strict_line_strip_narrow", PRIMITIVEWIDENESS_NARROW));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode, verify rasterization result
+		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLineStripMaintenance5TestInstance>(testCtx, "non_strict_line_strip_wide", PRIMITIVEWIDENESS_WIDE));
+		rasterizationTests->addChild(maintenance5tests);
+	}
+#endif // CTS_USES_VULKANSC
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "rasterization", "Rasterization Tests", createRasterizationTests);
+	return createTestGroup(testCtx, name.c_str(), createRasterizationTests);
 }
 
 } // rasterization

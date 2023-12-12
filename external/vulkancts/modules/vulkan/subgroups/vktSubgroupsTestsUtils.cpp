@@ -4488,9 +4488,6 @@ void vkt::subgroups::supportedCheckShader (Context& context, const VkShaderStage
 {
 	checkShaderStageSetValidity(shaderStages);
 
-	if ((shaderStages & VK_SHADER_STAGE_GEOMETRY_BIT) != 0)
-		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
-
 	if ((context.getSubgroupProperties().supportedStages & shaderStages) == 0)
 	{
 		if (isAllComputeStages(shaderStages))
