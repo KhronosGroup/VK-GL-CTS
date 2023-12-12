@@ -63,15 +63,6 @@ MAIN_EGL_COMMON_FILTERS		= [include("egl-master.txt"),
 
 # Android CTS is not using EGL test list for year 2021
 MAIN_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
-		# Main
-		Configuration(name			= "master",
-					  glconfig		= "rgba8888d24s8ms0",
-					  rotation		= "unspecified",
-					  surfacetype	= "window",
-					  required		= True,
-					  filters		= MAIN_EGL_COMMON_FILTERS,
-					  runtime		= "23m",
-					  runByDefault	= False),
 		Configuration(name			= "master-2020-03-01",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
@@ -117,15 +108,6 @@ MAIN_GLES2_COMMON_FILTERS		= [
 		exclude("gles2-temp-excluded.txt"),
 	]
 MAIN_GLES2_PKG				= Package(module = GLES2_MODULE, configurations = [
-		# Main
-		Configuration(name			= "master",
-					  glconfig		= "rgba8888d24s8ms0",
-					  rotation		= "unspecified",
-					  surfacetype	= "window",
-					  required		= True,
-					  filters		= MAIN_GLES2_COMMON_FILTERS,
-					  runtime		= "46m",
-					  runByDefault		= False),
 		Configuration(name			= "master-2020-03-01",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
@@ -174,14 +156,6 @@ MAIN_GLES3_COMMON_FILTERS		= [
 	]
 MAIN_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 		# Main
-		Configuration(name			= "master",
-					  glconfig		= "rgba8888d24s8ms0",
-					  rotation		= "unspecified",
-					  surfacetype	= "window",
-					  required		= True,
-					  filters		= MAIN_GLES3_COMMON_FILTERS,
-					  runtime		= "1h50m",
-					  runByDefault	= False),
 		Configuration(name			= "master-2020-03-01",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
@@ -277,15 +251,6 @@ MAIN_GLES31_COMMON_FILTERS	= [
 		exclude("gles31-waivers.txt"),
 	]
 MAIN_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
-		# Main
-		Configuration(name			= "master",
-					  glconfig		= "rgba8888d24s8ms0",
-					  rotation		= "unspecified",
-					  surfacetype	= "window",
-					  required		= True,
-					  filters		= MAIN_GLES31_COMMON_FILTERS,
-					  runtime		= "1h40m",
-					  runByDefault		= False),
 		Configuration(name			= "master-2020-03-01",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
@@ -373,11 +338,6 @@ MAIN_VULKAN_FILTERS			= [
 		exclude("vk-temp-excluded.txt"),
 	]
 MAIN_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
-		Configuration(name					= "master",
-					  filters				= MAIN_VULKAN_FILTERS,
-					  runtime				= "2h39m",
-					  runByDefault			= False,
-					  listOfGroupsToSplit	= ["dEQP-VK", "dEQP-VK.pipeline"]),
 		Configuration(name					= "master-2019-03-01",
 					  filters				= [include("vk-master-2019-03-01.txt")],
 					  runtime				= "2h29m",

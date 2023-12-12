@@ -1,0 +1,2 @@
+dEQP-VK.compute.basic.secondary_compute_only_queue
+dEQP-VK.compute.basic.webgl_spirv_loop

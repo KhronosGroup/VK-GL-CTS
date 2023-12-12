@@ -1,0 +1,4 @@
+dEQP-VK.synchronization.basic.timeline_semaphore.wait_for_all_current_value
+dEQP-VK.synchronization.basic.timeline_semaphore.wait_for_all_lesser_value
+dEQP-VK.synchronization.basic.timeline_semaphore.wait_for_any_current_value
+dEQP-VK.synchronization.basic.timeline_semaphore.wait_for_any_lesser_value
