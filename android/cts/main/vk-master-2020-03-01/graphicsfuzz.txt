@@ -66,14 +66,14 @@ dEQP-VK.graphicsfuzz.two-loops-with-break
 dEQP-VK.graphicsfuzz.two-nested-do-whiles
 dEQP-VK.graphicsfuzz.two-nested-for-loops-with-returns
 dEQP-VK.graphicsfuzz.two-nested-infinite-loops-discard
+dEQP-VK.graphicsfuzz.undefined-assign-in-infinite-loop
 dEQP-VK.graphicsfuzz.undefined-integer-in-function
 dEQP-VK.graphicsfuzz.uninit-element-cast-in-loop
 dEQP-VK.graphicsfuzz.uninitialized-var-decrement-and-add
-dEQP-VK.graphicsfuzz.undefined-assign-in-infinite-loop
 dEQP-VK.graphicsfuzz.unreachable-barrier-in-loops
 dEQP-VK.graphicsfuzz.unreachable-continue-statement
-dEQP-VK.graphicsfuzz.unreachable-discard-statement-in-if
 dEQP-VK.graphicsfuzz.unreachable-discard-statement
+dEQP-VK.graphicsfuzz.unreachable-discard-statement-in-if
 dEQP-VK.graphicsfuzz.unreachable-loops
 dEQP-VK.graphicsfuzz.unreachable-loops-in-switch
 dEQP-VK.graphicsfuzz.unreachable-return-in-loop
