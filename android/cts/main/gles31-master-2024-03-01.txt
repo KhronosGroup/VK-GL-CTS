@@ -1,10 +1,10 @@
-dEQP-GLES31.functional.image_load_store.2d.atomic.comp_swap_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.2d.atomic.comp_swap_r32i_return_value
-dEQP-GLES31.functional.image_load_store.cube.atomic.comp_swap_r32ui_return_value
-dEQP-GLES31.functional.image_load_store.cube.atomic.comp_swap_r32i_return_value
-dEQP-GLES31.functional.image_load_store.3d.atomic.comp_swap_r32ui_return_value
-dEQP-GLES31.functional.image_load_store.3d.atomic.comp_swap_r32i_return_value
-dEQP-GLES31.functional.image_load_store.2d_array.atomic.comp_swap_r32ui_return_value
+dEQP-GLES31.functional.image_load_store.2d.atomic.comp_swap_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.2d_array.atomic.comp_swap_r32i_return_value
-dEQP-GLES31.functional.image_load_store.buffer.atomic.comp_swap_r32ui_return_value
+dEQP-GLES31.functional.image_load_store.2d_array.atomic.comp_swap_r32ui_return_value
+dEQP-GLES31.functional.image_load_store.3d.atomic.comp_swap_r32i_return_value
+dEQP-GLES31.functional.image_load_store.3d.atomic.comp_swap_r32ui_return_value
 dEQP-GLES31.functional.image_load_store.buffer.atomic.comp_swap_r32i_return_value
+dEQP-GLES31.functional.image_load_store.buffer.atomic.comp_swap_r32ui_return_value
+dEQP-GLES31.functional.image_load_store.cube.atomic.comp_swap_r32i_return_value
+dEQP-GLES31.functional.image_load_store.cube.atomic.comp_swap_r32ui_return_value
