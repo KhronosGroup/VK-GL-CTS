@@ -1712,6 +1712,9 @@ void ShaderMatrixCase::init (void)
 	}
 
 	ShaderRenderCase::init();
+
+	// reassign grid size prevent matrix inverse inf value.
+	m_gridSize = 64;
 }
 
 std::string ShaderMatrixCase::genGLSLMatToVec3Reduction (const glu::DataType& matType, const char* varName)
