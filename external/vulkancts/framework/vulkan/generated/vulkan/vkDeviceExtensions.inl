@@ -80,6 +80,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_timeline_semaphore",
 	"VK_KHR_uniform_buffer_standard_layout",
 	"VK_KHR_variable_pointers",
+	"VK_KHR_vertex_attribute_divisor",
 	"VK_KHR_video_decode_h264",
 	"VK_KHR_video_decode_h265",
 	"VK_KHR_video_decode_queue",
