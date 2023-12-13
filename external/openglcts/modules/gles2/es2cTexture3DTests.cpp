@@ -175,6 +175,10 @@ void Texture3DBase::getSupportedCompressedFormats(std::set<int>& formatsSet) con
 		if (tcu::isEtcFormat(format) || tcu::isBcFormat(format))
 			continue;
 
+		// AHB formats are not supported
+		if (tcu::isAhbRawFormat(format))
+			continue;
+
 		int glFormat = glu::getGLFormat(format);
 		if (contextInfo.isCompressedTextureFormatSupported(glFormat))
 			formatsSet.insert(glFormat);
