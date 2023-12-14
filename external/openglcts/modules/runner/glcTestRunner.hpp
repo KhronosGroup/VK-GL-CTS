@@ -26,6 +26,7 @@
 
 #include "gluPlatform.hpp"
 #include "tcuDefs.hpp"
+#include "tcuTestPackage.hpp"
 
 #include <string>
 #include <vector>
@@ -67,6 +68,7 @@ struct TestRunSummary
 	bool					   isConformant;
 	std::string				   configLogFilename;
 	std::vector<TestRunParams> runParams;
+	std::vector<tcu::TestRunStatus> results;
 
 	TestRunSummary(void) : isConformant(false)
 	{
@@ -78,6 +80,7 @@ struct TestRunSummary
 		isConformant = false;
 		configLogFilename.clear();
 		runParams.clear();
+		results.clear();
 	}
 };
 
