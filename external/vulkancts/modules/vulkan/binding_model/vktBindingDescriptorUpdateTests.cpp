@@ -342,7 +342,7 @@ vk::VkSampler SamplerlessDescriptorWriteTestInstance::getSamplerHandle (void) co
 {
 	if (m_params.pointer == PointerCase::ZERO)	return vk::VkSampler{DE_NULL};
 	if (m_params.pointer == PointerCase::ONE)	return vk::VkSampler{1};
-	static const DestroyedSampler destroyedSampler{m_context};
+	DestroyedSampler destroyedSampler{m_context};
 	return destroyedSampler.sampler;
 }
 
