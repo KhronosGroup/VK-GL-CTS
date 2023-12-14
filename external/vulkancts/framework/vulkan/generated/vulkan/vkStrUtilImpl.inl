@@ -2330,6 +2330,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_DRIVER_PROPERTIES_MSFT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_DRIVER_PROPERTIES_MSFT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV";
 		default:																					return DE_NULL;
 	}
 }
@@ -17950,6 +17951,16 @@ std::ostream& operator<< (std::ostream& s, const VkRenderPassStripeSubmitInfoARM
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tstripeSemaphoreInfoCount = " << value.stripeSemaphoreInfoCount << '\n';
 	s << "\tpStripeSemaphoreInfos = " << value.pStripeSemaphoreInfos << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRawAccessChainsFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceRawAccessChainsFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderRawAccessChains = " << value.shaderRawAccessChains << '\n';
 	s << '}';
 	return s;
 }
