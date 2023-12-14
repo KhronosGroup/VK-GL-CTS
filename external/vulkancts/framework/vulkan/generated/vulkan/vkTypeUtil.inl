@@ -412,6 +412,17 @@ inline VkSurfaceFormatKHR makeSurfaceFormatKHR (VkFormat format, VkColorSpaceKHR
 	return res;
 }
 
+inline VkLayerSettingEXT makeLayerSettingEXT (const char* pLayerName, const char* pSettingName, VkLayerSettingTypeEXT type, uint32_t valueCount, const void* pValues)
+{
+	VkLayerSettingEXT res;
+	res.pLayerName		= pLayerName;
+	res.pSettingName	= pSettingName;
+	res.type			= type;
+	res.valueCount		= valueCount;
+	res.pValues			= pValues;
+	return res;
+}
+
 inline VkBindShaderGroupIndirectCommandNV makeBindShaderGroupIndirectCommandNV (uint32_t groupIndex)
 {
 	VkBindShaderGroupIndirectCommandNV res;
@@ -578,9 +589,9 @@ inline VkShaderResourceUsageAMD makeShaderResourceUsageAMD (uint32_t numUsedVgpr
 	return res;
 }
 
-inline VkVertexInputBindingDivisorDescriptionEXT makeVertexInputBindingDivisorDescriptionEXT (uint32_t binding, uint32_t divisor)
+inline VkVertexInputBindingDivisorDescriptionKHR makeVertexInputBindingDivisorDescriptionKHR (uint32_t binding, uint32_t divisor)
 {
-	VkVertexInputBindingDivisorDescriptionEXT res;
+	VkVertexInputBindingDivisorDescriptionKHR res;
 	res.binding	= binding;
 	res.divisor	= divisor;
 	return res;

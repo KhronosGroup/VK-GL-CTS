@@ -42,6 +42,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuCommandLine.hpp"
 #include "deUniquePtr.hpp"
@@ -486,6 +487,9 @@ protected:
 	de::MovePtr<Allocator>	m_customAllocator;
 
 	VkDevice				m_device;
+#ifdef CTS_USES_VULKANSC
+	const CustomInstance	m_customInstance;
+#endif // CTS_USES_VULKANSC
 	Allocator*				m_allocator;
 	uint32_t				m_queueFamilyIndex;
 
@@ -546,6 +550,9 @@ TimestampTestInstance::TimestampTestInstance (Context&						context,
 											  const bool					transferOnlyQueue,
 											  const VkQueryResultFlags		queryResultFlags)
 	: TestInstance			(context)
+#ifdef CTS_USES_VULKANSC
+	, m_customInstance		(createCustomInstanceFromContext(context))
+#endif // CTS_USES_VULKANSC
 	, m_stages				(stages)
 	, m_inRenderPass		(inRenderPass)
 	, m_hostQueryReset		(hostQueryReset)
@@ -796,9 +803,17 @@ Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory (VkFormat							
 
 void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
 {
-	const InstanceInterface&	vki				= m_context.getInstanceInterface();
-	const DeviceInterface&		vk				= m_context.getDeviceInterface();
-	const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
+#ifdef CTS_USES_VULKANSC
+	vk::VkInstance					instance				= m_customInstance;
+	const vk::InstanceInterface&	vki						= m_customInstance.getDriver();
+	const VkPhysicalDevice			physicalDevice			= chooseDevice(vki, m_customInstance, m_context.getTestContext().getCommandLine());
+#else
+	vk::VkInstance instance									= m_context.getInstance();
+	const vk::InstanceInterface&	vki						= m_context.getInstanceInterface();
+	const VkPhysicalDevice			physicalDevice			= m_context.getPhysicalDevice();
+#endif // CTS_USES_VULKANSC
+
+	const DeviceInterface&			vk						= m_context.getDeviceInterface();
 
 	m_queueFamilyIndex = findQueueFamilyIndexWithCaps(vki, physicalDevice, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
@@ -877,7 +892,7 @@ void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
 		DE_NULL,										// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	m_customDevice		= vkt::createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), vki, physicalDevice, &deviceCreateInfo);
+	m_customDevice		= vkt::createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, vki, physicalDevice, &deviceCreateInfo);
 	m_customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(vk, *m_customDevice, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 
 	m_device			= *m_customDevice;
@@ -1032,7 +1047,7 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance (Context& conte
 	m_timestampPeriod = getPhysicalDeviceProperties(vki, physDevice).limits.timestampPeriod;
 
 	deUint32 domainCount;
-	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsEXT(physDevice, &domainCount, DE_NULL));
+	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, DE_NULL));
 	if (domainCount == 0)
 	{
 		throw tcu::NotSupportedError("No calibrateable time domains found");
@@ -1040,7 +1055,7 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance (Context& conte
 
 	std::vector<VkTimeDomainEXT> domains;
 	domains.resize(domainCount);
-	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsEXT(physDevice, &domainCount, domains.data()));
+	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsKHR(physDevice, &domainCount, domains.data()));
 
 	// Find the dev domain.
 	std::vector<VkTimeDomainEXT> preferredDevDomains;
@@ -1248,7 +1263,7 @@ std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTime
 	const DeviceInterface&      vk          = m_context.getDeviceInterface();
 	const VkDevice              vkDevice    = m_context.getDevice();
 
-	VK_CHECK(vk.getCalibratedTimestampsEXT(vkDevice, static_cast<deUint32>(domains.size()), infos.data(), timestamps.data(), &deviation));
+	VK_CHECK(vk.getCalibratedTimestampsKHR(vkDevice, static_cast<deUint32>(domains.size()), infos.data(), timestamps.data(), &deviation));
 
 	if (deviation > kDeviationErrorLimitNanos)
 	{
@@ -3427,7 +3442,7 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx, PipelineCon
 	// Transfer Tests - don't repeat those tests for graphics pipeline library
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> transferTests (new tcu::TestCaseGroup(testCtx, "transfer_tests", "Record timestamp for transfer stages"));
+		de::MovePtr<tcu::TestCaseGroup> transferTests (new tcu::TestCaseGroup(testCtx, "transfer_tests"));
 
 		const VkPipelineStageFlagBits transferStages[][2] =
 		{
@@ -3475,7 +3490,7 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx, PipelineCon
 	// Calibrated Timestamp Tests - don't repeat those tests for graphics pipeline library
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> calibratedTimestampTests (new tcu::TestCaseGroup(testCtx, "calibrated", "VK_EXT_calibrated_timestamps tests"));
+		de::MovePtr<tcu::TestCaseGroup> calibratedTimestampTests (new tcu::TestCaseGroup(testCtx, "calibrated"));
 
 		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampDevDomainTestInstance>	(testCtx, "dev_domain_test"));
 		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampHostDomainTestInstance>	(testCtx, "host_domain_test"));
@@ -3496,7 +3511,7 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx, PipelineCon
 
 		const std::string queryResultsFlagsMiscTestsStr[] = {"", "_with_availability_bit"};
 
-		de::MovePtr<tcu::TestCaseGroup> miscTests (new tcu::TestCaseGroup(testCtx, "misc_tests", "Misc tests that can not be categorized to other group."));
+		de::MovePtr<tcu::TestCaseGroup> miscTests (new tcu::TestCaseGroup(testCtx, "misc_tests"));
 
 		for (deUint32 flagsIdx = 0u; flagsIdx < DE_LENGTH_OF_ARRAY(queryResultFlagsMiscTests); flagsIdx++)
 		{

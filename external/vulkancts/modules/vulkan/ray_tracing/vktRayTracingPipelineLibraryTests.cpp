@@ -1026,7 +1026,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(group->getTestContext(), "misc", ""));
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(group->getTestContext(), "misc"));
 
 		TestParams testParamsMaintenance5
 		{

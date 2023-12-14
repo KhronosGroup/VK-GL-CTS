@@ -2767,7 +2767,7 @@ tcu::TestCaseGroup* createPhysicalPointersComputeGroup (tcu::TestContext& testCt
 
 tcu::TestCaseGroup* createVariablePointersGraphicsGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "variable_pointers", "Graphics tests for SPV_KHR_variable_pointers extension"));
+	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "variable_pointers"));
 
 	addTestGroup(group.get(), "graphics", addVariablePointersGraphicsGroup);
 	// Testing Variable Pointers pointing to different input buffers in graphics pipeline (no SSBO writes)

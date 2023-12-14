@@ -2064,9 +2064,9 @@ void OpaqueTypeIndexingTests::init (void)
 	{
 		// Uniform Block Instance Array Indexing Tests
 		tcu::TestCaseGroup* const	uboGroup			= new tcu::TestCaseGroup(m_testCtx, "ubo");
-		tcu::TestCaseGroup* const	ssboGroup			= new tcu::TestCaseGroup(m_testCtx, "ssbo",								"Buffer Block Instance Array Indexing Tests");
-		tcu::TestCaseGroup* const	ssboStorageBufGroup	= new tcu::TestCaseGroup(m_testCtx, "ssbo_storage_buffer_decoration",	"Buffer Block (new StorageBuffer decoration) Instance Array Indexing Tests");
-		tcu::TestCaseGroup* const	acGroup				= new tcu::TestCaseGroup(m_testCtx, "atomic_counter",					"Atomic Counter Array Indexing Tests");
+		tcu::TestCaseGroup* const	ssboGroup			= new tcu::TestCaseGroup(m_testCtx, "ssbo");
+		tcu::TestCaseGroup* const	ssboStorageBufGroup	= new tcu::TestCaseGroup(m_testCtx, "ssbo_storage_buffer_decoration");
+		tcu::TestCaseGroup* const	acGroup				= new tcu::TestCaseGroup(m_testCtx, "atomic_counter");
 		addChild(uboGroup);
 		addChild(ssboGroup);
 		addChild(ssboStorageBufGroup);

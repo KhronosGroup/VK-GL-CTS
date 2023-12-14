@@ -868,6 +868,9 @@ void RandomTestCase::checkSupport (Context& context) const
 	if (!context.requireDeviceFunctionality("VK_KHR_dynamic_rendering"))
 		TCU_THROW(NotSupportedError, "VK_KHR_dynamic_rendering is not supported");
 
+	if (!context.requireDeviceFunctionality("VK_KHR_multiview"))
+		TCU_THROW(NotSupportedError, "VK_KHR_multiview is not supported");
+
 	const VkPhysicalDeviceDynamicRenderingFeaturesKHR& dynamicRenderingFeatures(context.getDynamicRenderingFeatures());
 
 	if (dynamicRenderingFeatures.dynamicRendering == DE_FALSE)

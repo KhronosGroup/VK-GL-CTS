@@ -2458,13 +2458,13 @@ TestInstance* BuiltinInputVariationsCase::createInstance (Context& context) cons
 
 TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup> builtinGroup			(new TestCaseGroup(testCtx, "builtin_var", "Shader builtin variable tests."));
-	de::MovePtr<TestCaseGroup> simpleGroup			(new TestCaseGroup(testCtx, "simple", "Simple cases."));
-	de::MovePtr<TestCaseGroup> inputVariationsGroup	(new TestCaseGroup(testCtx, "input_variations", "Input type variation tests."));
-	de::MovePtr<TestCaseGroup> frontFacingGroup		(new TestCaseGroup(testCtx, "frontfacing", "Test gl_Frontfacing keyword."));
-	de::MovePtr<TestCaseGroup> fragDepthGroup		(new TestCaseGroup(testCtx, "fragdepth", "Test gl_FragDepth keyword."));
-	de::MovePtr<TestCaseGroup> fragCoordMsaaGroup	(new TestCaseGroup(testCtx, "fragcoord_msaa", "Test interation between gl_FragCoord and msaa"));
-	de::MovePtr<TestCaseGroup> fragCoordMsaaInputGroup	(new TestCaseGroup(testCtx, "fragcoord_msaa_input", "Test interation between gl_FragCoord and msaa"));
+	de::MovePtr<TestCaseGroup> builtinGroup			(new TestCaseGroup(testCtx, "builtin_var"));
+	de::MovePtr<TestCaseGroup> simpleGroup			(new TestCaseGroup(testCtx, "simple"));
+	de::MovePtr<TestCaseGroup> inputVariationsGroup	(new TestCaseGroup(testCtx, "input_variations"));
+	de::MovePtr<TestCaseGroup> frontFacingGroup		(new TestCaseGroup(testCtx, "frontfacing"));
+	de::MovePtr<TestCaseGroup> fragDepthGroup		(new TestCaseGroup(testCtx, "fragdepth"));
+	de::MovePtr<TestCaseGroup> fragCoordMsaaGroup	(new TestCaseGroup(testCtx, "fragcoord_msaa"));
+	de::MovePtr<TestCaseGroup> fragCoordMsaaInputGroup	(new TestCaseGroup(testCtx, "fragcoord_msaa_input"));
 
 	// FragCoord xyz test
 	simpleGroup->addChild(new BuiltinGlFragCoordXYZCase(testCtx, "fragcoord_xyz"));

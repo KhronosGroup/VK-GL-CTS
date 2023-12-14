@@ -1757,7 +1757,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 	// 2D array cases.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	group2DArray	(new tcu::TestCaseGroup(testCtx, "2d_array", "2D texture array shadow lookup tests"));
+		de::MovePtr<tcu::TestCaseGroup>	group2DArray	(new tcu::TestCaseGroup(testCtx, "2d_array"));
 
 		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
 		{
@@ -1799,7 +1799,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 	// 1D cases.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	group1D	(new tcu::TestCaseGroup(testCtx, "1d", "1D texture shadow lookup tests"));
+		de::MovePtr<tcu::TestCaseGroup>	group1D	(new tcu::TestCaseGroup(testCtx, "1d"));
 
 		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
 		{
@@ -1837,7 +1837,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 	// 1D array cases.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	group1DArray	(new tcu::TestCaseGroup(testCtx, "1d_array", "1D texture array shadow lookup tests"));
+		de::MovePtr<tcu::TestCaseGroup>	group1DArray	(new tcu::TestCaseGroup(testCtx, "1d_array"));
 
 		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
 		{
@@ -1877,7 +1877,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 	// Cubemap Array cases.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	groupCubeArray	(new tcu::TestCaseGroup(testCtx, "cube_array", "Cube map texture shadow lookup tests"));
+		de::MovePtr<tcu::TestCaseGroup>	groupCubeArray	(new tcu::TestCaseGroup(testCtx, "cube_array"));
 
 		for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(filters); filterNdx++)
 		{
@@ -1922,7 +1922,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 #ifndef CTS_USES_VULKANSC
 	// Texel replacement tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	groupTexelReplacement	(new tcu::TestCaseGroup(testCtx, "texel_replacement", "Texel replacement texture shadow lookup tests"));
+		de::MovePtr<tcu::TestCaseGroup>	groupTexelReplacement	(new tcu::TestCaseGroup(testCtx, "texel_replacement"));
 
 		cts_amber::AmberTestCase*		testCaseLod				= cts_amber::createAmberTestCase(testCtx, "d32_sfloat", "texture/shadow/texel_replacement", "d32_sfloat.amber");
 

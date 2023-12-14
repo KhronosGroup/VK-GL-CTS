@@ -1302,8 +1302,8 @@ void IndirectDrawTests::init (void)
 			tcu::TestCaseGroup* indirectDrawGroup			= new tcu::TestCaseGroup(m_testCtx, "indirect_draw");
 			// Draws geometry with VK_KHR_draw_indirect_count extension
 			tcu::TestCaseGroup* indirectDrawCountGroup		= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_count");
-			tcu::TestCaseGroup* indirectDrawParamCountGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count", "Draws geometry with VK_KHR_draw_indirect_count extension and limit draws count with call parameter");
-			tcu::TestCaseGroup* indirectDrawMultiviewGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_multiview", "Draws geometry with indirect draws and multiview");
+			tcu::TestCaseGroup* indirectDrawParamCountGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count");
+			tcu::TestCaseGroup* indirectDrawMultiviewGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_multiview");
 			{
 				IndirectDraw::TestSpec testSpec(m_groupParams);
 				testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
@@ -1411,11 +1411,11 @@ void IndirectDrawTests::init (void)
 				drawTypeGroup->addChild(indirectDrawParamCountFirstInstanceGroup);
 			}
 
-			tcu::TestCaseGroup* indirectDrawInstancedGroup				= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_instanced", "Draws an instanced geometry");
-			tcu::TestCaseGroup* indirectDrawCountInstancedGroup			= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_count_instanced", "Draws an instanced geometry with VK_KHR_draw_indirect_count extension");
-			tcu::TestCaseGroup* indirectDrawParamCountInstancedGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count_instanced", "Draws an instanced geometry with VK_KHR_draw_indirect_count extension and limit draws count with call parameter");
+			tcu::TestCaseGroup* indirectDrawInstancedGroup				= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_instanced");
+			tcu::TestCaseGroup* indirectDrawCountInstancedGroup			= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_count_instanced");
+			tcu::TestCaseGroup* indirectDrawParamCountInstancedGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count_instanced");
 			{
-				tcu::TestCaseGroup*	indirectDrawNoFirstInstanceGroup			= new tcu::TestCaseGroup(m_testCtx, "no_first_instance", "Use 0 as firstInstance");
+				tcu::TestCaseGroup*	indirectDrawNoFirstInstanceGroup			= new tcu::TestCaseGroup(m_testCtx, "no_first_instance");
 				tcu::TestCaseGroup*	indirectDrawCountNoFirstInstanceGroup		= new tcu::TestCaseGroup(m_testCtx, "no_first_instance");
 				tcu::TestCaseGroup*	indirectDrawParamCountNoFirstInstanceGroup	= new tcu::TestCaseGroup(m_testCtx, "no_first_instance");
 				{
@@ -1459,7 +1459,7 @@ void IndirectDrawTests::init (void)
 				indirectDrawCountInstancedGroup->addChild(indirectDrawCountNoFirstInstanceGroup);
 				indirectDrawParamCountInstancedGroup->addChild(indirectDrawParamCountNoFirstInstanceGroup);
 
-				tcu::TestCaseGroup*	indirectDrawFirstInstanceGroup				= new tcu::TestCaseGroup(m_testCtx, "first_instance", "Use drawIndirectFirstInstance optional feature");
+				tcu::TestCaseGroup*	indirectDrawFirstInstanceGroup				= new tcu::TestCaseGroup(m_testCtx, "first_instance");
 				tcu::TestCaseGroup*	indirectDrawCountFirstInstanceGroup			= new tcu::TestCaseGroup(m_testCtx, "first_instance");
 				tcu::TestCaseGroup*	indirectDrawParamCountFirstInstanceGroup	= new tcu::TestCaseGroup(m_testCtx, "first_instance");
 				{

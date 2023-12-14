@@ -1313,7 +1313,7 @@ void initTests(tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 		const std::string	sampleName("samples_" + de::toString(sampleCount));
 
 		// create test group for sample count
-		de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sampleName.c_str(), sampleName.c_str()));
+		de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sampleName.c_str()));
 
 		// iterate over depth/stencil formats
 		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
@@ -1333,7 +1333,7 @@ void initTests(tcu::TestCaseGroup* group, const SharedGroupParams groupParams)
 				const std::string	groupName = std::string(formatName) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "");
 
 				// create test group for format
-				de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupName.c_str()));
+				de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 				// iterate over depth resolve modes
 				for (size_t depthResolveModeNdx = 0; depthResolveModeNdx < DE_LENGTH_OF_ARRAY(resolveModes); depthResolveModeNdx++)

@@ -831,8 +831,7 @@ de::MovePtr<tcu::TestCaseGroup> createImageFormatTests (tcu::TestContext& testCt
 		}
 
 		de::MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(testCtx,
-			getFormatCaseName(format).c_str(),
-			(std::string("Samples a texture of format ") + getFormatName(format)).c_str()));
+			getFormatCaseName(format).c_str()));
 		createImageCountTests(formatGroup.get(), testCtx, allocationKind, pipelineConstructionType, samplingType, imageViewType, format);
 
 		imageFormatTests->addChild(formatGroup.release());

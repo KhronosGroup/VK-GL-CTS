@@ -1215,7 +1215,7 @@ void addCopyTests(tcu::TestCaseGroup* group)
 			CT_FIRST_ACTIVE,
 			true,
 		};
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(group->getTestContext(), "misc", ""));
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(group->getTestContext(), "misc"));
 		miscGroup->addChild(new OpacityMicromapCase(testCtx, "maintenance5", testParams));
 		group->addChild(miscGroup.release());
 	}

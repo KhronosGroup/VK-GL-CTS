@@ -408,6 +408,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_IMG_relaxed_line_rasterization")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shared_presentable_image")
 	{
 		return;
@@ -1303,6 +1307,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_ARM_render_pass_striped")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_fragment_density_map_offset")
 	{
 		return;
@@ -1416,6 +1424,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_layer_settings")
+	{
+		return;
+	}
 	if (extName == "VK_ARM_shader_core_builtins")
 	{
 		return;
@@ -1461,12 +1473,21 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_vertex_attribute_divisor")
+	{
+		return;
+	}
 	if (extName == "VK_QNX_external_memory_screen_buffer")
 	{
 		return;
 	}
 	if (extName == "VK_MSFT_layered_driver")
 	{
+		return;
+	}
+	if (extName == "VK_KHR_calibrated_timestamps")
+	{
+		functions.push_back("vkGetPhysicalDeviceCalibrateableTimeDomainsKHR");
 		return;
 	}
 	if (extName == "VK_NV_descriptor_pool_overallocation")
@@ -1946,6 +1967,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdBeginRenderPass2KHR");
 		functions.push_back("vkCmdNextSubpass2KHR");
 		functions.push_back("vkCmdEndRenderPass2KHR");
+		return;
+	}
+	if (extName == "VK_IMG_relaxed_line_rasterization")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_shared_presentable_image")
@@ -3048,6 +3073,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_ARM_render_pass_striped")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_fragment_density_map_offset")
 	{
 		return;
@@ -3243,6 +3272,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_layer_settings")
+	{
+		return;
+	}
 	if (extName == "VK_ARM_shader_core_builtins")
 	{
 		return;
@@ -3293,6 +3326,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetAttachmentFeedbackLoopEnableEXT");
 		return;
 	}
+	if (extName == "VK_KHR_vertex_attribute_divisor")
+	{
+		return;
+	}
 	if (extName == "VK_QNX_external_memory_screen_buffer")
 	{
 		functions.push_back("vkGetScreenBufferPropertiesQNX");
@@ -3300,6 +3337,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_MSFT_layered_driver")
 	{
+		return;
+	}
+	if (extName == "VK_KHR_calibrated_timestamps")
+	{
+		functions.push_back("vkGetCalibratedTimestampsKHR");
 		return;
 	}
 	if (extName == "VK_NV_descriptor_pool_overallocation")
@@ -3376,6 +3418,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_portability_enumeration",
 	"VK_GOOGLE_surfaceless_query",
 	"VK_LUNARG_direct_driver_loading",
+	"VK_EXT_layer_settings",
 };
 
 ::std::string deviceExtensionNames[] =
@@ -3449,6 +3492,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_hdr_metadata",
 	"VK_KHR_imageless_framebuffer",
 	"VK_KHR_create_renderpass2",
+	"VK_IMG_relaxed_line_rasterization",
 	"VK_KHR_shared_presentable_image",
 	"VK_KHR_external_fence",
 	"VK_KHR_external_fence_win32",
@@ -3650,6 +3694,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_VALVE_descriptor_set_host_mapping",
 	"VK_EXT_depth_clamp_zero_one",
 	"VK_EXT_non_seamless_cube_map",
+	"VK_ARM_render_pass_striped",
 	"VK_QCOM_fragment_density_map_offset",
 	"VK_NV_copy_memory_indirect",
 	"VK_NV_memory_decompression",
@@ -3687,7 +3732,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_QCOM_ycbcr_degamma",
 	"VK_QCOM_filter_cubic_clamp",
 	"VK_EXT_attachment_feedback_loop_dynamic_state",
+	"VK_KHR_vertex_attribute_divisor",
 	"VK_QNX_external_memory_screen_buffer",
 	"VK_MSFT_layered_driver",
+	"VK_KHR_calibrated_timestamps",
 	"VK_NV_descriptor_pool_overallocation",
 };

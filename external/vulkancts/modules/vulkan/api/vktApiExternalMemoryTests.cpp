@@ -5134,7 +5134,7 @@ de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx)
 
 de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk::VkExternalMemoryHandleTypeFlagBits externalType)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, externalMemoryTypeToName(externalType), "Tests for external memory"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, externalMemoryTypeToName(externalType)));
 
 	for (size_t dedicatedNdx = 0; dedicatedNdx < 2; dedicatedNdx++)
 	{
@@ -5297,7 +5297,7 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createExternalMemoryTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "external", "Tests for external Vulkan objects"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "external"));
 
 	group->addChild(createSemaphoreTests(testCtx).release());
 	group->addChild(createMemoryTests(testCtx).release());

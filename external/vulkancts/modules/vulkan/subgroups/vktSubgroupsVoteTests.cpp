@@ -511,22 +511,22 @@ namespace subgroups
 {
 TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "vote", "Subgroup vote category tests"));
-	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics", "Subgroup vote category tests: graphics"));
-	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup vote category tests: compute"));
-	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup vote category tests: framebuffer"));
-	de::MovePtr<TestCaseGroup>	fragHelperGroup		(new TestCaseGroup(testCtx, "frag_helper", "Subgroup vote category tests: fragment helper invocation"));
+	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "vote"));
+	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer"));
+	de::MovePtr<TestCaseGroup>	fragHelperGroup		(new TestCaseGroup(testCtx, "frag_helper"));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup vote category tests: raytracing"));
-	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh", "Subgroup vote category tests: mesh shading"));
-	de::MovePtr<TestCaseGroup>	meshGroupARB		(new TestCaseGroup(testCtx, "mesh", "Subgroup vote category tests: mesh shading"));
+	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing"));
+	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh"));
+	de::MovePtr<TestCaseGroup>	meshGroupARB		(new TestCaseGroup(testCtx, "mesh"));
 #endif // CTS_USES_VULKANSC
 
-	de::MovePtr<TestCaseGroup>	groupARB			(new TestCaseGroup(testCtx, "ext_shader_subgroup_vote", "VK_EXT_shader_subgroup_vote category tests"));
-	de::MovePtr<TestCaseGroup>	graphicGroupARB		(new TestCaseGroup(testCtx, "graphics", "Subgroup vote category tests: graphics"));
-	de::MovePtr<TestCaseGroup>	computeGroupARB		(new TestCaseGroup(testCtx, "compute", "Subgroup vote category tests: compute"));
-	de::MovePtr<TestCaseGroup>	framebufferGroupARB	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup vote category tests: framebuffer"));
-	de::MovePtr<TestCaseGroup>	fragHelperGroupARB	(new TestCaseGroup(testCtx, "frag_helper", "Subgroup vote category tests: fragment helper invocation"));
+	de::MovePtr<TestCaseGroup>	groupARB			(new TestCaseGroup(testCtx, "ext_shader_subgroup_vote"));
+	de::MovePtr<TestCaseGroup>	graphicGroupARB		(new TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<TestCaseGroup>	computeGroupARB		(new TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<TestCaseGroup>	framebufferGroupARB	(new TestCaseGroup(testCtx, "framebuffer"));
+	de::MovePtr<TestCaseGroup>	fragHelperGroupARB	(new TestCaseGroup(testCtx, "frag_helper"));
 	const deBool				boolValues[]		=
 	{
 		DE_FALSE,

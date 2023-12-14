@@ -1960,13 +1960,13 @@ TestStatus test (Context& context, const CaseDefinition caseDef)
 
 TestCaseGroup* createSubgroupsBuiltinVarTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup>	group						(new TestCaseGroup(testCtx, "builtin_var",	"Subgroup builtin variable tests"));
-	de::MovePtr<TestCaseGroup>	graphicGroup				(new TestCaseGroup(testCtx, "graphics",		"Subgroup builtin variable tests: graphics"));
-	de::MovePtr<TestCaseGroup>	computeGroup				(new TestCaseGroup(testCtx, "compute",		"Subgroup builtin variable tests: compute"));
-	de::MovePtr<TestCaseGroup>	framebufferGroup			(new TestCaseGroup(testCtx, "framebuffer",	"Subgroup builtin variable tests: framebuffer"));
+	de::MovePtr<TestCaseGroup>	group						(new TestCaseGroup(testCtx, "builtin_var"));
+	de::MovePtr<TestCaseGroup>	graphicGroup				(new TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<TestCaseGroup>	computeGroup				(new TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<TestCaseGroup>	framebufferGroup			(new TestCaseGroup(testCtx, "framebuffer"));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<TestCaseGroup>	raytracingGroup				(new TestCaseGroup(testCtx, "ray_tracing",	"Subgroup builtin variable tests: ray tracing"));
-	de::MovePtr<TestCaseGroup>	meshGroup					(new TestCaseGroup(testCtx, "mesh",			"Subgroup builtin variable tests: mesh shading"));
+	de::MovePtr<TestCaseGroup>	raytracingGroup				(new TestCaseGroup(testCtx, "ray_tracing"));
+	de::MovePtr<TestCaseGroup>	meshGroup					(new TestCaseGroup(testCtx, "mesh"));
 #endif // CTS_USES_VULKANSC
 	const TestType				allStagesBuiltinVars[]		=
 	{

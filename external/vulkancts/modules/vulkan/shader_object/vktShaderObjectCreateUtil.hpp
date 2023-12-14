@@ -30,11 +30,12 @@
 namespace vk
 {
 
+#ifndef CTS_USES_VULKANSC
 std::string				getShaderName						(vk::VkShaderStageFlagBits stage);
 vk::VkShaderStageFlags	getShaderObjectNextStages			(vk::VkShaderStageFlagBits shaderStage, bool tessellationShaderFeature, bool geometryShaderFeature);
 
-Move<VkShaderEXT>		createShaderFromBinary				(const DeviceInterface& vk, VkDevice device, vk::VkShaderStageFlagBits shaderStage, size_t codeSize, const void* pCode, bool tessellationShaderFeature, bool geometryShaderFeature, vk::VkDescriptorSetLayout descriptorSetLayout);
-Move<VkShaderEXT>		createShader						(const DeviceInterface& vk, VkDevice device, const vk::VkShaderCreateInfoEXT& shaderCreateInfo);
+Move<vk::VkShaderEXT>	createShaderFromBinary				(const DeviceInterface& vk, VkDevice device, vk::VkShaderStageFlagBits shaderStage, size_t codeSize, const void* pCode, bool tessellationShaderFeature, bool geometryShaderFeature, vk::VkDescriptorSetLayout descriptorSetLayout);
+Move<vk::VkShaderEXT>	createShader						(const DeviceInterface& vk, VkDevice device, const vk::VkShaderCreateInfoEXT& shaderCreateInfo);
 
 void					addBasicShaderObjectShaders	(vk::SourceCollections& programCollection);
 
@@ -44,6 +45,7 @@ void					bindGraphicsShaders					(const vk::DeviceInterface& vk, vk::VkCommandBu
 void					bindComputeShader					(const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT compShader);
 void					bindNullTaskMeshShaders				(const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures);
 void					bindNullRasterizationShaders		(const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkPhysicalDeviceFeatures features);
+#endif
 
 } // vkt
 

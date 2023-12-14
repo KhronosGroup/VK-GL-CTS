@@ -3785,7 +3785,7 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 			static_cast<CapturedPropertiesFlags>(CapturedPropertiesBits::STATS));
 		baseParams.graphicsShaders = graphicsShadersCases[1];
 
-		GroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+		GroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 
 		BaseParamsPtr params = baseParams.copy(1);
 		miscGroup->addChild(new CreateAndUseIdsCase(testCtx, "capture_statistics_maintenance5", std::move(params)));

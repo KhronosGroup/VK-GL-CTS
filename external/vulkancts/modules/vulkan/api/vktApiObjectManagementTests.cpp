@@ -643,6 +643,7 @@ struct Device
 		};
 
 		void* pNext									= DE_NULL;
+		std::vector<const char*> extensions;
 #ifdef CTS_USES_VULKANSC
 		VkDeviceObjectReservationCreateInfo memReservationInfo	= env.commandLine.isSubProcess() ? env.resourceInterface->getStatMax() : resetDeviceObjectReservationCreateInfo();
 		memReservationInfo.pNext								= pNext;
@@ -678,9 +679,26 @@ struct Device
 				memReservationInfo.pPipelinePoolSizes				= poolSizes.data();
 			}
 		}
+#else
+		VkPhysicalDevicePipelineCreationCacheControlFeatures pipelineCreationCacheControlFeatures = vk::initVulkanStructure();
+		VkPhysicalDeviceVulkan13Features vulkan13Features = vk::initVulkanStructure();
+		if (env.apiVersion < VK_API_VERSION_1_3) {
+			VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure(&pipelineCreationCacheControlFeatures);
+			res.vki.getPhysicalDeviceFeatures2(res.physicalDevice, &features2);
+			pipelineCreationCacheControlFeatures.pNext = pNext;
+			pNext = &pipelineCreationCacheControlFeatures;
+			extensions.push_back("VK_EXT_pipeline_creation_cache_control");
+		} else {
+			VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure(&vulkan13Features);
+			res.vki.getPhysicalDeviceFeatures2(res.physicalDevice, &features2);
+			vulkan13Features.pNext = pNext;
+			pNext = &vulkan13Features;
+		}
 #endif // CTS_USES_VULKANSC
 
-		VkPhysicalDeviceFeatures enabledFeatures = getPhysicalDeviceFeatures(res.vki, res.physicalDevice);
+		VkPhysicalDeviceFeatures2	enabledFeatures = getPhysicalDeviceFeatures2(res.vki, res.physicalDevice);
+		enabledFeatures.pNext = pNext;
+		pNext = &enabledFeatures;
 
 		const VkDeviceCreateInfo		deviceInfo	=
 		{
@@ -693,7 +711,7 @@ struct Device
 			DE_NULL,								// ppEnabledLayerNames
 			0u,										// enabledExtensionNameCount
 			DE_NULL,								// ppEnabledExtensionNames
-			&enabledFeatures,						// pEnabledFeatures
+			DE_NULL,								// pEnabledFeatures
 		};
 
 		return createCustomDevice(env.commandLine.isValidationEnabled(), env.vkp, env.instance, res.vki, res.physicalDevice, &deviceInfo, env.allocationCallbacks);
@@ -1419,7 +1437,11 @@ struct PipelineCache
 
 	struct Parameters
 	{
+		bool externSync = false;
 		Parameters (void) {}
+		Parameters (bool externSync_)
+			: externSync	(externSync_)
+		{}
 	};
 
 	struct Resources
@@ -1437,8 +1459,9 @@ struct PipelineCache
 		ShaderModule::initPrograms(dst, ShaderModule::Parameters(VK_SHADER_STAGE_COMPUTE_BIT, "comp"));
 	}
 
-	static Move<VkPipelineCache> create (const Environment& env, const Resources&, const Parameters&)
+	static Move<VkPipelineCache> create (const Environment& env, const Resources&, const Parameters& params)
 	{
+		(void)params;
 #ifdef CTS_USES_VULKANSC
 		// creating dummy compute pipeline to ensure pipeline cache is not empty
 		if (!env.commandLine.isSubProcess())
@@ -1476,13 +1499,16 @@ struct PipelineCache
 
 			Move<VkPipeline>						pipeline					= createComputePipeline(env.vkd, env.device, DE_NULL, &pipelineInfo);
 		}
+#else
+		VkPipelineCacheCreateFlags					pipelineCacheCreateFlags = params.externSync ? (VkPipelineCacheCreateFlags)VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT : 0u;
 #endif // CTS_USES_VULKANSC
+
 		const VkPipelineCacheCreateInfo	pipelineCacheInfo	=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,				// VkStructureType				sType;
 			DE_NULL,													// const void*					pNext;
 #ifndef CTS_USES_VULKANSC
-			(VkPipelineCacheCreateFlags)0u,								// VkPipelineCacheCreateFlags	flags;
+			pipelineCacheCreateFlags,									// VkPipelineCacheCreateFlags	flags;
 			0u,															// size_t						initialDataSize;
 			DE_NULL,													// const void*					pInitialData;
 #else
@@ -1494,6 +1520,106 @@ struct PipelineCache
 		};
 
 		return createPipelineCache(env.vkd, env.device, &pipelineCacheInfo, env.allocationCallbacks);
+	}
+};
+
+struct MergedPipelineCache
+{
+	typedef VkPipelineCache Type;
+
+	struct Parameters
+	{
+		bool srcExternSync;
+		bool dstExternSync;
+		Parameters(bool srcExternSync_, bool dstExternSync_)
+			: srcExternSync	(srcExternSync_)
+			, dstExternSync	(dstExternSync_)
+		{}
+	};
+
+	struct Resources
+	{
+		inline static std::unordered_map<VkDevice, SharedPtr<Dependency<PipelineCache>>>			srcPipelineCaches;
+		Resources(const Environment& env, const Parameters& params)
+		{
+			if (srcPipelineCaches.find(env.device) == srcPipelineCaches.end()) {
+				srcPipelineCaches[env.device] = SharedPtr<Dependency<PipelineCache>>(new Dependency<PipelineCache>(env, {params.srcExternSync}));
+			}
+		}
+		~Resources() {
+			if (!srcPipelineCaches.empty()) {
+				srcPipelineCaches.clear();
+			}
+		}
+	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<MergedPipelineCache>(context, params, MAX_CONCURRENT_PIPELINE_CACHES);
+	}
+
+	static void initPrograms(SourceCollections& dst, Parameters)
+	{
+		ShaderModule::initPrograms(dst, ShaderModule::Parameters(VK_SHADER_STAGE_COMPUTE_BIT, "comp"));
+	}
+
+	static Move<VkPipelineCache> create(const Environment& env, const Resources& resources, const Parameters& params)
+	{
+		(void)resources;
+		// creating dummy compute pipeline to ensure pipeline cache is not empty
+		if (!env.commandLine.isSubProcess())
+		{
+			const Unique<VkShaderModule>			shaderModule				(createShaderModule(env.vkd, env.device, env.programBinaries.get("comp"), 0u));
+
+			const Move<VkDescriptorSetLayout>		descriptorSetLayout			(DescriptorSetLayoutBuilder()
+																					.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+																					.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+																					.build(env.vkd, env.device));
+
+			const Move<VkPipelineLayout>			pipelineLayout				(makePipelineLayout(env.vkd, env.device, *descriptorSetLayout));
+
+			const VkPipelineShaderStageCreateInfo	stageCreateInfo				=
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,			// VkStructureType                     sType;
+				DE_NULL,														// const void*                         pNext;
+				0u,																// VkPipelineShaderStageCreateFlags    flags;
+				VK_SHADER_STAGE_COMPUTE_BIT,									// VkShaderStageFlagBits               stage;
+				*shaderModule,													// VkShaderModule                      module;
+				"main",															// const char*                         pName;
+				DE_NULL,														// const VkSpecializationInfo*         pSpecializationInfo;
+			};
+
+			const VkComputePipelineCreateInfo		pipelineInfo				=
+			{
+				VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,					// VkStructureType					sType
+				DE_NULL,														// const void*						pNext
+				(VkPipelineCreateFlags)0,										// VkPipelineCreateFlags			flags
+				stageCreateInfo,												// VkPipelineShaderStageCreateInfo	stage
+				*pipelineLayout,												// VkPipelineLayout					layout
+				DE_NULL,														// VkPipeline						basePipelineHandle
+				0u																// deInt32							basePipelineIndex
+			};
+
+			Move<VkPipeline>						pipeline					= createComputePipeline(env.vkd, env.device, DE_NULL, &pipelineInfo);
+		}
+
+		VkPipelineCacheCreateFlags					pipelineCacheCreateFlags	= params.dstExternSync ? (VkPipelineCacheCreateFlags)VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT : 0u;
+
+		const VkPipelineCacheCreateInfo	pipelineCacheInfo	=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,				// VkStructureType				sType;
+			DE_NULL,													// const void*					pNext;
+			pipelineCacheCreateFlags,									// VkPipelineCacheCreateFlags	flags;
+			0u,															// size_t						initialDataSize;
+			DE_NULL,													// const void*					pInitialData;
+		};
+
+		auto pipelineCache = createPipelineCache(env.vkd, env.device, &pipelineCacheInfo, env.allocationCallbacks);
+#ifndef CTS_USES_VULKANSC
+		VkPipelineCache srcCache = resources.srcPipelineCaches[env.device]->object.get();
+		env.vkd.mergePipelineCaches(env.device, pipelineCache.get(), 1u, &srcCache);
+#endif
+		return pipelineCache;
 	}
 };
 
@@ -3353,6 +3479,7 @@ struct CaseDescriptions
 	CaseDescription<QueryPool>				queryPool;
 	CaseDescription<ShaderModule>			shaderModule;
 	CaseDescription<PipelineCache>			pipelineCache;
+	CaseDescription<MergedPipelineCache>	mergedPipelineCache;
 	CaseDescription<PipelineLayout>			pipelineLayout;
 	CaseDescription<RenderPass>				renderPass;
 	CaseDescription<GraphicsPipeline>		graphicsPipeline;
@@ -3378,7 +3505,8 @@ void addCases (tcu::TestCaseGroup *group, const CaseDescription<Object>& cases)
 	}
 }
 
-void checkImageCubeArraySupport (Context& context, const ImageView::Parameters params) {
+void checkImageCubeArraySupport (Context& context, const ImageView::Parameters params)
+{
 	if (params.viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !context.getDeviceFeatures().imageCubeArray)
 		TCU_THROW(NotSupportedError, "imageCubeArray feature is not supported by this implementation");
 }
@@ -3390,6 +3518,15 @@ void checkEventSupport (Context& context, const Event::Parameters)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
 #else
 	DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
+}
+
+void checkPipelineCacheControlSupport (Context& context, const MergedPipelineCache::Parameters)
+{
+	(void)context;
+#ifndef CTS_USES_VULKANSC
+	if (!context.isDeviceFunctionalitySupported("VK_EXT_pipeline_creation_cache_control") || !context.getPipelineCreationCacheControlFeatures().pipelineCreationCacheControl)
+		TCU_THROW(NotSupportedError, "pipelineCreationCacheControl not supported by this implementation");
 #endif // CTS_USES_VULKANSC
 }
 
@@ -3433,6 +3570,7 @@ static void createTests (tcu::TestCaseGroup* group, CaseDescriptions cases)
 	addCasesWithProgs	(group, cases.shaderModule);
 #ifndef CTS_USES_VULKANSC
 	addCases			(group, cases.pipelineCache);
+	addCasesWithProgs	(group, cases.mergedPipelineCache);
 #else
 	addCasesWithProgs	(group, cases.pipelineCache);
 #endif // CTS_USES_VULKANSC
@@ -3557,6 +3695,13 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	{
 		{ "pipeline_cache",				PipelineCache::Parameters()		}
 	};
+	static const NamedParameters<MergedPipelineCache>	s_mergedPipelineCacheCases[]	=
+	{
+		{ "merged_pipeline_cache",					MergedPipelineCache::Parameters(false, false)	},
+		{ "merged_pipeline_cache_src_sync",			MergedPipelineCache::Parameters(true, false)	},
+		{ "merged_pipeline_cache_dst_sync",			MergedPipelineCache::Parameters(false, true)	},
+		{ "merged_pipeline_cache_src_dst_sync",		MergedPipelineCache::Parameters(true, true)		}
+	};
 	static const NamedParameters<PipelineLayout>		s_pipelineLayoutCases[]			=
 	{
 		{ "pipeline_layout_empty",		PipelineLayout::Parameters::empty()										},
@@ -3623,6 +3768,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createSingleTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
 		CASE_DESC(createSingleTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
 		CASE_DESC(createSingleTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(createSingleTest	<MergedPipelineCache>,		s_mergedPipelineCacheCases,	checkPipelineCacheControlSupport),
 		CASE_DESC(createSingleTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
 		CASE_DESC(createSingleTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
 		CASE_DESC(createSingleTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
@@ -3659,6 +3805,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMultipleUniqueResourcesTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
 		CASE_DESC(createMultipleUniqueResourcesTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
 		CASE_DESC(createMultipleUniqueResourcesTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(createMultipleUniqueResourcesTest	<MergedPipelineCache>,		s_mergedPipelineCacheCases,	checkPipelineCacheControlSupport),
 		CASE_DESC(createMultipleUniqueResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
 		CASE_DESC(createMultipleUniqueResourcesTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
 		CASE_DESC(createMultipleUniqueResourcesTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
@@ -3695,6 +3842,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMultipleSharedResourcesTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
 		CASE_DESC(createMultipleSharedResourcesTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
 		CASE_DESC(createMultipleSharedResourcesTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(createMultipleSharedResourcesTest	<MergedPipelineCache>,		s_mergedPipelineCacheCases,	checkPipelineCacheControlSupport),
 		CASE_DESC(createMultipleSharedResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
 		CASE_DESC(createMultipleSharedResourcesTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
 		CASE_DESC(createMultipleSharedResourcesTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
@@ -3728,6 +3876,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createMaxConcurrentTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
 		CASE_DESC(createMaxConcurrentTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
 		CASE_DESC(createMaxConcurrentTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(createMaxConcurrentTest	<MergedPipelineCache>,		s_mergedPipelineCacheCases,	checkPipelineCacheControlSupport),
 		CASE_DESC(createMaxConcurrentTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
 		CASE_DESC(createMaxConcurrentTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
 		CASE_DESC(createMaxConcurrentTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
@@ -3760,6 +3909,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<MergedPipelineCache>,		s_mergedPipelineCacheCases,	checkPipelineCacheControlSupport),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
@@ -3791,6 +3941,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<MergedPipelineCache>,		s_mergedPipelineCacheCases,	checkPipelineCacheControlSupport),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
@@ -3827,6 +3978,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<MergedPipelineCache>,		s_mergedPipelineCacheCases,	checkPipelineCacheControlSupport),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
@@ -3861,6 +4013,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createSingleAllocCallbacksTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
 		CASE_DESC(createSingleAllocCallbacksTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
 		CASE_DESC(createSingleAllocCallbacksTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(createSingleAllocCallbacksTest	<MergedPipelineCache>,		s_mergedPipelineCacheCases,	checkPipelineCacheControlSupport),
 		CASE_DESC(createSingleAllocCallbacksTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
 		CASE_DESC(createSingleAllocCallbacksTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
 		CASE_DESC(createSingleAllocCallbacksTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
@@ -3897,6 +4050,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(allocCallbackFailTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
 		CASE_DESC(allocCallbackFailTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
 		CASE_DESC(allocCallbackFailTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		CASE_DESC(allocCallbackFailTest	<MergedPipelineCache>,		s_mergedPipelineCacheCases,	checkPipelineCacheControlSupport),
 		CASE_DESC(allocCallbackFailTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
 		CASE_DESC(allocCallbackFailTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
 		CASE_DESC(allocCallbackFailTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),
@@ -3932,6 +4086,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		EMPTY_CASE_DESC(QueryPool),
 		EMPTY_CASE_DESC(ShaderModule),
 		EMPTY_CASE_DESC(PipelineCache),
+		EMPTY_CASE_DESC(MergedPipelineCache),
 		EMPTY_CASE_DESC(PipelineLayout),
 		EMPTY_CASE_DESC(RenderPass),
 		CASE_DESC(allocCallbackFailMultipleObjectsTest <GraphicsPipeline>,		s_graphicsPipelineCases,	DE_NULL),
@@ -3966,6 +4121,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(createPrivateDataTest	<QueryPool>,				s_queryPoolCases,			DE_NULL),
 		CASE_DESC(createPrivateDataTest	<ShaderModule>,				s_shaderModuleCases,		DE_NULL),
 		CASE_DESC(createPrivateDataTest	<PipelineCache>,			s_pipelineCacheCases,		DE_NULL),
+		EMPTY_CASE_DESC(MergedPipelineCache),
 		CASE_DESC(createPrivateDataTest	<PipelineLayout>,			s_pipelineLayoutCases,		DE_NULL),
 		CASE_DESC(createPrivateDataTest	<RenderPass>,				s_renderPassCases,			DE_NULL),
 		CASE_DESC(createPrivateDataTest	<GraphicsPipeline>,			s_graphicsPipelineCases,	DE_NULL),

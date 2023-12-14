@@ -1805,8 +1805,7 @@ tcu::TestCaseGroup* createPermutedIndexTests (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, name.c_str(), "Memory model tests"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	typedef struct
 	{

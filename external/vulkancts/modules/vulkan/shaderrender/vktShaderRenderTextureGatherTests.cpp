@@ -2672,9 +2672,6 @@ void TextureGatherTests::init (void)
 													new TestCaseGroup(m_testCtx,
 																	  offsetSize == OFFSETSIZE_MINIMUM_REQUIRED				? "min_required_offset"
 																	  : offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM		? "implementation_offset"
-																	  : DE_NULL,
-																	  offsetSize == OFFSETSIZE_MINIMUM_REQUIRED				? "Use offsets within Vulkan minimum required range"
-																	  : offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM		? "Use offsets within the implementation range"
 																	  : DE_NULL);
 
 			if (offsetSizeGroup != gatherTypeGroup)
@@ -2728,8 +2725,7 @@ void TextureGatherTests::init (void)
 								TestCaseGroup* const compareModeGroup = compareMode == tcu::Sampler::COMPAREMODE_NONE ?
 																			textureSizeGroup :
 																			new TestCaseGroup(m_testCtx,
-																							  (string() + "compare_" + compareModeName(compareMode)).c_str(),
-																							  "");
+																							  (string() + "compare_" + compareModeName(compareMode)).c_str());
 								if (compareModeGroup != textureSizeGroup)
 									textureSizeGroup->addChild(compareModeGroup);
 
@@ -2786,7 +2782,7 @@ void TextureGatherTests::init (void)
 						}
 
 						{
-							TestCaseGroup* const filterModeGroup = new TestCaseGroup(m_testCtx, "filter_mode", "Test that filter modes have no effect");
+							TestCaseGroup* const filterModeGroup = new TestCaseGroup(m_testCtx, "filter_mode");
 							formatGroup->addChild(filterModeGroup);
 
 							const struct

@@ -4089,10 +4089,8 @@ tcu::Maybe<uint32_t> getComputeOnlyQueueFamily(Context& context)
 }
 
 // Creates a device that has a queue for compute capabilities without graphics.
-Move<VkDevice> createComputeOnlyDevice(Context& context, uint32_t& queueFamilyIndex)
+Move<VkDevice> createComputeOnlyDevice(vk::VkInstance instance, const InstanceInterface& instanceDriver, const VkPhysicalDevice physicalDevice, Context& context, uint32_t& queueFamilyIndex)
 {
-	const auto&	instanceDriver		= context.getInstanceInterface();
-	const auto	physicalDevice		= context.getPhysicalDevice();
 	const auto	queueFamilies		= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 	// One queue family without a graphics bit should be found, since this is checked in checkSupport.
@@ -4110,9 +4108,13 @@ Move<VkDevice> createComputeOnlyDevice(Context& context, uint32_t& queueFamilyIn
 
 	void* pNext = nullptr;
 #ifdef CTS_USES_VULKANSC
-	VkDeviceObjectReservationCreateInfo memReservationInfo =
+	VkDeviceObjectReservationCreateInfo memReservationInfo	=
 		context.getTestContext().getCommandLine().isSubProcess() ? context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
 	pNext = &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
 
 	VkPipelineCacheCreateInfo			pcCI;
 	std::vector<VkPipelinePoolSize>		poolSizes;
@@ -4156,7 +4158,7 @@ Move<VkDevice> createComputeOnlyDevice(Context& context, uint32_t& queueFamilyIn
 
 	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
 								   context.getPlatformInterface(),
-								   context.getInstance(),
+								   instance,
 								   instanceDriver, physicalDevice, &deviceCreateInfo);
 }
 
@@ -4173,9 +4175,17 @@ public:
 
 class SecondaryCommandBufferComputeOnlyTestInstance : public vkt::TestInstance {
 public:
-	SecondaryCommandBufferComputeOnlyTestInstance(Context& context) : vkt::TestInstance(context)
+	SecondaryCommandBufferComputeOnlyTestInstance(Context& context)
+		: vkt::TestInstance(context)
+#ifdef CTS_USES_VULKANSC
+		, m_customInstance(createCustomInstanceFromContext(context))
+#endif // CTS_USES_VULKANSC
 	{ };
 	virtual tcu::TestStatus iterate(void);
+protected:
+#ifdef CTS_USES_VULKANSC
+	const CustomInstance	m_customInstance;
+#endif // CTS_USES_VULKANSC
 };
 
 void SecondaryCommandBufferComputeOnlyTest::initPrograms(SourceCollections& collection) const {
@@ -4208,20 +4218,26 @@ void SecondaryCommandBufferComputeOnlyTest::checkSupport(Context& context) const
 
 tcu::TestStatus SecondaryCommandBufferComputeOnlyTestInstance::iterate()
 {
-	const InstanceInterface&	vki						= m_context.getInstanceInterface();
-#ifdef CTS_USES_VULKANSC
-	de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter> deviceDriver;
-#else
-	de::MovePtr<DeviceDriver> deviceDriver;
-#endif // CTS_USES_VULKANSC
 	VkDevice device;
 	uint32_t queueFamilyIndex;
-	auto customDevice = createComputeOnlyDevice(m_context, queueFamilyIndex);
+#ifdef CTS_USES_VULKANSC
+	const vk::InstanceInterface&						vki						= m_customInstance.getDriver();
+	const VkPhysicalDevice								physDevice				= chooseDevice(vki, m_customInstance, m_context.getTestContext().getCommandLine());
+	auto												customDevice			= createComputeOnlyDevice(m_customInstance, vki, physDevice, m_context, queueFamilyIndex);
+	de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>	deviceDriver;
+#else
+	const InstanceInterface&							vki						= m_context.getInstanceInterface();
+	const VkPhysicalDevice								physDevice				= m_context.getPhysicalDevice();
+	auto												customDevice			= createComputeOnlyDevice(m_context.getInstance(), vki, physDevice, m_context, queueFamilyIndex);
+	de::MovePtr<DeviceDriver>							deviceDriver;
+#endif // CTS_USES_VULKANSC
+
 	device = customDevice.get();
+
 #ifndef CTS_USES_VULKANSC
 	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), device, m_context.getUsedApiVersion()));
 #else
-	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_context.getInstance(), device,
+	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_customInstance, device,
 		m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(),
 		m_context.getDeviceProperties(), m_context.getUsedApiVersion()), DeinitDeviceDeleter(m_context.getResourceInterface().get(), device));
 #endif // CTS_USES_VULKANSC
@@ -4229,7 +4245,7 @@ tcu::TestStatus SecondaryCommandBufferComputeOnlyTestInstance::iterate()
 	const DeviceInterface& vkdi = *deviceDriver;
 
 	auto queue		= getDeviceQueue(vkdi, device, queueFamilyIndex, 0u);
-	auto allocator	= de::MovePtr<Allocator>(new SimpleAllocator(vkdi, device, getPhysicalDeviceMemoryProperties(vki, m_context.getPhysicalDevice())));
+	auto allocator	= de::MovePtr<Allocator>(new SimpleAllocator(vkdi, device, getPhysicalDeviceMemoryProperties(vki, physDevice)));
 
 	const auto			bufferSize	= static_cast<VkDeviceSize>(sizeof(uint32_t));
 	BufferWithMemory	buffer			(vkdi, device, *allocator.get(), makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);

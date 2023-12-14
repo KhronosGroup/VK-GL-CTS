@@ -249,10 +249,10 @@ TestInstance* FragmentInputComponentCase::createInstance (Context& context) cons
 
 TestCaseGroup* createLimitTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup> limitGroup			(new TestCaseGroup(testCtx,	"limits",			"Shader device limit tests"));
-	de::MovePtr<TestCaseGroup> nearGroup			(new TestCaseGroup(testCtx, "near_max",			"Shaders near maximum values"));
+	de::MovePtr<TestCaseGroup> limitGroup			(new TestCaseGroup(testCtx,	"limits"));
+	de::MovePtr<TestCaseGroup> nearGroup			(new TestCaseGroup(testCtx, "near_max"));
 
-	de::MovePtr<TestCaseGroup> inputComponentsGroup	(new TestCaseGroup(testCtx,	"fragment_input",	"Fragment input component variations"));
+	de::MovePtr<TestCaseGroup> inputComponentsGroup	(new TestCaseGroup(testCtx,	"fragment_input"));
 
 	// Fragment input component case
 	deUint16 fragmentComponentMaxLimits [] = { 64u, 128u, 256u };

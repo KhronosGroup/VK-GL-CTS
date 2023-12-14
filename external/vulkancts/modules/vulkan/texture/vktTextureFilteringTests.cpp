@@ -1240,8 +1240,8 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 		// 2D Texture Formats
 		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats"));
-		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes", "Texture Sizes"));
-		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup	(new tcu::TestCaseGroup(testCtx, "combinations", "Filter and wrap mode combinations"));
+		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes"));
+		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup	(new tcu::TestCaseGroup(testCtx, "combinations"));
 
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
@@ -1358,10 +1358,10 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 	// Unnormalized texture filtering.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	groupUnnormal		(new tcu::TestCaseGroup(testCtx, "unnormal", "Unnormalized Texture Filtering"));
+		de::MovePtr<tcu::TestCaseGroup>	groupUnnormal		(new tcu::TestCaseGroup(testCtx, "unnormal"));
 
-		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats", "2D Texture Formats"));
-		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes", "Texture Sizes"));
+		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats"));
+		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes"));
 
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
@@ -1438,12 +1438,12 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 	// Cube map texture filtering.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	groupCube				(new tcu::TestCaseGroup(testCtx, "cube", "Cube Map Texture Filtering"));
+		de::MovePtr<tcu::TestCaseGroup>	groupCube				(new tcu::TestCaseGroup(testCtx, "cube"));
 
-		de::MovePtr<tcu::TestCaseGroup>	formatsGroup			(new tcu::TestCaseGroup(testCtx, "formats", "2D Texture Formats"));
-		de::MovePtr<tcu::TestCaseGroup>	sizesGroup				(new tcu::TestCaseGroup(testCtx, "sizes", "Texture Sizes"));
-		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup		(new tcu::TestCaseGroup(testCtx, "combinations", "Filter and wrap mode combinations"));
-		de::MovePtr<tcu::TestCaseGroup>	onlyFaceInteriorGroup	(new tcu::TestCaseGroup(testCtx, "no_edges_visible", "Don't sample anywhere near a face's edges"));
+		de::MovePtr<tcu::TestCaseGroup>	formatsGroup			(new tcu::TestCaseGroup(testCtx, "formats"));
+		de::MovePtr<tcu::TestCaseGroup>	sizesGroup				(new tcu::TestCaseGroup(testCtx, "sizes"));
+		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup		(new tcu::TestCaseGroup(testCtx, "combinations"));
+		de::MovePtr<tcu::TestCaseGroup>	onlyFaceInteriorGroup	(new tcu::TestCaseGroup(testCtx, "no_edges_visible"));
 
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
@@ -1578,11 +1578,11 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 	// 2D array texture filtering.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	group2DArray		(new tcu::TestCaseGroup(testCtx, "2d_array", "2D Array Texture Filtering"));
+		de::MovePtr<tcu::TestCaseGroup>	group2DArray		(new tcu::TestCaseGroup(testCtx, "2d_array"));
 
-		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats", "2D Array Texture Formats"));
-		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes", "Texture Sizes"));
-		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup	(new tcu::TestCaseGroup(testCtx, "combinations", "Filter and wrap mode combinations"));
+		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats"));
+		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes"));
+		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup	(new tcu::TestCaseGroup(testCtx, "combinations"));
 
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
@@ -1700,11 +1700,11 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 	// 3D texture filtering.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	group3D				(new tcu::TestCaseGroup(testCtx, "3d", "3D Texture Filtering"));
+		de::MovePtr<tcu::TestCaseGroup>	group3D				(new tcu::TestCaseGroup(testCtx, "3d"));
 
-		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats", "3D Texture Formats"));
-		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes", "Texture Sizes"));
-		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup	(new tcu::TestCaseGroup(testCtx, "combinations", "Filter and wrap mode combinations"));
+		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats"));
+		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes"));
+		de::MovePtr<tcu::TestCaseGroup>	combinationsGroup	(new tcu::TestCaseGroup(testCtx, "combinations"));
 
 		// Formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)

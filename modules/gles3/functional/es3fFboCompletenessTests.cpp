@@ -165,16 +165,11 @@ static const FormatExtEntry s_es3ExtFormats[] =
 		GLS_ARRAY_RANGE(s_extOESTextureStencil8)
 	},
 
-	// Since GLES31 is backwards compatible to GLES3, we might actually be running on a GLES31.
-	// Add rule changes of GLES31 that have no corresponding GLES3 extension.
-	//
-	// \note Not all feature changes are listed here but only those that alter GLES3 subset of
-	//       the formats
 	{
-		"DEQP_gles31_core_compatible GL_EXT_render_snorm",
+		"GL_EXT_render_snorm",
 		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE | TEXTURE_VALID | RENDERBUFFER_VALID),
 		GLS_ARRAY_RANGE(s_extRenderSnorm)
-		},
+	},
 
 	{
 		"GL_QCOM_render_shared_exponent",

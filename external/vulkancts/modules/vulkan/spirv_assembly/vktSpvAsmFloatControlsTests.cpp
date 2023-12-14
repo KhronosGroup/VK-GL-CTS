@@ -5273,7 +5273,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 
 tcu::TestCaseGroup* createFloatControlsTestGroup (TestContext& testCtx, TestGroupBuilderBase* groupBuilder)
 {
-	de::MovePtr<TestCaseGroup>	group(new TestCaseGroup(testCtx, "float_controls", "Tests for VK_KHR_shader_float_controls extension"));
+	de::MovePtr<TestCaseGroup>	group(new TestCaseGroup(testCtx, "float_controls"));
 
 	struct TestGroup
 	{

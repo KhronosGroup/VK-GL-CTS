@@ -895,6 +895,18 @@ bool check_VK_KHR_create_renderpass2(const tcu::UVec2& v, const ExtPropVect& vIE
 	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_multiview")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance2"));
 }
 
+bool check_VK_IMG_relaxed_line_rasterization(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_IMG_relaxed_line_rasterization"))
+		return true;
+
+	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)
+	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")));
+}
+
 bool check_VK_KHR_shared_presentable_image(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -2905,6 +2917,18 @@ bool check_VK_EXT_non_seamless_cube_map(const tcu::UVec2& v, const ExtPropVect& 
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_ARM_render_pass_striped(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_render_pass_striped"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_KHR_synchronization2
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) || (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2"));
+}
+
 bool check_VK_QCOM_fragment_density_map_offset(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3241,6 +3265,18 @@ bool check_VK_EXT_dynamic_rendering_unused_attachments(const tcu::UVec2& v, cons
 	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && ((isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_dynamic_rendering")));
 }
 
+bool check_VK_NV_low_latency2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_NV_low_latency2"))
+		return true;
+
+	// depends attribute in xml: VK_VERSION_1_2,VK_KHR_timeline_semaphore
+	return isCompatibile(1, 2, v) || (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_timeline_semaphore"));
+}
+
 bool check_VK_KHR_cooperative_matrix(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3301,6 +3337,18 @@ bool check_VK_EXT_attachment_feedback_loop_dynamic_state(const tcu::UVec2& v, co
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && isSupported(vDEP, "VK_EXT_attachment_feedback_loop_layout");
 }
 
+bool check_VK_KHR_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_vertex_attribute_divisor"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 bool check_VK_QNX_external_memory_screen_buffer(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3322,6 +3370,18 @@ bool check_VK_MSFT_layered_driver(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
+bool check_VK_KHR_calibrated_timestamps(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_calibrated_timestamps"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
@@ -3380,6 +3440,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_hdr_metadata",									&check_VK_EXT_hdr_metadata),
 	std::make_pair("VK_KHR_imageless_framebuffer",							&check_VK_KHR_imageless_framebuffer),
 	std::make_pair("VK_KHR_create_renderpass2",								&check_VK_KHR_create_renderpass2),
+	std::make_pair("VK_IMG_relaxed_line_rasterization",						&check_VK_IMG_relaxed_line_rasterization),
 	std::make_pair("VK_KHR_shared_presentable_image",						&check_VK_KHR_shared_presentable_image),
 	std::make_pair("VK_KHR_external_fence",									&check_VK_KHR_external_fence),
 	std::make_pair("VK_KHR_external_fence_win32",							&check_VK_KHR_external_fence_win32),
@@ -3541,6 +3602,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_VALVE_descriptor_set_host_mapping",					&check_VK_VALVE_descriptor_set_host_mapping),
 	std::make_pair("VK_EXT_depth_clamp_zero_one",							&check_VK_EXT_depth_clamp_zero_one),
 	std::make_pair("VK_EXT_non_seamless_cube_map",							&check_VK_EXT_non_seamless_cube_map),
+	std::make_pair("VK_ARM_render_pass_striped",							&check_VK_ARM_render_pass_striped),
 	std::make_pair("VK_QCOM_fragment_density_map_offset",					&check_VK_QCOM_fragment_density_map_offset),
 	std::make_pair("VK_NV_copy_memory_indirect",							&check_VK_NV_copy_memory_indirect),
 	std::make_pair("VK_NV_memory_decompression",							&check_VK_NV_memory_decompression),
@@ -3569,13 +3631,16 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_ARM_shader_core_builtins",							&check_VK_ARM_shader_core_builtins),
 	std::make_pair("VK_EXT_pipeline_library_group_handles",					&check_VK_EXT_pipeline_library_group_handles),
 	std::make_pair("VK_EXT_dynamic_rendering_unused_attachments",			&check_VK_EXT_dynamic_rendering_unused_attachments),
+	std::make_pair("VK_NV_low_latency2",									&check_VK_NV_low_latency2),
 	std::make_pair("VK_KHR_cooperative_matrix",								&check_VK_KHR_cooperative_matrix),
 	std::make_pair("VK_QCOM_image_processing2",								&check_VK_QCOM_image_processing2),
 	std::make_pair("VK_QCOM_filter_cubic_weights",							&check_VK_QCOM_filter_cubic_weights),
 	std::make_pair("VK_QCOM_filter_cubic_clamp",							&check_VK_QCOM_filter_cubic_clamp),
 	std::make_pair("VK_EXT_attachment_feedback_loop_dynamic_state",			&check_VK_EXT_attachment_feedback_loop_dynamic_state),
+	std::make_pair("VK_KHR_vertex_attribute_divisor",						&check_VK_KHR_vertex_attribute_divisor),
 	std::make_pair("VK_QNX_external_memory_screen_buffer",					&check_VK_QNX_external_memory_screen_buffer),
 	std::make_pair("VK_MSFT_layered_driver",								&check_VK_MSFT_layered_driver),
+	std::make_pair("VK_KHR_calibrated_timestamps",							&check_VK_KHR_calibrated_timestamps),
 	std::make_pair("VK_NV_descriptor_pool_overallocation",					&check_VK_NV_descriptor_pool_overallocation),
 };
 
@@ -3677,6 +3742,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_hdr_metadata"),
 	std::make_tuple(1, 0, "VK_KHR_imageless_framebuffer"),
 	std::make_tuple(1, 0, "VK_KHR_create_renderpass2"),
+	std::make_tuple(1, 0, "VK_IMG_relaxed_line_rasterization"),
 	std::make_tuple(1, 0, "VK_KHR_shared_presentable_image"),
 	std::make_tuple(1, 0, "VK_KHR_external_fence_capabilities"),
 	std::make_tuple(1, 0, "VK_KHR_external_fence"),
@@ -3893,6 +3959,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_VALVE_descriptor_set_host_mapping"),
 	std::make_tuple(1, 0, "VK_EXT_depth_clamp_zero_one"),
 	std::make_tuple(1, 0, "VK_EXT_non_seamless_cube_map"),
+	std::make_tuple(1, 0, "VK_ARM_render_pass_striped"),
 	std::make_tuple(1, 0, "VK_QCOM_fragment_density_map_offset"),
 	std::make_tuple(1, 0, "VK_NV_copy_memory_indirect"),
 	std::make_tuple(1, 0, "VK_NV_memory_decompression"),
@@ -3921,6 +3988,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_ray_tracing_invocation_reorder"),
 	std::make_tuple(1, 0, "VK_NV_extended_sparse_address_space"),
 	std::make_tuple(1, 0, "VK_EXT_mutable_descriptor_type"),
+	std::make_tuple(1, 0, "VK_EXT_layer_settings"),
 	std::make_tuple(1, 0, "VK_ARM_shader_core_builtins"),
 	std::make_tuple(1, 0, "VK_EXT_pipeline_library_group_handles"),
 	std::make_tuple(1, 0, "VK_EXT_dynamic_rendering_unused_attachments"),
@@ -3932,7 +4000,9 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_QCOM_ycbcr_degamma"),
 	std::make_tuple(1, 0, "VK_QCOM_filter_cubic_clamp"),
 	std::make_tuple(1, 0, "VK_EXT_attachment_feedback_loop_dynamic_state"),
+	std::make_tuple(1, 0, "VK_KHR_vertex_attribute_divisor"),
 	std::make_tuple(1, 0, "VK_QNX_external_memory_screen_buffer"),
 	std::make_tuple(1, 0, "VK_MSFT_layered_driver"),
+	std::make_tuple(1, 0, "VK_KHR_calibrated_timestamps"),
 	std::make_tuple(1, 1, "VK_NV_descriptor_pool_overallocation"),
 };

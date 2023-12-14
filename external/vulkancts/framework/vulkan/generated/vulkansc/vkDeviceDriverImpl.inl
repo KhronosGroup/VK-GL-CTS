@@ -779,9 +779,9 @@ void DeviceDriver::getDescriptorSetLayoutSupport (VkDevice device, const VkDescr
 	m_vk.getDescriptorSetLayoutSupport(device, pCreateInfo, pSupport);
 }
 
-VkResult DeviceDriver::getCalibratedTimestampsEXT (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const
+VkResult DeviceDriver::getCalibratedTimestampsKHR (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const
 {
-	return m_vk.getCalibratedTimestampsEXT(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
+	return m_vk.getCalibratedTimestampsKHR(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
 }
 
 VkResult DeviceDriver::setDebugUtilsObjectNameEXT (VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) const

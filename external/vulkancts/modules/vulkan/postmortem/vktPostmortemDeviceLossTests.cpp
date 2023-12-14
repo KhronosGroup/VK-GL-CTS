@@ -366,7 +366,7 @@ TestInstance* DeviceLossCase::createInstance(Context& context) const
 
 tcu::TestCaseGroup* createDeviceLossTests(tcu::TestContext& testCtx)
 {
-	auto rootGroup = new TestCaseGroup(testCtx, "device_loss", "");
+	auto rootGroup = new TestCaseGroup(testCtx, "device_loss");
 
 	rootGroup->addChild(new DeviceLossCase(testCtx, "maintenance5"));
 

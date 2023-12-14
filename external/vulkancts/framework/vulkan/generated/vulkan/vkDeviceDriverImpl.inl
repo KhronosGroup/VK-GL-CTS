@@ -1069,9 +1069,9 @@ void DeviceDriver::setLocalDimmingAMD (VkDevice device, VkSwapchainKHR swapChain
 	m_vk.setLocalDimmingAMD(device, swapChain, localDimmingEnable);
 }
 
-VkResult DeviceDriver::getCalibratedTimestampsEXT (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const
+VkResult DeviceDriver::getCalibratedTimestampsKHR (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const
 {
-	return m_vk.getCalibratedTimestampsEXT(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
+	return m_vk.getCalibratedTimestampsKHR(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
 }
 
 VkResult DeviceDriver::setDebugUtilsObjectNameEXT (VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) const
@@ -2454,9 +2454,9 @@ void DeviceDriver::setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain
 	m_vk.setLatencyMarkerNV(device, swapchain, pLatencyMarkerInfo);
 }
 
-void DeviceDriver::getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pTimingCount, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
+void DeviceDriver::getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
 {
-	m_vk.getLatencyTimingsNV(device, swapchain, pTimingCount, pLatencyMarkerInfo);
+	m_vk.getLatencyTimingsNV(device, swapchain, pLatencyMarkerInfo);
 }
 
 void DeviceDriver::queueNotifyOutOfBandNV (VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const

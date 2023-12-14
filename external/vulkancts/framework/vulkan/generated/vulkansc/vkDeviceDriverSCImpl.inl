@@ -1357,10 +1357,10 @@ void DeviceDriverSC::getDescriptorSetLayoutSupport (VkDevice device, const VkDes
 		getDescriptorSetLayoutSupportHandler(device, pCreateInfo, pSupport);
 }
 
-VkResult DeviceDriverSC::getCalibratedTimestampsEXT (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const
+VkResult DeviceDriverSC::getCalibratedTimestampsKHR (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const
 {
 	if (m_normalMode)
-		return m_vk.getCalibratedTimestampsEXT(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
+		return m_vk.getCalibratedTimestampsKHR(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
 	return VK_SUCCESS;
 }
 

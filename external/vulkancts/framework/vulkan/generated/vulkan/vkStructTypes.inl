@@ -1490,6 +1490,23 @@ struct VkValidationFeaturesEXT
 	const VkValidationFeatureDisableEXT*	pDisabledValidationFeatures;
 };
 
+struct VkLayerSettingEXT
+{
+	const char*				pLayerName;
+	const char*				pSettingName;
+	VkLayerSettingTypeEXT	type;
+	uint32_t				valueCount;
+	const void*				pValues;
+};
+
+struct VkLayerSettingsCreateInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	uint32_t					settingCount;
+	const VkLayerSettingEXT*	pSettings;
+};
+
 struct VkPipelineRasterizationStateRasterizationOrderAMD
 {
 	VkStructureType			sType;
@@ -3396,11 +3413,11 @@ struct VkPhysicalDeviceConservativeRasterizationPropertiesEXT
 	VkBool32		conservativeRasterizationPostDepthCoverage;
 };
 
-struct VkCalibratedTimestampInfoEXT
+struct VkCalibratedTimestampInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	VkTimeDomainEXT	timeDomain;
+	VkTimeDomainKHR	timeDomain;
 };
 
 struct VkPhysicalDeviceShaderCorePropertiesAMD
@@ -3651,18 +3668,18 @@ struct VkSemaphoreSignalInfo
 	uint64_t		value;
 };
 
-struct VkVertexInputBindingDivisorDescriptionEXT
+struct VkVertexInputBindingDivisorDescriptionKHR
 {
 	uint32_t	binding;
 	uint32_t	divisor;
 };
 
-struct VkPipelineVertexInputDivisorStateCreateInfoEXT
+struct VkPipelineVertexInputDivisorStateCreateInfoKHR
 {
 	VkStructureType										sType;
 	const void*											pNext;
 	uint32_t											vertexBindingDivisorCount;
-	const VkVertexInputBindingDivisorDescriptionEXT*	pVertexBindingDivisors;
+	const VkVertexInputBindingDivisorDescriptionKHR*	pVertexBindingDivisors;
 };
 
 struct VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
@@ -3670,6 +3687,14 @@ struct VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	uint32_t		maxVertexAttribDivisor;
+};
+
+struct VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxVertexAttribDivisor;
+	VkBool32		supportsNonZeroFirstInstance;
 };
 
 struct VkPhysicalDevicePCIBusInfoPropertiesEXT
@@ -3809,7 +3834,7 @@ struct VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT
 	VkBool32		sparseImageFloat32AtomicMinMax;
 };
 
-struct VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
+struct VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -5900,6 +5925,13 @@ struct VkPhysicalDeviceClusterCullingShaderFeaturesHUAWEI
 	void*			pNext;
 	VkBool32		clustercullingShader;
 	VkBool32		multiviewClusterCullingShader;
+};
+
+struct VkPhysicalDeviceClusterCullingShaderVrsFeaturesHUAWEI
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		clusterShadingRate;
 };
 
 struct VkBufferCopy2
@@ -8627,7 +8659,7 @@ struct VkDirectDriverLoadingInfoLUNARG
 struct VkDirectDriverLoadingListLUNARG
 {
 	VkStructureType							sType;
-	void*									pNext;
+	const void*								pNext;
 	VkDirectDriverLoadingModeLUNARG			mode;
 	uint32_t								driverCount;
 	const VkDirectDriverLoadingInfoLUNARG*	pDrivers;
@@ -9041,6 +9073,7 @@ struct VkGetLatencyMarkerInfoNV
 {
 	VkStructureType					sType;
 	const void*						pNext;
+	uint32_t						timingCount;
 	VkLatencyTimingsFrameReportNV*	pTimings;
 };
 
@@ -9107,6 +9140,51 @@ struct VkPhysicalDeviceSchedulingControlsPropertiesARM
 	VkStructureType								sType;
 	void*										pNext;
 	VkPhysicalDeviceSchedulingControlsFlagsARM	schedulingControlsFlags;
+};
+
+struct VkPhysicalDeviceRelaxedLineRasterizationFeaturesIMG
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		relaxedLineRasterization;
+};
+
+struct VkPhysicalDeviceRenderPassStripedFeaturesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		renderPassStriped;
+};
+
+struct VkPhysicalDeviceRenderPassStripedPropertiesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkExtent2D		renderPassStripeGranularity;
+	uint32_t		maxRenderPassStripes;
+};
+
+struct VkRenderPassStripeInfoARM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkRect2D		stripeArea;
+};
+
+struct VkRenderPassStripeBeginInfoARM
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	uint32_t					stripeInfoCount;
+	VkRenderPassStripeInfoARM*	pStripeInfos;
+};
+
+struct VkRenderPassStripeSubmitInfoARM
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	uint32_t						stripeSemaphoreInfoCount;
+	const VkSemaphoreSubmitInfo*	pStripeSemaphoreInfos;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -10250,6 +10328,8 @@ typedef VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR VkPhysicalDeviceGlobalPri
 
 typedef VkQueueFamilyGlobalPriorityPropertiesKHR VkQueueFamilyGlobalPriorityPropertiesEXT;
 
+typedef VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT;
+
 typedef VkPhysicalDeviceDescriptorIndexingFeatures VkPhysicalDeviceDescriptorIndexingFeaturesEXT;
 
 typedef VkPhysicalDeviceDescriptorIndexingProperties VkPhysicalDeviceDescriptorIndexingPropertiesEXT;
@@ -10286,11 +10366,17 @@ typedef VkSemaphoreWaitInfo VkSemaphoreWaitInfoKHR;
 
 typedef VkSemaphoreSignalInfo VkSemaphoreSignalInfoKHR;
 
+typedef VkVertexInputBindingDivisorDescriptionKHR VkVertexInputBindingDivisorDescriptionEXT;
+
+typedef VkPipelineVertexInputDivisorStateCreateInfoKHR VkPipelineVertexInputDivisorStateCreateInfoEXT;
+
 typedef VkPhysicalDevice8BitStorageFeatures VkPhysicalDevice8BitStorageFeaturesKHR;
 
 typedef VkPhysicalDeviceVulkanMemoryModelFeatures VkPhysicalDeviceVulkanMemoryModelFeaturesKHR;
 
 typedef VkPhysicalDeviceShaderAtomicInt64Features VkPhysicalDeviceShaderAtomicInt64FeaturesKHR;
+
+typedef VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT;
 
 typedef VkPhysicalDeviceDepthStencilResolveProperties VkPhysicalDeviceDepthStencilResolvePropertiesKHR;
 

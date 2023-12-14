@@ -982,7 +982,7 @@ tcu::TestCaseGroup* createLocalSizeGroup(tcu::TestContext& testCtx, bool useLoca
 {
 	const char*		groupName[]{ "localsize", "localsize_id" };
 
-	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, groupName[useLocalSizeId], ""));
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, groupName[useLocalSizeId]));
 	ComputeShaderSpec				spec;
 	de::Random						rnd				(deStringHash(group->getName()));
 	const deUint32					numElements		= 64u;
@@ -1272,7 +1272,7 @@ do { \
 			{
 				const string					nan				= testWithNan ? "_nan" : "";
 				const string					groupName		= "opfunord" + nan;
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, groupName.c_str(), "Test the OpFUnord* opcodes"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
 				vector<OpFUnordCase>			cases;
@@ -1411,7 +1411,7 @@ do { \
 					groupName += "_return_values";
 				if (volatileAtomic)
 					groupName += "_volatile";
-				de::MovePtr<tcu::TestCaseGroup>	group				(new tcu::TestCaseGroup(testCtx, groupName.c_str(), "Test the OpAtomic* opcodes"));
+				de::MovePtr<tcu::TestCaseGroup>	group				(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 				vector<OpAtomicCase>			cases;
 
 				const StringTemplate			shaderTemplate	(
@@ -1714,7 +1714,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpModuleProcessedGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opmoduleprocessed", "Test the OpModuleProcessed instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opmoduleprocessed"));
 				ComputeShaderSpec				spec;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 10;
@@ -1774,7 +1774,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpNoLineGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opnoline", "Test the OpNoLine instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opnoline"));
 				ComputeShaderSpec				spec;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -1862,7 +1862,7 @@ do { \
 
 			tcu::TestCaseGroup* createNoContractionGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "nocontraction", "Test the NoContraction decoration"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "nocontraction"));
 				vector<CaseParameter>			cases;
 				const int						numElements		= 100;
 				vector<float>					inputFloats1	(numElements, 0);
@@ -1976,7 +1976,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpFRemGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opfrem", "Test the OpFRem instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opfrem"));
 				ComputeShaderSpec				spec;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 200;
@@ -2080,7 +2080,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpNMinGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opnmin", "Test the OpNMin instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opnmin"));
 				ComputeShaderSpec				spec;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 200;
@@ -2203,7 +2203,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpNMaxGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "opnmax", "Test the OpNMax instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "opnmax"));
 				ComputeShaderSpec				spec;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 200;
@@ -2334,7 +2334,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpNClampGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opnclamp", "Test the OpNClamp instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opnclamp"));
 				ComputeShaderSpec				spec;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 200;
@@ -2456,7 +2456,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpSRemComputeGroup (tcu::TestContext& testCtx, qpTestResult negFailResult)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsrem", "Test the OpSRem instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsrem"));
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 200;
 
@@ -2549,7 +2549,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpSRemComputeGroup64 (tcu::TestContext& testCtx, qpTestResult negFailResult)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsrem64", "Test the 64-bit OpSRem instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsrem64"));
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 200;
 
@@ -2654,7 +2654,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpSModComputeGroup (tcu::TestContext& testCtx, qpTestResult negFailResult)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsmod", "Test the OpSMod instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsmod"));
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 200;
 
@@ -2767,7 +2767,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpSModComputeGroup64 (tcu::TestContext& testCtx, qpTestResult negFailResult)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsmod64", "Test the OpSMod instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsmod64"));
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 200;
 
@@ -2894,7 +2894,7 @@ do { \
 // Copy contents in the input buffer to the output buffer.
 			tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opcopymemory", "Test the OpCopyMemory instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opcopymemory"));
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
 
@@ -3105,7 +3105,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpCopyObjectGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opcopyobject", "Test the OpCopyObject instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opcopyobject"));
 				ComputeShaderSpec				spec;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -3276,7 +3276,7 @@ do { \
 #ifndef CTS_USES_VULKANSC
 			tcu::TestCaseGroup* createOpArrayLengthComputeGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group		(new tcu::TestCaseGroup(testCtx, "oparraylength", "Test the OpArrayLength instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group		(new tcu::TestCaseGroup(testCtx, "oparraylength"));
 				static const char				dataDir[]	= "spirv_assembly/instruction/compute/arraylength";
 
 				struct Case
@@ -3302,7 +3302,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opunreachable", "Test the OpUnreachable instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opunreachable"));
 				ComputeShaderSpec				spec;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -3443,7 +3443,7 @@ do { \
 // }
 			tcu::TestCaseGroup* createDecorationGroupGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "decoration_group", "Test the OpDecorationGroup & OpGroupDecorate instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "decoration_group"));
 				ComputeShaderSpec				spec;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -3784,7 +3784,7 @@ do { \
 
 			tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opspecconstantop", "Test the OpSpecConstantOp instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opspecconstantop"));
 				vector<SpecConstantTwoValCase>	cases;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -4696,7 +4696,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opphi", "Test the OpPhi instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opphi"));
 				ComputeShaderSpec				spec1;
 				ComputeShaderSpec				spec2;
 				ComputeShaderSpec				spec3;
@@ -5058,7 +5058,7 @@ do { \
 // }
 			tcu::TestCaseGroup* createBlockOrderGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "block_order", "Test block orders"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "block_order"));
 				ComputeShaderSpec				spec;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -5196,7 +5196,7 @@ do { \
 
 			tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "multiple_shaders", "Test multiple shaders in the same module"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "multiple_shaders"));
 				ComputeShaderSpec				spec1;
 				ComputeShaderSpec				spec2;
 				de::Random						rnd				(deStringHash(group->getName()));
@@ -5331,7 +5331,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpSourceGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsource", "Tests the OpSource & OpSourceContinued instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsource"));
 				vector<CaseParameter>			cases;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -5427,7 +5427,7 @@ do { \
 
 			tcu::TestCaseGroup* createOpSourceExtensionGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsourceextension", "Tests the OpSource instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opsourceextension"));
 				vector<CaseParameter>			cases;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -5491,7 +5491,7 @@ do { \
 // Checks that a compute shader can generate a constant null value of various types, without exercising a computation on it.
 			tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opconstantnull", "Tests the OpConstantNull instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opconstantnull"));
 				vector<CaseParameter>			cases;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -5571,7 +5571,7 @@ do { \
 // Checks that a compute shader can generate a constant composite value of various types, without exercising a computation on it.
 			tcu::TestCaseGroup* createOpConstantCompositeGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opconstantcomposite", "Tests the OpConstantComposite instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opconstantcomposite"));
 				vector<CaseParameter>			cases;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -5757,7 +5757,7 @@ do { \
 // Checks that a compute shader can generate a constant composite value of various types, without exercising a computation on it.
 			tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opquantize", "Tests the OpQuantizeToF16 instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opquantize"));
 
 				const std::string shader (
 						string(getComputeAsmShaderPreamble()) +
@@ -5944,7 +5944,7 @@ do { \
 
 			tcu::TestCaseGroup* createSpecConstantOpQuantizeToF16Group (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opspecconstantop_opquantize", "Tests the OpQuantizeToF16 opcode for the OpSpecConstantOp instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opspecconstantop_opquantize"));
 
 				const std::string shader (
 						string(getComputeAsmShaderPreamble()) +
@@ -6148,7 +6148,7 @@ do { \
 // Checks that constant null/composite values can be used in computation.
 			tcu::TestCaseGroup* createOpConstantUsageGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opconstantnullcomposite", "Spotcheck the OpConstantNull & OpConstantComposite instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opconstantnullcomposite"));
 				ComputeShaderSpec				spec;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -6253,7 +6253,7 @@ do { \
 // }
 			tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "loop_control", "Tests loop control cases"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "loop_control"));
 				vector<CaseParameter>			cases;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -6357,7 +6357,7 @@ do { \
 // }
 			tcu::TestCaseGroup* createSelectionControlGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "selection_control", "Tests selection control cases"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "selection_control"));
 				vector<CaseParameter>			cases;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -6508,10 +6508,10 @@ do { \
 
 			tcu::TestCaseGroup* createOpNameGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opname", "Tests OpName cases"));
-				de::MovePtr<tcu::TestCaseGroup>	entryMainGroup	(new tcu::TestCaseGroup(testCtx, "entry_main", "OpName tests with entry main"));
-				de::MovePtr<tcu::TestCaseGroup>	entryNotGroup	(new tcu::TestCaseGroup(testCtx, "entry_rdc", "OpName tests with entry rdc"));
-				de::MovePtr<tcu::TestCaseGroup>	abuseGroup		(new tcu::TestCaseGroup(testCtx, "abuse", "OpName abuse tests"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opname"));
+				de::MovePtr<tcu::TestCaseGroup>	entryMainGroup	(new tcu::TestCaseGroup(testCtx, "entry_main"));
+				de::MovePtr<tcu::TestCaseGroup>	entryNotGroup	(new tcu::TestCaseGroup(testCtx, "entry_rdc"));
+				de::MovePtr<tcu::TestCaseGroup>	abuseGroup		(new tcu::TestCaseGroup(testCtx, "abuse"));
 				vector<CaseParameter>			cases;
 				vector<CaseParameter>			abuseCases;
 				vector<string>					testFunc;
@@ -6734,8 +6734,8 @@ do { \
 
 			tcu::TestCaseGroup* createOpMemberNameGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "opmembername", "Tests OpMemberName cases"));
-				de::MovePtr<tcu::TestCaseGroup>	abuseGroup(new tcu::TestCaseGroup(testCtx, "abuse", "OpMemberName abuse tests"));
+				de::MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "opmembername"));
+				de::MovePtr<tcu::TestCaseGroup>	abuseGroup(new tcu::TestCaseGroup(testCtx, "abuse"));
 				vector<CaseParameter>			abuseCases;
 				vector<string>					testFunc;
 				de::Random						rnd(deStringHash(group->getName()));
@@ -6868,7 +6868,7 @@ do { \
 // }
 			tcu::TestCaseGroup* createFunctionControlGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "function_control", "Tests function control cases"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "function_control"));
 				vector<CaseParameter>			cases;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -6946,7 +6946,7 @@ do { \
 
 			tcu::TestCaseGroup* createMemoryAccessGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "memory_access", "Tests memory access cases"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "memory_access"));
 				vector<CaseParameter>			cases;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -7017,7 +7017,7 @@ do { \
 // Checks that we can get undefined values for various types, without exercising a computation with it.
 			tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opundef", "Tests the OpUndef instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opundef"));
 				vector<CaseParameter>			cases;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -7131,7 +7131,7 @@ do { \
 // Checks that a compute shader can generate a constant composite value of various types, without exercising a computation on it.
 			tcu::TestCaseGroup* createFloat16OpConstantCompositeGroup (tcu::TestContext& testCtx)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opconstantcomposite", "Tests the OpConstantComposite instruction"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opconstantcomposite"));
 				vector<CaseParameter>			cases;
 				de::Random						rnd				(deStringHash(group->getName()));
 				const int						numElements		= 100;
@@ -7404,7 +7404,7 @@ do { \
 		{
 			struct NameCodePair { string name, code; };
 			RGBA							defaultColors[4];
-			de::MovePtr<tcu::TestCaseGroup> opSourceTests			(new tcu::TestCaseGroup(testCtx, "opsource", "OpSource instruction"));
+			de::MovePtr<tcu::TestCaseGroup> opSourceTests			(new tcu::TestCaseGroup(testCtx, "opsource"));
 			const std::string				opsourceGLSLWithFile	= "%opsrcfile = OpString \"foo.vert\"\nOpSource GLSL 450 %opsrcfile ";
 			map<string, string>				fragments				= passthruFragments();
 			const NameCodePair				tests[]					=
@@ -7438,7 +7438,7 @@ do { \
 		{
 			struct NameCodePair { string name, code; };
 			RGBA								defaultColors[4];
-			de::MovePtr<tcu::TestCaseGroup>		opSourceTests		(new tcu::TestCaseGroup(testCtx, "opsourcecontinued", "OpSourceContinued instruction"));
+			de::MovePtr<tcu::TestCaseGroup>		opSourceTests		(new tcu::TestCaseGroup(testCtx, "opsourcecontinued"));
 			map<string, string>					fragments			= passthruFragments();
 			const std::string					opsource			= "%opsrcfile = OpString \"foo.vert\"\nOpSource GLSL 450 %opsrcfile \"void main(){}\"\n";
 			const NameCodePair					tests[]				=
@@ -7465,7 +7465,7 @@ do { \
 		tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
 		{
 			RGBA								 defaultColors[4];
-			de::MovePtr<tcu::TestCaseGroup>		 opLineTests		 (new tcu::TestCaseGroup(testCtx, "opnoline", "OpNoLine instruction"));
+			de::MovePtr<tcu::TestCaseGroup>		 opLineTests		 (new tcu::TestCaseGroup(testCtx, "opnoline"));
 			map<string, string>					 fragments;
 			getDefaultColors(defaultColors);
 			fragments["debug"]			=
@@ -7520,7 +7520,7 @@ do { \
 		tcu::TestCaseGroup* createOpModuleProcessedTests(tcu::TestContext& testCtx)
 		{
 			RGBA								defaultColors[4];
-			de::MovePtr<tcu::TestCaseGroup>		opModuleProcessedTests			(new tcu::TestCaseGroup(testCtx, "opmoduleprocessed", "OpModuleProcessed instruction"));
+			de::MovePtr<tcu::TestCaseGroup>		opModuleProcessedTests			(new tcu::TestCaseGroup(testCtx, "opmoduleprocessed"));
 			map<string, string>					fragments;
 			std::vector<std::string>			noExtensions;
 			GraphicsResources					resources;
@@ -7559,7 +7559,7 @@ do { \
 		tcu::TestCaseGroup* createOpLineTests(tcu::TestContext& testCtx)
 		{
 			RGBA													defaultColors[4];
-			de::MovePtr<tcu::TestCaseGroup>							opLineTests			(new tcu::TestCaseGroup(testCtx, "opline", "OpLine instruction"));
+			de::MovePtr<tcu::TestCaseGroup>							opLineTests			(new tcu::TestCaseGroup(testCtx, "opline"));
 			map<string, string>										fragments;
 			std::vector<std::pair<std::string, std::string> >		problemStrings;
 
@@ -7620,7 +7620,7 @@ do { \
 
 		tcu::TestCaseGroup* createOpConstantNullTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> opConstantNullTests		(new tcu::TestCaseGroup(testCtx, "opconstantnull", "OpConstantNull instruction"));
+			de::MovePtr<tcu::TestCaseGroup> opConstantNullTests		(new tcu::TestCaseGroup(testCtx, "opconstantnull"));
 			RGBA							colors[4];
 
 
@@ -7736,7 +7736,7 @@ do { \
 		}
 		tcu::TestCaseGroup* createOpConstantCompositeTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> opConstantCompositeTests		(new tcu::TestCaseGroup(testCtx, "opconstantcomposite", "OpConstantComposite instruction"));
+			de::MovePtr<tcu::TestCaseGroup> opConstantCompositeTests		(new tcu::TestCaseGroup(testCtx, "opconstantcomposite"));
 			RGBA							inputColors[4];
 			RGBA							outputColors[4];
 
@@ -7879,7 +7879,7 @@ do { \
 
 		tcu::TestCaseGroup* createSelectionBlockOrderTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "selection_block_order", "Out-of-order blocks for selection"));
+			de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "selection_block_order"));
 			RGBA							inputColors[4];
 			RGBA							outputColors[4];
 			map<string, string>				fragments;
@@ -7960,7 +7960,7 @@ do { \
 
 		tcu::TestCaseGroup* createSwitchBlockOrderTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "switch_block_order", "Out-of-order blocks for switch"));
+			de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "switch_block_order"));
 			RGBA							inputColors[4];
 			RGBA							outputColors[4];
 			map<string, string>				fragments;
@@ -8068,7 +8068,7 @@ do { \
 
 		tcu::TestCaseGroup* createDecorationGroupTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "decoration_group", "Decoration group tests"));
+			de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "decoration_group"));
 			RGBA							inputColors[4];
 			RGBA							outputColors[4];
 			map<string, string>				fragments;
@@ -8221,7 +8221,7 @@ do { \
 
 		tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>			group (new tcu::TestCaseGroup(testCtx, "opspecconstantop", "Test the OpSpecConstantOp instruction"));
+			de::MovePtr<tcu::TestCaseGroup>			group (new tcu::TestCaseGroup(testCtx, "opspecconstantop"));
 			vector<SpecConstantTwoValGraphicsCase>	cases;
 			RGBA									inputColors[4];
 			RGBA									outputColors0[4];
@@ -8492,7 +8492,7 @@ do { \
 
 		tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "opphi", "Test the OpPhi instruction"));
+			de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "opphi"));
 			RGBA							inputColors[4];
 			RGBA							outputColors1[4];
 			RGBA							outputColors2[4];
@@ -8731,7 +8731,7 @@ do { \
 
 		tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> group			(new tcu::TestCaseGroup(testCtx, "nocontraction", "Test the NoContraction decoration"));
+			de::MovePtr<tcu::TestCaseGroup> group			(new tcu::TestCaseGroup(testCtx, "nocontraction"));
 			RGBA							inputColors[4];
 			RGBA							outputColors[4];
 
@@ -8804,7 +8804,7 @@ do { \
 
 		tcu::TestCaseGroup* createMemoryAccessTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> memoryAccessTests (new tcu::TestCaseGroup(testCtx, "opmemoryaccess", "Memory Semantics"));
+			de::MovePtr<tcu::TestCaseGroup> memoryAccessTests (new tcu::TestCaseGroup(testCtx, "opmemoryaccess"));
 			RGBA							colors[4];
 
 			const char						constantsAndTypes[]	 =
@@ -8885,7 +8885,7 @@ do { \
 		}
 		tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		opUndefTests		 (new tcu::TestCaseGroup(testCtx, "opundef", "Test OpUndef"));
+			de::MovePtr<tcu::TestCaseGroup>		opUndefTests		 (new tcu::TestCaseGroup(testCtx, "opundef"));
 			RGBA								defaultColors[4];
 			map<string, string>					fragments;
 			getDefaultColors(defaultColors);
@@ -9364,7 +9364,7 @@ do { \
 
 		tcu::TestCaseGroup* createOpQuantizeTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> opQuantizeTests (new tcu::TestCaseGroup(testCtx, "opquantize", "Test OpQuantizeToF16"));
+			de::MovePtr<tcu::TestCaseGroup> opQuantizeTests (new tcu::TestCaseGroup(testCtx, "opquantize"));
 			createOpQuantizeSingleOptionTests(opQuantizeTests.get());
 			createOpQuantizeTwoPossibilityTests(opQuantizeTests.get());
 			return opQuantizeTests.release();
@@ -9396,7 +9396,7 @@ do { \
 		{
 			RGBA								defaultColors[4];
 			RGBA								invertedColors[4];
-			de::MovePtr<tcu::TestCaseGroup>		moduleTests			(new tcu::TestCaseGroup(testCtx, "module", "Multiple entry points into shaders"));
+			de::MovePtr<tcu::TestCaseGroup>		moduleTests			(new tcu::TestCaseGroup(testCtx, "module"));
 
 			getDefaultColors(defaultColors);
 			getInvertedDefaultColors(invertedColors);
@@ -9544,7 +9544,7 @@ do { \
 
 		tcu::TestCaseGroup* createUnusedVariableTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		moduleTests				(new tcu::TestCaseGroup(testCtx, "unused_variables", "Graphics shaders with unused variables"));
+			de::MovePtr<tcu::TestCaseGroup>		moduleTests				(new tcu::TestCaseGroup(testCtx, "unused_variables"));
 
 			ShaderTaskArray						shaderCombinations[]	=
 					{
@@ -9587,7 +9587,7 @@ do { \
 
 		tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "loop", "Looping control flow"));
+			de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "loop"));
 			RGBA defaultColors[4];
 			getDefaultColors(defaultColors);
 			map<string, string> fragments;
@@ -9884,7 +9884,7 @@ do { \
 // A collection of tests putting OpControlBarrier in places GLSL forbids but SPIR-V allows.
 		tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "barrier", "OpControlBarrier"));
+			de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "barrier"));
 			map<string, string> fragments;
 
 			// A barrier inside a function body.
@@ -10029,7 +10029,7 @@ do { \
 // Test for the OpFRem instruction.
 		tcu::TestCaseGroup* createFRemTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "frem", "OpFRem"));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "frem"));
 			map<string, string>					fragments;
 			RGBA								inputColors[4];
 			RGBA								outputColors[4];
@@ -10077,7 +10077,7 @@ do { \
 // Test for the OpSRem instruction.
 		tcu::TestCaseGroup* createOpSRemGraphicsTests(tcu::TestContext& testCtx, qpTestResult negFailResult)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "srem", "OpSRem"));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "srem"));
 			map<string, string>					fragments;
 
 			fragments["pre_main"]				 =
@@ -10160,7 +10160,7 @@ do { \
 // Test for the OpSMod instruction.
 		tcu::TestCaseGroup* createOpSModGraphicsTests(tcu::TestContext& testCtx, qpTestResult negFailResult)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "smod", "OpSMod"));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "smod"));
 			map<string, string>					fragments;
 
 			fragments["pre_main"]				 =
@@ -11269,7 +11269,7 @@ do { \
 // Test for OpSConvert, OpUConvert, OpFConvert and OpConvert* in compute shaders
 		tcu::TestCaseGroup* createConvertComputeTests (tcu::TestContext& testCtx, const string& instruction, const string& name)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		group(new tcu::TestCaseGroup(testCtx, name.c_str(), instruction.c_str()));
+			de::MovePtr<tcu::TestCaseGroup>		group(new tcu::TestCaseGroup(testCtx, name.c_str()));
 			vector<ConvertCase>					testCases;
 			createConvertCases(testCases, instruction);
 
@@ -11291,7 +11291,7 @@ do { \
 // Test for OpSConvert, OpUConvert, OpFConvert and OpConvert* in graphics shaders
 		tcu::TestCaseGroup* createConvertGraphicsTests (tcu::TestContext& testCtx, const string& instruction, const string& name)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		group(new tcu::TestCaseGroup(testCtx, name.c_str(), instruction.c_str()));
+			de::MovePtr<tcu::TestCaseGroup>		group(new tcu::TestCaseGroup(testCtx, name.c_str()));
 			vector<ConvertCase>					testCases;
 			createConvertCases(testCases, instruction);
 
@@ -11326,7 +11326,7 @@ do { \
 // Constant-Creation Instructions: OpConstant, OpConstantComposite
 		tcu::TestCaseGroup* createOpConstantFloat16Tests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> opConstantCompositeTests		(new tcu::TestCaseGroup(testCtx, "opconstant", "OpConstant and OpConstantComposite instruction"));
+			de::MovePtr<tcu::TestCaseGroup> opConstantCompositeTests		(new tcu::TestCaseGroup(testCtx, "opconstant"));
 			RGBA							inputColors[4];
 			RGBA							outputColors[4];
 			vector<string>					extensions;
@@ -11550,7 +11550,7 @@ do { \
 		{
 			const string						nan					= nanSupported ? "_nan" : "";
 			const string						groupName			= "logical" + nan;
-			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, groupName.c_str(), "Float 16 logical tests"));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 			de::Random							rnd					(deStringHash(testGroup->getName()));
 			const string						spvCapabilities		= string("OpCapability Float16\n") + (nanSupported ? "OpCapability SignedZeroInfNanPreserve\n" : "");
@@ -11883,7 +11883,7 @@ do { \
 		template<class SpecResource>
 		tcu::TestCaseGroup* createFloat16FuncSet (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "function", "Float 16 function call related tests"));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "function"));
 
 			de::Random							rnd					(deStringHash(testGroup->getName()));
 			const StringTemplate				capabilities		("OpCapability Float16\n");
@@ -12106,7 +12106,7 @@ do { \
 		template<class SpecResource>
 		tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "opvectorextractdynamic", "OpVectorExtractDynamic tests"));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "opvectorextractdynamic"));
 
 			de::Random							rnd					(deStringHash(testGroup->getName()));
 			const deUint32						numDataPoints		= 256;
@@ -12366,7 +12366,7 @@ do { \
 		template<class SpecResource>
 		tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "opvectorinsertdynamic", "OpVectorInsertDynamic tests"));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "opvectorinsertdynamic"));
 
 			de::Random							rnd					(deStringHash(testGroup->getName()));
 			const deUint32						replacement			= 42;
@@ -12694,7 +12694,7 @@ do { \
 		template<class SpecResource>
 		tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "opvectorshuffle", "OpVectorShuffle tests"));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "opvectorshuffle"));
 			const int							testSpecificSeed	= deStringHash(testGroup->getName());
 			const int							seed				= testCtx.getCommandLine().getBaseSeed() ^ testSpecificSeed;
 			de::Random							rnd					(seed);
@@ -12988,7 +12988,7 @@ do { \
 		template<class SpecResource>
 		tcu::TestCaseGroup* createFloat16CompositeConstructSet (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		testGroup				(new tcu::TestCaseGroup(testCtx, "opcompositeconstruct", "OpCompositeConstruct tests"));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup				(new tcu::TestCaseGroup(testCtx, "opcompositeconstruct"));
 			const deUint32						numElements				= 8;
 			const string						testName				= "struct";
 			const deUint32						structItemsCount		= 88;
@@ -13458,7 +13458,7 @@ do { \
 		template<class SpecResource>
 		tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& testCtx, const char* op)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		testGroup		(new tcu::TestCaseGroup(testCtx, de::toLower(op).c_str(), op));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup		(new tcu::TestCaseGroup(testCtx, de::toLower(op).c_str()));
 			const deFloat16						exceptionValue	= tcu::Float16(-1.0).bits();
 			const string						opName			(op);
 			const deUint32						opIndex			= (opName == "OpCompositeInsert") ? 0
@@ -18827,7 +18827,7 @@ do { \
 			DE_STATIC_ASSERT(C >= 1 && C <= 4);
 
 			const std::string				testGroupName	(string("arithmetic_") + de::toString(C));
-			de::MovePtr<tcu::TestCaseGroup>	testGroup		(new tcu::TestCaseGroup(testCtx, testGroupName.c_str(), "Float 16 arithmetic and related tests"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup		(new tcu::TestCaseGroup(testCtx, testGroupName.c_str()));
 			const Math16TestFunc			testFuncs[]		=
 					{
 							{	"OpFNegate",			"",			1,	C,		C,		0,		0, &getInputData,	compareFP16ArithmeticFunc<  C,  C,  0,  0, fp16OpFNegate>					},
@@ -18916,7 +18916,7 @@ do { \
 		tcu::TestCaseGroup* createFloat16ArithmeticSet (tcu::TestContext& testCtx)
 		{
 			const std::string				testGroupName	("arithmetic");
-			de::MovePtr<tcu::TestCaseGroup>	testGroup		(new tcu::TestCaseGroup(testCtx, testGroupName.c_str(), "Float 16 arithmetic and related tests"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup		(new tcu::TestCaseGroup(testCtx, testGroupName.c_str()));
 			const Math16TestFunc			testFuncs[]		=
 					{
 							{	"OpTranspose",			"2x2",		1,	MAT2X2,	MAT2X2,	0,		0, &getInputDataM,	compareFP16ArithmeticFunc<  4,  4,  0,  0, fp16Transpose<2,2> >				},
@@ -19017,7 +19017,7 @@ do { \
 		tcu::TestCaseGroup* createFloat32ComparisonComputeSet (tcu::TestContext& testCtx)
 		{
 			const string					testGroupName	("comparison_" + de::toString(C));
-			de::MovePtr<tcu::TestCaseGroup>	testGroup		(new tcu::TestCaseGroup(testCtx, testGroupName.c_str(), "Float 32 comparison tests"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup		(new tcu::TestCaseGroup(testCtx, testGroupName.c_str()));
 #ifndef CTS_USES_VULKANSC
 			const char*						dataDir			= "spirv_assembly/instruction/float32/comparison";
 
@@ -19052,7 +19052,7 @@ do { \
 		tcu::TestCaseGroup* createFloat32ComparisonGraphicsSet (tcu::TestContext& testCtx)
 		{
 			const string					testGroupName	("comparison_" + de::toString(C));
-			de::MovePtr<tcu::TestCaseGroup>	testGroup		(new tcu::TestCaseGroup(testCtx, testGroupName.c_str(), "Float 32 comparison tests"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup		(new tcu::TestCaseGroup(testCtx, testGroupName.c_str()));
 #ifndef CTS_USES_VULKANSC
 			const char*						dataDir			= "spirv_assembly/instruction/float32/comparison";
 
@@ -19378,7 +19378,7 @@ do { \
 
 		tcu::TestCaseGroup* createOpCompositeInsertGroup (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opcompositeinsert", "Test the OpCompositeInsert instruction"));
+			de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opcompositeinsert"));
 			de::Random						rnd		(deStringHash(group->getName()));
 
 			for (int type = NUMBERTYPE_INT32; type != NUMBERTYPE_END32; ++type)
@@ -19574,7 +19574,7 @@ do { \
 
 		tcu::TestCaseGroup* createOpInBoundsAccessChainGroup (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opinboundsaccesschain", "Test the OpInBoundsAccessChain instruction"));
+			de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opinboundsaccesschain"));
 			de::Random						rnd				(deStringHash(group->getName()));
 
 			for (int type = NUMBERTYPE_INT32; type != NUMBERTYPE_END32; ++type)
@@ -19754,7 +19754,7 @@ do { \
 
 		tcu::TestCaseGroup* createShaderDefaultOutputGroup (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "shader_default_output", "Test shader default output."));
+			de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "shader_default_output"));
 			de::Random						rnd		(deStringHash(group->getName()));
 
 			for (int type = NUMBERTYPE_INT32; type != NUMBERTYPE_END32; ++type)
@@ -19823,7 +19823,7 @@ do { \
 
 		tcu::TestCaseGroup* createOpNopTests (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "opnop", "Test OpNop"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "opnop"));
 			RGBA							defaultColors[4];
 			map<string, string>				opNopFragments;
 
@@ -19858,7 +19858,7 @@ do { \
 
 		tcu::TestCaseGroup* createOpNameTests (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "opname","Test OpName"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "opname"));
 			RGBA							defaultColors[4];
 			map<string, string>				opNameFragments;
 
@@ -19885,7 +19885,7 @@ do { \
 
 		tcu::TestCaseGroup* createFloat16Tests (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "float16", "Float 16 tests"));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "float16"));
 
 			testGroup->addChild(createOpConstantFloat16Tests(testCtx));
 			testGroup->addChild(createFloat16LogicalSet<GraphicsResources>(testCtx, TEST_WITH_NAN));
@@ -19908,7 +19908,7 @@ do { \
 
 		tcu::TestCaseGroup* createFloat32Tests (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "float32", "Float 32 tests"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "float32"));
 
 			testGroup->addChild(createFloat32ComparisonGraphicsSet<1>(testCtx));
 			testGroup->addChild(createFloat32ComparisonGraphicsSet<2>(testCtx));
@@ -19920,7 +19920,7 @@ do { \
 
 		tcu::TestCaseGroup* createFloat16Group (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "float16", "Float 16 tests"));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "float16"));
 
 			testGroup->addChild(createFloat16OpConstantCompositeGroup(testCtx));
 			testGroup->addChild(createFloat16LogicalSet<ComputeShaderSpec>(testCtx, TEST_WITH_NAN));
@@ -19943,7 +19943,7 @@ do { \
 
 		tcu::TestCaseGroup* createFloat32Group (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "float32", "Float 32 tests"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "float32"));
 
 			testGroup->addChild(createFloat32ComparisonComputeSet<1>(testCtx));
 			testGroup->addChild(createFloat32ComparisonComputeSet<2>(testCtx));
@@ -19955,7 +19955,7 @@ do { \
 
 		tcu::TestCaseGroup* createBoolMixedBitSizeGroup (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "mixed_bitsize", "Tests boolean operands produced from instructions of different bit-sizes"));
+			de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "mixed_bitsize"));
 
 			de::Random						rnd				(deStringHash(group->getName()));
 			const int		numElements		= 100;
@@ -20142,7 +20142,7 @@ do { \
 
 		tcu::TestCaseGroup* createBoolGroup (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "bool", "Boolean tests"));
+			de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "bool"));
 
 			testGroup->addChild(createBoolMixedBitSizeGroup(testCtx));
 
@@ -20151,7 +20151,7 @@ do { \
 
 		tcu::TestCaseGroup* createOpNameAbuseTests (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	abuseGroup(new tcu::TestCaseGroup(testCtx, "opname_abuse", "OpName abuse tests"));
+			de::MovePtr<tcu::TestCaseGroup>	abuseGroup(new tcu::TestCaseGroup(testCtx, "opname_abuse"));
 			vector<CaseParameter>			abuseCases;
 			RGBA							defaultColors[4];
 			map<string, string>				opNameFragments;
@@ -20240,7 +20240,7 @@ do { \
 
 		tcu::TestCaseGroup* createOpMemberNameAbuseTests (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	abuseGroup(new tcu::TestCaseGroup(testCtx, "opmembername_abuse", "OpName abuse tests"));
+			de::MovePtr<tcu::TestCaseGroup>	abuseGroup(new tcu::TestCaseGroup(testCtx, "opmembername_abuse"));
 			vector<CaseParameter>			abuseCases;
 			RGBA							defaultColors[4];
 			map<string, string>				opMemberNameFragments;
@@ -20583,7 +20583,7 @@ do { \
 
 		tcu::TestCaseGroup* createSpirvIdsAbuseTests (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "spirv_ids_abuse", "SPIR-V abuse tests"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "spirv_ids_abuse"));
 
 			createSparseIdsAbuseTest<GraphicsResources>(testCtx, testGroup);
 			createLotsIdsAbuseTest<GraphicsResources>(testCtx, testGroup);
@@ -20593,7 +20593,7 @@ do { \
 
 		tcu::TestCaseGroup* createSpirvIdsAbuseGroup (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "spirv_ids_abuse", "SPIR-V abuse tests"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "spirv_ids_abuse"));
 
 			createSparseIdsAbuseTest<ComputeShaderSpec>(testCtx, testGroup);
 			createLotsIdsAbuseTest<ComputeShaderSpec>(testCtx, testGroup);
@@ -20603,7 +20603,7 @@ do { \
 
 		tcu::TestCaseGroup* createFunctionParamsGroup (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "function_params", "Function parameter tests"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "function_params"));
 #ifndef CTS_USES_VULKANSC
 			static const char data_dir[] = "spirv_assembly/instruction/function_params";
 
@@ -20631,7 +20631,7 @@ do { \
 
 		tcu::TestCaseGroup* createEarlyFragmentTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> earlyFragTests (new tcu::TestCaseGroup(testCtx, "early_fragment", "Early Fragment Tests"));
+			de::MovePtr<tcu::TestCaseGroup> earlyFragTests (new tcu::TestCaseGroup(testCtx, "early_fragment"));
 
 #ifndef CTS_USES_VULKANSC
 			static const char dataDir[] = "spirv_assembly/instruction/graphics/early_fragment";
@@ -20669,7 +20669,7 @@ do { \
 
 		tcu::TestCaseGroup* createEarlyAndLateFragmentTests(tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> earlyLateFragTests(new tcu::TestCaseGroup(testCtx, "early_and_late_fragment", "Early And Late Fragment Tests"));
+			de::MovePtr<tcu::TestCaseGroup> earlyLateFragTests(new tcu::TestCaseGroup(testCtx, "early_and_late_fragment"));
 #ifndef CTS_USES_VULKANSC
 			static const char dataDir[] = "spirv_assembly/instruction/graphics/early_and_late_fragment";
 
@@ -20705,7 +20705,7 @@ do { \
 
 		tcu::TestCaseGroup* createOpExecutionModeTests (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "execution_mode", "Execution mode tests"));
+			de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "execution_mode"));
 
 #ifndef CTS_USES_VULKANSC
 			static const char dataDir[] = "spirv_assembly/instruction/graphics/execution_mode";
@@ -20748,7 +20748,7 @@ do { \
 
 		tcu::TestCaseGroup* createOpMulExtendedGroup (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "mul_extended", "Op[S/U]MulExtended tests"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "mul_extended"));
 
 #ifndef CTS_USES_VULKANSC
 			static const char	dataDir[]	= "spirv_assembly/instruction/compute/mul_extended";
@@ -20786,7 +20786,7 @@ do { \
 
 		tcu::TestCaseGroup* createQueryGroup (tcu::TestContext& testCtx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "image_query", "image query tests"));
+			de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "image_query"));
 
 #ifndef CTS_USES_VULKANSC
 			static const char data_dir[] = "spirv_assembly/instruction/image_query";
@@ -20821,9 +20821,9 @@ do { \
 		{
 			const bool testComputePipeline = true;
 
-			de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
-			de::MovePtr<tcu::TestCaseGroup> computeTests		(new tcu::TestCaseGroup(testCtx, "compute", "Compute Instructions with special opcodes/operands"));
-			de::MovePtr<tcu::TestCaseGroup> graphicsTests		(new tcu::TestCaseGroup(testCtx, "graphics", "Graphics Instructions with special opcodes/operands"));
+			de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction"));
+			de::MovePtr<tcu::TestCaseGroup> computeTests		(new tcu::TestCaseGroup(testCtx, "compute"));
+			de::MovePtr<tcu::TestCaseGroup> graphicsTests		(new tcu::TestCaseGroup(testCtx, "graphics"));
 
 			computeTests->addChild(createSpivVersionCheckTests(testCtx, testComputePipeline));
 			computeTests->addChild(createLocalSizeGroup(testCtx, false));
@@ -20887,7 +20887,7 @@ do { \
 			computeTests->addChild(createOpNClampGroup(testCtx));
 			computeTests->addChild(createFloatControlsExtensionlessGroup(testCtx));
 			{
-				de::MovePtr<tcu::TestCaseGroup>	computeAndroidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
+				de::MovePtr<tcu::TestCaseGroup>	computeAndroidTests	(new tcu::TestCaseGroup(testCtx, "android"));
 
 				computeAndroidTests->addChild(createOpSRemComputeGroup(testCtx, QP_TEST_RESULT_QUALITY_WARNING));
 				computeAndroidTests->addChild(createOpSModComputeGroup(testCtx, QP_TEST_RESULT_QUALITY_WARNING));
@@ -20963,7 +20963,7 @@ do { \
 			graphicsTests->addChild(createOpSModGraphicsTests(testCtx, QP_TEST_RESULT_PASS));
 
 			{
-				de::MovePtr<tcu::TestCaseGroup>	graphicsAndroidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
+				de::MovePtr<tcu::TestCaseGroup>	graphicsAndroidTests	(new tcu::TestCaseGroup(testCtx, "android"));
 
 				graphicsAndroidTests->addChild(createOpSRemGraphicsTests(testCtx, QP_TEST_RESULT_QUALITY_WARNING));
 				graphicsAndroidTests->addChild(createOpSModGraphicsTests(testCtx, QP_TEST_RESULT_QUALITY_WARNING));

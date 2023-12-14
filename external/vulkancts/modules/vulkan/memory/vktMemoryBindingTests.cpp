@@ -1094,10 +1094,10 @@ tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 		// Memory binding tests with aliasing of two resources.
 		de::MovePtr<tcu::TestCaseGroup>		aliasing							(new tcu::TestCaseGroup(testCtx, "aliasing"));
 
-		de::MovePtr<tcu::TestCaseGroup>		regular_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated", "Basic memory binding tests with suballocated memory."));
-		de::MovePtr<tcu::TestCaseGroup>		regular_dedicated					(new tcu::TestCaseGroup(testCtx, "dedicated", "Basic memory binding tests with deditatedly allocated memory."));
+		de::MovePtr<tcu::TestCaseGroup>		regular_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated"));
+		de::MovePtr<tcu::TestCaseGroup>		regular_dedicated					(new tcu::TestCaseGroup(testCtx, "dedicated"));
 
-		de::MovePtr<tcu::TestCaseGroup>		aliasing_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated", "Memory binding tests with aliasing of two resources with suballocated mamory."));
+		de::MovePtr<tcu::TestCaseGroup>		aliasing_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated"));
 
 		const VkDeviceSize					allocationSizes[]					= {	33, 257, 4087, 8095, 1*1024*1024 + 1	};
 

@@ -939,11 +939,11 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 
 	for (const auto& grpVariant : groupVariants)
 	{
-		de::MovePtr<tcu::TestCaseGroup> group {new tcu::TestCaseGroup{testCtx, grpVariant.groupName.c_str(), ""}};
+		de::MovePtr<tcu::TestCaseGroup> group {new tcu::TestCaseGroup{testCtx, grpVariant.groupName.c_str()}};
 
 		for (const auto& sampleVariant : sampleVariants)
 		{
-			de::MovePtr<tcu::TestCaseGroup> sampleGroup {new tcu::TestCaseGroup{testCtx, sampleVariant.groupName.c_str(), ""}};
+			de::MovePtr<tcu::TestCaseGroup> sampleGroup {new tcu::TestCaseGroup{testCtx, sampleVariant.groupName.c_str()}};
 
 			for (const auto& testVariant : testVariants)
 			{

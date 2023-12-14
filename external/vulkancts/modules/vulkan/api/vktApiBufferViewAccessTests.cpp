@@ -1343,14 +1343,14 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 
 		for (deUint32 usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(createUsage); ++usageNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx], ""));
+			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx]));
 
 			for (deUint32 formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); formatIdx++)
 			{
 				const auto			skip	= strlen("VK_FORMAT_");
 				const std::string	fmtName	= de::toLower(std::string(getFormatName(testFormats[formatIdx])).substr(skip));
 
-				de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, fmtName.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, fmtName.c_str()));
 
 				if (createUsage[usageNdx] == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT && !isSupportedImageLoadStore(mapVkFormat(testFormats[formatIdx])))
 					continue;
@@ -1378,7 +1378,7 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 	}
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<tcu::TestCaseGroup> uniformStorageGroup		(new tcu::TestCaseGroup(testCtx, "uniform_storage_texel_buffer", ""));
+	de::MovePtr<tcu::TestCaseGroup> uniformStorageGroup		(new tcu::TestCaseGroup(testCtx, "uniform_storage_texel_buffer"));
 	{
 
 		const char* const					usageName[]	= { "bind_as_uniform", "bind_as_storage" };
@@ -1389,14 +1389,14 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 
 		for (deUint32 usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(usageName); ++usageNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx], ""));
+			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx]));
 
 			for (deUint32 formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); formatIdx++)
 			{
 				const auto			skip	= strlen("VK_FORMAT_");
 				const std::string	fmtName	= de::toLower(std::string(getFormatName(testFormats[formatIdx])).substr(skip));
 
-				de::MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(testCtx, fmtName.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(testCtx, fmtName.c_str()));
 
 				if (bindUsage[usageNdx] == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT && !isSupportedImageLoadStore(mapVkFormat(testFormats[formatIdx])))
 					continue;

@@ -1926,11 +1926,11 @@ void ShaderOperatorTests::init (void)
 
 	// The sequence operator (comma).
 
-	TestCaseGroup* sequenceGroup = new TestCaseGroup(m_testCtx, "sequence", "Sequence operator tests");
+	TestCaseGroup* sequenceGroup = new TestCaseGroup(m_testCtx, "sequence");
 	addChild(sequenceGroup);
 
-	TestCaseGroup* sequenceNoSideEffGroup = new TestCaseGroup(m_testCtx, "no_side_effects", "Sequence tests without side-effects");
-	TestCaseGroup* sequenceSideEffGroup = new TestCaseGroup(m_testCtx, "side_effects", "Sequence tests with side-effects");
+	TestCaseGroup* sequenceNoSideEffGroup = new TestCaseGroup(m_testCtx, "no_side_effects");
+	TestCaseGroup* sequenceSideEffGroup = new TestCaseGroup(m_testCtx, "side_effects");
 	sequenceGroup->addChild(sequenceNoSideEffGroup);
 	sequenceGroup->addChild(sequenceSideEffGroup);
 

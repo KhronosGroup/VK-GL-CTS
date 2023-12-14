@@ -1877,9 +1877,9 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>		dedicated						(new tcu::TestCaseGroup(testCtx, "dedicated_alloc"));
 	de::MovePtr<tcu::TestCaseGroup>		sets[]							=
 	{
-		de::MovePtr<tcu::TestCaseGroup> (new tcu::TestCaseGroup(testCtx, "suballocation", "Suballocated memory mapping tests.")),
-		de::MovePtr<tcu::TestCaseGroup> (new tcu::TestCaseGroup(testCtx, "buffer", "Buffer dedicated memory mapping tests.")),
-		de::MovePtr<tcu::TestCaseGroup> (new tcu::TestCaseGroup(testCtx, "image", "Image dedicated memory mapping tests."))
+		de::MovePtr<tcu::TestCaseGroup> (new tcu::TestCaseGroup(testCtx, "suballocation")),
+		de::MovePtr<tcu::TestCaseGroup> (new tcu::TestCaseGroup(testCtx, "buffer")),
+		de::MovePtr<tcu::TestCaseGroup> (new tcu::TestCaseGroup(testCtx, "image"))
 	};
 
 	const VkDeviceSize allocationSizes[] =
@@ -1932,7 +1932,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 	// .full
 	for (size_t allocationKindNdx = 0; allocationKindNdx < ALLOCATION_KIND_LAST; allocationKindNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> fullGroup (new tcu::TestCaseGroup(testCtx, "full", "Map memory completely."));
+		de::MovePtr<tcu::TestCaseGroup> fullGroup (new tcu::TestCaseGroup(testCtx, "full"));
 
 		for (size_t allocationSizeNdx = 0; allocationSizeNdx < DE_LENGTH_OF_ARRAY(allocationSizes); allocationSizeNdx++)
 		{
@@ -1968,7 +1968,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 	// .sub
 	for (size_t allocationKindNdx = 0; allocationKindNdx < ALLOCATION_KIND_LAST; allocationKindNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup (new tcu::TestCaseGroup(testCtx, "sub", "Map part of the memory."));
+		de::MovePtr<tcu::TestCaseGroup> subGroup (new tcu::TestCaseGroup(testCtx, "sub"));
 
 		for (size_t allocationSizeNdx = 0; allocationSizeNdx < DE_LENGTH_OF_ARRAY(allocationSizes); allocationSizeNdx++)
 		{
@@ -2032,7 +2032,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 
 	// .random
 	{
-		de::MovePtr<tcu::TestCaseGroup>	randomGroup	(new tcu::TestCaseGroup(testCtx, "random", "Random memory mapping tests."));
+		de::MovePtr<tcu::TestCaseGroup>	randomGroup	(new tcu::TestCaseGroup(testCtx, "random"));
 		de::Random						rng			(3927960301u);
 		for (size_t ndx = 0; ndx < 100; ndx++)
 		{

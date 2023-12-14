@@ -37,6 +37,7 @@
 #include "vkRefUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkSafetyCriticalUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuTexture.hpp"
@@ -72,10 +73,20 @@ struct TestParams
 };
 
 // Creates a device that has transfer only operations
-Move<VkDevice> createCustomDevice(Context& context, uint32_t& queueFamilyIndex)
+Move<VkDevice> createCustomDevice(Context& context,
+#ifdef CTS_USES_VULKANSC
+								  const vkt::CustomInstance& customInstance,
+#endif // CTS_USES_VULKANSC
+								  uint32_t& queueFamilyIndex)
 {
-	const InstanceInterface&	instanceDriver = context.getInstanceInterface();
-	const VkPhysicalDevice		physicalDevice = context.getPhysicalDevice();
+#ifdef CTS_USES_VULKANSC
+	const vk::InstanceInterface&	instanceDriver		= customInstance.getDriver();
+	const vk::VkPhysicalDevice		physicalDevice		= chooseDevice(instanceDriver, customInstance, context.getTestContext().getCommandLine());
+#else
+	const vk::VkInstance			customInstance		= context.getInstance();
+	const vk::InstanceInterface&	instanceDriver		= context.getInstanceInterface();
+	const vk::VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
+#endif // CTS_USES_VULKANSC
 
 	queueFamilyIndex = findQueueFamilyIndexWithCaps(instanceDriver, physicalDevice, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
@@ -158,7 +169,7 @@ Move<VkDevice> createCustomDevice(Context& context, uint32_t& queueFamilyIndex)
 		DE_NULL,										// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instanceDriver, physicalDevice, &deviceCreateInfo);
+	return vkt::createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), customInstance, instanceDriver, physicalDevice, &deviceCreateInfo);
 }
 
 class FillWholeBufferTestInstance : public vkt::TestInstance
@@ -176,6 +187,9 @@ protected:
 	de::MovePtr<Allocator>	m_customAllocator;
 
 	VkDevice				m_device;
+#ifdef CTS_USES_VULKANSC
+	const CustomInstance	m_customInstance;
+#endif // CTS_USES_VULKANSC
 	Allocator*				m_allocator;
 	uint32_t				m_queueFamilyIndex;
 
@@ -187,15 +201,28 @@ protected:
 };
 
 FillWholeBufferTestInstance::FillWholeBufferTestInstance(Context& context, const TestParams& testParams)
-	: vkt::TestInstance(context), m_params(testParams)
+	: vkt::TestInstance(context)
+	, m_params(testParams)
+#ifdef CTS_USES_VULKANSC
+	, m_customInstance(createCustomInstanceFromContext(context))
+#endif // CTS_USES_VULKANSC
 {
-	const InstanceInterface&	vki			= m_context.getInstanceInterface();
-	const DeviceInterface&		vk			= m_context.getDeviceInterface();
-	const VkPhysicalDevice		physDevice	= m_context.getPhysicalDevice();
+#ifdef CTS_USES_VULKANSC
+	const vk::InstanceInterface&	vki				= m_customInstance.getDriver();
+	const VkPhysicalDevice			physDevice		= vk::chooseDevice(vki, m_customInstance, m_context.getTestContext().getCommandLine());
+#else
+	const vk::InstanceInterface&	vki				= m_context.getInstanceInterface();
+	const VkPhysicalDevice			physDevice		= m_context.getPhysicalDevice();
+#endif // CTS_USES_VULKANSC
+const DeviceInterface&				vk				= m_context.getDeviceInterface();
 
 	if (testParams.useTransferOnlyQueue)
 	{
-		m_customDevice		= createCustomDevice(context, m_queueFamilyIndex);
+		m_customDevice		= createCustomDevice(context,
+#ifdef CTS_USES_VULKANSC
+												 m_customInstance,
+#endif
+												 m_queueFamilyIndex);
 		m_customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(vk, *m_customDevice, getPhysicalDeviceMemoryProperties(vki, physDevice)));
 
 		m_device			= *m_customDevice;
@@ -357,6 +384,9 @@ protected:
 	de::MovePtr<Allocator>			m_customAllocator;
 
 	VkDevice						m_device;
+#ifdef CTS_USES_VULKANSC
+	const CustomInstance			m_customInstance;
+#endif // CTS_USES_VULKANSC
 	Allocator*						m_allocator;
 	uint32_t						m_queueFamilyIndex;
 
@@ -392,6 +422,9 @@ protected:
 																		 TestParams					testParams)
 									: vkt::TestInstance					(context)
 									, m_params							(testParams)
+#ifdef CTS_USES_VULKANSC
+									, m_customInstance(createCustomInstanceFromContext(context))
+#endif // CTS_USES_VULKANSC
 {
 	const InstanceInterface&	vki			= m_context.getInstanceInterface();
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
@@ -399,7 +432,11 @@ protected:
 
 	if (testParams.useTransferOnlyQueue)
 	{
-		m_customDevice		= createCustomDevice(context, m_queueFamilyIndex);
+		m_customDevice		= createCustomDevice(context,
+#ifdef CTS_USES_VULKANSC
+												m_customInstance,
+#endif // CTS_USES_VULKANSC
+												m_queueFamilyIndex);
 		m_customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(vk, *m_customDevice, getPhysicalDeviceMemoryProperties(vki, physDevice)));
 
 		m_device			= *m_customDevice;

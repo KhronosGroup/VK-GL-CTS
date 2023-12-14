@@ -303,7 +303,9 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(1, 1, 0, 0))
     m_vk.getDescriptorSetLayoutSupport = (GetDescriptorSetLayoutSupportFunc) GET_PROC_ADDR("vkGetDescriptorSetLayoutSupport");
 if (!m_vk.getDescriptorSetLayoutSupport)
     m_vk.getDescriptorSetLayoutSupport = (GetDescriptorSetLayoutSupportFunc) GET_PROC_ADDR("vkGetDescriptorSetLayoutSupportKHR");
-m_vk.getCalibratedTimestampsEXT = (GetCalibratedTimestampsEXTFunc) GET_PROC_ADDR("vkGetCalibratedTimestampsEXT");
+m_vk.getCalibratedTimestampsKHR = (GetCalibratedTimestampsKHRFunc) GET_PROC_ADDR("vkGetCalibratedTimestampsKHR");
+if (!m_vk.getCalibratedTimestampsKHR)
+    m_vk.getCalibratedTimestampsKHR = (GetCalibratedTimestampsKHRFunc) GET_PROC_ADDR("vkGetCalibratedTimestampsEXT");
 m_vk.setDebugUtilsObjectNameEXT = (SetDebugUtilsObjectNameEXTFunc) GET_PROC_ADDR("vkSetDebugUtilsObjectNameEXT");
 m_vk.setDebugUtilsObjectTagEXT = (SetDebugUtilsObjectTagEXTFunc) GET_PROC_ADDR("vkSetDebugUtilsObjectTagEXT");
 m_vk.queueBeginDebugUtilsLabelEXT = (QueueBeginDebugUtilsLabelEXTFunc) GET_PROC_ADDR("vkQueueBeginDebugUtilsLabelEXT");

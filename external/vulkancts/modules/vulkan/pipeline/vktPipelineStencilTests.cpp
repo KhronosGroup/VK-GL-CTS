@@ -960,7 +960,7 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConst
 	for (deUint32 colorAttachmentEnabledIdx = 0; colorAttachmentEnabledIdx < DE_LENGTH_OF_ARRAY(colorAttachmentEnabled); colorAttachmentEnabledIdx++)
 	{
 		const bool							colorEnabled				= colorAttachmentEnabled[colorAttachmentEnabledIdx];
-		de::MovePtr<tcu::TestCaseGroup>		formatTests					(new tcu::TestCaseGroup(testCtx, "format", "Uses different stencil formats"));
+		de::MovePtr<tcu::TestCaseGroup>		formatTests					(new tcu::TestCaseGroup(testCtx, "format"));
 		StencilOpStateUniqueRandomIterator	stencilOpItr				(123);
 
 		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(stencilFormats); formatNdx++)
@@ -975,8 +975,7 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConst
 				const bool			useSeparateDepthStencilLayouts	= bool(separateDepthStencilLayouts);
 
 				de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-																						(getFormatCaseName(stencilFormat) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "")).c_str(),
-																						(std::string("Uses format ") + getFormatName(stencilFormat) + ((useSeparateDepthStencilLayouts) ? " with separate depth/stencil layouts" : "")).c_str()));
+																						(getFormatCaseName(stencilFormat) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "")).c_str()));
 
 				de::MovePtr<tcu::TestCaseGroup>	stencilStateTests;
 				{

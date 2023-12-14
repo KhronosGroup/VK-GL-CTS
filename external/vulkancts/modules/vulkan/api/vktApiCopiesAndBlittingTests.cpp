@@ -9599,7 +9599,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 1D to 3D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_3d", "1D to 3D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_3d"));
 
 		TestParams	params;
 		params.src.image.imageType	 = VK_IMAGE_TYPE_1D;
@@ -9659,7 +9659,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 2D to 1D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_1d", "2D to 1D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_1d"));
 
 		TestParams	params;
 		params.src.image.imageType	 = VK_IMAGE_TYPE_2D;
@@ -9716,7 +9716,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 2D to 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_2d", "2D to 2D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_2d"));
 
 		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_2D;
@@ -9772,7 +9772,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 2D to 3D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_3d", "2D to 3D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_3d"));
 
 		TestParams	params;
 		params.src.image.imageType	 = VK_IMAGE_TYPE_2D;
@@ -9829,7 +9829,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 3D to 1D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_1d", "3D to 1D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_1d"));
 
 		TestParams	params;
 		params.src.image.imageType	 = VK_IMAGE_TYPE_3D;
@@ -9889,7 +9889,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 3D to 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_2d", "3D to 2D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_2d"));
 
 		TestParams	params;
 		params.src.image.imageType	 = VK_IMAGE_TYPE_3D;
@@ -9949,7 +9949,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 3D to 3D tests. Note we use smaller dimensions here for performance reasons.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_3d", "3D to 3D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_3d"));
 
 		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_3D;
@@ -10141,7 +10141,7 @@ void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, TestGroupParamsP
 
 		const std::string	dimensionStr		= "src" + de::toString(testParams.params.src.image.extent.width) + "x" + de::toString(testParams.params.src.image.extent.height)
 												  + "_dst" + de::toString(testParams.params.dst.image.extent.width) + "x" + de::toString(testParams.params.dst.image.extent.height);
-		tcu::TestCaseGroup*	imageSizeGroup		= new tcu::TestCaseGroup(testCtx, dimensionStr.c_str(), ("Image sizes " + dimensionStr).c_str());
+		tcu::TestCaseGroup*	imageSizeGroup		= new tcu::TestCaseGroup(testCtx, dimensionStr.c_str());
 
 		// Compatible formats for copying
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(testFormats); compatibleFormatsIndex++)
@@ -10249,7 +10249,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 1D to 1D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_1d", "1D to 1D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_1d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -10325,7 +10325,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 1D to 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_2d", "1D to 2D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_2d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -10402,7 +10402,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 1D to 3D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_3d", "1D to 3D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_3d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -10482,7 +10482,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 2D to 1D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_1d", "2D to 1D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_1d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -10590,7 +10590,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 2D to 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_2d", "2D to 2D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_2d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -10697,7 +10697,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 2D to 3D tests.
 	{
-	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_3d", "2D to 3D copies"));
+	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_3d"));
 
 	for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 	{
@@ -10805,7 +10805,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 3D to 1D tests.
 	{
-	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_1d", "3D to 1D copies"));
+	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_1d"));
 
 	for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 	{
@@ -10885,7 +10885,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 3D to 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_2d", "3D to 2D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_2d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -10965,7 +10965,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 3D tests. Note we use smaller dimensions here for performance reasons.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_3d", "3D to 3D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_3d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -14688,7 +14688,7 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 
 	// 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d", "2D blitting tests"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d"));
 
 		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_2D;
@@ -14752,7 +14752,7 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 
 	// 1D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d", "1D blitting tests"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d"));
 
 		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_1D;
@@ -14833,7 +14833,7 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 
 	// 3D tests. Note we use smaller dimensions here for performance reasons.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d", "3D blitting tests"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d"));
 
 		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_3D;
@@ -14962,7 +14962,7 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 
 	// 2D tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d", "2D blitting tests"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -15078,7 +15078,7 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 
 	// 1D tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d", "1D blitting tests"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -15194,7 +15194,7 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 
 	// 3D tests. Note we use smaller dimensions here for performance reasons.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d", "3D blitting tests"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -15420,9 +15420,8 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, 
 	{
 		const int						layerCount		= layerCountsToTest[layerCountIndex];
 		const std::string				layerGroupName	= "layercount_" + de::toString(layerCount);
-		const std::string				layerGroupDesc	= "Blit mipmaps with layerCount = " + de::toString(layerCount);
 
-		de::MovePtr<tcu::TestCaseGroup>	layerCountGroup	(new tcu::TestCaseGroup(group->getTestContext(), layerGroupName.c_str(), layerGroupDesc.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	layerCountGroup	(new tcu::TestCaseGroup(group->getTestContext(), layerGroupName.c_str()));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
 		{
@@ -15532,9 +15531,8 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 	{
 		const int						layerCount		= layerCountsToTest[layerCountIndex];
 		const std::string				layerGroupName	= "layercount_" + de::toString(layerCount);
-		const std::string				layerGroupDesc	= "Blit mipmaps with layerCount = " + de::toString(layerCount);
 
-		de::MovePtr<tcu::TestCaseGroup>	layerCountGroup	(new tcu::TestCaseGroup(group->getTestContext(), layerGroupName.c_str(), layerGroupDesc.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	layerCountGroup	(new tcu::TestCaseGroup(group->getTestContext(), layerGroupName.c_str()));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
 		{
@@ -15579,10 +15577,9 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 		{
 			if (layerCount != 1 || barrierCount != 1)
 			{
-				const std::string				barrierGroupName = (multiLayer ? "layerbarriercount_" : "mipbarriercount_") + de::toString(barrierCount);
-				const std::string				barrierGroupDesc = "Use " + de::toString(barrierCount) + " image barriers";
+				const std::string barrierGroupName = (multiLayer ? "layerbarriercount_" : "mipbarriercount_") + de::toString(barrierCount);
 
-				de::MovePtr<tcu::TestCaseGroup>	barrierCountGroup(new tcu::TestCaseGroup(group->getTestContext(), barrierGroupName.c_str(), barrierGroupDesc.c_str()));
+				de::MovePtr<tcu::TestCaseGroup>	barrierCountGroup(new tcu::TestCaseGroup(group->getTestContext(), barrierGroupName.c_str()));
 
 				params.barrierCount = barrierCount;
 
@@ -15850,8 +15847,8 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 
 void addComputeAndTransferQueueTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, deUint32 extensionFlags)
 {
-	de::MovePtr<tcu::TestCaseGroup>		computeGroup	(new tcu::TestCaseGroup(group->getTestContext(), "whole_copy_before_resolving_compute", "Resolve from image to image using compute queue (whole copy before resolving)"));
-	de::MovePtr<tcu::TestCaseGroup>		transferGroup	(new tcu::TestCaseGroup(group->getTestContext(), "whole_copy_before_resolving_transfer", "Resolve from image to image using compute queue (whole copy before resolving)"));
+	de::MovePtr<tcu::TestCaseGroup>		computeGroup	(new tcu::TestCaseGroup(group->getTestContext(), "whole_copy_before_resolving_compute"));
+	de::MovePtr<tcu::TestCaseGroup>		transferGroup	(new tcu::TestCaseGroup(group->getTestContext(), "whole_copy_before_resolving_transfer"));
 
 	TestParams	params;
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
@@ -16540,7 +16537,7 @@ void addDepthStencilCopyMSAATestGroup (tcu::TestCaseGroup* group, AllocationKind
 
 void addBufferCopyOffsetTests (tcu::TestCaseGroup* group)
 {
-	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "buffer_to_buffer_with_offset", "Copy from buffer to buffer using different offsets in the source and destination buffers"));
+	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "buffer_to_buffer_with_offset"));
 
 	for (deUint32 srcOffset = 0u; srcOffset < BufferOffsetParams::kMaxOffset; ++srcOffset)
 	for (deUint32 dstOffset = 0u; dstOffset < BufferOffsetParams::kMaxOffset; ++dstOffset)
@@ -16630,7 +16627,7 @@ static void cleanupGroup(tcu::TestCaseGroup*)
 
 tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	copiesAndBlittingTests(new tcu::TestCaseGroup(testCtx, "copy_and_blit", "Copies And Blitting Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	copiesAndBlittingTests(new tcu::TestCaseGroup(testCtx, "copy_and_blit"));
 
 	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "core", addCoreCopiesAndBlittingTests, cleanupGroup));
 	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	addDedicatedAllocationCopiesAndBlittingTests, cleanupGroup));

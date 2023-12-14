@@ -345,8 +345,7 @@ tcu::TestCaseGroup*	createClearColorImageTests (tcu::TestContext& testCtx, CmdBu
 	}
 
 	std::string groupName = getCmdBufferTypeStr(cmdBufferType);
-	std::string groupDesc = "Clear Color Image Tests with " + groupName + " command buffer";
-	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 	clearTests->addChild(clearStaticTests.release());
 	clearTests->addChild(clearRandomTests.release());
 	return clearTests.release();
@@ -356,7 +355,7 @@ tcu::TestCaseGroup*	createClearColorImageTests (tcu::TestContext& testCtx, CmdBu
 
 tcu::TestCaseGroup*	createClearColorImageTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, "clear_color", "Clear Color Image Tests"));
+	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, "clear_color"));
 
 	clearTests->addChild(createClearColorImageTests(testCtx, CMD_BUFFER_PRIMARY));
 	clearTests->addChild(createClearColorImageTests(testCtx, CMD_BUFFER_SECONDARY));

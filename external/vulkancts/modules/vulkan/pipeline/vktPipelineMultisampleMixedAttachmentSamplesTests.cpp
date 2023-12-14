@@ -1921,7 +1921,7 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, Pi
 				params.useFragmentShadingRate = useFragmentShadingRate;
 
 				MovePtr<tcu::TestCaseGroup> sampleCaseGroup(new tcu::TestCaseGroup(
-					rootGroup->getTestContext(), getSampleCountGroupName(samples.numCoverageSamples, samples.numColorSamples, samples.numDepthStencilSamples).c_str(), ""));
+					rootGroup->getTestContext(), getSampleCountGroupName(samples.numCoverageSamples, samples.numColorSamples, samples.numDepthStencilSamples).c_str()));
 
 				for (const VkFormat *pDepthStencilFormat = depthStencilFormatRange; pDepthStencilFormat != DE_ARRAY_END(depthStencilFormatRange); ++pDepthStencilFormat)
 				for (const VkFormat *pColorFormat		 = colorFormatRange;		pColorFormat		!= DE_ARRAY_END(colorFormatRange);		  ++pColorFormat)
@@ -1995,7 +1995,7 @@ void createMixedAttachmentSamplesTestsInGroup (tcu::TestCaseGroup* rootGroup, Pi
 			params.numCoverageSamples		= de::max(params.numColorSamples, params.numDepthStencilSamples);
 
 			MovePtr<tcu::TestCaseGroup> sampleCaseGroup(new tcu::TestCaseGroup(
-				rootGroup->getTestContext(), getSampleCountGroupName(params.numCoverageSamples, params.numColorSamples, params.numDepthStencilSamples).c_str(), ""));
+				rootGroup->getTestContext(), getSampleCountGroupName(params.numCoverageSamples, params.numColorSamples, params.numDepthStencilSamples).c_str()));
 
 			for (const VkFormat *pDepthStencilFormat = depthStencilReducedFormatRange;  pDepthStencilFormat != DE_ARRAY_END(depthStencilReducedFormatRange); ++pDepthStencilFormat)
 			for (const VkFormat *pColorFormat		 = colorFormatRange;				pColorFormat		!= DE_ARRAY_END(colorFormatRange);				 ++pColorFormat)

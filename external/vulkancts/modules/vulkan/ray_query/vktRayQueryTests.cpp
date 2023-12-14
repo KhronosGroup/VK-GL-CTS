@@ -49,7 +49,7 @@ namespace RayQuery
 
 tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str(), "Ray query tests"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	group->addChild(createBuiltinTests(testCtx));
 	group->addChild(createTraversalControlTests(testCtx));

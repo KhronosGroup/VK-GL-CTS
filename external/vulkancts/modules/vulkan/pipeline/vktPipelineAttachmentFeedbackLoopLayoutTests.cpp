@@ -2922,7 +2922,7 @@ tcu::TestCaseGroup* createAttachmentFeedbackLoopLayoutSamplerTests (tcu::TestCon
 
 	if (pipelineConstructionType == PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		TestCaseGroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+		TestCaseGroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_color_attachment", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_COLOR, false, PipelineStateMode::STATIC, true));
 		miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(testCtx, pipelineConstructionType, "maintenance5_ds_attachment", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_DEPTH, false, PipelineStateMode::STATIC, true));
 		samplingTypeTests->addChild(miscGroup.release());

@@ -1126,7 +1126,7 @@ class QueueSubmitSignalOrderSharedTests : public tcu::TestCaseGroup
 {
 public:
 	QueueSubmitSignalOrderSharedTests (tcu::TestContext& testCtx, SynchronizationType type, VkSemaphoreType semaphoreType, const char *name)
-		: tcu::TestCaseGroup	(testCtx, name, "Signal ordering of semaphores")
+		: tcu::TestCaseGroup	(testCtx, name)
 		, m_type				(type)
 		, m_semaphoreType		(semaphoreType)
 	{
@@ -1685,7 +1685,7 @@ class QueueSubmitSignalOrderTests : public tcu::TestCaseGroup
 {
 public:
 	QueueSubmitSignalOrderTests (tcu::TestContext& testCtx, SynchronizationType type, VkSemaphoreType semaphoreType, const char *name)
-		: tcu::TestCaseGroup	(testCtx, name, "Signal ordering of semaphores")
+		: tcu::TestCaseGroup	(testCtx, name)
 		, m_type				(type)
 		, m_semaphoreType		(semaphoreType)
 	{

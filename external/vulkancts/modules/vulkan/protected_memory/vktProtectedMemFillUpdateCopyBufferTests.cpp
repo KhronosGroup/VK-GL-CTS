@@ -658,7 +658,7 @@ tcu::TestCaseGroup*	createUpdateBufferTests (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup*	createCopyBufferTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, "copy", "Copy Buffer Tests"));
+	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, "copy"));
 
 	copyTests->addChild(createFillUpdateCopyBufferFloatTests(testCtx, COPY_BUFFER));
 	copyTests->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, COPY_BUFFER));
