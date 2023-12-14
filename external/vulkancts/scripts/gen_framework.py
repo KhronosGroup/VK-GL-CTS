@@ -28,6 +28,8 @@ import json
 import argparse
 import datetime
 import collections
+import ast
+import logging
 from lxml import etree
 
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
@@ -143,6 +145,48 @@ TYPE_SUBSTITUTIONS		= [
 EXTENSION_POSTFIXES_STANDARD	= ["KHR", "EXT"]
 EXTENSION_POSTFIXES_VENDOR		= ["AMD", "ARM", "NV", 'INTEL', "NVX", "KHX", "NN", "MVK", "FUCHSIA", 'QCOM', "GGP", "QNX", "ANDROID", 'VALVE', 'HUAWEI']
 EXTENSION_POSTFIXES				= EXTENSION_POSTFIXES_STANDARD + EXTENSION_POSTFIXES_VENDOR
+
+# Converts the dependecies expression into an Abstract Syntax Tree that uses boolean operators
+def parseDependsEpression(string):
+	try:
+		# Parse the input string into an abstract syntax tree (AST)
+		tree = ast.parse(string.replace('+', ' and ').replace(',', ' or '), mode='eval')
+		expression = tree.body
+		return expression
+	except SyntaxError as e:
+		print(f"Syntax error in the input string: {e}")
+		return None
+
+# Checks the dependencies AST against the passed extensions
+def checkDependencyAST(node, extensions):
+	if isinstance(node, ast.BoolOp):
+		assert(len(node.values) >= 2)
+		value = checkDependencyAST(node.values.pop(), extensions)
+		while node.values:
+			nextValue = checkDependencyAST(node.values.pop(), extensions)
+			if isinstance(node.op, ast.And):
+				value = value and nextValue
+			if isinstance(node.op, ast.Or):
+				value = value or nextValue
+		return value
+	elif isinstance(node, ast.Name):
+		if '_VERSION_' in node.id:
+			return True
+		for ext in extensions:
+			if node.id == ext.name:
+				return True
+		return False
+	elif isinstance(node, ast.Constant):
+		return node.value
+
+# helper function that check if dependency is in list of extension
+def isDependencyMet(dependsExpression, extensionList):
+	if dependsExpression is None:
+		return True
+	tree = parseDependsEpression(dependsExpression)
+	# check if requirement dependencies are meet; if not then struct/function is not used
+	ret = checkDependencyAST(tree, extensionList)
+	return ret
 
 def substituteType(object):		# both CompositeMember and FunctionArgument can be passed to this function
 	for src, dst in TYPE_SUBSTITUTIONS:
@@ -778,23 +822,12 @@ class API:
 				self.notSupportedExtensions.remove(formatFeatureFlags2)
 
 		# add new enumerators that were added by extensions to api.enums
-		# we have to do it at the end for SC becouse some enums are dependednt from extensions/api versions
+		# we have to do it at the end for SC because some enums are dependent from extensions/api versions
 		# and those dependencies can be checked only after all extensions were read
 		for ext in self.extensions:
 			for requirement in ext.requirementsList:
 				# check if this requirement is supported by current implementation
-				isRequirementSupported = True
-				dependencies = requirement.depends
-				if dependencies is not None:
-					# check if dependency extension or api version is part of this api
-					# note: this logic will have to changed if there are dependencies with "and/or" grammar
-					assert((',' not in dependencies) or ('+' not in dependencies))
-					isRequirementSupported = '_VERSION_' in dependencies
-					if isRequirementSupported == False:
-						for e in self.extensions:
-							if e.name in dependencies:
-								isRequirementSupported = True
-								break
+				isRequirementSupported = isDependencyMet(requirement.depends, self.extensions)
 				# add enumerator to proper enum from api.enums
 				if isRequirementSupported:
 					for enumerator in requirement.extendedEnums:
@@ -817,6 +850,8 @@ class API:
 								# we might not be able to add alias as we might be missing what we are aliasing
 								# this will hapen when aliased enum is added later then definition of alias
 								self.tempAliasesList.append((matchedEnum, enumerator.name, enumerator.alias))
+				else:
+					logging.warning("Skipping requirement in extension %s because dependencies are not met: %s" % (ext.name, requirement.depends))
 
 		# add aliases to enumerators that were defined after alias definition
 		for enum, name, alias in self.tempAliasesList:
@@ -988,20 +1023,6 @@ class API:
 		for er in enumsToRemove:
 			self.enums.remove(er)
 
-		# helper function that check if dependency is in list of extension
-		def isDependencyMeet(dependency, extensionList):
-			if dependency == None:
-				return True
-			# check if requirement dependencies are meet; if not then struct/function is not used
-			# note: this logic will have to changed if there are dependencies with "and/or" grammar
-			if '_VERSION_' in dependency:
-				return True
-			dependency = dependency.split(',')[0]
-			for e in extensionList:
-				if dependency == e.name:
-					return True
-			return False
-
 		# remove structures that are not part of any vulkan version nor extension
 		# (SC specific structures are in vk.xml without any attribute identifying that they are SC specific)
 		def isStructUsed(featureList, extensionList, structNameList):
@@ -1014,7 +1035,7 @@ class API:
 				for requirement in ext.requirementsList:
 					for newType in requirement.newTypes:
 						if newType.name in structNameList:
-							return isDependencyMeet(requirement.depends, extensionList)
+							return isDependencyMet(requirement.depends, extensionList)
 			return False
 
 		structsToRemove = []
@@ -1038,7 +1059,7 @@ class API:
 				for requirement in ext.requirementsList:
 					for newCommand in requirement.newCommands:
 						if newCommand.name in functionNameList:
-							return isDependencyMeet(requirement.depends, extensionList)
+							return isDependencyMet(requirement.depends, extensionList)
 			return False
 
 		functionsToRemove = []
@@ -1048,6 +1069,7 @@ class API:
 				continue
 			functionsToRemove.append(fun)
 		for fun in functionsToRemove:
+			logging.debug("Removing function %s because not used" % (fun.name))
 			self.functions.remove(fun)
 
 		# remove handles that are not part of any vulkan command or structure
@@ -2298,6 +2320,7 @@ def writeExtensionFunctions (api, filename):
 						if api.apiName == "vulkansc":
 							continue
 						# something went wrong, for "vulkan" func should always be found
+						logging.error("%s in %s not valid" % (commandName, ext.name))
 						assert(False)
 					if func.getType() == functionType:
 						# only add functions with same vendor as extension
