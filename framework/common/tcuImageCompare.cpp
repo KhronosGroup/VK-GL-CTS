@@ -1045,8 +1045,10 @@ bool dsThresholdCompare(TestLog& log, const char* imageSetName, const char* imag
 	int					width = reference.getWidth();
 	int					height = reference.getHeight();
 	int					depth = reference.getDepth();
-	TextureLevel		errorMaskStorage(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height, depth);
-	PixelBufferAccess	errorMask = errorMaskStorage.getAccess();
+	TextureLevel		errorLevelDepth(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height, depth);
+	TextureLevel		errorLevelStencil(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height, depth);
+	PixelBufferAccess	errorMaskDepth = errorLevelDepth.getAccess();
+	PixelBufferAccess	errorMaskStencil = errorLevelStencil.getAccess();
 	float				maxDiff = 0.0;
 	bool				allStencilOk = true;
 	bool				hasDepth = tcu::hasDepthComponent(result.getFormat().order);
@@ -1060,16 +1062,19 @@ bool dsThresholdCompare(TestLog& log, const char* imageSetName, const char* imag
 		{
 			for (int x = 0; x < width; x++)
 			{
-				bool	isOk = true;
-
 				if (hasDepth)
 				{
 					float refDepth	= reference.getPixDepth(x, y, z);
 					float cmpDepth	= result.getPixDepth(x, y, z);
 					float diff		= de::abs(refDepth - cmpDepth);
 
-					isOk = diff <= threshold;
+					const bool depthOk = (diff <= threshold);
 					maxDiff = (float) deMax(maxDiff, diff);
+
+					if (depthOk)
+						errorMaskDepth.setPixel(Vec4(0.0f, 1.0f, 0.0f, 1.0f), x, y, z);
+					else
+						errorMaskDepth.setPixel(Vec4(1.0f, 0.0f, 0.0f, 1.0f), x, y, z);
 				}
 
 				if (hasStencil)
@@ -1077,17 +1082,21 @@ bool dsThresholdCompare(TestLog& log, const char* imageSetName, const char* imag
 					deUint8 refStencil = (deUint8) reference.getPixStencil(x, y, z);
 					deUint8 cmpStencil = (deUint8) result.getPixStencil(x, y, z);
 
-					bool isStencilOk = (refStencil == cmpStencil);
-					allStencilOk = allStencilOk && isStencilOk;
-					isOk = isOk && isStencilOk;
-				}
+					const bool isStencilOk = (refStencil == cmpStencil);
 
-				errorMask.setPixel(isOk ? IVec4(0, 0xff, 0, 0xff) : IVec4(0xff, 0, 0, 0xff), x, y, z);
+					if (isStencilOk)
+						errorMaskStencil.setPixel(Vec4(0.0f, 1.0f, 0.0f, 1.0f), x, y, z);
+					else
+						errorMaskStencil.setPixel(Vec4(1.0f, 0.0f, 0.0f, 1.0f), x, y, z);
+
+					allStencilOk = allStencilOk && isStencilOk;
+				}
 			}
 		}
 	}
 
-	bool compareOk = (maxDiff <= threshold) && allStencilOk;
+	const bool allDepthOk = (maxDiff <= threshold);
+	bool compareOk = allDepthOk && allStencilOk;
 
 	if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
 	{
@@ -1099,12 +1108,53 @@ bool dsThresholdCompare(TestLog& log, const char* imageSetName, const char* imag
 				log << TestLog::Message << "Stencil comparison failed" << TestLog::EndMessage;
 		}
 
-		log << TestLog::ImageSet(imageSetName, imageSetDesc)
-			// TODO: Convert depth/stencil buffers into separate depth & stencil for logging?
-//			<< TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
-//			<< TestLog::Image("Reference", "Reference", reference, pixelScale, pixelBias)
-			<< TestLog::Image("ErrorMask", "Error mask", errorMask)
-			<< TestLog::EndImageSet;
+		log << TestLog::ImageSet(imageSetName, imageSetDesc);
+
+		if (!allDepthOk)
+		{
+			TextureLevel refDepthLevel(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height, depth);
+			TextureLevel resDepthLevel(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height, depth);
+			tcu::PixelBufferAccess refDepthAccess = refDepthLevel.getAccess();
+			tcu::PixelBufferAccess resDepthAccess = resDepthLevel.getAccess();
+
+			for (int z = 0; z < depth; z++)
+				for (int y = 0; y < height; y++)
+					for (int x = 0; x < width; x++)
+					{
+						const float refDepth = reference.getPixDepth(x, y, z);
+						const float resDepth = result.getPixDepth(x, y, z);
+						refDepthAccess.setPixel(Vec4(refDepth, refDepth, refDepth, 1.0f), x, y, z);
+						resDepthAccess.setPixel(Vec4(resDepth, resDepth, resDepth, 1.0f), x, y, z);
+					}
+
+			log << TestLog::Image("ResultDepth", "", resDepthAccess)
+				<< TestLog::Image("ReferenceDepth", "", refDepthAccess)
+				<< TestLog::Image("ErrorMaskDepth", "", errorMaskDepth);
+		}
+
+		if (!allStencilOk)
+		{
+			TextureLevel refStencilLevel(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height, depth);
+			TextureLevel resStencilLevel(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height, depth);
+			tcu::PixelBufferAccess refStencilAccess = refStencilLevel.getAccess();
+			tcu::PixelBufferAccess resStencilAccess = resStencilLevel.getAccess();
+
+			for (int z = 0; z < depth; z++)
+				for (int y = 0; y < height; y++)
+					for (int x = 0; x < width; x++)
+					{
+						const float refStencil = static_cast<float>(reference.getPixStencil(x, y, z)) / 255.0f;
+						const float resStencil = static_cast<float>(result.getPixStencil(x, y, z)) / 255.0f;
+						refStencilAccess.setPixel(Vec4(refStencil, refStencil, refStencil, 1.0f), x, y, z);
+						resStencilAccess.setPixel(Vec4(resStencil, resStencil, resStencil, 1.0f), x, y, z);
+					}
+
+			log << TestLog::Image("ResultStencil", "", resStencilAccess)
+				<< TestLog::Image("ReferenceStencil", "", refStencilAccess)
+				<< TestLog::Image("ErrorMaskStencil", "", errorMaskDepth);
+		}
+
+		log << TestLog::EndImageSet;
 	}
 	else if (logMode == COMPARE_LOG_RESULT)
 	{
