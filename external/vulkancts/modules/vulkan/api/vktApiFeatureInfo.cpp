@@ -6745,6 +6745,7 @@ tcu::TestStatus testNoUnknownExtensions (Context& context)
 	allowedDeviceExtensions.insert("VK_GOOGLE_display_timing");
 	allowedDeviceExtensions.insert("VK_GOOGLE_decorate_string");
 	allowedDeviceExtensions.insert("VK_GOOGLE_hlsl_functionality1");
+	allowedDeviceExtensions.insert("VK_GOOGLE_user_type");
 	allowedInstanceExtensions.insert("VK_GOOGLE_surfaceless_query");
 
 	// Instance extensions
