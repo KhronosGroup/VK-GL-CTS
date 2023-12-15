@@ -196,6 +196,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
 	de::MovePtr<tcu::TestCaseGroup> monolithicGroup					(createTestGroup(testCtx, "monolithic", createChildren, PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC));
+#ifndef CTS_USES_VULKANSC
 	// Graphics pipeline library tests
 	de::MovePtr<tcu::TestCaseGroup> pipelineLibraryGroup			(createTestGroup(testCtx, "pipeline_library", createChildren, PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY));
 	// Fast linked graphics pipeline library tests
@@ -208,15 +209,18 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 	de::MovePtr<tcu::TestCaseGroup> shaderObjectLinkedSpirvGroup	(createTestGroup(testCtx, "shader_object_linked_spirv", createChildren, PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_SPIRV));
 	// Linked binary shader object tests
 	de::MovePtr<tcu::TestCaseGroup> shaderObjectLinkedBinaryGroup	(createTestGroup(testCtx, "shader_object_linked_binary", createChildren, PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_BINARY));
+#endif
 
 	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 	mainGroup->addChild(monolithicGroup.release());
+#ifndef CTS_USES_VULKANSC
 	mainGroup->addChild(pipelineLibraryGroup.release());
 	mainGroup->addChild(fastLinkedLibraryGroup.release());
 	mainGroup->addChild(shaderObjectUnlinkedSpirvGroup.release());
 	mainGroup->addChild(shaderObjectUnlinkedBinaryGroup.release());
 	mainGroup->addChild(shaderObjectLinkedSpirvGroup.release());
 	mainGroup->addChild(shaderObjectLinkedBinaryGroup.release());
+#endif
 	return mainGroup.release();
 }
 
