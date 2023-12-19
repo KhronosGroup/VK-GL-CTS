@@ -24,7 +24,6 @@
  * \brief Stencil Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktPipelineStencilTests.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -40,13 +39,12 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deMemory.h"
-#include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 
-#include <algorithm>
 #include <sstream>
 #include <vector>
 
@@ -893,6 +891,594 @@ tcu::TestStatus StencilTestInstance::verifyImage (void)
 		return tcu::TestStatus::fail("Image mismatch");
 }
 
+struct NoStencilAttachmentParams
+{
+	PipelineConstructionType	pipelineConstructionType;
+	VkFormat					format;
+	bool						dynamicRendering;
+	bool						dynamicEnable;
+
+	bool useDynamicRendering (void) const
+	{
+		return (dynamicRendering || isConstructionTypeShaderObject(pipelineConstructionType));
+	}
+};
+
+class NoStencilAttachmentCase : public vkt::TestCase
+{
+public:
+					NoStencilAttachmentCase		(tcu::TestContext& testCtx, const std::string& name, const NoStencilAttachmentParams& params)
+						: vkt::TestCase	(testCtx, name)
+						, m_params		(params)
+						{}
+	virtual			~NoStencilAttachmentCase	(void) {}
+
+	void			checkSupport				(Context& context) const override;
+	void			initPrograms				(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance				(Context& context) const override;
+
+	static void			getImageCreateInfo		(VkImageCreateInfo* createInfo, const VkFormat format);
+	static tcu::Vec4	getClearColor			(void);
+	static tcu::Vec4	getGeometryColor		(void);
+
+protected:
+	const NoStencilAttachmentParams m_params;
+};
+
+class NoStencilAttachmentInstance : public vkt::TestInstance
+{
+public:
+						NoStencilAttachmentInstance		(Context& context, const NoStencilAttachmentParams& params)
+							: vkt::TestInstance	(context)
+							, m_params			(params)
+							{}
+	virtual				~NoStencilAttachmentInstance	(void) {}
+
+	tcu::TestStatus		iterate							(void) override;
+
+protected:
+	const NoStencilAttachmentParams m_params;
+};
+
+void NoStencilAttachmentCase::getImageCreateInfo (VkImageCreateInfo* createInfo_, const VkFormat format)
+{
+	const VkImageUsageFlags mainUsage	= (isDepthStencilFormat(format)
+										? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+										: VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	const VkImageUsageFlags usage		= (mainUsage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	*createInfo_ =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		format,									//	VkFormat				format;
+		makeExtent3D(32u, 32u, 1u),				//	VkExtent3D				extent;
+		1u,										//	uint32_t				mipLevels;
+		1u,										//	uint32_t				arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		usage,									//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+}
+
+tcu::Vec4 NoStencilAttachmentCase::getClearColor (void)
+{
+	return tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+tcu::Vec4 NoStencilAttachmentCase::getGeometryColor (void)
+{
+	return tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
+}
+
+void NoStencilAttachmentCase::checkSupport (Context& context) const
+{
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	checkPipelineConstructionRequirements(vki, physicalDevice, m_params.pipelineConstructionType);
+
+	if (m_params.dynamicRendering)
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+	if (m_params.dynamicEnable && !isConstructionTypeShaderObject(m_params.pipelineConstructionType))
+		context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
+
+	VkImageCreateInfo		createInfo;
+	VkImageFormatProperties	imgFormatProperties;
+
+	getImageCreateInfo(&createInfo, m_params.format);
+
+	const auto result = vki.getPhysicalDeviceImageFormatProperties(
+		physicalDevice,
+		createInfo.format,
+		createInfo.imageType,
+		createInfo.tiling,
+		createInfo.usage,
+		createInfo.flags,
+		&imgFormatProperties);
+
+	if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+		TCU_THROW(NotSupportedError, "Format does not support the required features");
+
+	VK_CHECK(result);
+}
+
+void NoStencilAttachmentCase::initPrograms (SourceCollections& dst) const
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "vec2 positions[3] = vec2[](\n"
+		<< "    vec2(-1.0, -1.0),\n"
+		<< "    vec2( 3.0, -1.0),\n"
+		<< "    vec2(-1.0,  3.0)\n"
+		<< ");\n"
+		<< "layout (push_constant, std430) uniform PushConstantBlock {\n"
+		<< "    float depth;\n"
+		<< "} pc;\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = vec4(positions[gl_VertexIndex % 3], pc.depth, 1.0);\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance* NoStencilAttachmentCase::createInstance (Context& context) const
+{
+	return new NoStencilAttachmentInstance(context, m_params);
+}
+
+// The goal here is indicating the stencil attachment is not present, either because there is no stencil aspect in the depth/stencil
+// format or because (when using dynamic rendering) the stencil attachment and format are null/unused respectively. Despite this
+// setup, in the depth/stencil pipeline state or dynamic state, we will indicate the stencil test is enabled.
+//
+// According to the spec, if there is no stencil attachment, the stencil test should not modify coverage and should be effectively
+// disabled.
+tcu::TestStatus NoStencilAttachmentInstance::iterate (void)
+{
+	const auto&			ctx			= m_context.getContextCommonData();
+	const auto			colorFormat	= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuColorFmt	= mapVkFormat(colorFormat);
+	const auto			tcuDSFmt	= mapVkFormat(m_params.format);
+	const auto			clearColor	= NoStencilAttachmentCase::getClearColor();
+	const auto			geomColor	= NoStencilAttachmentCase::getGeometryColor();
+	const tcu::Vec4		threshold	(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+	const auto			dataStages	= VK_SHADER_STAGE_VERTEX_BIT;
+	const float			clearDepth	= 0.5f;
+	const float			geomDepth	= 0.75f;
+	const uint32_t		stencilClr	= 255u;
+	const uint32_t		stencilRef	= 128u;
+	const bool			useDR		= m_params.useDynamicRendering();
+
+	// Formats used to verify the different aspects.
+	const bool hasDepth				= tcu::hasDepthComponent(tcuDSFmt.order);
+	const bool hasStencil			= tcu::hasStencilComponent(tcuDSFmt.order);
+
+	DE_ASSERT(hasDepth);
+
+	const auto depthCopyFormat		= (hasDepth ?	getDepthCopyFormat(m_params.format)		: tcu::TextureFormat());
+	const auto stencilCopyFormat	= (hasStencil ?	getStencilCopyFormat(m_params.format)	: tcu::TextureFormat());
+
+	VkImageCreateInfo	colorCreateInfo;
+	VkImageCreateInfo	dsCreateInfo;
+
+	NoStencilAttachmentCase::getImageCreateInfo(&colorCreateInfo, colorFormat);
+	NoStencilAttachmentCase::getImageCreateInfo(&dsCreateInfo, m_params.format);
+
+	const auto&	vkExtent	= colorCreateInfo.extent;
+	const auto	fbExtent	= tcu::IVec3(static_cast<int>(vkExtent.width), static_cast<int>(vkExtent.height), static_cast<int>(vkExtent.depth));
+	const auto	pixelCount	= fbExtent.x() * fbExtent.y() * fbExtent.z();
+	const auto	colorSRR	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, colorCreateInfo.mipLevels, 0u, colorCreateInfo.arrayLayers);
+	const auto	dsSRR		= makeImageSubresourceRange(getImageAspectFlags(tcuDSFmt), 0u, dsCreateInfo.mipLevels, 0u, dsCreateInfo.arrayLayers);
+	const auto	colorSRL	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, colorCreateInfo.arrayLayers);
+	const auto	depthSRL	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, dsCreateInfo.arrayLayers);
+	const auto	stencilSRL	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, dsCreateInfo.arrayLayers);
+
+	// Color buffer with verification buffer.
+	ImageWithBuffer colorBuffer (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		colorCreateInfo.extent,
+		colorCreateInfo.format,
+		colorCreateInfo.usage,
+		colorCreateInfo.imageType,
+		colorSRR,
+		colorCreateInfo.arrayLayers,
+		colorCreateInfo.samples,
+		colorCreateInfo.tiling,
+		colorCreateInfo.mipLevels,
+		colorCreateInfo.sharingMode);
+
+	ImageWithMemory	dsBuffer	(ctx.vkd, ctx.device, ctx.allocator, dsCreateInfo, MemoryRequirement::Any);
+	const auto		dsView		= makeImageView(ctx.vkd, ctx.device, dsBuffer.get(), VK_IMAGE_VIEW_TYPE_2D, dsCreateInfo.format, dsSRR);
+
+	// Verification buffers for depth/stencil.
+	using BufferWithMemoryPtr = std::unique_ptr<BufferWithMemory>;
+
+	BufferWithMemoryPtr depthVerifBuffer;
+	BufferWithMemoryPtr stencilVerifBuffer;
+
+	VkDeviceSize depthVerifBufferSize	= 0ull;
+	VkDeviceSize stencilVerifBufferSize	= 0ull;
+
+	if (hasDepth)
+	{
+		depthVerifBufferSize = static_cast<VkDeviceSize>(tcu::getPixelSize(depthCopyFormat) * pixelCount);
+		const auto createInfo = makeBufferCreateInfo(depthVerifBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		depthVerifBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, createInfo, MemoryRequirement::HostVisible));
+	}
+
+	if (hasStencil)
+	{
+		stencilVerifBufferSize = static_cast<VkDeviceSize>(tcu::getPixelSize(stencilCopyFormat) * pixelCount);
+		const auto createInfo = makeBufferCreateInfo(stencilVerifBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		stencilVerifBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, createInfo, MemoryRequirement::HostVisible));
+	}
+
+	const std::vector<VkImageView> fbViews { colorBuffer.getImageView(), *dsView };
+
+	// Push constants.
+	const auto pcSize	= static_cast<uint32_t>(sizeof(geomDepth));
+	const auto pcRange	= makePushConstantRange(dataStages, 0u, pcSize);
+
+	const PipelineLayoutWrapper pipelineLayout (m_params.pipelineConstructionType, ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+
+	const auto renderPass		= (useDR
+								? Move<VkRenderPass>()
+								: makeRenderPass(ctx.vkd, ctx.device, colorCreateInfo.format, dsCreateInfo.format));
+	const auto framebuffer		= (useDR
+								? Move<VkFramebuffer>()
+								: makeFramebuffer(ctx.vkd, ctx.device, *renderPass, de::sizeU32(fbViews), de::dataOrNull(fbViews),
+												  colorCreateInfo.extent.width, colorCreateInfo.extent.height, colorCreateInfo.arrayLayers));
+
+	// Modules.
+	const auto&			binaries	= m_context.getBinaryCollection();
+	const ShaderWrapper	vertModule	(ctx.vkd, ctx.device, binaries.get("vert"));
+	const ShaderWrapper	fragModule	(ctx.vkd, ctx.device, binaries.get("frag"));
+	const ShaderWrapper	nullModule;
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(colorCreateInfo.extent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(colorCreateInfo.extent));
+
+	// Depth/stencil state: note how, despite not having a stencil attachment, we enable the stencil test in a way that will not
+	// preserve the stencil clear value no matter if the test passes or not.
+	const auto stencilOpState = makeStencilOpState(
+		VK_STENCIL_OP_ZERO,
+		VK_STENCIL_OP_DECREMENT_AND_CLAMP,
+		VK_STENCIL_OP_INVERT,
+		VK_COMPARE_OP_EQUAL,
+		0xFFu, 0xFFu, stencilRef);
+
+	const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,		//	VkStructureType							sType;
+		nullptr,														//	const void*								pNext;
+		0u,																//	VkPipelineDepthStencilStateCreateFlags	flags;
+		VK_TRUE,														//	VkBool32								depthTestEnable;
+		VK_TRUE,														//	VkBool32								depthWriteEnable;
+		VK_COMPARE_OP_GREATER,											//	VkCompareOp								depthCompareOp;
+		VK_FALSE,														//	VkBool32								depthBoundsTestEnable;
+		(m_params.dynamicEnable ? VK_FALSE : VK_TRUE),					//	VkBool32								stencilTestEnable;
+		stencilOpState,													//	VkStencilOpState						front;
+		stencilOpState,													//	VkStencilOpState						back;
+		0.0f,															//	float									minDepthBounds;
+		1.0f,															//	float									maxDepthBounds;
+	};
+
+	const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
+
+#ifndef CTS_USES_VULKANSC
+	// When using dynamic rendering, we'll signal the lack of a stencil attachment using VK_FORMAT_UNDEFINED for the stencil format.
+	VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,	//	VkStructureType	sType;
+		nullptr,											//	const void*		pNext;
+		0u,													//	uint32_t		viewMask;
+		1u,													//	uint32_t		colorAttachmentCount;
+		&colorCreateInfo.format,							//	const VkFormat*	pColorAttachmentFormats;
+		dsCreateInfo.format,								//	VkFormat		depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,								//	VkFormat		stencilAttachmentFormat;
+	};
+#endif // CTS_USES_VULKANSC
+
+	PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfoPtr (
+#ifndef CTS_USES_VULKANSC
+		&pipelineRenderingCreateInfo
+#else
+		nullptr
+#endif // CTS_USES_VULKANSC
+		);
+
+	std::vector<VkDynamicState> dynamicStates;
+	if (m_params.dynamicEnable)
+		dynamicStates.push_back(VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT);
+
+	const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,												//	const void*							pNext;
+		0u,														//	VkPipelineDynamicStateCreateFlags	flags;
+		de::sizeU32(dynamicStates),								//	uint32_t							dynamicStateCount;
+		de::dataOrNull(dynamicStates),							//	const VkDynamicState*				pDynamicStates;
+	};
+
+	GraphicsPipelineWrapper pipelineWrapper (ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
+											 m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
+
+	pipelineWrapper	.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+					.setDefaultRasterizationState()
+					.setDefaultColorBlendState()
+					.setDefaultMultisampleState()
+					.setDynamicState(&dynamicStateCreateInfo)
+					.setupVertexInputState(&vertexInputStateCreateInfo)
+					.setupPreRasterizationShaderState(
+						viewports,
+						scissors,
+						pipelineLayout,
+						*renderPass,
+						0u,
+						vertModule,
+						nullptr,
+						nullModule,
+						nullModule,
+						nullModule,
+						nullptr,
+						nullptr,
+						pipelineRenderingCreateInfoPtr)
+					.setupFragmentShaderState(
+						pipelineLayout,
+						*renderPass,
+						0u,
+						fragModule,
+						&depthStencilStateCreateInfo)
+					.setupFragmentOutputState(
+						*renderPass,
+						0u)
+					.setMonolithicPipelineLayout(pipelineLayout)
+					.buildPipeline();
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	const std::vector<VkClearValue> clearValues
+	{
+		makeClearValueColor(clearColor),
+		makeClearValueDepthStencil(clearDepth, stencilClr),
+	};
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+	if (useDR)
+	{
+		// Transition image layouts and clear images, then begin rendering.
+		const std::vector<VkImageMemoryBarrier> preClearBarriers
+		{
+			makeImageMemoryBarrier(
+				0u,
+				VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				colorBuffer.getImage(), colorSRR),
+
+			makeImageMemoryBarrier(
+				0u,
+				VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				dsBuffer.get(), dsSRR),
+		};
+
+		cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, de::dataOrNull(preClearBarriers), de::sizeU32(preClearBarriers));
+
+		// We want to use these clears instead of beginRendering clears to make sure the stencil aspect of the image is cleared too when present.
+		ctx.vkd.cmdClearColorImage(cmdBuffer, colorBuffer.getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValues.at(0u).color, 1u, &colorSRR);
+		ctx.vkd.cmdClearDepthStencilImage(cmdBuffer, dsBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValues.at(1u).depthStencil, 1u, &dsSRR);
+
+		const std::vector<VkImageMemoryBarrier> postClearBarriers
+		{
+			makeImageMemoryBarrier(
+				VK_ACCESS_TRANSFER_WRITE_BIT,
+				(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				colorBuffer.getImage(), colorSRR),
+
+			makeImageMemoryBarrier(
+				VK_ACCESS_TRANSFER_WRITE_BIT,
+				(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT|VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT),
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+				dsBuffer.get(), dsSRR),
+		};
+
+		const auto srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		const auto dstStage = (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT|VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT|VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
+		cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, srcStage, dstStage, de::dataOrNull(postClearBarriers), de::sizeU32(postClearBarriers));
+
+#ifndef CTS_USES_VULKANSC
+		const VkRenderingAttachmentInfo colorAttInfo =
+		{
+			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,	//	VkStructureType			sType;
+			nullptr,										//	const void*				pNext;
+			colorBuffer.getImageView(),						//	VkImageView				imageView;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		//	VkImageLayout			imageLayout;
+			VK_RESOLVE_MODE_NONE,							//	VkResolveModeFlagBits	resolveMode;
+			VK_NULL_HANDLE,									//	VkImageView				resolveImageView;
+			VK_IMAGE_LAYOUT_UNDEFINED,						//	VkImageLayout			resolveImageLayout;
+			VK_ATTACHMENT_LOAD_OP_LOAD,						//	VkAttachmentLoadOp		loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,					//	VkAttachmentStoreOp		storeOp;
+			/*unused*/makeClearValueColor(tcu::Vec4(0.0f)),	//	VkClearValue			clearValue;
+		};
+
+		const VkRenderingAttachmentInfo depthAttInfo =
+		{
+			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,		//	VkStructureType			sType;
+			nullptr,											//	const void*				pNext;
+			*dsView,											//	VkImageView				imageView;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	//	VkImageLayout			imageLayout;
+			VK_RESOLVE_MODE_NONE,								//	VkResolveModeFlagBits	resolveMode;
+			VK_NULL_HANDLE,										//	VkImageView				resolveImageView;
+			VK_IMAGE_LAYOUT_UNDEFINED,							//	VkImageLayout			resolveImageLayout;
+			VK_ATTACHMENT_LOAD_OP_LOAD,							//	VkAttachmentLoadOp		loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,						//	VkAttachmentStoreOp		storeOp;
+			/*unused*/makeClearValueColor(tcu::Vec4(0.0f)),		//	VkClearValue			clearValue;
+		};
+
+		const VkRenderingInfo renderingInfo =
+		{
+			VK_STRUCTURE_TYPE_RENDERING_INFO,	//	VkStructureType						sType;
+			nullptr,							//	const void*							pNext;
+			0u,									//	VkRenderingFlags					flags;
+			scissors.at(0u),					//	VkRect2D							renderArea;
+			colorCreateInfo.arrayLayers,		//	uint32_t							layerCount;
+			0u,									//	uint32_t							viewMask;
+			1u,									//	uint32_t							colorAttachmentCount;
+			&colorAttInfo,						//	const VkRenderingAttachmentInfo*	pColorAttachments;
+			&depthAttInfo,						//	const VkRenderingAttachmentInfo*	pDepthAttachment;
+			nullptr,							//	const VkRenderingAttachmentInfo*	pStencilAttachment;
+		};
+
+		ctx.vkd.cmdBeginRendering(cmdBuffer, &renderingInfo);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+	else
+		beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), de::sizeU32(clearValues), de::dataOrNull(clearValues));
+
+	pipelineWrapper.bind(cmdBuffer);
+	ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, dataStages, 0u, pcSize, &geomDepth);
+	if (m_params.dynamicEnable)
+	{
+#ifndef CTS_USES_VULKANSC
+		ctx.vkd.cmdSetStencilTestEnable(cmdBuffer, VK_TRUE);
+#else
+		ctx.vkd.cmdSetStencilTestEnableEXT(cmdBuffer, VK_TRUE);
+#endif // CTS_USES_VULKANSC
+	}
+	ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+
+	if (useDR)
+	{
+#ifndef CTS_USES_VULKANSC
+		endRendering(ctx.vkd, cmdBuffer);
+#else
+		DE_ASSERT(false);
+#endif // CTS_USES_VULKANSC
+	}
+	else
+		endRenderPass(ctx.vkd, cmdBuffer);
+
+	{
+		const std::vector<VkImageMemoryBarrier> imgMemoryBarriers
+		{
+			makeImageMemoryBarrier(
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				VK_ACCESS_TRANSFER_READ_BIT,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				colorBuffer.getImage(), colorSRR),
+
+			makeImageMemoryBarrier(
+				VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+				VK_ACCESS_TRANSFER_READ_BIT,
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				dsBuffer.get(), dsSRR),
+		};
+
+		const auto srcStages = (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+		const auto dstStages = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+		cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, srcStages, dstStages, de::dataOrNull(imgMemoryBarriers), de::sizeU32(imgMemoryBarriers));
+
+		const auto colorRegion = makeBufferImageCopy(vkExtent, colorSRL);
+		ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorBuffer.getBuffer(), 1u, &colorRegion);
+
+		if (hasDepth)
+		{
+			const auto depthRegion = makeBufferImageCopy(vkExtent, depthSRL);
+			ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, dsBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, depthVerifBuffer->get(), 1u, &depthRegion);
+		}
+
+		if (hasStencil)
+		{
+			const auto stencilRegion = makeBufferImageCopy(vkExtent, stencilSRL);
+			ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, dsBuffer.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stencilVerifBuffer->get(), 1u, &stencilRegion);
+		}
+
+		const auto preHostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+		cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &preHostBarrier);
+	}
+
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color output.
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+	tcu::PixelBufferAccess resultAccess (tcuColorFmt, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+	tcu::TextureLevel	referenceLevel	(tcuColorFmt, fbExtent.x(), fbExtent.y());
+	auto				referenceAccess	= referenceLevel.getAccess();
+	tcu::clear(referenceAccess, geomColor);
+
+	auto& log = m_context.getTestContext().getLog();
+	if (!tcu::floatThresholdCompare(log, "ResultColor", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+	// Verify depth/stencil if available.
+	if (hasDepth)
+	{
+		const auto& allocation = depthVerifBuffer->getAllocation();
+		invalidateAlloc(ctx.vkd, ctx.device, allocation);
+
+		tcu::PixelBufferAccess	resultDepth		(depthCopyFormat, fbExtent, allocation.getHostPtr());
+		tcu::TextureLevel		referenceDepth	(depthCopyFormat, fbExtent.x(), fbExtent.y());
+		auto					refDepthAccess	= referenceDepth.getAccess();
+
+		tcu::clearDepth(refDepthAccess, geomDepth);
+		const float depthThreshold = 0.000025f; // Should be good enough for D16, D24 and D32 given the depth values we're using.
+
+		if (!tcu::dsThresholdCompare(log, "ResultDepth", "", refDepthAccess, resultDepth, depthThreshold, tcu::COMPARE_LOG_ON_ERROR))
+			return tcu::TestStatus::fail("Unexpected depth in result buffer; check log for details");
+	}
+	if (hasStencil)
+	{
+		const auto& allocation = stencilVerifBuffer->getAllocation();
+		invalidateAlloc(ctx.vkd, ctx.device, allocation);
+
+		tcu::PixelBufferAccess	resultStencil		(stencilCopyFormat, fbExtent, allocation.getHostPtr());
+		tcu::TextureLevel		referenceStencil	(stencilCopyFormat, fbExtent.x(), fbExtent.y());
+		auto					refStencilAccess	= referenceStencil.getAccess();
+
+		tcu::clearStencil(refStencilAccess, stencilClr);
+		const float stencilThreshold = 0.0f; // This is actually not used for stencil.
+
+		if (!tcu::dsThresholdCompare(log, "ResultStencil", "", refStencilAccess, resultStencil, stencilThreshold, tcu::COMPARE_LOG_ON_ERROR))
+			return tcu::TestStatus::fail("Unexpected stencil value in result buffer; check log for details");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
 
 // Utilities for test names
 
@@ -1055,6 +1641,69 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConst
 	}
 
 	stencilTests->addChild(noColorAttachmentTests.release());
+
+	// Tests attempting to enable the stencil test while not using a stencil attachment.
+	const auto isNoStencilRelevantVariant	= (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC
+											|| pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV
+											|| pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY);
+	if (isNoStencilRelevantVariant)
+	{
+		de::MovePtr<tcu::TestCaseGroup> noStencilAttGroup (new tcu::TestCaseGroup(testCtx, "no_stencil_att"));
+
+		const VkFormat depthComponentFormats[] =
+		{
+			VK_FORMAT_D16_UNORM,
+			VK_FORMAT_X8_D24_UNORM_PACK32,
+			VK_FORMAT_D32_SFLOAT,
+			VK_FORMAT_D16_UNORM_S8_UINT,
+			VK_FORMAT_D24_UNORM_S8_UINT,
+			VK_FORMAT_D32_SFLOAT_S8_UINT,
+		};
+
+		for (const auto dynamicRendering : { false, true })
+		{
+			if (!dynamicRendering && isConstructionTypeShaderObject(pipelineConstructionType))
+				continue;
+
+#ifdef CTS_USES_VULKANSC
+			if (dynamicRendering)
+				continue;
+#endif
+
+			const char* renderingGroupName = (dynamicRendering ? "dynamic_rendering" : "render_passes");
+			de::MovePtr<tcu::TestCaseGroup> renderingGroup (new tcu::TestCaseGroup(testCtx, renderingGroupName));
+
+			for (const auto dynamicEnable : { false, true })
+			{
+				const char* enableGroupName = (dynamicEnable ? "dynamic_enable" : "static_enable");
+				de::MovePtr<tcu::TestCaseGroup> dynEnableGroup (new tcu::TestCaseGroup(testCtx, enableGroupName));
+
+				for (const auto& depthComponentFormat : depthComponentFormats)
+				{
+					// When using classic render passes, we cannot indicate a separate stencil format and image.
+					const auto tcuFormat = mapVkFormat(depthComponentFormat);
+					if (!dynamicRendering && tcu::hasStencilComponent(tcuFormat.order))
+						continue;
+
+					const NoStencilAttachmentParams params
+					{
+						pipelineConstructionType,
+						depthComponentFormat,
+						dynamicRendering,
+						dynamicEnable,
+					};
+					const std::string testName = getFormatCaseName(depthComponentFormat);
+					dynEnableGroup->addChild(new NoStencilAttachmentCase(testCtx, testName, params));
+				}
+
+				renderingGroup->addChild(dynEnableGroup.release());
+			}
+
+			noStencilAttGroup->addChild(renderingGroup.release());
+		}
+
+		stencilTests->addChild(noStencilAttGroup.release());
+	}
 
 	return stencilTests.release();
 }
