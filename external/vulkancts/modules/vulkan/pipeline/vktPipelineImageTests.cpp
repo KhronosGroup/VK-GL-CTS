@@ -621,6 +621,9 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx,
 		for (size_t flagNdx = 0; flagNdx < DE_LENGTH_OF_ARRAY(pipelineProtectedAccess); ++flagNdx) {
 			if (!pipelineProtectedAccess[protectedNdx] && pipelineProtectedFlag[flagNdx]) continue;
 
+			/* VK_EXT_pipeline_protected_access doesn't apply to shader objects */
+			if (pipelineProtectedAccess[protectedNdx] && isConstructionTypeShaderObject(pipelineConstructionType)) continue;
+
 			for (size_t sizeNdx = 0; sizeNdx < imageSizes.size(); sizeNdx++)
 			{
 				for (size_t arraySizeNdx = 0; arraySizeNdx < arraySizes.size(); arraySizeNdx++)
