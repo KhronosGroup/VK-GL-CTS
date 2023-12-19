@@ -2539,6 +2539,8 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
 				glLog.glUniform1i(offsetLocation, i);
 				glLog.glDispatchCompute((dispatchCount - i)*imageSize.x(), imageSize.y(), numSlicesOrFaces);
 				GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "glDispatchCompute");
+				glLog.glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+				GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "glMemoryBarrier");
 			}
 		}
 	}
