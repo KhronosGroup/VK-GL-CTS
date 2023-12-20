@@ -150,6 +150,9 @@ public:
 	const std::string&				getApplicationName				(void) const;
 	const std::string&				getInitialCmdLine				(void) const;
 
+	//! Is quiet mode active?
+	bool							quietMode						(void) const;
+
 	//! Get log file name (--deqp-log-filename)
 	const char*						getLogFileName					(void) const;
 
