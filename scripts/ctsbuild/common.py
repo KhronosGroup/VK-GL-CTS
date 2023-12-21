@@ -68,7 +68,7 @@ def die (msg):
 	exit(-1)
 
 def shellquote(s):
-	return '"%s"' % s.replace('\\', '\\\\').replace('"', '\"').replace('$', '\$').replace('`', '\`')
+	return '"%s"' % s.replace('\\', '\\\\').replace('"', '\"').replace('$', '\\$').replace('`', '\\`')
 
 g_workDirStack = []
 
