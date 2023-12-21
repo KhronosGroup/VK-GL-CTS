@@ -399,16 +399,19 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&	vk,
 		255u,								// write mask
 		255u);								// reference
 
+	const bool useDepth		= (depthAttachmentFormat != VK_FORMAT_UNDEFINED);
+	const bool useStencil	= (stencilAttachmentFormat != VK_FORMAT_UNDEFINED);
+
 	VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,		// VkStructureType								sType;
 		DE_NULL,														// const void*									pNext;
 		(VkPipelineDepthStencilStateCreateFlags)0,						// VkPipelineDepthStencilStateCreateFlags		flags;
-		VK_TRUE,														// VkBool32										depthTestEnable;
-		VK_TRUE,														// VkBool32										depthWriteEnable;
+		(useDepth ? VK_TRUE : VK_FALSE),								// VkBool32										depthTestEnable;
+		(useDepth ? VK_TRUE : VK_FALSE),								// VkBool32										depthWriteEnable;
 		VK_COMPARE_OP_ALWAYS,											// VkCompareOp									depthCompareOp;
 		VK_FALSE,														// VkBool32										depthBoundsTestEnable;
-		VK_TRUE,														// VkBool32										stencilTestEnable;
+		(useStencil ? VK_TRUE : VK_FALSE),								// VkBool32										stencilTestEnable;
 		stencilOp,														// VkStencilOpState								front;
 		stencilOp,														// VkStencilOpState								back;
 		0.0f,															// float										minDepthBounds;
@@ -527,14 +530,7 @@ VkFormat getSupportedStencilFormat (const InstanceInterface&	vki,
 	return VK_FORMAT_UNDEFINED;
 }
 
-tcu::TextureFormat getDepthTextureFormat (const VkFormat	depthStencilFormat)
-{
-	return	((depthStencilFormat == VK_FORMAT_D24_UNORM_S8_UINT) ?
-			tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNSIGNED_INT_24_8_REV) :
-			tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::FLOAT));
-}
-
-tcu::TextureLevel generateColroImage (const tcu::TextureFormat	format,
+tcu::TextureLevel generateColorImage (const tcu::TextureFormat	format,
 									  const UVec2&				renderSize,
 									  const int					attachmentNdx)
 {
@@ -944,18 +940,18 @@ void DynamicRenderingTestInstance::initialize (void)
 		const VkDeviceSize				imageBufferStencilSize	= m_parameters.renderSize.x() *
 																  m_parameters.renderSize.y() *
 																  tcu::getPixelSize(mapVkFormat(VK_FORMAT_S8_UINT));
-		const VkDeviceSize				imageBufferDepthlSize	= m_parameters.renderSize.x() *
+		const VkDeviceSize				imageBufferDepthSize	= m_parameters.renderSize.x() *
 																  m_parameters.renderSize.y() *
-																  tcu::getPixelSize(getDepthTextureFormat(m_formatStencilDepthImage));
+																  tcu::getPixelSize(getDepthCopyFormat(m_formatStencilDepthImage));
 
-		const VkImageUsageFlags			imageStenciDepthlUsage	= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+		const VkImageUsageFlags			imageStenciDepthUsage	= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
 																| VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 																| VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		const VkImageCreateInfo			imageInfo				= makeImageCreateInfo(m_formatStencilDepthImage,
-																					  m_parameters.renderSize, imageStenciDepthlUsage);
+																					  m_parameters.renderSize, imageStenciDepthUsage);
 		const VkBufferCreateInfo		bufferStencilInfo		= makeBufferCreateInfo(imageBufferStencilSize,
 																					   VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-		const VkBufferCreateInfo		bufferDepthlInfo		= makeBufferCreateInfo(imageBufferDepthlSize,
+		const VkBufferCreateInfo		bufferDepthInfo			= makeBufferCreateInfo(imageBufferDepthSize,
 																					   VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
 		m_imageStencilDepth				= makeImage(vk, device, imageInfo);
@@ -963,7 +959,7 @@ void DynamicRenderingTestInstance::initialize (void)
 
 		m_imageStencilBuffer			= Buffer::createAndAlloc(vk, device, bufferStencilInfo,
 																 allocator, MemoryRequirement::HostVisible);
-		m_imageDepthBuffer				= Buffer::createAndAlloc(vk, device, bufferDepthlInfo,
+		m_imageDepthBuffer				= Buffer::createAndAlloc(vk, device, bufferDepthInfo,
 																 allocator, MemoryRequirement::HostVisible);
 		m_stencilDepthAttachmentView	= makeImageView(vk, device, *m_imageStencilDepth,
 														VK_IMAGE_VIEW_TYPE_2D, m_formatStencilDepthImage, imageStencilSubresource);
@@ -973,7 +969,7 @@ void DynamicRenderingTestInstance::initialize (void)
 		flushAlloc(vk, device, alloc);
 
 		const Allocation allocDepth = m_imageDepthBuffer->getBoundMemory();
-		deMemset(allocDepth.getHostPtr(), 0, static_cast<std::size_t>(imageBufferDepthlSize));
+		deMemset(allocDepth.getHostPtr(), 0, static_cast<std::size_t>(imageBufferDepthSize));
 		flushAlloc(vk, device, allocDepth);
 	}
 
@@ -983,11 +979,11 @@ void DynamicRenderingTestInstance::initialize (void)
 
 	for (deUint32 ndx = 0; ndx < COLOR_ATTACHMENTS_NUMBER; ++ndx)
 	{
-		m_referenceImages.push_back(generateColroImage(mapVkFormat(m_parameters.imageFormat),
+		m_referenceImages.push_back(generateColorImage(mapVkFormat(m_parameters.imageFormat),
 			m_parameters.renderSize, ndx));
 	}
 
-	m_referenceImages.push_back(generateDepthImage(getDepthTextureFormat(m_formatStencilDepthImage),
+	m_referenceImages.push_back(generateDepthImage(getDepthCopyFormat(m_formatStencilDepthImage),
 		m_parameters.renderSize, 0.2f));
 
 	m_referenceImages.push_back(generateStencilImage(mapVkFormat(VK_FORMAT_S8_UINT),
@@ -1109,6 +1105,8 @@ void DynamicRenderingTestInstance::preBarier (VkCommandBuffer		cmdBuffer,
 {
 	const DeviceInterface&	vk = m_context.getDeviceInterface();
 
+	VkPipelineStageFlags srcStages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
 	std::vector<VkImageMemoryBarrier> barriers;
 
 	for (deUint32 ndx = 0; ndx < colorAtchCount; ++ndx)
@@ -1126,8 +1124,10 @@ void DynamicRenderingTestInstance::preBarier (VkCommandBuffer		cmdBuffer,
 
 	if (imagesFormat.depth != VK_FORMAT_UNDEFINED)
 	{
+		const bool						prevXFer = (imagesLayout.oldDepth == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		const VkAccessFlags				srcAccess = (prevXFer ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_NONE_KHR);
 		const VkImageSubresourceRange	subresource = makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
-		const VkImageMemoryBarrier		barrier = makeImageMemoryBarrier(VK_ACCESS_NONE_KHR,
+		const VkImageMemoryBarrier		barrier = makeImageMemoryBarrier(srcAccess,
 																		 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 																		 imagesLayout.oldDepth,
 																		 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
@@ -1135,12 +1135,17 @@ void DynamicRenderingTestInstance::preBarier (VkCommandBuffer		cmdBuffer,
 																		 subresource);
 		imagesLayout.oldDepth = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		barriers.push_back(barrier);
+
+		if (prevXFer)
+			srcStages |= VK_PIPELINE_STAGE_TRANSFER_BIT;
 	}
 
 	if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
 	{
+		const bool						prevXFer = (imagesLayout.oldStencil == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		const VkAccessFlags				srcAccess = (prevXFer ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_NONE_KHR);
 		const VkImageSubresourceRange	subresource = makeImageSubresourceRange(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u);
-		const VkImageMemoryBarrier		barrier = makeImageMemoryBarrier(VK_ACCESS_NONE_KHR,
+		const VkImageMemoryBarrier		barrier = makeImageMemoryBarrier(srcAccess,
 																		 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 																		 imagesLayout.oldStencil,
 																		 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
@@ -1148,11 +1153,14 @@ void DynamicRenderingTestInstance::preBarier (VkCommandBuffer		cmdBuffer,
 																		 subresource);
 		imagesLayout.oldStencil = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		barriers.push_back(barrier);
+
+		if (prevXFer)
+			srcStages |= VK_PIPELINE_STAGE_TRANSFER_BIT;
 	}
 
 	cmdPipelineImageMemoryBarrier(vk,
 								  cmdBuffer,
-								  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+								  srcStages,
 								  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
 								  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 								  barriers.data(),
@@ -1335,7 +1343,7 @@ void DynamicRenderingTestInstance::verifyDepth (const tcu::TextureLevel&	depthRe
 	const Allocation		allocDepth = m_imageDepthBuffer->getBoundMemory();
 	invalidateAlloc(vk, device, allocDepth);
 
-	const tcu::ConstPixelBufferAccess	resultDepthImage(getDepthTextureFormat(m_formatStencilDepthImage),
+	const tcu::ConstPixelBufferAccess	resultDepthImage(getDepthCopyFormat(m_formatStencilDepthImage),
 															m_parameters.renderSize.x(),
 															m_parameters.renderSize.y(),
 															1u, allocDepth.getHostPtr());
@@ -1356,8 +1364,8 @@ void DynamicRenderingTestInstance::verifyDepth (const tcu::TextureLevel&	depthRe
 	}
 	else
 	{
-		if (!tcu::floatThresholdCompare(log, "Compare Depth Image", "Result comparison",
-			depthReference.getAccess(), resultDepthImage, Vec4(0.02f), tcu::COMPARE_LOG_ON_ERROR))
+		if (!tcu::dsThresholdCompare(log, "Compare Depth Image", "Result comparison",
+			depthReference.getAccess(), resultDepthImage, 0.02f, tcu::COMPARE_LOG_ON_ERROR))
 		{
 			TCU_FAIL("Rendered depth image is not correct");
 		}
@@ -3635,7 +3643,7 @@ void PartialBindingDepthStencil::baseTest (const VkPipeline					pipeline,
 	{
 		VkImageSubresourceRange	subresource	= makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u);
 		VkImageMemoryBarrier	barrier		= makeImageMemoryBarrier(VK_ACCESS_NONE_KHR,
-																	 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+																	 VK_ACCESS_TRANSFER_WRITE_BIT,
 																	 imagesLayout.oldDepth,
 																	 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 																	 *m_imageStencilDepth,
@@ -3643,8 +3651,7 @@ void PartialBindingDepthStencil::baseTest (const VkPipeline					pipeline,
 		cmdPipelineImageMemoryBarrier(vk,
 									  *m_cmdBuffer,
 									  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-									  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-									  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+									  VK_PIPELINE_STAGE_TRANSFER_BIT,
 									  &barrier,
 									  1u);
 		imagesLayout.oldDepth	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -3671,15 +3678,20 @@ void PartialBindingDepthStencil::baseTest (const VkPipeline					pipeline,
 
 	// Copy images
 	{
+		const auto prevDepthXfer	= (imagesLayout.oldDepth == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		const auto prevStencilXfer	= (imagesLayout.oldStencil == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		const auto srcAccessDepth	= (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | (prevDepthXfer ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_NONE_KHR));
+		const auto srcAccessStencil	= (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | (prevStencilXfer ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_NONE_KHR));
+
 		copyImageToBuffer(vk, *m_cmdBuffer, *m_imageStencilDepth, m_imageDepthBuffer->object(),
 						  tcu::IVec2(m_parameters.renderSize.x(), m_parameters.renderSize.y()),
-						  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, imagesLayout.oldDepth,
+						  srcAccessDepth, imagesLayout.oldDepth,
 						  1u, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 		imagesLayout.oldDepth = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
 		copyImageToBuffer(vk, *m_cmdBuffer, *m_imageStencilDepth, m_imageStencilBuffer->object(),
 						  tcu::IVec2(m_parameters.renderSize.x(), m_parameters.renderSize.y()),
-						  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, imagesLayout.oldStencil,
+						  srcAccessStencil, imagesLayout.oldStencil,
 						  1u, VK_IMAGE_ASPECT_STENCIL_BIT, VK_IMAGE_ASPECT_STENCIL_BIT);
 		imagesLayout.oldStencil = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	}
@@ -3697,7 +3709,7 @@ void PartialBindingDepthStencil::baseTest (const VkPipeline					pipeline,
 		}
 		else
 		{
-			reference = tcu::TextureLevel(getDepthTextureFormat(m_formatStencilDepthImage),
+			reference = tcu::TextureLevel(getDepthCopyFormat(m_formatStencilDepthImage),
 										  m_parameters.renderSize.x(), m_parameters.renderSize.y());
 
 			for (int z = 0u; z < reference.getDepth(); ++z)
