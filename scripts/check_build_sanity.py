@@ -231,10 +231,10 @@ def getBuildRecipes ():
 	return [(b.getName(), [b]) for b in BUILD_TARGETS]
 
 def getAllRecipe (recipes):
-	allSteps = []
+	allSteps = {}
 	for name, steps in recipes:
-		allSteps += steps
-	return ("all", allSteps)
+		allSteps[name] = steps
+	return allSteps
 
 def getRecipes ():
 	recipes = EARLY_SPECIAL_RECIPES + getBuildRecipes() + LATE_SPECIAL_RECIPES
