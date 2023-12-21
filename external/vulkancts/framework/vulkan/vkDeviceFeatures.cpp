@@ -151,7 +151,8 @@ namespace vk
 				{
 #ifndef CTS_USES_VULKANSC
 					// Some non-standard promotions may need feature structs filled in anyway.
-					if (!strcmp(featureName, "VK_EXT_extended_dynamic_state") && vk13Supported)
+					if (!strcmp(featureName, "VK_EXT_extended_dynamic_state") &&
+						(de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), "VK_EXT_extended_dynamic_state")))
 					{
 						FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
 						if (p == DE_NULL)
@@ -161,7 +162,8 @@ namespace vk
 						f->extendedDynamicState = true;
 						m_features.push_back(p);
 					}
-					if (!strcmp(featureName, "VK_EXT_extended_dynamic_state2") && vk13Supported)
+					if (!strcmp(featureName, "VK_EXT_extended_dynamic_state2") &&
+						(de::contains(allDeviceExtensions.begin(), allDeviceExtensions.end(), "VK_EXT_extended_dynamic_state2")))
 					{
 						FeatureStructWrapperBase *p = (*featureStructCreationData.creatorFunction)();
 						if (p == DE_NULL)
