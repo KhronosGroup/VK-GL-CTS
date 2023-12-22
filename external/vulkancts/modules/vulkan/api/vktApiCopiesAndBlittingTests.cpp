@@ -4216,11 +4216,35 @@ bool BlittingImages::checkCompressedNonNearestFilteredResult(const tcu::ConstPix
 //! Utility to encapsulate coordinate computation and loops.
 struct CompareEachPixelInEachRegion
 {
+protected:
+	void getUsedZRange (int32_t range[2], const ImageParms& imgParams, const VkImageSubresourceLayers& layers, const VkOffset3D offsets[2]) const
+	{
+		if (imgParams.imageType == VK_IMAGE_TYPE_3D)
+		{
+			range[0] = offsets[0].z;
+			range[1] = offsets[1].z;
+		}
+		else if (imgParams.imageType == VK_IMAGE_TYPE_2D)
+		{
+			range[0] = static_cast<int32_t>(layers.baseArrayLayer);
+			range[1] = static_cast<int32_t>(layers.baseArrayLayer + (
+				(layers.layerCount == VK_REMAINING_ARRAY_LAYERS)
+				? (getArraySize(imgParams) - layers.baseArrayLayer)
+				: layers.layerCount));
+		}
+		else
+		{
+			range[0] = 0;
+			range[1] = 1;
+		}
+	}
+
+public:
 	virtual		 ~CompareEachPixelInEachRegion  (void) {}
 	virtual bool compare								(const void* pUserData, const int x, const int y, const int z, const tcu::Vec3& srcNormCoord) const = 0;
 
 	bool forEach (const void*							pUserData,
-				  const std::vector<CopyRegion>&		regions,
+				  const TestParams&						params,
 				  const int								sourceWidth,
 				  const int								sourceHeight,
 				  const int								sourceDepth,
@@ -4228,19 +4252,25 @@ struct CompareEachPixelInEachRegion
 	{
 		bool compareOk = true;
 
-		for (std::vector<CopyRegion>::const_iterator regionIter = regions.begin(); regionIter != regions.end(); ++regionIter)
+		for (std::vector<CopyRegion>::const_iterator regionIter = params.regions.begin(); regionIter != params.regions.end(); ++regionIter)
 		{
 			const VkImageBlit& blit = regionIter->imageBlit;
 
+			int32_t srcZ[2];
+			int32_t dstZ[2];
+
+			getUsedZRange(srcZ, params.src.image, blit.srcSubresource, blit.srcOffsets);
+			getUsedZRange(dstZ, params.dst.image, blit.dstSubresource, blit.dstOffsets);
+
 			const int	xStart	= deMin32(blit.dstOffsets[0].x, blit.dstOffsets[1].x);
 			const int	yStart	= deMin32(blit.dstOffsets[0].y, blit.dstOffsets[1].y);
-			const int	zStart	= deMin32(blit.dstOffsets[0].z, blit.dstOffsets[1].z);
+			const int	zStart	= deMin32(dstZ[0], dstZ[1]);
 			const int	xEnd	= deMax32(blit.dstOffsets[0].x, blit.dstOffsets[1].x);
 			const int	yEnd	= deMax32(blit.dstOffsets[0].y, blit.dstOffsets[1].y);
-			const int	zEnd	= deMax32(blit.dstOffsets[0].z, blit.dstOffsets[1].z);
+			const int	zEnd	= deMax32(dstZ[0], dstZ[1]);
 			const float	xScale	= static_cast<float>(blit.srcOffsets[1].x - blit.srcOffsets[0].x) / static_cast<float>(blit.dstOffsets[1].x - blit.dstOffsets[0].x);
 			const float	yScale	= static_cast<float>(blit.srcOffsets[1].y - blit.srcOffsets[0].y) / static_cast<float>(blit.dstOffsets[1].y - blit.dstOffsets[0].y);
-			const float	zScale	= static_cast<float>(blit.srcOffsets[1].z - blit.srcOffsets[0].z) / static_cast<float>(blit.dstOffsets[1].z - blit.dstOffsets[0].z);
+			const float	zScale	= static_cast<float>(srcZ[1] - srcZ[0]) / static_cast<float>(dstZ[1] - dstZ[0]);
 			const float srcInvW	= 1.0f / static_cast<float>(sourceWidth);
 			const float srcInvH	= 1.0f / static_cast<float>(sourceHeight);
 			const float srcInvD	= 1.0f / static_cast<float>(sourceDepth);
@@ -4253,7 +4283,7 @@ struct CompareEachPixelInEachRegion
 				(
 					(xScale * (static_cast<float>(x - blit.dstOffsets[0].x) + 0.5f) + static_cast<float>(blit.srcOffsets[0].x)) * srcInvW,
 					(yScale * (static_cast<float>(y - blit.dstOffsets[0].y) + 0.5f) + static_cast<float>(blit.srcOffsets[0].y)) * srcInvH,
-					(zScale * (static_cast<float>(z - blit.dstOffsets[0].z) + 0.5f) + static_cast<float>(blit.srcOffsets[0].z)) * srcInvD
+					(zScale * (static_cast<float>(z - dstZ[0]) + 0.5f) + static_cast<float>(srcZ[0])) * srcInvD
 				);
 
 				if (!compare(pUserData, x, y, z, srcNormCoord))
@@ -4305,7 +4335,7 @@ bool floatNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
 							  const tcu::Vec4&						sourceThreshold,
 							  const tcu::Vec4&						resultThreshold,
 							  const tcu::PixelBufferAccess&			errorMask,
-							  const std::vector<CopyRegion>&		regions)
+							  const TestParams&						params)
 {
 	const tcu::Sampler		sampler		(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
 										 0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
@@ -4321,10 +4351,11 @@ bool floatNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
 		const tcu::ConstPixelBufferAccess&	result;
 		const tcu::Sampler&					sampler;
 		const tcu::LookupPrecision&			precision;
+		const TestParams&					params;
 		const bool							isSRGB;
 	} capture =
 	{
-		source, result, sampler, precision, tcu::isSRGB(result.getFormat())
+		source, result, sampler, precision, params, tcu::isSRGB(result.getFormat())
 	};
 
 	const struct Loop : CompareEachPixelInEachRegion
@@ -4345,13 +4376,13 @@ bool floatNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
 		}
 	} loop;
 
-	return loop.forEach(&capture, regions, source.getWidth(), source.getHeight(), source.getDepth(), errorMask);
+	return loop.forEach(&capture, params, source.getWidth(), source.getHeight(), source.getDepth(), errorMask);
 }
 
 bool intNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
 							const tcu::ConstPixelBufferAccess&	result,
 							const tcu::PixelBufferAccess&		errorMask,
-							const std::vector<CopyRegion>&		regions)
+							const TestParams&					params)
 {
 	const tcu::Sampler		sampler		(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
 										 0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
@@ -4402,7 +4433,7 @@ bool intNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
 		}
 	} loop;
 
-	return loop.forEach(&capture, regions, source.getWidth(), source.getHeight(), source.getDepth(), errorMask);
+	return loop.forEach(&capture, params, source.getWidth(), source.getHeight(), source.getDepth(), errorMask);
 }
 
 bool BlittingImages::checkNearestFilteredResult (const tcu::ConstPixelBufferAccess&	result,
@@ -4435,13 +4466,13 @@ bool BlittingImages::checkNearestFilteredResult (const tcu::ConstPixelBufferAcce
 
 	if (dstImageIsIntClass)
 	{
-		ok = intNearestBlitCompare(source, result, errorMask, m_params.regions);
+		ok = intNearestBlitCompare(source, result, errorMask, m_params);
 	}
 	else
 	{
 		const tcu::Vec4 srcMaxDiff = getFloatOrFixedPointFormatThreshold(source.getFormat());
 		const tcu::Vec4 dstMaxDiff = getFloatOrFixedPointFormatThreshold(result.getFormat());
-		ok = floatNearestBlitCompare(source, result, srcMaxDiff, dstMaxDiff, errorMask, m_params.regions);
+		ok = floatNearestBlitCompare(source, result, srcMaxDiff, dstMaxDiff, errorMask, m_params);
 	}
 
 	if (result.getFormat() != tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8))
@@ -4581,7 +4612,7 @@ bool BlittingImages::checkCompressedNearestFilteredResult (const tcu::ConstPixel
 	const tcu::ConstPixelBufferAccess src = clampSource ? clampedSourceLevel.getAccess() : source;
 	const tcu::ConstPixelBufferAccess res = clampResult ? clampedResultLevel.getAccess() : result;
 
-	if (floatNearestBlitCompare(src, res, srcMaxDiff, dstMaxDiff, errorMask, m_params.regions))
+	if (floatNearestBlitCompare(src, res, srcMaxDiff, dstMaxDiff, errorMask, m_params))
 	{
 		log << tcu::TestLog::EndImageSet;
 		return true;
@@ -5614,6 +5645,10 @@ bool BlittingMipmaps::checkNearestFilteredResult (void)
 			if (m_params.regions.at(regionNdx).imageBlit.dstSubresource.mipLevel == mipLevelNdx)
 				mipLevelRegions.push_back(m_params.regions.at(regionNdx));
 
+		// Use the calculated regions instead of the original ones.
+		TestParams newParams = m_params;
+		newParams.regions = mipLevelRegions;
+
 		tcu::TextureLevel				errorMaskStorage	(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), result.getWidth(), result.getHeight(), result.getDepth());
 		tcu::PixelBufferAccess			errorMask			= errorMaskStorage.getAccess();
 		tcu::Vec4						pixelBias			(0.0f, 0.0f, 0.0f, 0.0f);
@@ -5624,14 +5659,14 @@ bool BlittingMipmaps::checkNearestFilteredResult (void)
 		if (dstChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
 			dstChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
 		{
-			singleLevelOk = intNearestBlitCompare(source, result, errorMask, mipLevelRegions);
+			singleLevelOk = intNearestBlitCompare(source, result, errorMask, newParams);
 		}
 		else
 		{
 			const tcu::Vec4 srcMaxDiff = getFloatOrFixedPointFormatThreshold(source.getFormat());
 			const tcu::Vec4 dstMaxDiff = getFloatOrFixedPointFormatThreshold(result.getFormat());
 
-			singleLevelOk = floatNearestBlitCompare(source, result, srcMaxDiff, dstMaxDiff, errorMask, mipLevelRegions);
+			singleLevelOk = floatNearestBlitCompare(source, result, srcMaxDiff, dstMaxDiff, errorMask, newParams);
 		}
 
 		if (dstFormat != tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8))
@@ -14047,8 +14082,6 @@ void addBlittingImageArrayTests (tcu::TestCaseGroup* group, TestParams params)
 		params.dst.image.extent			 = defaultExtent;
 		params.src.image.extent.depth	 = layerCount;
 		params.dst.image.extent.depth	 = layerCount;
-		params.src.image.fillMode		 = FILL_MODE_RED;
-		params.dst.image.fillMode		 = FILL_MODE_RED;
 		params.filter					 = VK_FILTER_NEAREST;
 		params.extensionFlags			|= MAINTENANCE_5;
 
