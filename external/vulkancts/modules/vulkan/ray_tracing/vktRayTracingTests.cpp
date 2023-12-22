@@ -45,6 +45,8 @@
 #include "vktRayTracingBarycentricCoordinatesTests.hpp"
 #include "vktRayTracingNonUniformArgsTests.hpp"
 #include "vktRayTracingPipelineFlagsTests.hpp"
+#include "vktRayTracingOpacityMicromapTests.hpp"
+#include "vktRayTracingPositionFetchTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -55,9 +57,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ray_tracing_pipeline", "Ray tracing tests"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	group->addChild(createBuiltinTests(testCtx));
 	group->addChild(createSpecConstantTests(testCtx));
@@ -86,6 +88,8 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createNonUniformArgsTests(testCtx));
 	group->addChild(createPipelineFlagsTests(testCtx));
 	group->addChild(createTraceRays2Tests(testCtx));
+	group->addChild(createOpacityMicromapTests(testCtx));
+	group->addChild(createPositionFetchTests(testCtx));
 
 	return group.release();
 }

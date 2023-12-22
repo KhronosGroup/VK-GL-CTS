@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +48,7 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuMaybe.hpp"
+#include "tcuImageCompare.hpp"
 
 #include "deStringUtil.hpp"
 #include "deMemory.h"
@@ -99,20 +102,21 @@ class SamplerTest : public vkt::TestCase
 public:
 										SamplerTest						(tcu::TestContext&			testContext,
 																		 const char*				name,
-																		 const char*				description,
 																		 PipelineConstructionType	pipelineConstructionType,
 																		 SamplerViewType			imageViewType,
 																		 VkFormat					imageFormat,
 																		 int						imageSize,
 																		 float						samplerLod,
-																		 bool						separateStencilUsage);
+																		 bool						separateStencilUsage,
+																		 bool						sampleStencil);
 	virtual								~SamplerTest					(void) {}
 
 	virtual ImageSamplingInstanceParams	getImageSamplingInstanceParams	(SamplerViewType	imageViewType,
 																		 VkFormat			imageFormat,
 																		 int				imageSize,
 																		 float				samplerLod,
-																		 bool				separateStencilUsage) const;
+																		 bool				separateStencilUsage,
+																		 bool				sampleStencil) const;
 
 	tcu::Vec4							swizzle							(tcu::Vec4 inputData, VkComponentMapping componentMapping, float zeroOrOneValue) const;
 	virtual void						initPrograms					(SourceCollections& sourceCollections) const;
@@ -123,7 +127,7 @@ public:
 	virtual VkSamplerCreateInfo			getSamplerCreateInfo			(void) const;
 	virtual VkComponentMapping			getComponentMapping				(void) const;
 
-	static std::string					getGlslSamplerType				(const tcu::TextureFormat& format, SamplerViewType type);
+	static std::string					getGlslSamplerType				(const tcu::TextureFormat& format, SamplerViewType type, bool sampleStencil);
 	static tcu::IVec3					getImageSize					(SamplerViewType viewType, int size);
 	static int							getArraySize					(SamplerViewType viewType);
 
@@ -134,6 +138,7 @@ protected:
 	int									m_imageSize;
 	float								m_samplerLod;
 	bool								m_separateStencilUsage;
+	bool								m_sampleStencil;
 };
 
 class SamplerMagFilterTest : public SamplerTest
@@ -141,7 +146,6 @@ class SamplerMagFilterTest : public SamplerTest
 public:
 									SamplerMagFilterTest	(tcu::TestContext&			testContext,
 															 const char*				name,
-															 const char*				description,
 															 PipelineConstructionType	pipelineConstructionType,
 															 SamplerViewType			imageViewType,
 															 VkFormat					imageFormat,
@@ -159,7 +163,6 @@ class SamplerMinFilterTest : public SamplerTest
 public:
 									SamplerMinFilterTest	(tcu::TestContext&			testContext,
 															 const char*				name,
-															 const char*				description,
 															 PipelineConstructionType	pipelineConstructionType,
 															 SamplerViewType			imageViewType,
 															 VkFormat					imageFormat,
@@ -177,7 +180,6 @@ class SamplerMagReduceFilterTest : public SamplerMagFilterTest
 public:
 												SamplerMagReduceFilterTest	(tcu::TestContext&			testContext,
 																			const char*					name,
-																			const char*					description,
 																			PipelineConstructionType	pipelineConstructionType,
 																			SamplerViewType				imageViewType,
 																			VkFormat					imageFormat,
@@ -199,7 +201,6 @@ class SamplerMinReduceFilterTest : public SamplerMinFilterTest
 public:
 												SamplerMinReduceFilterTest	(tcu::TestContext&			testContext,
 																			 const char*				name,
-																			 const char*				description,
 																			 PipelineConstructionType	pipelineConstructionType,
 																			 SamplerViewType			imageViewType,
 																			 VkFormat					imageFormat,
@@ -221,7 +222,6 @@ class SamplerLodTest : public SamplerTest
 public:
 									SamplerLodTest			(tcu::TestContext&			testContext,
 															 const char*				name,
-															 const char*				description,
 															 PipelineConstructionType	pipelineConstructionType,
 															 SamplerViewType			imageViewType,
 															 VkFormat					imageFormat,
@@ -260,7 +260,6 @@ class SamplerAddressModesTest : public SamplerTest
 public:
 										SamplerAddressModesTest		(tcu::TestContext&			testContext,
 																	 const char*				name,
-																	 const char*				description,
 																	 PipelineConstructionType	pipelineConstructionType,
 																	 SamplerViewType			imageViewType,
 																	 VkFormat					imageFormat,
@@ -270,7 +269,8 @@ public:
 																	 VkBorderColor				borderColor,
 																	 rr::GenericVec4			customBorderColorValue,
 																	 bool						customBorderColorFormatless,
-																	 bool						separateStencilUsage);
+																	 bool						separateStencilUsage,
+																	 bool						sampleStencil);
 	virtual								~SamplerAddressModesTest	(void) {}
 	virtual tcu::UVec2					getRenderSize				(SamplerViewType viewType) const;
 	virtual std::vector<Vertex4Tex4>	createVertices				(void) const;
@@ -292,40 +292,53 @@ private:
 
 SamplerTest::SamplerTest	(tcu::TestContext&			testContext,
 							 const char*				name,
-							 const char*				description,
 							 PipelineConstructionType	pipelineConstructionType,
 							 SamplerViewType			imageViewType,
 							 VkFormat					imageFormat,
 							 int						imageSize,
 							 float						samplerLod,
-							 bool						separateStencilUsage)
-	: vkt::TestCase					(testContext, name, description)
+							 bool						separateStencilUsage,
+							 bool						sampleStencil)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_imageViewType				(imageViewType)
 	, m_imageFormat					(imageFormat)
 	, m_imageSize					(imageSize)
 	, m_samplerLod					(samplerLod)
 	, m_separateStencilUsage		(separateStencilUsage)
+	, m_sampleStencil				(sampleStencil)
 {
+	// Can't do both at the same time with the current code.
+	DE_ASSERT(!separateStencilUsage || !sampleStencil);
 }
 
 ImageSamplingInstanceParams SamplerTest::getImageSamplingInstanceParams (SamplerViewType	imageViewType,
 																		 VkFormat			imageFormat,
 																		 int				imageSize,
 																		 float				samplerLod,
-																		 bool				separateStencilUsage) const
+																		 bool				separateStencilUsage,
+																		 bool				sampleStencil) const
 {
 	const tcu::UVec2				renderSize			= getRenderSize(imageViewType);
 	const std::vector<Vertex4Tex4>	vertices			= createVertices();
 	const VkSamplerCreateInfo		samplerParams		= getSamplerCreateInfo();
 	const VkComponentMapping		componentMapping	= getComponentMapping();
 
-	const VkImageAspectFlags		imageAspect			= (!isCompressedFormat(imageFormat) && hasDepthComponent(mapVkFormat(imageFormat).order)) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+	const auto						isDSFormat			= isDepthStencilFormat(imageFormat);
+	const auto						tcuFormat			= (isDSFormat ? mapVkFormat(imageFormat) : tcu::TextureFormat());
+	const auto						hasDepth			= (isDSFormat && tcu::hasDepthComponent(tcuFormat.order));
+	const auto						hasStencil			= (isDSFormat && tcu::hasStencilComponent(tcuFormat.order));
+	const auto						imageAspect			= (isDSFormat ? (sampleStencil ? VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT) : VK_IMAGE_ASPECT_COLOR_BIT);
 	const deUint32					mipLevels			= (imageViewType.isNormalized() ? static_cast<deUint32>(deLog2Floor32(imageSize)) + 1u : 1u);
+
+	DE_UNREF(hasDepth);		// For debug builds.
+	DE_UNREF(hasStencil);	// For debug builds.
+	DE_ASSERT(imageAspect != VK_IMAGE_ASPECT_DEPTH_BIT || hasDepth);
+	DE_ASSERT(imageAspect != VK_IMAGE_ASPECT_STENCIL_BIT || hasStencil);
 
 	const VkImageSubresourceRange	subresourceRange	=
 	{
-		imageAspect,										// VkImageAspectFlags	aspectMask;
+		(VkImageAspectFlags)imageAspect,					// VkImageAspectFlags	aspectMask;
 		0u,													// deUint32				baseMipLevel;
 		mipLevels,											// deUint32				mipLevels;
 		0u,													// deUint32				baseArrayLayer;
@@ -341,8 +354,12 @@ ImageSamplingInstanceParams SamplerTest::getImageSamplingInstanceParams (Sampler
 
 void SamplerTest::checkSupport (Context& context) const
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
-	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_samplerLod, m_separateStencilUsage));
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+#ifndef CTS_USES_VULKANSC
+	if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR || m_imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_samplerLod, m_separateStencilUsage, m_sampleStencil));
 }
 
 tcu::Vec4 SamplerTest::swizzle (tcu::Vec4 inputData, VkComponentMapping componentMapping, float zeroOrOneValue) const
@@ -385,7 +402,7 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 	tcu::Vec4						lookupScale;
 	tcu::Vec4						lookupBias;
 
-	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias);
+	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias, m_sampleStencil);
 
 	tcu::Vec4						swizzledScale	= swizzle(lookupScale,	getComponentMapping(), 1.0f);
 	tcu::Vec4						swizzledBias	= swizzle(lookupBias,	getComponentMapping(), 0.0f);
@@ -426,7 +443,7 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 			  << "}\n";
 
 	fragmentSrc << "#version 440\n"
-				<< "layout(set = 0, binding = 0) uniform highp " << getGlslSamplerType(format, m_imageViewType) << " texSampler;\n"
+				<< "layout(set = 0, binding = 0) uniform highp " << getGlslSamplerType(format, m_imageViewType, m_sampleStencil) << " texSampler;\n"
 				<< "layout(location = 0) in highp vec4 vtxTexCoords;\n"
 				<< "layout(location = 0) out highp vec4 fragColor;\n"
 				<< "void main (void)\n"
@@ -452,7 +469,7 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* SamplerTest::createInstance (Context& context) const
 {
-	return new ImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_samplerLod, m_separateStencilUsage));
+	return new ImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_samplerLod, m_separateStencilUsage, m_sampleStencil));
 }
 
 tcu::UVec2 SamplerTest::getRenderSize (SamplerViewType viewType) const
@@ -488,24 +505,24 @@ VkSamplerCreateInfo SamplerTest::getSamplerCreateInfo (void) const
 {
 	const VkSamplerCreateInfo defaultSamplerParams =
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,									// VkStructureType			sType;
-		DE_NULL,																// const void*				pNext;
-		0u,																		// VkSamplerCreateFlags		flags;
-		VK_FILTER_NEAREST,														// VkFilter					magFilter;
-		VK_FILTER_NEAREST,														// VkFilter					minFilter;
-		VK_SAMPLER_MIPMAP_MODE_NEAREST,											// VkSamplerMipmapMode		mipmapMode;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeU;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeV;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeW;
-		0.0f,																	// float					mipLodBias;
-		VK_FALSE,																// VkBool32					anisotropyEnable;
-		1.0f,																	// float					maxAnisotropy;
-		false,																	// VkBool32					compareEnable;
-		VK_COMPARE_OP_NEVER,													// VkCompareOp				compareOp;
-		0.0f,																	// float					minLod;
-		(m_imageViewType.isNormalized() ? 0.25f : 0.0f),						// float					maxLod;
-		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, m_imageFormat),	// VkBorderColor			borderColor;
-		!m_imageViewType.isNormalized(),										// VkBool32					unnormalizedCoordinates;
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,													// VkStructureType			sType;
+		DE_NULL,																				// const void*				pNext;
+		0u,																						// VkSamplerCreateFlags		flags;
+		VK_FILTER_NEAREST,																		// VkFilter					magFilter;
+		VK_FILTER_NEAREST,																		// VkFilter					minFilter;
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,															// VkSamplerMipmapMode		mipmapMode;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,													// VkSamplerAddressMode		addressModeU;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,													// VkSamplerAddressMode		addressModeV;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,													// VkSamplerAddressMode		addressModeW;
+		0.0f,																					// float					mipLodBias;
+		VK_FALSE,																				// VkBool32					anisotropyEnable;
+		1.0f,																					// float					maxAnisotropy;
+		false,																					// VkBool32					compareEnable;
+		VK_COMPARE_OP_NEVER,																	// VkCompareOp				compareOp;
+		0.0f,																					// float					minLod;
+		(m_imageViewType.isNormalized() ? 0.25f : 0.0f),										// float					maxLod;
+		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, m_imageFormat, m_sampleStencil),	// VkBorderColor			borderColor;
+		!m_imageViewType.isNormalized(),														// VkBool32					unnormalizedCoordinates;
 	};
 
 	return defaultSamplerParams;
@@ -517,11 +534,11 @@ VkComponentMapping SamplerTest::getComponentMapping (void) const
 	return componentMapping;
 }
 
-std::string SamplerTest::getGlslSamplerType (const tcu::TextureFormat& format, SamplerViewType type)
+std::string SamplerTest::getGlslSamplerType (const tcu::TextureFormat& format, SamplerViewType type, bool sampleStencil)
 {
 	std::ostringstream samplerType;
 
-	if (tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
+	if (tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER || sampleStencil)
 		samplerType << "u";
 	else if (tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
 		samplerType << "i";
@@ -606,13 +623,12 @@ int SamplerTest::getArraySize (SamplerViewType viewType)
 
 SamplerMagFilterTest::SamplerMagFilterTest (tcu::TestContext&			testContext,
 											const char*					name,
-											const char*					description,
 											PipelineConstructionType	pipelineConstructionType,
 											SamplerViewType				imageViewType,
 											VkFormat					imageFormat,
 											VkFilter					magFilter,
 											bool						separateStencilUsage)
-	: SamplerTest	(testContext, name, description, pipelineConstructionType, imageViewType, imageFormat, 8, 0.0f, separateStencilUsage)
+	: SamplerTest	(testContext, name, pipelineConstructionType, imageViewType, imageFormat, 8, 0.0f, separateStencilUsage, false)
 	, m_magFilter	(magFilter)
 {
 }
@@ -630,13 +646,12 @@ VkSamplerCreateInfo SamplerMagFilterTest::getSamplerCreateInfo (void) const
 
 SamplerMinFilterTest::SamplerMinFilterTest (tcu::TestContext&			testContext,
 											const char*					name,
-											const char*					description,
 											PipelineConstructionType	pipelineConstructionType,
 											SamplerViewType				imageViewType,
 											VkFormat					imageFormat,
 											VkFilter					minFilter,
 											bool						separateStencilUsage)
-	: SamplerTest	(testContext, name, description, pipelineConstructionType, imageViewType, imageFormat, 32, 0.0f, separateStencilUsage)
+	: SamplerTest	(testContext, name, pipelineConstructionType, imageViewType, imageFormat, 32, 0.0f, separateStencilUsage, false)
 	, m_minFilter	(minFilter)
 {
 }
@@ -673,14 +688,13 @@ VkSamplerReductionModeCreateInfo getSamplerReductionCreateInfo (VkSamplerReducti
 
 SamplerMagReduceFilterTest::SamplerMagReduceFilterTest (tcu::TestContext&			testContext,
 														const char*					name,
-														const char*					description,
 														PipelineConstructionType	pipelineConstructionType,
 														SamplerViewType				imageViewType,
 														VkFormat					imageFormat,
 														VkComponentMapping			componentMapping,
 														VkSamplerReductionMode		reductionMode,
 														bool						separateStencilUsage)
-	: SamplerMagFilterTest		(testContext, name, description, pipelineConstructionType, imageViewType, imageFormat, VK_FILTER_LINEAR, separateStencilUsage)
+	: SamplerMagFilterTest		(testContext, name, pipelineConstructionType, imageViewType, imageFormat, VK_FILTER_LINEAR, separateStencilUsage)
 	, m_reductionCreaterInfo	(getSamplerReductionCreateInfo(reductionMode))
 	, m_componentMapping		(componentMapping)
 {
@@ -704,14 +718,13 @@ VkComponentMapping SamplerMagReduceFilterTest::getComponentMapping (void) const
 
 SamplerMinReduceFilterTest::SamplerMinReduceFilterTest (tcu::TestContext&			testContext,
 														const char*					name,
-														const char*					description,
 														PipelineConstructionType	pipelineConstructionType,
 														SamplerViewType				imageViewType,
 														VkFormat					imageFormat,
 														VkComponentMapping			componentMapping,
 														VkSamplerReductionMode		reductionMode,
 														bool						separateStencilUsage)
-	: SamplerMinFilterTest		(testContext, name, description, pipelineConstructionType, imageViewType, imageFormat, VK_FILTER_LINEAR, separateStencilUsage)
+	: SamplerMinFilterTest		(testContext, name, pipelineConstructionType, imageViewType, imageFormat, VK_FILTER_LINEAR, separateStencilUsage)
 	, m_reductionCreaterInfo	(getSamplerReductionCreateInfo(reductionMode))
 	, m_componentMapping		(componentMapping)
 {
@@ -735,7 +748,6 @@ VkComponentMapping SamplerMinReduceFilterTest::getComponentMapping (void) const
 
 SamplerLodTest::SamplerLodTest (tcu::TestContext&			testContext,
 								const char*					name,
-								const char*					description,
 								PipelineConstructionType	pipelineConstructionType,
 								SamplerViewType				imageViewType,
 								VkFormat					imageFormat,
@@ -745,7 +757,7 @@ SamplerLodTest::SamplerLodTest (tcu::TestContext&			testContext,
 								float						mipLodBias,
 								float						samplerLod,
 								bool						separateStencilUsage)
-	: SamplerTest	(testContext, name, description, pipelineConstructionType, imageViewType, imageFormat, 32, samplerLod, separateStencilUsage)
+	: SamplerTest	(testContext, name, pipelineConstructionType, imageViewType, imageFormat, 32, samplerLod, separateStencilUsage, false)
 	, m_mipmapMode	(mipmapMode)
 	, m_minLod		(minLod)
 	, m_maxLod		(maxLod)
@@ -770,7 +782,6 @@ VkSamplerCreateInfo SamplerLodTest::getSamplerCreateInfo (void) const
 
 SamplerAddressModesTest::SamplerAddressModesTest (tcu::TestContext&			testContext,
 												  const char*				name,
-												  const char*				description,
 												  PipelineConstructionType	pipelineConstructionType,
 												  SamplerViewType			imageViewType,
 												  VkFormat					imageFormat,
@@ -780,8 +791,9 @@ SamplerAddressModesTest::SamplerAddressModesTest (tcu::TestContext&			testContex
 												  VkBorderColor				borderColor,
 												  rr::GenericVec4			customBorderColorValue,
 												  bool						customBorderColorFormatless,
-												  bool						separateStencilUsage)
-	: SamplerTest	(testContext, name, description, pipelineConstructionType, imageViewType, imageFormat, 8, 0.0f, separateStencilUsage)
+												  bool						separateStencilUsage,
+												  bool						sampleStencil)
+	: SamplerTest	(testContext, name, pipelineConstructionType, imageViewType, imageFormat, 8, 0.0f, separateStencilUsage, sampleStencil)
 	, m_addressU	(addressU)
 	, m_addressV	(addressV)
 	, m_addressW	(addressW)
@@ -875,22 +887,28 @@ std::string getFormatCaseName (const VkFormat format)
 
 MovePtr<tcu::TestCaseGroup> createSamplerMagFilterTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, SamplerViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
 {
-	MovePtr<tcu::TestCaseGroup> samplerMagFilterTests (new tcu::TestCaseGroup(testCtx, "mag_filter", "Tests for magnification filter"));
+	// Tests for magnification filter
+	MovePtr<tcu::TestCaseGroup> samplerMagFilterTests (new tcu::TestCaseGroup(testCtx, "mag_filter"));
 
 	if (imageViewType.isNormalized() && (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat))))
-		samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "linear", "Magnifies image using VK_FILTER_LINEAR", pipelineConstructionType, imageViewType, imageFormat, VK_FILTER_LINEAR, separateStencilUsage));
-	samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "nearest", "Magnifies image using VK_FILTER_NEAREST", pipelineConstructionType, imageViewType, imageFormat, VK_FILTER_NEAREST, separateStencilUsage));
+		// Magnifies image using VK_FILTER_LINEAR
+		samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "linear", pipelineConstructionType, imageViewType, imageFormat, VK_FILTER_LINEAR, separateStencilUsage));
+	// Magnifies image using VK_FILTER_NEAREST
+	samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "nearest", pipelineConstructionType, imageViewType, imageFormat, VK_FILTER_NEAREST, separateStencilUsage));
 
 	return samplerMagFilterTests;
 }
 
 MovePtr<tcu::TestCaseGroup> createSamplerMinFilterTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, SamplerViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
 {
-	MovePtr<tcu::TestCaseGroup> samplerMinFilterTests (new tcu::TestCaseGroup(testCtx, "min_filter", "Tests for minification filter"));
+	// Tests for minification filter
+	MovePtr<tcu::TestCaseGroup> samplerMinFilterTests (new tcu::TestCaseGroup(testCtx, "min_filter"));
 
 	if (imageViewType.isNormalized() && (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat))))
-		samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "linear", "Minifies image using VK_FILTER_LINEAR", pipelineConstructionType, imageViewType, imageFormat, VK_FILTER_LINEAR, separateStencilUsage));
-	samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "nearest", "Minifies image using VK_FILTER_NEAREST", pipelineConstructionType, imageViewType, imageFormat, VK_FILTER_NEAREST, separateStencilUsage));
+		// Minifies image using VK_FILTER_LINEAR
+		samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "linear", pipelineConstructionType, imageViewType, imageFormat, VK_FILTER_LINEAR, separateStencilUsage));
+	// Minifies image using VK_FILTER_NEAREST
+	samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "nearest", pipelineConstructionType, imageViewType, imageFormat, VK_FILTER_NEAREST, separateStencilUsage));
 
 	return samplerMinFilterTests;
 }
@@ -933,20 +951,23 @@ static std::string getComponentMappingGroupName (const VkComponentMapping& compo
 
 MovePtr<tcu::TestCaseGroup> createSamplerMagReduceFilterTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, SamplerViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
 {
-	MovePtr<tcu::TestCaseGroup> samplerMagReduceFilterTests (new tcu::TestCaseGroup(testCtx, "mag_reduce", "Tests for magnification reduce filter"));
+	MovePtr<tcu::TestCaseGroup> samplerMagReduceFilterTests (new tcu::TestCaseGroup(testCtx, "mag_reduce"));
 
 	for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(reduceFilterComponentMappings); ++i)
 	{
 		const VkComponentMapping&	mapping		= reduceFilterComponentMappings[i];
 
-		MovePtr<tcu::TestCaseGroup> componentGroup (new tcu::TestCaseGroup(testCtx, getComponentMappingGroupName(mapping).c_str(), "Group for given view component mapping"));
+		MovePtr<tcu::TestCaseGroup> componentGroup (new tcu::TestCaseGroup(testCtx, getComponentMappingGroupName(mapping).c_str()));
 
 		if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
 		{
-			componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "average", "Magnifies image using VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE", pipelineConstructionType, imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE, separateStencilUsage));
+			// Magnifies image using VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE
+			componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "average", pipelineConstructionType, imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE, separateStencilUsage));
 		}
-		componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "min", "Magnifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MIN", pipelineConstructionType, imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MIN, separateStencilUsage));
-		componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "max", "Magnifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MAX", pipelineConstructionType, imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MAX, separateStencilUsage));
+		// Magnifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MIN
+		componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "min", pipelineConstructionType, imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MIN, separateStencilUsage));
+		// Magnifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MAX
+		componentGroup->addChild(new SamplerMagReduceFilterTest(testCtx, "max", pipelineConstructionType, imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MAX, separateStencilUsage));
 		samplerMagReduceFilterTests->addChild(componentGroup.release());
 	}
 	return samplerMagReduceFilterTests;
@@ -954,20 +975,23 @@ MovePtr<tcu::TestCaseGroup> createSamplerMagReduceFilterTests (tcu::TestContext&
 
 MovePtr<tcu::TestCaseGroup> createSamplerMinReduceFilterTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, SamplerViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
 {
-	MovePtr<tcu::TestCaseGroup> samplerMinReduceFilterTests (new tcu::TestCaseGroup(testCtx, "min_reduce", "Tests for minification reduce filter"));
+	MovePtr<tcu::TestCaseGroup> samplerMinReduceFilterTests (new tcu::TestCaseGroup(testCtx, "min_reduce"));
 
 	for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(reduceFilterComponentMappings); ++i)
 	{
 		const VkComponentMapping&	mapping = reduceFilterComponentMappings[i];
 
-		MovePtr<tcu::TestCaseGroup> componentGroup (new tcu::TestCaseGroup(testCtx, getComponentMappingGroupName(mapping).c_str(), "Group for given view component mapping"));
+		MovePtr<tcu::TestCaseGroup> componentGroup (new tcu::TestCaseGroup(testCtx, getComponentMappingGroupName(mapping).c_str()));
 
 		if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
 		{
-			componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "average", "Minifies image using VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE", pipelineConstructionType, imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE, separateStencilUsage));
+			// Minifies image using VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE
+			componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "average", pipelineConstructionType, imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE, separateStencilUsage));
 		}
-		componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "min", "Minifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MIN", pipelineConstructionType, imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MIN, separateStencilUsage));
-		componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "max", "Minifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MAX", pipelineConstructionType, imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MAX, separateStencilUsage));
+		// Minifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MIN
+		componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "min", pipelineConstructionType, imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MIN, separateStencilUsage));
+		// Minifies and reduces image using VK_SAMPLER_REDUCTION_MODE_MAX
+		componentGroup->addChild(new SamplerMinReduceFilterTest(testCtx, "max", pipelineConstructionType, imageViewType, imageFormat, mapping, VK_SAMPLER_REDUCTION_MODE_MAX, separateStencilUsage));
 		samplerMinReduceFilterTests->addChild(componentGroup.release());
 	}
 	return samplerMinReduceFilterTests;
@@ -978,7 +1002,6 @@ MovePtr<tcu::TestCaseGroup> createSamplerLodTests (tcu::TestContext& testCtx, Pi
 	struct TestCaseConfig
 	{
 		const char*	name;
-		const char*	description;
 		float		minLod;
 		float		maxLod;
 		float		mipLodBias;
@@ -987,22 +1010,29 @@ MovePtr<tcu::TestCaseGroup> createSamplerLodTests (tcu::TestContext& testCtx, Pi
 
 	TestCaseConfig testCaseConfigs [] =
 	{
-		{ "equal_min_3_max_3",		"minLod = 3, maxLod = 3, mipLodBias = 0, lod = 0",		3.0f, 3.0f, 0.0f, 0.0f },
-		{ "select_min_1",			"minLod = 1, maxLod = 5, mipLodBias = 0, lod = 0",		1.0f, 5.0f, 0.0f, 0.0f },
-		{ "select_max_4",			"minLod = 0, maxLod = 4, mipLodBias = 0, lod = 5",		0.0f, 4.0f, 0.0f, 5.0f },
-		{ "select_bias_2_1",		"minLod = 0, maxLod = 2.1, mipLodBias = 5.0, lod = 0",	0.0f, 2.1f, 5.0f, 0.0f },
-		{ "select_bias_2_5",		"minLod = 0, maxLod = 5, mipLodBias = 2.5, lod = 0",	0.0f, 5.0f, 2.5f, 0.00001f },
-		{ "select_bias_3_1",		"minLod = 0, maxLod = 5, mipLodBias = -0.9, lod = 4.0",	0.0f, 5.0f, -0.9f, 4.0f },
-		{ "select_bias_3_7",		"minLod = 0, maxLod = 5, mipLodBias = 3.0, lod = 0.7",	0.0f, 5.0f, 3.0f, 0.7f },
+		// minLod = 3, maxLod = 3, mipLodBias = 0, lod = 0
+		{ "equal_min_3_max_3",3.0f, 3.0f, 0.0f, 0.0f },
+		// minLod = 1, maxLod = 5, mipLodBias = 0, lod = 0
+		{ "select_min_1",1.0f, 5.0f, 0.0f, 0.0f },
+		// minLod = 0, maxLod = 4, mipLodBias = 0, lod = 5
+		{ "select_max_4",0.0f, 4.0f, 0.0f, 5.0f },
+		// minLod = 0, maxLod = 2.1, mipLodBias = 5.0, lod = 0
+		{ "select_bias_2_1",0.0f, 2.1f, 5.0f, 0.0f },
+		// minLod = 0, maxLod = 5, mipLodBias = 2.5, lod = 0
+		{ "select_bias_2_5",0.0f, 5.0f, 2.5f, 0.00001f },
+		// minLod = 0, maxLod = 5, mipLodBias = -0.9, lod = 4.0
+		{ "select_bias_3_1",0.0f, 5.0f, -0.9f, 4.0f },
+		// minLod = 0, maxLod = 5, mipLodBias = 3.0, lod = 0.7
+		{ "select_bias_3_7",0.0f, 5.0f, 3.0f, 0.7f },
 	};
 
-	MovePtr<tcu::TestCaseGroup> samplerLodTests (new tcu::TestCaseGroup(testCtx, "lod", "Tests for sampler LOD"));
+	MovePtr<tcu::TestCaseGroup> samplerLodTests (new tcu::TestCaseGroup(testCtx, "lod"));
 
 	for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testCaseConfigs); configNdx++)
 	{
 		const TestCaseConfig& config = testCaseConfigs[configNdx];
 
-		samplerLodTests->addChild(new SamplerLodTest(testCtx, config.name, config.description, pipelineConstructionType, imageViewType, imageFormat, mipmapMode, config.minLod, config.maxLod, config.mipLodBias, config.lod, separateStencilUsage));
+		samplerLodTests->addChild(new SamplerLodTest(testCtx, config.name, pipelineConstructionType, imageViewType, imageFormat, mipmapMode, config.minLod, config.maxLod, config.mipLodBias, config.lod, separateStencilUsage));
 	}
 
 	return samplerLodTests;
@@ -1010,17 +1040,17 @@ MovePtr<tcu::TestCaseGroup> createSamplerLodTests (tcu::TestContext& testCtx, Pi
 
 MovePtr<tcu::TestCaseGroup> createSamplerMipmapTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, SamplerViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
 {
-	MovePtr<tcu::TestCaseGroup> samplerMipmapTests (new tcu::TestCaseGroup(testCtx, "mipmap", "Tests for mipmap modes"));
+	MovePtr<tcu::TestCaseGroup> samplerMipmapTests (new tcu::TestCaseGroup(testCtx, "mipmap"));
 
 	// Mipmap mode: nearest
-	MovePtr<tcu::TestCaseGroup> mipmapNearestTests (new tcu::TestCaseGroup(testCtx, "nearest", "Uses VK_TEX_MIPMAP_MODE_NEAREST"));
+	MovePtr<tcu::TestCaseGroup> mipmapNearestTests (new tcu::TestCaseGroup(testCtx, "nearest"));
 	mipmapNearestTests->addChild(createSamplerLodTests(testCtx, pipelineConstructionType, imageViewType, imageFormat, VK_SAMPLER_MIPMAP_MODE_NEAREST, separateStencilUsage).release());
 	samplerMipmapTests->addChild(mipmapNearestTests.release());
 
 	// Mipmap mode: linear
 	if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
 	{
-		MovePtr<tcu::TestCaseGroup> mipmapLinearTests(new tcu::TestCaseGroup(testCtx, "linear", "Uses VK_TEX_MIPMAP_MODE_LINEAR"));
+		MovePtr<tcu::TestCaseGroup> mipmapLinearTests(new tcu::TestCaseGroup(testCtx, "linear"));
 		mipmapLinearTests->addChild(createSamplerLodTests(testCtx, pipelineConstructionType, imageViewType, imageFormat, VK_SAMPLER_MIPMAP_MODE_LINEAR, separateStencilUsage).release());
 		samplerMipmapTests->addChild(mipmapLinearTests.release());
 	}
@@ -1028,7 +1058,7 @@ MovePtr<tcu::TestCaseGroup> createSamplerMipmapTests (tcu::TestContext& testCtx,
 	return samplerMipmapTests;
 }
 
-std::string getAddressModesCaseName (VkSamplerAddressMode u, VkSamplerAddressMode v, VkSamplerAddressMode w, BorderColor border, tcu::IVec4 customIntValue, bool formatless)
+std::string getAddressModesCaseName (VkSamplerAddressMode u, VkSamplerAddressMode v, VkSamplerAddressMode w, BorderColor border, tcu::IVec4 customIntValue, bool formatless, bool sampleStencil)
 {
 	static const char* borderColorNames[BORDER_COLOR_COUNT] =
 	{
@@ -1079,6 +1109,10 @@ std::string getAddressModesCaseName (VkSamplerAddressMode u, VkSamplerAddressMod
 			caseName << "_formatless";
 
 	}
+
+	if (sampleStencil)
+		caseName << "_stencil";
+
 	return caseName.str();
 }
 
@@ -1166,7 +1200,7 @@ MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests (tcu::TestContext& te
 			true,	tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),	tcu::IVec4(1, 1, 0, 1) },
 	};
 
-	MovePtr<tcu::TestCaseGroup> samplerAddressModesTests (new tcu::TestCaseGroup(testCtx, "address_modes", "Tests for address modes"));
+	MovePtr<tcu::TestCaseGroup> samplerAddressModesTests (new tcu::TestCaseGroup(testCtx, "address_modes"));
 
 	for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testCaseConfigs); configNdx++)
 	{
@@ -1177,24 +1211,49 @@ MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests (tcu::TestContext& te
 			 (config.v != VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE && config.v != VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER)))
 			 continue;
 
-		// VK_FORMAT_B4G4R4A4_UNORM_PACK16, VK_FORMAT_B5G6R5_UNORM_PACK16 and VK_FORMAT_B5G5R5A1_UNORM_PACK16 are forbidden
-		// for non-formatless custom border color.
+		// VK_FORMAT_B4G4R4A4_UNORM_PACK16, VK_FORMAT_B5G6R5_UNORM_PACK16, VK_FORMAT_B5G5R5A1_UNORM_PACK16
+		// and VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR are forbidden for non-formatless custom border color.
 		if ((imageFormat == VK_FORMAT_B4G4R4A4_UNORM_PACK16 ||
 			 imageFormat == VK_FORMAT_B5G6R5_UNORM_PACK16   ||
+#ifndef CTS_USES_VULKANSC
+			 imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR ||
+#endif
 			 imageFormat == VK_FORMAT_B5G5R5A1_UNORM_PACK16)  && config.border == BORDER_COLOR_CUSTOM && config.customColorFormatless)
 			continue;
 
-		samplerAddressModesTests->addChild(new SamplerAddressModesTest(testCtx,
-																	   getAddressModesCaseName(config.u, config.v, config.w, config.border, config.customColorValueInt, config.customColorFormatless).c_str(),
-																	   "",
-																	   pipelineConstructionType,
-																	   imageViewType,
-																	   imageFormat,
-																	   config.u, config.v, config.w,
-																	   getFormatBorderColor(config.border, imageFormat),
-																	   getFormatCustomBorderColor(config.customColorValueFloat, config.customColorValueInt, imageFormat),
-																	   config.customColorFormatless,
-																	   separateStencilUsage));
+		for (int i = 0; i < 2; ++i)
+		{
+			const bool isDSFormat		= isDepthStencilFormat(imageFormat);
+			const bool sampleStencil	= (i > 0);
+
+			if (separateStencilUsage && sampleStencil)
+				continue;
+
+			if (!isDSFormat && sampleStencil)
+				continue;
+
+			if (isDSFormat)
+			{
+				const auto tcuFormat = mapVkFormat(imageFormat);
+
+				if (!sampleStencil && !tcu::hasDepthComponent(tcuFormat.order))
+					continue;
+				if (sampleStencil && !tcu::hasStencilComponent(tcuFormat.order))
+					continue;
+			}
+
+			samplerAddressModesTests->addChild(new SamplerAddressModesTest(testCtx,
+																		getAddressModesCaseName(config.u, config.v, config.w, config.border, config.customColorValueInt, config.customColorFormatless, sampleStencil).c_str(),
+																		pipelineConstructionType,
+																		imageViewType,
+																		imageFormat,
+																		config.u, config.v, config.w,
+																		getFormatBorderColor(config.border, imageFormat, sampleStencil),
+																		getFormatCustomBorderColor(config.customColorValueFloat, config.customColorValueInt, imageFormat, sampleStencil),
+																		config.customColorFormatless,
+																		separateStencilUsage,
+																		sampleStencil));
+		}
 	}
 
 	return samplerAddressModesTests;
@@ -1231,7 +1290,7 @@ public:
 		static std::vector<vk::VkVertexInputAttributeDescription>	getAttributeDescriptions	(void);
 	};
 
-									ExactSamplingCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params);
+									ExactSamplingCase		(tcu::TestContext& testCtx, const std::string& name, const Params& params);
 	virtual							~ExactSamplingCase		(void) {}
 
 	virtual void					initPrograms			(vk::SourceCollections& programCollection) const;
@@ -1292,8 +1351,8 @@ std::vector<vk::VkVertexInputAttributeDescription> ExactSamplingCase::VertexData
 }
 
 
-ExactSamplingCase::ExactSamplingCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params)
-	: vkt::TestCase{testCtx, name, description}, m_params(params)
+ExactSamplingCase::ExactSamplingCase (tcu::TestContext& testCtx, const std::string& name, const Params& params)
+	: vkt::TestCase{testCtx, name}, m_params(params)
 {
 }
 
@@ -1375,6 +1434,11 @@ TestInstance* ExactSamplingCase::createInstance (Context& context) const
 
 void ExactSamplingCase::checkSupport (Context& context) const
 {
+#ifndef CTS_USES_VULKANSC
+	if (m_params.format == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	const auto&						vki					= context.getInstanceInterface();
 	const auto						physicalDevice		= context.getPhysicalDevice();
 	const auto						props				= vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, m_params.format);
@@ -1386,7 +1450,7 @@ void ExactSamplingCase::checkSupport (Context& context) const
 		|(m_params.solidColor ? vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT : 0)
 		);
 
-	checkPipelineLibraryRequirements(vki, physicalDevice, m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(vki, physicalDevice, m_params.pipelineConstructionType);
 
 	if ((props.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
 		TCU_THROW(NotSupportedError, "Selected format does not support the required features");
@@ -1404,7 +1468,9 @@ vk::VkExtent3D ExactSamplingInstance::getTextureExtent (void) const
 
 tcu::TestStatus ExactSamplingInstance::iterate (void)
 {
+	const auto& vki			= m_context.getInstanceInterface();
 	const auto&	vkd			= m_context.getDeviceInterface();
+	const auto  physDevice	= m_context.getPhysicalDevice();
 	const auto	device		= m_context.getDevice();
 	auto&		allocator	= m_context.getDefaultAllocator();
 	const auto	queue		= m_context.getUniversalQueue();
@@ -1492,26 +1558,26 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 	tcu::Vec4 texColor;
 
 	for (int x = 0; x < W; ++x)
-	for (int y = 0; y < H; ++y)
-	for (int z = 0; z < D; ++z)
-	{
-		if (m_params.solidColor)
-		{
-			// Texture with solid color for filtered sampling.
-			texColor = tcu::Vec4{0.5f, 0.25f, 0.7529411764705882f, 1.0f};
-		}
-		else
-		{
-			// Use a color gradient otherwise.
-			const float colorX = static_cast<float>(x) / divX;
-			const float colorY = static_cast<float>(y) / divY;
-			const float colorZ = std::min(colorX, colorY);
+		for (int y = 0; y < H; ++y)
+			for (int z = 0; z < D; ++z)
+			{
+				if (m_params.solidColor)
+				{
+					// Texture with solid color for filtered sampling.
+					texColor = tcu::Vec4{0.5f, 0.25f, 0.7529411764705882f, 1.0f};
+				}
+				else
+				{
+					// Use a color gradient otherwise.
+					const float colorX = static_cast<float>(x) / divX;
+					const float colorY = static_cast<float>(y) / divY;
+					const float colorZ = std::min(colorX, colorY);
 
-			texColor = tcu::Vec4{colorX, colorY, colorZ, 1.0f};
-		}
-		const tcu::Vec4 finalColor = (texColor - formatInfo.lookupBias) / formatInfo.lookupScale;
-		texPixels.setPixel(finalColor, x, y, z);
-	}
+					texColor = tcu::Vec4{colorX, colorY, colorZ, 1.0f};
+				}
+				const tcu::Vec4 finalColor = (texColor - formatInfo.lookupBias) / formatInfo.lookupScale;
+				texPixels.setPixel(finalColor, x, y, z);
+			}
 
 	vk::flushAlloc(vkd, device, texBufferAlloc);
 
@@ -1603,8 +1669,8 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 	updateBuilder.update(vkd, device);
 
 	// Shader modules.
-	const auto vertexModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const auto fragModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	const auto vertexModule	= vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto fragModule	= vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 
 	// Render pass.
 	const vk::VkAttachmentDescription fbAttachment =
@@ -1652,12 +1718,12 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 		0u,												// deUint32							dependencyCount;
 		nullptr,										// const VkSubpassDependency*		pDependencies;
 	};
-	const auto renderPass = vk::createRenderPass(vkd, device, &renderPassInfo);
+	RenderPassWrapper renderPass (m_params.pipelineConstructionType, vkd, device, &renderPassInfo);
 
 	// Framebuffer.
 	std::vector<vk::VkImageView> attachments;
 	attachments.push_back(fbView.get());
-	const auto framebuffer = vk::makeFramebuffer(vkd, device, renderPass.get(), 1u, &fbView.get(), texExtent.width, texExtent.height, texExtent.depth);
+	renderPass.createFramebuffer(vkd, device, 1u, &fbImage.get(),&fbView.get(), texExtent.width, texExtent.height, texExtent.depth);
 
 	// Push constant range.
 	const vk::VkPushConstantRange pcRange =
@@ -1678,7 +1744,7 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 		1u,													// deUint32							pushConstantRangeCount;
 		&pcRange,											// const VkPushConstantRange*		pPushConstantRanges;
 	};
-	const auto pipelineLayout = vk::createPipelineLayout(vkd, device, &pipelineLayoutInfo);
+	const vk::PipelineLayoutWrapper pipelineLayout (m_params.pipelineConstructionType, vkd, device, &pipelineLayoutInfo);
 
 	// Graphics pipeline.
 	const std::vector<vk::VkViewport>	viewports	{ vk::makeViewport(texExtent) };
@@ -1699,21 +1765,21 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 		vtxAttributeDescriptions.data(),								// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
 	};
 
-	GraphicsPipelineWrapper pipeline(vkd, device, m_params.pipelineConstructionType);
+	GraphicsPipelineWrapper pipeline(vki, vkd, physDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 	pipeline.setDefaultDepthStencilState()
 			.setDefaultRasterizationState()
 			.setDefaultMultisampleState()
 			.setDefaultColorBlendState()
-			.setupVertexInputStete(&vertexInputInfo)
+			.setupVertexInputState(&vertexInputInfo)
 			.setupPreRasterizationShaderState(viewports,
 							scissors,
-							*pipelineLayout,
+							pipelineLayout,
 							*renderPass,
 							0u,
-							*vertexModule)
-			.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragModule)
+							vertexModule)
+			.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
 			.setupFragmentOutputState(*renderPass)
-			.setMonolithicPipelineLayout(*pipelineLayout)
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 
 	// Command pool and command buffer.
@@ -1746,13 +1812,13 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 	vkd.cmdCopyBufferToImage(cmdBuffer, texBuffer.get(), texImage.get(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &texImageCopy);
 	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &postTexCopyBarrier);
 
-	vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), renderArea, clearFbColor);
-	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
+	renderPass.begin(vkd, cmdBuffer, renderArea, clearFbColor);
+	pipeline.bind(cmdBuffer);
 	vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 	vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), vk::VK_SHADER_STAGE_VERTEX_BIT, 0u, static_cast<deUint32>(sizeof(pushConstants)), &pushConstants);
 	vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(fullScreenQuad.size()), 1u, 0u, 0u);
-	vk::endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 
 	vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), iImgSize);
 
@@ -1779,21 +1845,21 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 
 	bool pass = true;
 	for (int x = 0; x < W; ++x)
-	for (int y = 0; y < H; ++y)
-	for (int z = 0; z < D; ++z)
-	{
-		const auto inPix	= texPixels.getPixel(x, y, z);
-		const auto outPix	= resultPixels.getPixel(x, y, z);
-		if (inPix == outPix)
-		{
-			diffImg.setPixel(colorGreen, x, y, z);
-		}
-		else
-		{
-			pass = false;
-			diffImg.setPixel(colorRed, x, y, z);
-		}
-	}
+		for (int y = 0; y < H; ++y)
+			for (int z = 0; z < D; ++z)
+			{
+				const auto inPix	= texPixels.getPixel(x, y, z);
+				const auto outPix	= resultPixels.getPixel(x, y, z);
+				if (inPix == outPix)
+				{
+					diffImg.setPixel(colorGreen, x, y, z);
+				}
+				else
+				{
+					pass = false;
+					diffImg.setPixel(colorRed, x, y, z);
+				}
+			}
 
 	tcu::TestStatus status = tcu::TestStatus::pass("Pass");
 	if (!pass)
@@ -1806,6 +1872,375 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 	}
 
 	return status;
+}
+
+enum class LodBiasCase
+{
+	SAMPLER_BIAS	= 0,
+	SAMPLER_MINLOD	= 1,
+	SHADER_LOD		= 2,
+	SHADER_BIAS		= 3,
+	VIEW_MINLOD		= 4,
+	CASE_COUNT		= 5,
+};
+
+std::string getLodBiasCaseName (LodBiasCase lodBiasCase)
+{
+	std::string name;
+
+	switch (lodBiasCase)
+	{
+	case LodBiasCase::SAMPLER_BIAS:		name = "sampler_bias";		break;
+	case LodBiasCase::SAMPLER_MINLOD:	name = "sampler_minlod";	break;
+	case LodBiasCase::SHADER_LOD:		name = "shader_lod";		break;
+	case LodBiasCase::SHADER_BIAS:		name = "shader_bias";		break;
+	case LodBiasCase::VIEW_MINLOD:		name = "view_minlod";		break;
+	case LodBiasCase::CASE_COUNT: // fallthrough
+	default:
+		DE_ASSERT(false);
+		break;
+	}
+
+	return name;
+}
+
+struct MaxSamplerLodBiasParams
+{
+	const PipelineConstructionType	pipelineConstructionType;
+	const LodBiasCase				lodBiasCase;
+};
+
+class MaxSamplerLodBiasCase : public vkt::TestCase
+{
+public:
+					MaxSamplerLodBiasCase	(tcu::TestContext& testCtx, const std::string& name, const MaxSamplerLodBiasParams& params)
+						: vkt::TestCase	(testCtx, name)
+						, m_params		(params)
+						{}
+	virtual			~MaxSamplerLodBiasCase	(void) {}
+
+	void			checkSupport			(Context& context) const override;
+	void			initPrograms			(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance			(Context& context) const override;
+
+protected:
+	const MaxSamplerLodBiasParams m_params;
+};
+
+class MaxSamplerLodBiasInstance : public vkt::TestInstance
+{
+public:
+						MaxSamplerLodBiasInstance	(Context& context, const MaxSamplerLodBiasParams& params)
+							: vkt::TestInstance	(context)
+							, m_params			(params)
+							{}
+	virtual				~MaxSamplerLodBiasInstance	(void) {}
+
+	tcu::TestStatus		iterate						(void);
+
+protected:
+	const MaxSamplerLodBiasParams m_params;
+};
+
+void MaxSamplerLodBiasCase::checkSupport (Context& context) const
+{
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+
+	if (m_params.lodBiasCase == LodBiasCase::VIEW_MINLOD)
+		context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
+}
+
+void MaxSamplerLodBiasCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "layout (location=0) in vec4 inPos;\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = inPos;\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	std::string			sampleStatement;
+	const std::string	sampleCoords = "vec2(gl_FragCoord.x / pc.fbWidth, gl_FragCoord.y / pc.fbHeight)";
+
+	if (m_params.lodBiasCase == LodBiasCase::SHADER_LOD)
+		sampleStatement = "textureLod(texSampler, " + sampleCoords + ", pc.lodLevel)";
+	else if (m_params.lodBiasCase == LodBiasCase::SHADER_BIAS)
+		sampleStatement = "texture(texSampler, " + sampleCoords + ", pc.lodLevel)";
+	else
+		sampleStatement = "textureLod(texSampler, " + sampleCoords + ", 0.0)";
+
+	DE_ASSERT(!sampleStatement.empty());
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "layout (set=0, binding=0) uniform sampler2D texSampler;\n"
+		<< "layout (push_constant, std430) uniform PushConstantBlock {\n"
+		<< "    float lodLevel;\n"
+		<< "    float fbWidth;\n"
+		<< "    float fbHeight;\n"
+		<< "} pc;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = " << sampleStatement << ";\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance* MaxSamplerLodBiasCase::createInstance (Context& context) const
+{
+	return new MaxSamplerLodBiasInstance(context, m_params);
+}
+
+tcu::TestStatus MaxSamplerLodBiasInstance::iterate (void)
+{
+	const auto ctx					= m_context.getContextCommonData();
+	const auto vkFormat				= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto tcuFormat			= mapVkFormat(vkFormat);
+	const auto imageType			= VK_IMAGE_TYPE_2D;
+	const auto tiling				= VK_IMAGE_TILING_OPTIMAL;
+	const auto textureUsage			= (VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+	const auto fbUsage				= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto sampleCount			= VK_SAMPLE_COUNT_1_BIT;
+	const auto descriptorType		= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	const auto maxLodBias			= getPhysicalDeviceProperties(ctx.vki, ctx.physicalDevice).limits.maxSamplerLodBias;
+	const auto roundedBias			= deFloatFloor(maxLodBias + 0.5f);
+	const auto textureProperties	= getPhysicalDeviceImageFormatProperties(ctx.vki, ctx.physicalDevice, vkFormat, imageType, tiling, textureUsage, 0u);
+	const auto textureExtent		= makeExtent3D(textureProperties.maxExtent.width, 1u, 1u);
+	const auto fbExtent				= tcu::IVec3(1, 1, 1);
+	const auto vkExtent				= makeExtent3D(fbExtent);
+	const auto baseSeed				= 1687852938u;
+
+	const VkImageCreateInfo textureCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,						//	VkStructureType			sType;
+		nullptr,													//	const void*				pNext;
+		0u,															//	VkImageCreateFlags		flags;
+		imageType,													//	VkImageType				imageType;
+		vkFormat,													//	VkFormat				format;
+		textureExtent,												//	VkExtent3D				extent;
+		textureProperties.maxMipLevels,								//	uint32_t				mipLevels;
+		1u,															//	uint32_t				arrayLayers;
+		sampleCount,												//	VkSampleCountFlagBits	samples;
+		tiling,														//	VkImageTiling			tiling;
+		textureUsage,												//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,									//	VkSharingMode			sharingMode;
+		0u,															//	uint32_t				queueFamilyIndexCount;
+		nullptr,													//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,									//	VkImageLayout			initialLayout;
+	};
+	ImageWithMemory texture (ctx.vkd, ctx.device, ctx.allocator, textureCreateInfo, MemoryRequirement::Any);
+	const auto textureColorSRR	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, textureCreateInfo.mipLevels, 0u, 1u);
+	const auto accessedLevel	= std::min(roundedBias, static_cast<float>(textureCreateInfo.mipLevels - 1u));
+
+#ifndef CTS_USES_VULKANSC
+	std::unique_ptr<VkImageViewMinLodCreateInfoEXT> viewMinLodPtr;
+	if (m_params.lodBiasCase == LodBiasCase::VIEW_MINLOD)
+	{
+		viewMinLodPtr.reset(new VkImageViewMinLodCreateInfoEXT{
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT,
+			nullptr,
+			accessedLevel, // VUID-VkImageViewMinLodCreateInfoEXT-minLod-06456 prevents us from using maxLodBias directly.
+		});
+	}
+#endif // CTS_USES_VULKANSC
+
+	const VkImageViewCreateInfo viewCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	//	VkStructureType			sType;
+#ifndef CTS_USES_VULKANSC
+		viewMinLodPtr.get(),						//	const void*				pNext;
+#else
+		nullptr,						//	const void*				pNext;
+#endif // CTS_USES_VULKANSC
+		0u,											//	VkImageViewCreateFlags	flags;
+		texture.get(),								//	VkImage					image;
+		VK_IMAGE_VIEW_TYPE_2D,						//	VkImageViewType			viewType;
+		vkFormat,									//	VkFormat				format;
+		{											//	VkComponentMapping		components;
+			VK_COMPONENT_SWIZZLE_R,
+			VK_COMPONENT_SWIZZLE_G,
+			VK_COMPONENT_SWIZZLE_B,
+			VK_COMPONENT_SWIZZLE_A,
+		},
+		textureColorSRR,							//	VkImageSubresourceRange	subresourceRange;
+	};
+	const auto textureView = createImageView(ctx.vkd, ctx.device, &viewCreateInfo);
+
+	// Output color buffer.
+	ImageWithBuffer colorBuffer (ctx.vkd, ctx.device, ctx.allocator, vkExtent, vkFormat, fbUsage, imageType);
+
+	// Texture sampler.
+	const float samplerMipLodBias	= ((m_params.lodBiasCase == LodBiasCase::SAMPLER_BIAS) ?	maxLodBias : 0.0f);
+	const float samplerMinLod		= ((m_params.lodBiasCase == LodBiasCase::SAMPLER_MINLOD) ?	maxLodBias : 0.0f);
+	const VkSamplerCreateInfo samplerCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,		//	VkStructureType			sType;
+		nullptr,									//	const void*				pNext;
+		0u,											//	VkSamplerCreateFlags	flags;
+		VK_FILTER_NEAREST,							//	VkFilter				magFilter;
+		VK_FILTER_NEAREST,							//	VkFilter				minFilter;
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,				//	VkSamplerMipmapMode		mipmapMode;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,				//	VkSamplerAddressMode	addressModeU;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,				//	VkSamplerAddressMode	addressModeV;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,				//	VkSamplerAddressMode	addressModeW;
+		samplerMipLodBias,							//	float					mipLodBias;
+		VK_FALSE,									//	VkBool32				anisotropyEnable;
+		0.0f,										//	float					maxAnisotropy;
+		VK_FALSE,									//	VkBool32				compareEnable;
+		VK_COMPARE_OP_NEVER,						//	VkCompareOp				compareOp;
+		samplerMinLod,								//	float					minLod;
+		VK_LOD_CLAMP_NONE,							//	float					maxLod;
+		VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,	//	VkBorderColor			borderColor;
+		VK_FALSE,									//	VkBool32				unnormalizedCoordinates;
+	};
+	const auto sampler = createSampler(ctx.vkd, ctx.device, &samplerCreateInfo);
+
+	// Vertex buffer.
+	const std::vector<tcu::Vec4> vertices
+	{
+		tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+		tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f),
+		tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f),
+		tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f),
+	};
+	const auto			vertexBufferSize	= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vertexBufferInfo	= makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	BufferWithMemory	vertexBuffer		(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, MemoryRequirement::HostVisible);
+	auto&				vertexBufferAlloc	= vertexBuffer.getAllocation();
+	void*				vertexBufferDataPtr	= vertexBufferAlloc.getHostPtr();
+	const auto			vertexBufferOffset	= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(vertexBufferDataPtr, de::dataOrNull(vertices), de::dataSize(vertices));
+	flushAlloc(ctx.vkd, ctx.device, vertexBufferAlloc);
+
+	// Render pass and framebuffer.
+	auto renderPass	= RenderPassWrapper(m_params.pipelineConstructionType, ctx.vkd, ctx.device, vkFormat);
+	renderPass.createFramebuffer(ctx.vkd, ctx.device, colorBuffer.getImage(), colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
+
+	// Push constants.
+	const std::vector<float>	pcValues	{ maxLodBias, static_cast<float>(vkExtent.width), static_cast<float>(vkExtent.height) };
+	const auto					pcSize		= static_cast<uint32_t>(de::dataSize(pcValues));
+	const auto					pcStages	= VK_SHADER_STAGE_FRAGMENT_BIT;
+	const auto					pcRange		= makePushConstantRange(pcStages, 0u, pcSize);
+
+	// Descriptor pool and set.
+	DescriptorSetLayoutBuilder setLayoutBuilder;
+	setLayoutBuilder.addSingleBinding			(descriptorType, VK_SHADER_STAGE_FRAGMENT_BIT);
+	const auto descriptorSetLayout				= setLayoutBuilder.build(ctx.vkd, ctx.device);
+	const PipelineLayoutWrapper pipelineLayout	(m_params.pipelineConstructionType, ctx.vkd, ctx.device, *descriptorSetLayout, &pcRange);
+
+	DescriptorPoolBuilder descriptorPoolBuilder;
+	descriptorPoolBuilder.addType(descriptorType);
+	const auto descriptorPool	= descriptorPoolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const auto descriptorSet	= makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *descriptorSetLayout);
+
+	DescriptorSetUpdateBuilder setUpdateBuilder;
+	const auto samplerDescriptorInfo = makeDescriptorImageInfo(*sampler, *textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	setUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &samplerDescriptorInfo);
+	setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+	// Pipeline.
+	const auto&	binaries	= m_context.getBinaryCollection();
+	const auto	vertMod		= ShaderWrapper(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragMod		= ShaderWrapper(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	GraphicsPipelineWrapper pipeline (ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
+	pipeline.setDefaultDepthStencilState()
+			.setDefaultRasterizationState()
+			.setDefaultMultisampleState()
+			.setDefaultColorBlendState()
+			.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+			.setupVertexInputState()
+			.setupPreRasterizationShaderState(viewports,
+							scissors,
+							pipelineLayout,
+							*renderPass,
+							0u,
+							vertMod)
+			.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragMod)
+			.setupFragmentOutputState(*renderPass)
+			.setMonolithicPipelineLayout(pipelineLayout)
+			.buildPipeline();
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+	// Transition texture to layout suitable for filling.
+	const auto preFillBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture.get(), textureColorSRR);
+	cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preFillBarrier);
+
+	// Fill every level with a different random color.
+	auto& log = m_context.getTestContext().getLog();
+	de::Random rnd(baseSeed + static_cast<uint32_t>(m_params.lodBiasCase));
+	std::vector<tcu::Vec4> levelColors;
+	levelColors.reserve(textureCreateInfo.mipLevels);
+
+	for (uint32_t level = 0u; level < textureCreateInfo.mipLevels; ++level)
+	{
+		const auto		levelRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, level, 1u, 0u, 1u);
+		// If we "embed" these expressions in the constructor below, separated by commas, the order in which colors are obtained would depend on the compiler.
+		const auto		red				= rnd.getFloat(0.0f, 1.0f);
+		const auto		green			= rnd.getFloat(0.0f, 1.0f);
+		const auto		blue			= rnd.getFloat(0.0f, 1.0f);
+		const tcu::Vec4	clearValue		(red, green, blue, 1.0f);
+		const auto		clearValueColor	= makeClearValueColorVec4(clearValue);
+
+		levelColors.push_back(clearValue);
+		ctx.vkd.cmdClearColorImage(cmdBuffer, texture.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValueColor.color, 1u, &levelRange);
+		log << tcu::TestLog::Message << "Level " << level << " cleared to " << clearValue << tcu::TestLog::EndMessage;
+	}
+
+	// Transition texture to suitable layout for reading it in the shader.
+	const auto preReadBarrier = makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texture.get(), textureColorSRR);
+	cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, &preReadBarrier);
+
+	const tcu::Vec4 fbClearColor (0.0f, 0.0f, 0.0f, 0.0f);
+	renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), fbClearColor);
+	ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+	pipeline.bind(cmdBuffer);
+	ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, de::dataOrNull(pcValues));
+	ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+	renderPass.end(ctx.vkd, cmdBuffer);
+
+	// Copy color buffer to verification buffer.
+	copyImageToBuffer(ctx.vkd,
+					  cmdBuffer,
+					  colorBuffer.getImage(),
+					  colorBuffer.getBuffer(),
+					  fbExtent.swizzle(0, 1),
+					  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+					  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+					  1u,
+					  VK_IMAGE_ASPECT_COLOR_BIT,
+					  VK_IMAGE_ASPECT_COLOR_BIT,
+					  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color buffer has the right mip level color.
+	const auto& colorBufferAlloc = colorBuffer.getBufferAllocation();
+	invalidateAlloc(ctx.vkd, ctx.device, colorBufferAlloc);
+
+	const tcu::ConstPixelBufferAccess	resultAccess		(tcuFormat, fbExtent, colorBufferAlloc.getHostPtr());
+	const auto							channelThreshold	= 0.005f; // 1/255 < 0.005 < 2/255
+	const tcu::Vec4						threshold			(channelThreshold, channelThreshold, channelThreshold, 0.0f);
+
+	if (!tcu::floatThresholdCompare(log, "Result", "", levelColors.at(static_cast<size_t>(accessedLevel)), resultAccess, threshold, tcu::COMPARE_LOG_EVERYTHING))
+		return tcu::TestStatus::fail("Unexpected color found in color buffer -- check log for details");
+
+	return tcu::TestStatus::pass("Pass");
 }
 
 } // anonymous
@@ -1845,6 +2280,9 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, Pip
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
 		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 
 		// Pairwise combinations of 8-bit channel formats, UNORM/SNORM/SINT/UINT/SRGB type x 1-to-4 channels x RGBA/BGRA order
 		VK_FORMAT_R8_SRGB,
@@ -1868,6 +2306,9 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, Pip
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_B8G8R8_UNORM,
 		VK_FORMAT_R8_UNORM,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 
 		// Pairwise combinations of 16/32-bit channel formats x SINT/UINT/SFLOAT type x 1-to-4 channels
 		VK_FORMAT_R32G32_SFLOAT,
@@ -1921,13 +2362,13 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, Pip
 		VK_FORMAT_D32_SFLOAT_S8_UINT,
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> viewTypeTests		(new tcu::TestCaseGroup(testCtx, "view_type", ""));
+	de::MovePtr<tcu::TestCaseGroup> viewTypeTests		(new tcu::TestCaseGroup(testCtx, "view_type"));
 
 	for (int viewTypeNdx = 0; viewTypeNdx < DE_LENGTH_OF_ARRAY(imageViewTypes); viewTypeNdx++)
 	{
 		const SamplerViewType			viewType		= imageViewTypes[viewTypeNdx].type;
-		de::MovePtr<tcu::TestCaseGroup>	viewTypeGroup	(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name, (std::string("Uses a ") + imageViewTypes[viewTypeNdx].name + " view").c_str()));
-		de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, "format", "Tests samplable formats"));
+		de::MovePtr<tcu::TestCaseGroup>	viewTypeGroup	(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name));
+		de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, "format"));
 
 		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
@@ -1946,8 +2387,7 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, Pip
 				continue;
 
 			de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx,
-																				getFormatCaseName(format).c_str(),
-																				(std::string("Samples a texture of format ") + getFormatName(format)).c_str()));
+																				getFormatCaseName(format).c_str()));
 
 			if (!isCompressed && viewType.isNormalized())
 			{
@@ -1989,7 +2429,7 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, Pip
 
 tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> exactSamplingTests(new tcu::TestCaseGroup(testCtx, "exact_sampling", "Exact sampling tests"));
+	de::MovePtr<tcu::TestCaseGroup> exactSamplingTests(new tcu::TestCaseGroup(testCtx, "exact_sampling"));
 
 	static const std::vector<vk::VkFormat> formats =
 	{
@@ -2014,6 +2454,9 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx, Pipelin
 		vk::VK_FORMAT_R8G8_SNORM,
 		vk::VK_FORMAT_B8G8R8_UNORM,
 		vk::VK_FORMAT_R8_UNORM,
+#ifndef CTS_USES_VULKANSC
+		vk::VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 
 		vk::VK_FORMAT_R32G32_SFLOAT,
 		vk::VK_FORMAT_R32G32B32_UINT,
@@ -2035,23 +2478,26 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx, Pipelin
 	{
 		const bool			unnormalized;
 		const std::string	name;
-		const std::string	desc;
 	} unnormalizedCoordinates[] =
 	{
-		{ false,	"normalized_coords",	"Normalized coordinates"	},
-		{ true,		"unnormalized_coords",	"Unnormalized coordinates"	},
+		// Normalized coordinates
+		{ false,	"normalized_coords"},
+		// Unnormalized coordinates
+		{ true,		"unnormalized_coords"},
 	};
 
 	static const struct
 	{
 		const tcu::Maybe<float>	offset;
 		const std::string		name;
-		const std::string		desc;
 	} testEdges[] =
 	{
-		{ tcu::Nothing,				"centered",		"Sampling points centered in texel"		},
-		{ tcu::just<float>(-1.0f),	"edge_left",	"Sampling points near left edge"		},
-		{ tcu::just<float>(+1.0f),	"edge_right",	"Sampling points near right edge"		},
+		// Sampling points centered in texel
+		{ tcu::Nothing,				"centered"},
+		// Sampling points near left edge
+		{ tcu::just<float>(-1.0f),	"edge_left"},
+		// Sampling points near right edge
+		{ tcu::just<float>(+1.0f),	"edge_right"},
 	};
 
 	static const std::vector<std::pair<bool, std::string>> solidColor =
@@ -2063,24 +2509,23 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx, Pipelin
 	for (const auto format : formats)
 	{
 		const std::string formatName	= getFormatCaseName(format);
-		const std::string description	= std::string("Exact sampling tests with image format ") + getFormatName(format);
 
-		de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str(), description.c_str()));
+		de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 
 		for (const auto& solid : solidColor)
 		{
-			de::MovePtr<tcu::TestCaseGroup> solidColorGroup(new tcu::TestCaseGroup(testCtx, solid.second.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> solidColorGroup(new tcu::TestCaseGroup(testCtx, solid.second.c_str()));
 
 			for (int unIdx = 0; unIdx < DE_LENGTH_OF_ARRAY(unnormalizedCoordinates); ++unIdx)
 			{
 				const auto&						unnorm		= unnormalizedCoordinates[unIdx];
-				de::MovePtr<tcu::TestCaseGroup> coordGroup	(new tcu::TestCaseGroup(testCtx, unnorm.name.c_str(), unnorm.desc.c_str()));
+				de::MovePtr<tcu::TestCaseGroup> coordGroup	(new tcu::TestCaseGroup(testCtx, unnorm.name.c_str()));
 
 				for (int edgeIdx = 0; edgeIdx < DE_LENGTH_OF_ARRAY(testEdges); ++edgeIdx)
 				{
 					const auto&						edges	= testEdges[edgeIdx];
 					const ExactSamplingCase::Params	params	= { pipelineConstructionType, format, unnorm.unnormalized, solid.first, edges.offset };
-					coordGroup->addChild(new ExactSamplingCase{testCtx, edges.name, edges.desc, params});
+					coordGroup->addChild(new ExactSamplingCase{testCtx, edges.name, params});
 				}
 
 				solidColorGroup->addChild(coordGroup.release());
@@ -2095,16 +2540,37 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx, Pipelin
 	return exactSamplingTests.release();
 }
 
+tcu::TestCaseGroup* createMaxSamplerLodBiasTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
+{
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "max_sampler_lod_bias"));
+
+	for (int caseIdx = 0; caseIdx < static_cast<int>(LodBiasCase::CASE_COUNT); ++caseIdx)
+	{
+		const auto						caseValue	= static_cast<LodBiasCase>(caseIdx);
+		const auto						testName	= getLodBiasCaseName(caseValue);
+		const MaxSamplerLodBiasParams	params		{pipelineConstructionType, caseValue};
+
+#ifdef CTS_USES_VULKANSC
+		if (caseValue == LodBiasCase::VIEW_MINLOD)
+			continue;
+#endif // CTS_USES_VULKANSC
+
+		testGroup->addChild(new MaxSamplerLodBiasCase(testCtx, testName, params));
+	}
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> samplerTests(new tcu::TestCaseGroup(testCtx, "sampler", "Sampler tests"));
+	de::MovePtr<tcu::TestCaseGroup> samplerTests(new tcu::TestCaseGroup(testCtx, "sampler"));
 	{
 		samplerTests->addChild(createAllFormatsSamplerTests(testCtx, pipelineConstructionType));
 		samplerTests->addChild(createExactSamplingTests(testCtx, pipelineConstructionType));
 	}
 
 	// tests for VK_EXT_separate_stencil_usage
-	de::MovePtr<tcu::TestCaseGroup> separateStencilUsageSamplerTests (new tcu::TestCaseGroup(testCtx, "separate_stencil_usage", "testing VK_EXT_separate_stencil_uasge"));
+	de::MovePtr<tcu::TestCaseGroup> separateStencilUsageSamplerTests (new tcu::TestCaseGroup(testCtx, "separate_stencil_usage"));
 	{
 		separateStencilUsageSamplerTests->addChild(createAllFormatsSamplerTests(testCtx, pipelineConstructionType, true));
 		samplerTests->addChild(separateStencilUsageSamplerTests.release());
@@ -2114,6 +2580,8 @@ tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx, PipelineConst
 	// Border color swizzle tests.
 	samplerTests->addChild(createSamplerBorderSwizzleTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
+
+	samplerTests->addChild(createMaxSamplerLodBiasTests(testCtx, pipelineConstructionType));
 
 	return samplerTests.release();
 }

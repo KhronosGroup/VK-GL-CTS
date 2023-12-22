@@ -3,6 +3,8 @@
 * ------------------------
 *
 * Copyright (c) 2016 The Khronos Group Inc.
+* Copyright (c) 2023 LunarG, Inc.
+* Copyright (c) 2023 Nintendo
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -38,6 +40,7 @@
 #include "tcuTestLog.hpp"
 
 #include <set>
+#include <cmath>
 
 using std::set;
 
@@ -645,7 +648,7 @@ VkPipelineMultisampleStateCreateInfo MSInstanceSampleMaskPattern::getMSStateCrea
 		(VkPipelineMultisampleStateCreateFlags)0u,						// VkPipelineMultisampleStateCreateFlags	flags;
 		imageMSParams.numSamples,										// VkSampleCountFlagBits					rasterizationSamples;
 		VK_FALSE,														// VkBool32									sampleShadingEnable;
-		1.0f,															// float									minSampleShading;
+		imageMSParams.shadingRate,										// float									minSampleShading;
 		&m_sampleMask,													// const VkSampleMask*						pSampleMask;
 		VK_FALSE,														// VkBool32									alphaToCoverageEnable;
 		VK_FALSE,														// VkBool32									alphaToOneEnable;
@@ -808,7 +811,7 @@ template<> tcu::TestStatus MSInstance<MSInstanceSampleMaskBitCount>::verifyImage
 	DE_UNREF(dataRS);
 
 	if (checkForErrorMS(imageMSInfo, dataPerSample, 0))
-		return tcu::TestStatus::fail("gl_SampleMaskIn has more than one bit set for some shader invocations");
+		return tcu::TestStatus::fail("gl_SampleMaskIn has an illegal number of bits for some shader invocations");
 
 	return tcu::TestStatus::pass("Passed");
 }
@@ -827,7 +830,7 @@ template<> void MSCase<MSCaseSampleMaskBitCount>::init (void)
 		<< tcu::TestLog::Message
 		<< "Verifying gl_SampleMaskIn.\n"
 		<< "	Fragment shader will be invoked numSamples times.\n"
-		<< "	=> gl_SampleMaskIn should have only one bit set for each shader invocation.\n"
+		<< "	=> gl_SampleMaskIn should have a number of bits that depends on the shading rate.\n"
 		<< tcu::TestLog::EndMessage;
 
 	MultisampleCaseBase::init();
@@ -856,19 +859,20 @@ template<> void MSCase<MSCaseSampleMaskBitCount>::initPrograms (vk::SourceCollec
 	// Create fragment shader
 	std::ostringstream fs;
 
+	// The worst case scenario would be all invocations except one covering a single sample, and then one invocation covering the rest.
+	const int minInvocations	= static_cast<int>(std::ceil(static_cast<float>(m_imageMSParams.numSamples) * m_imageMSParams.shadingRate));
+	const int minCount			= 1;
+	const int maxCount			= m_imageMSParams.numSamples - (minInvocations - 1);
+
 	fs << "#version 440\n"
 		<< "\n"
 		<< "layout(location = 0) out vec4 fs_out_color;\n"
 		<< "\n"
 		<< "void main (void)\n"
 		<< "{\n"
-		<< "	uint maskBitCount = 0u;\n"
+		<< "	const int maskBitCount = bitCount(gl_SampleMaskIn[0]);\n"
 		<< "\n"
-		<< "	for (int i = 0; i < 32; ++i)\n"
-		<< "		if (((gl_SampleMaskIn[0] >> i) & 0x01) == 0x01)\n"
-		<< "			++maskBitCount;\n"
-		<< "\n"
-		<< "	if (maskBitCount != 1u)\n"
+		<< "	if (maskBitCount < " << minCount << " || maskBitCount > " << maxCount << ")\n"
 		<< "		fs_out_color = vec4(1.0, 0.0, 0.0, 1.0);\n"
 		<< "	else\n"
 		<< "		fs_out_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
@@ -993,7 +997,7 @@ template<> VkPipelineMultisampleStateCreateInfo MSInstance<MSInstanceSampleMaskW
 		(VkPipelineMultisampleStateCreateFlags)0u,					// VkPipelineMultisampleStateCreateFlags	flags;
 		imageMSParams.numSamples,									// VkSampleCountFlagBits					rasterizationSamples;
 		VK_FALSE,													// VkBool32									sampleShadingEnable;
-		0.0f,														// float									minSampleShading;
+		imageMSParams.shadingRate,									// float									minSampleShading;
 		DE_NULL,													// const VkSampleMask*						pSampleMask;
 		VK_FALSE,													// VkBool32									alphaToCoverageEnable;
 		VK_FALSE,													// VkBool32									alphaToOneEnable;
@@ -1155,8 +1159,8 @@ struct WriteSampleParams
 class WriteSampleTest : public vkt::TestCase
 {
 public:
-									WriteSampleTest		(tcu::TestContext& testCtx, const std::string& name, const std::string& desc, const WriteSampleParams& params)
-										: vkt::TestCase(testCtx, name, desc), m_params(params)
+									WriteSampleTest		(tcu::TestContext& testCtx, const std::string& name, const WriteSampleParams& params)
+										: vkt::TestCase(testCtx, name), m_params(params)
 										{}
 	virtual							~WriteSampleTest	(void) {}
 
@@ -1219,7 +1223,7 @@ void WriteSampleTest::checkSupport (Context& context) const
 	if (!(imgProps.sampleCounts & m_params.sampleCount))
 		TCU_THROW(NotSupportedError, "Format does not support the required sample count");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void WriteSampleTest::initPrograms (vk::SourceCollections& programCollection) const
@@ -1386,8 +1390,8 @@ tcu::TestStatus WriteSampleTestInstance::iterate (void)
 	updateBuilder.update(vkd, device);
 
 	// Create write and verification compute pipelines.
-	auto shaderWriteModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("write"), 0u);
-	auto shaderVerifyModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("verify"), 0u);
+	auto shaderWriteModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("write"), 0u);
+	auto shaderVerifyModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("verify"), 0u);
 	auto pipelineLayout		= vk::makePipelineLayout(vkd, device, descriptorSetLayout.get());
 
 	const vk::VkComputePipelineCreateInfo writePipelineCreateInfo =
@@ -1400,7 +1404,7 @@ tcu::TestStatus WriteSampleTestInstance::iterate (void)
 			nullptr,													// const void*							pNext;
 			0u,															// VkPipelineShaderStageCreateFlags		flags;
 			vk::VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
-			shaderWriteModule.get(),									// VkShaderModule						module;
+			shaderWriteModule.getModule(),								// VkShaderModule						module;
 			"main",														// const char*							pName;
 			nullptr,													// const VkSpecializationInfo*			pSpecializationInfo;
 		},
@@ -1410,7 +1414,7 @@ tcu::TestStatus WriteSampleTestInstance::iterate (void)
 	};
 
 	auto verificationPipelineCreateInfo = writePipelineCreateInfo;
-	verificationPipelineCreateInfo.stage.module = shaderVerifyModule.get();
+	verificationPipelineCreateInfo.stage.module = shaderVerifyModule.getModule();
 
 	auto writePipeline			= vk::createComputePipeline(vkd, device, DE_NULL, &writePipelineCreateInfo);
 	auto verificationPipeline	= vk::createComputePipeline(vkd, device, DE_NULL, &verificationPipelineCreateInfo);
@@ -1514,7 +1518,7 @@ using WriteSampleMaskParams = WriteSampleParams;
 class WriteSampleMaskTestCase : public vkt::TestCase
 {
 public:
-							WriteSampleMaskTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const WriteSampleMaskParams& params);
+							WriteSampleMaskTestCase		(tcu::TestContext& testCtx, const std::string& name, const WriteSampleMaskParams& params);
 	virtual					~WriteSampleMaskTestCase	(void) {}
 
 	virtual void			checkSupport				(Context& context) const;
@@ -1548,8 +1552,8 @@ private:
 	WriteSampleMaskParams		m_params;
 };
 
-WriteSampleMaskTestCase::WriteSampleMaskTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const WriteSampleMaskParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+WriteSampleMaskTestCase::WriteSampleMaskTestCase (tcu::TestContext& testCtx, const std::string& name, const WriteSampleMaskParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -1572,7 +1576,7 @@ void WriteSampleMaskTestCase::checkSupport (Context& context) const
 	if (!(imgProps.sampleCounts & m_params.sampleCount))
 		TCU_THROW(NotSupportedError, "Format does not support the required sample count");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void WriteSampleMaskTestCase::initPrograms (vk::SourceCollections& programCollection) const
@@ -1671,7 +1675,9 @@ WriteSampleMaskTestInstance::WriteSampleMaskTestInstance (Context& context, cons
 
 tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 {
+	const auto&		vki					= m_context.getInstanceInterface();
 	const auto&		vkd					= m_context.getDeviceInterface();
+	const auto		physicalDevice		= m_context.getPhysicalDevice();
 	const auto		device				= m_context.getDevice();
 	auto&			alloc				= m_context.getDefaultAllocator();
 	const auto		queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
@@ -1850,26 +1856,31 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 		static_cast<deUint32>(subpassDependencies.size()),	//	deUint32						dependencyCount;
 		subpassDependencies.data(),							//	const VkSubpassDependency*		pDependencies;
 	};
-	const auto renderPass = vk::createRenderPass(vkd, device, &renderPassInfo);
+	RenderPassWrapper renderPass (m_params.pipelineConstructionType, vkd, device, &renderPassInfo);
 
 	// Framebuffer.
-	const std::vector<vk::VkImageView> imageViews =
+	const std::vector<vk::VkImage>		images		=
+	{
+		colorImage.get(),
+		auxiliarImage.get(),
+	};
+	const std::vector<vk::VkImageView>	imageViews	=
 	{
 		colorImageView.get(),
 		auxiliarImageView.get(),
 	};
-	const auto framebuffer = vk::makeFramebuffer(vkd, device, renderPass.get(), static_cast<deUint32>(imageViews.size()), imageViews.data(), kImageExtent.width, kImageExtent.height);
+	renderPass.createFramebuffer(vkd, device, static_cast<deUint32>(imageViews.size()), images.data(), imageViews.data(), kImageExtent.width, kImageExtent.height);
 
 	// Empty pipeline layout for the first subpass.
-	const auto emptyPipelineLayout = vk::makePipelineLayout(vkd, device);
+	const PipelineLayoutWrapper emptyPipelineLayout (m_params.pipelineConstructionType, vkd, device);
 
 	// Pipeline layout for the second subpass.
-	const auto checkPipelineLayout = vk::makePipelineLayout(vkd, device, descriptorSetLayout.get());
+	const PipelineLayoutWrapper checkPipelineLayout (m_params.pipelineConstructionType, vkd, device, descriptorSetLayout.get());
 
 	// Shader modules.
-	const auto vertModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-	const auto writeModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag_write"), 0u);
-	const auto checkModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag_check"), 0u);
+	const auto vertModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto writeModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag_write"), 0u);
+	const auto checkModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag_check"), 0u);
 
 	const std::vector<vk::VkVertexInputBindingDescription> vertexBindings =
 	{
@@ -1982,25 +1993,25 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 	};
 
 	// Pipeline for the first subpass.
-	vk::GraphicsPipelineWrapper firstSubpassPipeline(vkd, device, m_params.pipelineConstructionType);
+	vk::GraphicsPipelineWrapper firstSubpassPipeline(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 	firstSubpassPipeline.setDynamicState(&dynamicStateInfo)
 						.setDefaultRasterizationState()
-						.setupVertexInputStete(&vertexInputInfo, &inputAssemblyInfo)
-						.setupPreRasterizationShaderState(viewport, scissor, *emptyPipelineLayout, *renderPass, 0u, *vertModule)
-						.setupFragmentShaderState(*emptyPipelineLayout, *renderPass, 0u, *writeModule, &depthStencilInfo, &multisampleInfo)
+						.setupVertexInputState(&vertexInputInfo, &inputAssemblyInfo)
+						.setupPreRasterizationShaderState(viewport, scissor, emptyPipelineLayout, *renderPass, 0u, vertModule)
+						.setupFragmentShaderState(emptyPipelineLayout, *renderPass, 0u, writeModule, &depthStencilInfo, &multisampleInfo)
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo, &multisampleInfo)
-						.setMonolithicPipelineLayout(*emptyPipelineLayout)
+						.setMonolithicPipelineLayout(emptyPipelineLayout)
 						.buildPipeline();
 
 	// Pipeline for the second subpass.
-	vk::GraphicsPipelineWrapper secondSubpassPipeline(vkd, device, m_params.pipelineConstructionType);
+	vk::GraphicsPipelineWrapper secondSubpassPipeline(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 	secondSubpassPipeline.setDynamicState(&dynamicStateInfo)
 						.setDefaultRasterizationState()
-						.setupVertexInputStete(&vertexInputInfo, &inputAssemblyInfo)
-						.setupPreRasterizationShaderState(viewport, scissor, *checkPipelineLayout, *renderPass, 1u, *vertModule)
-						.setupFragmentShaderState(*checkPipelineLayout, *renderPass, 1u, *checkModule, &depthStencilInfo, &multisampleInfo)
+						.setupVertexInputState(&vertexInputInfo, &inputAssemblyInfo)
+						.setupPreRasterizationShaderState(viewport, scissor, checkPipelineLayout, *renderPass, 1u, vertModule)
+						.setupFragmentShaderState(checkPipelineLayout, *renderPass, 1u, checkModule, &depthStencilInfo, &multisampleInfo)
 						.setupFragmentOutputState(*renderPass, 1u, &colorBlendInfo, &multisampleInfo)
-						.setMonolithicPipelineLayout(*checkPipelineLayout)
+						.setMonolithicPipelineLayout(checkPipelineLayout)
 						.buildPipeline();
 
 	// Command pool and command buffer.
@@ -2022,17 +2033,17 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 	// Run pipelines.
 	vk::beginCommandBuffer(vkd, cmdBuffer);
 
-	vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), vk::makeRect2D(kImageExtent), WriteSampleMaskTestCase::kClearColor);
+	renderPass.begin(vkd, cmdBuffer, vk::makeRect2D(kImageExtent), WriteSampleMaskTestCase::kClearColor);
 	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, firstSubpassPipeline.getPipeline());
+	firstSubpassPipeline.bind(cmdBuffer);
 	vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(quadVertices.size()), 1u, 0u, 0u);
 
-	vkd.cmdNextSubpass(cmdBuffer, vk::VK_SUBPASS_CONTENTS_INLINE);
-	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, secondSubpassPipeline.getPipeline());
+	renderPass.nextSubpass(vkd, cmdBuffer, vk::VK_SUBPASS_CONTENTS_INLINE);
+	secondSubpassPipeline.bind(cmdBuffer);
 	vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, checkPipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
 	vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(quadVertices.size()), 1u, 0u, 0u);
 
-	vk::endRenderPass(vkd, cmdBuffer);
+	renderPass.end(vkd, cmdBuffer);
 	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &bufferBarrier, 0u, nullptr);
 	vk::endCommandBuffer(vkd, cmdBuffer);
 
@@ -2088,7 +2099,7 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 
 tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "multisample_shader_builtin", "Multisample Shader BuiltIn Tests"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "multisample_shader_builtin"));
 
 	const tcu::UVec3 imageSizes[] =
 	{
@@ -2112,7 +2123,7 @@ tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testC
 
 	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleID> >(testCtx, "sample_id", pipelineConstructionType, imageSizes, sizesElemCount, samplesSetFull, samplesSetFullCount));
 
-	de::MovePtr<tcu::TestCaseGroup> samplePositionGroup(new tcu::TestCaseGroup(testCtx, "sample_position", "Sample Position Tests"));
+	de::MovePtr<tcu::TestCaseGroup> samplePositionGroup(new tcu::TestCaseGroup(testCtx, "sample_position"));
 
 	samplePositionGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSamplePosDistribution> >(testCtx, "distribution", pipelineConstructionType, imageSizes, sizesElemCount, samplesSetFull, samplesSetFullCount));
 	samplePositionGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSamplePosCorrectness> > (testCtx, "correctness", pipelineConstructionType, imageSizes, sizesElemCount, samplesSetFull, samplesSetFullCount));
@@ -2130,19 +2141,21 @@ tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testC
 
 	const deUint32 samplesSetReducedCount = static_cast<deUint32>(DE_LENGTH_OF_ARRAY(samplesSetReduced));
 
-	de::MovePtr<tcu::TestCaseGroup> sampleMaskGroup(new tcu::TestCaseGroup(testCtx, "sample_mask", "Sample Mask Tests"));
+	de::MovePtr<tcu::TestCaseGroup> sampleMaskGroup(new tcu::TestCaseGroup(testCtx, "sample_mask"));
 
-	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskPattern> >	(testCtx, "pattern",	pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
-	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskBitCount> >	(testCtx, "bit_count",	pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
-	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskCorrectBit> >(testCtx, "correct_bit",pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
-	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskWrite> >		(testCtx, "write",		pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
+	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskPattern> >	(testCtx, "pattern",		pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
+	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskBitCount> >	(testCtx, "bit_count",		pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
+	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskBitCount> >	(testCtx, "bit_count_0_5",	pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount, multisample::ComponentData{}, 0.5f));
+	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskCorrectBit> >(testCtx, "correct_bit",	pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
+	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskWrite> >		(testCtx, "write",			pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
 
 	testGroup->addChild(sampleMaskGroup.release());
 
 	// Write image sample tests using a storage images (tests construct only compute pipeline).
 	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> imageWriteSampleGroup(new tcu::TestCaseGroup(testCtx, "image_write_sample", "Test OpImageWrite with a sample ID"));
+		// Test OpImageWrite with a sample ID
+		de::MovePtr<tcu::TestCaseGroup> imageWriteSampleGroup(new tcu::TestCaseGroup(testCtx, "image_write_sample"));
 
 		for (auto count : multisample::kValidSquareSampleCounts)
 		{
@@ -2151,7 +2164,7 @@ tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testC
 
 			multisample::WriteSampleParams params { pipelineConstructionType, static_cast<vk::VkSampleCountFlagBits>(count) };
 			const auto countStr = de::toString(count);
-			imageWriteSampleGroup->addChild(new multisample::WriteSampleTest(testCtx, countStr + "_samples", "Test image with " + countStr + " samples", params));
+			imageWriteSampleGroup->addChild(new multisample::WriteSampleTest(testCtx, countStr + "_samples", params));
 		}
 
 		testGroup->addChild(imageWriteSampleGroup.release());
@@ -2159,13 +2172,13 @@ tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testC
 
 	// Write to gl_SampleMask from the fragment shader.
 	{
-		de::MovePtr<tcu::TestCaseGroup> writeSampleMaskGroup(new tcu::TestCaseGroup(testCtx, "write_sample_mask", "Test writes to SampleMask variable"));
+		de::MovePtr<tcu::TestCaseGroup> writeSampleMaskGroup(new tcu::TestCaseGroup(testCtx, "write_sample_mask"));
 
 		for (auto count : multisample::kValidSquareSampleCounts)
 		{
 			multisample::WriteSampleMaskParams params { pipelineConstructionType, static_cast<vk::VkSampleCountFlagBits>(count) };
 			const auto countStr = de::toString(count);
-			writeSampleMaskGroup->addChild(new multisample::WriteSampleMaskTestCase(testCtx, countStr + "_samples", "Test image with " + countStr + " samples", params));
+			writeSampleMaskGroup->addChild(new multisample::WriteSampleMaskTestCase(testCtx, countStr + "_samples", params));
 		}
 
 		testGroup->addChild(writeSampleMaskGroup.release());

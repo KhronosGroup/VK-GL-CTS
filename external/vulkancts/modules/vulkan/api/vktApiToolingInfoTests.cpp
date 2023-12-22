@@ -232,15 +232,15 @@ tcu::TestStatus validateToolsProperties (Context& context)
 
 void createTestCases (tcu::TestCaseGroup* group)
 {
-	addFunctionCase(group, "validate_getter", "Validate getPhysicalDeviceToolPropertiesEXT", checkSupport, validateGetter);
-	addFunctionCase(group, "validate_tools_properties","Validate tools properties",	checkSupport, validateToolsProperties);
+	addFunctionCase(group, "validate_getter", checkSupport, validateGetter);
+	addFunctionCase(group, "validate_tools_properties",	checkSupport, validateToolsProperties);
 }
 
 } // anonymous
 
 tcu::TestCaseGroup*	createToolingInfoTests(tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "tooling_info", "VK_EXT_tooling_info tests", createTestCases);
+	return createTestGroup(testCtx, "tooling_info", createTestCases);
 }
 
 } // api

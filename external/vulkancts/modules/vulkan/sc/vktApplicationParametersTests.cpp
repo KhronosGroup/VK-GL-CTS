@@ -125,45 +125,58 @@ std::vector<TestData> getTestDataList(Context& context, TestParams testParams)
 
 	readIDsFromDevice(context, vendorId, deviceId);
 
+//#define VENDOR_PARAMS_ADDED 1
+#if defined(VENDOR_PARAMS_ADDED)
+	uint32_t validVendorID = vendorId;
+	uint32_t validDeviceID = deviceId;
+	uint32_t validInstanceParamKey = 0;		// TODO: provide valid instance parameter key
+	uint64_t invalidInstanceParamValue = 0;	// TODO: provide invalid parameter value for <validInstanceParamKey>
+	uint64_t validInstanceParamValue = 0;	// TODO: provide valid parameter value for <validInstanceParamKey>
+	uint32_t validDeviceParamKey = 0;		// TODO: provide valid device parameter key
+	uint64_t invalidDeviceParamValue = 0;	// TODO: provide invalid parameter value for <validDeviceParamKey>
+	uint64_t validDeviceParamValue = 0;		// TODO: provide valid parameter value for <validDeviceParamKey>
+#endif
+
 	const std::vector<TestData> vendorTestDataList =
 	{
 		//	The invalid param value and valid tests need to use vendor-specific application
 		//	parameter keys and values. In order to have full test coverage, vendors should
 		//	provide their own test data for the invalid param value and valid tests here.
-		//	For example:
 		//
-		//	{
-		//		{ INSTANCE, INVALID_PARAM_VALUE },
-		//		validVendorID,
-		//		validDeviceID,
-		//		validParamKey,
-		//		invalidParamValue,
-		//		VK_ERROR_INITIALIZATION_FAILED
-		//	},
-		//	{
-		//		{ INSTANCE, VALID },
-		//		validVendorID,
-		//		validDeviceID,
-		//		validParamKey,
-		//		validParamValue,
-		//		VK_SUCCESS
-		//	},
-		//	{
-		//		{ DEVICE, INVALID_PARAM_VALUE },
-		//		validVendorID,
-		//		validDeviceID,
-		//		validParamKey,
-		//		invalidParamValue,
-		//		VK_ERROR_INITIALIZATION_FAILED
-		//	},
-		//	{
-		//		{ DEVICE, VALID },
-		//		validVendorID,
-		//		validDeviceID,
-		//		validParamKey,
-		//		validParamValue,
-		//		VK_SUCCESS
-		//	}
+#if defined(VENDOR_PARAMS_ADDED)
+		{
+			{ INSTANCE, INVALID_PARAM_VALUE },
+			validVendorID,
+			validDeviceID,
+			validInstanceParamKey,
+			invalidInstanceParamValue,
+			VK_ERROR_INITIALIZATION_FAILED
+		},
+		{
+			{ INSTANCE, VALID },
+			validVendorID,
+			validDeviceID,
+			validInstanceParamKey,
+			validInstanceParamValue,
+			VK_SUCCESS
+		},
+		{
+			{ DEVICE, INVALID_PARAM_VALUE },
+			validVendorID,
+			validDeviceID,
+			validDeviceParamKey,
+			invalidDeviceParamValue,
+			VK_ERROR_INITIALIZATION_FAILED
+		},
+		{
+			{ DEVICE, VALID },
+			validVendorID,
+			validDeviceID,
+			validDeviceParamKey,
+			validDeviceParamValue,
+			VK_SUCCESS
+		}
+#endif // defined(VENDOR_PARAMS_ADDED)
 	};
 
 	if (testParams.testType != INVALID_PARAM_VALUE && testParams.testType != VALID)
@@ -193,7 +206,7 @@ void checkSupport (Context& context, TestParams testParams)
 	const std::vector<TestData> testDataList = getTestDataList(context, testParams);
 
 	if (testDataList.empty())
-		TCU_THROW(NotSupportedError, "No test data available");
+		TCU_THROW(TestError, "No test data available - please update vendorTestDataList");
 }
 
 tcu::TestStatus createDeviceTest (Context& context, TestParams testParams)
@@ -257,7 +270,7 @@ tcu::TestStatus createDeviceTest (Context& context, TestParams testParams)
 
 		if (device)
 		{
-			const DeviceDriver deviceIface(platformInterface, instance, device);
+			const DeviceDriver deviceIface(platformInterface, instance, device, context.getUsedApiVersion());
 			deviceIface.destroyDevice(device, DE_NULL/*pAllocator*/);
 		}
 
@@ -342,7 +355,7 @@ tcu::TestStatus createInstanceTest (Context& context, TestParams testParams)
 
 tcu::TestCaseGroup*	createApplicationParametersTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "application_parameters", "Tests VK_EXT_application_parameters"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "application_parameters"));
 
 	const struct
 	{
@@ -369,16 +382,16 @@ tcu::TestCaseGroup*	createApplicationParametersTests (tcu::TestContext& testCtx)
 
 	for (int groupIdx = 0; groupIdx < DE_LENGTH_OF_ARRAY(groups); ++groupIdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> createGroup(new tcu::TestCaseGroup(testCtx, groups[groupIdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> createGroup(new tcu::TestCaseGroup(testCtx, groups[groupIdx].name));
 
 		for (int testIdx = 0; testIdx < DE_LENGTH_OF_ARRAY(tests); ++testIdx)
 		{
 			TestParams testParams = { groups[groupIdx].createType, tests[testIdx].testType };
 
 			if (testParams.createType == INSTANCE)
-				addFunctionCase(createGroup.get(), tests[testIdx].name, "", checkSupport, createInstanceTest, testParams);
+				addFunctionCase(createGroup.get(), tests[testIdx].name, checkSupport, createInstanceTest, testParams);
 			else
-				addFunctionCase(createGroup.get(), tests[testIdx].name, "", checkSupport, createDeviceTest, testParams);
+				addFunctionCase(createGroup.get(), tests[testIdx].name, checkSupport, createDeviceTest, testParams);
 		}
 
 		group->addChild(createGroup.release());

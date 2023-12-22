@@ -62,8 +62,6 @@ using ::std::vector;
  *//*--------------------------------------------------------------------*/
 namespace test_common
 {
-static constexpr auto VK_NULL_HANDLE = DE_NULL;
-
 using ::std::chrono::high_resolution_clock;
 using ::std::chrono::microseconds;
 
@@ -300,16 +298,16 @@ struct TestParams
 	static constexpr size_t MAX_ITERATIONS = 4;
 	using IterationArray				   = ConstexprVector<Iteration, MAX_ITERATIONS>;
 
-	const char*	   name;
-	const char*	   description;
-	CacheType	   cacheType;
-	IterationArray iterations;
+	const char*		name;
+	CacheType		cacheType;
+	IterationArray	iterations;
+	bool			useMaintenance5;
 };
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify extension and feature support
  *//*--------------------------------------------------------------------*/
-void checkSupport(Context& context, const TestParams&)
+void checkSupport(Context& context, const TestParams& params)
 {
 	static constexpr char EXT_NAME[] = "VK_EXT_pipeline_creation_cache_control";
 	if (!context.requireDeviceFunctionality(EXT_NAME))
@@ -322,6 +320,9 @@ void checkSupport(Context& context, const TestParams&)
 	{
 		TCU_THROW(NotSupportedError, "Feature 'pipelineCreationCacheControl' is not enabled");
 	}
+
+	if (params.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -879,8 +880,9 @@ TestStatus testInstance(Context& context, const TestParams& testParameter)
 	const auto	pipelineCache = createPipelineCache(vk, device, testParameter);
 	const auto	layout		  = createPipelineLayout(vk, device, testParameter);
 	const auto	renderPass	  = createRenderPass(vk, device, testParameter);
-	const auto	modules		  = createShaderModules(vk, device, context.getBinaryCollection(), {"vertex", "fragment"});
-	const auto	shaderStages  = createShaderStages(modules, {VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT});
+	// No fragment due to rasterizationDiscardEnabled
+	const auto	modules		  = createShaderModules(vk, device, context.getBinaryCollection(), std::vector<const char*>{"vertex"});
+	const auto	shaderStages  = createShaderStages(modules, std::vector<VkShaderStageFlagBits>{VK_SHADER_STAGE_VERTEX_BIT});
 
 	// Placeholder for base pipeline if using cacheType == DERIVATIVE_HANDLE
 	auto basePipeline = UniquePipeline{};
@@ -896,9 +898,23 @@ TestStatus testInstance(Context& context, const TestParams& testParameter)
 
 	for (const auto& i : testParameter.iterations)
 	{
-		const auto createInfos = createPipelineCreateInfos(i, baseCreateInfo, basePipeline.get(), testParameter);
-		auto	   created	   = vector<VkPipeline>{};
+		auto createInfos	= createPipelineCreateInfos(i, baseCreateInfo, basePipeline.get(), testParameter);
+		auto created		= vector<VkPipeline>{};
 		created.resize(createInfos.size());
+
+#ifndef CTS_USES_VULKANSC
+		std::vector<VkPipelineCreateFlags2CreateInfoKHR> flags2CreateInfo(created.size(), { VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR, 0, 0 });
+		if (testParameter.useMaintenance5)
+		{
+			for (deUint32 ci = 0; ci < createInfos.size(); ++ci)
+			{
+				flags2CreateInfo[ci].flags	= translateCreateFlag(createInfos[ci].flags);
+				flags2CreateInfo[ci].pNext  = createInfos[ci].pNext;
+				createInfos[ci].flags		= 0;
+				createInfos[ci].pNext		= &flags2CreateInfo[ci];
+			}
+		}
+#endif // CTS_USES_VULKANSC
 
 		const auto timedResult = timePipelineCreation(vk, device, pipelineCache.get(), createInfos, created);
 		auto	   pipelines   = wrapHandles(vk, device, created);
@@ -1117,15 +1133,12 @@ TestStatus testInstance(Context& context, const TestParams& testParameter)
 
 using namespace test_common;
 
-// Disable formatting on this next block for readability
-// clang-format off
 /*--------------------------------------------------------------------*//*!
  * \brief Duplicate single pipeline recreation with explicit caching
  *//*--------------------------------------------------------------------*/
 static constexpr TestParams DUPLICATE_SINGLE_RECREATE_EXPLICIT_CACHING =
 {
 	"duplicate_single_recreate_explicit_caching",
-	"Duplicate single pipeline recreation with explicit caching",
 	TestParams::EXPLICIT_CACHE,
 	TestParams::IterationArray
 	{
@@ -1151,7 +1164,8 @@ static constexpr TestParams DUPLICATE_SINGLE_RECREATE_EXPLICIT_CACHING =
 				checkElapsedTime<ELAPSED_TIME_FAST, QP_TEST_RESULT_QUALITY_WARNING>
 			}
 		}
-	}
+	},
+	false
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -1160,7 +1174,6 @@ static constexpr TestParams DUPLICATE_SINGLE_RECREATE_EXPLICIT_CACHING =
 static constexpr TestParams DUPLICATE_SINGLE_RECREATE_NO_CACHING =
 {
 	"duplicate_single_recreate_no_caching",
-	"Duplicate single pipeline recreation with no explicit cache",
 	TestParams::NO_CACHE,
 	TestParams::IterationArray{
 		TestParams::Iteration{
@@ -1181,7 +1194,8 @@ static constexpr TestParams DUPLICATE_SINGLE_RECREATE_NO_CACHING =
 				checkElapsedTime<ELAPSED_TIME_FAST, QP_TEST_RESULT_QUALITY_WARNING>
 			}
 		}
-	}
+	},
+	false
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -1190,7 +1204,6 @@ static constexpr TestParams DUPLICATE_SINGLE_RECREATE_NO_CACHING =
 static constexpr TestParams DUPLICATE_SINGLE_RECREATE_DERIVATIVE =
 {
 	"duplicate_single_recreate_derivative",
-	"Duplicate single pipeline recreation using derivative pipelines",
 	TestParams::DERIVATIVE_HANDLE,
 	TestParams::IterationArray{
 		TestParams::Iteration{
@@ -1211,7 +1224,8 @@ static constexpr TestParams DUPLICATE_SINGLE_RECREATE_DERIVATIVE =
 				checkElapsedTime<ELAPSED_TIME_FAST, QP_TEST_RESULT_QUALITY_WARNING>
 			}
 		}
-	}
+	},
+	false
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -1220,7 +1234,6 @@ static constexpr TestParams DUPLICATE_SINGLE_RECREATE_DERIVATIVE =
 static constexpr TestParams SINGLE_PIPELINE_NO_COMPILE =
 {
 	"single_pipeline_no_compile",
-	"Single creation of never before seen pipeline without compile",
 	TestParams::NO_CACHE,
 	TestParams::IterationArray{
 		TestParams::Iteration{
@@ -1230,7 +1243,8 @@ static constexpr TestParams SINGLE_PIPELINE_NO_COMPILE =
 				checkElapsedTime<ELAPSED_TIME_IMMEDIATE, QP_TEST_RESULT_QUALITY_WARNING>
 			}
 		}
-	}
+	},
+	false
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -1239,7 +1253,6 @@ static constexpr TestParams SINGLE_PIPELINE_NO_COMPILE =
 static constexpr TestParams DUPLICATE_BATCH_PIPELINES_EXPLICIT_CACHE =
 {
 	"duplicate_batch_pipelines_explicit_cache",
-	"Batch creation of duplicate pipelines with explicit caching",
 	TestParams::EXPLICIT_CACHE,
 	TestParams::IterationArray{
 		TestParams::Iteration{
@@ -1255,7 +1268,8 @@ static constexpr TestParams DUPLICATE_BATCH_PIPELINES_EXPLICIT_CACHE =
 				checkPipelineMustBeValid<2, QP_TEST_RESULT_COMPATIBILITY_WARNING>
 			}
 		}
-	}
+	},
+	false
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -1264,7 +1278,6 @@ static constexpr TestParams DUPLICATE_BATCH_PIPELINES_EXPLICIT_CACHE =
 static constexpr TestParams DUPLICATE_BATCH_PIPELINES_NO_CACHE =
 {
 	"duplicate_batch_pipelines_no_cache",
-	"Batch creation of duplicate pipelines with no caching",
 	TestParams::NO_CACHE,
 	TestParams::IterationArray{
 		TestParams::Iteration{
@@ -1278,7 +1291,8 @@ static constexpr TestParams DUPLICATE_BATCH_PIPELINES_NO_CACHE =
 				checkPipelineMustBeNull<0, QP_TEST_RESULT_COMPATIBILITY_WARNING>
 			}
 		}
-	}
+	},
+	false
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -1287,7 +1301,6 @@ static constexpr TestParams DUPLICATE_BATCH_PIPELINES_NO_CACHE =
 static constexpr TestParams DUPLICATE_BATCH_PIPELINES_DERIVATIVE_INDEX =
 {
 	"duplicate_batch_pipelines_derivative_index",
-	"Batch creation of duplicate pipelines with derivative pipeline index",
 	TestParams::DERIVATIVE_INDEX,
 	TestParams::IterationArray{
 		TestParams::Iteration{
@@ -1301,7 +1314,8 @@ static constexpr TestParams DUPLICATE_BATCH_PIPELINES_DERIVATIVE_INDEX =
 				checkPipelineMustBeNull<0, QP_TEST_RESULT_COMPATIBILITY_WARNING>
 			}
 		}
-	}
+	},
+	false
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -1310,7 +1324,6 @@ static constexpr TestParams DUPLICATE_BATCH_PIPELINES_DERIVATIVE_INDEX =
 static constexpr TestParams BATCH_PIPELINES_EARLY_RETURN =
 {
 	"batch_pipelines_early_return",
-	"Batch creation of pipelines with early return",
 	TestParams::NO_CACHE,
 	TestParams::IterationArray{
 		TestParams::Iteration{
@@ -1326,7 +1339,33 @@ static constexpr TestParams BATCH_PIPELINES_EARLY_RETURN =
 				checkResult<VK_ERROR_PIPELINE_COMPILE_REQUIRED_EXT, QP_TEST_RESULT_COMPATIBILITY_WARNING>
 			}
 		}
-	}
+	},
+	false
+};
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Batch creation of pipelines with early return using VkPipelineCreateFlagBits2KHR from maintenance5
+ *//*--------------------------------------------------------------------*/
+static constexpr TestParams BATCH_PIPELINES_EARLY_RETURN_MAINTENANCE_5
+{
+	"batch_pipelines_early_return_maintenance5",
+	TestParams::NO_CACHE,
+	TestParams::IterationArray{
+		TestParams::Iteration{
+			TestParams::Iteration::BATCH_RETURN_COMPILE_NOCOMPILE,
+			ValidatorArray{
+				// fail if a valid pipeline follows the early-return failure
+				checkPipelineNullAfterIndex<0>,
+				// Warn if return was not immediate
+				checkElapsedTime<ELAPSED_TIME_IMMEDIATE, QP_TEST_RESULT_QUALITY_WARNING>,
+				// Warn if pipelines[0] is not VK_NULL_HANDLE
+				checkPipelineMustBeNull<0, QP_TEST_RESULT_COMPATIBILITY_WARNING>,
+				// Warn if result is not VK_ERROR_PIPELINE_COMPILE_REQUIRED_EXT
+				checkResult<VK_ERROR_PIPELINE_COMPILE_REQUIRED_EXT, QP_TEST_RESULT_COMPATIBILITY_WARNING>
+			}
+		}
+	},
+	true,
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -1341,9 +1380,13 @@ static constexpr TestParams TEST_CASES[] =
 	DUPLICATE_SINGLE_RECREATE_DERIVATIVE,
 	DUPLICATE_BATCH_PIPELINES_EXPLICIT_CACHE,
 	DUPLICATE_BATCH_PIPELINES_NO_CACHE,
-	DUPLICATE_BATCH_PIPELINES_DERIVATIVE_INDEX
+	DUPLICATE_BATCH_PIPELINES_DERIVATIVE_INDEX,
+
+#ifndef CTS_USES_VULKANSC
+	BATCH_PIPELINES_EARLY_RETURN_MAINTENANCE_5,
+#endif // CTS_USES_VULKANSC
+
 };
-// clang-format on
 
 /*--------------------------------------------------------------------*//*!
  * \brief Variadic version of de::newMovePtr
@@ -1361,13 +1404,12 @@ void addGraphicsPipelineTests(TestCaseGroup& group)
 {
 	using namespace graphics_tests;
 
-	auto tests = newMovePtr<TestCaseGroup>(
-		group.getTestContext(), "graphics_pipelines", "Test pipeline creation cache control with graphics pipelines");
+	auto tests = newMovePtr<TestCaseGroup>(group.getTestContext(), "graphics_pipelines");
 
 	for (const auto& params : TEST_CASES)
 	{
 		addFunctionCaseWithPrograms<const TestParams&>(
-			tests.get(), params.name, params.description, checkSupport, initPrograms, testInstance, params);
+			tests.get(), params.name, checkSupport, initPrograms, testInstance, params);
 	}
 
 	group.addChild(tests.release());
@@ -1380,13 +1422,12 @@ void addComputePipelineTests(TestCaseGroup& group)
 {
 	using namespace compute_tests;
 
-	auto tests = newMovePtr<TestCaseGroup>(
-		group.getTestContext(), "compute_pipelines", "Test pipeline creation cache control with compute pipelines");
+	auto tests = newMovePtr<TestCaseGroup>(group.getTestContext(), "compute_pipelines");
 
 	for (const auto& params : TEST_CASES)
 	{
 		addFunctionCaseWithPrograms<const TestParams&>(
-			tests.get(), params.name, params.description, checkSupport, initPrograms, testInstance, params);
+			tests.get(), params.name, checkSupport, initPrograms, testInstance, params);
 	}
 
 	group.addChild(tests.release());
@@ -1399,7 +1440,7 @@ void addComputePipelineTests(TestCaseGroup& group)
  *//*--------------------------------------------------------------------*/
 TestCaseGroup* createCacheControlTests(TestContext& testCtx)
 {
-	auto tests = newMovePtr<TestCaseGroup>(testCtx, "creation_cache_control", "pipeline creation cache control tests");
+	auto tests = newMovePtr<TestCaseGroup>(testCtx, "creation_cache_control");
 
 	addGraphicsPipelineTests(*tests);
 	addComputePipelineTests(*tests);

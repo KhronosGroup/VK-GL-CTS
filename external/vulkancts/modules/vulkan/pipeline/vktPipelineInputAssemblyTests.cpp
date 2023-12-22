@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +58,13 @@ namespace pipeline
 
 using namespace vk;
 
+enum class RestartType
+{
+	NORMAL,
+	NONE,
+	ALL,
+};
+
 namespace
 {
 
@@ -69,7 +78,6 @@ public:
 
 										InputAssemblyTest		(tcu::TestContext&					testContext,
 																 const std::string&					name,
-																 const std::string&					description,
 																 const PipelineConstructionType		pipelineConstructionType,
 																 VkPrimitiveTopology				primitiveTopology,
 																 int								primitiveCount,
@@ -91,10 +99,10 @@ protected:
 																 std::vector<deUint32>&		indexData,
 																 std::vector<Vertex4RGBA>&	vertexData) const = 0;
 	VkPrimitiveTopology					m_primitiveTopology;
+	const int							m_primitiveCount;
 
 private:
 	const PipelineConstructionType		m_pipelineConstructionType;
-	const int							m_primitiveCount;
 	bool								m_testPrimitiveRestart;
 	VkIndexType							m_indexType;
 };
@@ -104,7 +112,6 @@ class PrimitiveTopologyTest : public InputAssemblyTest
 public:
 										PrimitiveTopologyTest	(tcu::TestContext&			testContext,
 																 const std::string&			name,
-																 const std::string&			description,
 																 PipelineConstructionType	pipelineConstructionType,
 																 VkPrimitiveTopology		primitiveTopology,
 																 VkIndexType				indexType);
@@ -126,11 +133,10 @@ class PrimitiveRestartTest : public InputAssemblyTest
 public:
 										PrimitiveRestartTest	(tcu::TestContext&					testContext,
 																 const std::string&					name,
-																 const std::string&					description,
 																 const PipelineConstructionType		pipelineConstructionType,
 																 VkPrimitiveTopology				primitiveTopology,
 																 VkIndexType						indexType,
-																 bool								useRestartPrimitives);
+																 RestartType						restartType);
 	virtual								~PrimitiveRestartTest	(void) {}
 	virtual void						checkSupport			(Context& context) const;
 
@@ -155,6 +161,7 @@ private:
 																 std::vector<deUint32>		adjacencies) const;
 
 	std::vector<deUint32>				m_restartPrimitives;
+	RestartType							m_restartType;
 };
 #endif // CTS_USES_VULKANSC
 
@@ -196,15 +203,15 @@ private:
 	Move<VkImage>						m_colorImage;
 	de::MovePtr<Allocation>				m_colorImageAlloc;
 	Move<VkImageView>					m_colorAttachmentView;
-	Move<VkRenderPass>					m_renderPass;
+	RenderPassWrapper					m_renderPass;
 	Move<VkFramebuffer>					m_framebuffer;
 
-	Move<VkShaderModule>				m_vertexShaderModule;
-	Move<VkShaderModule>				m_fragmentShaderModule;
-	Move<VkShaderModule>				m_tcsShaderModule;
-	Move<VkShaderModule>				m_tesShaderModule;
+	ShaderWrapper						m_vertexShaderModule;
+	ShaderWrapper						m_fragmentShaderModule;
+	ShaderWrapper						m_tcsShaderModule;
+	ShaderWrapper						m_tesShaderModule;
 
-	Move<VkPipelineLayout>				m_pipelineLayout;
+	PipelineLayoutWrapper				m_pipelineLayout;
 	GraphicsPipelineWrapper				m_graphicsPipeline;
 
 	Move<VkCommandPool>					m_cmdPool;
@@ -234,16 +241,15 @@ const deUint8 InputAssemblyTest::s_restartIndex8	= ~((deUint8)0u);
 
 InputAssemblyTest::InputAssemblyTest (tcu::TestContext&					testContext,
 									  const std::string&				name,
-									  const std::string&				description,
 									  const PipelineConstructionType	pipelineConstructionType,
 									  VkPrimitiveTopology				primitiveTopology,
 									  int								primitiveCount,
 									  bool								testPrimitiveRestart,
 									  VkIndexType						indexType)
-	: vkt::TestCase				(testContext, name, description)
+	: vkt::TestCase				(testContext, name)
 	, m_primitiveTopology		(primitiveTopology)
+	, m_primitiveCount(primitiveCount)
 	, m_pipelineConstructionType(pipelineConstructionType)
-	, m_primitiveCount			(primitiveCount)
 	, m_testPrimitiveRestart	(testPrimitiveRestart)
 	, m_indexType				(indexType)
 {
@@ -271,7 +277,7 @@ void InputAssemblyTest::checkSupport (Context& context) const
 			break;
 	}
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
 #ifndef CTS_USES_VULKANSC
 	if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
@@ -386,11 +392,10 @@ deUint32 InputAssemblyTest::getRestartIndex (VkIndexType indexType)
 
 PrimitiveTopologyTest::PrimitiveTopologyTest (tcu::TestContext&			testContext,
 											  const std::string&		name,
-											  const std::string&		description,
 											  PipelineConstructionType	pipelineConstructionType,
 											  VkPrimitiveTopology		primitiveTopology,
 											  VkIndexType				indexType)
-	: InputAssemblyTest	(testContext, name, description, pipelineConstructionType, primitiveTopology, 10, false, indexType)
+	: InputAssemblyTest	(testContext, name, pipelineConstructionType, primitiveTopology, 10, false, indexType)
 {
 }
 
@@ -731,17 +736,53 @@ void PrimitiveTopologyTest::createBufferData (VkPrimitiveTopology topology, int 
 
 PrimitiveRestartTest::PrimitiveRestartTest (tcu::TestContext&			testContext,
 											const std::string&			name,
-											const std::string&			description,
 											PipelineConstructionType	pipelineConstructionType,
 											VkPrimitiveTopology			primitiveTopology,
 											VkIndexType					indexType,
-											bool						useRestartPrimitives)
+											RestartType					restartType)
 
-	: InputAssemblyTest	(testContext, name, description, pipelineConstructionType, primitiveTopology, 10, true, indexType)
+	: InputAssemblyTest	(testContext, name, pipelineConstructionType, primitiveTopology, 10, true, indexType)
+	, m_restartType(restartType)
 {
 	deUint32 restartPrimitives[] = { 1, 5 };
 
-	m_restartPrimitives = useRestartPrimitives ? std::vector<deUint32>(restartPrimitives, restartPrimitives + sizeof(restartPrimitives) / sizeof(deUint32)) : std::vector<deUint32>{};
+	if (restartType == RestartType::NORMAL)
+	{
+		m_restartPrimitives = std::vector<deUint32>(restartPrimitives, restartPrimitives + sizeof(restartPrimitives) / sizeof(deUint32));
+	}
+	else if (restartType == RestartType::NONE)
+	{
+		m_restartPrimitives = std::vector<deUint32>{};
+	}
+	else
+	{
+		deUint32 count = 1;
+		switch (primitiveTopology)
+		{
+			case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+			case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+			case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+			case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+				count = 2;
+				break;
+			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+				count = 3;
+				break;
+			default:
+				break;
+		}
+		for (deUint32 i = 0; i < (deUint32)m_primitiveCount; ++i)
+		{
+			if (i % count == count - 1)
+			{
+				m_restartPrimitives.push_back(i);
+			}
+		}
+	}
 }
 
 void PrimitiveRestartTest::checkSupport (Context& context) const
@@ -833,7 +874,7 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 				}
 				else
 				{
-					if (primitiveStart)
+					if (primitiveStart && m_restartType != RestartType::ALL)
 					{
 						const Vertex4RGBA vertex =
 						{
@@ -870,7 +911,7 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 				}
 				else
 				{
-					if (primitiveStart)
+					if (primitiveStart && m_restartType != RestartType::ALL)
 					{
 						for (int vertexNdx = 0; vertexNdx < 2; vertexNdx++)
 						{
@@ -912,7 +953,7 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 				}
 				else
 				{
-					if (primitiveStart)
+					if (primitiveStart && m_restartType != RestartType::ALL)
 					{
 						Vertex4RGBA vertex =
 						{
@@ -956,7 +997,7 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 				}
 				else
 				{
-					if (primitiveStart)
+					if (primitiveStart && m_restartType != RestartType::ALL)
 					{
 						indices.push_back(0);
 
@@ -998,7 +1039,7 @@ void PrimitiveRestartTest::createBufferData (VkPrimitiveTopology topology, int p
 				}
 				else
 				{
-					if (primitiveStart)
+					if (primitiveStart && m_restartType != RestartType::ALL)
 					{
 						for (int vertexNdx = 0; vertexNdx < 2; vertexNdx++)
 						{
@@ -1156,7 +1197,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 	, m_indices					(indexBufferData)
 	, m_renderSize				((primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN) ? tcu::UVec2(32, 32) : tcu::UVec2(64, 16))
 	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_graphicsPipeline		(context.getDeviceInterface(), context.getDevice(), pipelineConstructionType)
+	, m_graphicsPipeline		(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType)
 {
 	const DeviceInterface&			vk						= context.getDeviceInterface();
 	const VkDevice					vkDevice				= context.getDevice();
@@ -1212,7 +1253,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat);
+	m_renderPass = RenderPassWrapper(pipelineConstructionType, vk, vkDevice, m_colorFormat);
 
 	// Create framebuffer
 	{
@@ -1229,7 +1270,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 			1u													// deUint32					layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, *m_colorImage);
 	}
 
 	// Create pipeline layout
@@ -1245,16 +1286,16 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
-	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
-	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
+	m_vertexShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+	m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
 
 	if (patchList)
 	{
-		m_tcsShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_tcs"), 0);
-		m_tesShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_tes"), 0);
+		m_tcsShaderModule = ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_tcs"), 0);
+		m_tesShaderModule = ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_tes"), 0);
 	}
 
 	// Create pipeline
@@ -1366,23 +1407,23 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 
 		m_graphicsPipeline.setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
-						  .setupVertexInputStete(&vertexInputStateParams, &inputAssemblyStateParams)
+						  .setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
 						  .setupPreRasterizationShaderState(viewport,
 											scissor,
-											*m_pipelineLayout,
+											m_pipelineLayout,
 											*m_renderPass,
 											0u,
-											*m_vertexShaderModule,
+											m_vertexShaderModule,
 											DE_NULL,
-											*m_tcsShaderModule,
-											*m_tesShaderModule)
-						  .setupFragmentShaderState(*m_pipelineLayout,
+											m_tcsShaderModule,
+											m_tesShaderModule)
+						  .setupFragmentShaderState(m_pipelineLayout,
 											*m_renderPass,
 											0u,
-											*m_fragmentShaderModule,
+											m_fragmentShaderModule,
 											&depthStencilStateParams)
 						  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
-						  .setMonolithicPipelineLayout(*m_pipelineLayout)
+						  .setMonolithicPipelineLayout(m_pipelineLayout)
 						  .buildPipeline();
 	}
 
@@ -1471,16 +1512,16 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, 1u, &attachmentLayoutBarrier);
 
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+		m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
 
 		const VkDeviceSize vertexBufferOffset = 0;
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+		m_graphicsPipeline.bind(*m_cmdBuffer);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 		vk.cmdBindIndexBuffer(*m_cmdBuffer, *m_indexBuffer, 0, m_indexType);
 		vk.cmdDrawIndexed(*m_cmdBuffer, (deUint32)m_indices.size(), 1, 0, 0, 0);
 
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
@@ -1611,11 +1652,11 @@ std::string getPrimitiveTopologyCaseName (VkPrimitiveTopology topology)
 
 de::MovePtr<tcu::TestCaseGroup> createPrimitiveTopologyTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> primitiveTopologyTests (new tcu::TestCaseGroup(testCtx, "primitive_topology", ""));
+	de::MovePtr<tcu::TestCaseGroup> primitiveTopologyTests (new tcu::TestCaseGroup(testCtx, "primitive_topology"));
 
-	de::MovePtr<tcu::TestCaseGroup> indexUint16Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint16", ""));
-	de::MovePtr<tcu::TestCaseGroup> indexUint32Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint32", ""));
-	de::MovePtr<tcu::TestCaseGroup> indexUint8Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint8", ""));
+	de::MovePtr<tcu::TestCaseGroup> indexUint16Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint16"));
+	de::MovePtr<tcu::TestCaseGroup> indexUint32Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint32"));
+	de::MovePtr<tcu::TestCaseGroup> indexUint8Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint8"));
 
 	for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(InputAssemblyTest::s_primitiveTopologies); topologyNdx++)
 	{
@@ -1623,21 +1664,18 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveTopologyTests (tcu::TestContext& 
 
 		indexUint16Tests->addChild(new PrimitiveTopologyTest(testCtx,
 															 getPrimitiveTopologyCaseName(topology),
-															 "",
 															 pipelineConstructionType,
 															 topology,
 															 VK_INDEX_TYPE_UINT16));
 
 		indexUint32Tests->addChild(new PrimitiveTopologyTest(testCtx,
 															 getPrimitiveTopologyCaseName(topology),
-															 "",
 															 pipelineConstructionType,
 															 topology,
 															 VK_INDEX_TYPE_UINT32));
 
 		indexUint8Tests->addChild(new PrimitiveTopologyTest(testCtx,
 															 getPrimitiveTopologyCaseName(topology),
-															 "",
 															 pipelineConstructionType,
 															 topology,
 															 VK_INDEX_TYPE_UINT8_EXT));
@@ -1670,44 +1708,52 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 		VK_PRIMITIVE_TOPOLOGY_PATCH_LIST
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> primitiveRestartTests (new tcu::TestCaseGroup(testCtx, "primitive_restart", "Restarts indices of "));
+	de::MovePtr<tcu::TestCaseGroup> primitiveRestartTests (new tcu::TestCaseGroup(testCtx, "primitive_restart"));
 
-	de::MovePtr<tcu::TestCaseGroup> indexUint16Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint16", ""));
-	de::MovePtr<tcu::TestCaseGroup> indexUint32Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint32", ""));
-	de::MovePtr<tcu::TestCaseGroup> indexUint8Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint8", ""));
+	de::MovePtr<tcu::TestCaseGroup> indexUint16Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint16"));
+	de::MovePtr<tcu::TestCaseGroup> indexUint32Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint32"));
+	de::MovePtr<tcu::TestCaseGroup> indexUint8Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint8"));
 
-	bool useRestartPrimitives[] = { true, false };
+	constexpr struct RestartTest
+	{
+		RestartType	type;
+		const char* name;
+	} restartTypes[] =
+	{
+		{ RestartType::NORMAL,	"",					},
+		{ RestartType::NONE,	"no_restart_",		},
+		{ RestartType::ALL,		"restart_all_"		},
+	};
 
 	for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(primitiveRestartTopologies); topologyNdx++)
 	{
 		const VkPrimitiveTopology topology = primitiveRestartTopologies[topologyNdx];
 
-		for (int useRestartNdx = 0; useRestartNdx < DE_LENGTH_OF_ARRAY(useRestartPrimitives); useRestartNdx++)
+		for (int useRestartNdx = 0; useRestartNdx < DE_LENGTH_OF_ARRAY(restartTypes); useRestartNdx++)
 		{
-			std::string restartName = useRestartPrimitives[useRestartNdx] ? "" : "no_restart_";
+			if (topology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST && restartTypes[useRestartNdx].type == RestartType::ALL) {
+				continue;
+			}
 			indexUint16Tests->addChild(new PrimitiveRestartTest(testCtx,
-																restartName + getPrimitiveTopologyCaseName(topology),
-																"",
+																restartTypes[useRestartNdx].name + getPrimitiveTopologyCaseName(topology),
 																pipelineConstructionType,
 																topology,
 																VK_INDEX_TYPE_UINT16,
-																useRestartPrimitives[useRestartNdx]));
+																restartTypes[useRestartNdx].type));
 
 			indexUint32Tests->addChild(new PrimitiveRestartTest(testCtx,
-																restartName + getPrimitiveTopologyCaseName(topology),
-																"",
+																restartTypes[useRestartNdx].name + getPrimitiveTopologyCaseName(topology),
 																pipelineConstructionType,
 																topology,
 																VK_INDEX_TYPE_UINT32,
-																useRestartPrimitives[useRestartNdx]));
+																restartTypes[useRestartNdx].type));
 
 			indexUint8Tests->addChild(new PrimitiveRestartTest(testCtx,
-																restartName + getPrimitiveTopologyCaseName(topology),
-																"",
+																restartTypes[useRestartNdx].name + getPrimitiveTopologyCaseName(topology),
 																pipelineConstructionType,
 																topology,
 																VK_INDEX_TYPE_UINT8_EXT,
-																useRestartPrimitives[useRestartNdx]));
+																restartTypes[useRestartNdx].type));
 		}
 	}
 
@@ -1738,9 +1784,9 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 		for (auto& test : tests)
 		{
 			std::string testName = "restart_disabled_" + test.name;
-			indexUint16Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", dataDir.c_str(), testName + "_uint16.amber", test.requirements));
+			indexUint16Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(),  dataDir.c_str(), testName + "_uint16.amber", test.requirements));
 			test.requirements.push_back("VK_EXT_index_type_uint8");
-			indexUint8Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", dataDir.c_str(), testName + "_uint8.amber", test.requirements));
+			indexUint8Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), dataDir.c_str(), testName + "_uint8.amber", test.requirements));
 		}
 	}
 
@@ -1756,7 +1802,7 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 
 tcu::TestCaseGroup* createInputAssemblyTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup>		inputAssemblyTests (new tcu::TestCaseGroup(testCtx, "input_assembly", "Input assembly tests"));
+	de::MovePtr<tcu::TestCaseGroup>		inputAssemblyTests (new tcu::TestCaseGroup(testCtx, "input_assembly"));
 
 	inputAssemblyTests->addChild(createPrimitiveTopologyTests(testCtx, pipelineConstructionType).release());
 #ifndef CTS_USES_VULKANSC

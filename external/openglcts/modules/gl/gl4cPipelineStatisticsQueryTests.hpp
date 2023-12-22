@@ -263,7 +263,8 @@ public:
 	static bool executeQuery(glw::GLenum query_type, glw::GLuint qo_id, glw::GLuint qo_bo_id,
 							 PFNQUERYDRAWHANDLERPROC pfn_draw, void* draw_user_arg,
 							 const glu::RenderContext& render_context, tcu::TestContext& test_context,
-							 const glu::ContextInfo& context_info, _test_execution_result* out_result);
+							 const glu::ContextInfo& context_info, _test_execution_result* out_result,
+							 bool& skipped);
 
 	static glw::GLenum getEnumForPrimitiveType(_primitive_type primitive_type);
 	static std::string getGLSLStringForGSInput(_geometry_shader_input gs_input);

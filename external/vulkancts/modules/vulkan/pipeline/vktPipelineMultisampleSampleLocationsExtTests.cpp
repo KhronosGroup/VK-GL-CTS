@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2017 Advanced Micro Devices, Inc.
  * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,13 +132,12 @@ private:
 template<typename Instance, typename Arg0>
 void addInstanceTestCaseWithPrograms (tcu::TestCaseGroup*								group,
 									  const std::string&								name,
-									  const std::string&								desc,
 									  typename FunctionSupport1<Arg0>::Function			checkSupport,
 									  typename FunctionProgramsSimple1<Arg0>::Function	initPrograms,
 									  Arg0												arg0)
 {
 	group->addChild(new InstanceFactory1WithSupport<Instance, Arg0, FunctionSupport1<Arg0>, FunctionProgramsSimple1<Arg0> >(
-		group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, FunctionProgramsSimple1<Arg0>(initPrograms), arg0, typename FunctionSupport1<Arg0>::Args(checkSupport, arg0)));
+		group->getTestContext(), name, FunctionProgramsSimple1<Arg0>(initPrograms), arg0, typename FunctionSupport1<Arg0>::Args(checkSupport, arg0)));
 }
 
 void checkSupportSampleLocations (Context& context)
@@ -558,10 +559,10 @@ enum VertexInputConfig
 //! Create a MSAA pipeline, with max per-sample shading
 void preparePipelineWrapper (GraphicsPipelineWrapper&			gpw,
 							 const std::vector<VkDynamicState>&	dynamicState,
-							 const VkPipelineLayout				pipelineLayout,
+							 const PipelineLayoutWrapper&		pipelineLayout,
 							 const VkRenderPass					renderPass,
-							 const VkShaderModule				vertexModule,
-							 const VkShaderModule				fragmentModule,
+							 const ShaderWrapper				vertexModule,
+							 const ShaderWrapper				fragmentModule,
 							 const deUint32						subpassIndex,
 							 const VkViewport&					viewport,
 							 const VkRect2D						scissor,
@@ -691,14 +692,14 @@ void preparePipelineWrapper (GraphicsPipelineWrapper&			gpw,
 	gpw.setDefaultTopology(topology)
 	   .setDynamicState(&dynamicStateCreateInfo)
 	   .setDefaultRasterizationState()
-	   .setupVertexInputStete(&vertexInputStateInfo)
+	   .setupVertexInputState(&vertexInputStateInfo)
 	   .setupPreRasterizationShaderState(viewports,
 								scissors,
 								pipelineLayout,
 								renderPass,
 								subpassIndex,
 								vertexModule,
-								nullptr, DE_NULL, DE_NULL, DE_NULL, DE_NULL,
+								nullptr, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), DE_NULL,
 								(useFragmentShadingRate ? &shadingRateStateCreateInfo : nullptr))
 	   .setupFragmentShaderState(pipelineLayout,
 								renderPass,
@@ -713,10 +714,10 @@ void preparePipelineWrapper (GraphicsPipelineWrapper&			gpw,
 
 void preparePipelineWrapperSinglePassColor (GraphicsPipelineWrapper&			gpw,
 											const std::vector<VkDynamicState>&	dynamicState,
-											const VkPipelineLayout				pipelineLayout,
+											const PipelineLayoutWrapper&		pipelineLayout,
 											const VkRenderPass					renderPass,
-											const VkShaderModule				vertexModule,
-											const VkShaderModule				fragmentModule,
+											const ShaderWrapper					vertexModule,
+											const ShaderWrapper					fragmentModule,
 											const VkViewport&					viewport,
 											const VkRect2D						scissor,
 											const VkSampleCountFlagBits			numSamples,
@@ -742,7 +743,8 @@ public:
 	}
 
 	//! Returns an attachment index that is used to reference this attachment later
-	deUint32 addAttachment (const VkImageView					imageView,
+	deUint32 addAttachment (const VkImage						image,
+							const VkImageView					imageView,
 							const VkAttachmentDescriptionFlags	flags,
 							const VkFormat						format,
 							const VkSampleCountFlagBits			numSamples,
@@ -757,6 +759,7 @@ public:
 	{
 		const deUint32 index = static_cast<deUint32>(m_attachments.size());
 
+		m_images.push_back(image);
 		m_attachments.push_back(imageView);
 		m_attachmentDescriptions.push_back(makeAttachmentDescription(
 			flags,										// VkAttachmentDescriptionFlags		flags;
@@ -845,9 +848,9 @@ public:
 	//! Create a RenderPass and Framebuffer based on provided attachments
 	void bake (const DeviceInterface&							vk,
 			   const VkDevice									device,
+			   const PipelineConstructionType					pipelineConstructionType,
 			   const UVec2&										framebufferSize)
 	{
-		DE_ASSERT(!m_renderPass);
 		const deUint32 numSubpasses = static_cast<deUint32>(m_subpasses.size());
 
 		std::vector<VkSubpassDescription>	subpassDescriptions;
@@ -916,20 +919,23 @@ public:
 			dataOrNullPtr(subpassDependencies)								// const VkSubpassDependency*		pDependencies;
 		};
 
-		m_renderPass  = createRenderPass(vk, device, &renderPassInfo);
-		m_framebuffer = makeFramebuffer (vk, device, *m_renderPass, static_cast<deUint32>(m_attachments.size()), dataOrNullPtr(m_attachments), framebufferSize.x(), framebufferSize.y());
+		m_renderPass  = RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
+		m_renderPass.createFramebuffer(vk, device, static_cast<deUint32>(m_attachments.size()), dataOrNullPtr(m_images), dataOrNullPtr(m_attachments), framebufferSize.x(), framebufferSize.y());
+	}
+
+	const RenderPassWrapper& getRenderPassWrapper (void) const
+	{
+		return m_renderPass;
 	}
 
 	VkRenderPass getRenderPass (void) const
 	{
-		DE_ASSERT(m_renderPass);
 		return *m_renderPass;
 	}
 
-	VkFramebuffer getFramebuffer (void) const
+	VkFramebuffer getFramebuffer(void) const
 	{
-		DE_ASSERT(m_framebuffer);
-		return *m_framebuffer;
+		return m_renderPass.getFramebuffer();
 	}
 
 	void recordBeginRenderPass (const DeviceInterface&	vk,
@@ -937,9 +943,6 @@ public:
 								const VkRect2D&			renderArea,
 								const VkSubpassContents	subpassContents) const
 	{
-		DE_ASSERT(m_renderPass);
-		DE_ASSERT(m_framebuffer);
-
 		const VkRenderPassSampleLocationsBeginInfoEXT renderPassSampleLocationsBeginInfo =
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT,	// VkStructureType                          sType;
@@ -949,18 +952,17 @@ public:
 			static_cast<deUint32>(m_subpassSampleLocations.size()),			// uint32_t                                 postSubpassSampleLocationsCount;
 			dataOrNullPtr(m_subpassSampleLocations),						// const VkSubpassSampleLocationsEXT*       pPostSubpassSampleLocations;
 		};
+		m_renderPass.begin(vk, cmdBuffer, renderArea, static_cast<deUint32>(m_clearValues.size()), dataOrNullPtr(m_clearValues), subpassContents, &renderPassSampleLocationsBeginInfo);
+	}
 
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,						// VkStructureType         sType;
-			&renderPassSampleLocationsBeginInfo,							// const void*             pNext;
-			*m_renderPass,													// VkRenderPass            renderPass;
-			*m_framebuffer,													// VkFramebuffer           framebuffer;
-			renderArea,														// VkRect2D                renderArea;
-			static_cast<deUint32>(m_clearValues.size()),					// uint32_t                clearValueCount;
-			dataOrNullPtr(m_clearValues),									// const VkClearValue*     pClearValues;
-		};
-		vk.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, subpassContents);
+	void nextSubpass (const DeviceInterface& vk, const VkCommandBuffer cmdBuffer, const VkSubpassContents subpassContents) const
+	{
+		m_renderPass.nextSubpass(vk, cmdBuffer, subpassContents);
+	}
+
+	void endRenderPass (const DeviceInterface& vk, const VkCommandBuffer cmdBuffer) const
+	{
+		m_renderPass.end(vk, cmdBuffer);
 	}
 
 private:
@@ -974,13 +976,13 @@ private:
 	};
 
 	std::vector<SubpassDescription>				m_subpasses;
+	std::vector<VkImage>						m_images;
 	std::vector<VkImageView>					m_attachments;
 	std::vector<VkAttachmentDescription>		m_attachmentDescriptions;
 	std::vector<VkClearValue>					m_clearValues;
 	std::vector<VkAttachmentSampleLocationsEXT>	m_attachmentSampleLocations;
 	std::vector<VkSubpassSampleLocationsEXT>	m_subpassSampleLocations;
-	Move<VkRenderPass>							m_renderPass;
-	Move<VkFramebuffer>							m_framebuffer;
+	RenderPassWrapper							m_renderPass;
 
 	// No copying allowed
 	RenderTarget (const RenderTarget&);
@@ -1140,23 +1142,27 @@ void recordClearAttachments (const DeviceInterface&		vk,
 }
 
 //! Suitable for executing in a render pass, no queries
-void beginSecondaryCommandBuffer (const DeviceInterface&	vk,
-								  const VkCommandBuffer		commandBuffer,
-								  const VkRenderPass		renderPass,
-								  const deUint32			subpass,
-								  const VkFramebuffer		framebuffer)
+void beginSecondaryCommandBuffer (const DeviceInterface&			vk,
+								  const VkCommandBuffer				commandBuffer,
+								  const RenderPassWrapper&			renderPass,
+								  const deUint32					subpass,
+								  const VkSampleCountFlagBits		samples,
+								  const PipelineConstructionType	pct)
 {
-	const VkCommandBufferInheritanceInfo inheritanceInfo =
+	DE_UNREF(samples);
+	DE_UNREF(pct);
+	VkCommandBufferInheritanceInfo inheritanceInfo =
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,		// VkStructureType                  sType;
 		DE_NULL,												// const void*                      pNext;
-		renderPass,												// VkRenderPass                     renderPass;
+		*renderPass,											// VkRenderPass                     renderPass;
 		subpass,												// uint32_t                         subpass;
-		framebuffer,											// VkFramebuffer                    framebuffer;
+		renderPass.getFramebuffer(),							// VkFramebuffer                    framebuffer;
 		VK_FALSE,												// VkBool32                         occlusionQueryEnable;
 		(VkQueryControlFlags)0,									// VkQueryControlFlags              queryFlags;
 		(VkQueryPipelineStatisticFlags)0,						// VkQueryPipelineStatisticFlags    pipelineStatistics;
 	};
+
 	const VkCommandBufferBeginInfo beginInfo =
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,		// VkStructureType                          sType;
@@ -1165,6 +1171,20 @@ void beginSecondaryCommandBuffer (const DeviceInterface&	vk,
 		|VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT),	// VkCommandBufferUsageFlags                flags;
 		&inheritanceInfo,									// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
 	};
+
+#ifndef CTS_USES_VULKANSC
+	vk::VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo = vk::initVulkanStructure();
+	inheritanceRenderingInfo.flags = (VkRenderingFlags)0u;
+	inheritanceRenderingInfo.viewMask = 0x0;
+	inheritanceRenderingInfo.rasterizationSamples = samples;
+	std::vector<vk::VkFormat> colorFormats;
+	if (isConstructionTypeShaderObject(pct))
+	{
+		renderPass.fillInheritanceRenderingInfo(subpass, &colorFormats, &inheritanceRenderingInfo);
+		inheritanceInfo.pNext = &inheritanceRenderingInfo;
+	}
+#endif
+
 	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &beginInfo));
 }
 
@@ -1336,7 +1356,7 @@ void checkSupportVerifyTests (Context& context, const TestParams params)
 	if (TEST_OPTION_VARIABLE_SAMPLE_LOCATIONS_BIT & params.options && !getSampleLocationsPropertiesEXT(context).variableSampleLocations)
 		TCU_THROW(NotSupportedError, "VkPhysicalDeviceSampleLocationsPropertiesEXT: variableSampleLocations not supported");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 }
 
 std::string declareSampleDataSSBO (void)
@@ -1551,14 +1571,16 @@ protected:
 	{
 		DE_ASSERT(m_descriptorSetLayout);
 
+		const InstanceInterface&		vki				= m_context.getInstanceInterface();
 		const DeviceInterface&			vk				= m_context.getDeviceInterface();
+		const VkPhysicalDevice			physicalDevice	= m_context.getPhysicalDevice();
 		const VkDevice					device			= m_context.getDevice();
 		const VkViewport				viewport		= makeViewport(m_renderSize);
 		const VkRect2D					renderArea		= makeRect2D(m_renderSize);
 		const VkRect2D					scissor			= makeRect2D(m_renderSize);
-		const Unique<VkShaderModule>	vertexModule	(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-		const Unique<VkShaderModule>	fragmentModule	(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
-		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, *m_descriptorSetLayout));
+		const ShaderWrapper				vertexModule	(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+		const ShaderWrapper				fragmentModule	(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
+		const PipelineLayoutWrapper		pipelineLayout	(m_params.pipelineConstructionType, vk, device, *m_descriptorSetLayout);
 
 		const bool						useDynamicStateSampleLocations	= ((m_params.options & TEST_OPTION_DYNAMIC_STATE_BIT) != 0u);
 		const bool						useFragmentShadingRate			= ((m_params.options & TEST_OPTION_FRAGMENT_SHADING_RATE_BIT) != 0u);
@@ -1567,6 +1589,7 @@ protected:
 		RenderTarget rt;
 
 		rt.addAttachment(
+			*m_colorImage,												// VkImage						image,
 			*m_colorImageView,											// VkImageView					imageView,
 			(VkAttachmentDescriptionFlags)0,							// VkAttachmentDescriptionFlags	flags,
 			m_colorFormat,												// VkFormat						format,
@@ -1580,6 +1603,7 @@ protected:
 			makeClearValueColor(CLEAR_COLOR_0));						// VkClearValue					clearValue,
 
 		rt.addAttachment(
+			*m_resolveImage,												// VkImage						image
 			*m_resolveImageView,										// VkImageView					imageView,
 			(VkAttachmentDescriptionFlags)0,							// VkAttachmentDescriptionFlags	flags,
 			m_colorFormat,												// VkFormat						format,
@@ -1603,9 +1627,9 @@ protected:
 				1u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 		}
 
-		rt.bake(vk, device, m_renderSize);
+		rt.bake(vk, device, m_params.pipelineConstructionType, m_renderSize);
 
-		GraphicsPipelineWrapper pipeline(vk, device, m_params.pipelineConstructionType);
+		GraphicsPipelineWrapper pipeline(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 
 		if (useDynamicStateSampleLocations)
 		{
@@ -1613,13 +1637,13 @@ protected:
 			dynamicState.push_back(VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT);
 
 			preparePipelineWrapperSinglePassColor(
-				pipeline, dynamicState, *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule, viewport, scissor,
+				pipeline, dynamicState, pipelineLayout, rt.getRenderPass(), vertexModule, fragmentModule, viewport, scissor,
 				m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(), vertexInputConfig, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, useFragmentShadingRate);
 		}
 		else
 		{
 			preparePipelineWrapperSinglePassColor(
-				pipeline, std::vector<VkDynamicState>(), *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule, viewport, scissor,
+				pipeline, std::vector<VkDynamicState>(), pipelineLayout, rt.getRenderPass(), vertexModule, fragmentModule, viewport, scissor,
 				m_params.numSamples, /*use sample locations*/ true, sampleLocationsInfo, vertexInputConfig, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, useFragmentShadingRate);
 		}
 
@@ -1631,7 +1655,7 @@ protected:
 		rt.recordBeginRenderPass(vk, *cmdBuffer, renderArea, VK_SUBPASS_CONTENTS_INLINE);
 
 		vk.cmdBindVertexBuffers(*cmdBuffer, /*first binding*/ 0u, /*num bindings*/ 1u, &m_vertexBuffer.get(), /*offsets*/ &ZERO);
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
+		pipeline.bind(*cmdBuffer);
 
 		if (useDynamicStateSampleLocations)
 			vk.cmdSetSampleLocationsEXT(*cmdBuffer, &sampleLocationsInfo);
@@ -1640,7 +1664,7 @@ protected:
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
 
 		vk.cmdDraw(*cmdBuffer, m_numVertices, 1u, 0u, 0u);
-		endRenderPass(vk, *cmdBuffer);
+		rt.endRenderPass(vk, *cmdBuffer);
 
 		recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
 
@@ -1835,13 +1859,13 @@ void addCases (tcu::TestCaseGroup* group, const VkSampleCountFlagBits numSamples
 	{
 		params.options	= options.testFlags;
 
-		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + options.testSuffix).c_str(), "", checkSupportVerifyTests, initPrograms, params);
+		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + options.testSuffix).c_str(), checkSupportVerifyTests, initPrograms, params);
 
 		params.options	|= (TestOptionFlags)TEST_OPTION_DYNAMIC_STATE_BIT;
-		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_dynamic" + options.testSuffix).c_str(), "", checkSupportVerifyTests, initPrograms, params);
+		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_dynamic" + options.testSuffix).c_str(), checkSupportVerifyTests, initPrograms, params);
 
 		params.options	|= (TestOptionFlags)TEST_OPTION_CLOSELY_PACKED_BIT;
-		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_packed" + options.testSuffix).c_str(), "", checkSupportVerifyTests, initPrograms, params);
+		addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_packed" + options.testSuffix).c_str(), checkSupportVerifyTests, initPrograms, params);
 	}
 }
 
@@ -1916,7 +1940,7 @@ void checkSupportDrawTests (Context& context, const TestParams params)
 	if (TEST_OPTION_FRAGMENT_SHADING_RATE_BIT & params.options)
 		checkFragmentShadingRateRequirements(context, params.numSamples);
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 
 #ifndef CTS_USES_VULKANSC
 	if (TEST_OPTION_WAIT_EVENTS_BIT & params.options &&
@@ -2246,20 +2270,23 @@ protected:
 	//! Draw the second pass image, but with sample pattern from the first pass -- used to verify that the pattern is different
 	void drawPatternChangeReference (void)
 	{
+		const InstanceInterface&		vki					= m_context.getInstanceInterface();
 		const DeviceInterface&			vk					= m_context.getDeviceInterface();
+		const VkPhysicalDevice			physicalDevice		= m_context.getPhysicalDevice();
 		const VkDevice					device				= m_context.getDevice();
 		const VkViewport				viewport			= makeViewport(m_renderSize);
 		const VkRect2D					renderArea			= makeRect2D(m_renderSize);
 		const VkRect2D					scissor				= makeRect2D(m_renderSize);
-		const Unique<VkShaderModule>	vertexModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-		const Unique<VkShaderModule>	fragmentModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
-		const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device));
+		const ShaderWrapper				vertexModule		(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+		const ShaderWrapper				fragmentModule		(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
+		const PipelineLayoutWrapper		pipelineLayout		(m_params.pipelineConstructionType, vk, device);
 		const VkSampleLocationsInfoEXT	sampleLocationsInfo	= makeSampleLocationsInfo(m_pixelGrids[0]);
 		const VkClearValue				clearColor0			= (m_params.clears == TEST_CLEARS_NO_CLEAR ? makeClearValueColor(CLEAR_COLOR_0) : makeClearValueColor(CLEAR_COLOR_1));
 
 		RenderTarget rt;
 
 		rt.addAttachment(
+			*m_colorImage,												// VkImage						image
 			*m_colorImageView,											// VkImageView					imageView,
 			(VkAttachmentDescriptionFlags)0,							// VkAttachmentDescriptionFlags	flags,
 			m_colorFormat,												// VkFormat						format,
@@ -2273,6 +2300,7 @@ protected:
 			clearColor0);												// VkClearValue					clearValue,
 
 		rt.addAttachment(
+			*m_resolveImage,											// VkImage						image
 			*m_resolveImageView,										// VkImageView					imageView,
 			(VkAttachmentDescriptionFlags)0,							// VkAttachmentDescriptionFlags	flags,
 			m_colorFormat,												// VkFormat						format,
@@ -2291,6 +2319,7 @@ protected:
 		if (useDepth() || useStencil())
 		{
 			rt.addAttachment(
+				*m_depthStencilImage,											// VkImage						image
 				*m_depthStencilImageView,										// VkImageView					imageView,
 				(VkAttachmentDescriptionFlags)0,								// VkAttachmentDescriptionFlags	flags,
 				m_depthStencilFormat,											// VkFormat						format,
@@ -2307,10 +2336,10 @@ protected:
 			rt.addSubpassDepthStencilAttachment(2u, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, &sampleLocationsInfo);
 		}
 
-		rt.bake(vk, device, m_renderSize);
+		rt.bake(vk, device, m_params.pipelineConstructionType, m_renderSize);
 
-		GraphicsPipelineWrapper pipeline(vk, device, m_params.pipelineConstructionType);
-		preparePipelineWrapper(pipeline, std::vector<VkDynamicState>(), *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule,
+		GraphicsPipelineWrapper pipeline(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
+		preparePipelineWrapper(pipeline, std::vector<VkDynamicState>(), pipelineLayout, rt.getRenderPass(), vertexModule, fragmentModule,
 				/*subpass index*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, sampleLocationsInfo,
 				useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate());
 
@@ -2328,11 +2357,11 @@ protected:
 			secondaryCmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 			currentCmdBuffer = *secondaryCmdBuffer;
 
-			beginSecondaryCommandBuffer(vk, currentCmdBuffer, rt.getRenderPass(), /*subpass*/ 0u, rt.getFramebuffer());
+			beginSecondaryCommandBuffer(vk, currentCmdBuffer, rt.getRenderPassWrapper(), /*subpass*/ 0u, m_params.numSamples, m_params.pipelineConstructionType);
 		}
 
 		vk.cmdBindVertexBuffers(currentCmdBuffer, /*first binding*/ 0u, /*num bindings*/ 1u, &m_vertexBuffer.get(), /*offsets*/ &ZERO);
-		vk.cmdBindPipeline(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
+		pipeline.bind(currentCmdBuffer);
 
 		// Draw the right shape only
 		vk.cmdDraw(currentCmdBuffer, m_numVertices, /*instance count*/ 1u, /*first vertex*/ 0u, /*first instance*/ 1u);
@@ -2345,7 +2374,7 @@ protected:
 			vk.cmdExecuteCommands(currentCmdBuffer, 1u, &secondaryCmdBuffer.get());
 		}
 
-		endRenderPass(vk, *cmdBuffer);
+		rt.endRenderPass(vk, *cmdBuffer);
 
 		recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
 
@@ -2358,14 +2387,16 @@ protected:
 	//! Draw two shapes with distinct sample patterns, each in its own render pass
 	void drawRenderPasses (void)
 	{
+		const InstanceInterface&		vki					= m_context.getInstanceInterface();
 		const DeviceInterface&			vk					= m_context.getDeviceInterface();
+		const VkPhysicalDevice			physicalDevice		= m_context.getPhysicalDevice();
 		const VkDevice					device				= m_context.getDevice();
 		const VkViewport				viewport			= makeViewport(m_renderSize);
 		const VkRect2D					renderArea			= makeRect2D(m_renderSize);
 		const VkRect2D					scissor				= makeRect2D(m_renderSize);
-		const Unique<VkShaderModule>	vertexModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-		const Unique<VkShaderModule>	fragmentModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
-		const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device));
+		const ShaderWrapper				vertexModule		(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+		const ShaderWrapper				fragmentModule		(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
+		const PipelineLayoutWrapper		pipelineLayout		(m_params.pipelineConstructionType, vk, device);
 		const VkClearValue				clearColor0			= makeClearValueColor(CLEAR_COLOR_0);
 		const VkClearValue				clearColor1			= makeClearValueColor(CLEAR_COLOR_1);
 		const VkClearValue				clearDepthStencil0	= makeClearValueDepthStencil(DEPTH_CLEAR, STENCIL_REFERENCE);
@@ -2392,6 +2423,7 @@ protected:
 		// First render pass - no resolves
 		{
 			rt[0].addAttachment(
+				*m_colorImage,												// VkImage						image
 				*m_colorImageView,											// VkImageView					imageView,
 				(VkAttachmentDescriptionFlags)0,							// VkAttachmentDescriptionFlags	flags,
 				m_colorFormat,												// VkFormat						format,
@@ -2409,6 +2441,7 @@ protected:
 			if (useDepth() || useStencil())
 			{
 				rt[0].addAttachment(
+					*m_depthStencilImage,											// VkImage						image
 					*m_depthStencilImageView,										// VkImageView					imageView,
 					(VkAttachmentDescriptionFlags)0,								// VkAttachmentDescriptionFlags	flags,
 					m_depthStencilFormat,											// VkFormat						format,
@@ -2425,7 +2458,7 @@ protected:
 				rt[0].addSubpassDepthStencilAttachment(1u, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, &sampleLocationsInfo[0]);
 			}
 
-			rt[0].bake(vk, device, m_renderSize);
+			rt[0].bake(vk, device, m_params.pipelineConstructionType, m_renderSize);
 		}
 
 		// Second render pass
@@ -2433,6 +2466,7 @@ protected:
 			const VkAttachmentLoadOp loadOp	= (m_params.clears == TEST_CLEARS_LOAD_OP_CLEAR ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD);
 
 			rt[1].addAttachment(
+				*m_colorImage,												// VkImage						image
 				*m_colorImageView,											// VkImageView					imageView,
 				(VkAttachmentDescriptionFlags)0,							// VkAttachmentDescriptionFlags	flags,
 				m_colorFormat,												// VkFormat						format,
@@ -2446,6 +2480,7 @@ protected:
 				clearColor1);												// VkClearValue					clearValue,
 
 			rt[1].addAttachment(
+				*m_resolveImage,											// VkImage						image
 				*m_resolveImageView,										// VkImageView					imageView,
 				(VkAttachmentDescriptionFlags)0,							// VkAttachmentDescriptionFlags	flags,
 				m_colorFormat,												// VkFormat						format,
@@ -2464,6 +2499,7 @@ protected:
 			if (useDepth() || useStencil())
 			{
 				rt[1].addAttachment(
+					*m_depthStencilImage,											// VkImage						image
 					*m_depthStencilImageView,										// VkImageView					imageView,
 					(VkAttachmentDescriptionFlags)0,								// VkAttachmentDescriptionFlags	flags,
 					m_depthStencilFormat,											// VkFormat						format,
@@ -2480,7 +2516,7 @@ protected:
 				rt[1].addSubpassDepthStencilAttachment(2u, depthStencilLayout1, &sampleLocationsInfo[1]);
 			}
 
-			rt[1].bake(vk, device, m_renderSize);
+			rt[1].bake(vk, device, m_params.pipelineConstructionType, m_renderSize);
 		}
 
 		// Pipelines
@@ -2492,16 +2528,16 @@ protected:
 
 			for (deUint32 passNdx = 0; passNdx < NUM_PASSES; ++passNdx)
 			{
-				pipelines.emplace_back(vk, device, m_params.pipelineConstructionType);
-				preparePipelineWrapper(pipelines.back(), dynamicState, *pipelineLayout, rt[passNdx].getRenderPass(), *vertexModule, *fragmentModule,
+				pipelines.emplace_back(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
+				preparePipelineWrapper(pipelines.back(), dynamicState, pipelineLayout, rt[passNdx].getRenderPass(), vertexModule, fragmentModule,
 					/*subpass index*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(),
 					useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate());
 			}
 		}
 		else for (deUint32 passNdx = 0; passNdx < NUM_PASSES; ++passNdx)
 		{
-			pipelines.emplace_back(vk, device, m_params.pipelineConstructionType);
-			preparePipelineWrapper(pipelines.back(), std::vector<VkDynamicState>(), *pipelineLayout, rt[passNdx].getRenderPass(), *vertexModule, *fragmentModule,
+			pipelines.emplace_back(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
+			preparePipelineWrapper(pipelines.back(), std::vector<VkDynamicState>(), pipelineLayout, rt[passNdx].getRenderPass(), vertexModule, fragmentModule,
 				/*subpass index*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, sampleLocationsInfo[passNdx],
 				useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate());
 		}
@@ -2514,13 +2550,13 @@ protected:
 			secondaryCmdBuffer[1] = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
 			// First render pass contents
-			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer[0], rt[0].getRenderPass(), /*subpass*/ 0u, rt[0].getFramebuffer());
-			recordFirstPassContents(*secondaryCmdBuffer[0], pipelines[0].getPipeline(), sampleLocationsInfo[0]);
+			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer[0], rt[0].getRenderPassWrapper(), /*subpass*/ 0u, m_params.numSamples, m_params.pipelineConstructionType);
+			recordFirstPassContents(*secondaryCmdBuffer[0], pipelines[0], sampleLocationsInfo[0]);
 			endCommandBuffer(vk, *secondaryCmdBuffer[0]);
 
 			// Second render pass contents
-			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer[1], rt[1].getRenderPass(), /*subpass*/ 0u, rt[1].getFramebuffer());
-			recordSecondPassContents(*secondaryCmdBuffer[1], pipelines[1].getPipeline(), sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
+			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer[1], rt[1].getRenderPassWrapper(), /*subpass*/ 0u, m_params.numSamples, m_params.pipelineConstructionType);
+			recordSecondPassContents(*secondaryCmdBuffer[1], pipelines[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
 			endCommandBuffer(vk, *secondaryCmdBuffer[1]);
 		}
 
@@ -2534,13 +2570,13 @@ protected:
 		{
 			rt[0].recordBeginRenderPass(vk, currentCmdBuffer, renderArea, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 			vk.cmdExecuteCommands(currentCmdBuffer, 1u, &secondaryCmdBuffer[0].get());
-			endRenderPass(vk, currentCmdBuffer);
+			rt[0].endRenderPass(vk, currentCmdBuffer);
 		}
 		else
 		{
 			rt[0].recordBeginRenderPass(vk, currentCmdBuffer, renderArea, VK_SUBPASS_CONTENTS_INLINE);
-			recordFirstPassContents(currentCmdBuffer, pipelines[0].getPipeline(), sampleLocationsInfo[0]);
-			endRenderPass(vk, currentCmdBuffer);
+			recordFirstPassContents(currentCmdBuffer, pipelines[0], sampleLocationsInfo[0]);
+			rt[0].endRenderPass(vk, currentCmdBuffer);
 		}
 
 		endCommandBuffer(vk, currentCmdBuffer);
@@ -2672,13 +2708,13 @@ protected:
 		{
 			rt[1].recordBeginRenderPass(vk, currentCmdBuffer, renderArea, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 			vk.cmdExecuteCommands(currentCmdBuffer, 1u, &secondaryCmdBuffer[1].get());
-			endRenderPass(vk, currentCmdBuffer);
+			rt[1].endRenderPass(vk, currentCmdBuffer);
 		}
 		else
 		{
 			rt[1].recordBeginRenderPass(vk, currentCmdBuffer, renderArea, VK_SUBPASS_CONTENTS_INLINE);
-			recordSecondPassContents(currentCmdBuffer, pipelines[1].getPipeline(), sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
-			endRenderPass(vk, currentCmdBuffer);
+			recordSecondPassContents(currentCmdBuffer, pipelines[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
+			rt[1].endRenderPass(vk, currentCmdBuffer);
 		}
 
 		// Resolve image -> host buffer
@@ -2715,13 +2751,13 @@ protected:
 	}
 
 	void recordFirstPassContents (const VkCommandBuffer				cmdBuffer,
-								  const VkPipeline					pipeline,
+								  const GraphicsPipelineWrapper&	pipeline,
 								  const VkSampleLocationsInfoEXT&	sampleLocationsInfo)
 	{
 		const DeviceInterface& vk = m_context.getDeviceInterface();
 
 		vk.cmdBindVertexBuffers(cmdBuffer, /*first binding*/ 0u, /*num bindings*/ 1u, &m_vertexBuffer.get(), /*offsets*/ &ZERO);
-		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		pipeline.bind(cmdBuffer);
 
 		if (useDynamicState())
 			vk.cmdSetSampleLocationsEXT(cmdBuffer, &sampleLocationsInfo);
@@ -2733,7 +2769,7 @@ protected:
 	}
 
 	void recordSecondPassContents (const VkCommandBuffer			cmdBuffer,
-								   const VkPipeline					pipeline,
+								   const GraphicsPipelineWrapper&	pipeline,
 								   const VkSampleLocationsInfoEXT&	sampleLocationsInfo,
 								   const VkClearValue&				clearColor,
 								   const VkClearValue&				clearDepthStencil,
@@ -2742,7 +2778,7 @@ protected:
 		const DeviceInterface& vk = m_context.getDeviceInterface();
 
 		vk.cmdBindVertexBuffers(cmdBuffer, /*first binding*/ 0u, /*num bindings*/ 1u, &m_vertexBuffer.get(), /*offsets*/ &ZERO);
-		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		pipeline.bind(cmdBuffer);
 
 		if (m_params.clears == TEST_CLEARS_CMD_CLEAR_ATTACHMENTS)
 			recordClearAttachments(vk, cmdBuffer, 0u, clearColor, m_depthStencilAspect, clearDepthStencil, clearRect);
@@ -2761,14 +2797,16 @@ protected:
 		DE_ASSERT(m_params.clears != TEST_CLEARS_LOAD_OP_CLEAR);			// can't specify a load op for a subpass
 		DE_ASSERT((m_params.options & TEST_OPTION_WAIT_EVENTS_BIT) == 0);	// can't change layouts inside a subpass
 
+		const InstanceInterface&		vki					= m_context.getInstanceInterface();
 		const DeviceInterface&			vk					= m_context.getDeviceInterface();
+		const VkPhysicalDevice			physicalDevice		= m_context.getPhysicalDevice();
 		const VkDevice					device				= m_context.getDevice();
 		const VkViewport				viewport			= makeViewport(m_renderSize);
 		const VkRect2D					renderArea			= makeRect2D(m_renderSize);
 		const VkRect2D					scissor				= makeRect2D(m_renderSize);
-		const Unique<VkShaderModule>	vertexModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-		const Unique<VkShaderModule>	fragmentModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
-		const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device));
+		const ShaderWrapper				vertexModule		(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+		const ShaderWrapper				fragmentModule		(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
+		const PipelineLayoutWrapper		pipelineLayout		(m_params.pipelineConstructionType, vk, device);
 		const VkClearValue				clearColor0			= makeClearValueColor(CLEAR_COLOR_0);
 		const VkClearValue				clearColor1			= makeClearValueColor(CLEAR_COLOR_1);
 		const VkClearValue				clearDepthStencil0	= makeClearValueDepthStencil(DEPTH_CLEAR, STENCIL_REFERENCE);
@@ -2791,6 +2829,7 @@ protected:
 		// Prepare the render pass
 		{
 			rt.addAttachment(
+				*m_colorImage,												// VkImage						image
 				*m_colorImageView,											// VkImageView					imageView,
 				(VkAttachmentDescriptionFlags)0,							// VkAttachmentDescriptionFlags	flags,
 				m_colorFormat,												// VkFormat						format,
@@ -2804,6 +2843,7 @@ protected:
 				clearColor0);												// VkClearValue					clearValue,
 
 			rt.addAttachment(
+				*m_resolveImage,											// VkImage						image
 				*m_resolveImageView,										// VkImageView					imageView,
 				(VkAttachmentDescriptionFlags)0,							// VkAttachmentDescriptionFlags	flags,
 				m_colorFormat,												// VkFormat						format,
@@ -2822,6 +2862,7 @@ protected:
 			if (useDepth() || useStencil())
 			{
 				rt.addAttachment(
+					*m_depthStencilImage,											// VkImage						image
 					*m_depthStencilImageView,										// VkImageView					imageView,
 					(VkAttachmentDescriptionFlags)0,								// VkAttachmentDescriptionFlags	flags,
 					m_depthStencilFormat,											// VkFormat						format,
@@ -2846,7 +2887,7 @@ protected:
 			if (useDepth() || useStencil())
 				rt.addSubpassDepthStencilAttachment(2u, depthStencilLayout1, &sampleLocationsInfo[1]);
 
-			rt.bake(vk, device, m_renderSize);
+			rt.bake(vk, device, m_params.pipelineConstructionType, m_renderSize);
 		}
 
 		// Pipelines
@@ -2858,16 +2899,16 @@ protected:
 
 			for (deUint32 passNdx = 0; passNdx < NUM_PASSES; ++passNdx)
 			{
-				pipelines.emplace_back(vk, device, m_params.pipelineConstructionType);
-				preparePipelineWrapper(pipelines.back(), dynamicState, *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule,
+				pipelines.emplace_back(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
+				preparePipelineWrapper(pipelines.back(), dynamicState, pipelineLayout, rt.getRenderPass(), vertexModule, fragmentModule,
 					/*subpass*/ passNdx, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(),
 					useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate());
 			}
 		}
 		else for (deUint32 passNdx = 0; passNdx < NUM_PASSES; ++passNdx)
 		{
-			pipelines.emplace_back(vk, device, m_params.pipelineConstructionType);
-			preparePipelineWrapper(pipelines.back(), std::vector<VkDynamicState>(), *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule,
+			pipelines.emplace_back(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
+			preparePipelineWrapper(pipelines.back(), std::vector<VkDynamicState>(), pipelineLayout, rt.getRenderPass(), vertexModule, fragmentModule,
 				/*subpass*/ passNdx, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, sampleLocationsInfo[passNdx],
 				useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate());
 		}
@@ -2880,13 +2921,13 @@ protected:
 			secondaryCmdBuffer[1] = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
 			// First subpass contents
-			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer[0], rt.getRenderPass(), /*subpass*/ 0u, rt.getFramebuffer());
-			recordFirstPassContents(*secondaryCmdBuffer[0], pipelines[0].getPipeline(), sampleLocationsInfo[0]);
+			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer[0], rt.getRenderPassWrapper(), /*subpass*/ 0u, m_params.numSamples, m_params.pipelineConstructionType);
+			recordFirstPassContents(*secondaryCmdBuffer[0], pipelines[0], sampleLocationsInfo[0]);
 			endCommandBuffer(vk, *secondaryCmdBuffer[0]);
 
 			// Second subpass contents
-			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer[1], rt.getRenderPass(), /*subpass*/ 1u, rt.getFramebuffer());
-			recordSecondPassContents(*secondaryCmdBuffer[1], pipelines[1].getPipeline(), sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
+			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer[1], rt.getRenderPassWrapper(), /*subpass*/ 1u, m_params.numSamples, m_params.pipelineConstructionType);
+			recordSecondPassContents(*secondaryCmdBuffer[1], pipelines[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
 			endCommandBuffer(vk, *secondaryCmdBuffer[1]);
 		}
 
@@ -2899,19 +2940,19 @@ protected:
 			rt.recordBeginRenderPass(vk, *cmdBuffer, renderArea, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 			vk.cmdExecuteCommands(*cmdBuffer, 1u, &secondaryCmdBuffer[0].get());
 
-			vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+			rt.nextSubpass(vk, *cmdBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 			vk.cmdExecuteCommands(*cmdBuffer, 1u, &secondaryCmdBuffer[1].get());
 		}
 		else
 		{
 			rt.recordBeginRenderPass(vk, *cmdBuffer, renderArea, VK_SUBPASS_CONTENTS_INLINE);
-			recordFirstPassContents(*cmdBuffer, pipelines[0].getPipeline(), sampleLocationsInfo[0]);
+			recordFirstPassContents(*cmdBuffer, pipelines[0], sampleLocationsInfo[0]);
 
-			vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
-			recordSecondPassContents(*cmdBuffer, pipelines[1].getPipeline(), sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
+			rt.nextSubpass(vk, *cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			recordSecondPassContents(*cmdBuffer, pipelines[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
 		}
 
-		endRenderPass(vk, *cmdBuffer);
+		rt.endRenderPass(vk, *cmdBuffer);
 
 		// Resolve image -> host buffer
 		recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
@@ -2930,14 +2971,16 @@ protected:
 		DE_ASSERT((m_params.options & TEST_OPTION_WAIT_EVENTS_BIT) == 0);		// can't change layouts inside a subpass
 		DE_ASSERT((m_params.options & TEST_OPTION_GENERAL_LAYOUT_BIT) == 0);	// can't change layouts inside a subpass
 
+		const InstanceInterface&		vki					= m_context.getInstanceInterface();
 		const DeviceInterface&			vk					= m_context.getDeviceInterface();
+		const VkPhysicalDevice			physicalDevice		= m_context.getPhysicalDevice();
 		const VkDevice					device				= m_context.getDevice();
 		const VkViewport				viewport			= makeViewport(m_renderSize);
 		const VkRect2D					renderArea			= makeRect2D(m_renderSize);
 		const VkRect2D					scissor				= makeRect2D(m_renderSize);
-		const Unique<VkShaderModule>	vertexModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-		const Unique<VkShaderModule>	fragmentModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
-		const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device));
+		const ShaderWrapper				vertexModule		(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+		const ShaderWrapper				fragmentModule		(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
+		const PipelineLayoutWrapper		pipelineLayout		(m_params.pipelineConstructionType, vk, device);
 		const VkClearValue				clearColor0			= makeClearValueColor(CLEAR_COLOR_0);
 		const VkClearValue				clearColor1			= makeClearValueColor(CLEAR_COLOR_1);
 		const VkClearValue				clearDepthStencil0	= makeClearValueDepthStencil(DEPTH_CLEAR, STENCIL_REFERENCE);
@@ -2957,6 +3000,7 @@ protected:
 		// Prepare the render pass
 		{
 			rt.addAttachment(
+				*m_colorImage,												// VkImage						image
 				*m_colorImageView,											// VkImageView					imageView,
 				(VkAttachmentDescriptionFlags)0,							// VkAttachmentDescriptionFlags	flags,
 				m_colorFormat,												// VkFormat						format,
@@ -2970,6 +3014,7 @@ protected:
 				clearColor0);												// VkClearValue					clearValue,
 
 			rt.addAttachment(
+				*m_resolveImage,											// VkImage						image
 				*m_resolveImageView,										// VkImageView					imageView,
 				(VkAttachmentDescriptionFlags)0,							// VkAttachmentDescriptionFlags	flags,
 				m_colorFormat,												// VkFormat						format,
@@ -2988,6 +3033,7 @@ protected:
 			if (useDepth() || useStencil())
 			{
 				rt.addAttachment(
+					*m_depthStencilImage,											// VkImage						image
 					*m_depthStencilImageView,										// VkImageView					imageView,
 					(VkAttachmentDescriptionFlags)0,								// VkAttachmentDescriptionFlags	flags,
 					m_depthStencilFormat,											// VkFormat						format,
@@ -3004,7 +3050,7 @@ protected:
 				rt.addSubpassDepthStencilAttachment(2u, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, &sampleLocationsInfo[0]);
 			}
 
-			rt.bake(vk, device, m_renderSize);
+			rt.bake(vk, device, m_params.pipelineConstructionType, m_renderSize);
 		}
 
 		// Pipelines
@@ -3016,16 +3062,16 @@ protected:
 
 			for (deUint32 passNdx = 0; passNdx < NUM_PASSES; ++passNdx)
 			{
-				pipelines.emplace_back(vk, device, m_params.pipelineConstructionType);
-				preparePipelineWrapper(pipelines.back(), dynamicState, *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule,
+				pipelines.emplace_back(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
+				preparePipelineWrapper(pipelines.back(), dynamicState, pipelineLayout, rt.getRenderPass(), vertexModule, fragmentModule,
 					/*subpass*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(),
 					useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate);
 			}
 		}
 		else for (deUint32 passNdx = 0; passNdx < NUM_PASSES; ++passNdx)
 		{
-			pipelines.emplace_back(vk, device, m_params.pipelineConstructionType);
-			preparePipelineWrapper(pipelines.back(), std::vector<VkDynamicState>(), *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule,
+			pipelines.emplace_back(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
+			preparePipelineWrapper(pipelines.back(), std::vector<VkDynamicState>(), pipelineLayout, rt.getRenderPass(), vertexModule, fragmentModule,
 				/*subpass*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, sampleLocationsInfo[passNdx],
 				useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce(), useFragmentShadingRate);
 		}
@@ -3036,9 +3082,9 @@ protected:
 		{
 			secondaryCmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
-			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, rt.getRenderPass(), /*subpass*/ 0u, rt.getFramebuffer());
-			recordFirstPassContents(*secondaryCmdBuffer, pipelines[0].getPipeline(), sampleLocationsInfo[0]);
-			recordSecondPassContents(*secondaryCmdBuffer, pipelines[1].getPipeline(), sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
+			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, rt.getRenderPassWrapper(), /*subpass*/ 0u, m_params.numSamples, m_params.pipelineConstructionType);
+			recordFirstPassContents(*secondaryCmdBuffer, pipelines[0], sampleLocationsInfo[0]);
+			recordSecondPassContents(*secondaryCmdBuffer, pipelines[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
 			endCommandBuffer(vk, *secondaryCmdBuffer);
 		}
 
@@ -3054,11 +3100,11 @@ protected:
 		else
 		{
 			rt.recordBeginRenderPass(vk, *cmdBuffer, renderArea, VK_SUBPASS_CONTENTS_INLINE);
-			recordFirstPassContents(*cmdBuffer, pipelines[0].getPipeline(), sampleLocationsInfo[0]);
-			recordSecondPassContents(*cmdBuffer, pipelines[1].getPipeline(), sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
+			recordFirstPassContents(*cmdBuffer, pipelines[0], sampleLocationsInfo[0]);
+			recordSecondPassContents(*cmdBuffer, pipelines[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
 		}
 
-		endRenderPass(vk, *cmdBuffer);
+		rt.endRenderPass(vk, *cmdBuffer);
 
 		// Resolve image -> host buffer
 		recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
@@ -3100,10 +3146,10 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType
 	// Queries
 	if (!useFragmentShadingRate && (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC))
 	{
-		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(rootGroup->getTestContext(), "query", ""));
+		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(rootGroup->getTestContext(), "query"));
 
-		addFunctionCase(group.get(), "sample_locations_properties", "", checkSupportSampleLocations, testQuerySampleLocationProperties);
-		addFunctionCase(group.get(), "multisample_properties",		"", checkSupportSampleLocations, testQueryMultisampleProperties);
+		addFunctionCase(group.get(), "sample_locations_properties", checkSupportSampleLocations, testQuerySampleLocationProperties);
+		addFunctionCase(group.get(), "multisample_properties",		checkSupportSampleLocations, testQueryMultisampleProperties);
 
 		rootGroup->addChild(group.release());
 	}
@@ -3121,8 +3167,8 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType
 	{
 		using namespace VerifySamples;
 
-		MovePtr<tcu::TestCaseGroup> groupLocation		(new tcu::TestCaseGroup(rootGroup->getTestContext(), "verify_location", ""));
-		MovePtr<tcu::TestCaseGroup> groupInterpolation	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "verify_interpolation", ""));
+		MovePtr<tcu::TestCaseGroup> groupLocation		(new tcu::TestCaseGroup(rootGroup->getTestContext(), "verify_location"));
+		MovePtr<tcu::TestCaseGroup> groupInterpolation	(new tcu::TestCaseGroup(rootGroup->getTestContext(), "verify_interpolation"));
 
 		for (const VkSampleCountFlagBits* pLoopNumSamples = sampleCountRange; pLoopNumSamples < DE_ARRAY_END(sampleCountRange); ++pLoopNumSamples)
 		{
@@ -3178,13 +3224,13 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType
 			TEST_IMAGE_ASPECT_STENCIL,
 		};
 
-		MovePtr<tcu::TestCaseGroup> drawGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), "draw", ""));
+		MovePtr<tcu::TestCaseGroup> drawGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), "draw"));
 		for (const TestImageAspect* pLoopImageAspect = aspectRange; pLoopImageAspect != DE_ARRAY_END(aspectRange); ++pLoopImageAspect)
 		{
-			MovePtr<tcu::TestCaseGroup> aspectGroup (new tcu::TestCaseGroup(drawGroup->getTestContext(), getString(*pLoopImageAspect), ""));
+			MovePtr<tcu::TestCaseGroup> aspectGroup (new tcu::TestCaseGroup(drawGroup->getTestContext(), getString(*pLoopImageAspect)));
 			for (const VkSampleCountFlagBits* pLoopNumSamples = sampleCountRange; pLoopNumSamples < DE_ARRAY_END(sampleCountRange); ++pLoopNumSamples)
 			{
-				MovePtr<tcu::TestCaseGroup> samplesGroup (new tcu::TestCaseGroup(aspectGroup->getTestContext(), getString(*pLoopNumSamples).c_str(), ""));
+				MovePtr<tcu::TestCaseGroup> samplesGroup (new tcu::TestCaseGroup(aspectGroup->getTestContext(), getString(*pLoopNumSamples).c_str()));
 
 				for (deUint32		 loopDrawSetNdx = 0u;		  loopDrawSetNdx <  DE_LENGTH_OF_ARRAY(drawClearSets); ++loopDrawSetNdx)
 				for (const deUint32* pLoopOptions	= optionSets; pLoopOptions	 != DE_ARRAY_END(optionSets);		   ++pLoopOptions)
@@ -3220,7 +3266,7 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType
 							 << getString(params.clears) << (params.options != 0 ? "_" : "")
 							 << getTestOptionFlagsString(params.options);
 
-					addInstanceTestCaseWithPrograms<DrawTest>(samplesGroup.get(), caseName.str().c_str(), "", checkSupportDrawTests, initPrograms, params);
+					addInstanceTestCaseWithPrograms<DrawTest>(samplesGroup.get(), caseName.str().c_str(), checkSupportDrawTests, initPrograms, params);
 				}
 				aspectGroup->addChild(samplesGroup.release());
 			}
@@ -3234,7 +3280,7 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup, PipelineConstructionType
 
 tcu::TestCaseGroup* createMultisampleSampleLocationsExtTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, bool useFragmentShadingRate)
 {
-	return createTestGroup(testCtx, "sample_locations_ext", "Test a graphics pipeline with user-defined sample locations", createTestsInGroup, pipelineConstructionType, useFragmentShadingRate);
+	return createTestGroup(testCtx, "sample_locations_ext", createTestsInGroup, pipelineConstructionType, useFragmentShadingRate);
 }
 
 } // pipeline

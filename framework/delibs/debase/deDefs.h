@@ -101,6 +101,12 @@
 #	error Unknown operating system.
 #endif
 
+#if ((DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_UNIX)) && !defined(DEQP_SURFACELESS) && !defined(NULLWS)
+#	define DE_PLATFORM_USE_LIBRARY_TYPE 1
+#else
+#	undef DE_PLATFORM_USE_LIBRARY_TYPE
+#endif
+
 /* CPUs */
 #define DE_CPU_VANILLA	0
 #define DE_CPU_X86		1
@@ -109,6 +115,8 @@
 #define DE_CPU_ARM_64	4
 #define DE_CPU_MIPS		5
 #define DE_CPU_MIPS_64	6
+#define DE_CPU_RISCV_32	7
+#define DE_CPU_RISCV_64	8
 
 /* CPU detection. */
 #if defined(DE_CPU)
@@ -125,6 +133,10 @@
 #	define DE_CPU DE_CPU_MIPS
 #elif defined(__mips__) && ((__mips) == 64)
 #	define DE_CPU DE_CPU_MIPS_64
+#elif defined(__riscv) && ((__riscv_xlen) == 32)
+#	define DE_CPU DE_CPU_RISCV_32
+#elif defined(__riscv) && ((__riscv_xlen) == 64)
+#	define DE_CPU DE_CPU_RISCV_64
 #else
 #	error Unknown CPU.
 #endif
@@ -208,13 +220,6 @@ typedef void (*deFunctionPtr) (void);
 #	endif
 #endif
 
-/* Debug code macro. */
-#if defined(DE_DEBUG)
-#	define DE_DEBUG_CODE(X) X
-#else
-#	define DE_DEBUG_CODE(X)
-#endif
-
 /* Inline. */
 #if (DE_COMPILER == DE_COMPILER_MSC)
 #	define DE_INLINE __forceinline
@@ -261,14 +266,14 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 
 /* Assertion macro. */
 #if defined(DE_DEBUG) && !defined(DE_COVERAGE_BUILD)
-#	define DE_ASSERT(X) do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
+#	define DE_ASSERT(X) do { if (!(X)) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
 #else
 #	define DE_ASSERT(X) /*@ -noeffect*/ ((void)0)	/*!< Assertion macro. */
 #endif
 
 /* Verify macro. Behaves like assert in debug build, but executes statement in release build. */
 #if defined(DE_DEBUG)
-#	define DE_VERIFY(X) do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
+#	define DE_VERIFY(X) do { if (!(X)) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
 #else
 #	define DE_VERIFY(X) X
 #endif
@@ -281,7 +286,7 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 #endif
 
 /** Test assert macro for use in testers (same as DE_ASSERT, but always enabled). */
-#define DE_TEST_ASSERT(X) do { if ((!deGetFalse() && (X)) ? DE_FALSE : DE_TRUE) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
+#define DE_TEST_ASSERT(X) do { if (!(X)) deAssertFail(#X, __FILE__, __LINE__); } while(deGetFalse())
 
 #if (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
 	/* GCC 4.8 and newer warns about unused typedefs. */
@@ -292,10 +297,8 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 
 /** Compile-time assertion macro. */
 #define DE_STATIC_ASSERT(X)						typedef char DE_UNIQUE_NAME[(X) ? 1 : -1] DE_UNUSED_ATTR
-#define DE_HEADER_STATIC_ASSERT(HEADERTOKEN, X)	typedef char DE_HEADER_UNIQUE_NAME(HEADERTOKEN)[(X) ? 1 : -1] DE_UNUSED_ATTR
 
 #define DE_UNIQUE_NAME						DE_MAKE_NAME(__LINE__, hoax)
-#define DE_HEADER_UNIQUE_NAME(HEADERTOKEN)	DE_MAKE_NAME(__LINE__, HEADERTOKEN)
 #define DE_MAKE_NAME(line, token) DE_MAKE_NAME2(line, token)
 #define DE_MAKE_NAME2(line, token) _static_assert_##line##_##token
 
@@ -330,6 +333,21 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 #	define DE_PTR_SIZE 8
 #else
 #	define DE_PTR_SIZE 4	/* default to 32-bit */
+#endif
+
+/* Floating-point environment flag. */
+#if defined(DE_FENV_ACCESS_ON)
+	/* Already defined */
+#elif (DE_COMPILER == DE_COMPILER_CLANG) && (DE_CPU == DE_CPU_ARM)
+// FENV_ACCESS is not supported, disable all optimizations to avoid incorrect fp operation ordering
+// Google Bug: b/298204279
+#	define DE_FENV_ACCESS_ON _Pragma("clang optimize off")
+#elif (DE_COMPILER == DE_COMPILER_CLANG) && (DE_CPU != DE_CPU_ARM)
+#	define DE_FENV_ACCESS_ON _Pragma("STDC FENV_ACCESS ON")
+#elif (DE_COMPILER == DE_COMPILER_MSC)
+#	define DE_FENV_ACCESS_ON __pragma(fenv_access (on))
+#else
+#	define DE_FENV_ACCESS_ON	/* not supported */
 #endif
 
 /** Unreferenced variable silencing. */

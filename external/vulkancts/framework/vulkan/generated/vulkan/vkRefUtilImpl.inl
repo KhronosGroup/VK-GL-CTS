@@ -211,6 +211,18 @@ void Deleter<VkBufferCollectionFUCHSIA>::operator() (VkBufferCollectionFUCHSIA o
 }
 
 template<>
+void Deleter<VkCudaModuleNV>::operator() (VkCudaModuleNV obj) const
+{
+	m_deviceIface->destroyCudaModuleNV(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkCudaFunctionNV>::operator() (VkCudaFunctionNV obj) const
+{
+	m_deviceIface->destroyCudaFunctionNV(m_device, obj, m_allocator);
+}
+
+template<>
 void Deleter<VkMicromapEXT>::operator() (VkMicromapEXT obj) const
 {
 	m_deviceIface->destroyMicromapEXT(m_device, obj, m_allocator);
@@ -220,6 +232,12 @@ template<>
 void Deleter<VkOpticalFlowSessionNV>::operator() (VkOpticalFlowSessionNV obj) const
 {
 	m_deviceIface->destroyOpticalFlowSessionNV(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkShaderEXT>::operator() (VkShaderEXT obj) const
+{
+	m_deviceIface->destroyShaderEXT(m_device, obj, m_allocator);
 }
 
 } // refdetails
@@ -586,6 +604,20 @@ Move<VkBufferCollectionFUCHSIA> createBufferCollectionFUCHSIA (const DeviceInter
 	VkBufferCollectionFUCHSIA object = 0;
 	VK_CHECK(vk.createBufferCollectionFUCHSIA(device, pCreateInfo, pAllocator, &object));
 	return Move<VkBufferCollectionFUCHSIA>(check<VkBufferCollectionFUCHSIA>(object), Deleter<VkBufferCollectionFUCHSIA>(vk, device, pAllocator));
+}
+
+Move<VkCudaModuleNV> createCudaModuleNV (const DeviceInterface& vk, VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkCudaModuleNV object = 0;
+	VK_CHECK(vk.createCudaModuleNV(device, pCreateInfo, pAllocator, &object));
+	return Move<VkCudaModuleNV>(check<VkCudaModuleNV>(object), Deleter<VkCudaModuleNV>(vk, device, pAllocator));
+}
+
+Move<VkCudaFunctionNV> createCudaFunctionNV (const DeviceInterface& vk, VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkCudaFunctionNV object = 0;
+	VK_CHECK(vk.createCudaFunctionNV(device, pCreateInfo, pAllocator, &object));
+	return Move<VkCudaFunctionNV>(check<VkCudaFunctionNV>(object), Deleter<VkCudaFunctionNV>(vk, device, pAllocator));
 }
 
 Move<VkMicromapEXT> createMicromapEXT (const DeviceInterface& vk, VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)

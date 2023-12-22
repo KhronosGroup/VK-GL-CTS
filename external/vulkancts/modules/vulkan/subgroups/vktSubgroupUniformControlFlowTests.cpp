@@ -42,9 +42,8 @@ namespace
 
 struct Case
 {
-	Case(const char*	b, const char* d,	bool sw,	bool use_ssc,	vk::VkShaderStageFlagBits s, vk::VkSubgroupFeatureFlagBits o) :
+	Case(const char*	b,	bool sw,	bool use_ssc,	vk::VkShaderStageFlagBits s, vk::VkSubgroupFeatureFlagBits o) :
 		basename(b),
-		description(d),
 		small_workgroups(sw),
 		use_subgroup_size_control(use_ssc),
 		stage(s)
@@ -52,7 +51,6 @@ struct Case
 		operation = (vk::VkSubgroupFeatureFlagBits)(o | vk::VK_SUBGROUP_FEATURE_BASIC_BIT);
 	}
 	const char* basename;
-	const char* description;
 	bool small_workgroups;
 	bool use_subgroup_size_control;
 	vk::VkShaderStageFlagBits stage;
@@ -62,9 +60,9 @@ struct Case
 struct CaseGroup
 {
 	CaseGroup(const char*	the_data_dir, const char*	the_subdir) : data_dir(the_data_dir),	subdir(the_subdir) { }
-	void add(const char*	basename,	const char*	description,	bool small_workgroups,	bool use_subgroup_size_control, vk::VkShaderStageFlagBits stage, vk::VkSubgroupFeatureFlagBits operation = vk::VK_SUBGROUP_FEATURE_BASIC_BIT)
+	void add(const char*	basename,	bool small_workgroups,	bool use_subgroup_size_control, vk::VkShaderStageFlagBits stage, vk::VkSubgroupFeatureFlagBits operation = vk::VK_SUBGROUP_FEATURE_BASIC_BIT)
 	{
-		cases.push_back(Case(basename, description, small_workgroups, use_subgroup_size_control, stage, operation));
+		cases.push_back(Case(basename, small_workgroups, use_subgroup_size_control, stage, operation));
 	}
 
 	const char*	data_dir;
@@ -77,13 +75,12 @@ class SubgroupUniformControlFlowTestCase : public cts_amber::AmberTestCase
 public:
 	SubgroupUniformControlFlowTestCase(tcu::TestContext&	testCtx,
 									   const char*	name,
-									   const char*	description,
 									   const std::string&	readFilename,
 									   bool	small_workgroups,
 									   bool	use_subgroup_size_control,
 									   vk::VkShaderStageFlagBits stage,
 									   vk::VkSubgroupFeatureFlagBits operation) :
-		cts_amber::AmberTestCase(testCtx, name, description, readFilename),
+		cts_amber::AmberTestCase(testCtx, name, "", readFilename),
 		m_small_workgroups(small_workgroups),
 		m_use_subgroup_size_control(use_subgroup_size_control),
 		m_stage(stage),
@@ -101,6 +98,7 @@ private:
 void SubgroupUniformControlFlowTestCase::checkSupport(Context& ctx) const
 {
 	// Check required extensions.
+	ctx.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 	ctx.requireDeviceFunctionality("VK_KHR_shader_subgroup_uniform_control_flow");
 	if (m_use_subgroup_size_control)
 	{
@@ -191,7 +189,6 @@ template<bool requirements> void addTestsForAmberFiles(tcu::TestCaseGroup* tests
 		SubgroupUniformControlFlowTestCase*	testCase =
 			new SubgroupUniformControlFlowTestCase(testCtx,
 													cases[i].basename,
-													cases[i].description,
 													readFilename,
 													cases[i].small_workgroups,
 													cases[i].use_subgroup_size_control,
@@ -226,7 +223,7 @@ tcu::TestCaseGroup* createSubgroupUniformControlFlowTests(tcu::TestContext&	test
 	// it, while implementations that do support the feature will (likely) not
 	// pass the tests that do not enable the feature.
 
-	de::MovePtr<tcu::TestCaseGroup>	uniformControlFlowTests(new	tcu::TestCaseGroup(testCtx,	"subgroup_uniform_control_flow", "VK_KHR_shader_subgroup_uniform_control_flow tests"));
+	de::MovePtr<tcu::TestCaseGroup>	uniformControlFlowTests(new	tcu::TestCaseGroup(testCtx,	"subgroup_uniform_control_flow"));
 
 	// Location of the Amber script files under data/vulkan/amber source tree.
 	const char* data_dir = "subgroup_uniform_control_flow";
@@ -244,59 +241,99 @@ tcu::TestCaseGroup* createSubgroupUniformControlFlowTests(tcu::TestContext&	test
 		vk::VkShaderStageFlagBits stage = vk::VK_SHADER_STAGE_COMPUTE_BIT;
 		const char*	subdir = (control ? large_control_dir : large_dir);
 		CaseGroup group(data_dir, subdir);
-		group.add("subgroup_reconverge00", "if/else diverge", small, control, stage);
-		group.add("subgroup_reconverge01", "do while diverge", small, control, stage);
-		group.add("subgroup_reconverge02", "while true with break", small, control, stage);
-		group.add("subgroup_reconverge03", "if/else diverge, volatile", small, control, stage);
-		group.add("subgroup_reconverge04", "early return and if/else diverge", small, control, stage);
-		group.add("subgroup_reconverge05", "early return and if/else volatile", small, control, stage);
-		group.add("subgroup_reconverge06", "while true with volatile conditional break and early return", small, control, stage);
-		group.add("subgroup_reconverge07", "while true return and break", small, control, stage);
-		group.add("subgroup_reconverge08", "for loop atomics with conditional break", small, control, stage);
-		group.add("subgroup_reconverge09", "diverge in for loop", small, control, stage);
-		group.add("subgroup_reconverge10", "diverge in for loop and break", small, control, stage);
-		group.add("subgroup_reconverge11", "diverge in for loop and continue", small, control, stage);
-		group.add("subgroup_reconverge12", "early return, divergent switch", small, control, stage);
-		group.add("subgroup_reconverge13", "early return, divergent switch more cases", small, control, stage);
-		group.add("subgroup_reconverge14", "divergent switch, some subgroups terminate", small, control, stage);
-		group.add("subgroup_reconverge15", "switch in switch", small, control, stage);
-		group.add("subgroup_reconverge16", "for loop unequal iterations", small, control, stage);
-		group.add("subgroup_reconverge17", "if/else with nested returns", small, control, stage);
-		group.add("subgroup_reconverge18", "if/else subgroup all equal", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
-		group.add("subgroup_reconverge19", "if/else subgroup any nested return", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
-		group.add("subgroup_reconverge20", "deeply nested", small, control, stage);
+		// if/else diverge
+		group.add("subgroup_reconverge00", small, control, stage);
+		// do while diverge
+		group.add("subgroup_reconverge01", small, control, stage);
+		// while true with break
+		group.add("subgroup_reconverge02", small, control, stage);
+		// if/else diverge, volatile
+		group.add("subgroup_reconverge03", small, control, stage);
+		// early return and if/else diverge
+		group.add("subgroup_reconverge04", small, control, stage);
+		// early return and if/else volatile
+		group.add("subgroup_reconverge05", small, control, stage);
+		// while true with volatile conditional break and early return
+		group.add("subgroup_reconverge06", small, control, stage);
+		// while true return and break
+		group.add("subgroup_reconverge07", small, control, stage);
+		// for loop atomics with conditional break
+		group.add("subgroup_reconverge08", small, control, stage);
+		// diverge in for loop
+		group.add("subgroup_reconverge09", small, control, stage);
+		// diverge in for loop and break
+		group.add("subgroup_reconverge10", small, control, stage);
+		// diverge in for loop and continue
+		group.add("subgroup_reconverge11", small, control, stage);
+		// early return, divergent switch
+		group.add("subgroup_reconverge12", small, control, stage);
+		// early return, divergent switch more cases
+		group.add("subgroup_reconverge13", small, control, stage);
+		// divergent switch, some subgroups terminate
+		group.add("subgroup_reconverge14", small, control, stage);
+		// switch in switch
+		group.add("subgroup_reconverge15", small, control, stage);
+		// for loop unequal iterations
+		group.add("subgroup_reconverge16", small, control, stage);
+		// if/else with nested returns
+		group.add("subgroup_reconverge17", small, control, stage);
+		// if/else subgroup all equal
+		group.add("subgroup_reconverge18", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
+		// if/else subgroup any nested return
+		group.add("subgroup_reconverge19", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
+		// deeply nested
+		group.add("subgroup_reconverge20", small, control, stage);
 		const char*	group_name = (control ? "large_full_control" : "large_full");
-		uniformControlFlowTests->addChild(createTestGroup(testCtx, group_name,
-														  "Large Full subgroups",
-														  control?addTestsForAmberFiles<true>:addTestsForAmberFiles<false>, group));
+		// Large Full subgroups
+		uniformControlFlowTests->addChild(createTestGroup(testCtx, group_name, control?addTestsForAmberFiles<true>:addTestsForAmberFiles<false>, group));
 
 		// Partial subgroup.
 		group = CaseGroup(data_dir, subdir);
-		group.add("subgroup_reconverge_partial00", "if/else diverge", small, control, stage);
-		group.add("subgroup_reconverge_partial01", "do while diverge", small, control, stage);
-		group.add("subgroup_reconverge_partial02", "while true with break", small, control, stage);
-		group.add("subgroup_reconverge_partial03", "if/else diverge, volatile", small, control, stage);
-		group.add("subgroup_reconverge_partial04", "early return and if/else diverge", small, control, stage);
-		group.add("subgroup_reconverge_partial05", "early return and if/else volatile", small, control, stage);
-		group.add("subgroup_reconverge_partial06", "while true with volatile conditional break and early return", small, control, stage);
-		group.add("subgroup_reconverge_partial07", "while true return and break", small, control, stage);
-		group.add("subgroup_reconverge_partial08", "for loop atomics with conditional break", small, control, stage);
-		group.add("subgroup_reconverge_partial09", "diverge in for loop", small, control, stage);
-		group.add("subgroup_reconverge_partial10", "diverge in for loop and break", small, control, stage);
-		group.add("subgroup_reconverge_partial11", "diverge in for loop and continue", small, control, stage);
-		group.add("subgroup_reconverge_partial12", "early return, divergent switch", small, control, stage);
-		group.add("subgroup_reconverge_partial13", "early return, divergent switch more cases", small, control, stage);
-		group.add("subgroup_reconverge_partial14", "divergent switch, some subgroups terminate", small, control, stage);
-		group.add("subgroup_reconverge_partial15", "switch in switch", small, control, stage);
-		group.add("subgroup_reconverge_partial16", "for loop unequal iterations", small, control, stage);
-		group.add("subgroup_reconverge_partial17", "if/else with nested returns", small, control, stage);
-		group.add("subgroup_reconverge_partial18", "if/else subgroup all equal", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
-		group.add("subgroup_reconverge_partial19", "if/else subgroup any nested return", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
-		group.add("subgroup_reconverge_partial20", "deeply nested", small, control, stage);
+		// if/else diverge
+		group.add("subgroup_reconverge_partial00", small, control, stage);
+		// do while diverge
+		group.add("subgroup_reconverge_partial01", small, control, stage);
+		// while true with break
+		group.add("subgroup_reconverge_partial02", small, control, stage);
+		// if/else diverge, volatile
+		group.add("subgroup_reconverge_partial03", small, control, stage);
+		// early return and if/else diverge
+		group.add("subgroup_reconverge_partial04", small, control, stage);
+		// early return and if/else volatile
+		group.add("subgroup_reconverge_partial05", small, control, stage);
+		// while true with volatile conditional break and early return
+		group.add("subgroup_reconverge_partial06", small, control, stage);
+		// while true return and break
+		group.add("subgroup_reconverge_partial07", small, control, stage);
+		// for loop atomics with conditional break
+		group.add("subgroup_reconverge_partial08", small, control, stage);
+		// diverge in for loop
+		group.add("subgroup_reconverge_partial09", small, control, stage);
+		// diverge in for loop and break
+		group.add("subgroup_reconverge_partial10", small, control, stage);
+		// diverge in for loop and continue
+		group.add("subgroup_reconverge_partial11", small, control, stage);
+		// early return, divergent switch
+		group.add("subgroup_reconverge_partial12", small, control, stage);
+		// early return, divergent switch more cases
+		group.add("subgroup_reconverge_partial13", small, control, stage);
+		// divergent switch, some subgroups terminate
+		group.add("subgroup_reconverge_partial14", small, control, stage);
+		// switch in switch
+		group.add("subgroup_reconverge_partial15", small, control, stage);
+		// for loop unequal iterations
+		group.add("subgroup_reconverge_partial16", small, control, stage);
+		// if/else with nested returns
+		group.add("subgroup_reconverge_partial17", small, control, stage);
+		// if/else subgroup all equal
+		group.add("subgroup_reconverge_partial18", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
+		// if/else subgroup any nested return
+		group.add("subgroup_reconverge_partial19", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
+		// deeply nested
+		group.add("subgroup_reconverge_partial20", small, control, stage);
 		group_name = (control ? "large_partial_control" : "large_partial");
-		uniformControlFlowTests->addChild(createTestGroup(testCtx, group_name,
-														  "Large Partial subgroups",
-														  control?addTestsForAmberFiles<true>:addTestsForAmberFiles<false>, group));
+		// Large Partial subgroups
+		uniformControlFlowTests->addChild(createTestGroup(testCtx, group_name, control?addTestsForAmberFiles<true>:addTestsForAmberFiles<false>, group));
 	}
 
 	for (unsigned c = 0; c < controls.size(); ++c)
@@ -307,67 +344,107 @@ tcu::TestCaseGroup* createSubgroupUniformControlFlowTests(tcu::TestContext&	test
 		vk::VkShaderStageFlagBits stage = vk::VK_SHADER_STAGE_COMPUTE_BIT;
 		const char*	subdir = (control ? small_control_dir : small_dir);
 		CaseGroup group(data_dir, subdir);
-		group.add("small_subgroup_reconverge00", "if/else diverge", small, control, stage);
-		group.add("small_subgroup_reconverge01", "do while diverge", small, control, stage);
-		group.add("small_subgroup_reconverge02", "while true with break", small, control, stage);
-		group.add("small_subgroup_reconverge03", "if/else diverge, volatile", small, control, stage);
-		group.add("small_subgroup_reconverge04", "early return and if/else diverge", small, control, stage);
-		group.add("small_subgroup_reconverge05", "early return and if/else volatile", small, control, stage);
-		group.add("small_subgroup_reconverge06", "while true with volatile conditional break and early return", small, control, stage);
-		group.add("small_subgroup_reconverge07", "while true return and break", small, control, stage);
-		group.add("small_subgroup_reconverge08", "for loop atomics with conditional break", small, control, stage);
-		group.add("small_subgroup_reconverge09", "diverge in for loop", small, control, stage);
-		group.add("small_subgroup_reconverge10", "diverge in for loop and break", small, control, stage);
-		group.add("small_subgroup_reconverge11", "diverge in for loop and continue", small, control, stage);
-		group.add("small_subgroup_reconverge12", "early return, divergent switch", small, control, stage);
-		group.add("small_subgroup_reconverge13", "early return, divergent switch more cases", small, control, stage);
-		group.add("small_subgroup_reconverge14", "divergent switch, some subgroups terminate", small, control, stage);
-		group.add("small_subgroup_reconverge15", "switch in switch", small, control, stage);
-		group.add("small_subgroup_reconverge16", "for loop unequal iterations", small, control, stage);
-		group.add("small_subgroup_reconverge17", "if/else with nested returns", small, control, stage);
-		group.add("small_subgroup_reconverge18", "if/else subgroup all equal", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
-		group.add("small_subgroup_reconverge19", "if/else subgroup any nested return", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
-		group.add("small_subgroup_reconverge20", "deeply nested", small, control, stage);
+		// if/else diverge
+		group.add("small_subgroup_reconverge00", small, control, stage);
+		// do while diverge
+		group.add("small_subgroup_reconverge01", small, control, stage);
+		// while true with break
+		group.add("small_subgroup_reconverge02", small, control, stage);
+		// if/else diverge, volatile
+		group.add("small_subgroup_reconverge03", small, control, stage);
+		// early return and if/else diverge
+		group.add("small_subgroup_reconverge04", small, control, stage);
+		// early return and if/else volatile
+		group.add("small_subgroup_reconverge05", small, control, stage);
+		// while true with volatile conditional break and early return
+		group.add("small_subgroup_reconverge06", small, control, stage);
+		// while true return and break
+		group.add("small_subgroup_reconverge07", small, control, stage);
+		// for loop atomics with conditional break
+		group.add("small_subgroup_reconverge08", small, control, stage);
+		// diverge in for loop
+		group.add("small_subgroup_reconverge09", small, control, stage);
+		// diverge in for loop and break
+		group.add("small_subgroup_reconverge10", small, control, stage);
+		// diverge in for loop and continue
+		group.add("small_subgroup_reconverge11", small, control, stage);
+		// early return, divergent switch
+		group.add("small_subgroup_reconverge12", small, control, stage);
+		// early return, divergent switch more cases
+		group.add("small_subgroup_reconverge13", small, control, stage);
+		// divergent switch, some subgroups terminate
+		group.add("small_subgroup_reconverge14", small, control, stage);
+		// switch in switch
+		group.add("small_subgroup_reconverge15", small, control, stage);
+		// for loop unequal iterations
+		group.add("small_subgroup_reconverge16", small, control, stage);
+		// if/else with nested returns
+		group.add("small_subgroup_reconverge17", small, control, stage);
+		// if/else subgroup all equal
+		group.add("small_subgroup_reconverge18", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
+		// if/else subgroup any nested return
+		group.add("small_subgroup_reconverge19", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
+		// deeply nested
+		group.add("small_subgroup_reconverge20", small, control, stage);
 		const char*	group_name = (control ? "small_full_control" : "small_full");
-		uniformControlFlowTests->addChild(createTestGroup(testCtx, group_name,
-														  "Small Full subgroups",
-														  control?addTestsForAmberFiles<true>:addTestsForAmberFiles<false>, group));
+		// Small Full subgroups
+		uniformControlFlowTests->addChild(createTestGroup(testCtx, group_name, control?addTestsForAmberFiles<true>:addTestsForAmberFiles<false>, group));
 
 		// Partial subgroup.
 		group = CaseGroup(data_dir, subdir);
-		group.add("small_subgroup_reconverge_partial00", "if/else diverge", small, control, stage);
-		group.add("small_subgroup_reconverge_partial01", "do while diverge", small, control, stage);
-		group.add("small_subgroup_reconverge_partial02", "while true with break", small, control, stage);
-		group.add("small_subgroup_reconverge_partial03", "if/else diverge, volatile", small, control, stage);
-		group.add("small_subgroup_reconverge_partial04", "early return and if/else diverge", small, control, stage);
-		group.add("small_subgroup_reconverge_partial05", "early return and if/else volatile", small, control, stage);
-		group.add("small_subgroup_reconverge_partial06", "while true with volatile conditional break and early return", small, control, stage);
-		group.add("small_subgroup_reconverge_partial07", "while true return and break", small, control, stage);
-		group.add("small_subgroup_reconverge_partial08", "for loop atomics with conditional break", small, control, stage);
-		group.add("small_subgroup_reconverge_partial09", "diverge in for loop", small, control, stage);
-		group.add("small_subgroup_reconverge_partial10", "diverge in for loop and break", small, control, stage);
-		group.add("small_subgroup_reconverge_partial11", "diverge in for loop and continue", small, control, stage);
-		group.add("small_subgroup_reconverge_partial12", "early return, divergent switch", small, control, stage);
-		group.add("small_subgroup_reconverge_partial13", "early return, divergent switch more cases", small, control, stage);
-		group.add("small_subgroup_reconverge_partial14", "divergent switch, some subgroups terminate", small, control, stage);
-		group.add("small_subgroup_reconverge_partial15", "switch in switch", small, control, stage);
-		group.add("small_subgroup_reconverge_partial16", "for loop unequal iterations", small, control, stage);
-		group.add("small_subgroup_reconverge_partial17", "if/else with nested returns", small, control, stage);
-		group.add("small_subgroup_reconverge_partial18", "if/else subgroup all equal", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
-		group.add("small_subgroup_reconverge_partial19", "if/else subgroup any nested return", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
-		group.add("small_subgroup_reconverge_partial20", "deeply nested", small, control, stage);
+		// if/else diverge
+		group.add("small_subgroup_reconverge_partial00", small, control, stage);
+		// do while diverge
+		group.add("small_subgroup_reconverge_partial01", small, control, stage);
+		// while true with break
+		group.add("small_subgroup_reconverge_partial02", small, control, stage);
+		// if/else diverge, volatile
+		group.add("small_subgroup_reconverge_partial03", small, control, stage);
+		// early return and if/else diverge
+		group.add("small_subgroup_reconverge_partial04", small, control, stage);
+		// early return and if/else volatile
+		group.add("small_subgroup_reconverge_partial05", small, control, stage);
+		// while true with volatile conditional break and early return
+		group.add("small_subgroup_reconverge_partial06", small, control, stage);
+		// while true return and break
+		group.add("small_subgroup_reconverge_partial07", small, control, stage);
+		// for loop atomics with conditional break
+		group.add("small_subgroup_reconverge_partial08", small, control, stage);
+		// diverge in for loop
+		group.add("small_subgroup_reconverge_partial09", small, control, stage);
+		// diverge in for loop and break
+		group.add("small_subgroup_reconverge_partial10", small, control, stage);
+		// diverge in for loop and continue
+		group.add("small_subgroup_reconverge_partial11", small, control, stage);
+		// early return, divergent switch
+		group.add("small_subgroup_reconverge_partial12", small, control, stage);
+		// early return, divergent switch more cases
+		group.add("small_subgroup_reconverge_partial13", small, control, stage);
+		// divergent switch, some subgroups terminate
+		group.add("small_subgroup_reconverge_partial14", small, control, stage);
+		// switch in switch
+		group.add("small_subgroup_reconverge_partial15", small, control, stage);
+		// for loop unequal iterations
+		group.add("small_subgroup_reconverge_partial16", small, control, stage);
+		// if/else with nested returns
+		group.add("small_subgroup_reconverge_partial17", small, control, stage);
+		// if/else subgroup all equal
+		group.add("small_subgroup_reconverge_partial18", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
+		// if/else subgroup any nested return
+		group.add("small_subgroup_reconverge_partial19", small, control, stage, vk::VK_SUBGROUP_FEATURE_VOTE_BIT);
+		// deeply nested
+		group.add("small_subgroup_reconverge_partial20", small, control, stage);
 		group_name = (control ? "small_partial_control" : "small_partial");
-		uniformControlFlowTests->addChild(createTestGroup(testCtx, group_name,
-														  "Small Partial subgroups",
-														  control?addTestsForAmberFiles<true>:addTestsForAmberFiles<false>, group));
+		// Small Partial subgroups
+		uniformControlFlowTests->addChild(createTestGroup(testCtx, group_name, control?addTestsForAmberFiles<true>:addTestsForAmberFiles<false>, group));
 	}
 
 	// Discard test
 	CaseGroup group(data_dir, "discard");
-	group.add("subgroup_reconverge_discard00", "discard test", true, false, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
-	uniformControlFlowTests->addChild(createTestGroup(testCtx, "discard",
-														"Discard tests",
-														addTestsForAmberFiles<false>, group));
+	// discard test
+	group.add("subgroup_reconverge_discard00", true, false, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+	// Discard tests
+	uniformControlFlowTests->addChild(createTestGroup(testCtx, "discard", addTestsForAmberFiles<false>, group));
 
 	return uniformControlFlowTests.release();
 }

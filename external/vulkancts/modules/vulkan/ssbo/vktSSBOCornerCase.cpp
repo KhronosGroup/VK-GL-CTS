@@ -46,8 +46,8 @@ namespace
 class CornerCase : public TestCase
 {
 public:
-								CornerCase			(tcu::TestContext &testCtx, const char *name, const char *description)
-	: TestCase										(testCtx, name, description)
+								CornerCase			(tcu::TestContext &testCtx, const char *name)
+	: TestCase										(testCtx, name)
 	{
 		init();
 	}
@@ -113,13 +113,17 @@ struct Buffer
 	Buffer		(void)							: buffer(0), size(0) {}
 };
 
-de::MovePtr<vk::Allocation> allocateAndBindMemory (Context &context, vk::VkBuffer buffer, vk::MemoryRequirement memReqs)
+de::MovePtr<vk::Allocation> allocateAndBindMemory (Context &context, vk::VkBuffer buffer, vk::MemoryRequirement memReqs, vk::VkDeviceSize* allocationSize = DE_NULL)
 {
 	const vk::DeviceInterface		&vkd	= context.getDeviceInterface();
 	const vk::VkMemoryRequirements	bufReqs	= vk::getBufferMemoryRequirements(vkd, context.getDevice(), buffer);
 	de::MovePtr<vk::Allocation>		memory	= context.getDefaultAllocator().allocate(bufReqs, memReqs);
 
 	vkd.bindBufferMemory(context.getDevice(), buffer, memory->getMemory(), memory->getOffset());
+	if (allocationSize)
+	{
+		*allocationSize = bufReqs.size;
+	}
 
 	return memory;
 }
@@ -176,10 +180,11 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate (void)
 	// Create descriptor set
 	const deUint32					acBufferSize		= 4;
 	vk::Move<vk::VkBuffer>			acBuffer			(createBuffer(m_context, acBufferSize, vk:: VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
-	de::UniquePtr<vk::Allocation>	acBufferAlloc		(allocateAndBindMemory(m_context, *acBuffer, vk::MemoryRequirement::HostVisible));
+	vk::VkDeviceSize				acMemorySize		= 0;
+	de::UniquePtr<vk::Allocation>	acBufferAlloc		(allocateAndBindMemory(m_context, *acBuffer, vk::MemoryRequirement::HostVisible, &acMemorySize));
 
 	deMemset(acBufferAlloc->getHostPtr(), 0, acBufferSize);
-	flushMappedMemoryRange(vk, device, acBufferAlloc->getMemory(), acBufferAlloc->getOffset(), acBufferSize);
+	flushMappedMemoryRange(vk, device, acBufferAlloc->getMemory(), acBufferAlloc->getOffset(), acMemorySize);
 
 	vk::DescriptorSetLayoutBuilder	setLayoutBuilder;
 	vk::DescriptorPoolBuilder		poolBuilder;
@@ -326,8 +331,8 @@ void CornerCase::delayedInit (void)
 
 tcu::TestCaseGroup* createSSBOCornerCaseTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> cornerCaseGroup (new tcu::TestCaseGroup(testCtx, "corner_case", "Corner cases"));
-	cornerCaseGroup->addChild(new CornerCase(testCtx, "long_shader_bitwise_and", ""));
+	de::MovePtr<tcu::TestCaseGroup> cornerCaseGroup (new tcu::TestCaseGroup(testCtx, "corner_case"));
+	cornerCaseGroup->addChild(new CornerCase(testCtx, "long_shader_bitwise_and"));
 	return cornerCaseGroup.release();
 }
 } // ssbo

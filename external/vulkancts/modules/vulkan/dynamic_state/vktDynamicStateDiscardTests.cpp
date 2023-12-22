@@ -5,6 +5,7 @@
  * Copyright (c) 2022 LunarG, Inc.
  * Copyright (c) 2022 The Khronos Group Inc.
  * Copyright (c) 2022 Google LLC
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,7 +149,7 @@ DiscardTestInstance::DiscardTestInstance(Context& context, vk::PipelineConstruct
 	};
 
 	DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo(1, &binding);
-	m_descriptorSetLayout = vk::createDescriptorSetLayout(m_vk, device, &descriptorSetLayoutCreateInfo);
+	m_otherSetLayout = vk::createDescriptorSetLayout(m_vk, device, &descriptorSetLayoutCreateInfo);
 }
 
 void DiscardTestInstance::initRenderPass (const vk::VkDevice device)
@@ -197,7 +198,7 @@ void DiscardTestInstance::initRenderPass (const vk::VkDevice device)
 	)
 	);
 
-	m_renderPass = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
+	m_renderPass = vk::RenderPassWrapper(m_pipelineConstructionType, m_vk, device, &renderPassCreateInfo);
 }
 
 void DiscardTestInstance::initFramebuffer (const vk::VkDevice device)
@@ -208,13 +209,13 @@ void DiscardTestInstance::initFramebuffer (const vk::VkDevice device)
 
 	const FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, attachments, WIDTH, HEIGHT, 1);
 
-	m_framebuffer = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
+	m_renderPass.createFramebuffer(m_vk, device, &framebufferCreateInfo, {m_colorTargetImage->object(), m_depthStencilImage->object()});
 }
 
 void DiscardTestInstance::initPipeline(const vk::VkDevice device)
 {
-	const vk::Unique<vk::VkShaderModule>					vs(createShaderModule	(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
-	const vk::Unique<vk::VkShaderModule>					fs(createShaderModule	(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+	const vk::ShaderWrapper									vs(vk::ShaderWrapper	(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
+	const vk::ShaderWrapper									fs(vk::ShaderWrapper	(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
 	std::vector<vk::VkViewport>								viewports				{ { 0.0f, 0.0f, (float)WIDTH, (float)HEIGHT, 0.0f, 1.0f } };
 	std::vector<vk::VkRect2D>								scissors				{ { { 0u, 0u }, { WIDTH, HEIGHT } } };
 
@@ -249,17 +250,17 @@ void DiscardTestInstance::initPipeline(const vk::VkDevice device)
 	m_pipeline.setDefaultTopology(m_topology)
 		.setDynamicState(static_cast<const vk::VkPipelineDynamicStateCreateInfo*>(&dynamicState))
 		.setDefaultMultisampleState()
-		.setupVertexInputStete(&m_vertexInputState)
+		.setupVertexInputState(&m_vertexInputState)
 		.setupPreRasterizationShaderState(viewports,
 			scissors,
-			*m_pipelineLayout,
+			m_pipelineLayout,
 			*m_renderPass,
 			0u,
-			*vs,
+			vs,
 			static_cast<const vk::VkPipelineRasterizationStateCreateInfo*>(&rasterizerState))
-		.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
+		.setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fs, static_cast<const vk::VkPipelineDepthStencilStateCreateInfo*>(&depthStencilState))
 		.setupFragmentOutputState(*m_renderPass, 0u, static_cast<const vk::VkPipelineColorBlendStateCreateInfo*>(&colorBlendState))
-		.setMonolithicPipelineLayout(*m_pipelineLayout)
+		.setMonolithicPipelineLayout(m_pipelineLayout)
 		.buildPipeline();
 }
 
@@ -307,7 +308,7 @@ void DiscardTestInstance::beginRenderPass (const vk::VkClearColorValue& clearCol
 
 	m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 0, 1, &dsMemBarrier, 0, NULL, 0, NULL);
 
-	vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, vk::makeRect2D(0, 0, WIDTH, HEIGHT));
+	m_renderPass.begin(m_vk, *m_cmdBuffer, vk::makeRect2D(0, 0, WIDTH, HEIGHT));
 }
 tcu::TestStatus DiscardTestInstance::iterate(void) {
 	const vk::VkQueue					queue				= m_context.getUniversalQueue();
@@ -329,7 +330,7 @@ tcu::TestStatus DiscardTestInstance::iterate(void) {
 	};
 
 	vk::Move<vk::VkDescriptorPool>		descriptorPool		= createDescriptorPool(m_vk, device, &poolInfo);
-	vk::Move<vk::VkDescriptorSet>		descriptorSet		= makeDescriptorSet(m_vk, device, *descriptorPool, *m_descriptorSetLayout);
+	vk::Move<vk::VkDescriptorSet>		descriptorSet		= makeDescriptorSet(m_vk, device, *descriptorPool, *m_otherSetLayout);
 
 	const vk::VkDeviceSize				size				= sizeof(int);
 
@@ -360,7 +361,7 @@ tcu::TestStatus DiscardTestInstance::iterate(void) {
 	const vk::VkClearColorValue			clearColor			= { { 0.0f, 0.0f, 0.0f, 1.0f } };
 	beginRenderPass(clearColor);
 	m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1, &*descriptorSet, 0, nullptr);
-	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
+	m_pipeline.bind(*m_cmdBuffer);
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	const vk::VkBuffer		vertexBuffer = m_vertexBuffer->object();
 	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
@@ -368,7 +369,7 @@ tcu::TestStatus DiscardTestInstance::iterate(void) {
 	setDynamicState();
 
 	m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
-	endRenderPass(m_vk, *m_cmdBuffer);
+	m_renderPass.end(m_vk, *m_cmdBuffer);
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -437,7 +438,18 @@ public:
 
 	virtual void setDynamicState(void) {
 		vk::VkViewport viewport = vk::makeViewport(tcu::UVec2(WIDTH, HEIGHT));
-		m_vk.cmdSetViewport(*m_cmdBuffer, 0, 1, &viewport);
+		if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
+		{
+#ifndef CTS_USES_VULKANSC
+			m_vk.cmdSetViewportWithCount(*m_cmdBuffer, 1, &viewport);
+#else
+			m_vk.cmdSetViewportWithCountEXT(*m_cmdBuffer, 1, &viewport);
+#endif
+		}
+		else
+		{
+			m_vk.cmdSetViewport(*m_cmdBuffer, 0, 1, &viewport);
+		}
 	}
 
 	virtual tcu::TestStatus verifyResults(void) {
@@ -603,8 +615,8 @@ public:
 class DiscardTestCase : public vkt::TestCase
 {
 public:
-	DiscardTestCase (tcu::TestContext& context, const char* name, const char* description, vk::PipelineConstructionType pipelineConstructionType, TestDynamicStateDiscard testCase)
-		: TestCase	(context, name, description)
+	DiscardTestCase (tcu::TestContext& context, const char* name, vk::PipelineConstructionType pipelineConstructionType, TestDynamicStateDiscard testCase)
+		: TestCase	(context, name)
 		, m_pipelineConstructionType(pipelineConstructionType)
 		, m_testCase(testCase)
 		, m_depthBounds(false)
@@ -613,7 +625,7 @@ public:
 
 	virtual void	checkSupport(Context& context) const
 	{
-		checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+		checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 	}
 
 	TestInstance* createInstance(Context& context) const
@@ -688,7 +700,7 @@ protected:
 };
 
 DynamicStateDiscardTests::DynamicStateDiscardTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
-	: TestCaseGroup					(testCtx, "discard", "Tests for dynamic state")
+	: TestCaseGroup					(testCtx, "discard")
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
@@ -700,12 +712,18 @@ DynamicStateDiscardTests::~DynamicStateDiscardTests ()
 
 void DynamicStateDiscardTests::init (void)
 {
-	addChild(new DiscardTestCase(m_testCtx, "stencil", "Use dynamic stencil with discard", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_STENCIL));
-	addChild(new DiscardTestCase(m_testCtx, "viewport", "Use dynamic viewport with discard", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_VIEWPORT));
-	addChild(new DiscardTestCase(m_testCtx, "scissor", "Use dynamic scissor with discard", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_SCISSOR));
-	addChild(new DiscardTestCase(m_testCtx, "depth", "Use dynamic depth with discard", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_DEPTH));
-	addChild(new DiscardTestCase(m_testCtx, "blend", "Use dynamic blend constants with discard", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_BLEND_CONSTANTS));
-	addChild(new DiscardTestCase(m_testCtx, "line", "Use dynamic line width with discard", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_LINE_WIDTH));
+	// Use dynamic stencil with discard
+	addChild(new DiscardTestCase(m_testCtx, "stencil", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_STENCIL));
+	// Use dynamic viewport with discard
+	addChild(new DiscardTestCase(m_testCtx, "viewport", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_VIEWPORT));
+	// Use dynamic scissor with discard
+	addChild(new DiscardTestCase(m_testCtx, "scissor", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_SCISSOR));
+	// Use dynamic depth with discard
+	addChild(new DiscardTestCase(m_testCtx, "depth", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_DEPTH));
+	// Use dynamic blend constants with discard
+	addChild(new DiscardTestCase(m_testCtx, "blend", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_BLEND_CONSTANTS));
+	// Use dynamic line width with discard
+	addChild(new DiscardTestCase(m_testCtx, "line", m_pipelineConstructionType, TestDynamicStateDiscard::TEST_LINE_WIDTH));
 }
 
 } // DynamicState

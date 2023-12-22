@@ -27,12 +27,13 @@ import argparse
 import subprocess
 
 from fetch_sources import *
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
+scriptPath = os.path.join(os.path.dirname(__file__), "..", "scripts")
+sys.path.insert(0, scriptPath)
 
-from build.common import *
+from ctsbuild.common import *
 
 EXTERNAL_DIR	= os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
-SHA1 = "3059c07a20ac64f636296a7ef200dadc1ce7d37a"
+SHA1 = "a83863a61ecaa72a38361c6f0ca6291970d1d240"
 
 PACKAGES = [
 	GitRepo(

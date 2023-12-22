@@ -27,6 +27,7 @@
 
 #include "vktApiMaintenance3Check.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestCaseUtil.hpp"
 
 #include <sstream>
 #include <limits>
@@ -508,7 +509,7 @@ class Maintenance3StructTestCase : public TestCase
 {
 public:
 											Maintenance3StructTestCase				(tcu::TestContext&	testCtx)
-												: TestCase(testCtx, "maintenance3_properties", "tests VkPhysicalDeviceMaintenance3Properties struct")
+												: TestCase(testCtx, "maintenance3_properties")
 	{}
 
 	virtual									~Maintenance3StructTestCase				(void)
@@ -691,7 +692,7 @@ class Maintenance3DescriptorTestCase : public TestCase
 
 public:
 											Maintenance3DescriptorTestCase			(tcu::TestContext&	testCtx)
-												: TestCase(testCtx, "descriptor_set", "tests vkGetDescriptorSetLayoutSupport struct")
+												: TestCase(testCtx, "descriptor_set")
 	{}
 	virtual									~Maintenance3DescriptorTestCase			(void)
 	{}
@@ -705,13 +706,214 @@ public:
 	}
 };
 
+struct CountLayoutSupportParams
+{
+	const VkDescriptorType	descriptorType;
+	const bool				extraBindings;
+	const bool				useVariableSize;
+};
+
+void checkSupportCountLayoutSupport (Context& context, CountLayoutSupportParams params)
+{
+	context.requireDeviceFunctionality("VK_KHR_maintenance3");
+	context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
+
+	if (params.useVariableSize)
+	{
+		const auto& indexingFeatures = context.getDescriptorIndexingFeatures();
+		if (!indexingFeatures.descriptorBindingVariableDescriptorCount)
+			TCU_THROW(NotSupportedError, "descriptorBindingVariableDescriptorCount not supported");
+	}
+
+	if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+		context.requireDeviceFunctionality("VK_EXT_inline_uniform_block");
+}
+
+struct SetLayoutSupportAndCount
+{
+	const bool		supported;
+	const uint32_t	maxVariableDescriptorCount;
+};
+
+SetLayoutSupportAndCount getSetLayoutSupportAndCount (Context& context, const VkDescriptorSetLayoutCreateInfo* setLayoutCreateInfo)
+{
+	VkDescriptorSetVariableDescriptorCountLayoutSupport	countLayoutSupport	= initVulkanStructure();
+	VkDescriptorSetLayoutSupport						setLayoutSupport	= initVulkanStructure(&countLayoutSupport);
+
+	// Set a garbage value in the maxVariableDescriptorCount member, to verify it's not simply left untouched by the implementation.
+	countLayoutSupport.maxVariableDescriptorCount = std::numeric_limits<uint32_t>::max();
+	context.getDeviceInterface().getDescriptorSetLayoutSupport(context.getDevice(), setLayoutCreateInfo, &setLayoutSupport);
+	return SetLayoutSupportAndCount{ (setLayoutSupport.supported == VK_TRUE), countLayoutSupport.maxVariableDescriptorCount };
+}
+
+tcu::TestStatus testCountLayoutSupport (Context& context, CountLayoutSupportParams params)
+{
+	VkShaderStageFlags stages = 0u;
+
+	// The shader stages are probably not very relevant. This is an attempt at setting some varied but plausible stages anyway.
+	switch (params.descriptorType)
+	{
+	case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+	case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+		stages = VK_SHADER_STAGE_COMPUTE_BIT;
+		break;
+
+	case VK_DESCRIPTOR_TYPE_SAMPLER:
+	case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+	case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+	case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+		stages = VK_SHADER_STAGE_FRAGMENT_BIT;
+		break;
+
+	case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+	case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+	case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+	case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:
+		stages = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+		break;
+
+	default:
+		DE_ASSERT(false);
+		break;
+	};
+
+	std::vector<VkDescriptorSetLayoutBinding>	bindings;
+	std::vector<VkDescriptorBindingFlags>		bindingFlags;
+
+	if (params.extraBindings)
+	{
+		// Add a few uniform buffers to the mix.
+		const auto extraBindingCount = 3u;
+
+		for (uint32_t i = 0u; i < extraBindingCount; ++i)
+		{
+			bindings.emplace_back(
+				VkDescriptorSetLayoutBinding {
+					de::sizeU32(bindings),				//	uint32_t			binding;
+					VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	//	VkDescriptorType	descriptorType;
+					1u,									//	uint32_t			descriptorCount;
+					stages,								//	VkShaderStageFlags	stageFlags;
+					nullptr,							//	const VkSampler*	pImmutableSamplers;
+				});
+			bindingFlags.push_back(0u);
+		}
+	}
+
+	// VUID-VkDescriptorSetLayoutBinding-descriptorType-02209 mandates descriptorCount to be a multiple of 4 when using inline
+	// uniform blocks.
+	const auto descriptorCount = ((params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK) ? 4u : 1u);
+
+	bindings.emplace_back(
+		VkDescriptorSetLayoutBinding {
+			de::sizeU32(bindings),		//	uint32_t			binding;
+			params.descriptorType,		//	VkDescriptorType	descriptorType;
+			descriptorCount,			//	uint32_t			descriptorCount;
+			stages,						//	VkShaderStageFlags	stageFlags;
+			nullptr,					//	const VkSampler*	pImmutableSamplers;
+		});
+	bindingFlags.push_back(params.useVariableSize ? static_cast<VkDescriptorBindingFlags>(VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT) : 0u);
+
+	const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,	//	VkStructureType					sType;
+		nullptr,															//	const void*						pNext;
+		de::sizeU32(bindingFlags),											//	uint32_t						bindingCount;
+		de::dataOrNull(bindingFlags),										//	const VkDescriptorBindingFlags*	pBindingFlags;
+	};
+
+	const VkDescriptorSetLayoutCreateInfo layoutCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType                        sType;
+		&bindingFlagsInfo,										// const void*                            pNext;
+		0u,														// VkDescriptorSetLayoutCreateFlags       flags;
+		de::sizeU32(bindings),									// uint32_t                               bindingCount;
+		de::dataOrNull(bindings),								// const VkDescriptorSetLayoutBinding*    pBindings;
+	};
+
+	// Check the layout is supported.
+	const auto normalValues = getSetLayoutSupportAndCount(context, &layoutCreateInfo);
+	if (!normalValues.supported)
+		TCU_THROW(NotSupportedError, "Set layout not supported");
+
+	if (!params.useVariableSize)
+	{
+		if (normalValues.maxVariableDescriptorCount != 0u)
+			TCU_FAIL("Nonzero maxVariableDescriptorCount when using no variable descriptor counts");
+	}
+	else
+	{
+		// Verify if we switch from one to zero descriptors we get the same reply back.
+		bindings.back().descriptorCount = 0u;
+		const auto zeroDescriptorValues = getSetLayoutSupportAndCount(context, &layoutCreateInfo);
+
+		if (!zeroDescriptorValues.supported)
+			TCU_FAIL("Implementation reports support with one descriptor and no support with zero descriptors");
+
+		if (zeroDescriptorValues.maxVariableDescriptorCount != normalValues.maxVariableDescriptorCount)
+			TCU_FAIL("Mismatch in maxVariableDescriptorCount when using zero and one as descriptor counts");
+
+		// Verify we can create a descriptor set with the promised amount of descriptors.
+		bindings.back().descriptorCount = normalValues.maxVariableDescriptorCount;
+		const auto maxDescriptorValues = getSetLayoutSupportAndCount(context, &layoutCreateInfo);
+
+		if (!maxDescriptorValues.supported)
+			TCU_FAIL("Implementation reports no support when using the maximum allowed size");
+
+		if (maxDescriptorValues.maxVariableDescriptorCount != normalValues.maxVariableDescriptorCount)
+			TCU_FAIL("Mismatch in maxVariableDescriptorCount when using one and the maximum descriptor counts");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+std::string getDescriptorTypeShortName (const VkDescriptorType descType)
+{
+	static const auto	prefixLen	= strlen("VK_DESCRIPTOR_TYPE_");
+	std::string			name		= getDescriptorTypeName(descType);
+
+	name = name.substr(prefixLen);
+	return de::toLower(name);
+}
+
 } // anonymous
 
 tcu::TestCaseGroup*							createMaintenance3Tests					(tcu::TestContext&	testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	main3Tests(new tcu::TestCaseGroup(testCtx, "maintenance3_check", "Maintenance3 Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	main3Tests(new tcu::TestCaseGroup(testCtx, "maintenance3_check"));
 	main3Tests->addChild(new Maintenance3StructTestCase(testCtx));
 	main3Tests->addChild(new Maintenance3DescriptorTestCase(testCtx));
+
+	{
+		const VkDescriptorType descriptorTypes[] =
+		{
+			VK_DESCRIPTOR_TYPE_SAMPLER,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+			VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+			VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+			VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
+			VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+			VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
+		};
+
+		for (const auto& descriptorType : descriptorTypes)
+			for (const auto& extraBindings : { false, true })
+				for (const auto& useVariableSize : { false, true })
+				{
+					const auto						extraBindingsSuffix	= (extraBindings ? "_extra_bindings" : "");
+					const auto						variableSizeSuffix	= (useVariableSize ? "" : "_no_variable_size");
+					const auto						caseName			= "support_count_" + getDescriptorTypeShortName(descriptorType) + extraBindingsSuffix + variableSizeSuffix;
+					const CountLayoutSupportParams	params				{ descriptorType, extraBindings, useVariableSize };
+
+					addFunctionCase(main3Tests.get(), caseName.c_str(), checkSupportCountLayoutSupport, testCountLayoutSupport, params);
+				}
+	}
 
 	return main3Tests.release();
 }

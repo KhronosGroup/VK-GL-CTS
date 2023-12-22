@@ -37,11 +37,11 @@ namespace
 
 tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	uniform	 (new tcu::TestCaseGroup(testCtx, "uniform", "Test uniform texel buffer"));
+	de::MovePtr<tcu::TestCaseGroup>	uniform	 (new tcu::TestCaseGroup(testCtx, "uniform"));
 
 	// .srgb
 	{
-		tcu::TestCaseGroup* const	srgb		= new tcu::TestCaseGroup(testCtx, "srgb", "Test uniform texel buffer with srgb formats");
+		tcu::TestCaseGroup* const	srgb		= new tcu::TestCaseGroup(testCtx, "srgb");
 		static const char			dataDir[]	= "texture/texel_buffer/uniform/srgb";
 
 		static const struct {
@@ -93,7 +93,7 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 			bufferRequirements.push_back({cases[i].format, VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT});
 
 			cts_amber::AmberTestCase*					testCase			=
-					cts_amber::createAmberTestCase(testCtx, cases[i].testName.c_str(), "",
+					cts_amber::createAmberTestCase(testCtx, cases[i].testName.c_str(),
 												   dataDir, fileName, std::vector<std::string>(),
 												   imageRequirements, bufferRequirements);
 			srgb->addChild(testCase);
@@ -103,7 +103,8 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 	// .packed
 #ifndef CTS_USES_VULKANSC
 	{
-		tcu::TestCaseGroup* const	packed		= new tcu::TestCaseGroup(testCtx, "packed", "Test uniform texel buffer with packed formats");
+		// Test uniform texel buffer with packed formats
+		tcu::TestCaseGroup* const	packed		= new tcu::TestCaseGroup(testCtx, "packed");
 		static const char			dataDir[]	= "texture/texel_buffer/uniform/packed";
 
 		static const std::string	cases[]		=
@@ -122,7 +123,7 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
 		{
 			const std::string			fileName	= cases[i] + ".amber";
-			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), "", dataDir, fileName);
+			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].c_str(), dataDir, fileName);
 
 			packed->addChild(testCase);
 		}
@@ -132,7 +133,8 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 	// .snorm
 #ifndef CTS_USES_VULKANSC
 	{
-		tcu::TestCaseGroup* const	snorm		= new tcu::TestCaseGroup(testCtx, "snorm", "Test uniform texel buffer with SNORM formats");
+		// Test uniform texel buffer with SNORM formats
+		tcu::TestCaseGroup* const	snorm		= new tcu::TestCaseGroup(testCtx, "snorm");
 		static const char			dataDir[]	= "texture/texel_buffer/uniform/snorm";
 
 		static const struct {
@@ -163,7 +165,7 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 			if (!c.mandatoryFormat)
 				bufferRequirements.push_back({c.format, VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT});
 
-			cts_amber::AmberTestCase*					testCase			= cts_amber::createAmberTestCase(testCtx, c.testName.c_str(), "",
+			cts_amber::AmberTestCase*					testCase			= cts_amber::createAmberTestCase(testCtx, c.testName.c_str(),
 																											 dataDir, fileName,
 																											 std::vector<std::string>(),
 																											 std::vector<vk::VkImageCreateInfo>(),
@@ -181,7 +183,7 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createTextureTexelBufferTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> texelBuffer (new tcu::TestCaseGroup(testCtx, "texel_buffer", "Test texel buffer"));
+	de::MovePtr<tcu::TestCaseGroup> texelBuffer (new tcu::TestCaseGroup(testCtx, "texel_buffer"));
 
 	texelBuffer->addChild(createUniformTexelBufferTests(testCtx));
 

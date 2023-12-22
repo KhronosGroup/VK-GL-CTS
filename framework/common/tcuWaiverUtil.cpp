@@ -36,12 +36,14 @@ namespace tcu
 
 SessionInfo::SessionInfo(deUint32				vendorId,
 						 deUint32				deviceId,
+						 const std::string&		deviceName,
 						 const std::string&		cmdLine)
 	: m_cmdLine	(cmdLine)
 {
 	m_info << std::hex
 		   << "#sessionInfo vendorID 0x" << vendorId << "\n"
-		   << "#sessionInfo deviceID 0x" << deviceId << "\n";
+		   << "#sessionInfo deviceID 0x" << deviceId << "\n"
+		   << "#sessionInfo deviceName " << deviceName << "\n";
 }
 
 SessionInfo::SessionInfo(std::string			vendor,
@@ -345,7 +347,7 @@ void WaiverTreeBuilder::buildTreeFromPathList(void)
 	deUint32 parentIndex = 0;
 
 	// construct root node
-	m_buildTree.emplace_back("root", DE_NULL);
+	m_buildTree.emplace_back("root", 0);
 
 	for (const auto& path : m_testList)
 	{

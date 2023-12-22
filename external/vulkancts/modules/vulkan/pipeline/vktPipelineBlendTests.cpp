@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,7 +134,6 @@ public:
 
 										BlendTest				(tcu::TestContext&							testContext,
 																 const std::string&							name,
-																 const std::string&							description,
 																 PipelineConstructionType					pipelineConstructionType,
 																 const VkFormat								colorFormat,
 																 const VkPipelineColorBlendAttachmentState	blendStates[QUAD_COUNT]);
@@ -160,7 +161,6 @@ public:
 
 										DualSourceBlendTest		(tcu::TestContext&							testContext,
 																 const std::string&							name,
-																 const std::string&							description,
 																 PipelineConstructionType					pipelineConstructionType,
 																 const VkFormat								colorFormat,
 																 const VkPipelineColorBlendAttachmentState	blendStates[QUAD_COUNT]);
@@ -194,17 +194,17 @@ private:
 	Move<VkImage>						m_colorImage;
 	de::MovePtr<Allocation>				m_colorImageAlloc;
 	Move<VkImageView>					m_colorAttachmentView;
-	Move<VkRenderPass>					m_renderPass;
+	RenderPassWrapper					m_renderPass;
 	Move<VkFramebuffer>					m_framebuffer;
 
-	Move<VkShaderModule>				m_vertexShaderModule;
-	Move<VkShaderModule>				m_fragmentShaderModule;
+	ShaderWrapper						m_vertexShaderModule;
+	ShaderWrapper						m_fragmentShaderModule;
 
 	Move<VkBuffer>						m_vertexBuffer;
 	std::vector<Vertex4RGBA>			m_vertices;
 	de::MovePtr<Allocation>				m_vertexBufferAlloc;
 
-	Move<VkPipelineLayout>				m_pipelineLayout;
+	PipelineLayoutWrapper				m_pipelineLayout;
 	GraphicsPipelineWrapper				m_graphicsPipelines[BlendTest::QUAD_COUNT];
 
 	Move<VkCommandPool>					m_cmdPool;
@@ -231,17 +231,17 @@ private:
 	Move<VkImage>						m_colorImage;
 	de::MovePtr<Allocation>				m_colorImageAlloc;
 	Move<VkImageView>					m_colorAttachmentView;
-	Move<VkRenderPass>					m_renderPass;
+	RenderPassWrapper					m_renderPass;
 	Move<VkFramebuffer>					m_framebuffer;
 
-	Move<VkShaderModule>				m_vertexShaderModule;
-	Move<VkShaderModule>				m_fragmentShaderModule;
+	ShaderWrapper						m_vertexShaderModule;
+	ShaderWrapper						m_fragmentShaderModule;
 
 	Move<VkBuffer>						m_vertexBuffer;
 	std::vector<Vertex4RGBARGBA>		m_vertices;
 	de::MovePtr<Allocation>				m_vertexBufferAlloc;
 
-	Move<VkPipelineLayout>				m_pipelineLayout;
+	PipelineLayoutWrapper				m_pipelineLayout;
 	GraphicsPipelineWrapper				m_graphicsPipelines[DualSourceBlendTest::QUAD_COUNT];
 
 	Move<VkCommandPool>					m_cmdPool;
@@ -420,11 +420,10 @@ const tcu::Vec4 BlendTest::s_blendConst = tcu::Vec4(0.1f, 0.2f, 0.3f, 0.4f);
 
 BlendTest::BlendTest (tcu::TestContext&								testContext,
 					  const std::string&							name,
-					  const std::string&							description,
 					  PipelineConstructionType						pipelineConstructionType,
 					  const VkFormat								colorFormat,
 					  const VkPipelineColorBlendAttachmentState		blendStates[QUAD_COUNT])
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_colorFormat					(colorFormat)
 {
@@ -445,7 +444,7 @@ void BlendTest::checkSupport (Context& context) const
 	if (!isSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_colorFormat))
 		throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") + getFormatName(m_colorFormat));
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 #ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
 		!context.getPortabilitySubsetFeatures().constantAlphaColorBlendFactors)
@@ -505,11 +504,10 @@ const tcu::Vec4 DualSourceBlendTest::s_blendConst = tcu::Vec4(0.1f, 0.2f, 0.3f, 
 
 DualSourceBlendTest::DualSourceBlendTest (tcu::TestContext&								testContext,
 										  const std::string&							name,
-										  const std::string&							description,
 										  PipelineConstructionType						pipelineConstructionType,
 										  const VkFormat								colorFormat,
 										  const VkPipelineColorBlendAttachmentState		blendStates[QUAD_COUNT])
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_colorFormat					(colorFormat)
 {
@@ -559,7 +557,7 @@ void DualSourceBlendTest::checkSupport (Context& context) const
 
 	if (!isSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_colorFormat))
 		throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") + getFormatName(m_colorFormat));
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 void DualSourceBlendTest::initPrograms (SourceCollections& sourceCollections) const
@@ -607,10 +605,10 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 	, m_colorFormat		(colorFormat)
 	, m_graphicsPipelines
 	{
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType }
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType }
 	}
 {
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
@@ -668,7 +666,7 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat);
+	m_renderPass = RenderPassWrapper(pipelineConstructionType, vk, vkDevice, m_colorFormat);
 
 	// Create framebuffer
 	{
@@ -685,7 +683,7 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 			1u													// deUint32					layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, *m_colorImage);
 	}
 
 	// Create pipeline layout
@@ -701,11 +699,11 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
-	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
-	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
+	m_vertexShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+	m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
 
 	// Create pipeline
 	{
@@ -772,16 +770,16 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 			m_graphicsPipelines[quadNdx].setDefaultMultisampleState()
 										.setDefaultDepthStencilState()
 										.setDefaultRasterizationState()
-										.setupVertexInputStete(&vertexInputStateParams)
+										.setupVertexInputState(&vertexInputStateParams)
 										.setupPreRasterizationShaderState(viewports,
 																		  scissors,
-																		  *m_pipelineLayout,
+																		  m_pipelineLayout,
 																		  *m_renderPass,
 																		  0u,
-																		  *m_vertexShaderModule)
-										.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+																		  m_vertexShaderModule)
+										.setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
 										.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
-										.setMonolithicPipelineLayout(*m_pipelineLayout)
+										.setMonolithicPipelineLayout(m_pipelineLayout)
 										.buildPipeline();
 		}
 	}
@@ -849,7 +847,7 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, 1u, &imageLayoutBarrier);
 
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+		m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
 
 		const VkDeviceSize quadOffset = (m_vertices.size() / BlendTest::QUAD_COUNT) * sizeof(Vertex4RGBA);
 
@@ -857,12 +855,12 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 		{
 			VkDeviceSize vertexBufferOffset = quadOffset * quadNdx;
 
-			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelines[quadNdx].getPipeline());
+			m_graphicsPipelines[quadNdx].bind(*m_cmdBuffer);
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_vertices.size() / BlendTest::QUAD_COUNT), 1, 0, 0);
 		}
 
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
@@ -1201,10 +1199,10 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance (Context&									conte
 	, m_colorFormat		(colorFormat)
 	, m_graphicsPipelines
 	{
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType }
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType }
 	}
 {
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
@@ -1262,7 +1260,7 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance (Context&									conte
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat);
+	m_renderPass = RenderPassWrapper(pipelineConstructionType, vk, vkDevice, m_colorFormat);
 
 	// Create framebuffer
 	{
@@ -1279,7 +1277,7 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance (Context&									conte
 			1u													// deUint32					layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, *m_colorImage);
 	}
 
 	// Create pipeline layout
@@ -1295,11 +1293,11 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance (Context&									conte
 			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
-	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
-	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
+	m_vertexShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+	m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
 
 	// Create pipeline
 	{
@@ -1372,16 +1370,16 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance (Context&									conte
 			m_graphicsPipelines[quadNdx].setDefaultRasterizationState()
 										.setDefaultDepthStencilState()
 										.setDefaultMultisampleState()
-										.setupVertexInputStete(&vertexInputStateParams)
+										.setupVertexInputState(&vertexInputStateParams)
 										.setupPreRasterizationShaderState(viewports,
 																		  scissors,
-																		  *m_pipelineLayout,
+																		  m_pipelineLayout,
 																		  *m_renderPass,
 																		  0u,
-																		  *m_vertexShaderModule)
-										.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+																		  m_vertexShaderModule)
+										.setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
 										.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
-										.setMonolithicPipelineLayout(*m_pipelineLayout)
+										.setMonolithicPipelineLayout(m_pipelineLayout)
 										.buildPipeline();
 		}
 	}
@@ -1452,7 +1450,7 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance (Context&									conte
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, 1u, &imageLayoutBarrier);
 
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+		m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
 
 		const VkDeviceSize quadOffset = (m_vertices.size() / DualSourceBlendTest::QUAD_COUNT) * sizeof(Vertex4RGBARGBA);
 
@@ -1460,12 +1458,12 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance (Context&									conte
 		{
 			VkDeviceSize vertexBufferOffset = quadOffset * quadNdx;
 
-			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelines[quadNdx].getPipeline());
+			m_graphicsPipelines[quadNdx].bind(*m_cmdBuffer);
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_vertices.size() / DualSourceBlendTest::QUAD_COUNT), 1, 0, 0);
 		}
 
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
@@ -1658,7 +1656,6 @@ class ClampTest : public vkt::TestCase
 public:
 										ClampTest				(tcu::TestContext&							testContext,
 																 const std::string&							name,
-																 const std::string&							description,
 																 const ClampTestParams&						testParams);
 	virtual								~ClampTest				(void) {}
 	virtual void						initPrograms			(SourceCollections& sourceCollections) const;
@@ -1684,9 +1681,8 @@ private:
 
 ClampTest::ClampTest (tcu::TestContext&			testContext,
 					  const std::string&		name,
-					  const std::string&		description,
 					  const ClampTestParams&	testParams)
-	: vkt::TestCase (testContext, name, description)
+	: vkt::TestCase (testContext, name)
 	, m_params(testParams)
 {
 	// As per the spec:
@@ -1735,7 +1731,7 @@ void ClampTest::checkSupport (Context& context) const
 {
 	if (!isSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.colorFormat))
 		throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") + getFormatName(m_params.colorFormat));
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 TestInstance* ClampTest::createInstance(Context& context) const
@@ -1745,12 +1741,14 @@ TestInstance* ClampTest::createInstance(Context& context) const
 
 tcu::TestStatus ClampTestInstance::iterate (void)
 {
-	const vk::DeviceInterface&	vkd					= m_context.getDeviceInterface();
-	const vk::VkDevice			device				= m_context.getDevice();
-	vk::Allocator&				allocator			= m_context.getDefaultAllocator();
-	const vk::VkQueue			queue				= m_context.getUniversalQueue();
-	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	const vk::VkExtent3D		renderSize			= { 32u, 32u, 1u };
+	const vk::InstanceInterface&	vki					= m_context.getInstanceInterface();
+	const vk::DeviceInterface&		vkd					= m_context.getDeviceInterface();
+	const vk::VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
+	const vk::VkDevice				device				= m_context.getDevice();
+	vk::Allocator&					allocator			= m_context.getDefaultAllocator();
+	const vk::VkQueue				queue				= m_context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const vk::VkExtent3D			renderSize			= { 32u, 32u, 1u };
 
 	// Image.
 	const vk::VkImageCreateInfo	imageCreateInfo =
@@ -1795,7 +1793,7 @@ tcu::TestStatus ClampTestInstance::iterate (void)
 	auto colorImageView = createImageView(vkd, device, &imageViewCreateInfo);
 
 	// Render pass.
-	auto renderPass = makeRenderPass(vkd, device, m_params.colorFormat);
+	RenderPassWrapper renderPass(m_params.pipelineConstructionType, vkd, device, m_params.colorFormat);
 
 	// Frame buffer.
 	const vk::VkFramebufferCreateInfo framebufferParams =
@@ -1811,7 +1809,7 @@ tcu::TestStatus ClampTestInstance::iterate (void)
 		1u,													// deUint32					layers;
 	};
 
-	auto framebuffer = createFramebuffer(vkd, device, &framebufferParams);
+	renderPass.createFramebuffer(vkd, device, &framebufferParams, *colorImage);
 
 	// Pipeline layout.
 	const vk::VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
@@ -1825,11 +1823,11 @@ tcu::TestStatus ClampTestInstance::iterate (void)
 		nullptr,											// const VkPushConstantRange*		pPushConstantRanges;
 	};
 
-	auto pipelineLayout = createPipelineLayout(vkd, device, &pipelineLayoutCreateInfo);
+	const PipelineLayoutWrapper pipelineLayout (m_params.pipelineConstructionType, vkd, device, &pipelineLayoutCreateInfo);
 
 	// Shader modules.
-	auto vertexShaderModule		= createShaderModule(vkd, device, m_context.getBinaryCollection().get("color_vert"), 0);
-	auto fragmentShaderModule	= createShaderModule(vkd, device, m_context.getBinaryCollection().get("color_frag"), 0);
+	auto vertexShaderModule		= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("color_vert"), 0);
+	auto fragmentShaderModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("color_frag"), 0);
 
 	// Graphics pipeline.
 	const vk::VkVertexInputBindingDescription vertexInputBindingDescription =
@@ -1906,20 +1904,20 @@ tcu::TestStatus ClampTestInstance::iterate (void)
 		},
 	};
 
-	GraphicsPipelineWrapper graphicsPipeline(vkd, device, m_params.pipelineConstructionType);
+	GraphicsPipelineWrapper graphicsPipeline(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
 	graphicsPipeline.setDefaultRasterizationState()
 					.setDefaultDepthStencilState()
 					.setDefaultMultisampleState()
-					.setupVertexInputStete(&vertexInputStateParams)
+					.setupVertexInputState(&vertexInputStateParams)
 					.setupPreRasterizationShaderState(viewports,
 													  scissors,
-													  *pipelineLayout,
+													  pipelineLayout,
 													  *renderPass,
 													  0u,
-													  *vertexShaderModule)
-					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragmentShaderModule)
+													  vertexShaderModule)
+					.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragmentShaderModule)
 					.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateParams)
-					.setMonolithicPipelineLayout(*pipelineLayout)
+					.setMonolithicPipelineLayout(pipelineLayout)
 					.buildPipeline();
 
 	// Vertex buffer
@@ -1966,11 +1964,11 @@ tcu::TestStatus ClampTestInstance::iterate (void)
 	const vk::VkDeviceSize vertexOffets[] = { 0u };
 
 	beginCommandBuffer(vkd, cmdBuffer, 0u);
-		beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), makeRect2D(renderSize), clearValue);
-			vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
+		renderPass.begin(vkd, cmdBuffer, makeRect2D(renderSize), clearValue);
+			graphicsPipeline.bind(cmdBuffer);
 			vkd.cmdBindVertexBuffers(cmdBuffer, 0, 1u, &vertexBuffer.get(), vertexOffets);
 			vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1, 0, 0);
-		endRenderPass(vkd, cmdBuffer);
+		renderPass.end(vkd, cmdBuffer);
 	endCommandBuffer(vkd, cmdBuffer);
 
 	// Submit commands.
@@ -2066,18 +2064,6 @@ std::string getBlendStateSetName (const VkPipelineColorBlendAttachmentState blen
 	return name.str();
 }
 
-std::string getBlendStateSetDescription (const VkPipelineColorBlendAttachmentState blendStates[BlendTest::QUAD_COUNT])
-{
-	std::ostringstream description;
-
-	description << "Draws " << BlendTest::QUAD_COUNT << " quads with the following blend states:\n";
-
-	for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
-		description << blendStates[quadNdx] << "\n";
-
-	return description.str();
-}
-
 std::string getFormatCaseName (VkFormat format)
 {
 	const std::string fullName = getFormatName(format);
@@ -2138,11 +2124,13 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 		VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>				blendTests				(new tcu::TestCaseGroup(testCtx, "blend", "Blend tests"));
-	de::MovePtr<tcu::TestCaseGroup>				formatTests				(new tcu::TestCaseGroup(testCtx, "format", "Uses different blend formats"));
-	de::MovePtr<tcu::TestCaseGroup>				clampTests				(new tcu::TestCaseGroup(testCtx, "clamp", "Verifies clamping for normalized formats"));
-	de::MovePtr<tcu::TestCaseGroup>				dualSourceBlendTests	(new tcu::TestCaseGroup(testCtx, "dual_source", "Blend tests taking into account dual-source blend factors"));
-	de::MovePtr<tcu::TestCaseGroup>				dualSourceFormatTests	(new tcu::TestCaseGroup(testCtx, "format", "Uses different blend formats"));
+	// Blend tests
+	de::MovePtr<tcu::TestCaseGroup>				blendTests				(new tcu::TestCaseGroup(testCtx, "blend"));
+	// Uses different blend formats
+	de::MovePtr<tcu::TestCaseGroup>				formatTests				(new tcu::TestCaseGroup(testCtx, "format"));
+	de::MovePtr<tcu::TestCaseGroup>				clampTests				(new tcu::TestCaseGroup(testCtx, "clamp"));
+	de::MovePtr<tcu::TestCaseGroup>				dualSourceBlendTests	(new tcu::TestCaseGroup(testCtx, "dual_source"));
+	de::MovePtr<tcu::TestCaseGroup>				dualSourceFormatTests	(new tcu::TestCaseGroup(testCtx, "format"));
 
 
 	BlendStateUniqueRandomIterator				blendStateItr			(blendStatesPerFormat, 123);
@@ -2155,13 +2143,12 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 		// Blend tests
 		{
 			de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-																					getFormatCaseName(format).c_str(),
-																					(std::string("Uses format ") + getFormatName(format)).c_str()));
+																					getFormatCaseName(format).c_str()));
 			de::MovePtr<tcu::TestCaseGroup>	blendStateTests;
 			{
 				std::ostringstream blendStateDescription;
 				blendStateDescription << "Combines blend factors, operators and channel write masks. The constant color used in all tests is " << BlendTest::s_blendConst;
-				blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states", blendStateDescription.str().c_str()));
+				blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
 			}
 
 			blendStateItr.reset();
@@ -2178,7 +2165,6 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 
 				blendStateTests->addChild(new BlendTest(testCtx,
 														getBlendStateSetName(quadBlendConfigs),
-														getBlendStateSetDescription(quadBlendConfigs),
 														pipelineConstructionType,
 														format,
 														quadBlendConfigs));
@@ -2190,13 +2176,12 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 		// Dual-Source blending tests
 		{
 			de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-																					getFormatCaseName(format).c_str(),
-																					(std::string("Uses format ") + getFormatName(format)).c_str()));
+																					getFormatCaseName(format).c_str()));
 			de::MovePtr<tcu::TestCaseGroup>	blendStateTests;
 			{
 				std::ostringstream blendStateDescription;
 				blendStateDescription << "Combines blend factors, operators and channel write masks. The constant color used in all tests is " << BlendTest::s_blendConst;
-				blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states", blendStateDescription.str().c_str()));
+				blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
 			}
 
 			dualSourceBlendStateItr.reset();
@@ -2223,7 +2208,6 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 
 				blendStateTests->addChild(new DualSourceBlendTest(testCtx,
 																  getBlendStateSetName(quadBlendConfigs),
-																  getBlendStateSetDescription(quadBlendConfigs),
 																  pipelineConstructionType,
 																  format,
 																  quadBlendConfigs));
@@ -2277,7 +2261,7 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 			testParams.blendConstants[3] = 1.0f;
 		}
 
-		clampTests->addChild(new ClampTest(testCtx, getFormatCaseName(format), std::string("Using format ") + getFormatName(format), testParams));
+		clampTests->addChild(new ClampTest(testCtx, getFormatCaseName(format), testParams));
 	}
 
 	blendTests->addChild(formatTests.release());

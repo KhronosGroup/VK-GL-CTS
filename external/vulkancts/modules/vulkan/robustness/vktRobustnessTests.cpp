@@ -26,6 +26,7 @@
 #include "vktRobustnessExtsTests.hpp"
 #include "vktRobustnessBufferAccessTests.hpp"
 #include "vktRobustnessVertexAccessTests.hpp"
+#include "vktRobustnessIndexAccessTests.hpp"
 #include "vktRobustBufferAccessWithVariablePointersTests.hpp"
 #include "vktNonRobustBufferAccessTests.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -55,12 +56,13 @@ private:
 
 }
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> robustnessTests(new tcu::TestCaseGroup(testCtx, "robustness", ""));
+	de::MovePtr<tcu::TestCaseGroup> robustnessTests(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	robustnessTests->addChild(createBufferAccessTests(testCtx));
 	robustnessTests->addChild(createVertexAccessTests(testCtx));
+	robustnessTests->addChild(createIndexAccessTests(testCtx));
 
 	std::vector<tcu::TestNode*> children;
 	robustnessTests->getChildren(children);
@@ -71,7 +73,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	}
 	else
 	{
-		de::MovePtr<tcu::TestCaseGroup> bufferAccess(new tcu::TestCaseGroup(testCtx, "buffer_access", ""));
+		de::MovePtr<tcu::TestCaseGroup> bufferAccess(new tcu::TestCaseGroup(testCtx, "buffer_access"));
 		bufferAccess->addChild(createBufferAccessWithVariablePointersTests(testCtx));
 		robustnessTests->addChild(bufferAccess.release());
 	}
@@ -85,6 +87,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 
 #ifndef CTS_USES_VULKANSC
 	robustnessTests->addChild(createPipelineRobustnessBufferAccessTests(testCtx));
+	robustnessTests->addChild(createCmdBindIndexBuffer2Tests(testCtx));
 #endif
 	robustnessTests->addChild(createRobustness1VertexAccessTests(testCtx));
 

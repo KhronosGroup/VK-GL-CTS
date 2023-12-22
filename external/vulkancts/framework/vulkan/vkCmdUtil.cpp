@@ -41,6 +41,39 @@ void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer comman
 	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &commandBufBeginParams));
 }
 
+void beginSecondaryCommandBuffer	(const DeviceInterface&				vkd,
+									 const VkCommandBuffer				cmdBuffer,
+									 const VkRenderPass					renderPass,
+									 const VkFramebuffer				framebuffer,
+									 const VkCommandBufferUsageFlags	flags)
+{
+	const VkCommandBufferInheritanceInfo inheritanceInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,	//	VkStructureType					sType;
+		nullptr,											//	const void*						pNext;
+		renderPass,											//	VkRenderPass					renderPass;
+		0u,													//	deUint32						subpass;
+		framebuffer,										//	VkFramebuffer					framebuffer;
+		VK_FALSE,											//	VkBool32						occlusionQueryEnable;
+		0u,													//	VkQueryControlFlags				queryFlags;
+		0u,													//	VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+
+	const VkCommandBufferUsageFlags	extraFlags	= ((renderPass == DE_NULL)
+												? static_cast<VkCommandBufferUsageFlagBits>(0)
+												: VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
+	const VkCommandBufferUsageFlags	usageFlags	= (flags | extraFlags);
+	const VkCommandBufferBeginInfo	beginInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	//	VkStructureType							sType;
+		nullptr,										//	const void*								pNext;
+		usageFlags,										//	VkCommandBufferUsageFlags				flags;
+		&inheritanceInfo,								//	const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+	};
+
+	vkd.beginCommandBuffer(cmdBuffer, &beginInfo);
+}
+
 void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
 {
 	VK_CHECK(vk.endCommandBuffer(commandBuffer));
@@ -320,6 +353,25 @@ void submitCommandsAndWait (const DeviceInterface&		vk,
 							const VkSemaphore*			waitSemaphores,
 							const VkPipelineStageFlags*	waitStages)
 {
+	const auto fence = submitCommands(vk, device, queue, commandBuffer, useDeviceGroups, deviceMask, waitSemaphoreCount, waitSemaphores, waitStages);
+	waitForFence(vk, device, *fence);
+}
+
+void waitForFence (const DeviceInterface& vk, const VkDevice device, const VkFence fence, uint64_t timeoutNanos)
+{
+	VK_CHECK(vk.waitForFences(device, 1u, &fence, VK_TRUE, timeoutNanos));
+}
+
+vk::Move<VkFence> submitCommands (const DeviceInterface&		vk,
+								  const VkDevice				device,
+								  const VkQueue					queue,
+								  const VkCommandBuffer			commandBuffer,
+								  const bool					useDeviceGroups,
+								  const deUint32				deviceMask,
+								  const deUint32				waitSemaphoreCount,
+								  const VkSemaphore*			waitSemaphores,
+								  const VkPipelineStageFlags*	waitStages)
+{
 	// For simplicity. A more complete approach can be found in vkt::sparse::submitCommandsAndWait().
 	DE_ASSERT(!(useDeviceGroups && waitSemaphoreCount > 0u));
 
@@ -329,24 +381,22 @@ void submitCommandsAndWait (const DeviceInterface&		vk,
 		DE_ASSERT(waitStages != nullptr);
 	}
 
-	const Unique<VkFence>	fence					(createFence(vk, device));
-
-	VkDeviceGroupSubmitInfo	deviceGroupSubmitInfo	=
+	const VkDeviceGroupSubmitInfo	deviceGroupSubmitInfo	=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,		//	VkStructureType		sType;
-		DE_NULL,										//	const void*			pNext;
+		nullptr,										//	const void*			pNext;
 		0u,												//	deUint32			waitSemaphoreCount;
-		DE_NULL,										//	const deUint32*		pWaitSemaphoreDeviceIndices;
+		nullptr,										//	const deUint32*		pWaitSemaphoreDeviceIndices;
 		1u,												//	deUint32			commandBufferCount;
 		&deviceMask,									//	const deUint32*		pCommandBufferDeviceMasks;
 		0u,												//	deUint32			signalSemaphoreCount;
-		DE_NULL,										//	const deUint32*		pSignalSemaphoreDeviceIndices;
+		nullptr,										//	const deUint32*		pSignalSemaphoreDeviceIndices;
 	};
 
-	const VkSubmitInfo		submitInfo				=
+	const VkSubmitInfo				submitInfo				=
 	{
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,						// VkStructureType				sType;
-		useDeviceGroups ? &deviceGroupSubmitInfo : DE_NULL,	// const void*					pNext;
+		useDeviceGroups ? &deviceGroupSubmitInfo : nullptr,	// const void*					pNext;
 		waitSemaphoreCount,									// deUint32						waitSemaphoreCount;
 		waitSemaphores,										// const VkSemaphore*			pWaitSemaphores;
 		waitStages,											// const VkPipelineStageFlags*	pWaitDstStageMask;
@@ -356,8 +406,10 @@ void submitCommandsAndWait (const DeviceInterface&		vk,
 		nullptr,											// const VkSemaphore*			pSignalSemaphores;
 	};
 
+	Move<VkFence> fence (createFence(vk, device));
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+
+	return fence;
 }
 
 } // vk

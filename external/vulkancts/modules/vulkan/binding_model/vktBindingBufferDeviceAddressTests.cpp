@@ -102,16 +102,23 @@ typedef enum
 	CONVERT_U64TOUVEC2,
 } Convert;
 
+typedef enum
+{
+	OFFSET_ZERO = 0,
+	OFFSET_NONZERO,
+} MemoryOffset;
+
 struct CaseDef
 {
-	deUint32 set;
-	deUint32 depth;
-	Base base;
-	Stage stage;
-	Convert convertUToPtr;
-	bool storeInLocal;
-	BufType bufType;
-	Layout layout;
+	deUint32		set;
+	deUint32		depth;
+	Base			base;
+	Stage			stage;
+	Convert			convertUToPtr;
+	bool			storeInLocal;
+	BufType			bufType;
+	Layout			layout;
+	MemoryOffset	memoryOffset;
 };
 
 class BufferAddressTestInstance : public TestInstance
@@ -146,7 +153,7 @@ BufferAddressTestInstance::~BufferAddressTestInstance (void)
 class BufferAddressTestCase : public TestCase
 {
 	public:
-							BufferAddressTestCase	(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+							BufferAddressTestCase	(tcu::TestContext& context, const char* name, const CaseDef data);
 							~BufferAddressTestCase	(void);
 	virtual	void			initPrograms			(SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance			(Context& context) const;
@@ -157,8 +164,8 @@ private:
 	CaseDef					m_data;
 };
 
-BufferAddressTestCase::BufferAddressTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+BufferAddressTestCase::BufferAddressTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -724,8 +731,10 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	};
 
 	bool multiBuffer = m_data.bufType != BT_SINGLE;
+	bool offsetNonZero = m_data.memoryOffset == OFFSET_NONZERO;
 	deUint32 numBuffers = multiBuffer ? numBindings : 1;
 	VkDeviceSize bufferSize = multiBuffer ? align : (align*numBindings);
+	VkDeviceSize memoryOffset = 0;
 
 	vector<VkBufferSp>			buffers(numBuffers);
 	vector<AllocationSp>		allocations(numBuffers);
@@ -772,7 +781,14 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 			opaqueBufferAddrs[i] = vk.getBufferOpaqueCaptureAddress(device, &bufferDeviceAddressInfo);
 		}
 
-		allocations[i] = AllocationSp(allocateExtended(vki, vk, physDevice, device, getBufferMemoryRequirements(vk, device, **buffers[i]), MemoryRequirement::HostVisible, &allocFlagsInfo));
+		VkMemoryRequirements memReq = getBufferMemoryRequirements(vk, device, **buffers[i]);
+		if (offsetNonZero)
+		{
+			memoryOffset = memReq.alignment;
+			memReq.size += memoryOffset;
+		}
+
+		allocations[i] = AllocationSp(allocateExtended(vki, vk, physDevice, device, memReq, MemoryRequirement::HostVisible, &allocFlagsInfo));
 
 		if (useKHR)
 		{
@@ -780,7 +796,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 			opaqueMemoryAddrs[i] = vk.getDeviceMemoryOpaqueCaptureAddress(device, &deviceMemoryOpaqueCaptureAddressInfo);
 		}
 
-		VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), 0));
+		VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), memoryOffset));
 	}
 
 	if (m_data.bufType == BT_REPLAY)
@@ -827,7 +843,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		bufferDeviceAddressInfo.buffer = **buffers[multiBuffer ? i : 0];
 		gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
 
-		cpuAddrs[i] = (deUint8 *)allocations[multiBuffer ? i : 0]->getHostPtr();
+		cpuAddrs[i] = (deUint8 *)allocations[multiBuffer ? i : 0]->getHostPtr() + memoryOffset;
 		if (!multiBuffer)
 		{
 			cpuAddrs[i] = cpuAddrs[i] + align*i;
@@ -1346,7 +1362,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 class CaptureReplayTestCase : public TestCase
 {
 public:
-							CaptureReplayTestCase	(tcu::TestContext& context, const char* name, const char* desc, deUint32 seed);
+							CaptureReplayTestCase	(tcu::TestContext& context, const char* name, deUint32 seed);
 							~CaptureReplayTestCase	(void);
 	virtual	void			initPrograms			(SourceCollections& programCollection) const { DE_UNREF(programCollection); }
 	virtual TestInstance*	createInstance			(Context& context) const;
@@ -1355,8 +1371,8 @@ private:
 	deUint32				m_seed;
 };
 
-CaptureReplayTestCase::CaptureReplayTestCase (tcu::TestContext& context, const char* name, const char* desc, deUint32 seed)
-	: vkt::TestCase	(context, name, desc)
+CaptureReplayTestCase::CaptureReplayTestCase (tcu::TestContext& context, const char* name, deUint32 seed)
+	: vkt::TestCase	(context, name)
 	, m_seed(seed)
 {
 }
@@ -1557,117 +1573,148 @@ tcu::TestStatus CaptureReplayTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createBufferDeviceAddressTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "buffer_device_address", "Test VK_EXT_buffer_device_address"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "buffer_device_address"));
 
 	typedef struct
 	{
 		deUint32				count;
 		const char*				name;
-		const char*				description;
 	} TestGroupCase;
 
 	TestGroupCase setCases[] =
 	{
-		{ 0,	"set0",		"set 0"		},
-		{ 3,	"set3",		"set 3"		},
-		{ 7,	"set7",		"set 7"		},
-		{ 15,	"set15",	"set 15"	},
-		{ 31,	"set31",	"set 31"	},
+		{ 0,	"set0"},
+		{ 3,	"set3"},
+		{ 7,	"set7"},
+		{ 15,	"set15"},
+		{ 31,	"set31"},
 	};
 
 	TestGroupCase depthCases[] =
 	{
-		{ 1,	"depth1",	"1 nested struct"		},
-		{ 2,	"depth2",	"2 nested structs"		},
-		{ 3,	"depth3",	"3 nested structs"		},
+		{ 1,	"depth1"},
+		{ 2,	"depth2"},
+		{ 3,	"depth3"},
 	};
 
 	TestGroupCase baseCases[] =
 	{
-		{ BASE_UBO,	"baseubo",	"base ubo"		},
-		{ BASE_SSBO,"basessbo",	"base ssbo"		},
+		{ BASE_UBO,	"baseubo"},
+		{ BASE_SSBO,"basessbo"},
 	};
 
 	TestGroupCase cvtCases[] =
 	{
-		{ CONVERT_NONE,			"load",				"load reference"										},
-		{ CONVERT_UINT64,		"convert",			"load and convert reference"							},
-		{ CONVERT_UVEC2,		"convertuvec2",		"load and convert reference to uvec2"					},
-		{ CONVERT_U64CMP,		"convertchecku64",	"load, convert and compare references as uint64_t"		},
-		{ CONVERT_UVEC2CMP,		"convertcheckuv2",	"load, convert and compare references as uvec2"			},
-		{ CONVERT_UVEC2TOU64,	"crossconvertu2p",	"load reference as uint64_t and convert it to uvec2"	},
-		{ CONVERT_U64TOUVEC2,	"crossconvertp2u",	"load reference as uvec2 and convert it to uint64_t"	},
+		// load reference
+		{ CONVERT_NONE,			"load"},
+		// load and convert reference
+		{ CONVERT_UINT64,		"convert"},
+		// load and convert reference to uvec2
+		{ CONVERT_UVEC2,		"convertuvec2"},
+		// load, convert and compare references as uint64_t
+		{ CONVERT_U64CMP,		"convertchecku64"},
+		// load, convert and compare references as uvec2
+		{ CONVERT_UVEC2CMP,		"convertcheckuv2"},
+		// load reference as uint64_t and convert it to uvec2
+		{ CONVERT_UVEC2TOU64,	"crossconvertu2p"},
+		// load reference as uvec2 and convert it to uint64_t
+		{ CONVERT_U64TOUVEC2,	"crossconvertp2u"},
 	};
 
 	TestGroupCase storeCases[] =
 	{
-		{ 0,	"nostore",		"don't store intermediate reference"		},
-		{ 1,	"store",		"store intermediate reference"				},
+		// don't store intermediate reference
+		{ 0,	"nostore"},
+		// store intermediate reference
+		{ 1,	"store"},
 	};
 
 	TestGroupCase btCases[] =
 	{
-		{ BT_SINGLE,	"single",		"single buffer"	},
-		{ BT_MULTI,		"multi",		"multiple buffers"	},
-		{ BT_REPLAY,	"replay",		"multiple buffers and VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT"	},
+		// single buffer
+		{ BT_SINGLE,	"single"},
+		// multiple buffers
+		{ BT_MULTI,		"multi"},
+		// multiple buffers and VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT
+		{ BT_REPLAY,	"replay"},
 	};
 
 	TestGroupCase layoutCases[] =
 	{
-		{ LAYOUT_STD140,	"std140",		"std140"	},
-		{ LAYOUT_SCALAR,	"scalar",		"scalar"	},
+		{ LAYOUT_STD140,	"std140"},
+		{ LAYOUT_SCALAR,	"scalar"},
 	};
 
 	TestGroupCase stageCases[] =
 	{
-		{ STAGE_COMPUTE,	"comp",		"compute"	},
-		{ STAGE_FRAGMENT,	"frag",		"fragment"	},
-		{ STAGE_VERTEX,		"vert",		"vertex"	},
+		{ STAGE_COMPUTE,	"comp"},
+		{ STAGE_FRAGMENT,	"frag"},
+		{ STAGE_VERTEX,		"vert"},
 #if ENABLE_RAYTRACING
-		{ STAGE_RAYGEN,		"rgen",		"raygen"	},
+		// raygen
+		{ STAGE_RAYGEN,		"rgen"},
 #endif
+	};
+
+	TestGroupCase offsetCases[] =
+	{
+		{ OFFSET_ZERO,		"offset_zero"},
+		{ OFFSET_NONZERO,	"offset_nonzero"},
 	};
 
 	for (int setNdx = 0; setNdx < DE_LENGTH_OF_ARRAY(setCases); setNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> setGroup(new tcu::TestCaseGroup(testCtx, setCases[setNdx].name, setCases[setNdx].description));
+		de::MovePtr<tcu::TestCaseGroup> setGroup(new tcu::TestCaseGroup(testCtx, setCases[setNdx].name));
 		for (int depthNdx = 0; depthNdx < DE_LENGTH_OF_ARRAY(depthCases); depthNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> depthGroup(new tcu::TestCaseGroup(testCtx, depthCases[depthNdx].name, depthCases[depthNdx].description));
+			de::MovePtr<tcu::TestCaseGroup> depthGroup(new tcu::TestCaseGroup(testCtx, depthCases[depthNdx].name));
 			for (int baseNdx = 0; baseNdx < DE_LENGTH_OF_ARRAY(baseCases); baseNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup> baseGroup(new tcu::TestCaseGroup(testCtx, baseCases[baseNdx].name, baseCases[baseNdx].description));
+				de::MovePtr<tcu::TestCaseGroup> baseGroup(new tcu::TestCaseGroup(testCtx, baseCases[baseNdx].name));
 				for (int cvtNdx = 0; cvtNdx < DE_LENGTH_OF_ARRAY(cvtCases); cvtNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup> cvtGroup(new tcu::TestCaseGroup(testCtx, cvtCases[cvtNdx].name, cvtCases[cvtNdx].description));
+					de::MovePtr<tcu::TestCaseGroup> cvtGroup(new tcu::TestCaseGroup(testCtx, cvtCases[cvtNdx].name));
 					for (int storeNdx = 0; storeNdx < DE_LENGTH_OF_ARRAY(storeCases); storeNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup> storeGroup(new tcu::TestCaseGroup(testCtx, storeCases[storeNdx].name, storeCases[storeNdx].description));
+						de::MovePtr<tcu::TestCaseGroup> storeGroup(new tcu::TestCaseGroup(testCtx, storeCases[storeNdx].name));
 						for (int btNdx = 0; btNdx < DE_LENGTH_OF_ARRAY(btCases); btNdx++)
 						{
-							de::MovePtr<tcu::TestCaseGroup> btGroup(new tcu::TestCaseGroup(testCtx, btCases[btNdx].name, btCases[btNdx].description));
+							de::MovePtr<tcu::TestCaseGroup> btGroup(new tcu::TestCaseGroup(testCtx, btCases[btNdx].name));
 							for (int layoutNdx = 0; layoutNdx < DE_LENGTH_OF_ARRAY(layoutCases); layoutNdx++)
 							{
-								de::MovePtr<tcu::TestCaseGroup> layoutGroup(new tcu::TestCaseGroup(testCtx, layoutCases[layoutNdx].name, layoutCases[layoutNdx].description));
+								de::MovePtr<tcu::TestCaseGroup> layoutGroup(new tcu::TestCaseGroup(testCtx, layoutCases[layoutNdx].name));
 								for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
 								{
-									CaseDef c =
+									for (int offsetNdx = 0; offsetNdx < DE_LENGTH_OF_ARRAY(offsetCases); offsetNdx++)
 									{
-										setCases[setNdx].count,						// deUint32 set;
-										depthCases[depthNdx].count,					// deUint32 depth;
-										(Base)baseCases[baseNdx].count,				// Base base;
-										(Stage)stageCases[stageNdx].count,			// Stage stage;
-										(Convert)cvtCases[cvtNdx].count,			// Convert convertUToPtr;
-										!!storeCases[storeNdx].count,				// bool storeInLocal;
-										(BufType)btCases[btNdx].count,				// BufType bufType;
-										(Layout)layoutCases[layoutNdx].count,		// Layout layout;
-									};
+										CaseDef c =
+										{
+											setCases[setNdx].count,						// deUint32 set;
+											depthCases[depthNdx].count,					// deUint32 depth;
+											(Base)baseCases[baseNdx].count,				// Base base;
+											(Stage)stageCases[stageNdx].count,			// Stage stage;
+											(Convert)cvtCases[cvtNdx].count,			// Convert convertUToPtr;
+											!!storeCases[storeNdx].count,				// bool storeInLocal;
+											(BufType)btCases[btNdx].count,				// BufType bufType;
+											(Layout)layoutCases[layoutNdx].count,		// Layout layout;
+											(MemoryOffset)offsetCases[offsetNdx].count, // Memory Offset;
+										};
 
-									// Skip more complex test cases for most descriptor sets, to reduce runtime.
-									if (c.set != 3 && (c.depth == 3 || c.layout != LAYOUT_STD140))
-										continue;
+										// Skip more complex test cases for most descriptor sets, to reduce runtime.
+										if (c.set != 3 && (c.depth == 3 || c.layout != LAYOUT_STD140))
+											continue;
 
-									layoutGroup->addChild(new BufferAddressTestCase(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].description, c));
+										// Memory offset tests are only for single buffer test cases.
+										if (c.memoryOffset == OFFSET_NONZERO && c.bufType != BT_SINGLE)
+											continue;
+
+										std::ostringstream caseName;
+										caseName << stageCases[stageNdx].name;
+										if (c.memoryOffset == OFFSET_NONZERO)
+											caseName << "_offset_nonzero";
+
+										layoutGroup->addChild(new BufferAddressTestCase(testCtx, caseName.str().c_str(), c));
+									}
 								}
 								btGroup->addChild(layoutGroup.release());
 							}
@@ -1684,10 +1731,10 @@ tcu::TestCaseGroup*	createBufferDeviceAddressTests (tcu::TestContext& testCtx)
 		group->addChild(setGroup.release());
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> capGroup(new tcu::TestCaseGroup(testCtx, "capture_replay_stress", "Test VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT"));
+	de::MovePtr<tcu::TestCaseGroup> capGroup(new tcu::TestCaseGroup(testCtx, "capture_replay_stress"));
 	for (deUint32 i = 0; i < 10; ++i)
 	{
-		capGroup->addChild(new CaptureReplayTestCase(testCtx, (std::string("seed_") + de::toString(i)).c_str(), "", i));
+		capGroup->addChild(new CaptureReplayTestCase(testCtx, (std::string("seed_") + de::toString(i)).c_str(), i));
 	}
 	group->addChild(capGroup.release());
 	return group.release();

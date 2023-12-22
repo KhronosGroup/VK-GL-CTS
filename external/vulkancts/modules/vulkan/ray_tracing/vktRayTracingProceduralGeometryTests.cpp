@@ -23,7 +23,7 @@
 
 #include "vktRayTracingProceduralGeometryTests.hpp"
 #include "vktCustomInstancesDevices.hpp"
-#include "vkPipelineBinariesUtil.hpp"
+#include "vkPipelineBinaryUtil.hpp"
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -63,7 +63,7 @@ enum class TestType
 {
 	OBJECT_BEHIND_BOUNDING_BOX = 0,
 	TRIANGLE_IN_BETWEEN,
-	PIPELINE_BINARIES,
+	PIPELINE_BINARY,
 };
 
 struct DeviceHelper
@@ -74,7 +74,7 @@ struct DeviceHelper
 	VkQueue							queue;
 	de::MovePtr<SimpleAllocator>	allocator;
 
-	DeviceHelper (Context& context, bool usePipelineBinaries)
+	DeviceHelper (Context& context, bool usePipelineBinary)
 	{
 		const auto&	vkp					= context.getPlatformInterface();
 		const auto&	vki					= context.getInstanceInterface();
@@ -87,7 +87,7 @@ struct DeviceHelper
 		VkPhysicalDeviceRayTracingPipelineFeaturesKHR		rayTracingPipelineFeatures		= initVulkanStructure();
 		VkPhysicalDeviceAccelerationStructureFeaturesKHR	accelerationStructureFeatures	= initVulkanStructure(&rayTracingPipelineFeatures);
 		VkPhysicalDeviceBufferDeviceAddressFeaturesKHR		deviceAddressFeatures			= initVulkanStructure(&accelerationStructureFeatures);
-		VkPhysicalDevicePipelineBinariesFeaturesKHR			pipelineBinariesFeatures		= initVulkanStructure(&deviceAddressFeatures);
+		VkPhysicalDevicePipelineBinaryFeaturesKHR			pipelineBinaryFeatures			= initVulkanStructure(&deviceAddressFeatures);
 		VkPhysicalDeviceFeatures2							deviceFeatures					= initVulkanStructure(&deviceAddressFeatures);
 
 		// Required extensions - create device with VK_KHR_ray_tracing_pipeline but
@@ -103,10 +103,10 @@ struct DeviceHelper
 			"VK_KHR_shader_float_controls"
 		};
 
-		if (usePipelineBinaries)
+		if (usePipelineBinary)
 		{
-			deviceFeatures.pNext = &pipelineBinariesFeatures;
-			requiredExtensions.push_back("VK_KHR_pipeline_binaries");
+			deviceFeatures.pNext = &pipelineBinaryFeatures;
+			requiredExtensions.push_back("VK_KHR_pipeline_binary");
 		}
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
@@ -141,7 +141,7 @@ struct DeviceHelper
 
 		// Create custom device and related objects
 		device		= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get()));
+		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion()));
 		queue		= getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
 		allocator	= de::MovePtr<SimpleAllocator>(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
@@ -523,11 +523,11 @@ void TriangleInBeteenInstance::setupAccelerationStructures()
 	m_resultTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
 }
 
-class PipelineBinariesInstance : public RayTracingProceduralGeometryTestBase
+class PipelineBinaryInstance : public RayTracingProceduralGeometryTestBase
 {
 public:
 
-	PipelineBinariesInstance(Context& context);
+	PipelineBinaryInstance(Context& context);
 
 	void setupRayTracingPipeline		() override;
 	void setupAccelerationStructures	() override;
@@ -542,16 +542,16 @@ protected:
 
 	Move<VkShaderModule>		m_shaderModules[4];
 	Move<VkPipeline>			m_secondPipeline;
-	PipelineBinariesWrapper		m_binaries;
+	PipelineBinaryWrapper		m_binaries;
 };
 
-PipelineBinariesInstance::PipelineBinariesInstance(Context& context)
+PipelineBinaryInstance::PipelineBinaryInstance(Context& context)
 	: RayTracingProceduralGeometryTestBase(context, true)
 	, m_binaries(*m_customDevice.vkd, *m_customDevice.device)
 {
 }
 
-void PipelineBinariesInstance::setupRayTracingPipeline()
+void PipelineBinaryInstance::setupRayTracingPipeline()
 {
 	const DeviceInterface&	vkd					= *m_customDevice.vkd;
 	const VkDevice			device				= *m_customDevice.device;
@@ -599,11 +599,13 @@ void PipelineBinariesInstance::setupRayTracingPipeline()
 	shaderGroupCreateInfoVect[2].generalShader		= 3u;
 
 	// create ray tracing pipeline that will capture its data
+	VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+	pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR;
 	VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo
 	{
 		VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,		//  VkStructureType								sType;
-		DE_NULL,													//  const void*									pNext;
-		VK_PIPELINE_CREATE_CAPTURE_DATA_BIT_KHR,					//  VkPipelineCreateFlags						flags;
+		&pipelineFlags2CreateInfo,									//  const void*									pNext;
+		0,															//  VkPipelineCreateFlags						flags;
 		4u,															//  deUint32									stageCount;
 		shaderCreateInfoVect.data(),								//  const VkPipelineShaderStageCreateInfo*		pStages;
 		3u,															//  deUint32									groupCount;
@@ -644,7 +646,7 @@ void PipelineBinariesInstance::setupRayTracingPipeline()
 	m_missShaderBT = m_rayTracingPipeline->createShaderBindingTable(vkd, device, *m_pipeline, allocator, sgHandleSize, sgBaseAlignment, 2, 1);
 }
 
-void PipelineBinariesInstance::setupAccelerationStructures()
+void PipelineBinaryInstance::setupAccelerationStructures()
 {
 	const DeviceInterface&	vkd			= *m_customDevice.vkd;
 	const VkDevice			device		= *m_customDevice.device;
@@ -672,13 +674,13 @@ void PipelineBinariesInstance::setupAccelerationStructures()
 	m_resultTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
 }
 
-void PipelineBinariesInstance::traceRays(VkDescriptorSet							referenceDescriptorSet,
-										 VkDescriptorSet							resultDescriptorSet,
-										 const VkStridedDeviceAddressRegionKHR*		rgenSBTR,
-										 const VkStridedDeviceAddressRegionKHR*		missSBTR,
-										 const VkStridedDeviceAddressRegionKHR*		chitSBTR,
-										 const VkStridedDeviceAddressRegionKHR*		callableSBTR,
-										 deUint32									imageSize)
+void PipelineBinaryInstance::traceRays(VkDescriptorSet							referenceDescriptorSet,
+									   VkDescriptorSet							resultDescriptorSet,
+									   const VkStridedDeviceAddressRegionKHR*	rgenSBTR,
+									   const VkStridedDeviceAddressRegionKHR*	missSBTR,
+									   const VkStridedDeviceAddressRegionKHR*	chitSBTR,
+									   const VkStridedDeviceAddressRegionKHR*	callableSBTR,
+									   deUint32									imageSize)
 {
 	const DeviceInterface& vkd = *m_customDevice.vkd;
 
@@ -710,7 +712,7 @@ protected:
 };
 
 RayTracingProceduralGeometryTestCase::RayTracingProceduralGeometryTestCase(tcu::TestContext& context, const char* name, TestType testType)
-	: TestCase		(context, name, "")
+	: TestCase		(context, name)
 	, m_testType	(testType)
 {
 }
@@ -720,8 +722,8 @@ void RayTracingProceduralGeometryTestCase::checkSupport(Context& context) const
 	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
 
-	if (m_testType == TestType::PIPELINE_BINARIES)
-		context.requireDeviceFunctionality("VK_KHR_pipeline_binaries");
+	if (m_testType == TestType::PIPELINE_BINARY)
+		context.requireDeviceFunctionality("VK_KHR_pipeline_binary");
 
 	if (!context.getRayTracingPipelineFeatures().rayTracingPipeline)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
@@ -832,8 +834,8 @@ TestInstance* RayTracingProceduralGeometryTestCase::createInstance(Context& cont
 	if (m_testType == TestType::TRIANGLE_IN_BETWEEN)
 		return new TriangleInBeteenInstance(context);
 
-	if (m_testType == TestType::PIPELINE_BINARIES)
-		return new PipelineBinariesInstance(context);
+	if (m_testType == TestType::PIPELINE_BINARY)
+		return new PipelineBinaryInstance(context);
 
 	// TestType::OBJECT_BEHIND_BOUNDING_BOX
 	return new ObjectBehindBoundingBoxInstance(context);
@@ -843,11 +845,12 @@ TestInstance* RayTracingProceduralGeometryTestCase::createInstance(Context& cont
 
 tcu::TestCaseGroup*	createProceduralGeometryTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "procedural_geometry", "Test procedural geometry with complex bouding box sets"));
+	// Test procedural geometry with complex bouding box sets
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "procedural_geometry"));
 
 	group->addChild(new RayTracingProceduralGeometryTestCase(testCtx, "object_behind_bounding_boxes",	TestType::OBJECT_BEHIND_BOUNDING_BOX));
 	group->addChild(new RayTracingProceduralGeometryTestCase(testCtx, "triangle_in_between",			TestType::TRIANGLE_IN_BETWEEN));
-	group->addChild(new RayTracingProceduralGeometryTestCase(testCtx, "pipeline_binaries",				TestType::PIPELINE_BINARIES));
+	group->addChild(new RayTracingProceduralGeometryTestCase(testCtx, "pipeline_binary",				TestType::PIPELINE_BINARY));
 
 	return group.release();
 }

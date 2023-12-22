@@ -44,6 +44,23 @@ void checkConditionalRenderingCapabilities (vkt::Context& context, const Conditi
 
 	if (data.conditionInherited && !conditionalRenderingFeatures.inheritedConditionalRendering)
 		TCU_THROW(NotSupportedError, "Device does not support inherited conditional rendering");
+
+	if (data.secondaryCommandBufferNested) {
+		context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+		const auto& features = *vk::findStructure<vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+		if (!features.nestedCommandBuffer)
+			TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+	}
+}
+
+void checkNestedRenderPassCapabilities (vkt::Context& context)
+{
+	context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+	const auto& features = *vk::findStructure<vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+	if (!features.nestedCommandBuffer)
+		TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+	if (!features.nestedCommandBufferRendering)
+		TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
 }
 
 de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer (vkt::Context& context, const ConditionalData& data)
@@ -119,12 +136,20 @@ std::ostream& operator<< (std::ostream& str, ConditionalData const& c)
 
 	if (c.conditionInSecondaryCommandBuffer || !conditionEnabled)
 	{
-		str << "_secondary_buffer";
+		if (c.secondaryCommandBufferNested) {
+			str << "_nested_buffer";
+		} else {
+			str << "_secondary_buffer";
+		}
 	}
 
 	if (c.conditionInherited)
 	{
-		str << "_inherited";
+		if (c.secondaryCommandBufferNested) {
+			str << "_nested_inherited";
+		} else {
+			str << "_inherited";
+		}
 	}
 
 	str << "_" << (c.expectCommandExecution ? "expect_execution" : "expect_noop");

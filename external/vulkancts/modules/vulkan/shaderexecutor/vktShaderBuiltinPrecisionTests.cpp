@@ -68,7 +68,6 @@
 #define GLS_LOG_ALL_RESULTS false
 
 #define FLOAT16_1_0		0x3C00 //1.0 float16bit
-#define FLOAT16_180_0	0x59A0 //180.0 float16bit
 #define FLOAT16_2_0		0x4000 //2.0 float16bit
 #define FLOAT16_3_0		0x4200 //3.0 float16bit
 #define FLOAT16_0_5		0x3800 //0.5 float16bit
@@ -1470,7 +1469,11 @@ public:
 				VariableP	(void) {}
 				VariableP	(const Super& ptr) : Super(ptr) {}
 
-	operator	ExprP<T>	(void) const { return exprP(SharedPtr<const Expr<T> >(*this)); }
+	operator	ExprP<T>	(void) const
+	{
+		SharedPtr<const Expr<T> > ptr = *this;
+		return exprP(ptr);
+	}
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -1585,6 +1588,8 @@ VariableP<T> bindExpression (const string& name, ExpandContext& ctx, const ExprP
  *
  * A constant is evaluated by rounding it to a set of possible values allowed
  * by the current floating point precision.
+ * TODO: For whatever reason this doesn't happen, the constant is converted to
+ *       type T and the interval contains only (T)value. See FloatConstant, below.
  *//*--------------------------------------------------------------------*/
 template <typename T>
 class Constant : public Expr<T>
@@ -1606,6 +1611,32 @@ template <typename T>
 ExprP<T> constant (const T& value)
 {
 	return exprP(new Constant<T>(value));
+}
+
+template <typename T>
+class FloatConstant : public Expr<T>
+{
+public:
+	typedef typename Expr<T>::IVal IVal;
+
+			FloatConstant		(double value) : m_value(value) {}
+
+protected:
+	void	doPrintExpr		(ostream& os) const			{ os << m_value; }
+	// TODO: This should probably roundOut to T, not ctx.format, but the templates don't work like that.
+	IVal	doEvaluate		(const EvalContext &ctx) const	{ return ctx.format.roundOut(makeIVal(m_value), true); }
+
+private:
+	double		m_value;
+};
+
+ExprP<deFloat16> f16Constant (double value)
+{
+	return exprP(new FloatConstant<deFloat16>(value));
+}
+ExprP<float> f32Constant (double value)
+{
+	return exprP(new FloatConstant<float>(value));
 }
 
 //! Return a reference to a singleton void constant.
@@ -3017,13 +3048,10 @@ DEFINE_DERIVED_FLOAT1_16BIT(Sqrt16Bit,	sqrt,		x,		constant((deFloat16)FLOAT16_1_
 DEFINE_DERIVED_DOUBLE1(Sqrt64Bit,		sqrt,		x,		constant(1.0) / app<InverseSqrt64Bit>(x))
 DEFINE_DERIVED_FLOAT2(Pow,				pow,		x,	y,	exp2<float>(y * log2(x)))
 DEFINE_DERIVED_FLOAT2_16BIT(Pow16,		pow,		x,	y,	exp2<deFloat16>(y * log2(x)))
-DEFINE_DERIVED_DOUBLE2(Pow64,			pow,		x,	y,	exp2<double>(y * log2(x)))
-DEFINE_DERIVED_FLOAT1(Radians,			radians,	d,		(constant(DE_PI) / constant(180.0f)) * d)
-DEFINE_DERIVED_FLOAT1_16BIT(Radians16,	radians,	d,		(constant((deFloat16)DE_PI_16BIT) / constant((deFloat16)FLOAT16_180_0)) * d)
-DEFINE_DERIVED_DOUBLE1(Radians64,		radians,	d,		(constant((double)(DE_PI)) / constant(180.0)) * d)
-DEFINE_DERIVED_FLOAT1(Degrees,			degrees,	r,		(constant(180.0f) / constant(DE_PI)) * r)
-DEFINE_DERIVED_FLOAT1_16BIT(Degrees16,	degrees,	r,		(constant((deFloat16)FLOAT16_180_0) / constant((deFloat16)DE_PI_16BIT)) * r)
-DEFINE_DERIVED_DOUBLE1(Degrees64,		degrees,	r,		(constant(180.0) / constant((double)(DE_PI))) * r)
+DEFINE_DERIVED_FLOAT1(Radians,			radians,	d,		f32Constant(DE_PI_DOUBLE / 180.0f) * d)
+DEFINE_DERIVED_FLOAT1_16BIT(Radians16,	radians,	d,		f16Constant(DE_PI_DOUBLE / 180.0f) * d)
+DEFINE_DERIVED_FLOAT1(Degrees,			degrees,	r,		f32Constant(180.0 / DE_PI_DOUBLE) * r)
+DEFINE_DERIVED_FLOAT1_16BIT(Degrees16,	degrees,	r,		f16Constant(180.0 / DE_PI_DOUBLE) * r)
 
 /*Proper parameters for template T
 	Signature<float, float>		32bit tests
@@ -3208,7 +3236,6 @@ ExprP<double> cos (const ExprP<double>& x) { return app<Cos<Signature<double, do
 
 DEFINE_DERIVED_FLOAT1_INPUTRANGE(Tan, tan, x, sin(x) * (constant(1.0f) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE))
 DEFINE_DERIVED_FLOAT1_INPUTRANGE_16BIT(Tan16Bit, tan, x, sin(x) * (constant((deFloat16)FLOAT16_1_0) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE))
-DEFINE_DERIVED_DOUBLE1_INPUTRANGE(Tan64Bit, tan, x, sin(x) * (constant(1.0) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE))
 
 template <class T>
 class ATan : public CFloatFunc1<T>
@@ -3290,10 +3317,6 @@ DEFINE_DERIVED_FLOAT1_16BIT(Sinh16Bit, sinh, x, (exp(x) - exp(-x)) / constant((d
 DEFINE_DERIVED_FLOAT1_16BIT(Cosh16Bit, cosh, x, (exp(x) + exp(-x)) / constant((deFloat16)FLOAT16_2_0))
 DEFINE_DERIVED_FLOAT1_16BIT(Tanh16Bit, tanh, x, sinh(x) / cosh(x))
 
-DEFINE_DERIVED_DOUBLE1(Sinh64Bit, sinh, x, (exp<double>(x) - exp<double>(-x)) / constant(2.0))
-DEFINE_DERIVED_DOUBLE1(Cosh64Bit, cosh, x, (exp<double>(x) + exp<double>(-x)) / constant(2.0))
-DEFINE_DERIVED_DOUBLE1(Tanh64Bit, tanh, x, sinh(x) / cosh(x))
-
 DEFINE_DERIVED_FLOAT1(ASin, asin, x, atan2(x, sqrt(constant(1.0f) - x * x)))
 DEFINE_DERIVED_FLOAT1(ACos, acos, x, atan2(sqrt(constant(1.0f) - x * x), x))
 DEFINE_DERIVED_FLOAT1(ASinh, asinh, x, log(x + sqrt(x * x + constant(1.0f))))
@@ -3309,14 +3332,6 @@ DEFINE_DERIVED_FLOAT1_16BIT(ACosh16Bit, acosh, x, log(x + sqrt(alternatives((x +
 																 (x * x - constant((deFloat16)FLOAT16_1_0))))))
 DEFINE_DERIVED_FLOAT1_16BIT(ATanh16Bit, atanh, x, constant((deFloat16)FLOAT16_0_5) * log((constant((deFloat16)FLOAT16_1_0) + x) /
 															(constant((deFloat16)FLOAT16_1_0) - x)))
-
-DEFINE_DERIVED_DOUBLE1(ASin64Bit, asin, x, atan2(x, sqrt(constant(1.0) - pow(x, constant(2.0)))))
-DEFINE_DERIVED_DOUBLE1(ACos64Bit, acos, x, atan2(sqrt(constant(1.0) - pow(x, constant(2.0))), x))
-DEFINE_DERIVED_DOUBLE1(ASinh64Bit, asinh, x, log(x + sqrt(x * x + constant(1.0))))
-DEFINE_DERIVED_DOUBLE1(ACosh64Bit, acosh, x, log(x + sqrt(alternatives((x + constant(1.0)) * (x - constant(1.0)),
-																 (x * x - constant(1.0))))))
-DEFINE_DERIVED_DOUBLE1(ATanh64Bit, atanh, x, constant(0.5) * log((constant(1.0) + x) /
-															(constant(1.0) - x)))
 
 template <typename T>
 class GetComponent : public PrimitiveFunc<Signature<typename T::Element, T, int> >
@@ -4042,7 +4057,7 @@ public:
 protected:
 	ExprP<Ret>	doExpand	(ExpandContext&, const ArgExprs& args) const
 	{
-		return args.a / length<Size, T, T>(args.a);
+		return args.a * app<InverseSqrt<Signature<T, T>>>(dot(args.a, args.a));
 	}
 };
 
@@ -6428,7 +6443,7 @@ class PrecisionCase : public TestCase
 {
 protected:
 						PrecisionCase	(const CaseContext& context, const string& name, const Interval& inputRange, const string& extension = "")
-							: TestCase		(context.testContext, name.c_str(), name.c_str())
+							: TestCase		(context.testContext, name.c_str())
 							, m_ctx			(context)
 							, m_extension	(extension)
 							{
@@ -6849,7 +6864,7 @@ public:
 
 	MovePtr<TestNode>	createCase			(const CaseContext& ctx) const
 	{
-		TestCaseGroup* group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
+		TestCaseGroup* group = new TestCaseGroup(ctx.testContext, ctx.name.c_str());
 
 		group->addChild(createFuncCase(ctx, "scalar",	m_funcs.func,	m_modularOp));
 		group->addChild(createFuncCase(ctx, "vec2",		m_funcs.func2,	m_modularOp));
@@ -6873,7 +6888,7 @@ class TemplateFuncCaseFactory : public FuncCaseFactory
 public:
 	MovePtr<TestNode>	createCase		(const CaseContext& ctx) const
 	{
-		TestCaseGroup*	group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
+		TestCaseGroup*	group = new TestCaseGroup(ctx.testContext, ctx.name.c_str());
 
 		group->addChild(createFuncCase(ctx, "scalar", instance<GenF<1, T> >()));
 		group->addChild(createFuncCase(ctx, "vec2", instance<GenF<2, T> >()));
@@ -6893,7 +6908,7 @@ class SquareMatrixFuncCaseFactory : public FuncCaseFactory
 public:
 	MovePtr<TestNode>	createCase		(const CaseContext& ctx) const
 	{
-		TestCaseGroup* group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
+		TestCaseGroup* group = new TestCaseGroup(ctx.testContext, ctx.name.c_str());
 
 		group->addChild(createFuncCase(ctx, "mat2", instance<GenF<2> >()));
 
@@ -6946,7 +6961,7 @@ class MatrixFuncCaseFactory : public FuncCaseFactory
 public:
 	MovePtr<TestNode>	createCase		(const CaseContext& ctx) const
 	{
-		TestCaseGroup*	const group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
+		TestCaseGroup*	const group = new TestCaseGroup(ctx.testContext, ctx.name.c_str());
 
 		this->addCase<2, 2>(ctx, group);
 		this->addCase<3, 2>(ctx, group);
@@ -7122,29 +7137,7 @@ MovePtr<const CaseFactories> createBuiltinDoubleCases ()
 
 	// Radians, degrees, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh, atan2, pow, exp, log, exp2 and log2
 	// only work with 16-bit and 32-bit floating point types according to the spec.
-#if 0
-	addScalarFactory<Radians64>(*funcs);
-	addScalarFactory<Degrees64>(*funcs);
-	addScalarFactory<Sin<Signature<double, double>>>(*funcs);
-	addScalarFactory<Cos<Signature<double, double>>>(*funcs);
-	addScalarFactory<Tan64Bit>(*funcs);
-	addScalarFactory<ASin64Bit>(*funcs);
-	addScalarFactory<ACos64Bit>(*funcs);
-	addScalarFactory<ATan2<Signature<double, double, double>>>(*funcs, "atan2");
-	addScalarFactory<ATan<Signature<double, double>>>(*funcs);
-	addScalarFactory<Sinh64Bit>(*funcs);
-	addScalarFactory<Cosh64Bit>(*funcs);
-	addScalarFactory<Tanh64Bit>(*funcs);
-	addScalarFactory<ASinh64Bit>(*funcs);
-	addScalarFactory<ACosh64Bit>(*funcs);
-	addScalarFactory<ATanh64Bit>(*funcs);
 
-	addScalarFactory<Pow64>(*funcs);
-	addScalarFactory<Exp<Signature<double, double>>>(*funcs);
-	addScalarFactory<Log<Signature<double, double>>>(*funcs);
-	addScalarFactory<Exp2<Signature<double, double>>>(*funcs);
-	addScalarFactory<Log2<Signature<double, double>>>(*funcs);
-#endif
 	addScalarFactory<Sqrt64Bit>(*funcs);
 	addScalarFactory<InverseSqrt<Signature<double, double>>>(*funcs);
 
@@ -7277,7 +7270,7 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 
 TestCaseGroup* createFuncGroup (TestContext& ctx, const CaseFactory& factory, int numRandoms)
 {
-	TestCaseGroup* const	group	= new TestCaseGroup(ctx, factory.getName().c_str(), factory.getDesc().c_str());
+	TestCaseGroup* const	group	= new TestCaseGroup(ctx, factory.getName().c_str());
 	const FloatFormat		highp		(-126, 127, 23, true,
 										 tcu::MAYBE,	// subnormals
 										 tcu::YES,		// infinities
@@ -7300,7 +7293,7 @@ TestCaseGroup* createFuncGroup (TestContext& ctx, const CaseFactory& factory, in
 
 TestCaseGroup* createFuncGroupDouble (TestContext& ctx, const CaseFactory& factory, int numRandoms)
 {
-	TestCaseGroup* const	group		= new TestCaseGroup(ctx, factory.getName().c_str(), factory.getDesc().c_str());
+	TestCaseGroup* const	group		= new TestCaseGroup(ctx, factory.getName().c_str());
 	const Precision			precision	= Precision(glu::PRECISION_LAST);
 	const FloatFormat		highp		(-1022, 1023, 52, true,
 										 tcu::MAYBE,	// subnormals
@@ -7317,7 +7310,7 @@ TestCaseGroup* createFuncGroupDouble (TestContext& ctx, const CaseFactory& facto
 
 TestCaseGroup* createFuncGroup16Bit(TestContext& ctx, const CaseFactory& factory, int numRandoms, bool storage32)
 {
-	TestCaseGroup* const	group = new TestCaseGroup(ctx, factory.getName().c_str(), factory.getDesc().c_str());
+	TestCaseGroup* const	group = new TestCaseGroup(ctx, factory.getName().c_str());
 	const Precision			precision = Precision(glu::PRECISION_LAST);
 	const FloatFormat		float16	(-14, 15, 10, true, tcu::MAYBE);
 
@@ -7366,7 +7359,7 @@ void addBuiltinPrecisionDoubleTests (TestContext&		ctx,
 }
 
 BuiltinPrecisionTests::BuiltinPrecisionTests (tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup(testCtx, "precision", "Builtin precision tests")
+	: tcu::TestCaseGroup(testCtx, "precision")
 {
 }
 
@@ -7380,7 +7373,7 @@ void BuiltinPrecisionTests::init (void)
 }
 
 BuiltinPrecisionDoubleTests::BuiltinPrecisionDoubleTests (tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup(testCtx, "precision_double", "Builtin precision tests")
+	: tcu::TestCaseGroup(testCtx, "precision_double")
 {
 }
 
@@ -7394,7 +7387,7 @@ void BuiltinPrecisionDoubleTests::init (void)
 }
 
 BuiltinPrecision16BitTests::BuiltinPrecision16BitTests (tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup(testCtx, "precision_fp16_storage16b", "Builtin precision tests")
+	: tcu::TestCaseGroup(testCtx, "precision_fp16_storage16b")
 {
 }
 
@@ -7408,7 +7401,7 @@ void BuiltinPrecision16BitTests::init (void)
 }
 
 BuiltinPrecision16Storage32BitTests::BuiltinPrecision16Storage32BitTests(tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup(testCtx, "precision_fp16_storage32b", "Builtin precision tests")
+	: tcu::TestCaseGroup(testCtx, "precision_fp16_storage32b")
 {
 }
 

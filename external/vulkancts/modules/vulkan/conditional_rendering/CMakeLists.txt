@@ -17,6 +17,10 @@ set(DEQP_VK_CONDITIONAL_REDENDERING_SRCS
 	vktConditionalTests.cpp
 	vktConditionalDrawAndClearTests.hpp
 	vktConditionalDrawAndClearTests.cpp
+	vktConditionalIgnoreTests.hpp
+	vktConditionalIgnoreTests.cpp
+	vktConditionalTransformFeedbackTests.hpp
+	vktConditionalTransformFeedbackTests.cpp
 )
 
 set(DEQP_VK_CONDITIONAL_REDENDERING_LIBS

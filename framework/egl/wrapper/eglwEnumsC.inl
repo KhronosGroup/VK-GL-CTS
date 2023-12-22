@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 3338ed0db494d6a4db7f76627b38f0b1892db096.
+ * Generated from Khronos EGL API description (egl.xml) revision 6550e9b12e0b4f11182bda30ae2a8dd56d0b02c8.
  */
 #define EGL_PBUFFER_BIT										0x0001
 #define EGL_PIXMAP_BIT										0x0002
@@ -228,6 +228,7 @@
 #define EGL_BUFFER_AGE_KHR									0x313D
 #define EGL_BUFFER_AGE_EXT									0x313D
 #define EGL_NATIVE_BUFFER_ANDROID							0x3140
+#define EGL_RECORDABLE_ANDROID								0x3142
 #define EGL_CONTEXT_OPENGL_DEBUG							0x31B0
 #define EGL_CONTEXT_OPENGL_FORWARD_COMPATIBLE				0x31B1
 #define EGL_CONTEXT_OPENGL_ROBUST_ACCESS					0x31B2
@@ -291,3 +292,4 @@
 #define EGL_GL_COLORSPACE_DISPLAY_P3_LINEAR_EXT				0x3362
 #define EGL_GL_COLORSPACE_DISPLAY_P3_EXT					0x3363
 #define EGL_GL_COLORSPACE_DISPLAY_P3_PASSTHROUGH_EXT		0x3490
+#define EGL_GL_COLORSPACE_BT2020_HLG_EXT					0x3540

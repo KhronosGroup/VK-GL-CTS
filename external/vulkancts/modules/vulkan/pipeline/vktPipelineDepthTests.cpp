@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,10 +62,11 @@ enum class DepthClipControlCase
 {
 	DISABLED			= 0,	// No depth clip control.
 	NORMAL				= 1,	// Depth clip control with static viewport.
-	BEFORE_STATIC		= 2,	// Set dynamic viewport state, then bind a static pipeline.
-	BEFORE_DYNAMIC		= 3,	// Set dynamic viewport state, bind dynamic pipeline.
-	BEFORE_TWO_DYNAMICS	= 4,	// Set dynamic viewport state, bind dynamic pipeline with [0,1] view volume, then bind dynamic pipeline with [-1,1] view volume.
-	AFTER_DYNAMIC		= 5,	// Bind dynamic pipeline, then set dynamic viewport state.
+	NORMAL_W			= 2,	// Depth clip control with static viewport and .w different from 1.0f
+	BEFORE_STATIC		= 3,	// Set dynamic viewport state, then bind a static pipeline.
+	BEFORE_DYNAMIC		= 4,	// Set dynamic viewport state, bind dynamic pipeline.
+	BEFORE_TWO_DYNAMICS	= 5,	// Set dynamic viewport state, bind dynamic pipeline with [0,1] view volume, then bind dynamic pipeline with [-1,1] view volume.
+	AFTER_DYNAMIC		= 6,	// Bind dynamic pipeline, then set dynamic viewport state.
 };
 
 bool isSupportedDepthStencilFormat (const InstanceInterface& instanceInterface, VkPhysicalDevice device, VkFormat format)
@@ -124,20 +127,23 @@ public:
 
 	static const float					quadDepths[QUAD_COUNT];
 	static const float					quadDepthsMinusOneToOne[QUAD_COUNT];
+	static const float					quadWs[QUAD_COUNT];
 
 										DepthTest				(tcu::TestContext&					testContext,
 																 const std::string&					name,
-																 const std::string&					description,
 																 const PipelineConstructionType		pipelineConstructionType,
 																 const VkFormat						depthFormat,
 																 const VkCompareOp					depthCompareOps[QUAD_COUNT],
 																 const bool							separateDepthStencilLayouts,
+																 const VkPrimitiveTopology			primitiveTopology				= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 																 const bool							depthBoundsTestEnable			= false,
 																 const float						depthBoundsMin					= 0.0f,
 																 const float						depthBoundsMax					= 1.0f,
 																 const bool							depthTestEnable					= true,
 																 const bool							stencilTestEnable				= false,
 																 const bool							colorAttachmentEnable			= true,
+																 const bool							hostVisible						= false,
+																 const tcu::UVec2					renderSize						= tcu::UVec2(32, 32),
 																 const DepthClipControlCase			depthClipControl				= DepthClipControlCase::DISABLED);
 	virtual								~DepthTest				(void);
 	virtual void						initPrograms			(SourceCollections& programCollection) const;
@@ -148,12 +154,15 @@ private:
 	const PipelineConstructionType		m_pipelineConstructionType;
 	const VkFormat						m_depthFormat;
 	const bool							m_separateDepthStencilLayouts;
+	VkPrimitiveTopology					m_primitiveTopology;
 	const bool							m_depthBoundsTestEnable;
 	const float							m_depthBoundsMin;
 	const float							m_depthBoundsMax;
 	const bool							m_depthTestEnable;
 	const bool							m_stencilTestEnable;
 	const bool							m_colorAttachmentEnable;
+	const bool							m_hostVisible;
+	const tcu::UVec2					m_renderSize;
 	const DepthClipControlCase			m_depthClipControl;
 	VkCompareOp							m_depthCompareOps[QUAD_COUNT];
 };
@@ -166,12 +175,15 @@ public:
 																 const VkFormat						depthFormat,
 																 const VkCompareOp					depthCompareOps[DepthTest::QUAD_COUNT],
 																 const bool							separateDepthStencilLayouts,
+																 const VkPrimitiveTopology			primitiveTopology,
 																 const bool							depthBoundsTestEnable,
 																 const float						depthBoundsMin,
 																 const float						depthBoundsMax,
 																 const bool							depthTestEnable,
 																 const bool							stencilTestEnable,
 																 const bool							colorAttachmentEnable,
+																 const bool							hostVisible,
+																 const tcu::UVec2					renderSize,
 																 const DepthClipControlCase			depthClipControl);
 
 	virtual								~DepthTestInstance		(void);
@@ -186,12 +198,14 @@ private:
 	const VkFormat						m_colorFormat;
 	const VkFormat						m_depthFormat;
 	const bool							m_separateDepthStencilLayouts;
+	VkPrimitiveTopology					m_primitiveTopology;
 	const bool							m_depthBoundsTestEnable;
 	const float							m_depthBoundsMin;
 	const float							m_depthBoundsMax;
 	const bool							m_depthTestEnable;
 	const bool							m_stencilTestEnable;
 	const bool							m_colorAttachmentEnable;
+	const bool							m_hostVisible;
 	const DepthClipControlCase			m_depthClipControl;
 	VkImageSubresourceRange				m_depthImageSubresourceRange;
 
@@ -201,17 +215,21 @@ private:
 	de::MovePtr<Allocation>				m_depthImageAlloc;
 	Move<VkImageView>					m_colorAttachmentView;
 	Move<VkImageView>					m_depthAttachmentView;
-	Move<VkRenderPass>					m_renderPass;
+	RenderPassWrapper					m_renderPass;
 	Move<VkFramebuffer>					m_framebuffer;
 
-	Move<VkShaderModule>				m_vertexShaderModule;
-	Move<VkShaderModule>				m_fragmentShaderModule;
+	ShaderWrapper						m_vertexShaderModule;
+	ShaderWrapper						m_fragmentShaderModule;
 
 	Move<VkBuffer>						m_vertexBuffer;
 	std::vector<Vertex4RGBA>			m_vertices;
 	de::MovePtr<Allocation>				m_vertexBufferAlloc;
 
-	Move<VkPipelineLayout>				m_pipelineLayout;
+	Move<VkBuffer>						m_altVertexBuffer;
+	std::vector<Vertex4RGBA>			m_altVertices;
+	de::MovePtr<Allocation>				m_altVertexBufferAlloc;
+
+	PipelineLayoutWrapper				m_pipelineLayout;
 	GraphicsPipelineWrapper				m_graphicsPipelines[DepthTest::QUAD_COUNT];
 	GraphicsPipelineWrapper				m_altGraphicsPipelines[DepthTest::QUAD_COUNT];
 
@@ -236,30 +254,43 @@ const float DepthTest::quadDepthsMinusOneToOne[QUAD_COUNT] =
 	 0.2f
 };
 
+const float DepthTest::quadWs[QUAD_COUNT] =
+{
+	2.0f,
+	1.25f,
+	0.5f,
+	0.25f
+};
+
 DepthTest::DepthTest (tcu::TestContext&					testContext,
 					  const std::string&				name,
-					  const std::string&				description,
 					  const PipelineConstructionType	pipelineConstructionType,
 					  const VkFormat					depthFormat,
 					  const VkCompareOp					depthCompareOps[QUAD_COUNT],
 					  const bool						separateDepthStencilLayouts,
+					  const VkPrimitiveTopology			primitiveTopology,
 					  const bool						depthBoundsTestEnable,
 					  const float						depthBoundsMin,
 					  const float						depthBoundsMax,
 					  const bool						depthTestEnable,
 					  const bool						stencilTestEnable,
 					  const bool						colorAttachmentEnable,
+					  const bool						hostVisible,
+						const tcu::UVec2				renderSize,
 					  const DepthClipControlCase		depthClipControl)
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_depthFormat					(depthFormat)
 	, m_separateDepthStencilLayouts	(separateDepthStencilLayouts)
+	, m_primitiveTopology			(primitiveTopology)
 	, m_depthBoundsTestEnable		(depthBoundsTestEnable)
 	, m_depthBoundsMin				(depthBoundsMin)
 	, m_depthBoundsMax				(depthBoundsMax)
 	, m_depthTestEnable				(depthTestEnable)
 	, m_stencilTestEnable			(stencilTestEnable)
 	, m_colorAttachmentEnable		(colorAttachmentEnable)
+	, m_hostVisible					(hostVisible)
+	, m_renderSize					(renderSize)
 	, m_depthClipControl			(depthClipControl)
 {
 	deMemcpy(m_depthCompareOps, depthCompareOps, sizeof(VkCompareOp) * QUAD_COUNT);
@@ -280,7 +311,7 @@ void DepthTest::checkSupport (Context& context) const
 	if (m_separateDepthStencilLayouts && !context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
 		TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
 #ifndef CTS_USES_VULKANSC
 	if (m_depthClipControl != DepthClipControlCase::DISABLED && !context.isDeviceFunctionalitySupported("VK_EXT_depth_clip_control"))
@@ -290,7 +321,7 @@ void DepthTest::checkSupport (Context& context) const
 
 TestInstance* DepthTest::createInstance (Context& context) const
 {
-	return new DepthTestInstance(context, m_pipelineConstructionType, m_depthFormat, m_depthCompareOps, m_separateDepthStencilLayouts, m_depthBoundsTestEnable, m_depthBoundsMin, m_depthBoundsMax, m_depthTestEnable, m_stencilTestEnable, m_colorAttachmentEnable, m_depthClipControl);
+	return new DepthTestInstance(context, m_pipelineConstructionType, m_depthFormat, m_depthCompareOps, m_separateDepthStencilLayouts, m_primitiveTopology, m_depthBoundsTestEnable, m_depthBoundsMin, m_depthBoundsMax, m_depthTestEnable, m_stencilTestEnable, m_colorAttachmentEnable, m_hostVisible, m_renderSize, m_depthClipControl);
 }
 
 void DepthTest::initPrograms (SourceCollections& programCollection) const
@@ -305,6 +336,7 @@ void DepthTest::initPrograms (SourceCollections& programCollection) const
 			"void main (void)\n"
 			"{\n"
 			"	gl_Position = position;\n"
+			"	gl_PointSize = 1.0f;\n"
 			"	vtxColor = color;\n"
 			"}\n");
 
@@ -326,6 +358,7 @@ void DepthTest::initPrograms (SourceCollections& programCollection) const
 			"void main (void)\n"
 			"{\n"
 			"	gl_Position = position;\n"
+			"	gl_PointSize = 1.0f;\n"
 			"}\n");
 	}
 }
@@ -335,38 +368,43 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 									  const VkFormat					depthFormat,
 									  const VkCompareOp					depthCompareOps[DepthTest::QUAD_COUNT],
 									  const bool						separateDepthStencilLayouts,
+									  const VkPrimitiveTopology			primitiveTopology,
 									  const bool						depthBoundsTestEnable,
 									  const float						depthBoundsMin,
 									  const float						depthBoundsMax,
 									  const bool						depthTestEnable,
 									  const bool						stencilTestEnable,
 									  const bool						colorAttachmentEnable,
+									  const bool						hostVisible,
+									  const tcu::UVec2					renderSize,
 									  const DepthClipControlCase		depthClipControl)
 	: vkt::TestInstance				(context)
-	, m_renderSize					(32, 32)
+	, m_renderSize					(renderSize)
 	, m_colorFormat					(colorAttachmentEnable ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_UNDEFINED)
 	, m_depthFormat					(depthFormat)
 	, m_separateDepthStencilLayouts	(separateDepthStencilLayouts)
+	, m_primitiveTopology			(primitiveTopology)
 	, m_depthBoundsTestEnable		(depthBoundsTestEnable)
 	, m_depthBoundsMin				(depthBoundsMin)
 	, m_depthBoundsMax				(depthBoundsMax)
 	, m_depthTestEnable				(depthTestEnable)
 	, m_stencilTestEnable			(stencilTestEnable)
 	, m_colorAttachmentEnable		(colorAttachmentEnable)
+	, m_hostVisible					(hostVisible)
 	, m_depthClipControl			(depthClipControl)
 	, m_graphicsPipelines
 	{
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType }
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType }
 	}
 	, m_altGraphicsPipelines
 	{
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType }
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), m_context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), m_context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), m_context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), m_context.getDeviceExtensions(), pipelineConstructionType }
 	}
 {
 	const DeviceInterface&		vk						= context.getDeviceInterface();
@@ -375,7 +413,9 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 	SimpleAllocator				memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 	const bool					hasDepthClipControl		= (m_depthClipControl != DepthClipControlCase::DISABLED);
-	const bool					useAltGraphicsPipelines	= (m_depthClipControl == DepthClipControlCase::BEFORE_TWO_DYNAMICS);
+	const bool					useAltGraphicsPipelines	= (m_depthClipControl == DepthClipControlCase::BEFORE_TWO_DYNAMICS ||
+														   m_depthClipControl == DepthClipControlCase::NORMAL_W);
+	const bool					useAltVertices			= m_depthClipControl == DepthClipControlCase::NORMAL_W;
 
 	// Copy depth operators
 	deMemcpy(m_depthCompareOps, depthCompareOps, sizeof(VkCompareOp) * DepthTest::QUAD_COUNT);
@@ -434,7 +474,8 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 		m_depthImage = createImage(vk, vkDevice, &depthImageParams);
 
 		// Allocate and bind depth image memory
-		m_depthImageAlloc = memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_depthImage), MemoryRequirement::Any);
+		auto memReqs = MemoryRequirement::Local | MemoryRequirement::HostVisible;
+		m_depthImageAlloc = memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_depthImage), m_hostVisible ? memReqs : MemoryRequirement::Any);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_depthImage, m_depthImageAlloc->getMemory(), m_depthImageAlloc->getOffset()));
 
 		const VkImageAspectFlags aspect = (mapVkFormat(m_depthFormat).order == tcu::TextureFormat::DS ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT
@@ -478,15 +519,20 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_depthFormat);
+	m_renderPass = RenderPassWrapper(pipelineConstructionType, vk, vkDevice, m_colorFormat, m_depthFormat);
 
 	// Create framebuffer
 	{
+		std::vector<VkImage>			images;
 		std::vector<VkImageView>		attachmentBindInfos;
 
 		if (m_colorAttachmentEnable)
+		{
+			images.push_back(*m_colorImage);
 			attachmentBindInfos.push_back(*m_colorAttachmentView);
+		}
 
+		images.push_back(*m_depthImage);
 		attachmentBindInfos.push_back(*m_depthAttachmentView);
 
 		const VkFramebufferCreateInfo	framebufferParams	=
@@ -502,7 +548,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			1u													// deUint32						layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, images);
 	}
 
 	// Create pipeline layout
@@ -518,13 +564,13 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
 	// Shader modules
-	m_vertexShaderModule		= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+	m_vertexShaderModule		= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
 	if (m_colorAttachmentEnable)
-		m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
+		m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
 
 	const std::vector<VkViewport>	viewports		{ makeViewport(m_renderSize) };
 	const std::vector<VkViewport>	badViewports	{ makeViewport(0.0f, 0.0f, static_cast<float>(m_renderSize.x()) / 2.0f, static_cast<float>(m_renderSize.y()) / 2.0f, 1.0f, 0.0f) };
@@ -565,6 +611,15 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
 			2u,																// deUint32									vertexAttributeDescriptionCount;
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+		};
+
+		const VkPipelineInputAssemblyStateCreateInfo		inputAssemblyStateParams
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType								sType
+			DE_NULL,														// const void*									pNext
+			0u,																// VkPipelineInputAssemblyStateCreateFlags		flags
+			m_primitiveTopology,											// VkPrimitiveTopology							topology
+			VK_FALSE														// VkBool32										primitiveRestartEnable
 		};
 
 		VkPipelineDepthStencilStateCreateInfo				depthStencilStateParams
@@ -661,53 +716,108 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			de::dataOrNull(dynamicStates),							//	const VkDynamicState*				pDynamicStates;
 		};
 
+		const vk::VkPipelineColorBlendAttachmentState blendState
+		{
+			VK_FALSE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_OP_ADD,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_OP_ADD,
+			VK_COLOR_COMPONENT_R_BIT |
+			VK_COLOR_COMPONENT_G_BIT |
+			VK_COLOR_COMPONENT_B_BIT |
+			VK_COLOR_COMPONENT_A_BIT,
+		};
+
+		deUint32 colorAttachmentCount = (m_colorFormat != VK_FORMAT_UNDEFINED) ? 1u : 0u;
+
+		const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType								sType
+			DE_NULL,														// const void*									pNext
+			0u,																// VkPipelineColorBlendStateCreateFlags			flags
+			VK_FALSE,														// VkBool32										logicOpEnable
+			VK_LOGIC_OP_CLEAR,												// VkLogicOp									logicOp
+			colorAttachmentCount,											// deUint32										attachmentCount
+			&blendState,													// const VkPipelineColorBlendAttachmentState*	pAttachments
+			{ 0.0f, 0.0f, 0.0f, 0.0f }										// float										blendConstants[4]
+		};
+
 		for (int quadNdx = 0; quadNdx < DepthTest::QUAD_COUNT; quadNdx++)
 		{
 			depthStencilStateParams.depthCompareOp	= depthCompareOps[quadNdx];
 
 			m_graphicsPipelines[quadNdx].setDefaultMultisampleState()
 										.setDefaultColorBlendState()
-										.setDepthClipControl(depthClipControlWrapper)
+										.setViewportStatePnext(depthClipControlWrapper.ptr)
 										.setDynamicState(&dynamicStateCreateInfo)
-										.setupVertexInputStete(&vertexInputStateParams)
+										.setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
 										.setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
 																	scissors,
-																	*m_pipelineLayout,
+																	m_pipelineLayout,
 																	*m_renderPass,
 																	0u,
-																	*m_vertexShaderModule,
+																	m_vertexShaderModule,
 																	&rasterizationStateParams)
-										.setupFragmentShaderState(*m_pipelineLayout,
+										.setupFragmentShaderState(m_pipelineLayout,
 																	*m_renderPass,
 																	0u,
-																	*m_fragmentShaderModule,
+																	m_fragmentShaderModule,
 																	&depthStencilStateParams)
-										.setupFragmentOutputState(*m_renderPass)
-										.setMonolithicPipelineLayout(*m_pipelineLayout)
+										.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo)
+										.setMonolithicPipelineLayout(m_pipelineLayout)
 										.buildPipeline();
 
 			if (useAltGraphicsPipelines)
 			{
-				m_altGraphicsPipelines[quadNdx].setDefaultMultisampleState()
-											   .setDefaultColorBlendState()
-											   .setDepthClipControl(depthClipControl01Wrapper)
-											   .setDynamicState(&dynamicStateCreateInfo)
-											   .setupVertexInputStete(&vertexInputStateParams)
-											   .setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
+				if (m_depthClipControl == DepthClipControlCase::NORMAL_W)
+				{
+					m_altGraphicsPipelines[quadNdx].setDefaultMultisampleState()
+												   .setDefaultColorBlendState()
+												   .setViewportStatePnext(depthClipControl01Wrapper.ptr)
+												   .setDynamicState(&dynamicStateCreateInfo)
+												   .setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
+												   .setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
 																				scissors,
-																				*m_pipelineLayout,
+																				m_pipelineLayout,
 																				*m_renderPass,
 																				0u,
-																				*m_vertexShaderModule,
+																				m_vertexShaderModule,
 																				&rasterizationStateParams)
-											   .setupFragmentShaderState(*m_pipelineLayout,
-																				*m_renderPass,
-																				0u,
-																				*m_fragmentShaderModule,
-																				&depthStencilStateParams)
-											   .setupFragmentOutputState(*m_renderPass)
-											   .setMonolithicPipelineLayout(*m_pipelineLayout)
-											   .buildPipeline();
+												   .setupFragmentShaderState(m_pipelineLayout,
+																		*m_renderPass,
+																		0u,
+																		m_fragmentShaderModule,
+																		&depthStencilStateParams)
+												   .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo)
+												   .setMonolithicPipelineLayout(m_pipelineLayout)
+												   .buildPipeline();
+				}
+				else
+				{
+					m_altGraphicsPipelines[quadNdx].setDefaultMultisampleState()
+												   .setDefaultColorBlendState()
+												   .setViewportStatePnext(depthClipControl01Wrapper.ptr)
+												   .setDynamicState(&dynamicStateCreateInfo)
+												   .setupVertexInputState(&vertexInputStateParams)
+												   .setupPreRasterizationShaderState((dynamicViewport ? badViewports : viewports),
+																					scissors,
+																					m_pipelineLayout,
+																					*m_renderPass,
+																					0u,
+																					m_vertexShaderModule,
+																					&rasterizationStateParams)
+												   .setupFragmentShaderState(m_pipelineLayout,
+																					*m_renderPass,
+																					0u,
+																					m_fragmentShaderModule,
+																					&depthStencilStateParams)
+												   .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo)
+												   .setMonolithicPipelineLayout(m_pipelineLayout)
+												   .buildPipeline();
+				}
 			}
 		}
 	}
@@ -732,16 +842,55 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset()));
 
+		if (useAltVertices) {
+			m_altVertices			= createOverlappingQuads();
+			m_altVertexBuffer		= createBuffer(vk, vkDevice, &vertexBufferParams);
+			m_altVertexBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_altVertexBuffer), MemoryRequirement::HostVisible);
+
+			VK_CHECK(vk.bindBufferMemory(vkDevice, *m_altVertexBuffer, m_altVertexBufferAlloc->getMemory(), m_altVertexBufferAlloc->getOffset()));
+		}
+
 		// Adjust depths
 		for (int quadNdx = 0; quadNdx < DepthTest::QUAD_COUNT; quadNdx++)
 			for (int vertexNdx = 0; vertexNdx < 6; vertexNdx++)
 			{
 				m_vertices[quadNdx * 6 + vertexNdx].position.z() = (hasDepthClipControl ? DepthTest::quadDepthsMinusOneToOne[quadNdx] : DepthTest::quadDepths[quadNdx]);
+				if (m_depthClipControl == DepthClipControlCase::NORMAL_W)
+				{
+					const float w = DepthTest::quadWs[quadNdx];
+					m_vertices[quadNdx * 6 + vertexNdx].position.x() *= w;
+					m_vertices[quadNdx * 6 + vertexNdx].position.y() *= w;
+					m_vertices[quadNdx * 6 + vertexNdx].position.z() *= w;
+					m_vertices[quadNdx * 6 + vertexNdx].position.w() = w;
+				}
+				if (useAltVertices)
+				{
+					m_altVertices[quadNdx * 6 + vertexNdx].position = m_vertices[quadNdx * 6 + vertexNdx].position;
+					float z = m_altVertices[quadNdx * 6 + vertexNdx].position.z();
+					float w = m_altVertices[quadNdx * 6 + vertexNdx].position.w();
+					if (depthCompareOps[quadNdx] == vk::VK_COMPARE_OP_NOT_EQUAL ||
+						depthCompareOps[quadNdx] == vk::VK_COMPARE_OP_LESS ||
+						depthCompareOps[quadNdx] == vk::VK_COMPARE_OP_LESS_OR_EQUAL)
+					{
+						z += 0.01f;
+					}
+					else if (depthCompareOps[quadNdx] == vk::VK_COMPARE_OP_GREATER ||
+							 depthCompareOps[quadNdx] == vk::VK_COMPARE_OP_GREATER_OR_EQUAL)
+					{
+						z -= 0.01f;
+					}
+					m_altVertices[quadNdx * 6 + vertexNdx].position.z() = (z + w) * 0.5f;
+				}
 			}
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
 		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
+
+		if (useAltVertices) {
+			deMemcpy(m_altVertexBufferAlloc->getHostPtr(), m_altVertices.data(), m_altVertices.size() * sizeof(Vertex4RGBA));
+			flushAlloc(vk, vkDevice, *m_altVertexBufferAlloc);
+		}
 	}
 
 	// Create command pool
@@ -807,7 +956,7 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 			VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, (deUint32)imageLayoutBarriers.size(), imageLayoutBarriers.data());
 
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)attachmentClearValues.size(), attachmentClearValues.data());
+		m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)attachmentClearValues.size(), attachmentClearValues.data());
 
 		const VkDeviceSize quadOffset = (m_vertices.size() / DepthTest::QUAD_COUNT) * sizeof(Vertex4RGBA);
 
@@ -815,27 +964,56 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 		{
 			VkDeviceSize vertexBufferOffset = quadOffset * quadNdx;
 
+			if (m_depthClipControl == DepthClipControlCase::NORMAL_W && depthCompareOps[quadNdx] != vk::VK_COMPARE_OP_NEVER)
+			{
+				m_altGraphicsPipelines[quadNdx].bind(*m_cmdBuffer);
+				vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_altVertexBuffer.get(), &vertexBufferOffset);
+				vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_altVertices.size() / DepthTest::QUAD_COUNT), 1, 0, 0);
+			}
+
 			if (m_depthClipControl == DepthClipControlCase::BEFORE_STATIC
 				|| m_depthClipControl == DepthClipControlCase::BEFORE_DYNAMIC
 				|| m_depthClipControl == DepthClipControlCase::BEFORE_TWO_DYNAMICS)
 			{
-				vk.cmdSetViewport(*m_cmdBuffer, 0u, 1u, viewports.data());
+				if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
+				{
+#ifndef CTS_USES_VULKANSC
+					vk.cmdSetViewportWithCount(*m_cmdBuffer, 1u, viewports.data());
+#else
+					vk.cmdSetViewportWithCountEXT(*m_cmdBuffer, 1u, viewports.data());
+#endif
+				}
+				else
+				{
+					vk.cmdSetViewport(*m_cmdBuffer, 0u, 1u, viewports.data());
+				}
 			}
 
-			if (useAltGraphicsPipelines)
-				vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_altGraphicsPipelines[quadNdx].getPipeline());
-			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelines[quadNdx].getPipeline());
+			if (m_depthClipControl == DepthClipControlCase::BEFORE_TWO_DYNAMICS)
+				m_altGraphicsPipelines[quadNdx].bind(*m_cmdBuffer);
+			m_graphicsPipelines[quadNdx].bind(*m_cmdBuffer);
 
 			if (m_depthClipControl == DepthClipControlCase::AFTER_DYNAMIC)
 			{
-				vk.cmdSetViewport(*m_cmdBuffer, 0u, 1u, viewports.data());
+				if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
+				{
+#ifndef CTS_USES_VULKANSC
+					vk.cmdSetViewportWithCount(*m_cmdBuffer, 1u, viewports.data());
+#else
+					vk.cmdSetViewportWithCountEXT(*m_cmdBuffer, 1u, viewports.data());
+#endif
+				}
+				else
+				{
+					vk.cmdSetViewport(*m_cmdBuffer, 0u, 1u, viewports.data());
+				}
 			}
 
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_vertices.size() / DepthTest::QUAD_COUNT), 1, 0, 0);
 		}
 
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
@@ -882,7 +1060,7 @@ tcu::TestStatus DepthTestInstance::verifyImage (void)
 			}
 
 			refRenderer.draw(renderState,
-							 rr::PRIMITIVETYPE_TRIANGLES,
+							 mapVkPrimitiveTopology(m_primitiveTopology),
 							 std::vector<Vertex4RGBA>(m_vertices.begin() + quadNdx * 6,
 													  m_vertices.begin() + (quadNdx + 1) * 6));
 		}
@@ -984,6 +1162,14 @@ std::string getFormatCaseName (const VkFormat format)
 	return de::toLower(fullName.substr(10));
 }
 
+std::string getTopologyName (const VkPrimitiveTopology topology) {
+	const std::string	fullName	= getPrimitiveTopologyName(topology);
+
+	DE_ASSERT(de::beginsWith(fullName, "VK_PRIMITIVE_TOPOLOGY_"));
+
+	return de::toLower(fullName.substr(22));
+}
+
 std::string	getCompareOpsName (const VkCompareOp quadDepthOps[DepthTest::QUAD_COUNT])
 {
 	std::ostringstream name;
@@ -1002,22 +1188,6 @@ std::string	getCompareOpsName (const VkCompareOp quadDepthOps[DepthTest::QUAD_CO
 
 	return name.str();
 }
-
-std::string	getCompareOpsDescription (const VkCompareOp quadDepthOps[DepthTest::QUAD_COUNT])
-{
-	std::ostringstream desc;
-	desc << "Draws " << DepthTest::QUAD_COUNT << " quads with depth compare ops: ";
-
-	for (int quadNdx = 0; quadNdx < DepthTest::QUAD_COUNT; quadNdx++)
-	{
-		desc << getCompareOpName(quadDepthOps[quadNdx]) << " at depth " << DepthTest::quadDepths[quadNdx];
-
-		if (quadNdx < DepthTest::QUAD_COUNT - 1)
-			desc << ", ";
-	}
-	return desc.str();
-}
-
 
 } // anonymous
 
@@ -1115,18 +1285,19 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 
 	const bool						colorAttachmentEnabled[]	= { true, false };
 
-	de::MovePtr<tcu::TestCaseGroup>	depthTests					(new tcu::TestCaseGroup(testCtx, "depth", "Depth tests"));
-	de::MovePtr<tcu::TestCaseGroup>	noColorAttachmentTests		(new tcu::TestCaseGroup(testCtx, "nocolor", "Depth tests with no color attachment"));
+	const VkPrimitiveTopology		primitiveTopologies[]		= { VK_PRIMITIVE_TOPOLOGY_POINT_LIST, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST };
+
+	de::MovePtr<tcu::TestCaseGroup>	depthTests					(new tcu::TestCaseGroup(testCtx, "depth"));
+	de::MovePtr<tcu::TestCaseGroup>	noColorAttachmentTests		(new tcu::TestCaseGroup(testCtx, "nocolor"));
 
 	// Tests for format features
-	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+	if (!isConstructionTypeLibrary(pipelineConstructionType) && !isConstructionTypeShaderObject(pipelineConstructionType))
 	{
-		de::MovePtr<tcu::TestCaseGroup> formatFeaturesTests (new tcu::TestCaseGroup(testCtx, "format_features", "Checks depth format features"));
+		de::MovePtr<tcu::TestCaseGroup> formatFeaturesTests (new tcu::TestCaseGroup(testCtx, "format_features"));
 
 		// Formats that must be supported in all implementations
 		addFunctionCase(formatFeaturesTests.get(),
 				"support_d16_unorm",
-				"Tests if VK_FORMAT_D16_UNORM is supported as depth/stencil attachment format",
 				testSupportsDepthStencilFormat,
 				VK_FORMAT_D16_UNORM);
 
@@ -1136,13 +1307,11 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 
 		addFunctionCase(formatFeaturesTests.get(),
 				"support_d24_unorm_or_d32_sfloat",
-				"Tests if any of VK_FORMAT_D24_UNORM_X8 or VK_FORMAT_D32_SFLOAT are supported as depth/stencil attachment format",
 				testSupportsAtLeastOneDepthStencilFormat,
 				std::vector<VkFormat>(depthOnlyFormats, depthOnlyFormats + DE_LENGTH_OF_ARRAY(depthOnlyFormats)));
 
 		addFunctionCase(formatFeaturesTests.get(),
 				"support_d24_unorm_s8_uint_or_d32_sfloat_s8_uint",
-				"Tests if any of VK_FORMAT_D24_UNORM_S8_UINT or VK_FORMAT_D32_SFLOAT_S8_UINT are supported as depth/stencil attachment format",
 				testSupportsAtLeastOneDepthStencilFormat,
 				std::vector<VkFormat>(depthStencilFormats, depthStencilFormats + DE_LENGTH_OF_ARRAY(depthStencilFormats)));
 
@@ -1155,7 +1324,8 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 
 		// Tests for format and compare operators
 		{
-			de::MovePtr<tcu::TestCaseGroup> formatTests (new tcu::TestCaseGroup(testCtx, "format", "Uses different depth formats"));
+			// Uses different depth formats
+			de::MovePtr<tcu::TestCaseGroup> formatTests (new tcu::TestCaseGroup(testCtx, "format"));
 
 			for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(depthFormats); formatNdx++)
 			{
@@ -1168,33 +1338,39 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 					const bool			useSeparateDepthStencilLayouts	= bool(separateDepthStencilLayouts);
 
 					de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-								(getFormatCaseName(depthFormats[formatNdx]) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "")).c_str(),
-								(std::string("Uses format ") + getFormatName(depthFormats[formatNdx]) + ((useSeparateDepthStencilLayouts) ? " with separate depth/stencil layouts" : "")).c_str()));
-					de::MovePtr<tcu::TestCaseGroup>	compareOpsTests	(new tcu::TestCaseGroup(testCtx, "compare_ops", "Combines depth compare operators"));
+								(getFormatCaseName(depthFormats[formatNdx]) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "")).c_str()));
+					// Combines depth compare operators
+					de::MovePtr<tcu::TestCaseGroup>	compareOpsTests	(new tcu::TestCaseGroup(testCtx, "compare_ops"));
 
-					for (size_t opsNdx = 0; opsNdx < DE_LENGTH_OF_ARRAY(depthOps); opsNdx++)
-					{
-						compareOpsTests->addChild(new DepthTest(testCtx,
-									getCompareOpsName(depthOps[opsNdx]),
-									getCompareOpsDescription(depthOps[opsNdx]),
-									pipelineConstructionType,
-									depthFormats[formatNdx],
-									depthOps[opsNdx],
-									useSeparateDepthStencilLayouts));
+					for (size_t topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(primitiveTopologies); topologyNdx++) {
+						const std::string topologyName = getTopologyName(primitiveTopologies[topologyNdx]) + "_";
+						for (size_t opsNdx = 0; opsNdx < DE_LENGTH_OF_ARRAY(depthOps); opsNdx++)
+						{
+							compareOpsTests->addChild(new DepthTest(testCtx,
+										topologyName + getCompareOpsName(depthOps[opsNdx]),
+										pipelineConstructionType,
+										depthFormats[formatNdx],
+										depthOps[opsNdx],
+										useSeparateDepthStencilLayouts,
+										primitiveTopologies[topologyNdx],
+										false,
+										0.0f,
+										1.0f));
 
-						compareOpsTests->addChild(new DepthTest(testCtx,
-									getCompareOpsName(depthOps[opsNdx]) + "_depth_bounds_test",
-									getCompareOpsDescription(depthOps[opsNdx]) + " with depth bounds test enabled",
-									pipelineConstructionType,
-									depthFormats[formatNdx],
-									depthOps[opsNdx],
-									useSeparateDepthStencilLayouts,
-									true,
-									0.1f,
-									0.25f,
-									true,
-									false,
-									colorEnabled));
+							compareOpsTests->addChild(new DepthTest(testCtx,
+										topologyName + getCompareOpsName(depthOps[opsNdx]) + "_depth_bounds_test",
+										pipelineConstructionType,
+										depthFormats[formatNdx],
+										depthOps[opsNdx],
+										useSeparateDepthStencilLayouts,
+										primitiveTopologies[topologyNdx],
+										true,
+										0.1f,
+										0.25f,
+										true,
+										false,
+										colorEnabled));
+						}
 					}
 					// Special VkPipelineDepthStencilStateCreateInfo known to have issues
 					{
@@ -1202,11 +1378,11 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 
 						compareOpsTests->addChild(new DepthTest(testCtx,
 									"never_zerodepthbounds_depthdisabled_stencilenabled",
-									"special VkPipelineDepthStencilStateCreateInfo",
 									pipelineConstructionType,
 									depthFormats[formatNdx],
 									depthOpsSpecial,
 									useSeparateDepthStencilLayouts,
+									VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 									true,
 									0.0f,
 									0.0f,
@@ -1217,16 +1393,16 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 					formatTest->addChild(compareOpsTests.release());
 
 					// Test case with depth test enabled, but depth write disabled
-					de::MovePtr<tcu::TestCaseGroup>	depthTestDisabled(new tcu::TestCaseGroup(testCtx, "depth_test_disabled", "Test for disabled depth test"));
+					de::MovePtr<tcu::TestCaseGroup>	depthTestDisabled(new tcu::TestCaseGroup(testCtx, "depth_test_disabled"));
 					{
 						const VkCompareOp depthOpsDepthTestDisabled[DepthTest::QUAD_COUNT] = { VK_COMPARE_OP_NEVER, VK_COMPARE_OP_LESS, VK_COMPARE_OP_GREATER, VK_COMPARE_OP_ALWAYS };
 						depthTestDisabled->addChild(new DepthTest(testCtx,
 									"depth_write_enabled",
-									"Depth writes should not occur if depth test is disabled",
 									pipelineConstructionType,
 									depthFormats[formatNdx],
 									depthOpsDepthTestDisabled,
 									useSeparateDepthStencilLayouts,
+									VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 									false,			/* depthBoundsTestEnable */
 									0.0f,			/* depthBoundMin*/
 									1.0f,			/* depthBoundMax*/
@@ -1235,6 +1411,31 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 									colorEnabled	/* colorAttachmentEnable */));
 					}
 					formatTest->addChild(depthTestDisabled.release());
+
+					// Test case with depth buffer placed in local memory
+					de::MovePtr<tcu::TestCaseGroup>	hostVisibleTests(new tcu::TestCaseGroup(testCtx, "host_visible"));
+					{
+						const VkCompareOp hostVisibleOps[DepthTest::QUAD_COUNT] = { VK_COMPARE_OP_NEVER, VK_COMPARE_OP_LESS, VK_COMPARE_OP_GREATER, VK_COMPARE_OP_ALWAYS };
+
+						// Depth buffer placed in local memory
+						hostVisibleTests->addChild(new DepthTest(testCtx,
+									"local_memory_depth_buffer",
+									pipelineConstructionType,
+									depthFormats[formatNdx],
+									hostVisibleOps,
+									useSeparateDepthStencilLayouts,
+									VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+									false,					/* depthBoundsTestEnable */
+									0.0f,					/* depthBoundMin*/
+									1.0f,					/* depthBoundMax*/
+									true,					/* depthTestEnable */
+									false,					/* stencilTestEnable */
+									colorEnabled,			/* colorAttachmentEnable */
+									true,					/* hostVisible */
+									tcu::UVec2(256, 256)	/*renderSize*/));
+					}
+
+					formatTest->addChild(hostVisibleTests.release());
 					formatTests->addChild(formatTest.release());
 				}
 			}
@@ -1247,7 +1448,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 	depthTests->addChild(noColorAttachmentTests.release());
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<tcu::TestCaseGroup>	depthClipControlTests		(new tcu::TestCaseGroup(testCtx, "depth_clip_control", "Depth tests with depth clip control enabled"));
+	de::MovePtr<tcu::TestCaseGroup>	depthClipControlTests		(new tcu::TestCaseGroup(testCtx, "depth_clip_control"));
 	{
 		const VkCompareOp compareOps[] = { VK_COMPARE_OP_ALWAYS, VK_COMPARE_OP_LESS };
 
@@ -1258,6 +1459,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 		} kViewportCases[] =
 		{
 			{ DepthClipControlCase::NORMAL,					""								},
+			{ DepthClipControlCase::NORMAL_W,				"_different_w"					},
 			{ DepthClipControlCase::BEFORE_STATIC,			"_viewport_before_static"		},
 			{ DepthClipControlCase::BEFORE_DYNAMIC,			"_viewport_before_dynamic"		},
 			{ DepthClipControlCase::BEFORE_TWO_DYNAMICS,	"_viewport_before_two_dynamic"	},
@@ -1271,8 +1473,8 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 					std::string testName = getFormatCaseName(format) + "_" + de::toLower(std::string(getCompareOpName(compareOp)).substr(14)) + viewportCase.suffix;
 
 					const VkCompareOp ops[DepthTest::QUAD_COUNT] = { compareOp, compareOp, compareOp, compareOp };
-					depthClipControlTests->addChild(new DepthTest(testCtx, testName, "", pipelineConstructionType, format, ops,
-													false, false, 0.0f, 1.0f, true, false, true, viewportCase.viewportCase));
+					depthClipControlTests->addChild(new DepthTest(testCtx, testName, pipelineConstructionType, format, ops,
+													false, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false, 0.0f, 1.0f, true, false, true, false, tcu::UVec2(32,32), viewportCase.viewportCase));
 				}
 	}
 	depthTests->addChild(depthClipControlTests.release());

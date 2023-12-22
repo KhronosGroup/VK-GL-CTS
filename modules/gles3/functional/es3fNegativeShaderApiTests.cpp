@@ -175,9 +175,20 @@ void NegativeShaderApiTests::init (void)
 				expectError(GL_INVALID_VALUE);
 				m_log << TestLog::EndSection;
 
-				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if more than one of the handles in shaders refers to the same type of shader, or GL_INVALID_VALUE due to invalid data pointer.");
+				// Error handling is different in case of SPIRV.
+				const bool spirvBinary = binaryFormats[0] == GL_SHADER_BINARY_FORMAT_SPIR_V;
+				if (spirvBinary)
+					m_log << TestLog::Section("", "GL_INVALID_VALUE due to invalid data pointer.");
+				else
+					m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if more than one of the handles in shaders refers to the same type of shader, or GL_INVALID_VALUE due to invalid data pointer.");
+
 				glShaderBinary(2, &shaders[0], binaryFormats[0], 0, 0);
-				expectError(GL_INVALID_OPERATION, GL_INVALID_VALUE);
+
+				if (spirvBinary)
+					expectError(GL_INVALID_VALUE);
+				else
+					expectError(GL_INVALID_OPERATION, GL_INVALID_VALUE);
+
 				m_log << TestLog::EndSection;
 			}
 
@@ -218,10 +229,12 @@ void NegativeShaderApiTests::init (void)
 			expectError(GL_INVALID_OPERATION);
 			m_log << TestLog::EndSection;
 
-			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if a shader of the same type as shader is already attached to program.");
-			glAttachShader(program, shader2);
-			expectError(GL_INVALID_OPERATION);
-			m_log << TestLog::EndSection;
+			if (glu::isContextTypeES(m_context.getRenderContext().getType())){
+				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if a shader of the same type as shader is already attached to program.");
+				glAttachShader(program, shader2);
+				expectError(GL_INVALID_OPERATION);
+				m_log << TestLog::EndSection;
+			}
 
 			glDeleteProgram(program);
 			glDeleteShader(shader1);
@@ -378,45 +391,48 @@ void NegativeShaderApiTests::init (void)
 
 			glDeleteShader(shader);
 		});
-	ES3F_ADD_API_CASE(get_program_binary, "Invalid glGetProgramBinary() usage",
-		{
-			glu::ShaderProgram				program			(m_context.getRenderContext(), glu::makeVtxFragSources(vertexShaderSource, fragmentShaderSource));
-			glu::ShaderProgram				programInvalid	(m_context.getRenderContext(), glu::makeVtxFragSources(vertexShaderSource, ""));
-			GLenum							binaryFormat	= -1;
-			GLsizei							binaryLength	= -1;
-			GLint							binaryPtr		= -1;
-			GLint							bufSize			= -1;
-			GLint							linkStatus		= -1;
-
-			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if bufSize is less than the size of GL_PROGRAM_BINARY_LENGTH for program.");
-			glGetProgramiv		(program.getProgram(), GL_PROGRAM_BINARY_LENGTH,	&bufSize);
-			expectError			(GL_NO_ERROR);
-			glGetProgramiv		(program.getProgram(), GL_LINK_STATUS,				&linkStatus);
-			m_log << TestLog::Message << "// GL_PROGRAM_BINARY_LENGTH = " << bufSize << TestLog::EndMessage;
-			m_log << TestLog::Message << "// GL_LINK_STATUS = " << linkStatus << TestLog::EndMessage;
-			expectError			(GL_NO_ERROR);
-
-			glGetProgramBinary	(program.getProgram(), 0, &binaryLength, &binaryFormat, &binaryPtr);
-			expectError			(GL_INVALID_OPERATION);
-			if (bufSize > 0)
+	if (glu::isContextTypeES(m_context.getRenderContext().getType()))
+	{
+		ES3F_ADD_API_CASE(get_program_binary, "Invalid glGetProgramBinary() usage",
 			{
-				glGetProgramBinary	(program.getProgram(), bufSize-1, &binaryLength, &binaryFormat, &binaryPtr);
+				glu::ShaderProgram				program			(m_context.getRenderContext(), glu::makeVtxFragSources(vertexShaderSource, fragmentShaderSource));
+				glu::ShaderProgram				programInvalid	(m_context.getRenderContext(), glu::makeVtxFragSources(vertexShaderSource, ""));
+				GLenum							binaryFormat	= -1;
+				GLsizei							binaryLength	= -1;
+				GLint							binaryPtr		= -1;
+				GLint							bufSize			= -1;
+				GLint							linkStatus		= -1;
+
+				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if bufSize is less than the size of GL_PROGRAM_BINARY_LENGTH for program.");
+				glGetProgramiv		(program.getProgram(), GL_PROGRAM_BINARY_LENGTH,	&bufSize);
+				expectError			(GL_NO_ERROR);
+				glGetProgramiv		(program.getProgram(), GL_LINK_STATUS,				&linkStatus);
+				m_log << TestLog::Message << "// GL_PROGRAM_BINARY_LENGTH = " << bufSize << TestLog::EndMessage;
+				m_log << TestLog::Message << "// GL_LINK_STATUS = " << linkStatus << TestLog::EndMessage;
+				expectError			(GL_NO_ERROR);
+
+				glGetProgramBinary	(program.getProgram(), 0, &binaryLength, &binaryFormat, &binaryPtr);
 				expectError			(GL_INVALID_OPERATION);
-			}
-			m_log << TestLog::EndSection;
+				if (bufSize > 0)
+				{
+					glGetProgramBinary	(program.getProgram(), bufSize-1, &binaryLength, &binaryFormat, &binaryPtr);
+					expectError			(GL_INVALID_OPERATION);
+				}
+				m_log << TestLog::EndSection;
 
-			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if GL_LINK_STATUS for the program object is false.");
-			glGetProgramiv		(programInvalid.getProgram(), GL_PROGRAM_BINARY_LENGTH,	&bufSize);
-			expectError			(GL_NO_ERROR);
-			glGetProgramiv		(programInvalid.getProgram(), GL_LINK_STATUS,			&linkStatus);
-			m_log << TestLog::Message << "// GL_PROGRAM_BINARY_LENGTH = " << bufSize << TestLog::EndMessage;
-			m_log << TestLog::Message << "// GL_LINK_STATUS = " << linkStatus << TestLog::EndMessage;
-			expectError			(GL_NO_ERROR);
+				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if GL_LINK_STATUS for the program object is false.");
+				glGetProgramiv		(programInvalid.getProgram(), GL_PROGRAM_BINARY_LENGTH,	&bufSize);
+				expectError			(GL_NO_ERROR);
+				glGetProgramiv		(programInvalid.getProgram(), GL_LINK_STATUS,			&linkStatus);
+				m_log << TestLog::Message << "// GL_PROGRAM_BINARY_LENGTH = " << bufSize << TestLog::EndMessage;
+				m_log << TestLog::Message << "// GL_LINK_STATUS = " << linkStatus << TestLog::EndMessage;
+				expectError			(GL_NO_ERROR);
 
-			glGetProgramBinary	(programInvalid.getProgram(), bufSize, &binaryLength, &binaryFormat, &binaryPtr);
-			expectError			(GL_INVALID_OPERATION);
-			m_log << TestLog::EndSection;
-		});
+				glGetProgramBinary	(programInvalid.getProgram(), bufSize, &binaryLength, &binaryFormat, &binaryPtr);
+				expectError			(GL_INVALID_OPERATION);
+				m_log << TestLog::EndSection;
+			});
+	}
 	ES3F_ADD_API_CASE(program_binary, "Invalid glProgramBinary() usage",
 		{
 			glu::ShaderProgram		srcProgram		(m_context.getRenderContext(), glu::makeVtxFragSources(vertexShaderSource, fragmentShaderSource));

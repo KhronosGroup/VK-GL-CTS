@@ -101,20 +101,20 @@ static inline IVec3 defaultImageSize (TextureType type)
 	}
 }
 
-template <typename T, int Size>
-static string arrayStr (const T (&arr)[Size])
+template <typename T>
+static string arrayStr (const std::vector<T> (&arr))
 {
 	string result = "{ ";
-	for (int i = 0; i < Size; i++)
+	for (size_t i = 0; i < arr.size(); i++)
 		result += (i > 0 ? ", " : "") + toString(arr[i]);
 	result += " }";
 	return result;
 }
 
-template <typename T, int N>
-static int arrayIndexOf (const T (&arr)[N], const T& e)
+template <typename T>
+static int arrayIndexOf (const std::vector<T> (&arr), const T& e)
 {
-	return (int)(std::find(DE_ARRAY_BEGIN(arr), DE_ARRAY_END(arr), e) - DE_ARRAY_BEGIN(arr));
+	return (int)(std::find(arr.begin(), arr.end(), e) - arr.begin());
 }
 
 static const char* getTextureTypeName (TextureType type)
@@ -273,6 +273,33 @@ static inline deUint32 getGLTextureTarget (TextureType texType)
 			DE_ASSERT(false);
 			return (deUint32)-1;
 	}
+}
+
+static inline int getGLTextureMaxSize (glu::CallLogWrapper glLog, TextureType texType)
+{
+	int maxSize;
+	deUint32 macroValue;
+	switch (texType)
+	{
+		case TEXTURETYPE_BUFFER:
+			macroValue = GL_MAX_TEXTURE_BUFFER_SIZE;
+			break;
+		case TEXTURETYPE_3D:
+		case TEXTURETYPE_2D_ARRAY:
+			macroValue = GL_MAX_3D_TEXTURE_SIZE;
+			break;
+		case TEXTURETYPE_2D:
+		case TEXTURETYPE_CUBE:
+			macroValue = GL_MAX_TEXTURE_SIZE;
+			break;
+		default:
+			DE_ASSERT(false);
+			return (deUint32)-1;
+	}
+
+	glLog.glGetIntegerv(macroValue, &maxSize);
+
+	return maxSize;
 }
 
 static deUint32 cubeFaceToGLFace (tcu::CubeFace face)
@@ -1593,8 +1620,7 @@ enum AtomicOperationCaseType
  * The compute shader invocations contributing to a pixel (X, Y, Z) in the
  * end result image are the invocations with global IDs
  * (X, Y, Z), (X+W, Y, Z), (X+2*W, Y, Z), ..., (X+(N-1)*W, Y, W), where W
- * is the width of the end result image and N is
- * BinaryAtomicOperationCase::NUM_INVOCATIONS_PER_PIXEL.
+ * is the width of the end result image and N is m_numInvocationsPerPixel.
  *//*--------------------------------------------------------------------*/
 class BinaryAtomicOperationCase : public TestCase
 {
@@ -1626,8 +1652,7 @@ private:
 	//! Generate the shader expression for the argument given to the atomic function. x, y and z are the identifiers for the invocation ID components.
 	static string					getAtomicFuncArgumentShaderStr	(AtomicOperation op, const string& x, const string& y, const string& z, const IVec2& dispatchSizeXY);
 
-	static const int				NUM_INVOCATIONS_PER_PIXEL = 5;
-
+	const int						m_numInvocationsPerPixel = 5;
 	const TextureFormat				m_format;
 	const TextureType				m_imageType;
 	const AtomicOperation			m_operation;
@@ -1705,12 +1730,12 @@ string BinaryAtomicOperationCase::getAtomicFuncArgumentShaderStr (AtomicOperatio
 class BinaryAtomicOperationCase::EndResultVerifier : public ImageLayerVerifier
 {
 public:
-	EndResultVerifier (AtomicOperation operation, TextureType imageType) : m_operation(operation), m_imageType(imageType) {}
+	EndResultVerifier (AtomicOperation operation, TextureType imageType, int numInvocationsPerPixel) : m_operation(operation), m_imageType(imageType), m_numInvocationsPerPixel(numInvocationsPerPixel) {}
 
 	bool operator() (TestLog& log, const ConstPixelBufferAccess& resultSlice, int sliceOrFaceNdx) const
 	{
 		const bool		isIntegerFormat		= isFormatTypeInteger(resultSlice.getFormat().type);
-		const IVec2		dispatchSizeXY		(NUM_INVOCATIONS_PER_PIXEL*resultSlice.getWidth(), resultSlice.getHeight());
+		const IVec2		dispatchSizeXY		(m_numInvocationsPerPixel*resultSlice.getWidth(), resultSlice.getHeight());
 
 		log << TestLog::Image("EndResults" + toString(sliceOrFaceNdx),
 							  "Result Values, " + (m_imageType == TEXTURETYPE_CUBE ? "face " + string(glu::getCubeMapFaceName(cubeFaceToGLFace(glslImageFuncZToCubeFace(sliceOrFaceNdx))))
@@ -1733,10 +1758,10 @@ public:
 
 			// Compute the arguments that were given to the atomic function in the invocations that contribute to this pixel.
 
-			IVec3	invocationGlobalIDs[NUM_INVOCATIONS_PER_PIXEL];
-			int		atomicArgs[NUM_INVOCATIONS_PER_PIXEL];
+			std::vector<IVec3>	invocationGlobalIDs(m_numInvocationsPerPixel);
+			std::vector<int>	atomicArgs(m_numInvocationsPerPixel);
 
-			for (int i = 0; i < NUM_INVOCATIONS_PER_PIXEL; i++)
+			for (int i = 0; i < m_numInvocationsPerPixel; i++)
 			{
 				const IVec3 gid(x + i*resultSlice.getWidth(), y, sliceOrFaceNdx);
 
@@ -1752,7 +1777,7 @@ public:
 
 				int reference = getOperationInitialValue(m_operation);
 
-				for (int i = 0; i < NUM_INVOCATIONS_PER_PIXEL; i++)
+				for (int i = 0; i < m_numInvocationsPerPixel; i++)
 					reference = computeBinaryAtomicOperationResult(m_operation, reference, atomicArgs[i]);
 
 				if (result.i != reference)
@@ -1770,7 +1795,7 @@ public:
 
 				bool matchFound = false;
 
-				for (int i = 0; i < NUM_INVOCATIONS_PER_PIXEL && !matchFound; i++)
+				for (int i = 0; i < m_numInvocationsPerPixel && !matchFound; i++)
 					matchFound = isIntegerFormat ? result.i == atomicArgs[i]
 												 : de::abs(result.f - (float)atomicArgs[i]) <= 0.01f;
 
@@ -1792,20 +1817,34 @@ public:
 private:
 	const AtomicOperation	m_operation;
 	const TextureType		m_imageType;
+	const int				m_numInvocationsPerPixel;
 };
+
+
+template <typename T>
+T getPixelValueX(const ConstPixelBufferAccess& resultSlice, int x, int y)
+{
+	return resultSlice.getPixelInt(x, y).x();
+}
+
+template <>
+float getPixelValueX<float>(const ConstPixelBufferAccess& resultSlice, int x, int y)
+{
+	return resultSlice.getPixel(x, y).x();
+}
 
 class BinaryAtomicOperationCase::ReturnValueVerifier : public ImageLayerVerifier
 {
 public:
 	//! \note endResultImageLayerSize is (width, height) of the image operated on by the atomic ops, and not the size of the image where the return values are stored.
-	ReturnValueVerifier (AtomicOperation operation, TextureType imageType, const IVec2& endResultImageLayerSize) : m_operation(operation), m_imageType(imageType), m_endResultImageLayerSize(endResultImageLayerSize) {}
+	ReturnValueVerifier (AtomicOperation operation, TextureType imageType, const IVec2& endResultImageLayerSize, int numInvocationsPerPixel) : m_operation(operation), m_imageType(imageType), m_endResultImageLayerSize(endResultImageLayerSize), m_numInvocationsPerPixel(numInvocationsPerPixel) {}
 
 	bool operator() (TestLog& log, const ConstPixelBufferAccess& resultSlice, int sliceOrFaceNdx) const
 	{
 		const bool		isIntegerFormat		(isFormatTypeInteger(resultSlice.getFormat().type));
 		const IVec2		dispatchSizeXY	(resultSlice.getWidth(), resultSlice.getHeight());
 
-		DE_ASSERT(resultSlice.getWidth()	== NUM_INVOCATIONS_PER_PIXEL*m_endResultImageLayerSize.x()	&&
+		DE_ASSERT(resultSlice.getWidth()	== m_numInvocationsPerPixel*m_endResultImageLayerSize.x()	&&
 				  resultSlice.getHeight()	== m_endResultImageLayerSize.y()							&&
 				  resultSlice.getDepth()	== 1);
 
@@ -1818,62 +1857,15 @@ public:
 		for (int y = 0; y < m_endResultImageLayerSize.y(); y++)
 		for (int x = 0; x < m_endResultImageLayerSize.x(); x++)
 		{
-			union IntFloatArr
+			if (isIntegerFormat)
 			{
-				int		i[NUM_INVOCATIONS_PER_PIXEL];
-				float	f[NUM_INVOCATIONS_PER_PIXEL];
-			};
-
-			// Get the atomic function args and return values for all the invocations that contribute to the pixel (x, y) in the current end result slice.
-
-			IntFloatArr		returnValues;
-			IntFloatArr		atomicArgs;
-			IVec3			invocationGlobalIDs[NUM_INVOCATIONS_PER_PIXEL];
-			IVec2			pixelCoords[NUM_INVOCATIONS_PER_PIXEL];
-
-			for (int i = 0; i < NUM_INVOCATIONS_PER_PIXEL; i++)
-			{
-				const IVec2 pixCoord	(x + i*m_endResultImageLayerSize.x(), y);
-				const IVec3 gid			(pixCoord.x(), pixCoord.y(), sliceOrFaceNdx);
-
-				invocationGlobalIDs[i]	= gid;
-				pixelCoords[i]			= pixCoord;
-
-				if (isIntegerFormat)
-				{
-					returnValues.i[i]	= resultSlice.getPixelInt(gid.x(), y).x();
-					atomicArgs.i[i]		= getAtomicFuncArgument(m_operation, gid, dispatchSizeXY);
-				}
-				else
-				{
-					returnValues.f[i]	= resultSlice.getPixel(gid.x(), y).x();
-					atomicArgs.f[i]		= (float)getAtomicFuncArgument(m_operation, gid, dispatchSizeXY);
-				}
-			}
-
-			// Verify that the return values form a valid sequence.
-
-			{
-				const bool success = isIntegerFormat ? verifyOperationAccumulationIntermediateValues(m_operation,
-																									 getOperationInitialValue(m_operation),
-																									 atomicArgs.i,
-																									 returnValues.i)
-
-													 : verifyOperationAccumulationIntermediateValues(m_operation,
-																									 (float)getOperationInitialValue(m_operation),
-																									 atomicArgs.f,
-																									 returnValues.f);
-
-				if (!success)
-				{
-					log << TestLog::Message << "// Failure: intermediate return values at pixels " << arrayStr(pixelCoords) << " of current layer are "
-											<< (isIntegerFormat ? arrayStr(returnValues.i) : arrayStr(returnValues.f)) << TestLog::EndMessage
-						<< TestLog::Message << "// Note: relevant shader invocation global IDs are " << arrayStr(invocationGlobalIDs) << TestLog::EndMessage
-						<< TestLog::Message << "// Note: data expression values for the IDs are "
-											<< (isIntegerFormat ? arrayStr(atomicArgs.i) : arrayStr(atomicArgs.f))
-											<< "; return values are not a valid result for any order of operations" << TestLog::EndMessage;
+				if (!checkPixel<int>(log, resultSlice, x, y, sliceOrFaceNdx, dispatchSizeXY))
 					return false;
-				}
+			}
+			else
+			{
+				if (!checkPixel<float>(log, resultSlice, x, y, sliceOrFaceNdx, dispatchSizeXY))
+					return false;
 			}
 		}
 
@@ -1884,13 +1876,57 @@ private:
 	const AtomicOperation	m_operation;
 	const TextureType		m_imageType;
 	const IVec2				m_endResultImageLayerSize;
+	const int				m_numInvocationsPerPixel;
+
+	template <typename T>
+	bool checkPixel(TestLog& log, const ConstPixelBufferAccess& resultSlice, int x, int y, int sliceOrFaceNdx, const IVec2 &dispatchSizeXY) const
+	{
+		// Get the atomic function args and return values for all the invocations that contribute to the pixel (x, y) in the current end result slice.
+
+		std::vector<T>		returnValues(m_numInvocationsPerPixel);
+		std::vector<T>		atomicArgs(m_numInvocationsPerPixel);
+		std::vector<IVec3>	invocationGlobalIDs(m_numInvocationsPerPixel);
+		std::vector<IVec2>	pixelCoords(m_numInvocationsPerPixel);
+
+		for (int i = 0; i < m_numInvocationsPerPixel; i++)
+		{
+			const IVec2 pixCoord	(x + i*m_endResultImageLayerSize.x(), y);
+			const IVec3 gid			(pixCoord.x(), pixCoord.y(), sliceOrFaceNdx);
+
+			invocationGlobalIDs[i]	= gid;
+			pixelCoords[i]			= pixCoord;
+
+			returnValues[i]			= getPixelValueX<T>(resultSlice, gid.x(), y);
+			atomicArgs[i]			= static_cast<T>(getAtomicFuncArgument(m_operation, gid, dispatchSizeXY));
+		}
+
+		// Verify that the return values form a valid sequence.
+		{
+			const bool success = verifyOperationAccumulationIntermediateValues(m_operation,
+																			   static_cast<T>(getOperationInitialValue(m_operation)),
+																			   atomicArgs,
+																			   returnValues);
+
+			if (!success)
+			{
+				log << TestLog::Message << "// Failure: intermediate return values at pixels " << arrayStr(pixelCoords) << " of current layer are "
+										<< arrayStr(returnValues) << TestLog::EndMessage
+					<< TestLog::Message << "// Note: relevant shader invocation global IDs are " << arrayStr(invocationGlobalIDs) << TestLog::EndMessage
+					<< TestLog::Message << "// Note: data expression values for the IDs are "
+										<< arrayStr(atomicArgs) << "; return values are not a valid result for any order of operations" << TestLog::EndMessage;
+				return false;
+			}
+		}
+
+		return true;
+	}
 
 	//! Check whether there exists an ordering of args such that { init*A", init*A*B, ..., init*A*B*...*LAST } is the "returnValues" sequence, where { A, B, ..., LAST } is args, and * denotes the operation.
 	//	That is, whether "returnValues" is a valid sequence of intermediate return values when "operation" has been accumulated on "args" (and "init") in some arbitrary order.
 	template <typename T>
-	static bool verifyOperationAccumulationIntermediateValues (AtomicOperation operation, T init, const T (&args)[NUM_INVOCATIONS_PER_PIXEL], const T (&returnValues)[NUM_INVOCATIONS_PER_PIXEL])
+	bool verifyOperationAccumulationIntermediateValues (AtomicOperation operation, T init, const std::vector<T> (&args), const std::vector<T> (&returnValues)) const
 	{
-		bool argsUsed[NUM_INVOCATIONS_PER_PIXEL] = { false };
+		std::vector<bool> argsUsed(m_numInvocationsPerPixel, false);
 
 		return verifyRecursive(operation, 0, init, argsUsed, args, returnValues);
 	}
@@ -1900,11 +1936,11 @@ private:
 
 	//! Depth-first search for verifying the return value sequence.
 	template <typename T>
-	static bool verifyRecursive (AtomicOperation operation, int index, T valueSoFar, bool (&argsUsed)[NUM_INVOCATIONS_PER_PIXEL], const T (&args)[NUM_INVOCATIONS_PER_PIXEL], const T (&returnValues)[NUM_INVOCATIONS_PER_PIXEL])
+	bool verifyRecursive (AtomicOperation operation, int index, T valueSoFar, std::vector<bool> (&argsUsed), const std::vector<T> (&args), const std::vector<T> (&returnValues)) const
 	{
-		if (index < NUM_INVOCATIONS_PER_PIXEL)
+		if (index < m_numInvocationsPerPixel)
 		{
-			for (int i = 0; i < NUM_INVOCATIONS_PER_PIXEL; i++)
+			for (int i = 0; i < m_numInvocationsPerPixel; i++)
 			{
 				if (!argsUsed[i] && compare(returnValues[i], valueSoFar))
 				{
@@ -1946,9 +1982,21 @@ BinaryAtomicOperationCase::IterateResult BinaryAtomicOperationCase::iterate (voi
 	const glu::Buffer			returnValueTextureBuf	(renderCtx);
 	const glu::Texture			endResultTexture		(renderCtx); //!< Texture for the final result; i.e. the texture on which the atomic operations are done. Size imageSize.
 	const glu::Texture			returnValueTexture		(renderCtx); //!< Texture into which the return values are stored if m_caseType == CASETYPE_RETURN_VALUES.
-																	 //	  Size imageSize*IVec3(N, 1, 1) or, for cube maps, imageSize*IVec3(N, N, 1) where N is NUM_INVOCATIONS_PER_PIXEL.
+																	 //	  Size imageSize*IVec3(N, 1, 1) or, for cube maps, imageSize*IVec3(N, N, 1) where N is m_numInvocationsPerPixel.
 
 	glLog.enableLogging(true);
+
+	// Adjust result image size for result image
+	if (m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES)
+	{
+		int maxWidth = getGLTextureMaxSize(glLog, m_imageType);
+
+		while (maxWidth < m_numInvocationsPerPixel * imageSize.x())
+		{
+			int* numInvocationsPerPixel = const_cast<int*>(&m_numInvocationsPerPixel);
+			(*numInvocationsPerPixel) -= 1;
+		}
+	}
 
 	// Setup textures.
 
@@ -2000,8 +2048,8 @@ BinaryAtomicOperationCase::IterateResult BinaryAtomicOperationCase::iterate (voi
 		setTexParameteri(glLog, textureTargetGL);
 
 		log << TestLog::Message << "// Setting storage of return-value texture" << TestLog::EndMessage;
-		setTextureStorage(glLog, m_imageType, internalFormatGL, imageSize * (m_imageType == TEXTURETYPE_CUBE ? IVec3(NUM_INVOCATIONS_PER_PIXEL, NUM_INVOCATIONS_PER_PIXEL,	1)
-																											 : IVec3(NUM_INVOCATIONS_PER_PIXEL, 1,							1)),
+		setTextureStorage(glLog, m_imageType, internalFormatGL, imageSize * (m_imageType == TEXTURETYPE_CUBE ? IVec3(m_numInvocationsPerPixel, m_numInvocationsPerPixel,	1)
+																											 : IVec3(m_numInvocationsPerPixel, 1,							1)),
 						  *returnValueTextureBuf);
 
 		glLog.glBindImageTexture(1, *returnValueTexture, 0, GL_TRUE, 0, GL_WRITE_ONLY, internalFormatGL);
@@ -2023,7 +2071,7 @@ BinaryAtomicOperationCase::IterateResult BinaryAtomicOperationCase::iterate (voi
 		const string atomicArgExpr			= (isUintFormat		? "uint"
 											 : isIntFormat		? ""
 											 : "float")
-												+ getAtomicFuncArgumentShaderStr(m_operation, "gx", "gy", "gz", IVec2(NUM_INVOCATIONS_PER_PIXEL*imageSize.x(), imageSize.y()));
+												+ getAtomicFuncArgumentShaderStr(m_operation, "gx", "gy", "gz", IVec2(m_numInvocationsPerPixel*imageSize.x(), imageSize.y()));
 		const string atomicInvocation		= string() + getAtomicOperationShaderFuncName(m_operation) + "(u_results, " + atomicCoord + ", " + atomicArgExpr + ")";
 		const string shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
 		const string shaderImageTypeStr		= getShaderImageType(m_format.type, m_imageType);
@@ -2068,7 +2116,7 @@ BinaryAtomicOperationCase::IterateResult BinaryAtomicOperationCase::iterate (voi
 
 		glLog.glUseProgram(program.getProgram());
 
-		glLog.glDispatchCompute(NUM_INVOCATIONS_PER_PIXEL*imageSize.x(), imageSize.y(), numSlicesOrFaces);
+		glLog.glDispatchCompute(m_numInvocationsPerPixel*imageSize.x(), imageSize.y(), numSlicesOrFaces);
 		GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "glDispatchCompute");
 	}
 
@@ -2082,9 +2130,9 @@ BinaryAtomicOperationCase::IterateResult BinaryAtomicOperationCase::iterate (voi
 																		: m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES	? *returnValueTextureBuf
 																		: (deUint32)-1;
 
-		const IVec3									textureToCheckSize	= imageSize * IVec3(m_caseType == ATOMIC_OPERATION_CASE_TYPE_END_RESULT ? 1 : NUM_INVOCATIONS_PER_PIXEL, 1, 1);
-		const UniquePtr<const ImageLayerVerifier>	verifier			(m_caseType == ATOMIC_OPERATION_CASE_TYPE_END_RESULT		? new EndResultVerifier(m_operation, m_imageType)
-																	   : m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES		? new ReturnValueVerifier(m_operation, m_imageType, imageSize.swizzle(0, 1))
+		const IVec3									textureToCheckSize	= imageSize * IVec3(m_caseType == ATOMIC_OPERATION_CASE_TYPE_END_RESULT ? 1 : m_numInvocationsPerPixel, 1, 1);
+		const UniquePtr<const ImageLayerVerifier>	verifier			(m_caseType == ATOMIC_OPERATION_CASE_TYPE_END_RESULT		? new EndResultVerifier(m_operation, m_imageType, m_numInvocationsPerPixel)
+																	   : m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES		? new ReturnValueVerifier(m_operation, m_imageType, imageSize.swizzle(0, 1), m_numInvocationsPerPixel)
 																	   : (ImageLayerVerifier*)DE_NULL);
 
 		if (readTextureAndVerify(renderCtx, glLog, textureToCheckGL, textureToCheckBufGL, m_imageType, m_format, textureToCheckSize, *verifier))
@@ -2129,8 +2177,7 @@ private:
 	static string					getCompareArgShaderStr	(const string& x, const string& y, const string& z, int imageWidth);
 	static string					getAssignArgShaderStr	(const string& x, const string& y, const string& z, int imageWidth);
 
-	static const int				NUM_INVOCATIONS_PER_PIXEL = 5;
-
+	const int						m_numInvocationsPerPixel = 5;
 	const TextureFormat				m_format;
 	const TextureType				m_imageType;
 	const AtomicOperationCaseType	m_caseType;
@@ -2180,7 +2227,7 @@ void AtomicCompSwapCase::init (void)
 class AtomicCompSwapCase::EndResultVerifier : public ImageLayerVerifier
 {
 public:
-	EndResultVerifier (TextureType imageType, int imageWidth) : m_imageType(imageType), m_imageWidth(imageWidth) {}
+	EndResultVerifier (TextureType imageType, int imageWidth, int numInvocationsPerPixel) : m_imageType(imageType), m_imageWidth(imageWidth), m_numInvocationsPerPixel(numInvocationsPerPixel) {}
 
 	bool operator() (TestLog& log, const ConstPixelBufferAccess& resultSlice, int sliceOrFaceNdx) const
 	{
@@ -2198,11 +2245,11 @@ public:
 			// Compute the value-to-assign arguments that were given to the atomic function in the invocations that contribute to this pixel.
 			// One of those should be the result.
 
-			const int	result = resultSlice.getPixelInt(x, y).x();
-			IVec3		invocationGlobalIDs[NUM_INVOCATIONS_PER_PIXEL];
-			int			assignArgs[NUM_INVOCATIONS_PER_PIXEL];
+			const int			result = resultSlice.getPixelInt(x, y).x();
+			std::vector<IVec3>	invocationGlobalIDs(m_numInvocationsPerPixel);
+			std::vector<int>	assignArgs(m_numInvocationsPerPixel);
 
-			for (int i = 0; i < NUM_INVOCATIONS_PER_PIXEL; i++)
+			for (int i = 0; i < m_numInvocationsPerPixel; i++)
 			{
 				const IVec3 gid(x + i*resultSlice.getWidth(), y, sliceOrFaceNdx);
 
@@ -2212,7 +2259,7 @@ public:
 
 			{
 				bool matchFound = false;
-				for (int i = 0; i < NUM_INVOCATIONS_PER_PIXEL && !matchFound; i++)
+				for (int i = 0; i < m_numInvocationsPerPixel && !matchFound; i++)
 					matchFound = result == assignArgs[i];
 
 				if (!matchFound)
@@ -2233,18 +2280,19 @@ public:
 private:
 	const TextureType	m_imageType;
 	const int			m_imageWidth;
+	const int			m_numInvocationsPerPixel;
 };
 
 class AtomicCompSwapCase::ReturnValueVerifier : public ImageLayerVerifier
 {
 public:
 	//! \note endResultImageLayerSize is (width, height) of the image operated on by the atomic ops, and not the size of the image where the return values are stored.
-	ReturnValueVerifier (TextureType imageType, int endResultImageWidth) : m_imageType(imageType), m_endResultImageWidth(endResultImageWidth) {}
+	ReturnValueVerifier (TextureType imageType, int endResultImageWidth, int numInvocationsPerPixel) : m_imageType(imageType), m_endResultImageWidth(endResultImageWidth), m_numInvocationsPerPixel(numInvocationsPerPixel) {}
 
 	bool operator() (TestLog& log, const ConstPixelBufferAccess& resultSlice, int sliceOrFaceNdx) const
 	{
 		DE_ASSERT(isFormatTypeInteger(resultSlice.getFormat().type));
-		DE_ASSERT(resultSlice.getWidth() == NUM_INVOCATIONS_PER_PIXEL*m_endResultImageWidth);
+		DE_ASSERT(resultSlice.getWidth() == m_numInvocationsPerPixel*m_endResultImageWidth);
 
 		log << TestLog::Image("ReturnValues" + toString(sliceOrFaceNdx),
 							  "Per-Invocation Return Values, "
@@ -2257,12 +2305,12 @@ public:
 		{
 			// Get the atomic function args and return values for all the invocations that contribute to the pixel (x, y) in the current end result slice.
 
-			int		returnValues[NUM_INVOCATIONS_PER_PIXEL];
-			int		compareArgs[NUM_INVOCATIONS_PER_PIXEL];
-			IVec3	invocationGlobalIDs[NUM_INVOCATIONS_PER_PIXEL];
-			IVec2	pixelCoords[NUM_INVOCATIONS_PER_PIXEL];
+			std::vector<int>	returnValues(m_numInvocationsPerPixel);
+			std::vector<int>	compareArgs(m_numInvocationsPerPixel);
+			std::vector<IVec3>	invocationGlobalIDs(m_numInvocationsPerPixel);
+			std::vector<IVec2>	pixelCoords(m_numInvocationsPerPixel);
 
-			for (int i = 0; i < NUM_INVOCATIONS_PER_PIXEL; i++)
+			for (int i = 0; i < m_numInvocationsPerPixel; i++)
 			{
 				const IVec2 pixCoord	(x + i*m_endResultImageWidth, y);
 				const IVec3 gid			(pixCoord.x(), pixCoord.y(), sliceOrFaceNdx);
@@ -2278,17 +2326,15 @@ public:
 			// among the different invocations contributing to the same pixel -- i.e. one invocation
 			// compares to A and assigns B, another compares to B and assigns C, and so on, where
 			// A<B<C etc -- the first value in the return value sequence must be A, and each following
-			// value must be either the same as or the smallest value (among A, B, C, ...) bigger than
-			// the one just before it. E.g. sequences A A A A A A A A, A B C D E F G H and
-			// A A B B B C D E are all valid sequences (if there were 8 invocations contributing
-			// to each pixel).
+			// value must be the smallest value (among A, B, C, ...) bigger than the one just before it.
+			// The only valid sequence being: A B C D E F G H
 
 			{
 				int failingNdx = -1;
 
 				{
 					int currentAtomicValueNdx = 0;
-					for (int i = 0; i < NUM_INVOCATIONS_PER_PIXEL; i++)
+					for (int i = 0; i < m_numInvocationsPerPixel; i++)
 					{
 						if (returnValues[i] == compareArgs[currentAtomicValueNdx])
 							continue;
@@ -2331,6 +2377,7 @@ public:
 private:
 	const TextureType	m_imageType;
 	const int			m_endResultImageWidth;
+	const int			m_numInvocationsPerPixel;
 };
 
 AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
@@ -2353,6 +2400,18 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
 	DE_ASSERT(isUintFormat || isIntFormat);
 
 	glLog.enableLogging(true);
+
+	// Adjust result image size for result image
+	if (m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES)
+	{
+		int maxWidth = getGLTextureMaxSize(glLog, m_imageType);
+
+		while (maxWidth < m_numInvocationsPerPixel * imageSize.x())
+		{
+			int* numInvocationsPerPixel = const_cast<int*>(&m_numInvocationsPerPixel);
+			(*numInvocationsPerPixel) -= 1;
+		}
+	}
 
 	// Setup textures.
 
@@ -2402,8 +2461,8 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
 		setTexParameteri(glLog, textureTargetGL);
 
 		log << TestLog::Message << "// Setting storage of return-value texture" << TestLog::EndMessage;
-		setTextureStorage(glLog, m_imageType, internalFormatGL, imageSize * (m_imageType == TEXTURETYPE_CUBE ? IVec3(NUM_INVOCATIONS_PER_PIXEL, NUM_INVOCATIONS_PER_PIXEL,	1)
-																											 : IVec3(NUM_INVOCATIONS_PER_PIXEL, 1,							1)),
+		setTextureStorage(glLog, m_imageType, internalFormatGL, imageSize * (m_imageType == TEXTURETYPE_CUBE ? IVec3(m_numInvocationsPerPixel, m_numInvocationsPerPixel,	1)
+																											 : IVec3(m_numInvocationsPerPixel, 1,							1)),
 						  *returnValueTextureBuf);
 
 		glLog.glBindImageTexture(1, *returnValueTexture, 0, GL_TRUE, 0, GL_WRITE_ONLY, internalFormatGL);
@@ -2439,10 +2498,11 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
 														+ (m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES ?
 															  "layout (" + shaderImageFormatStr + ", binding=1) writeonly uniform " + shaderImageTypeStr + " u_returnValues;\n"
 															: "") +
+														"uniform int offset;"
 														"\n"
 														"void main (void)\n"
 														"{\n"
-														"	int gx = int(gl_GlobalInvocationID.x);\n"
+														"	int gx = int(gl_GlobalInvocationID.x) + offset * " + std::to_string(imageSize.x()) + ";\n"
 														"	int gy = int(gl_GlobalInvocationID.y);\n"
 														"	int gz = int(gl_GlobalInvocationID.z);\n"
 														"	" + colorScalarTypeName + " compare = " + colorScalarTypeName + getCompareArgShaderStr("gx", "gy", "gz", imageSize.x()) + ";\n"
@@ -2450,7 +2510,8 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
 														"	" + colorScalarTypeName + " status  = " + colorScalarTypeName + "(-1);\n"
 														"	status = imageAtomicCompSwap(u_results, " + atomicCoord + ", compare, data);\n"
 														+ (m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES ?
-															"	imageStore(u_returnValues, " + invocationCoord + ", " + colorVecTypeName + "(status));\n" :
+															// Ensure there's an ordered ascending pattern to correctly check values are being stored in order
+															"	if(compare == status) imageStore(u_returnValues, " + invocationCoord + ", " + colorVecTypeName + "(status));\n" :
 															"") +
 														"}\n"));
 
@@ -2468,8 +2529,18 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
 
 		glLog.glUseProgram(program.getProgram());
 
-		glLog.glDispatchCompute(NUM_INVOCATIONS_PER_PIXEL*imageSize.x(), imageSize.y(), numSlicesOrFaces);
-		GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "glDispatchCompute");
+		{
+			deUint32 offsetLocation = glLog.glGetUniformLocation(program.getProgram(), "offset");
+			int dispatchCount = m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES ? m_numInvocationsPerPixel : 1u;
+
+			for (int i = 0; i < dispatchCount; ++i)
+			{
+				// Ensure we get correct values for output
+				glLog.glUniform1i(offsetLocation, i);
+				glLog.glDispatchCompute((dispatchCount - i)*imageSize.x(), imageSize.y(), numSlicesOrFaces);
+				GLU_EXPECT_NO_ERROR(renderCtx.getFunctions().getError(), "glDispatchCompute");
+			}
+		}
 	}
 
 	// Create reference, read texture and compare.
@@ -2487,10 +2558,10 @@ AtomicCompSwapCase::IterateResult AtomicCompSwapCase::iterate (void)
 		// different from actual texture size for cube maps, because cube maps
 		// may have unused pixels due to square size restriction).
 		const IVec3									relevantRegion		= imageSize * (m_caseType == ATOMIC_OPERATION_CASE_TYPE_END_RESULT	? IVec3(1,							1,							1)
-																					 :														  IVec3(NUM_INVOCATIONS_PER_PIXEL,	1,							1));
+																					 :														  IVec3(m_numInvocationsPerPixel,	1,							1));
 
-		const UniquePtr<const ImageLayerVerifier>	verifier			(m_caseType == ATOMIC_OPERATION_CASE_TYPE_END_RESULT		? new EndResultVerifier(m_imageType, imageSize.x())
-																	   : m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES		? new ReturnValueVerifier(m_imageType, imageSize.x())
+		const UniquePtr<const ImageLayerVerifier>	verifier			(m_caseType == ATOMIC_OPERATION_CASE_TYPE_END_RESULT		? new EndResultVerifier(m_imageType, imageSize.x(), m_numInvocationsPerPixel)
+																	   : m_caseType == ATOMIC_OPERATION_CASE_TYPE_RETURN_VALUES		? new ReturnValueVerifier(m_imageType, imageSize.x(), m_numInvocationsPerPixel)
 																	   : (ImageLayerVerifier*)DE_NULL);
 
 		if (readTextureAndVerify(renderCtx, glLog, textureToCheckGL, textureToCheckBufGL, m_imageType, m_format, relevantRegion, *verifier))

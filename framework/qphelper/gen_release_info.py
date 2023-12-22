@@ -36,6 +36,11 @@ def writeFile (filename, data):
 	f.write(data)
 	f.close()
 
+def getDescribe (gitDir):
+	commit = subprocess.check_output(["git", "--git-dir", gitDir,
+	                                  "describe", "--always", "--long", "--abbrev=40"])
+	return commit.decode().strip()
+
 def getHead (gitDir):
 	commit = subprocess.check_output(["git", "--git-dir", gitDir,
 									  "rev-parse", "HEAD"])
@@ -97,7 +102,7 @@ if __name__ == "__main__":
 	if args.git:
 		gitDir				= args.gitDir				if args.gitDir				!= None else defaultGitDir
 		head				= getHead(gitDir)
-		releaseName			= "git-%s" % head
+		releaseName			= getDescribe(gitDir)
 		releaseId			= "0x%s" % head[0:8]
 	else:
 		releaseName			= args.releaseName

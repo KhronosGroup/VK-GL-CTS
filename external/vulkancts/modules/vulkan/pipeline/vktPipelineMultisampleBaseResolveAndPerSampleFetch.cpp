@@ -3,6 +3,8 @@
 * ------------------------
 *
 * Copyright (c) 2016 The Khronos Group Inc.
+* Copyright (c) 2023 LunarG, Inc.
+* Copyright (c) 2023 Nintendo
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -94,7 +96,7 @@ VkPipelineMultisampleStateCreateInfo MSInstanceBaseResolveAndPerSampleFetch::get
 		(VkPipelineMultisampleStateCreateFlags)0u,						// VkPipelineMultisampleStateCreateFlags	flags;
 		imageMSParams.numSamples,										// VkSampleCountFlagBits					rasterizationSamples;
 		VK_TRUE,														// VkBool32									sampleShadingEnable;
-		1.0f,															// float									minSampleShading;
+		imageMSParams.shadingRate,										// float									minSampleShading;
 		DE_NULL,														// const VkSampleMask*						pSampleMask;
 		VK_FALSE,														// VkBool32									alphaToCoverageEnable;
 		VK_FALSE,														// VkBool32									alphaToOneEnable;
@@ -295,34 +297,41 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 		subpasses[1u + sampleNdx] = subpassDesc;
 
-		const VkSubpassDependency subpassDependency =
+		if (sampleNdx == 0u)
 		{
-			0u,												// uint32_t                srcSubpass;
-			1u + sampleNdx,									// uint32_t                dstSubpass;
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // VkPipelineStageFlags    srcStageMask;
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags    dstStageMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags           srcAccessMask;
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags           dstAccessMask;
-			0u,												// VkDependencyFlags       dependencyFlags;
-		};
+			// The second subpass will be in charge of transitioning the multisample attachment from
+			// VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+			const VkSubpassDependency subpassDependency =
+			{
+				0u,												// uint32_t                srcSubpass;
+				1u + sampleNdx,									// uint32_t                dstSubpass;
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags    srcStageMask;
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags    dstStageMask;
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags           srcAccessMask;
+				VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags           dstAccessMask;
+				0u,												// VkDependencyFlags       dependencyFlags;
+			};
 
-		subpassDependencies.push_back(subpassDependency);
-	}
-	// now handle the very last sample pass, which must synchronize with all prior subpasses
-	for (deUint32 sampleNdx = 0u; sampleNdx < (numSamples - 1); ++sampleNdx)
-	{
-		const VkSubpassDependency subpassDependency =
+			subpassDependencies.push_back(subpassDependency);
+		}
+		else
 		{
-			1u + sampleNdx,									// uint32_t					srcSubpass;
-			numSamples,										// uint32_t					dstSubpass;
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags		srcStageMask;
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags		dstStageMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags			dstAccessMask;
-			0u,												// VkDependencyFlags		dependencyFlags;
-		};
+			// Make sure subpass reads are in order. This serializes subpasses to make sure there are no layout transition hazards
+			// in the multisample image, from VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			// caused by parallel execution of several subpasses.
+			const VkSubpassDependency readDependency =
+			{
+				sampleNdx,										// uint32_t                srcSubpass;
+				1u + sampleNdx,									// uint32_t                dstSubpass;
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags    srcStageMask;
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags    dstStageMask;
+				VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags           srcAccessMask;
+				VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags           dstAccessMask;
+				0u,												// VkDependencyFlags       dependencyFlags;
+			};
 
-		subpassDependencies.push_back(subpassDependency);
+			subpassDependencies.push_back(readDependency);
+		}
 	}
 
 	const VkRenderPassCreateInfo renderPassInfo =
@@ -338,14 +347,18 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 		dataPointer(subpassDependencies)					// const VkSubpassDependency*		pDependencies;
 	};
 
-	const Unique<VkRenderPass> renderPass(createRenderPass(deviceInterface, device, &renderPassInfo));
+	RenderPassWrapper renderPass (m_imageMSParams.pipelineConstructionType, deviceInterface, device, &renderPassInfo);
 
 	const VkImageSubresourceRange fullImageRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, imageMSInfo.mipLevels, 0u, imageMSInfo.arrayLayers);
 
 	// Create color attachments image views
 	typedef de::SharedPtr<Unique<VkImageView> > VkImageViewSp;
 	std::vector<VkImageViewSp>	imageViewsShPtrs(firstSubpassAttachmentsCount + numSamples);
+	std::vector<VkImage>		images(firstSubpassAttachmentsCount + numSamples);
 	std::vector<VkImageView>	imageViews(firstSubpassAttachmentsCount + numSamples);
+
+	images[0] = **imageMS;
+	images[1] = **imageRS;
 
 	imageViewsShPtrs[0] = makeVkSharedPtr(makeImageView(deviceInterface, device, **imageMS, mapImageViewType(m_imageType), imageMSInfo.format, fullImageRange));
 	imageViewsShPtrs[1] = makeVkSharedPtr(makeImageView(deviceInterface, device, **imageRS, mapImageViewType(m_imageType), imageRSInfo.format, fullImageRange));
@@ -355,6 +368,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 	for (deUint32 sampleNdx = 0u; sampleNdx < numSamples; ++sampleNdx)
 	{
+		images[firstSubpassAttachmentsCount + sampleNdx] = **imagesPerSampleVec[sampleNdx];
 		imageViewsShPtrs[firstSubpassAttachmentsCount + sampleNdx] = makeVkSharedPtr(makeImageView(deviceInterface, device, **imagesPerSampleVec[sampleNdx], mapImageViewType(m_imageType), imageRSInfo.format, fullImageRange));
 		imageViews[firstSubpassAttachmentsCount + sampleNdx] = **imageViewsShPtrs[firstSubpassAttachmentsCount + sampleNdx];
 	}
@@ -373,7 +387,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 		imageMSInfo.arrayLayers,					// uint32_t                                    layers;
 	};
 
-	const Unique<VkFramebuffer> framebuffer(createFramebuffer(deviceInterface, device, &framebufferInfo));
+	renderPass.createFramebuffer(deviceInterface, device, &framebufferInfo, images);
 
 	const VkDescriptorSetLayout* descriptorSetLayoutMSPass = createMSPassDescSetLayout(m_imageMSParams);
 
@@ -389,7 +403,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 		DE_NULL,										// const VkPushConstantRange*		pPushConstantRanges;
 	};
 
-	const Unique<VkPipelineLayout> pipelineLayoutMSPass(createPipelineLayout(deviceInterface, device, &pipelineLayoutMSPassParams));
+	const PipelineLayoutWrapper pipelineLayoutMSPass(m_imageMSParams.pipelineConstructionType, deviceInterface, device, &pipelineLayoutMSPassParams);
 
 	// Create vertex attributes data
 	const VertexDataDesc vertexDataDesc = getVertexDataDescripton();
@@ -425,19 +439,19 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 	const VkPipelineMultisampleStateCreateInfo multisampleStateInfo = getMSStateCreateInfo(m_imageMSParams);
 
 	// Create graphics pipeline for multisample pass
-	const Unique<VkShaderModule> vsMSPassModule(createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("vertex_shader"), (VkShaderModuleCreateFlags)0u));
-	const Unique<VkShaderModule> fsMSPassModule(createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("fragment_shader"), (VkShaderModuleCreateFlags)0u));
+	const ShaderWrapper vsMSPassModule(ShaderWrapper(deviceInterface, device, m_context.getBinaryCollection().get("vertex_shader"), (VkShaderModuleCreateFlags)0u));
+	const ShaderWrapper fsMSPassModule(ShaderWrapper(deviceInterface, device, m_context.getBinaryCollection().get("fragment_shader"), (VkShaderModuleCreateFlags)0u));
 
-	GraphicsPipelineWrapper graphicsPipelineMSPass(deviceInterface, device, m_imageMSParams.pipelineConstructionType);
+	GraphicsPipelineWrapper graphicsPipelineMSPass(instance, deviceInterface, physicalDevice, device, m_context.getDeviceExtensions(), m_imageMSParams.pipelineConstructionType);
 	graphicsPipelineMSPass.setDefaultColorBlendState()
 						  .setDefaultDepthStencilState()
 						  .setDefaultRasterizationState()
 						  .setDefaultTopology(vertexDataDesc.primitiveTopology)
-						  .setupVertexInputStete(&vertexInputStateInfo)
-						  .setupPreRasterizationShaderState(viewports, scissors, *pipelineLayoutMSPass, *renderPass, 0u, *vsMSPassModule)
-						  .setupFragmentShaderState(*pipelineLayoutMSPass, *renderPass, 0u, *fsMSPassModule, DE_NULL, &multisampleStateInfo)
+						  .setupVertexInputState(&vertexInputStateInfo)
+						  .setupPreRasterizationShaderState(viewports, scissors, pipelineLayoutMSPass, *renderPass, 0u, vsMSPassModule)
+						  .setupFragmentShaderState(pipelineLayoutMSPass, *renderPass, 0u, fsMSPassModule, DE_NULL, &multisampleStateInfo)
 						  .setupFragmentOutputState(*renderPass, 0u, DE_NULL, &multisampleStateInfo)
-						  .setMonolithicPipelineLayout(*pipelineLayoutMSPass)
+						  .setMonolithicPipelineLayout(pipelineLayoutMSPass)
 						  .buildPipeline();
 
 	std::vector<GraphicsPipelineWrapper> graphicsPipelinesPerSampleFetch;
@@ -450,7 +464,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 		.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build(deviceInterface, device));
 
-	const Unique<VkPipelineLayout> pipelineLayoutPerSampleFetchPass(makePipelineLayout(deviceInterface, device, *descriptorSetLayout));
+	const PipelineLayoutWrapper pipelineLayoutPerSampleFetchPass(m_imageMSParams.pipelineConstructionType, deviceInterface, device, *descriptorSetLayout);
 
 	const deUint32 bufferPerSampleFetchPassSize = 4u * (deUint32)sizeof(tcu::Vec4);
 
@@ -458,8 +472,8 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 	// Create graphics pipelines for per sample texel fetch passes
 	{
-		const Unique<VkShaderModule> vsPerSampleFetchPassModule(createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("per_sample_fetch_vs"), (VkShaderModuleCreateFlags)0u));
-		const Unique<VkShaderModule> fsPerSampleFetchPassModule(createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("per_sample_fetch_fs"), (VkShaderModuleCreateFlags)0u));
+		const ShaderWrapper vsPerSampleFetchPassModule(ShaderWrapper(deviceInterface, device, m_context.getBinaryCollection().get("per_sample_fetch_vs"), (VkShaderModuleCreateFlags)0u));
+		const ShaderWrapper fsPerSampleFetchPassModule(ShaderWrapper(deviceInterface, device, m_context.getBinaryCollection().get("per_sample_fetch_fs"), (VkShaderModuleCreateFlags)0u));
 
 		std::vector<tcu::Vec4> vertices;
 
@@ -477,18 +491,18 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 		for (deUint32 sampleNdx = 0u; sampleNdx < numSamples; ++sampleNdx)
 		{
 			const deUint32 subpass = 1u + sampleNdx;
-			graphicsPipelinesPerSampleFetch.emplace_back(deviceInterface, device, m_imageMSParams.pipelineConstructionType);
+			graphicsPipelinesPerSampleFetch.emplace_back(instance, deviceInterface, physicalDevice, device, m_context.getDeviceExtensions(), m_imageMSParams.pipelineConstructionType);
 			graphicsPipelinesPerSampleFetch.back()
 				.setDefaultMultisampleState()
 				.setDefaultColorBlendState()
 				.setDefaultDepthStencilState()
 				.setDefaultRasterizationState()
 				.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
-				.setupVertexInputStete()
-				.setupPreRasterizationShaderState(viewports, scissors, *pipelineLayoutPerSampleFetchPass, *renderPass, subpass, *vsPerSampleFetchPassModule)
-				.setupFragmentShaderState(*pipelineLayoutPerSampleFetchPass, *renderPass, subpass, *fsPerSampleFetchPassModule)
+				.setupVertexInputState()
+				.setupPreRasterizationShaderState(viewports, scissors, pipelineLayoutPerSampleFetchPass, *renderPass, subpass, vsPerSampleFetchPassModule)
+				.setupFragmentShaderState(pipelineLayoutPerSampleFetchPass, *renderPass, subpass, fsPerSampleFetchPassModule)
 				.setupFragmentOutputState(*renderPass, subpass)
-				.setMonolithicPipelineLayout(*pipelineLayoutPerSampleFetchPass)
+				.setMonolithicPipelineLayout(pipelineLayoutPerSampleFetchPass)
 				.buildPipeline();
 		}
 	}
@@ -598,10 +612,10 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 			clearValues[attachmentNdx] = makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		}
 
-		beginRenderPass(deviceInterface, *commandBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, imageMSInfo.extent.width, imageMSInfo.extent.height), (deUint32)clearValues.size(), dataPointer(clearValues));
+		renderPass.begin(deviceInterface, *commandBuffer, makeRect2D(0, 0, imageMSInfo.extent.width, imageMSInfo.extent.height), (deUint32)clearValues.size(), dataPointer(clearValues));
 
 		// Bind graphics pipeline
-		deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineMSPass.getPipeline());
+		graphicsPipelineMSPass.bind(*commandBuffer);
 
 		const VkDescriptorSet* descriptorSetMSPass = createMSPassDescSet(m_imageMSParams, descriptorSetLayoutMSPass);
 
@@ -619,10 +633,10 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 
 		for (deUint32 sampleNdx = 0u; sampleNdx < numSamples; ++sampleNdx)
 		{
-			deviceInterface.cmdNextSubpass(*commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			renderPass.nextSubpass(deviceInterface, *commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
 			// Bind graphics pipeline
-			deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelinesPerSampleFetch[sampleNdx].getPipeline());
+			graphicsPipelinesPerSampleFetch[sampleNdx].bind(*commandBuffer);
 
 			// Bind descriptor set
 			deviceInterface.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayoutPerSampleFetchPass, 0u, 1u, &descriptorSet.get(), 1u, &sampleIDsOffsets[sampleNdx]);
@@ -635,7 +649,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 		}
 
 		// End render pass
-		endRenderPass(deviceInterface, *commandBuffer);
+		renderPass.end(deviceInterface, *commandBuffer);
 	}
 
 	{

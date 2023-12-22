@@ -36,6 +36,7 @@
 #include "vktWsiColorSpaceTests.hpp"
 #include "vktWsiFullScreenExclusiveTests.hpp"
 #include "vktWsiPresentIdWaitTests.hpp"
+#include "vktWsiMaintenance1Tests.hpp"
 
 namespace vkt
 {
@@ -47,15 +48,26 @@ namespace
 
 void createTypeSpecificTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	addTestGroup(testGroup, "surface",					"VkSurface Tests",							createSurfaceTests,					wsiType);
-	addTestGroup(testGroup, "swapchain",				"VkSwapchain Tests",						createSwapchainTests,				wsiType);
-	addTestGroup(testGroup, "incremental_present",		"Incremental present tests",				createIncrementalPresentTests,		wsiType);
-	addTestGroup(testGroup, "display_timing",			"Display Timing Tests",						createDisplayTimingTests,			wsiType);
-	addTestGroup(testGroup, "shared_presentable_image",	"VK_KHR_shared_presentable_image tests",	createSharedPresentableImageTests,	wsiType);
-	addTestGroup(testGroup, "colorspace",				"ColorSpace tests",							createColorSpaceTests,				wsiType);
-	addTestGroup(testGroup, "colorspace_compare",		"ColorSpace compare tests",					createColorspaceCompareTests,		wsiType);
-	addTestGroup(testGroup, "full_screen_exclusive",	"VK_EXT_full_screen_exclusive tests",		createFullScreenExclusiveTests,		wsiType);
-	addTestGroup(testGroup, "present_id_wait",			"VK_KHR_present_(id|wait) tests",			createPresentIdWaitTests,			wsiType);
+	// VkSurface Tests
+	addTestGroup(testGroup, "surface", createSurfaceTests,					wsiType);
+	// VkSwapchain Tests
+	addTestGroup(testGroup, "swapchain", createSwapchainTests,				wsiType);
+	// Incremental present tests
+	addTestGroup(testGroup, "incremental_present", createIncrementalPresentTests,		wsiType);
+	// Display Timing Tests
+	addTestGroup(testGroup, "display_timing", createDisplayTimingTests,			wsiType);
+	// VK_KHR_shared_presentable_image tests
+	addTestGroup(testGroup, "shared_presentable_image", createSharedPresentableImageTests,	wsiType);
+	// ColorSpace tests
+	addTestGroup(testGroup, "colorspace", createColorSpaceTests,				wsiType);
+	// ColorSpace compare tests
+	addTestGroup(testGroup, "colorspace_compare", createColorspaceCompareTests,		wsiType);
+	// VK_EXT_full_screen_exclusive tests
+	addTestGroup(testGroup, "full_screen_exclusive", createFullScreenExclusiveTests,		wsiType);
+	// VK_KHR_present_(id|wait) tests
+	addTestGroup(testGroup, "present_id_wait", createPresentIdWaitTests,			wsiType);
+	// VK_KHR_(surface|swapchain)_maintenance1 tests
+	addTestGroup(testGroup, "maintenance1", createMaintenance1Tests,			wsiType);
 }
 
 void createWsiTests (tcu::TestCaseGroup* apiTests)
@@ -64,19 +76,22 @@ void createWsiTests (tcu::TestCaseGroup* apiTests)
 	{
 		const vk::wsi::Type	wsiType	= (vk::wsi::Type)typeNdx;
 
-		addTestGroup(apiTests, getName(wsiType), "", createTypeSpecificTests, wsiType);
+		addTestGroup(apiTests, getName(wsiType), createTypeSpecificTests, wsiType);
 	}
 
-	addTestGroup(apiTests, "display", "Display coverage tests", createDisplayCoverageTests);
-	addTestGroup(apiTests, "display_control", "Display Control Tests", createDisplayControlTests);
-	addTestGroup(apiTests, "acquire_drm_display", "Acquire Drm display tests", createAcquireDrmDisplayTests);
+	// Display coverage tests
+	addTestGroup(apiTests, "display", createDisplayCoverageTests);
+	// Display Control Tests
+	addTestGroup(apiTests, "display_control", createDisplayControlTests);
+	// Acquire Drm display tests
+	addTestGroup(apiTests, "acquire_drm_display", createAcquireDrmDisplayTests);
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "wsi", "WSI Tests", createWsiTests);
+	return createTestGroup(testCtx, name.c_str(), createWsiTests);
 }
 
 } // wsi

@@ -43,9 +43,9 @@ void createAmberTests (tcu::TestCaseGroup* group)
 
 } // anonymous
 
-tcu::TestCaseGroup* createGraphicsFuzzTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createGraphicsFuzzTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "graphicsfuzz", "Amber GraphicsFuzz Tests", createAmberTests);
+	return createTestGroup(testCtx, name.c_str(), createAmberTests);
 }
 
 } // cts_amber

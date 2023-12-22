@@ -59,19 +59,6 @@ namespace texture
 namespace util
 {
 
-deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
-{
-	const std::vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
-
-	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
-	{
-		if ((queueProps[queueNdx].queueFlags & requiredCaps) == requiredCaps)
-			return (deUint32)queueNdx;
-	}
-
-	TCU_THROW(NotSupportedError, "No matching queue found");
-}
-
 struct ShaderParameters {
 	float		bias;				//!< User-supplied bias.
 	float		ref;				//!< Reference value for shadow lookups.
@@ -168,7 +155,7 @@ VkImageType imageViewTypeToImageType (VkImageViewType type)
 	}
 }
 
-void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle, glu::Precision fragOutputPrecision)
+void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle, glu::Precision fragOutputPrecision, bool unnormal)
 {
 	static const char* vertShaderTemplate =
 		"${VTX_HEADER}"
@@ -250,56 +237,59 @@ void initializePrograms (vk::SourceCollections& programCollection, glu::Precisio
 			params["TEXCOORD_SWZ"]	= std::string(".") + texCoordSwizzle;
 
 		const char*	sampler	= DE_NULL;
-		const char*	lookup	= DE_NULL;
+		std::string	lookup;
+
+		std::string texture = unnormal ? "textureLod" : "texture";
+		std::string lod		= unnormal ? ", 0" : "";
 
 		switch (program)
 		{
-			case PROGRAM_2D_FLOAT:			sampler = "sampler2D";				lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_2D_INT:			sampler = "isampler2D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_2D_UINT:			sampler = "usampler2D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_2D_FETCH_LOD:		sampler = "sampler2D";				lookup = "texelFetch(u_sampler, ivec2(texCoord * vec2(64.f), 3)";							break;
-			case PROGRAM_2D_SHADOW:			sampler = "sampler2DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref)), 0.0, 0.0, 1.0)";				break;
-			case PROGRAM_2D_FLOAT_BIAS:		sampler = "sampler2D";				lookup = "texture(u_sampler, texCoord, u_bias)";										break;
-			case PROGRAM_2D_INT_BIAS:		sampler = "isampler2D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_2D_UINT_BIAS:		sampler = "usampler2D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_2D_SHADOW_BIAS:	sampler = "sampler2DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref), u_bias), 0.0, 0.0, 1.0)";		break;
-			case PROGRAM_1D_FLOAT:			sampler = "sampler1D";				lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_1D_INT:			sampler = "isampler1D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_1D_UINT:			sampler = "usampler1D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_1D_SHADOW:			sampler = "sampler1DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, 0.0, u_ref)), 0.0, 0.0, 1.0)";			break;
-			case PROGRAM_1D_FLOAT_BIAS:		sampler = "sampler1D";				lookup = "texture(u_sampler, texCoord, u_bias)";										break;
-			case PROGRAM_1D_INT_BIAS:		sampler = "isampler1D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_1D_UINT_BIAS:		sampler = "usampler1D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_1D_SHADOW_BIAS:	sampler = "sampler1DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, 0.0, u_ref), u_bias), 0.0, 0.0, 1.0)";	break;
-			case PROGRAM_CUBE_FLOAT:		sampler = "samplerCube";			lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_CUBE_INT:			sampler = "isamplerCube";			lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_CUBE_UINT:			sampler = "usamplerCube";			lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_CUBE_SHADOW:		sampler = "samplerCubeShadow";		lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref)), 0.0, 0.0, 1.0)";				break;
-			case PROGRAM_CUBE_FLOAT_BIAS:	sampler = "samplerCube";			lookup = "texture(u_sampler, texCoord, u_bias)";										break;
-			case PROGRAM_CUBE_INT_BIAS:		sampler = "isamplerCube";			lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_CUBE_UINT_BIAS:	sampler = "usamplerCube";			lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_CUBE_SHADOW_BIAS:	sampler = "samplerCubeShadow";		lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref), u_bias), 0.0, 0.0, 1.0)";		break;
-			case PROGRAM_2D_ARRAY_FLOAT:	sampler = "sampler2DArray";			lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_2D_ARRAY_INT:		sampler = "isampler2DArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_2D_ARRAY_UINT:		sampler = "usampler2DArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_2D_ARRAY_SHADOW:	sampler = "sampler2DArrayShadow";	lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref)), 0.0, 0.0, 1.0)";				break;
-			case PROGRAM_3D_FLOAT:			sampler = "sampler3D";				lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_3D_INT:			sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_3D_UINT:			sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_3D_FLOAT_BIAS:		sampler = "sampler3D";				lookup = "texture(u_sampler, texCoord, u_bias)";										break;
-			case PROGRAM_3D_INT_BIAS:		sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_3D_UINT_BIAS:		sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
-			case PROGRAM_CUBE_ARRAY_FLOAT:	sampler = "samplerCubeArray";		lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_CUBE_ARRAY_INT:	sampler = "isamplerCubeArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_CUBE_ARRAY_UINT:	sampler = "usamplerCubeArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_CUBE_ARRAY_SHADOW:	sampler = "samplerCubeArrayShadow";	lookup = "vec4(texture(u_sampler, texCoord, u_ref), 0.0, 0.0, 1.0)";					break;
-			case PROGRAM_1D_ARRAY_FLOAT:	sampler = "sampler1DArray";			lookup = "texture(u_sampler, texCoord)";												break;
-			case PROGRAM_1D_ARRAY_INT:		sampler = "isampler1DArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_1D_ARRAY_UINT:		sampler = "usampler1DArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
-			case PROGRAM_1D_ARRAY_SHADOW:	sampler = "sampler1DArrayShadow";	lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref)), 0.0, 0.0, 1.0)";				break;
-			case PROGRAM_BUFFER_FLOAT:		sampler = "samplerBuffer";			lookup = "texelFetch(u_sampler, int(texCoord))";										break;
-			case PROGRAM_BUFFER_INT:		sampler = "isamplerBuffer";			lookup = "vec4(texelFetch(u_sampler, int(texCoord)))";									break;
-			case PROGRAM_BUFFER_UINT:		sampler = "usamplerBuffer";			lookup = "vec4(texelFetch(u_sampler, int(texCoord)))";									break;
+			case PROGRAM_2D_FLOAT:			sampler = "sampler2D";				lookup = texture + "(u_sampler, texCoord" + lod + ")";												break;
+			case PROGRAM_2D_INT:			sampler = "isampler2D";				lookup = "vec4(" + texture + "(u_sampler, texCoord" + lod + "))";									break;
+			case PROGRAM_2D_UINT:			sampler = "usampler2D";				lookup = "vec4(" + texture + "(u_sampler, texCoord" + lod + "))";									break;
+			case PROGRAM_2D_FETCH_LOD:		sampler = "sampler2D";				lookup = "texelFetch(u_sampler, ivec2(texCoord * vec2(64.f), 3)";									break;
+			case PROGRAM_2D_SHADOW:			sampler = "sampler2DShadow";		lookup = "vec4(" + texture + "(u_sampler, vec3(texCoord, u_ref)" + lod + "), 0.0, 0.0, 1.0)";		break;
+			case PROGRAM_2D_FLOAT_BIAS:		sampler = "sampler2D";				lookup = "texture(u_sampler, texCoord, u_bias)";													break;
+			case PROGRAM_2D_INT_BIAS:		sampler = "isampler2D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_2D_UINT_BIAS:		sampler = "usampler2D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_2D_SHADOW_BIAS:	sampler = "sampler2DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref), u_bias), 0.0, 0.0, 1.0)";					break;
+			case PROGRAM_1D_FLOAT:			sampler = "sampler1D";				lookup = texture + "(u_sampler, texCoord" + lod + ")";												break;
+			case PROGRAM_1D_INT:			sampler = "isampler1D";				lookup = "vec4(" + texture + "(u_sampler, texCoord" + lod + "))";									break;
+			case PROGRAM_1D_UINT:			sampler = "usampler1D";				lookup = "vec4(" + texture + "(u_sampler, texCoord" + lod + "))";									break;
+			case PROGRAM_1D_SHADOW:			sampler = "sampler1DShadow";		lookup = "vec4(" + texture + "(u_sampler, vec3(texCoord, 0.0, u_ref)" + lod + "), 0.0, 0.0, 1.0)";	break;
+			case PROGRAM_1D_FLOAT_BIAS:		sampler = "sampler1D";				lookup = "texture(u_sampler, texCoord, u_bias)";													break;
+			case PROGRAM_1D_INT_BIAS:		sampler = "isampler1D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_1D_UINT_BIAS:		sampler = "usampler1D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_1D_SHADOW_BIAS:	sampler = "sampler1DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, 0.0, u_ref), u_bias), 0.0, 0.0, 1.0)";				break;
+			case PROGRAM_CUBE_FLOAT:		sampler = "samplerCube";			lookup = "texture(u_sampler, texCoord)";															break;
+			case PROGRAM_CUBE_INT:			sampler = "isamplerCube";			lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_CUBE_UINT:			sampler = "usamplerCube";			lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_CUBE_SHADOW:		sampler = "samplerCubeShadow";		lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref)), 0.0, 0.0, 1.0)";							break;
+			case PROGRAM_CUBE_FLOAT_BIAS:	sampler = "samplerCube";			lookup = "texture(u_sampler, texCoord, u_bias)";													break;
+			case PROGRAM_CUBE_INT_BIAS:		sampler = "isamplerCube";			lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_CUBE_UINT_BIAS:	sampler = "usamplerCube";			lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_CUBE_SHADOW_BIAS:	sampler = "samplerCubeShadow";		lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref), u_bias), 0.0, 0.0, 1.0)";					break;
+			case PROGRAM_2D_ARRAY_FLOAT:	sampler = "sampler2DArray";			lookup = "texture(u_sampler, texCoord)";															break;
+			case PROGRAM_2D_ARRAY_INT:		sampler = "isampler2DArray";		lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_2D_ARRAY_UINT:		sampler = "usampler2DArray";		lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_2D_ARRAY_SHADOW:	sampler = "sampler2DArrayShadow";	lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref)), 0.0, 0.0, 1.0)";							break;
+			case PROGRAM_3D_FLOAT:			sampler = "sampler3D";				lookup = "texture(u_sampler, texCoord)";															break;
+			case PROGRAM_3D_INT:			sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_3D_UINT:			sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_3D_FLOAT_BIAS:		sampler = "sampler3D";				lookup = "texture(u_sampler, texCoord, u_bias)";													break;
+			case PROGRAM_3D_INT_BIAS:		sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_3D_UINT_BIAS:		sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";												break;
+			case PROGRAM_CUBE_ARRAY_FLOAT:	sampler = "samplerCubeArray";		lookup = "texture(u_sampler, texCoord)";															break;
+			case PROGRAM_CUBE_ARRAY_INT:	sampler = "isamplerCubeArray";		lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_CUBE_ARRAY_UINT:	sampler = "usamplerCubeArray";		lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_CUBE_ARRAY_SHADOW:	sampler = "samplerCubeArrayShadow";	lookup = "vec4(texture(u_sampler, texCoord, u_ref), 0.0, 0.0, 1.0)";								break;
+			case PROGRAM_1D_ARRAY_FLOAT:	sampler = "sampler1DArray";			lookup = "texture(u_sampler, texCoord)";															break;
+			case PROGRAM_1D_ARRAY_INT:		sampler = "isampler1DArray";		lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_1D_ARRAY_UINT:		sampler = "usampler1DArray";		lookup = "vec4(texture(u_sampler, texCoord))";														break;
+			case PROGRAM_1D_ARRAY_SHADOW:	sampler = "sampler1DArrayShadow";	lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref)), 0.0, 0.0, 1.0)";							break;
+			case PROGRAM_BUFFER_FLOAT:		sampler = "samplerBuffer";			lookup = "texelFetch(u_sampler, int(texCoord))";													break;
+			case PROGRAM_BUFFER_INT:		sampler = "isamplerBuffer";			lookup = "vec4(texelFetch(u_sampler, int(texCoord)))";												break;
+			case PROGRAM_BUFFER_UINT:		sampler = "usamplerBuffer";			lookup = "vec4(texelFetch(u_sampler, int(texCoord)))";												break;
 			default:
 				DE_ASSERT(false);
 		}
@@ -496,21 +486,6 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 	m_textureImageView		= createImageView(vkd, m_device, &viewParams);
 }
 
-static
-std::vector<std::string> removeExtensions (const std::vector<std::string>& a, const std::vector<const char*>& b)
-{
-	std::vector<std::string>	res;
-	std::set<std::string>		removeExts	(b.begin(), b.end());
-
-	for (std::vector<std::string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
-	{
-		if (!de::contains(removeExts, *aIter))
-			res.push_back(*aIter);
-	}
-
-	return res;
-}
-
 Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysicalDeviceFeatures2* enabledFeatures2)
 {
 	const float queuePriority = 1.0f;
@@ -528,15 +503,7 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 
 	// \note Extensions in core are not explicitly enabled even though
 	//		 they are in the extension list advertised to tests.
-    std::vector<const char*>	extensionPtrs;
-	std::vector<const char*>	coreExtensions;
-	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
-    std::vector<std::string>	nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
-
-	extensionPtrs.resize(nonCoreExtensions.size());
-
-	for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
-		extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
+	const auto& extensionPtrs = context.getDeviceCreationExtensions();
 
 	const VkDeviceCreateInfo		deviceParams =
 	{
@@ -546,10 +513,10 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 		1u,										// deUint32							queueCreateInfoCount;
 		&queueParams,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
 		0u,										// deUint32							enabledLayerCount;
-		DE_NULL,								// const char* const*				ppEnabledLayerNames;
-		(deUint32)extensionPtrs.size(),			// deUint32							enabledExtensionCount;
-		(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),	// const char* const*				ppEnabledExtensionNames;
-		DE_NULL									// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		nullptr,								// const char* const*				ppEnabledLayerNames;
+		de::sizeU32(extensionPtrs),				// deUint32							enabledExtensionCount;
+		de::dataOrNull(extensionPtrs),			// const char* const*				ppEnabledExtensionNames;
+		nullptr									// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
 	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
@@ -1872,6 +1839,11 @@ Texture1DArrayTestCaseParameters::Texture1DArrayTestCaseParameters (void)
 
 TextureCubeArrayTestCaseParameters::TextureCubeArrayTestCaseParameters (void)
 	: numLayers				(8)
+{
+}
+
+TextureCubeFilteringTestCaseParameters::TextureCubeFilteringTestCaseParameters (void)
+	: onlySampleFaceInterior	(false)
 {
 }
 

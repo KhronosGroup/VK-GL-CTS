@@ -236,6 +236,12 @@ public:
 		DE_UNREF(newSize);
 	}
 
+	void setMinimized(bool minimized)
+	{
+		DE_UNREF(minimized);
+		TCU_THROW(NotSupportedError, "Minimized on Android is not implemented");
+	}
+
 	~VulkanWindow (void)
 	{
 		m_window.release();

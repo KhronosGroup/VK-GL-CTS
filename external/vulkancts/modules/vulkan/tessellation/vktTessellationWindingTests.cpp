@@ -217,7 +217,7 @@ WindingTest::WindingTest (tcu::TestContext&			testCtx,
 						  const ShaderLanguage		shaderLanguage,
 						  const Winding				winding,
 						  bool						yFlip)
-	: TestCase			(testCtx, getCaseName(primitiveType, shaderLanguage, winding, yFlip), "")
+	: TestCase			(testCtx, getCaseName(primitiveType, shaderLanguage, winding, yFlip))
 	, m_primitiveType	(primitiveType)
 	, m_domainOrigin	(domainOrigin)
 	, m_shaderLanguage	(shaderLanguage)
@@ -600,11 +600,15 @@ void populateWindingGroup (tcu::TestCaseGroup* group, tcu::Maybe<VkTessellationD
 //! These tests correspond to dEQP-GLES31.functional.tessellation.winding.*
 tcu::TestCaseGroup* createWindingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "winding", "Test the cw and ccw input layout qualifiers"));
+	// Test the cw and ccw input layout qualifiers
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "winding"));
 
-	addTestGroup(group.get(), "default_domain",		"No tessellation domain specified",	populateWindingGroup,	tcu::nothing<VkTessellationDomainOrigin>());
-	addTestGroup(group.get(), "lower_left_domain",	"Lower left tessellation domain",	populateWindingGroup,	tcu::just(VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT));
-	addTestGroup(group.get(), "upper_left_domain",	"Upper left tessellation domain",	populateWindingGroup,	tcu::just(VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT));
+	// No tessellation domain specified
+	addTestGroup(group.get(), "default_domain", populateWindingGroup,	tcu::nothing<VkTessellationDomainOrigin>());
+	// Lower left tessellation domain
+	addTestGroup(group.get(), "lower_left_domain", populateWindingGroup,	tcu::just(VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT));
+	// Upper left tessellation domain
+	addTestGroup(group.get(), "upper_left_domain", populateWindingGroup,	tcu::just(VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT));
 
 	return group.release();
 }

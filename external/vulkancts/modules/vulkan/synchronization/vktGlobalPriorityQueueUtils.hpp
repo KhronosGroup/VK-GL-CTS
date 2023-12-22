@@ -39,38 +39,17 @@ class Context;
 namespace synchronization
 {
 
-struct QueueGlobalPriorities
-{
-	typedef vk::VkQueueGlobalPriorityKHR Priority;
-	typedef std::set<Priority> Priorities;
-	QueueGlobalPriorities	();
-	QueueGlobalPriorities	(const QueueGlobalPriorities& other);
-	QueueGlobalPriorities	(const vk::VkQueueFamilyGlobalPriorityPropertiesKHR& source);
-	QueueGlobalPriorities	(std::initializer_list<Priority> priorities);
-	static QueueGlobalPriorities full ();
-	auto			make	(void* pNext = nullptr) const -> vk::VkQueueFamilyGlobalPriorityPropertiesKHR;
-	bool			insert	(const Priority& prio);
-	bool			remove	(const Priority& prio);
-	bool			any		(const Priority& prio) const;
-	bool			any		(const QueueGlobalPriorities& other) const;
-	bool			all		(const QueueGlobalPriorities& other) const;
-protected:
-	Priorities	m_priorities;
-};
+constexpr deUint32 INVALID_UINT32 = (~(static_cast<deUint32>(0u)));
 
 deUint32 findQueueFamilyIndex (const vk::InstanceInterface&	vki,
 							   vk::VkPhysicalDevice			dev,
+							   vk::VkQueueGlobalPriorityKHR	priority,
 							   vk::VkQueueFlags				includeFlags,
-							   vk::VkQueueFlags				excludeFlags			= 0,
-							   bool							priorityQueryEnabled	= false,
-							   QueueGlobalPriorities		priorities				= QueueGlobalPriorities::full(),
-							   const bool					eitherAnyOrAll = true);
-
-constexpr deUint32 INVALID_UINT32 = (~(static_cast<deUint32>(0u)));
+							   vk::VkQueueFlags				excludeFlags,
+							   deUint32						excludeIndex = INVALID_UINT32);
 
 struct SpecialDevice
 {
-							SpecialDevice		(SpecialDevice&&				src);
 							SpecialDevice		(Context&						ctx,
 												 vk::VkQueueFlagBits			transitionFrom,
 												 vk::VkQueueFlagBits			transitionTo,
@@ -78,29 +57,37 @@ struct SpecialDevice
 												 vk::VkQueueGlobalPriorityKHR	priorityTo,
 												 bool							enableProtected,
 												 bool							enableSparseBinding);
-	static vk::VkQueueFlags	getColissionFlags	(vk::VkQueueFlagBits			bits);
+							SpecialDevice		(const SpecialDevice&) = delete;
+		   SpecialDevice&	operator=			(const SpecialDevice&) = delete;
+	static vk::VkQueueFlags	getColissionFlags	(vk::VkQueueFlags				flags);
 	virtual					~SpecialDevice		();
-	bool					isValid				(vk::VkResult&					creationResult) const;
 
 public:
 	const deUint32&			queueFamilyIndexFrom;
 	const deUint32&			queueFamilyIndexTo;
-	const vk::VkDevice&		device;
+	const vk::VkDevice&		handle;
 	const vk::VkQueue&		queueFrom;
 	const vk::VkQueue&		queueTo;
-	vk::Allocator&			getAllocator() const;
+	const vk::VkResult&		createResult;
+	const char* const&		createExpression;
+	const char* const&		createFileName;
+	const deInt32&			createFileLine;
+	vk::Allocator&			getAllocator() const { return *m_allocator; }
 
 protected:
-	const vk::DeviceInterface&		m_vkd;
+	Context&						m_context;
 	vk::VkQueueFlagBits				m_transitionFrom;
 	vk::VkQueueFlagBits				m_transitionTo;
 	deUint32						m_queueFamilyIndexFrom;
 	deUint32						m_queueFamilyIndexTo;
-	vk::VkDevice					m_device;
+	vk::VkDevice					m_deviceHandle;
 	vk::VkQueue						m_queueFrom;
 	vk::VkQueue						m_queueTo;
 	de::MovePtr<vk::Allocator>		m_allocator;
-	vk::VkResult					m_creationResult;
+	vk::VkResult					m_createResult;
+	const char*						m_createExpression;
+	const char*						m_createFileName;
+	deInt32							m_createFileLine;
 };
 
 class BufferWithMemory
@@ -116,9 +103,10 @@ public:
 												 const vk::VkQueue				sparseQueue = vk::VkQueue(0));
 
 	const vk::VkBuffer&		get					(void) const { return *m_buffer; }
+	const vk::VkBuffer*		getPtr				(void) const { return &(*m_buffer); }
 	const vk::VkBuffer&		operator*			(void) const { return get(); }
 	void*					getHostPtr			(void) const;
-	vk::VkDeviceSize		getSize				() const { return m_requirements.size; }
+	vk::VkDeviceSize		getSize				() const { return m_size; }
 	void					invalidateAlloc		(const vk::DeviceInterface&		vk,
 												 const vk::VkDevice				device) const;
 	void					flushAlloc			(const vk::DeviceInterface&		vk,
@@ -131,6 +119,7 @@ protected:
 	const vk::Unique<vk::VkBuffer>				m_buffer;
 	const vk::VkMemoryRequirements				m_requirements;
 	std::vector<de::SharedPtr<vk::Allocation>>	m_allocations;
+	const vk::VkDeviceSize						m_size;
 
 										BufferWithMemory	(const BufferWithMemory&);
 	BufferWithMemory					operator=			(const BufferWithMemory&);

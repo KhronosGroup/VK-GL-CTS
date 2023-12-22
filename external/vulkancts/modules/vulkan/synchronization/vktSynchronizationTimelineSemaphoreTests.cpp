@@ -68,7 +68,6 @@ using namespace vk;
 using tcu::TestLog;
 using de::MovePtr;
 using de::SharedPtr;
-using de::UniquePtr;
 
 template<typename T>
 inline SharedPtr<Move<T> > makeVkSharedPtr (Move<T> move)
@@ -253,7 +252,7 @@ class WaitTestCase : public TestCase
 {
 public:
 	WaitTestCase (tcu::TestContext& testCtx, const std::string& name, SynchronizationType type, bool waitAll, bool signalFromDevice)
-		: TestCase				(testCtx, name.c_str(), "")
+		: TestCase				(testCtx, name.c_str())
 		, m_type				(type)
 		, m_waitAll				(waitAll)
 		, m_signalFromDevice	(signalFromDevice)
@@ -386,7 +385,7 @@ public:
 	HostWaitBeforeSignalTestCase(tcu::TestContext&		testCtx,
 								 const std::string&		name,
 								 SynchronizationType	type)
-		: TestCase(testCtx, name.c_str(), "")
+		: TestCase(testCtx, name.c_str())
 		, m_type(type)
 	{
 	}
@@ -428,6 +427,7 @@ public:
 		std::vector<deUint64>								timelineValues;
 		const deUint64										secondInMicroSeconds	= 1000ull * 1000ull * 1000ull;
 		deUint64											startTime;
+		VkResult											result = VK_SUCCESS;
 
 		for (deUint32 i = 0; i < semaphorePtrs.size(); i++)
 		{
@@ -450,7 +450,8 @@ public:
 		do
 		{
 			deUint64	value;
-			VkResult	result	=	vk.getSemaphoreCounterValue(device, semaphores.back(), &value);
+
+			result = vk.getSemaphoreCounterValue(device, semaphores.back(), &value);
 
 			if (result != VK_SUCCESS)
 				break;
@@ -464,12 +465,15 @@ public:
 			}
 
 			if (value > timelineValues.back())
+			{
+				result = VK_ERROR_UNKNOWN;
 				break;
-		} while ((deGetMicroseconds() - startTime) > secondInMicroSeconds);
+			}
+		} while ((deGetMicroseconds() - startTime) < secondInMicroSeconds);
 
 		VK_CHECK(vk.deviceWaitIdle(device));
 
-		if ((deGetMicroseconds() - startTime) < secondInMicroSeconds)
+		if (result != VK_SUCCESS)
 			return tcu::TestStatus::fail("Fail");
 		return tcu::TestStatus::fail("Timeout");
 	}
@@ -493,7 +497,7 @@ class PollTestCase : public TestCase
 {
 public:
 	PollTestCase (tcu::TestContext& testCtx, const std::string& name, bool signalFromDevice)
-		: TestCase				(testCtx, name.c_str(), "")
+		: TestCase				(testCtx, name.c_str())
 		, m_signalFromDevice	(signalFromDevice)
 	{
 	}
@@ -731,8 +735,9 @@ tcu::TestStatus initialValueCase (Context& context, SynchronizationType type)
 class WaitTests : public tcu::TestCaseGroup
 {
 public:
+	// Various wait cases of timeline semaphores
 	WaitTests (tcu::TestContext& testCtx, SynchronizationType type)
-		: tcu::TestCaseGroup(testCtx, "wait", "Various wait cases of timeline semaphores")
+		: tcu::TestCaseGroup(testCtx, "wait")
 		, m_type(type)
 	{
 	}
@@ -1073,13 +1078,12 @@ class DeviceHostSyncTestCase : public TestCase
 public:
 	DeviceHostSyncTestCase	(tcu::TestContext&			testCtx,
 							 const std::string&			name,
-							 const std::string&			description,
 							 SynchronizationType		type,
 							 const ResourceDescription	resourceDesc,
 							 const OperationName		writeOp,
 							 const OperationName		readOp,
 							 PipelineCacheData&			pipelineCacheData)
-		: TestCase				(testCtx, name, description)
+		: TestCase				(testCtx, name)
 		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
@@ -1117,8 +1121,9 @@ private:
 class DeviceHostTestsBase : public tcu::TestCaseGroup
 {
 public:
+	// Synchronization of serialized device/host operations
 	DeviceHostTestsBase(tcu::TestContext& testCtx, SynchronizationType type)
-		: tcu::TestCaseGroup(testCtx, "device_host", "Synchronization of serialized device/host operations")
+		: tcu::TestCaseGroup(testCtx, "device_host")
 		, m_type(type)
 	{
 	}
@@ -1189,7 +1194,7 @@ public:
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str()));
 
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
@@ -1198,7 +1203,7 @@ public:
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new DeviceHostSyncTestCase(m_testCtx, name, "", m_type, resource, writeOp, readOp, m_pipelineCacheData));
+					opGroup->addChild(new DeviceHostSyncTestCase(m_testCtx, name, m_type, resource, writeOp, readOp, m_pipelineCacheData));
 					empty = false;
 				}
 			}
@@ -1228,9 +1233,11 @@ public:
 	{
 		initCommonTests();
 
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc", ""));
-		addFunctionCase(miscGroup.get(), "max_difference_value", "Timeline semaphore properties test", checkSupport, maxDifferenceValueCase, m_type);
-		addFunctionCase(miscGroup.get(), "initial_value", "Timeline semaphore initial value test", checkSupport, initialValueCase, m_type);
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc"));
+		// Timeline semaphore properties test
+		addFunctionCase(miscGroup.get(), "max_difference_value", checkSupport, maxDifferenceValueCase, m_type);
+		// Timeline semaphore initial value test
+		addFunctionCase(miscGroup.get(), "initial_value", checkSupport, initialValueCase, m_type);
 		addChild(miscGroup.release());
 	}
 };
@@ -1247,8 +1254,9 @@ public:
 	{
 		initCommonTests();
 
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc", ""));
-		addFunctionCase(miscGroup.get(), "max_difference_value", "Timeline semaphore properties test", checkSupport, maxDifferenceValueCase, m_type);
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc"));
+		// Timeline semaphore properties test
+		addFunctionCase(miscGroup.get(), "max_difference_value", checkSupport, maxDifferenceValueCase, m_type);
 		addChild(miscGroup.release());
 	}
 };
@@ -1391,8 +1399,7 @@ Move<VkDevice> createTestDevice(Context& context, const VkInstance& instance, co
 class SingletonDevice
 {
 	SingletonDevice	(Context& context, SynchronizationType type)
-		: m_instance		(createCustomInstanceFromContext(context))
-		, m_logicalDevice	(createTestDevice(context, m_instance, m_instance.getDriver(), type))
+		: m_logicalDevice	(createTestDevice(context, context.getInstance(), context.getInstanceInterface(), type))
 	{
 	}
 
@@ -1407,24 +1414,11 @@ public:
 		return m_singletonDevice->m_logicalDevice;
 	}
 
-	static vk::VkInstance getInstance()
-	{
-		DE_ASSERT(m_singletonDevice);
-		return m_singletonDevice->m_instance;
-	}
-
-	static const vk::InstanceDriver& getDriver()
-	{
-		DE_ASSERT(m_singletonDevice);
-		return m_singletonDevice->m_instance.getDriver();
-	}
-
 	static void destroy()
 	{
 		m_singletonDevice.clear();
 	}
 private:
-	CustomInstance						m_instance;
 	const Unique<vk::VkDevice>			m_logicalDevice;
 
 	static SharedPtr<SingletonDevice>	m_singletonDevice;
@@ -1455,19 +1449,21 @@ public:
 		, m_device			(SingletonDevice::getDevice(context, type))
 		, m_context			(context)
 #ifndef CTS_USES_VULKANSC
-		, m_deviceDriver	(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device)))
+		, m_deviceDriver	(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion())))
 #else
-		, m_deviceDriver	(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
+		, m_deviceDriver	(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
 #endif // CTS_USES_VULKANSC
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
-												 getPhysicalDeviceMemoryProperties(SingletonDevice::getDriver(),
-												 chooseDevice(SingletonDevice::getDriver(), SingletonDevice::getInstance(), context.getTestContext().getCommandLine()))))
+												 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
+												 chooseDevice(context.getInstanceInterface(), context.getInstance(), context.getTestContext().getCommandLine()))))
 		, m_opContext		(context, type, *m_deviceDriver, *m_device, *m_allocator, pipelineCacheData)
 	{
+		const auto&									vki							= m_context.getInstanceInterface();
+		const auto									instance					= m_context.getInstance();
 		const DeviceInterface&						vk							= *m_deviceDriver;
 		const VkDevice								device						= *m_device;
-		const VkPhysicalDevice						physicalDevice				= chooseDevice(SingletonDevice::getDriver(), SingletonDevice::getInstance(), context.getTestContext().getCommandLine());
-		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties		= getPhysicalDeviceQueueFamilyProperties(SingletonDevice::getDriver(), physicalDevice);
+		const VkPhysicalDevice						physicalDevice				= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties		= getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 		const deUint32								universalQueueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 		de::Random									rng							(1234);
 		deUint32									lastCopyOpIdx				= 0;
@@ -1499,6 +1495,10 @@ public:
 						VkQueueFlags				copyOpQueueFlags	= copyOpSupport->getQueueFlags(m_opContext);
 
 						if ((copyOpQueueFlags & queueFamilyProperties[familyIdx].queueFlags) != copyOpQueueFlags)
+							continue;
+
+						// Barriers use VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT pipeline stage so queue must have VK_QUEUE_GRAPHICS_BIT
+						if ((copyOpQueueFlags & VK_QUEUE_GRAPHICS_BIT) == 0u)
 							continue;
 
 						m_iterations.push_back(makeSharedPtr(new QueueTimelineIteration(copyOpSupport, m_iterations.back()->timelineValue,
@@ -1712,13 +1712,12 @@ class WaitBeforeSignalTestCase : public TestCase
 public:
 	WaitBeforeSignalTestCase	(tcu::TestContext&			testCtx,
 								 const std::string&			name,
-								 const std::string&			description,
 								 SynchronizationType		type,
 								 const ResourceDescription	resourceDesc,
 								 const OperationName		writeOp,
 								 const OperationName		readOp,
 								 PipelineCacheData&			pipelineCacheData)
-		: TestCase				(testCtx, name, description)
+		: TestCase				(testCtx, name)
 		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
@@ -1762,8 +1761,9 @@ private:
 class WaitBeforeSignalTests : public tcu::TestCaseGroup
 {
 public:
+	// Synchronization of out of order submissions to queues
 	WaitBeforeSignalTests (tcu::TestContext& testCtx, SynchronizationType type)
-		: tcu::TestCaseGroup(testCtx, "wait_before_signal", "Synchronization of out of order submissions to queues")
+		: tcu::TestCaseGroup(testCtx, "wait_before_signal")
 		, m_type(type)
 	{
 	}
@@ -1834,7 +1834,7 @@ public:
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str()));
 
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
@@ -1843,7 +1843,7 @@ public:
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new WaitBeforeSignalTestCase(m_testCtx, name, "", m_type, resource, writeOp, readOp, m_pipelineCacheData));
+					opGroup->addChild(new WaitBeforeSignalTestCase(m_testCtx, name, m_type, resource, writeOp, readOp, m_pipelineCacheData));
 					empty = false;
 				}
 			}
@@ -1887,19 +1887,21 @@ public:
 		, m_device			(SingletonDevice::getDevice(context, type))
 		, m_context			(context)
 #ifndef CTS_USES_VULKANSC
-		, m_deviceDriver(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device)))
+		, m_deviceDriver(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion())))
 #else
-		, m_deviceDriver(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), SingletonDevice::getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
+		, m_deviceDriver(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
 #endif // CTS_USES_VULKANSC
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
-												 getPhysicalDeviceMemoryProperties(SingletonDevice::getDriver(),
-												 chooseDevice(SingletonDevice::getDriver(), SingletonDevice::getInstance(), context.getTestContext().getCommandLine()))))
+												 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
+												 chooseDevice(context.getInstanceInterface(), context.getInstance(), context.getTestContext().getCommandLine()))))
 		, m_opContext		(context, type, *m_deviceDriver, *m_device, *m_allocator, pipelineCacheData)
 	{
+		const auto&									vki							= m_context.getInstanceInterface();
+		const auto									instance					= m_context.getInstance();
 		const DeviceInterface&						vk							= *m_deviceDriver;
 		const VkDevice								device						= *m_device;
-		const VkPhysicalDevice						physicalDevice				= chooseDevice(SingletonDevice::getDriver(), SingletonDevice::getInstance(), context.getTestContext().getCommandLine());
-		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties		= getPhysicalDeviceQueueFamilyProperties(SingletonDevice::getDriver(), physicalDevice);
+		const VkPhysicalDevice						physicalDevice				= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties		= getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 		const deUint32								universalQueueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 		de::Random									rng							(1234);
 		deUint32									lastCopyOpIdx				= 0;
@@ -1928,6 +1930,15 @@ public:
 
 						if ((copyOpQueueFlags & queueFamilyProperties[familyIdx].queueFlags) != copyOpQueueFlags)
 							continue;
+
+						VkShaderStageFlagBits writeStage = writeOp->getShaderStage();
+						if (writeStage != VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM && !isStageSupported(writeStage, copyOpQueueFlags)) {
+							continue;
+						}
+						VkShaderStageFlagBits readStage = readOp->getShaderStage();
+						if (readStage != VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM && !isStageSupported(readStage, copyOpQueueFlags)) {
+							continue;
+						}
 
 						m_copyIterations.push_back(makeSharedPtr(new QueueTimelineIteration(copyOpSupport, lastSubmitValue,
 																							getDeviceQueue(vk, device, familyIdx, instanceIdx),
@@ -2001,7 +2012,7 @@ public:
 	{
 	}
 
-	void recordBarrier (const DeviceInterface&	vk, VkCommandBuffer cmdBuffer, const QueueTimelineIteration& inIter, const QueueTimelineIteration& outIter, const Resource& resource)
+	void recordBarrier (const DeviceInterface&	vk, VkCommandBuffer cmdBuffer, const QueueTimelineIteration& inIter, const QueueTimelineIteration& outIter, const Resource& resource, bool originalLayout)
 	{
 		const SyncInfo				writeSync				= inIter.op->getOutSyncInfo();
 		const SyncInfo				readSync				= outIter.op->getInSyncInfo();
@@ -2013,16 +2024,16 @@ public:
 			DE_ASSERT(readSync.imageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
 
 			const VkImageMemoryBarrier2KHR imageMemoryBarrier2 = makeImageMemoryBarrier2(
-				writeSync.stageMask,							// VkPipelineStageFlags2KHR			srcStageMask
-				writeSync.accessMask,							// VkAccessFlags2KHR				srcAccessMask
-				readSync.stageMask,								// VkPipelineStageFlags2KHR			dstStageMask
-				readSync.accessMask,							// VkAccessFlags2KHR				dstAccessMask
-				writeSync.imageLayout,							// VkImageLayout					oldLayout
-				readSync.imageLayout,							// VkImageLayout					newLayout
-				resource.getImage().handle,						// VkImage							image
-				resource.getImage().subresourceRange,			// VkImageSubresourceRange			subresourceRange
-				inIter.queueFamilyIdx,							// deUint32							srcQueueFamilyIndex
-				outIter.queueFamilyIdx							// deUint32							destQueueFamilyIndex
+				writeSync.stageMask,											// VkPipelineStageFlags2KHR			srcStageMask
+				writeSync.accessMask,											// VkAccessFlags2KHR				srcAccessMask
+				readSync.stageMask,												// VkPipelineStageFlags2KHR			dstStageMask
+				readSync.accessMask,											// VkAccessFlags2KHR				dstAccessMask
+				originalLayout ? writeSync.imageLayout : readSync.imageLayout,	// VkImageLayout					oldLayout
+				readSync.imageLayout,											// VkImageLayout					newLayout
+				resource.getImage().handle,										// VkImage							image
+				resource.getImage().subresourceRange,							// VkImageSubresourceRange			subresourceRange
+				inIter.queueFamilyIdx,											// deUint32							srcQueueFamilyIndex
+				outIter.queueFamilyIdx											// deUint32							destQueueFamilyIndex
 			);
 			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
 			synchronizationWrapper->cmdPipelineBarrier(cmdBuffer, &dependencyInfo);
@@ -2118,7 +2129,7 @@ public:
 			for (deUint32 copyOpIdx = 0; copyOpIdx < m_copyIterations.size(); copyOpIdx++)
 			{
 				beginCommandBuffer(vk, **copyPtrCmdBuffers[copyOpIdx]);
-				recordBarrier(vk, **copyPtrCmdBuffers[copyOpIdx], *m_writeIteration, *m_copyIterations[copyOpIdx], *m_writeResource);
+				recordBarrier(vk, **copyPtrCmdBuffers[copyOpIdx], *m_writeIteration, *m_copyIterations[copyOpIdx], *m_writeResource, copyOpIdx == 0);
 				m_copyIterations[copyOpIdx]->op->recordCommands(**copyPtrCmdBuffers[copyOpIdx]);
 				endCommandBuffer(vk, **copyPtrCmdBuffers[copyOpIdx]);
 			}
@@ -2126,7 +2137,7 @@ public:
 			for (deUint32 readOpIdx = 0; readOpIdx < m_readIterations.size(); readOpIdx++)
 			{
 				beginCommandBuffer(vk, **readPtrCmdBuffers[readOpIdx]);
-				recordBarrier(vk, **readPtrCmdBuffers[readOpIdx], *m_copyIterations[readOpIdx], *m_readIterations[readOpIdx], *m_copyResources[readOpIdx]);
+				recordBarrier(vk, **readPtrCmdBuffers[readOpIdx], *m_copyIterations[readOpIdx], *m_readIterations[readOpIdx], *m_copyResources[readOpIdx], true);
 				m_readIterations[readOpIdx]->op->recordCommands(**readPtrCmdBuffers[readOpIdx]);
 				endCommandBuffer(vk, **readPtrCmdBuffers[readOpIdx]);
 			}
@@ -2203,13 +2214,12 @@ class OneToNTestCase : public TestCase
 public:
 	OneToNTestCase	(tcu::TestContext&			testCtx,
 					 const std::string&			name,
-					 const std::string&			description,
 					 SynchronizationType		type,
 					 const ResourceDescription	resourceDesc,
 					 const OperationName		writeOp,
 					 const OperationName		readOp,
 					 PipelineCacheData&			pipelineCacheData)
-		: TestCase				(testCtx, name, description)
+		: TestCase				(testCtx, name)
 		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
@@ -2254,7 +2264,7 @@ class OneToNTests : public tcu::TestCaseGroup
 {
 public:
 	OneToNTests (tcu::TestContext& testCtx, SynchronizationType type)
-		: tcu::TestCaseGroup(testCtx, "one_to_n", "Synchronization multiple waiter on a signal producer")
+		: tcu::TestCaseGroup(testCtx, "one_to_n")
 		, m_type(type)
 	{
 	}
@@ -2325,7 +2335,7 @@ public:
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str()));
 
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
@@ -2334,7 +2344,7 @@ public:
 
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
-					opGroup->addChild(new OneToNTestCase(m_testCtx, name, "", m_type, resource, writeOp, readOp, m_pipelineCacheData));
+					opGroup->addChild(new OneToNTestCase(m_testCtx, name, m_type, resource, writeOp, readOp, m_pipelineCacheData));
 					empty = false;
 				}
 			}
@@ -2373,7 +2383,7 @@ struct SparseBindParams
 class SparseBindCase : public vkt::TestCase
 {
 public:
-							SparseBindCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const SparseBindParams& params);
+							SparseBindCase	(tcu::TestContext& testCtx, const std::string& name, const SparseBindParams& params);
 	virtual					~SparseBindCase	(void) {}
 
 	virtual TestInstance*	createInstance	(Context& context) const;
@@ -2395,8 +2405,8 @@ private:
 	SparseBindParams m_params;
 };
 
-SparseBindCase::SparseBindCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const SparseBindParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+SparseBindCase::SparseBindCase (tcu::TestContext& testCtx, const std::string& name, const SparseBindParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -2603,8 +2613,9 @@ tcu::TestStatus SparseBindInstance::iterate (void)
 class SparseBindGroup : public tcu::TestCaseGroup
 {
 public:
+	// vkQueueBindSparse combined with timeline semaphores
 	SparseBindGroup (tcu::TestContext& testCtx)
-		: tcu::TestCaseGroup (testCtx, "sparse_bind", "vkQueueBindSparse combined with timeline semaphores")
+		: tcu::TestCaseGroup (testCtx, "sparse_bind")
 	{}
 
 	virtual void init (void)
@@ -2614,18 +2625,22 @@ public:
 			deUint32	waitSems;
 			deUint32	sigSems;
 			std::string	name;
-			std::string	desc;
 		} kSparseBindCases[] =
 		{
-			{	0u,		0u,		"no_sems",			"No semaphores to wait for or signal"					},
-			{	0u,		1u,		"no_wait_sig",		"Signal semaphore without waiting for any other"		},
-			{	1u,		0u,		"wait_no_sig",		"Wait for semaphore but do not signal any other"		},
-			{	1u,		1u,		"wait_and_sig",		"Wait for semaphore and signal a second one"			},
-			{	2u,		2u,		"wait_and_sig_2",	"Wait for two semaphores and signal two other ones"		},
+			// No semaphores to wait for or signal
+			{	0u,		0u,		"no_sems"},
+			// Signal semaphore without waiting for any other
+			{	0u,		1u,		"no_wait_sig"},
+			// Wait for semaphore but do not signal any other
+			{	1u,		0u,		"wait_no_sig"},
+			// Wait for semaphore and signal a second one
+			{	1u,		1u,		"wait_and_sig"},
+			// Wait for two semaphores and signal two other ones
+			{	2u,		2u,		"wait_and_sig_2"},
 		};
 
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(kSparseBindCases); ++i)
-			addChild(new SparseBindCase(m_testCtx, kSparseBindCases[i].name, kSparseBindCases[i].desc, SparseBindParams{kSparseBindCases[i].waitSems, kSparseBindCases[i].sigSems}));
+			addChild(new SparseBindCase(m_testCtx, kSparseBindCases[i].name, SparseBindParams{kSparseBindCases[i].waitSems, kSparseBindCases[i].sigSems}));
 	}
 };
 
@@ -2636,7 +2651,7 @@ public:
 tcu::TestCaseGroup* createTimelineSemaphoreTests (tcu::TestContext& testCtx)
 {
 	const SynchronizationType			type		(SynchronizationType::LEGACY);
-	de::MovePtr<tcu::TestCaseGroup>		basicTests	(new tcu::TestCaseGroup(testCtx, "timeline_semaphore", "Timeline semaphore tests"));
+	de::MovePtr<tcu::TestCaseGroup>		basicTests	(new tcu::TestCaseGroup(testCtx, "timeline_semaphore"));
 
 	basicTests->addChild(new LegacyDeviceHostTests(testCtx));
 	basicTests->addChild(new OneToNTests(testCtx, type));
@@ -2652,7 +2667,7 @@ tcu::TestCaseGroup* createTimelineSemaphoreTests (tcu::TestContext& testCtx)
 tcu::TestCaseGroup* createSynchronization2TimelineSemaphoreTests(tcu::TestContext& testCtx)
 {
 	const SynchronizationType			type		(SynchronizationType::SYNCHRONIZATION2);
-	de::MovePtr<tcu::TestCaseGroup>		basicTests	(new tcu::TestCaseGroup(testCtx, "timeline_semaphore", "Timeline semaphore tests"));
+	de::MovePtr<tcu::TestCaseGroup>		basicTests	(new tcu::TestCaseGroup(testCtx, "timeline_semaphore"));
 
 	basicTests->addChild(new Sytnchronization2DeviceHostTests(testCtx));
 	basicTests->addChild(new OneToNTests(testCtx, type));

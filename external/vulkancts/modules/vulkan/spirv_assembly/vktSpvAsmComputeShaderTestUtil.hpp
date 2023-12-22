@@ -337,6 +337,7 @@ struct ComputeShaderSpec
 	std::string								entryPoint;
 	std::vector<Resource>					inputs;
 	std::vector<Resource>					outputs;
+	vk::VkFormat							inputFormat = vk::VK_FORMAT_R32G32B32A32_SFLOAT;
 	tcu::IVec3								numWorkGroups;
 	SpecConstants							specConstants;
 	BufferSp								pushConstants;

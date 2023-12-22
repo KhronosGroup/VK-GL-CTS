@@ -70,8 +70,12 @@ typedef ShaderRenderCaseInstance::ImageBackingMode ImageBackingMode;
 
 enum
 {
-	SPEC_MAX_MIN_OFFSET = -8,
-	SPEC_MIN_MAX_OFFSET = 7
+    SPEC_MAX_MIN_OFFSET = -8,
+    SPEC_MIN_MAX_OFFSET = 7,
+    // textureGatherOffsets requires parameters at compile time
+    // Most implementations minimum is -32 and maximum is 31 so we will use those values
+    IMPLEMENTATION_MIN_MIN_OFFSET = -32,
+    IMPLEMENTATION_MAX_MAX_OFFSET = 31
 };
 
 enum TextureType
@@ -789,18 +793,6 @@ static inline const char* gatherTypeName (GatherType type)
 	}
 }
 
-static inline const char* gatherTypeDescription (GatherType type)
-{
-	switch (type)
-	{
-		case GATHERTYPE_BASIC:				return "textureGather";
-		case GATHERTYPE_OFFSET:				return "textureGatherOffset";
-		case GATHERTYPE_OFFSET_DYNAMIC:		return "textureGatherOffset with dynamic offsets";
-		case GATHERTYPE_OFFSETS:			return "textureGatherOffsets";
-		default: DE_ASSERT(false); return DE_NULL;
-	}
-}
-
 static inline bool requireGpuShader5 (GatherType gatherType, OffsetSize offsetSize)
 {
 	return gatherType == GATHERTYPE_OFFSET_DYNAMIC || gatherType == GATHERTYPE_OFFSETS
@@ -925,7 +917,7 @@ enum class LevelMode
 	AMD_LOD,
 };
 
-vector<GatherArgs> generateBasic2DCaseIterations (GatherType gatherType, LevelMode levelMode, const tcu::TextureFormat& textureFormat, const IVec2& offsetRange)
+vector<GatherArgs> generateBasic2DCaseIterations (GatherType gatherType, OffsetSize offsetSize, LevelMode levelMode, const tcu::TextureFormat& textureFormat, const IVec2& offsetRange)
 {
 	const int			numComponentCases	= isDepthFormat(textureFormat) ? 1 : 4+1; // \note For non-depth textures, test explicit components 0 to 3 and implicit component 0.
 	const bool			skipImplicitCase	= (levelMode == LevelMode::AMD_BIAS);
@@ -970,23 +962,37 @@ vector<GatherArgs> generateBasic2DCaseIterations (GatherType gatherType, LevelMo
 
 			case GATHERTYPE_OFFSETS:
 			{
-				const int min	= offsetRange.x();
-				const int max	= offsetRange.y();
-				const int hmin	= divRoundToZero(min, 2);
-				const int hmax	= divRoundToZero(max, 2);
-
-				result.push_back(GatherArgs(componentNdx,
-											IVec2(min,	min),
-											IVec2(min,	max),
-											IVec2(max,	min),
-											IVec2(max,	max)));
-
-				if (componentCaseNdx == 0) // Don't test all offsets variants for all color components (they should be pretty orthogonal).
+				// textureGatherOffsets requires parameters at compile time
+				// Most implementations minimum is -32 and maximum is 31 so we will use those values
+				// and verify them in checkSupport
+				if (offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM)
+				{
 					result.push_back(GatherArgs(componentNdx,
-												IVec2(min,	hmax),
-												IVec2(hmin,	max),
-												IVec2(0,	hmax),
-												IVec2(hmax,	0)));
+												IVec2(IMPLEMENTATION_MIN_MIN_OFFSET, IMPLEMENTATION_MIN_MIN_OFFSET),
+												IVec2(IMPLEMENTATION_MIN_MIN_OFFSET, IMPLEMENTATION_MAX_MAX_OFFSET),
+												IVec2(IMPLEMENTATION_MAX_MAX_OFFSET, IMPLEMENTATION_MIN_MIN_OFFSET),
+												IVec2(IMPLEMENTATION_MAX_MAX_OFFSET, IMPLEMENTATION_MAX_MAX_OFFSET)));
+				}
+				else
+				{
+					const int min	= offsetRange.x();
+					const int max	= offsetRange.y();
+					const int hmin	= divRoundToZero(min, 2);
+					const int hmax	= divRoundToZero(max, 2);
+
+					result.push_back(GatherArgs(componentNdx,
+												IVec2(min,	min),
+												IVec2(min,	max),
+												IVec2(max,	min),
+												IVec2(max,	max)));
+
+					if (componentCaseNdx == 0) // Don't test all offsets variants for all color components (they should be pretty orthogonal).
+						result.push_back(GatherArgs(componentNdx,
+													IVec2(min,	hmax),
+													IVec2(hmin,	max),
+													IVec2(0,	hmax),
+													IVec2(hmax,	0)));
+				}
 				break;
 			}
 
@@ -1444,7 +1450,7 @@ void TextureGatherInstance::setupUniforms (const tcu::Vec4&)
 			const IVec2&		offsetRange		= getOffsetRange(m_baseParams.offsetSize, m_context.getDeviceProperties().limits);
 			addUniform(binding++, vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(tcu::IVec2), offsetRange.getPtr());
 		}
-		else
+		else if (m_baseParams.gatherType != GATHERTYPE_OFFSETS)
 			DE_ASSERT(false);
 	}
 }
@@ -1778,13 +1784,27 @@ string genGatherFuncCall (GatherType				gatherType,
 				break;
 
 			case GATHERTYPE_OFFSETS:
-				DE_ASSERT(offsetSize != OFFSETSIZE_IMPLEMENTATION_MAXIMUM);
-				result += "ivec2[4](\n"
-						  + string(indentationDepth, '\t') + "\tivec2" + de::toString(gatherArgs.offsets[0]) + ",\n"
-						  + string(indentationDepth, '\t') + "\tivec2" + de::toString(gatherArgs.offsets[1]) + ",\n"
-						  + string(indentationDepth, '\t') + "\tivec2" + de::toString(gatherArgs.offsets[2]) + ",\n"
-						  + string(indentationDepth, '\t') + "\tivec2" + de::toString(gatherArgs.offsets[3]) + ")\n"
-						  + string(indentationDepth, '\t') + "\t";
+				if (offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM)
+				{
+					// textureGatherOffsets requires parameters at compile time
+					// Most implementations minimum is -32 and maximum is 31 so we will use those values
+					// and verify them in checkSupport
+					result += "ivec2[4](\n"
+						+ string(indentationDepth, '\t') + "\tivec2(" + de::toString(IMPLEMENTATION_MIN_MIN_OFFSET) + ", " + de::toString(IMPLEMENTATION_MIN_MIN_OFFSET) + "),\n"
+						+ string(indentationDepth, '\t') + "\tivec2(" + de::toString(IMPLEMENTATION_MIN_MIN_OFFSET) + ", " + de::toString(IMPLEMENTATION_MAX_MAX_OFFSET) + "),\n"
+						+ string(indentationDepth, '\t') + "\tivec2(" + de::toString(IMPLEMENTATION_MAX_MAX_OFFSET) + ", " + de::toString(IMPLEMENTATION_MIN_MIN_OFFSET) + "),\n"
+						+ string(indentationDepth, '\t') + "\tivec2(" + de::toString(IMPLEMENTATION_MAX_MAX_OFFSET) + ", " + de::toString(IMPLEMENTATION_MAX_MAX_OFFSET) + "))\n"
+						+ string(indentationDepth, '\t') + "\t";
+				}
+				else
+				{
+					result += "ivec2[4](\n"
+						+ string(indentationDepth, '\t') + "\tivec2" + de::toString(gatherArgs.offsets[0]) + ",\n"
+						+ string(indentationDepth, '\t') + "\tivec2" + de::toString(gatherArgs.offsets[1]) + ",\n"
+						+ string(indentationDepth, '\t') + "\tivec2" + de::toString(gatherArgs.offsets[2]) + ",\n"
+						+ string(indentationDepth, '\t') + "\tivec2" + de::toString(gatherArgs.offsets[3]) + ")\n"
+						+ string(indentationDepth, '\t') + "\t";
+				}
 				break;
 
 			default:
@@ -1965,7 +1985,6 @@ class TextureGather2DCase : public TestCase
 public:
 									TextureGather2DCase					(tcu::TestContext&					testCtx,
 																		 const string&						name,
-																		 const string&						description,
 																		 const GatherType					gatherType,
 																		 const OffsetSize					offsetSize,
 																		 const tcu::TextureFormat			textureFormat,
@@ -1993,7 +2012,6 @@ private:
 
 TextureGather2DCase::TextureGather2DCase (tcu::TestContext&						testCtx,
 										  const string&							name,
-										  const string&							description,
 										  const GatherType						gatherType,
 										  const OffsetSize						offsetSize,
 										  const tcu::TextureFormat				textureFormat,
@@ -2008,7 +2026,7 @@ TextureGather2DCase::TextureGather2DCase (tcu::TestContext&						testCtx,
 										  const deUint32						flags,
 										  const IVec2&							textureSize,
 										  const ImageBackingMode				sparseCase)
-	: TestCase		(testCtx, name, description)
+	: TestCase		(testCtx, name)
 	, m_baseParams	(TEXTURETYPE_2D, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, levelMode, baseLevel, flags, sparseCase)
 	, m_textureSize	(textureSize)
 {
@@ -2021,16 +2039,17 @@ TextureGather2DCase::~TextureGather2DCase (void)
 void TextureGather2DCase::initPrograms (vk::SourceCollections& dst) const
 {
 	const vector<GatherArgs>	iterations	= generateBasic2DCaseIterations(m_baseParams.gatherType,
+																			m_baseParams.offsetSize,
 																			m_baseParams.levelMode,
 																			m_baseParams.textureFormat,
 																			m_baseParams.offsetSize != OFFSETSIZE_IMPLEMENTATION_MAXIMUM ? getOffsetRange(m_baseParams.offsetSize) : IVec2(0));
-
 	genGatherPrograms(dst, m_baseParams, iterations);
 }
 
 TestInstance* TextureGather2DCase::createInstance (Context& context) const
 {
 	const vector<GatherArgs>	iterations	= generateBasic2DCaseIterations(m_baseParams.gatherType,
+																			m_baseParams.offsetSize,
 																			m_baseParams.levelMode,
 																			m_baseParams.textureFormat,
 																			getOffsetRange(m_baseParams.offsetSize, context.getDeviceProperties().limits));
@@ -2038,10 +2057,16 @@ TestInstance* TextureGather2DCase::createInstance (Context& context) const
 	return new TextureGather2DInstance(context, m_baseParams, m_textureSize, iterations);
 }
 
-void TextureGather2DCase::checkSupport(Context& context) const
+void TextureGather2DCase::checkSupport (Context& context) const
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_IMAGE_GATHER_EXTENDED);
 	checkMutableComparisonSamplersSupport(context, m_baseParams);
+
+	if (m_baseParams.gatherType == GATHERTYPE_OFFSETS && m_baseParams.offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM)
+	{
+		if (context.getDeviceProperties().limits.minTexelGatherOffset > IMPLEMENTATION_MIN_MIN_OFFSET || context.getDeviceProperties().limits.maxTexelGatherOffset < IMPLEMENTATION_MAX_MAX_OFFSET)
+			TCU_THROW(NotSupportedError, "Required minTexelGatherOffset and maxTexelGatherOffset limits are not supported");
+	}
 }
 
 // 2D array
@@ -2055,12 +2080,13 @@ struct Gather2DArrayArgs
 };
 
 vector<Gather2DArrayArgs> generate2DArrayCaseIterations (GatherType					gatherType,
+														 OffsetSize					offsetSize,
 														 LevelMode					levelMode,
 														 const tcu::TextureFormat&	textureFormat,
 														 const IVec2&				offsetRange,
 														 const IVec3&				textureSize)
 {
-	const vector<GatherArgs>	basicIterations	= generateBasic2DCaseIterations(gatherType, levelMode, textureFormat, offsetRange);
+	const vector<GatherArgs>	basicIterations	= generateBasic2DCaseIterations(gatherType, offsetSize, levelMode, textureFormat, offsetRange);
 	vector<Gather2DArrayArgs>	iterations;
 
 	// \note Out-of-bounds layer indices are tested too.
@@ -2193,7 +2219,6 @@ class TextureGather2DArrayCase : public TestCase
 public:
 									TextureGather2DArrayCase			(tcu::TestContext&					testCtx,
 																		 const string&						name,
-																		 const string&						description,
 																		 const GatherType					gatherType,
 																		 const OffsetSize					offsetSize,
 																		 const tcu::TextureFormat			textureFormat,
@@ -2221,7 +2246,6 @@ private:
 
 TextureGather2DArrayCase::TextureGather2DArrayCase (tcu::TestContext&					testCtx,
 													const string&						name,
-													const string&						description,
 													const GatherType					gatherType,
 													const OffsetSize					offsetSize,
 													const tcu::TextureFormat			textureFormat,
@@ -2236,7 +2260,7 @@ TextureGather2DArrayCase::TextureGather2DArrayCase (tcu::TestContext&					testCt
 													const deUint32						flags,
 													const IVec3&						textureSize,
 													const ImageBackingMode				sparseCase)
-	: TestCase			(testCtx, name, description)
+	: TestCase			(testCtx, name)
 	, m_baseParams		(TEXTURETYPE_2D_ARRAY, gatherType, offsetSize, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, levelMode, baseLevel, flags, sparseCase)
 	, m_textureSize		(textureSize)
 {
@@ -2249,6 +2273,7 @@ TextureGather2DArrayCase::~TextureGather2DArrayCase (void)
 void TextureGather2DArrayCase::initPrograms (vk::SourceCollections& dst) const
 {
 	const vector<Gather2DArrayArgs>		iterations	= generate2DArrayCaseIterations(m_baseParams.gatherType,
+																					m_baseParams.offsetSize,
 																					m_baseParams.levelMode,
 																					m_baseParams.textureFormat,
 																					m_baseParams.offsetSize != OFFSETSIZE_IMPLEMENTATION_MAXIMUM ? getOffsetRange(m_baseParams.offsetSize) : IVec2(0),
@@ -2260,6 +2285,7 @@ void TextureGather2DArrayCase::initPrograms (vk::SourceCollections& dst) const
 TestInstance* TextureGather2DArrayCase::createInstance (Context& context) const
 {
 	const vector<Gather2DArrayArgs>		iterations	= generate2DArrayCaseIterations(m_baseParams.gatherType,
+																					m_baseParams.offsetSize,
 																					m_baseParams.levelMode,
 																					m_baseParams.textureFormat,
 																					getOffsetRange(m_baseParams.offsetSize, context.getDeviceProperties().limits),
@@ -2268,10 +2294,16 @@ TestInstance* TextureGather2DArrayCase::createInstance (Context& context) const
 	return new TextureGather2DArrayInstance(context, m_baseParams, m_textureSize, iterations);
 }
 
-void TextureGather2DArrayCase::checkSupport(Context& context) const
+void TextureGather2DArrayCase::checkSupport (Context& context) const
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_IMAGE_GATHER_EXTENDED);
 	checkMutableComparisonSamplersSupport(context, m_baseParams);
+
+	if (m_baseParams.gatherType == GATHERTYPE_OFFSETS && m_baseParams.offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM)
+	{
+		if (context.getDeviceProperties().limits.minTexelGatherOffset > IMPLEMENTATION_MIN_MIN_OFFSET || context.getDeviceProperties().limits.maxTexelGatherOffset < IMPLEMENTATION_MAX_MAX_OFFSET)
+			TCU_THROW(NotSupportedError, "Required minTexelGatherOffset and maxTexelGatherOffset limits are not supported");
+	}
 }
 
 // Cube
@@ -2284,9 +2316,9 @@ struct GatherCubeArgs
 	operator GatherArgs() const { return gatherArgs; }
 };
 
-vector<GatherCubeArgs> generateCubeCaseIterations (GatherType gatherType, LevelMode levelMode, const tcu::TextureFormat& textureFormat, const IVec2& offsetRange)
+vector<GatherCubeArgs> generateCubeCaseIterations (GatherType gatherType, OffsetSize offsetSize, LevelMode levelMode, const tcu::TextureFormat& textureFormat, const IVec2& offsetRange)
 {
-	const vector<GatherArgs>	basicIterations = generateBasic2DCaseIterations(gatherType, levelMode, textureFormat, offsetRange);
+	const vector<GatherArgs>	basicIterations = generateBasic2DCaseIterations(gatherType, offsetSize, levelMode, textureFormat, offsetRange);
 	vector<GatherCubeArgs>		iterations;
 
 	for (int cubeFaceI = 0; cubeFaceI < tcu::CUBEFACE_LAST; cubeFaceI++)
@@ -2425,7 +2457,6 @@ class TextureGatherCubeCase : public TestCase
 public:
 									TextureGatherCubeCase				(tcu::TestContext&					testCtx,
 																		 const string&						name,
-																		 const string&						description,
 																		 const tcu::TextureFormat			textureFormat,
 																		 const tcu::Sampler::CompareMode	shadowCompareMode,
 																		 const tcu::Sampler::WrapMode		wrapS,
@@ -2451,7 +2482,6 @@ private:
 
 TextureGatherCubeCase::TextureGatherCubeCase (tcu::TestContext&						testCtx,
 											  const string&							name,
-											  const string&							description,
 											  const tcu::TextureFormat				textureFormat,
 											  const tcu::Sampler::CompareMode		shadowCompareMode,
 											  const tcu::Sampler::WrapMode			wrapS,
@@ -2464,7 +2494,7 @@ TextureGatherCubeCase::TextureGatherCubeCase (tcu::TestContext&						testCtx,
 											  const deUint32						flags,
 											  const int								textureSize,
 											  const ImageBackingMode				sparseCase)
-	: TestCase			(testCtx, name, description)
+	: TestCase			(testCtx, name)
 	, m_baseParams		(TEXTURETYPE_CUBE, GATHERTYPE_BASIC, OFFSETSIZE_NONE, textureFormat, shadowCompareMode, wrapS, wrapT, textureSwizzle, minFilter, magFilter, levelMode, baseLevel, flags, sparseCase)
 	, m_textureSize		(textureSize)
 {
@@ -2477,6 +2507,7 @@ TextureGatherCubeCase::~TextureGatherCubeCase (void)
 void TextureGatherCubeCase::initPrograms (vk::SourceCollections& dst) const
 {
 	const vector<GatherCubeArgs>	iterations	= generateCubeCaseIterations(m_baseParams.gatherType,
+																			 m_baseParams.offsetSize,
 																			 m_baseParams.levelMode,
 																			 m_baseParams.textureFormat,
 																			 m_baseParams.offsetSize != OFFSETSIZE_IMPLEMENTATION_MAXIMUM ? getOffsetRange(m_baseParams.offsetSize) : IVec2(0));
@@ -2487,6 +2518,7 @@ void TextureGatherCubeCase::initPrograms (vk::SourceCollections& dst) const
 TestInstance* TextureGatherCubeCase::createInstance (Context& context) const
 {
 	const vector<GatherCubeArgs>	iterations	= generateCubeCaseIterations(m_baseParams.gatherType,
+																			 m_baseParams.offsetSize,
 																			 m_baseParams.levelMode,
 																			 m_baseParams.textureFormat,
 																			 getOffsetRange(m_baseParams.offsetSize, context.getDeviceProperties().limits));
@@ -2513,7 +2545,7 @@ private:
 };
 
 TextureGatherTests::TextureGatherTests (tcu::TestContext& context)
-	: TestCaseGroup(context, "texture_gather", "textureGather* tests")
+	: TestCaseGroup(context, "texture_gather")
 {
 }
 
@@ -2524,7 +2556,6 @@ TextureGatherTests::~TextureGatherTests (void)
 static inline TestCase* makeTextureGatherCase (TextureType					textureType,
 											   tcu::TestContext&			testCtx,
 											   const string&				name,
-											   const string&				description,
 											   GatherType					gatherType,
 											   OffsetSize					offsetSize,
 											   tcu::TextureFormat			textureFormat,
@@ -2543,17 +2574,17 @@ static inline TestCase* makeTextureGatherCase (TextureType					textureType,
 	switch (textureType)
 	{
 		case TEXTURETYPE_2D:
-			return new TextureGather2DCase(testCtx, name, description, gatherType, offsetSize, textureFormat, shadowCompareMode,
+			return new TextureGather2DCase(testCtx, name, gatherType, offsetSize, textureFormat, shadowCompareMode,
 										   wrapS, wrapT, texSwizzle, minFilter, magFilter, levelMode, baseLevel, flags, textureSize.swizzle(0, 1), sparseCase);
 
 		case TEXTURETYPE_2D_ARRAY:
-			return new TextureGather2DArrayCase(testCtx, name, description, gatherType, offsetSize, textureFormat, shadowCompareMode,
+			return new TextureGather2DArrayCase(testCtx, name, gatherType, offsetSize, textureFormat, shadowCompareMode,
 												wrapS, wrapT, texSwizzle, minFilter, magFilter, levelMode, baseLevel, flags, textureSize, sparseCase);
 
 		case TEXTURETYPE_CUBE:
 			DE_ASSERT(gatherType == GATHERTYPE_BASIC);
 			DE_ASSERT(offsetSize == OFFSETSIZE_NONE);
-			return new TextureGatherCubeCase(testCtx, name, description, textureFormat, shadowCompareMode,
+			return new TextureGatherCubeCase(testCtx, name, textureFormat, shadowCompareMode,
 											 wrapS, wrapT, texSwizzle, minFilter, magFilter, levelMode, baseLevel, flags, textureSize.x(), sparseCase);
 
 		default:
@@ -2627,7 +2658,7 @@ void TextureGatherTests::init (void)
 	for (int gatherTypeI = 0; gatherTypeI < GATHERTYPE_LAST; gatherTypeI++)
 	{
 		const GatherType		gatherType			= (GatherType)gatherTypeI;
-		TestCaseGroup* const	gatherTypeGroup		= new TestCaseGroup(m_testCtx, gatherTypeName(gatherType), gatherTypeDescription(gatherType));
+		TestCaseGroup* const	gatherTypeGroup		= new TestCaseGroup(m_testCtx, gatherTypeName(gatherType));
 		addChild(gatherTypeGroup);
 
 		for (int offsetSizeI = 0; offsetSizeI < OFFSETSIZE_LAST; offsetSizeI++)
@@ -2636,17 +2667,11 @@ void TextureGatherTests::init (void)
 			if ((gatherType == GATHERTYPE_BASIC) != (offsetSize == OFFSETSIZE_NONE))
 				continue;
 
-			if (gatherType == GATHERTYPE_OFFSETS && offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM) // \note offsets argument must be compile-time constant
-				continue;
-
 			TestCaseGroup* const offsetSizeGroup = offsetSize == OFFSETSIZE_NONE ?
 													gatherTypeGroup :
 													new TestCaseGroup(m_testCtx,
 																	  offsetSize == OFFSETSIZE_MINIMUM_REQUIRED				? "min_required_offset"
 																	  : offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM		? "implementation_offset"
-																	  : DE_NULL,
-																	  offsetSize == OFFSETSIZE_MINIMUM_REQUIRED				? "Use offsets within Vulkan minimum required range"
-																	  : offsetSize == OFFSETSIZE_IMPLEMENTATION_MAXIMUM		? "Use offsets within the implementation range"
 																	  : DE_NULL);
 
 			if (offsetSizeGroup != gatherTypeGroup)
@@ -2659,20 +2684,21 @@ void TextureGatherTests::init (void)
 				if (textureType == TEXTURETYPE_CUBE && gatherType != GATHERTYPE_BASIC)
 					continue;
 
-				TestCaseGroup* const textureTypeGroup = new TestCaseGroup(m_testCtx, textureTypes[textureTypeNdx].name, "");
+				TestCaseGroup* const textureTypeGroup = new TestCaseGroup(m_testCtx, textureTypes[textureTypeNdx].name);
 				offsetSizeGroup->addChild(textureTypeGroup);
 
 				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 				{
 					const tcu::TextureFormat&	format			= formats[formatNdx].format;
-					TestCaseGroup* const		formatGroup		= new TestCaseGroup(m_testCtx, formats[formatNdx].name, "");
+					TestCaseGroup* const		formatGroup		= new TestCaseGroup(m_testCtx, formats[formatNdx].name);
 					textureTypeGroup->addChild(formatGroup);
 
 					for (int noCornersI = 0; noCornersI <= ((textureType == TEXTURETYPE_CUBE)?1:0); noCornersI++)
 					{
+						// Test case variants that don't sample around cube map corners
 						const bool				noCorners		= noCornersI!= 0;
 						TestCaseGroup* const	cornersGroup	= noCorners
-																? new TestCaseGroup(m_testCtx, "no_corners", "Test case variants that don't sample around cube map corners")
+																? new TestCaseGroup(m_testCtx, "no_corners")
 																: formatGroup;
 
 						if (formatGroup != cornersGroup)
@@ -2681,7 +2707,7 @@ void TextureGatherTests::init (void)
 						for (int textureSizeNdx = 0; textureSizeNdx < DE_LENGTH_OF_ARRAY(textureSizes); textureSizeNdx++)
 						{
 							const IVec3&			textureSize			= textureSizes[textureSizeNdx].size;
-							TestCaseGroup* const	textureSizeGroup	= new TestCaseGroup(m_testCtx, textureSizes[textureSizeNdx].name, "");
+							TestCaseGroup* const	textureSizeGroup	= new TestCaseGroup(m_testCtx, textureSizes[textureSizeNdx].name);
 							cornersGroup->addChild(textureSizeGroup);
 
 							for (int compareModeI = 0; compareModeI < tcu::Sampler::COMPAREMODE_LAST; compareModeI++)
@@ -2699,8 +2725,7 @@ void TextureGatherTests::init (void)
 								TestCaseGroup* const compareModeGroup = compareMode == tcu::Sampler::COMPAREMODE_NONE ?
 																			textureSizeGroup :
 																			new TestCaseGroup(m_testCtx,
-																							  (string() + "compare_" + compareModeName(compareMode)).c_str(),
-																							  "");
+																							  (string() + "compare_" + compareModeName(compareMode)).c_str());
 								if (compareModeGroup != textureSizeGroup)
 									textureSizeGroup->addChild(compareModeGroup);
 
@@ -2713,11 +2738,11 @@ void TextureGatherTests::init (void)
 
 									const string caseName = string() + wrapModes[wrapSNdx].name + "_" + wrapModes[wrapTNdx].name;
 
-									compareModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), "", gatherType, offsetSize, format, compareMode, wrapS, wrapT,
+									compareModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), gatherType, offsetSize, format, compareMode, wrapS, wrapT,
 																					 MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, LevelMode::NORMAL, 0, textureSize,
 																					 noCorners ? GATHERCASE_DONT_SAMPLE_CUBE_CORNERS : 0));
 #ifndef CTS_USES_VULKANSC
-									compareModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, "", gatherType, offsetSize, format, compareMode, wrapS, wrapT,
+									compareModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, gatherType, offsetSize, format, compareMode, wrapS, wrapT,
 																					 MaybeTextureSwizzle::createNoneTextureSwizzle(), tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, LevelMode::NORMAL, 0, textureSize,
 																					 noCorners ? GATHERCASE_DONT_SAMPLE_CUBE_CORNERS : 0, ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE));
 #endif // CTS_USES_VULKANSC
@@ -2730,7 +2755,7 @@ void TextureGatherTests::init (void)
 					{
 						if (!isDepthFormat(format))
 						{
-							TestCaseGroup* const swizzleGroup = new TestCaseGroup(m_testCtx, "texture_swizzle", "");
+							TestCaseGroup* const swizzleGroup = new TestCaseGroup(m_testCtx, "texture_swizzle");
 							formatGroup->addChild(swizzleGroup);
 
 							DE_STATIC_ASSERT(TEXTURESWIZZLECOMPONENT_R == 0);
@@ -2745,11 +2770,11 @@ void TextureGatherTests::init (void)
 									caseName += (i > 0 ? "_" : "") + de::toLower(de::toString(swizzle.getSwizzle()[i]));
 								}
 
-								swizzleGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), "", gatherType, offsetSize, format,
+								swizzleGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), gatherType, offsetSize, format,
 																			 tcu::Sampler::COMPAREMODE_NONE, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 																			 swizzle, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, LevelMode::NORMAL, 0, IVec3(64, 64, 3)));
 #ifndef CTS_USES_VULKANSC
-								swizzleGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, "", gatherType, offsetSize, format,
+								swizzleGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, gatherType, offsetSize, format,
 																			 tcu::Sampler::COMPAREMODE_NONE, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 																			 swizzle, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST, LevelMode::NORMAL, 0, IVec3(64, 64, 3), 0, ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE));
 #endif // CTS_USES_VULKANSC
@@ -2757,7 +2782,7 @@ void TextureGatherTests::init (void)
 						}
 
 						{
-							TestCaseGroup* const filterModeGroup = new TestCaseGroup(m_testCtx, "filter_mode", "Test that filter modes have no effect");
+							TestCaseGroup* const filterModeGroup = new TestCaseGroup(m_testCtx, "filter_mode");
 							formatGroup->addChild(filterModeGroup);
 
 							const struct
@@ -2799,11 +2824,11 @@ void TextureGatherTests::init (void)
 
 								const string caseName = string() + "min_" + minFilters[minFilterNdx].name + "_mag_" + magFilters[magFilterNdx].name;
 
-								filterModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), "", gatherType, offsetSize, format, compareMode,
+								filterModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), gatherType, offsetSize, format, compareMode,
 																				tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, MaybeTextureSwizzle::createNoneTextureSwizzle(),
 																				minFilter, magFilter, LevelMode::NORMAL, 0, IVec3(64, 64, 3)));
 #ifndef CTS_USES_VULKANSC
-								filterModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, "", gatherType, offsetSize, format, compareMode,
+								filterModeGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, gatherType, offsetSize, format, compareMode,
 																				tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, MaybeTextureSwizzle::createNoneTextureSwizzle(),
 																				minFilter, magFilter, LevelMode::NORMAL, 0, IVec3(64, 64, 3), 0, ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE));
 #endif // CTS_USES_VULKANSC
@@ -2811,7 +2836,7 @@ void TextureGatherTests::init (void)
 						}
 
 						{
-							TestCaseGroup* const baseLevelGroup = new TestCaseGroup(m_testCtx, "base_level", "");
+							TestCaseGroup* const baseLevelGroup = new TestCaseGroup(m_testCtx, "base_level");
 							formatGroup->addChild(baseLevelGroup);
 
 							for (int baseLevel = 1; baseLevel <= 2; baseLevel++)
@@ -2841,12 +2866,12 @@ void TextureGatherTests::init (void)
 									const tcu::Sampler::CompareMode		compareMode		= isDepthFormat(format) ? tcu::Sampler::COMPAREMODE_LESS : tcu::Sampler::COMPAREMODE_NONE;
 									// The minFilter mode may need to be NEAREST_MIPMAP_NEAREST so the sampler creating code will not limit maxLod.
 									const auto							minFilter		= ((mode == LevelMode::NORMAL) ? tcu::Sampler::NEAREST : tcu::Sampler::NEAREST_MIPMAP_NEAREST);
-									baseLevelGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), "", gatherType, offsetSize, format,
+									baseLevelGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, caseName.c_str(), gatherType, offsetSize, format,
 																				compareMode, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 																				MaybeTextureSwizzle::createNoneTextureSwizzle(), minFilter, tcu::Sampler::NEAREST,
 																				mode, baseLevel, IVec3(64, 64, 3)));
 #ifndef CTS_USES_VULKANSC
-									baseLevelGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, "", gatherType, offsetSize, format,
+									baseLevelGroup->addChild(makeTextureGatherCase(textureType, m_testCtx, "sparse_" + caseName, gatherType, offsetSize, format,
 																				compareMode, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 																				MaybeTextureSwizzle::createNoneTextureSwizzle(), minFilter, tcu::Sampler::NEAREST,
 																				mode, baseLevel, IVec3(64, 64, 3), 0, ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE));

@@ -504,12 +504,11 @@ void UniformSetup::setup (ShaderRenderCaseInstance& instance, const tcu::Vec4& c
 
 ShaderRenderCase::ShaderRenderCase (tcu::TestContext&			testCtx,
 									const std::string&			name,
-									const std::string&			description,
 									const bool					isVertexCase,
 									const ShaderEvalFunc		evalFunc,
 									const UniformSetup*			uniformSetup,
 									const AttributeSetupFunc	attribFunc)
-	: vkt::TestCase		(testCtx, name, description)
+	: vkt::TestCase		(testCtx, name)
 	, m_isVertexCase	(isVertexCase)
 	, m_evaluator		(new ShaderEvaluator(evalFunc))
 	, m_uniformSetup	(uniformSetup ? uniformSetup : new UniformSetup())
@@ -518,12 +517,11 @@ ShaderRenderCase::ShaderRenderCase (tcu::TestContext&			testCtx,
 
 ShaderRenderCase::ShaderRenderCase (tcu::TestContext&			testCtx,
 									const std::string&			name,
-									const std::string&			description,
 									const bool					isVertexCase,
 									const ShaderEvaluator*		evaluator,
 									const UniformSetup*			uniformSetup,
 									const AttributeSetupFunc	attribFunc)
-	: vkt::TestCase		(testCtx, name, description)
+	: vkt::TestCase		(testCtx, name)
 	, m_isVertexCase	(isVertexCase)
 	, m_evaluator		(evaluator)
 	, m_uniformSetup	(uniformSetup ? uniformSetup : new UniformSetup())
@@ -1079,7 +1077,7 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 	flushAlloc(vk, vkDevice, *bufferAlloc);
 
 	if(m_externalCommandPool.get() != DE_NULL)
-		copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, aspectMask, mipLevels, arrayLayers, destImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, &(m_externalCommandPool.get()->get()));
+		copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, aspectMask, mipLevels, arrayLayers, destImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, &(m_externalCommandPool.get()->get()));
 	else
 		copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, aspectMask, mipLevels, arrayLayers, destImage);
 }

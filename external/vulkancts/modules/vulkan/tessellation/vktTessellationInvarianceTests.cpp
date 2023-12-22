@@ -157,17 +157,17 @@ inline bool byPatchPrimitiveID (const PerPrimitive& a, const PerPrimitive& b)
 	return a.patchPrimitiveID < b.patchPrimitiveID;
 }
 
-inline std::string getProgramName (const std::string& baseName, const Winding winding, const bool usePointMode)
+inline std::string getProgramName (const std::string& baseName, const bool usePointMode, const bool writePointSize)
 {
 	std::ostringstream str;
-	str << baseName << "_" << getWindingShaderName(winding) << (usePointMode ? "_point_mode" : "");
+	str << baseName << (usePointMode ? "_point_mode" : "") << (writePointSize ? "_write_point_size" : "");
 	return str.str();
 }
 
-inline std::string getProgramName (const std::string& baseName, const bool usePointMode)
+inline std::string getProgramName (const std::string& baseName, const bool writePointSize)
 {
 	std::ostringstream str;
-	str << baseName << (usePointMode ? "_point_mode" : "");
+	str << baseName << (writePointSize ? "_write_point_size" : "");
 	return str.str();
 }
 
@@ -360,44 +360,54 @@ void addDefaultPrograms (vk::SourceCollections&		programCollection,
 
 	// Geometry shader: data is captured here.
 	{
-		for (std::vector<bool>::const_iterator usePointModeIter = usePointModeCases.begin(); usePointModeIter != usePointModeCases.end(); ++usePointModeIter)
+		for (deUint32 j = 0; j < 2; ++j)
 		{
-			const int numVertices = numVerticesPerPrimitive(primitiveType, *usePointModeIter);  // Primitives that the tessellated patch comprises of.
+			const bool writePointSize = j == 1;
+			for (std::vector<bool>::const_iterator usePointModeIter = usePointModeCases.begin(); usePointModeIter != usePointModeCases.end(); ++usePointModeIter)
+			{
+				const int numVertices = numVerticesPerPrimitive(primitiveType, *usePointModeIter);  // Primitives that the tessellated patch comprises of.
 
-			std::ostringstream src;
-			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-				<< "#extension GL_EXT_geometry_shader : require\n"
-				<< "\n"
-				<< "layout(" << getGeometryShaderInputPrimitiveTypeShaderName(primitiveType, *usePointModeIter) << ") in;\n"
-				<< "layout(" << getGeometryShaderOutputPrimitiveTypeShaderName(primitiveType, *usePointModeIter) << ", max_vertices = " << numVertices << ") out;\n"
-				<< "\n"
-				<< "layout(location = 0) in " << perVertexInterfaceBlock << " ib_in[];\n"
-				<< "\n"
-				<< "struct PerPrimitive {\n"
-				<< "    int  patchPrimitiveID;\n"
-				<< "    int  primitiveID;\n"
-				<< "    vec4 tessCoord[3];\n"
-				<< "};\n"
-				<< "\n"
-				<< "layout(set = 0, binding = 0, std430) coherent restrict buffer Output {\n"
-				<< "    int          numPrimitives;\n"
-				<< "    PerPrimitive primitive[];\n"
-				<< "} sb_out;\n"
-				<< "\n"
-				<< "void main (void)\n"
-				<< "{\n"
-				<< "    int index = atomicAdd(sb_out.numPrimitives, 1);\n"
-				<< "    sb_out.primitive[index].patchPrimitiveID = ib_in[0].in_gs_primitiveID;\n"
-				<< "    sb_out.primitive[index].primitiveID      = index;\n";
-			for (int i = 0; i < numVertices; ++i)
-				src << "    sb_out.primitive[index].tessCoord[" << i << "]     = ib_in[" << i << "].in_gs_tessCoord;\n";
-			for (int i = 0; i < numVertices; ++i)
+				std::ostringstream src;
+				src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+					<< "#extension GL_EXT_geometry_shader : require\n";
+				if (writePointSize)
+					src << "#extension GL_EXT_geometry_point_size : require\n";
 				src << "\n"
-					<< "    gl_Position = vec4(0.0);\n"
-					<< "    EmitVertex();\n";
-			src << "}\n";
+					<< "layout(" << getGeometryShaderInputPrimitiveTypeShaderName(primitiveType, *usePointModeIter) << ") in;\n"
+					<< "layout(" << getGeometryShaderOutputPrimitiveTypeShaderName(primitiveType, *usePointModeIter) << ", max_vertices = " << numVertices << ") out;\n"
+					<< "\n"
+					<< "layout(location = 0) in " << perVertexInterfaceBlock << " ib_in[];\n"
+					<< "\n"
+					<< "struct PerPrimitive {\n"
+					<< "    int  patchPrimitiveID;\n"
+					<< "    int  primitiveID;\n"
+					<< "    vec4 tessCoord[3];\n"
+					<< "};\n"
+					<< "\n"
+					<< "layout(set = 0, binding = 0, std430) coherent restrict buffer Output {\n"
+					<< "    int          numPrimitives;\n"
+					<< "    PerPrimitive primitive[];\n"
+					<< "} sb_out;\n"
+					<< "\n"
+					<< "void main (void)\n"
+					<< "{\n"
+					<< "    int index = atomicAdd(sb_out.numPrimitives, 1);\n"
+					<< "    sb_out.primitive[index].patchPrimitiveID = ib_in[0].in_gs_primitiveID;\n"
+					<< "    sb_out.primitive[index].primitiveID      = index;\n";
+				for (int i = 0; i < numVertices; ++i)
+					src << "    sb_out.primitive[index].tessCoord[" << i << "]     = ib_in[" << i << "].in_gs_tessCoord;\n";
+				for (int i = 0; i < numVertices; ++i)
+				{
+					src << "\n"
+						<< "    gl_Position = vec4(0.0);\n";
+					if (writePointSize)
+						src << "    gl_PointSize = 1.0f;\n";
+					src << "    EmitVertex();\n";
+				}
+				src << "}\n";
 
-			programCollection.glslSources.add(getProgramName("geom", *usePointModeIter)) << glu::GeometrySource(src.str());
+				programCollection.glslSources.add(getProgramName("geom", *usePointModeIter, writePointSize)) << glu::GeometrySource(src.str());
+			}
 		}
 	}
 }
@@ -632,13 +642,15 @@ BaseTestInstance::DrawResult BaseTestInstance::draw (const deUint32 vertexCount,
 	const VkDevice				device		= m_context.getDevice();
 	const VkQueue				queue		= m_context.getUniversalQueue();
 
+	const bool					geomPointSize = m_context.getDeviceFeatures().shaderTessellationAndGeometryPointSize;
+
 	const Unique<VkPipeline>	pipeline	(GraphicsPipelineBuilder()
 		.setPatchControlPoints				(NUM_TESS_LEVELS)
 		.setVertexInputSingleAttribute		(m_vertexFormat, m_vertexStride)
 		.setShader							(vk, device, VK_SHADER_STAGE_VERTEX_BIT,					m_context.getBinaryCollection().get("vert"), DE_NULL)
 		.setShader							(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		m_context.getBinaryCollection().get("tesc"), DE_NULL)
 		.setShader							(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	m_context.getBinaryCollection().get(getProgramName("tese", winding, usePointMode)), DE_NULL)
-		.setShader							(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,					m_context.getBinaryCollection().get(getProgramName("geom", usePointMode)), DE_NULL)
+		.setShader							(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,					m_context.getBinaryCollection().get(getProgramName("geom", usePointMode, geomPointSize)), DE_NULL)
 		.build								(vk, device, *m_pipelineLayout, *m_renderPass));
 
 	{
@@ -649,7 +661,7 @@ BaseTestInstance::DrawResult BaseTestInstance::draw (const deUint32 vertexCount,
 	}
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
-	beginRenderPassWithRasterizationDisabled(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer);
+	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(1, 1));
 
 	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 	vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
@@ -1013,8 +1025,8 @@ tcu::TestStatus SymmetricOuterEdgeTestInstance::iterate (void)
 class OuterEdgeDivisionTest : public TestCase
 {
 public:
-	OuterEdgeDivisionTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const CaseDefinition caseDef)
-		: TestCase	(testCtx, name, description)
+	OuterEdgeDivisionTest (tcu::TestContext& testCtx, const std::string& name, const CaseDefinition caseDef)
+		: TestCase	(testCtx, name)
 		, m_caseDef	(caseDef)
 	{
 	}
@@ -1046,8 +1058,8 @@ private:
 class OuterEdgeIndexIndependenceTest : public TestCase
 {
 public:
-	OuterEdgeIndexIndependenceTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const CaseDefinition caseDef)
-		: TestCase	(testCtx, name, description)
+	OuterEdgeIndexIndependenceTest (tcu::TestContext& testCtx, const std::string& name, const CaseDefinition caseDef)
+		: TestCase	(testCtx, name)
 		, m_caseDef	(caseDef)
 	{
 		DE_ASSERT(m_caseDef.primitiveType == TESSPRIMITIVETYPE_TRIANGLES || m_caseDef.primitiveType == TESSPRIMITIVETYPE_QUADS);
@@ -1075,8 +1087,8 @@ private:
 class SymmetricOuterEdgeTest : public TestCase
 {
 public:
-	SymmetricOuterEdgeTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const CaseDefinition caseDef)
-		: TestCase	(testCtx, name, description)
+	SymmetricOuterEdgeTest (tcu::TestContext& testCtx, const std::string& name, const CaseDefinition caseDef)
+		: TestCase	(testCtx, name)
 		, m_caseDef	(caseDef)
 	{
 	}
@@ -1101,22 +1113,22 @@ private:
 	const CaseDefinition m_caseDef;
 };
 
-tcu::TestCase* makeOuterEdgeDivisionTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
+tcu::TestCase* makeOuterEdgeDivisionTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
 {
 	const CaseDefinition caseDef = { primitiveType, spacingMode, WINDING_LAST, false };  // winding is ignored by this test
-	return new OuterEdgeDivisionTest(testCtx, name, description, caseDef);
+	return new OuterEdgeDivisionTest(testCtx, name, caseDef);
 }
 
-tcu::TestCase* makeOuterEdgeIndexIndependenceTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
+tcu::TestCase* makeOuterEdgeIndexIndependenceTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { primitiveType, spacingMode, winding, usePointMode };
-	return new OuterEdgeIndexIndependenceTest(testCtx, name, description, caseDef);
+	return new OuterEdgeIndexIndependenceTest(testCtx, name, caseDef);
 }
 
-tcu::TestCase* makeSymmetricOuterEdgeTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
+tcu::TestCase* makeSymmetricOuterEdgeTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { primitiveType, spacingMode, winding, usePointMode };
-	return new SymmetricOuterEdgeTest(testCtx, name, description, caseDef);
+	return new SymmetricOuterEdgeTest(testCtx, name, caseDef);
 }
 
 } // InvariantOuterEdge ns
@@ -1281,8 +1293,8 @@ bool comparePrimitivesExact (const PerPrimitive* const primitivesA, const PerPri
 class InvarianceTestCase : public TestCase
 {
 public:
-									InvarianceTestCase			(tcu::TestContext& context, const std::string& name, const std::string& description, const CaseDefinition& caseDef)
-										: TestCase	(context, name, description)
+									InvarianceTestCase			(tcu::TestContext& context, const std::string& name, const CaseDefinition& caseDef)
+										: TestCase	(context, name)
 										, m_caseDef	(caseDef) {}
 
 	virtual							~InvarianceTestCase			(void) {}
@@ -1366,6 +1378,8 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	Allocator&				allocator			= m_context.getDefaultAllocator();
 
+	const bool				geomPointSize		= m_context.getDeviceFeatures().shaderTessellationAndGeometryPointSize;
+
 	const std::vector<LevelCase>	tessLevelCases				= genTessLevelCases();
 	const int						numPatchesPerDrawCall		= 2;
 	int								maxNumPrimitivesPerPatch	= 0;  // computed below
@@ -1425,6 +1439,9 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 
 	for (int tessLevelCaseNdx = 0; tessLevelCaseNdx < static_cast<int>(tessLevelCases.size()); ++tessLevelCaseNdx)
 	{
+		if (m_caseDef.caseType == CASETYPE_INVARIANT_OUTER_TRIANGLE_SET)
+			m_context.getTestContext().touchWatchdog();
+
 		const LevelCase& levelCase = tessLevelCases[tessLevelCaseNdx];
 		PerPrimitiveVec  firstPrim;
 
@@ -1462,7 +1479,7 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 					.setShader						(vk, device, VK_SHADER_STAGE_VERTEX_BIT,					m_context.getBinaryCollection().get("vert"), DE_NULL)
 					.setShader						(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		m_context.getBinaryCollection().get("tesc"), DE_NULL)
 					.setShader						(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	m_context.getBinaryCollection().get(getProgramName("tese", *windingIter, m_caseDef.usePointMode)), DE_NULL)
-					.setShader						(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,					m_context.getBinaryCollection().get(getProgramName("geom", m_caseDef.usePointMode)), DE_NULL)
+					.setShader						(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,					m_context.getBinaryCollection().get(getProgramName("geom", m_caseDef.usePointMode, geomPointSize)), DE_NULL)
 					.build							(vk, device, *pipelineLayout, *renderPass));
 
 				{
@@ -1473,7 +1490,7 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 				}
 
 				beginCommandBuffer(vk, *cmdBuffer);
-				beginRenderPassWithRasterizationDisabled(vk, *cmdBuffer, *renderPass, *framebuffer);
+				beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(1, 1));
 
 				vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 				vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
@@ -1837,31 +1854,31 @@ TestInstance* InvarianceTestCase::createInstance (Context& context) const
 	}
 }
 
-TestCase* makeInvariantPrimitiveSetTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
+TestCase* makeInvariantPrimitiveSetTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { CASETYPE_INVARIANT_PRIMITIVE_SET, primitiveType, spacingMode, getWindingUsage(winding), usePointMode };
-	return new InvarianceTestCase(testCtx, name, description, caseDef);
+	return new InvarianceTestCase(testCtx, name, caseDef);
 }
 
-TestCase* makeInvariantTriangleSetTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
+TestCase* makeInvariantTriangleSetTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
 {
 	DE_ASSERT(primitiveType == TESSPRIMITIVETYPE_TRIANGLES || primitiveType == TESSPRIMITIVETYPE_QUADS);
 	const CaseDefinition caseDef = { CASETYPE_INVARIANT_TRIANGLE_SET, primitiveType, spacingMode, WINDING_USAGE_VARY, false };
-	return new InvarianceTestCase(testCtx, name, description, caseDef);
+	return new InvarianceTestCase(testCtx, name, caseDef);
 }
 
-TestCase* makeInvariantInnerTriangleSetTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
+TestCase* makeInvariantInnerTriangleSetTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
 {
 	DE_ASSERT(primitiveType == TESSPRIMITIVETYPE_TRIANGLES || primitiveType == TESSPRIMITIVETYPE_QUADS);
 	const CaseDefinition caseDef = { CASETYPE_INVARIANT_INNER_TRIANGLE_SET, primitiveType, spacingMode, WINDING_USAGE_VARY, false };
-	return new InvarianceTestCase(testCtx, name, description, caseDef);
+	return new InvarianceTestCase(testCtx, name, caseDef);
 }
 
-TestCase* makeInvariantOuterTriangleSetTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
+TestCase* makeInvariantOuterTriangleSetTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
 {
 	DE_ASSERT(primitiveType == TESSPRIMITIVETYPE_TRIANGLES || primitiveType == TESSPRIMITIVETYPE_QUADS);
 	const CaseDefinition caseDef = { CASETYPE_INVARIANT_OUTER_TRIANGLE_SET, primitiveType, spacingMode, WINDING_USAGE_VARY, false };
-	return new InvarianceTestCase(testCtx, name, description, caseDef);
+	return new InvarianceTestCase(testCtx, name, caseDef);
 }
 
 } // PrimitiveSetInvariance ns
@@ -1993,27 +2010,35 @@ void initPrograms (vk::SourceCollections& programCollection, const CaseDefinitio
 			return;
 		}
 
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "#extension GL_EXT_tessellation_shader : require\n"
-			<< "\n"
-			<< "layout(" << getTessPrimitiveTypeShaderName(caseDef.primitiveType) << ", "
-						 << getSpacingModeShaderName(caseDef.spacingMode) << ", "
-						 << getWindingShaderName(caseDef.winding)
-						 << (caseDef.usePointMode ? ", point_mode" : "") << ") in;\n"
-			<< "\n"
-			<< "layout(set = 0, binding = 0, std430) coherent restrict buffer Output {\n"
-			<< "    int  numInvocations;\n"
-			<< "    vec3 tessCoord[];\n"
-			<< "} sb_out;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    int index = atomicAdd(sb_out.numInvocations, 1);\n"
-			<< tessCoordSrc.str()
-			<< "}\n";
+		for (deUint32 i = 0; i < 2; ++i)
+		{
+			bool writePointSize = i == 1;
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "#extension GL_EXT_tessellation_shader : require\n";
+			if (writePointSize)
+				src << "#extension GL_EXT_tessellation_point_size : require\n";
+			src << "\n"
+				<< "layout(" << getTessPrimitiveTypeShaderName(caseDef.primitiveType) << ", "
+				<< getSpacingModeShaderName(caseDef.spacingMode) << ", "
+				<< getWindingShaderName(caseDef.winding)
+				<< (caseDef.usePointMode ? ", point_mode" : "") << ") in;\n"
+				<< "\n"
+				<< "layout(set = 0, binding = 0, std430) coherent restrict buffer Output {\n"
+				<< "    int  numInvocations;\n"
+				<< "    vec3 tessCoord[];\n";
+			src << "} sb_out;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    int index = atomicAdd(sb_out.numInvocations, 1);\n"
+				<< tessCoordSrc.str();
+			if (writePointSize)
+				src << "    gl_PointSize = 1.0f;\n";
+			src << "}\n";
 
-		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+			programCollection.glslSources.add(getProgramName("tese", writePointSize)) << glu::TessellationEvaluationSource(src.str());
+		}
 	}
 }
 
@@ -2026,6 +2051,8 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	const VkQueue			queue				= context.getUniversalQueue();
 	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&				allocator			= context.getDefaultAllocator();
+
+	const bool				tessPointSize		= context.getDeviceFeatures().shaderTessellationAndGeometryPointSize;
 
 	const int						numTessLevelCases	= 32;
 	const std::vector<TessLevels>	tessLevelCases		= genTessLevelCases(numTessLevelCases);
@@ -2081,7 +2108,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 		.setVertexInputSingleAttribute(vertexFormat, vertexStride)
 		.setShader                    (vk, device, VK_SHADER_STAGE_VERTEX_BIT,					context.getBinaryCollection().get("vert"), DE_NULL)
 		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	context.getBinaryCollection().get("tesc"), DE_NULL)
-		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, context.getBinaryCollection().get("tese"), DE_NULL)
+		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, context.getBinaryCollection().get(getProgramName("tese", tessPointSize)), DE_NULL)
 		.build                        (vk, device, *pipelineLayout, *renderPass));
 
 	for (int tessLevelCaseNdx = 0; tessLevelCaseNdx < numTessLevelCases; ++tessLevelCaseNdx)
@@ -2105,7 +2132,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 		}
 
 		beginCommandBuffer(vk, *cmdBuffer);
-		beginRenderPassWithRasterizationDisabled(vk, *cmdBuffer, *renderPass, *framebuffer);
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(1, 1));
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
@@ -2162,16 +2189,16 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	return tcu::TestStatus::pass("OK");
 }
 
-tcu::TestCase* makeTessCoordRangeTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
+tcu::TestCase* makeTessCoordRangeTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { CASETYPE_TESS_COORD_RANGE, primitiveType, spacingMode, winding, usePointMode };
-	return createFunctionCaseWithPrograms(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, description, checkSupportCase, initPrograms, test, caseDef);
+	return createFunctionCaseWithPrograms(testCtx, name, checkSupportCase, initPrograms, test, caseDef);
 }
 
-tcu::TestCase* makeOneMinusTessCoordTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
+tcu::TestCase* makeOneMinusTessCoordTest (tcu::TestContext& testCtx, const std::string& name, const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const Winding winding, const bool usePointMode)
 {
 	const CaseDefinition caseDef = { CASETYPE_ONE_MINUS_TESS_COORD, primitiveType, spacingMode, winding, usePointMode };
-	return createFunctionCaseWithPrograms(testCtx, tcu::NODETYPE_SELF_VALIDATE, name, description, checkSupportCase, initPrograms, test, caseDef);
+	return createFunctionCaseWithPrograms(testCtx, name, checkSupportCase, initPrograms, test, caseDef);
 }
 
 } // TessCoordComponent ns
@@ -2184,17 +2211,17 @@ tcu::TestCase* makeOneMinusTessCoordTest (tcu::TestContext& testCtx, const std::
 //! invocation is undefined.
 tcu::TestCaseGroup* createInvarianceTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "invariance", "Test tessellation invariance rules"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "invariance"));
 
-	de::MovePtr<tcu::TestCaseGroup> invariantPrimitiveSetGroup				(new tcu::TestCaseGroup(testCtx, "primitive_set",					"Test invariance rule #1"));
-	de::MovePtr<tcu::TestCaseGroup> invariantOuterEdgeGroup					(new tcu::TestCaseGroup(testCtx, "outer_edge_division",				"Test invariance rule #2"));
-	de::MovePtr<tcu::TestCaseGroup> symmetricOuterEdgeGroup					(new tcu::TestCaseGroup(testCtx, "outer_edge_symmetry",				"Test invariance rule #3"));
-	de::MovePtr<tcu::TestCaseGroup> outerEdgeVertexSetIndexIndependenceGroup(new tcu::TestCaseGroup(testCtx, "outer_edge_index_independence",	"Test invariance rule #4"));
-	de::MovePtr<tcu::TestCaseGroup> invariantTriangleSetGroup				(new tcu::TestCaseGroup(testCtx, "triangle_set",					"Test invariance rule #5"));
-	de::MovePtr<tcu::TestCaseGroup> invariantInnerTriangleSetGroup			(new tcu::TestCaseGroup(testCtx, "inner_triangle_set",				"Test invariance rule #6"));
-	de::MovePtr<tcu::TestCaseGroup> invariantOuterTriangleSetGroup			(new tcu::TestCaseGroup(testCtx, "outer_triangle_set",				"Test invariance rule #7"));
-	de::MovePtr<tcu::TestCaseGroup> tessCoordComponentRangeGroup			(new tcu::TestCaseGroup(testCtx, "tess_coord_component_range",		"Test invariance rule #8, first part"));
-	de::MovePtr<tcu::TestCaseGroup> oneMinusTessCoordComponentGroup			(new tcu::TestCaseGroup(testCtx, "one_minus_tess_coord_component",	"Test invariance rule #8, second part"));
+	de::MovePtr<tcu::TestCaseGroup> invariantPrimitiveSetGroup				(new tcu::TestCaseGroup(testCtx, "primitive_set"));
+	de::MovePtr<tcu::TestCaseGroup> invariantOuterEdgeGroup					(new tcu::TestCaseGroup(testCtx, "outer_edge_division"));
+	de::MovePtr<tcu::TestCaseGroup> symmetricOuterEdgeGroup					(new tcu::TestCaseGroup(testCtx, "outer_edge_symmetry"));
+	de::MovePtr<tcu::TestCaseGroup> outerEdgeVertexSetIndexIndependenceGroup(new tcu::TestCaseGroup(testCtx, "outer_edge_index_independence"));
+	de::MovePtr<tcu::TestCaseGroup> invariantTriangleSetGroup				(new tcu::TestCaseGroup(testCtx, "triangle_set"));
+	de::MovePtr<tcu::TestCaseGroup> invariantInnerTriangleSetGroup			(new tcu::TestCaseGroup(testCtx, "inner_triangle_set"));
+	de::MovePtr<tcu::TestCaseGroup> invariantOuterTriangleSetGroup			(new tcu::TestCaseGroup(testCtx, "outer_triangle_set"));
+	de::MovePtr<tcu::TestCaseGroup> tessCoordComponentRangeGroup			(new tcu::TestCaseGroup(testCtx, "tess_coord_component_range"));
+	de::MovePtr<tcu::TestCaseGroup> oneMinusTessCoordComponentGroup			(new tcu::TestCaseGroup(testCtx, "one_minus_tess_coord_component"));
 
 	for (int primitiveTypeNdx = 0; primitiveTypeNdx < TESSPRIMITIVETYPE_LAST; ++primitiveTypeNdx)
 	for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; ++spacingModeNdx)
@@ -2207,10 +2234,10 @@ tcu::TestCaseGroup* createInvarianceTests (tcu::TestContext& testCtx)
 
 		if (triOrQuad)
 		{
-			invariantOuterEdgeGroup->addChild		(    InvariantOuterEdge::makeOuterEdgeDivisionTest			(testCtx, primSpacName, "", primitiveType, spacingMode));
-			invariantTriangleSetGroup->addChild		(PrimitiveSetInvariance::makeInvariantTriangleSetTest		(testCtx, primSpacName, "", primitiveType, spacingMode));
-			invariantInnerTriangleSetGroup->addChild(PrimitiveSetInvariance::makeInvariantInnerTriangleSetTest	(testCtx, primSpacName, "", primitiveType, spacingMode));
-			invariantOuterTriangleSetGroup->addChild(PrimitiveSetInvariance::makeInvariantOuterTriangleSetTest	(testCtx, primSpacName, "", primitiveType, spacingMode));
+			invariantOuterEdgeGroup->addChild		(    InvariantOuterEdge::makeOuterEdgeDivisionTest			(testCtx, primSpacName, primitiveType, spacingMode));
+			invariantTriangleSetGroup->addChild		(PrimitiveSetInvariance::makeInvariantTriangleSetTest		(testCtx, primSpacName, primitiveType, spacingMode));
+			invariantInnerTriangleSetGroup->addChild(PrimitiveSetInvariance::makeInvariantInnerTriangleSetTest	(testCtx, primSpacName, primitiveType, spacingMode));
+			invariantOuterTriangleSetGroup->addChild(PrimitiveSetInvariance::makeInvariantOuterTriangleSetTest	(testCtx, primSpacName, primitiveType, spacingMode));
 		}
 
 		for (int windingNdx = 0; windingNdx < WINDING_LAST; ++windingNdx)
@@ -2220,13 +2247,13 @@ tcu::TestCaseGroup* createInvarianceTests (tcu::TestContext& testCtx)
 			const bool			usePointMode			= (usePointModeNdx != 0);
 			const std::string	primSpacWindPointName	= primSpacName + "_" + getWindingShaderName(winding) + (usePointMode ? "_point_mode" : "");
 
-			invariantPrimitiveSetGroup->addChild		(PrimitiveSetInvariance::makeInvariantPrimitiveSetTest	(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
-			tessCoordComponentRangeGroup->addChild		(    TessCoordComponent::makeTessCoordRangeTest			(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
-			oneMinusTessCoordComponentGroup->addChild	(    TessCoordComponent::makeOneMinusTessCoordTest		(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
-			symmetricOuterEdgeGroup->addChild			(    InvariantOuterEdge::makeSymmetricOuterEdgeTest		(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
+			invariantPrimitiveSetGroup->addChild		(PrimitiveSetInvariance::makeInvariantPrimitiveSetTest	(testCtx, primSpacWindPointName, primitiveType, spacingMode, winding, usePointMode));
+			tessCoordComponentRangeGroup->addChild		(    TessCoordComponent::makeTessCoordRangeTest			(testCtx, primSpacWindPointName, primitiveType, spacingMode, winding, usePointMode));
+			oneMinusTessCoordComponentGroup->addChild	(    TessCoordComponent::makeOneMinusTessCoordTest		(testCtx, primSpacWindPointName, primitiveType, spacingMode, winding, usePointMode));
+			symmetricOuterEdgeGroup->addChild			(    InvariantOuterEdge::makeSymmetricOuterEdgeTest		(testCtx, primSpacWindPointName, primitiveType, spacingMode, winding, usePointMode));
 
 			if (triOrQuad)
-				outerEdgeVertexSetIndexIndependenceGroup->addChild(InvariantOuterEdge::makeOuterEdgeIndexIndependenceTest(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
+				outerEdgeVertexSetIndexIndependenceGroup->addChild(InvariantOuterEdge::makeOuterEdgeIndexIndependenceTest(testCtx, primSpacWindPointName, primitiveType, spacingMode, winding, usePointMode));
 		}
 	}
 

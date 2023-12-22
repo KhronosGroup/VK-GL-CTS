@@ -29,6 +29,8 @@ set(DEQP_VK_DYNAMIC_STATE_SRCS
 	vktDynamicStateVPTests.hpp
 	vktDynamicStateDiscardTests.cpp
 	vktDynamicStateDiscardTests.hpp
+	vktDynamicStateLineWidthTests.cpp
+	vktDynamicStateLineWidthTests.hpp
 )
 
 PCH(DEQP_VK_DYNAMIC_STATE_SRCS ../pch.cpp)
@@ -37,5 +39,4 @@ add_library(deqp-vk-dynamic-state STATIC ${DEQP_VK_DYNAMIC_STATE_SRCS})
 target_link_libraries(deqp-vk-dynamic-state deqp-vk-draw tcutil vkutil)
 
 add_library(deqp-vksc-dynamic-state STATIC ${DEQP_VK_DYNAMIC_STATE_SRCS})
-target_include_directories(deqp-vksc-dynamic-state BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-dynamic-state PUBLIC deqp-vksc-draw deqp-vksc-util tcutil vkscutil)

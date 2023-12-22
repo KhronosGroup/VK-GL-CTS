@@ -38,7 +38,11 @@ namespace vkt
 namespace robustness
 {
 
-vk::Move<vk::VkDevice>	createRobustBufferAccessDevice		(Context& context, vk::VkInstance instance, const vk::InstanceInterface& vki, const vk::VkPhysicalDeviceFeatures2* enabledFeatures2 = DE_NULL);
+vk::Move<vk::VkDevice>	createRobustBufferAccessDevice		(Context& context,
+#ifdef CTS_USES_VULKANSC
+															 const vkt::CustomInstance& customInstance,
+#endif // CTS_USES_VULKANSC
+															 const vk::VkPhysicalDeviceFeatures2* enabledFeatures2 = DE_NULL);
 bool					areEqual							(float a, float b);
 bool					isValueZero							(const void* valuePtr, size_t valueSize);
 bool					isValueWithinBuffer					(const void* buffer, vk::VkDeviceSize bufferSize, const void* valuePtr, size_t valueSizeInBytes);
@@ -51,8 +55,7 @@ class TestEnvironment
 {
 public:
 									TestEnvironment		(Context&						context,
-														 vk::VkInstance					instance,
-														 const vk::InstanceInterface&	instanceInterface,
+														 const vk::DeviceInterface&		vk,
 														 vk::VkDevice					device,
 														 vk::VkDescriptorSetLayout		descriptorSetLayout,
 														 vk::VkDescriptorSet			descriptorSet);
@@ -63,8 +66,6 @@ public:
 
 protected:
 	Context&						m_context;
-	vk::VkInstance					m_instance;
-	const vk::InstanceInterface&	m_instanceInterface;
 	vk::VkDevice					m_device;
 	vk::VkDescriptorSetLayout		m_descriptorSetLayout;
 	vk::VkDescriptorSet				m_descriptorSet;
@@ -90,8 +91,7 @@ public:
 	};
 
 									GraphicsEnvironment		(Context&						context,
-															 vk::VkInstance					instance,
-															 const vk::InstanceInterface&	instanceInterface,
+															 const vk::DeviceInterface&		vk,
 															 vk::VkDevice					device,
 															 vk::VkDescriptorSetLayout		descriptorSetLayout,
 															 vk::VkDescriptorSet			descriptorSet,
@@ -126,8 +126,7 @@ class ComputeEnvironment: public TestEnvironment
 {
 public:
 									ComputeEnvironment		(Context&						context,
-															 vk::VkInstance					instance,
-															 const vk::InstanceInterface&	instanceInterface,
+															 const vk::DeviceInterface&		vk,
 															 vk::VkDevice					device,
 															 vk::VkDescriptorSetLayout		descriptorSetLayout,
 															 vk::VkDescriptorSet			descriptorSet,

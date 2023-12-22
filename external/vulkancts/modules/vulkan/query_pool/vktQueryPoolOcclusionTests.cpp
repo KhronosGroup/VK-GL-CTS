@@ -1256,8 +1256,8 @@ template<class Instance>
 class QueryPoolOcclusionTest : public vkt::TestCase
 {
 public:
-	QueryPoolOcclusionTest (tcu::TestContext &context, const char *name, const char *description, const OcclusionQueryTestVector& testVector)
-		: TestCase			(context, name, description)
+	QueryPoolOcclusionTest (tcu::TestContext &context, const char *name, const OcclusionQueryTestVector& testVector)
+		: TestCase			(context, name)
 		, m_testVector		(testVector)
 	{
 	}
@@ -1299,7 +1299,7 @@ private:
 } //anonymous
 
 QueryPoolOcclusionTests::QueryPoolOcclusionTests (tcu::TestContext &testCtx)
-	: TestCaseGroup(testCtx, "occlusion_query", "Tests for occlusion queries")
+	: TestCaseGroup(testCtx, "occlusion_query")
 {
 	/* Left blank on purpose */
 }
@@ -1327,9 +1327,9 @@ void QueryPoolOcclusionTests::init (void)
 	{
 		OcclusionQueryTestVector testVector = baseTestVector;
 		testVector.queryControlFlags = 0;
-		addChild(new QueryPoolOcclusionTest<BasicOcclusionQueryTestInstance>(m_testCtx,	"basic_conservative",	"draw with conservative occlusion query",	testVector));
+		addChild(new QueryPoolOcclusionTest<BasicOcclusionQueryTestInstance>(m_testCtx,	"basic_conservative",	testVector));
 		testVector.queryControlFlags = vk::VK_QUERY_CONTROL_PRECISE_BIT;
-		addChild(new QueryPoolOcclusionTest<BasicOcclusionQueryTestInstance>(m_testCtx,	"basic_precise",		"draw with precise occlusion query",		testVector));
+		addChild(new QueryPoolOcclusionTest<BasicOcclusionQueryTestInstance>(m_testCtx,	"basic_precise",		testVector));
 	}
 
 	// Functional test
@@ -1408,7 +1408,6 @@ void QueryPoolOcclusionTests::init (void)
 									}
 
 									std::ostringstream testName;
-									std::ostringstream testDescr;
 
 									testName << resultsModeStr[resultsModeIdx] << "_results"
 											 << "_" << controlFlagsStr[controlFlagIdx]
@@ -1418,15 +1417,7 @@ void QueryPoolOcclusionTests::init (void)
 											 << "_draw_" <<  primitiveTopologyStr[primitiveTopologyIdx]
 											 << discardHalfStr[discardHalfIdx];
 
-									testDescr << "draw occluded " << primitiveTopologyStr[primitiveTopologyIdx]
-											  << "with " << controlFlagsStr[controlFlagIdx] << ", "
-											  << resultsModeStr[resultsModeIdx] << " results "
-											  << testAvailabilityStr[testAvailabilityIdx] << " availability bit as "
-											  << resultSizeStr[resultSizeIdx] << "bit variables,"
-											  << (testVector.discardHalf ? " discarding half of the fragments," : "")
-											  << "wait for results on" << waitStr[waitIdx];
-
-									addChild(new QueryPoolOcclusionTest<OcclusionQueryTestInstance>(m_testCtx, testName.str().c_str(), testDescr.str().c_str(), testVector));
+									addChild(new QueryPoolOcclusionTest<OcclusionQueryTestInstance>(m_testCtx, testName.str().c_str(), testVector));
 								}
 							}
 						}
@@ -1449,7 +1440,6 @@ void QueryPoolOcclusionTests::init (void)
 							testVector.clearOp							= clearOp[clearOpIdx];
 
 							std::ostringstream testName;
-							std::ostringstream testDescr;
 
 							testName << "get_results"
 									 << "_" << controlFlagsStr[controlFlagIdx]
@@ -1459,14 +1449,7 @@ void QueryPoolOcclusionTests::init (void)
 									 << "_draw_" <<  primitiveTopologyStr[primitiveTopologyIdx]
 									 << "_" << clearOpStr[clearOpIdx];
 
-							testDescr << "draw occluded " << primitiveTopologyStr[primitiveTopologyIdx]
-									  << "with " << controlFlagsStr[controlFlagIdx] << ", "
-									  << "get results without availability bit "
-									  << "with " << clearOpStr[clearOpIdx] << " as "
-									  << resultSizeStr[resultSizeIdx] << "bit variables,"
-									  << "wait for results on" << waitStr[waitIdx];
-
-							addChild(new QueryPoolOcclusionTest<OcclusionQueryTestInstance>(m_testCtx, testName.str().c_str(), testDescr.str().c_str(), testVector));
+							addChild(new QueryPoolOcclusionTest<OcclusionQueryTestInstance>(m_testCtx, testName.str().c_str(), testVector));
 						}
 
 						// Tests with no color attachments.
@@ -1481,7 +1464,6 @@ void QueryPoolOcclusionTests::init (void)
 							testVector.noColorAttachments				= true;
 
 							std::ostringstream testName;
-							std::ostringstream testDescr;
 
 							testName << "get_results"
 									 << "_" << controlFlagsStr[controlFlagIdx]
@@ -1491,13 +1473,7 @@ void QueryPoolOcclusionTests::init (void)
 									 << "_draw_" <<  primitiveTopologyStr[primitiveTopologyIdx]
 									 << "_no_color_attachments";
 
-							testDescr << "draw occluded " << primitiveTopologyStr[primitiveTopologyIdx]
-									  << "with " << controlFlagsStr[controlFlagIdx] << ", "
-									  << "get results without availability bit and attachments as "
-									  << resultSizeStr[resultSizeIdx] << "bit variables,"
-									  << "wait for results on" << waitStr[waitIdx];
-
-							addChild(new QueryPoolOcclusionTest<OcclusionQueryTestInstance>(m_testCtx, testName.str().c_str(), testDescr.str().c_str(), testVector));
+							addChild(new QueryPoolOcclusionTest<OcclusionQueryTestInstance>(m_testCtx, testName.str().c_str(), testVector));
 						}
 					}
 				}
@@ -1581,7 +1557,6 @@ void QueryPoolOcclusionTests::init (void)
 							}
 
 							std::ostringstream testName;
-							std::ostringstream testDescr;
 
 							testName << resultsModeStr[resultsModeIdx]
 									 << "_results_size_" << resultSizeStr[resultSizeIdx]
@@ -1589,11 +1564,7 @@ void QueryPoolOcclusionTests::init (void)
 									 << "_" << testAvailabilityStr[testAvailabilityIdx] << "_availability"
 									 << copyQueryDstOffsetStr[dstOffsetIdx];
 
-							testDescr << resultsModeStr[resultsModeIdx] << " results "
-									  << testAvailabilityStr[testAvailabilityIdx] << " availability bit as "
-									  << resultSizeStr[resultSizeIdx] << "bit variables, with stride" << strides[strideIdx];
-
-							addChild(new QueryPoolOcclusionTest<OcclusionQueryTestInstance>(m_testCtx, testName.str().c_str(), testDescr.str().c_str(), testVector));
+							addChild(new QueryPoolOcclusionTest<OcclusionQueryTestInstance>(m_testCtx, testName.str().c_str(), testVector));
 						}
 					}
 				}

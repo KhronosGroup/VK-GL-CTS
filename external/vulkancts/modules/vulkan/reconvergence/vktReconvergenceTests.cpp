@@ -141,7 +141,7 @@ ReconvergenceTestInstance::~ReconvergenceTestInstance (void)
 class ReconvergenceTestCase : public TestCase
 {
 	public:
-								ReconvergenceTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+								ReconvergenceTestCase		(tcu::TestContext& context, const char* name, const CaseDef data);
 								~ReconvergenceTestCase	(void);
 	virtual	void				initPrograms		(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance		(Context& context) const;
@@ -151,8 +151,8 @@ private:
 	CaseDef					m_data;
 };
 
-ReconvergenceTestCase::ReconvergenceTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+ReconvergenceTestCase::ReconvergenceTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -1665,7 +1665,7 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 				vk, device, allocator, makeBufferCreateInfo(sizes[i], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
 		}
-		catch(tcu::ResourceError&)
+		catch(const tcu::TestError&)
 		{
 			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
 			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[i]) + " bytes");
@@ -1837,7 +1837,7 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 				vk, device, allocator, makeBufferCreateInfo(sizes[1], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
 		}
-		catch(tcu::ResourceError&)
+		catch(const tcu::TestError&)
 		{
 			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
 			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[1]) + " bytes");
@@ -1971,43 +1971,39 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
-}	// anonymous
-
-tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, bool createExperimental)
+tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& name, bool createExperimental)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "reconvergence", "reconvergence tests"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	typedef struct
 	{
 		deUint32				value;
 		const char*				name;
-		const char*				description;
 	} TestGroupCase;
 
 	TestGroupCase ttCases[] =
 	{
-		{ TT_SUCF_ELECT,				"subgroup_uniform_control_flow_elect",	"subgroup_uniform_control_flow_elect"		},
-		{ TT_SUCF_BALLOT,				"subgroup_uniform_control_flow_ballot",	"subgroup_uniform_control_flow_ballot"		},
-		{ TT_WUCF_ELECT,				"workgroup_uniform_control_flow_elect",	"workgroup_uniform_control_flow_elect"		},
-		{ TT_WUCF_BALLOT,				"workgroup_uniform_control_flow_ballot","workgroup_uniform_control_flow_ballot"		},
-		{ TT_MAXIMAL,					"maximal",								"maximal"									},
+		{ TT_SUCF_ELECT,				"subgroup_uniform_control_flow_elect"},
+		{ TT_SUCF_BALLOT,				"subgroup_uniform_control_flow_ballot"},
+		{ TT_WUCF_ELECT,				"workgroup_uniform_control_flow_elect"},
+		{ TT_WUCF_BALLOT,				"workgroup_uniform_control_flow_ballot"},
+		{ TT_MAXIMAL,					"maximal"},
 	};
 
 	for (int ttNdx = 0; ttNdx < DE_LENGTH_OF_ARRAY(ttCases); ttNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, ttCases[ttNdx].name, ttCases[ttNdx].description));
-		de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(testCtx, "compute", ""));
+		de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, ttCases[ttNdx].name));
+		de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(testCtx, "compute"));
 
 		for (deUint32 nNdx = 2; nNdx <= 6; nNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> nestGroup(new tcu::TestCaseGroup(testCtx, ("nesting" + de::toString(nNdx)).c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> nestGroup(new tcu::TestCaseGroup(testCtx, ("nesting" + de::toString(nNdx)).c_str()));
 
 			deUint32 seed = 0;
 
 			for (int sNdx = 0; sNdx < 8; sNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup> seedGroup(new tcu::TestCaseGroup(testCtx, de::toString(sNdx).c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> seedGroup(new tcu::TestCaseGroup(testCtx, de::toString(sNdx).c_str()));
 
 				deUint32 numTests = 0;
 				switch (nNdx)
@@ -2047,7 +2043,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, bool createExperimen
 					bool isExperimentalTest = !c.isUCF() || (ndx >= numTests / 5);
 
 					if (createExperimental == isExperimentalTest)
-						seedGroup->addChild(new ReconvergenceTestCase(testCtx, de::toString(ndx).c_str(), "", c));
+						seedGroup->addChild(new ReconvergenceTestCase(testCtx, de::toString(ndx).c_str(), c));
 				}
 				if (!seedGroup->empty())
 					nestGroup->addChild(seedGroup.release());
@@ -2062,6 +2058,18 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, bool createExperimen
 		}
 	}
 	return group.release();
+}
+
+}	// anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
+{
+	return createTests(testCtx, name, false);
+}
+
+tcu::TestCaseGroup* createTestsExperimental (tcu::TestContext& testCtx, const std::string& name)
+{
+	return createTests(testCtx, name, true);
 }
 
 }	// Reconvergence

@@ -72,6 +72,7 @@ TestCaseBase::TestCaseBase(Context& context, const ExtParameters& extParam, cons
 	, m_is_texture_border_clamp_supported(false)
 	, m_is_texture_buffer_supported(false)
 	, m_is_viewport_array_supported(false)
+	, m_is_texture_float_linear_supported(false)
 	, seed_value(1)
 {
 	m_glExtTokens.init(context.getRenderContext().getType());
@@ -104,6 +105,7 @@ void TestCaseBase::initExtensions()
 		m_is_texture_cube_map_array_supported		  = true;
 		m_is_texture_border_clamp_supported			  = true;
 		m_is_texture_buffer_supported				  = true;
+		m_is_texture_float_linear_supported			  = true;
 		m_is_shader_image_atomic_supported			  = glu::contextSupports(context_type, glu::ApiType::core(4, 2));
 		m_is_texture_storage_multisample_2d_array_supported =
 			glu::contextSupports(context_type, glu::ApiType::core(4, 3));
@@ -132,6 +134,7 @@ void TestCaseBase::initExtensions()
 		m_is_tessellation_shader_point_size_supported = isExtensionSupported("GL_OES_tessellation_point_size") ||
 														isExtensionSupported("GL_EXT_tessellation_point_size");
 		m_is_viewport_array_supported = isExtensionSupported("GL_OES_viewport_array");
+		m_is_texture_float_linear_supported = isExtensionSupported("GL_OES_texture_float_linear");
 	}
 	else
 	{
@@ -184,6 +187,7 @@ void TestCaseBase::initExtensions()
 			isExtensionSupported("GL_OES_texture_storage_multisample_2d_array");
 		m_is_viewport_array_supported = isExtensionSupported("GL_OES_viewport_array");
 		m_is_multiview_ovr_supported  = isExtensionSupported("GL_OVR_multiview");
+		m_is_texture_float_linear_supported = isExtensionSupported("GL_OES_texture_float_linear");
 	}
 }
 
@@ -710,7 +714,7 @@ bool TestCaseBase::comparePixel(const unsigned char* buffer, unsigned int x, uns
 
 	bool result = true;
 
-	/* Sanity checks */
+	/* Quick checks */
 	if (0 == buffer)
 	{
 		return false;

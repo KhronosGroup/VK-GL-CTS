@@ -219,7 +219,7 @@ struct DeviceHelper
 												 queueFamilyIndex,
 												 pAllocator,
 												 context.getTestContext().getCommandLine().isValidationEnabled()))
-		, vkd				(context.getPlatformInterface(), instance, *device)
+		, vkd				(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
 		, queue				(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}
@@ -781,6 +781,7 @@ tcu::TestStatus surfaceFormatRenderTests (Context& context, Type wsiType)
 	for (vector<VkSurfaceFormatKHR>::const_iterator curFmt = formats.begin(); curFmt != formats.end(); ++curFmt)
 	{
 		surfaceFormatRenderTest(context, wsiType, instHelper, devHelper, *surface, *curFmt);
+		context.getTestContext().touchWatchdog();
 	}
 	return tcu::TestStatus::pass("Rendering tests succeeded");
 }
@@ -802,6 +803,7 @@ tcu::TestStatus surfaceFormatRenderWithHdrTests (Context& context, Type wsiType)
 	for (vector<VkSurfaceFormatKHR>::const_iterator curFmt = formats.begin(); curFmt != formats.end(); ++curFmt)
 	{
 		surfaceFormatRenderTest(context, wsiType, instHelper, devHelper, *surface, *curFmt, true);
+		context.getTestContext().touchWatchdog();
 	}
 	return tcu::TestStatus::pass("Rendering tests succeeded");
 }
@@ -821,9 +823,12 @@ void getBasicRenderPrograms (SourceCollections& dst, Type)
 
 void createColorSpaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	addFunctionCase(testGroup, "extensions", "Verify Colorspace Extensions", basicExtensionTest, wsiType);
-	addFunctionCaseWithPrograms(testGroup, "basic", "Basic Rendering Tests", getBasicRenderPrograms, surfaceFormatRenderTests, wsiType);
-	addFunctionCaseWithPrograms(testGroup, "hdr", "Basic Rendering Tests with HDR", getBasicRenderPrograms, surfaceFormatRenderWithHdrTests, wsiType);
+	// Verify Colorspace Extensions
+	addFunctionCase(testGroup, "extensions", basicExtensionTest, wsiType);
+	// Basic Rendering Tests
+	addFunctionCaseWithPrograms(testGroup, "basic", getBasicRenderPrograms, surfaceFormatRenderTests, wsiType);
+	// Basic Rendering Tests with HDR
+	addFunctionCaseWithPrograms(testGroup, "hdr", getBasicRenderPrograms, surfaceFormatRenderWithHdrTests, wsiType);
 }
 
 void createColorspaceCompareTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
@@ -847,7 +852,7 @@ void createColorspaceCompareTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type 
 			wsiType,
 			format
 		};
-		addFunctionCaseWithPrograms(testGroup, caseName, "", getBasicRenderPrograms2, colorspaceCompareTest, params);
+		addFunctionCaseWithPrograms(testGroup, caseName, getBasicRenderPrograms2, colorspaceCompareTest, params);
 	}
 }
 

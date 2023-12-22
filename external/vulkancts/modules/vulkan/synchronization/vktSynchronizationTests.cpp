@@ -49,22 +49,22 @@ namespace synchronization
 namespace
 {
 
-tcu::TestCaseGroup* createBasicTests (tcu::TestContext& testCtx, SynchronizationType type)
+tcu::TestCaseGroup* createBasicTests (tcu::TestContext& testCtx, SynchronizationType type, VideoCodecOperationFlags videoCodecOperation)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "basic", ""));
+	de::MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "basic"));
 
 	if (type == SynchronizationType::LEGACY)
 	{
-		group->addChild(createBasicEventTests(testCtx));
-		group->addChild(createBasicFenceTests(testCtx));
+		group->addChild(createBasicEventTests(testCtx, videoCodecOperation));
+		group->addChild(createBasicFenceTests(testCtx, videoCodecOperation));
 	}
 	else
 	{
-		group->addChild(createSynchronization2BasicEventTests(testCtx));
+		group->addChild(createSynchronization2BasicEventTests(testCtx, videoCodecOperation));
 	}
 
-	group->addChild(createBasicBinarySemaphoreTests		(testCtx, type));
-	group->addChild(createBasicTimelineSemaphoreTests	(testCtx, type));
+	group->addChild(createBasicBinarySemaphoreTests		(testCtx, type, videoCodecOperation));
+	group->addChild(createBasicTimelineSemaphoreTests	(testCtx, type, videoCodecOperation));
 
 	return group.release();
 }
@@ -73,7 +73,7 @@ class OperationTests : public tcu::TestCaseGroup
 {
 public:
 	OperationTests (tcu::TestContext& testCtx, SynchronizationType type)
-		: tcu::TestCaseGroup(testCtx, "op", "Synchronization of a memory-modifying operation")
+		: tcu::TestCaseGroup(testCtx, "op")
 		, m_type(type)
 	{
 	}
@@ -91,59 +91,97 @@ private:
 	PipelineCacheData	m_pipelineCacheData;
 };
 
-tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, SynchronizationType type)
+const std::pair<std::string, std::string> getGroupName (SynchronizationType type, const std::string& name, VideoCodecOperationFlags videoCodecOperation)
 {
-	const bool		isSynchronization2	(type == SynchronizationType::SYNCHRONIZATION2);
-	const char*		groupName[]			{ "synchronization",		"synchronization2" };
-	const char*		groupDescription[]	{ "Synchronization tests",	"VK_KHR_synchronization2 tests" };
-
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, groupName[isSynchronization2], groupDescription[isSynchronization2]));
-
-	if (isSynchronization2)
+	if (videoCodecOperation == 0)
 	{
-		testGroup->addChild(createSynchronization2SmokeTests(testCtx));
-		testGroup->addChild(createSynchronization2TimelineSemaphoreTests(testCtx));
-#ifndef CTS_USES_VULKANSC
-		testGroup->addChild(createNoneStageTests(testCtx));
-#endif // CTS_USES_VULKANSC
-		testGroup->addChild(createImageLayoutTransitionTests(testCtx));
-	}
-	else // legacy synchronization
-	{
-		testGroup->addChild(createSmokeTests(testCtx));
-		testGroup->addChild(createTimelineSemaphoreTests(testCtx));
+		const bool	isSynchronization2	(type == SynchronizationType::SYNCHRONIZATION2);
+		const char*	groupDescription[]	{ "Synchronization tests",	"VK_KHR_synchronization2 tests" };
 
-		testGroup->addChild(createInternallySynchronizedObjects(testCtx));
-#ifndef CTS_USES_VULKANSC
-		testGroup->addChild(createWin32KeyedMutexTest(testCtx));
-		testGroup->addChild(createGlobalPriorityQueueTests(testCtx));
-#endif // CTS_USES_VULKANSC
+		return std::pair<std::string, std::string>(name, groupDescription[isSynchronization2]);
 	}
 
-	testGroup->addChild(createBasicTests(testCtx, type));
-	testGroup->addChild(new OperationTests(testCtx, type));
 #ifndef CTS_USES_VULKANSC
-	testGroup->addChild(createCrossInstanceSharingTest(testCtx, type));
-	testGroup->addChild(createSignalOrderTests(testCtx, type));
+	return std::pair<std::string, std::string>(name, "");
+#else
+	TCU_THROW(InternalError, "Video support is not implemented in Vulkan SC");
+#endif
+}
+
+tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, SynchronizationType type, const std::string& name, VideoCodecOperationFlags videoCodecOperation)
+{
+	const bool									isSynchronization2	(type == SynchronizationType::SYNCHRONIZATION2);
+	const std::pair<std::string, std::string>	groupName			= getGroupName(type, name, videoCodecOperation);
+
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, groupName.first.c_str()));
+
+	if (videoCodecOperation == 0)
+	{
+		if (isSynchronization2)
+		{
+			testGroup->addChild(createSynchronization2SmokeTests(testCtx));
+			testGroup->addChild(createSynchronization2TimelineSemaphoreTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+			testGroup->addChild(createNoneStageTests(testCtx));
 #endif // CTS_USES_VULKANSC
+			testGroup->addChild(createImageLayoutTransitionTests(testCtx));
+		}
+		else // legacy synchronization
+		{
+			testGroup->addChild(createSmokeTests(testCtx));
+			testGroup->addChild(createTimelineSemaphoreTests(testCtx));
+
+			testGroup->addChild(createInternallySynchronizedObjects(testCtx));
+#ifndef CTS_USES_VULKANSC
+			testGroup->addChild(createWin32KeyedMutexTest(testCtx));
+			testGroup->addChild(createGlobalPriorityQueueTests(testCtx));
+#endif // CTS_USES_VULKANSC
+		}
+	}
+
+	testGroup->addChild(createBasicTests(testCtx, type, videoCodecOperation));
+
+	if (videoCodecOperation == 0)
+	{
+		testGroup->addChild(new OperationTests(testCtx, type));
+#ifndef CTS_USES_VULKANSC
+		testGroup->addChild(createCrossInstanceSharingTest(testCtx, type));
+		testGroup->addChild(createSignalOrderTests(testCtx, type));
+#endif // CTS_USES_VULKANSC
+	}
 
 	return testGroup.release();
 }
-
 } // anonymous
 
 } // synchronization
 
-tcu::TestCaseGroup* createSynchronizationTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createSynchronizationTests(tcu::TestContext& testCtx, const std::string& name)
 {
-	using namespace synchronization;
-	return createTestsInternal(testCtx, SynchronizationType::LEGACY);
+	return createSynchronizationTests(testCtx, name, 0u);
 }
 
-tcu::TestCaseGroup* createSynchronization2Tests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createSynchronization2Tests(tcu::TestContext& testCtx, const std::string& name)
+{
+	return createSynchronization2Tests(testCtx, name, 0u);
+}
+
+tcu::TestCaseGroup* createSynchronizationTests (tcu::TestContext& testCtx, const std::string& name, synchronization::VideoCodecOperationFlags videoCodecOperation)
 {
 	using namespace synchronization;
-	return createTestsInternal(testCtx, SynchronizationType::SYNCHRONIZATION2);
+
+	de::MovePtr<tcu::TestCaseGroup> testGroup	(createTestsInternal(testCtx, SynchronizationType::LEGACY, name, videoCodecOperation));
+
+	return testGroup.release();
+}
+
+tcu::TestCaseGroup* createSynchronization2Tests (tcu::TestContext& testCtx, const std::string& name, synchronization::VideoCodecOperationFlags videoCodecOperation)
+{
+	using namespace synchronization;
+
+	de::MovePtr<tcu::TestCaseGroup> testGroup(createTestsInternal(testCtx, SynchronizationType::SYNCHRONIZATION2, name, videoCodecOperation));
+
+	return testGroup.release();
 }
 
 } // vkt

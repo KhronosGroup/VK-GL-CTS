@@ -160,7 +160,6 @@ protected:
 	bool									m_deviceCoherentMemSupported;
 
 private:
-	CustomInstance					m_deviceGroupInstance;
 	vk::Move<vk::VkDevice>			m_logicalDevice;
 #ifndef CTS_USES_VULKANSC
 	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
@@ -172,9 +171,9 @@ private:
 
 void BaseAllocateTestInstance::createTestDevice (void)
 {
-	m_deviceGroupInstance													= createCustomInstanceFromContext(m_context);
-	const InstanceDriver&							instanceDriver			= m_deviceGroupInstance.getDriver();
-	const VkPhysicalDevice							physicalDevice			= chooseDevice(instanceDriver, m_deviceGroupInstance, m_context.getTestContext().getCommandLine());
+	const auto&										instanceDriver			= m_context.getInstanceInterface();
+	const VkInstance								instance				= m_context.getInstance();
+	const VkPhysicalDevice							physicalDevice			= chooseDevice(instanceDriver, instance, m_context.getTestContext().getCommandLine());
 	const VkPhysicalDeviceFeatures					deviceFeatures			= getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
 	const float										queuePriority			= 1.0f;
 	deUint32										queueFamilyIndex		= 0;
@@ -211,7 +210,8 @@ void BaseAllocateTestInstance::createTestDevice (void)
 		pNext,															// const void*                                          pNext
 		VK_FALSE                                                        // VkBool32                                             deviceCoherentMemory;
 	};
-	if (m_context.isDeviceFunctionalitySupported("VK_AMD_device_coherent_memory")) pNext = &coherentMemoryFeatures;
+	if (m_context.isDeviceFunctionalitySupported("VK_AMD_device_coherent_memory"))
+		pNext = &coherentMemoryFeatures;
 #endif // CTS_USES_VULKANSC
 
 	VkPhysicalDeviceFeatures				features;
@@ -225,6 +225,7 @@ void BaseAllocateTestInstance::createTestDevice (void)
 	};
 
 	// Check if the physical device supports the protected memory feature
+	m_context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 	instanceDriver.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 	protMemSupported			= protectedMemoryFeature.protectedMemory;
 #ifndef CTS_USES_VULKANSC
@@ -271,11 +272,11 @@ void BaseAllocateTestInstance::createTestDevice (void)
 		(protMemSupported || usePageable || m_deviceCoherentMemSupported) ? DE_NULL : &deviceFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_deviceGroupInstance, instanceDriver, physicalDevice, &deviceInfo);
+	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 #ifndef CTS_USES_VULKANSC
-	m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice));
+	m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *m_logicalDevice, m_context.getUsedApiVersion()));
 #else
-	m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+	m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
 }
 
@@ -286,9 +287,9 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 	const deUint32									physDeviceIdx			= cmdLine.getVKDeviceId() - 1;
 	const float										queuePriority			= 1.0f;
 	deUint32										queueFamilyIndex		= 0;
-	const std::vector<std::string>					requiredExtensions		(1, "VK_KHR_device_group_creation");
-	m_deviceGroupInstance													= createCustomInstanceWithExtensions(m_context, requiredExtensions);
-	std::vector<VkPhysicalDeviceGroupProperties>	devGroupProperties		= enumeratePhysicalDeviceGroups(m_deviceGroupInstance.getDriver(), m_deviceGroupInstance);
+	const InstanceInterface&						instanceDriver			= m_context.getInstanceInterface();
+	const VkInstance								instance				= m_context.getInstance();
+	std::vector<VkPhysicalDeviceGroupProperties>	devGroupProperties		= enumeratePhysicalDeviceGroups(instanceDriver, instance);
 	m_numPhysDevices														= devGroupProperties[devGroupIdx].physicalDeviceCount;
 	m_subsetAllocationAllowed												= devGroupProperties[devGroupIdx].subsetAllocation;
 	if (m_numPhysDevices < 2)
@@ -306,7 +307,6 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 		devGroupProperties[devGroupIdx].physicalDevices										//physicalDevices
 	};
 
-	const InstanceDriver&							instanceDriver	= m_deviceGroupInstance.getDriver();
 	const VkPhysicalDeviceFeatures					deviceFeatures	= getPhysicalDeviceFeatures(instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
 
 	const std::vector<VkQueueFamilyProperties>		queueProps		= getPhysicalDeviceQueueFamilyProperties(instanceDriver, devGroupProperties[devGroupIdx].physicalDevices[physDeviceIdx]);
@@ -340,11 +340,11 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 		&deviceFeatures,											// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_deviceGroupInstance, instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
+	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
 #ifndef CTS_USES_VULKANSC
-	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice));
+	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *m_logicalDevice, m_context.getUsedApiVersion()));
 #else
-	m_deviceDriver		= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
+	m_deviceDriver		= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
 
 	m_memoryProperties	= getPhysicalDeviceMemoryProperties(instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
@@ -496,6 +496,10 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 										// don't show up in Vulkan queries. Use a hard coded threshold after which out of memory
 										// is allowed.
 										if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY && memoryType.propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT && ndx > 80)
+											break;
+
+										// We don't know the purpose of the memory type, memory type might have limitation not checked in this test.
+										if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY && (memReqs.memoryTypeBits & (1 << m_memoryTypeIndex)) == 0)
 											break;
 
 										VK_CHECK(res);
@@ -924,7 +928,7 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 				TCU_THROW(InternalError, "Unknown allocation mode");
 		}
 	} ();
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, name, "Memory allocation tests."));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, name));
 
 	const VkDeviceSize	KiB	= 1024;
 	const VkDeviceSize	MiB	= 1024 * KiB;
@@ -967,20 +971,19 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 	};
 
 	{
-		de::MovePtr<tcu::TestCaseGroup>	basicGroup(new tcu::TestCaseGroup(testCtx, "basic", "Basic memory allocation and free tests"));
+		de::MovePtr<tcu::TestCaseGroup>	basicGroup(new tcu::TestCaseGroup(testCtx, "basic"));
 
 		for (size_t allocationSizeNdx = 0; allocationSizeNdx < DE_LENGTH_OF_ARRAY(allocationSizes); allocationSizeNdx++)
 		{
 			const VkDeviceSize				allocationSize		= allocationSizes[allocationSizeNdx].size;
 			const char* const				allocationSizeName	= allocationSizes[allocationSizeNdx].str;
-			de::MovePtr<tcu::TestCaseGroup>	sizeGroup			(new tcu::TestCaseGroup(testCtx, ("size_" + string(allocationSizeName)).c_str(), ("Test different allocation sizes " + de::toString(allocationSize)).c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	sizeGroup			(new tcu::TestCaseGroup(testCtx, ("size_" + string(allocationSizeName)).c_str()));
 
 			for (size_t orderNdx = 0; orderNdx < DE_LENGTH_OF_ARRAY(orders); orderNdx++)
 			{
 				const TestConfig::Order			order				= orders[orderNdx].order;
 				const char* const				orderName			= orders[orderNdx].str;
-				const char* const				orderDescription	= orderName;
-				de::MovePtr<tcu::TestCaseGroup>	orderGroup			(new tcu::TestCaseGroup(testCtx, orderName, orderDescription));
+				de::MovePtr<tcu::TestCaseGroup>	orderGroup			(new tcu::TestCaseGroup(testCtx, orderName));
 
 				for (size_t allocationCountNdx = 0; allocationCountNdx < DE_LENGTH_OF_ARRAY(allocationCounts); allocationCountNdx++)
 				{
@@ -1011,7 +1014,7 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 					else
 						config.memoryAllocationCount	= allocationCount;
 
-					orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "count_" + de::toString(config.memoryAllocationCount), "", config));
+					orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(testCtx, "count_" + de::toString(config.memoryAllocationCount), config));
 				}
 
 				sizeGroup->addChild(orderGroup.release());
@@ -1023,14 +1026,13 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 		for (size_t allocationPercentNdx = 0; allocationPercentNdx < DE_LENGTH_OF_ARRAY(allocationPercents); allocationPercentNdx++)
 		{
 			const int						allocationPercent	= allocationPercents[allocationPercentNdx];
-			de::MovePtr<tcu::TestCaseGroup>	percentGroup		(new tcu::TestCaseGroup(testCtx, ("percent_" + de::toString(allocationPercent)).c_str(), ("Test different allocation percents " + de::toString(allocationPercent)).c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	percentGroup		(new tcu::TestCaseGroup(testCtx, ("percent_" + de::toString(allocationPercent)).c_str()));
 
 			for (size_t orderNdx = 0; orderNdx < DE_LENGTH_OF_ARRAY(orders); orderNdx++)
 			{
 				const TestConfig::Order			order				= orders[orderNdx].order;
 				const char* const				orderName			= orders[orderNdx].str;
-				const char* const				orderDescription	= orderName;
-				de::MovePtr<tcu::TestCaseGroup>	orderGroup			(new tcu::TestCaseGroup(testCtx, orderName, orderDescription));
+				de::MovePtr<tcu::TestCaseGroup>	orderGroup			(new tcu::TestCaseGroup(testCtx, orderName));
 
 				for (size_t allocationCountNdx = 0; allocationCountNdx < DE_LENGTH_OF_ARRAY(allocationCounts); allocationCountNdx++)
 				{
@@ -1059,7 +1061,7 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 					else
 						config.memoryAllocationCount	= allocationCount;
 
-					orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "count_" + de::toString(config.memoryAllocationCount), "", config));
+					orderGroup->addChild(new InstanceFactory1<AllocateFreeTestInstance, TestConfig>(testCtx, "count_" + de::toString(config.memoryAllocationCount), config));
 				}
 
 				percentGroup->addChild(orderGroup.release());
@@ -1075,13 +1077,13 @@ tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, Allo
 // RandomAllocFreeTestInstance test uses VkAllocationCallbacks and in Vulkan SC VkAllocationCallbacks must be NULL
 	{
 		const deUint32					caseCount	= 100;
-		de::MovePtr<tcu::TestCaseGroup>	randomGroup	(new tcu::TestCaseGroup(testCtx, "random", "Random memory allocation tests."));
+		de::MovePtr<tcu::TestCaseGroup>	randomGroup	(new tcu::TestCaseGroup(testCtx, "random"));
 
 		for (deUint32 caseNdx = 0; caseNdx < caseCount; caseNdx++)
 		{
 			TestConfigRandom config(deInt32Hash(caseNdx ^ 32480), allocationMode);
-
-			randomGroup->addChild(new InstanceFactory1<RandomAllocFreeTestInstance, TestConfigRandom>(testCtx, tcu::NODETYPE_SELF_VALIDATE, de::toString(caseNdx), "Random case", config));
+			// Random case
+			randomGroup->addChild(new InstanceFactory1<RandomAllocFreeTestInstance, TestConfigRandom>(testCtx, de::toString(caseNdx), config));
 		}
 
 		group->addChild(randomGroup.release());

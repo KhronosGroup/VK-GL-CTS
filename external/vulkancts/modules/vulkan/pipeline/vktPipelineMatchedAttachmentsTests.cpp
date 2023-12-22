@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2018 The Khronos Group Inc.
  * Copyright (c) 2018 Google Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +51,7 @@ struct MatchedAttachmentsTestParams
 
 void checkSupport(Context& context, const MatchedAttachmentsTestParams params)
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 }
 
 void initPrograms (SourceCollections& programCollection, const MatchedAttachmentsTestParams params)
@@ -75,10 +77,12 @@ void initPrograms (SourceCollections& programCollection, const MatchedAttachment
 
 tcu::TestStatus testMatchedAttachments (Context& context, const MatchedAttachmentsTestParams params)
 {
+	const InstanceInterface&						vki								= context.getInstanceInterface();
 	const DeviceInterface&							vk								= context.getDeviceInterface();
+	const VkPhysicalDevice							physicalDevice					= context.getPhysicalDevice();
 	const VkDevice									vkDevice						= context.getDevice();
-	const Unique<VkShaderModule>					vertexShaderModule				(createShaderModule(vk, vkDevice, context.getBinaryCollection().get("color_vert"), 0));
-	const Unique<VkShaderModule>					fragmentShaderModule			(createShaderModule(vk, vkDevice, context.getBinaryCollection().get("color_frag"), 0));
+	const ShaderWrapper								vertexShaderModule				(ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("color_vert"), 0));
+	const ShaderWrapper								fragmentShaderModule			(ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("color_frag"), 0));
 
 	const VkDescriptorSetLayoutBinding				descriptorSetLayoutBinding		=
 	{
@@ -111,7 +115,7 @@ tcu::TestStatus testMatchedAttachments (Context& context, const MatchedAttachmen
 		DE_NULL											// const VkPushConstantRange*      pPushConstantRanges;
 	};
 
-	const Unique<VkPipelineLayout>					pipelineLayout					(createPipelineLayout(vk, vkDevice, &pipelineLayoutCreateInfo, DE_NULL));
+	const PipelineLayoutWrapper						pipelineLayout					(params.pipelineConstructionType, vk, vkDevice, &pipelineLayoutCreateInfo, DE_NULL);
 
 	const VkAttachmentDescription					descs[2]						=
 	{
@@ -178,7 +182,7 @@ tcu::TestStatus testMatchedAttachments (Context& context, const MatchedAttachmen
 		DE_NULL										// const VkSubpassDependency*        pDependencies;
 	};
 
-	const Unique<VkRenderPass>						renderPass						(createRenderPass(vk, vkDevice, &renderPassCreateInfo, DE_NULL));
+	RenderPassWrapper								renderPass						(params.pipelineConstructionType, vk, vkDevice, &renderPassCreateInfo);
 
 	const VkPipelineCacheCreateInfo					pipelineCacheCreateInfo			=
 	{
@@ -226,21 +230,21 @@ tcu::TestStatus testMatchedAttachments (Context& context, const MatchedAttachmen
 
 	const std::vector<VkViewport>	viewport{};
 	const std::vector<VkRect2D>		scissor	{};
-	GraphicsPipelineWrapper			graphicsPipeline(vk, vkDevice, params.pipelineConstructionType);
+	GraphicsPipelineWrapper			graphicsPipeline(vki, vk, physicalDevice, vkDevice, context.getDeviceExtensions(), params.pipelineConstructionType);
 	graphicsPipeline.setDynamicState(&dynamicStateCreateInfo)
 					.setDefaultRasterizationState()
 					.setDefaultMultisampleState()
 					.setDefaultColorBlendState()
-					.setupVertexInputStete(&vertexInputStateCreateInfo)
+					.setupVertexInputState(&vertexInputStateCreateInfo)
 					.setupPreRasterizationShaderState(viewport,
 													  scissor,
-													  *pipelineLayout,
+													  pipelineLayout,
 													  *renderPass,
 													  0u,
-													  *vertexShaderModule)
-					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fragmentShaderModule)
+													  vertexShaderModule)
+					.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragmentShaderModule)
 					.setupFragmentOutputState(*renderPass, 0u)
-					.setMonolithicPipelineLayout(*pipelineLayout)
+					.setMonolithicPipelineLayout(pipelineLayout)
 					.buildPipeline(params.usePipelineCache ? *pipelineCache : DE_NULL);
 
 	// Passes as long as createGraphicsPipeline didn't crash.
@@ -249,18 +253,22 @@ tcu::TestStatus testMatchedAttachments (Context& context, const MatchedAttachmen
 
 void addMatchedAttachmentsTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
 {
-	const MatchedAttachmentsTestParams useCache = { pipelineConstructionType, true };
-	addFunctionCaseWithPrograms(group, "cache", "", checkSupport, initPrograms, testMatchedAttachments, useCache);
+	// Input attachments are not supported with dynamic rendering
+	if (!isConstructionTypeShaderObject(pipelineConstructionType))
+	{
+		const MatchedAttachmentsTestParams useCache = { pipelineConstructionType, true };
+		addFunctionCaseWithPrograms(group, "cache", checkSupport, initPrograms, testMatchedAttachments, useCache);
 
-	const MatchedAttachmentsTestParams noCache = { pipelineConstructionType, false };
-	addFunctionCaseWithPrograms(group, "no_cache", "", checkSupport, initPrograms, testMatchedAttachments, noCache);
+		const MatchedAttachmentsTestParams noCache = { pipelineConstructionType, false };
+		addFunctionCaseWithPrograms(group, "no_cache", checkSupport, initPrograms, testMatchedAttachments, noCache);
+	}
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createMatchedAttachmentsTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "matched_attachments", "Matched attachments tests", addMatchedAttachmentsTestCasesWithFunctions, pipelineConstructionType);
+	return createTestGroup(testCtx, "matched_attachments", addMatchedAttachmentsTestCasesWithFunctions, pipelineConstructionType);
 }
 
 } // pipeline

@@ -330,8 +330,7 @@ class SynchronizationImageLayoutTransitionTest : public TestCase
 {
 public:
 						SynchronizationImageLayoutTransitionTest	(tcu::TestContext&	testCtx,
-																	 const std::string&	name,
-																	 const std::string&	description);
+																	 const std::string&	name);
 
 	virtual void		checkSupport								(Context&			context) const;
 	void				initPrograms								(SourceCollections& programCollection) const;
@@ -339,9 +338,8 @@ public:
 };
 
 SynchronizationImageLayoutTransitionTest::SynchronizationImageLayoutTransitionTest (tcu::TestContext&	testCtx,
-																					const std::string&	name,
-																					const std::string&	description)
-	: TestCase	(testCtx, name, description)
+																					const std::string&	name)
+	: TestCase	(testCtx, name)
 {
 }
 
@@ -381,8 +379,9 @@ TestInstance* SynchronizationImageLayoutTransitionTest::createInstance (Context&
 
 tcu::TestCaseGroup* createImageLayoutTransitionTests	(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "layout_transition", "No-op image layout transition tests"));
-	testGroup->addChild(new SynchronizationImageLayoutTransitionTest(testCtx, "no_op", ""));
+	// No-op image layout transition tests
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "layout_transition"));
+	testGroup->addChild(new SynchronizationImageLayoutTransitionTest(testCtx, "no_op"));
 
 	return testGroup.release();
 }

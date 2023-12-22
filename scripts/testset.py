@@ -101,7 +101,7 @@ def readTestResults (filename):
 	if len(results) == 0:
 		raise Exception("Empty result list")
 
-	# Sanity check for results
+	# Quick check for results
 	numResultItems	= len(results[0].results)
 	seenResults		= set()
 	for result in results:

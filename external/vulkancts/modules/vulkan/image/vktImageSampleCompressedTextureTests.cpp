@@ -640,7 +640,6 @@ class SampleDrawnTextureTest : public TestCase
 public:
 						SampleDrawnTextureTest	(tcu::TestContext&	testCtx,
 												 const std::string&	name,
-												 const std::string&	description,
 												 const VkFormat		imageFormat,
 												 const VkFormat		imageViewFormat,
 												 const bool			twoSamplers,
@@ -659,12 +658,11 @@ private:
 
 SampleDrawnTextureTest::SampleDrawnTextureTest (tcu::TestContext&	testCtx,
 												const std::string&	name,
-												const std::string&	description,
 												const VkFormat		imageFormat,
 												const VkFormat		imageViewFormat,
 												const bool			twoSamplers,
 												const bool			cubemap)
-	: TestCase	(testCtx, name, description)
+	: TestCase	(testCtx, name)
 	, m_imageFormat	(imageFormat)
 	, m_imageViewFormat	(imageViewFormat)
 	, m_twoSamplers (twoSamplers)
@@ -845,17 +843,17 @@ tcu::TestCaseGroup* createImageSampleDrawnTextureTests	(tcu::TestContext& testCt
 	const bool twoSamplers	= true;
 	const bool cubemap		= true;
 
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "sample_texture", "Sample texture that has been rendered to tests"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "sample_texture"));
 
-	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format_cubemap", "", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, !twoSamplers, cubemap));
-	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format_cubemap", "", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, !twoSamplers, cubemap));
-	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format_two_samplers_cubemap", "", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, twoSamplers, cubemap));
-	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format_two_samplers_cubemap", "", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, twoSamplers, cubemap));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format_cubemap", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, !twoSamplers, cubemap));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format_cubemap", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, !twoSamplers, cubemap));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format_two_samplers_cubemap", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, twoSamplers, cubemap));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format_two_samplers_cubemap", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, twoSamplers, cubemap));
 
-	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format", "", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, !twoSamplers, false));
-	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format_two_samplers", "", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, twoSamplers, false));
-	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format", "", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, !twoSamplers, false));
-	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format_two_samplers", "", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, twoSamplers, false));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, !twoSamplers, false));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "64_bit_compressed_format_two_samplers", VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_R32G32_UINT, twoSamplers, false));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, !twoSamplers, false));
+	testGroup->addChild(new SampleDrawnTextureTest(testCtx, "128_bit_compressed_format_two_samplers", VK_FORMAT_BC3_UNORM_BLOCK, VK_FORMAT_R32G32B32A32_UINT, twoSamplers, false));
 
 	return testGroup.release();
 }

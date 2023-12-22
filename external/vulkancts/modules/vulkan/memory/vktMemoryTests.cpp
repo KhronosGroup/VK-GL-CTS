@@ -31,6 +31,7 @@
 #include "vktTestGroupUtil.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktMemoryMappingTests.hpp"
+#include "vktMemoryAddressBindingTests.hpp"
 #include "vktMemoryDeviceMemoryReportTests.hpp"
 #endif // CTS_USES_VULKANSC
 
@@ -60,14 +61,15 @@ void createChildren (tcu::TestCaseGroup* memoryTests)
 	memoryTests->addChild(createMemoryExternalMemoryHostTests	(testCtx));
 #ifndef CTS_USES_VULKANSC
 	memoryTests->addChild(createDeviceMemoryReportTests			(testCtx));
+	memoryTests->addChild(createAddressBindingReportTests		(testCtx));
 #endif
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "memory", "Memory Tests", createChildren);
+	return createTestGroup(testCtx, name, createChildren);
 }
 
 } // memory

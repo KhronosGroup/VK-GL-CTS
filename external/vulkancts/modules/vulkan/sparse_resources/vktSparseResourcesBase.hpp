@@ -75,7 +75,7 @@ protected:
 
 	deUint32											m_numPhysicalDevices;
 
-	void												createDeviceSupportingQueues	(const QueueRequirementsVec& queueRequirements);
+	void												createDeviceSupportingQueues	(const QueueRequirementsVec& queueRequirements, bool requireShaderImageAtomicInt64Features = false, bool requireMaintenance5 = false);
 	const Queue&										getQueue						(const vk::VkQueueFlags queueFlags, const deUint32 queueIndex) const;
 	const vk::DeviceInterface&							getDeviceInterface				(void) const		{ return *m_deviceDriver; }
 	vk::VkDevice										getDevice						(void) const		{ return *m_logicalDevice; }

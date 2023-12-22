@@ -748,7 +748,7 @@ VkClearValue TestAccelerationStructuresConfiguration::getClearValue ()
 class RayTracingCaptureReplayTestCase : public TestCase
 {
 	public:
-							RayTracingCaptureReplayTestCase				(tcu::TestContext& context, const char* name, const char* desc, const TestParams& data);
+							RayTracingCaptureReplayTestCase				(tcu::TestContext& context, const char* name, const TestParams& data);
 							~RayTracingCaptureReplayTestCase			(void);
 
 	virtual void			checkSupport								(Context& context) const;
@@ -775,8 +775,8 @@ private:
 	VkDeviceAddress													copyTLASAddress;
 };
 
-RayTracingCaptureReplayTestCase::RayTracingCaptureReplayTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams& data)
-	: vkt::TestCase	(context, name, desc)
+RayTracingCaptureReplayTestCase::RayTracingCaptureReplayTestCase (tcu::TestContext& context, const char* name, const TestParams& data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -894,19 +894,6 @@ void RayTracingCaptureReplayTestCase::initPrograms (SourceCollections& programCo
 	}
 }
 
-std::vector<std::string> removeExtensions (const std::vector<std::string>& a, const std::vector<const char*>& b)
-{
-	std::vector<std::string>	res;
-	std::set<std::string>		removeExts	(b.begin(), b.end());
-
-	for (std::vector<std::string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
-	{
-		if (!de::contains(removeExts, *aIter))
-			res.push_back(*aIter);
-	}
-	return res;
-}
-
 TestInstance* RayTracingCaptureReplayTestCase::createInstance (Context& context) const
 {
 	return new RayTracingCaptureReplayTestInstance(context, m_data);
@@ -924,91 +911,13 @@ RayTracingCaptureReplayTestInstance::~RayTracingCaptureReplayTestInstance (void)
 
 std::vector<deUint32> RayTracingCaptureReplayTestInstance::runTest(bool replay)
 {
-	const deUint32 NO_MATCH_FOUND = ~((deUint32)0);
-
-	// For this test we need to create separate device with ray tracing features and buffer device address features enabled
-	const PlatformInterface&				vkp									= m_context.getPlatformInterface();
-	const InstanceInterface&				vki									= m_context.getInstanceInterface();
-	const VkInstance						instance							= m_context.getInstance();
-	const VkPhysicalDevice					physicalDevice						= m_context.getPhysicalDevice();
-	const auto								validationEnabled					= m_context.getTestContext().getCommandLine().isValidationEnabled();
-
-	VkQueue									queue								= DE_NULL;
-	deUint32								queueFamilyIndex					= NO_MATCH_FOUND;
-
-	std::vector<VkQueueFamilyProperties>	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
-	for (deUint32 queueNdx = 0; queueNdx < queueFamilyProperties.size(); ++queueNdx)
-	{
-		if (queueFamilyProperties[queueNdx].queueFlags & ( VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT ))
-		{
-			if (queueFamilyIndex == NO_MATCH_FOUND)
-				queueFamilyIndex = queueNdx;
-		}
-	}
-	if (queueFamilyIndex == NO_MATCH_FOUND)
-		TCU_THROW(NotSupportedError, "Could not create queue");
-
-	const float								queuePriority						= 1.0f;
-	VkDeviceQueueCreateInfo					queueInfo;
-	deMemset(&queueInfo, 0, sizeof(queueInfo));
-	queueInfo.sType																= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueInfo.pNext																= DE_NULL;
-	queueInfo.flags																= (VkDeviceQueueCreateFlags)0u;
-	queueInfo.queueFamilyIndex													= queueFamilyIndex;
-	queueInfo.queueCount														= 1;
-	queueInfo.pQueuePriorities													= &queuePriority;
-
-	VkPhysicalDeviceRayTracingPipelineFeaturesKHR		rayTracingFeaturesKHR;
-	rayTracingFeaturesKHR.sType													= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-	rayTracingFeaturesKHR.pNext													= DE_NULL;
-
-	VkPhysicalDeviceAccelerationStructureFeaturesKHR	accelerationStructureFeaturesKHR;
-	accelerationStructureFeaturesKHR.sType										= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-	accelerationStructureFeaturesKHR.pNext										= &rayTracingFeaturesKHR;
-
-	VkPhysicalDeviceBufferDeviceAddressFeatures			bufferDeviceAddressFeatures;
-	bufferDeviceAddressFeatures.sType											= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
-	bufferDeviceAddressFeatures.pNext											= &accelerationStructureFeaturesKHR;
-
-	VkPhysicalDeviceFeatures2				deviceFeatures2;
-	deviceFeatures2.sType														= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	deviceFeatures2.pNext														= &bufferDeviceAddressFeatures;
-	vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
-
-	// skip core device extensions according to API version
-	std::vector<const char*>				coreExtensions;
-	getCoreDeviceExtensions(m_context.getUsedApiVersion(), coreExtensions);
-	std::vector<std::string>				nonCoreDeviceExtensions				(removeExtensions(m_context.getDeviceExtensions(), coreExtensions));
-	std::vector<const char*>				nonCoreDeviceExtensionsC;
-
-	// ppEnabledExtensionNames must not contain both VK_KHR_buffer_device_address and VK_EXT_buffer_device_address
-	if ( ( de::contains(begin(coreExtensions), end(coreExtensions), "VK_KHR_buffer_device_address") ||
-		   de::contains(begin(nonCoreDeviceExtensions), end(nonCoreDeviceExtensions), "VK_KHR_buffer_device_address") ) &&
-		 de::contains(begin(nonCoreDeviceExtensions), end(nonCoreDeviceExtensions), "VK_EXT_buffer_device_address") )
-		std::for_each(begin(nonCoreDeviceExtensions), end(nonCoreDeviceExtensions), [&nonCoreDeviceExtensionsC](const std::string& text) { if (text != "VK_EXT_buffer_device_address") nonCoreDeviceExtensionsC.push_back(text.c_str()); });
-	else
-		std::for_each(begin(nonCoreDeviceExtensions), end(nonCoreDeviceExtensions), [&nonCoreDeviceExtensionsC](const std::string& text) { nonCoreDeviceExtensionsC.push_back(text.c_str()); });
-
-	VkDeviceCreateInfo						deviceInfo;
-	deMemset(&deviceInfo, 0, sizeof(deviceInfo));
-	deviceInfo.sType															= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext															= &deviceFeatures2;
-	deviceInfo.enabledExtensionCount											= deUint32(nonCoreDeviceExtensionsC.size());
-	deviceInfo.ppEnabledExtensionNames											= nonCoreDeviceExtensionsC.data();
-	deviceInfo.enabledLayerCount												= 0u;
-	deviceInfo.ppEnabledLayerNames												= DE_NULL;
-	deviceInfo.pEnabledFeatures													= DE_NULL;
-	deviceInfo.queueCreateInfoCount												= 1;
-	deviceInfo.pQueueCreateInfos												= &queueInfo;
-	Move<VkDevice>							testDevice							= createCustomDevice(validationEnabled, vkp, m_context.getInstance(), vki, physicalDevice, &deviceInfo);
-	VkDevice								device								= *testDevice;
-	DeviceDriver							vkd									(vkp, instance, device);
-
-	vkd.getDeviceQueue(device, queueFamilyIndex, 0, &queue);
-
-	// create memory allocator for new VkDevice
-	VkPhysicalDeviceMemoryProperties		memoryProperties					= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
-	de::UniquePtr<vk::Allocator>			allocator							(new SimpleAllocator(vkd, device, memoryProperties));
+	const auto&	vki					= m_context.getInstanceInterface();
+	const auto	physicalDevice		= m_context.getPhysicalDevice();
+	const auto&	vkd					= m_context.getDeviceInterface();
+	const auto	device				= m_context.getDevice();
+	auto		allocator			= &m_context.getDefaultAllocator();
+	const auto	queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const auto	queue				= m_context.getUniversalQueue();
 
 	// Create common pipeline layout for all raytracing pipelines
 	const Move<VkDescriptorSetLayout>		descriptorSetLayout					= DescriptorSetLayoutBuilder()
@@ -1408,12 +1317,14 @@ void addReplayShaderBindingTablesTests(tcu::TestCaseGroup* group)
 	{
 		SBTReplayTestType	testType;
 		const char*			name;
-		const char*			description;
 	} testTypes[] =
 	{
-		{ TEST_PIPELINE_SINGLE,		"pipeline_single",			"Capture-replay scenario with single captured pipeline" },
-		{ TEST_PIPELINE_AFTER	,	"pipeline_after_captured",	"Not captured pipeline created after captured one" },
-		{ TEST_PIPELINE_BEFORE,		"pipeline_before_captured",	"Not captured pipeline created before captured one" },
+		// Capture-replay scenario with single captured pipeline
+		{ TEST_PIPELINE_SINGLE,		"pipeline_single"},
+		// Not captured pipeline created after captured one
+		{ TEST_PIPELINE_AFTER	,	"pipeline_after_captured"},
+		// Not captured pipeline created before captured one
+		{ TEST_PIPELINE_BEFORE,		"pipeline_before_captured"},
 	};
 
 	for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
@@ -1430,7 +1341,7 @@ void addReplayShaderBindingTablesTests(tcu::TestCaseGroup* group)
 			RTCR_DEFAULT_SIZE,
 			de::SharedPtr<TestConfiguration>(new TestShaderBindingTablesConfiguration())
 		};
-		group->addChild(new RayTracingCaptureReplayTestCase(group->getTestContext(), testTypes[testTypeNdx].name, testTypes[testTypeNdx].description, testParams));
+		group->addChild(new RayTracingCaptureReplayTestCase(group->getTestContext(), testTypes[testTypeNdx].name, testParams));
 	}
 }
 
@@ -1480,15 +1391,15 @@ void addReplayAccelerationStruturesTests(tcu::TestCaseGroup* group)
 
 	for (size_t operationTypeNdx = 0; operationTypeNdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypeNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> operationTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTypes[operationTypeNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> operationTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTypes[operationTypeNdx].name));
 
 		for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
 
 			for (size_t operationTargetNdx = 0; operationTargetNdx < DE_LENGTH_OF_ARRAY(operationTargets); ++operationTargetNdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup> operationTargetGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTargets[operationTargetNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup> operationTargetGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTargets[operationTargetNdx].name));
 
 				for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
 				{
@@ -1506,7 +1417,7 @@ void addReplayAccelerationStruturesTests(tcu::TestCaseGroup* group)
 						RTCR_DEFAULT_SIZE,
 						de::SharedPtr<TestConfiguration>(new TestAccelerationStructuresConfiguration())
 					};
-					operationTargetGroup->addChild(new RayTracingCaptureReplayTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, "", testParams));
+					operationTargetGroup->addChild(new RayTracingCaptureReplayTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, testParams));
 				}
 				buildGroup->addChild(operationTargetGroup.release());
 			}
@@ -1518,10 +1429,12 @@ void addReplayAccelerationStruturesTests(tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup*	createCaptureReplayTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "capture_replay", "Capture-replay capabilities"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "capture_replay"));
 
-	addTestGroup(group.get(), "shader_binding_tables", "Test replaying shader binding tables", addReplayShaderBindingTablesTests);
-	addTestGroup(group.get(), "acceleration_structures", "Test replaying acceleration structure", addReplayAccelerationStruturesTests);
+	// Test replaying shader binding tables
+	addTestGroup(group.get(), "shader_binding_tables", addReplayShaderBindingTablesTests);
+	// Test replaying acceleration structure
+	addTestGroup(group.get(), "acceleration_structures", addReplayAccelerationStruturesTests);
 
 	return group.release();
 }

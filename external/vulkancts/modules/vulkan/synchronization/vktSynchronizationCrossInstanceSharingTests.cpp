@@ -87,15 +87,6 @@ struct TestConfig
 	const bool											dedicated;
 };
 
-// A helper function to choose tiling type for cross instance sharing tests.
-// On Linux, DMABUF requires VK_EXT_image_drm_format_modifier support when
-// VK_IMAGE_TILING_OPTIMAL is used, therefore we choose to use linear with these tests.
-vk::VkImageTiling chooseTiling(VkExternalMemoryHandleTypeFlagBits memoryHandleType)
-{
-	// Choose tiling depending on memory handle type
-	return memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT ? vk::VK_IMAGE_TILING_LINEAR : vk::VK_IMAGE_TILING_OPTIMAL;
-}
-
 // A helper class to test for extensions upfront and throw not supported to speed up test runtimes compared to failing only
 // after creating unnecessary vkInstances.  A common example of this is win32 platforms taking a long time to run _fd tests.
 class NotSupportedChecker
@@ -123,9 +114,6 @@ public:
 		if (config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE)
 			m_context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 
-		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT
-			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT
-			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
 		if (config.type == SynchronizationType::SYNCHRONIZATION2)
 			m_context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
@@ -177,7 +165,7 @@ public:
 				&externalInfo,
 				config.resource.imageFormat,
 				config.resource.imageType,
-				chooseTiling(config.memoryHandleType),
+				vk::VK_IMAGE_TILING_OPTIMAL,
 				readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 				0u
 			};
@@ -694,7 +682,7 @@ Move<VkImage> createImage(const vk::DeviceInterface&				vkd,
 		1u,
 		1u,
 		resourceDesc.imageSamples,
-		chooseTiling(externalType),
+		vk::VK_IMAGE_TILING_OPTIMAL,
 		readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 		vk::VK_SHARING_MODE_EXCLUSIVE,
 
@@ -809,7 +797,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			DE_NULL,
 			(vk::VkExternalMemoryHandleTypeFlags)externalType
 		};
-		const vk::VkImageTiling				tiling					= chooseTiling(externalType);
+		const vk::VkImageTiling				tiling					= vk::VK_IMAGE_TILING_OPTIMAL;
 		const vk::VkImageCreateInfo			createInfo				=
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -1030,7 +1018,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
 	, m_deviceA					(InstanceAndDevice::getDeviceA())
-	, m_vkdA					(context.getPlatformInterface(), m_instanceA, *m_deviceA)
+	, m_vkdA					(context.getPlatformInterface(), m_instanceA, *m_deviceA, context.getUsedApiVersion())
 
 	, m_instanceB				(InstanceAndDevice::getInstanceB(context))
 	, m_vkiB					(InstanceAndDevice::getDriverB())
@@ -1038,7 +1026,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_queueFamiliesB			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
 	, m_queueFamilyIndicesB		(getFamilyIndices(m_queueFamiliesB))
 	, m_deviceB					(InstanceAndDevice::getDeviceB())
-	, m_vkdB					(context.getPlatformInterface(), m_instanceB, *m_deviceB)
+	, m_vkdB					(context.getPlatformInterface(), m_instanceB, *m_deviceB, context.getUsedApiVersion())
 
 	, m_semaphoreHandleType		(m_config.semaphoreHandleType)
 	, m_memoryHandleType		(m_config.memoryHandleType)
@@ -1095,7 +1083,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 
 			vk::Move<vk::VkImage>			image					= createImage(m_vkdA, *m_deviceA, resourceDesc, extent, m_queueFamilyIndicesA,
 																				  *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType);
-			const vk::VkImageTiling			tiling					= chooseTiling(m_memoryHandleType);
+			const vk::VkImageTiling			tiling					= vk::VK_IMAGE_TILING_OPTIMAL;
 			const vk::VkMemoryRequirements	requirements			= getMemoryRequirements(m_vkdA, *m_deviceA, *image, m_config.dedicated, m_getMemReq2Supported);
 											exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
 			vk::Move<vk::VkDeviceMemory>	memory					= allocateExportableMemory(m_vkdA, *m_deviceA, requirements.size, exportedMemoryTypeIndex, m_memoryHandleType, m_config.dedicated ? *image : (vk::VkImage)0);
@@ -1150,6 +1138,18 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 		const SyncInfo							readSync			= readOp->getInSyncInfo();
 		SynchronizationWrapperPtr				synchronizationWrapperA = getSynchronizationWrapper(m_config.type, m_vkdA, isTimelineSemaphore);
 		SynchronizationWrapperPtr				synchronizationWrapperB = getSynchronizationWrapper(m_config.type, m_vkdB, isTimelineSemaphore);
+
+		const vk::VkPipelineStageFlags2			graphicsFlags = vk::VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT | vk::VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT | vk::VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT |
+																vk::VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT | vk::VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+
+		if ((writeSync.stageMask & graphicsFlags) != 0 || (readSync.stageMask) != 0)
+		{
+			if (!checkQueueFlags(m_queueFamiliesA[m_queueANdx].queueFlags, VK_QUEUE_GRAPHICS_BIT))
+				TCU_THROW(NotSupportedError, "Operation not supported by the source queue");
+
+			if (!checkQueueFlags(m_queueFamiliesB[m_queueBNdx].queueFlags, VK_QUEUE_GRAPHICS_BIT))
+				TCU_THROW(NotSupportedError, "Operation not supported by the destination queue");
+		}
 
 		beginCommandBuffer(m_vkdA, *commandBufferA);
 		writeOp->recordCommands(*commandBufferA);
@@ -1390,7 +1390,7 @@ static void createTests (tcu::TestCaseGroup* group, SynchronizationType type)
 	for (size_t dedicatedNdx = 0; dedicatedNdx < 2; dedicatedNdx++)
 	{
 		const bool						dedicated		(dedicatedNdx == 1);
-		de::MovePtr<tcu::TestCaseGroup>	dedicatedGroup	(new tcu::TestCaseGroup(testCtx, dedicated ? "dedicated" : "suballocated", ""));
+		de::MovePtr<tcu::TestCaseGroup>	dedicatedGroup	(new tcu::TestCaseGroup(testCtx, dedicated ? "dedicated" : "suballocated"));
 
 		for (size_t writeOpNdx = 0; writeOpNdx < DE_LENGTH_OF_ARRAY(s_writeOps); ++writeOpNdx)
 		for (size_t readOpNdx = 0; readOpNdx < DE_LENGTH_OF_ARRAY(s_readOps); ++readOpNdx)
@@ -1400,7 +1400,7 @@ static void createTests (tcu::TestCaseGroup* group, SynchronizationType type)
 			const std::string	opGroupName	= getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(testCtx, opGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(testCtx, opGroupName.c_str()));
 
 			for (size_t resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
@@ -1421,7 +1421,7 @@ static void createTests (tcu::TestCaseGroup* group, SynchronizationType type)
 							const TestConfig	config (type, resource, (vk::VkSemaphoreType)semaphoreType, writeOp, readOp, cases[caseNdx].memoryType, cases[caseNdx].semaphoreType, dedicated);
 							std::string			name	= getResourceName(resource) + semaphoreNames[semaphoreType] + cases[caseNdx].nameSuffix;
 
-							opGroup->addChild(new InstanceFactory1<SharingTestInstance, TestConfig, Progs>(testCtx, tcu::NODETYPE_SELF_VALIDATE,  name, "", Progs(), config));
+							opGroup->addChild(new InstanceFactory1<SharingTestInstance, TestConfig, Progs>(testCtx, name, Progs(), config));
 							empty = false;
 						}
 					}
@@ -1446,7 +1446,7 @@ static void cleanupGroup (tcu::TestCaseGroup* group, SynchronizationType type)
 
 tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx, SynchronizationType type)
 {
-	return createTestGroup(testCtx, "cross_instance", "", createTests, type, cleanupGroup);
+	return createTestGroup(testCtx, "cross_instance", createTests, type, cleanupGroup);
 }
 
 } // synchronization

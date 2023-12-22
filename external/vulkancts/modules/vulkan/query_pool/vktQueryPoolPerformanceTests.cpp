@@ -33,8 +33,11 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "deMath.h"
+#include "deRandom.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuResource.hpp"
@@ -42,6 +45,9 @@
 #include "vkImageUtil.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuRGBA.hpp"
+
+#include <algorithm>
+#include <iterator>
 
 namespace vkt
 {
@@ -91,6 +97,38 @@ std::string uuidToHex(const deUint8 uuid[])
 	return result;
 }
 
+// Helper class to acquire and release the profiling lock in an orderly manner.
+// If an exception is thrown from a test (e.g. from VK_CHECK), the profiling lock is still released.
+class ProfilingLockGuard
+{
+public:
+	ProfilingLockGuard (const DeviceInterface& vkd, const VkDevice device)
+		: m_vkd(vkd), m_device(device)
+	{
+		const auto							timeout		= std::numeric_limits<uint64_t>::max(); // Must always succeed.
+		const VkAcquireProfilingLockInfoKHR	lockInfo	=
+		{
+			VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR,
+			NULL,
+			0,
+			timeout,
+		};
+
+		VK_CHECK(m_vkd.acquireProfilingLockKHR(m_device, &lockInfo));
+	}
+
+	~ProfilingLockGuard (void)
+	{
+		m_vkd.releaseProfilingLockKHR(m_device);
+	}
+
+protected:
+	const DeviceInterface&	m_vkd;
+	const VkDevice			m_device;
+};
+
+using PerformanceCounterVec = std::vector<VkPerformanceCounterKHR>;
+
 class EnumerateAndValidateTest : public TestInstance
 {
 public:
@@ -130,9 +168,10 @@ tcu::TestStatus EnumerateAndValidateTest::iterate (void)
 			continue;
 
 		{
-			std::vector<VkPerformanceCounterKHR>	counters			(counterCount);
-			deUint32								counterCountRead	= counterCount;
-			std::map<std::string, size_t>			uuidValidator;
+			const VkPerformanceCounterKHR	defaultCounterVal	= initVulkanStructure();
+			PerformanceCounterVec			counters			(counterCount, defaultCounterVal);
+			deUint32						counterCountRead	= counterCount;
+			std::map<std::string, size_t>	uuidValidator;
 
 			if (counterCount > 1)
 			{
@@ -170,7 +209,8 @@ tcu::TestStatus EnumerateAndValidateTest::iterate (void)
 			}
 		}
 		{
-			std::vector<VkPerformanceCounterDescriptionKHR>	counterDescriptors	(counterCount);
+			const VkPerformanceCounterDescriptionKHR		defaultDescription	= initVulkanStructure();
+			std::vector<VkPerformanceCounterDescriptionKHR>	counterDescriptors	(counterCount, defaultDescription);
 			deUint32										counterCountRead	= counterCount;
 
 			VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueNdx, &counterCountRead, DE_NULL, &counterDescriptors[0]));
@@ -193,30 +233,37 @@ tcu::TestStatus EnumerateAndValidateTest::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+using ResultsVec			= std::vector<VkPerformanceCounterResultKHR>;
+using BufferWithMemoryPtr	= std::unique_ptr<BufferWithMemory>;
+
 class QueryTestBase : public TestInstance
 {
 public:
-						QueryTestBase	(vkt::Context&	context);
+						QueryTestBase			(vkt::Context& context, bool copyResults, uint32_t seed);
 
 protected:
 
 	void				setupCounters			(void);
 	Move<VkQueryPool>	createQueryPool			(deUint32 enabledCounterOffset, deUint32 enabledCounterStride);
-	bool				acquireProfilingLock	(void);
-	void				releaseProfilingLock	(void);
-	bool				verifyQueryResults		(VkQueryPool queryPool);
-	deUint32			getRequiredNumerOfPasses(void);
+	ResultsVec			createResultsVector		(const VkQueryPool pool) const;
+	BufferWithMemoryPtr createResultsBuffer		(const ResultsVec& resultsVector) const;
+	void				verifyQueryResults		(uint32_t qfIndex, VkQueue queue, VkQueryPool queryPool) const;
+	uint32_t			getRequiredPassCount	(void) const;
 
 private:
 
-	bool									m_requiredExtensionsPresent;
-	deUint32								m_requiredNumerOfPasses;
-	std::map<deUint64, deUint32>			m_enabledCountersCountMap;		// number of counters that were enabled per query pool
-	std::vector<VkPerformanceCounterKHR>	m_counters;						// counters provided by the device
+	const bool						m_copyResults;
+	const uint32_t					m_seed;
+	bool							m_requiredExtensionsPresent;
+	deUint32						m_requiredNumerOfPasses;
+	std::map<deUint64, deUint32>	m_enabledCountersCountMap;		// number of counters that were enabled per query pool
+	PerformanceCounterVec			m_counters;						// counters provided by the device
 };
 
-QueryTestBase::QueryTestBase(vkt::Context& context)
+QueryTestBase::QueryTestBase(vkt::Context& context, bool copyResults, uint32_t seed)
 	: TestInstance	(context)
+	, m_copyResults(copyResults)
+	, m_seed(seed)
 	, m_requiredExtensionsPresent(context.requireDeviceFunctionality("VK_KHR_performance_query"))
 	, m_requiredNumerOfPasses(0)
 {
@@ -226,22 +273,33 @@ void QueryTestBase::setupCounters()
 {
 	const InstanceInterface&	vki					= m_context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
-	const CmdPoolCreateInfo		cmdPoolCreateInfo	= m_context.getUniversalQueueFamilyIndex();
-	deUint32					queueFamilyIndex	= cmdPoolCreateInfo.queueFamilyIndex;
-	deUint32					counterCount;
+	const auto					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const CmdPoolCreateInfo		cmdPoolCreateInfo	(queueFamilyIndex);
+	uint32_t					counterCount;
 
-	if (!m_context.getPerformanceQueryFeatures().performanceCounterQueryPools)
-		TCU_THROW(NotSupportedError, "Performance counter query pools feature not supported");
+	// Get the number of supported counters.
+	VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueFamilyIndex, &counterCount, nullptr, nullptr));
 
-	// get the number of supported counters
-	VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueFamilyIndex, &counterCount, NULL, NULL));
+	// Get supported counters.
+	const VkPerformanceCounterKHR defaultCounterVal = initVulkanStructure();
+	m_counters.resize(counterCount, defaultCounterVal);
+	VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueFamilyIndex, &counterCount, de::dataOrNull(m_counters), nullptr));
 
-	if (!counterCount)
-		TCU_THROW(NotSupportedError, "QualityWarning: there are no performance counters");
+	// Filter out all counters with scope
+	// VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR. For these counters, the
+	// begin and end command must be at the beginning/end of the command buffer,
+	// which does not match what these tests do.
+	const auto scopeIsNotCmdBuffer = [](const VkPerformanceCounterKHR& c) {
+		return (c.scope != VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR);
+	};
+	PerformanceCounterVec filteredCounters;
 
-	// get supported counters
-	m_counters.resize(counterCount);
-	VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueFamilyIndex, &counterCount, &m_counters[0], DE_NULL));
+	filteredCounters.reserve(m_counters.size());
+	std::copy_if(begin(m_counters), end(m_counters), std::back_inserter(filteredCounters), scopeIsNotCmdBuffer);
+	m_counters.swap(filteredCounters);
+
+	if (m_counters.empty())
+		TCU_THROW(NotSupportedError, "No counters without command buffer scope found");
 }
 
 Move<VkQueryPool> QueryTestBase::createQueryPool(deUint32 enabledCounterOffset, deUint32 enabledCounterStride)
@@ -286,13 +344,14 @@ Move<VkQueryPool> QueryTestBase::createQueryPool(deUint32 enabledCounterOffset, 
 			++enabledIndex;
 	}
 
-	// get number of counters that were enabled for this query pool
-	deUint32 enabledCountersCount = static_cast<deUint32>(enabledCounters.size());
-	if (!enabledCountersCount)
-		TCU_THROW(NotSupportedError, "QualityWarning: no performance counters");
+	// Get number of counters that were enabled for this query pool.
+	if (enabledCounters.empty())
+		TCU_THROW(NotSupportedError, "No suitable performance counters found for this test");
+
+	const auto enabledCountersCount = de::sizeU32(enabledCounters);
 
 	// define performance query
-	VkQueryPoolPerformanceCreateInfoKHR performanceQueryCreateInfo =
+	const VkQueryPoolPerformanceCreateInfoKHR performanceQueryCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_QUERY_POOL_PERFORMANCE_CREATE_INFO_KHR,
 		NULL,
@@ -305,7 +364,7 @@ Move<VkQueryPool> QueryTestBase::createQueryPool(deUint32 enabledCounterOffset, 
 	vki.getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(physicalDevice, &performanceQueryCreateInfo, &m_requiredNumerOfPasses);
 
 	// create query pool
-	VkQueryPoolCreateInfo queryPoolCreateInfo =
+	const VkQueryPoolCreateInfo queryPoolCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
 		&performanceQueryCreateInfo,
@@ -323,66 +382,91 @@ Move<VkQueryPool> QueryTestBase::createQueryPool(deUint32 enabledCounterOffset, 
 	return queryPool;
 }
 
-bool QueryTestBase::acquireProfilingLock()
+ResultsVec QueryTestBase::createResultsVector (const VkQueryPool pool) const
+{
+	const auto	itemCount		= m_enabledCountersCountMap.at(pool.getInternal());
+	ResultsVec	resultsVector	(itemCount);
+	const auto	byteSize		= de::dataSize(resultsVector);
+	const auto	contents		= reinterpret_cast<uint8_t*>(resultsVector.data());
+	de::Random	rnd				(m_seed);
+
+	// Fill vector with random bytes.
+	for (size_t i = 0u; i < byteSize; ++i)
+	{
+		const auto byte = rnd.getInt(1, 255); // Do not use zeros.
+		contents[i] = static_cast<uint8_t>(byte);
+	}
+
+	return resultsVector;
+}
+
+BufferWithMemoryPtr QueryTestBase::createResultsBuffer (const ResultsVec& resultsVector) const
+{
+	const auto&	vkd			= m_context.getDeviceInterface();
+	const auto	device		= m_context.getDevice();
+	auto&		alloc		= m_context.getDefaultAllocator();
+	const auto	bufferSize	= static_cast<VkDeviceSize>(de::dataSize(resultsVector));
+	const auto	createInfo	= makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+	BufferWithMemoryPtr	resultBuffer	(new BufferWithMemory(vkd, device, alloc, createInfo, MemoryRequirement::HostVisible));
+	auto&				bufferAlloc		= resultBuffer->getAllocation();
+	void*				bufferData		= bufferAlloc.getHostPtr();
+
+	deMemcpy(bufferData, resultsVector.data(), de::dataSize(resultsVector));
+	flushAlloc(vkd, device, bufferAlloc);
+
+	return resultBuffer;
+}
+
+void QueryTestBase::verifyQueryResults (uint32_t qfIndex, VkQueue queue, VkQueryPool queryPool) const
 {
 	const DeviceInterface&		vkd		= m_context.getDeviceInterface();
 	const VkDevice				device	= m_context.getDevice();
 
-	// acquire profiling lock before we record command buffers
-	VkAcquireProfilingLockInfoKHR lockInfo =
-	{
-		VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR,
-		NULL,
-		0,
-		2000000000ull					// wait 2s for the lock
-	};
+	const auto	initialVector		= createResultsVector(queryPool);
+	const auto	resultsBuffer		= createResultsBuffer(initialVector);
+	auto&		resultsBufferAlloc	= resultsBuffer->getAllocation();
+	void*		resultsBufferData	= resultsBufferAlloc.getHostPtr();
 
-	VkResult result = vkd.acquireProfilingLockKHR(device, &lockInfo);
-	if (result == VK_TIMEOUT)
+	const auto	resultsStride		= static_cast<VkDeviceSize>(sizeof(decltype(initialVector)::value_type) * initialVector.size());
+	const auto	hostBufferSize		= de::dataSize(initialVector);
+	const auto	resultFlags			= static_cast<VkQueryResultFlags>(VK_QUERY_RESULT_WAIT_BIT);
+
+	// Get or copy query pool results.
+	if (m_copyResults)
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message
-			<< "Timeout reached, profiling lock wasn't acquired - test had to end earlier"
-			<< tcu::TestLog::EndMessage;
-		return false;
+		const auto cmdPool		= createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, qfIndex);
+		const auto cmdBuffer	= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		const auto barrier		= makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+
+		beginCommandBuffer(vkd, *cmdBuffer);
+		vkd.cmdCopyQueryPoolResults(*cmdBuffer, queryPool, 0u, 1u, resultsBuffer->get(), 0ull, resultsStride, resultFlags);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &barrier);
+		endCommandBuffer(vkd, *cmdBuffer);
+		submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
+		invalidateAlloc(vkd, device, resultsBufferAlloc);
 	}
-	if (result != VK_SUCCESS)
-		TCU_FAIL("Profiling lock wasn't acquired");
-
-	return true;
-}
-
-void QueryTestBase::releaseProfilingLock()
-{
-	const DeviceInterface&	vkd		= m_context.getDeviceInterface();
-	const VkDevice			device	= m_context.getDevice();
-
-	// release the profiling lock after the command buffer is no longer in the pending state
-	vkd.releaseProfilingLockKHR(device);
-}
-
-bool QueryTestBase::verifyQueryResults(VkQueryPool queryPool)
-{
-	const DeviceInterface&		vkd		= m_context.getDeviceInterface();
-	const VkDevice				device	= m_context.getDevice();
-
-	// create an array to hold the results of all counters
-	deUint32 enabledCounterCount = m_enabledCountersCountMap[queryPool.getInternal()];
-	std::vector<VkPerformanceCounterResultKHR> recordedCounters(enabledCounterCount);
-
-	// verify that query result can be retrieved
-	VkResult result = vkd.getQueryPoolResults(device, queryPool, 0, 1, sizeof(VkPerformanceCounterResultKHR) * enabledCounterCount,
-		&recordedCounters[0], sizeof(VkPerformanceCounterResultKHR), VK_QUERY_RESULT_WAIT_BIT);
-	if (result == VK_NOT_READY)
+	else
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message
-			<< "Pass but result is not ready"
-			<< tcu::TestLog::EndMessage;
-		return true;
+		VK_CHECK(vkd.getQueryPoolResults(device, queryPool, 0u, 1u, hostBufferSize, resultsBufferData, resultsStride, resultFlags));
 	}
-	return (result == VK_SUCCESS);
+
+	// Check that the buffer was modified without analyzing result semantics.
+	ResultsVec resultsVector (initialVector.size());
+	deMemcpy(de::dataOrNull(resultsVector), resultsBufferData, hostBufferSize);
+
+	for (size_t i = 0u; i < initialVector.size(); ++i)
+	{
+		if (deMemCmp(&initialVector[i], &resultsVector[i], sizeof(resultsVector[i])) == 0)
+		{
+			std::ostringstream msg;
+			msg << "Result " << i << " was not modified by the implementation";
+			TCU_FAIL(msg.str());
+		}
+	}
 }
 
-deUint32 QueryTestBase::getRequiredNumerOfPasses()
+uint32_t QueryTestBase::getRequiredPassCount() const
 {
 	return m_requiredNumerOfPasses;
 }
@@ -391,7 +475,7 @@ deUint32 QueryTestBase::getRequiredNumerOfPasses()
 class GraphicQueryTestBase : public QueryTestBase
 {
 public:
-	GraphicQueryTestBase(vkt::Context&	context);
+	GraphicQueryTestBase(vkt::Context& context, bool copyResults, uint32_t seed);
 
 protected:
 	void initStateObjects(void);
@@ -412,8 +496,8 @@ protected:
 	deUint32				m_size;
 };
 
-GraphicQueryTestBase::GraphicQueryTestBase(vkt::Context& context)
-	: QueryTestBase(context)
+GraphicQueryTestBase::GraphicQueryTestBase(vkt::Context& context, bool copyResults, uint32_t seed)
+	: QueryTestBase(context, copyResults, seed)
 	, m_colorAttachmentFormat(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_size(32)
 {
@@ -554,12 +638,12 @@ void GraphicQueryTestBase::initStateObjects(void)
 class GraphicQueryTest : public GraphicQueryTestBase
 {
 public:
-						GraphicQueryTest	(vkt::Context&	context);
+						GraphicQueryTest	(vkt::Context& context, bool copyResults, uint32_t seed);
 	tcu::TestStatus		iterate				(void);
 };
 
-GraphicQueryTest::GraphicQueryTest(vkt::Context& context)
-	: GraphicQueryTestBase(context)
+GraphicQueryTest::GraphicQueryTest(vkt::Context& context, bool copyResults, uint32_t seed)
+	: GraphicQueryTestBase(context, copyResults, seed)
 {
 }
 
@@ -568,7 +652,8 @@ tcu::TestStatus GraphicQueryTest::iterate(void)
 	const DeviceInterface&		vkd					= m_context.getDeviceInterface();
 	const VkDevice				device				= m_context.getDevice();
 	const VkQueue				queue				= m_context.getUniversalQueue();
-	const CmdPoolCreateInfo		cmdPoolCreateInfo	= m_context.getUniversalQueueFamilyIndex();
+	const auto					qfIndex				= m_context.getUniversalQueueFamilyIndex();
+	const CmdPoolCreateInfo		cmdPoolCreateInfo	= qfIndex;
 	Unique<VkCommandPool>		cmdPool				(createCommandPool(vkd, device, &cmdPoolCreateInfo));
 	Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
@@ -577,133 +662,127 @@ tcu::TestStatus GraphicQueryTest::iterate(void)
 
 	vk::Unique<VkQueryPool> queryPool(createQueryPool(0, 1));
 
-	if (!acquireProfilingLock())
 	{
-		// lock was not acquired in given time, we can't fail the test
-		return tcu::TestStatus::pass("Pass");
-	}
+		const ProfilingLockGuard guard (vkd, device);
 
-	// reset query pool
-	{
-		Unique<VkCommandBuffer>		resetCmdBuffer	(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-		const Unique<VkFence>		fence			(createFence(vkd, device));
-		const VkSubmitInfo			submitInfo		=
+		// reset query pool
 		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
-			DE_NULL,											// pNext
-			0u,													// waitSemaphoreCount
-			DE_NULL,											// pWaitSemaphores
-			(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
-			1u,													// commandBufferCount
-			&resetCmdBuffer.get(),								// pCommandBuffers
-			0u,													// signalSemaphoreCount
-			DE_NULL,											// pSignalSemaphores
-		};
+			Unique<VkCommandBuffer>		resetCmdBuffer	(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+			const Unique<VkFence>		fence			(createFence(vkd, device));
+			const VkSubmitInfo			submitInfo		=
+			{
+				VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
+				DE_NULL,											// pNext
+				0u,													// waitSemaphoreCount
+				DE_NULL,											// pWaitSemaphores
+				(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
+				1u,													// commandBufferCount
+				&resetCmdBuffer.get(),								// pCommandBuffers
+				0u,													// signalSemaphoreCount
+				DE_NULL,											// pSignalSemaphores
+			};
 
-		beginCommandBuffer(vkd, *resetCmdBuffer);
-		vkd.cmdResetQueryPool(*resetCmdBuffer, *queryPool, 0u, 1u);
-		endCommandBuffer(vkd, *resetCmdBuffer);
+			beginCommandBuffer(vkd, *resetCmdBuffer);
+			vkd.cmdResetQueryPool(*resetCmdBuffer, *queryPool, 0u, 1u);
+			endCommandBuffer(vkd, *resetCmdBuffer);
 
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
-	}
+			VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
+			VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+		}
 
-	// begin command buffer
-	beginCommandBuffer(vkd, *cmdBuffer, 0u);
+		// begin command buffer
+		beginCommandBuffer(vkd, *cmdBuffer, 0u);
 
-	initialTransitionColor2DImage(vkd, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_GENERAL,
-								  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+		initialTransitionColor2DImage(vkd, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_GENERAL,
+									  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
-	// begin render pass
-	VkClearValue renderPassClearValue;
-	deMemset(&renderPassClearValue, 0, sizeof(VkClearValue));
+		// begin render pass
+		VkClearValue renderPassClearValue;
+		deMemset(&renderPassClearValue, 0, sizeof(VkClearValue));
 
-	// perform query during triangle draw
-	vkd.cmdBeginQuery(*cmdBuffer, *queryPool, 0, VK_QUERY_CONTROL_PRECISE_BIT);
+		// perform query during triangle draw
+		vkd.cmdBeginQuery(*cmdBuffer, *queryPool, 0, 0u);
 
-	beginRenderPass(vkd, *cmdBuffer, *m_renderPass, *m_framebuffer,
-					makeRect2D(0, 0, m_size, m_size),
-					1, &renderPassClearValue);
+		beginRenderPass(vkd, *cmdBuffer, *m_renderPass, *m_framebuffer,
+						makeRect2D(0, 0, m_size, m_size),
+						1, &renderPassClearValue);
 
-	// bind pipeline
-	vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+		// bind pipeline
+		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
-	// bind vertex buffer
-	VkBuffer vertexBuffer = m_vertexBuffer->object();
-	const VkDeviceSize vertexBufferOffset = 0;
-	vkd.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+		// bind vertex buffer
+		VkBuffer vertexBuffer = m_vertexBuffer->object();
+		const VkDeviceSize vertexBufferOffset = 0;
+		vkd.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
-	vkd.cmdDraw(*cmdBuffer, 3, 1, 0, 0);
+		vkd.cmdDraw(*cmdBuffer, 3, 1, 0, 0);
 
-	endRenderPass(vkd, *cmdBuffer);
+		endRenderPass(vkd, *cmdBuffer);
 
-	vkd.cmdEndQuery(*cmdBuffer, *queryPool, 0);
+		vkd.cmdEndQuery(*cmdBuffer, *queryPool, 0);
 
-	transition2DImage(vkd, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT,
-					  VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-					  VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+		transition2DImage(vkd, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT,
+						  VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+						  VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-	endCommandBuffer(vkd, *cmdBuffer);
+		endCommandBuffer(vkd, *cmdBuffer);
 
-	// submit command buffer for each pass and wait for its completion
-	for (deUint32 passIndex = 0; passIndex < getRequiredNumerOfPasses(); passIndex++)
-	{
-		const Unique<VkFence> fence(createFence(vkd, device));
-
-		VkPerformanceQuerySubmitInfoKHR performanceQuerySubmitInfo =
+		// submit command buffer for each pass and wait for its completion
+		const auto requiredPassCount = getRequiredPassCount();
+		for (deUint32 passIndex = 0; passIndex < requiredPassCount; passIndex++)
 		{
-			VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR,
-			NULL,
-			passIndex
-		};
+			const Unique<VkFence> fence(createFence(vkd, device));
 
-		const VkSubmitInfo submitInfo =
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
-			&performanceQuerySubmitInfo,						// pNext
-			0u,													// waitSemaphoreCount
-			DE_NULL,											// pWaitSemaphores
-			(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
-			1u,													// commandBufferCount
-			&cmdBuffer.get(),									// pCommandBuffers
-			0u,													// signalSemaphoreCount
-			DE_NULL,											// pSignalSemaphores
-		};
+			VkPerformanceQuerySubmitInfoKHR performanceQuerySubmitInfo =
+			{
+				VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR,
+				NULL,
+				passIndex
+			};
 
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+			const VkSubmitInfo submitInfo =
+			{
+				VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
+				&performanceQuerySubmitInfo,						// pNext
+				0u,													// waitSemaphoreCount
+				DE_NULL,											// pWaitSemaphores
+				(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
+				1u,													// commandBufferCount
+				&cmdBuffer.get(),									// pCommandBuffers
+				0u,													// signalSemaphoreCount
+				DE_NULL,											// pSignalSemaphores
+			};
+
+			VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
+			VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+		}
 	}
-
-	releaseProfilingLock();
 
 	VK_CHECK(vkd.resetCommandBuffer(*cmdBuffer, 0));
 
-	if (verifyQueryResults(*queryPool))
-		return tcu::TestStatus::pass("Pass");
-	return tcu::TestStatus::fail("Fail");
+	verifyQueryResults(qfIndex, queue, *queryPool);
+	return tcu::TestStatus::pass("Pass");
 }
 
 class GraphicMultiplePoolsTest : public GraphicQueryTestBase
 {
 public:
-						GraphicMultiplePoolsTest	(vkt::Context&	context);
+						GraphicMultiplePoolsTest	(vkt::Context& context, bool copyResults, uint32_t seed);
 	tcu::TestStatus		iterate						(void);
 };
 
-GraphicMultiplePoolsTest::GraphicMultiplePoolsTest(vkt::Context& context)
-	: GraphicQueryTestBase(context)
+GraphicMultiplePoolsTest::GraphicMultiplePoolsTest(vkt::Context& context, bool copyResults, uint32_t seed)
+	: GraphicQueryTestBase(context, copyResults, seed)
 {
 }
 
 tcu::TestStatus GraphicMultiplePoolsTest::iterate(void)
 {
-	if (!m_context.getPerformanceQueryFeatures().performanceCounterMultipleQueryPools)
-		throw tcu::NotSupportedError("MultipleQueryPools not supported");
-
 	const DeviceInterface&		vkd					= m_context.getDeviceInterface();
 	const VkDevice				device				= m_context.getDevice();
 	const VkQueue				queue				= m_context.getUniversalQueue();
-	const CmdPoolCreateInfo		cmdPoolCreateInfo	= m_context.getUniversalQueueFamilyIndex();
+	const auto					qfIndex				= m_context.getUniversalQueueFamilyIndex();
+	const CmdPoolCreateInfo		cmdPoolCreateInfo	= qfIndex;
 	Unique<VkCommandPool>		cmdPool				(createCommandPool(vkd, device, &cmdPoolCreateInfo));
 	Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
@@ -713,122 +792,119 @@ tcu::TestStatus GraphicMultiplePoolsTest::iterate(void)
 	vk::Unique<VkQueryPool> queryPool1(createQueryPool(0, 2)),
 							queryPool2(createQueryPool(1, 2));
 
-	if (!acquireProfilingLock())
 	{
-		// lock was not acquired in given time, we can't fail the test
-		return tcu::TestStatus::pass("Pass");
-	}
+		const ProfilingLockGuard guard (vkd, device);
 
-	// reset query pools
-	{
-		Unique<VkCommandBuffer>		resetCmdBuffer	(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-		const Unique<VkFence>		fence			(createFence(vkd, device));
-		const VkSubmitInfo			submitInfo		=
+		// reset query pools
 		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
-			DE_NULL,											// pNext
-			0u,													// waitSemaphoreCount
-			DE_NULL,											// pWaitSemaphores
-			(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
-			1u,													// commandBufferCount
-			&resetCmdBuffer.get(),								// pCommandBuffers
-			0u,													// signalSemaphoreCount
-			DE_NULL,											// pSignalSemaphores
+			Unique<VkCommandBuffer>		resetCmdBuffer	(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+			const Unique<VkFence>		fence			(createFence(vkd, device));
+			const VkSubmitInfo			submitInfo		=
+			{
+				VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
+				DE_NULL,											// pNext
+				0u,													// waitSemaphoreCount
+				DE_NULL,											// pWaitSemaphores
+				(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
+				1u,													// commandBufferCount
+				&resetCmdBuffer.get(),								// pCommandBuffers
+				0u,													// signalSemaphoreCount
+				DE_NULL,											// pSignalSemaphores
+			};
+
+			beginCommandBuffer(vkd, *resetCmdBuffer);
+			vkd.cmdResetQueryPool(*resetCmdBuffer, *queryPool1, 0u, 1u);
+			vkd.cmdResetQueryPool(*resetCmdBuffer, *queryPool2, 0u, 1u);
+			endCommandBuffer(vkd, *resetCmdBuffer);
+
+			VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
+			VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+		}
+
+		// begin command buffer
+		beginCommandBuffer(vkd, *cmdBuffer, 0u);
+
+		initialTransitionColor2DImage(vkd, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_GENERAL,
+									  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+		// begin render pass
+		VkClearValue renderPassClearValue;
+		deMemset(&renderPassClearValue, 0, sizeof(VkClearValue));
+
+		VkBuffer			vertexBuffer		= m_vertexBuffer->object();
+		const VkDeviceSize	vertexBufferOffset	= 0;
+		const VkQueryPool	queryPools[]		=
+		{
+			*queryPool1,
+			*queryPool2
 		};
 
-		beginCommandBuffer(vkd, *resetCmdBuffer);
-		vkd.cmdResetQueryPool(*resetCmdBuffer, *queryPool1, 0u, 1u);
-		vkd.cmdResetQueryPool(*resetCmdBuffer, *queryPool2, 0u, 1u);
-		endCommandBuffer(vkd, *resetCmdBuffer);
-
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
-	}
-
-	// begin command buffer
-	beginCommandBuffer(vkd, *cmdBuffer, 0u);
-
-	initialTransitionColor2DImage(vkd, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_GENERAL,
-								  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-
-	// begin render pass
-	VkClearValue renderPassClearValue;
-	deMemset(&renderPassClearValue, 0, sizeof(VkClearValue));
-
-	VkBuffer			vertexBuffer		= m_vertexBuffer->object();
-	const VkDeviceSize	vertexBufferOffset	= 0;
-	const VkQueryPool	queryPools[]		=
-	{
-		*queryPool1,
-		*queryPool2
-	};
-
-	// perform two queries during triangle draw
-	for (deUint32 loop = 0; loop < DE_LENGTH_OF_ARRAY(queryPools); ++loop)
-	{
-		const VkQueryPool queryPool = queryPools[loop];
-		vkd.cmdBeginQuery(*cmdBuffer, queryPool, 0u, (VkQueryControlFlags)0u);
-		beginRenderPass(vkd, *cmdBuffer, *m_renderPass, *m_framebuffer,
-						makeRect2D(0, 0, m_size, m_size),
-						1, &renderPassClearValue);
-
-		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-		vkd.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
-		vkd.cmdDraw(*cmdBuffer, 3, 1, 0, 0);
-
-		endRenderPass(vkd, *cmdBuffer);
-		vkd.cmdEndQuery(*cmdBuffer, queryPool, 0u);
-	}
-
-	transition2DImage(vkd, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT,
-					  VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-					  VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-	endCommandBuffer(vkd, *cmdBuffer);
-
-	// submit command buffer for each pass and wait for its completion
-	for (deUint32 passIndex = 0; passIndex < getRequiredNumerOfPasses(); passIndex++)
-	{
-		const Unique<VkFence> fence(createFence(vkd, device));
-
-		VkPerformanceQuerySubmitInfoKHR performanceQuerySubmitInfo =
+		// perform two queries during triangle draw
+		for (deUint32 loop = 0; loop < DE_LENGTH_OF_ARRAY(queryPools); ++loop)
 		{
-			VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR,
-			NULL,
-			passIndex
-		};
+			const VkQueryPool queryPool = queryPools[loop];
+			vkd.cmdBeginQuery(*cmdBuffer, queryPool, 0u, (VkQueryControlFlags)0u);
+			beginRenderPass(vkd, *cmdBuffer, *m_renderPass, *m_framebuffer,
+							makeRect2D(0, 0, m_size, m_size),
+							1, &renderPassClearValue);
 
-		const VkSubmitInfo submitInfo =
+			vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+			vkd.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+			vkd.cmdDraw(*cmdBuffer, 3, 1, 0, 0);
+
+			endRenderPass(vkd, *cmdBuffer);
+			vkd.cmdEndQuery(*cmdBuffer, queryPool, 0u);
+		}
+
+		transition2DImage(vkd, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT,
+						  VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+						  VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+		endCommandBuffer(vkd, *cmdBuffer);
+
+		// submit command buffer for each pass and wait for its completion
+		const auto requiredPassCount = getRequiredPassCount();
+		for (deUint32 passIndex = 0; passIndex < requiredPassCount; passIndex++)
 		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
-			&performanceQuerySubmitInfo,						// pNext
-			0u,													// waitSemaphoreCount
-			DE_NULL,											// pWaitSemaphores
-			(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
-			1u,													// commandBufferCount
-			&cmdBuffer.get(),									// pCommandBuffers
-			0u,													// signalSemaphoreCount
-			DE_NULL,											// pSignalSemaphores
-		};
+			const Unique<VkFence> fence(createFence(vkd, device));
 
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+			VkPerformanceQuerySubmitInfoKHR performanceQuerySubmitInfo =
+			{
+				VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR,
+				NULL,
+				passIndex
+			};
+
+			const VkSubmitInfo submitInfo =
+			{
+				VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
+				&performanceQuerySubmitInfo,						// pNext
+				0u,													// waitSemaphoreCount
+				DE_NULL,											// pWaitSemaphores
+				(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
+				1u,													// commandBufferCount
+				&cmdBuffer.get(),									// pCommandBuffers
+				0u,													// signalSemaphoreCount
+				DE_NULL,											// pSignalSemaphores
+			};
+
+			VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
+			VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+		}
 	}
-
-	releaseProfilingLock();
 
 	VK_CHECK(vkd.resetCommandBuffer(*cmdBuffer, 0));
 
-	if (verifyQueryResults(*queryPool1) && verifyQueryResults(*queryPool2))
-		return tcu::TestStatus::pass("Pass");
-	return tcu::TestStatus::fail("Fail");
+	verifyQueryResults(qfIndex, queue, *queryPool1);
+	verifyQueryResults(qfIndex, queue, *queryPool2);
+	return tcu::TestStatus::pass("Pass");
 }
 
 // Base class for all compute tests
 class ComputeQueryTestBase : public QueryTestBase
 {
 public:
-	ComputeQueryTestBase(vkt::Context&	context);
+	ComputeQueryTestBase(vkt::Context& context, bool copyResults, uint32_t seed);
 
 protected:
 	void initStateObjects(void);
@@ -843,8 +919,8 @@ protected:
 	VkBufferMemoryBarrier	m_computeFinishBarrier;
 };
 
-ComputeQueryTestBase::ComputeQueryTestBase(vkt::Context& context)
-	: QueryTestBase(context)
+ComputeQueryTestBase::ComputeQueryTestBase(vkt::Context& context, bool copyResults, uint32_t seed)
+	: QueryTestBase(context, copyResults, seed)
 {
 }
 
@@ -953,12 +1029,12 @@ void ComputeQueryTestBase::initStateObjects(void)
 class ComputeQueryTest : public ComputeQueryTestBase
 {
 public:
-						ComputeQueryTest	(vkt::Context&	context);
+						ComputeQueryTest	(vkt::Context& context, bool copyResults, uint32_t seed);
 	tcu::TestStatus		iterate				(void);
 };
 
-ComputeQueryTest::ComputeQueryTest(vkt::Context& context)
-	: ComputeQueryTestBase(context)
+ComputeQueryTest::ComputeQueryTest(vkt::Context& context, bool copyResults, uint32_t seed)
+	: ComputeQueryTestBase(context, copyResults, seed)
 {
 }
 
@@ -967,7 +1043,8 @@ tcu::TestStatus ComputeQueryTest::iterate(void)
 	const DeviceInterface&			vkd					= m_context.getDeviceInterface();
 	const VkDevice					device				= m_context.getDevice();
 	const VkQueue					queue				= m_context.getUniversalQueue();
-	const CmdPoolCreateInfo			cmdPoolCreateInfo	(m_context.getUniversalQueueFamilyIndex());
+	const auto						qfIndex				= m_context.getUniversalQueueFamilyIndex();
+	const CmdPoolCreateInfo			cmdPoolCreateInfo	(qfIndex);
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vkd, device, &cmdPoolCreateInfo));
 	const Unique<VkCommandBuffer>	resetCmdBuffer		(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -977,108 +1054,102 @@ tcu::TestStatus ComputeQueryTest::iterate(void)
 
 	vk::Unique<VkQueryPool> queryPool(createQueryPool(0, 1));
 
-	if (!acquireProfilingLock())
 	{
-		// lock was not acquired in given time, we can't fail the test
-		return tcu::TestStatus::pass("Pass");
-	}
+		const ProfilingLockGuard guard (vkd, device);
 
-	beginCommandBuffer(vkd, *resetCmdBuffer);
-	vkd.cmdResetQueryPool(*resetCmdBuffer, *queryPool, 0u, 1u);
-	endCommandBuffer(vkd, *resetCmdBuffer);
+		beginCommandBuffer(vkd, *resetCmdBuffer);
+		vkd.cmdResetQueryPool(*resetCmdBuffer, *queryPool, 0u, 1u);
+		endCommandBuffer(vkd, *resetCmdBuffer);
 
-	beginCommandBuffer(vkd, *cmdBuffer, 0u);
-	vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipeline);
-	vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &(m_descriptorSet.get()), 0u, DE_NULL);
+		beginCommandBuffer(vkd, *cmdBuffer, 0u);
+		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipeline);
+		vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &(m_descriptorSet.get()), 0u, DE_NULL);
 
-	vkd.cmdBeginQuery(*cmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
-	vkd.cmdDispatch(*cmdBuffer, 2, 2, 2);
-	vkd.cmdEndQuery(*cmdBuffer, *queryPool, 0u);
+		vkd.cmdBeginQuery(*cmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
+		vkd.cmdDispatch(*cmdBuffer, 2, 2, 2);
+		vkd.cmdEndQuery(*cmdBuffer, *queryPool, 0u);
 
-	vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-		(VkDependencyFlags)0u, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &m_computeFinishBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
-	endCommandBuffer(vkd, *cmdBuffer);
+		vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+			(VkDependencyFlags)0u, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &m_computeFinishBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
+		endCommandBuffer(vkd, *cmdBuffer);
 
-	// submit reset of queries only once
-	{
-		const VkSubmitInfo submitInfo =
+		// submit reset of queries only once
 		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
-			DE_NULL,											// pNext
-			0u,													// waitSemaphoreCount
-			DE_NULL,											// pWaitSemaphores
-			(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
-			1u,													// commandBufferCount
-			&resetCmdBuffer.get(),								// pCommandBuffers
-			0u,													// signalSemaphoreCount
-			DE_NULL,											// pSignalSemaphores
-		};
+			const VkSubmitInfo submitInfo =
+			{
+				VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
+				DE_NULL,											// pNext
+				0u,													// waitSemaphoreCount
+				DE_NULL,											// pWaitSemaphores
+				(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
+				1u,													// commandBufferCount
+				&resetCmdBuffer.get(),								// pCommandBuffers
+				0u,													// signalSemaphoreCount
+				DE_NULL,											// pSignalSemaphores
+			};
 
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
-	}
+			VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+		}
 
-	// submit command buffer for each pass and wait for its completion
-	for (deUint32 passIndex = 0; passIndex < getRequiredNumerOfPasses(); passIndex++)
-	{
-		const Unique<VkFence> fence(createFence(vkd, device));
-
-		VkPerformanceQuerySubmitInfoKHR performanceQuerySubmitInfo =
+		// submit command buffer for each pass and wait for its completion
+		const auto requiredPassCount = getRequiredPassCount();
+		for (deUint32 passIndex = 0; passIndex < requiredPassCount; passIndex++)
 		{
-			VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR,
-			NULL,
-			passIndex
-		};
+			const Unique<VkFence> fence(createFence(vkd, device));
 
-		const VkSubmitInfo submitInfo =
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
-			&performanceQuerySubmitInfo,						// pNext
-			0u,													// waitSemaphoreCount
-			DE_NULL,											// pWaitSemaphores
-			(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
-			1u,													// commandBufferCount
-			&cmdBuffer.get(),									// pCommandBuffers
-			0u,													// signalSemaphoreCount
-			DE_NULL,											// pSignalSemaphores
-		};
+			VkPerformanceQuerySubmitInfoKHR performanceQuerySubmitInfo =
+			{
+				VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR,
+				NULL,
+				passIndex
+			};
 
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+			const VkSubmitInfo submitInfo =
+			{
+				VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
+				&performanceQuerySubmitInfo,						// pNext
+				0u,													// waitSemaphoreCount
+				DE_NULL,											// pWaitSemaphores
+				(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
+				1u,													// commandBufferCount
+				&cmdBuffer.get(),									// pCommandBuffers
+				0u,													// signalSemaphoreCount
+				DE_NULL,											// pSignalSemaphores
+			};
+
+			VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
+			VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+		}
 	}
-
-	releaseProfilingLock();
 
 	VK_CHECK(vkd.resetCommandBuffer(*cmdBuffer, 0));
 
-	if (verifyQueryResults(*queryPool))
-		return tcu::TestStatus::pass("Pass");
-	return tcu::TestStatus::fail("Fail");
+	verifyQueryResults(qfIndex, queue, *queryPool);
+	return tcu::TestStatus::pass("Pass");
 }
 
 class ComputeMultiplePoolsTest : public ComputeQueryTestBase
 {
 public:
-					ComputeMultiplePoolsTest	(vkt::Context&	context);
+					ComputeMultiplePoolsTest	(vkt::Context& context, bool copyResults, uint32_t seed);
 	tcu::TestStatus iterate						(void);
 };
 
-ComputeMultiplePoolsTest::ComputeMultiplePoolsTest(vkt::Context& context)
-	: ComputeQueryTestBase(context)
+ComputeMultiplePoolsTest::ComputeMultiplePoolsTest(vkt::Context& context, bool copyResults, uint32_t seed)
+	: ComputeQueryTestBase(context, copyResults, seed)
 {
 }
 
 tcu::TestStatus ComputeMultiplePoolsTest::iterate(void)
 {
-	if (!m_context.getPerformanceQueryFeatures().performanceCounterMultipleQueryPools)
-		throw tcu::NotSupportedError("MultipleQueryPools not supported");
-
-	const DeviceInterface&			vkd = m_context.getDeviceInterface();
-	const VkDevice					device = m_context.getDevice();
-	const VkQueue					queue = m_context.getUniversalQueue();
-	const CmdPoolCreateInfo			cmdPoolCreateInfo(m_context.getUniversalQueueFamilyIndex());
-	const Unique<VkCommandPool>		cmdPool(createCommandPool(vkd, device, &cmdPoolCreateInfo));
-	const Unique<VkCommandBuffer>	resetCmdBuffer(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const Unique<VkCommandBuffer>	cmdBuffer(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const DeviceInterface&			vkd					= m_context.getDeviceInterface();
+	const VkDevice					device				= m_context.getDevice();
+	const VkQueue					queue				= m_context.getUniversalQueue();
+	const auto						qfIndex				= m_context.getUniversalQueueFamilyIndex();
+	const CmdPoolCreateInfo			cmdPoolCreateInfo	(qfIndex);
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vkd, device, &cmdPoolCreateInfo));
+	const Unique<VkCommandBuffer>	resetCmdBuffer		(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	initStateObjects();
 	setupCounters();
@@ -1086,94 +1157,91 @@ tcu::TestStatus ComputeMultiplePoolsTest::iterate(void)
 	vk::Unique<VkQueryPool>	queryPool1(createQueryPool(0, 2)),
 							queryPool2(createQueryPool(1, 2));
 
-	if (!acquireProfilingLock())
 	{
-		// lock was not acquired in given time, we can't fail the test
-		return tcu::TestStatus::pass("Pass");
-	}
+		const ProfilingLockGuard guard (vkd, device);
 
-	const VkQueryPool queryPools[] =
-	{
-		*queryPool1,
-		*queryPool2
-	};
-
-	beginCommandBuffer(vkd, *resetCmdBuffer);
-	vkd.cmdResetQueryPool(*resetCmdBuffer, queryPools[0], 0u, 1u);
-	vkd.cmdResetQueryPool(*resetCmdBuffer, queryPools[1], 0u, 1u);
-	endCommandBuffer(vkd, *resetCmdBuffer);
-
-	beginCommandBuffer(vkd, *cmdBuffer, 0u);
-	vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipeline);
-	vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &(m_descriptorSet.get()), 0u, DE_NULL);
-
-	// perform two queries
-	for (deUint32 loop = 0; loop < DE_LENGTH_OF_ARRAY(queryPools); ++loop)
-	{
-		const VkQueryPool queryPool = queryPools[loop];
-		vkd.cmdBeginQuery(*cmdBuffer, queryPool, 0u, (VkQueryControlFlags)0u);
-		vkd.cmdDispatch(*cmdBuffer, 2, 2, 2);
-		vkd.cmdEndQuery(*cmdBuffer, queryPool, 0u);
-	}
-
-	vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-		(VkDependencyFlags)0u, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &m_computeFinishBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
-	endCommandBuffer(vkd, *cmdBuffer);
-
-	// submit reset of queries only once
-	{
-		const VkSubmitInfo submitInfo =
+		const VkQueryPool queryPools[] =
 		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
-			DE_NULL,											// pNext
-			0u,													// waitSemaphoreCount
-			DE_NULL,											// pWaitSemaphores
-			(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
-			1u,													// commandBufferCount
-			&resetCmdBuffer.get(),								// pCommandBuffers
-			0u,													// signalSemaphoreCount
-			DE_NULL,											// pSignalSemaphores
+			*queryPool1,
+			*queryPool2
 		};
 
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
-	}
+		beginCommandBuffer(vkd, *resetCmdBuffer);
+		vkd.cmdResetQueryPool(*resetCmdBuffer, queryPools[0], 0u, 1u);
+		vkd.cmdResetQueryPool(*resetCmdBuffer, queryPools[1], 0u, 1u);
+		endCommandBuffer(vkd, *resetCmdBuffer);
 
-	// submit command buffer for each pass and wait for its completion
-	for (deUint32 passIndex = 0; passIndex < getRequiredNumerOfPasses(); passIndex++)
-	{
-		const Unique<VkFence> fence(createFence(vkd, device));
+		beginCommandBuffer(vkd, *cmdBuffer, 0u);
+		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipeline);
+		vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &(m_descriptorSet.get()), 0u, DE_NULL);
 
-		VkPerformanceQuerySubmitInfoKHR performanceQuerySubmitInfo =
+		// perform two queries
+		for (deUint32 loop = 0; loop < DE_LENGTH_OF_ARRAY(queryPools); ++loop)
 		{
-			VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR,
-			NULL,
-			passIndex
-		};
+			const VkQueryPool queryPool = queryPools[loop];
+			vkd.cmdBeginQuery(*cmdBuffer, queryPool, 0u, (VkQueryControlFlags)0u);
+			vkd.cmdDispatch(*cmdBuffer, 2, 2, 2);
+			vkd.cmdEndQuery(*cmdBuffer, queryPool, 0u);
+		}
 
-		const VkSubmitInfo submitInfo =
+		vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+			(VkDependencyFlags)0u, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &m_computeFinishBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
+		endCommandBuffer(vkd, *cmdBuffer);
+
+		// submit reset of queries only once
 		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
-			&performanceQuerySubmitInfo,						// pNext
-			0u,													// waitSemaphoreCount
-			DE_NULL,											// pWaitSemaphores
-			(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
-			1u,													// commandBufferCount
-			&cmdBuffer.get(),									// pCommandBuffers
-			0u,													// signalSemaphoreCount
-			DE_NULL,											// pSignalSemaphores
-		};
+			const VkSubmitInfo submitInfo =
+			{
+				VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
+				DE_NULL,											// pNext
+				0u,													// waitSemaphoreCount
+				DE_NULL,											// pWaitSemaphores
+				(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
+				1u,													// commandBufferCount
+				&resetCmdBuffer.get(),								// pCommandBuffers
+				0u,													// signalSemaphoreCount
+				DE_NULL,											// pSignalSemaphores
+			};
 
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+			VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+		}
+
+		// submit command buffer for each pass and wait for its completion
+		const auto requiredPassCount = getRequiredPassCount();
+		for (deUint32 passIndex = 0; passIndex < requiredPassCount; passIndex++)
+		{
+			const Unique<VkFence> fence(createFence(vkd, device));
+
+			VkPerformanceQuerySubmitInfoKHR performanceQuerySubmitInfo =
+			{
+				VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR,
+				NULL,
+				passIndex
+			};
+
+			const VkSubmitInfo submitInfo =
+			{
+				VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
+				&performanceQuerySubmitInfo,						// pNext
+				0u,													// waitSemaphoreCount
+				DE_NULL,											// pWaitSemaphores
+				(const VkPipelineStageFlags*)DE_NULL,				// pWaitDstStageMask
+				1u,													// commandBufferCount
+				&cmdBuffer.get(),									// pCommandBuffers
+				0u,													// signalSemaphoreCount
+				DE_NULL,											// pSignalSemaphores
+			};
+
+			VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
+			VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+		}
 	}
-
-	releaseProfilingLock();
 
 	VK_CHECK(vkd.resetCommandBuffer(*cmdBuffer, 0));
 
-	if (verifyQueryResults(*queryPool1) && verifyQueryResults(*queryPool2))
-		return tcu::TestStatus::pass("Pass");
-	return tcu::TestStatus::fail("Fail");
+	verifyQueryResults(qfIndex, queue, *queryPool1);
+	verifyQueryResults(qfIndex, queue, *queryPool2);
+	return tcu::TestStatus::pass("Pass");
 }
 
 enum TestType
@@ -1186,14 +1254,16 @@ enum TestType
 class QueryPoolPerformanceTest : public TestCase
 {
 public:
-	QueryPoolPerformanceTest (tcu::TestContext &context, TestType testType, VkQueueFlagBits queueFlagBits, const char *name)
-		: TestCase			(context, name, "")
+	QueryPoolPerformanceTest (tcu::TestContext &context, TestType testType, VkQueueFlagBits queueFlagBits, bool copyResults, uint32_t seed, const std::string& name)
+		: TestCase			(context, name)
 		, m_testType		(testType)
 		, m_queueFlagBits	(queueFlagBits)
+		, m_copyResults		(copyResults)
+		, m_seed			(seed)
 	{
 	}
 
-	vkt::TestInstance* createInstance (vkt::Context& context) const
+	vkt::TestInstance* createInstance (vkt::Context& context) const override
 	{
 		if (m_testType == TT_ENUMERATE_AND_VALIDATE)
 			return new EnumerateAndValidateTest(context, m_queueFlagBits);
@@ -1201,17 +1271,17 @@ public:
 		if (m_queueFlagBits == VK_QUEUE_GRAPHICS_BIT)
 		{
 			if (m_testType == TT_QUERY)
-				return new GraphicQueryTest(context);
-			return new GraphicMultiplePoolsTest(context);
+				return new GraphicQueryTest(context, m_copyResults, m_seed);
+			return new GraphicMultiplePoolsTest(context, m_copyResults, m_seed);
 		}
 
 		// tests for VK_QUEUE_COMPUTE_BIT
 		if (m_testType == TT_QUERY)
-			return new ComputeQueryTest(context);
-		return new ComputeMultiplePoolsTest(context);
+			return new ComputeQueryTest(context, m_copyResults, m_seed);
+		return new ComputeMultiplePoolsTest(context, m_copyResults, m_seed);
 	}
 
-	void initPrograms (SourceCollections& programCollection) const
+	void initPrograms (SourceCollections& programCollection) const override
 	{
 		// validation test do not need programs
 		if (m_testType == TT_ENUMERATE_AND_VALIDATE)
@@ -1250,27 +1320,69 @@ public:
 								 "}\n");
 	}
 
+	void checkSupport (Context& context) const override
+	{
+		const auto& perfQueryFeatures = context.getPerformanceQueryFeatures();
+
+		if (!perfQueryFeatures.performanceCounterQueryPools)
+			TCU_THROW(NotSupportedError, "performanceCounterQueryPools not supported");
+
+		if (m_testType == TT_MULTIPLE_POOLS && !perfQueryFeatures.performanceCounterMultipleQueryPools)
+			TCU_THROW(NotSupportedError, "performanceCounterMultipleQueryPools not supported");
+
+		const auto&	vki				= context.getInstanceInterface();
+		const auto	physicalDevice	= context.getPhysicalDevice();
+		const auto	qfIndex			= context.getUniversalQueueFamilyIndex();
+
+		// Get the number of supported counters;
+		uint32_t counterCount;
+		VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, qfIndex, &counterCount, NULL, NULL));
+
+		if (!counterCount)
+			TCU_THROW(QualityWarning, "There are no performance counters");
+
+		if (m_copyResults && !context.getPerformanceQueryProperties().allowCommandBufferQueryCopies)
+			TCU_THROW(NotSupportedError, "VkPhysicalDevicePerformanceQueryPropertiesKHR::allowCommandBufferQueryCopies not supported");
+	}
+
 private:
 
 	TestType			m_testType;
 	VkQueueFlagBits		m_queueFlagBits;
+	const bool			m_copyResults;
+	const uint32_t		m_seed;
 };
 
 } //anonymous
 
 QueryPoolPerformanceTests::QueryPoolPerformanceTests (tcu::TestContext &testCtx)
-	: TestCaseGroup(testCtx, "performance_query", "Tests for performance queries")
+	: TestCaseGroup(testCtx, "performance_query")
 {
 }
 
 void QueryPoolPerformanceTests::init (void)
 {
-	addChild(new QueryPoolPerformanceTest(m_testCtx, TT_ENUMERATE_AND_VALIDATE, VK_QUEUE_GRAPHICS_BIT, "enumerate_and_validate_graphic"));
-	addChild(new QueryPoolPerformanceTest(m_testCtx, TT_ENUMERATE_AND_VALIDATE, VK_QUEUE_COMPUTE_BIT,  "enumerate_and_validate_compute"));
-	addChild(new QueryPoolPerformanceTest(m_testCtx, TT_QUERY, VK_QUEUE_GRAPHICS_BIT, "query_graphic"));
-	addChild(new QueryPoolPerformanceTest(m_testCtx, TT_QUERY, VK_QUEUE_COMPUTE_BIT, "query_compute"));
-	addChild(new QueryPoolPerformanceTest(m_testCtx, TT_MULTIPLE_POOLS, VK_QUEUE_GRAPHICS_BIT, "multiple_pools_graphic"));
-	addChild(new QueryPoolPerformanceTest(m_testCtx, TT_MULTIPLE_POOLS, VK_QUEUE_COMPUTE_BIT, "multiple_pools_compute"));
+
+	const struct
+	{
+		const bool			copyResults;
+		const std::string	suffix;
+	} copyCases[]
+	{
+		{ false,	""		},
+		{ true,		"_copy"	},
+	};
+
+	uint32_t seed = 1692187611u;
+	for (const auto& copyCase : copyCases)
+	{
+		addChild(new QueryPoolPerformanceTest(m_testCtx, TT_ENUMERATE_AND_VALIDATE, VK_QUEUE_GRAPHICS_BIT, copyCase.copyResults, seed++, "enumerate_and_validate_graphic" + copyCase.suffix));
+		addChild(new QueryPoolPerformanceTest(m_testCtx, TT_ENUMERATE_AND_VALIDATE, VK_QUEUE_COMPUTE_BIT,  copyCase.copyResults, seed++, "enumerate_and_validate_compute" + copyCase.suffix));
+		addChild(new QueryPoolPerformanceTest(m_testCtx, TT_QUERY, VK_QUEUE_GRAPHICS_BIT, copyCase.copyResults, seed++, "query_graphic" + copyCase.suffix));
+		addChild(new QueryPoolPerformanceTest(m_testCtx, TT_QUERY, VK_QUEUE_COMPUTE_BIT, copyCase.copyResults, seed++, "query_compute" + copyCase.suffix));
+		addChild(new QueryPoolPerformanceTest(m_testCtx, TT_MULTIPLE_POOLS, VK_QUEUE_GRAPHICS_BIT, copyCase.copyResults, seed++, "multiple_pools_graphic" + copyCase.suffix));
+		addChild(new QueryPoolPerformanceTest(m_testCtx, TT_MULTIPLE_POOLS, VK_QUEUE_COMPUTE_BIT, copyCase.copyResults, seed++, "multiple_pools_compute" + copyCase.suffix));
+	}
 }
 
 } //QueryPool

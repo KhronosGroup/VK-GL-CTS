@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2021 The Khronos Group Inc.
  * Copyright (c) 2021 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +67,7 @@ struct BindVertexBuffersData : public DynamicStateData
 {
 private:
 	using BufferPtr			= de::MovePtr<BufferWithMemory>;
-	using RenderPassPtr		= Move<VkRenderPass>;
+	using RenderPassPtr		= RenderPassWrapper;
 	using LayoutPtr			= Move<VkPipelineLayout>;
 	using ModulePtr			= Move<VkShaderModule>;
 	using PipelinePtr		= Move<VkPipeline>;
@@ -79,7 +81,7 @@ private:
 	}
 
 public:
-	BindVertexBuffersData(Context& ctx, VkDevice device)
+	BindVertexBuffersData(Context& ctx, VkDevice device, PipelineConstructionType pipelineConstructionType)
 		: m_vertexBuffer		()
 		, m_dataSize			(0u)
 		, m_vertexBufferSize	(0ull)
@@ -106,7 +108,7 @@ public:
 		flushAlloc(vkd, device, bufferAlloc);
 
 		// Empty render pass.
-		m_renderPass = makeRenderPass(vkd, device);
+		m_renderPass = RenderPassWrapper(pipelineConstructionType, vkd, device);
 
 		// Empty pipeline layout.
 		m_pipelineLayout = makePipelineLayout(vkd, device);
@@ -571,11 +573,12 @@ class DeviceHelper
 {
 public:
 	virtual ~DeviceHelper () {}
-	virtual const DeviceInterface&	getDeviceInterface	(void) const = 0;
-	virtual VkDevice				getDevice			(void) const = 0;
-	virtual uint32_t				getQueueFamilyIndex	(void) const = 0;
-	virtual VkQueue					getQueue			(void) const = 0;
-	virtual Allocator&				getAllocator		(void) const = 0;
+	virtual const DeviceInterface&			getDeviceInterface	(void) const = 0;
+	virtual VkDevice						getDevice			(void) const = 0;
+	virtual uint32_t						getQueueFamilyIndex	(void) const = 0;
+	virtual VkQueue							getQueue			(void) const = 0;
+	virtual Allocator&						getAllocator		(void) const = 0;
+	virtual const std::vector<std::string>&	getDeviceExtensions	(void) const = 0;
 };
 
 // This one just reuses the default device from the context.
@@ -588,22 +591,25 @@ public:
 		, m_queueFamilyIndex	(context.getUniversalQueueFamilyIndex())
 		, m_queue				(context.getUniversalQueue())
 		, m_allocator			(context.getDefaultAllocator())
+		, m_extensions			(context.getDeviceExtensions())
 		{}
 
 	virtual ~ContextDeviceHelper () {}
 
-	const DeviceInterface&	getDeviceInterface	(void) const override	{ return m_deviceInterface;		}
-	VkDevice				getDevice			(void) const override	{ return m_device;				}
-	uint32_t				getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
-	VkQueue					getQueue			(void) const override	{ return m_queue;				}
-	Allocator&				getAllocator		(void) const override	{ return m_allocator;			}
+	const DeviceInterface&			getDeviceInterface	(void) const override	{ return m_deviceInterface;		}
+	VkDevice						getDevice			(void) const override	{ return m_device;				}
+	uint32_t						getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
+	VkQueue							getQueue			(void) const override	{ return m_queue;				}
+	Allocator&						getAllocator		(void) const override	{ return m_allocator;			}
+	const std::vector<std::string>&	getDeviceExtensions	(void) const override	{ return m_extensions;			}
 
 protected:
-	const DeviceInterface&	m_deviceInterface;
-	const VkDevice			m_device;
-	const uint32_t			m_queueFamilyIndex;
-	const VkQueue			m_queue;
-	Allocator&				m_allocator;
+	const DeviceInterface&		m_deviceInterface;
+	const VkDevice				m_device;
+	const uint32_t				m_queueFamilyIndex;
+	const VkQueue				m_queue;
+	Allocator&					m_allocator;
+	std::vector<std::string>	m_extensions;
 };
 
 // This one creates a new device with VK_NV_shading_rate_image.
@@ -636,6 +642,7 @@ public:
 		{
 			"VK_NV_shading_rate_image",
 		};
+		m_extensions.push_back("VK_NV_shading_rate_image");
 
 #ifndef CTS_USES_VULKANSC
 		VkPhysicalDeviceShadingRateImageFeaturesNV	shadingRateImageFeatures	= initVulkanStructure();
@@ -663,18 +670,19 @@ public:
 		};
 
 		m_device	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-		m_vkd		.reset(new DeviceDriver(vkp, instance, m_device.get()));
+		m_vkd		.reset(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion()));
 		m_queue		= getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
 		m_allocator	.reset(new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
 
 	virtual ~ShadingRateImageDeviceHelper () {}
 
-	const DeviceInterface&	getDeviceInterface	(void) const override	{ return *m_vkd;				}
-	VkDevice				getDevice			(void) const override	{ return m_device.get();		}
-	uint32_t				getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
-	VkQueue					getQueue			(void) const override	{ return m_queue;				}
-	Allocator&				getAllocator		(void) const override	{ return *m_allocator;			}
+	const DeviceInterface&			getDeviceInterface	(void) const override	{ return *m_vkd;				}
+	VkDevice						getDevice			(void) const override	{ return m_device.get();		}
+	uint32_t						getQueueFamilyIndex	(void) const override	{ return m_queueFamilyIndex;	}
+	VkQueue							getQueue			(void) const override	{ return m_queue;				}
+	Allocator&						getAllocator		(void) const override	{ return *m_allocator;			}
+	const std::vector<std::string>&	getDeviceExtensions	(void) const override	{ return m_extensions;			}
 
 protected:
 	Move<VkDevice>						m_device;
@@ -682,6 +690,7 @@ protected:
 	deUint32							m_queueFamilyIndex;
 	VkQueue								m_queue;
 	std::unique_ptr<SimpleAllocator>	m_allocator;
+	std::vector<std::string>			m_extensions;
 };
 
 std::unique_ptr<DeviceHelper> g_shadingRateDeviceHelper;
@@ -704,11 +713,11 @@ DeviceHelper& getDeviceHelper(Context& context, VkDynamicState dynamicState)
 }
 
 // Returns the set of auxiliary data needed to set a given state.
-de::MovePtr<DynamicStateData> getDynamicStateData (Context& ctx, VkDevice device, VkDynamicState state)
+de::MovePtr<DynamicStateData> getDynamicStateData (Context& ctx, VkDevice device, VkDynamicState state, PipelineConstructionType pipelineConstructionType)
 {
 	// Create vertex buffer for VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE_EXT.
 	if (state == VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE_EXT)
-		return de::MovePtr<DynamicStateData>(new BindVertexBuffersData(ctx, device));
+		return de::MovePtr<DynamicStateData>(new BindVertexBuffersData(ctx, device, pipelineConstructionType));
 
 	// null pointer normally.
 	return de::MovePtr<DynamicStateData>();
@@ -729,7 +738,7 @@ class DynamicStateComputeCase : public vkt::TestCase
 {
 public:
 
-							DynamicStateComputeCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							DynamicStateComputeCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params, PipelineConstructionType pipelineConstructionType);
 	virtual					~DynamicStateComputeCase	(void) {}
 
 	virtual void			checkSupport				(Context& context) const;
@@ -737,13 +746,14 @@ public:
 	virtual TestInstance*	createInstance				(Context& context) const;
 
 protected:
-	TestParams				m_params;
+	TestParams					m_params;
+	PipelineConstructionType	m_pipelineConstructionType;
 };
 
 class DynamicStateComputeInstance : public vkt::TestInstance
 {
 public:
-								DynamicStateComputeInstance		(Context& context, const TestParams& params);
+								DynamicStateComputeInstance		(Context& context, const TestParams& params, PipelineConstructionType pipelineConstructionType);
 	virtual						~DynamicStateComputeInstance	(void) {}
 
 	virtual tcu::TestStatus		iterate							(void);
@@ -753,20 +763,25 @@ protected:
 	tcu::TestStatus				iterateCompute					(void);
 
 	TestParams					m_params;
+	PipelineConstructionType	m_pipelineConstructionType;
 };
 
-DynamicStateComputeCase::DynamicStateComputeCase(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
-	, m_params		(params)
+DynamicStateComputeCase::DynamicStateComputeCase(tcu::TestContext& testCtx, const std::string& name, const TestParams& params, PipelineConstructionType pipelineConstructionType)
+	: vkt::TestCase					(testCtx, name)
+	, m_params						(params)
+	, m_pipelineConstructionType	(pipelineConstructionType)
 {}
 
-DynamicStateComputeInstance::DynamicStateComputeInstance (Context& context, const TestParams& params)
-	: vkt::TestInstance (context)
-	, m_params			(params)
+DynamicStateComputeInstance::DynamicStateComputeInstance (Context& context, const TestParams& params, PipelineConstructionType pipelineConstructionType)
+	: vkt::TestInstance				(context)
+	, m_params						(params)
+	, m_pipelineConstructionType	(pipelineConstructionType)
 {}
 
 void DynamicStateComputeCase::checkSupport (Context& context) const
 {
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+
 	// Check required functionalities.
 	for (const auto& state : m_params.states)
 	{
@@ -821,7 +836,7 @@ void DynamicStateComputeCase::initPrograms (vk::SourceCollections& programCollec
 
 vkt::TestInstance* DynamicStateComputeCase::createInstance (Context& context) const
 {
-	return new DynamicStateComputeInstance(context, m_params);
+	return new DynamicStateComputeInstance(context, m_params, m_pipelineConstructionType);
 }
 
 tcu::TestStatus DynamicStateComputeInstance::iterate (void)
@@ -886,7 +901,7 @@ tcu::TestStatus DynamicStateComputeInstance::iterateTransfer (void)
 		const auto	offset		= elemSize * stateIdx;
 		const auto&	state		= m_params.states[stateIdx];
 		const auto	stateInfo	= getDynamicStateInfo(state);
-		statesData.push_back(getDynamicStateData(m_context, device, state));
+		statesData.push_back(getDynamicStateData(m_context, device, state, m_pipelineConstructionType));
 
 		// Record command if before.
 		if (m_params.whenToSet == WhenToSet::BEFORE)
@@ -1027,9 +1042,17 @@ tcu::TestStatus DynamicStateComputeInstance::iterateCompute (void)
 	for (size_t stateIdx = 0; stateIdx < m_params.states.size(); ++stateIdx)
 	{
 		// Objects needed to set the dynamic state.
-		const auto&	state		= m_params.states[stateIdx];
+		auto		state		= m_params.states[stateIdx];
+		if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
+		{
+			if (state == vk::VK_DYNAMIC_STATE_VIEWPORT)
+				state = vk::VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT;
+			if (state == vk::VK_DYNAMIC_STATE_SCISSOR)
+				state = vk::VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT;
+		}
+
 		const auto	stateInfo	= getDynamicStateInfo(state);
-		statesData.push_back(getDynamicStateData(m_context, device, state));
+		statesData.push_back(getDynamicStateData(m_context, device, state, m_pipelineConstructionType));
 
 		if (m_params.whenToSet == WhenToSet::BEFORE)
 			stateInfo.recorder(&vkd, cmdBuffer, statesData.back().get());
@@ -1081,11 +1104,12 @@ std::string getDynamicStateBriefName (VkDynamicState state)
 
 } // anonymous
 
-tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
 	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-	GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "compute_transfer", "Dynamic state mixed with compute and transfer operations"));
+	// Dynamic state mixed with compute and transfer operations
+	GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "compute_transfer"));
 
 	const struct
 	{
@@ -1109,18 +1133,18 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx)
 
 	// Tests with a single dynamic state.
 	{
-		GroupPtr singleStateGroup(new tcu::TestCaseGroup(testCtx, "single", "Tests using a single dynamic state"));
+		GroupPtr singleStateGroup(new tcu::TestCaseGroup(testCtx, "single"));
 
 		for (int operIdx = 0; operIdx < DE_LENGTH_OF_ARRAY(operations); ++operIdx)
 		{
-			GroupPtr operationGroup(new tcu::TestCaseGroup(testCtx, operations[operIdx].name, ""));
+			GroupPtr operationGroup(new tcu::TestCaseGroup(testCtx, operations[operIdx].name));
 
 			for (int stateIdx = 0; stateIdx < DE_LENGTH_OF_ARRAY(dynamicStateList); ++stateIdx)
 			{
 				const auto	state		= dynamicStateList[stateIdx];
 				const auto	stateName	= getDynamicStateBriefName(state);
 
-				GroupPtr stateGroup(new tcu::TestCaseGroup(testCtx, stateName.c_str(), ""));
+				GroupPtr stateGroup(new tcu::TestCaseGroup(testCtx, stateName.c_str()));
 
 				for (int momentIdx = 0; momentIdx < DE_LENGTH_OF_ARRAY(moments); ++momentIdx)
 				{
@@ -1131,7 +1155,7 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx)
 						std::vector<VkDynamicState>(1, state),	//	std::vector<VkDynamicState>	state;
 					};
 
-					stateGroup->addChild(new DynamicStateComputeCase(testCtx, moments[momentIdx].name, "", testParams));
+					stateGroup->addChild(new DynamicStateComputeCase(testCtx, moments[momentIdx].name, testParams, pipelineConstructionType));
 				}
 
 				operationGroup->addChild(stateGroup.release());
@@ -1145,11 +1169,11 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx)
 
 	// A few tests with several dynamic states.
 	{
-		GroupPtr multiStateGroup(new tcu::TestCaseGroup(testCtx, "multi", "Tests using multiple dynamic states"));
+		GroupPtr multiStateGroup(new tcu::TestCaseGroup(testCtx, "multi"));
 
 		for (int operIdx = 0; operIdx < DE_LENGTH_OF_ARRAY(operations); ++operIdx)
 		{
-			GroupPtr operationGroup(new tcu::TestCaseGroup(testCtx, operations[operIdx].name, ""));
+			GroupPtr operationGroup(new tcu::TestCaseGroup(testCtx, operations[operIdx].name));
 
 			for (int momentIdx = 0; momentIdx < DE_LENGTH_OF_ARRAY(moments); ++momentIdx)
 			{
@@ -1168,7 +1192,7 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx)
 						break;
 				}
 
-				operationGroup->addChild(new DynamicStateComputeCase(testCtx, moments[momentIdx].name, "", testParams));
+				operationGroup->addChild(new DynamicStateComputeCase(testCtx, moments[momentIdx].name, testParams, pipelineConstructionType));
 			}
 
 			multiStateGroup->addChild(operationGroup.release());

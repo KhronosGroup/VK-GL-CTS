@@ -48,9 +48,9 @@ static void cleanupGroup (tcu::TestCaseGroup* group)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "fragment_shader_interlock", "Fragment shader interlock tests", createChildren, cleanupGroup);
+	return createTestGroup(testCtx, name.c_str(), createChildren, cleanupGroup);
 }
 
 } // FragmentShaderInterlock

@@ -174,7 +174,7 @@ RayTracingBuildLargeTestInstance::~RayTracingBuildLargeTestInstance (void)
 class RayTracingTestCase : public TestCase
 {
 	public:
-							RayTracingTestCase	(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+							RayTracingTestCase	(tcu::TestContext& context, const char* name, const CaseDef data);
 							~RayTracingTestCase	(void);
 
 	virtual	void			initPrograms		(SourceCollections& programCollection) const;
@@ -186,8 +186,8 @@ private:
 	CaseDef					m_data;
 };
 
-RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 	DE_ASSERT((m_data.width * m_data.height) == (m_data.squaresGroupCount * m_data.geometriesGroupCount * m_data.instancesGroupCount));
@@ -397,7 +397,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuildLargeTestInstance::runTest (const d
 	const VkImageMemoryBarrier			preImageBarrier						= makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT,
 																				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 																				**image, imageSubresourceRange);
-	const VkImageMemoryBarrier			postImageBarrier					= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
+	const VkImageMemoryBarrier			postImageBarrier					= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
 																				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 																				**image, imageSubresourceRange);
 	const VkMemoryBarrier				postTraceMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
@@ -411,7 +411,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuildLargeTestInstance::runTest (const d
 	{
 		cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preImageBarrier);
 		vkd.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
-		cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
+		cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &postImageBarrier);
 
 		bottomLevelAccelerationStructure	= initBottomAccelerationStructure(*cmdBuffer);
 		topLevelAccelerationStructure		= initTopAccelerationStructure(*cmdBuffer, bottomLevelAccelerationStructure);
@@ -537,7 +537,8 @@ tcu::TestStatus RayTracingBuildLargeTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createBuildLargeShaderSetTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "large_shader_set", "Build large shader set using CPU host threading"));
+	// Build large shader set using CPU host threading
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "large_shader_set"));
 
 	const deUint32	sizes[]		= { 8, 16, 32, 64 };
 	const struct
@@ -555,7 +556,7 @@ tcu::TestCaseGroup*	createBuildLargeShaderSetTests (tcu::TestContext& testCtx)
 
 	for (size_t buildNdx = 0; buildNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(testCtx, buildTypes[buildNdx].buildTypeName, ""));
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(testCtx, buildTypes[buildNdx].buildTypeName));
 
 		for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 		{
@@ -576,7 +577,7 @@ tcu::TestCaseGroup*	createBuildLargeShaderSetTests (tcu::TestContext& testCtx)
 			};
 			const std::string	testName			= de::toString(largestGroup);
 
-			buildTypeGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+			buildTypeGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 		}
 
 		group->addChild(buildTypeGroup.release());
@@ -591,7 +592,7 @@ tcu::TestCaseGroup*	createBuildLargeShaderSetTests (tcu::TestContext& testCtx)
 
 			const std::string				suffix				= threads[threadsNdx] == std::numeric_limits<deUint32>::max() ? "max" : de::toString(threads[threadsNdx]);
 			const std::string				buildTypeGroupName	= std::string(buildTypes[buildNdx].buildTypeName) + '_' + suffix;
-			de::MovePtr<tcu::TestCaseGroup> buildTypeGroup		  (new tcu::TestCaseGroup(testCtx, buildTypeGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> buildTypeGroup		  (new tcu::TestCaseGroup(testCtx, buildTypeGroupName.c_str()));
 
 			for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 			{
@@ -612,7 +613,7 @@ tcu::TestCaseGroup*	createBuildLargeShaderSetTests (tcu::TestContext& testCtx)
 				};
 				const std::string	testName			= de::toString(largestGroup);
 
-				buildTypeGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+				buildTypeGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 			}
 
 			group->addChild(buildTypeGroup.release());

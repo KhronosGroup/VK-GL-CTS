@@ -250,7 +250,7 @@ struct TestParams
 class DirectionTestCase : public vkt::TestCase
 {
 public:
-							DirectionTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							DirectionTestCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~DirectionTestCase		(void) {}
 
 	virtual void			checkSupport			(Context& context) const;
@@ -274,8 +274,8 @@ protected:
 };
 
 
-DirectionTestCase::DirectionTestCase(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+DirectionTestCase::DirectionTestCase(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -566,7 +566,7 @@ tcu::TestStatus DirectionTestInstance::iterate (void)
 		missSBT			= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline.get(), alloc, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
 		missSBTRegion	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missSBT->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
 
-		hitSBT			= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline.get(), alloc, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1);
+		hitSBT			= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline.get(), alloc, shaderGroupHandleSize * hitModuleCount, shaderGroupBaseAlignment, 2, 1);
 		hitSBTRegion	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitSBT->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize * hitModuleCount);
 	}
 
@@ -668,7 +668,8 @@ std::vector<std::pair<float, float>> generateRotationAngles (de::Random& rnd)
 
 tcu::TestCaseGroup*	createDirectionLengthTests(tcu::TestContext& testCtx)
 {
-	GroupPtr directionGroup (new tcu::TestCaseGroup(testCtx, "direction_length", "Test direction vector length when tracing rays"));
+	// Test direction vector length when tracing rays
+	GroupPtr directionGroup (new tcu::TestCaseGroup(testCtx, "direction_length"));
 
 	struct
 	{
@@ -701,7 +702,7 @@ tcu::TestCaseGroup*	createDirectionLengthTests(tcu::TestContext& testCtx)
 	for (int stageIdx = 0; stageIdx < DE_LENGTH_OF_ARRAY(stages); ++stageIdx)
 	{
 		const auto& stageData = stages[stageIdx];
-		GroupPtr stageGroup (new tcu::TestCaseGroup(testCtx, stageData.name, ""));
+		GroupPtr stageGroup (new tcu::TestCaseGroup(testCtx, stageData.name));
 
 		for (int geometryTypeIdx = 0; geometryTypeIdx < DE_LENGTH_OF_ARRAY(geometryTypes); ++geometryTypeIdx)
 		{
@@ -711,13 +712,13 @@ tcu::TestCaseGroup*	createDirectionLengthTests(tcu::TestContext& testCtx)
 			if (gType.geometryType == VK_GEOMETRY_TYPE_TRIANGLES_KHR && stageData.hitStage == VK_SHADER_STAGE_INTERSECTION_BIT_KHR)
 				continue;
 
-			GroupPtr geomGroup (new tcu::TestCaseGroup(testCtx, gType.name, ""));
+			GroupPtr geomGroup (new tcu::TestCaseGroup(testCtx, gType.name));
 
 			for (size_t scalingIdx = 0; scalingIdx < scalingFactors.size(); ++scalingIdx)
 			{
 				const auto scale		= scalingFactors[scalingIdx];
 				const auto scaleName	= "scaling_factor_" + de::toString(scalingIdx);
-				GroupPtr factorGroup (new tcu::TestCaseGroup(testCtx, scaleName.c_str(), ""));
+				GroupPtr factorGroup (new tcu::TestCaseGroup(testCtx, scaleName.c_str()));
 
 				for (size_t rotationIdx = 0; rotationIdx < rotationAngles.size(); ++rotationIdx)
 				{
@@ -746,7 +747,7 @@ tcu::TestCaseGroup*	createDirectionLengthTests(tcu::TestContext& testCtx)
 					};
 					++caseCounter;
 
-					factorGroup->addChild(new DirectionTestCase(testCtx, angleName, "", params));
+					factorGroup->addChild(new DirectionTestCase(testCtx, angleName, params));
 				}
 
 				geomGroup->addChild(factorGroup.release());
@@ -763,7 +764,8 @@ tcu::TestCaseGroup*	createDirectionLengthTests(tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup*	createInsideAABBsTests(tcu::TestContext& testCtx)
 {
-	GroupPtr insideAABBsGroup (new tcu::TestCaseGroup(testCtx, "inside_aabbs", "Test shooting rays that start inside AABBs"));
+	// Test shooting rays that start inside AABBs
+	GroupPtr insideAABBsGroup (new tcu::TestCaseGroup(testCtx, "inside_aabbs"));
 
 	struct
 	{
@@ -797,19 +799,19 @@ tcu::TestCaseGroup*	createInsideAABBsTests(tcu::TestContext& testCtx)
 	for (int stageIdx = 0; stageIdx < DE_LENGTH_OF_ARRAY(stages); ++stageIdx)
 	{
 		const auto& stageData = stages[stageIdx];
-		GroupPtr stageGroup (new tcu::TestCaseGroup(testCtx, stageData.name, ""));
+		GroupPtr stageGroup (new tcu::TestCaseGroup(testCtx, stageData.name));
 
 		for (int rayEndCaseIdx = 0; rayEndCaseIdx < DE_LENGTH_OF_ARRAY(rayEndCases); ++rayEndCaseIdx)
 		{
 			const auto&			rayEndCase	= rayEndCases[rayEndCaseIdx];
 			const std::string	rayEndName	= std::string("ray_end_") + rayEndCase.name;
-			GroupPtr			rayEndGroup	(new tcu::TestCaseGroup(testCtx, rayEndName.c_str(), ""));
+			GroupPtr			rayEndGroup	(new tcu::TestCaseGroup(testCtx, rayEndName.c_str()));
 
 			for (size_t scalingIdx = 0; scalingIdx < scalingFactors.size(); ++scalingIdx)
 			{
 				const auto scale		= scalingFactors[scalingIdx];
 				const auto scaleName	= "scaling_factor_" + de::toString(scalingIdx);
-				GroupPtr factorGroup (new tcu::TestCaseGroup(testCtx, scaleName.c_str(), ""));
+				GroupPtr factorGroup (new tcu::TestCaseGroup(testCtx, scaleName.c_str()));
 
 				for (size_t rotationIdx = 0; rotationIdx < rotationAngles.size(); ++rotationIdx)
 				{
@@ -834,7 +836,7 @@ tcu::TestCaseGroup*	createInsideAABBsTests(tcu::TestContext& testCtx)
 						rayEndCase.rayEndType,			//		RayEndType				rayEndType;
 					};
 
-					factorGroup->addChild(new DirectionTestCase(testCtx, angleName, "", params));
+					factorGroup->addChild(new DirectionTestCase(testCtx, angleName, params));
 				}
 
 				rayEndGroup->addChild(factorGroup.release());

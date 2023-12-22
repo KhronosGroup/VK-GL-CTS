@@ -109,7 +109,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&	vk,
 
 	const VkStencilOpState					stencilOpState				= makeStencilOpState(
 		stencilFailOp,			// stencil fail
-	    stencilPassOp,			// depth & stencil pass
+		stencilPassOp,			// depth & stencil pass
 		VK_STENCIL_OP_KEEP,		// depth only fail
 		VK_COMPARE_OP_EQUAL,	// compare op
 		0x3,					// compare mask
@@ -230,7 +230,7 @@ private:
 };
 
 EarlyFragmentTest::EarlyFragmentTest (tcu::TestContext& testCtx, const std::string name, const deUint32 flags)
-	: TestCase	(testCtx, name, "")
+	: TestCase	(testCtx, name)
 	, m_flags	(flags)
 {
 }
@@ -1271,36 +1271,36 @@ Move<VkRenderPass> EarlyFragmentSampleMaskTestInstance::makeRenderPass (const De
 	{
 		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,			// VkStructureType		sType;
 		DE_NULL,											// const void*			pNext;
-		0u,													// deUint32         attachment
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout    layout
+		0u,													// deUint32				attachment
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout		layout
 		VK_IMAGE_ASPECT_COLOR_BIT							// VkImageAspectFlags	aspectMask;
 	};
 
 	const VkAttachmentReference2				depthStencilAttachmentRef			=
 	{
-		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,												// VkStructureType		sType;
-		DE_NULL,																				// const void*			pNext;
-	    hasDepthStencil ? 1u : 0u,																// deUint32         attachment
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,										// VkImageLayout    layout
-	    m_testMode == MODE_DEPTH ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT		// VkImageAspectFlags	aspectMask;
+		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,																// VkStructureType		sType;
+		DE_NULL,																								// const void*			pNext;
+		hasDepthStencil ? 1u : 0u,																				// deUint32				attachment
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,														// VkImageLayout		layout
+		VkImageAspectFlags(m_testMode == MODE_DEPTH ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT)	// VkImageAspectFlags	aspectMask;
 	};
 
 	const VkAttachmentReference2				resolveAttachmentRef					=
 	{
 		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,			// VkStructureType		sType;
 		DE_NULL,											// const void*			pNext;
-		hasColor ? 2u : 0u,									// deUint32         attachment
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout    layout
+		hasColor ? 2u : 0u,									// deUint32				attachment
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout		layout
 		VK_IMAGE_ASPECT_COLOR_BIT							// VkImageAspectFlags	aspectMask;
 	};
 
 	const VkAttachmentReference2				depthStencilResolveAttachmentRef			=
 	{
-		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,												// VkStructureType		sType;
-		DE_NULL,																				// const void*			pNext;
-	    hasDepthStencil ? 3u : 0u,																// deUint32         attachment
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,										// VkImageLayout    layout
-	    m_testMode == MODE_DEPTH ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT		// VkImageAspectFlags	aspectMask;
+		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,																// VkStructureType		sType;
+		DE_NULL,																								// const void*			pNext;
+		hasDepthStencil ? 3u : 0u,																				// deUint32				attachment
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,														// VkImageLayout		layout
+		VkImageAspectFlags(m_testMode == MODE_DEPTH ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT)	// VkImageAspectFlags	aspectMask;
 	};
 
 	// Using VK_RESOLVE_MODE_SAMPLE_ZERO_BIT as resolve mode, so no need to check its support as it is mandatory in the extension.
@@ -1839,10 +1839,18 @@ void EarlyFragmentSampleMaskTest::checkSupport(Context& context) const
 	context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
 }
 
+struct SampleCountTestParams
+{
+	deUint32	sampleCount;
+	bool		earlyAndLate;
+	bool		alphaToCoverage;
+	bool		useMaintenance5;
+};
+
 class EarlyFragmentSampleCountTestInstance : public EarlyFragmentTestInstance
 {
 public:
-						EarlyFragmentSampleCountTestInstance	(Context& context, const deUint32 sampleCount);
+						EarlyFragmentSampleCountTestInstance	(Context& context, const SampleCountTestParams& testParams);
 
 	tcu::TestStatus		iterate									(void);
 
@@ -1863,12 +1871,12 @@ private:
 																 const tcu::IVec2&			renderSize,
 																 const VkSampleMask			sampleMask);
 
-	const deUint32		m_sampleCount;
+	const SampleCountTestParams		m_testParams;
 };
 
-EarlyFragmentSampleCountTestInstance::EarlyFragmentSampleCountTestInstance (Context& context, const deUint32 sampleCount)
+EarlyFragmentSampleCountTestInstance::EarlyFragmentSampleCountTestInstance (Context& context, const SampleCountTestParams& testParams)
 	: EarlyFragmentTestInstance	(context, FLAG_TEST_DEPTH)
-	, m_sampleCount				(sampleCount)
+	, m_testParams				(testParams)
 {
 }
 
@@ -1905,11 +1913,11 @@ Move<VkPipeline> EarlyFragmentSampleCountTestInstance::makeGraphicsPipeline	(con
 		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType
 		DE_NULL,													// const void*								pNext
 		0u,															// VkPipelineMultisampleStateCreateFlags	flags
-		(VkSampleCountFlagBits)m_sampleCount,						// VkSampleCountFlagBits					rasterizationSamples
+		(VkSampleCountFlagBits)m_testParams.sampleCount,			// VkSampleCountFlagBits					rasterizationSamples
 		DE_FALSE,													// VkBool32									sampleShadingEnable
 		0.0f,														// float									minSampleShading
 		&sampleMask,												// const VkSampleMask*						pSampleMask
-		DE_FALSE,													// VkBool32									alphaToCoverageEnable
+		m_testParams.alphaToCoverage,								// VkBool32									alphaToCoverageEnable
 		DE_FALSE,													// VkBool32									alphaToOneEnable
 	};
 
@@ -1940,27 +1948,27 @@ Move<VkRenderPass> EarlyFragmentSampleCountTestInstance::makeRenderPass	(const D
 {
 	const VkAttachmentDescription			colorAttachmentDescription			=
 	{
-		(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags	flags;
-		colorFormat,								// VkFormat						format;
-		(VkSampleCountFlagBits)m_sampleCount,		// VkSampleCountFlagBits		samples;
-		VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp			loadOp;
-		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp			storeOp;
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp			stencilLoadOp
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp			stencilStoreOp
-		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout				initialLayout
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout				finalLayout
+		(VkAttachmentDescriptionFlags)0,					// VkAttachmentDescriptionFlags	flags;
+		colorFormat,										// VkFormat						format;
+		(VkSampleCountFlagBits)m_testParams.sampleCount,	// VkSampleCountFlagBits		samples;
+		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp			loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp			storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp			stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp			stencilStoreOp
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout				initialLayout
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout				finalLayout
 	};
 
 	const VkAttachmentDescription			depthStencilAttachmentDescription	=
 	{
 		(VkAttachmentDescriptionFlags)0,					// VkStructureType			sType;
 		depthStencilFormat,									// VkFormat					format
-		(VkSampleCountFlagBits)m_sampleCount,				// VkSampleCountFlagBits	samples
+		(VkSampleCountFlagBits)m_testParams.sampleCount,	// VkSampleCountFlagBits	samples
 		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp		loadOp
 		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp		storeOp
 		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp		stencilLoadOp
 		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp		stencilStoreOp
-		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			initialLayout
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout			initialLayout
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout			finalLayout
 	};
 
@@ -1974,7 +1982,7 @@ Move<VkRenderPass> EarlyFragmentSampleCountTestInstance::makeRenderPass	(const D
 		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp			storeOp
 		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp			stencilLoadOp
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp			stencilStoreOp
-		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout				initialLayout
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout				initialLayout
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout				finalLayout
 	};
 
@@ -1992,7 +2000,7 @@ Move<VkRenderPass> EarlyFragmentSampleCountTestInstance::makeRenderPass	(const D
 
 	const VkAttachmentReference				depthStencilAttachmentRef			=
 	{
-	    1u,													// deUint32			attachment
+		1u,													// deUint32			attachment
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout	layout
 	};
 
@@ -2086,7 +2094,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 		makeExtent3D(renderSize.x(), renderSize.y(), 1),	// VkExtent3D				extent;
 		1u,													// deUint32					mipLevels;
 		1u,													// deUint32					arrayLayers;
-		(VkSampleCountFlagBits)m_sampleCount,				// VkSampleCountFlagBits	samples;
+		(VkSampleCountFlagBits)m_testParams.sampleCount,	// VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,							// VkImageTiling			tiling;
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,				// VkImageUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,							// VkSharingMode			sharingMode;
@@ -2116,7 +2124,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 		makeExtent3D(renderSize.x(), renderSize.y(), 1),	// VkExtent3D				extent;
 		1u,													// deUint32					mipLevels;
 		1u,													// deUint32					arrayLayers;
-		(VkSampleCountFlagBits)m_sampleCount,				// VkSampleCountFlagBits	samples;
+		(VkSampleCountFlagBits)m_testParams.sampleCount,	// VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,							// VkImageTiling			tiling;
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,		// VkImageUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,							// VkSharingMode			sharingMode;
@@ -2203,6 +2211,19 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 
 		beginCommandBuffer(vk, *cmdBuffer);
 
+		// transition images to proper layouts - this cant be done with renderpass as we will use same renderpass twice
+		const VkImageMemoryBarrier initialImageBarriers[]
+		{
+			makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *colorImage, colorSubresourceRange),
+			makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *resolveColorImage, colorSubresourceRange),
+			makeImageMemoryBarrier(0, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, *depthImage, depthSubresourceRange)
+		};
+		vk.cmdPipelineBarrier(*cmdBuffer, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 2u, initialImageBarriers);
+		vk.cmdPipelineBarrier(*cmdBuffer, 0, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &initialImageBarriers[2]);
+
 		const VkClearValue				clearValues[]				=
 		{
 			makeClearValueColor(clearColor),		// attachment 0
@@ -2240,6 +2261,11 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 
 		copyImageToBuffer(vk, *cmdBuffer, *resolveColorImage, *colorBufferNoEarlyResults, renderSize, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
 
+		// after copying from resolved image we need to switch its layout back to color attachment optimal
+		const VkImageMemoryBarrier postResolveImageBarrier = makeImageMemoryBarrier(VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *resolveColorImage, colorSubresourceRange);
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &postResolveImageBarrier);
+
 		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
@@ -2273,7 +2299,7 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 	// The image has 32x32 pixels and each pixel has m_sampleCount samples. Half of these samples are discarded before sample counting.
 	// This means the reference value for passed samples is ((32 x 32) / 2 / 2) * sampleCount.
 	{
-		deUint64	refValue	= deUint64(deUint32((renderSize.x() * renderSize.y()) / 4) * m_sampleCount);
+		deUint64	refValue	= deUint64(deUint32((renderSize.x() * renderSize.y()) / 4) * m_testParams.sampleCount);
 		deUint64	tolerance	= deUint64(refValue * 5 / 100);
 		deUint64	minValue	= refValue - tolerance;
 		deUint64	maxValue	= refValue + tolerance;
@@ -2300,11 +2326,39 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 		}
 		else if (sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] >= minValue && sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] <= maxValue && sampleCounts[QUERY_INDEX_EARLY_FRAG] == 0)
 		{
+#ifndef CTS_USES_VULKANSC
+			if (m_testParams.useMaintenance5)
+			{
+				if (m_context.getMaintenance5Properties().earlyFragmentMultisampleCoverageAfterSampleCounting)
+					return tcu::TestStatus::fail("Fail");
+				return tcu::TestStatus::pass("Pass");
+			}
+#endif
 			// Spec says: "If the fragment shader declares the EarlyFragmentTests execution mode, fragment shading and
 			// multisample coverage operations should instead be performed after sample counting.
 
 			// since the specification says 'should', the opposite behavior is allowed, but not preferred
 			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Sample count is 0 - sample counting performed after multisample coverage and fragment shading");
+		}
+		else if (sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] >= minValue && sampleCounts[QUERY_INDEX_NO_EARLY_FRAG] <= maxValue &&
+					sampleCounts[QUERY_INDEX_EARLY_FRAG] >= (minValue * 2) && sampleCounts[QUERY_INDEX_EARLY_FRAG] <= (maxValue * 2))
+		{
+			// If the sample count returned is double the expected value, the sample mask test has been executed after
+			// sample counting.
+
+#ifndef CTS_USES_VULKANSC
+			if (m_testParams.useMaintenance5)
+			{
+				if (m_context.getMaintenance5Properties().earlyFragmentSampleMaskTestBeforeSampleCounting)
+					return tcu::TestStatus::fail("Fail");
+				return tcu::TestStatus::pass("Pass");
+			}
+#endif
+			// Spec says: "If there is a fragment shader and it declares the EarlyFragmentTests execution mode, ...
+			// sample mask test may: instead be performed after sample counting"
+
+			// since the specification says 'may', the opposite behavior is allowed, but not preferred
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Sample count is greater than expected - sample mask test performed after sample counting");
 		}
 		else
 		{
@@ -2342,30 +2396,27 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate (void)
 class EarlyFragmentSampleCountTest : public EarlyFragmentTest
 {
 public:
-	EarlyFragmentSampleCountTest		(tcu::TestContext&	testCtx,
-										 const std::string	name,
-										 const deUint32		sampleCount,
-										 const bool			earlyAndLate);
+	EarlyFragmentSampleCountTest		(tcu::TestContext&				testCtx,
+										 const std::string				name,
+										 const SampleCountTestParams&	testParams);
 
 	void				initPrograms	(SourceCollections& programCollection) const override;
 	TestInstance*		createInstance	(Context& context) const override;
 	void				checkSupport	(Context& context) const override;
 
 private:
-	const deUint32		m_sampleCount;
-	const bool			m_earlyAndLate;
+	const SampleCountTestParams m_testParams;
 };
 
-EarlyFragmentSampleCountTest::EarlyFragmentSampleCountTest(tcu::TestContext& testCtx, const std::string name, const deUint32 sampleCount, const bool earlyAndLate)
+EarlyFragmentSampleCountTest::EarlyFragmentSampleCountTest(tcu::TestContext& testCtx, const std::string name, const SampleCountTestParams& testParams)
 	: EarlyFragmentTest	(testCtx, name, FLAG_TEST_DEPTH)
-	, m_sampleCount		(sampleCount)
-	, m_earlyAndLate	(earlyAndLate)
+	, m_testParams		(testParams)
 {
 }
 
 TestInstance* EarlyFragmentSampleCountTest::createInstance (Context& context) const
 {
-	return new EarlyFragmentSampleCountTestInstance(context, m_sampleCount);
+	return new EarlyFragmentSampleCountTestInstance(context, m_testParams);
 }
 
 void EarlyFragmentSampleCountTest::initPrograms(SourceCollections& programCollection) const
@@ -2391,7 +2442,7 @@ void EarlyFragmentSampleCountTest::initPrograms(SourceCollections& programCollec
 	}
 
 	// Fragment shader for runs without early fragment test
-	if (m_earlyAndLate == false)
+	if (m_testParams.earlyAndLate == false)
 	{
 		std::ostringstream frg;
 
@@ -2457,7 +2508,7 @@ void EarlyFragmentSampleCountTest::initPrograms(SourceCollections& programCollec
 	}
 
 	// Fragment shader for early fragment tests
-	if (m_earlyAndLate == false)
+	if (m_testParams.earlyAndLate == false)
 	{
 		std::ostringstream frg;
 
@@ -2468,11 +2519,21 @@ void EarlyFragmentSampleCountTest::initPrograms(SourceCollections& programCollec
 			<< "layout(location = 0) out highp vec4 fragColor;\n"
 			<< "\n"
 			<< "void main (void)\n"
-			<< "{\n"
-			<< "    // Sample mask kills all the samples, but the sample counting has already happened.\n"
-			<< "    gl_SampleMask[0] = 0x0;\n"
-			<< "    fragColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
-			<< "}\n";
+			<< "{\n";
+
+		if (m_testParams.alphaToCoverage)
+		{
+			frg << "    // alphaToCoverageEnable = TRUE and emitting 0 alpha kills all the samples, but the sample counting has already happened.\n"
+				<< "    fragColor = vec4(1.0, 1.0, 0.0, 0.0);\n"
+				<< "}\n";
+		}
+		else
+		{
+			frg << "    // Sample mask kills all the samples, but the sample counting has already happened.\n"
+				<< "    gl_SampleMask[0] = 0x0;\n"
+				<< "    fragColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
+				<< "}\n";
+		}
 
 		programCollection.glslSources.add("frag_early") << glu::FragmentSource(frg.str());
 	}
@@ -2535,20 +2596,23 @@ void EarlyFragmentSampleCountTest::checkSupport(Context& context) const
 	VkImageFormatProperties		formatProperties;
 
 	vki.getPhysicalDeviceImageFormatProperties(physDevice, colorFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
-	if ((formatProperties.sampleCounts & m_sampleCount) == 0)
+	if ((formatProperties.sampleCounts & m_testParams.sampleCount) == 0)
 		TCU_THROW(NotSupportedError, "Format does not support this number of samples for color format");
 
 	vki.getPhysicalDeviceImageFormatProperties(physDevice, depthFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
-	if ((formatProperties.sampleCounts & m_sampleCount) == 0)
+	if ((formatProperties.sampleCounts & m_testParams.sampleCount) == 0)
 		TCU_THROW(NotSupportedError, "Format does not support this number of samples for depth format");
 
 #ifndef CTS_USES_VULKANSC
-	if (m_earlyAndLate)
+	if (m_testParams.earlyAndLate)
 	{
 		context.requireDeviceFunctionality("VK_AMD_shader_early_and_late_fragment_tests");
 		if (context.getShaderEarlyAndLateFragmentTestsFeaturesAMD().shaderEarlyAndLateFragmentTests == VK_FALSE)
 			TCU_THROW(NotSupportedError, "shaderEarlyAndLateFragmentTests is not supported");
 	}
+
+	if (m_testParams.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 #endif
 }
 
@@ -2556,7 +2620,7 @@ void EarlyFragmentSampleCountTest::checkSupport(Context& context) const
 
 tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup			(new tcu::TestCaseGroup(testCtx, "early_fragment", "early fragment test cases"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup			(new tcu::TestCaseGroup(testCtx, "early_fragment"));
 
 	{
 		struct TestCaseEarly
@@ -2651,9 +2715,25 @@ tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx)
 
 		for (deUint32 sampleCountsNdx = 0; sampleCountsNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountsNdx++)
 		{
-			testGroup->addChild(new EarlyFragmentSampleCountTest(testCtx, "sample_count_early_fragment_tests_depth_" + sampleCountsStr[sampleCountsNdx], sampleCounts[sampleCountsNdx], false));
+			SampleCountTestParams params
+			{
+				sampleCounts[sampleCountsNdx],	// deUint32	sampleCount;
+				false,							// bool		earlyAndLate;
+				false,							// bool		alphaToCoverage;
+				false,							// bool		useMaintenance5;
+			};
+
+			testGroup->addChild(new EarlyFragmentSampleCountTest(testCtx, "sample_count_early_fragment_tests_depth_" + sampleCountsStr[sampleCountsNdx], params));
 #ifndef CTS_USES_VULKANSC
-			testGroup->addChild(new EarlyFragmentSampleCountTest(testCtx, "sample_count_early_and_late_fragment_tests_depth_" + sampleCountsStr[sampleCountsNdx], sampleCounts[sampleCountsNdx], true));
+			params.earlyAndLate = true;
+			testGroup->addChild(new EarlyFragmentSampleCountTest(testCtx, "sample_count_early_and_late_fragment_tests_depth_" + sampleCountsStr[sampleCountsNdx], params));
+
+			params.useMaintenance5 = true;
+			testGroup->addChild(new EarlyFragmentSampleCountTest(testCtx, "sample_count_early_and_late_fragment_tests_depth_" + sampleCountsStr[sampleCountsNdx] + "_maintenance5", params));
+			params.earlyAndLate = false;
+			testGroup->addChild(new EarlyFragmentSampleCountTest(testCtx, "sample_count_early_fragment_tests_depth_" + sampleCountsStr[sampleCountsNdx] + "_maintenance5", params));
+			params.alphaToCoverage = true;
+			testGroup->addChild(new EarlyFragmentSampleCountTest(testCtx, "sample_count_early_fragment_tests_depth_alpha_to_coverage_" + sampleCountsStr[sampleCountsNdx] + "_maintenance5", params));
 #endif
 		}
 	}

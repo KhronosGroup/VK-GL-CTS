@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2022 The Khronos Group Inc.
  * Copyright (c) 2022 Google Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,17 +78,17 @@ public:
 private:
 	VkImageCreateInfo	makeImageCreateInfo		(const tcu::IVec2& imageSize, const deUint32 sampleCount);
 
-	Move<VkRenderPass>	makeRenderPass			(const DeviceInterface&		vk,
-												 const VkDevice				device,
-												 const VkFormat				colorFormat,
-												 const VkImageLayout		initialLayout);
+	RenderPassWrapper	makeRenderPass			(const DeviceInterface&			vk,
+												 const VkDevice					device,
+												 const VkFormat					colorFormat,
+												 const VkImageLayout			initialLayout);
 
-	void				preparePipelineWrapper	(GraphicsPipelineWrapper&	gpw,
-												 const VkPipelineLayout		pipelineLayout,
-												 const VkRenderPass			renderPass,
-												 const VkShaderModule		vertexModule,
-												 const VkShaderModule		fragmentModule,
-												 const tcu::IVec2&			framebufferSize);
+	void				preparePipelineWrapper	(GraphicsPipelineWrapper&		gpw,
+												 const PipelineLayoutWrapper&	pipelineLayout,
+												 const VkRenderPass				renderPass,
+												 const ShaderWrapper			vertexModule,
+												 const ShaderWrapper			fragmentModule,
+												 const tcu::IVec2&				framebufferSize);
 
 	const PipelineConstructionType		m_pipelineConstructionType;
 	const deUint32						m_sampleCount;
@@ -119,10 +121,10 @@ VkImageCreateInfo MultisampleRenderAreaTestInstance::makeImageCreateInfo(const t
 	return imageParams;
 }
 
-Move<VkRenderPass> MultisampleRenderAreaTestInstance::makeRenderPass (const DeviceInterface&	vk,
-																	  const VkDevice			device,
-																	  const VkFormat			colorFormat,
-																	  const VkImageLayout		initialLayout)
+RenderPassWrapper MultisampleRenderAreaTestInstance::makeRenderPass (const DeviceInterface&			vk,
+																	 const VkDevice					device,
+																	 const VkFormat					colorFormat,
+																	 const VkImageLayout			initialLayout)
 {
 	const VkAttachmentDescription			colorAttachmentDescription		=
 	{
@@ -194,15 +196,15 @@ Move<VkRenderPass> MultisampleRenderAreaTestInstance::makeRenderPass (const Devi
 		DE_NULL,									// const VkSubpassDependency*		pDependencies;
 	};
 
-	return createRenderPass(vk, device, &renderPassInfo);
+	return RenderPassWrapper(m_pipelineConstructionType, vk, device, &renderPassInfo);
 }
 
-void MultisampleRenderAreaTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&	gpw,
-																const VkPipelineLayout		pipelineLayout,
-																const VkRenderPass			renderPass,
-																const VkShaderModule		vertexModule,
-																const VkShaderModule		fragmentModule,
-																const tcu::IVec2&			framebufferSize)
+void MultisampleRenderAreaTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&		gpw,
+																const PipelineLayoutWrapper&	pipelineLayout,
+																const VkRenderPass				renderPass,
+																const ShaderWrapper				vertexModule,
+																const ShaderWrapper				fragmentModule,
+																const tcu::IVec2&				framebufferSize)
 {
 	const std::vector<VkViewport>	viewports		{ makeViewport(framebufferSize) };
 	const std::vector<VkRect2D>		scissors		{ makeRect2D(framebufferSize) };
@@ -224,7 +226,7 @@ void MultisampleRenderAreaTestInstance::preparePipelineWrapper (GraphicsPipeline
 	gpw.setDefaultDepthStencilState()
 	   .setDefaultColorBlendState()
 	   .setDefaultRasterizationState()
-	   .setupVertexInputStete()
+	   .setupVertexInputState()
 	   .setupPreRasterizationShaderState(viewports,
 			scissors,
 			pipelineLayout,
@@ -244,15 +246,17 @@ void MultisampleRenderAreaTestInstance::preparePipelineWrapper (GraphicsPipeline
 
 tcu::TestStatus	MultisampleRenderAreaTestInstance::iterate (void)
 {
+	const InstanceInterface&		vki						= m_context.getInstanceInterface();
 	const DeviceInterface&			vk						= m_context.getDeviceInterface();
+	const VkPhysicalDevice			physicalDevice			= m_context.getPhysicalDevice();
 	const VkDevice					device					= m_context.getDevice();
 	Allocator&						allocator				= m_context.getDefaultAllocator();
 	const VkQueue					queue					= m_context.getUniversalQueue();
 	const deUint32					queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const VkImageSubresourceRange	colorSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 
-	const Unique<VkShaderModule>	vertexModule			(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>	fragmentModule			(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
+	const ShaderWrapper				vertexModule			(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper				fragmentModule			(ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
 
 	const Unique<VkImage>			colorImage				(makeImage(vk, device, makeImageCreateInfo(m_framebufferSize, m_sampleCount)));
 	const UniquePtr<Allocation>		colorImageAlloc			(bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any));
@@ -262,6 +266,7 @@ tcu::TestStatus	MultisampleRenderAreaTestInstance::iterate (void)
 	const UniquePtr<Allocation>		resolveColorImageAlloc	(bindImage(vk, device, allocator, *resolveColorImage, MemoryRequirement::Any));
 	const Unique<VkImageView>		resolveColorImageView	(makeImageView(vk, device, *resolveColorImage, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, colorSubresourceRange));
 
+	const VkImage					images[]				= { *colorImage, *resolveColorImage };
 	const VkImageView				attachmentImages[]		= { *colorImageView, *resolveColorImageView };
 	const deUint32					numUsedAttachmentImages	= DE_LENGTH_OF_ARRAY(attachmentImages);
 
@@ -269,12 +274,13 @@ tcu::TestStatus	MultisampleRenderAreaTestInstance::iterate (void)
 	const Unique<VkBuffer>			colorBufferResults		(makeBuffer(vk, device, colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>		colorBufferAlloc		(bindBuffer(vk, device, allocator, *colorBufferResults, MemoryRequirement::HostVisible));
 
-	const Unique<VkRenderPass>		renderPassOne			(makeRenderPass(vk, device, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED));
-	const Unique<VkRenderPass>		renderPassTwo			(makeRenderPass(vk, device, m_colorFormat, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-	const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPassOne, numUsedAttachmentImages, attachmentImages, m_framebufferSize.x(), m_framebufferSize.y()));
+	RenderPassWrapper				renderPassOne			(makeRenderPass(vk, device, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED));
+	RenderPassWrapper				renderPassTwo			(makeRenderPass(vk, device, m_colorFormat, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+	renderPassOne.createFramebuffer(vk, device, numUsedAttachmentImages, images, attachmentImages, m_framebufferSize.x(), m_framebufferSize.y());
+	renderPassTwo.createFramebuffer(vk, device, numUsedAttachmentImages, images, attachmentImages, m_framebufferSize.x(), m_framebufferSize.y());
 
-	const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout(vk, device, DE_NULL));
-	GraphicsPipelineWrapper			graphicsPipeline		{vk, device, m_pipelineConstructionType};
+	const PipelineLayoutWrapper		pipelineLayout			(m_pipelineConstructionType, vk, device);
+	GraphicsPipelineWrapper			graphicsPipeline		{vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_pipelineConstructionType};
 
 	const Unique<VkCommandPool>		cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	commandBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -285,7 +291,7 @@ tcu::TestStatus	MultisampleRenderAreaTestInstance::iterate (void)
 	const Unique<VkBuffer>			vertexBuffer			(makeBuffer(vk, device, vertexBufferSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 	const UniquePtr<Allocation>		vertexBufferAlloc		(bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
 
-	preparePipelineWrapper(graphicsPipeline, *pipelineLayout, *renderPassOne, *vertexModule, *fragmentModule, m_framebufferSize);
+	preparePipelineWrapper(graphicsPipeline, pipelineLayout, *renderPassOne, vertexModule, fragmentModule, m_framebufferSize);
 
 	{
 		tcu::Vec4* const pVertices = reinterpret_cast<tcu::Vec4*>(vertexBufferAlloc->getHostPtr());
@@ -353,15 +359,15 @@ tcu::TestStatus	MultisampleRenderAreaTestInstance::iterate (void)
 	};
 
 	// Clear whole render area with red color.
-	beginRenderPass(vk, *commandBuffer, *renderPassOne, *framebuffer, fullRenderArea, static_cast<deUint32>(clearValuesFullArea.size()), clearValuesFullArea.data());
-	endRenderPass(vk, *commandBuffer);
+	renderPassOne.begin(vk, *commandBuffer, fullRenderArea, static_cast<deUint32>(clearValuesFullArea.size()), clearValuesFullArea.data());
+	renderPassTwo.end(vk, *commandBuffer);
 
 	// Draw shape when render area size is halved.
-	beginRenderPass(vk, *commandBuffer, *renderPassTwo, *framebuffer, testRenderArea, static_cast<deUint32>(clearValuesTestArea.size()), clearValuesTestArea.data());
+	renderPassTwo.begin(vk, *commandBuffer, testRenderArea, static_cast<deUint32>(clearValuesTestArea.size()), clearValuesTestArea.data());
 	vk.cmdBindVertexBuffers(*commandBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-	vk.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
+	graphicsPipeline.bind(*commandBuffer);
 	vk.cmdDraw(*commandBuffer, numVertices, 1u, 0u, 0u);
-	endRenderPass(vk, *commandBuffer);
+	renderPassTwo.end(vk, *commandBuffer);
 
 	copyImageToBuffer(vk, *commandBuffer, *resolveColorImage, *colorBufferResults, m_framebufferSize, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
 
@@ -428,7 +434,7 @@ public:
 													 const tcu::IVec2					framebufferSize,
 													 const TestShape					testShape,
 													 const VkFormat						colorFormat	= VK_FORMAT_R8G8B8A8_UNORM)
-													: TestCase(testCtx,	name, "")
+													: TestCase(testCtx,	name)
 													, m_pipelineConstructionType	(pipelineConstructionType)
 													, m_sampleCount					(sampleCount)
 													, m_framebufferSize				(framebufferSize)
@@ -503,16 +509,18 @@ void MultisampleRenderAreaTest::checkSupport(Context& context) const
 	if ((formatProperties.sampleCounts & m_sampleCount) == 0)
 		TCU_THROW(NotSupportedError, "Format does not support this number of samples");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createMultisampleResolveRenderpassRenderAreaTests(tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroupResolve(new tcu::TestCaseGroup(testCtx, "resolve", "resolving multisample image tests"));
+	// resolving multisample image tests
+	de::MovePtr<tcu::TestCaseGroup> testGroupResolve(new tcu::TestCaseGroup(testCtx, "resolve"));
 
-	de::MovePtr<tcu::TestCaseGroup> testGroupRenderArea(new tcu::TestCaseGroup(testCtx, "renderpass_renderarea", "renderpass render area tests"));
+	// renderpass render area tests
+	de::MovePtr<tcu::TestCaseGroup> testGroupRenderArea(new tcu::TestCaseGroup(testCtx, "renderpass_renderarea"));
 
 	static const struct
 	{

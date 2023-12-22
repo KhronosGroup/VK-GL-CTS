@@ -2206,7 +2206,7 @@ const std::string getRayTracingShaderBodyText (const TestParams& testParams)
 class BindingAccelerationStructureTestCase : public TestCase
 {
 	public:
-							BindingAccelerationStructureTestCase	(tcu::TestContext& context, const char* name, const char* desc, const TestParams testParams);
+							BindingAccelerationStructureTestCase	(tcu::TestContext& context, const char* name, const TestParams testParams);
 							~BindingAccelerationStructureTestCase	(void);
 
 	virtual void			checkSupport							(Context& context) const;
@@ -2217,8 +2217,8 @@ private:
 	TestParams				m_testParams;
 };
 
-BindingAccelerationStructureTestCase::BindingAccelerationStructureTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams testParams)
-	: vkt::TestCase	(context, name, desc)
+BindingAccelerationStructureTestCase::BindingAccelerationStructureTestCase (tcu::TestContext& context, const char* name, const TestParams testParams)
+	: vkt::TestCase	(context, name)
 	, m_testParams		(testParams)
 {
 }
@@ -2435,7 +2435,7 @@ static inline ShaderBodyTextFunc getShaderBodyTextFunc (const TestType testType)
 
 tcu::TestCaseGroup* createDescriptorUpdateASTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "acceleration_structure", "Tests acceleration structure descriptor updates"));
+	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "acceleration_structure"));
 
 	const struct TestTypes
 	{
@@ -2451,14 +2451,17 @@ tcu::TestCaseGroup* createDescriptorUpdateASTests (tcu::TestContext& testCtx)
 	{
 		const UpdateMethod	method;
 		const char*			name;
-		const char*			description;
 	}
 	updateMethods[] =
 	{
-		{ UPDATE_METHOD_NORMAL,				"regular",				"Use regular descriptor updates"		},
-		{ UPDATE_METHOD_WITH_TEMPLATE,		"with_template",		"Use descriptor update templates"		},
-		{ UPDATE_METHOD_WITH_PUSH,			"with_push",			"Use push descriptor updates"			},
-		{ UPDATE_METHOD_WITH_PUSH_TEMPLATE,	"with_push_template",	"Use push descriptor update templates"	},
+		// Use regular descriptor updates
+		{ UPDATE_METHOD_NORMAL,				"regular"},
+		// Use descriptor update templates
+		{ UPDATE_METHOD_WITH_TEMPLATE,		"with_template"},
+		// Use push descriptor updates
+		{ UPDATE_METHOD_WITH_PUSH,			"with_push"},
+		// Use push descriptor update templates
+		{ UPDATE_METHOD_WITH_PUSH_TEMPLATE,	"with_push_template"},
 	};
 	const struct PipelineStages
 	{
@@ -2484,14 +2487,14 @@ tcu::TestCaseGroup* createDescriptorUpdateASTests (tcu::TestContext& testCtx)
 
 	for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	testTypeGroup		(new tcu::TestCaseGroup(group->getTestContext(), testTypes[testTypeNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup>	testTypeGroup		(new tcu::TestCaseGroup(group->getTestContext(), testTypes[testTypeNdx].name));
 		const TestType					testType			= testTypes[testTypeNdx].testType;
 		const ShaderBodyTextFunc		shaderBodyTextFunc	= getShaderBodyTextFunc(testType);
 		const deUint32					imageDepth			= 1;
 
 		for (size_t updateMethodsNdx = 0; updateMethodsNdx < DE_LENGTH_OF_ARRAY(updateMethods); ++updateMethodsNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	updateMethodsGroup		(new tcu::TestCaseGroup(group->getTestContext(), updateMethods[updateMethodsNdx].name, updateMethods[updateMethodsNdx].description));
+			de::MovePtr<tcu::TestCaseGroup>	updateMethodsGroup		(new tcu::TestCaseGroup(group->getTestContext(), updateMethods[updateMethodsNdx].name));
 			const UpdateMethod				updateMethod			= updateMethods[updateMethodsNdx].method;
 
 			for (size_t pipelineStageNdx = 0; pipelineStageNdx < DE_LENGTH_OF_ARRAY(pipelineStages); ++pipelineStageNdx)
@@ -2521,7 +2524,7 @@ tcu::TestCaseGroup* createDescriptorUpdateASTests (tcu::TestContext& testCtx)
 					shaderBodyTextFunc,		//  ShaderTestTextFunc		testConfigShaderBodyText;
 				};
 
-				updateMethodsGroup->addChild(new BindingAccelerationStructureTestCase(group->getTestContext(), pipelineStages[pipelineStageNdx].name, "", testParams));
+				updateMethodsGroup->addChild(new BindingAccelerationStructureTestCase(group->getTestContext(), pipelineStages[pipelineStageNdx].name, testParams));
 			}
 
 			testTypeGroup->addChild(updateMethodsGroup.release());

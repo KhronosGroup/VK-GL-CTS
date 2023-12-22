@@ -290,7 +290,7 @@ void readCaseLists (xe::TestRoot& root, const char* caseListDir)
 			if (baseName.find("-cases.xml") == baseName.length()-10)
 			{
 				string		packageName	= baseName.substr(0, baseName.length()-10);
-				xe::TestGroup*	package		= root.createGroup(packageName.c_str(), "");
+				xe::TestGroup*	package		= root.createGroup(packageName.c_str());
 
 				readCaseList(package, item.getPath());
 				testCaseListCount++;

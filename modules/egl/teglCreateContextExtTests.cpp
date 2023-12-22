@@ -392,6 +392,10 @@ void CreateContextExtCase::checkRequiredExtensions (void)
 				case EGL_CONTEXT_FLAGS_KHR:
 					iter++;
 					requiredExtensions.insert("EGL_KHR_create_context");
+
+					if (*iter & EGL_CONTEXT_OPENGL_ROBUST_ACCESS_BIT_KHR)
+							requiredExtensions.insert("EGL_EXT_create_context_robustness");
+
 					iter++;
 					break;
 

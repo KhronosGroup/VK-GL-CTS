@@ -397,6 +397,7 @@ GLXContext GlxVisual::createContext (const GlxContextFactory&		factory,
 
 	if (resetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
 	{
+		checkGlxExtension(m_display, "GLX_ARB_create_context_robustness");
 		attribs.push_back(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB);
 
 		if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)
@@ -561,7 +562,7 @@ void Rank::sub (size_t bits, deUint32 value)
 
 static deUint64 configRank (GlxVisual& visual)
 {
-	// Sanity checks.
+	// Quick checks.
 	if (visual.getAttrib(GLX_DOUBLEBUFFER)					== False	||
 		(visual.getAttrib(GLX_RENDER_TYPE) & GLX_RGBA_BIT)	== 0)
 		return 0;

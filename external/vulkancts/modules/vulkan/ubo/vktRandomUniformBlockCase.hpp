@@ -67,7 +67,6 @@ class RandomUniformBlockCase : public UniformBlockCase
 public:
 							RandomUniformBlockCase		(tcu::TestContext&		testCtx,
 														 const std::string&		name,
-														 const std::string&		description,
 														 BufferMode				bufferMode,
 														 deUint32				features,
 														 deUint32				seed);

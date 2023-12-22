@@ -12,8 +12,8 @@ vk-master-2020-03-01/graphicsfuzz.txt
 vk-master-2020-03-01/image.txt
 vk-master-2020-03-01/imageless-framebuffer.txt
 vk-master-2020-03-01/info.txt
-vk-master-2020-03-01/memory-model.txt
 vk-master-2020-03-01/memory.txt
+vk-master-2020-03-01/memory-model.txt
 vk-master-2020-03-01/pipeline.txt
 vk-master-2020-03-01/protected-memory.txt
 vk-master-2020-03-01/query-pool.txt

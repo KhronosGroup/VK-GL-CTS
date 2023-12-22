@@ -249,10 +249,10 @@ vk::VkRect2D getRenderFrameRect (size_t		frameNdx,
 								: de::min(((deUint32)frameNdx) % imageHeight, imageHeight - 1u);
 	const deUint32		width	= frameNdx == 0
 								? imageWidth
-								: 1 + de::min((deUint32)(frameNdx) % de::min<deUint32>(100, imageWidth / 3), imageWidth - x);
+								: 1 + de::min((deUint32)(frameNdx) % de::min<deUint32>(100, imageWidth / 3), imageWidth - x - 1);
 	const deUint32		height	= frameNdx == 0
 								? imageHeight
-								: 1 + de::min((deUint32)(frameNdx) % de::min<deUint32>(100, imageHeight / 3), imageHeight - y);
+								: 1 + de::min((deUint32)(frameNdx) % de::min<deUint32>(100, imageHeight / 3), imageHeight - y - 1);
 	const vk::VkRect2D	rect	=
 	{
 		{ (deInt32)x, (deInt32)y },
@@ -377,7 +377,7 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 			image,
 			subRange
 		};
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
 	}
 
 	beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, vk::makeRect2D(imageWidth, imageHeight), tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
@@ -811,7 +811,7 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance (Context& context
 	, m_queueFamilyIndex		(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
 	, m_deviceExtensions		(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
 	, m_device					(createDeviceWithWsi(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, testConfig.useIncrementalPresent, context.getTestContext().getCommandLine().isValidationEnabled()))
-	, m_vkd						(m_vkp, m_instance, *m_device)
+	, m_vkd						(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
 	, m_commandPool				(createCommandPool(m_vkd, *m_device, m_queueFamilyIndex))
@@ -1204,19 +1204,19 @@ void createIncrementalPresentTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type
 
 		{
 
-			de::MovePtr<tcu::TestCaseGroup>	scaleGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), scaling[scalingNdx].name, scaling[scalingNdx].name));
+			de::MovePtr<tcu::TestCaseGroup>	scaleGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), scaling[scalingNdx].name));
 
 			for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name, presentModes[presentModeNdx].name));
+				de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name));
 
 				for (size_t transformNdx = 0; transformNdx < DE_LENGTH_OF_ARRAY(transforms); transformNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup>	transformGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), transforms[transformNdx].name, transforms[transformNdx].name));
+					de::MovePtr<tcu::TestCaseGroup>	transformGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), transforms[transformNdx].name));
 
 					for (size_t alphaNdx = 0; alphaNdx < DE_LENGTH_OF_ARRAY(alphas); alphaNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup>	alphaGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), alphas[alphaNdx].name, alphas[alphaNdx].name));
+						de::MovePtr<tcu::TestCaseGroup>	alphaGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), alphas[alphaNdx].name));
 
 						for (size_t ref = 0; ref < 2; ref++)
 						{
@@ -1231,7 +1231,7 @@ void createIncrementalPresentTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type
 							config.transform				= transforms[transformNdx].transform;
 							config.alpha					= alphas[alphaNdx].alpha;
 
-							alphaGroup->addChild(new vkt::InstanceFactory1<IncrementalPresentTestInstance, TestConfig, Programs>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, name, Programs(), config));
+							alphaGroup->addChild(new vkt::InstanceFactory1<IncrementalPresentTestInstance, TestConfig, Programs>(testGroup->getTestContext(), name, Programs(), config));
 						}
 
 						transformGroup->addChild(alphaGroup.release());

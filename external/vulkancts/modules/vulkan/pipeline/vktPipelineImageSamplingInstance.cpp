@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -340,7 +342,16 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support remapping format components");
 		}
 	}
+
+	bool formatRgba10x6WithoutYCbCrSampler = context.getRGBA10X6FormatsFeaturesEXT().formatRgba10x6WithoutYCbCrSampler;
+#else
+	bool formatRgba10x6WithoutYCbCrSampler = VK_FALSE;
 #endif // CTS_USES_VULKANSC
+
+	if ((params.imageFormat == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16) && (params.subresourceRange.levelCount > 1) && (formatRgba10x6WithoutYCbCrSampler == VK_FALSE))
+	{
+		TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
+	}
 }
 
 ImageSamplingInstance::ImageSamplingInstance (Context&						context,
@@ -361,7 +372,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 	, m_renderSize					(params.renderSize)
 	, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_vertices					(params.vertices)
-	, m_graphicsPipeline			(context.getDeviceInterface(), context.getDevice(), params.pipelineConstructionType, params.pipelineCreateFlags)
+	, m_graphicsPipeline			(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), m_context.getDeviceExtensions(), params.pipelineConstructionType, params.pipelineCreateFlags)
 	, m_pipelineConstructionType	(params.pipelineConstructionType)
 	, m_imageLayout					(params.imageLayout)
 {
@@ -670,14 +681,18 @@ void ImageSamplingInstance::setup ()
 			DE_NULL												// const VkSubpassDependency*		pDependencies;
 		};
 
-		m_renderPass = createRenderPass(vk, vkDevice, &renderPassParams);
+		m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
 	}
 
 	// Create framebuffer
 	{
-		std::vector<VkImageView> pAttachments(m_imageCount);
+		std::vector<VkImage>		images			(m_imageCount);
+		std::vector<VkImageView>	pAttachments	(m_imageCount);
 		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+		{
+			images[imgNdx] = m_colorImages[imgNdx]->get();
 			pAttachments[imgNdx] = m_colorAttachmentViews[imgNdx]->get();
+		}
 
 		const VkFramebufferCreateInfo framebufferParams =
 		{
@@ -692,13 +707,13 @@ void ImageSamplingInstance::setup ()
 			1u													// deUint32					layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, images);
 	}
 
 	// Create pipeline layout
 	{
 #ifndef CTS_USES_VULKANSC
-		VkPipelineLayoutCreateFlags pipelineLayoutFlags = (m_pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+		VkPipelineLayoutCreateFlags pipelineLayoutFlags = (!isConstructionTypeLibrary(m_pipelineConstructionType)) ? 0u : deUint32(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
 #else
 		VkPipelineLayoutCreateFlags pipelineLayoutFlags = 0u;
 #endif // CTS_USES_VULKANSC
@@ -713,14 +728,14 @@ void ImageSamplingInstance::setup ()
 			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
 		};
 
-		m_preRasterizationStatePipelineLayout	= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_preRasterizationStatePipelineLayout	= PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 		pipelineLayoutParams.setLayoutCount		= 1u;
 		pipelineLayoutParams.pSetLayouts		= &m_descriptorSetLayout.get();
-		m_fragmentStatePipelineLayout			= createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_fragmentStatePipelineLayout			= PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
-	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("tex_vert"), 0);
-	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("tex_frag"), 0);
+	m_vertexShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("tex_vert"), 0);
+	m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("tex_frag"), 0);
 
 	// Create pipeline
 	{
@@ -788,18 +803,18 @@ void ImageSamplingInstance::setup ()
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4];
 		};
 
-		m_graphicsPipeline.setMonolithicPipelineLayout(*m_fragmentStatePipelineLayout)
+		m_graphicsPipeline.setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
 						  .setDefaultDepthStencilState()
 						  .setDefaultRasterizationState()
 						  .setDefaultMultisampleState()
-						  .setupVertexInputStete(&vertexInputStateParams)
+						  .setupVertexInputState(&vertexInputStateParams)
 						  .setupPreRasterizationShaderState(viewports,
 														scissors,
-														*m_preRasterizationStatePipelineLayout,
+														m_preRasterizationStatePipelineLayout,
 														*m_renderPass,
 														0u,
-														*m_vertexShaderModule)
-						  .setupFragmentShaderState(*m_fragmentStatePipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule)
+														m_vertexShaderModule)
+						  .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
 						  .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
 						  .buildPipeline();
 	}
@@ -864,17 +879,17 @@ void ImageSamplingInstance::setup ()
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, (deUint32)m_imageCount, &preAttachmentBarriers[0]);
 
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)attachmentClearValues.size(), &attachmentClearValues[0]);
+		m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)attachmentClearValues.size(), &attachmentClearValues[0]);
 
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.getPipeline());
+		m_graphicsPipeline.bind(*m_cmdBuffer);
 
-		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout, 0, 1, &m_descriptorSet.get(), 0, DE_NULL);
+		m_fragmentStatePipelineLayout.bindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 1, &m_descriptorSet.get(), 0, DE_NULL);
 
 		const VkDeviceSize vertexBufferOffset = 0;
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
 
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
@@ -1471,13 +1486,14 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 	const CoordinateCaptureProgram		coordCaptureProgram;
 	const rr::Program					rrProgram				= coordCaptureProgram.getReferenceProgram();
 	ReferenceRenderer					refRenderer				(m_renderSize.x(), m_renderSize.y(), 1, colorFormat, depthStencilFormat, &rrProgram);
+	const bool							useStencilAspect		= (m_subresourceRange.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT);
 
 	bool								compareOkAll			= true;
 
 	tcu::Vec4							lookupScale				(1.0f);
 	tcu::Vec4							lookupBias				(0.0f);
 
-	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias);
+	getLookupScaleBias(m_imageFormat, lookupScale, lookupBias, useStencilAspect);
 
 	// Render out coordinates
 	{
@@ -1508,6 +1524,8 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 		lookupPrecision.colorMask		= m_componentMask;
 		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(max((tcu::IVec4(8, 8, 8, 8) - (isNearestOnly ? 1 : 2)), tcu::IVec4(0))) / swizzleScaleBias(lookupScale, m_componentMapping, 1.0f);
 
+		if (m_imageFormat == VK_FORMAT_BC5_UNORM_BLOCK || m_imageFormat == VK_FORMAT_BC5_SNORM_BLOCK)
+			lookupPrecision.colorThreshold = tcu::Vec4(0.06f, 0.06f, 0.06f, 0.06f);
 		if (tcu::isSRGB(m_texture->getTextureFormat()))
 			lookupPrecision.colorThreshold += tcu::Vec4(4.f / 255.f);
 
@@ -1519,24 +1537,36 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 			// Verification loop does not support reading from combined depth stencil texture levels.
 			// Get rid of stencil component.
 
-			tcu::TextureFormat::ChannelType depthChannelType = tcu::TextureFormat::CHANNELTYPE_LAST;
+			tcu::TextureFormat::ChannelOrder	channelOrder	= tcu::TextureFormat::CHANNELORDER_LAST;
+			tcu::TextureFormat::ChannelType		channelType		= tcu::TextureFormat::CHANNELTYPE_LAST;
 
-			switch (m_texture->getTextureFormat().type)
+			if (subresource.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
 			{
-			case tcu::TextureFormat::UNSIGNED_INT_16_8_8:
-				depthChannelType = tcu::TextureFormat::UNORM_INT16;
-				break;
-			case tcu::TextureFormat::UNSIGNED_INT_24_8:
-			case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
-				depthChannelType = tcu::TextureFormat::UNORM_INT24;
-				break;
-			case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
-				depthChannelType = tcu::TextureFormat::FLOAT;
-				break;
-			default:
-				DE_FATAL("Unhandled texture format type in switch");
+				channelOrder	= tcu::TextureFormat::S;
+				channelType		= tcu::TextureFormat::UNSIGNED_INT8;
 			}
-			textureCopy	= m_texture->copy(tcu::TextureFormat(tcu::TextureFormat::D, depthChannelType));
+			else
+			{
+				channelOrder = tcu::TextureFormat::D;
+
+				switch (m_texture->getTextureFormat().type)
+				{
+				case tcu::TextureFormat::UNSIGNED_INT_16_8_8:
+					channelType = tcu::TextureFormat::UNORM_INT16;
+					break;
+				case tcu::TextureFormat::UNSIGNED_INT_24_8:
+				case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
+					channelType = tcu::TextureFormat::UNORM_INT24;
+					break;
+				case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+					channelType = tcu::TextureFormat::FLOAT;
+					break;
+				default:
+					DE_FATAL("Unhandled texture format type in switch");
+				}
+			}
+
+			textureCopy	= m_texture->copy(tcu::TextureFormat(channelOrder, channelType));
 			texture		= textureCopy.get();
 		}
 		else

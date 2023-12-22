@@ -35,6 +35,7 @@
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "tcuTestLog.hpp"
+#include <cstdio>
 
 namespace vkt
 {
@@ -67,56 +68,6 @@ struct TestParameters
 	}
 };
 
-void checkSupport (Context& context, const TestParameters params)
-{
-	const bool							disjoint = (params.flags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0;
-	std::vector<std::string>			reqExts;
-
-	if (disjoint)
-	{
-		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_bind_memory2"))
-			reqExts.push_back("VK_KHR_bind_memory2");
-		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_get_memory_requirements2"))
-			reqExts.push_back("VK_KHR_get_memory_requirements2");
-	}
-
-	for ( const auto& extIter : reqExts )
-	{
-		if (!context.isDeviceFunctionalitySupported(extIter))
-			TCU_THROW(NotSupportedError, (extIter + " is not supported").c_str());
-	}
-
-	{
-		const VkFormatProperties	formatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
-			context.getPhysicalDevice(),
-			params.format);
-
-		if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
-			TCU_THROW(NotSupportedError, "Storage images are not supported for this format");
-
-		if (disjoint && ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
-			TCU_THROW(NotSupportedError, "Disjoint planes are not supported for this format");
-	}
-}
-
-template<typename T>
-inline de::SharedPtr<vk::Unique<T> > makeVkSharedPtr(vk::Move<T> vkMove)
-{
-	return de::SharedPtr<vk::Unique<T> >(new vk::Unique<T>(vkMove));
-}
-
-tcu::UVec3 computeWorkGroupSize(const VkExtent3D& planeExtent)
-{
-	const deUint32		maxComputeWorkGroupInvocations	= 128u;
-	const tcu::UVec3	maxComputeWorkGroupSize			= tcu::UVec3(128u, 128u, 64u);
-
-	const deUint32		xWorkGroupSize					= std::min(std::min(planeExtent.width, maxComputeWorkGroupSize.x()), maxComputeWorkGroupInvocations);
-	const deUint32		yWorkGroupSize					= std::min(std::min(planeExtent.height, maxComputeWorkGroupSize.y()), maxComputeWorkGroupInvocations / xWorkGroupSize);
-	const deUint32		zWorkGroupSize					= std::min(std::min(planeExtent.depth, maxComputeWorkGroupSize.z()), maxComputeWorkGroupInvocations / (xWorkGroupSize*yWorkGroupSize));
-
-	return tcu::UVec3(xWorkGroupSize, yWorkGroupSize, zWorkGroupSize);
-}
-
 vk::VkFormat getPlaneCompatibleFormatForWriting(const vk::PlanarFormatDescription& formatInfo, deUint32 planeNdx)
 {
 	DE_ASSERT(planeNdx < formatInfo.numPlanes);
@@ -140,6 +91,133 @@ vk::VkFormat getPlaneCompatibleFormatForWriting(const vk::PlanarFormatDescriptio
 	return result;
 }
 
+void checkSupport (Context& context, const TestParameters params)
+{
+	const bool							disjoint = (params.flags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0;
+	const auto&							instInt	(context.getInstanceInterface());
+	std::vector<std::string>			reqExts;
+
+	if (disjoint)
+	{
+		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_bind_memory2"))
+			reqExts.push_back("VK_KHR_bind_memory2");
+		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_get_memory_requirements2"))
+			reqExts.push_back("VK_KHR_get_memory_requirements2");
+	}
+
+	for ( const auto& extIter : reqExts )
+	{
+		if (!context.isDeviceFunctionalitySupported(extIter))
+			TCU_THROW(NotSupportedError, (extIter + " is not supported").c_str());
+	}
+
+	{
+		const VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+			DE_NULL,												// pNext;
+			params.format,											// format;
+			VK_IMAGE_TYPE_2D,										// type;
+			VK_IMAGE_TILING_OPTIMAL,								// tiling;
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			VK_IMAGE_USAGE_SAMPLED_BIT,								// usage;
+			(VkImageCreateFlags)0u									// flags
+		};
+
+		VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
+		samplerYcbcrConversionImage.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
+		samplerYcbcrConversionImage.pNext = DE_NULL;
+
+		VkImageFormatProperties2						imageFormatProperties		= {};
+		imageFormatProperties.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
+
+		VkResult result = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties);
+		if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported.");
+		VK_CHECK(result);
+
+
+		// Check for plane compatible format support when the disjoint flag is being used
+		if (disjoint)
+		{
+			const PlanarFormatDescription				formatDescription		= getPlanarFormatDescription(params.format);
+
+			for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
+			{
+				if (!formatDescription.hasChannelNdx(channelNdx))
+					continue;
+				deUint32					planeNdx					= formatDescription.channels[channelNdx].planeNdx;
+				vk::VkFormat				planeCompatibleFormat		= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
+
+				const VkPhysicalDeviceImageFormatInfo2			planeImageFormatInfo				=
+				{
+					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+					DE_NULL,												// pNext;
+					planeCompatibleFormat,									// format;
+					VK_IMAGE_TYPE_2D,										// type;
+					VK_IMAGE_TILING_OPTIMAL,								// tiling;
+					VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+					VK_IMAGE_USAGE_SAMPLED_BIT,								// usage;
+					(VkImageCreateFlags)0u									// flags
+				};
+
+				VkResult planesResult = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &planeImageFormatInfo, &imageFormatProperties);
+				if (planesResult == VK_ERROR_FORMAT_NOT_SUPPORTED)
+					TCU_THROW(NotSupportedError, "Plane compatibile format not supported.");
+				VK_CHECK(planesResult);
+			}
+		}
+	}
+
+	{
+		const VkFormatProperties	formatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+			context.getPhysicalDevice(),
+			params.format);
+
+		const bool					transferByViews = disjoint && (getPlanarFormatDescription(params.format).numPlanes > 1);
+
+		if (!disjoint && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
+			TCU_THROW(NotSupportedError, "Storage images are not supported for this format");
+
+		if (disjoint && ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
+			TCU_THROW(NotSupportedError, "Disjoint planes are not supported for this format");
+
+		if (disjoint && transferByViews)
+		{
+			const PlanarFormatDescription	formatDescription				= getPlanarFormatDescription(params.format);
+			for (deUint32 planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
+			{
+				const VkFormat				planeCompatibleFormat			= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
+				const VkFormatProperties	planeCompatibleFormatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+					context.getPhysicalDevice(),
+					planeCompatibleFormat);
+
+				if ((planeCompatibleFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
+					TCU_THROW(NotSupportedError, "Storage images are not supported for the plane compatible format");
+			}
+		}
+	}
+}
+
+template<typename T>
+inline de::SharedPtr<vk::Unique<T> > makeVkSharedPtr(vk::Move<T> vkMove)
+{
+	return de::SharedPtr<vk::Unique<T> >(new vk::Unique<T>(vkMove));
+}
+
+tcu::UVec3 computeWorkGroupSize(const VkExtent3D& planeExtent)
+{
+	const deUint32		maxComputeWorkGroupInvocations	= 128u;
+	const tcu::UVec3	maxComputeWorkGroupSize			= tcu::UVec3(128u, 128u, 64u);
+
+	const deUint32		xWorkGroupSize					= std::min(std::min(planeExtent.width, maxComputeWorkGroupSize.x()), maxComputeWorkGroupInvocations);
+	const deUint32		yWorkGroupSize					= std::min(std::min(planeExtent.height, maxComputeWorkGroupSize.y()), maxComputeWorkGroupInvocations / xWorkGroupSize);
+	const deUint32		zWorkGroupSize					= std::min(std::min(planeExtent.depth, maxComputeWorkGroupSize.z()), maxComputeWorkGroupInvocations / (xWorkGroupSize*yWorkGroupSize));
+
+	return tcu::UVec3(xWorkGroupSize, yWorkGroupSize, zWorkGroupSize);
+}
+
 tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 {
 	const DeviceInterface&						vkd						= context.getDeviceInterface();
@@ -147,6 +225,8 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 	const deUint32								queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	const VkQueue								queue					= context.getUniversalQueue();
 	const PlanarFormatDescription				formatDescription		= getPlanarFormatDescription(params.format);
+	const bool									disjoint				= (params.flags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0;
+	const bool									transferByViews			= disjoint && (formatDescription.numPlanes > 1);
 
 	VkImageCreateInfo							imageCreateInfo =
 	{
@@ -169,7 +249,7 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 
 	// check if we need to create VkImageView with different VkFormat than VkImage format
 	VkFormat planeCompatibleFormat0 = getPlaneCompatibleFormatForWriting(formatDescription, 0);
-	if (planeCompatibleFormat0 != getPlaneCompatibleFormat(formatDescription, 0))
+	if (planeCompatibleFormat0 != params.format)
 	{
 		imageCreateInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
 	}
@@ -186,7 +266,7 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 
 	// Create descriptor sets
 	const Unique<VkDescriptorPool>				descriptorPool			(DescriptorPoolBuilder()
-		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, vk::PlanarFormatDescription::MAX_PLANES)
 		.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, vk::PlanarFormatDescription::MAX_PLANES));
 
 	// Create command buffer for compute and transfer operations
@@ -221,14 +301,21 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 			shaderName << "comp" << planeNdx;
 			auto							shaderModule			= makeVkSharedPtr(createShaderModule(vkd, device, context.getBinaryCollection().get(shaderName.str()), DE_NULL));
 			shaderModules.push_back(shaderModule);
-			auto							computePipeline			= makeVkSharedPtr(makeComputePipeline(vkd, device, *pipelineLayout, (VkPipelineCreateFlags) 0u, shaderModule->get(), (VkPipelineShaderStageCreateFlags) 0u, DE_NULL));
+			auto							computePipeline			= makeVkSharedPtr(makeComputePipeline(vkd, device, *pipelineLayout, (VkPipelineCreateFlags) 0u, nullptr, shaderModule->get(), (VkPipelineShaderStageCreateFlags) 0u, DE_NULL));
 			computePipelines.push_back(computePipeline);
 			vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline->get());
 
 			auto							descriptorSet			= makeVkSharedPtr(makeDescriptorSet(vkd, device, *descriptorPool, *descriptorSetLayout));
 			descriptorSets.push_back(descriptorSet);
 
-			auto							imageView				= makeVkSharedPtr(makeImageView(vkd, device, *image, VK_IMAGE_VIEW_TYPE_2D, planeCompatibleFormat, subresourceRange));
+			VkImageViewUsageCreateInfo imageViewUsageCreateInfo =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,		//VkStructureType		sType;
+				DE_NULL,											//const void*			pNext;
+				VK_IMAGE_USAGE_STORAGE_BIT,							//VkImageUsageFlags		usage;
+			};
+
+			auto							imageView				= makeVkSharedPtr(makeImageView(vkd, device, *image, VK_IMAGE_VIEW_TYPE_2D, planeCompatibleFormat, subresourceRange, transferByViews ? &imageViewUsageCreateInfo : DE_NULL));
 			imageViews.push_back(imageView);
 			const VkDescriptorImageInfo		imageInfo				= makeDescriptorImageInfo(DE_NULL, imageView->get(), VK_IMAGE_LAYOUT_GENERAL);
 
@@ -322,101 +409,101 @@ tcu::TestStatus testStorageImageWrite (Context& context, TestParameters params)
 
 		for (deUint32 planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
 			planePointers[planeNdx] = outputData + static_cast<size_t>(planeOffsets[planeNdx]);
-	}
 
-	// write result images to log file
-	for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
-	{
-		if (!formatDescription.hasChannelNdx(channelNdx))
-			continue;
-		deUint32					planeNdx					= formatDescription.channels[channelNdx].planeNdx;
-		vk::VkFormat				planeCompatibleFormat		= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
-		vk::PlanarFormatDescription	compatibleFormatDescription	= (planeCompatibleFormat != getPlaneCompatibleFormat(formatDescription, planeNdx)) ? getPlanarFormatDescription(planeCompatibleFormat) : formatDescription;
-		const tcu::UVec3			compatibleShaderGridSize	( params.size.x() / formatDescription.blockWidth, params.size.y() / formatDescription.blockHeight, params.size.z() / 1u );
-		tcu::ConstPixelBufferAccess	pixelBuffer					= vk::getChannelAccess(compatibleFormatDescription, compatibleShaderGridSize, planeRowPitches, (const void* const*)planePointers, channelNdx);
-		std::ostringstream str;
-		str << "image" << channelNdx;
-		context.getTestContext().getLog() << tcu::LogImage(str.str(), str.str(), pixelBuffer);
-	}
-
-	// verify data
-	const float					epsilon = 1e-5f;
-	for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
-	{
-		if (!formatDescription.hasChannelNdx(channelNdx))
-			continue;
-
-		deUint32							planeNdx					= formatDescription.channels[channelNdx].planeNdx;
-		vk::VkFormat						planeCompatibleFormat		= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
-		vk::PlanarFormatDescription			compatibleFormatDescription	= (planeCompatibleFormat != getPlaneCompatibleFormat(formatDescription, planeNdx)) ? getPlanarFormatDescription(planeCompatibleFormat) : formatDescription;
-		const tcu::UVec3					compatibleShaderGridSize	( params.size.x() / formatDescription.blockWidth, params.size.y() / formatDescription.blockHeight, params.size.z() / 1u );
-		VkExtent3D							compatibleImageSize			{ imageCreateInfo.extent.width / formatDescription.blockWidth, imageCreateInfo.extent.height / formatDescription.blockHeight, imageCreateInfo.extent.depth / 1u };
-		tcu::ConstPixelBufferAccess			pixelBuffer					= vk::getChannelAccess(compatibleFormatDescription, compatibleShaderGridSize, planeRowPitches, (const void* const*)planePointers, channelNdx);
-		VkExtent3D							planeExtent					= getPlaneExtent(compatibleFormatDescription, compatibleImageSize, planeNdx, 0u);
-		tcu::IVec3							pixelDivider				= pixelBuffer.getDivider();
-
-		for (deUint32 offsetZ = 0u; offsetZ < planeExtent.depth; ++offsetZ)
-		for (deUint32 offsetY = 0u; offsetY < planeExtent.height; ++offsetY)
-		for (deUint32 offsetX = 0u; offsetX < planeExtent.width; ++offsetX)
+		// write result images to log file
+		for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
 		{
-			deUint32	iReferenceValue;
-			float		fReferenceValue;
-			switch (channelNdx)
+			if (!formatDescription.hasChannelNdx(channelNdx))
+				continue;
+			deUint32					planeNdx					= formatDescription.channels[channelNdx].planeNdx;
+			vk::VkFormat				planeCompatibleFormat		= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
+			vk::PlanarFormatDescription	compatibleFormatDescription	= (planeCompatibleFormat != getPlaneCompatibleFormat(formatDescription, planeNdx)) ? getPlanarFormatDescription(planeCompatibleFormat) : formatDescription;
+			const tcu::UVec3			compatibleShaderGridSize	( params.size.x() / formatDescription.blockWidth, params.size.y() / formatDescription.blockHeight, params.size.z() / 1u );
+			tcu::ConstPixelBufferAccess	pixelBuffer					= vk::getChannelAccess(compatibleFormatDescription, compatibleShaderGridSize, planeRowPitches, (const void* const*)planePointers, channelNdx);
+			std::ostringstream str;
+			str << "image" << channelNdx;
+			context.getTestContext().getLog() << tcu::LogImage(str.str(), str.str(), pixelBuffer);
+		}
+
+		// verify data
+		const float					epsilon = 1e-5f;
+		for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
+		{
+			if (!formatDescription.hasChannelNdx(channelNdx))
+				continue;
+
+			deUint32							planeNdx					= formatDescription.channels[channelNdx].planeNdx;
+			vk::VkFormat						planeCompatibleFormat		= getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
+			vk::PlanarFormatDescription			compatibleFormatDescription	= (planeCompatibleFormat != getPlaneCompatibleFormat(formatDescription, planeNdx)) ? getPlanarFormatDescription(planeCompatibleFormat) : formatDescription;
+			const tcu::UVec3					compatibleShaderGridSize	( params.size.x() / formatDescription.blockWidth, params.size.y() / formatDescription.blockHeight, params.size.z() / 1u );
+			VkExtent3D							compatibleImageSize			{ imageCreateInfo.extent.width / formatDescription.blockWidth, imageCreateInfo.extent.height / formatDescription.blockHeight, imageCreateInfo.extent.depth / 1u };
+			tcu::ConstPixelBufferAccess			pixelBuffer					= vk::getChannelAccess(compatibleFormatDescription, compatibleShaderGridSize, planeRowPitches, (const void* const*)planePointers, channelNdx);
+			VkExtent3D							planeExtent					= getPlaneExtent(compatibleFormatDescription, compatibleImageSize, planeNdx, 0u);
+			tcu::IVec3							pixelDivider				= pixelBuffer.getDivider();
+
+			for (deUint32 offsetZ = 0u; offsetZ < planeExtent.depth; ++offsetZ)
+			for (deUint32 offsetY = 0u; offsetY < planeExtent.height; ++offsetY)
+			for (deUint32 offsetX = 0u; offsetX < planeExtent.width; ++offsetX)
 			{
-				case 0:
-					iReferenceValue = offsetX % 127u;
-					fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
-					break;
-				case 1:
-					iReferenceValue = offsetY % 127u;
-					fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
-					break;
-				case 2:
-					iReferenceValue = offsetZ % 127u;
-					fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
-					break;
-				case 3:
-					iReferenceValue = 0u;
-					fReferenceValue = 0.f;
-					break;
-				default:	DE_FATAL("Unexpected channel index");	break;
-			}
-			float acceptableError = epsilon;
-
-			switch (formatDescription.channels[channelNdx].type)
-			{
-				case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-				case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+				deUint32	iReferenceValue;
+				float		fReferenceValue;
+				switch (channelNdx)
 				{
-					tcu::UVec4 outputValue = pixelBuffer.getPixelUint(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
-
-					if (outputValue.x() != iReferenceValue)
-						return tcu::TestStatus::fail("Failed");
-
-					break;
+					case 0:
+						iReferenceValue = offsetX % 127u;
+						fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
+						break;
+					case 1:
+						iReferenceValue = offsetY % 127u;
+						fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
+						break;
+					case 2:
+						iReferenceValue = offsetZ % 127u;
+						fReferenceValue = static_cast<float>(iReferenceValue) / 127.f;
+						break;
+					case 3:
+						iReferenceValue = 1u;
+						fReferenceValue = 1.f;
+						break;
+					default:	DE_FATAL("Unexpected channel index");	break;
 				}
-				case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-				case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+				float acceptableError = epsilon;
+
+				switch (formatDescription.channels[channelNdx].type)
 				{
-					float fixedPointError = tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
-					acceptableError += fixedPointError;
-					tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
+					case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+					case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+					{
+						tcu::UVec4 outputValue = pixelBuffer.getPixelUint(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
 
-					if (deAbs(outputValue.x() - fReferenceValue) > acceptableError)
-						return tcu::TestStatus::fail("Failed");
+						if (outputValue.x() != iReferenceValue)
+							return tcu::TestStatus::fail("Failed");
 
-					break;
+						break;
+					}
+					case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+					case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+					{
+						float fixedPointError = tcu::TexVerifierUtil::computeFixedPointError(formatDescription.channels[channelNdx].sizeBits);
+						acceptableError += fixedPointError;
+						tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
+
+						if (deAbs(outputValue.x() - fReferenceValue) > acceptableError)
+							return tcu::TestStatus::fail("Failed");
+
+						break;
+					}
+					case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+					{
+						const tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
+
+						if (deAbs( outputValue.x() - fReferenceValue) > acceptableError)
+							return tcu::TestStatus::fail("Failed");
+
+						break;
+					}
+					default:	DE_FATAL("Unexpected channel type");	break;
 				}
-				case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
-				{
-					const tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), 0);
-
-					if (deAbs( outputValue.x() - fReferenceValue) > acceptableError)
-						return tcu::TestStatus::fail("Failed");
-
-					break;
-				}
-				default:	DE_FATAL("Unexpected channel type");	break;
 			}
 		}
 	}
@@ -655,7 +742,7 @@ tcu::TestCaseGroup* populateStorageImageWriteFormatGroup (tcu::TestContext& test
 		const VkFormat					format				= (VkFormat)formatNdx;
 		tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(format);
 		std::string						formatName			= de::toLower(de::toString(format).substr(10));
-		de::MovePtr<tcu::TestCaseGroup> formatGroup			( new tcu::TestCaseGroup(testCtx, formatName.c_str(), "") );
+		de::MovePtr<tcu::TestCaseGroup> formatGroup			( new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 
 		for (size_t sizeNdx = 0; sizeNdx < availableSizes.size(); sizeNdx++)
 		{
@@ -669,10 +756,10 @@ tcu::TestCaseGroup* populateStorageImageWriteFormatGroup (tcu::TestContext& test
 
 			std::ostringstream stream;
 			stream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
-			de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, stream.str().c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, stream.str().c_str()));
 
-			addFunctionCaseWithPrograms(sizeGroup.get(), "joint", "", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, 0u));
-			addFunctionCaseWithPrograms(sizeGroup.get(), "disjoint", "", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT));
+			addFunctionCaseWithPrograms(sizeGroup.get(), "joint", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, 0u));
+			addFunctionCaseWithPrograms(sizeGroup.get(), "disjoint", checkSupport, initPrograms, testStorageImageWrite, TestParameters(format, imageSize, (VkImageCreateFlags)(VK_IMAGE_CREATE_DISJOINT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT)));
 
 			formatGroup->addChild(sizeGroup.release());
 		}
@@ -696,7 +783,7 @@ tcu::TestCaseGroup* populateStorageImageWriteFormatGroup (tcu::TestContext& test
 
 tcu::TestCaseGroup* createStorageImageWriteTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "storage_image_write", "Writing to YCbCr storage images"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "storage_image_write"));
 	return populateStorageImageWriteFormatGroup(testCtx, testGroup);
 }
 

@@ -751,7 +751,6 @@ class DiscardRectanglesTestCase : public TestCase
 public:
 								DiscardRectanglesTestCase	(tcu::TestContext &context,
 															 const char *name,
-															 const char *description,
 															 TestParams params);
 	virtual						~DiscardRectanglesTestCase	(void) {}
 
@@ -765,9 +764,8 @@ private:
 
 DiscardRectanglesTestCase::DiscardRectanglesTestCase	(tcu::TestContext &context,
 														 const char *name,
-														 const char *description,
 														 TestParams params)
-	: TestCase		(context, name, description)
+	: TestCase		(context, name)
 	, m_params		(params)
 {
 }
@@ -850,7 +848,7 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 
 					name << dynamicName[dynamic] << scissorName[scissor] << modeName[mode] << "rect_" << numRect[rect];
 
-					testGroup->addChild(new DiscardRectanglesTestCase(testCtx, name.str().c_str(), "", params));
+					testGroup->addChild(new DiscardRectanglesTestCase(testCtx, name.str().c_str(), params));
 				}
 			}
 		}
@@ -860,7 +858,7 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 
 tcu::TestCaseGroup* createDiscardRectanglesTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "discard_rectangles", "Discard Rectangles tests", createTests, groupParams);
+	return createTestGroup(testCtx, "discard_rectangles", createTests, groupParams);
 }
 
 }	// Draw

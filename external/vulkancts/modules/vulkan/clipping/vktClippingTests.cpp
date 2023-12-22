@@ -280,14 +280,14 @@ bool checkFragColors (const tcu::ConstPixelBufferAccess pixels, IVec2 clipRegion
 		if (x < clipRegion.x() && y < clipRegion.y())
 			continue;
 
-		const tcu::Vec4	color					= pixels.getPixel(x, y);
-		const int		barWidth				= pixels.getWidth() / 8;
-		const bool		insideBar				= x >= barWidth * barIdx && x < barWidth * (barIdx + 1);
-		const float		expectedClipDistance	= insideBar ? (((((float)y + 0.5f) / (float)pixels.getHeight()) - 0.5f) * 2.0f) : 0.0f;
-		float			expectedCullDistance	= 0.5f;
-		const float		clipDistance			= color.y();
-		const float		cullDistance			= color.z();
-		const float		height					= (float)pixels.getHeight();
+		const tcu::Vec4	color = pixels.getPixel(x, y);
+		const int		barWidth = pixels.getWidth() / 8;
+		const bool		insideBar = x >= barWidth * barIdx && x < barWidth* (barIdx + 1);
+		const float		expectedClipDistance = insideBar ? (((((float)y + 0.5f) / (float)pixels.getHeight()) - 0.5f) * 2.0f) : 0.0f;
+		float			expectedCullDistance = 0.5f;
+		const float		clipDistance = color.y();
+		const float		cullDistance = color.z();
+		const float		height = (float)pixels.getHeight();
 
 		if (hasCullDistance)
 		{
@@ -1092,10 +1092,17 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 			if (caseDef.numCullDistances > 0)
 			{
 				src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n";
-				if (caseDef.enableTessellation || caseDef.enableGeometry)
-					src	<< "        gl_CullDistance[i] = 0.1f;\n";
+				if (!caseDef.readInFragmentShader)
+				{
+					src << "		gl_CullDistance[i] = (gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+				}
 				else
-					src	<< "        gl_CullDistance[i] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+				{
+					if (caseDef.enableTessellation || caseDef.enableGeometry)
+						src << "        gl_CullDistance[i] = 0.1f;\n";
+					else
+						src << "        gl_CullDistance[i] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+				}
 			}
 		}
 		else
@@ -1105,10 +1112,17 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 
 			for (int i = 0; i < caseDef.numCullDistances; ++i)
 			{
-				if (caseDef.enableTessellation || caseDef.enableGeometry)
-					src	<< "    gl_CullDistance[" << i << "] = 0.1f;\n";
+				if (!caseDef.readInFragmentShader)
+				{
+					src << "    gl_CullDistance[" << i << "] = (gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+				}
 				else
-					src << "    gl_CullDistance[" << i << "] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+				{
+					if (caseDef.enableTessellation || caseDef.enableGeometry)
+						src << "    gl_CullDistance[" << i << "] = 0.1f;\n";
+					else
+						src << "    gl_CullDistance[" << i << "] = (gl_Position.y < 0) ? -0.5f : 0.5f;\n";
+				}
 			}
 		}
 		src	<< "}\n";
@@ -1152,12 +1166,19 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 			{
 				src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n";
 				src << "    {\n";
-				src	<< "        gl_out[gl_InvocationID].gl_CullDistance[i] = (gl_in[gl_InvocationID].gl_CullDistance[i] == 0.1f) ? ";
-				if (caseDef.enableGeometry)
-					src << "0.3f";
+				if (!caseDef.readInFragmentShader)
+				{
+					src << "    gl_out[gl_InvocationID].gl_CullDistance[i] = (gl_in[gl_InvocationID].gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+				}
 				else
-					src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
-				src << " : 0.2f;\n";
+				{
+					src << "        gl_out[gl_InvocationID].gl_CullDistance[i] = (gl_in[gl_InvocationID].gl_CullDistance[i] == 0.1f) ? ";
+					if (caseDef.enableGeometry)
+						src << "0.3f";
+					else
+						src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
+					src << " : 0.2f;\n";
+				}
 				src << "    }\n";
 			}
 		}
@@ -1167,12 +1188,19 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 				src << "    gl_out[gl_InvocationID].gl_ClipDistance[" << i << "] = gl_in[gl_InvocationID].gl_ClipDistance[" << i << "];\n";
 			for (int i = 0; i < caseDef.numCullDistances; ++i)
 			{
-				src	<< "    gl_out[gl_InvocationID].gl_CullDistance[" << i << "] = (gl_in[gl_InvocationID].gl_CullDistance[" << i << "] == 0.1f) ? ";
-				if (caseDef.enableGeometry)
-					src << "0.3f";
+				if (!caseDef.readInFragmentShader)
+				{
+					src << "    gl_out[gl_InvocationID].gl_CullDistance[" << i << "] = (gl_in[gl_InvocationID].gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+				}
 				else
-					src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
-				src << " : 0.2f;\n";
+				{
+					src << "    gl_out[gl_InvocationID].gl_CullDistance[" << i << "] = (gl_in[gl_InvocationID].gl_CullDistance[" << i << "] == 0.1f) ? ";
+					if (caseDef.enableGeometry)
+						src << "0.3f";
+					else
+						src << "((gl_in[gl_InvocationID].gl_Position.y < 0) ? -0.5f : 0.5f)";
+					src << " : 0.2f;\n";
+				}
 			}
 		}
 		src << "}\n";
@@ -1265,12 +1293,19 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 				{
 					src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n";
 					src << "    {\n";
-					src	<< "        gl_CullDistance[i] = (gl_in[" << vertNdx << "].gl_CullDistance[i] == ";
-					if (caseDef.enableTessellation)
-						src << "0.3f";
+					if (!caseDef.readInFragmentShader)
+					{
+						src << "    gl_CullDistance[i] = (gl_in[" << vertNdx << "].gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+					}
 					else
-						src << "0.1f";
-					src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					{
+						src << "        gl_CullDistance[i] = (gl_in[" << vertNdx << "].gl_CullDistance[i] == ";
+						if (caseDef.enableTessellation)
+							src << "0.3f";
+						else
+							src << "0.1f";
+						src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					}
 					src << "    }\n";
 				}
 			}
@@ -1281,12 +1316,19 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 
 				for (int i = 0; i < caseDef.numCullDistances; ++i)
 				{
-					src	<< "        gl_CullDistance[" << i << "] = (gl_in[" << vertNdx << "].gl_CullDistance[" << i << "] == ";
-					if (caseDef.enableTessellation)
-						src << "0.3f";
+					if (!caseDef.readInFragmentShader)
+					{
+						src << "    gl_CullDistance[" << i << "] = (gl_in[" << vertNdx << "].gl_Position.x >= 0.75f) ? -0.5f : 0.5f;\n";
+					}
 					else
-						src << "0.1f";
-					src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					{
+						src << "        gl_CullDistance[" << i << "] = (gl_in[" << vertNdx << "].gl_CullDistance[" << i << "] == ";
+						if (caseDef.enableTessellation)
+							src << "0.3f";
+						else
+							src << "0.1f";
+						src << ") ? ((gl_in[" << vertNdx << "].gl_Position.y < 0) ? -0.5f : 0.5f) : 0.4f;\n";
+					}
 				}
 			}
 			src << "    EmitVertex();\n";
@@ -1413,7 +1455,10 @@ tcu::TestStatus testClipDistance (Context& context, const CaseDefinition caseDef
 	// Count black pixels in the whole image.
 	const int	numBlackPixels			= countPixels(drawContext.getColorPixels(), Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
 	const IVec2	clipRegion				= IVec2(caseDef.numClipDistances * RENDER_SIZE / numBars, RENDER_SIZE / 2);
-	const int	expectedClippedPixels	= clipRegion.x() * clipRegion.y();
+	// Cull is set to > 0.75 in the shader if caseDef.readInFragmentShader is false
+	const int	barsCulled				= (int)deFloor((0.25f) / (1.0f / numBars));
+	const IVec2	cullRegion				= (caseDef.readInFragmentShader || caseDef.numCullDistances == 0) ? IVec2(0.0f, 0.0f) : IVec2(barsCulled, RENDER_SIZE);
+	const int	expectedClippedPixels	= clipRegion.x() * clipRegion.y() + cullRegion.x() * cullRegion.y();
 	// Make sure the bottom half has no black pixels (possible if image became corrupted).
 	const int	guardPixels				= countPixels(drawContext.getColorPixels(), IVec2(0, RENDER_SIZE/2), clipRegion, Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
 	const bool	fragColorsOk			= caseDef.readInFragmentShader ? checkFragColors(drawContext.getColorPixels(), clipRegion, caseDef.numClipDistances / 2, caseDef.numCullDistances > 0) : true;
@@ -1547,6 +1592,85 @@ tcu::TestStatus testComplementarity (Context& context, const int numClipDistance
 
 } // ClipDistanceComplementarity ns
 
+namespace CullDistance
+{
+	void checkSupport(Context& context)
+	{
+		const InstanceInterface&	vki			= context.getInstanceInterface();
+		const VkPhysicalDevice		physDevice	= context.getPhysicalDevice();
+
+		requireFeatures(vki, physDevice, FEATURE_SHADER_CULL_DISTANCE);
+	}
+
+	void initPrograms(SourceCollections& programCollection)
+	{
+		// setup triangle with three per-vertex cull distance values:
+		// v0: gl_CullDistance = {  0.0,  0.0, -1.0 };
+		// v1: gl_CullDistance = {  0.0, -1.0,  0.0 };
+		// v2: gl_CullDistance = { -1.0,  0.0,  0.0 };
+		// each vertex has a negative cull distance value but the triangle must not
+		// be culled because none of the three half-spaces is negative for all vertices
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(
+			"#version 450\n"
+			"layout(location = 0) in vec4 v_position;\n"
+			"out gl_PerVertex {\n"
+			"  vec4  gl_Position;\n"
+			"  float gl_CullDistance[3];\n"
+			"};\n"
+			"void main (void)\n"
+			"{\n"
+			"  gl_Position = v_position;\n"
+			"  gl_CullDistance[0] = 0.0 - float(gl_VertexIndex == 2);\n"
+			"  gl_CullDistance[1] = 0.0 - float(gl_VertexIndex == 1);\n"
+			"  gl_CullDistance[2] = 0.0 - float(gl_VertexIndex == 0);\n"
+			"}\n");
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(
+			"#version 450\n"
+			"layout(location = 0) out vec4 o_color;\n"
+			"void main (void)\n"
+			"{\n"
+			"  o_color = vec4(1.0, 0.0, 0.0, 1.0);\n"
+			"}\n");
+	}
+
+	tcu::TestStatus testCullDistance(Context& context)
+	{
+		std::vector<VulkanShader> shaders
+		{
+			VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,	context.getBinaryCollection().get("vert")),
+			VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag"))
+		};
+
+		std::vector<Vec4> vertices
+		{
+			{ -3.0f,  0.0f, 0.0f, 1.0f },
+			{  0.0f,  3.0f, 0.0f, 1.0f },
+			{  0.0f, -3.0f, 0.0f, 1.0f },
+		};
+
+		VulkanProgram		vulkanProgram		(shaders);
+		FrameBufferState	framebufferState	(RENDER_SIZE, RENDER_SIZE);
+		PipelineState		pipelineState		(context.getDeviceProperties().limits.subPixelPrecisionBits);
+		DrawCallData		drawCallData		(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, vertices);
+		VulkanDrawContext	drawContext			(context, framebufferState);
+
+		drawContext.registerDrawObject(pipelineState, vulkanProgram, drawCallData);
+		drawContext.draw();
+
+		const int numDrawnPixels = countPixels(drawContext.getColorPixels(), Vec4(1.0f, 0.0f, 0.0f, 1.0f), Vec4(0.02f, 0.02f, 0.02f, 0.0f));
+		const int numExpectedPixels = RENDER_SIZE * RENDER_SIZE / 2;
+
+		// triangle should be drawn and half of framebuffer should be filled with red color
+		if (numDrawnPixels == numExpectedPixels)
+			return tcu::TestStatus::pass("OK");
+
+		return tcu::TestStatus::fail("Triangle was not drawn");
+	}
+
+} // CullDistance
+
 void checkTopologySupport(Context& context, const VkPrimitiveTopology topology)
 {
 #ifndef CTS_USES_VULKANSC
@@ -1584,48 +1708,48 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
 		};
 
-		MovePtr<tcu::TestCaseGroup> clipVolumeGroup(new tcu::TestCaseGroup(testCtx, "clip_volume", "clipping with the clip volume"));
+		MovePtr<tcu::TestCaseGroup> clipVolumeGroup(new tcu::TestCaseGroup(testCtx, "clip_volume"));
 
 		// Fully inside the clip volume
 		{
-			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "inside", ""));
+			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "inside"));
 
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", checkTopologySupport, initPrograms, testPrimitivesInside, cases[caseNdx]);
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), checkTopologySupport, initPrograms, testPrimitivesInside, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}
 
 		// Fully outside the clip volume
 		{
-			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "outside", ""));
+			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "outside"));
 
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", checkTopologySupport, initPrograms, testPrimitivesOutside, cases[caseNdx]);
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), checkTopologySupport, initPrograms, testPrimitivesOutside, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}
 
 		// Depth clamping
 		{
-			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "depth_clamp", ""));
+			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "depth_clamp"));
 
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", checkTopologySupport, initPrograms, testPrimitivesDepthClamp, cases[caseNdx]);
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), checkTopologySupport, initPrograms, testPrimitivesDepthClamp, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}
 
 		// Depth clipping
 		{
-			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "depth_clip", ""));
+			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "depth_clip"));
 
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
-					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", checkTopologySupport, initPrograms, testPrimitivesDepthClip, cases[caseNdx]);
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), checkTopologySupport, initPrograms, testPrimitivesDepthClip, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}
@@ -1635,12 +1759,12 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 			// \note For both points and lines, if an unsupported size/width is selected, the nearest supported size will be chosen.
 			//       We do have to check for feature support though.
 
-			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "clipped", ""));
+			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "clipped"));
 
-			addFunctionCaseWithPrograms(group.get(), "large_points", "", initProgramsPointSize, testLargePoints);
+			addFunctionCaseWithPrograms(group.get(), "large_points", initProgramsPointSize, testLargePoints);
 
-			addFunctionCaseWithPrograms<LineOrientation>(group.get(), "wide_lines_axis_aligned", "", initPrograms, testWideLines, LINE_ORIENTATION_AXIS_ALIGNED);
-			addFunctionCaseWithPrograms<LineOrientation>(group.get(), "wide_lines_diagonal",	 "", initPrograms, testWideLines, LINE_ORIENTATION_DIAGONAL);
+			addFunctionCaseWithPrograms<LineOrientation>(group.get(), "wide_lines_axis_aligned", initPrograms, testWideLines, LINE_ORIENTATION_AXIS_ALIGNED);
+			addFunctionCaseWithPrograms<LineOrientation>(group.get(), "wide_lines_diagonal",	 initPrograms, testWideLines, LINE_ORIENTATION_DIAGONAL);
 
 			clipVolumeGroup->addChild(group.release());
 		}
@@ -1650,7 +1774,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 
 	// User-defined clip planes
 	{
-		MovePtr<tcu::TestCaseGroup> clipDistanceGroup(new tcu::TestCaseGroup(testCtx, "user_defined", "user-defined clip planes"));
+		MovePtr<tcu::TestCaseGroup> clipDistanceGroup(new tcu::TestCaseGroup(testCtx, "user_defined"));
 
 		// ClipDistance, CullDistance and maxCombinedClipAndCullDistances usage
 		{
@@ -1659,12 +1783,11 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 			static const struct
 			{
 				const char* const	groupName;
-				const char* const	description;
 				bool				useCullDistance;
 			} caseGroups[] =
 			{
-				{ "clip_distance",		"use ClipDistance",										false },
-				{ "clip_cull_distance",	"use ClipDistance and CullDistance at the same time",	true  },
+				{ "clip_distance",		false },
+				{ "clip_cull_distance",	true  },
 			};
 
 			static const struct
@@ -1687,7 +1810,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 				const bool			dynamicIndexing	= (indexingMode == 1);
 				const std::string	mainGroupName	= de::toString(caseGroups[groupNdx].groupName) + (dynamicIndexing ? "_dynamic_index" : "");
 
-				MovePtr<tcu::TestCaseGroup>	mainGroup(new tcu::TestCaseGroup(testCtx, mainGroupName.c_str(), ""));
+				MovePtr<tcu::TestCaseGroup>	mainGroup(new tcu::TestCaseGroup(testCtx, mainGroupName.c_str()));
 
 				for (deUint32 shaderMask = 0u; shaderMask <= (flagTessellation | flagGeometry); ++shaderMask)
 				{
@@ -1695,7 +1818,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 					const bool			useGeometry		= (shaderMask & flagGeometry) != 0;
 					const std::string	shaderGroupName	= std::string("vert") + (useTessellation ? "_tess" : "") + (useGeometry ? "_geom" : "");
 
-					MovePtr<tcu::TestCaseGroup>	shaderGroup(new tcu::TestCaseGroup(testCtx, shaderGroupName.c_str(), ""));
+					MovePtr<tcu::TestCaseGroup>	shaderGroup(new tcu::TestCaseGroup(testCtx, shaderGroupName.c_str()));
 
 					for (int numClipPlanes = 1; numClipPlanes <= MAX_CLIP_DISTANCES; ++numClipPlanes)
 					for (int fragmentShaderReadNdx = 0; fragmentShaderReadNdx < DE_LENGTH_OF_ARRAY(fragmentShaderReads); ++fragmentShaderReadNdx)
@@ -1707,7 +1830,7 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 						const VkPrimitiveTopology	topology		= (useTessellation ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
 						addFunctionCaseWithPrograms<CaseDefinition>(
-							shaderGroup.get(), caseName, caseGroups[groupNdx].description, initPrograms, testClipDistance,
+							shaderGroup.get(), caseName, initPrograms, testClipDistance,
 							CaseDefinition(topology, numClipPlanes, numCullPlanes, useTessellation, useGeometry, dynamicIndexing, fragmentShaderReads[fragmentShaderReadNdx].readInFragmentShader));
 					}
 					mainGroup->addChild(shaderGroup.release());
@@ -1715,28 +1838,37 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 				clipDistanceGroup->addChild(mainGroup.release());
 			}
 		}
+		clippingTestsGroup->addChild(clipDistanceGroup.release());
 
 		// Complementarity criterion (i.e. clipped and not clipped areas must add up to a complete primitive with no holes nor overlap)
 		{
 			using namespace ClipDistanceComplementarity;
 
-			MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "complementarity", ""));
+			MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "complementarity"));
 
 			for (int numClipDistances = 1; numClipDistances <= MAX_CLIP_DISTANCES; ++numClipDistances)
-				addFunctionCaseWithPrograms<int>(group.get(), de::toString(numClipDistances).c_str(), "", initPrograms, testComplementarity, numClipDistances);
+				addFunctionCaseWithPrograms<int>(group.get(), de::toString(numClipDistances).c_str(), initPrograms, testComplementarity, numClipDistances);
 
 			clippingTestsGroup->addChild(group.release());
 		}
 
-		clippingTestsGroup->addChild(clipDistanceGroup.release());
+		{
+			using namespace CullDistance;
+
+			MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "misc"));
+
+			addFunctionCaseWithPrograms(group.get(), "negative_and_non_negative_cull_distance", checkSupport, initPrograms, testCullDistance);
+
+			clippingTestsGroup->addChild(group.release());
+		}
 	}
 }
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "clipping", "Clipping tests", addClippingTests);
+	return createTestGroup(testCtx, name.c_str(), addClippingTests);
 }
 
 } // clipping

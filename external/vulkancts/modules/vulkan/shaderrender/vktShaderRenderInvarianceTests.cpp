@@ -99,7 +99,7 @@ static std::string formatGLSL(const char* templateString, const FormatArgumentLi
 class InvarianceTest : public vkt::TestCase
 {
 public:
-								InvarianceTest(tcu::TestContext& ctx, const char* name, const char* desc, const std::string& vertexShader1, const std::string& vertexShader2, const std::string& fragmentShader = "");
+								InvarianceTest(tcu::TestContext& ctx, const char* name, const std::string& vertexShader1, const std::string& vertexShader2, const std::string& fragmentShader = "");
 
 	void						initPrograms	(SourceCollections& sourceCollections) const override;
 	vkt::TestInstance*			createInstance	(vkt::Context& context) const override;
@@ -119,8 +119,8 @@ public:
 	const int			m_renderSize = 256;
 };
 
- InvarianceTest::InvarianceTest(tcu::TestContext& ctx, const char* name, const char* desc, const std::string& vertexShader1, const std::string& vertexShader2, const std::string& fragmentShader)
-	: vkt::TestCase(ctx, name, desc)
+ InvarianceTest::InvarianceTest(tcu::TestContext& ctx, const char* name, const std::string& vertexShader1, const std::string& vertexShader2, const std::string& fragmentShader)
+	: vkt::TestCase(ctx, name)
 	, m_vertexShader1(vertexShader1)
 	, m_vertexShader2(vertexShader2)
 	, m_fragmentShader(fragmentShader)
@@ -365,7 +365,7 @@ bool InvarianceTestInstance::checkImage(const tcu::ConstPixelBufferAccess& image
 
 tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> invarianceGroup(new tcu::TestCaseGroup(testCtx, "invariance", "Invariance tests"));
+	de::MovePtr<tcu::TestCaseGroup> invarianceGroup(new tcu::TestCaseGroup(testCtx, "invariance"));
 
 	static const struct PrecisionCase
 	{
@@ -416,12 +416,14 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 	{
 		const char* const			precisionName = precisions[precNdx].name;
 		const glu::Precision		precision = precisions[precNdx].prec;
-		tcu::TestCaseGroup* const	group = new tcu::TestCaseGroup(testCtx, precisionName, "Invariance tests using the given precision.");
+		// Invariance tests using the given precision.
+		tcu::TestCaseGroup* const	group = new tcu::TestCaseGroup(testCtx, precisionName);
 
 		const deUint32 VAR_GROUP_SIZE = 2u;
 		tcu::TestCaseGroup* varGroup[VAR_GROUP_SIZE];
-		varGroup[0] = new tcu::TestCaseGroup(testCtx, "gl_position", "Invariance tests using gl_Position variable");
-		varGroup[1] = new tcu::TestCaseGroup(testCtx, "user_defined", "Invariance tests using user defined variable");
+		// Invariance tests using gl_Position variable
+		varGroup[0] = new tcu::TestCaseGroup(testCtx, "gl_position");
+		varGroup[1] = new tcu::TestCaseGroup(testCtx, "user_defined");
 		FormatArgumentList	args[VAR_GROUP_SIZE];
 		for (deUint32 groupNdx = 0u; groupNdx < VAR_GROUP_SIZE; ++groupNdx)
 		{
@@ -454,7 +456,8 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 			// First shader shares "${HIGH_VALUE}*a_input.x*a_input.xxxx + ${HIGH_VALUE}*a_input.y*a_input.yyyy" with unrelated output variable. Reordering might result in accuracy loss
 			// due to the high exponent. In the second shader, the high exponent may be removed during compilation.
 
-			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "common_subexpression_0", "Shader shares a subexpression with an unrelated variable.",
+			// Shader shares a subexpression with an unrelated variable.
+			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "common_subexpression_0",
 				formatGLSL("${VERSION}"
 					"${IN} ${IN_PREC} vec4 a_input;\n"
 					"${OUT} mediump vec4 v_unrelated;\n"
@@ -480,7 +483,8 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 			// In the first shader, the unrelated variable "d" has mathematically the same expression as "e", but the different
 			// order of calculation might cause different results.
 
-			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "common_subexpression_1", "Shader shares a subexpression with an unrelated variable.",
+			// Shader shares a subexpression with an unrelated variable.
+			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "common_subexpression_1",
 				formatGLSL("${VERSION}"
 					"${IN} ${IN_PREC} vec4 a_input;\n"
 					"${OUT} mediump vec4 v_unrelated;\n"
@@ -513,7 +517,8 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 
 			// Intermediate values used by an unrelated output variable
 
-			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "common_subexpression_2", "Shader shares a subexpression with an unrelated variable.",
+			// Shader shares a subexpression with an unrelated variable.
+			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "common_subexpression_2",
 				formatGLSL("${VERSION}"
 					"${IN} ${IN_PREC} vec4 a_input;\n"
 					"${OUT} mediump vec4 v_unrelated;\n"
@@ -545,7 +550,8 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 
 			// Invariant value can be calculated using unrelated value
 
-			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "common_subexpression_3", "Shader shares a subexpression with an unrelated variable.",
+			// Shader shares a subexpression with an unrelated variable.
+			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "common_subexpression_3",
 				formatGLSL("${VERSION}"
 					"${IN} ${IN_PREC} vec4 a_input;\n"
 					"${OUT} mediump vec4 v_unrelated;\n"
@@ -591,7 +597,8 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 				const char* const		normalizationStrUsed = (minPrecision == glu::PRECISION_LOWP) ? ("vec4(fract(used2).xyz, 0.0)") : ("vec4(fract(used2 / 1.0e2).xyz - fract(used2 / 1.0e3).xyz, 0.0)");
 				const char* const		normalizationStrUnrelated = (minPrecision == glu::PRECISION_LOWP) ? ("vec4(fract(unrelated2).xyz, 0.0)") : ("vec4(fract(unrelated2 / 1.0e2).xyz - fract(unrelated2 / 1.0e3).xyz, 0.0)");
 
-				varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, ("subexpression_precision_" + std::string(unrelatedPrec)).c_str(), "Shader shares subexpression of different precision with an unrelated variable.",
+				// Shader shares subexpression of different precision with an unrelated variable.
+				varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, ("subexpression_precision_" + std::string(unrelatedPrec)).c_str(),
 					formatGLSL("${VERSION}"
 						"${IN} ${IN_PREC} vec4 a_input;\n"
 						"${OUT} ${UNRELATED_PREC} vec4 v_unrelated;\n"
@@ -653,7 +660,8 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 		// loops
 		for (deUint32 groupNdx = 0u; groupNdx < VAR_GROUP_SIZE; ++groupNdx)
 		{
-			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "loop_0", "Invariant value set using a loop",
+			// Invariant value set using a loop
+			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "loop_0",
 				formatGLSL("${VERSION}"
 					"${IN} ${IN_PREC} vec4 a_input;\n"
 					"${OUT} highp vec4 v_unrelated;\n"
@@ -700,7 +708,8 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 					"	fragColor = vec4(ucolor.u_color.r, ucolor.u_color.g, blue, ucolor.u_color.a);\n"
 					"}\n", args[groupNdx])));
 
-			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "loop_1", "Invariant value set using a loop",
+			// Invariant value set using a loop
+			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "loop_1",
 				formatGLSL("${VERSION}"
 					"${IN} ${IN_PREC} vec4 a_input;\n"
 					"${OUT} mediump vec4 v_unrelated;\n"
@@ -734,7 +743,8 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 					"}\n", args[groupNdx]),
 				formatGLSL(basicFragmentShader, args[groupNdx])));
 
-			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "loop_2", "Invariant value set using a loop",
+			// Invariant value set using a loop
+			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "loop_2",
 				formatGLSL("${VERSION}"
 					"${IN} ${IN_PREC} vec4 a_input;\n"
 					"${OUT} mediump vec4 v_unrelated;\n"
@@ -773,7 +783,8 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 					"}\n", args[groupNdx]),
 				formatGLSL(basicFragmentShader, args[groupNdx])));
 
-			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "loop_3", "Invariant value set using a loop",
+			// Invariant value set using a loop
+			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "loop_3",
 				formatGLSL("${VERSION}"
 					"${IN} ${IN_PREC} vec4 a_input;\n"
 					"${OUT} mediump vec4 v_unrelated;\n"
@@ -809,7 +820,8 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 					"}\n", args[groupNdx]),
 				formatGLSL(basicFragmentShader, args[groupNdx])));
 
-			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "loop_4", "Invariant value set using a loop",
+			// Invariant value set using a loop
+			varGroup[groupNdx]->addChild(new InvarianceTest(testCtx, "loop_4",
 				formatGLSL("${VERSION}"
 					"${IN} ${IN_PREC} vec4 a_input;\n"
 					"${OUT} mediump vec4 v_unrelated;\n"

@@ -40,14 +40,13 @@ include_directories(
 if (DE_OS_IS_UNIX)
 	if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
 		add_definitions(-D__BSD_VISIBLE)
-		add_definitions(-D_XOPEN_SOURCE=600)
 	endif ()
 	add_definitions(-D_GNU_SOURCE)
 
 	set(DETHREAD_LIBS ${DETHREAD_LIBS} pthread)
 endif ()
 
-if (DE_OS_IS_ANDROID OR DE_OS_IS_OSX OR DE_OS_IS_IOS OR DE_OS_IS_QNX OR DE_OS_IS_FUCHSIA)
+if (DE_OS_IS_UNIX OR DE_OS_IS_ANDROID OR DE_OS_IS_OSX OR DE_OS_IS_IOS OR DE_OS_IS_QNX OR DE_OS_IS_FUCHSIA)
 	add_definitions(-D_XOPEN_SOURCE=600)
 endif ()
 

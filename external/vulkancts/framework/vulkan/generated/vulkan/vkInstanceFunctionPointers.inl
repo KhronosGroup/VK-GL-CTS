@@ -84,6 +84,7 @@ GetPhysicalDeviceDisplayProperties2KHRFunc							getPhysicalDeviceDisplayPropert
 GetPhysicalDeviceDisplayPlaneProperties2KHRFunc						getPhysicalDeviceDisplayPlaneProperties2KHR;
 GetDisplayModeProperties2KHRFunc									getDisplayModeProperties2KHR;
 GetDisplayPlaneCapabilities2KHRFunc									getDisplayPlaneCapabilities2KHR;
+GetPhysicalDeviceCalibrateableTimeDomainsKHRFunc					getPhysicalDeviceCalibrateableTimeDomainsKHR;
 GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc					getPhysicalDeviceCalibrateableTimeDomainsEXT;
 CreateDebugUtilsMessengerEXTFunc									createDebugUtilsMessengerEXT;
 DestroyDebugUtilsMessengerEXTFunc									destroyDebugUtilsMessengerEXT;
@@ -99,6 +100,8 @@ GetPhysicalDeviceToolPropertiesEXTFunc								getPhysicalDeviceToolPropertiesEXT
 GetPhysicalDeviceFragmentShadingRatesKHRFunc						getPhysicalDeviceFragmentShadingRatesKHR;
 GetPhysicalDeviceVideoCapabilitiesKHRFunc							getPhysicalDeviceVideoCapabilitiesKHR;
 GetPhysicalDeviceVideoFormatPropertiesKHRFunc						getPhysicalDeviceVideoFormatPropertiesKHR;
+GetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHRFunc			getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR;
 AcquireDrmDisplayEXTFunc											acquireDrmDisplayEXT;
 GetDrmDisplayEXTFunc												getDrmDisplayEXT;
 GetPhysicalDeviceOpticalFlowImageFormatsNVFunc						getPhysicalDeviceOpticalFlowImageFormatsNV;
+GetPhysicalDeviceCooperativeMatrixPropertiesKHRFunc					getPhysicalDeviceCooperativeMatrixPropertiesKHR;

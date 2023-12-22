@@ -45,7 +45,7 @@ tcu::TestCaseGroup*	createNonRobustBufferAccessTests (tcu::TestContext& testCtx)
 		{ "unexecuted_oob_overflow",	"Test for correct handling of buffer access index overflow in unexecuted shader code paths" }
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str(), "Non-robust buffer access test group"}};
+	de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str()}};
 #ifndef CTS_USES_VULKANSC
 	for (const auto& test : nonRobustBufferAccessTests)
 	{

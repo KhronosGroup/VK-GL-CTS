@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +72,13 @@ static const VkFormat COLOR_FORMAT	=		VK_FORMAT_R8G8B8A8_UNORM;
 
 typedef SharedPtr<Unique<VkImageView> >	SharedPtrVkImageView;
 
+enum MultiAttachmentsTestType
+{
+	MULTI_ATTACHMENTS_NONE,
+	MULTI_ATTACHMENTS_DIFFERENT_SIZES,
+	MULTI_ATTACHMENTS_NOT_EXPORTED,
+};
+
 struct CaseDef
 {
 	PipelineConstructionType	pipelineConstructionType;
@@ -78,6 +87,7 @@ struct CaseDef
 	IVec3						attachmentSize;
 	deUint32					numLayers;
 	bool						multisample;
+	MultiAttachmentsTestType	multiAttachmentsTestType;
 };
 
 template<typename T>
@@ -116,11 +126,12 @@ VkImageType getImageType(const VkImageViewType viewType)
 }
 
 //! Make a render pass with one subpass per color attachment and one attachment per image layer.
-Move<VkRenderPass> makeRenderPass (const DeviceInterface& vk,
-								   const VkDevice		  device,
-								   const VkFormat		  colorFormat,
-								   const deUint32		  numLayers,
-								   const bool			  multisample)
+RenderPassWrapper makeRenderPass (const DeviceInterface&			vk,
+								  const VkDevice					device,
+								  const PipelineConstructionType	pipelineConstructionType,
+								  const VkFormat					colorFormat,
+								  const deUint32					numLayers,
+								  const bool						multisample)
 {
 	vector<VkAttachmentDescription>	attachmentDescriptions		(numLayers);
 	deUint32						attachmentIndex				= 0;
@@ -183,19 +194,19 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface& vk,
 		DE_NULL										// const VkSubpassDependency*		pDependencies;
 	};
 
-	return createRenderPass(vk, device, &renderPassInfo);
+	return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
 }
 
-void preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
-							const VkPipelineLayout		pipelineLayout,
-							const VkRenderPass			renderPass,
-							const VkShaderModule		vertexModule,
-							const VkShaderModule		fragmentModule,
-							const IVec3					renderSize,
-							const VkPrimitiveTopology	topology,
-							const deUint32				subpass,
-							const deUint32				numAttachments,
-							const bool					multisample)
+void preparePipelineWrapper(GraphicsPipelineWrapper&		gpw,
+							const PipelineLayoutWrapper&	pipelineLayout,
+							const VkRenderPass				renderPass,
+							const ShaderWrapper				vertexModule,
+							const ShaderWrapper				fragmentModule,
+							const IVec3						renderSize,
+							const VkPrimitiveTopology		topology,
+							const deUint32					subpass,
+							const deUint32					numAttachments,
+							const bool						multisample)
 {
 	const std::vector<VkViewport>				viewports							{ makeViewport(renderSize) };
 	const std::vector<VkRect2D>					scissors							{ makeRect2D(renderSize) };
@@ -246,7 +257,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
 	gpw.setDefaultTopology(topology)
 	   .setDefaultRasterizationState()
 	   .setDefaultDepthStencilState()
-	   .setupVertexInputStete()
+	   .setupVertexInputState()
 	   .setupPreRasterizationShaderState(viewports,
 										 scissors,
 										 pipelineLayout,
@@ -373,7 +384,9 @@ inline VkImageSubresourceRange makeColorSubresourceRange (const deUint32 baseArr
 // and multi-sample configurations.
 tcu::TestStatus test (Context& context, const CaseDef caseDef)
 {
+	const InstanceInterface&		vki					= context.getInstanceInterface();
 	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkPhysicalDevice			physicalDevice		= context.getPhysicalDevice();
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
@@ -399,15 +412,15 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	MovePtr<Allocation>				vertexBufferAlloc;
 
 	vector<SharedPtrVkImageView>	colorAttachments;
+	vector<VkImage>					images;
 	vector<VkImageView>				attachmentHandles;
 
-	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device));
+	const PipelineLayoutWrapper		pipelineLayout		(caseDef.pipelineConstructionType, vk, device);
 	vector<GraphicsPipelineWrapper>	pipeline;
-	const Unique<VkRenderPass>		renderPass			(makeRenderPass(vk, device, COLOR_FORMAT, caseDef.numLayers, caseDef.multisample));
-	Move<VkFramebuffer>				framebuffer;
+	RenderPassWrapper				renderPass			(makeRenderPass(vk, device, caseDef.pipelineConstructionType, COLOR_FORMAT, caseDef.numLayers, caseDef.multisample));
 
-	const Unique<VkShaderModule>	vertexModule		(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>	fragmentModule		(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
+	const ShaderWrapper				vertexModule		(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper				fragmentModule		(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag"), 0u));
 
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
@@ -451,15 +464,16 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	{
 		colorAttachments.push_back(makeSharedPtr(makeImageView(vk, device, ! caseDef.multisample ? *colorImage : *msColorImage,
 			imageViewType, COLOR_FORMAT, makeColorSubresourceRange(layerNdx, 1))));
+		images.push_back(!caseDef.multisample ? *colorImage : *msColorImage);
 		attachmentHandles.push_back(**colorAttachments.back());
 
-		pipeline.emplace_back(vk, device, caseDef.pipelineConstructionType);
-		preparePipelineWrapper(pipeline.back(), *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+		pipeline.emplace_back(vki, vk, physicalDevice, device, context.getDeviceExtensions(), caseDef.pipelineConstructionType);
+		preparePipelineWrapper(pipeline.back(), pipelineLayout, *renderPass, vertexModule, fragmentModule,
 							   caseDef.renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, layerNdx, 1u, caseDef.multisample);
 	}
 
 	// create framebuffer
-	framebuffer = makeFramebuffer(vk, device, *renderPass, caseDef.numLayers, &attachmentHandles[0],
+	renderPass.createFramebuffer(vk, device, caseDef.numLayers, &images[0], &attachmentHandles[0],
 		static_cast<deUint32>(caseDef.renderSize.x()), static_cast<deUint32>(caseDef.renderSize.y()));
 
 	// record command buffer
@@ -517,19 +531,19 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		{
 			const VkDeviceSize			vertexBufferOffset	= 0ull;
 
-			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()));
+			renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()));
 			{
 				vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 				for (deUint32 layerNdx = 0; layerNdx < caseDef.numLayers; ++layerNdx)
 				{
 					if (layerNdx != 0)
-						vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+						renderPass.nextSubpass(vk, *cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-					vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline[layerNdx].getPipeline());
+					pipeline[layerNdx].bind(*cmdBuffer);
 					vk.cmdDraw(*cmdBuffer, 4u, 1u, layerNdx*4u, 0u);
 				}
 			}
-			endRenderPass(vk, *cmdBuffer);
+			renderPass.end(vk, *cmdBuffer);
 		}
 
 		// If we are using a multi-sampled render target (msColorImage), resolve it now (to colorImage)
@@ -700,7 +714,7 @@ void initImagePrograms (SourceCollections& programCollection, const NoAttCaseDef
 }
 
 //! Make a render pass with no attachments
-Move<VkRenderPass> makeRenderPassNoAtt (const DeviceInterface& vk, const VkDevice device)
+RenderPassWrapper makeRenderPassNoAtt (const DeviceInterface& vk, const VkDevice device, const PipelineConstructionType pipelineConstructionType)
 {
 	// Create a single subpass with no attachment references
 	vector<VkSubpassDescription>	subpasses;
@@ -733,7 +747,7 @@ Move<VkRenderPass> makeRenderPassNoAtt (const DeviceInterface& vk, const VkDevic
 		DE_NULL										// const VkSubpassDependency*		pDependencies;
 	};
 
-	return createRenderPass(vk, device, &renderPassInfo);
+	return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
 }
 
 tcu::PixelBufferAccess getExpectedDataNoAtt (tcu::TextureLevel& textureLevel)
@@ -771,7 +785,9 @@ vector<tcu::Vec4> genPointVertices (void)
 // 4-sample multi-sampling
 tcu::TestStatus testNoAtt (Context& context, const NoAttCaseDef caseDef)
 {
+	const InstanceInterface&			vki						= context.getInstanceInterface();
 	const DeviceInterface&				vk						= context.getDeviceInterface();
+	const VkPhysicalDevice				physicalDevice			= context.getPhysicalDevice();
 	const VkDevice						device					= context.getDevice();
 	const VkQueue						queue					= context.getUniversalQueue();
 	const deUint32						queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
@@ -781,8 +797,8 @@ tcu::TestStatus testNoAtt (Context& context, const NoAttCaseDef caseDef)
 	Move<VkBuffer>						vertexBuffer;
 	MovePtr<Allocation>					vertexBufferAlloc;
 
-	const Unique<VkShaderModule>		vertexModule			(createShaderModule (vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>		fragmentModule			(createShaderModule (vk, device, context.getBinaryCollection().get("frag"), 0u));
+	const ShaderWrapper					vertexModule			(ShaderWrapper (vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper					fragmentModule			(ShaderWrapper (vk, device, context.getBinaryCollection().get("frag"), 0u));
 
 	// Create image where we will record the writes. For single-sampled cases this is a 4x1 image
 	// and for multi-sampled cases this is a 4x<num_samples> image.
@@ -818,10 +834,9 @@ tcu::TestStatus testNoAtt (Context& context, const NoAttCaseDef caseDef)
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo)
 		.update(vk, device);
 
-	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout (vk, device, *descriptorSetLayout));
-	GraphicsPipelineWrapper				pipeline				(vk, device, caseDef.pipelineConstructionType);
-	const Unique<VkRenderPass>			renderPass				(makeRenderPassNoAtt (vk, device));
-	Move<VkFramebuffer>					framebuffer;
+	const PipelineLayoutWrapper			pipelineLayout			(caseDef.pipelineConstructionType, vk, device, *descriptorSetLayout);
+	GraphicsPipelineWrapper				pipeline				(vki, vk, physicalDevice, device, context.getDeviceExtensions(), caseDef.pipelineConstructionType);
+	RenderPassWrapper					renderPass				= makeRenderPassNoAtt(vk, device, caseDef.pipelineConstructionType);
 
 	const Unique<VkCommandPool>			cmdPool					(createCommandPool (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer				(makeCommandBuffer (vk, device, *cmdPool));
@@ -838,9 +853,9 @@ tcu::TestStatus testNoAtt (Context& context, const NoAttCaseDef caseDef)
 	}
 
 	// Create pipeline
-	preparePipelineWrapper(pipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule,
+	preparePipelineWrapper(pipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule,
 						   renderSize, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0, 0u, caseDef.multisample);
-	framebuffer = makeFramebuffer(vk, device, *renderPass, 0, DE_NULL, renderSize.x(), renderSize.y());
+	renderPass.createFramebuffer(vk, device, 0, DE_NULL, renderSize.x(), renderSize.y());
 
 	// Record command buffer
 	beginCommandBuffer(vk, *cmdBuffer);
@@ -860,14 +875,14 @@ tcu::TestStatus testNoAtt (Context& context, const NoAttCaseDef caseDef)
 		{
 			const VkDeviceSize vertexBufferOffset = 0ull;
 
-			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()));
+			renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()));
 
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
+			pipeline.bind(*cmdBuffer);
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
-			endRenderPass(vk, *cmdBuffer);
+			renderPass.end(vk, *cmdBuffer);
 		}
 
 		// copy image to host visible colorBuffer
@@ -942,11 +957,12 @@ tcu::TestStatus testNoAtt (Context& context, const NoAttCaseDef caseDef)
 }
 
 //! Make a render pass with three color attachments
-Move<VkRenderPass> makeRenderPassDifferentAttachmentSizes	(const DeviceInterface&	vk,
-															 const VkDevice			device,
-															 const VkFormat			colorFormat,
-															 deUint32				numAttachments,
-															 const bool				multisample)
+RenderPassWrapper makeRenderPassMultiAttachments	(const DeviceInterface&			vk,
+													 const VkDevice					device,
+													 const PipelineConstructionType pipelineConstructionType,
+													 const VkFormat					colorFormat,
+													 deUint32						numAttachments,
+													 const bool						multisample)
 {
 	vector<VkAttachmentDescription>	attachmentDescriptions		(numAttachments);
 	vector<VkAttachmentReference>	colorAttachmentReferences	(numAttachments);
@@ -1002,18 +1018,22 @@ Move<VkRenderPass> makeRenderPassDifferentAttachmentSizes	(const DeviceInterface
 		DE_NULL										// const VkSubpassDependency*		pDependencies;
 	};
 
-	return createRenderPass(vk, device, &renderPassInfo);
+	return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
 }
 
 // Tests framebuffer with attachments of different sizes
-tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef caseDef)
+tcu::TestStatus testMultiAttachments (Context& context, const CaseDef caseDef)
 {
+	const InstanceInterface&		vki					= context.getInstanceInterface();
 	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkPhysicalDevice			physicalDevice		= context.getPhysicalDevice();
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&						allocator			= context.getDefaultAllocator();
 	const deUint32					numRenderTargets	= 3;
+	const deBool					differentSizeTest	= caseDef.multiAttachmentsTestType == MULTI_ATTACHMENTS_DIFFERENT_SIZES;
+	const deBool					notExportTest		= caseDef.multiAttachmentsTestType == MULTI_ATTACHMENTS_NOT_EXPORTED;
 
 	// Color images for rendering in single-sample tests or resolve targets for multi-sample tests
 	Move<VkImage>					colorImages[numRenderTargets];
@@ -1046,15 +1066,15 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 	MovePtr<Allocation>				vertexBufferAlloc;
 
 	vector<SharedPtrVkImageView>	colorAttachments;
+	vector<VkImage>					images;
 	vector<VkImageView>				attachmentHandles;
 
-	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device));
-	GraphicsPipelineWrapper			pipeline			(vk, device, caseDef.pipelineConstructionType);
-	const Unique<VkRenderPass>		renderPass			(makeRenderPassDifferentAttachmentSizes(vk, device, COLOR_FORMAT, numRenderTargets, caseDef.multisample));
-	Move<VkFramebuffer>				framebuffer;
+	const PipelineLayoutWrapper		pipelineLayout		(caseDef.pipelineConstructionType, vk, device);
+	GraphicsPipelineWrapper			pipeline			(vki, vk, physicalDevice, device, context.getDeviceExtensions(), caseDef.pipelineConstructionType);
+	RenderPassWrapper				renderPass			(makeRenderPassMultiAttachments(vk, device, caseDef.pipelineConstructionType, COLOR_FORMAT, numRenderTargets, caseDef.multisample));
 
-	const Unique<VkShaderModule>	vertexModule		(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>	fragmentModule		(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
+	const ShaderWrapper				vertexModule		(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper				fragmentModule		(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag"), 0u));
 
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
@@ -1067,10 +1087,12 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 	// create color buffers
 	for (deUint32 renderTargetIdx = 0; renderTargetIdx < numRenderTargets; renderTargetIdx++)
 	{
+		const IVec3 attachmentSize = differentSizeTest ? attachmentSizes[renderTargetIdx] : caseDef.attachmentSize;
+
 		// Host memory buffer where we will copy the rendered image for verification
-		const deUint32					att_size_x			= attachmentSizes[renderTargetIdx].x();
-		const deUint32					att_size_y			= attachmentSizes[renderTargetIdx].y();
-		const deUint32					att_size_z			= attachmentSizes[renderTargetIdx].z();
+		const deUint32					att_size_x			= attachmentSize.x();
+		const deUint32					att_size_y			= attachmentSize.y();
+		const deUint32					att_size_z			= attachmentSize.z();
 		const VkDeviceSize				colorBufferSize		= att_size_x * att_size_y * att_size_z * tcu::getPixelSize(mapVkFormat(COLOR_FORMAT));
 		colorBuffers[renderTargetIdx]						= makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		colorBufferAllocs[renderTargetIdx]					= bindBuffer(vk, device, allocator, *colorBuffers[renderTargetIdx], MemoryRequirement::HostVisible);
@@ -1091,16 +1113,18 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 	// create colorImages (and msColorImages) using the configured attachmentsize
 	for (deUint32 renderTargetIdx = 0; renderTargetIdx < numRenderTargets; renderTargetIdx++)
 	{
+		const IVec3 attachmentSize = differentSizeTest ? attachmentSizes[renderTargetIdx] : caseDef.attachmentSize;
+
 		const VkImageUsageFlags	colorImageUsage	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		colorImages[renderTargetIdx]			= makeImage(vk, device, VkImageViewCreateFlags(0), getImageType(caseDef.imageType), COLOR_FORMAT,
-			attachmentSizes[renderTargetIdx], 1, colorImageUsage, false);
+			attachmentSize, 1, colorImageUsage, false);
 		colorImageAllocs[renderTargetIdx]		= bindImage(vk, device, allocator, *colorImages[renderTargetIdx], MemoryRequirement::Any);
 
 		if (caseDef.multisample)
 		{
 			const VkImageUsageFlags	msImageUsage	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-			msColorImages[renderTargetIdx]			= makeImage(vk, device, VkImageViewCreateFlags(0), getImageType(caseDef.imageType), COLOR_FORMAT, attachmentSizes[renderTargetIdx], 1, msImageUsage, true);
+			msColorImages[renderTargetIdx]			= makeImage(vk, device, VkImageViewCreateFlags(0), getImageType(caseDef.imageType), COLOR_FORMAT, attachmentSize, 1, msImageUsage, true);
 			msColorImageAllocs[renderTargetIdx]		= bindImage(vk, device, allocator, *msColorImages[renderTargetIdx], MemoryRequirement::Any);
 		}
 	}
@@ -1109,13 +1133,14 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 	for (deUint32 renderTargetIdx = 0; renderTargetIdx < numRenderTargets; renderTargetIdx++)
 	{
 		colorAttachments.push_back(makeSharedPtr(makeImageView(vk, device, ! caseDef.multisample ? *colorImages[renderTargetIdx] : *msColorImages[renderTargetIdx], imageViewType, COLOR_FORMAT, range)));
+		images.push_back(! caseDef.multisample ? *colorImages[renderTargetIdx] : *msColorImages[renderTargetIdx]);
 		attachmentHandles.push_back(**colorAttachments.back());
 	}
 
-	preparePipelineWrapper(pipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, caseDef.renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, numRenderTargets, caseDef.multisample);
+	preparePipelineWrapper(pipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule, caseDef.renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, numRenderTargets, caseDef.multisample);
 
 	// create framebuffer
-	framebuffer = makeFramebuffer(vk, device, *renderPass, numRenderTargets, &attachmentHandles[0], static_cast<deUint32>(caseDef.renderSize.x()), static_cast<deUint32>(caseDef.renderSize.y()));
+	renderPass.createFramebuffer(vk, device, numRenderTargets, &images[0], &attachmentHandles[0], static_cast<deUint32>(caseDef.renderSize.x()), static_cast<deUint32>(caseDef.renderSize.y()));
 
 	// record command buffer
 	beginCommandBuffer(vk, *cmdBuffer);
@@ -1169,13 +1194,13 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 	{
 		const VkDeviceSize			vertexBufferOffset	= 0ull;
 
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()));
+		renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()));
 		{
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
+			pipeline.bind(*cmdBuffer);
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 		}
-		endRenderPass(vk, *cmdBuffer);
+		renderPass.end(vk, *cmdBuffer);
 	}
 
 	// If we are using a multi-sampled render target (msColorImage), resolve it now (to colorImage)
@@ -1183,6 +1208,8 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 	{
 		for (deUint32 renderTargetIdx = 0; renderTargetIdx < numRenderTargets; renderTargetIdx++)
 		{
+			const IVec3 attachmentSize = differentSizeTest ? attachmentSizes[renderTargetIdx] : caseDef.attachmentSize;
+
 			// Transition msColorImage (from layout COLOR_ATTACHMENT_OPTIMAL) and colorImage (from layout UNDEFINED) to layout GENERAL before resolving
 			const VkImageMemoryBarrier	imageBarriers[]	=
 			{
@@ -1221,7 +1248,7 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 				makeOffset3D(0, 0, 0),											// VkOffset3D                  srcOffset;
 				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1),	// VkImageSubresourceLayers    dstSubresource;
 				makeOffset3D(0, 0, 0),											// VkOffset3D                  dstOffset;
-				makeExtent3D(attachmentSizes[renderTargetIdx])					// VkExtent3D                  extent;
+				makeExtent3D(attachmentSize)									// VkExtent3D                  extent;
 			};
 
 			vk.cmdResolveImage(*cmdBuffer, *msColorImages[renderTargetIdx], VK_IMAGE_LAYOUT_GENERAL, *colorImages[renderTargetIdx], VK_IMAGE_LAYOUT_GENERAL, 1, &region);
@@ -1230,6 +1257,8 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 
 	for (deUint32 renderTargetIdx = 0; renderTargetIdx < numRenderTargets; renderTargetIdx++)
 	{
+		const IVec3 attachmentSize = differentSizeTest ? attachmentSizes[renderTargetIdx] : caseDef.attachmentSize;
+
 		// copy colorImage to host visible colorBuffer
 		const VkImageMemoryBarrier	imageBarrier		=
 		{
@@ -1255,7 +1284,7 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 			0u,																	// uint32_t                    bufferImageHeight;
 			makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),	// VkImageSubresourceLayers    imageSubresource;
 			makeOffset3D(0, 0, 0),												// VkOffset3D                  imageOffset;
-			makeExtent3D(attachmentSizes[renderTargetIdx]),						// VkExtent3D                  imageExtent;
+			makeExtent3D(attachmentSize),										// VkExtent3D                  imageExtent;
 		};
 
 		vk.cmdCopyImageToBuffer(*cmdBuffer, *colorImages[renderTargetIdx], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorBuffers[renderTargetIdx], 1u, &region);
@@ -1281,19 +1310,24 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	// Verify results
+	const deUint32						skippedRenderTarget	= notExportTest ? 1 : numRenderTargets;
+	const tcu::Vec4						expectedColors[]	=
+	{
+		tcu::Vec4(1.0f, 0.5f, 0.25f, 1.0f),
+		tcu::Vec4(0.5f, 1.0f, 0.25f, 1.0f),
+		tcu::Vec4(0.25f, 0.5f, 1.0, 1.0f)
+	};
+
 	for (deUint32 renderTargetIdx = 0; renderTargetIdx < numRenderTargets; renderTargetIdx++)
 	{
 		const tcu::TextureFormat			format				= mapVkFormat(COLOR_FORMAT);
-		const IVec3							size				= attachmentSizes[renderTargetIdx];
+		const IVec3							size				= differentSizeTest ? attachmentSizes[renderTargetIdx] : caseDef.attachmentSize;
 		tcu::TextureLevel					textureLevel		(format, size.x(), size.y(), size.z());
 		const tcu::PixelBufferAccess		expectedImage		(textureLevel);
 
-		const tcu::Vec4						expectedColors[]	=
-		{
-			tcu::Vec4(1.0f, 0.5f, 0.25f, 1.0f),
-			tcu::Vec4(0.5f, 1.0f, 0.25f, 1.0f),
-			tcu::Vec4(0.25f, 0.5f, 1.0, 1.0f)
-		};
+		// Doesn't need to check the output of unused MRT, that may be undefined.
+		if (notExportTest && (renderTargetIdx==skippedRenderTarget))
+			continue;
 
 		invalidateAlloc(vk, device, *colorBufferAllocs[renderTargetIdx]);
 
@@ -1360,9 +1394,10 @@ void initInputResolveSameAttachmentPrograms (SourceCollections& programCollectio
 	}
 }
 
-Move<VkRenderPass> makeRenderPassInputResolveSameAttachment	(const DeviceInterface&	vk,
-															 const VkDevice			device,
-															 const VkFormat			colorFormat)
+RenderPassWrapper makeRenderPassInputResolveSameAttachment	(const DeviceInterface&			vk,
+															 const VkDevice					device,
+															 const PipelineConstructionType pipelineConstructionType,
+															 const VkFormat					colorFormat)
 {
 	std::vector<VkAttachmentDescription> attachmentDescriptions;
 	VkAttachmentDescription colorAttachmentDescription =
@@ -1434,12 +1469,14 @@ Move<VkRenderPass> makeRenderPassInputResolveSameAttachment	(const DeviceInterfa
 		DE_NULL										// const VkSubpassDependency*		pDependencies;
 	};
 
-	return createRenderPass(vk, device, &renderPassInfo);
+	return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
 }
 
 tcu::TestStatus testInputResolveSameAttachment(Context &context, const CaseDef caseDef)
 {
+	const InstanceInterface&		vki					= context.getInstanceInterface();
 	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkPhysicalDevice			physicalDevice		= context.getPhysicalDevice();
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
@@ -1456,6 +1493,7 @@ tcu::TestStatus testInputResolveSameAttachment(Context &context, const CaseDef c
 	MovePtr<Allocation>				vertexBufferAlloc;
 
 	vector<SharedPtrVkImageView>	colorAttachments;
+	vector<VkImage>					images;
 	vector<VkImageView>				attachmentHandles;
 
 	// Create pipeline descriptor set for the image
@@ -1469,13 +1507,12 @@ tcu::TestStatus testInputResolveSameAttachment(Context &context, const CaseDef c
 
 	const Move<VkDescriptorSet>			descriptorSet			= makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 
-	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout (vk, device, *descriptorSetLayout));
-	GraphicsPipelineWrapper				pipeline				(vk, device, caseDef.pipelineConstructionType);
-	const Unique<VkRenderPass>			renderPass				(makeRenderPassInputResolveSameAttachment(vk, device, COLOR_FORMAT));
-	Move<VkFramebuffer>					framebuffer;
+	const PipelineLayoutWrapper			pipelineLayout			(caseDef.pipelineConstructionType, vk, device, *descriptorSetLayout);
+	GraphicsPipelineWrapper				pipeline				(vki, vk, physicalDevice, device, context.getDeviceExtensions(), caseDef.pipelineConstructionType);
+	RenderPassWrapper					renderPass				(makeRenderPassInputResolveSameAttachment(vk, device, caseDef.pipelineConstructionType, COLOR_FORMAT));
 
-	const Unique<VkShaderModule>		vertexModule			(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>		fragmentModule			(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
+	const ShaderWrapper					vertexModule			(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const ShaderWrapper					fragmentModule			(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag"), 0u));
 
 	const Unique<VkCommandPool>			cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer				(makeCommandBuffer(vk, device, *cmdPool));
@@ -1514,9 +1551,11 @@ tcu::TestStatus testInputResolveSameAttachment(Context &context, const CaseDef c
 
 	// create attachmentHandles. We use the renderSize for viewport and scissor
 	colorAttachments.push_back(makeSharedPtr(makeImageView(vk, device, *msColorImage, imageViewType, COLOR_FORMAT, range)));
+	images.push_back(*msColorImage);
 	attachmentHandles.push_back(**colorAttachments.back());
 
 	colorAttachments.push_back(makeSharedPtr(makeImageView(vk, device, *colorImage, imageViewType, COLOR_FORMAT, range)));
+	images.push_back(*colorImage);
 	attachmentHandles.push_back(**colorAttachments.back());
 
 	const VkDescriptorImageInfo			descriptorImageInfo		= makeDescriptorImageInfo(DE_NULL, attachmentHandles[1], VK_IMAGE_LAYOUT_GENERAL);
@@ -1524,10 +1563,10 @@ tcu::TestStatus testInputResolveSameAttachment(Context &context, const CaseDef c
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &descriptorImageInfo)
 		.update(vk, device);
 
-	preparePipelineWrapper(pipeline, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, caseDef.renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 1u, true);
+	preparePipelineWrapper(pipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule, caseDef.renderSize, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 1u, true);
 
 	// create framebuffer
-	framebuffer = makeFramebuffer(vk, device, *renderPass, 2u, &attachmentHandles[0], static_cast<deUint32>(caseDef.renderSize.x()), static_cast<deUint32>(caseDef.renderSize.y()));
+	renderPass.createFramebuffer(vk, device, 2u, &images[0], &attachmentHandles[0], static_cast<deUint32>(caseDef.renderSize.x()), static_cast<deUint32>(caseDef.renderSize.y()));
 
 	// record command buffer
 	beginCommandBuffer(vk, *cmdBuffer);
@@ -1605,14 +1644,14 @@ tcu::TestStatus testInputResolveSameAttachment(Context &context, const CaseDef c
 	{
 		const VkDeviceSize			vertexBufferOffset	= 0ull;
 
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()));
+		renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()));
 		{
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipeline());
+			pipeline.bind(*cmdBuffer);
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 		}
-		endRenderPass(vk, *cmdBuffer);
+		renderPass.end(vk, *cmdBuffer);
 	}
 
 	// copy colorImage to host visible colorBuffer
@@ -1694,7 +1733,7 @@ tcu::TestStatus testInputResolveSameAttachment(Context &context, const CaseDef c
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testUnusedAtt (Context& context)
+tcu::TestStatus testUnusedAtt (Context& context, PipelineConstructionType pipelineConstructionType)
 {
 	const DeviceInterface&			vk						= context.getDeviceInterface();
 	const VkDevice					device					= context.getDevice();
@@ -1734,7 +1773,7 @@ tcu::TestStatus testUnusedAtt (Context& context)
 		DE_NULL
 	};
 
-	const Move<VkRenderPass>		renderPass				= createRenderPass(vk, device, &renderPassCreateInfo, DE_NULL);
+	RenderPassWrapper				renderPass				(pipelineConstructionType, vk, device, &renderPassCreateInfo);
 
 	const VkFramebufferCreateInfo	framebufferCreateInfo	=
 	{
@@ -1749,11 +1788,11 @@ tcu::TestStatus testUnusedAtt (Context& context)
 		1
 	};
 
-	const Move<VkFramebuffer>		framebuffer				= createFramebuffer(vk, device, &framebufferCreateInfo, DE_NULL);
+	renderPass.createFramebuffer(vk, device, &framebufferCreateInfo, VK_NULL_HANDLE);
 
 	beginCommandBuffer(vk, *cmdBuffer);
-	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, 32u, 32u));
-	endRenderPass(vk, *cmdBuffer);
+	renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, 32u, 32u));
+	renderPass.end(vk, *cmdBuffer);
 	endCommandBuffer(vk, *cmdBuffer);
 
 	return tcu::TestStatus::pass("Pass");
@@ -1802,6 +1841,48 @@ void initDifferentAttachmentSizesPrograms (SourceCollections& programCollection,
 	}
 }
 
+void initMultiAttachmentsNotExportPrograms (SourceCollections& programCollection, const CaseDef caseDef)
+{
+	DE_UNREF(caseDef);
+
+	// Vertex shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in vec4 in_position;\n"
+			<< "\n"
+			<< "out gl_PerVertex {\n"
+			<< "	vec4 gl_Position;\n"
+			<< "};\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "	gl_Position	= in_position;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+	}
+
+	// Fragment shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) out vec4 o_color0;\n"
+			<< "layout(location = 1) out vec4 o_color1;\n"
+			<< "layout(location = 2) out vec4 o_color2;\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    o_color0 = vec4(1.0,  0.5, 0.25, 1.0);\n"
+			<< "    o_color2 = vec4(0.25, 0.5, 1.0,  1.0);\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+	}
+}
+
 std::string getShortImageViewTypeName (const VkImageViewType imageViewType)
 {
 	std::string	s	(getImageViewTypeName(imageViewType));
@@ -1839,14 +1920,19 @@ std::string getTestCaseString (const CaseDef& caseDef)
 	return str.str();
 }
 
+void checkConstructionTypeSupport (Context& context, PipelineConstructionType pipelineConstructionType)
+{
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), pipelineConstructionType);
+}
+
 void checkSupport (Context& context, const CaseDef caseDef)
 {
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
+	checkConstructionTypeSupport(context, caseDef.pipelineConstructionType);
 }
 
 void checkSupportNoAtt (Context& context, const NoAttCaseDef caseDef)
 {
-	const VkPhysicalDeviceFeatures features = context.getDeviceFeatures();
+	const auto& features = context.getDeviceFeatures();
 
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
 
@@ -1856,7 +1942,7 @@ void checkSupportNoAtt (Context& context, const NoAttCaseDef caseDef)
 	if (caseDef.multisample)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING); // MS shader uses gl_SampleID
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
+	checkConstructionTypeSupport(context, caseDef.pipelineConstructionType);
 }
 
 void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
@@ -1865,94 +1951,111 @@ void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineCon
 	const CaseDef	caseDef[]	=
 	{
 		// Single-sample test cases
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,			IVec3(32, 1, 1),	IVec3(64, 1, 1),	1,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,			IVec3(32, 1, 1),	IVec3(48, 1, 1),	1,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,			IVec3(32, 1, 1),	IVec3(39, 1, 1),	1,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,			IVec3(19, 1, 1),	IVec3(32, 1, 1),	1,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,			IVec3(32, 1, 1),	IVec3(64, 1, 1),	1,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,			IVec3(32, 1, 1),	IVec3(48, 1, 1),	1,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,			IVec3(32, 1, 1),	IVec3(39, 1, 1),	1,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,			IVec3(19, 1, 1),	IVec3(32, 1, 1),	1,		false,	MULTI_ATTACHMENTS_NONE },
 
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D_ARRAY,	IVec3(32, 1, 1),	IVec3(64, 1, 1),	4,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D_ARRAY,	IVec3(32, 1, 1),	IVec3(48, 1, 1),	4,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D_ARRAY,	IVec3(32, 1, 1),	IVec3(39, 1, 1),	4,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D_ARRAY,	IVec3(19, 1, 1),	IVec3(32, 1, 1),	4,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D_ARRAY,	IVec3(32, 1, 1),	IVec3(64, 1, 1),	4,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D_ARRAY,	IVec3(32, 1, 1),	IVec3(48, 1, 1),	4,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D_ARRAY,	IVec3(32, 1, 1),	IVec3(39, 1, 1),	4,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D_ARRAY,	IVec3(19, 1, 1),	IVec3(32, 1, 1),	4,		false,	MULTI_ATTACHMENTS_NONE },
 
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,		false,	MULTI_ATTACHMENTS_NONE },
 
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	4,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	4,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	4,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	4,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	4,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	4,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	4,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	4,		false,	MULTI_ATTACHMENTS_NONE },
 
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE,		IVec3(32, 32, 1),	IVec3(64, 64, 1),	6,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE,		IVec3(32, 32, 1),	IVec3(48, 48, 1),	6,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE,		IVec3(32, 32, 1),	IVec3(39, 41, 1),	6,		false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE,		IVec3(19, 27, 1),	IVec3(32, 32, 1),	6,		false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE,		IVec3(32, 32, 1),	IVec3(64, 64, 1),	6,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE,		IVec3(32, 32, 1),	IVec3(48, 48, 1),	6,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE,		IVec3(32, 32, 1),	IVec3(39, 41, 1),	6,		false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE,		IVec3(19, 27, 1),	IVec3(32, 32, 1),	6,		false,	MULTI_ATTACHMENTS_NONE },
 
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	6*2,	false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	6*2,	false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	6*2,	false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	6*2,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	6*2,	false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	6*2,	false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	6*2,	false,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	6*2,	false,	MULTI_ATTACHMENTS_NONE },
 
 		// Multi-sample test cases
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,		true },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,		true },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,		true },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,		true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,		true,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,		true,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,		true,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,			IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,		true,	MULTI_ATTACHMENTS_NONE },
 
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	4,		true },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	4,		true },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	4,		true },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	4,		true },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	4,		true,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	4,		true,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	4,		true,	MULTI_ATTACHMENTS_NONE },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D_ARRAY,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	4,		true,	MULTI_ATTACHMENTS_NONE },
 	};
 
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(caseDef); ++sizeNdx)
-		addFunctionCaseWithPrograms(group, getTestCaseString(caseDef[sizeNdx]).c_str(), "", checkSupport, initColorPrograms, test, caseDef[sizeNdx]);
+		addFunctionCaseWithPrograms(group, getTestCaseString(caseDef[sizeNdx]).c_str(), checkSupport, initColorPrograms, test, caseDef[sizeNdx]);
 
 	// Add tests for the case where there are no color attachments but the
 	// fragment shader writes to an image via imageStore().
 	NoAttCaseDef noAttCaseDef { pipelineConstructionType, false };
-	addFunctionCaseWithPrograms(group, "no_attachments",    "", checkSupportNoAtt, initImagePrograms, testNoAtt, noAttCaseDef);
+	addFunctionCaseWithPrograms(group, "no_attachments",    checkSupportNoAtt, initImagePrograms, testNoAtt, noAttCaseDef);
 	noAttCaseDef.multisample = true;
-	addFunctionCaseWithPrograms(group, "no_attachments_ms", "", checkSupportNoAtt, initImagePrograms, testNoAtt, noAttCaseDef);
+	addFunctionCaseWithPrograms(group, "no_attachments_ms", checkSupportNoAtt, initImagePrograms, testNoAtt, noAttCaseDef);
 
 	// Test render pass with attachment set as unused.
-	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-		addFunctionCase(group, "unused_attachment", "", testUnusedAtt);
+	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC || pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+		addFunctionCase(group, "unused_attachment", checkConstructionTypeSupport, testUnusedAtt, pipelineConstructionType);
 
+	// Tests with multiple attachments that have different sizes.
 	const CaseDef	differentAttachmentSizesCaseDef[]	=
 	{
 		// Single-sample test cases
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,	IVec3(32, 1, 1),	IVec3(64, 1, 1),	1,	false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,	IVec3(32, 1, 1),	IVec3(48, 1, 1),	1,	false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,	IVec3(32, 1, 1),	IVec3(39, 1, 1),	1,	false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,	IVec3(19, 1, 1),	IVec3(32, 1, 1),	1,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,	IVec3(32, 1, 1),	IVec3(64, 1, 1),	1,	false,	MULTI_ATTACHMENTS_DIFFERENT_SIZES },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,	IVec3(32, 1, 1),	IVec3(48, 1, 1),	1,	false,	MULTI_ATTACHMENTS_DIFFERENT_SIZES },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,	IVec3(32, 1, 1),	IVec3(39, 1, 1),	1,	false,	MULTI_ATTACHMENTS_DIFFERENT_SIZES },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_1D,	IVec3(19, 1, 1),	IVec3(32, 1, 1),	1,	false,	MULTI_ATTACHMENTS_DIFFERENT_SIZES },
 
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,	false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,	false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,	false },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,	false },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,	false,	MULTI_ATTACHMENTS_DIFFERENT_SIZES },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,	false,	MULTI_ATTACHMENTS_DIFFERENT_SIZES },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,	false,	MULTI_ATTACHMENTS_DIFFERENT_SIZES },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,	false,	MULTI_ATTACHMENTS_DIFFERENT_SIZES },
 
 		// Multi-sample test cases
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,	true },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,	true },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,	true },
-		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,	true }
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(64, 64, 1),	1,	true,	MULTI_ATTACHMENTS_DIFFERENT_SIZES },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(48, 48, 1),	1,	true,	MULTI_ATTACHMENTS_DIFFERENT_SIZES },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(32, 32, 1),	IVec3(39, 41, 1),	1,	true,	MULTI_ATTACHMENTS_DIFFERENT_SIZES },
+		{ pipelineConstructionType,		VK_IMAGE_VIEW_TYPE_2D,	IVec3(19, 27, 1),	IVec3(32, 32, 1),	1,	true,	MULTI_ATTACHMENTS_DIFFERENT_SIZES }
 	};
 
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(differentAttachmentSizesCaseDef); ++sizeNdx)
-		addFunctionCaseWithPrograms(group, (std::string("diff_attachments_") + getTestCaseString(differentAttachmentSizesCaseDef[sizeNdx])).c_str(), "", checkSupport, initDifferentAttachmentSizesPrograms, testDifferentAttachmentSizes, differentAttachmentSizesCaseDef[sizeNdx]);
+		addFunctionCaseWithPrograms(group, (std::string("diff_attachments_") + getTestCaseString(differentAttachmentSizesCaseDef[sizeNdx])).c_str(), checkSupport, initDifferentAttachmentSizesPrograms, testMultiAttachments, differentAttachmentSizesCaseDef[sizeNdx]);
 
-	const CaseDef resolveInputSameAttachmentCaseDef = { pipelineConstructionType,	VK_IMAGE_VIEW_TYPE_2D,	IVec3(64, 64, 1),	IVec3(64, 64, 1),	1,	true };
-	addFunctionCaseWithPrograms(group, "resolve_input_same_attachment" , "", checkSupport, initInputResolveSameAttachmentPrograms, testInputResolveSameAttachment, resolveInputSameAttachmentCaseDef);
+	// Tests with same attachment for input and resolving.
+	const CaseDef resolveInputSameAttachmentCaseDef = { pipelineConstructionType,	VK_IMAGE_VIEW_TYPE_2D,	IVec3(64, 64, 1),	IVec3(64, 64, 1),	1,	true,	MULTI_ATTACHMENTS_NONE };
+	// Input attachments are not supported with dynamic rendering
+	if (!vk::isConstructionTypeShaderObject(pipelineConstructionType))
+	{
+		addFunctionCaseWithPrograms(group, "resolve_input_same_attachment", checkSupport, initInputResolveSameAttachmentPrograms, testInputResolveSameAttachment, resolveInputSameAttachmentCaseDef);
+	}
+
+	// Tests with multiple attachments, which some of them are not used in FS.
+	const CaseDef AttachmentCaseDef[] = {
+		// Single-sample test case
+		{ pipelineConstructionType,	VK_IMAGE_VIEW_TYPE_2D,	IVec3(64, 64, 1),	IVec3(64, 64, 1),	1,	false,	MULTI_ATTACHMENTS_NOT_EXPORTED },
+		// Multi-sample test case
+		{ pipelineConstructionType,	VK_IMAGE_VIEW_TYPE_2D,	IVec3(64, 64, 1),	IVec3(64, 64, 1),	1,	true,	MULTI_ATTACHMENTS_NOT_EXPORTED }
+	};
+
+	for (int Ndx = 0; Ndx < DE_LENGTH_OF_ARRAY(AttachmentCaseDef); ++Ndx)
+		addFunctionCaseWithPrograms(group, (std::string("multi_attachments_not_exported_") + getTestCaseString(AttachmentCaseDef[Ndx])).c_str(), checkSupport, initMultiAttachmentsNotExportPrograms, testMultiAttachments, AttachmentCaseDef[Ndx]);
 }
 
 } // anonymous ns
 
 tcu::TestCaseGroup* createFramebufferAttachmentTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "framebuffer_attachment", "Framebuffer attachment tests", addAttachmentTestCasesWithFunctions, pipelineConstructionType);
+	return createTestGroup(testCtx, "framebuffer_attachment", addAttachmentTestCasesWithFunctions, pipelineConstructionType);
 }
 
 } // pipeline

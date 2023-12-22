@@ -28,6 +28,8 @@
 #include "vkSafetyCriticalUtil.hpp"
 #endif // CTS_USES_VULKANSC
 
+#include "deMemory.h"
+
 namespace vk
 {
 
@@ -144,8 +146,11 @@ VkResult InstanceDriverSC::createDevice (VkPhysicalDevice						physicalDevice,
 
 DeviceDriver::DeviceDriver (const PlatformInterface&	platformInterface,
 							VkInstance					instance,
-							VkDevice					device)
+							VkDevice					device,
+							uint32_t					usedApiVersion)
 {
+	deMemset(&m_vk, 0, sizeof(m_vk));
+
 	m_vk.getDeviceProcAddr = (GetDeviceProcAddrFunc)platformInterface.getInstanceProcAddr(instance, "vkGetDeviceProcAddr");
 
 #define GET_PROC_ADDR(NAME) m_vk.getDeviceProcAddr(device, NAME)
@@ -180,8 +185,9 @@ DeviceDriverSC::DeviceDriverSC (const PlatformInterface&					platformInterface,
 								const tcu::CommandLine&						cmdLine,
 								de::SharedPtr<vk::ResourceInterface>		resourceInterface,
 								const VkPhysicalDeviceVulkanSC10Properties&	physicalDeviceVulkanSC10Properties,
-								const VkPhysicalDeviceProperties&			physicalDeviceProperties)
-	: DeviceDriver(platformInterface, instance, device)
+								const VkPhysicalDeviceProperties&			physicalDeviceProperties,
+								const uint32_t								usedApiVersion)
+	: DeviceDriver(platformInterface, instance, device, usedApiVersion)
 	, m_normalMode(cmdLine.isSubProcess())
 	, m_resourceInterface(resourceInterface)
 	, m_physicalDeviceVulkanSC10Properties(physicalDeviceVulkanSC10Properties)
@@ -819,6 +825,13 @@ void DeviceDriverSC::checkFramebufferSupport (const VkFramebufferCreateInfo*		pC
 		{
 			const std::string	msg = "Requested framebuffer attachment count (" + de::toString(pCreateInfo->attachmentCount)
 				+ ") is greater than VulkanSC limits allow (" + de::toString(m_physicalDeviceVulkanSC10Properties.maxFramebufferAttachments) + ")";
+
+			TCU_THROW(NotSupportedError, msg);
+		}
+		else if (pCreateInfo->layers > m_physicalDeviceProperties.limits.maxFramebufferLayers)
+		{
+			const std::string	msg = "Requested framebuffer layers (" + de::toString(pCreateInfo->layers)
+				+ ") is greater than VulkanSC limits allow (" + de::toString(m_physicalDeviceProperties.limits.maxFramebufferLayers) + ")";
 
 			TCU_THROW(NotSupportedError, msg);
 		}

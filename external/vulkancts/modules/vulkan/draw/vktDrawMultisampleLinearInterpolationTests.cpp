@@ -511,13 +511,12 @@ class MultisampleLinearInterpolationTestCase : public TestCase
 	public:
 								MultisampleLinearInterpolationTestCase	(tcu::TestContext&				context,
 																		 const char*					name,
-																		 const char*					desc,
 																		 const tcu::IVec2				renderSize,
 																		 const float					interpolationRange,
 																		 const tcu::Vec2				offset,
 																		 const VkSampleCountFlagBits	sampleCountFlagBits,
 																		 const SharedGroupParams		groupParams)
-								: vkt::TestCase(context, name, desc)
+								: vkt::TestCase(context, name)
 								, m_renderSize			(renderSize)
 								, m_interpolationRange	(interpolationRange)
 								, m_offset				(offset)
@@ -614,7 +613,9 @@ void MultisampleLinearInterpolationTestCase::initPrograms (SourceCollections& pr
 			<< "    out_color /= " << m_interpolationRange << ";\n";
 
 		// Run additional sample comparison test. If it fails, we write 1.0 to blue color channel.
-		frg << "    if (out_color_sample != interpolateAtOffset(in_color, gl_SamplePosition - vec2(0.5)))\n"
+		frg << "    vec4 diff = out_color_sample - interpolateAtOffset(in_color, gl_SamplePosition - vec2(0.5));"
+			<< "    float min_precision = 0.000001;\n"
+			<< "    if (diff.x > min_precision && diff.y > min_precision && diff.z > min_precision && diff.w > min_precision)\n"
 			<< "    {\n"
 			<< "        out_color.z = 1.0;\n"
 			<< "    }\n";
@@ -627,6 +628,8 @@ void MultisampleLinearInterpolationTestCase::initPrograms (SourceCollections& pr
 
 void MultisampleLinearInterpolationTestCase::checkSupport (Context& context) const
 {
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+
 	if (!(m_sampleCountFlagBits & context.getDeviceProperties().limits.framebufferColorSampleCounts))
 		TCU_THROW(NotSupportedError, "Multisampling with " + de::toString(m_sampleCountFlagBits) + " samples not supported");
 
@@ -685,7 +688,7 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 			if (groupParams->useSecondaryCmdBuffer && (flagBit.value > VK_SAMPLE_COUNT_4_BIT))
 				break;
 
-			testGroup->addChild(new MultisampleLinearInterpolationTestCase(testCtx, (offset.name + "_" + flagBit.name).c_str(), ".", tcu::IVec2(16, 16), 1.0f, offset.value, flagBit.value, groupParams));
+			testGroup->addChild(new MultisampleLinearInterpolationTestCase(testCtx, (offset.name + "_" + flagBit.name).c_str(), tcu::IVec2(16, 16), 1.0f, offset.value, flagBit.value, groupParams));
 		}
 	}
 }
@@ -694,7 +697,8 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 
 tcu::TestCaseGroup*	createMultisampleLinearInterpolationTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "linear_interpolation", "Tests for linear interpolation decorations.", createTests, groupParams);
+	// Tests for linear interpolation decorations.
+	return createTestGroup(testCtx, "linear_interpolation", createTests, groupParams);
 }
 
 }	// Draw

@@ -38,6 +38,7 @@
 #include "glcInfoTests.hpp"
 #include "glcPackedDepthStencilTests.hpp"
 #include "glcPackedPixelsTests.hpp"
+#include "glcShaderFunctionTests.hpp"
 #include "glcShaderIndexingTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
@@ -49,7 +50,9 @@
 #include "glcNearestEdgeTests.hpp"
 #include "glcGLSLVectorConstructorTests.hpp"
 #include "gluStateReset.hpp"
+#include "qpTestLog.h"
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 #include "tcuWaiverUtil.hpp"
 
 #include "../glesext/texture_shadow_lod/esextcTextureShadowLodFunctionsTest.hpp"
@@ -96,6 +99,16 @@ tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
 	}
 
 	const tcu::TestCase::IterateResult result = testCase->iterate();
+
+	{
+		if (testCtx.getCommandLine().isTerminateOnDeviceLostEnabled()) {
+			const glw::Functions& gl = renderCtx.getFunctions();
+			auto res = gl.getGraphicsResetStatus();
+			if (res != GL_NO_ERROR) {
+				testCtx.setTestResult(QP_TEST_RESULT_DEVICE_LOST, "Device Lost");
+			}
+		}
+	}
 
 	// Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
 	try
@@ -256,6 +269,7 @@ public:
 		addChild(new deqp::ShaderLoopTests(m_context, glu::GLSL_VERSION_330));
 		addChild(
 			new deqp::ShaderLibraryGroup(m_context, "preprocessor", "Preprocessor Tests", "gl33/preprocessor.test"));
+		addChild(new deqp::ShaderFunctionTests(m_context, glu::GLSL_VERSION_330));
 		addChild(new deqp::ShaderStructTests(m_context, glu::GLSL_VERSION_330));
 		addChild(new deqp::UniformBlockTests(m_context, glu::GLSL_VERSION_330));
 		addChild(new deqp::ShaderIntegerMixTests(m_context, glu::GLSL_VERSION_330));

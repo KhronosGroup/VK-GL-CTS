@@ -53,7 +53,6 @@ class ShaderSwitchCase : public ShaderRenderCase
 public:
 						ShaderSwitchCase			(tcu::TestContext&	testCtx,
 													 const string&		name,
-													 const string&		description,
 													 bool				isVertexCase,
 													 const string&		vtxSource,
 													 const string&		fragSource,
@@ -64,13 +63,12 @@ public:
 
 ShaderSwitchCase::ShaderSwitchCase (tcu::TestContext&	testCtx,
 									const string&		name,
-									const string&		description,
 									bool				isVertexCase,
 									const string&		vtxSource,
 									const string&		fragSource,
 									ShaderEvalFunc		evalFunc,
 									UniformSetupFunc	setupUniformsFunc)
-	: ShaderRenderCase (testCtx, name, description, isVertexCase, evalFunc, new UniformSetup(setupUniformsFunc), DE_NULL)
+	: ShaderRenderCase (testCtx, name, isVertexCase, evalFunc, new UniformSetup(setupUniformsFunc), DE_NULL)
 {
 	m_vertShaderSource	= vtxSource;
 	m_fragShaderSource	= fragSource;
@@ -103,7 +101,7 @@ static void evalSwitchDynamic	(ShaderEvalContext& evalCtx)
 	}
 }
 
-static de::MovePtr<ShaderSwitchCase> makeSwitchCase (tcu::TestContext& testCtx, const string& name, const string& desc, SwitchType type, bool isVertex, const LineStream& switchBody)
+static de::MovePtr<ShaderSwitchCase> makeSwitchCase (tcu::TestContext& testCtx, const string& name, SwitchType type, bool isVertex, const LineStream& switchBody)
 {
 	std::ostringstream	vtx;
 	std::ostringstream	frag;
@@ -164,7 +162,7 @@ static de::MovePtr<ShaderSwitchCase> makeSwitchCase (tcu::TestContext& testCtx, 
 	vtx << "}\n";
 	frag << "}\n";
 
-	return de::MovePtr<ShaderSwitchCase>(new ShaderSwitchCase(testCtx, name, desc, isVertex, vtx.str(), frag.str(),
+	return de::MovePtr<ShaderSwitchCase>(new ShaderSwitchCase(testCtx, name, isVertex, vtx.str(), frag.str(),
 															type == SWITCHTYPE_STATIC	? evalSwitchStatic	:
 															type == SWITCHTYPE_UNIFORM	? evalSwitchUniform	:
 															type == SWITCHTYPE_DYNAMIC	? evalSwitchDynamic	: (ShaderEvalFunc)DE_NULL,
@@ -183,11 +181,11 @@ private:
 							ShaderSwitchTests		(const ShaderSwitchTests&);		// not allowed!
 	ShaderSwitchTests&		operator=				(const ShaderSwitchTests&);		// not allowed!
 
-	void					makeSwitchCases			(const string& name, const string& desc, const LineStream& switchBody, const bool skipDynamicType = false);
+	void					makeSwitchCases			(const string& name, const LineStream& switchBody, const bool skipDynamicType = false);
 };
 
 ShaderSwitchTests::ShaderSwitchTests (tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup (testCtx, "switch", "Switch statement tests")
+	: tcu::TestCaseGroup (testCtx, "switch")
 {
 }
 
@@ -195,7 +193,7 @@ ShaderSwitchTests::~ShaderSwitchTests (void)
 {
 }
 
-void ShaderSwitchTests::makeSwitchCases (const string& name, const string& desc, const LineStream& switchBody, const bool skipDynamicType)
+void ShaderSwitchTests::makeSwitchCases (const string& name, const LineStream& switchBody, const bool skipDynamicType)
 {
 	static const char* switchTypeNames[] = { "static", "uniform", "dynamic" };
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(switchTypeNames) == SWITCHTYPE_LAST);
@@ -205,8 +203,8 @@ void ShaderSwitchTests::makeSwitchCases (const string& name, const string& desc,
 		if (skipDynamicType && (type == SWITCHTYPE_DYNAMIC))
 			continue;
 
-		addChild(makeSwitchCase(m_testCtx, (name + "_" + switchTypeNames[type] + "_vertex"),	desc, (SwitchType)type, true,	switchBody).release());
-		addChild(makeSwitchCase(m_testCtx, (name + "_" + switchTypeNames[type] + "_fragment"),	desc, (SwitchType)type, false,	switchBody).release());
+		addChild(makeSwitchCase(m_testCtx, (name + "_" + switchTypeNames[type] + "_vertex"), (SwitchType)type, true,	switchBody).release());
+		addChild(makeSwitchCase(m_testCtx, (name + "_" + switchTypeNames[type] + "_fragment"), (SwitchType)type, false,	switchBody).release());
 	}
 }
 
@@ -218,7 +216,8 @@ void ShaderSwitchTests::init (void)
 	// 2: yzw
 	// 3: zyx
 
-	makeSwitchCases("basic", "Basic switch statement usage",
+	// Basic switch statement usage
+	makeSwitchCases("basic",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"
@@ -228,7 +227,8 @@ void ShaderSwitchTests::init (void)
 		<< "	case 3:		res = coords.zyx;	break;"
 		<< "}");
 
-	makeSwitchCases("const_expr_in_label", "Constant expression in label",
+	// Constant expression in label
+	makeSwitchCases("const_expr_in_label",
 		LineStream(1)
 		<< "const int t = 2;"
 		<< "switch (${CONDITION})"
@@ -239,7 +239,8 @@ void ShaderSwitchTests::init (void)
 		<< "	case t+1:		res = coords.zyx;	break;"
 		<< "}");
 
-	makeSwitchCases("default_label", "Default label usage",
+	// Default label usage
+	makeSwitchCases("default_label",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"
@@ -249,7 +250,8 @@ void ShaderSwitchTests::init (void)
 		<< "	default:	res = coords.yzw;"
 		<< "}");
 
-	makeSwitchCases("default_not_last", "Default label usage",
+	// Default label usage
+	makeSwitchCases("default_not_last",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"
@@ -259,7 +261,8 @@ void ShaderSwitchTests::init (void)
 		<< "	case 3:		res = coords.zyx;	break;"
 		<< "}");
 
-	makeSwitchCases("no_default_label", "No match in switch without default label",
+	// No match in switch without default label
+	makeSwitchCases("no_default_label",
 		LineStream(1)
 		<< "res = coords.yzw;\n"
 		<< "switch (${CONDITION})"
@@ -269,7 +272,8 @@ void ShaderSwitchTests::init (void)
 		<< "	case 3:		res = coords.zyx;	break;"
 		<< "}");
 
-	makeSwitchCases("default_only", "Default case only",
+	// Default case only
+	makeSwitchCases("default_only",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"
@@ -277,7 +281,8 @@ void ShaderSwitchTests::init (void)
 		<< "		res = coords.yzw;"
 		<< "}", true);
 
-	makeSwitchCases("empty_case_default", "Empty case and default",
+	// Empty case and default
+	makeSwitchCases("empty_case_default",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"
@@ -286,7 +291,8 @@ void ShaderSwitchTests::init (void)
 		<< "		res = coords.yzw;"
 		<< "}", true);
 
-	makeSwitchCases("fall_through", "Fall-through",
+	// Fall-through
+	makeSwitchCases("fall_through",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"
@@ -297,7 +303,8 @@ void ShaderSwitchTests::init (void)
 		<< "	case 3:		res = coords.zyx;	break;"
 		<< "}");
 
-	makeSwitchCases("fall_through_default", "Fall-through",
+	// Fall-through
+	makeSwitchCases("fall_through_default",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"
@@ -308,7 +315,8 @@ void ShaderSwitchTests::init (void)
 		<< "	default:	res = vec3(coords);"
 		<< "}");
 
-	makeSwitchCases("conditional_fall_through", "Fall-through",
+	// Fall-through
+	makeSwitchCases("conditional_fall_through",
 		LineStream(1)
 		<< "highp vec4 tmp = coords;"
 		<< "switch (${CONDITION})"
@@ -324,7 +332,8 @@ void ShaderSwitchTests::init (void)
 		<< "	default:	res = tmp.zyx;		break;"
 		<< "}");
 
-	makeSwitchCases("conditional_fall_through_2", "Fall-through",
+	// Fall-through
+	makeSwitchCases("conditional_fall_through_2",
 		LineStream(1)
 		<< "highp vec4 tmp = coords;"
 		<< "mediump int c = ${CONDITION};"
@@ -342,7 +351,8 @@ void ShaderSwitchTests::init (void)
 		<< "	default:	res = tmp.zyx;		break;"
 		<< "}");
 
-	makeSwitchCases("scope", "Basic switch statement usage",
+	// Basic switch statement usage
+	makeSwitchCases("scope",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"
@@ -357,7 +367,8 @@ void ShaderSwitchTests::init (void)
 		<< "	case 3:		res = coords.zyx;	break;"
 		<< "}");
 
-	makeSwitchCases("switch_in_if", "Switch in for loop",
+	// Switch in for loop
+	makeSwitchCases("switch_in_if",
 		LineStream(1)
 		<< "if (${CONDITION} >= 0)"
 		<< "{"
@@ -370,7 +381,8 @@ void ShaderSwitchTests::init (void)
 		<< "	}"
 		<< "}");
 
-	makeSwitchCases("switch_in_for_loop", "Switch in for loop",
+	// Switch in for loop
+	makeSwitchCases("switch_in_for_loop",
 		LineStream(1)
 		<< "for (int i = 0; i <= ${CONDITION}; i++)"
 		<< "{"
@@ -384,7 +396,8 @@ void ShaderSwitchTests::init (void)
 		<< "}");
 
 
-	makeSwitchCases("switch_in_while_loop", "Switch in while loop",
+	// Switch in while loop
+	makeSwitchCases("switch_in_while_loop",
 		LineStream(1)
 		<< "int i = 0;"
 		<< "while (i <= ${CONDITION})"
@@ -399,7 +412,8 @@ void ShaderSwitchTests::init (void)
 		<< "	i += 1;"
 		<< "}");
 
-	makeSwitchCases("switch_in_do_while_loop", "Switch in do-while loop",
+	// Switch in do-while loop
+	makeSwitchCases("switch_in_do_while_loop",
 		LineStream(1)
 		<< "int i = 0;"
 		<< "do"
@@ -414,7 +428,8 @@ void ShaderSwitchTests::init (void)
 		<< "	i += 1;"
 		<< "} while (i <= ${CONDITION});");
 
-	makeSwitchCases("if_in_switch", "Basic switch statement usage",
+	// Basic switch statement usage
+	makeSwitchCases("if_in_switch",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"
@@ -428,7 +443,8 @@ void ShaderSwitchTests::init (void)
 		<< "		break;"
 		<< "}");
 
-	makeSwitchCases("for_loop_in_switch", "Basic switch statement usage",
+	// Basic switch statement usage
+	makeSwitchCases("for_loop_in_switch",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"
@@ -445,7 +461,8 @@ void ShaderSwitchTests::init (void)
 		<< "	default:	res = coords.zyx;	break;"
 		<< "}");
 
-	makeSwitchCases("while_loop_in_switch", "Basic switch statement usage",
+	// Basic switch statement usage
+	makeSwitchCases("while_loop_in_switch",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"
@@ -466,7 +483,8 @@ void ShaderSwitchTests::init (void)
 		<< "	default:	res = coords.zyx;	break;"
 		<< "}");
 
-	makeSwitchCases("do_while_loop_in_switch", "Basic switch statement usage",
+	// Basic switch statement usage
+	makeSwitchCases("do_while_loop_in_switch",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"
@@ -487,7 +505,8 @@ void ShaderSwitchTests::init (void)
 		<< "	default:	res = coords.zyx;	break;"
 		<< "}");
 
-	makeSwitchCases("switch_in_switch", "Basic switch statement usage",
+	// Basic switch statement usage
+	makeSwitchCases("switch_in_switch",
 		LineStream(1)
 		<< "switch (${CONDITION})"
 		<< "{"

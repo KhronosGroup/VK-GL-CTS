@@ -63,7 +63,7 @@ public:
 		VkExtent3D	dimensions;		// .depth will be the number of layers for 2D images and the depth for 3D images.
 	};
 
-							TransferQueueCase				(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							TransferQueueCase				(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~TransferQueueCase				(void) {}
 
 	virtual void			initPrograms					(vk::SourceCollections&) const {}
@@ -86,8 +86,8 @@ private:
 	Move<VkCommandBuffer>				m_cmdBuffer;
 };
 
-TransferQueueCase::TransferQueueCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+TransferQueueCase::TransferQueueCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {
 }
@@ -102,12 +102,17 @@ void TransferQueueCase::checkSupport (Context& context) const
 	const auto& vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
+#ifndef CTS_USES_VULKANSC
+	if (m_params.imageFormat == VK_FORMAT_A8_UNORM_KHR || m_params.imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	VkImageFormatProperties	formatProperties;
 	const auto result = vki.getPhysicalDeviceImageFormatProperties(physicalDevice, m_params.imageFormat, m_params.imageType, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0u, &formatProperties);
 	if (result != VK_SUCCESS)
 	{
 		if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Error: format " + de::toString(m_params.imageFormat) + " does not support the required features");
+			TCU_THROW(NotSupportedError, "format " + de::toString(m_params.imageFormat) + " does not support the required features");
 		else
 			TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
 	}
@@ -192,6 +197,7 @@ tcu::TestStatus TransferQueueInstance::iterate (void)
 		fillRandomNoNaN(&randomGen, generatedData.data(), (deUint32)generatedData.size(), m_params.imageFormat);
 		const Allocation& alloc = srcBuffer.getAllocation();
 		deMemcpy(alloc.getHostPtr(), generatedData.data(), generatedData.size());
+		flushAlloc(vk, device, alloc);
 	}
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
@@ -224,7 +230,7 @@ tcu::TestStatus TransferQueueInstance::iterate (void)
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
 			DE_NULL,										// const void*				pNext;
 			VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+			VK_ACCESS_TRANSFER_READ_BIT,					// VkAccessFlags			dstAccessMask;
 			VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
@@ -252,6 +258,7 @@ tcu::TestStatus TransferQueueInstance::iterate (void)
 	{
 		std::vector<deUint8> resultData(pixelDataSize);
 		const Allocation& alloc = dstBuffer.getAllocation();
+		invalidateAlloc(vk, device, alloc);
 		deMemcpy(resultData.data(), alloc.getHostPtr(), resultData.size());
 
 		for (uint32_t i = 0; i < pixelDataSize; ++i) {
@@ -280,19 +287,21 @@ VkImageAspectFlags getAspectFlags (tcu::TextureFormat format)
 
 tcu::TestCaseGroup* createTransferQueueImageTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> layoutTestGroup (new tcu::TestCaseGroup(testCtx, "queue_transfer", "Tests for transfering from buffer to image and back"));
+	de::MovePtr<tcu::TestCaseGroup> layoutTestGroup (new tcu::TestCaseGroup(testCtx, "queue_transfer"));
 
 	struct
 	{
 		VkImageType	type;
 		bool		array;
 		const char*	name;
-		const char*	desc;
 	} imageClass[] =
 	{
-		{ VK_IMAGE_TYPE_2D,	false,	"2d",		"2D images"							},
-		{ VK_IMAGE_TYPE_2D,	true,	"2d_array",	"2D images with multiple layers"	},
-		{ VK_IMAGE_TYPE_3D,	false,	"3d",		"3D images"							},
+		// 2D images
+		{ VK_IMAGE_TYPE_2D,	false,	"2d"},
+		// 2D images with multiple layers
+		{ VK_IMAGE_TYPE_2D,	true,	"2d_array"},
+		// 3D images
+		{ VK_IMAGE_TYPE_3D,	false,	"3d"},
 	};
 
 	struct
@@ -319,6 +328,9 @@ tcu::TestCaseGroup* createTransferQueueImageTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
@@ -326,6 +338,9 @@ tcu::TestCaseGroup* createTransferQueueImageTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,
@@ -437,12 +452,12 @@ tcu::TestCaseGroup* createTransferQueueImageTests (tcu::TestContext& testCtx)
 	for (int classIdx = 0; classIdx < DE_LENGTH_OF_ARRAY(imageClass); ++classIdx)
 	{
 		const auto& imgClass = imageClass[classIdx];
-		de::MovePtr<tcu::TestCaseGroup> classGroup (new tcu::TestCaseGroup(testCtx, imgClass.name, imgClass.desc));
+		de::MovePtr<tcu::TestCaseGroup> classGroup (new tcu::TestCaseGroup(testCtx, imgClass.name));
 
 		for (int extentIdx = 0; extentIdx < DE_LENGTH_OF_ARRAY(extents); ++extentIdx)
 		{
 			const auto &extent = extents[extentIdx];
-			de::MovePtr<tcu::TestCaseGroup> mipGroup (new tcu::TestCaseGroup(testCtx, extent.name, extent.desc));
+			de::MovePtr<tcu::TestCaseGroup> mipGroup (new tcu::TestCaseGroup(testCtx, extent.name));
 
 			for (int formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); ++formatIdx)
 			{
@@ -450,14 +465,13 @@ tcu::TestCaseGroup* createTransferQueueImageTests (tcu::TestContext& testCtx)
 				const auto			format		= testFormats[formatIdx];
 				const auto			fmtName		= std::string(getFormatName(format));
 				const auto			name		= de::toLower(fmtName.substr(prefixLen)); // Remove VK_FORMAT_ prefix.
-				const auto			desc		= "Using format " + fmtName;
 
 				TransferQueueCase::TestParams params;
 				params.imageFormat	= format;
 				params.imageType	= imgClass.type;
 				params.dimensions	= {extent.extent.width, extent.extent.height, extent.extent.depth};
 
-				mipGroup->addChild(new TransferQueueCase(testCtx, name, desc, params));
+				mipGroup->addChild(new TransferQueueCase(testCtx, name,params));
 			}
 
 			classGroup->addChild(mipGroup.release());

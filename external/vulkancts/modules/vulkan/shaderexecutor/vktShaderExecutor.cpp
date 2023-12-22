@@ -34,6 +34,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "gluShaderUtil.hpp"
 
@@ -2840,6 +2841,244 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 	readOutputBuffer(outputs, numValues);
 }
 
+#ifndef CTS_USES_VULKANSC
+// MeshTaskShaderExecutor
+
+class MeshTaskShaderExecutor : public BufferIoExecutor
+{
+public:
+						MeshTaskShaderExecutor	(Context& context, const ShaderSpec& shaderSpec, VkDescriptorSetLayout extraResourcesLayout);
+	virtual				~MeshTaskShaderExecutor	(void);
+
+	static void			generateSources			(const ShaderSpec& shaderSpec, SourceCollections& programCollection, bool useTask);
+
+	virtual void		execute					(int numValues, const void* const* inputs, void* const* outputs, VkDescriptorSet extraResources);
+
+protected:
+	static std::string	generateMeshShader		(const ShaderSpec& spec, bool useTask);
+	static std::string	generateTaskShader		(const ShaderSpec& spec);
+
+private:
+	const VkDescriptorSetLayout					m_extraResourcesLayout;
+};
+
+MeshTaskShaderExecutor::MeshTaskShaderExecutor (Context& context, const ShaderSpec& shaderSpec, VkDescriptorSetLayout extraResourcesLayout)
+	: BufferIoExecutor			(context, shaderSpec)
+	, m_extraResourcesLayout	(extraResourcesLayout)
+{
+}
+
+MeshTaskShaderExecutor::~MeshTaskShaderExecutor (void)
+{
+}
+
+std::string MeshTaskShaderExecutor::generateMeshShader (const ShaderSpec& spec, bool useTask)
+{
+	DE_ASSERT(spec.spirvCase == SPIRV_CASETYPE_NONE);
+
+	std::ostringstream src;
+
+	if (useTask)
+	{
+		src << glu::getGLSLVersionDeclaration(spec.glslVersion) << "\n"
+			<< "#extension GL_EXT_mesh_shader : enable\n"
+			<< "layout(local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
+			<< "layout(points) out;\n"
+			<< "layout(max_vertices=1, max_primitives=1) out;\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    SetMeshOutputsEXT(0u, 0u);\n"
+			<< "}\n";
+	}
+	else
+	{
+		src << glu::getGLSLVersionDeclaration(spec.glslVersion) << "\n"
+			<< "#extension GL_EXT_mesh_shader : enable\n";
+
+		if (!spec.globalDeclarations.empty())
+			src << spec.globalDeclarations << "\n";
+
+		src << "layout(local_size_x = " << spec.localSizeX << ") in;\n"
+			<< "layout(points) out;\n"
+			<< "layout(max_vertices=1, max_primitives=1) out;\n"
+			<< "\n";
+
+		declareBufferBlocks(src, spec);
+
+		src << "void main (void)\n"
+			<< "{\n"
+			<< "	uint invocationNdx = gl_NumWorkGroups.x*gl_NumWorkGroups.y*gl_WorkGroupID.z\n"
+			<< "	                   + gl_NumWorkGroups.x*gl_WorkGroupID.y + gl_WorkGroupID.x;\n";
+
+		generateExecBufferIo(src, spec, "invocationNdx");
+
+		src << "	SetMeshOutputsEXT(0u, 0u);\n"
+			<< "}\n";
+	}
+
+	return src.str();
+}
+
+std::string MeshTaskShaderExecutor::generateTaskShader (const ShaderSpec& spec)
+{
+	std::ostringstream src;
+
+	src << glu::getGLSLVersionDeclaration(spec.glslVersion) << "\n"
+		<< "#extension GL_EXT_mesh_shader : enable\n";
+
+	if (!spec.globalDeclarations.empty())
+		src << spec.globalDeclarations << "\n";
+
+	src << "layout(local_size_x = " << spec.localSizeX << ") in;\n"
+		<< "\n";
+
+	declareBufferBlocks(src, spec);
+
+	src << "void main (void)\n"
+		<< "{\n"
+		<< "    uint invocationNdx = gl_NumWorkGroups.x*gl_NumWorkGroups.y*gl_WorkGroupID.z\n"
+		<< "                       + gl_NumWorkGroups.x*gl_WorkGroupID.y + gl_WorkGroupID.x;\n";
+
+	generateExecBufferIo(src, spec, "invocationNdx");
+
+	src << "    EmitMeshTasksEXT(0u, 0u, 0u);\n"
+		<< "}\n";
+
+	return src.str();
+}
+
+void MeshTaskShaderExecutor::generateSources (const ShaderSpec& shaderSpec, SourceCollections& programCollection, bool useTask)
+{
+	DE_ASSERT(shaderSpec.spirvCase == SPIRV_CASETYPE_NONE);
+	programCollection.glslSources.add("mesh") << glu::MeshSource(generateMeshShader(shaderSpec, useTask)) << shaderSpec.buildOptions;
+	if (useTask)
+		programCollection.glslSources.add("task") << glu::TaskSource(generateTaskShader(shaderSpec)) << shaderSpec.buildOptions;
+}
+
+void MeshTaskShaderExecutor::execute (int numValues, const void* const* inputs, void* const* outputs, VkDescriptorSet extraResources)
+{
+	const auto	vkDevice			= m_context.getDevice();
+	const auto&	vk					= m_context.getDeviceInterface();
+	const auto	queue				= m_context.getUniversalQueue();
+	const auto	queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const auto	bindPoint			= VK_PIPELINE_BIND_POINT_GRAPHICS;
+	const auto&	binaries			= m_context.getBinaryCollection();
+	const bool	useTask				= binaries.contains("task");
+	const auto	shaderStage			= (useTask ? VK_SHADER_STAGE_TASK_BIT_EXT : VK_SHADER_STAGE_MESH_BIT_EXT);
+	const auto	pipelineStage		= (useTask ? VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT : VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT);
+
+	DE_ASSERT((m_extraResourcesLayout != DE_NULL) == (extraResources != DE_NULL));
+
+	// Create input and output buffers.
+	initBuffers(numValues);
+
+	// Setup input buffer & copy data
+	// For spirv shaders using packed 16 bit float values as input, the floats are converted to 16 bit before
+	// storing in the lower 16 bits of 32 bit integers in the uniform buffer and cast back to 16 bit floats in
+	// the shader.
+	uploadInputBuffer(inputs, numValues, m_shaderSpec.packFloat16Bit && (m_shaderSpec.spirvCase != SPIRV_CASETYPE_NONE));
+
+	// Create command pool
+	const auto cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+
+	// Descriptor pool, set layout and set.
+	DescriptorPoolBuilder		descriptorPoolBuilder;
+	DescriptorSetLayoutBuilder	descriptorSetLayoutBuilder;
+
+	descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, shaderStage);
+	descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, shaderStage);
+	descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+	const auto descriptorSetLayout	= descriptorSetLayoutBuilder.build(vk, vkDevice);
+	const auto descriptorPool		= descriptorPoolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const auto descriptorSet		= makeDescriptorSet(vk, vkDevice, descriptorPool.get(), descriptorSetLayout.get());
+
+	// Create pipeline layout
+	std::vector<VkDescriptorSetLayout> setLayouts;
+	setLayouts.push_back(descriptorSetLayout.get());
+	if (m_extraResourcesLayout != DE_NULL)
+		setLayouts.push_back(m_extraResourcesLayout);
+
+	const auto pipelineLayout = makePipelineLayout(vk, vkDevice, static_cast<uint32_t>(setLayouts.size()), de::dataOrNull(setLayouts));
+
+	// Create shaders
+	const auto meshShaderModule = createShaderModule(vk, vkDevice, binaries.get("mesh"));
+	const auto taskShaderModule = (useTask ? createShaderModule(vk, vkDevice, binaries.get("task")) : Move<VkShaderModule>());
+
+	// Render pass and framebuffer.
+	const auto fbExtent		= makeExtent2D(1u, 1u);
+	const auto renderPass	= makeRenderPass(vk, vkDevice);
+	const auto framebuffer	= makeFramebuffer(vk, vkDevice, renderPass.get(), 0u, nullptr, fbExtent.width, fbExtent.height);
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(fbExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(fbExtent));
+
+	// Create pipeline.
+	const auto meshPipeline	= makeGraphicsPipeline(
+		vk, vkDevice, pipelineLayout.get(),
+		taskShaderModule.get(), meshShaderModule.get(), DE_NULL,
+		renderPass.get(), viewports, scissors);
+
+	const int		maxValuesPerInvocation	= m_context.getMeshShaderPropertiesEXT().maxMeshWorkGroupSize[0];
+	const uint32_t	inputStride				= getInputStride();
+	const uint32_t	outputStride			= getOutputStride();
+	const auto		outputBufferBinding		= DescriptorSetUpdateBuilder::Location::binding(static_cast<uint32_t>(OUTPUT_BUFFER_BINDING));
+	const auto		inputBufferBinding		= DescriptorSetUpdateBuilder::Location::binding(static_cast<uint32_t>(INPUT_BUFFER_BINDING));
+	int				curOffset				= 0;
+
+	while (curOffset < numValues)
+	{
+		const auto remaining = numValues - curOffset;
+		const auto numToExec = de::min(maxValuesPerInvocation, remaining);
+
+		// Update descriptors
+		{
+			DescriptorSetUpdateBuilder descriptorSetUpdateBuilder;
+
+			const auto outputDescriptorBufferInfo = makeDescriptorBufferInfo(m_outputBuffer.get(), curOffset * outputStride, numToExec * outputStride);
+			descriptorSetUpdateBuilder.writeSingle(descriptorSet.get(), outputBufferBinding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputDescriptorBufferInfo);
+
+			if (inputStride)
+			{
+				const auto inputDescriptorBufferInfo = makeDescriptorBufferInfo(m_inputBuffer.get(), curOffset * inputStride, numToExec * inputStride);
+				descriptorSetUpdateBuilder.writeSingle(descriptorSet.get(), inputBufferBinding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputDescriptorBufferInfo);
+			}
+
+			descriptorSetUpdateBuilder.update(vk, vkDevice);
+		}
+
+		std::vector<VkDescriptorSet> descriptorSets;
+		descriptorSets.push_back(descriptorSet.get());
+		if (extraResources != DE_NULL)
+			descriptorSets.push_back(extraResources);
+
+		const auto bufferBarrier	= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, m_outputBuffer.get(), 0ull, VK_WHOLE_SIZE);
+		const auto cmdBufferPtr		= allocateCommandBuffer(vk, vkDevice, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		const auto cmdBuffer		= cmdBufferPtr.get();
+
+		// Record command buffer, including pipeline barrier from output buffer to the host.
+		beginCommandBuffer(vk, cmdBuffer);
+		beginRenderPass(vk, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u));
+		vk.cmdBindPipeline(cmdBuffer, bindPoint, meshPipeline.get());
+		vk.cmdBindDescriptorSets(cmdBuffer, bindPoint, pipelineLayout.get(), 0u, static_cast<uint32_t>(descriptorSets.size()), de::dataOrNull(descriptorSets), 0u, DE_NULL);
+		vk.cmdDrawMeshTasksEXT(cmdBuffer, numToExec, 1u, 1u);
+		endRenderPass(vk, cmdBuffer);
+		cmdPipelineBufferMemoryBarrier(vk, cmdBuffer, pipelineStage, VK_PIPELINE_STAGE_HOST_BIT, &bufferBarrier);
+		endCommandBuffer(vk, cmdBuffer);
+
+		// Execute
+		submitCommandsAndWait(vk, vkDevice, queue, cmdBuffer);
+
+		curOffset += numToExec;
+	}
+
+	// Read back data
+	readOutputBuffer(outputs, numValues);
+}
+#endif // CTS_USES_VULKANSC
+
 // Tessellation utils
 
 static std::string generateVertexShaderForTess (void)
@@ -3478,12 +3717,16 @@ void generateSources (glu::ShaderType shaderType, const ShaderSpec& shaderSpec, 
 {
 	switch (shaderType)
 	{
-		case glu::SHADERTYPE_VERTEX:					VertexShaderExecutor::generateSources	(shaderSpec, dst);	break;
-		case glu::SHADERTYPE_TESSELLATION_CONTROL:		TessControlExecutor::generateSources	(shaderSpec, dst);	break;
-		case glu::SHADERTYPE_TESSELLATION_EVALUATION:	TessEvaluationExecutor::generateSources	(shaderSpec, dst);	break;
-		case glu::SHADERTYPE_GEOMETRY:					GeometryShaderExecutor::generateSources	(shaderSpec, dst);	break;
-		case glu::SHADERTYPE_FRAGMENT:					FragmentShaderExecutor::generateSources	(shaderSpec, dst);	break;
-		case glu::SHADERTYPE_COMPUTE:					ComputeShaderExecutor::generateSources	(shaderSpec, dst);	break;
+		case glu::SHADERTYPE_VERTEX:					VertexShaderExecutor::generateSources	(shaderSpec, dst);						break;
+		case glu::SHADERTYPE_TESSELLATION_CONTROL:		TessControlExecutor::generateSources	(shaderSpec, dst);						break;
+		case glu::SHADERTYPE_TESSELLATION_EVALUATION:	TessEvaluationExecutor::generateSources	(shaderSpec, dst);						break;
+		case glu::SHADERTYPE_GEOMETRY:					GeometryShaderExecutor::generateSources	(shaderSpec, dst);						break;
+		case glu::SHADERTYPE_FRAGMENT:					FragmentShaderExecutor::generateSources	(shaderSpec, dst);						break;
+		case glu::SHADERTYPE_COMPUTE:					ComputeShaderExecutor::generateSources	(shaderSpec, dst);						break;
+#ifndef CTS_USES_VULKANSC
+		case glu::SHADERTYPE_MESH:						MeshTaskShaderExecutor::generateSources	(shaderSpec, dst, false/*useTask*/);	break;
+		case glu::SHADERTYPE_TASK:						MeshTaskShaderExecutor::generateSources	(shaderSpec, dst, true/*useTask*/);		break;
+#endif // CTS_USES_VULKANSC
 		default:
 			TCU_THROW(InternalError, "Unsupported shader type");
 	}
@@ -3499,12 +3742,16 @@ ShaderExecutor* createExecutor (Context& context, glu::ShaderType shaderType, co
 		case glu::SHADERTYPE_GEOMETRY:					return new GeometryShaderExecutor	(context, shaderSpec, extraResourcesLayout);
 		case glu::SHADERTYPE_FRAGMENT:					return new FragmentShaderExecutor	(context, shaderSpec, extraResourcesLayout);
 		case glu::SHADERTYPE_COMPUTE:					return new ComputeShaderExecutor	(context, shaderSpec, extraResourcesLayout);
+#ifndef CTS_USES_VULKANSC
+		case glu::SHADERTYPE_MESH:						return new MeshTaskShaderExecutor	(context, shaderSpec, extraResourcesLayout);
+		case glu::SHADERTYPE_TASK:						return new MeshTaskShaderExecutor	(context, shaderSpec, extraResourcesLayout);
+#endif // CTS_USES_VULKANSC
 		default:
 			TCU_THROW(InternalError, "Unsupported shader type");
 	}
 }
 
-bool  executorSupported(glu::ShaderType shaderType)
+bool executorSupported(glu::ShaderType shaderType)
 {
 	switch (shaderType)
 	{
@@ -3514,6 +3761,8 @@ bool  executorSupported(glu::ShaderType shaderType)
 	case glu::SHADERTYPE_GEOMETRY:
 	case glu::SHADERTYPE_FRAGMENT:
 	case glu::SHADERTYPE_COMPUTE:
+	case glu::SHADERTYPE_MESH:
+	case glu::SHADERTYPE_TASK:
 		return true;
 	default:
 		return false;
@@ -3522,6 +3771,61 @@ bool  executorSupported(glu::ShaderType shaderType)
 
 void checkSupportShader(Context& context, const glu::ShaderType shaderType)
 {
+	// Stage support.
+	switch (shaderType)
+	{
+	case glu::SHADERTYPE_TESSELLATION_CONTROL:
+	case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+		break;
+
+	case glu::SHADERTYPE_GEOMETRY:
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+		break;
+
+	case glu::SHADERTYPE_TASK:
+	case glu::SHADERTYPE_MESH:
+		{
+			context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+
+			if (shaderType == glu::SHADERTYPE_TASK)
+			{
+#ifndef CTS_USES_VULKANSC
+				const auto& features = context.getMeshShaderFeaturesEXT();
+				if (!features.taskShader)
+					TCU_THROW(NotSupportedError, "taskShader not supported");
+#else // CTS_USES_VULKANSC
+				TCU_THROW(NotSupportedError, "taskShader not supported");
+#endif // CTS_USES_VULKANSC
+			}
+		}
+		break;
+
+	default:
+		break;
+	}
+
+	// Stores and atomic operation support.
+	switch (shaderType)
+	{
+	case glu::SHADERTYPE_VERTEX:
+	case glu::SHADERTYPE_TESSELLATION_CONTROL:
+	case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+	case glu::SHADERTYPE_GEOMETRY:
+	case glu::SHADERTYPE_TASK:
+	case glu::SHADERTYPE_MESH:
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+		break;
+	case glu::SHADERTYPE_FRAGMENT:
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+		break;
+	case glu::SHADERTYPE_COMPUTE:
+		break;
+	default:
+		DE_FATAL("Unsupported shader type");
+		break;
+	}
+
 #ifndef CTS_USES_VULKANSC
 	if (shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION &&
 		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
@@ -3529,9 +3833,6 @@ void checkSupportShader(Context& context, const glu::ShaderType shaderType)
 	{
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Tessellation iso lines are not supported by this implementation");
 	}
-#else
-	DE_UNREF(context);
-	DE_UNREF(shaderType);
 #endif // CTS_USES_VULKANSC
 }
 

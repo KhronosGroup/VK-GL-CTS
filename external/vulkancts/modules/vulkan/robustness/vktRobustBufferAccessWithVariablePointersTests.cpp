@@ -65,7 +65,11 @@ namespace
 {
 
 // Creates a custom device with robust buffer access and variable pointer features.
-Move<VkDevice> createRobustBufferAccessVariablePointersDevice (Context& context, VkInstance instance, const InstanceInterface& vki )
+Move<VkDevice> createRobustBufferAccessVariablePointersDevice (Context& context
+#ifdef CTS_USES_VULKANSC
+															  , const vkt::CustomInstance& customInstance
+#endif // CTS_USES_VULKANSC
+															  )
 {
 	auto pointerFeatures = context.getVariablePointersFeatures();
 
@@ -74,7 +78,11 @@ Move<VkDevice> createRobustBufferAccessVariablePointersDevice (Context& context,
 	features2.features.robustBufferAccess = VK_TRUE;
 	features2.pNext = &pointerFeatures;
 
-	return createRobustBufferAccessDevice(context, instance, vki, &features2);
+	return createRobustBufferAccessDevice(context,
+#ifdef CTS_USES_VULKANSC
+										 customInstance,
+#endif // CTS_USES_VULKANSC
+										  &features2);
 }
 
 // A supplementary structures that can hold information about buffer size
@@ -188,7 +196,6 @@ public:
 
 								RobustAccessWithPointersTest	(tcu::TestContext&		testContext,
 																 const std::string&		name,
-																 const std::string&		description,
 																 VkShaderStageFlags		shaderStage,
 																 ShaderType				shaderType,
 																 VkFormat				bufferFormat);
@@ -210,11 +217,10 @@ const deUint32 RobustAccessWithPointersTest::s_numberOfBytesAccessed = static_ca
 
 RobustAccessWithPointersTest::RobustAccessWithPointersTest(tcu::TestContext&		testContext,
 	const std::string&		name,
-	const std::string&		description,
 	VkShaderStageFlags		shaderStage,
 	ShaderType				shaderType,
 	VkFormat				bufferFormat)
-	: vkt::TestCase(testContext, name, description)
+	: vkt::TestCase(testContext, name)
 	, m_shaderStage(shaderStage)
 	, m_shaderType(shaderType)
 	, m_bufferFormat(bufferFormat)
@@ -238,7 +244,6 @@ class RobustReadTest : public RobustAccessWithPointersTest
 public:
 								RobustReadTest					(tcu::TestContext&		testContext,
 																 const std::string&		name,
-																 const std::string&		description,
 																 VkShaderStageFlags		shaderStage,
 																 ShaderType				shaderType,
 																 VkFormat				bufferFormat,
@@ -260,7 +265,6 @@ class RobustWriteTest : public RobustAccessWithPointersTest
 public:
 								RobustWriteTest				(tcu::TestContext&		testContext,
 															 const std::string&		name,
-															 const std::string&		description,
 															 VkShaderStageFlags		shaderStage,
 															 ShaderType				shaderType,
 															 VkFormat				bufferFormat,
@@ -304,11 +308,11 @@ class AccessInstance : public vkt::TestInstance
 {
 public:
 								AccessInstance				(Context&			context,
-															 std::shared_ptr<CustomInstanceWrapper> instanceWrapper,
 															 Move<VkDevice>		device,
 #ifndef CTS_USES_VULKANSC
 															 de::MovePtr<vk::DeviceDriver>		deviceDriver,
 #else
+															 de::MovePtr<CustomInstance>								customInstance,
 															 de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 															 ShaderType			shaderType,
@@ -333,11 +337,13 @@ private:
 															 VkDeviceSize		valueSize);
 
 protected:
-	std::shared_ptr<CustomInstanceWrapper>	m_instanceWrapper;
-	Move<VkDevice>							m_device;
 #ifndef CTS_USES_VULKANSC
+	Move<VkDevice>							m_device;
 	de::MovePtr<vk::DeviceDriver>			m_deviceDriver;
 #else
+	// Construction needs to happen in this exact order to ensure proper resource destruction
+	de::MovePtr<CustomInstance>				m_customInstance;
+	Move<VkDevice>							m_device;
 	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
 #endif // CTS_USES_VULKANSC
 	de::MovePtr<TestEnvironment>m_testEnvironment;
@@ -378,11 +384,11 @@ class ReadInstance: public AccessInstance
 {
 public:
 								ReadInstance			(Context&				context,
-														 std::shared_ptr<CustomInstanceWrapper>	instanceWrapper,
 														 Move<VkDevice>			device,
 #ifndef CTS_USES_VULKANSC
 														 de::MovePtr<vk::DeviceDriver>		deviceDriver,
 #else
+														 de::MovePtr<CustomInstance>								customInstance,
 														 de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 														 ShaderType				shaderType,
@@ -399,11 +405,11 @@ class WriteInstance: public AccessInstance
 {
 public:
 								WriteInstance			(Context&				context,
-														 std::shared_ptr<CustomInstanceWrapper>	instanceWrapper,
 														 Move<VkDevice>			device,
 #ifndef CTS_USES_VULKANSC
 														 de::MovePtr<vk::DeviceDriver>		deviceDriver,
 #else
+														 de::MovePtr<CustomInstance>								customInstance,
 														 de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 														 ShaderType				shaderType,
@@ -1304,13 +1310,12 @@ std::string MakeShader(VkShaderStageFlags shaderStage, ShaderType shaderType, Vk
 
 RobustReadTest::RobustReadTest (tcu::TestContext&		testContext,
 								const std::string&		name,
-								const std::string&		description,
 								VkShaderStageFlags		shaderStage,
 								ShaderType				shaderType,
 								VkFormat				bufferFormat,
 								VkDeviceSize			readAccessRange,
 								bool					accessOutOfBackingMemory)
-	: RobustAccessWithPointersTest	(testContext, name, description, shaderStage, shaderType, bufferFormat)
+	: RobustAccessWithPointersTest	(testContext, name, shaderStage, shaderType, bufferFormat)
 	, m_readAccessRange				(readAccessRange)
 	, m_accessOutOfBackingMemory	(accessOutOfBackingMemory)
 {
@@ -1318,15 +1323,20 @@ RobustReadTest::RobustReadTest (tcu::TestContext&		testContext,
 
 TestInstance* RobustReadTest::createInstance (Context& context) const
 {
-	std::shared_ptr<CustomInstanceWrapper> instanceWrapper(new CustomInstanceWrapper(context));
-	auto device = createRobustBufferAccessVariablePointersDevice(context, instanceWrapper->instance, instanceWrapper->instance.getDriver());
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instanceWrapper->instance, *device));
+	auto device = createRobustBufferAccessVariablePointersDevice(context);
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instanceWrapper->instance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
+	de::MovePtr<CustomInstance> customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
+	auto device = createRobustBufferAccessVariablePointersDevice(context, *customInstance);
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
 #endif // CTS_USES_VULKANSC
 
-	return new ReadInstance(context, instanceWrapper, device, deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_readAccessRange, m_accessOutOfBackingMemory);
+	return new ReadInstance(context, device,
+#ifdef CTS_USES_VULKANSC
+							customInstance,
+#endif // CTS_USES_VULKANSC
+							deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_readAccessRange, m_accessOutOfBackingMemory);
 }
 
 void RobustReadTest::initPrograms(SourceCollections&	programCollection) const
@@ -1344,14 +1354,13 @@ void RobustReadTest::initPrograms(SourceCollections&	programCollection) const
 
 RobustWriteTest::RobustWriteTest (tcu::TestContext&		testContext,
 								  const std::string&	name,
-								  const std::string&	description,
 								  VkShaderStageFlags	shaderStage,
 								  ShaderType			shaderType,
 								  VkFormat				bufferFormat,
 								  VkDeviceSize			writeAccessRange,
 								  bool					accessOutOfBackingMemory)
 
-	: RobustAccessWithPointersTest	(testContext, name, description, shaderStage, shaderType, bufferFormat)
+	: RobustAccessWithPointersTest	(testContext, name, shaderStage, shaderType, bufferFormat)
 	, m_writeAccessRange			(writeAccessRange)
 	, m_accessOutOfBackingMemory	(accessOutOfBackingMemory)
 {
@@ -1359,15 +1368,22 @@ RobustWriteTest::RobustWriteTest (tcu::TestContext&		testContext,
 
 TestInstance* RobustWriteTest::createInstance (Context& context) const
 {
-	std::shared_ptr<CustomInstanceWrapper> instanceWrapper(new CustomInstanceWrapper(context));
-	auto device = createRobustBufferAccessVariablePointersDevice(context, instanceWrapper->instance, instanceWrapper->instance.getDriver());
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instanceWrapper->instance, *device));
+	auto device = createRobustBufferAccessVariablePointersDevice(context);
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instanceWrapper->instance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
+	de::MovePtr<CustomInstance> customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
+	auto device = createRobustBufferAccessVariablePointersDevice(context, *customInstance);
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
 #endif // CTS_USES_VULKANSC
 
-	return new WriteInstance(context, instanceWrapper, device, deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_writeAccessRange, m_accessOutOfBackingMemory);
+
+
+	return new WriteInstance(context, device,
+#ifdef CTS_USES_VULKANSC
+							 customInstance,
+#endif
+							 deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_writeAccessRange, m_accessOutOfBackingMemory);
 }
 
 void RobustWriteTest::initPrograms(SourceCollections&	programCollection) const
@@ -1384,11 +1400,11 @@ void RobustWriteTest::initPrograms(SourceCollections&	programCollection) const
 }
 
 AccessInstance::AccessInstance (Context&			context,
-								std::shared_ptr<CustomInstanceWrapper> instanceWrapper,
 								Move<VkDevice>		device,
 #ifndef CTS_USES_VULKANSC
 								de::MovePtr<vk::DeviceDriver>		deviceDriver,
 #else
+								de::MovePtr<CustomInstance>								customInstance,
 								de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 
@@ -1400,7 +1416,9 @@ AccessInstance::AccessInstance (Context&			context,
 								VkDeviceSize		outBufferAccessRange,
 								bool				accessOutOfBackingMemory)
 	: vkt::TestInstance				(context)
-	, m_instanceWrapper				(instanceWrapper)
+#ifdef CTS_USES_VULKANSC
+	, m_customInstance				(customInstance)
+#endif
 	, m_device						(device)
 	, m_deviceDriver				(deviceDriver)
 	, m_shaderType					(shaderType)
@@ -1411,9 +1429,11 @@ AccessInstance::AccessInstance (Context&			context,
 {
 	tcu::TestLog&									log						= context.getTestContext().getLog();
 	const DeviceInterface&							vk						= *m_deviceDriver;
+	const auto&										vki						= context.getInstanceInterface();
+	const auto										instance				= context.getInstance();
 	const deUint32									queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-	const VkPhysicalDevice							physicalDevice			= chooseDevice(instanceWrapper->instance.getDriver(), instanceWrapper->instance, context.getTestContext().getCommandLine());
-	SimpleAllocator									memAlloc				(vk, *m_device, getPhysicalDeviceMemoryProperties(instanceWrapper->instance.getDriver(), physicalDevice));
+	const VkPhysicalDevice							physicalDevice			= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+	SimpleAllocator									memAlloc				(vk, *m_device, getPhysicalDeviceMemoryProperties(vki, physicalDevice));
 
 	DE_ASSERT(RobustAccessWithPointersTest::s_numberOfBytesAccessed % sizeof(deUint32) == 0);
 	DE_ASSERT(inBufferAccessRange <= RobustAccessWithPointersTest::s_numberOfBytesAccessed);
@@ -1512,7 +1532,7 @@ AccessInstance::AccessInstance (Context&			context,
 
 	if (m_shaderStage == VK_SHADER_STAGE_COMPUTE_BIT)
 	{
-		m_testEnvironment = de::MovePtr<TestEnvironment>(new ComputeEnvironment(m_context, m_instanceWrapper->instance, m_instanceWrapper->instance.getDriver(), *m_device, *m_descriptorSetLayout, *m_descriptorSet));
+		m_testEnvironment = de::MovePtr<TestEnvironment>(new ComputeEnvironment(m_context, *m_deviceDriver, *m_device, *m_descriptorSetLayout, *m_descriptorSet));
 	}
 	else
 	{
@@ -1553,8 +1573,7 @@ AccessInstance::AccessInstance (Context&			context,
 		};
 
 		m_testEnvironment = de::MovePtr<TestEnvironment>(new GraphicsEnvironment(m_context,
-																				 m_instanceWrapper->instance,
-																				 m_instanceWrapper->instance.getDriver(),
+																				 *m_deviceDriver,
 																				 *m_device,
 																				 *m_descriptorSetLayout,
 																				 *m_descriptorSet,
@@ -1862,11 +1881,11 @@ bool AccessInstance::verifyResult (bool splitAccess)
 // BufferReadInstance
 
 ReadInstance::ReadInstance (Context&				context,
-							std::shared_ptr<CustomInstanceWrapper> instanceWrapper,
 							Move<VkDevice>			device,
 #ifndef CTS_USES_VULKANSC
 							de::MovePtr<vk::DeviceDriver>	deviceDriver,
 #else
+							de::MovePtr<CustomInstance>									customInstance,
 							de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 							ShaderType				shaderType,
@@ -1876,7 +1895,11 @@ ReadInstance::ReadInstance (Context&				context,
 							VkDeviceSize			inBufferAccessRange,
 							bool					accessOutOfBackingMemory)
 
-	: AccessInstance	(context, instanceWrapper, device, deviceDriver, shaderType, shaderStage, bufferFormat,
+	: AccessInstance	(context, device,
+#ifdef CTS_USES_VULKANSC
+						 customInstance,
+#endif // CTS_USES_VULKANSC
+						 deviceDriver, shaderType, shaderStage, bufferFormat,
 						 BUFFER_ACCESS_TYPE_READ_FROM_STORAGE,
 						 inBufferAccessRange, RobustAccessWithPointersTest::s_numberOfBytesAccessed,
 						 accessOutOfBackingMemory)
@@ -1886,11 +1909,11 @@ ReadInstance::ReadInstance (Context&				context,
 // BufferWriteInstance
 
 WriteInstance::WriteInstance (Context&				context,
-							  std::shared_ptr<CustomInstanceWrapper>	instanceWrapper,
 							  Move<VkDevice>		device,
 #ifndef CTS_USES_VULKANSC
 							  de::MovePtr<vk::DeviceDriver>		deviceDriver,
 #else
+							  de::MovePtr<CustomInstance>								customInstance,
 							  de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 							  ShaderType			shaderType,
@@ -1899,7 +1922,11 @@ WriteInstance::WriteInstance (Context&				context,
 							  VkDeviceSize			writeBufferAccessRange,
 							  bool					accessOutOfBackingMemory)
 
-	: AccessInstance	(context, instanceWrapper, device, deviceDriver, shaderType, shaderStage, bufferFormat,
+	: AccessInstance	(context, device,
+#ifdef CTS_USES_VULKANSC
+						 customInstance,
+#endif // CTS_USES_VULKANSC
+						 deviceDriver, shaderType, shaderStage, bufferFormat,
 						 BUFFER_ACCESS_TYPE_WRITE_TO_STORAGE,
 						 RobustAccessWithPointersTest::s_numberOfBytesAccessed, writeBufferAccessRange,
 						 accessOutOfBackingMemory)
@@ -1911,20 +1938,20 @@ WriteInstance::WriteInstance (Context&				context,
 tcu::TestCaseGroup* createBufferAccessWithVariablePointersTests(tcu::TestContext& testCtx)
 {
 	// Lets make group for the tests
-	de::MovePtr<tcu::TestCaseGroup> bufferAccessWithVariablePointersTests	(new tcu::TestCaseGroup(testCtx, "through_pointers", ""));
+	de::MovePtr<tcu::TestCaseGroup> bufferAccessWithVariablePointersTests	(new tcu::TestCaseGroup(testCtx, "through_pointers"));
 
 	// Lets add subgroups to better organise tests
-	de::MovePtr<tcu::TestCaseGroup> computeWithVariablePointersTests		(new tcu::TestCaseGroup(testCtx, "compute", ""));
-	de::MovePtr<tcu::TestCaseGroup> computeReads							(new tcu::TestCaseGroup(testCtx, "reads", ""));
-	de::MovePtr<tcu::TestCaseGroup> computeWrites							(new tcu::TestCaseGroup(testCtx, "writes", ""));
+	de::MovePtr<tcu::TestCaseGroup> computeWithVariablePointersTests		(new tcu::TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<tcu::TestCaseGroup> computeReads							(new tcu::TestCaseGroup(testCtx, "reads"));
+	de::MovePtr<tcu::TestCaseGroup> computeWrites							(new tcu::TestCaseGroup(testCtx, "writes"));
 
-	de::MovePtr<tcu::TestCaseGroup> graphicsWithVariablePointersTests		(new tcu::TestCaseGroup(testCtx, "graphics", ""));
-	de::MovePtr<tcu::TestCaseGroup> graphicsReads							(new tcu::TestCaseGroup(testCtx, "reads", ""));
-	de::MovePtr<tcu::TestCaseGroup> graphicsReadsVertex						(new tcu::TestCaseGroup(testCtx, "vertex", ""));
-	de::MovePtr<tcu::TestCaseGroup> graphicsReadsFragment					(new tcu::TestCaseGroup(testCtx, "fragment", ""));
-	de::MovePtr<tcu::TestCaseGroup> graphicsWrites							(new tcu::TestCaseGroup(testCtx, "writes", ""));
-	de::MovePtr<tcu::TestCaseGroup> graphicsWritesVertex					(new tcu::TestCaseGroup(testCtx, "vertex", ""));
-	de::MovePtr<tcu::TestCaseGroup> graphicsWritesFragment					(new tcu::TestCaseGroup(testCtx, "fragment", ""));
+	de::MovePtr<tcu::TestCaseGroup> graphicsWithVariablePointersTests		(new tcu::TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsReads							(new tcu::TestCaseGroup(testCtx, "reads"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsReadsVertex						(new tcu::TestCaseGroup(testCtx, "vertex"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsReadsFragment					(new tcu::TestCaseGroup(testCtx, "fragment"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsWrites							(new tcu::TestCaseGroup(testCtx, "writes"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsWritesVertex					(new tcu::TestCaseGroup(testCtx, "vertex"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsWritesFragment					(new tcu::TestCaseGroup(testCtx, "fragment"));
 
 	// A struct for describing formats
 	struct Formats
@@ -1989,7 +2016,7 @@ tcu::TestCaseGroup* createBufferAccessWithVariablePointersTests(tcu::TestContext
 					{
 						std::ostringstream	name;
 						name << types[i].sizes[k] << "B_" << backingMemory[s] << "_with_" << types[i].name << '_' << types[i].formats[j].name;
-						stages[stageId].reads->addChild(new RobustReadTest(testCtx, name.str().c_str(), "", stages[stageId].stage, types[i].value, types[i].formats[j].value, types[i].sizes[k], s != 0));
+						stages[stageId].reads->addChild(new RobustReadTest(testCtx, name.str().c_str(), stages[stageId].stage, types[i].value, types[i].formats[j].value, types[i].sizes[k], s != 0));
 					}
 
 	for (deInt32 stageId = 0; stageId < DE_LENGTH_OF_ARRAY(stages); ++stageId)
@@ -2000,7 +2027,7 @@ tcu::TestCaseGroup* createBufferAccessWithVariablePointersTests(tcu::TestContext
 					{
 						std::ostringstream	name;
 						name << types[i].sizes[k] << "B_" << backingMemory[s] << "_with_" << types[i].name << '_' << types[i].formats[j].name;
-						stages[stageId].writes->addChild(new RobustWriteTest(testCtx, name.str().c_str(), "", stages[stageId].stage, types[i].value, types[i].formats[j].value, types[i].sizes[k], s != 0));
+						stages[stageId].writes->addChild(new RobustWriteTest(testCtx, name.str().c_str(), stages[stageId].stage, types[i].value, types[i].formats[j].value, types[i].sizes[k], s != 0));
 					}
 
 	graphicsReads->addChild(graphicsReadsVertex.release());

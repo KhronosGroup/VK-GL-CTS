@@ -74,6 +74,10 @@ public:
 								ProgramCollection	(const BuildOptions defaultBuildOptions);
 								~ProgramCollection	(void);
 
+	// Forbid copy and assignment.
+	ProgramCollection (const ProgramCollection<Program, BuildOptions>& other) = delete;
+	ProgramCollection<Program, BuildOptions>& operator=(const ProgramCollection<Program, BuildOptions>& other) = delete;
+
 	void						clear				(void);
 
 	Program&					add					(const std::string& name);

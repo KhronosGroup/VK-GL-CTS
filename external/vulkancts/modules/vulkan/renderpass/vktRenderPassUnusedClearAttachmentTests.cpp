@@ -226,9 +226,8 @@ class UnusedClearAttachmentTest : public vkt::TestCase
 public:
 										UnusedClearAttachmentTest	(tcu::TestContext&	testContext,
 																	 const std::string&	name,
-																	 const std::string&	description,
 																	 const TestParams&	testParams)
-											: vkt::TestCase(testContext, name, description)
+											: vkt::TestCase(testContext, name)
 											, m_testParams(testParams)
 											{}
 	virtual								~UnusedClearAttachmentTest	(void) {}
@@ -792,6 +791,10 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 		void* pNext = DE_NULL;
 #ifndef CTS_USES_VULKANSC
 		const std::vector<VkFormat> colorAttachmentFormats(testParams.colorUsed.size(), FORMAT_COLOR);
+		const bool hasDepth = m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
+			m_testParams.depthStencilType == DEPTH_STENCIL_DEPTH_ONLY;
+		const bool hasStencil = m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
+			m_testParams.depthStencilType == DEPTH_STENCIL_STENCIL_ONLY;
 		VkPipelineRenderingCreateInfoKHR renderingCreateInfo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -799,8 +802,8 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 			0u,
 			static_cast<deUint32>(colorAttachmentFormats.size()),
 			colorAttachmentFormats.data(),
-			(hasDepthStencil(m_testParams.depthStencilType) ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED),
-			(hasDepthStencil(m_testParams.depthStencilType) ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED),
+			(hasDepth ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED),
+			(hasStencil ? m_testParams.depthStencilFormat : vk::VK_FORMAT_UNDEFINED),
 		};
 
 		if (testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
@@ -902,7 +905,10 @@ void UnusedClearAttachmentTestInstance::createCommandBuffer (const DeviceInterfa
 	RenderpassSubpass::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfo, &subpassBeginInfo);
 
 	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
-	vk.cmdClearAttachments(*m_cmdBuffer, static_cast<deUint32>(clearAttachments.size()), (clearAttachments.empty() ? DE_NULL : clearAttachments.data()), 1u, &clearRect);
+	if (!clearAttachments.empty())
+	{
+		vk.cmdClearAttachments(*m_cmdBuffer, static_cast<deUint32>(clearAttachments.size()), clearAttachments.data(), 1u, &clearRect);
+	}
 
 	const typename RenderpassSubpass::SubpassEndInfo subpassEndInfo(DE_NULL);
 	RenderpassSubpass::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
@@ -976,10 +982,10 @@ void UnusedClearAttachmentTestInstance::createCommandBufferDynamicRendering(cons
 		m_clearColorDepth														// VkClearValue							clearValue;
 	};
 
-	const bool hasDepth		= m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
-							  m_testParams.depthStencilType == DEPTH_STENCIL_DEPTH_ONLY;
-	const bool hasStencil	= m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
-							  m_testParams.depthStencilType == DEPTH_STENCIL_STENCIL_ONLY;
+	const bool hasDepth		= (m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
+							  m_testParams.depthStencilType == DEPTH_STENCIL_DEPTH_ONLY) && m_testParams.depthStencilUsed;
+	const bool hasStencil	= (m_testParams.depthStencilType == DEPTH_STENCIL_BOTH ||
+							  m_testParams.depthStencilType == DEPTH_STENCIL_STENCIL_ONLY) && m_testParams.depthStencilUsed;
 
 	std::vector<VkFormat> colorAttachmentFormats(m_testParams.colorUsed.size(), VK_FORMAT_UNDEFINED);
 	for (size_t i = 0; i < m_testParams.colorUsed.size(); ++i)
@@ -1042,7 +1048,10 @@ void UnusedClearAttachmentTestInstance::createCommandBufferDynamicRendering(cons
 		}
 
 		vk.cmdBindPipeline(*m_secCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
-		vk.cmdClearAttachments(*m_secCmdBuffer, static_cast<deUint32>(clearAttachments.size()), (clearAttachments.empty() ? DE_NULL : clearAttachments.data()), 1u, &clearRect);
+		if (!clearAttachments.empty())
+		{
+			vk.cmdClearAttachments(*m_secCmdBuffer, static_cast<deUint32>(clearAttachments.size()), clearAttachments.data(), 1u, &clearRect);
+		}
 
 		if (m_testParams.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
 			vk.cmdEndRendering(*m_secCmdBuffer);
@@ -1066,7 +1075,10 @@ void UnusedClearAttachmentTestInstance::createCommandBufferDynamicRendering(cons
 		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
-		vk.cmdClearAttachments(*m_cmdBuffer, static_cast<deUint32>(clearAttachments.size()), (clearAttachments.empty() ? DE_NULL : clearAttachments.data()), 1u, &clearRect);
+		if (!clearAttachments.empty())
+		{
+			vk.cmdClearAttachments(*m_cmdBuffer, static_cast<deUint32>(clearAttachments.size()), clearAttachments.data(), 1u, &clearRect);
+		}
 
 		vk.cmdEndRendering(*m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
@@ -1226,7 +1238,8 @@ std::string getCombName(const std::vector<deBool>& array)
 
 tcu::TestCaseGroup* createRenderPassUnusedClearAttachmentTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "unused_clear_attachments", "Unused attachments with vkCmdClearAttachments"));
+	// Unused attachments with vkCmdClearAttachments
+	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "unused_clear_attachments"));
 
 	for (int depthStencilType = 0; depthStencilType < DEPTH_STENCIL_MAX_ENUM; ++depthStencilType)
 	{
@@ -1238,6 +1251,24 @@ tcu::TestCaseGroup* createRenderPassUnusedClearAttachmentTests (tcu::TestContext
 			for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(DE_BOOL_VALUES); ++i)
 			{
 				const deBool			depthStencilUse	= DE_BOOL_VALUES[i];
+
+				if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING
+					&& dsType != DEPTH_STENCIL_NONE && !depthStencilUse
+					&& groupParams->useSecondaryCmdBuffer
+					&& !groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+				{
+					// In dynamic rendering, we cannot have D/S format set for attachment in secondary command buffer,
+					// while having no attachment in rendering info in primary command buffer.
+					//
+					// Spec:
+					// If vkCmdExecuteCommands is being called within a render pass instance begun with vkCmdBeginRendering and
+					// the VkRenderingInfo::pDepthAttachment->imageView parameter to vkCmdBeginRendering was VK_NULL_HANDLE,
+					// the value of the depthAttachmentFormat member of the VkCommandBufferInheritanceRenderingInfo structure included
+					// in the pNext chain of VkCommandBufferBeginInfo::pInheritanceInfo used to begin recording each element of
+					// pCommandBuffers must be VK_FORMAT_UNDEFINED
+					continue;
+				}
+
 				const std::string		dsCase			= depthStencilTypeName(dsType, dsFormat);
 				std::vector<TestParams>	testTypes;
 
@@ -1254,13 +1285,13 @@ tcu::TestCaseGroup* createRenderPassUnusedClearAttachmentTests (tcu::TestContext
 							std::string name = getCombName(array) + "_" + dsCase;
 							if (hasDepthStencil(dsType))
 								name += std::string("_") + getUsed(depthStencilUse);
-							testGroup->addChild(new UnusedClearAttachmentTest(testCtx, name, "", params));
+							testGroup->addChild(new UnusedClearAttachmentTest(testCtx, name, params));
 						});
 					}
 					else
 					{
 						std::string name = dsCase + "_" + getUsed(depthStencilUse);
-						testGroup->addChild(new UnusedClearAttachmentTest(testCtx, name, "", params));
+						testGroup->addChild(new UnusedClearAttachmentTest(testCtx, name, params));
 					}
 
 				}

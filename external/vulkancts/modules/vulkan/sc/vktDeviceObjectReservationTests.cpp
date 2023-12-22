@@ -323,6 +323,7 @@ void createBufferViews		(const DeviceInterface&					vkd,
 void createImageViews		(const DeviceInterface&					vkd,
 							 const VkDevice							device,
 							 const VkImage							image,
+							 const VkFormat							format,
 							 std::vector<ImageViewSp>::iterator		begin,
 							 std::vector<ImageViewSp>::iterator		end)
 {
@@ -336,7 +337,7 @@ void createImageViews		(const DeviceInterface&					vkd,
 			0u,																// VkImageViewCreateFlags   flags
 			image,															// VkImage                  image
 			VK_IMAGE_VIEW_TYPE_2D,											// VkImageViewType          viewType
-			VK_FORMAT_R8_UNORM,												// VkFormat                 format
+			format,															// VkFormat                 format
 			componentMapping,												// VkComponentMapping       components
 			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },					// VkImageSubresourceRange  subresourceRange
 		};
@@ -890,7 +891,7 @@ tcu::TestStatus DeviceObjectReservationInstance::iterate (void)
 
 	Move<VkDevice>					device				= createTestDevice(deviceCreateInfo, objectInfo, sc10Features);
 	de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>
-									deviceDriver		= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties()),
+									deviceDriver		= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *device, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()),
 															DeinitDeviceDeleter(m_context.getResourceInterface().get(), *device));
 
 	performTest(*deviceDriver, *device);
@@ -1480,7 +1481,7 @@ public:
 			}
 			case TRC_BUFFER_VIEW:
 			{
-				const VkBufferCreateInfo bufferCI = makeBufferCreateInfo(128ull, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+				const VkBufferCreateInfo bufferCI = makeBufferCreateInfo(128ull, VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT);
 				BufferWithMemory buffer(vkd, device, allocator, bufferCI, MemoryRequirement::HostVisible);
 
 				std::vector<BufferViewSp> bufferViews(VERIFYMAXVALUES_OBJECT_COUNT);
@@ -1518,11 +1519,11 @@ public:
 				ImageWithMemory image(vkd, device, allocator, imageCI, MemoryRequirement::Any);
 
 				std::vector<ImageViewSp> imageViews(VERIFYMAXVALUES_OBJECT_COUNT);
-				createImageViews(vkd, device, image.get(), begin(imageViews), end(imageViews));
+				createImageViews(vkd, device, image.get(), VK_FORMAT_R8_UNORM, begin(imageViews), end(imageViews));
 				std::fill(begin(imageViews) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(imageViews), ImageViewSp());
-				createImageViews(vkd, device, image.get(), begin(imageViews) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(imageViews));
+				createImageViews(vkd, device, image.get(), VK_FORMAT_R8_UNORM, begin(imageViews) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(imageViews));
 				std::fill(begin(imageViews), end(imageViews), ImageViewSp());
-				createImageViews(vkd, device, image.get(), begin(imageViews), end(imageViews));
+				createImageViews(vkd, device, image.get(), VK_FORMAT_R8_UNORM, begin(imageViews), end(imageViews));
 				break;
 			}
 			case TRC_LAYERED_IMAGE_VIEW:
@@ -1552,11 +1553,11 @@ public:
 				ImageWithMemory image(vkd, device, allocator, imageCI, MemoryRequirement::Any);
 
 				std::vector<ImageViewSp> imageViews(VERIFYMAXVALUES_OBJECT_COUNT);
-				createImageViews(vkd, device, image.get(), begin(imageViews), end(imageViews));
+				createImageViews(vkd, device, image.get(), VK_FORMAT_R8_UNORM, begin(imageViews), end(imageViews));
 				std::fill(begin(imageViews) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(imageViews), ImageViewSp());
-				createImageViews(vkd, device, image.get(), begin(imageViews) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(imageViews));
+				createImageViews(vkd, device, image.get(), VK_FORMAT_R8_UNORM, begin(imageViews) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(imageViews));
 				std::fill(begin(imageViews), end(imageViews), ImageViewSp());
-				createImageViews(vkd, device, image.get(), begin(imageViews), end(imageViews));
+				createImageViews(vkd, device, image.get(), VK_FORMAT_R8_UNORM, begin(imageViews), end(imageViews));
 				break;
 			}
 			case TRC_PIPELINE_LAYOUT:
@@ -1731,7 +1732,7 @@ public:
 				createRenderPasses(vkd, device, &attachmentDescription, begin(renderPasses), end(renderPasses));
 
 				std::vector<ImageViewSp> imageViews(1u);
-				createImageViews(vkd, device, image.get(), begin(imageViews), end(imageViews));
+				createImageViews(vkd, device, image.get(), VK_FORMAT_R8G8B8A8_UNORM, begin(imageViews), end(imageViews));
 
 				std::vector<FramebufferSp> framebuffers(VERIFYMAXVALUES_OBJECT_COUNT);
 				createFramebuffers(vkd, device, renderPasses[0]->get(), imageViews[0]->get(), begin(framebuffers), end(framebuffers));
@@ -1988,21 +1989,22 @@ public:
 
 tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "device_object_reservation", "Tests verifying VkDeviceObjectReservationCreateInfo"));
+	// Tests verifying VkDeviceObjectReservationCreateInfo
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "device_object_reservation"));
 
 	// add basic tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> basicGroup(new tcu::TestCaseGroup(group->getTestContext(), "basic", ""));
+		de::MovePtr<tcu::TestCaseGroup> basicGroup(new tcu::TestCaseGroup(group->getTestContext(), "basic"));
 
-		basicGroup->addChild(new InstanceFactory1<DeviceObjectReservationInstance, TestParams>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "create_device", "", TestParams()));
-		basicGroup->addChild(new InstanceFactory1<MultipleReservation, TestParams>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "multiple_device_object_reservation", "", TestParams()));
+		basicGroup->addChild(new InstanceFactory1<DeviceObjectReservationInstance, TestParams>(testCtx, "create_device", TestParams()));
+		basicGroup->addChild(new InstanceFactory1<MultipleReservation, TestParams>(testCtx, "multiple_device_object_reservation", TestParams()));
 
 		group->addChild(basicGroup.release());
 	}
 
 	// add tests verifying device limits
 	{
-		de::MovePtr<tcu::TestCaseGroup> limitGroup(new tcu::TestCaseGroup(group->getTestContext(), "limits", ""));
+		de::MovePtr<tcu::TestCaseGroup> limitGroup(new tcu::TestCaseGroup(group->getTestContext(), "limits"));
 		struct TestMaxValuesData
 		{
 			TestMaxValues							testMaxValues;
@@ -2018,7 +2020,7 @@ tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCt
 			{ TMV_MAX_TIMESTAMP_QUERIES_PER_POOL,			"max_timestamp_queries_per_pool" },
 		};
 		{
-			de::MovePtr<tcu::TestCaseGroup> maxValGroup(new tcu::TestCaseGroup(group->getTestContext(), "max_values", ""));
+			de::MovePtr<tcu::TestCaseGroup> maxValGroup(new tcu::TestCaseGroup(group->getTestContext(), "max_values"));
 
 			for (deInt32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testMaxValues); ndx++)
 			{
@@ -2027,7 +2029,7 @@ tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCt
 					testMaxValues[ndx].testMaxValues,
 					TRC_UNDEFINED
 				};
-				maxValGroup->addChild(new InstanceFactory1WithSupport<VerifyMaxValues, TestParams, FunctionSupport1<TestParams>>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testMaxValues[ndx].name, "", testParams,
+				maxValGroup->addChild(new InstanceFactory1WithSupport<VerifyMaxValues, TestParams, FunctionSupport1<TestParams>>(testCtx, testMaxValues[ndx].name, testParams,
 					typename FunctionSupport1<TestParams>::Args(checkSupportVerifyMaxValues, testParams)));
 			}
 
@@ -2067,7 +2069,7 @@ tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCt
 //			{ TRC_DISPLAY_MODE,					"display_mode" },
 		};
 		{
-			de::MovePtr<tcu::TestCaseGroup> requestCountGroup(new tcu::TestCaseGroup(group->getTestContext(), "request_count", ""));
+			de::MovePtr<tcu::TestCaseGroup> requestCountGroup(new tcu::TestCaseGroup(group->getTestContext(), "request_count"));
 
 			for (deInt32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testRequestCounts); ndx++)
 			{
@@ -2076,7 +2078,7 @@ tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCt
 					TMV_UNDEFINED,
 					testRequestCounts[ndx].requestCount
 				};
-				requestCountGroup->addChild(new InstanceFactory1WithSupport<VerifyRequestCounts, TestParams, FunctionSupport1<TestParams>, ProgramsVerifyLimits>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testRequestCounts[ndx].name, "",
+				requestCountGroup->addChild(new InstanceFactory1WithSupport<VerifyRequestCounts, TestParams, FunctionSupport1<TestParams>, ProgramsVerifyLimits>(testCtx, testRequestCounts[ndx].name,
 					ProgramsVerifyLimits(), testParams, typename FunctionSupport1<TestParams>::Args(checkSupportVerifyRequestCounts, testParams)));
 			}
 
@@ -2088,7 +2090,7 @@ tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCt
 
 	// add tests verifying pipeline pool sizes
 	{
-		de::MovePtr<tcu::TestCaseGroup> ppsGroup(new tcu::TestCaseGroup(group->getTestContext(), "pipeline_pool_size", ""));
+		de::MovePtr<tcu::TestCaseGroup> ppsGroup(new tcu::TestCaseGroup(group->getTestContext(), "pipeline_pool_size"));
 
 
 		struct PoolSizesData
@@ -2108,7 +2110,7 @@ tcu::TestCaseGroup*	createDeviceObjectReservationTests (tcu::TestContext& testCt
 		{
 			TestParams testParams(TMV_UNDEFINED, TRC_UNDEFINED, poolSizes[ndx].type);
 
-			ppsGroup->addChild(new InstanceFactory1<VerifyPipelinePoolSizes, TestParams, ProgramsVerifyLimits>(testCtx, tcu::NODETYPE_SELF_VALIDATE, poolSizes[ndx].name, "", ProgramsVerifyLimits(), testParams));
+			ppsGroup->addChild(new InstanceFactory1<VerifyPipelinePoolSizes, TestParams, ProgramsVerifyLimits>(testCtx, poolSizes[ndx].name, ProgramsVerifyLimits(), testParams));
 		}
 
 

@@ -547,7 +547,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 	Allocator&								allocator			= m_context.getDefaultAllocator();
 	const Unique<VkCommandPool>				cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>			cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const UVec3								fullSize			(m_parameters.size.x(), m_parameters.size.y(), 1);
+	const UVec3								fullSize			(m_parameters.size.x(), m_parameters.imageType == IMAGE_TYPE_1D ? 1 : m_parameters.size.y(), 1);
 	const vector<UVec3>						mipMapSizes			= m_parameters.useMipmaps ? getMipLevelSizes (getLayerDims()) : vector<UVec3>(1, fullSize);
 	vector<ImageData>						imageData			(m_parameters.imagesCount);
 	const deUint32							compressedNdx		= 0u;
@@ -611,6 +611,8 @@ TestStatus BasicComputeTestInstance::iterate (void)
 			break;
 	}
 
+	bool pass = true;
+	std::string failString;
 	{
 		Move<VkDescriptorSetLayout>	descriptorSetLayout;
 		Move<VkDescriptorPool>		descriptorPool;
@@ -650,13 +652,22 @@ TestStatus BasicComputeTestInstance::iterate (void)
 													imageData[resultImageNdx].getImageInfo(imageNdx).extent.height,
 													imageData[resultImageNdx].getImageInfo(imageNdx).extent.depth);
 				if (!copyResultAndCompare(*cmdPool, *cmdBuffer, imageData[resultImageNdx].getImage(imageNdx), offset, size))
-					return TestStatus::fail("Uncompressed output mismatch at offset " + de::toString(offset) + " even before executing decompression");
+				{
+					pass = false;
+					failString = std::string("Uncompressed output mismatch at offset ") + de::toString(offset) + " even before executing decompression";
+				}
 				offset += getCompressedImageSizeInBytes(m_parameters.formatCompressed, mipMapSizes[mipNdx]);
 			}
 		}
 	}
 	if (!decompressImage(*cmdPool, *cmdBuffer, imageData, mipMapSizes))
-			return TestStatus::fail("Decompression failed");
+	{
+		pass = false;
+		failString = "Decompression failed";
+	}
+
+	if (!pass)
+		return TestStatus::fail(failString);
 
 	if (m_bASTCErrorColourMismatch)
 	{
@@ -845,7 +856,7 @@ void BasicComputeTestInstance::executeShader (const VkCommandPool&			cmdPool,
 	m_context.resetCommandPoolForVKSC(device, cmdPool);
 }
 
-bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandPool&				cmdPool,
+bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandPool&	cmdPool,
 													 const VkCommandBuffer&	cmdBuffer,
 													 const VkImage&			uncompressed,
 													 const VkDeviceSize		offset,
@@ -1017,7 +1028,7 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 	}
 }
 
-bool BasicComputeTestInstance::decompressImage (const VkCommandPool&				cmdPool,
+bool BasicComputeTestInstance::decompressImage (const VkCommandPool&	cmdPool,
 												 const VkCommandBuffer&	cmdBuffer,
 												 vector<ImageData>&		imageData,
 												 const vector<UVec3>&	mipMapSizes)
@@ -1038,7 +1049,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandPool&				cmdPool,
 	{
 		const bool						layoutShaderReadOnly	= (layerNdx % 2u) == 1;
 		const deUint32					imageNdx				= layerNdx + mipNdx * getLayerCount();
-		const VkExtent3D				extentCompressed		= imageType == VK_IMAGE_TYPE_1D ? makeExtent3D(mipMapSizes[mipNdx].x(), 1, mipMapSizes[mipNdx].z()) : makeExtent3D(mipMapSizes[mipNdx]);
+		const VkExtent3D				extentCompressed		= makeExtent3D(mipMapSizes[mipNdx]);
 		const VkImage&					uncompressed			= imageData[m_parameters.imagesCount -1].getImage(imageNdx);
 		const VkExtent3D				extentUncompressed		= imageData[m_parameters.imagesCount -1].getImageInfo(imageNdx).extent;
 		const VkDeviceSize				bufferSizeComp			= getCompressedImageSizeInBytes(m_parameters.formatCompressed, mipMapSizes[mipNdx]);
@@ -1445,7 +1456,7 @@ void ImageStoreComputeTestInstance::executeShader (const VkCommandPool&			cmdPoo
 		for (deUint32 imageNdx = 0u; imageNdx < imageData[1].getImagesCount(); ++imageNdx)
 		{
 			preShaderImageBarriers[imageNdx]									= makeImageMemoryBarrier(
-																					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+																					VK_ACCESS_TRANSFER_WRITE_BIT, (VK_ACCESS_SHADER_READ_BIT|VK_ACCESS_SHADER_WRITE_BIT),
 																					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 																					imageData[1].getImage(imageNdx), uncompressedRange);
 
@@ -1456,7 +1467,7 @@ void ImageStoreComputeTestInstance::executeShader (const VkCommandPool&			cmdPoo
 		}
 
 		preShaderImageBarriers[preShaderImageBarriers.size()-1] = makeImageMemoryBarrier(
-																	VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+																	VK_ACCESS_TRANSFER_WRITE_BIT, (VK_ACCESS_SHADER_READ_BIT|VK_ACCESS_SHADER_WRITE_BIT),
 																	VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 																	imageData[0].getImage(0u), compressedRange);
 
@@ -1505,9 +1516,10 @@ protected:
 																		 const deUint32					level);
 	virtual void						prepareData						();
 	virtual void						prepareVertexBuffer				();
-	virtual void						transcodeRead					();
-	virtual void						transcodeWrite					();
-	bool								verifyDecompression				(const std::vector<deUint8>&	refCompressedData,
+	virtual void						transcodeRead					(const VkCommandPool&			cmdPool);
+	virtual void						transcodeWrite					(const VkCommandPool&			cmdPool);
+	bool								verifyDecompression				(const VkCommandPool&			cmdPool,
+																		 const std::vector<deUint8>&	refCompressedData,
 																		 const de::MovePtr<Image>&		resCompressedImage,
 																		 const deUint32					layer,
 																		 const deUint32					level,
@@ -1570,6 +1582,11 @@ GraphicsAttachmentsTestInstance::GraphicsAttachmentsTestInstance (Context& conte
 
 TestStatus GraphicsAttachmentsTestInstance::iterate (void)
 {
+	const DeviceInterface&				vk						= m_context.getDeviceInterface();
+	const VkDevice						device					= m_context.getDevice();
+	const deUint32						queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const Unique<VkCommandPool>			cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+
 	prepareData();
 	prepareVertexBuffer();
 
@@ -1578,22 +1595,26 @@ TestStatus GraphicsAttachmentsTestInstance::iterate (void)
 			DE_ASSERT(m_srcData[levelNdx][layerNdx]->size() == m_dstData[levelNdx][layerNdx]->size());
 
 	if (isWriteToCompressedOperation())
-		transcodeWrite();
+		transcodeWrite(*cmdPool);
 	else
-		transcodeRead();
+		transcodeRead(*cmdPool);
 
+	bool pass = true;
 	for (deUint32 levelNdx = 0; levelNdx < getLevelCount(); ++levelNdx)
 		for (deUint32 layerNdx = 0; layerNdx < getLayerCount(); ++layerNdx)
 			if (isWriteToCompressedOperation())
 			{
-				if (!verifyDecompression(*m_srcData[levelNdx][layerNdx], m_compressedImage, levelNdx, layerNdx, m_compressedImageResVec[levelNdx]))
-					return TestStatus::fail("Images difference detected");
+				if (!verifyDecompression(*cmdPool, *m_srcData[levelNdx][layerNdx], m_compressedImage, levelNdx, layerNdx, m_compressedImageResVec[levelNdx]))
+					pass = false;
 			}
 			else
 			{
-				if (!verifyDecompression(*m_dstData[levelNdx][layerNdx], m_compressedImage, levelNdx, layerNdx, m_compressedImageResVec[levelNdx]))
-					return TestStatus::fail("Images difference detected");
+				if (!verifyDecompression(*cmdPool, *m_dstData[levelNdx][layerNdx], m_compressedImage, levelNdx, layerNdx, m_compressedImageResVec[levelNdx]))
+					pass = false;
 			}
+
+	if (!pass)
+		return TestStatus::fail("Images difference detected");;
 
 	if (m_bASTCErrorColourMismatch)
 	{
@@ -1676,11 +1697,10 @@ void GraphicsAttachmentsTestInstance::prepareVertexBuffer ()
 	flushAlloc(vk, device, vertexBufferAlloc);
 }
 
-void GraphicsAttachmentsTestInstance::transcodeRead ()
+void GraphicsAttachmentsTestInstance::transcodeRead (const VkCommandPool&				cmdPool)
 {
 	const DeviceInterface&				vk						= m_context.getDeviceInterface();
 	const VkDevice						device					= m_context.getDevice();
-	const deUint32						queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const VkQueue						queue					= m_context.getUniversalQueue();
 	Allocator&							allocator				= m_context.getDefaultAllocator();
 
@@ -1706,8 +1726,7 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSizeUnused, 1u, true));
 
-	const Unique<VkCommandPool>			cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	for (deUint32 levelNdx = 0; levelNdx < getLevelCount(); ++levelNdx)
 	{
@@ -1800,7 +1819,7 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-			m_context.resetCommandPoolForVKSC(device, *cmdPool);
+			m_context.resetCommandPoolForVKSC(device, cmdPool);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
 			invalidateAlloc(vk, device, dstImageBufferAlloc);
@@ -1811,11 +1830,10 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 	m_compressedImage = srcImage;
 }
 
-void GraphicsAttachmentsTestInstance::transcodeWrite ()
+void GraphicsAttachmentsTestInstance::transcodeWrite (const VkCommandPool&				cmdPool)
 {
 	const DeviceInterface&				vk						= m_context.getDeviceInterface();
 	const VkDevice						device					= m_context.getDevice();
-	const deUint32						queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const VkQueue						queue					= m_context.getUniversalQueue();
 	Allocator&							allocator				= m_context.getDefaultAllocator();
 
@@ -1841,8 +1859,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSizeUnused, 1u, true));
 
-	const Unique<VkCommandPool>			cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	for (deUint32 levelNdx = 0; levelNdx < getLevelCount(); ++levelNdx)
 	{
@@ -1935,7 +1952,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-			m_context.resetCommandPoolForVKSC(device, *cmdPool);
+			m_context.resetCommandPoolForVKSC(device, cmdPool);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
 			invalidateAlloc(vk, device, dstImageBufferAlloc);
@@ -2025,7 +2042,8 @@ VkDeviceSize GraphicsAttachmentsTestInstance::getUncompressedImageData (const Vk
 	return sizeBytes;
 }
 
-bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deUint8>&	refCompressedData,
+bool GraphicsAttachmentsTestInstance::verifyDecompression (const VkCommandPool&			cmdPool,
+														   const std::vector<deUint8>&	refCompressedData,
 														   const de::MovePtr<Image>&	resCompressedImage,
 														   const deUint32				level,
 														   const deUint32				layer,
@@ -2033,7 +2051,6 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 {
 	const DeviceInterface&				vk							= m_context.getDeviceInterface();
 	const VkDevice						device						= m_context.getDevice();
-	const deUint32						queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
 	const VkQueue						queue						= m_context.getUniversalQueue();
 	Allocator&							allocator					= m_context.getDefaultAllocator();
 
@@ -2106,12 +2123,8 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const VkExtent2D					renderSize					(makeExtent2D(mipmapDims.x(), mipmapDims.y()));
 	const Unique<VkPipelineLayout>		pipelineLayout				(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>			pipeline					(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSize, 0u));
-#ifndef CTS_USES_VULKANSC
-	const Unique<VkCommandPool>			cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT, queueFamilyIndex));
-#else
-	const Unique<VkCommandPool>			cmdPool						(createCommandPool(vk, device, VkCommandPoolCreateFlags(0u), queueFamilyIndex));
-#endif // CTS_USES_VULKANSC
-	const Unique<VkCommandBuffer>		cmdBuffer					(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	const Unique<VkCommandBuffer>		cmdBuffer					(allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkBufferImageCopy				copyBufferToImageRegion		= makeBufferImageCopy(mipmapDimsBlocked.x(), mipmapDimsBlocked.y(), 0u, 0u, mipmapDimsBlocked.x(), mipmapDimsBlocked.y());
 	const VkBufferImageCopy				copyRegion					= makeBufferImageCopy(mipmapDims.x(), mipmapDims.y(), 0u, 0u);
@@ -2194,7 +2207,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-	m_context.resetCommandPoolForVKSC(device, *cmdPool);
+	m_context.resetCommandPoolForVKSC(device, cmdPool);
 
 	// Compare decompressed pixel data in reference and result images
 	{
@@ -2250,8 +2263,8 @@ public:
 
 protected:
 	virtual bool		isWriteToCompressedOperation	();
-	virtual void		transcodeRead					();
-	virtual void		transcodeWrite					();
+	virtual void		transcodeRead					(const VkCommandPool&				cmdPool);
+	virtual void		transcodeWrite					(const VkCommandPool&				cmdPool);
 };
 
 GraphicsTextureTestInstance::GraphicsTextureTestInstance (Context& context, const TestParameters& parameters)
@@ -2264,11 +2277,10 @@ bool GraphicsTextureTestInstance::isWriteToCompressedOperation ()
 	return (m_parameters.operation == OPERATION_TEXTURE_WRITE);
 }
 
-void GraphicsTextureTestInstance::transcodeRead ()
+void GraphicsTextureTestInstance::transcodeRead (const VkCommandPool&				cmdPool)
 {
 	const DeviceInterface&				vk						= m_context.getDeviceInterface();
 	const VkDevice						device					= m_context.getDevice();
-	const deUint32						queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const VkQueue						queue					= m_context.getUniversalQueue();
 	Allocator&							allocator				= m_context.getDefaultAllocator();
 
@@ -2296,8 +2308,7 @@ void GraphicsTextureTestInstance::transcodeRead ()
 	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSizeUnused, 0u, true));
 
-	const Unique<VkCommandPool>			cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	for (deUint32 levelNdx = 0; levelNdx < getLevelCount(); ++levelNdx)
 	{
@@ -2340,7 +2351,7 @@ void GraphicsTextureTestInstance::transcodeRead ()
 			const VkImageMemoryBarrier		srcCopyImageBarrierPre	= makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, srcImage->get(), srcSubresourceRange);
 			const VkImageMemoryBarrier		srcCopyImageBarrierPost	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, srcImage->get(), srcSubresourceRange);
 			const VkBufferImageCopy			dstCopyRegion			= makeBufferImageCopy(dstImageResolution.x(), dstImageResolution.y());
-			const VkImageMemoryBarrier		dstInitImageBarrier		= makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, dstImage->get(), dstSubresourceRange);
+			const VkImageMemoryBarrier		dstInitImageBarrier		= makeImageMemoryBarrier(0u, (VK_ACCESS_SHADER_READ_BIT|VK_ACCESS_SHADER_WRITE_BIT), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, dstImage->get(), dstSubresourceRange);
 
 			const VkExtent2D				framebufferSize			(makeExtent2D(dstImageResolution[0], dstImageResolution[1]));
 			const Move<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPass, 0, DE_NULL, framebufferSize.width, framebufferSize.height, SINGLE_LAYER));
@@ -2394,7 +2405,7 @@ void GraphicsTextureTestInstance::transcodeRead ()
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-			m_context.resetCommandPoolForVKSC(device, *cmdPool);
+			m_context.resetCommandPoolForVKSC(device, cmdPool);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
 			invalidateAlloc(vk, device, dstImageBufferAlloc);
@@ -2405,11 +2416,10 @@ void GraphicsTextureTestInstance::transcodeRead ()
 	m_compressedImage = srcImage;
 }
 
-void GraphicsTextureTestInstance::transcodeWrite ()
+void GraphicsTextureTestInstance::transcodeWrite (const VkCommandPool&				cmdPool)
 {
 	const DeviceInterface&				vk						= m_context.getDeviceInterface();
 	const VkDevice						device					= m_context.getDevice();
-	const deUint32						queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const VkQueue						queue					= m_context.getUniversalQueue();
 	Allocator&							allocator				= m_context.getDefaultAllocator();
 
@@ -2437,8 +2447,7 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertShaderModule, *fragShaderModule, renderSizeUnused, 0u, true));
 
-	const Unique<VkCommandPool>			cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	for (deUint32 levelNdx = 0; levelNdx < getLevelCount(); ++levelNdx)
 	{
@@ -2535,7 +2544,7 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-			m_context.resetCommandPoolForVKSC(device, *cmdPool);
+			m_context.resetCommandPoolForVKSC(device, cmdPool);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
 			invalidateAlloc(vk, device, dstImageBufferAlloc);
@@ -2551,7 +2560,6 @@ class TexelViewCompatibleCase : public TestCase
 public:
 							TexelViewCompatibleCase		(TestContext&				testCtx,
 														 const std::string&			name,
-														 const std::string&			desc,
 														 const TestParameters&		parameters);
 	void					initPrograms				(SourceCollections&			programCollection) const;
 	TestInstance*			createInstance				(Context&					context) const;
@@ -2560,8 +2568,8 @@ protected:
 	const TestParameters	m_parameters;
 };
 
-TexelViewCompatibleCase::TexelViewCompatibleCase (TestContext& testCtx, const std::string& name, const std::string& desc, const TestParameters& parameters)
-	: TestCase				(testCtx, name, desc)
+TexelViewCompatibleCase::TexelViewCompatibleCase (TestContext& testCtx, const std::string& name, const TestParameters& parameters)
+	: TestCase				(testCtx, name)
 	, m_parameters			(parameters)
 {
 }
@@ -3202,21 +3210,21 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 
 	DE_ASSERT(DE_LENGTH_OF_ARRAY(formatsCompressedSets) == DE_LENGTH_OF_ARRAY(formatsUncompressedSets));
 
-	MovePtr<tcu::TestCaseGroup>	texelViewCompatibleTests							(new tcu::TestCaseGroup(testCtx, "texel_view_compatible", "Texel view compatible cases"));
+	MovePtr<tcu::TestCaseGroup>	texelViewCompatibleTests							(new tcu::TestCaseGroup(testCtx, "texel_view_compatible"));
 
 	for (int shaderType = SHADER_TYPE_COMPUTE; shaderType < SHADER_TYPE_LAST; ++shaderType)
 	{
-		MovePtr<tcu::TestCaseGroup>	pipelineTypeGroup	(new tcu::TestCaseGroup(testCtx, pipelineName[shaderType].c_str(), ""));
+		MovePtr<tcu::TestCaseGroup>	pipelineTypeGroup	(new tcu::TestCaseGroup(testCtx, pipelineName[shaderType].c_str()));
 
 		for (int mipmapTestNdx = 0; mipmapTestNdx < DE_LENGTH_OF_ARRAY(mipmapness); mipmapTestNdx++)
 		{
 			const bool mipmapTest = mipmapness[mipmapTestNdx];
 
-			MovePtr<tcu::TestCaseGroup>	mipmapTypeGroup	(new tcu::TestCaseGroup(testCtx, mipmanpnessName[mipmapTestNdx].c_str(), ""));
+			MovePtr<tcu::TestCaseGroup>	mipmapTypeGroup	(new tcu::TestCaseGroup(testCtx, mipmanpnessName[mipmapTestNdx].c_str()));
 
 			for (int imageTypeNdx = 0; imageTypeNdx < DE_LENGTH_OF_ARRAY(imageTypes); imageTypeNdx++)
 			{
-				MovePtr<tcu::TestCaseGroup> imageTypeGroup	(new tcu::TestCaseGroup(testCtx, imageTypes[imageTypeNdx].name.c_str(), ""));
+				MovePtr<tcu::TestCaseGroup> imageTypeGroup	(new tcu::TestCaseGroup(testCtx, imageTypes[imageTypeNdx].name.c_str()));
 				ImageType					imageType = imageTypes[imageTypeNdx].type;
 
 				for (int operationNdx = OPERATION_IMAGE_LOAD; operationNdx < OPERATION_LAST; ++operationNdx)
@@ -3231,7 +3239,7 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 						(operationNdx == OPERATION_ATTACHMENT_READ || operationNdx == OPERATION_ATTACHMENT_WRITE))
 						continue;
 
-					MovePtr<tcu::TestCaseGroup>	imageOperationGroup	(new tcu::TestCaseGroup(testCtx, operationName[operationNdx].c_str(), ""));
+					MovePtr<tcu::TestCaseGroup>	imageOperationGroup	(new tcu::TestCaseGroup(testCtx, operationName[operationNdx].c_str()));
 
 					deUint32 depth		= 1u + 2 * (imageType == IMAGE_TYPE_3D);
 					deUint32 imageCount	= 2u + (operationNdx == OPERATION_IMAGE_STORE);
@@ -3243,7 +3251,7 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 						{
 							const VkFormat				formatCompressed			= formatsCompressedSets[formatBitnessGroup].formats[formatCompressedNdx];
 							const std::string			compressedFormatGroupName	= getFormatShortString(formatCompressed);
-							MovePtr<tcu::TestCaseGroup>	compressedFormatGroup		(new tcu::TestCaseGroup(testCtx, compressedFormatGroupName.c_str(), ""));
+							MovePtr<tcu::TestCaseGroup>	compressedFormatGroup		(new tcu::TestCaseGroup(testCtx, compressedFormatGroupName.c_str()));
 
 							for (deUint32 formatUncompressedNdx = 0; formatUncompressedNdx < formatsUncompressedSets[formatBitnessGroup].count; ++formatUncompressedNdx)
 							{
@@ -3268,7 +3276,7 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 									FormatIsASTC(formatCompressed)
 								};
 
-								compressedFormatGroup->addChild(new TexelViewCompatibleCase(testCtx, uncompressedFormatGroupName, "", parameters));
+								compressedFormatGroup->addChild(new TexelViewCompatibleCase(testCtx, uncompressedFormatGroupName, parameters));
 							}
 
 							imageOperationGroup->addChild(compressedFormatGroup.release());

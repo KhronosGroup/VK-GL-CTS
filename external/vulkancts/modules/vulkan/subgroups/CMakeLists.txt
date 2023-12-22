@@ -57,6 +57,4 @@ add_library(deqp-vk-subgroups STATIC ${DEQP_VK_VKSC_SUBGROUPS_SRCS} ${DEQP_VK_SU
 target_link_libraries(deqp-vk-subgroups tcutil vkutil)
 
 add_library(deqp-vksc-subgroups STATIC ${DEQP_VK_VKSC_SUBGROUPS_SRCS})
-target_include_directories(deqp-vksc-subgroups BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-subgroups PUBLIC deqp-vksc-util tcutil vkscutil)
-

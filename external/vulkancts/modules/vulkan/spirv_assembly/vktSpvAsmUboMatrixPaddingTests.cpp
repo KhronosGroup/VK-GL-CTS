@@ -140,7 +140,7 @@ void addComputeUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 	// Shader is expected to pass the input data by treating the input vec4 as mat2x2
 	spec.outputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData))));
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "mat2x2", "Tests mat2x2 member in UBO struct without padding (treated as vec4).", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "mat2x2", spec));
 }
 
 void addGraphicsUboMatrixPaddingTest (tcu::TestCaseGroup* group)
@@ -270,7 +270,8 @@ void addGraphicsUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createUboMatrixPaddingComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "ubo_padding", "Compute tests for UBO struct member packing."));
+	// Compute tests for UBO struct member packing.
+	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "ubo_padding"));
 	addComputeUboMatrixPaddingTest(group.get());
 
 	return group.release();
@@ -278,7 +279,8 @@ tcu::TestCaseGroup* createUboMatrixPaddingComputeGroup (tcu::TestContext& testCt
 
 tcu::TestCaseGroup* createUboMatrixPaddingGraphicsGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "ubo_padding", "Graphics tests for UBO struct member packing."));
+	// Graphics tests for UBO struct member packing.
+	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "ubo_padding"));
 	addGraphicsUboMatrixPaddingTest(group.get());
 
 	return group.release();

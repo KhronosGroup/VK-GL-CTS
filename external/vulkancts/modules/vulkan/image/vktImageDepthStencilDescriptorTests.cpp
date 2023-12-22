@@ -185,7 +185,7 @@ VkImageUsageFlags getReadOnlyUsageFlags (const ROAccessVec& readOnlyAccesses)
 		if (access == ReadOnlyAccess::DS_ATTACHMENT)
 			usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		else if (access == ReadOnlyAccess::INPUT_ATTACHMENT)
-			usageFlags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+			usageFlags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		else if (access == ReadOnlyAccess::SAMPLED)
 			usageFlags |= VK_IMAGE_USAGE_SAMPLED_BIT;
 		else
@@ -344,7 +344,7 @@ bool TestParams::needsStencilTest () const
 class DepthStencilDescriptorCase : public vkt::TestCase
 {
 public:
-					DepthStencilDescriptorCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+					DepthStencilDescriptorCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual			~DepthStencilDescriptorCase		(void) {}
 
 	void			checkSupport	(Context& context) const override;
@@ -393,8 +393,8 @@ protected:
 	TestParams		m_params;
 };
 
-DepthStencilDescriptorCase::DepthStencilDescriptorCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+DepthStencilDescriptorCase::DepthStencilDescriptorCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -1309,7 +1309,8 @@ tcu::TestCaseGroup* createImageDepthStencilDescriptorTests (tcu::TestContext& te
 	const auto kLayoutPrefixLen = std::string("VK_IMAGE_LAYOUT_").size();
 	const auto kFormatPrefixLen = std::string("VK_FORMAT_").size();
 
-	TestCaseGroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "depth_stencil_descriptor", "Tests using depth/stencil images as descriptors"));
+	// Tests using depth/stencil images as descriptors
+	TestCaseGroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "depth_stencil_descriptor"));
 
 	for (const auto& layout : kTestedLayouts)
 	{
@@ -1317,7 +1318,7 @@ tcu::TestCaseGroup* createImageDepthStencilDescriptorTests (tcu::TestContext& te
 		const auto layoutGroupName	= de::toLower(layoutStr.substr(kLayoutPrefixLen));
 		const auto layoutGroupDesc	= "Tests using the " + layoutStr + " layout";
 
-		TestCaseGroupPtr layoutGroup(new tcu::TestCaseGroup(testCtx, layoutGroupName.c_str(), layoutGroupDesc.c_str()));
+		TestCaseGroupPtr layoutGroup(new tcu::TestCaseGroup(testCtx, layoutGroupName.c_str()));
 
 		for (const auto& format : kDepthStencilFormats)
 		{
@@ -1325,7 +1326,7 @@ tcu::TestCaseGroup* createImageDepthStencilDescriptorTests (tcu::TestContext& te
 			const auto formatGroupName	= de::toLower(formatStr.substr(kFormatPrefixLen));
 			const auto formatGroupDesc	= "Tests using the " + formatStr + " format";
 
-			TestCaseGroupPtr formatGroup(new tcu::TestCaseGroup(testCtx, formatGroupName.c_str(), formatGroupDesc.c_str()));
+			TestCaseGroupPtr formatGroup(new tcu::TestCaseGroup(testCtx, formatGroupName.c_str()));
 
 			const auto depthAccess		= getLegalAccess(layout, VK_IMAGE_ASPECT_DEPTH_BIT);
 			const auto stencilAccess	= getLegalAccess(layout, VK_IMAGE_ASPECT_STENCIL_BIT);
@@ -1363,7 +1364,7 @@ tcu::TestCaseGroup* createImageDepthStencilDescriptorTests (tcu::TestContext& te
 								tcu::just(*depthROCase),	//	tcu::Maybe<ROAccessVec>	depthROAccesses;
 								tcu::just(*stencilROCase),	//	tcu::Maybe<ROAccessVec>	stencilROAccesses;
 							};
-							formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, "", params));
+							formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, params));
 						}
 					}
 					else
@@ -1381,7 +1382,7 @@ tcu::TestCaseGroup* createImageDepthStencilDescriptorTests (tcu::TestContext& te
 							tcu::just(*depthROCase),		//	tcu::Maybe<ROAccessVec>	depthROAccesses;
 							tcu::Nothing,					//	tcu::Maybe<ROAccessVec>	stencilROAccesses;
 						};
-						formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, "", params));
+						formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, params));
 					}
 				}
 			}
@@ -1406,7 +1407,7 @@ tcu::TestCaseGroup* createImageDepthStencilDescriptorTests (tcu::TestContext& te
 							tcu::Nothing,					//	tcu::Maybe<ROAccessVec>	depthROAccesses;
 							tcu::just(*stencilROCase),		//	tcu::Maybe<ROAccessVec>	stencilROAccesses;
 						};
-						formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, "", params));
+						formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, params));
 					}
 				}
 				else
@@ -1424,7 +1425,7 @@ tcu::TestCaseGroup* createImageDepthStencilDescriptorTests (tcu::TestContext& te
 						tcu::Nothing,					//	tcu::Maybe<ROAccessVec>	depthROAccesses;
 						tcu::Nothing,					//	tcu::Maybe<ROAccessVec>	stencilROAccesses;
 					};
-					formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, "", params));
+					formatGroup->addChild(new DepthStencilDescriptorCase(testCtx, depthPart + stencilPart, params));
 				}
 			}
 

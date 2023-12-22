@@ -106,7 +106,7 @@ protected:
 };
 
 SpvAsmSpirvNonSemanticInfoBasicCase::SpvAsmSpirvNonSemanticInfoBasicCase(tcu::TestContext& testCtx, const char* name, TestType type)
-	: TestCase (testCtx, name, "")
+	: TestCase (testCtx, name)
 	, m_testType(type)
 {
 }
@@ -251,9 +251,9 @@ void SpvAsmSpirvNonSemanticInfoBasicCase::initPrograms (SourceCollections& progr
 			"%array4_ptr         = OpTypePointer Function %array4\n"
 			"%matrix3x3          = OpTypeMatrix %fvec3 3\n"
 			"%matrix3x3_ptr      = OpTypePointer Function %matrix3x3\n"
-			"%uvec2              = OpTypeVector %u32 2\n"
+			"%ivec2              = OpTypeVector %i32 2\n"
 			"%fvec4              = OpTypeVector %f32 4\n"
-			"%uv                 = OpConstantComposite %uvec2 %zero %zero\n";
+			"%uv                 = OpConstantComposite %ivec2 %zero %zero\n";
 
 		beginningOfMain =
 			"%struct_var = OpVariable %struct_ptr Function\n"
@@ -335,7 +335,8 @@ TestInstance* SpvAsmSpirvNonSemanticInfoBasicCase::createInstance (Context& cont
 
 tcu::TestCaseGroup* createNonSemanticInfoGroup(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "non_semantic_info", "Test for VK_KHR_shader_non_semantic_info"));
+	// Test for VK_KHR_shader_non_semantic_info
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "non_semantic_info"));
 
 	struct TestData
 	{

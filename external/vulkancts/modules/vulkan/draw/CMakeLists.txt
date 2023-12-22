@@ -56,6 +56,12 @@ set(DEQP_VK_VKSC_DRAW_SRCS
 	vktDrawDepthClampTests.hpp
 	vktDrawMultipleClearsWithinRenderPass.cpp
 	vktDrawMultipleClearsWithinRenderPass.hpp
+	vktDrawSampleAttributeTests.cpp
+	vktDrawSampleAttributeTests.hpp
+	vktDrawPointClampTests.cpp
+	vktDrawPointClampTests.hpp
+	vktDrawVertexAttribDivisorTests.cpp
+	vktDrawVertexAttribDivisorTests.hpp
 )
 
 set(DEQP_VK_DRAW_SRCS
@@ -63,6 +69,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawOutputLocationTests.hpp
 	vktDrawDepthBiasTests.cpp
 	vktDrawDepthBiasTests.hpp
+	vktDrawAhbExternalFormatResolveTests.cpp
+	vktDrawAhbExternalFormatResolveTests.hpp
 	vktDrawAhbTests.cpp
 	vktDrawAhbTests.hpp
 	vktDrawMultiExtTests.hpp
@@ -75,5 +83,4 @@ add_library(deqp-vk-draw STATIC ${DEQP_VK_VKSC_DRAW_SRCS} ${DEQP_VK_DRAW_SRCS})
 target_link_libraries(deqp-vk-draw tcutil vkutil)
 
 add_library(deqp-vksc-draw STATIC ${DEQP_VK_VKSC_DRAW_SRCS})
-target_include_directories(deqp-vksc-draw BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-draw PUBLIC deqp-vksc-util tcutil vkscutil)

@@ -95,7 +95,6 @@ class ImageSparseMemoryAliasingCase : public TestCase
 public:
 	ImageSparseMemoryAliasingCase	(tcu::TestContext&		testCtx,
 									 const std::string&		name,
-									 const std::string&		description,
 									 const ImageType		imageType,
 									 const tcu::UVec3&		imageSize,
 									 const VkFormat			format,
@@ -117,13 +116,12 @@ private:
 
 ImageSparseMemoryAliasingCase::ImageSparseMemoryAliasingCase	(tcu::TestContext&		testCtx,
 																 const std::string&		name,
-																 const std::string&		description,
 																 const ImageType		imageType,
 																 const tcu::UVec3&		imageSize,
 																 const VkFormat			format,
 																 const glu::GLSLVersion	glslVersion,
 																 const bool				useDeviceGroups)
-	: TestCase			(testCtx, name, description)
+	: TestCase			(testCtx, name)
 	, m_useDeviceGroups	(useDeviceGroups)
 	, m_imageType		(imageType)
 	, m_imageSize		(imageSize)
@@ -205,7 +203,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 		queueRequirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
 		queueRequirements.push_back(QueueRequirements(VK_QUEUE_COMPUTE_BIT, 1u));
 
-		createDeviceSupportingQueues(queueRequirements);
+		createDeviceSupportingQueues(queueRequirements, formatIsR64(m_format));
 	}
 
 	const VkPhysicalDevice		physicalDevice			= getPhysicalDevice();
@@ -911,13 +909,13 @@ tcu::TestCaseGroup* createImageSparseMemoryAliasingTestsCommon(tcu::TestContext&
 	for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
 	{
 		const ImageType					imageType = imageParameters[imageTypeNdx].imageType;
-		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str()));
 
 		for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
 		{
 			VkFormat						format				= imageParameters[imageTypeNdx].formats[formatNdx].format;
 			tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(format);
-			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str()));
 
 			for (size_t imageSizeNdx = 0; imageSizeNdx < imageParameters[imageTypeNdx].imageSizes.size(); ++imageSizeNdx)
 			{
@@ -932,7 +930,7 @@ tcu::TestCaseGroup* createImageSparseMemoryAliasingTestsCommon(tcu::TestContext&
 				std::ostringstream stream;
 				stream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
 
-				formatGroup->addChild(new ImageSparseMemoryAliasingCase(testCtx, stream.str(), "", imageType, imageSize, format, glu::GLSL_VERSION_440, useDeviceGroup));
+				formatGroup->addChild(new ImageSparseMemoryAliasingCase(testCtx, stream.str(), imageType, imageSize, format, glu::GLSL_VERSION_440, useDeviceGroup));
 			}
 			imageTypeGroup->addChild(formatGroup.release());
 		}
@@ -944,13 +942,13 @@ tcu::TestCaseGroup* createImageSparseMemoryAliasingTestsCommon(tcu::TestContext&
 
 tcu::TestCaseGroup* createImageSparseMemoryAliasingTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_sparse_memory_aliasing", "Sparse Image Memory Aliasing"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_sparse_memory_aliasing"));
 	return createImageSparseMemoryAliasingTestsCommon(testCtx, testGroup);
 }
 
 tcu::TestCaseGroup* createDeviceGroupImageSparseMemoryAliasingTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "device_group_image_sparse_memory_aliasing", "Sparse Image Memory Aliasing"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "device_group_image_sparse_memory_aliasing"));
 	return createImageSparseMemoryAliasingTestsCommon(testCtx, testGroup, true);
 }
 

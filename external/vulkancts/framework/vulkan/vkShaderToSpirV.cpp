@@ -193,8 +193,8 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxCullDistances							= 8;
 	builtin->maxCombinedClipAndCullDistances			= 8;
 	builtin->maxSamples									= 4;
-	builtin->maxMeshOutputVerticesNV					= 256;
-	builtin->maxMeshOutputPrimitivesNV					= 256;
+	builtin->maxMeshOutputVerticesNV					= 2048;
+	builtin->maxMeshOutputPrimitivesNV					= 2048;
 	builtin->maxMeshWorkGroupSizeX_NV					= 256;
 	builtin->maxMeshWorkGroupSizeY_NV					= 1;
 	builtin->maxMeshWorkGroupSizeZ_NV					= 1;
@@ -202,8 +202,8 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxTaskWorkGroupSizeY_NV					= 1;
 	builtin->maxTaskWorkGroupSizeZ_NV					= 1;
 	builtin->maxMeshViewCountNV							= 4;
-	builtin->maxMeshOutputVerticesEXT					= 256;
-	builtin->maxMeshOutputPrimitivesEXT					= 256;
+	builtin->maxMeshOutputVerticesEXT					= 2048;
+	builtin->maxMeshOutputPrimitivesEXT					= 2048;
 	builtin->maxMeshWorkGroupSizeX_EXT					= 256;
 	builtin->maxMeshWorkGroupSizeY_EXT					= 256;
 	builtin->maxMeshWorkGroupSizeZ_EXT					= 256;

@@ -32,7 +32,7 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*		createTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createTests (tcu::TestContext& testCtx, const std::string& name);
 tcu::TestCaseGroup*		createDynamicRenderingTests (tcu::TestContext& testCtx);
 } // Draw
 } // vkt

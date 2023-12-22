@@ -255,6 +255,101 @@ bool fuzzyCompare (TestLog& log, const char* imageSetName, const char* imageSetD
 }
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Per-pixel bitwise comparison
+ *
+ * This compare expects bit precision between result and reference image.
+ * Comparison fails if any pixels do not match bitwise.
+ * Reference and result format must match.
+ *
+ * This comparison can be used for any type texture formats since it does
+ * not care about types.
+ *
+ * On failure error image is generated that shows where the failing pixels
+ * are.
+ *
+ * \param log			Test log for results
+ * \param imageSetName	Name for image set when logging results
+ * \param imageSetDesc	Description for image set
+ * \param reference		Reference image
+ * \param result		Result image
+ * \param logMode		Logging mode
+ * \return true if comparison passes, false otherwise
+ *//*--------------------------------------------------------------------*/
+bool bitwiseCompare (TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, CompareLogMode logMode)
+{
+	int	width	= reference.getWidth();
+	int	height	= reference.getHeight();
+	int	depth	= reference.getDepth();
+	TCU_CHECK_INTERNAL(result.getWidth() == width && result.getHeight() == height && result.getDepth() == depth);
+
+	// Enforce texture has same channel count and channel size
+	TCU_CHECK_INTERNAL(reference.getFormat() == result.getFormat()); result.getPixelPitch();
+
+	TextureLevel		errorMaskStorage	(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height, depth);
+	PixelBufferAccess	errorMask			= errorMaskStorage.getAccess();
+	Vec4				pixelBias			(0.0f, 0.0f, 0.0f, 0.0f);
+	Vec4				pixelScale			(1.0f, 1.0f, 1.0f, 1.0f);
+	bool				compareOk			= true;
+
+	for (int z = 0; z < depth; z++)
+	{
+		for (int y = 0; y < height; y++)
+		{
+			for (int x = 0; x < width; x++)
+			{
+				const U64Vec4	refPix	= reference.getPixelBitsAsUint64(x, y, z);
+				const U64Vec4	cmpPix	= result.getPixelBitsAsUint64(x, y, z);
+				const bool		isOk	= (refPix == cmpPix);
+
+				errorMask.setPixel(isOk ? IVec4(0, 0xff, 0, 0xff) : IVec4(0xff, 0, 0, 0xff), x, y, z);
+				compareOk	&= isOk;
+			}
+		}
+	}
+
+	if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
+	{
+		{
+			const auto refChannelClass = tcu::getTextureChannelClass(reference.getFormat().type);
+			const auto resChannelClass = tcu::getTextureChannelClass(result.getFormat().type);
+
+			const bool refIsUint8 = (reference.getFormat().type == TextureFormat::UNSIGNED_INT8);
+			const bool resIsUint8 = (result.getFormat().type == TextureFormat::UNSIGNED_INT8);
+
+			const bool calcScaleBias = ((refChannelClass != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT && !refIsUint8) ||
+				(resChannelClass != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT && !resIsUint8));
+
+			// All formats except normalized unsigned fixed point ones need remapping in order to fit into unorm channels in logged images.
+			if (calcScaleBias)
+			{
+				computeScaleAndBias(reference, result, pixelScale, pixelBias);
+				log << TestLog::Message << "Result and reference images are normalized with formula p * " << pixelScale << " + " << pixelBias << TestLog::EndMessage;
+			}
+		}
+
+		if (!compareOk)
+			log << TestLog::Message << "Image comparison failed: Pixels with different values were found when bitwise precision is expected" << TestLog::EndMessage;
+
+		log << TestLog::ImageSet(imageSetName, imageSetDesc)
+			<< TestLog::Image("Result",		"Result",		result,		pixelScale, pixelBias)
+			<< TestLog::Image("Reference",	"Reference",	reference,	pixelScale, pixelBias)
+			<< TestLog::Image("ErrorMask",	"Error mask",	errorMask)
+			<< TestLog::EndImageSet;
+	}
+	else if (logMode == COMPARE_LOG_RESULT)
+	{
+		if (result.getFormat() != TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8))
+			computePixelScaleBias(result, pixelScale, pixelBias);
+
+		log << TestLog::ImageSet(imageSetName, imageSetDesc)
+			<< TestLog::Image("Result",		"Result",		result,		pixelScale, pixelBias)
+			<< TestLog::EndImageSet;
+	}
+
+	return compareOk;
+}
+
+/*--------------------------------------------------------------------*//*!
  * \brief Fuzzy image comparison
  *
  * This image comparison is designed for comparing images rendered by 3D
@@ -776,7 +871,10 @@ bool floatThresholdCompare (TestLog& log, const char* imageSetName, const char* 
 
 				maxDiff = max(maxDiff, diff);
 
-				errorMask.setPixel(isOk ? Vec4(0.0f, 1.0f, 0.0f, 1.0f) : Vec4(1.0f, 0.0f, 0.0f, 1.0f), x, y, z);
+				if (isOk)
+					errorMask.setPixel(Vec4(0.0f, 1.0f, 0.0f, 1.0f), x, y, z);
+				else
+					errorMask.setPixel(Vec4(1.0f, 0.0f, 0.0f, 1.0f), x, y, z);
 			}
 		}
 	}
@@ -848,6 +946,11 @@ bool intThresholdCompare (TestLog& log, const char* imageSetName, const char* im
 	Vec4				pixelBias			(0.0f, 0.0f, 0.0f, 0.0f);
 	Vec4				pixelScale			(1.0f, 1.0f, 1.0f, 1.0f);
 
+	I64Vec4	refPix64;
+	I64Vec4	cmpPix64;
+	IVec4	refPix;
+	IVec4	cmpPix;
+
 	TCU_CHECK_INTERNAL(result.getWidth() == width && result.getHeight() == height && result.getDepth() == depth);
 
 	for (int z = 0; z < depth; z++)
@@ -858,21 +961,24 @@ bool intThresholdCompare (TestLog& log, const char* imageSetName, const char* im
 			{
 				if (use64Bits)
 				{
-					I64Vec4	refPix	= reference.getPixelInt64(x, y, z);
-					I64Vec4	cmpPix	= result.getPixelInt64(x, y, z);
-					diff			= abs(refPix - cmpPix).cast<deUint64>();
+					refPix64	= reference.getPixelInt64(x, y, z);
+					cmpPix64	= result.getPixelInt64(x, y, z);
+					diff		= abs(refPix64 - cmpPix64).cast<deUint64>();
 				}
 				else
 				{
-					IVec4	refPix	= reference.getPixelInt(x, y, z);
-					IVec4	cmpPix	= result.getPixelInt(x, y, z);
-					diff			= abs(refPix - cmpPix).cast<deUint64>();
+					refPix	= reference.getPixelInt(x, y, z);
+					cmpPix	= result.getPixelInt(x, y, z);
+					diff	= abs(refPix - cmpPix).cast<deUint64>();
 				}
 
 				maxDiff = max(maxDiff, diff);
 
 				const bool isOk = boolAll(lessThanEqual(diff, threshold64));
-				errorMask.setPixel(isOk ? IVec4(0, 0xff, 0, 0xff) : IVec4(0xff, 0, 0, 0xff), x, y, z);
+				if (isOk)
+					errorMask.setPixel(IVec4(0, 0xff, 0, 0xff), x, y, z);
+				else
+					errorMask.setPixel(IVec4(0xff, 0, 0, 0xff), x, y, z);
 			}
 		}
 	}
@@ -881,12 +987,22 @@ bool intThresholdCompare (TestLog& log, const char* imageSetName, const char* im
 
 	if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
 	{
-		// All formats except normalized unsigned fixed point ones need remapping in order to fit into unorm channels in logged images.
-		if (tcu::getTextureChannelClass(reference.getFormat().type)	!= tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
-			tcu::getTextureChannelClass(result.getFormat().type)	!= tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT)
 		{
-			computeScaleAndBias(reference, result, pixelScale, pixelBias);
-			log << TestLog::Message << "Result and reference images are normalized with formula p * " << pixelScale << " + " << pixelBias << TestLog::EndMessage;
+			const auto refChannelClass = tcu::getTextureChannelClass(reference.getFormat().type);
+			const auto resChannelClass = tcu::getTextureChannelClass(result.getFormat().type);
+
+			const bool refIsUint8 = (reference.getFormat().type == TextureFormat::UNSIGNED_INT8);
+			const bool resIsUint8 = (result.getFormat().type == TextureFormat::UNSIGNED_INT8);
+
+			const bool calcScaleBias = ((refChannelClass != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT && !refIsUint8) ||
+				(resChannelClass != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT && !resIsUint8));
+
+			// All formats except normalized unsigned fixed point ones need remapping in order to fit into unorm channels in logged images.
+			if (calcScaleBias)
+			{
+				computeScaleAndBias(reference, result, pixelScale, pixelBias);
+				log << TestLog::Message << "Result and reference images are normalized with formula p * " << pixelScale << " + " << pixelBias << TestLog::EndMessage;
+			}
 		}
 
 		if (!compareOk)

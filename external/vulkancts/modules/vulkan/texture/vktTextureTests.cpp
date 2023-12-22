@@ -68,9 +68,9 @@ void createTextureTests (tcu::TestCaseGroup* textureTests)
 
 } // anonymous
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, "texture", "Texture Tests", createTextureTests);
+	return createTestGroup(testCtx, name.c_str(), createTextureTests);
 }
 
 } // texture

@@ -132,7 +132,7 @@ FSITestInstance::~FSITestInstance (void)
 class FSITestCase : public TestCase
 {
 	public:
-								FSITestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+								FSITestCase		(tcu::TestContext& context, const char* name, const CaseDef data);
 								~FSITestCase	(void);
 	virtual	void				initPrograms	(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance	(Context& context) const;
@@ -142,8 +142,8 @@ private:
 	CaseDef						m_data;
 };
 
-FSITestCase::FSITestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+FSITestCase::FSITestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -784,78 +784,77 @@ tcu::TestStatus FSITestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createBasicTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "basic", "Test VK_EXT_fragment_shader_interlock"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "basic"));
 
 	typedef struct
 	{
 		deUint32				count;
 		const char*				name;
-		const char*				description;
 	} TestGroupCase;
 
 	TestGroupCase dimCases[] =
 	{
-		{ 8,	"8x8",		"8x8"		},
-		{ 16,	"16x16",	"16x16"		},
-		{ 32,	"32x32",	"32x32"		},
-		{ 64,	"64x64",	"64x64"	},
-		{ 128,	"128x128",	"128x128"	},
-		{ 256,	"256x256",	"256x256"	},
-		{ 512,	"512x512",	"512x512"	},
-		{ 1024,	"1024x1024","1024x1024"	},
+		{ 8,	"8x8"},
+		{ 16,	"16x16"},
+		{ 32,	"32x32"},
+		{ 64,	"64x64"},
+		{ 128,	"128x128"},
+		{ 256,	"256x256"},
+		{ 512,	"512x512"},
+		{ 1024,	"1024x1024"},
 	};
 
 	TestGroupCase resCases[] =
 	{
-		{ RES_IMAGE,	"image",	"image"		},
-		{ RES_SSBO,		"ssbo",		"ssbo"		},
+		{ RES_IMAGE,	"image"},
+		{ RES_SSBO,		"ssbo"},
 	};
 
 	TestGroupCase killCases[] =
 	{
-		{ 0,	"nodiscard",	"no discard"		},
-		{ 1,	"discard",		"discard odd pixels"},
+		{ 0,	"nodiscard"},
+		{ 1,	"discard"},
 	};
 
 	TestGroupCase sampCases[] =
 	{
-		{ 1,	"1xaa",		"1 sample"	},
-		{ 4,	"4xaa",		"4 sample"	},
+		{ 1,	"1xaa"},
+		{ 4,	"4xaa"},
 	};
 
 	TestGroupCase ssCases[] =
 	{
-		{ 0,	"no_sample_shading",		"no sample shading"	},
-		{ 1,	"sample_shading",			"sample shading"	},
+		{ 0,	"no_sample_shading"},
+		{ 1,	"sample_shading"},
 	};
 
 	TestGroupCase intCases[] =
 	{
-		{ INT_PIXEL_ORDERED,	"pixel_ordered",	"pixel_ordered"		},
-		{ INT_PIXEL_UNORDERED,	"pixel_unordered",	"pixel_unordered"		},
-		{ INT_SAMPLE_ORDERED,	"sample_ordered",	"sample_ordered"		},
-		{ INT_SAMPLE_UNORDERED,	"sample_unordered",	"sample_unordered"		},
+		{ INT_PIXEL_ORDERED,	"pixel_ordered"},
+		{ INT_PIXEL_UNORDERED,	"pixel_unordered"},
+		{ INT_SAMPLE_ORDERED,	"sample_ordered"},
+		{ INT_SAMPLE_UNORDERED,	"sample_unordered"},
 #ifndef CTS_USES_VULKANSC
-		{ INT_SHADING_RATE_ORDERED,		"shading_rate_ordered",	"shading_rate_ordered"		},
-		{ INT_SHADING_RATE_UNORDERED,	"shading_rate_unordered",	"shading_rate_unordered"		},
+		{ INT_SHADING_RATE_ORDERED,		"shading_rate_ordered"},
+		{ INT_SHADING_RATE_UNORDERED,	"shading_rate_unordered"},
 #endif // CTS_USES_VULKANSC
 	};
 
 	for (int killNdx = 0; killNdx < DE_LENGTH_OF_ARRAY(killCases); killNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> killGroup(new tcu::TestCaseGroup(testCtx, killCases[killNdx].name, killCases[killNdx].description));
+		de::MovePtr<tcu::TestCaseGroup> killGroup(new tcu::TestCaseGroup(testCtx, killCases[killNdx].name));
 		for (int resNdx = 0; resNdx < DE_LENGTH_OF_ARRAY(resCases); resNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> resGroup(new tcu::TestCaseGroup(testCtx, resCases[resNdx].name, resCases[resNdx].description));
+			de::MovePtr<tcu::TestCaseGroup> resGroup(new tcu::TestCaseGroup(testCtx, resCases[resNdx].name));
 			for (int intNdx = 0; intNdx < DE_LENGTH_OF_ARRAY(intCases); intNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup> intGroup(new tcu::TestCaseGroup(testCtx, intCases[intNdx].name, intCases[intNdx].description));
+				de::MovePtr<tcu::TestCaseGroup> intGroup(new tcu::TestCaseGroup(testCtx, intCases[intNdx].name));
 				for (int sampNdx = 0; sampNdx < DE_LENGTH_OF_ARRAY(sampCases); sampNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup> sampGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name, sampCases[sampNdx].description));
+					de::MovePtr<tcu::TestCaseGroup> sampGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name));
 					for (int ssNdx = 0; ssNdx < DE_LENGTH_OF_ARRAY(ssCases); ssNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup> ssGroup(new tcu::TestCaseGroup(testCtx, ssCases[ssNdx].name, ssCases[ssNdx].description));
+						de::MovePtr<tcu::TestCaseGroup> ssGroup(new tcu::TestCaseGroup(testCtx, ssCases[ssNdx].name));
 						for (int dimNdx = 0; dimNdx < DE_LENGTH_OF_ARRAY(dimCases); dimNdx++)
 						{
 							CaseDef c =
@@ -871,7 +870,7 @@ tcu::TestCaseGroup*	createBasicTests (tcu::TestContext& testCtx)
 							if (c.sampleShading && c.samples == 1)
 								continue;
 
-							ssGroup->addChild(new FSITestCase(testCtx, dimCases[dimNdx].name, dimCases[dimNdx].description, c));
+							ssGroup->addChild(new FSITestCase(testCtx, dimCases[dimNdx].name, c));
 						}
 						sampGroup->addChild(ssGroup.release());
 					}

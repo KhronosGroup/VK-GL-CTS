@@ -197,7 +197,7 @@ struct DeviceHelper
 												 queueFamilyIndex,
 												 pAllocator,
 												 context.getTestContext().getCommandLine().isValidationEnabled()))
-		, vkd				(context.getPlatformInterface(), instance, *device)
+		, vkd				(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
 		, queue				(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}
@@ -658,7 +658,7 @@ void createFullScreenExclusiveTests (tcu::TestCaseGroup* testGroup, vk::wsi::Typ
 			wsiType,
 			fullScreenTestTypes[fseNdx].testType
 		};
-		addFunctionCaseWithPrograms(testGroup, fullScreenTestTypes[fseNdx].name, "", getBasicRenderPrograms, fullScreenExclusiveTest, testParams);
+		addFunctionCaseWithPrograms(testGroup, fullScreenTestTypes[fseNdx].name, getBasicRenderPrograms, fullScreenExclusiveTest, testParams);
 	}
 }
 

@@ -423,20 +423,6 @@ std::string getTestCaseName (const Flags flags)
 	return buf.str();
 }
 
-std::string getTestCaseDescription (const Flags flags)
-{
-	std::ostringstream buf;
-
-	// join per-bit descriptions into a single string with ", " separator
-	if (flags & FLAG_VERTEX_SET)					buf																			<< "set point size in vertex shader";
-	if (flags & FLAG_TESSELLATION_EVALUATION_SET)	buf << ((flags & (FLAG_TESSELLATION_EVALUATION_SET-1))	? (", ") : (""))	<< "set point size in tessellation evaluation shader";
-	if (flags & FLAG_TESSELLATION_ADD)				buf << ((flags & (FLAG_TESSELLATION_ADD-1))				? (", ") : (""))	<< "add to point size in tessellation shader";
-	if (flags & FLAG_GEOMETRY_SET)					buf << ((flags & (FLAG_GEOMETRY_SET-1))					? (", ") : (""))	<< "set point size in geometry shader";
-	if (flags & FLAG_GEOMETRY_ADD)					buf << ((flags & (FLAG_GEOMETRY_ADD-1))					? (", ") : (""))	<< "add to point size in geometry shader";
-
-	return buf.str();
-}
-
 void checkSupportTess (Context& context, const Flags flags)
 {
 #ifndef CTS_USES_VULKANSC
@@ -455,7 +441,7 @@ void checkSupportTess (Context& context, const Flags flags)
 //! with the exception of the default 1.0 point size cases (not valid in Vulkan).
 tcu::TestCaseGroup* createGeometryPointSizeTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "point_size", "Test point size"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "point_size"));
 
 	static const Flags caseFlags[] =
 	{
@@ -471,9 +457,8 @@ tcu::TestCaseGroup* createGeometryPointSizeTests (tcu::TestContext& testCtx)
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(caseFlags); ++ndx)
 	{
 		const std::string name = getTestCaseName       (caseFlags[ndx]);
-		const std::string desc = getTestCaseDescription(caseFlags[ndx]);
 
-		addFunctionCaseWithPrograms(group.get(), name, desc, checkSupportTess, initPrograms, test, caseFlags[ndx]);
+		addFunctionCaseWithPrograms(group.get(), name, checkSupportTess, initPrograms, test, caseFlags[ndx]);
 	}
 
 	return group.release();

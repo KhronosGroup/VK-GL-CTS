@@ -49,7 +49,7 @@ void addSparseCase(const SparseCaseParams& params, tcu::TestContext& testCtx, tc
 
 tcu::TestCaseGroup* createSparseResourcesShaderIntrinsicsTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "shader_intrinsics", "Sparse Resources Shader Intrinsics"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "shader_intrinsics"));
 
 	const std::vector<TestImageParameters> imageParameters
 	{
@@ -93,14 +93,14 @@ tcu::TestCaseGroup* createSparseResourcesShaderIntrinsicsTests (tcu::TestContext
 		{
 			caseParams.imageType = imageParams.imageType;
 
-			de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, (getImageTypeName(caseParams.imageType) + functions[functionNdx]).c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, (getImageTypeName(caseParams.imageType) + functions[functionNdx]).c_str()));
 
 			for (const auto& testFormat : imageParams.formats)
 			{
 				caseParams.format = testFormat.format;
 
 				tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(caseParams.format);
-				de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(caseParams.format).c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(caseParams.format).c_str()));
 
 				for (size_t imageSizeNdx = 0; imageSizeNdx < imageParams.imageSizes.size(); ++imageSizeNdx)
 				{

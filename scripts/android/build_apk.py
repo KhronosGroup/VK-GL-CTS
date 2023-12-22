@@ -39,43 +39,45 @@ import xml.etree.ElementTree
 # Import from <root>/scripts
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from build.common import *
-from build.config import *
-from build.build import *
+from ctsbuild.common import *
+from ctsbuild.config import *
+from ctsbuild.build import *
 
 class SDKEnv:
-	def __init__(self, path):
+	def __init__(self, path, desired_version):
 		self.path				= path
-		self.buildToolsVersion	= SDKEnv.selectBuildToolsVersion(self.path)
+		self.buildToolsVersion	= SDKEnv.selectBuildToolsVersion(self.path, desired_version)
 
 	@staticmethod
 	def getBuildToolsVersions (path):
 		buildToolsPath	= os.path.join(path, "build-tools")
-		versions		= []
+		versions		= {}
 
 		if os.path.exists(buildToolsPath):
 			for item in os.listdir(buildToolsPath):
 				m = re.match(r'^([0-9]+)\.([0-9]+)\.([0-9]+)$', item)
 				if m != None:
-					versions.append((int(m.group(1)), int(m.group(2)), int(m.group(3))))
+					versions[int(m.group(1))] = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
 
 		return versions
 
 	@staticmethod
-	def selectBuildToolsVersion (path):
-		preferred	= [(25, 0, 2)]
+	def selectBuildToolsVersion (path, preferred):
 		versions	= SDKEnv.getBuildToolsVersions(path)
 
 		if len(versions) == 0:
 			return (0,0,0)
 
-		for candidate in preferred:
-			if candidate in versions:
-				return candidate
+		if preferred == -1:
+			return max(versions.values())
+
+		if preferred in versions:
+			return versions[preferred]
 
 		# Pick newest
-		versions.sort()
-		return versions[-1]
+		newest_version = max(versions.values())
+		print("Couldn't find Android Tool version %d, %d was selected." % (preferred, newest_version[0]))
+		return newest_version
 
 	def getPlatformLibrary (self, apiVersion):
 		return os.path.join(self.path, "platforms", "android-%d" % apiVersion, "android.jar")
@@ -182,6 +184,7 @@ class Configuration:
 		self.verbose			= verbose
 		self.layers				= layers
 		self.angle				= angle
+		self.dCompilerName		= "d8"
 		self.cmakeGenerator		= selectFirstAvailableGenerator([NINJA_GENERATOR, MAKEFILE_GENERATOR, NMAKE_GENERATOR])
 
 	def check (self):
@@ -203,12 +206,20 @@ class Configuration:
 		if self.env.sdk.buildToolsVersion == (0,0,0):
 			raise Exception("No build tools directory found at %s" % os.path.join(self.env.sdk.path, "build-tools"))
 
-		androidBuildTools = ["aapt", "zipalign", "dx"]
+		if not os.path.exists(os.path.join(self.env.sdk.path, "platforms", "android-%d" % self.javaApi)):
+			raise Exception("No SDK with api version %d directory found at %s for Java Api" % (self.javaApi, os.path.join(self.env.sdk.path, "platforms")))
+
+		# Try to find first d8 since dx was deprecated
+		if which(self.dCompilerName, [self.env.sdk.getBuildToolsPath()]) == None:
+			print("Couldn't find %s, will try to find dx", self.dCompilerName)
+			self.dCompilerName = "dx"
+
+		androidBuildTools = ["aapt", "zipalign", "apksigner", self.dCompilerName]
 		for tool in androidBuildTools:
 			if which(tool, [self.env.sdk.getBuildToolsPath()]) == None:
-				raise Exception("Missing Android build tool: %s" % tool)
+				raise Exception("Missing Android build tool: %s in %s" % (tool, self.env.sdk.getBuildToolsPath()))
 
-		requiredToolsInPath = ["javac", "jar", "jarsigner", "keytool"]
+		requiredToolsInPath = ["javac", "jar", "keytool"]
 		for tool in requiredToolsInPath:
 			if which(tool) == None:
 				raise Exception("%s not in PATH" % tool)
@@ -426,6 +437,9 @@ class PackageDescription:
 	def getClassesJarPath (self):
 		return [BuildRoot(), self.appDirName, "bin", "classes.jar"]
 
+	def getClassesDexDirectory (self):
+		return [BuildRoot(), self.appDirName, "bin",]
+
 	def getClassesDexPath (self):
 		return [BuildRoot(), self.appDirName, "bin", "classes.dex"]
 
@@ -549,19 +563,23 @@ class BuildDex (BuildStep):
 		return [self.package.getClassesDexPath()]
 
 	def update (self, config):
-		dxPath		= which("dx", [config.env.sdk.getBuildToolsPath()])
-		srcPaths	= resolvePaths(config, self.getInputs())
-		dexPath		= resolvePath(config, self.package.getClassesDexPath())
+		dxPath		= which(config.dCompilerName, [config.env.sdk.getBuildToolsPath()])
+		dexPath		= resolvePath(config, self.package.getClassesDexDirectory())
 		jarPaths	= [resolvePath(config, self.package.getClassesJarPath())]
 
 		for lib in self.libraries:
 			jarPaths.append(resolvePath(config, lib.getClassesJarPath()))
 
-		executeAndLog(config, [
-				dxPath,
-				"--dex",
-				"--output", dexPath
-			] + jarPaths)
+		args = [ dxPath ]
+		if config.dCompilerName == "d8":
+			args.append("--lib")
+			args.append(config.env.sdk.getPlatformLibrary(config.javaApi))
+		else:
+			args.append("--dex")
+		args.append("--output")
+		args.append(dexPath)
+
+		executeAndLog(config, args + jarPaths)
 
 class CreateKeystore (BuildStep):
 	def __init__ (self):
@@ -576,7 +594,7 @@ class CreateKeystore (BuildStep):
 	def update (self, config):
 		executeAndLog(config, [
 				"keytool",
-				"-genkey",
+				"-genkeypair",
 				"-keystore", resolvePath(config, self.keystorePath),
 				"-storepass", "android",
 				"-alias", "androiddebugkey",
@@ -623,6 +641,7 @@ class BuildBaseAPK (BuildStep):
 			"-M", resolvePath(config, self.package.getManifestPath()),
 			"-I", config.env.sdk.getPlatformLibrary(config.javaApi),
 			"-F", dstPath,
+			"-0", "arsc" # arsc files need to be uncompressed for SDK version 30 and up
 		]
 
 		for resPath in self.getResPaths():
@@ -750,7 +769,8 @@ class AddNativeLibsToAPK (BuildStep):
 			libFiles.append(libRelPath)
 
 			if config.layers:
-				layersGlob = os.path.join(config.layers, abi, "libVkLayer_*.so")
+				# Need to copy everything in the layer folder
+				layersGlob = os.path.join(config.layers, abi, "*")
 				libVkLayers = glob.glob(layersGlob)
 				for layer in libVkLayers:
 					layerFilename = os.path.basename(layer)
@@ -777,8 +797,8 @@ class AddNativeLibsToAPK (BuildStep):
 class SignAPK (BuildStep):
 	def __init__ (self, package):
 		self.package		= package
-		self.srcPath		= AddNativeLibsToAPK(self.package, []).getOutputs()[0]
-		self.dstPath		= [BuildRoot(), self.package.getAppDirName(), "tmp", "signed.apk"]
+		self.srcPath		= AlignAPK(self.package).getOutputs()[0]
+		self.dstPath		= [BuildRoot(), getBuildRootRelativeAPKPath(self.package)]
 		self.keystorePath	= CreateKeystore().getOutputs()[0]
 
 	def getInputs (self):
@@ -788,27 +808,31 @@ class SignAPK (BuildStep):
 		return [self.dstPath]
 
 	def update (self, config):
+		apksigner	= which("apksigner", [config.env.sdk.getBuildToolsPath()])
 		srcPath		= resolvePath(config, self.srcPath)
 		dstPath		= resolvePath(config, self.dstPath)
 
 		executeAndLog(config, [
-				"jarsigner",
-				"-keystore", resolvePath(config, self.keystorePath),
-				"-storepass", "android",
-				"-keypass", "android",
-				"-signedjar", dstPath,
-				srcPath,
-				"androiddebugkey"
+				apksigner,
+				"sign",
+				"--ks", resolvePath(config, self.keystorePath),
+				"--ks-key-alias", "androiddebugkey",
+				"--ks-pass", "pass:android",
+				"--key-pass", "pass:android",
+				"--min-sdk-version", str(config.minApi),
+				"--max-sdk-version", str(config.javaApi),
+				"--out", dstPath,
+				srcPath
 			])
 
 def getBuildRootRelativeAPKPath (package):
 	return os.path.join(package.getAppDirName(), package.getAppName() + ".apk")
 
-class FinalizeAPK (BuildStep):
+class AlignAPK (BuildStep):
 	def __init__ (self, package):
 		self.package		= package
-		self.srcPath		= SignAPK(self.package).getOutputs()[0]
-		self.dstPath		= [BuildRoot(), getBuildRootRelativeAPKPath(self.package)]
+		self.srcPath		= AddNativeLibsToAPK(self.package, []).getOutputs()[0]
+		self.dstPath		= [BuildRoot(), self.package.getAppDirName(), "tmp", "aligned.apk"]
 		self.keystorePath	= CreateKeystore().getOutputs()[0]
 
 	def getInputs (self):
@@ -862,8 +886,8 @@ def getBuildStepsForPackage (abis, package, libraries = []):
 
 	# Finalize APK
 	steps.append(CreateKeystore())
+	steps.append(AlignAPK(package))
 	steps.append(SignAPK(package))
-	steps.append(FinalizeAPK(package))
 
 	return steps
 
@@ -926,6 +950,11 @@ def parseArgs ():
 		dest='javaApi',
 		default=28,
 		help="Android API level to target in Java code")
+	parser.add_argument('--tool-api',
+		type=int,
+		dest='toolApi',
+		default=-1,
+		help="Android Tools level to target (-1 being maximum present)")
 	parser.add_argument('--min-api',
 		type=int,
 		dest='minApi',
@@ -995,7 +1024,7 @@ if __name__ == "__main__":
 	args		= parseArgs()
 
 	ndk			= NDKEnv(os.path.realpath(args.ndkPath))
-	sdk			= SDKEnv(os.path.realpath(args.sdkPath))
+	sdk			= SDKEnv(os.path.realpath(args.sdkPath), args.toolApi)
 	buildPath	= os.path.realpath(args.buildRoot)
 	env			= Environment(sdk, ndk)
 	config		= Configuration(env, buildPath, abis=args.abis, nativeApi=args.nativeApi, javaApi=args.javaApi, minApi=args.minApi, nativeBuildType=args.nativeBuildType, gtfTarget=args.gtfTarget,

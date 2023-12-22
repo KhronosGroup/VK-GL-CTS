@@ -23,6 +23,7 @@
 
 #include "tcuTestCase.hpp"
 #include "tcuPlatform.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deString.h"
 
@@ -43,19 +44,17 @@ inline bool isValidCaseName (const char* name)
 	return true;
 }
 
-TestNode::TestNode (TestContext& testCtx, TestNodeType nodeType, const char* name, const char* description)
+TestNode::TestNode (TestContext& testCtx, TestNodeType nodeType, const char* name)
 	: m_testCtx		(testCtx)
 	, m_name		(name)
-	, m_description	(description)
 	, m_nodeType	(nodeType)
 {
 	DE_ASSERT(isValidCaseName(name));
 }
 
-TestNode::TestNode (TestContext& testCtx, TestNodeType nodeType, const char* name, const char* description, const vector<TestNode*>& children)
+TestNode::TestNode (TestContext& testCtx, TestNodeType nodeType, const char* name, const vector<TestNode*>& children)
 	: m_testCtx		(testCtx)
 	, m_name		(name)
-	, m_description	(description)
 	, m_nodeType	(nodeType)
 {
 	DE_ASSERT(isValidCaseName(name));
@@ -73,6 +72,15 @@ void TestNode::getChildren (vector<TestNode*>& res) const
 	res.clear();
 	for (int i = 0; i < (int)m_children.size(); i++)
 		res.push_back(m_children[i]);
+}
+
+void TestNode::addRootChild (const std::string& groupName, const CaseListFilter* caseListFilter, TestCaseGroup* (*createTestGroup)(tcu::TestContext& testCtx, const std::string& name))
+{
+	// Skip tests not in case list
+	if (caseListFilter && !caseListFilter->checkTestGroupName((m_name + "." + groupName).c_str()))
+		return;
+
+	return addChild(createTestGroup(m_testCtx, groupName));
 }
 
 void TestNode::addChild (TestNode* node)
@@ -110,14 +118,28 @@ void TestNode::deinit (void)
 
 // TestCaseGroup
 
-TestCaseGroup::TestCaseGroup (TestContext& testCtx, const char* name, const char* description)
-	: TestNode(testCtx, NODETYPE_GROUP, name, description)
+TestCaseGroup::TestCaseGroup (TestContext& testCtx, const char* name)
+	: TestNode(testCtx, NODETYPE_GROUP, name)
 {
 }
 
-TestCaseGroup::TestCaseGroup (TestContext& testCtx, const char* name, const char* description, const vector<TestNode*>& children)
-	: TestNode(testCtx, NODETYPE_GROUP, name, description, children)
+TestCaseGroup::TestCaseGroup (TestContext& testCtx, const char* name, const vector<TestNode*>& children)
+	: TestNode(testCtx, NODETYPE_GROUP, name, children)
 {
+}
+
+// Deprecated constructor with an ignored description argument. These shouldn't really be used
+// in new code but are retained to avoid changing every test group construction at once.
+TestCaseGroup::TestCaseGroup (TestContext& testCtx, const char* name, const char* description)
+	: TestCaseGroup(testCtx, name)
+{
+	DE_UNREF(description);
+}
+
+TestCaseGroup::TestCaseGroup (TestContext& testCtx, const char* name, const char* description, const vector<TestNode*>& children)
+	: TestCaseGroup(testCtx, name, children)
+{
+	DE_UNREF(description);
 }
 
 TestCaseGroup::~TestCaseGroup (void)
@@ -132,15 +154,29 @@ TestCase::IterateResult TestCaseGroup::iterate (void)
 
 // TestCase
 
-TestCase::TestCase (TestContext& testCtx, const char* name, const char* description)
-	: TestNode(testCtx, NODETYPE_SELF_VALIDATE, name, description)
+TestCase::TestCase (TestContext& testCtx, const char* name)
+	: TestNode(testCtx, NODETYPE_SELF_VALIDATE, name)
 {
 }
 
-TestCase::TestCase (TestContext& testCtx, TestNodeType nodeType, const char* name, const char* description)
-	: TestNode(testCtx, nodeType, name, description)
+TestCase::TestCase (TestContext& testCtx, TestNodeType nodeType, const char* name)
+	: TestNode(testCtx, nodeType, name)
 {
 	DE_ASSERT(isTestNodeTypeExecutable(nodeType));
+}
+
+// Deprecated constructor with an ignored description argument. These shouldn't really be used
+// in new code but are retained to avoid changing every test case construction at once.
+TestCase::TestCase (TestContext& testCtx, const char* name, const char* description)
+	: TestCase(testCtx, name)
+{
+	DE_UNREF(description);
+}
+
+TestCase::TestCase (TestContext& testCtx, TestNodeType nodeType, const char* name, const char* description)
+	: TestCase(testCtx, nodeType, name)
+{
+	DE_UNREF(description);
 }
 
 TestCase::~TestCase (void)

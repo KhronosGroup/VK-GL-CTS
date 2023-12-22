@@ -80,7 +80,7 @@ public:
 															 deUint32					fillValue,
 															 ValidationData				data,
 															 CmdBufferType				cmdBufferType)
-									: TestCase				(testCtx, name, "Copy buffer to image.")
+									: TestCase				(testCtx, name)
 									, m_fillValue			(fillValue)
 									, m_refData				(data)
 									, m_validator			(vk::VK_FORMAT_R32G32B32A32_SFLOAT)
@@ -374,7 +374,8 @@ tcu::TestCaseGroup*	createCopyBufferToImageTests (tcu::TestContext& testCtx, Cmd
 		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	copyStaticTests		(new tcu::TestCaseGroup(testCtx, "static", "Copy Buffer To Image Tests with static input"));
+	// Copy Buffer To Image Tests with static input
+	de::MovePtr<tcu::TestCaseGroup>	copyStaticTests		(new tcu::TestCaseGroup(testCtx, "static"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
@@ -383,7 +384,8 @@ tcu::TestCaseGroup*	createCopyBufferToImageTests (tcu::TestContext& testCtx, Cmd
 	}
 
 	/* Add a few randomized tests */
-	de::MovePtr<tcu::TestCaseGroup>	copyRandomTests		(new tcu::TestCaseGroup(testCtx, "random", "Copy Buffer To Image Tests with random input"));
+	// Copy Buffer To Image Tests with random input
+	de::MovePtr<tcu::TestCaseGroup>	copyRandomTests		(new tcu::TestCaseGroup(testCtx, "random"));
 	const int						testCount			= 10;
 	de::Random						rnd					(testCtx.getCommandLine().getBaseSeed());
 	for (int ndx = 0; ndx < testCount; ++ndx)
@@ -411,7 +413,7 @@ tcu::TestCaseGroup*	createCopyBufferToImageTests (tcu::TestContext& testCtx, Cmd
 
 	std::string groupName = getCmdBufferTypeStr(cmdBufferType);
 	std::string groupDesc = "Copy Buffer To Image Tests with " + groupName + " command buffer";
-	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 	copyTests->addChild(copyStaticTests.release());
 	copyTests->addChild(copyRandomTests.release());
 	return copyTests.release();
@@ -421,7 +423,7 @@ tcu::TestCaseGroup*	createCopyBufferToImageTests (tcu::TestContext& testCtx, Cmd
 
 tcu::TestCaseGroup*	createCopyBufferToImageTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, "copy_buffer_to_image", "Copy Buffer To Image Tests"));
+	de::MovePtr<tcu::TestCaseGroup> clearTests (new tcu::TestCaseGroup(testCtx, "copy_buffer_to_image"));
 
 	clearTests->addChild(createCopyBufferToImageTests(testCtx, CMD_BUFFER_PRIMARY));
 	clearTests->addChild(createCopyBufferToImageTests(testCtx, CMD_BUFFER_SECONDARY));

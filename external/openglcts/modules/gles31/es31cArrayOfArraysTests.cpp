@@ -432,47 +432,37 @@ void initializeMap()
 		const std::string* vs  = &default_vertex_shader_source;                        \
 		const std::string* tcs = &default_tc_shader_source;                            \
 		const std::string* tes = &default_te_shader_source;                            \
-		const std::string* gs  = &default_geometry_shader_source;                      \
 		const std::string* fs  = &default_fragment_shader_source;                      \
                                                                                        \
 		switch (TYPE)                                                                  \
 		{                                                                              \
 		case TestCaseBase<API>::COMPUTE_SHADER_TYPE:                                   \
-			cs  = &SOURCE;                                                             \
-			vs  = &empty_string;                                                       \
-			tcs = &empty_string;                                                       \
-			tes = &empty_string;                                                       \
-			gs  = &empty_string;                                                       \
-			fs  = &empty_string;                                                       \
+			this->execute_positive_test(empty_string, empty_string, empty_string,      \
+										empty_string, empty_string, SOURCE,            \
+										DELETE, GPU5);                                 \
 			break;                                                                     \
 		case TestCaseBase<API>::FRAGMENT_SHADER_TYPE:                                  \
-			fs = &SOURCE;                                                              \
+			this->execute_positive_test(*vs, SOURCE, DELETE, GPU5);                    \
 			break;                                                                     \
 		case TestCaseBase<API>::GEOMETRY_SHADER_TYPE:                                  \
-			gs = &SOURCE;                                                              \
+			this->execute_positive_test(*vs, empty_string, empty_string, SOURCE, *fs,  \
+										*cs, DELETE, GPU5);                            \
 			break;                                                                     \
 		case TestCaseBase<API>::TESSELATION_CONTROL_SHADER_TYPE:                       \
-			tcs = &SOURCE;                                                             \
+			this->execute_positive_test(*vs, SOURCE, *tes, empty_string, *fs, *cs,     \
+										DELETE, GPU5);                                 \
 			break;                                                                     \
 		case TestCaseBase<API>::TESSELATION_EVALUATION_SHADER_TYPE:                    \
-			tes = &SOURCE;                                                             \
+			this->execute_positive_test(*vs, *tcs, SOURCE, empty_string, *fs, *cs,     \
+										DELETE, GPU5);                                 \
 			break;                                                                     \
 		case TestCaseBase<API>::VERTEX_SHADER_TYPE:                                    \
-			vs = &SOURCE;                                                              \
+			this->execute_positive_test(SOURCE, *fs, DELETE, GPU5);                    \
 			break;                                                                     \
 		default:                                                                       \
 			TCU_FAIL("Invalid enum");                                                  \
 			break;                                                                     \
 		};                                                                             \
-                                                                                       \
-		if (API::USE_ALL_SHADER_STAGES)                                                \
-		{                                                                              \
-			this->execute_positive_test(*vs, *tcs, *tes, *gs, *fs, *cs, DELETE, GPU5); \
-		}                                                                              \
-		else                                                                           \
-		{                                                                              \
-			this->execute_positive_test(*vs, *fs, DELETE, GPU5);                       \
-		}                                                                              \
 	} while (0)
 
 /** Macro executes either positive or negative test
@@ -982,6 +972,12 @@ tcu::TestNode::IterateResult TestCaseBase<API>::execute_positive_test(const std:
 #endif /* IS_DEBUG_DUMP_ALL_SHADERS */
 #endif /* IS_DEBUG */
 
+			if (delete_generated_objects)
+			{
+				/* Deallocate any resources used. */
+				this->delete_objects();
+			}
+
 			TCU_FAIL("Linking was expected to succeed, but the process was unsuccessful.");
 
 			test_result = false;
@@ -1275,6 +1271,12 @@ tcu::TestNode::IterateResult TestCaseBase<API>::execute_positive_test(
 			}
 #endif /* IS_DEBUG_DUMP_ALL_SHADERS */
 #endif /* IS_DEBUG */
+
+			if (delete_generated_objects)
+			{
+				/* Deallocate any resources used. */
+				this->delete_objects();
+			}
 
 			TCU_FAIL("Linking was expected to succeed, but the process was unsuccessful.");
 

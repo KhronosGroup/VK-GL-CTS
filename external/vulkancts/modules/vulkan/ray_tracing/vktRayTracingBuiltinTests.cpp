@@ -34,6 +34,7 @@
 #include "vkImageWithMemory.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 #include "vkRayTracingUtil.hpp"
 
@@ -85,6 +86,11 @@ enum TestId
 	TEST_ID_OBJECT_TO_WORLD_3X4_EXT,
 	TEST_ID_WORLD_TO_OBJECT_EXT,
 	TEST_ID_WORLD_TO_OBJECT_3X4_EXT,
+	TEST_ID_INDICES_INDIRECT,
+	TEST_ID_TRANSFORMS_INDIRECT,
+	TEST_ID_TMINMAX_INDIRECT,
+	TEST_ID_INCOMING_RAY_FLAGS_INDIRECT,
+	TEST_ID_HIT_KIND_INDIRECT,
 	TEST_ID_LAST
 };
 
@@ -127,6 +133,8 @@ struct CaseDef
 	bool					frontFace;
 	VkPipelineCreateFlags	pipelineCreateFlags;
 	bool					useSpecConstants;
+	bool					skipClosestHit;
+	bool					useMaintenance5;
 };
 
 const deUint32	DEFAULT_UINT_CLEAR_VALUE	= 0x8000;
@@ -279,7 +287,7 @@ RayTracingBuiltinLaunchTestInstance::~RayTracingBuiltinLaunchTestInstance (void)
 class RayTracingTestCase : public TestCase
 {
 	public:
-										RayTracingTestCase			(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+										RayTracingTestCase			(tcu::TestContext& context, const char* name, const CaseDef data);
 										~RayTracingTestCase			(void);
 
 	virtual	void						initPrograms				(SourceCollections& programCollection) const;
@@ -294,8 +302,8 @@ private:
 	CaseDef								m_data;
 };
 
-RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -326,6 +334,9 @@ void RayTracingTestCase::checkSupport(Context& context) const
 
 	if (cullingFlags && rayTracingPipelineFeaturesKHR.rayTraversalPrimitiveCulling == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTraversalPrimitiveCulling");
+
+	if (m_data.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
 
 const std::string RayTracingTestCase::getIntersectionPassthrough (void)
@@ -1572,7 +1583,11 @@ Move<VkPipeline> RayTracingBuiltinLaunchTestInstance::makePipeline (de::MovePtr<
 	if (0 != (m_shaders & VK_SHADER_STAGE_CALLABLE_BIT_KHR))		rayTracingPipeline->addShader(VK_SHADER_STAGE_CALLABLE_BIT_KHR		, createShaderModule(vkd, device, collection.get("call"), 0), m_callableShaderGroup, specializationInfo);
 
 	if (m_data.pipelineCreateFlags != 0)
+	{
 		rayTracingPipeline->setCreateFlags(m_data.pipelineCreateFlags);
+		if (m_data.useMaintenance5)
+			rayTracingPipeline->setCreateFlags2(translateCreateFlag(m_data.pipelineCreateFlags));
+	}
 
 	Move<VkPipeline> pipeline = rayTracingPipeline->createPipeline(vkd, device, pipelineLayout);
 
@@ -2442,6 +2457,1437 @@ tcu::TestStatus RayTracingBuiltinLaunchTestInstance::iterate (void)
 		return tcu::TestStatus::fail("fail");
 }
 
+enum ShaderSourceFlag
+{
+	DEFINE_RAY = 0x1,
+	DEFINE_RESULT_BUFFER = 0x2,
+	DEFINE_SCENE = 0x4,
+	DEFINE_RAY_BUFFER = 0x8,
+	DEFINE_SIMPLE_BINDINGS = DEFINE_RESULT_BUFFER | DEFINE_SCENE | DEFINE_RAY_BUFFER
+};
+
+std::string generateShaderSource(const char* body, const char* resultType = "", deUint32 flags = 0, const char* prefix = "")
+{
+	std::ostringstream src;
+	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_460) << "\n";
+
+	src << "#extension GL_EXT_ray_tracing : enable\n";
+
+	src << prefix << "\n";
+
+	if (flags & DEFINE_SIMPLE_BINDINGS)
+		flags |= DEFINE_RAY_BUFFER;
+
+	if (flags & DEFINE_RAY_BUFFER)
+		flags |= DEFINE_RAY;
+
+	if (flags & DEFINE_RAY)
+	{
+		src << "struct Ray { vec3 pos; float tmin; vec3 dir; float tmax; };\n";
+	}
+
+	if (flags & DEFINE_RESULT_BUFFER)
+		src << "layout(std430, set = 0, binding = " << 0 << ") buffer Results { " << resultType << " results[]; };\n";
+
+	if (flags & DEFINE_SCENE)
+	{
+		src << "layout(set = 0, binding = " << 1 << ") uniform accelerationStructureEXT scene;\n";
+	}
+
+	if (flags & DEFINE_RAY_BUFFER)
+		src << "layout(std430, set = 0, binding = " << 2 << ") buffer Rays { Ray rays[]; };\n";
+
+	src << "uint launchIndex() { return gl_LaunchIDEXT.z*gl_LaunchSizeEXT.x*gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y*gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x; }\n";
+
+	src << body;
+
+	return src.str();
+}
+
+std::string getShaderIdentifier(const CaseDef& params, VkShaderStageFlagBits stage)
+{
+	std::string testStage;
+
+	switch (params.stage)
+	{
+	case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
+		testStage = "raygen";
+		break;
+	case VK_SHADER_STAGE_MISS_BIT_KHR:
+		testStage = "-miss";
+		break;
+	case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
+		testStage = "-closest-hit";
+		break;
+	case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
+		testStage = "-any_hit";
+		break;
+	case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
+		testStage = "-closest_hit";
+		break;
+	case VK_SHADER_STAGE_CALLABLE_BIT_KHR:
+		testStage = "-callable";
+		break;
+	default:
+		DE_ASSERT(false);
+		return std::string();
+	}
+
+	switch (stage)
+	{
+	case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
+		return testStage + "-rgen";
+	case VK_SHADER_STAGE_MISS_BIT_KHR:
+		return testStage + "-miss";
+	case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
+		return testStage + "-closest_hit";
+	case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
+		return testStage + "-any_hit";
+	case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
+		return testStage + "-isect";
+	case VK_SHADER_STAGE_CALLABLE_BIT_KHR:
+		return testStage + "-callable";
+	default:
+		DE_ASSERT(false);
+		return std::string();
+	}
+}
+
+std::string replaceString(std::string text, const std::string& search, const std::string& replace)
+{
+	size_t found;
+
+	while ((found = text.find(search)) != std::string::npos)
+	{
+		text = text.replace(found, search.length(), replace);
+	}
+
+	return text;
+}
+
+template<typename T> inline void addBuiltInShaderSource(SourceCollections& programCollection,
+														VkShaderStageFlagBits stage,
+														const std::string& body,
+														const CaseDef& params,
+														std::string builtInType)
+{
+	std::string identifier = getShaderIdentifier(params, stage);
+
+	deUint32 flags = 0;
+
+	if (stage == VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+		flags |= DEFINE_RAY | DEFINE_SIMPLE_BINDINGS;
+
+	std::string text = generateShaderSource(body.c_str(), builtInType.c_str(), flags, "");
+
+	text = replaceString(text, "$builtInType$", builtInType);
+
+	const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0, true);
+	programCollection.glslSources.add(identifier) << T(text) << buildOptions;
+}
+
+class RayTracingIndirectTestInstance : public TestInstance
+{
+public:
+																RayTracingIndirectTestInstance			(Context& context, const CaseDef& data);
+																~RayTracingIndirectTestInstance			(void);
+	tcu::TestStatus												iterate									(void);
+
+private:
+	void														checkSupportInInstance					(void) const;
+	Move<VkPipeline>											createPipelineAndShaderBindingTables	(de::MovePtr<RayTracingPipeline>&	rayTracingPipeline,
+																										 bool aabb,
+																										VkPipelineLayout pipelineLayout);
+
+	void														createPipelineLayoutAndSet				(deUint32 setCount,
+																										vk::Move<VkDescriptorPool>& descriptorPool,
+																										vk::Move<VkDescriptorSetLayout>& descriptorSetLayout,
+																										std::vector<vk::Move<VkDescriptorSet>>& descriptorSets,
+																										vk::Move<VkPipelineLayout>& pipelineLayout);
+
+	de::SharedPtr<TopLevelAccelerationStructure>				initTopAccelerationStructure			(std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >&	bottomLevelAccelerationStructures);
+	vector<de::SharedPtr<BottomLevelAccelerationStructure>>		initBottomAccelerationStructures		(void);
+	void														initializeParameters					(void);
+	bool														verifyResults							(void);
+
+private:
+	CaseDef														m_data;
+	std::vector<std::vector<tcu::Vec3>>							m_geomData;
+	de::MovePtr<BufferWithMemory>								m_resultBuffer;
+	de::MovePtr<BufferWithMemory>								m_rayBuffer;
+	deUint32													m_numGeoms;
+	deUint32													m_primsPerGeometry;
+	deUint32													m_geomsPerInstance;
+
+	de::MovePtr<BufferWithMemory>								m_raygenShaderBindingTable;
+	de::MovePtr<BufferWithMemory>								m_missShaderBindingTable;
+	de::MovePtr<BufferWithMemory>								m_hitShaderBindingTable;
+
+	VkStridedDeviceAddressRegionKHR								m_raygenShaderBindingTableRegion;
+	VkStridedDeviceAddressRegionKHR								m_missShaderBindingTableRegion;
+	VkStridedDeviceAddressRegionKHR								m_hitShaderBindingTableRegion;
+	VkStridedDeviceAddressRegionKHR								m_callableShaderBindingTableRegion;
+};
+
+RayTracingIndirectTestInstance::RayTracingIndirectTestInstance (Context& context, const CaseDef& data)
+	: vkt::TestInstance		(context)
+	, m_data				(data)
+	, m_numGeoms			(0)
+	, m_primsPerGeometry	(0)
+	, m_geomsPerInstance	(0)
+{
+}
+
+RayTracingIndirectTestInstance::~RayTracingIndirectTestInstance(void)
+{
+}
+
+class RayTracingIndirectTestCase : public TestCase
+{
+	public:
+										RayTracingIndirectTestCase			(tcu::TestContext& context, const char* name, const CaseDef data);
+										~RayTracingIndirectTestCase			(void);
+
+	virtual	void						initPrograms				(SourceCollections& programCollection) const;
+	virtual TestInstance*				createInstance				(Context& context) const;
+	virtual void						checkSupport				(Context& context) const;
+
+private:
+	static inline const std::string		getIntersectionPassthrough	(void);
+	static inline const std::string		getMissPassthrough			(void);
+	static inline const std::string		getHitPassthrough			(void);
+
+	CaseDef								m_data;
+};
+
+RayTracingIndirectTestCase::RayTracingIndirectTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
+	, m_data		(data)
+{
+}
+
+RayTracingIndirectTestCase::~RayTracingIndirectTestCase	(void)
+{
+}
+
+void RayTracingIndirectTestCase::checkSupport(Context& context) const
+{
+	const bool	pipelineFlagSkipTriangles	= ((m_data.pipelineCreateFlags & VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR) != 0);
+	const bool	pipelineFlagSkipAABSs		= ((m_data.pipelineCreateFlags & VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR) != 0);
+	const bool	cullingFlags				=  m_data.rayFlagSkipTriangles
+											|| m_data.rayFlagSkipAABSs
+											|| pipelineFlagSkipTriangles
+											|| pipelineFlagSkipAABSs;
+
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE )
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
+
+	if (cullingFlags && rayTracingPipelineFeaturesKHR.rayTraversalPrimitiveCulling == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTraversalPrimitiveCulling");
+}
+
+void RayTracingIndirectTestCase::initPrograms (SourceCollections& programCollection) const
+{
+	if (m_data.id == TEST_ID_INDICES_INDIRECT)
+	{
+		std::ostringstream raygenSrc;
+		raygenSrc
+			<< "struct Payload { uvec4 data; };\n"
+			<< "layout(location = 0) rayPayloadEXT Payload payload;\n"
+			<< "void main() {\n"
+			<< "	uint index = launchIndex();\n"
+			<< "	payload.data = uvec4(0, 0, 0, 0);\n"
+			<< "	Ray ray = rays[index];\n"
+			<< "	traceRayEXT(scene, 0, 0xff, 0, 0, 0, ray.pos, ray.tmin, ray.dir, ray.tmax, 0);\n"
+			<< "	results[index] = payload.data;\n"
+			<< "}";
+		const std::string raygen = raygenSrc.str();
+		addBuiltInShaderSource<glu::RaygenSource>(programCollection, VK_SHADER_STAGE_RAYGEN_BIT_KHR, raygen, m_data, "uvec4");
+
+		std::ostringstream missSrc;
+		missSrc
+			<< "struct Payload { uvec4 data; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "void main() {\n"
+			<< "	payload.data = uvec4(111, 222, 333, 444);\n"
+			<< "}";
+		const std::string miss = missSrc.str();
+		addBuiltInShaderSource<glu::MissSource>(programCollection, VK_SHADER_STAGE_MISS_BIT_KHR, miss, m_data, "uvec4");
+
+		std::ostringstream closestHitSrc;
+		closestHitSrc
+			<< "struct Payload { uvec4 data; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "hitAttributeEXT vec2 attribs;\n"
+			<< "void main() {\n"
+			<< "	payload.data = uvec4(gl_PrimitiveID, 0, gl_InstanceID, gl_InstanceCustomIndexEXT);\n"
+			<< "}";
+		const std::string closestHit = closestHitSrc.str();
+		addBuiltInShaderSource<glu::ClosestHitSource>(programCollection, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, closestHit, m_data, "uvec4");
+
+		std::ostringstream anyHitSrc;
+		anyHitSrc
+			<< "struct Payload { uvec4 data; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "hitAttributeEXT vec2 attribs;\n"
+			<< "void main() {\n"
+			<< "	payload.data = uvec4(gl_PrimitiveID, 0, gl_InstanceID, gl_InstanceCustomIndexEXT);\n"
+			<< "}";
+		const std::string anyHit = anyHitSrc.str();
+		addBuiltInShaderSource<glu::AnyHitSource>(programCollection, VK_SHADER_STAGE_ANY_HIT_BIT_KHR, anyHit, m_data, "uvec4");
+
+		std::ostringstream isectSrc;
+		isectSrc
+			<< "hitAttributeEXT vec2 dummy;\n"
+			<< "void main() {\n"
+			<< "	reportIntersectionEXT(0.0, 0u);\n"
+			<< "}";
+		const std::string isect = isectSrc.str();
+		addBuiltInShaderSource<glu::IntersectionSource>(programCollection, VK_SHADER_STAGE_INTERSECTION_BIT_KHR, isect, m_data, "uvec4");
+	}
+	else if (m_data.id == TEST_ID_TRANSFORMS_INDIRECT)
+	{
+		const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0, true);
+
+		std::ostringstream preambleSrc;
+		preambleSrc
+			<< "struct ResultData { Ray ray; vec4 worldRayOrig; vec4 worldRayDir; vec4 objectRayOrig; vec4 objectRayDir;\n"
+			<< "vec4 objectToWorld[4]; vec4 worldToObject[4];\n"
+			<< "uint missResult; uint closestHitResult; uint anyHitResult; uint isectResult; };\n"
+			<< "layout(std430, set = 0, binding = 0) buffer Results { ResultData results; };\n"
+			<< "\n"
+			<< "#ifdef CHECKS\n"
+			<< "bool fuzzy_check(vec3 a, vec3 b) {\n"
+			<< "	float eps = 0.00001;\n"
+			<< "	return abs(a.x - b.x) <= eps && abs(a.y - b.y) <= eps && abs(a.z - b.z) <= eps;\n"
+			<< "}\n"
+			<< "bool check_all() {\n"
+			<< "	if (fuzzy_check(results.worldRayOrig.xyz, gl_WorldRayOriginEXT) == false)\n"
+			<< "		return false;\n"
+			<< "	if (fuzzy_check(results.worldRayDir.xyz, gl_WorldRayDirectionEXT) == false)\n"
+			<< "		return false;\n"
+			<< "#ifndef MISS_SHADER\n"
+			<< "	if (fuzzy_check(results.objectRayOrig.xyz, gl_ObjectRayOriginEXT) == false)\n"
+			<< "		return false;\n"
+			<< "	if (fuzzy_check(results.objectRayDir.xyz, gl_WorldRayDirectionEXT) == false)\n"
+			<< "		return false;\n"
+			<< "	if (fuzzy_check(results.objectToWorld[0].xyz, gl_ObjectToWorldEXT[0]) == false)\n"
+			<< "		return false;\n"
+			<< "	if (fuzzy_check(results.objectToWorld[1].xyz, gl_ObjectToWorldEXT[1]) == false)\n"
+			<< "		return false;\n"
+			<< "	if (fuzzy_check(results.objectToWorld[2].xyz, gl_ObjectToWorldEXT[2]) == false)\n"
+			<< "		return false;\n"
+			<< "	if (fuzzy_check(results.objectToWorld[3].xyz, gl_ObjectToWorldEXT[3]) == false)\n"
+			<< "		return false;\n"
+			<< "	if (fuzzy_check(results.worldToObject[0].xyz, gl_WorldToObjectEXT[0]) == false)\n"
+			<< "		return false;\n"
+			<< "	if (fuzzy_check(results.worldToObject[1].xyz, gl_WorldToObjectEXT[1]) == false)\n"
+			<< "		return false;\n"
+			<< "	if (fuzzy_check(results.worldToObject[2].xyz, gl_WorldToObjectEXT[2]) == false)\n"
+			<< "		return false;\n"
+			<< "	if (fuzzy_check(results.worldToObject[3].xyz, gl_WorldToObjectEXT[3]) == false)\n"
+			<< "		return false;\n"
+			<< "#endif\n"
+			<< "	return true;\n"
+			<< "};\n"
+			<< "#endif\n";
+		const std::string preamble = preambleSrc.str();
+
+		std::ostringstream raygenSrc;
+		raygenSrc
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadEXT Payload payload;\n"
+			<< "void main() {\n"
+			<< "	payload.x = 0;\n"
+			<< "	results.missResult = 0;\n"
+			<< "	results.closestHitResult = 0;\n"
+			<< "	results.anyHitResult = 0;\n"
+			<< "	results.isectResult = 0;\n"
+			<< "	Ray ray = results.ray;\n"
+			<< "	traceRayEXT(scene, 0, 0xff, 0, 0, 0, ray.pos, ray.tmin, ray.dir, ray.tmax, 0);\n"
+			<< "}";
+		std::string raygen = raygenSrc.str();
+		raygen = generateShaderSource(raygen.c_str(), "", DEFINE_RAY | DEFINE_SCENE);
+		raygen = replaceString(raygen, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_RAYGEN_BIT_KHR)) << glu::RaygenSource(raygen) << buildOptions;
+
+		std::ostringstream missSrc;
+		missSrc
+			<< "#define CHECKS\n"
+			<< "#define MISS_SHADER\n"
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "void main() {\n"
+			<< "	if (check_all())\n"
+			<< "		results.missResult = 1;\n"
+			<< "}";
+		std::string miss = missSrc.str();
+		miss = generateShaderSource(miss.c_str(), "", DEFINE_RAY);
+		miss = replaceString(miss, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_MISS_BIT_KHR)) << glu::MissSource(miss) << buildOptions;
+
+		std::ostringstream closestHitSrc;
+		closestHitSrc
+			<< "#define CHECKS\n"
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "hitAttributeEXT vec2 attribs; "
+			<< "void main() {\n"
+			<< "	if (check_all())\n"
+			<< "		results.closestHitResult = 1;\n"
+			<< "}";
+		std::string closestHit = closestHitSrc.str();
+		closestHit = generateShaderSource(closestHit.c_str(), "", DEFINE_RAY);
+		closestHit = replaceString(closestHit, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)) << glu::ClosestHitSource(closestHit) << buildOptions;
+
+		std::ostringstream anyHitSrc;
+		anyHitSrc
+			<< "#define CHECKS\n"
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "hitAttributeEXT vec2 attribs; "
+			<< "void main() {\n"
+			<< "	if (check_all())\n"
+			<< "		results.anyHitResult = 1;\n"
+			<< "}";
+		std::string anyHit = anyHitSrc.str();
+		anyHit = generateShaderSource(anyHit.c_str(), "", DEFINE_RAY);
+		anyHit = replaceString(anyHit, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_ANY_HIT_BIT_KHR)) << glu::AnyHitSource(anyHit) << buildOptions;
+
+		std::ostringstream isectSrc;
+		isectSrc
+			<< "#define CHECKS\n"
+			<< "$preamble$\n"
+			<< "hitAttributeEXT vec2 dummy;\n"
+			<< "void main() {\n"
+			<< "	if (check_all())\n"
+			<< "		results.isectResult = 1;\n"
+			<< "	reportIntersectionEXT(0.0, 0u);\n"
+			<< "}";
+		std::string isect = isectSrc.str();
+		isect = generateShaderSource(isect.c_str(), "", DEFINE_RAY);
+		isect = replaceString(isect, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_INTERSECTION_BIT_KHR)) << glu::IntersectionSource(isect) << buildOptions;
+	}
+	else if (m_data.id == TEST_ID_TMINMAX_INDIRECT)
+	{
+		const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+		std::ostringstream preambleSrc;
+		preambleSrc
+			<< "struct ResultData { Ray ray; float miss_maxt; float chit_maxt; float ahit_maxt; float isect_maxt;\n"
+			<< "uint missResult; uint closestHitResult; uint anyHitResult; uint isectResult; float debug; };\n"
+			<< "layout(std430, set = 0, binding = 0) buffer Results { ResultData results; };\n"
+			<< "\n"
+			<< "#ifdef CHECKS\n"
+			<< "bool fuzzy_check(float a, float b) {\n"
+			<< "	float eps = 0.0001;\n"
+			<< "	return abs(a - b) <= eps;\n"
+			<< "}\n"
+			<< "bool check_all() {\n"
+			<< "	if (fuzzy_check(results.ray.tmin, gl_RayTminEXT) == false)\n"
+			<< "		return false;\n"
+			<< "#ifdef MISS_SHADER\n"
+			<< "	if (fuzzy_check(results.miss_maxt, gl_RayTmaxEXT) == false)\n"
+			<< "		return false;\n"
+			<< "#endif\n"
+			<< "#ifdef CHIT_SHADER\n"
+			<< "	if (fuzzy_check(results.chit_maxt, gl_RayTmaxEXT) == false)\n"
+			<< "		return false;\n"
+			<< "#endif\n"
+			<< "#ifdef AHIT_SHADER\n"
+			<< "	if (fuzzy_check(results.ahit_maxt, gl_RayTmaxEXT) == false)\n"
+			<< "		return false;\n"
+			<< "#endif\n"
+			<< "#ifdef ISECT_SHADER\n"
+			<< "	if (fuzzy_check(results.isect_maxt, gl_RayTmaxEXT) == false)\n"
+			<< "		return false;\n"
+			<< "#endif\n"
+			<< "	return true;\n"
+			<< "};\n"
+			<< "#endif\n";
+		const std::string preamble = preambleSrc.str();
+
+		std::ostringstream raygenSrc;
+		raygenSrc
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadEXT Payload payload;\n"
+			<< "void main() {\n"
+			<< "	payload.x = 0;\n"
+			<< "	results.missResult = 0;\n"
+			<< "	results.closestHitResult = 0;\n"
+			<< "	results.anyHitResult = 0;\n"
+			<< "	results.isectResult = 0;\n"
+			<< "	Ray ray = results.ray;\n"
+			<< "	traceRayEXT(scene, 0, 0xff, 0, 0, 0, ray.pos, ray.tmin, ray.dir, ray.tmax, 0);\n"
+			<< "}";
+		std::string raygen = raygenSrc.str();
+		raygen = generateShaderSource(raygen.c_str(), "", DEFINE_RAY | DEFINE_SCENE);
+		raygen = replaceString(raygen, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_RAYGEN_BIT_KHR)) << glu::RaygenSource(raygen) << buildOptions;
+
+		std::ostringstream missSrc;
+		missSrc
+			<< "#define CHECKS\n"
+			<< "#define MISS_SHADER\n"
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "void main() {\n"
+			<< "	if (check_all())\n"
+			<< "		results.missResult = 1;\n"
+			<< "}";
+		std::string miss = missSrc.str();
+		miss = generateShaderSource(miss.c_str(), "", DEFINE_RAY);
+		miss = replaceString(miss, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_MISS_BIT_KHR)) << glu::MissSource(miss) << buildOptions;
+
+		std::ostringstream cloesetHitSrc;
+		cloesetHitSrc
+			<< "#define CHECKS\n"
+			<< "#define CHIT_SHADER\n"
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "hitAttributeEXT vec2 attribs; "
+			<< "void main() {\n"
+			<< "	if (check_all())\n"
+			<< "		results.closestHitResult = 1;\n"
+			<< "}";
+		std::string closestHit = cloesetHitSrc.str();
+		closestHit = generateShaderSource(closestHit.c_str(), "", DEFINE_RAY);
+		closestHit = replaceString(closestHit, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)) << glu::ClosestHitSource(closestHit) << buildOptions;
+
+		std::ostringstream anyHitSrc;
+		anyHitSrc
+			<< "#define CHECKS\n"
+			<< "#define AHIT_SHADER\n"
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "hitAttributeEXT vec2 attribs; "
+			<< "void main() {\n"
+			<< "	if (check_all())\n"
+			<< "		results.anyHitResult = 1;\n"
+			<< "}";
+		std::string anyHit = anyHitSrc.str();
+		anyHit = generateShaderSource(anyHit.c_str(), "", DEFINE_RAY);
+		anyHit = replaceString(anyHit, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_ANY_HIT_BIT_KHR)) << glu::AnyHitSource(anyHit) << buildOptions;
+
+		std::ostringstream isectSrc;
+		isectSrc
+			<< "#define CHECKS\n"
+			<< "#define ISECT_SHADER\n"
+			<< "$preamble$\n"
+			<< "hitAttributeEXT vec2 dummy;\n"
+			<< "void main() {\n"
+			<< "	results.debug = gl_RayTmaxEXT;\n"
+			<< "	if (check_all())\n"
+			<< "		results.isectResult = 1;\n"
+			<< "	reportIntersectionEXT(results.chit_maxt, 0u);\n"
+			<< "}";
+		std::string isect = isectSrc.str();
+		isect = generateShaderSource(isect.c_str(), "", DEFINE_RAY);
+		isect = replaceString(isect, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_INTERSECTION_BIT_KHR)) << glu::IntersectionSource(isect) << buildOptions;
+	}
+	else if (m_data.id == TEST_ID_INCOMING_RAY_FLAGS_INDIRECT)
+	{
+		const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0, true);
+
+		std::ostringstream preambleSrc;
+		preambleSrc
+			<< "struct ResultData { Ray ray[2]; uint flags; uint miss[2]; uint chit[2]; uint ahit[2]; uint isect[2]; };\n"
+			<< "layout(std430, set = 0, binding = 0) buffer Results { ResultData results; };\n"
+			<< "\n"
+			<< "#ifdef CHECKS\n"
+			<< "bool check_all() {\n"
+			<< "	if (gl_IncomingRayFlagsEXT != results.flags)\n"
+			<< "		return false;\n"
+			<< "	return true;\n"
+			<< "}\n"
+			<< "#endif\n";
+		const std::string preamble = preambleSrc.str();
+
+		std::ostringstream raygenSrc;
+		raygenSrc
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadEXT Payload payload;\n"
+			<< "void main() {\n"
+			<< "	payload.x = 0;\n"
+			<< "	results.miss[gl_LaunchIDEXT.x] = 0;\n"
+			<< "	results.chit[gl_LaunchIDEXT.x] = 0;\n"
+			<< "	results.ahit[gl_LaunchIDEXT.x] = 0;\n"
+			<< "	results.isect[gl_LaunchIDEXT.x] = 0;\n"
+			<< "	Ray ray = results.ray[gl_LaunchIDEXT.x];\n"
+			<< "	traceRayEXT(scene, results.flags, 0xff, 0, 0, 0, ray.pos, ray.tmin, ray.dir, ray.tmax, 0);\n"
+			<< "}";
+		std::string raygen = raygenSrc.str();
+		raygen = generateShaderSource(raygen.c_str(), "", DEFINE_RAY | DEFINE_SCENE);
+		raygen = replaceString(raygen, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_RAYGEN_BIT_KHR)) << glu::RaygenSource(raygen) << buildOptions;
+
+		std::ostringstream missSrc;
+		missSrc
+			<< "#define CHECKS\n"
+			<< "#define MISS_SHADER\n"
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "void main() {\n"
+			<< "	if (check_all())\n"
+			<< "		results.miss[gl_LaunchIDEXT.x]++;\n"
+			<< "}";
+		std::string miss = missSrc.str();
+		miss = generateShaderSource(miss.c_str(), "", DEFINE_RAY);
+		miss = replaceString(miss, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_MISS_BIT_KHR)) << glu::MissSource(miss) << buildOptions;
+
+		std::ostringstream closestHitSrc;
+		closestHitSrc
+			<< "#define CHECKS\n"
+			<< "#define CHIT_SHADER\n"
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "hitAttributeEXT vec2 attribs; "
+			<< "void main() {\n"
+			<< "	if (check_all())\n"
+			<< "		results.chit[gl_LaunchIDEXT.x]++;\n"
+			<< "}";
+		std::string closestHit = closestHitSrc.str();
+		closestHit = generateShaderSource(closestHit.c_str(), "", DEFINE_RAY);
+		closestHit = replaceString(closestHit, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)) << glu::ClosestHitSource(closestHit) << buildOptions;
+
+		std::ostringstream anyHitSrc;
+		anyHitSrc
+			<< "#define CHECKS\n"
+			<< "#define AHIT_SHADER\n"
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "hitAttributeEXT vec2 attribs; "
+			<< "void main() {\n"
+			<< "	if (check_all())\n"
+			<< "		results.ahit[gl_LaunchIDEXT.x]++;\n"
+			<< "}";
+		std::string anyHit = anyHitSrc.str();
+		anyHit = generateShaderSource(anyHit.c_str(), "", DEFINE_RAY);
+		anyHit = replaceString(anyHit, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_ANY_HIT_BIT_KHR)) << glu::AnyHitSource(anyHit) << buildOptions;
+
+		std::ostringstream isectSrc;
+		isectSrc
+			<< "#define CHECKS\n"
+			<< "#define ISECT_SHADER\n"
+			<< "$preamble$\n"
+			<< "hitAttributeEXT vec2 dummy;\n"
+			<< "void main() {\n"
+			<< "	if (check_all())\n"
+			<< "		results.isect[gl_LaunchIDEXT.x]++;\n"
+			<< "	reportIntersectionEXT(gl_RayTminEXT, 0u);\n"
+			<< "}";
+		std::string isect = isectSrc.str();
+		isect = generateShaderSource(isect.c_str(), "", DEFINE_RAY);
+		isect = replaceString(isect, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_INTERSECTION_BIT_KHR)) << glu::IntersectionSource(isect) << buildOptions;
+	}
+	else if (m_data.id == TEST_ID_HIT_KIND_INDIRECT)
+	{
+		const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0, true);
+
+		std::ostringstream preambleSrc;
+		preambleSrc
+			<< "struct ResultData { Ray ray[2]; uint kind[2]; uint chit[2]; uint ahit[2]; uint debug[2]; };\n"
+			<< "layout(std430, set = 0, binding = 0) buffer Results { ResultData results; };\n"
+			<< "\n"
+			<< "#ifdef CHECKS\n"
+			<< "bool check_all() {\n"
+			<< "#if defined(CHIT_SHADER) || defined(AHIT_SHADER)\n"
+			<< "	if (gl_HitKindEXT != results.kind[gl_LaunchIDEXT.x])\n"
+			<< "		return false;\n"
+			<< "#endif\n"
+			<< "	return true;\n"
+			<< "}\n"
+			<< "#endif\n";
+		const std::string preamble = preambleSrc.str();
+
+		std::ostringstream raygenSrc;
+		raygenSrc
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadEXT Payload payload;\n"
+			<< "void main() {\n"
+			<< "	payload.x = 0;\n"
+			<< "	uint i = gl_LaunchIDEXT.x;\n"
+			<< "	results.chit[i] = 0;\n"
+			<< "	results.ahit[i] = 0;\n"
+			<< "	Ray ray = results.ray[i];\n"
+			<< "	traceRayEXT(scene, 0, 0xff, 0, 0, 0, ray.pos, ray.tmin, ray.dir, ray.tmax, 0);\n"
+			<< "}";
+		std::string raygen = raygenSrc.str();
+		raygen = generateShaderSource(raygen.c_str(), "", DEFINE_RAY | DEFINE_SCENE);
+		raygen = replaceString(raygen, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_RAYGEN_BIT_KHR)) << glu::RaygenSource(raygen) << buildOptions;
+
+		std::ostringstream missSrc;
+		missSrc
+			<< "#define CHECKS\n"
+			<< "#define MISS_SHADER\n"
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "void main() {\n"
+			<< "}";
+		std::string miss = missSrc.str();
+		miss = generateShaderSource(miss.c_str(), "", DEFINE_RAY);
+		miss = replaceString(miss, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_MISS_BIT_KHR)) << glu::MissSource(miss) << buildOptions;
+
+		std::ostringstream closestHitSrc;
+		closestHitSrc
+			<< "#define CHECKS\n"
+			<< "#define CHIT_SHADER\n"
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "hitAttributeEXT vec2 attribs; "
+			<< "void main() {\n"
+			<< "	results.debug[gl_LaunchIDEXT.x] = gl_HitKindEXT;\n"
+			<< "	if (check_all())\n"
+			<< "		results.chit[gl_LaunchIDEXT.x] = 1;\n"
+			<< "}";
+		std::string closestHit = closestHitSrc.str();
+		closestHit = generateShaderSource(closestHit.c_str(), "", DEFINE_RAY);
+		closestHit = replaceString(closestHit, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)) << glu::ClosestHitSource(closestHit) << buildOptions;
+
+		std::ostringstream anyHitSrc;
+		anyHitSrc
+			<< "#define CHECKS\n"
+			<< "#define AHIT_SHADER\n"
+			<< "$preamble$\n"
+			<< "struct Payload { uint x; };\n"
+			<< "layout(location = 0) rayPayloadInEXT Payload payload;\n"
+			<< "hitAttributeEXT vec2 attribs; "
+			<< "void main() {\n"
+			<< "	if (check_all())\n"
+			<< "		results.ahit[gl_LaunchIDEXT.x] = 1;\n"
+			<< "}";
+		std::string anyHit = anyHitSrc.str();
+		anyHit = generateShaderSource(anyHit.c_str(), "", DEFINE_RAY);
+		anyHit = replaceString(anyHit, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_ANY_HIT_BIT_KHR)) << glu::AnyHitSource(anyHit) << buildOptions;
+
+		std::ostringstream isectSrc;
+		isectSrc
+			<< "#define CHECKS\n"
+			<< "#define ISECT_SHADER\n"
+			<< "$preamble$\n"
+			<< "hitAttributeEXT vec2 dummy;\n"
+			<< "void main() {\n"
+			<< "	reportIntersectionEXT(gl_RayTminEXT, results.kind[gl_LaunchIDEXT.x]);\n"
+			<< "}";
+		std::string isect = isectSrc.str();
+		isect = generateShaderSource(isect.c_str(), "", DEFINE_RAY);
+		isect = replaceString(isect, "$preamble$", preamble);
+		programCollection.glslSources.add(getShaderIdentifier(m_data, VK_SHADER_STAGE_INTERSECTION_BIT_KHR)) << glu::IntersectionSource(isect) << buildOptions;
+	}
+}
+
+TestInstance* RayTracingIndirectTestCase::createInstance (Context& context) const
+{
+	return new RayTracingIndirectTestInstance(context, m_data);
+}
+
+Move<VkPipeline> RayTracingIndirectTestInstance::createPipelineAndShaderBindingTables (de::MovePtr<RayTracingPipeline>& rayTracingPipeline, bool aabb, VkPipelineLayout pipelineLayout)
+{
+	const InstanceInterface&			vki									= m_context.getInstanceInterface();
+	const DeviceInterface&				vk									= m_context.getDeviceInterface();
+	const VkDevice						device								= m_context.getDevice();
+	const VkPhysicalDevice				physicalDevice						= m_context.getPhysicalDevice();
+	Allocator&							allocator							= m_context.getDefaultAllocator();
+
+	const deUint32	shaderGroupHandleSize		= getShaderGroupSize(vki, physicalDevice);
+	const deUint32	shaderGroupBaseAlignment	= getShaderGroupBaseAlignment(vki, physicalDevice);
+
+	rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		createShaderModule(vk, device, m_context.getBinaryCollection().get(getShaderIdentifier(m_data, VK_SHADER_STAGE_RAYGEN_BIT_KHR)), 0), 0);
+	rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,			createShaderModule(vk, device, m_context.getBinaryCollection().get(getShaderIdentifier(m_data, VK_SHADER_STAGE_MISS_BIT_KHR)), 0), 1);
+	for (deUint32 g = 0; g < m_numGeoms; ++g)
+	{
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	createShaderModule(vk, device, m_context.getBinaryCollection().get(getShaderIdentifier(m_data, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)), 0), 2 + g);
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR,		createShaderModule(vk, device, m_context.getBinaryCollection().get(getShaderIdentifier(m_data, VK_SHADER_STAGE_ANY_HIT_BIT_KHR)), 0), 2 + g);
+
+		if (aabb)
+		{
+			rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	createShaderModule(vk, device, m_context.getBinaryCollection().get(getShaderIdentifier(m_data, VK_SHADER_STAGE_INTERSECTION_BIT_KHR)), 0), 2 + g);
+		}
+	}
+	Move<VkPipeline> pipeline = rayTracingPipeline->createPipeline(vk, device, pipelineLayout);
+
+	m_raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+	m_missShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+	m_hitShaderBindingTable					= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, m_numGeoms);
+
+	m_raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, m_raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	m_missShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, m_missShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	m_hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, m_hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	m_callableShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+
+	return pipeline;
+}
+
+void RayTracingIndirectTestInstance::createPipelineLayoutAndSet (deUint32 setCount,
+																 vk::Move<VkDescriptorPool>& descriptorPool,
+																 vk::Move<VkDescriptorSetLayout>& descriptorSetLayout,
+																 std::vector<vk::Move<VkDescriptorSet>>& descriptorSets,
+																 vk::Move<VkPipelineLayout>& pipelineLayout)
+{
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	const VkDevice device = m_context.getDevice();
+
+	vk::DescriptorPoolBuilder descriptorPoolBuilder;
+
+	deUint32 storageBufCount = 2 * setCount;
+
+	const VkDescriptorType accelType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+
+	descriptorPoolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, storageBufCount);
+	descriptorPoolBuilder.addType(accelType, setCount);
+
+	descriptorPool = descriptorPoolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, setCount);
+
+	vk::DescriptorSetLayoutBuilder setLayoutBuilder;
+
+	setLayoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, ALL_RAY_TRACING_STAGES);
+	setLayoutBuilder.addSingleBinding(accelType, ALL_RAY_TRACING_STAGES);
+	setLayoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, ALL_RAY_TRACING_STAGES);
+
+	descriptorSetLayout = setLayoutBuilder.build(vk, device);
+
+	const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo =
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,		// VkStructureType				sType;
+		DE_NULL,											// const void*					pNext;
+		*descriptorPool,									// VkDescriptorPool				descriptorPool;
+		1u,													// deUint32						setLayoutCount;
+		&descriptorSetLayout.get()							// const VkDescriptorSetLayout*	pSetLayouts;
+	};
+
+	for (uint32_t i = 0; i < setCount; ++i)
+		descriptorSets.push_back(allocateDescriptorSet(vk, device, &descriptorSetAllocateInfo));
+
+	const VkPipelineLayoutCreateInfo pipelineLayoutInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
+		DE_NULL,											// const void*					pNext;
+		(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags	flags;
+		1u,													// deUint32						setLayoutCount;
+		&descriptorSetLayout.get(),							// const VkDescriptorSetLayout*	pSetLayouts;
+		0u,													// deUint32						pushConstantRangeCount;
+		nullptr,											// const VkPushConstantRange*	pPushConstantRanges;
+	};
+
+	pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutInfo);
+}
+
+de::SharedPtr<TopLevelAccelerationStructure> RayTracingIndirectTestInstance::initTopAccelerationStructure (std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>& blas)
+{
+	de::SharedPtr<TopLevelAccelerationStructure> tlas = de::SharedPtr<TopLevelAccelerationStructure>(makeTopLevelAccelerationStructure().release());
+
+	VkTransformMatrixKHR transform = identityMatrix3x4;
+	if (m_data.id == TEST_ID_TRANSFORMS_INDIRECT)
+	{
+		tcu::Vec3 instanceOffset = tcu::Vec3(2.0f, 4.0f, 8.0f);
+		transform.matrix[0][3] = instanceOffset[0];
+		transform.matrix[1][3] = instanceOffset[1];
+		transform.matrix[2][3] = instanceOffset[2];
+	}
+
+	for (size_t i = 0; i < blas.size(); ++i)
+	{
+		tlas->addInstance(blas[i], transform, 1000 + static_cast<deUint32>(i));
+	}
+
+	return tlas;
+}
+
+std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingIndirectTestInstance::initBottomAccelerationStructures()
+{
+	const bool aabb = (m_data.stage == VK_SHADER_STAGE_INTERSECTION_BIT_KHR);
+
+	deUint32 numInstances = m_data.id == TEST_ID_INDICES_INDIRECT ? 5 : 1;
+
+	if (m_data.id == TEST_ID_INDICES_INDIRECT || m_data.id == TEST_ID_TRANSFORMS_INDIRECT || m_data.id == TEST_ID_TMINMAX_INDIRECT)
+	{
+		m_geomsPerInstance = m_data.id == TEST_ID_INDICES_INDIRECT ? 3 : 1;
+		m_primsPerGeometry = m_data.id == TEST_ID_INDICES_INDIRECT ? 4 : 1;
+
+		m_numGeoms = numInstances * m_geomsPerInstance;
+
+		for (deUint32 i = 0; i < m_numGeoms; ++i)
+		{
+			std::vector<tcu::Vec3> geomPrims;
+
+			for (deUint32 j = 0; j < m_primsPerGeometry; ++j)
+			{
+				const deUint32 primId = (i * m_primsPerGeometry) + j;
+				float dx = 10.0f * static_cast<float>(primId);
+				if (aabb == false)
+				{
+					geomPrims.push_back(tcu::Vec3(dx + -1.0f, -1.0f, 1.0f));
+					geomPrims.push_back(tcu::Vec3(dx + 1.0f, -1.0f, 1.0f));
+					geomPrims.push_back(tcu::Vec3(dx + 0.0f, 1.0f, 1.0f));
+				}
+				else
+				{
+					geomPrims.push_back(tcu::Vec3(dx - 1.0f, -1.0f, 1.0f)); // min x/y/z
+					geomPrims.push_back(tcu::Vec3(dx + 1.0f, 1.0f, 2.0f)); // max x/y/z
+				}
+			}
+			m_geomData.push_back(geomPrims);
+		}
+	}
+	else if (m_data.id == TEST_ID_INCOMING_RAY_FLAGS_INDIRECT || m_data.id == TEST_ID_HIT_KIND_INDIRECT)
+	{
+		m_geomsPerInstance = m_data.id == TEST_ID_INCOMING_RAY_FLAGS_INDIRECT ? 2 : 1;
+		m_primsPerGeometry = 1;
+
+		m_numGeoms = numInstances * m_geomsPerInstance;
+
+		for (deUint32 i = 0; i < m_numGeoms; ++i)
+		{
+			std::vector<tcu::Vec3> geomPrims;
+
+			for (deUint32 j = 0; j < m_primsPerGeometry; ++j)
+			{
+				const deUint32 primId = (i * m_primsPerGeometry) + j;
+				float z = 1.0f + 10.0f * static_cast<float>(primId);
+
+				bool ccw = (primId % 2) == 0;
+
+				if (aabb == false)
+				{
+					if (ccw)
+					{
+						geomPrims.push_back(tcu::Vec3(-1.0f, -1.0f, z));
+						geomPrims.push_back(tcu::Vec3( 1.0f, -1.0f, z));
+						geomPrims.push_back(tcu::Vec3( 0.0f,  1.0f, z));
+					}
+					else
+					{
+						geomPrims.push_back(tcu::Vec3( 1.0f, -1.0f, z));
+						geomPrims.push_back(tcu::Vec3(-1.0f, -1.0f, z));
+						geomPrims.push_back(tcu::Vec3( 0.0f,  1.0f, z));
+					}
+				}
+				else
+				{
+					geomPrims.push_back(tcu::Vec3(-1.0f, -1.0f, z)); // min x/y/z
+					geomPrims.push_back(tcu::Vec3( 1.0f,  1.0f, z + 1.0f)); // max x/y/z
+				}
+			}
+			m_geomData.push_back(geomPrims);
+		}
+	}
+
+	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> blas;
+
+	if (!m_geomData.empty())
+	{
+		for (deUint32 i = 0; i < numInstances; ++i)
+		{
+			de::SharedPtr<BottomLevelAccelerationStructure>	accel = de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
+			for (deUint32 j = 0; j < m_geomsPerInstance; ++j)
+			{
+				accel->addGeometry(m_geomData[(i * m_geomsPerInstance) + j], !aabb, 0U);
+			}
+			blas.push_back(accel);
+		}
+	}
+	return blas;
+}
+
+struct Ray
+{
+	Ray() : o(0.0f), tmin(0.0f), d(0.0f), tmax(0.0f){}
+	Ray(const tcu::Vec3& io, float imin, const tcu::Vec3& id, float imax): o(io), tmin(imin), d(id), tmax(imax){}
+	tcu::Vec3 o;
+	float tmin;
+	tcu::Vec3 d;
+	float tmax;
+};
+
+struct TransformResultData {
+
+	TransformResultData(): ray(), worldRayOrig(0.f), padding0(0.f), worldRayDir(0.f), padding1(0.f),
+	objectRayOrig(0.f), padding2(0.f), objectRayDir(0.f), padding3(0.f), objectToWorld0(0.f), padding4(0.f),
+	objectToWorld1(0.f), padding5(0.f), objectToWorld2(0.f), padding6(0.f), objectToWorld3(0.f), padding7(0.f),
+	worldToObject0(0.f), padding8(0.f), worldToObject1(0.f), padding9(0.f), worldToObject2(0.f), padding10(0.f),
+	worldToObject3(0.f), padding11(0.f), missResult(0), closestHitResult(0), anyHitResult(0), isectResult(0) {}
+
+	Ray ray;
+	tcu::Vec3 worldRayOrig; float padding0;
+	tcu::Vec3 worldRayDir; float padding1;
+	tcu::Vec3 objectRayOrig; float padding2;
+	tcu::Vec3 objectRayDir; float padding3;
+	tcu::Vec3 objectToWorld0; float padding4;
+	tcu::Vec3 objectToWorld1; float padding5;
+	tcu::Vec3 objectToWorld2; float padding6;
+	tcu::Vec3 objectToWorld3; float padding7;
+	tcu::Vec3 worldToObject0; float padding8;
+	tcu::Vec3 worldToObject1; float padding9;
+	tcu::Vec3 worldToObject2; float padding10;
+	tcu::Vec3 worldToObject3; float padding11;
+	deUint32 missResult;
+	deUint32 closestHitResult;
+	deUint32 anyHitResult;
+	deUint32 isectResult;
+};
+
+struct TMinMaxResultData {
+	Ray ray;
+	float miss_maxt;
+	float chit_maxt;
+	float ahit_maxt;
+	float isect_maxt;
+	deUint32 missResult;
+	deUint32 closestHitResult;
+	deUint32 anyHitResult;
+	deUint32 isectResult;
+	float debug;
+};
+
+struct IncomingFlagsResultData {
+	Ray ray[2];
+	deUint32 flags;
+	deUint32 miss[2];
+	deUint32 chit[2];
+	deUint32 ahit[2];
+	deUint32 isect[2];
+};
+
+struct HitKindResultData {
+	Ray ray[2];
+	deUint32 kind[2];
+	deUint32 chit[2];
+	deUint32 ahit[2];
+	deUint32 debug[2];
+};
+
+void RayTracingIndirectTestInstance::initializeParameters()
+{
+	const VkDevice device = m_context.getDevice();
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	Allocator& allocator = m_context.getDefaultAllocator();
+
+	const bool aabb = (m_data.stage == VK_SHADER_STAGE_INTERSECTION_BIT_KHR);
+
+	if (m_data.id == TEST_ID_INDICES_INDIRECT)
+	{
+		std::vector<Ray> rays;
+		for (deUint32 g = 0; g < m_numGeoms; ++g)
+		{
+			for (deUint32 p = 0; p < m_primsPerGeometry; ++p)
+			{
+				tcu::Vec3 center = aabb ?
+							(m_geomData[g][2 * p + 0] + m_geomData[g][2 * p + 1]) * 0.5f :
+							(m_geomData[g][3 * p + 0] + m_geomData[g][3 * p + 1] + m_geomData[g][3 * p + 2]) * (1.0f / 3.0f);
+
+				Ray r;
+
+				r.o = tcu::Vec3(center[0], center[1], 0.0f);
+				r.d = tcu::Vec3(0.0f, 0.0f, 1.0f);
+				r.tmin = 0.0f;
+				r.tmax = 1000.0f;
+
+				rays.push_back(r);
+			}
+		}
+		const VkBufferCreateInfo resultBufferCreateInfo = makeBufferCreateInfo(rays.size() * sizeof(deUint32) * 8, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		m_resultBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+
+		const VkBufferCreateInfo rayBufferCreateInfo = makeBufferCreateInfo(rays.size() * sizeof(Ray), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		m_rayBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, rayBufferCreateInfo, MemoryRequirement::HostVisible));
+
+		memcpy(m_rayBuffer->getAllocation().getHostPtr(), &rays[0], rays.size() * sizeof(Ray));
+		flushMappedMemoryRange(vk, device, m_rayBuffer->getAllocation().getMemory(), m_rayBuffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
+	}
+	else if (m_data.id == TEST_ID_TRANSFORMS_INDIRECT)
+	{
+		const VkBufferCreateInfo resultBufferCreateInfo = makeBufferCreateInfo(sizeof(TransformResultData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		m_resultBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+
+		TransformResultData* resultData = (TransformResultData*)m_resultBuffer->getAllocation().getHostPtr();
+		*resultData = {};
+
+		VkTransformMatrixKHR transform = identityMatrix3x4;
+		tcu::Vec3 instanceOffset = tcu::Vec3(2.0f, 4.0f, 8.0f);
+		transform.matrix[0][3] = instanceOffset[0];
+		transform.matrix[1][3] = instanceOffset[1];
+		transform.matrix[2][3] = instanceOffset[2];
+
+		{
+			tcu::Vec3 center = aabb ?
+				(m_geomData[0][0] + m_geomData[0][1]) * 0.5f :
+				(m_geomData[0][0] + m_geomData[0][1] + m_geomData[0][2]) * (1.0f / 3.0f);
+
+			center = center + instanceOffset;
+
+			Ray r;
+
+			r.o = tcu::Vec3(center[0], center[1], 0.0f);
+			r.d = tcu::Vec3(0.0f, 0.0f, 1.0f);
+			r.tmin = 0.0f;
+			r.tmax = 1000.0f;
+
+			if (m_data.stage == VK_SHADER_STAGE_MISS_BIT_KHR)
+			{
+				r.d[2] = -1.0f;
+			}
+
+			resultData->ray = r;
+		}
+
+		resultData->worldRayOrig  = resultData->ray.o;
+		resultData->worldRayDir   = resultData->ray.d;
+		resultData->objectRayOrig = resultData->worldRayOrig - instanceOffset;
+		resultData->objectRayDir  = resultData->worldRayDir;
+
+		resultData->objectToWorld0 = tcu::Vec3(transform.matrix[0][0], transform.matrix[1][0], transform.matrix[2][0]);
+		resultData->objectToWorld1 = tcu::Vec3(transform.matrix[0][1], transform.matrix[1][1], transform.matrix[2][1]);
+		resultData->objectToWorld2 = tcu::Vec3(transform.matrix[0][2], transform.matrix[1][2], transform.matrix[2][2]);
+		resultData->objectToWorld3 = tcu::Vec3(transform.matrix[0][3], transform.matrix[1][3], transform.matrix[2][3]);
+
+		resultData->worldToObject0 = tcu::Vec3(transform.matrix[0][0], transform.matrix[0][1], transform.matrix[0][2]);
+		resultData->worldToObject1 = tcu::Vec3(transform.matrix[1][0], transform.matrix[1][1], transform.matrix[1][2]);
+		resultData->worldToObject2 = tcu::Vec3(transform.matrix[2][0], transform.matrix[2][1], transform.matrix[2][2]);
+		resultData->worldToObject3 = tcu::Vec3(-transform.matrix[0][3], -transform.matrix[1][3], -transform.matrix[2][3]);
+	}
+	else if (m_data.id == TEST_ID_TMINMAX_INDIRECT)
+	{
+		const VkBufferCreateInfo resultBufferCreateInfo = makeBufferCreateInfo(sizeof(TMinMaxResultData) * m_numGeoms * m_primsPerGeometry, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		m_resultBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+
+		TMinMaxResultData* resultData = (TMinMaxResultData*)m_resultBuffer->getAllocation().getHostPtr();
+		*resultData = {};
+		{
+			tcu::Vec3 center = aabb ?
+				(m_geomData[0][0] + m_geomData[0][1]) * 0.5f :
+				(m_geomData[0][0] + m_geomData[0][1] + m_geomData[0][2]) * (1.0f / 3.0f);
+
+			Ray r;
+
+			r.o = tcu::Vec3(center[0], center[1], 0.0f);
+			r.d = tcu::Vec3(0.0f, 0.0f, 1.0f);
+			r.tmin = 0.05f;
+			r.tmax = 1000.0f;
+
+			if (m_data.stage == VK_SHADER_STAGE_MISS_BIT_KHR)
+			{
+				r.d[2] = -1.0f;
+			}
+
+			resultData->ray = r;
+		}
+
+		resultData->miss_maxt  = resultData->ray.tmax;
+		resultData->isect_maxt = resultData->ray.tmax;
+		resultData->chit_maxt  = aabb ? 1.5f : 1.0f;
+		resultData->ahit_maxt  = aabb ? 1.5f : 1.0f;
+		resultData->isect_maxt = resultData->ray.tmax;
+		resultData->debug = -2.0f;
+	}
+	else if (m_data.id == TEST_ID_INCOMING_RAY_FLAGS_INDIRECT)
+	{
+		const VkBufferCreateInfo resultBufferCreateInfo = makeBufferCreateInfo(sizeof(IncomingFlagsResultData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		m_resultBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+
+		IncomingFlagsResultData* resultData = (IncomingFlagsResultData*)m_resultBuffer->getAllocation().getHostPtr();
+		*resultData = {};
+
+		for (deUint32 i = 0; i < 2; ++i)
+		{
+			tcu::Vec3 center = aabb ?
+				(m_geomData[0][0] + m_geomData[0][1]) * 0.5f :
+				(m_geomData[0][0] + m_geomData[0][1] + m_geomData[0][2]) * (1.0f / 3.0f);
+
+			Ray r;
+
+			r.o = tcu::Vec3(center[0], center[1], 0.0f);
+			r.d = tcu::Vec3(0.0f, 0.0f, (i == 0) ? -1.0f : 1.0f);
+			r.tmin = 0.05f;
+			r.tmax = 1000.0f;
+
+			resultData->ray[i] = r;
+		}
+
+		if (m_data.opaque)
+			resultData->flags |= (1 << RAY_FLAG_BIT_OPAQUE_EXT);
+		if (m_data.skipClosestHit)
+			resultData->flags |= (1 << RAY_FLAG_BIT_SKIP_CLOSEST_HIT_SHADER_EXT);
+	}
+	else if (m_data.id == TEST_ID_HIT_KIND_INDIRECT)
+	{
+		const VkBufferCreateInfo resultBufferCreateInfo = makeBufferCreateInfo(sizeof(HitKindResultData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		m_resultBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+
+		HitKindResultData* resultData = (HitKindResultData*)m_resultBuffer->getAllocation().getHostPtr();
+		*resultData = {};
+
+		for (deUint32 i = 0; i < 2; ++i)
+		{
+			tcu::Vec3 center = aabb ?
+				(m_geomData[0][0] + m_geomData[0][1]) * 0.5f :
+				(m_geomData[0][0] + m_geomData[0][1] + m_geomData[0][2]) * (1.0f / 3.0f);
+
+			Ray r;
+
+			r.o = tcu::Vec3(center[0], center[1], 0.0f);
+			r.d = tcu::Vec3(0.0f, 0.0f, (i == 1) ? -1.0f : 1.0f);
+
+			if (i == 1)
+				r.o += tcu::Vec3(0, 0, 100.0f);
+
+			r.tmin = 0.05f;
+			r.tmax = 1000.0f;
+
+			resultData->ray[i] = r;
+		}
+
+		resultData->kind[0] = 255;
+		resultData->kind[1] = 254;
+	}
+}
+
+bool RayTracingIndirectTestInstance::verifyResults()
+{
+	const bool aabb = (m_data.stage == VK_SHADER_STAGE_INTERSECTION_BIT_KHR);
+
+	if (m_data.id == TEST_ID_INDICES_INDIRECT)
+	{
+		deUint32* resultData = (deUint32*)m_resultBuffer->getAllocation().getHostPtr();
+		for (deUint32 r = 0; r < m_numGeoms * m_primsPerGeometry; ++r)
+		{
+			deUint32 primitiveId = r % m_primsPerGeometry;
+			deUint32 instanceId = (r / m_primsPerGeometry) / m_geomsPerInstance;
+			deUint32 instanceCustomIndex = 1000 + instanceId;
+
+			if (resultData[4 * r + 0] != primitiveId)
+				return false;
+
+			if (resultData[4 * r + 2] != instanceId)
+				return false;
+
+			if (resultData[4 * r + 3] != instanceCustomIndex)
+				return false;
+		}
+	}
+	else if (m_data.id == TEST_ID_TRANSFORMS_INDIRECT)
+	{
+		TransformResultData* resultData = (TransformResultData*)m_resultBuffer->getAllocation().getHostPtr();
+		if (resultData->anyHitResult != 1 || resultData->closestHitResult != 1)
+		{
+			return false;
+		}
+
+		if (aabb && resultData->isectResult != 1)
+		{
+			return false;
+		}
+	}
+	else if (m_data.id == TEST_ID_TMINMAX_INDIRECT)
+	{
+		TMinMaxResultData* resultData = (TMinMaxResultData*)m_resultBuffer->getAllocation().getHostPtr();
+		if (resultData->anyHitResult != 1 || resultData->closestHitResult != 1)
+		{
+			return false;
+		}
+
+		if (aabb && resultData->isectResult != 1)
+		{
+			return false;
+		}
+	}
+	else if (m_data.id == TEST_ID_INCOMING_RAY_FLAGS_INDIRECT)
+	{
+		IncomingFlagsResultData* resultData = (IncomingFlagsResultData*)m_resultBuffer->getAllocation().getHostPtr();
+
+		deUint32 miss[2] = { 1, 0 };
+		deUint32 chitMin[2] = { 0, 1 };
+		deUint32 chitMax[2] = { 0, 1 };
+		deUint32 ahitMin[2] = { 0, 1 };
+		deUint32 ahitMax[2] = { 0, 2 };
+		deUint32 isectMin[2] = { 0, 0 };
+		deUint32 isectMax[2] = { 0, 0 };
+
+		if (aabb)
+		{
+			isectMin[1] = 1;
+			isectMax[1] = 2;
+		}
+
+		if (m_data.opaque)
+		{
+			ahitMin[1] = 0;
+			ahitMax[1] = 0;
+		}
+
+		if (m_data.skipClosestHit)
+		{
+			chitMin[1] = 0;
+			chitMax[1] = 0;
+		}
+
+		for (deUint32 i = 0; i < 2; ++i)
+		{
+			if (resultData->miss[i] != miss[i])
+				return false;
+			if (resultData->chit[i] < chitMin[i])
+				return false;
+			if (resultData->chit[i] > chitMax[i])
+				return false;
+			if (resultData->ahit[i] < ahitMin[i])
+				return false;
+			if (resultData->ahit[i] > ahitMax[i])
+				return false;
+			if (resultData->isect[i] < isectMin[i])
+				return false;
+			if (resultData->isect[i] > isectMax[i])
+				return false;
+		}
+	}
+	else if (m_data.id == TEST_ID_HIT_KIND_INDIRECT)
+	{
+		HitKindResultData* resultData = (HitKindResultData*)m_resultBuffer->getAllocation().getHostPtr();
+		for (deUint32 i = 0; i < 2; ++i)
+		{
+			if (resultData->chit[i] != 1)
+				return false;
+
+			if (resultData->ahit[i]  != 1)
+				return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+	return true;
+}
+
+tcu::TestStatus RayTracingIndirectTestInstance::iterate (void)
+{
+	const VkDevice device = m_context.getDevice();
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	const deUint32 queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+	Allocator& allocator = m_context.getDefaultAllocator();
+
+	const bool aabb = (m_data.stage == VK_SHADER_STAGE_INTERSECTION_BIT_KHR);
+
+	vk::Move<VkDescriptorPool>		descriptorPool;
+	vk::Move<VkDescriptorSetLayout> descriptorSetLayout;
+	std::vector<vk::Move<VkDescriptorSet>>		descriptorSet;
+	vk::Move<VkPipelineLayout>		pipelineLayout;
+
+	createPipelineLayoutAndSet(1u, descriptorPool, descriptorSetLayout, descriptorSet, pipelineLayout);
+
+	std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> blas = initBottomAccelerationStructures();
+
+	de::SharedPtr<TopLevelAccelerationStructure> tlas = initTopAccelerationStructure(blas);
+
+	de::MovePtr<RayTracingPipeline>	rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+	Move<VkPipeline> pipeline = createPipelineAndShaderBindingTables(rayTracingPipeline, aabb, *pipelineLayout);
+
+	initializeParameters();
+
+	const VkDescriptorBufferInfo		resultDescriptorInfo			= makeDescriptorBufferInfo(m_resultBuffer->get(), 0, VK_WHOLE_SIZE);
+
+	const Move<VkCommandPool>			cmdPool							= createCommandPool(vk, device, 0, queueFamilyIndex);
+	const Move<VkCommandBuffer>			cmdBuffer						= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vk, *cmdBuffer);
+
+	for (const auto& accel : blas)
+	{
+		accel->createAndBuild(vk, device, *cmdBuffer, allocator);
+	}
+	tlas->createAndBuild(vk, device, *cmdBuffer, allocator);
+
+	VkWriteDescriptorSetAccelerationStructureKHR	accelerationStructureWriteDescriptorSet	=
+	{
+		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,	//  VkStructureType						sType;
+		DE_NULL,															//  const void*							pNext;
+		1u,																	//  deUint32							accelerationStructureCount;
+		tlas->getPtr(),														//  const VkAccelerationStructureKHR*	pAccelerationStructures;
+	};
+
+	if (m_rayBuffer)
+	{
+		const VkDescriptorBufferInfo		rayDescriptorInfo				= makeDescriptorBufferInfo(m_rayBuffer->get(), 0, VK_WHOLE_SIZE);
+
+		DescriptorSetUpdateBuilder()
+			.writeSingle(*descriptorSet[0], DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDescriptorInfo)
+			.writeSingle(*descriptorSet[0], DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelerationStructureWriteDescriptorSet)
+			.writeSingle(*descriptorSet[0], DescriptorSetUpdateBuilder::Location::binding(2u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &rayDescriptorInfo)
+			.update(vk, device);
+	}
+	else
+	{
+		DescriptorSetUpdateBuilder()
+			.writeSingle(*descriptorSet[0], DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultDescriptorInfo)
+			.writeSingle(*descriptorSet[0], DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelerationStructureWriteDescriptorSet)
+			.update(vk, device);
+	}
+
+	vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1, &descriptorSet[0].get(), 0, DE_NULL);
+
+	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
+
+	deUint32 rayCount = m_numGeoms * m_primsPerGeometry;
+	if (m_data.id == TEST_ID_HIT_KIND_INDIRECT)
+	{
+		rayCount *= 2;
+	}
+
+	VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo = { rayCount, 1, 1, 0};
+
+	VkBufferCreateInfo indirectBufferCreateInfo		= makeBufferCreateInfo(sizeof(VkAccelerationStructureBuildRangeInfoKHR), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+	de::MovePtr<BufferWithMemory> indirectBuffer	= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, indirectBufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress));
+
+	deMemcpy(indirectBuffer->getAllocation().getHostPtr(), (void*)&buildRangeInfo, sizeof(VkAccelerationStructureBuildRangeInfoKHR));
+	invalidateMappedMemoryRange(vk, device, indirectBuffer->getAllocation().getMemory(), indirectBuffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
+
+	cmdTraceRaysIndirect(vk, *cmdBuffer, &m_raygenShaderBindingTableRegion, &m_missShaderBindingTableRegion, &m_hitShaderBindingTableRegion, &m_callableShaderBindingTableRegion, getBufferDeviceAddress(vk, device, indirectBuffer->get(), 0));
+
+	endCommandBuffer(vk, *cmdBuffer);
+
+	submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
+
+	invalidateMappedMemoryRange(vk, device, m_resultBuffer->getAllocation().getMemory(), m_resultBuffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
+
+	return verifyResults() ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Invalid results");
+}
+
 static const struct Stages
 {
 	const char*				name;
@@ -2490,7 +3936,7 @@ void createLaunchTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 		{     1,  1331,   111 },
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str(), ""));
+	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str()));
 
 	for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stages); ++stageNdx)
 	{
@@ -2531,11 +3977,13 @@ void createLaunchTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 				false,					//  bool					frontFace;
 				0u,						//  VkPipelineCreateFlags	pipelineCreateFlags;
 				false,					//	bool					useSpecConstants;
+				false,					//	bool					skipClosestHit;
+				false,					//  bool					useMaintenance5;
 			};
 			const std::string	suffix		= de::toString(caseDef.width) + '_' + de::toString(caseDef.height) + '_' + de::toString(caseDef.depth);
 			const std::string	testName	= string(stages[stageNdx].name) + '_' + suffix;
 
-			group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+			group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 		}
 	}
 
@@ -2570,7 +4018,7 @@ void createScalarTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 	const deUint32	imageDepth				= 1;
 	const deUint32	rayDepth				= 1;
 
-	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str(), ""));
+	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str()));
 
 	for (size_t geomTypesNdx = 0; geomTypesNdx < DE_LENGTH_OF_ARRAY(geomTypes); ++geomTypesNdx)
 	for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stages); ++stageNdx)
@@ -2618,6 +4066,8 @@ void createScalarTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 				false,					//  bool					frontFace;
 				0u,						//  VkPipelineCreateFlags	pipelineCreateFlags;
 				false,					//	bool					useSpecConstants;
+				false,					//	bool					skipClosestHit;
+				false,					//  bool					useMaintenance5;
 			};
 			const std::string	suffix		= '_' + de::toString(caseDef.width) + '_' + de::toString(caseDef.height);
 			const std::string	testName	= string(stages[stageNdx].name) + '_' + geomTypes[geomTypesNdx].name + (specializedTest ? "" : suffix);
@@ -2635,7 +4085,7 @@ void createScalarTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 				generalTestsStarted = true;
 			}
 
-			group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+			group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 			testAdded = true;
 
 			if (specializedTest)
@@ -2700,16 +4150,16 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 		{ "pipelineskipaabbs",		VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR															},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str(), ""));
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str()));
 
 	for (size_t geomTypesNdx = 0; geomTypesNdx < DE_LENGTH_OF_ARRAY(geomTypes); ++geomTypesNdx)
 	{
 		const GeomType					geomType	= geomTypes[geomTypesNdx].geomType;
-		de::MovePtr<tcu::TestCaseGroup>	geomGroup	(new tcu::TestCaseGroup(testCtx, geomTypes[geomTypesNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup>	geomGroup	(new tcu::TestCaseGroup(testCtx, geomTypes[geomTypesNdx].name));
 
 		for (size_t skipRayFlagsNdx = 0; skipRayFlagsNdx < DE_LENGTH_OF_ARRAY(skipRayFlags); ++skipRayFlagsNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	rayFlagsGroup	(new tcu::TestCaseGroup(testCtx, skipRayFlags[skipRayFlagsNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>	rayFlagsGroup	(new tcu::TestCaseGroup(testCtx, skipRayFlags[skipRayFlagsNdx].name));
 
 			for (size_t pipelineFlagsNdx = 0; pipelineFlagsNdx < DE_LENGTH_OF_ARRAY(pipelineFlags); ++pipelineFlagsNdx)
 			{
@@ -2727,13 +4177,13 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 					continue;
 				}
 
-				de::MovePtr<tcu::TestCaseGroup>	pipelineFlagsGroup	(new tcu::TestCaseGroup(testCtx, pipelineFlags[pipelineFlagsNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	pipelineFlagsGroup	(new tcu::TestCaseGroup(testCtx, pipelineFlags[pipelineFlagsNdx].name));
 
 				for (size_t opaquesNdx = 0; opaquesNdx < DE_LENGTH_OF_ARRAY(opaques); ++opaquesNdx)
 				for (size_t facesNdx = 0; facesNdx < DE_LENGTH_OF_ARRAY(faces); ++facesNdx)
 				{
 					const std::string				geomPropertiesGroupName	= string(opaques[opaquesNdx].name) + '_' + string(faces[facesNdx].name);
-					de::MovePtr<tcu::TestCaseGroup>	geomPropertiesGroup		(new tcu::TestCaseGroup(testCtx, geomPropertiesGroupName.c_str(), ""));
+					de::MovePtr<tcu::TestCaseGroup>	geomPropertiesGroup		(new tcu::TestCaseGroup(testCtx, geomPropertiesGroupName.c_str()));
 
 					for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stages); ++stageNdx)
 					{
@@ -2745,9 +4195,8 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 
 						const deUint32		instancesGroupCount		= 1;
 						const deUint32		geometriesGroupCount	= 1;
-						const deUint32		largestGroup			= width * height / geometriesGroupCount / instancesGroupCount;
-						const deUint32		squaresGroupCount		= largestGroup;
-						const CaseDef		caseDef					=
+						const deUint32		squaresGroupCount		= width * height / geometriesGroupCount / instancesGroupCount;
+						const CaseDef		caseDef =
 						{
 							id,												//  TestId					id;
 							name,											//  const char*				name;
@@ -2770,10 +4219,12 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 							faces[facesNdx].flag,							//  bool					frontFace;
 							pipelineFlags[pipelineFlagsNdx].flag,			//  VkPipelineCreateFlags	pipelineCreateFlags;
 							false,											//	bool					useSpecConstants;
+							false,											//	bool					skipClosestHit;
+							false,											//	bool					useMaintenance5;
 						};
 						const std::string	testName				= string(stages[stageNdx].name) ;
 
-						geomPropertiesGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+						geomPropertiesGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 					}
 
 					pipelineFlagsGroup->addChild(geomPropertiesGroup.release());
@@ -2786,6 +4237,42 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 		}
 
 		group->addChild(geomGroup.release());
+	}
+
+	{
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
+		CaseDef caseDef
+		{
+			TEST_ID_INCOMING_RAY_FLAGS_EXT,								//  TestId					id;
+			name,														//  const char*				name;
+			width,														//  deUint32				width;
+			height,														//  deUint32				height;
+			imageDepth,													//  deUint32				depth;
+			rayDepth,													//  deUint32				raysDepth;
+			VK_FORMAT_R32_SINT,											//  VkFormat				format;
+			false,														//  bool					fixedPointScalarOutput;
+			false,														//  bool					fixedPointVectorOutput;
+			false,														//  bool					fixedPointMatrixOutput;
+			GEOM_TYPE_TRIANGLES,										//  GeomType				geomType;
+			width * height,												//  deUint32				squaresGroupCount;
+			1,															//  deUint32				geometriesGroupCount;
+			1,															//  deUint32				instancesGroupCount;
+			VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,						//  VkShaderStageFlagBits	stage;
+			false,														//  bool					skipTriangles;
+			false,														//  bool					skipAABSs;
+			false,														//  bool					opaque;
+			true,														//  bool					frontFace;
+			VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR,		//  VkPipelineCreateFlags	pipelineCreateFlags;
+			false,														//	bool					useSpecConstants;
+			false,														//	bool					skipClosestHit;
+			true,														//	bool					useMaintenance5;
+		};
+
+		miscGroup->addChild(new RayTracingTestCase(testCtx, "pipelineskiptriangles_maintenance5", caseDef));
+		caseDef.pipelineCreateFlags = VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR;
+		miscGroup->addChild(new RayTracingTestCase(testCtx, "pipelineskipaabbs_maintenance5", caseDef));
+
+		group->addChild(miscGroup.release());
 	}
 
 	builtinGroup->addChild(group.release());
@@ -2806,7 +4293,7 @@ void createMultiOutputTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* buil
 											: 0;
 	const deUint32	rayDepth				= 1;
 
-	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str(), ""));
+	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str()));
 
 	DE_ASSERT(imageDepth != 0);
 
@@ -2850,13 +4337,167 @@ void createMultiOutputTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* buil
 			false,					//  bool					frontFace;
 			0u,						//  VkPipelineCreateFlags	pipelineCreateFlags;
 			false,					//	bool					useSpecConstants;
+			false,					//	bool					skipClosestHit;
+			false,					//	bool					useMaintenance5;
 		};
 		const std::string	testName				= string(stages[stageNdx].name) + '_' + geomTypes[geomTypesNdx].name;
 
-		group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+		group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 	}
 
 	builtinGroup->addChild(group.release());
+}
+
+void createIndirectTestCases(tcu::TestContext& testCtx, tcu::TestCaseGroup* indirectGroup, TestId id, const char* name)
+{
+	const struct
+	{
+		VkShaderStageFlagBits	stage;
+		const char*				name;
+	}
+	types[] =
+	{
+		{ VK_SHADER_STAGE_RAYGEN_BIT_KHR,		"triangles"	},
+		{ VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	"aabbs"		},
+	};
+
+	const CaseDef caseDef =
+	{
+		id,									//  TestId					id;
+		"",									//  const char*				name;
+		0,									//  deUint32				width;
+		0,									//  deUint32				height;
+		0,									//  deUint32				depth;
+		0,									//  deUint32				raysDepth;
+		VK_FORMAT_R32_SINT,					//  VkFormat				format;
+		false,								//  bool					fixedPointScalarOutput;
+		false,								//  bool					fixedPointVectorOutput;
+		false,								//  bool					fixedPointMatrixOutput;
+		GEOM_TYPE_TRIANGLES,				//  GeomType				geomType;
+		0,									//  deUint32				squaresGroupCount;
+		0,									//  deUint32				geometriesGroupCount;
+		0,									//  deUint32				instancesGroupCount;
+		VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,	//  VkShaderStageFlagBits	stage;
+		false,								//  bool					rayFlagSkipTriangles;
+		false,								//  bool					rayFlagSkipAABSs;
+		false,								//  bool					opaque;
+		false,								//  bool					frontFace;
+		0u,									//  VkPipelineCreateFlags	pipelineCreateFlags;
+		false,								//	bool					useSpecConstants;
+		false,								//	bool					skipClosestHit;
+		false,								//	bool					useMaintenance5;
+	};
+
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, name));
+
+	for (size_t typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); ++typeNdx)
+	{
+		CaseDef params = caseDef;
+		params.stage = types[typeNdx].stage;
+		group->addChild(new RayTracingIndirectTestCase(testCtx, types[typeNdx].name, params));
+	}
+	indirectGroup->addChild(group.release());
+}
+
+void createIndirectFlagsTestCases(tcu::TestContext& testCtx, tcu::TestCaseGroup* indirectGroup, TestId id, const char* name)
+{
+	const struct
+	{
+		VkShaderStageFlagBits	stage;
+		const char*				name;
+	}
+	types[] =
+	{
+		{ VK_SHADER_STAGE_RAYGEN_BIT_KHR,		"triangles"	},
+		{ VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	"aabbs"		},
+	};
+
+	const struct
+	{
+		bool			opaque;
+		bool			skipClosestHit;
+		const char*		name;
+	}
+	flags[] =
+	{
+		{ false,	false,	"none"				},
+		{ true,		false,	"opaque"			},
+		{ false,	true,	"skip_closest_hit"	},
+	};
+
+	const CaseDef caseDef =
+	{
+		id,									//  TestId					id;
+		"",									//  const char*				name;
+		0,									//  deUint32				width;
+		0,									//  deUint32				height;
+		0,									//  deUint32				depth;
+		0,									//  deUint32				raysDepth;
+		VK_FORMAT_R32_SINT,					//  VkFormat				format;
+		false,								//  bool					fixedPointScalarOutput;
+		false,								//  bool					fixedPointVectorOutput;
+		false,								//  bool					fixedPointMatrixOutput;
+		GEOM_TYPE_TRIANGLES,				//  GeomType				geomType;
+		0,									//  deUint32				squaresGroupCount;
+		0,									//  deUint32				geometriesGroupCount;
+		0,									//  deUint32				instancesGroupCount;
+		VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,	//  VkShaderStageFlagBits	stage;
+		false,								//  bool					rayFlagSkipTriangles;
+		false,								//  bool					rayFlagSkipAABSs;
+		false,								//  bool					opaque;
+		false,								//  bool					frontFace;
+		0u,									//  VkPipelineCreateFlags	pipelineCreateFlags;
+		false,								//	bool					useSpecConstants;
+		false,								//	bool					skipClosestHit;
+		false,								//	bool					useMaintenance5;
+	};
+
+	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, name));
+
+	for (size_t typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(types); ++typeNdx)
+	{
+		CaseDef params = caseDef;
+		params.stage = types[typeNdx].stage;
+		de::MovePtr<tcu::TestCaseGroup> typeGroup (new tcu::TestCaseGroup(testCtx, types[typeNdx].name));
+
+		for (size_t flagsNdx = 0; flagsNdx < DE_LENGTH_OF_ARRAY(flags); ++flagsNdx)
+		{
+			params.opaque = flags[flagsNdx].opaque;
+			params.skipClosestHit = flags[flagsNdx].skipClosestHit;
+			typeGroup->addChild(new RayTracingIndirectTestCase(testCtx, flags[flagsNdx].name, params));
+		}
+		testGroup->addChild(typeGroup.release());
+	}
+	indirectGroup->addChild(testGroup.release());
+}
+
+void createIndirectTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGroup)
+{
+	typedef void CreateIndirectTestsFunc (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, TestId id, const char* name);
+
+	const struct
+	{
+		TestId						id;
+		const char*					name;
+		CreateIndirectTestsFunc*	createTestsFunc;
+	}
+	tests[] =
+	{
+		{ TEST_ID_INDICES_INDIRECT,				"indices",		createIndirectTestCases		},
+		{ TEST_ID_TRANSFORMS_INDIRECT,			"transforms",	createIndirectTestCases			},
+		{ TEST_ID_TMINMAX_INDIRECT,				"t_min_max",	createIndirectTestCases		},
+		{ TEST_ID_INCOMING_RAY_FLAGS_INDIRECT,	"incoming_flag",createIndirectFlagsTestCases	},
+		{ TEST_ID_HIT_KIND_INDIRECT,			"hit_kind",		createIndirectTestCases			},
+	};
+
+	// Test builtins using indirect trace rays
+	de::MovePtr<tcu::TestCaseGroup> indirectGroup (new tcu::TestCaseGroup(testCtx, "indirect"));
+
+	for (size_t testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(tests); ++testNdx)
+	{
+		tests[testNdx].createTestsFunc(testCtx, indirectGroup.get(), tests[testNdx].id, tests[testNdx].name);
+	}
+	builtinGroup->addChild(indirectGroup.release());
 }
 }	// anonymous
 
@@ -2901,17 +4542,24 @@ tcu::TestCaseGroup*	createBuiltinTests (tcu::TestContext& testCtx)
 		{ TEST_ID_WORLD_TO_OBJECT_3X4_EXT,		"WorldToObject3x4EXT"	,			A	|	C	|	I					, createMultiOutputTests	},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> builtinGroup(new tcu::TestCaseGroup(testCtx, "builtin", "Ray tracing shader builtin tests"));
+	// Ray tracing shader builtin tests
+	de::MovePtr<tcu::TestCaseGroup> builtinGroup(new tcu::TestCaseGroup(testCtx, "builtin"));
 
 	for (size_t testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(tests); ++testNdx)
+	{
 		tests[testNdx].createBuiltinTestsFunc(testCtx, builtinGroup.get(), tests[testNdx].id, tests[testNdx].name, tests[testNdx].stages);
+	}
+
+	{
+		createIndirectTests(testCtx, builtinGroup.get());
+	}
 
 	return builtinGroup.release();
 }
 
 tcu::TestCaseGroup* createSpecConstantTests	(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "spec_constants", "Test using spec constants in ray tracing shader stages"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "spec_constants"));
 
 	const VkShaderStageFlags	stageFlags				= VK_SHADER_STAGE_RAYGEN_BIT_KHR
 														| VK_SHADER_STAGE_ANY_HIT_BIT_KHR
@@ -2957,9 +4605,11 @@ tcu::TestCaseGroup* createSpecConstantTests	(tcu::TestContext& testCtx)
 			false,					//  bool					frontFace;
 			0u,						//  VkPipelineCreateFlags	pipelineCreateFlags;
 			true,					//	bool					useSpecConstants;
+			false,					//	bool					skipClosestHit;
+			false,					//	bool					useMaintenance5;
 		};
 
-		group->addChild(new RayTracingTestCase(testCtx, stages[stageNdx].name, "", caseDef));
+		group->addChild(new RayTracingTestCase(testCtx, stages[stageNdx].name, caseDef));
 	}
 
 	return group.release();

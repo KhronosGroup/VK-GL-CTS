@@ -231,27 +231,6 @@ Move<VkCommandPool> createCommandPool (const DeviceInterface& vk, VkDevice devic
 	return Move<VkCommandPool>(check<VkCommandPool>(object), Deleter<VkCommandPool>(vk, device, pAllocator));
 }
 
-Move<VkSamplerYcbcrConversion> createSamplerYcbcrConversion (const DeviceInterface& vk, VkDevice device, const VkSamplerYcbcrConversionCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkSamplerYcbcrConversion object = 0;
-	VK_CHECK(vk.createSamplerYcbcrConversion(device, pCreateInfo, pAllocator, &object));
-	return Move<VkSamplerYcbcrConversion>(check<VkSamplerYcbcrConversion>(object), Deleter<VkSamplerYcbcrConversion>(vk, device, pAllocator));
-}
-
-Move<VkRenderPass> createRenderPass2 (const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkRenderPass object = 0;
-	VK_CHECK(vk.createRenderPass2(device, pCreateInfo, pAllocator, &object));
-	return Move<VkRenderPass>(check<VkRenderPass>(object), Deleter<VkRenderPass>(vk, device, pAllocator));
-}
-
-Move<VkSwapchainKHR> createSwapchainKHR (const DeviceInterface& vk, VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkSwapchainKHR object = 0;
-	VK_CHECK(vk.createSwapchainKHR(device, pCreateInfo, pAllocator, &object));
-	return Move<VkSwapchainKHR>(check<VkSwapchainKHR>(object), Deleter<VkSwapchainKHR>(vk, device, pAllocator));
-}
-
 Move<VkSurfaceKHR> createDisplayPlaneSurfaceKHR (const InstanceInterface& vk, VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkSurfaceKHR object = 0;
@@ -266,11 +245,39 @@ Move<VkSwapchainKHR> createSharedSwapchainsKHR (const DeviceInterface& vk, VkDev
 	return Move<VkSwapchainKHR>(check<VkSwapchainKHR>(object), Deleter<VkSwapchainKHR>(vk, device, pAllocator));
 }
 
+Move<VkSwapchainKHR> createSwapchainKHR (const DeviceInterface& vk, VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkSwapchainKHR object = 0;
+	VK_CHECK(vk.createSwapchainKHR(device, pCreateInfo, pAllocator, &object));
+	return Move<VkSwapchainKHR>(check<VkSwapchainKHR>(object), Deleter<VkSwapchainKHR>(vk, device, pAllocator));
+}
+
+Move<VkSemaphoreSciSyncPoolNV> createSemaphoreSciSyncPoolNV (const DeviceInterface& vk, VkDevice device, const VkSemaphoreSciSyncPoolCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkSemaphoreSciSyncPoolNV object = 0;
+	VK_CHECK(vk.createSemaphoreSciSyncPoolNV(device, pCreateInfo, pAllocator, &object));
+	return Move<VkSemaphoreSciSyncPoolNV>(check<VkSemaphoreSciSyncPoolNV>(object), Deleter<VkSemaphoreSciSyncPoolNV>(vk, device, pAllocator));
+}
+
+Move<VkSamplerYcbcrConversion> createSamplerYcbcrConversion (const DeviceInterface& vk, VkDevice device, const VkSamplerYcbcrConversionCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkSamplerYcbcrConversion object = 0;
+	VK_CHECK(vk.createSamplerYcbcrConversion(device, pCreateInfo, pAllocator, &object));
+	return Move<VkSamplerYcbcrConversion>(check<VkSamplerYcbcrConversion>(object), Deleter<VkSamplerYcbcrConversion>(vk, device, pAllocator));
+}
+
 Move<VkDebugUtilsMessengerEXT> createDebugUtilsMessengerEXT (const InstanceInterface& vk, VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkDebugUtilsMessengerEXT object = 0;
 	VK_CHECK(vk.createDebugUtilsMessengerEXT(instance, pCreateInfo, pAllocator, &object));
 	return Move<VkDebugUtilsMessengerEXT>(check<VkDebugUtilsMessengerEXT>(object), Deleter<VkDebugUtilsMessengerEXT>(vk, instance, pAllocator));
+}
+
+Move<VkRenderPass> createRenderPass2 (const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkRenderPass object = 0;
+	VK_CHECK(vk.createRenderPass2(device, pCreateInfo, pAllocator, &object));
+	return Move<VkRenderPass>(check<VkRenderPass>(object), Deleter<VkRenderPass>(vk, device, pAllocator));
 }
 
 Move<VkSurfaceKHR> createHeadlessSurfaceEXT (const InstanceInterface& vk, VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)

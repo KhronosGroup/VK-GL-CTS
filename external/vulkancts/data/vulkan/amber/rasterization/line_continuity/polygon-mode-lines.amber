@@ -82,6 +82,7 @@ void main ()
         // Use this to break the lines and verify the checker is correct.
         //for (int x = 0; x < w; x++)
         //    imageStore(img, ivec2(x, 128), bg);
+        //memoryBarrierImage();
     }
 
     barrier();
@@ -94,6 +95,7 @@ void main ()
     if (c != bg)
         stack[0] = p;
 
+    memoryBarrierImage();
     barrier();
 
     if (gl_LocalInvocationIndex == 0 && stack[0] != ivec2(-1))
@@ -102,6 +104,7 @@ void main ()
         stackPtr++;
     }
 
+    memoryBarrierImage();
     barrier();
 
     while (!done)
@@ -109,6 +112,7 @@ void main ()
         if (gl_LocalInvocationIndex == 0 && stackPtr != 0)
             pixel = popMarkedPixel();
 
+        memoryBarrierImage();
         barrier();
 
         if (gl_LocalInvocationID.x < 3 && gl_LocalInvocationID.y < 3)
@@ -124,6 +128,7 @@ void main ()
             }
         }
 
+        memoryBarrierImage();
         barrier();
 
         if (gl_LocalInvocationIndex == 0 && stackPtr < 1)

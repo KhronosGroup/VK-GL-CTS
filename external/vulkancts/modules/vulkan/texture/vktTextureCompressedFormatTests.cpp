@@ -359,7 +359,7 @@ static bool validateTexture (tcu::TestLog& log, const tcu::Surface& rendered, co
 	}
 
 
-	return true;
+	return isOk;
 }
 
 tcu::TestStatus Compressed2DTestInstance::iterate (void)
@@ -456,7 +456,7 @@ private:
 	const ParameterType&				m_testParameters;
 	const tcu::CompressedTexFormat		m_compressedFormat;
 	TestTexture3DSp						m_texture3D;
-	TextureRenderer						m_renderer3D;
+	TextureRenderer						m_renderer2D;
 };
 
 Compressed3DTestInstance::Compressed3DTestInstance (Context&				context,
@@ -465,9 +465,9 @@ Compressed3DTestInstance::Compressed3DTestInstance (Context&				context,
 	, m_testParameters		(testParameters)
 	, m_compressedFormat	(mapVkCompressedFormat(testParameters.format))
 	, m_texture3D			(TestTexture3DSp(new pipeline::TestTexture3D(m_compressedFormat, testParameters.width, testParameters.height, testParameters.depth)))
-	, m_renderer3D			(context, testParameters.sampleCount, testParameters.width, testParameters.height, testParameters.depth, makeComponentMappingRGBA(), VK_IMAGE_TYPE_3D, VK_IMAGE_VIEW_TYPE_3D)
+	, m_renderer2D			(context, testParameters.sampleCount, testParameters.width, testParameters.height, 1, makeComponentMappingRGBA(), VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D)
 {
-	m_renderer3D.add3DTexture		(m_texture3D, testParameters.aspectMask, testParameters.backingMode);
+	m_renderer2D.add3DTexture		(m_texture3D, testParameters.aspectMask, testParameters.backingMode);
 
 	VkPhysicalDeviceFeatures		physicalFeatures;
 	context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &physicalFeatures);
@@ -496,13 +496,13 @@ Compressed3DTestInstance::Compressed3DTestInstance (Context&				context,
 tcu::TestStatus Compressed3DTestInstance::iterate (void)
 {
 	tcu::TestLog&					log				= m_context.getTestContext().getLog();
-	const pipeline::TestTexture3D&	texture			= m_renderer3D.get3DTexture(0);
+	const pipeline::TestTexture3D&	texture			= m_renderer2D.get3DTexture(0);
 	const tcu::TextureFormat		textureFormat	= texture.getTextureFormat();
 	const tcu::TextureFormatInfo	formatInfo		= tcu::getTextureFormatInfo(textureFormat);
 	const deUint32					mipLevel		= m_testParameters.mipmaps ? 1 : 0;
 
 	ReferenceParams					sampleParams	(TEXTURETYPE_3D);
-	tcu::Surface					rendered		(m_renderer3D.getRenderWidth(), m_renderer3D.getRenderHeight());
+	tcu::Surface					rendered		(m_renderer2D.getRenderWidth(), m_renderer2D.getRenderHeight());
 	vector<float>					texCoord;
 
 	// Setup params for reference.
@@ -566,7 +566,7 @@ tcu::TestStatus Compressed3DTestInstance::iterate (void)
 		// Render texture.
 		z = (((float)sliceNdx + 0.5f) / (float)(m_testParameters.depth >> mipLevel));
 		computeQuadTexCoord3D(texCoord, tcu::Vec3(0.0f, 0.0f, z), tcu::Vec3(1.0f, 1.0f, z), tcu::IVec3(0,1,2));
-		m_renderer3D.renderQuad(rendered, 0, &texCoord[0], sampleParams);
+		m_renderer2D.renderQuad(rendered, 0, &texCoord[0], sampleParams);
 
 		// Compare and log.
 #ifdef CTS_USES_VULKANSC
@@ -607,7 +607,7 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 		testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 		testParameters.mipmaps		= sizes[sizeNdx].mipmaps;
 
-		compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(testCtx, (nameBase + "_2d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), (formatStr + ", TEXTURETYPE_2D").c_str(), testParameters));
+		compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(testCtx, (nameBase + "_2d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), testParameters));
 	}
 }
 
@@ -634,18 +634,18 @@ void populate3DTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTextu
 		testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 		testParameters.mipmaps		= sizes[sizeNdx].mipmaps;
 
-		compressedTextureTests->addChild(new TextureTestCase<Compressed3DTestInstance>(testCtx, (nameBase + "_3d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), (formatStr + ", TEXTURETYPE_3D").c_str(), testParameters));
+		compressedTextureTests->addChild(new TextureTestCase<Compressed3DTestInstance>(testCtx, (nameBase + "_3d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), testParameters));
 	}
 }
 
 tcu::TestCaseGroup* createTextureCompressedFormatTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "compressed", "Texture compressed format tests.", populateTextureCompressedFormatTests);
+	return createTestGroup(testCtx, "compressed", populateTextureCompressedFormatTests);
 }
 
 tcu::TestCaseGroup* create3DTextureCompressedFormatTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "compressed_3D", "3D texture compressed format tests.", populate3DTextureCompressedFormatTests);
+	return createTestGroup(testCtx, "compressed_3D", populate3DTextureCompressedFormatTests);
 }
 
 } // texture

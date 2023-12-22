@@ -597,6 +597,30 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 		gl.enableVertexAttribArray(posLocation);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to setup shader program for rendering");
 
+		// Do extra rendering to allow frame pacing to stabilize.
+		// The frame timestamp validation below assumes there is no frame janking,
+		// however, this is not guaranteed.
+		// e.g. on some hardware, the shader compilation causes first few frames
+		// to jank. This will cause frame timestamps read back not matching with
+		// expectations: compositeToPresentLatency < 4 * compositeInterval.
+		// Do extra frames rendering to allow frames to stablize before measuring
+		// and verifying frame timestamps.
+		const size_t stablizeFramesCount = 120;
+		for (size_t i = 0;  i< stablizeFramesCount; ++i)
+		{
+			gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			gl.clear(GL_COLOR_BUFFER_BIT);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to clear surface");
+
+			const bool posSelect  = ((i % 2) == 0);
+			gl.vertexAttribPointer(posLocation, 2, GL_FLOAT, GL_FALSE, 0, posSelect ? positions1 : positions2);
+
+			gl.drawArrays(GL_TRIANGLES, 0, 6);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render");
+
+			EGLU_CHECK_CALL(egl, swapBuffers(display, *surface));
+		}
+
 		const size_t frameCount = 120;
 		std::vector<FrameTimes> frameTimes(frameCount);
 		for (size_t i = 0; i < frameCount; i++)

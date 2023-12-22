@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2019 The Khronos Group Inc.
  * Copyright (c) 2019 Valve Corporation.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +28,7 @@
 #include "vktPipelineVertexUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
-#include "vkPipelineBinariesUtil.hpp"
+#include "vkPipelineBinaryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkRefUtil.hpp"
@@ -125,7 +127,6 @@ public:
 																 deBool							zeroOutFeedbackCount = VK_FALSE);
 	virtual						~TestParam						(void) = default;
 	virtual const std::string	generateTestName				(void)	const;
-	virtual const std::string	generateTestDescription			(void)	const;
 	PipelineConstructionType	getPipelineConstructionType		(void)	const	{ return m_pipelineConstructionType; }
 	TestMode					getMode							(void)	const	{ return m_mode; }
 	VkShaderStageFlags			getShaderFlags					(void)	const	{ return m_shaders; }
@@ -166,24 +167,12 @@ const std::string TestParam::generateTestName (void) const
 	return getShaderFlagStr(m_shaders, false) + cacheString[m_noCache ? 1 : 0] + delayedDestroyString[m_delayedDestroy ? 1 : 0] + zeroOutFeedbackCoutString[m_zeroOutFeedbackCount ? 1 : 0];
 }
 
-const std::string TestParam::generateTestDescription (void) const
-{
-	std::string result("Get pipeline creation feedback with " + getShaderFlagStr(m_shaders, true));
-	if (m_noCache)
-		result += " with no cache";
-	if (m_delayedDestroy)
-		result += " with delayed destroy";
-
-	return result;
-}
-
 template <class Test>
 vkt::TestCase* newTestCase (tcu::TestContext&	testContext,
 							const TestParam*	testParam)
 {
 	return new Test(testContext,
 					testParam->generateTestName().c_str(),
-					testParam->generateTestDescription().c_str(),
 					testParam);
 }
 
@@ -193,9 +182,8 @@ class BaseTestCase : public vkt::TestCase
 public:
 					BaseTestCase(tcu::TestContext&		testContext,
 								 const std::string&		name,
-								 const std::string&		description,
 								 const TestParam*		param)
-						: vkt::TestCase (testContext, name, description)
+						: vkt::TestCase (testContext, name)
 						, m_param (*param)
 						{ }
 	virtual			~BaseTestCase(void) = default;
@@ -209,7 +197,7 @@ void BaseTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_EXT_pipeline_creation_feedback");
 	if (m_param.getMode() == TestMode::BINARIES)
-		context.requireDeviceFunctionality("VK_KHR_pipeline_binaries");
+		context.requireDeviceFunctionality("VK_KHR_pipeline_binary");
 }
 
 class BaseTestInstance : public vkt::TestInstance
@@ -228,7 +216,7 @@ protected:
 	Move<VkPipelineCache>	m_cache;
 
 	// binary related structures are used when m_mode is set to TestMode::BINARIES
-	de::MovePtr<PipelineBinariesWrapper> m_binaries;
+	de::MovePtr<PipelineBinaryWrapper> m_binaries;
 };
 
 BaseTestInstance::BaseTestInstance(Context&			context,
@@ -253,7 +241,7 @@ BaseTestInstance::BaseTestInstance(Context&			context,
 		m_cache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
 	}
 	else
-		m_binaries = de::MovePtr<PipelineBinariesWrapper>(new PipelineBinariesWrapper(vk, vkDevice));
+		m_binaries = de::MovePtr<PipelineBinaryWrapper>(new PipelineBinaryWrapper(vk, vkDevice));
 }
 
 tcu::TestStatus BaseTestInstance::iterate (void)
@@ -266,9 +254,8 @@ class GraphicsTestCase : public BaseTestCase
 public:
 	GraphicsTestCase(tcu::TestContext&		testContext,
 					 const std::string&		name,
-					 const std::string&		description,
 					 const TestParam*		param)
-		: BaseTestCase(testContext, name, description, param)
+		: BaseTestCase(testContext, name, param)
 		{ }
 	virtual					~GraphicsTestCase	(void) = default;
 	virtual void			initPrograms		(SourceCollections&	programCollection) const;
@@ -284,12 +271,13 @@ public:
 	virtual					~GraphicsTestInstance	(void) = default;
 protected:
 	void					preparePipelineWrapper		(GraphicsPipelineWrapper&		gpw,
-														 VkShaderModule					vertShaderModule,
-														 VkShaderModule					tescShaderModule,
-														 VkShaderModule					teseShaderModule,
-														 VkShaderModule					geomShaderModule,
-														 VkShaderModule					fragShaderModule,
+														 ShaderWrapper					vertShaderModule,
+														 ShaderWrapper					tescShaderModule,
+														 ShaderWrapper					teseShaderModule,
+														 ShaderWrapper					geomShaderModule,
+														 ShaderWrapper					fragShaderModule,
 														 VkPipelineCreationFeedbackEXT*	pipelineCreationFeedback,
+														 bool*							pipelineCreationIsHeavy,
 														 VkPipelineCreationFeedbackEXT*	pipelineStageCreationFeedbacks,
 														 VkPipeline						basePipelineHandle,
 														 VkBool32						zeroOutFeedbackCount,
@@ -305,12 +293,13 @@ protected:
 	const tcu::UVec2					m_renderSize;
 	const VkFormat						m_colorFormat;
 	const VkFormat						m_depthFormat;
-	Move<VkPipelineLayout>				m_pipelineLayout;
+	PipelineLayoutWrapper				m_pipelineLayout;
 
-	Move<VkRenderPass>					m_renderPass;
+	RenderPassWrapper					m_renderPass;
 
 	GraphicsPipelineWrapper				m_pipeline[PIPELINE_NDX_COUNT];
 	VkPipelineCreationFeedbackEXT		m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * PIPELINE_NDX_COUNT];
+	bool								m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS * PIPELINE_NDX_COUNT];
 	VkPipelineCreationFeedbackEXT		m_pipelineStageCreationFeedbacks[PIPELINE_NDX_COUNT * VK_MAX_SHADER_STAGES];
 };
 
@@ -362,7 +351,6 @@ void GraphicsTestCase::initPrograms (SourceCollections& programCollection) const
 				"  for(int ndx=0; ndx<3; ndx++)\n"
 				"  {\n"
 				"    gl_Position = gl_in[ndx].gl_Position;\n"
-				"    gl_PointSize = gl_in[ndx].gl_PointSize;\n"
 				"    vtxColor    = in_vtxColor[ndx];\n"
 				"    EmitVertex();\n"
 				"  }\n"
@@ -386,7 +374,6 @@ void GraphicsTestCase::initPrograms (SourceCollections& programCollection) const
 				"  gl_TessLevelOuter[2] = 4.0;\n"
 				"  gl_TessLevelInner[0] = 4.0;\n"
 				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-				"  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n"
 				"  vtxColor[gl_InvocationID] = color[gl_InvocationID];\n"
 				"}\n");
 	}
@@ -416,7 +403,6 @@ void GraphicsTestCase::initPrograms (SourceCollections& programCollection) const
 				"  pos.w = 1.0;\n"
 				"  color.w = 1.0;\n"
 				"  gl_Position = pos;\n"
-				"  gl_PointSize = gl_in[0].gl_PointSize;"
 				"  vtxColor = color;\n"
 				"}\n");
 	}
@@ -431,9 +417,9 @@ void GraphicsTestCase::checkSupport (Context& context) const
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
 
 	if (m_param.getMode() == TestMode::BINARIES)
-		context.requireDeviceFunctionality("VK_KHR_pipeline_binaries");
+		context.requireDeviceFunctionality("VK_KHR_pipeline_binary");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.getPipelineConstructionType());
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.getPipelineConstructionType());
 }
 
 TestInstance* GraphicsTestCase::createInstance (Context& context) const
@@ -449,11 +435,9 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 	, m_depthFormat			(VK_FORMAT_D16_UNORM)
 	, m_pipeline
 	{
-		{ context.getDeviceInterface(), context.getDevice(), param->getPipelineConstructionType(),
-		  (param->getMode() == TestMode::CACHE ? VkPipelineCreateFlags(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT)
-											   : VkPipelineCreateFlags(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT | VK_PIPELINE_CREATE_CAPTURE_DATA_BIT_KHR)), true },
-		{ context.getDeviceInterface(), context.getDevice(), param->getPipelineConstructionType(), VK_PIPELINE_CREATE_DERIVATIVE_BIT },
-		{ context.getDeviceInterface(), context.getDevice(), param->getPipelineConstructionType(), VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), param->getPipelineConstructionType(), VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), param->getPipelineConstructionType(), VK_PIPELINE_CREATE_DERIVATIVE_BIT },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), param->getPipelineConstructionType(), VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT },
 	}
 {
 	const DeviceInterface&	vk				= m_context.getDeviceInterface();
@@ -472,35 +456,35 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(m_param->getPipelineConstructionType(), vk, vkDevice, &pipelineLayoutParams);
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_depthFormat);
+	m_renderPass = RenderPassWrapper(m_param->getPipelineConstructionType(), vk, vkDevice, m_colorFormat, m_depthFormat);
 
 	// Create shader modules
-	Move<VkShaderModule> vertShaderModule1	= createShaderModule(vk, vkDevice, context.getBinaryCollection().get("color_vert_1"), 0);
-	Move<VkShaderModule> vertShaderModule2	= createShaderModule(vk, vkDevice, context.getBinaryCollection().get("color_vert_2"), 0);
-	Move<VkShaderModule> fragShaderModule	= createShaderModule(vk, vkDevice, context.getBinaryCollection().get("color_frag"), 0);
-	Move<VkShaderModule> tescShaderModule;
-	Move<VkShaderModule> teseShaderModule;
-	Move<VkShaderModule> geomShaderModule;
+	ShaderWrapper vertShaderModule1(vk, vkDevice, context.getBinaryCollection().get("color_vert_1"));
+	ShaderWrapper vertShaderModule2(vk, vkDevice, context.getBinaryCollection().get("color_vert_2"));
+	ShaderWrapper fragShaderModule (vk, vkDevice, context.getBinaryCollection().get("color_frag"));
+	ShaderWrapper tescShaderModule;
+	ShaderWrapper teseShaderModule;
+	ShaderWrapper geomShaderModule;
 
 	VkShaderStageFlags shaderFlags = m_param->getShaderFlags();
 	if (shaderFlags & VK_SHADER_STAGE_GEOMETRY_BIT)
-		geomShaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("unused_geo"), 0);
+		geomShaderModule = ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("unused_geo"));
 	if (shaderFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
-		tescShaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("basic_tcs"), 0);
+		tescShaderModule = ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("basic_tcs"));
 	if (shaderFlags & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
-		teseShaderModule = createShaderModule(vk, vkDevice, context.getBinaryCollection().get("basic_tes"), 0);
+		teseShaderModule = ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("basic_tes"));
 
 	if (param->getMode() == TestMode::CACHE)
 	{
 		for (deUint32 ndx = 0; ndx < PIPELINE_NDX_COUNT; ndx++)
 		{
-			VkShaderModule vertShaderModule = (ndx == PIPELINE_NDX_DERIVATIVE) ? *vertShaderModule2 : *vertShaderModule1;
+			ShaderWrapper& vertShaderModule = (ndx == PIPELINE_NDX_DERIVATIVE) ? vertShaderModule2 : vertShaderModule1;
 
-			if (ndx == PIPELINE_NDX_USE_BLOBS && !param->isDelayedDestroy())
+			if (ndx == PIPELINE_NDX_USE_BLOBS && !param->isDelayedDestroy() && m_pipeline[PIPELINE_NDX_NO_BLOBS].wasBuild())
 			{
 				// Destroy the NO_BLOBS pipeline to check that the cached one really hits cache,
 				// except for the case where we're testing cache hit of a pipeline still active.
@@ -509,19 +493,23 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 
 			clearFeedbacks();
 
-			preparePipelineWrapper(m_pipeline[ndx], vertShaderModule, *tescShaderModule, *teseShaderModule, *geomShaderModule, *fragShaderModule,
+			VkPipeline basePipeline = (ndx == PIPELINE_NDX_DERIVATIVE && m_pipeline[PIPELINE_NDX_NO_BLOBS].wasBuild()) ? m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipeline() : DE_NULL;
+
+			preparePipelineWrapper(m_pipeline[ndx], vertShaderModule, tescShaderModule, teseShaderModule, geomShaderModule, fragShaderModule,
 								   &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * ndx],
+								   &m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS * ndx],
 								   &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES * ndx],
-								   ndx == PIPELINE_NDX_DERIVATIVE ? m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipeline() : DE_NULL,
+								   basePipeline,
 								   param->isZeroOutFeedbackCount());
 
 			if (ndx != PIPELINE_NDX_NO_BLOBS)
 			{
 				// Destroy the pipeline as soon as it is created, except the NO_BLOBS because
 				// it is needed as a base pipeline for the derivative case.
-				m_pipeline[ndx].destroyPipeline();
+				if (m_pipeline[ndx].wasBuild())
+					m_pipeline[ndx].destroyPipeline();
 
-				if (ndx == PIPELINE_NDX_USE_BLOBS && param->isDelayedDestroy())
+				if (ndx == PIPELINE_NDX_USE_BLOBS && param->isDelayedDestroy() && m_pipeline[PIPELINE_NDX_NO_BLOBS].wasBuild())
 				{
 					// Destroy the pipeline we didn't destroy earlier for the isDelayedDestroy case.
 					m_pipeline[PIPELINE_NDX_NO_BLOBS].destroyPipeline();
@@ -536,8 +524,10 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 		clearFeedbacks();
 
 		// Create pipeline that is used to create binaries
-		preparePipelineWrapper(m_pipeline[PIPELINE_NDX_NO_BLOBS], *vertShaderModule1, *tescShaderModule, *teseShaderModule, *geomShaderModule, *fragShaderModule,
-							   &m_pipelineCreationFeedback[0], &m_pipelineStageCreationFeedbacks[0], DE_NULL, param->isZeroOutFeedbackCount());
+		m_pipeline[PIPELINE_NDX_NO_BLOBS].setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_ALLOW_DERIVATIVES_BIT_KHR | VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR);
+		preparePipelineWrapper(m_pipeline[PIPELINE_NDX_NO_BLOBS], vertShaderModule1, tescShaderModule, teseShaderModule, geomShaderModule, fragShaderModule,
+							   &m_pipelineCreationFeedback[0], &m_pipelineCreationIsHeavy[0], &m_pipelineStageCreationFeedbacks[0],
+							   DE_NULL, param->isZeroOutFeedbackCount());
 
 		if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 		{
@@ -547,14 +537,16 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 			VkPipelineBinaryInfoKHR pipelineBinaryInfo = m_binaries->preparePipelineBinaryInfo();
 
 			// Create derivative pipeline that also uses binaries
-			preparePipelineWrapper(m_pipeline[PIPELINE_NDX_DERIVATIVE], *vertShaderModule2, *tescShaderModule, *teseShaderModule, *geomShaderModule, *fragShaderModule,
-								   &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS], &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES],
-								   m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipeline(), param->isZeroOutFeedbackCount(), &pipelineBinaryInfo);
+			VkPipeline basePipeline = (m_pipeline[PIPELINE_NDX_NO_BLOBS].wasBuild()) ? m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipeline() : DE_NULL;
+			preparePipelineWrapper(m_pipeline[PIPELINE_NDX_DERIVATIVE], vertShaderModule2, tescShaderModule, teseShaderModule, geomShaderModule, fragShaderModule,
+								   &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS], &m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS], &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES],
+								   basePipeline, param->isZeroOutFeedbackCount(), &pipelineBinaryInfo);
 
 			// Destroy second pipeline as soon as it was created
-			m_pipeline[PIPELINE_NDX_DERIVATIVE].destroyPipeline();
+			if (m_pipeline[PIPELINE_NDX_DERIVATIVE].wasBuild())
+				m_pipeline[PIPELINE_NDX_DERIVATIVE].destroyPipeline();
 
-			if (!param->isDelayedDestroy())
+			if (!param->isDelayedDestroy() && m_pipeline[PIPELINE_NDX_NO_BLOBS].wasBuild())
 			{
 				// Destroy the NO_BLOBS pipeline to check that the cached one really hits cache,
 				// except for the case where we're testing cache hit of a pipeline still active.
@@ -562,14 +554,15 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 			}
 
 			// Create third pipeline that just uses binaries
-			preparePipelineWrapper(m_pipeline[PIPELINE_NDX_USE_BLOBS], *vertShaderModule1, *tescShaderModule, *teseShaderModule, *geomShaderModule, *fragShaderModule,
-								   &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * 2], &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES * 2],
+			preparePipelineWrapper(m_pipeline[PIPELINE_NDX_USE_BLOBS], vertShaderModule1, tescShaderModule, teseShaderModule, geomShaderModule, fragShaderModule,
+								   &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * 2], &m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS * 2], &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES * 2],
 								   DE_NULL, param->isZeroOutFeedbackCount(), &pipelineBinaryInfo);
 
 			// Destroy third pipeline as soon as it was created
-			m_pipeline[PIPELINE_NDX_USE_BLOBS].destroyPipeline();
+			if (m_pipeline[PIPELINE_NDX_USE_BLOBS].wasBuild())
+				m_pipeline[PIPELINE_NDX_USE_BLOBS].destroyPipeline();
 
-			if (param->isDelayedDestroy())
+			if (param->isDelayedDestroy() && m_pipeline[PIPELINE_NDX_NO_BLOBS].wasBuild())
 			{
 				// Destroy the NO_BLOBS pipeline to check that the cached one really hits cache,
 				// except for the case where we're testing cache hit of a pipeline still active.
@@ -600,15 +593,17 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 			}
 
 			// Create derivative pipeline that also uses binaries
-			preparePipelineWrapper(m_pipeline[PIPELINE_NDX_DERIVATIVE], *vertShaderModule2, *tescShaderModule, *teseShaderModule, *geomShaderModule, *fragShaderModule,
-				&m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS], &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES],
-				m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipeline(), param->isZeroOutFeedbackCount(), DE_NULL,
+			VkPipeline basePipeline = (m_pipeline[PIPELINE_NDX_NO_BLOBS].wasBuild()) ? m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipeline() : DE_NULL;
+			preparePipelineWrapper(m_pipeline[PIPELINE_NDX_DERIVATIVE], vertShaderModule2, tescShaderModule, teseShaderModule, geomShaderModule, fragShaderModule,
+				&m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS], &m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS], &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES],
+				basePipeline, param->isZeroOutFeedbackCount(), DE_NULL,
 				&pipelinePartBinaryInfo[0], &pipelinePartBinaryInfo[1], &pipelinePartBinaryInfo[2], &pipelinePartBinaryInfo[3]);
 
 			// Destroy second pipeline as soon as it was created
-			m_pipeline[PIPELINE_NDX_DERIVATIVE].destroyPipeline();
+			if (m_pipeline[PIPELINE_NDX_DERIVATIVE].wasBuild())
+				m_pipeline[PIPELINE_NDX_DERIVATIVE].destroyPipeline();
 
-			if (!param->isDelayedDestroy())
+			if (!param->isDelayedDestroy() && m_pipeline[PIPELINE_NDX_NO_BLOBS].wasBuild())
 			{
 				// Destroy the NO_BLOBS pipeline to check that the cached one really hits cache,
 				// except for the case where we're testing cache hit of a pipeline still active.
@@ -616,15 +611,16 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 			}
 
 			// Create third pipeline that just uses binaries
-			preparePipelineWrapper(m_pipeline[PIPELINE_NDX_USE_BLOBS], *vertShaderModule1, *tescShaderModule, *teseShaderModule, *geomShaderModule, *fragShaderModule,
-				&m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * 2], &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES * 2],
+			preparePipelineWrapper(m_pipeline[PIPELINE_NDX_USE_BLOBS], vertShaderModule1, tescShaderModule, teseShaderModule, geomShaderModule, fragShaderModule,
+				&m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * 2], &m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS * 2], &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES * 2],
 				DE_NULL, param->isZeroOutFeedbackCount(), DE_NULL,
 				&pipelinePartBinaryInfo[0], &pipelinePartBinaryInfo[1], &pipelinePartBinaryInfo[2], &pipelinePartBinaryInfo[3]);
 
 			// Destroy third pipeline as soon as it was created
-			m_pipeline[PIPELINE_NDX_USE_BLOBS].destroyPipeline();
+			if (m_pipeline[PIPELINE_NDX_USE_BLOBS].wasBuild())
+				m_pipeline[PIPELINE_NDX_USE_BLOBS].destroyPipeline();
 
-			if (param->isDelayedDestroy())
+			if (param->isDelayedDestroy() && m_pipeline[PIPELINE_NDX_NO_BLOBS].wasBuild())
 			{
 				// Destroy the NO_BLOBS pipeline to check that the cached one really hits cache,
 				// except for the case where we're testing cache hit of a pipeline still active.
@@ -635,12 +631,13 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 }
 
 void GraphicsTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&			gpw,
-												   VkShaderModule					vertShaderModule,
-												   VkShaderModule					tescShaderModule,
-												   VkShaderModule					teseShaderModule,
-												   VkShaderModule					geomShaderModule,
-												   VkShaderModule					fragShaderModule,
+												   ShaderWrapper					vertShaderModule,
+												   ShaderWrapper					tescShaderModule,
+												   ShaderWrapper					teseShaderModule,
+												   ShaderWrapper					geomShaderModule,
+												   ShaderWrapper					fragShaderModule,
 												   VkPipelineCreationFeedbackEXT*	pipelineCreationFeedback,
+												   bool*							pipelineCreationIsHeavy,
 												   VkPipelineCreationFeedbackEXT*	pipelineStageCreationFeedbacks,
 												   VkPipeline						basePipelineHandle,
 												   VkBool32							zeroOutFeedbackCount,
@@ -755,13 +752,17 @@ void GraphicsTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&			gp
 		pipelineCreationFeedbackCreateInfo[i] = initVulkanStructure();
 		pipelineCreationFeedbackCreateInfo[i].pPipelineCreationFeedback = &pipelineCreationFeedback[i];
 		pipelineCreationFeedbackWrapper[i].ptr = &pipelineCreationFeedbackCreateInfo[i];
+
+		pipelineCreationIsHeavy[i] = false;
 	}
 
-	deUint32 geometryStages = 1u + (geomShaderModule != DE_NULL) + (tescShaderModule != DE_NULL) + (teseShaderModule != DE_NULL);
+	deUint32 geometryStages = 1u + (geomShaderModule.isSet()) + (tescShaderModule.isSet()) + (teseShaderModule.isSet());
 	if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
 		pipelineCreationFeedbackCreateInfo[4].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : (1u + geometryStages);
 		pipelineCreationFeedbackCreateInfo[4].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
+
+		pipelineCreationIsHeavy[4] = true;
 	}
 	else
 	{
@@ -772,23 +773,29 @@ void GraphicsTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&			gp
 		pipelineCreationFeedbackCreateInfo[2].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : 1u;
 		pipelineCreationFeedbackCreateInfo[2].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks + geometryStages;
 
+		pipelineCreationIsHeavy[1] = true;
+		pipelineCreationIsHeavy[2] = true;
+
 		if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 		{
-			pipelineCreationFeedbackCreateInfo[4].pipelineStageCreationFeedbackCount	= zeroOutFeedbackCount ? 0u : (1u + geometryStages);
-			pipelineCreationFeedbackCreateInfo[4].pPipelineStageCreationFeedbacks		= pipelineStageCreationFeedbacks;
+			pipelineCreationIsHeavy[4] = true;
 		}
 	}
 
-	gpw.setDefaultTopology((tescShaderModule == DE_NULL) ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
+	// pipelineCreationIsHeavy element 0 and 3 intentionally left false,
+	// because these relate to vertex input and fragment output stages, which may be
+	// created in nearly zero time.
+
+	gpw.setDefaultTopology((!tescShaderModule.isSet()) ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
 	   .setDefaultRasterizationState()
 	   .setDefaultMultisampleState()
-	   .setMonolithicPipelineLayout(*m_pipelineLayout)
+	   .setMonolithicPipelineLayout(m_pipelineLayout)
 	   .setMonolithicPipelineBinaries(monolithicBinaryInfo)
-	   .setupVertexInputStete(&vertexInputStateParams, DE_NULL, *m_cache, pipelineCreationFeedbackWrapper[0], vertexPartBinaryInfo)
+	   .setupVertexInputState(&vertexInputStateParams, DE_NULL, *m_cache, pipelineCreationFeedbackWrapper[0], vertexPartBinaryInfo)
 	   .setupPreRasterizationShaderState3(
 			viewport,
 			scissor,
-			*m_pipelineLayout,
+			m_pipelineLayout,
 			*m_renderPass,
 			0u,
 			vertShaderModule, 0,
@@ -802,7 +809,7 @@ void GraphicsTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&			gp
 			pipelineCreationFeedbackWrapper[1],
 			preRasterizationPartBinaryInfo)
 	   .setupFragmentShaderState2(
-			*m_pipelineLayout,
+			m_pipelineLayout,
 			*m_renderPass,
 			0u,
 			fragShaderModule,
@@ -827,8 +834,6 @@ tcu::TestStatus GraphicsTestInstance::verifyTestResult (void)
 	deUint32		finalPipelineIndex		= deUint32(VK_MAX_PIPELINE_PARTS) - 1u;
 	deUint32		start					= isMonolithic ? finalPipelineIndex : 0u;
 	deUint32		step					= start + 1u;
-
-	clearFeedbacks();
 
 	// Iterate ofer creation feedback for all pipeline parts - if monolithic pipeline is tested then skip (step over) feedback for parts
 	for (deUint32 creationFeedbackNdx = start; creationFeedbackNdx < VK_MAX_PIPELINE_PARTS * PIPELINE_NDX_COUNT; creationFeedbackNdx += step)
@@ -890,8 +895,15 @@ tcu::TestStatus GraphicsTestInstance::verifyTestResult (void)
 
 			if (m_pipelineCreationFeedback[creationFeedbackNdx].duration == 0)
 			{
-				message << "\nWarning: Pipeline creation feedback reports duration spent creating a pipeline was zero nanoseconds\n";
-				durationZeroWarning = DE_TRUE;
+				if (m_pipelineCreationIsHeavy[creationFeedbackNdx])
+				{
+					// Emit warnings only for pipelines, that are expected to have large creation times.
+					// Pipelines containing only vertex input or fragment output stages may be created in
+					// time duration less than the timer precision available on given platform.
+
+					message << "\nWarning: Pipeline creation feedback reports duration spent creating a pipeline was zero nanoseconds\n";
+					durationZeroWarning = DE_TRUE;
+				}
 			}
 
 			message << "\n";
@@ -985,9 +997,8 @@ class ComputeTestCase : public BaseTestCase
 public:
 							ComputeTestCase		(tcu::TestContext&		testContext,
 												 const std::string&		name,
-												 const std::string&		description,
 												 const TestParam*		param)
-								: BaseTestCase	(testContext, name, description, param)
+								: BaseTestCase	(testContext, name, param)
 								{ }
 	virtual					~ComputeTestCase	(void) = default;
 	virtual void			initPrograms		(SourceCollections&	programCollection) const;
@@ -1108,7 +1119,10 @@ void ComputeTestInstance::buildPipeline (const TestParam* param, deUint32 ndx)
 	deMemset(&m_pipelineCreationFeedback[ndx], 0, sizeof(VkPipelineCreationFeedbackEXT));
 	deMemset(&m_pipelineStageCreationFeedback[ndx], 0, sizeof(VkPipelineCreationFeedbackEXT));
 
-	const VkPipelineCreationFeedbackCreateInfoEXT pipelineCreationFeedbackCreateInfo =
+	VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+	pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR;
+
+	VkPipelineCreationFeedbackCreateInfoEXT pipelineCreationFeedbackCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO_EXT,	// VkStructureType					sType;
 		DE_NULL,														// const void *						pNext;
@@ -1176,7 +1190,9 @@ void ComputeTestInstance::buildPipeline (const TestParam* param, deUint32 ndx)
 		vk.createComputePipelines(vkDevice, *m_cache, 1u, &pipelineCreateInfo, DE_NULL, &m_pipeline[ndx]);
 	else
 	{
-		pipelineCreateInfo.flags |= VK_PIPELINE_CREATE_CAPTURE_DATA_BIT_KHR;
+		// we need to switch to using VkPipelineCreateFlags2KHR and also include flags that were specified in pipelineCreateInfo
+		pipelineFlags2CreateInfo.flags |= static_cast<VkPipelineCreateFlags2KHR>(pipelineCreateInfo.flags);
+		pipelineCreationFeedbackCreateInfo.pNext = &pipelineFlags2CreateInfo;
 
 		if (ndx == PIPELINE_NDX_NO_BLOBS)
 		{
@@ -1354,11 +1370,11 @@ tcu::TestStatus ComputeTestInstance::verifyTestResult (void)
 
 tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType, TestMode testMode)
 {
-	de::MovePtr<tcu::TestCaseGroup> blobTests (new tcu::TestCaseGroup(testCtx, testMode == TestMode::CACHE ? "cache" : "binaries", ""));
+	de::MovePtr<tcu::TestCaseGroup> blobTests (new tcu::TestCaseGroup(testCtx, testMode == TestMode::CACHE ? "cache" : "binaries"));
 
-	// Graphics Pipeline Tests
+	// Test pipeline creation feedback with graphics pipeline.
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics_tests", "Test pipeline creation feedback with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics_tests"));
 
 		const VkShaderStageFlags vertFragStages		= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		const VkShaderStageFlags vertGeomFragStages	= vertFragStages | VK_SHADER_STAGE_GEOMETRY_BIT;
@@ -1391,7 +1407,7 @@ tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, PipelineCons
 	// Compute Pipeline Tests - don't repeat those tests for graphics pipeline library
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute_tests", "Test pipeline creation feedback with compute pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute_tests"));
 
 		const std::vector<TestParam> testParams
 		{

@@ -227,7 +227,6 @@ void addGraphicsVaryingNameTest (tcu::TestCaseGroup* group, const TestParams& pa
 
 		addFunctionCaseWithPrograms<InstanceContext>(group,
 				params.name.c_str(),
-				"",
 				params.createShaders,
 				runAndVerifyDefaultPipeline,
 				instanceContext);
@@ -238,7 +237,7 @@ void addGraphicsVaryingNameTest (tcu::TestCaseGroup* group, const TestParams& pa
 
 tcu::TestCaseGroup* createVaryingNameGraphicsGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group		(new tcu::TestCaseGroup(testCtx, "varying_name", "Graphics tests for varying names."));
+	de::MovePtr<tcu::TestCaseGroup>	group		(new tcu::TestCaseGroup(testCtx, "varying_name"));
 
 	static const TestParams			params[]	=
 	{

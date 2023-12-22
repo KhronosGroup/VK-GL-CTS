@@ -607,6 +607,67 @@ void logTestCaseInfo (TestLog& log, const TestConfig& config)
 void checkSupport (Context& context, const TestConfig config)
 {
 #if !defined(FAKE_COLOR_CONVERSION)
+
+	const auto&							instInt	(context.getInstanceInterface());
+
+	{
+		const vk::VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+			DE_NULL,													// pNext;
+			config.format,												// format;
+			vk::VK_IMAGE_TYPE_2D,										// type;
+			vk::VK_IMAGE_TILING_OPTIMAL,								// tiling;
+			vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			vk::VK_IMAGE_USAGE_SAMPLED_BIT,									// usage;
+			(vk::VkImageCreateFlags)0u										// flags
+		};
+
+		vk::VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
+		samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
+		samplerYcbcrConversionImage.pNext = DE_NULL;
+
+		vk::VkImageFormatProperties2						imageFormatProperties		= {};
+		imageFormatProperties.sType = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
+
+		vk::VkResult result = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties);
+		if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported.");
+		VK_CHECK(result);
+
+		// Check for plane compatible format support when the disjoint flag is being used
+		if (config.disjoint)
+		{
+			const vk::PlanarFormatDescription				formatDescription		= vk::getPlanarFormatDescription(config.format);
+
+			for (deUint32 channelNdx = 0; channelNdx < 4; ++channelNdx)
+			{
+				if (!formatDescription.hasChannelNdx(channelNdx))
+					continue;
+				deUint32					planeNdx					= formatDescription.channels[channelNdx].planeNdx;
+				vk::VkFormat				planeCompatibleFormat		= getPlaneCompatibleFormat(formatDescription, planeNdx);
+
+				const vk::VkPhysicalDeviceImageFormatInfo2			planeImageFormatInfo				=
+				{
+					vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+					DE_NULL,												// pNext;
+					planeCompatibleFormat,									// format;
+					vk::VK_IMAGE_TYPE_2D,										// type;
+					vk::VK_IMAGE_TILING_OPTIMAL,								// tiling;
+					vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+					vk::VK_IMAGE_USAGE_SAMPLED_BIT,								// usage;
+					(vk::VkImageCreateFlags)0u									// flags
+				};
+
+				vk::VkResult planesResult = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &planeImageFormatInfo, &imageFormatProperties);
+				if (planesResult == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+					TCU_THROW(NotSupportedError, "Plane compatibile format not supported.");
+				VK_CHECK(planesResult);
+			}
+		}
+	}
+
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_sampler_ycbcr_conversion not supported");
 
@@ -616,7 +677,6 @@ void checkSupport (Context& context, const TestConfig config)
 			TCU_THROW(NotSupportedError, "samplerYcbcrConversion feature is not supported");
 	}
 
-	try
 	{
 		const vk::VkFormatProperties	properties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), config.format));
 		const vk::VkFormatFeatureFlags	features	(config.imageTiling == vk::VK_IMAGE_TILING_OPTIMAL
@@ -656,13 +716,6 @@ void checkSupport (Context& context, const TestConfig config)
 		if (isYChromaSubsampled(config.format) && (config.yChromaOffset == vk::VK_CHROMA_LOCATION_MIDPOINT) && ((features & vk::VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support midpoint chroma samples");
 	}
-	catch (const vk::Error& err)
-	{
-		if (err.getError() == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Format not supported");
-
-		throw;
-	}
 #endif
 }
 
@@ -677,11 +730,38 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 	const UVec2						srcSize					= config.srcSize;
 	const UVec2						dstSize					= config.dstSize;
 	bool							isOk					= true;
+	const auto&						instInt	(context.getInstanceInterface());
 
 	logTestCaseInfo(log, config);
 
 #if !defined(FAKE_COLOR_CONVERSION)
-	try
+	{
+		const vk::VkPhysicalDeviceImageFormatInfo2			imageFormatInfo				=
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// sType;
+			DE_NULL,													// pNext;
+			config.format,												// format;
+			vk::VK_IMAGE_TYPE_2D,										// type;
+			vk::VK_IMAGE_TILING_OPTIMAL,								// tiling;
+			vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			vk::VK_IMAGE_USAGE_SAMPLED_BIT,									// usage;
+			(vk::VkImageCreateFlags)0u										// flags
+		};
+
+		vk::VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
+		samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
+		samplerYcbcrConversionImage.pNext = DE_NULL;
+
+		vk::VkImageFormatProperties2						imageFormatProperties		= {};
+		imageFormatProperties.sType = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
+
+		vk::VkResult result = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties);
+		if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported.");
+		VK_CHECK(result);
+	}
+
 	{
 		const vk::VkFormatProperties	properties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), config.format));
 		const vk::VkFormatFeatureFlags	features	(config.imageTiling == vk::VK_IMAGE_TILING_OPTIMAL
@@ -692,13 +772,6 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 			explicitReconstruction = true;
 
 		log << TestLog::Message << "FormatFeatures: " << vk::getFormatFeatureFlagsStr(features) << TestLog::EndMessage;
-	}
-	catch (const vk::Error& err)
-	{
-		if (err.getError() == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Format not supported");
-
-		throw;
 	}
 #endif
 
@@ -1330,7 +1403,7 @@ struct YCbCrConversionTestBuilder
 		{
 			const vk::VkFormat						format(noChromaSubsampledFormats[formatNdx]);
 			const std::string						formatName(de::toLower(std::string(getFormatName(format)).substr(10)));
-			de::MovePtr<tcu::TestCaseGroup>			formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ("Tests for color conversion using format " + formatName).c_str()));
+			de::MovePtr<tcu::TestCaseGroup>			formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 			const UVec2								srcSize(isXChromaSubsampled(format) ? 12 : 7,
 				isYChromaSubsampled(format) ? 8 : 13);
 			const UVec2								dstSize(srcSize.x() + srcSize.x() / 2,
@@ -1344,7 +1417,7 @@ struct YCbCrConversionTestBuilder
 				if (colorModel != vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY && getYCbCrFormatChannelCount(format) < 3)
 					continue;
 
-				de::MovePtr<tcu::TestCaseGroup>			colorModelGroup(new tcu::TestCaseGroup(testCtx, colorModelName, ("Tests for color model " + string(colorModelName)).c_str()));
+				de::MovePtr<tcu::TestCaseGroup>			colorModelGroup(new tcu::TestCaseGroup(testCtx, colorModelName));
 
 				if (colorModel == vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY)
 				{
@@ -1369,7 +1442,7 @@ struct YCbCrConversionTestBuilder
 									textureFilter, chromaLocation, chromaLocation, false, false,
 									colorRange, colorModel, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
-								addFunctionCaseWithPrograms(colorModelGroup.get(), std::string(textureFilterName) + "_" + tilingName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
+								addFunctionCaseWithPrograms(colorModelGroup.get(), std::string(textureFilterName) + "_" + tilingName + samplerBindingName, checkSupport, createTestShaders, textureConversionTest, config);
 							}
 						}
 					}
@@ -1390,7 +1463,7 @@ struct YCbCrConversionTestBuilder
 								continue;
 						}
 
-						de::MovePtr<tcu::TestCaseGroup>		colorRangeGroup(new tcu::TestCaseGroup(testCtx, colorRangeName, ("Tests for color range " + string(colorRangeName)).c_str()));
+						de::MovePtr<tcu::TestCaseGroup>		colorRangeGroup(new tcu::TestCaseGroup(testCtx, colorRangeName));
 
 						for (size_t textureFilterNdx = 0; textureFilterNdx < textureFilters.size(); textureFilterNdx++)
 						{
@@ -1410,7 +1483,7 @@ struct YCbCrConversionTestBuilder
 										textureFilter, chromaLocation, chromaLocation, false, false,
 										colorRange, colorModel, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
-									addFunctionCaseWithPrograms(colorRangeGroup.get(), std::string(textureFilterName) + "_" + tilingName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
+									addFunctionCaseWithPrograms(colorRangeGroup.get(), std::string(textureFilterName) + "_" + tilingName + samplerBindingName, checkSupport, createTestShaders, textureConversionTest, config);
 								}
 							}
 						}
@@ -1434,7 +1507,7 @@ struct YCbCrConversionTestBuilder
 		{
 			const vk::VkFormat				format(xChromaSubsampledFormats[formatNdx]);
 			const std::string				formatName(de::toLower(std::string(getFormatName(format)).substr(10)));
-			de::MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ("Tests for color conversion using format " + formatName).c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 			const UVec2						srcSize(isXChromaSubsampled(format) ? 12 : 7,
 				isYChromaSubsampled(format) ? 8 : 13);
 			const UVec2						dstSize(srcSize.x() + srcSize.x() / 2,
@@ -1442,7 +1515,7 @@ struct YCbCrConversionTestBuilder
 
 			// Color conversion tests
 			{
-				de::MovePtr<tcu::TestCaseGroup>	conversionGroup(new tcu::TestCaseGroup(testCtx, "color_conversion", ""));
+				de::MovePtr<tcu::TestCaseGroup>	conversionGroup(new tcu::TestCaseGroup(testCtx, "color_conversion"));
 
 				for (size_t xChromaOffsetNdx = 0; xChromaOffsetNdx < chromaLocations.size(); xChromaOffsetNdx++)
 				{
@@ -1475,7 +1548,7 @@ struct YCbCrConversionTestBuilder
 										vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
 										colorRange, colorModel, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
-									addFunctionCaseWithPrograms(conversionGroup.get(), string(colorModelName) + "_" + tilingName + "_" + xChromaOffsetName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
+									addFunctionCaseWithPrograms(conversionGroup.get(), string(colorModelName) + "_" + tilingName + "_" + xChromaOffsetName + samplerBindingName, checkSupport, createTestShaders, textureConversionTest, config);
 								}
 							}
 						}
@@ -1509,7 +1582,7 @@ struct YCbCrConversionTestBuilder
 											vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
 											colorRange, colorModel, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
-										addFunctionCaseWithPrograms(conversionGroup.get(), string(colorModelName) + "_" + colorRangeName + "_" + tilingName + "_" + xChromaOffsetName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
+										addFunctionCaseWithPrograms(conversionGroup.get(), string(colorModelName) + "_" + colorRangeName + "_" + tilingName + "_" + xChromaOffsetName + samplerBindingName, checkSupport, createTestShaders, textureConversionTest, config);
 									}
 								}
 							}
@@ -1526,13 +1599,13 @@ struct YCbCrConversionTestBuilder
 
 			// Chroma reconstruction tests
 			{
-				de::MovePtr<tcu::TestCaseGroup>	reconstrucGroup(new tcu::TestCaseGroup(testCtx, "chroma_reconstruction", ""));
+				de::MovePtr<tcu::TestCaseGroup>	reconstrucGroup(new tcu::TestCaseGroup(testCtx, "chroma_reconstruction"));
 
 				for (size_t textureFilterNdx = 0; textureFilterNdx < textureFilters.size(); textureFilterNdx++)
 				{
 					const char* const				textureFilterName(textureFilters[textureFilterNdx].name);
 					const vk::VkFilter				textureFilter(textureFilters[textureFilterNdx].value);
-					de::MovePtr<tcu::TestCaseGroup>	textureFilterGroup(new tcu::TestCaseGroup(testCtx, textureFilterName, textureFilterName));
+					de::MovePtr<tcu::TestCaseGroup>	textureFilterGroup(new tcu::TestCaseGroup(testCtx, textureFilterName));
 
 					for (size_t explicitReconstructionNdx = 0; explicitReconstructionNdx < 2; explicitReconstructionNdx++)
 					{
@@ -1559,7 +1632,7 @@ struct YCbCrConversionTestBuilder
 											vk::VK_FILTER_LINEAR, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
 											defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, dstSize, 0);
 
-										addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", checkSupport, createTestShaders, textureConversionTest, config);
+										addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), checkSupport, createTestShaders, textureConversionTest, config);
 									}
 
 									{
@@ -1569,7 +1642,7 @@ struct YCbCrConversionTestBuilder
 											vk::VK_FILTER_LINEAR, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
 											defaultColorRange, defaultColorModel, swappedChromaSwizzle, srcSize, dstSize, 0);
 
-										addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", "", checkSupport, createTestShaders, textureConversionTest, config);
+										addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", checkSupport, createTestShaders, textureConversionTest, config);
 									}
 
 									if (!explicitReconstruction)
@@ -1581,7 +1654,7 @@ struct YCbCrConversionTestBuilder
 												vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
 												defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, dstSize, 0);
 
-											addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", checkSupport, createTestShaders, textureConversionTest, config);
+											addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), checkSupport, createTestShaders, textureConversionTest, config);
 										}
 
 										{
@@ -1591,7 +1664,7 @@ struct YCbCrConversionTestBuilder
 												vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
 												defaultColorRange, defaultColorModel, swappedChromaSwizzle, srcSize, dstSize, 0);
 
-											addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", "", checkSupport, createTestShaders, textureConversionTest, config);
+											addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", checkSupport, createTestShaders, textureConversionTest, config);
 										}
 									}
 								}
@@ -1610,7 +1683,7 @@ struct YCbCrConversionTestBuilder
 											vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
 											defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, dstSize, 0);
 
-										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", checkSupport, createTestShaders, textureConversionTest, config);
+										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : ""), checkSupport, createTestShaders, textureConversionTest, config);
 									}
 
 									{
@@ -1620,7 +1693,7 @@ struct YCbCrConversionTestBuilder
 											vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
 											defaultColorRange, defaultColorModel, swappedChromaSwizzle, srcSize, dstSize, 0);
 
-										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", "", checkSupport, createTestShaders, textureConversionTest, config);
+										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", checkSupport, createTestShaders, textureConversionTest, config);
 									}
 								}
 							}
@@ -1641,7 +1714,7 @@ struct YCbCrConversionTestBuilder
 		{
 			const vk::VkFormat				format(xyChromaSubsampledFormats[formatNdx]);
 			const std::string				formatName(de::toLower(std::string(getFormatName(format)).substr(10)));
-			de::MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ("Tests for color conversion using format " + formatName).c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 			const UVec2						srcSize(isXChromaSubsampled(format) ? 12 : 7,
 				isYChromaSubsampled(format) ? 8 : 13);
 			const UVec2						dstSize(srcSize.x() + srcSize.x() / 2,
@@ -1649,7 +1722,7 @@ struct YCbCrConversionTestBuilder
 
 			// Color conversion tests
 			{
-				de::MovePtr<tcu::TestCaseGroup>	conversionGroup(new tcu::TestCaseGroup(testCtx, "color_conversion", ""));
+				de::MovePtr<tcu::TestCaseGroup>	conversionGroup(new tcu::TestCaseGroup(testCtx, "color_conversion"));
 
 				for (size_t chromaOffsetNdx = 0; chromaOffsetNdx < chromaLocations.size(); chromaOffsetNdx++)
 				{
@@ -1680,7 +1753,7 @@ struct YCbCrConversionTestBuilder
 										vk::VK_FILTER_NEAREST, chromaOffset, chromaOffset, false, false,
 										colorRange, colorModel, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
-									addFunctionCaseWithPrograms(conversionGroup.get(), std::string(colorModelName) + "_" + tilingName + "_" + chromaOffsetName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
+									addFunctionCaseWithPrograms(conversionGroup.get(), std::string(colorModelName) + "_" + tilingName + "_" + chromaOffsetName + samplerBindingName, checkSupport, createTestShaders, textureConversionTest, config);
 								}
 							}
 						}
@@ -1713,7 +1786,7 @@ struct YCbCrConversionTestBuilder
 											vk::VK_FILTER_NEAREST, chromaOffset, chromaOffset, false, false,
 											colorRange, colorModel, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
-										addFunctionCaseWithPrograms(conversionGroup.get(), string(colorModelName) + "_" + colorRangeName + "_" + tilingName + "_" + chromaOffsetName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
+										addFunctionCaseWithPrograms(conversionGroup.get(), string(colorModelName) + "_" + colorRangeName + "_" + tilingName + "_" + chromaOffsetName + samplerBindingName, checkSupport, createTestShaders, textureConversionTest, config);
 									}
 								}
 							}
@@ -1730,13 +1803,13 @@ struct YCbCrConversionTestBuilder
 
 			// Chroma reconstruction tests
 			{
-				de::MovePtr<tcu::TestCaseGroup>	reconstrucGroup(new tcu::TestCaseGroup(testCtx, "chroma_reconstruction", ""));
+				de::MovePtr<tcu::TestCaseGroup>	reconstrucGroup(new tcu::TestCaseGroup(testCtx, "chroma_reconstruction"));
 
 				for (size_t textureFilterNdx = 0; textureFilterNdx < textureFilters.size(); textureFilterNdx++)
 				{
 					const char* const				textureFilterName(textureFilters[textureFilterNdx].name);
 					const vk::VkFilter				textureFilter(textureFilters[textureFilterNdx].value);
-					de::MovePtr<tcu::TestCaseGroup>	textureFilterGroup(new tcu::TestCaseGroup(testCtx, textureFilterName, textureFilterName));
+					de::MovePtr<tcu::TestCaseGroup>	textureFilterGroup(new tcu::TestCaseGroup(testCtx, textureFilterName));
 
 					for (size_t explicitReconstructionNdx = 0; explicitReconstructionNdx < 2; explicitReconstructionNdx++)
 					{
@@ -1765,7 +1838,7 @@ struct YCbCrConversionTestBuilder
 												vk::VK_FILTER_LINEAR, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
 												defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, dstSize, 0);
 
-											addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", checkSupport, createTestShaders, textureConversionTest, config);
+											addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), checkSupport, createTestShaders, textureConversionTest, config);
 										}
 
 										{
@@ -1774,7 +1847,7 @@ struct YCbCrConversionTestBuilder
 												vk::VK_FILTER_LINEAR, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
 												defaultColorRange, defaultColorModel, swappedChromaSwizzle, srcSize, dstSize, 0);
 
-											addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", "", checkSupport, createTestShaders, textureConversionTest, config);
+											addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", checkSupport, createTestShaders, textureConversionTest, config);
 										}
 
 										if (!explicitReconstruction)
@@ -1785,7 +1858,7 @@ struct YCbCrConversionTestBuilder
 													vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
 													defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, dstSize, 0);
 
-												addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", checkSupport, createTestShaders, textureConversionTest, config);
+												addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), checkSupport, createTestShaders, textureConversionTest, config);
 											}
 
 											{
@@ -1794,7 +1867,7 @@ struct YCbCrConversionTestBuilder
 													vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
 													defaultColorRange, defaultColorModel, swappedChromaSwizzle, srcSize, dstSize, 0);
 
-												addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", "", checkSupport, createTestShaders, textureConversionTest, config);
+												addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", checkSupport, createTestShaders, textureConversionTest, config);
 											}
 										}
 									}
@@ -1813,7 +1886,7 @@ struct YCbCrConversionTestBuilder
 											vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
 											defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, dstSize, 0);
 
-										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", checkSupport, createTestShaders, textureConversionTest, config);
+										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : ""), checkSupport, createTestShaders, textureConversionTest, config);
 									}
 
 									{
@@ -1823,7 +1896,7 @@ struct YCbCrConversionTestBuilder
 											vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
 											defaultColorRange, defaultColorModel, swappedChromaSwizzle, srcSize, dstSize, 0);
 
-										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", "", checkSupport, createTestShaders, textureConversionTest, config);
+										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", checkSupport, createTestShaders, textureConversionTest, config);
 									}
 								}
 							}
@@ -1846,7 +1919,7 @@ struct YCbCrConversionTestBuilder
 				UVec2(20, 12)
 			};
 
-			de::MovePtr<tcu::TestCaseGroup>				oneToOneGroup(new tcu::TestCaseGroup(testCtx, "one_to_one", "Ycbcr images sampled to a frame buffer of the same dimentions."));
+			de::MovePtr<tcu::TestCaseGroup>				oneToOneGroup(new tcu::TestCaseGroup(testCtx, "one_to_one"));
 
 			const vk::VkFormat							format(vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM);
 			const vk::VkFilter							filter(vk::VK_FILTER_NEAREST);
@@ -1878,7 +1951,7 @@ struct YCbCrConversionTestBuilder
 							std::ostringstream			testName;
 							testName << string("implicit_nearest_") << srcSize.x() << "x" << srcSize.y() << "_" << tilingName << "_" << xChromaOffsetName << "_" << yChromaOffsetName;
 
-							addFunctionCaseWithPrograms(oneToOneGroup.get(), testName.str(), "", checkSupport, createTestShaders, textureConversionTest, config);
+							addFunctionCaseWithPrograms(oneToOneGroup.get(), testName.str(), checkSupport, createTestShaders, textureConversionTest, config);
 						}
 					}
 				}
@@ -1890,7 +1963,7 @@ struct YCbCrConversionTestBuilder
 
 	void buildArrayOfSamplersTests(const vk::VkFormat& format, const UVec2& srcSize, const UVec2& dstSize, de::MovePtr<tcu::TestCaseGroup>& formatGroup, tcu::TestContext& testCtx, de::Random& rng )
 	{
-		de::MovePtr<tcu::TestCaseGroup>			samplerArrayGroup(new tcu::TestCaseGroup(testCtx, "sampler_array", "Tests for array of samplers"));
+		de::MovePtr<tcu::TestCaseGroup>			samplerArrayGroup(new tcu::TestCaseGroup(testCtx, "sampler_array"));
 
 		for (size_t textureFilterNdx = 0; textureFilterNdx < textureFilters.size(); textureFilterNdx++)
 		{
@@ -1914,7 +1987,7 @@ struct YCbCrConversionTestBuilder
 						textureFilter, chromaLocation, chromaLocation, false, false,
 						colorRange, vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_LAST, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
-					addFunctionCaseWithPrograms(samplerArrayGroup.get(), std::string(textureFilterName) + "_" + tilingName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
+					addFunctionCaseWithPrograms(samplerArrayGroup.get(), std::string(textureFilterName) + "_" + tilingName + samplerBindingName, checkSupport, createTestShaders, textureConversionTest, config);
 				}
 			}
 		}
@@ -1932,7 +2005,7 @@ void initTests(tcu::TestCaseGroup* testGroup)
 
 tcu::TestCaseGroup* createConversionTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "conversion", "Sampler YCbCr Conversion Tests", initTests);
+	return createTestGroup(testCtx, "conversion", initTests);
 }
 
 } // ycbcr

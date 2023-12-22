@@ -105,6 +105,8 @@ typedef enum
 	STAGE_CLOSEST_HIT,
 	STAGE_MISS,
 	STAGE_CALLABLE,
+	STAGE_TASK,
+	STAGE_MESH,
 } Stage;
 
 typedef enum
@@ -146,6 +148,8 @@ bool isRayTracingStageKHR (const Stage stage)
 		case STAGE_VERTEX:
 		case STAGE_FRAGMENT:
 		case STAGE_RAYGEN_NV:
+		case STAGE_TASK:
+		case STAGE_MESH:
 			return false;
 
 		case STAGE_RAYGEN:
@@ -158,6 +162,16 @@ bool isRayTracingStageKHR (const Stage stage)
 
 		default: TCU_THROW(InternalError, "Unknown stage specified");
 	}
+}
+
+bool isMeshStage (Stage stage)
+{
+	return (stage == STAGE_TASK || stage == STAGE_MESH);
+}
+
+bool isVertexPipelineStage (Stage stage)
+{
+	return (isMeshStage(stage) || stage == STAGE_VERTEX);
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -175,6 +189,42 @@ VkShaderStageFlagBits getShaderStageFlag (const Stage stage)
 	}
 }
 #endif
+
+VkShaderStageFlags getAllShaderStagesFor(Stage stage)
+{
+#ifndef CTS_USES_VULKANSC
+	if (stage == STAGE_RAYGEN_NV)
+		return VK_SHADER_STAGE_RAYGEN_BIT_NV;
+
+	if (isRayTracingStageKHR(stage))
+		return ALL_RAY_TRACING_STAGES;
+
+	if (isMeshStage(stage))
+		return (VK_SHADER_STAGE_MESH_BIT_EXT | ((stage == STAGE_TASK) ? VK_SHADER_STAGE_TASK_BIT_EXT : 0));
+#else
+	DE_UNREF(stage);
+#endif // CTS_USES_VULKANSC
+
+	return (VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+}
+
+VkPipelineStageFlags getAllPipelineStagesFor(Stage stage)
+{
+#ifndef CTS_USES_VULKANSC
+	if (stage == STAGE_RAYGEN_NV)
+		return VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
+
+	if (isRayTracingStageKHR(stage))
+		return VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+
+	if (isMeshStage(stage))
+		return (VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT | ((stage == STAGE_TASK) ? VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT : 0));
+#else
+	DE_UNREF(stage);
+#endif // CTS_USES_VULKANSC
+
+	return (VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+}
 
 bool usesAccelerationStructure (const Stage stage)
 {
@@ -255,7 +305,7 @@ DescriptorSetRandomTestInstance::~DescriptorSetRandomTestInstance (void)
 class DescriptorSetRandomTestCase : public TestCase
 {
 	public:
-								DescriptorSetRandomTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef& data);
+								DescriptorSetRandomTestCase		(tcu::TestContext& context, const char* name, const CaseDef& data);
 								~DescriptorSetRandomTestCase	(void);
 	virtual	void				initPrograms					(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance					(Context& context) const;
@@ -267,8 +317,8 @@ private:
 	CaseDef&					m_data;
 };
 
-DescriptorSetRandomTestCase::DescriptorSetRandomTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef& data)
-	: vkt::TestCase	(context, name, desc)
+DescriptorSetRandomTestCase::DescriptorSetRandomTestCase (tcu::TestContext& context, const char* name, const CaseDef& data)
+	: vkt::TestCase	(context, name)
 	, m_data_ptr	(std::make_shared<CaseDef>(data))
 	, m_data		(*reinterpret_cast<CaseDef*>(m_data_ptr.get()))
 {
@@ -309,7 +359,7 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 #endif
 
 	// Check needed properties and features
-	if (m_data.stage == STAGE_VERTEX && !features.features.vertexPipelineStoresAndAtomics)
+	if (isVertexPipelineStage(m_data.stage) && !features.features.vertexPipelineStoresAndAtomics)
 	{
 		TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 	}
@@ -330,6 +380,17 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 		const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
 		if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
 			TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
+	}
+
+	if (isMeshStage(m_data.stage))
+	{
+		const auto& meshFeatures = context.getMeshShaderFeaturesEXT();
+
+		if (!meshFeatures.meshShader)
+			TCU_THROW(NotSupportedError, "Mesh shaders not supported");
+
+		if (m_data.stage == STAGE_TASK && !meshFeatures.taskShader)
+			TCU_THROW(NotSupportedError, "Task shaders not supported");
 	}
 #endif
 
@@ -612,6 +673,13 @@ void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, de
 						arraySizes[b] = de::min(maxArray, arraySizes[b]);
 						binding.descriptorCount = (arraySizes[b] ? arraySizes[b] : 1) * 16 + 16; // add 16 for "ivec4 unused"
 						numInlineUniformBlocks++;
+					}
+					else
+					{
+						// The meaning of descriptorCount for inline uniform blocks is diferrent from usual, which means
+						// (descriptorCount == 0) doesn't mean it will be discarded.
+						// So we use a similar trick to the below by replacing with a different type of descriptor.
+						binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 					}
 				}
 				else
@@ -1237,6 +1305,70 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 			programCollection.glslSources.add("test") << glu::VertexSource(vss.str());
 			break;
 		}
+	case STAGE_TASK:
+		{
+			std::stringstream task;
+			task
+				<< "#version 450\n"
+				<< "#extension GL_EXT_mesh_shader : enable\n"
+				<< "#extension GL_EXT_nonuniform_qualifier : enable\n"
+				<< pushdecl.str()
+				<< decls.str()
+				<< "layout(local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
+				<< "void main()\n"
+				<< "{\n"
+				<< "  const int invocationID = int(gl_GlobalInvocationID.y) * " << DIM << " + int(gl_GlobalInvocationID.x);\n"
+				<< "  int accum = 0, temp;\n"
+				<< checks.str()
+				<< "  ivec4 color = (accum != 0) ? ivec4(0,0,0,0) : ivec4(1,0,0,1);\n"
+				<< "  imageStore(simage0_0, ivec2(gl_GlobalInvocationID.xy), color);\n"
+				<< "  EmitMeshTasksEXT(0, 0, 0);\n"
+				<< "}\n"
+				;
+			programCollection.glslSources.add("test") << glu::TaskSource(task.str()) << buildOptions;
+
+			std::stringstream mesh;
+			mesh
+				<< "#version 450\n"
+				<< "#extension GL_EXT_mesh_shader : enable\n"
+				<< "#extension GL_EXT_nonuniform_qualifier : enable\n"
+				<< "layout(local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
+				<< "layout(triangles) out;\n"
+				<< "layout(max_vertices=3, max_primitives=1) out;\n"
+				<< "void main()\n"
+				<< "{\n"
+				<< "  SetMeshOutputsEXT(0, 0);\n"
+				<< "}\n"
+				;
+			programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+
+			break;
+		}
+	case STAGE_MESH:
+		{
+			std::stringstream mesh;
+			mesh
+				<< "#version 450\n"
+				<< "#extension GL_EXT_mesh_shader : enable\n"
+				<< "#extension GL_EXT_nonuniform_qualifier : enable\n"
+				<< pushdecl.str()
+				<< decls.str()
+				<< "layout(local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
+				<< "layout(triangles) out;\n"
+				<< "layout(max_vertices=3, max_primitives=1) out;\n"
+				<< "void main()\n"
+				<< "{\n"
+				<< "  const int invocationID = int(gl_GlobalInvocationID.y) * " << DIM << " + int(gl_GlobalInvocationID.x);\n"
+				<< "  int accum = 0, temp;\n"
+				<< checks.str()
+				<< "  ivec4 color = (accum != 0) ? ivec4(0,0,0,0) : ivec4(1,0,0,1);\n"
+				<< "  imageStore(simage0_0, ivec2(gl_GlobalInvocationID.xy), color);\n"
+				<< "}\n"
+				;
+			programCollection.glslSources.add("test") << glu::MeshSource(mesh.str()) << buildOptions;
+
+			break;
+		}
 	case STAGE_FRAGMENT:
 		{
 			std::stringstream vss;
@@ -1275,6 +1407,22 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 TestInstance* DescriptorSetRandomTestCase::createInstance (Context& context) const
 {
 	return new DescriptorSetRandomTestInstance(context, m_data_ptr);
+}
+
+void appendShaderStageCreateInfo (std::vector<VkPipelineShaderStageCreateInfo>& vec, VkShaderModule module, VkShaderStageFlagBits stage)
+{
+	const VkPipelineShaderStageCreateInfo info =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,												//	const void*							pNext;
+		0u,														//	VkPipelineShaderStageCreateFlags	flags;
+		stage,													//	VkShaderStageFlagBits				stage;
+		module,													//	VkShaderModule						module;
+		"main",													//	const char*							pName;
+		nullptr,												//	const VkSpecializationInfo*			pSpecializationInfo;
+	};
+
+	vec.push_back(info);
 }
 
 tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
@@ -1397,9 +1545,9 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 		const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo =
 		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,		// VkStructureType						sType;
-			DE_NULL,																// const void*							pNext;
-			(deUint32)bindings.size(),												// uint32_t								bindingCount;
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,		// VkStructureType					sType;
+			DE_NULL,																// const void*						pNext;
+			(deUint32)bindings.size(),												// uint32_t							bindingCount;
 			bindings.empty() ? DE_NULL : bindingsFlags.data(),						// const VkDescriptorBindingFlags*	pBindingFlags;
 		};
 
@@ -2528,7 +2676,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			(VkSubpassDescriptionFlags)0,											// VkSubpassDescriptionFlags	flags
 			VK_PIPELINE_BIND_POINT_GRAPHICS,										// VkPipelineBindPoint			pipelineBindPoint
 			static_cast<deUint32>(attachmentReferences.size()),						// deUint32						inputAttachmentCount
-			(attachmentReferences.empty() ? DE_NULL : attachmentReferences.data()),	// const VkAttachmentReference*	pInputAttachments
+			de::dataOrNull(attachmentReferences),									// const VkAttachmentReference*	pInputAttachments
 			0u,																		// deUint32						colorAttachmentCount
 			DE_NULL,																// const VkAttachmentReference*	pColorAttachments
 			DE_NULL,																// const VkAttachmentReference*	pResolveAttachments
@@ -2554,7 +2702,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			DE_NULL,												// const void*						pNext
 			(VkRenderPassCreateFlags)0,								// VkRenderPassCreateFlags			flags
 			static_cast<deUint32>(attachmentDescriptions.size()),	// deUint32							attachmentCount
-			attachmentDescriptions.data(),							// const VkAttachmentDescription*	pAttachments
+			de::dataOrNull(attachmentDescriptions),					// const VkAttachmentDescription*	pAttachments
 			1u,														// deUint32							subpassCount
 			&subpassDesc,											// const VkSubpassDescription*		pSubpasses
 			1u,														// deUint32							dependencyCount
@@ -2575,13 +2723,15 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			(vk::VkFramebufferCreateFlags)0,
 			*renderPass,											// renderPass
 			static_cast<deUint32>(rawInputAttachmentViews.size()),	// attachmentCount
-			rawInputAttachmentViews.data(),							// pAttachments
+			de::dataOrNull(rawInputAttachmentViews),				// pAttachments
 			DIM,													// width
 			DIM,													// height
 			1u,														// layers
 		};
 
 		framebuffer = createFramebuffer(vk, device, &framebufferParams);
+
+		// Note: vertex input state and input assembly state will not be used for mesh pipelines.
 
 		const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfo		=
 		{
@@ -2649,50 +2799,49 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 		Move<VkShaderModule> fs;
 		Move<VkShaderModule> vs;
+#ifndef CTS_USES_VULKANSC
+		Move<VkShaderModule> ms;
+		Move<VkShaderModule> ts;
+#endif // CTS_USES_VULKANSC
 
-		deUint32 numStages;
+		const auto& binaries = m_context.getBinaryCollection();
+
+		std::vector<VkPipelineShaderStageCreateInfo> stageCreateInfos;
+
 		if (m_data.stage == STAGE_VERTEX)
 		{
-			vs = createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0);
-			fs = createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0); // bogus
-			numStages = 1u;
+			vs = createShaderModule(vk, device, binaries.get("test"));
+			appendShaderStageCreateInfo(stageCreateInfos, vs.get(), VK_SHADER_STAGE_VERTEX_BIT);
 		}
-		else
+		else if (m_data.stage == STAGE_FRAGMENT)
 		{
-			vs = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
-			fs = createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0);
-			numStages = 2u;
+			vs = createShaderModule(vk, device, binaries.get("vert"));
+			fs = createShaderModule(vk, device, binaries.get("test"));
+			appendShaderStageCreateInfo(stageCreateInfos, vs.get(), VK_SHADER_STAGE_VERTEX_BIT);
+			appendShaderStageCreateInfo(stageCreateInfos, fs.get(), VK_SHADER_STAGE_FRAGMENT_BIT);
 		}
-
-		const VkPipelineShaderStageCreateInfo	shaderCreateInfo[2] =
+#ifndef CTS_USES_VULKANSC
+		else if (m_data.stage == STAGE_TASK)
 		{
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				DE_NULL,
-				(VkPipelineShaderStageCreateFlags)0,
-				VK_SHADER_STAGE_VERTEX_BIT,									// stage
-				*vs,														// shader
-				"main",
-				DE_NULL,													// pSpecializationInfo
-			},
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				DE_NULL,
-				(VkPipelineShaderStageCreateFlags)0,
-				VK_SHADER_STAGE_FRAGMENT_BIT,								// stage
-				*fs,														// shader
-				"main",
-				DE_NULL,													// pSpecializationInfo
-			}
-		};
+			ts = createShaderModule(vk, device, binaries.get("test"));
+			ms = createShaderModule(vk, device, binaries.get("mesh"));
+			appendShaderStageCreateInfo(stageCreateInfos, ts.get(), vk::VK_SHADER_STAGE_TASK_BIT_EXT);
+			appendShaderStageCreateInfo(stageCreateInfos, ms.get(), VK_SHADER_STAGE_MESH_BIT_EXT);
+		}
+		else if (m_data.stage == STAGE_MESH)
+		{
+			ms = createShaderModule(vk, device, binaries.get("test"));
+			appendShaderStageCreateInfo(stageCreateInfos, ms.get(), VK_SHADER_STAGE_MESH_BIT_EXT);
+		}
+#endif // CTS_USES_VULKANSC
 
 		const VkGraphicsPipelineCreateInfo				graphicsPipelineCreateInfo		=
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
 			DE_NULL,											// const void*										pNext;
 			(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags							flags;
-			numStages,											// deUint32											stageCount;
-			&shaderCreateInfo[0],								// const VkPipelineShaderStageCreateInfo*			pStages;
+			static_cast<uint32_t>(stageCreateInfos.size()),		// deUint32											stageCount;
+			de::dataOrNull(stageCreateInfos),					// const VkPipelineShaderStageCreateInfo*			pStages;
 			&vertexInputStateCreateInfo,						// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
 			&inputAssemblyStateCreateInfo,						// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
 			DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
@@ -2793,10 +2942,16 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		{
 			vk.cmdDraw(*cmdBuffer, DIM*DIM, 1u, 0u, 0u);
 		}
-		else
+		else if (m_data.stage == STAGE_FRAGMENT)
 		{
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 		}
+#ifndef CTS_USES_VULKANSC
+		else if (isMeshStage(m_data.stage))
+		{
+			vk.cmdDrawMeshTasksEXT(*cmdBuffer, DIM, DIM, 1u);
+		}
+#endif // CTS_USES_VULKANSC
 		endRenderPass(vk, *cmdBuffer);
 	}
 
@@ -2918,14 +3073,14 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	if (failures == 0)
 		return tcu::TestStatus::pass("Pass");
 	else
-		return tcu::TestStatus::fail("Fail (failures=" + de::toString(failures) + ")");
+		return tcu::TestStatus::fail("failures=" + de::toString(failures));
 }
 
 }	// anonymous
 
 tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "descriptorset_random", "Randomly-generated desciptor set layouts"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "descriptorset_random"));
 
 	deUint32 seed = 0;
 
@@ -2933,52 +3088,72 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 	{
 		deUint32				count;
 		const char*				name;
-		const char*				description;
 	} TestGroupCase;
 
 	TestGroupCase setsCases[] =
 	{
-		{ 4,	"sets4",	"4 descriptor sets"		},
-		{ 8,	"sets8",	"8 descriptor sets"		},
-		{ 16,	"sets16",	"16 descriptor sets"	},
-		{ 32,	"sets32",	"32 descriptor sets"	},
+		// 4 descriptor sets
+		{ 4,	"sets4"},
+		// 8 descriptor sets
+		{ 8,	"sets8"},
+		// 16 descriptor sets
+		{ 16,	"sets16"},
+		// 32 descriptor sets
+		{ 32,	"sets32"},
 	};
 
 	TestGroupCase indexCases[] =
 	{
-		{ INDEX_TYPE_NONE,			"noarray",		"all descriptor declarations are not arrays"		},
-		{ INDEX_TYPE_CONSTANT,		"constant",		"constant indexing of descriptor arrays"			},
-		{ INDEX_TYPE_PUSHCONSTANT,	"unifindexed",	"indexing descriptor arrays with push constants"	},
-		{ INDEX_TYPE_DEPENDENT,		"dynindexed",	"dynamically uniform indexing descriptor arrays"	},
-		{ INDEX_TYPE_RUNTIME_SIZE,	"runtimesize",	"runtime-size declarations of descriptor arrays"	},
+		// all descriptor declarations are not arrays
+		{ INDEX_TYPE_NONE,			"noarray"},
+		// constant indexing of descriptor arrays
+		{ INDEX_TYPE_CONSTANT,		"constant"},
+		// indexing descriptor arrays with push constants
+		{ INDEX_TYPE_PUSHCONSTANT,	"unifindexed"},
+		// dynamically uniform indexing descriptor arrays
+		{ INDEX_TYPE_DEPENDENT,		"dynindexed"},
+		// runtime-size declarations of descriptor arrays
+		{ INDEX_TYPE_RUNTIME_SIZE,	"runtimesize"},
 	};
 
 	TestGroupCase uboCases[] =
 	{
-		{ 0,			"noubo",			"no ubos"					},
-		{ 12,			"ubolimitlow",		"spec minmax ubo limit"		},
-		{ 4096,			"ubolimithigh",		"high ubo limit"			},
+		// no ubos
+		{ 0,			"noubo"},
+		// spec minmax ubo limit
+		{ 12,			"ubolimitlow"},
+		// high ubo limit
+		{ 4096,			"ubolimithigh"},
 	};
 
 	TestGroupCase sboCases[] =
 	{
-		{ 0,			"nosbo",			"no ssbos"					},
-		{ 4,			"sbolimitlow",		"spec minmax ssbo limit"	},
-		{ 4096,			"sbolimithigh",		"high ssbo limit"			},
+		// no ssbos
+		{ 0,			"nosbo"},
+		// spec minmax ssbo limit
+		{ 4,			"sbolimitlow"},
+		// high ssbo limit
+		{ 4096,			"sbolimithigh"},
 	};
 
 	TestGroupCase iaCases[] =
 	{
-		{ 0,			"noia",				"no input attachments"					},
-		{ 4,			"ialimitlow",		"spec minmax input attachment limit"	},
-		{ 64,			"ialimithigh",		"high input attachment limit"			},
+		// no input attachments
+		{ 0,			"noia"},
+		// spec minmax input attachment limit
+		{ 4,			"ialimitlow"},
+		// high input attachment limit
+		{ 64,			"ialimithigh"},
 	};
 
 	TestGroupCase sampledImgCases[] =
 	{
-		{ 0,			"nosampledimg",		"no sampled images"			},
-		{ 16,			"sampledimglow",	"spec minmax image limit"	},
-		{ 4096,			"sampledimghigh",	"high image limit"			},
+		// no sampled images
+		{ 0,			"nosampledimg"},
+		// spec minmax image limit
+		{ 16,			"sampledimglow"},
+		// high image limit
+		{ 4096,			"sampledimghigh"},
 	};
 
 	const struct
@@ -2986,14 +3161,18 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 		deUint32	sImgCount;
 		deUint32	sTexCount;
 		const char* name;
-		const char* description;
 	} sImgTexCases[] =
 	{
-		{ 1,		0,		"outimgonly",		"output storage image only"							},
-		{ 1,		3,		"outimgtexlow",		"output image low storage tex limit"				},
-		{ 4,		0,		"lowimgnotex",		"minmax storage images and no storage tex"			},
-		{ 3,		1,		"lowimgsingletex",	"low storage image single storage texel"			},
-		{ 2048,		2048,	"storageimghigh",	"high limit of storage images and texel buffers"	},
+		// output storage image only
+		{ 1,		0,		"outimgonly"},
+		// output image low storage tex limit
+		{ 1,		3,		"outimgtexlow"},
+		// minmax storage images and no storage tex
+		{ 4,		0,		"lowimgnotex"},
+		// low storage image single storage texel
+		{ 3,		1,		"lowimgsingletex"},
+		// high limit of storage images and texel buffers
+		{ 2048,		2048,	"storageimghigh"},
 	};
 
 	const struct
@@ -3001,75 +3180,85 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 		deUint32				iubCount;
 		deUint32				iubSize;
 		const char*				name;
-		const char*				description;
 	} iubCases[] =
 	{
-		{ 0, 0,		"noiub",			"no inline uniform blocks"			},
-		{ 4, 256,	"iublimitlow",		"inline uniform blocks low limit"	},
-		{ 8, 4096,	"iublimithigh",		"inline uniform blocks high limit"	},
+		// no inline uniform blocks
+		{ 0, 0,		"noiub"},
+		// inline uniform blocks low limit
+		{ 4, 256,	"iublimitlow"},
+		// inline uniform blocks high limit
+		{ 8, 4096,	"iublimithigh"},
 	};
 
 	TestGroupCase stageCases[] =
 	{
-		{ STAGE_COMPUTE,	"comp",		"compute"		},
-		{ STAGE_FRAGMENT,	"frag",		"fragment"		},
-		{ STAGE_VERTEX,		"vert",		"vertex"		},
+		// compute
+		{ STAGE_COMPUTE,	"comp"},
+		// fragment
+		{ STAGE_FRAGMENT,	"frag"},
+		// vertex
+		{ STAGE_VERTEX,		"vert"},
 #ifndef CTS_USES_VULKANSC
-		{ STAGE_RAYGEN_NV,	"rgnv",		"raygen_nv"		},
-		{ STAGE_RAYGEN,		"rgen",		"raygen"		},
-		{ STAGE_INTERSECT,	"sect",		"intersect"		},
-		{ STAGE_ANY_HIT,	"ahit",		"any_hit"		},
-		{ STAGE_CLOSEST_HIT,"chit",		"closest_hit"	},
-		{ STAGE_MISS,		"miss",		"miss"			},
-		{ STAGE_CALLABLE,	"call",		"callable"		},
+		// raygen_nv
+		{ STAGE_RAYGEN_NV,	"rgnv"},
+		// raygen
+		{ STAGE_RAYGEN,		"rgen"},
+		// intersect
+		{ STAGE_INTERSECT,	"sect"},
+		// any_hit
+		{ STAGE_ANY_HIT,	"ahit"},
+		// closest_hit
+		{ STAGE_CLOSEST_HIT,"chit"},
+		// miss
+		{ STAGE_MISS,		"miss"},
+		// callable
+		{ STAGE_CALLABLE,	"call"},
+		// task
+		{ STAGE_TASK,		"task"},
+		// mesh
+		{ STAGE_MESH,		"mesh"},
 #endif
 	};
 
 	TestGroupCase uabCases[] =
 	{
-		{ UPDATE_AFTER_BIND_DISABLED,	"nouab",	"no update after bind"		},
-		{ UPDATE_AFTER_BIND_ENABLED,	"uab",		"enable update after bind"	},
+		// no update after bind
+		{ UPDATE_AFTER_BIND_DISABLED,	"nouab"},
+		// enable update after bind
+		{ UPDATE_AFTER_BIND_ENABLED,	"uab"},
 	};
 
 	for (int setsNdx = 0; setsNdx < DE_LENGTH_OF_ARRAY(setsCases); setsNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> setsGroup(new tcu::TestCaseGroup(testCtx, setsCases[setsNdx].name, setsCases[setsNdx].description));
+		de::MovePtr<tcu::TestCaseGroup> setsGroup(new tcu::TestCaseGroup(testCtx, setsCases[setsNdx].name));
 		for (int indexNdx = 0; indexNdx < DE_LENGTH_OF_ARRAY(indexCases); indexNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> indexGroup(new tcu::TestCaseGroup(testCtx, indexCases[indexNdx].name, indexCases[indexNdx].description));
+			de::MovePtr<tcu::TestCaseGroup> indexGroup(new tcu::TestCaseGroup(testCtx, indexCases[indexNdx].name));
 			for (int uboNdx = 0; uboNdx < DE_LENGTH_OF_ARRAY(uboCases); uboNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup> uboGroup(new tcu::TestCaseGroup(testCtx, uboCases[uboNdx].name, uboCases[uboNdx].description));
+				de::MovePtr<tcu::TestCaseGroup> uboGroup(new tcu::TestCaseGroup(testCtx, uboCases[uboNdx].name));
 				for (int sboNdx = 0; sboNdx < DE_LENGTH_OF_ARRAY(sboCases); sboNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup> sboGroup(new tcu::TestCaseGroup(testCtx, sboCases[sboNdx].name, sboCases[sboNdx].description));
+					de::MovePtr<tcu::TestCaseGroup> sboGroup(new tcu::TestCaseGroup(testCtx, sboCases[sboNdx].name));
 					for (int sampledImgNdx = 0; sampledImgNdx < DE_LENGTH_OF_ARRAY(sampledImgCases); sampledImgNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup> sampledImgGroup(new tcu::TestCaseGroup(testCtx, sampledImgCases[sampledImgNdx].name, sampledImgCases[sampledImgNdx].description));
+						de::MovePtr<tcu::TestCaseGroup> sampledImgGroup(new tcu::TestCaseGroup(testCtx, sampledImgCases[sampledImgNdx].name));
 						for (int storageImgNdx = 0; storageImgNdx < DE_LENGTH_OF_ARRAY(sImgTexCases); ++storageImgNdx)
 						{
-							de::MovePtr<tcu::TestCaseGroup> storageImgGroup(new tcu::TestCaseGroup(testCtx, sImgTexCases[storageImgNdx].name, sImgTexCases[storageImgNdx].description));
+							de::MovePtr<tcu::TestCaseGroup> storageImgGroup(new tcu::TestCaseGroup(testCtx, sImgTexCases[storageImgNdx].name));
 							for (int iubNdx = 0; iubNdx < DE_LENGTH_OF_ARRAY(iubCases); iubNdx++)
 							{
-								de::MovePtr<tcu::TestCaseGroup> iubGroup(new tcu::TestCaseGroup(testCtx, iubCases[iubNdx].name, iubCases[iubNdx].description));
+								de::MovePtr<tcu::TestCaseGroup> iubGroup(new tcu::TestCaseGroup(testCtx, iubCases[iubNdx].name));
 								for (int uabNdx = 0; uabNdx < DE_LENGTH_OF_ARRAY(uabCases); uabNdx++)
 								{
-									de::MovePtr<tcu::TestCaseGroup> uabGroup(new tcu::TestCaseGroup(testCtx, uabCases[uabNdx].name, uabCases[uabNdx].description));
+									de::MovePtr<tcu::TestCaseGroup> uabGroup(new tcu::TestCaseGroup(testCtx, uabCases[uabNdx].name));
 									for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
 									{
 										const Stage		currentStage			= static_cast<Stage>(stageCases[stageNdx].count);
-#ifndef CTS_USES_VULKANSC
-										const VkFlags	rtShaderStagesNV		= currentStage == STAGE_RAYGEN_NV ? VK_SHADER_STAGE_RAYGEN_BIT_NV : 0;
-										const VkFlags	rtPipelineStagesNV		= currentStage == STAGE_RAYGEN_NV ? VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV : 0;
-										const VkFlags	rtShaderStagesKHR		= isRayTracingStageKHR(currentStage) ? ALL_RAY_TRACING_STAGES : 0;
-										const VkFlags	rtPipelineStagesKHR		= isRayTracingStageKHR(currentStage) ? VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR : 0;
-										const VkFlags	rtShaderStages			= rtShaderStagesNV | rtShaderStagesKHR;
-										const VkFlags	rtPipelineStages		= rtPipelineStagesNV | rtPipelineStagesKHR;
-#else
-										const VkFlags	rtShaderStages			= 0;
-										const VkFlags	rtPipelineStages		= 0;
-#endif
-										de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].description));
+										const auto		shaderStages			= getAllShaderStagesFor(currentStage);
+										const auto		pipelineStages			= getAllPipelineStagesFor(currentStage);
+
+										de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stageCases[stageNdx].name));
 										for (int iaNdx = 0; iaNdx < DE_LENGTH_OF_ARRAY(iaCases); ++iaNdx)
 										{
 											// Input attachments can only be used in the fragment stage.
@@ -3106,7 +3295,7 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 											if ((uboNdx == 0 || sboNdx == 0 || sampledImgNdx == 0) && indexNdx < 2)
 												continue;
 
-											de::MovePtr<tcu::TestCaseGroup> iaGroup(new tcu::TestCaseGroup(testCtx, iaCases[iaNdx].name, iaCases[iaNdx].description));
+											de::MovePtr<tcu::TestCaseGroup> iaGroup(new tcu::TestCaseGroup(testCtx, iaCases[iaNdx].name));
 
 											// Generate 10 random cases when working with only 4 sets and the number of descriptors is low. Otherwise just one case.
 											// Exception: the case of no descriptors of any kind only needs one case.
@@ -3115,9 +3304,6 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 
 											for (deUint32 rnd = 0; rnd < numSeeds; ++rnd)
 											{
-												const VkFlags allShaderStages	= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-												const VkFlags allPipelineStages	= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-
 												CaseDef c =
 												{
 													(IndexType)indexCases[indexNdx].count,						// IndexType indexType;
@@ -3135,13 +3321,13 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 													currentStage,												// Stage stage;
 													(UpdateAfterBind)uabCases[uabNdx].count,					// UpdateAfterBind uab;
 													seed++,														// deUint32 seed;
-													rtShaderStages ? rtShaderStages : allShaderStages,			// VkFlags allShaderStages;
-													rtPipelineStages ? rtPipelineStages : allPipelineStages,	// VkFlags allPipelineStages;
+													shaderStages,												// VkFlags allShaderStages;
+													pipelineStages,												// VkFlags allPipelineStages;
 													nullptr,													// std::shared_ptr<RandomLayout> randomLayout;
 												};
 
 												string name = de::toString(rnd);
-												iaGroup->addChild(new DescriptorSetRandomTestCase(testCtx, name.c_str(), "test", c));
+												iaGroup->addChild(new DescriptorSetRandomTestCase(testCtx, name.c_str(), c));
 											}
 											stageGroup->addChild(iaGroup.release());
 										}

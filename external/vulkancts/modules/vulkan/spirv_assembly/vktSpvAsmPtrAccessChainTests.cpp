@@ -69,7 +69,7 @@ tcu::TestCaseGroup* createPtrAccessChainGroup (tcu::TestContext& testCtx)
 {
 	// Location of the Amber script files under the data/vulkan/amber source tree.
 	const char* data_dir = "spirv_assembly/instruction/compute/ptr_access_chain";
-	return createTestGroup(testCtx, "ptr_access_chain", "OpPtrAccessChain edge cases", createTests, data_dir);
+	return createTestGroup(testCtx, "ptr_access_chain", createTests, data_dir);
 }
 
 } // SpirVAssembly

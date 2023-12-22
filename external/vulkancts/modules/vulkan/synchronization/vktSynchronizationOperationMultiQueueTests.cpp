@@ -48,6 +48,7 @@
 #include "tcuCommandLine.hpp"
 
 #include <set>
+#include <unordered_map>
 
 namespace vkt
 {
@@ -112,11 +113,22 @@ class MultiQueues
 	};
 
 	MultiQueues	(Context& context, SynchronizationType type, bool timelineSemaphore)
-		: m_instance	(createCustomInstanceFromContext(context))
-		, m_queueCount	(0)
+#ifdef CTS_USES_VULKANSC
+		: m_instance	(createCustomInstanceFromContext(context)),
+#else
+		:
+#endif // CTS_USES_VULKANSC
+		m_queueCount	(0)
 	{
+#ifdef CTS_USES_VULKANSC
 		const InstanceInterface&					instanceDriver			= m_instance.getDriver();
 		const VkPhysicalDevice						physicalDevice			= chooseDevice(instanceDriver, m_instance, context.getTestContext().getCommandLine());
+		const VkInstance							instance				= m_instance;
+#else
+		const InstanceInterface&					instanceDriver			= context.getInstanceInterface();
+		const VkPhysicalDevice						physicalDevice			= context.getPhysicalDevice();
+		const VkInstance							instance				= context.getInstance();
+#endif // CTS_USES_VULKANSC
 		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 		for (deUint32 queuePropertiesNdx = 0; queuePropertiesNdx < queueFamilyProperties.size(); ++queuePropertiesNdx)
@@ -214,11 +226,11 @@ class MultiQueues
 				DE_NULL															//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 			};
 
-			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), m_instance, instanceDriver, physicalDevice, &deviceInfo);
+			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 #ifndef CTS_USES_VULKANSC
-			m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), m_instance, *m_logicalDevice));
+			m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *m_logicalDevice, context.getUsedApiVersion()));
 #else
-			m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), m_instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
+			m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
 			m_allocator		= MovePtr<Allocator>(new SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice)));
 
@@ -351,10 +363,11 @@ public:
 
 	static SharedPtr<MultiQueues> getInstance(Context& context, SynchronizationType type, bool timelineSemaphore)
 	{
-		if (!m_multiQueues)
-			m_multiQueues = SharedPtr<MultiQueues>(new MultiQueues(context, type, timelineSemaphore));
+		deUint32 index = (deUint32)type << 1 | timelineSemaphore;
+		if (!m_multiQueues[index])
+			m_multiQueues[index] = SharedPtr<MultiQueues>(new MultiQueues(context, type, timelineSemaphore));
 
-		return m_multiQueues;
+		return m_multiQueues[index];
 	}
 	static void destroy()
 	{
@@ -362,7 +375,9 @@ public:
 	}
 
 private:
+#ifdef CTS_USES_VULKANSC
 	CustomInstance					m_instance;
+#endif // CTS_USES_VULKANSC
 	Move<VkDevice>					m_logicalDevice;
 #ifndef CTS_USES_VULKANSC
 	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
@@ -373,9 +388,9 @@ private:
 	std::map<deUint32, QueueData>	m_queues;
 	deUint32						m_queueCount;
 
-	static SharedPtr<MultiQueues>	m_multiQueues;
+	static std::unordered_map<deUint32, SharedPtr<MultiQueues>>	m_multiQueues;
 };
-SharedPtr<MultiQueues>				MultiQueues::m_multiQueues;
+std::unordered_map<deUint32, SharedPtr<MultiQueues>>				MultiQueues::m_multiQueues;
 
 void createBarrierMultiQueue (SynchronizationWrapperPtr synchronizationWrapper,
 							  const VkCommandBuffer&	cmdBuffer,
@@ -853,7 +868,6 @@ class BaseTestCase : public TestCase
 public:
 	BaseTestCase (tcu::TestContext&			testCtx,
 				  const std::string&		name,
-				  const std::string&		description,
 				  SynchronizationType		type,
 				  const SyncPrimitive		syncPrimitive,
 				  const ResourceDescription	resourceDesc,
@@ -861,7 +875,7 @@ public:
 				  const OperationName		readOp,
 				  const VkSharingMode		sharingMode,
 				  PipelineCacheData&		pipelineCacheData)
-		: TestCase				(testCtx, name, description)
+		: TestCase				(testCtx, name)
 		, m_type				(type)
 		, m_resourceDesc		(resourceDesc)
 		, m_writeOp				(makeOperationSupport(writeOp, resourceDesc).release())
@@ -968,7 +982,7 @@ void createTests (tcu::TestCaseGroup* group, TestData data)
 
 	for (int groupNdx = 0; groupNdx < DE_LENGTH_OF_ARRAY(groups); ++groupNdx)
 	{
-		MovePtr<tcu::TestCaseGroup> synchGroup (new tcu::TestCaseGroup(testCtx, groups[groupNdx].name, ""));
+		MovePtr<tcu::TestCaseGroup> synchGroup (new tcu::TestCaseGroup(testCtx, groups[groupNdx].name));
 
 		for (int writeOpNdx = 0; writeOpNdx < DE_LENGTH_OF_ARRAY(s_writeOps); ++writeOpNdx)
 		for (int readOpNdx  = 0; readOpNdx  < DE_LENGTH_OF_ARRAY(s_readOps);  ++readOpNdx)
@@ -978,7 +992,7 @@ void createTests (tcu::TestCaseGroup* group, TestData data)
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			MovePtr<tcu::TestCaseGroup> opGroup		(new tcu::TestCaseGroup(testCtx, opGroupName.c_str(), ""));
+			MovePtr<tcu::TestCaseGroup> opGroup		(new tcu::TestCaseGroup(testCtx, opGroupName.c_str()));
 
 			for (int optionNdx = 0; optionNdx <= groups[groupNdx].numOptions; ++optionNdx)
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
@@ -998,7 +1012,7 @@ void createTests (tcu::TestCaseGroup* group, TestData data)
 					else
 						name += "_exclusive";
 
-					opGroup->addChild(new BaseTestCase(testCtx, name, "", data.type, groups[groupNdx].syncPrimitive, resource, writeOp, readOp, sharingMode, *data.pipelineCacheData));
+					opGroup->addChild(new BaseTestCase(testCtx, name, data.type, groups[groupNdx].syncPrimitive, resource, writeOp, readOp, sharingMode, *data.pipelineCacheData));
 					empty = false;
 				}
 			}
@@ -1027,7 +1041,8 @@ tcu::TestCaseGroup* createSynchronizedOperationMultiQueueTests (tcu::TestContext
 		&pipelineCacheData
 	};
 
-	return createTestGroup(testCtx, "multi_queue", "Synchronization of a memory-modifying operation", createTests, data, cleanupGroup);
+	// Synchronization of a memory-modifying operation
+	return createTestGroup(testCtx, "multi_queue", createTests, data, cleanupGroup);
 }
 
 } // synchronization

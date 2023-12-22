@@ -30,6 +30,8 @@
 #include "vkCmdUtil.hpp"
 #include "tcuTextureUtil.hpp"
 #include "deMath.h"
+#include "vkMemUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include <map>
 #include <assert.h>
@@ -62,6 +64,46 @@ bool isUintFormat (VkFormat format)
 	return tcu::getTextureChannelClass(mapVkFormat(format).type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
 }
 
+bool isScaledFormat (VkFormat format)
+{
+	// update this mapping if VkFormat changes
+	DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
+
+	switch (format)
+	{
+		case VK_FORMAT_R8_USCALED:
+		case VK_FORMAT_R8_SSCALED:
+		case VK_FORMAT_R8G8_USCALED:
+		case VK_FORMAT_R8G8_SSCALED:
+		case VK_FORMAT_R8G8B8_USCALED:
+		case VK_FORMAT_R8G8B8_SSCALED:
+		case VK_FORMAT_R8G8B8A8_USCALED:
+		case VK_FORMAT_R8G8B8A8_SSCALED:
+		case VK_FORMAT_A2B10G10R10_USCALED_PACK32:
+		case VK_FORMAT_A2B10G10R10_SSCALED_PACK32:
+		case VK_FORMAT_R16_USCALED:
+		case VK_FORMAT_R16_SSCALED:
+		case VK_FORMAT_R16G16_USCALED:
+		case VK_FORMAT_R16G16_SSCALED:
+		case VK_FORMAT_R16G16B16_USCALED:
+		case VK_FORMAT_R16G16B16_SSCALED:
+		case VK_FORMAT_R16G16B16A16_USCALED:
+		case VK_FORMAT_R16G16B16A16_SSCALED:
+		case VK_FORMAT_B8G8R8_USCALED:
+		case VK_FORMAT_B8G8R8_SSCALED:
+		case VK_FORMAT_B8G8R8A8_USCALED:
+		case VK_FORMAT_B8G8R8A8_SSCALED:
+		case VK_FORMAT_A2R10G10B10_USCALED_PACK32:
+		case VK_FORMAT_A2R10G10B10_SSCALED_PACK32:
+		case VK_FORMAT_A8B8G8R8_USCALED_PACK32:
+		case VK_FORMAT_A8B8G8R8_SSCALED_PACK32:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 bool isDepthStencilFormat (VkFormat format)
 {
 	if (isCompressedFormat(format))
@@ -89,6 +131,58 @@ bool isSrgbFormat (VkFormat format)
 		default:
 			return false;
 	}
+}
+
+// Returns true if the format has padding bits.
+bool isPaddedFormat (VkFormat format)
+{
+	bool isPadded = false;
+
+	switch (format)
+	{
+	case VK_FORMAT_X8_D24_UNORM_PACK32:
+	case VK_FORMAT_R10X6_UNORM_PACK16:
+	case VK_FORMAT_R10X6G10X6_UNORM_2PACK16:
+	case VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
+	case VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
+	case VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
+	case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
+	case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
+	case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
+	case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:
+	case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
+	case VK_FORMAT_R12X4_UNORM_PACK16:
+	case VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
+	case VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
+	case VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
+	case VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
+	case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
+	case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
+	case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
+	case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
+	case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
+#ifndef CTS_USES_VULKANSC
+	case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16:
+	case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16:
+#endif // CTS_USES_VULKANSC
+		isPadded = true;
+		break;
+	default:
+		break;
+	}
+
+	return isPadded;
+}
+
+bool isAlphaOnlyFormat (VkFormat format)
+{
+	if (isCompressedFormat(format))
+		return false;
+
+	if (isYCbCrFormat(format))
+		return false;
+
+	return (mapVkFormat(format).order == tcu::TextureFormat::A);
 }
 
 bool isUfloatFormat (VkFormat format)
@@ -352,6 +446,26 @@ bool isYCbCr422Format (VkFormat format)
 		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
 			return true;
 
+		default:
+			return false;
+	}
+}
+
+bool isPvrtcFormat (VkFormat format)
+{
+	switch (format)
+	{
+#ifndef CTS_USES_VULKANSC
+		case VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG:
+		case VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG:
+		case VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG:
+		case VK_FORMAT_PVRTC2_4BPP_UNORM_BLOCK_IMG:
+		case VK_FORMAT_PVRTC1_2BPP_SRGB_BLOCK_IMG:
+		case VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG:
+		case VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG:
+		case VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG:
+			return true;
+#endif
 		default:
 			return false;
 	}
@@ -2475,6 +2589,31 @@ PlanarFormatDescription getCorePlanarFormatDescription (VkFormat format)
 			return desc;
 		}
 
+#ifndef CTS_USES_VULKANSC
+		case VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR:
+		{
+			const PlanarFormatDescription desc
+			{
+				1, // planes
+				chanR | chanG | chanB | chanA,
+				1,1,
+				{
+				//		Size	WDiv	HDiv	planeCompatibleFormat
+					{	2,		1,		1,		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		unorm,	11,		5,		2 },	// R
+					{	0,		unorm,	6,		5,		2 },	// G
+					{	0,		unorm,	1,		5,		2 },	// B
+					{	0,		unorm,	0,		1,		2 }		// A
+				}
+			};
+			return desc;
+		}
+#endif // CTS_USES_VULKANSC
 
 		default:
 			TCU_THROW(InternalError, "Not implemented");
@@ -2485,6 +2624,35 @@ PlanarFormatDescription getPlanarFormatDescription (VkFormat format)
 {
 	if (isYCbCrFormat(format))
 		return getYCbCrPlanarFormatDescription(format);
+#ifndef CTS_USES_VULKANSC
+	else if (format == VK_FORMAT_A8_UNORM_KHR)
+	{
+		const auto unorm = static_cast<uint8_t>(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT);
+		const auto chanA = static_cast<uint8_t>(PlanarFormatDescription::CHANNEL_A);
+
+		const PlanarFormatDescription	desc	=
+		{
+			1, // planes
+			chanA,
+			1,1,
+			{
+			//		Size	WDiv	HDiv	planeCompatibleFormat
+				{	1,		1,		1,		VK_FORMAT_A8_UNORM_KHR },
+				{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+				{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+			},
+			{
+			//		Plane	Type	Offs	Size	Stride
+				{	0,		0,		0,		0,		0 },	// R
+				{	0,		0,		0,		0,		0 },	// G
+				{	0,		0,		0,		0,		0 },	// B
+				{	0,		unorm,	0,		8,		1 },	// A
+			}
+		};
+
+		return desc;
+	}
+#endif // CTS_USES_VULKANSC
 	else
 		return getCorePlanarFormatDescription(format);
 }
@@ -2702,6 +2870,11 @@ bool isChromaSubsampled (VkFormat format)
 
 bool isSupportedByFramework (VkFormat format)
 {
+#ifndef CTS_USES_VULKANSC
+	if (format == VK_FORMAT_A8_UNORM_KHR || format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+		return true;
+#endif // CTS_USES_VULKANSC
+
 	if (format == VK_FORMAT_UNDEFINED || format > VK_CORE_FORMAT_LAST)
 		return false;
 
@@ -2782,6 +2955,9 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 		case FMT_CASE(RGB, UNORM_SHORT_565):				return VK_FORMAT_R5G6B5_UNORM_PACK16;
 		case FMT_CASE(RGBA, UNORM_SHORT_4444):				return VK_FORMAT_R4G4B4A4_UNORM_PACK16;
 		case FMT_CASE(RGBA, UNORM_SHORT_5551):				return VK_FORMAT_R5G5B5A1_UNORM_PACK16;
+#ifndef CTS_USES_VULKANSC
+		case FMT_CASE(ABGR, UNORM_SHORT_1555):				return VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR;
+#endif // CTS_USES_VULKANSC
 
 		case FMT_CASE(BGR, UNORM_SHORT_565):				return VK_FORMAT_B5G6R5_UNORM_PACK16;
 		case FMT_CASE(BGRA, UNORM_SHORT_4444):				return VK_FORMAT_B4G4R4A4_UNORM_PACK16;
@@ -2794,6 +2970,9 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 		case FMT_CASE(R, UNSIGNED_INT8):					return VK_FORMAT_R8_UINT;
 		case FMT_CASE(R, SIGNED_INT8):						return VK_FORMAT_R8_SINT;
 		case FMT_CASE(sR, UNORM_INT8):						return VK_FORMAT_R8_SRGB;
+#ifndef CTS_USES_VULKANSC
+		case FMT_CASE(A, UNORM_INT8):						return VK_FORMAT_A8_UNORM_KHR;
+#endif // CTS_USES_VULKANSC
 
 		case FMT_CASE(RG, UNORM_INT8):						return VK_FORMAT_R8G8_UNORM;
 		case FMT_CASE(RG, SNORM_INT8):						return VK_FORMAT_R8G8_SNORM;
@@ -2948,7 +3127,8 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 VkFormat mapCompressedTextureFormat (const tcu::CompressedTexFormat format)
 {
 	// update this mapping if CompressedTexFormat changes
-	DE_STATIC_ASSERT(tcu::COMPRESSEDTEXFORMAT_LAST == 55);
+	// 55 needed for Vulkan and 2 for AHB that won't have mapping here
+	DE_STATIC_ASSERT(tcu::COMPRESSEDTEXFORMAT_LAST == 57);
 
 	switch (format)
 	{
@@ -3035,6 +3215,9 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 		case VK_FORMAT_B5G5R5A1_UNORM_PACK16:	return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNORM_SHORT_5551);
 
 		case VK_FORMAT_A1R5G5B5_UNORM_PACK16:	return TextureFormat(TextureFormat::ARGB,	TextureFormat::UNORM_SHORT_1555);
+#ifndef CTS_USES_VULKANSC
+		case VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR:	return TextureFormat(TextureFormat::ABGR, TextureFormat::UNORM_SHORT_1555);
+#endif // CTS_USES_VULKANSC
 
 		case VK_FORMAT_R8_UNORM:				return TextureFormat(TextureFormat::R,		TextureFormat::UNORM_INT8);
 		case VK_FORMAT_R8_SNORM:				return TextureFormat(TextureFormat::R,		TextureFormat::SNORM_INT8);
@@ -3043,6 +3226,9 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 		case VK_FORMAT_R8_UINT:					return TextureFormat(TextureFormat::R,		TextureFormat::UNSIGNED_INT8);
 		case VK_FORMAT_R8_SINT:					return TextureFormat(TextureFormat::R,		TextureFormat::SIGNED_INT8);
 		case VK_FORMAT_R8_SRGB:					return TextureFormat(TextureFormat::sR,		TextureFormat::UNORM_INT8);
+#ifndef CTS_USES_VULKANSC
+		case VK_FORMAT_A8_UNORM_KHR:			return TextureFormat(TextureFormat::A,		TextureFormat::UNORM_INT8);
+#endif // CTS_USES_VULKANSC
 
 		case VK_FORMAT_R8G8_UNORM:				return TextureFormat(TextureFormat::RG,		TextureFormat::UNORM_INT8);
 		case VK_FORMAT_R8G8_SNORM:				return TextureFormat(TextureFormat::RG,		TextureFormat::SNORM_INT8);
@@ -3271,44 +3457,6 @@ tcu::CompressedTexFormat mapVkCompressedFormat (VkFormat format)
 		default:
 			TCU_THROW(InternalError, "Unknown image format");
 			return tcu::COMPRESSEDTEXFORMAT_LAST;
-	}
-}
-
-static bool isScaledFormat (VkFormat format)
-{
-	// update this mapping if VkFormat changes
-	DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
-
-	switch (format)
-	{
-		case VK_FORMAT_R8_USCALED:
-		case VK_FORMAT_R8_SSCALED:
-		case VK_FORMAT_R8G8_USCALED:
-		case VK_FORMAT_R8G8_SSCALED:
-		case VK_FORMAT_R8G8B8_USCALED:
-		case VK_FORMAT_R8G8B8_SSCALED:
-		case VK_FORMAT_R8G8B8A8_USCALED:
-		case VK_FORMAT_R8G8B8A8_SSCALED:
-		case VK_FORMAT_A2B10G10R10_USCALED_PACK32:
-		case VK_FORMAT_A2B10G10R10_SSCALED_PACK32:
-		case VK_FORMAT_R16_USCALED:
-		case VK_FORMAT_R16_SSCALED:
-		case VK_FORMAT_R16G16_USCALED:
-		case VK_FORMAT_R16G16_SSCALED:
-		case VK_FORMAT_R16G16B16_USCALED:
-		case VK_FORMAT_R16G16B16_SSCALED:
-		case VK_FORMAT_R16G16B16A16_USCALED:
-		case VK_FORMAT_R16G16B16A16_SSCALED:
-		case VK_FORMAT_B8G8R8_USCALED:
-		case VK_FORMAT_B8G8R8_SSCALED:
-		case VK_FORMAT_B8G8R8A8_USCALED:
-		case VK_FORMAT_B8G8R8A8_SSCALED:
-		case VK_FORMAT_A2R10G10B10_USCALED_PACK32:
-		case VK_FORMAT_A2R10G10B10_SSCALED_PACK32:
-			return true;
-
-		default:
-			return false;
 	}
 }
 
@@ -3639,8 +3787,12 @@ CompressedFormatParameters	compressedFormatParameters[VK_FORMAT_ASTC_12x12_SRGB_
 
 deUint32 getFormatComponentWidth (const VkFormat format, const deUint32 componentNdx)
 {
+	const bool					isAlphaOnly		= isAlphaOnlyFormat(format);
 	const tcu::TextureFormat	tcuFormat		(mapVkFormat(format));
-	const deUint32				componentCount	(tcu::getNumUsedChannels(tcuFormat.order));
+	const deUint32				componentCount	(isAlphaOnly ? 4u : tcu::getNumUsedChannels(tcuFormat.order));
+
+	if (isAlphaOnly && componentCount < 3u)
+		return 0; // RGB has no width for A8_UNORM
 
 	if (componentNdx >= componentCount)
 		DE_FATAL("Component index out of range");
@@ -4223,6 +4375,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						VkImage									destImage,
 						VkImageLayout							destImageLayout,
 						VkPipelineStageFlags					destImageDstStageFlags,
+						VkAccessFlags							destImageDstAccessMask,
 						deUint32								baseMipLevel)
 {
 	// Barriers for copying buffer to image
@@ -4264,7 +4417,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_SHADER_READ_BIT,						// VkAccessFlags			dstAccessMask;
+		destImageDstAccessMask,							// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
 		destImageLayout,								// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
@@ -4299,6 +4452,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						VkImage									destImage,
 						VkImageLayout							destImageLayout,
 						VkPipelineStageFlags					destImageDstStageFlags,
+						VkAccessFlags							destImageDstAccessMask,
 						const VkCommandPool*					externalCommandPool,
 						deUint32								baseMipLevel)
 {
@@ -4328,10 +4482,10 @@ void copyBufferToImage (const DeviceInterface&					vk,
 	};
 
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
-	copyBufferToImage(vk, *cmdBuffer, buffer, bufferSize, copyRegions, imageAspectFlags, mipLevels, arrayLayers, destImage, destImageLayout, destImageDstStageFlags, baseMipLevel);
+	copyBufferToImage(vk, *cmdBuffer, buffer, bufferSize, copyRegions, imageAspectFlags, mipLevels, arrayLayers, destImage, destImageLayout, destImageDstStageFlags, destImageDstAccessMask, baseMipLevel);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
 	const VkSubmitInfo submitInfo =
 	{
@@ -4367,7 +4521,8 @@ void copyImageToBuffer (const DeviceInterface&	vk,
 						VkImageLayout			oldLayout,
 						deUint32				numLayers,
 						VkImageAspectFlags		barrierAspect,
-						VkImageAspectFlags		copyAspect)
+						VkImageAspectFlags		copyAspect,
+						VkPipelineStageFlags	srcStageMask)
 {
 	const VkImageMemoryBarrier	imageBarrier	=
 	{
@@ -4383,7 +4538,7 @@ void copyImageToBuffer (const DeviceInterface&	vk,
 		makeImageSubresourceRange(barrierAspect, 0u, 1u, 0, numLayers)	// VkImageSubresourceRange	subresourceRange;
 	};
 
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+	vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 						  0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
 
 	const VkImageSubresourceLayers	subresource	=
@@ -5099,6 +5254,109 @@ void initDepthStencilImageChessboardPattern (const DeviceInterface&	vk,
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+}
+
+vk::VkImageSubresourceRange makeDefaultImageSubresourceRange() {
+	return vk::makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+}
+
+vk::VkImageSubresourceLayers makeDefaultImageSubresourceLayers() {
+	return makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+}
+
+ImageWithBuffer::ImageWithBuffer(
+			const DeviceInterface&		vkd,
+			const VkDevice				device,
+			Allocator&					alloc,
+			vk::VkExtent3D				extent,
+			vk::VkFormat				imageFormat,
+			vk::VkImageUsageFlags		usage,
+			vk::VkImageType				imageType,
+			vk::VkImageSubresourceRange ssr,
+			uint32_t					arrayLayers,
+			vk::VkSampleCountFlagBits   samples,
+			vk::VkImageTiling			tiling,
+			uint32_t					mipLevels,
+			vk::VkSharingMode			sharingMode)
+{
+
+	if (imageType == VK_IMAGE_TYPE_3D)
+		DE_ASSERT(arrayLayers == 1);
+	DE_ASSERT(extent.width > 0 && extent.height > 0 && extent.depth > 0);
+	DE_ASSERT(mipLevels > 0 && arrayLayers > 0);
+
+	// Color attachment.
+	const VkImageCreateInfo colorAttachmentCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		imageType,								//	VkImageType				imageType;
+		imageFormat,							//	VkFormat				format;
+		extent,									//	VkExtent3D				extent;
+		mipLevels,								//	uint32_t				mipLevels;
+		arrayLayers,							//	uint32_t				arrayLayers;
+		samples,								//	VkSampleCountFlagBits	samples;
+		tiling,									//	VkImageTiling			tiling;
+		usage,									//	VkImageUsageFlags		usage;
+		sharingMode,							//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	image = std::unique_ptr<ImageWithMemory>(new ImageWithMemory (vkd, device, alloc, colorAttachmentCreateInfo, MemoryRequirement::Any));
+
+	VkImageViewType viewType;
+	switch (imageType)
+	{
+	case VK_IMAGE_TYPE_1D:
+		viewType = ((arrayLayers == 1) ? VK_IMAGE_VIEW_TYPE_1D : VK_IMAGE_VIEW_TYPE_1D_ARRAY);
+		break;
+	case VK_IMAGE_TYPE_2D:
+		viewType = ((arrayLayers == 1) ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+		break;
+	case VK_IMAGE_TYPE_3D:
+		viewType = VK_IMAGE_VIEW_TYPE_3D;
+		break;
+	default:
+		viewType = VK_IMAGE_VIEW_TYPE_LAST;
+		DE_ASSERT(imageType <= VK_IMAGE_TYPE_3D);
+	}
+
+	// Color attachment view.
+	imageView = makeImageView(vkd, device, (*image).get(), viewType, imageFormat, ssr);
+
+	// Verification buffer.
+	const auto			tcuFormat						= mapVkFormat(imageFormat);
+	const auto			verificationBufferSize			= tcuFormat.getPixelSize() * extent.width * extent.height * arrayLayers * extent.depth;
+	const auto			verificationBufferCreateInfo	= makeBufferCreateInfo(verificationBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+	buffer	= std::unique_ptr<BufferWithMemory>(new BufferWithMemory(vkd, device, alloc, verificationBufferCreateInfo, MemoryRequirement::HostVisible));
+	size	= verificationBufferSize;
+}
+
+VkImage ImageWithBuffer::getImage() {
+	return (*image).get();
+}
+
+VkImageView ImageWithBuffer::getImageView() {
+	return imageView.get();
+}
+
+VkBuffer ImageWithBuffer::getBuffer() {
+	return (*buffer).get();
+}
+
+VkDeviceSize ImageWithBuffer::getBufferSize() {
+	return size;
+}
+
+Allocation& ImageWithBuffer::getImageAllocation() {
+	return (*image).getAllocation();
+}
+
+Allocation& ImageWithBuffer::getBufferAllocation() {
+	return (*buffer).getAllocation();
 }
 
 #ifndef CTS_USES_VULKANSC

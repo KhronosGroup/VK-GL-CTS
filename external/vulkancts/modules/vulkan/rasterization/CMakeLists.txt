@@ -16,6 +16,10 @@ set(DEQP_VK_RASTERIZATION_SRCS
 	vktRasterizationProvokingVertexTests.hpp
 	vktRasterizationOrderAttachmentAccessTests.cpp
 	vktRasterizationOrderAttachmentAccessTests.hpp
+	vktRasterizationDepthBiasControlTests.cpp
+	vktRasterizationDepthBiasControlTests.hpp
+	vktShaderTileImageTests.cpp
+	vktShaderTileImageTests.hpp
 	)
 
 include_directories("../../../../../external/amber/src/include")
@@ -23,5 +27,4 @@ add_library(deqp-vk-rasterization STATIC ${DEQP_VK_VKSC_RASTERIZATION_SRCS} ${DE
 target_link_libraries(deqp-vk-rasterization tcutil vkutil libamber)
 
 add_library(deqp-vksc-rasterization STATIC ${DEQP_VK_VKSC_RASTERIZATION_SRCS})
-target_include_directories(deqp-vksc-rasterization BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-rasterization PUBLIC deqp-vksc-util tcutil vkscutil)

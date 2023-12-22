@@ -1654,7 +1654,7 @@ InterfaceBlockCaseInstance::InterfaceBlockCaseInstance (Context&							ctx,
 	, m_imageExtent2D		(makeExtent2D(256u, 256u))
 {
 	const deUint32											componentsPerLocation		= 4u;
-	const deUint32											componentsRequired			= m_locationsRequired * componentsPerLocation;
+	const deUint32											componentsRequired			= m_locationsRequired * componentsPerLocation + 7u; // Add 7 for built-in components
 	const InstanceInterface&								vki							= m_context.getInstanceInterface();
 	const VkPhysicalDevice									physDevice					= m_context.getPhysicalDevice();
 	const VkPhysicalDeviceFeatures							features					= getPhysicalDeviceFeatures(vki, physDevice);
@@ -1928,11 +1928,10 @@ std::string InterfaceBlockCaseInstance::validateValues (const void* recievedData
 
 InterfaceBlockCase::InterfaceBlockCase (tcu::TestContext&	testCtx,
 										const std::string&	name,
-										const std::string&	description,
 										MatrixLoadFlags		matrixLoadFlag,
 										TestStageFlags		testStageFlags,
 										bool				shuffleInterfaceMembers)
-	: TestCase					(testCtx, name, description)
+	: TestCase					(testCtx, name)
 	, m_matrixLoadFlag			(matrixLoadFlag)
 	, m_testStageFlags			(testStageFlags)
 	, m_shuffleInterfaceMembers	(shuffleInterfaceMembers)

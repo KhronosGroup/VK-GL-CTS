@@ -52,6 +52,10 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingTests.hpp
 	vktRayTracingPipelineFlagsTests.cpp
 	vktRayTracingPipelineFlagsTests.hpp
+	vktRayTracingOpacityMicromapTests.cpp
+	vktRayTracingOpacityMicromapTests.hpp
+	vktRayTracingPositionFetchTests.cpp
+	vktRayTracingPositionFetchTests.hpp
 	)
 
 set(DEQP_VK_RAY_TRACING_LIBS

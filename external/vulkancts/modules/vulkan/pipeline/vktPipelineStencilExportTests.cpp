@@ -3,6 +3,8 @@
  * ------------------------
  *
  * Copyright (c) 2018 The Khronos Group Inc.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -250,10 +252,11 @@ VkImageCreateInfo makeImageCreateInfo (const VkFormat format, const UVec2& size,
 	return imageParams;
 }
 
-Move<VkRenderPass> makeTestRenderPass (const DeviceInterface& vk,
-									   const VkDevice		  device,
-									   const VkFormat		  colorFormat,
-									   const VkFormat		  stencilFormat)
+RenderPassWrapper makeTestRenderPass (const DeviceInterface&			vk,
+									  const VkDevice					device,
+									  const PipelineConstructionType	pipelineConstructionType,
+									  const VkFormat					colorFormat,
+									  const VkFormat					stencilFormat)
 {
 	VkAttachmentDescription attachmentDescriptions[] =
 	{
@@ -345,18 +348,18 @@ Move<VkRenderPass> makeTestRenderPass (const DeviceInterface& vk,
 		&dependency,								// const VkSubpassDependency*		pDependencies;
 	};
 
-	return createRenderPass(vk, device, &renderPassInfo);
+	return RenderPassWrapper(pipelineConstructionType, vk, device, &renderPassInfo);
 }
 
-void preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
-							const VkPipelineLayout		pipelineLayout,
-							const VkRenderPass			renderPass,
-							const deUint32				subpass,
-							const VkShaderModule		vertexModule,
-							const VkShaderModule		fragmentModule,
-							const UVec2					renderSize,
-							const bool					useColor,
-							const bool					earlyLate = false)
+void preparePipelineWrapper(GraphicsPipelineWrapper&		gpw,
+							const PipelineLayoutWrapper&	pipelineLayout,
+							const VkRenderPass				renderPass,
+							const deUint32					subpass,
+							const ShaderWrapper				vertexModule,
+							const ShaderWrapper				fragmentModule,
+							const UVec2						renderSize,
+							const bool						useColor,
+							const bool						earlyLate = false)
 {
 	const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo =
 	{
@@ -424,7 +427,7 @@ void preparePipelineWrapper(GraphicsPipelineWrapper&	gpw,
 
 	gpw.setDefaultRasterizationState()
 	   .setDefaultMultisampleState()
-	   .setupVertexInputStete(&vertexInputStateInfo)
+	   .setupVertexInputState(&vertexInputStateInfo)
 	   .setupPreRasterizationShaderState(viewport,
 										 scissor,
 										 pipelineLayout,
@@ -466,7 +469,9 @@ tcu::TestStatus testStencilExportReplace (Context& context, TestParams params)
 	auto& log = context.getTestContext().getLog();
 	log << tcu::TestLog::Message << "Drawing to stencil using shader then using it for another draw." << tcu::TestLog::EndMessage;
 
+	const InstanceInterface&		vki					= context.getInstanceInterface();
 	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkPhysicalDevice			physicalDevice		= context.getPhysicalDevice();
 	const VkDevice					device				= context.getDevice();
 	Allocator&						allocator			= context.getDefaultAllocator();
 
@@ -499,21 +504,27 @@ tcu::TestStatus testStencilExportReplace (Context& context, TestParams params)
 		MovePtr<Allocation>				colorImageAlloc			= bindImage					(vk, device, allocator, *colorImage, MemoryRequirement::Any);
 		Move<VkImageView>				colorAttachment			= makeImageView				(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange);
 
-		Move<VkShaderModule>			vertexModule			= createShaderModule		(vk, device, context.getBinaryCollection().get("vert"), 0);
-		Move<VkShaderModule>			fragmentColorModule		= createShaderModule		(vk, device, context.getBinaryCollection().get("frag-color"), 0);
+		ShaderWrapper					vertexModule			= ShaderWrapper				(vk, device, context.getBinaryCollection().get("vert"), 0);
+		ShaderWrapper					fragmentColorModule		= ShaderWrapper				(vk, device, context.getBinaryCollection().get("frag-color"), 0);
 
-		Move<VkRenderPass>				renderPass				= makeTestRenderPass		(vk, device, colorFormat, params.stencilFormat);
-		Move<VkPipelineLayout>			pipelineLayout			= makePipelineLayout		(vk, device);
-		GraphicsPipelineWrapper			colorPipeline										(vk, device, params.pipelineConstructionType);
+		RenderPassWrapper				renderPass				= makeTestRenderPass		(vk, device, params.pipelineConstructionType, colorFormat, params.stencilFormat);
+		PipelineLayoutWrapper			pipelineLayout			(params.pipelineConstructionType, vk, device);
+		GraphicsPipelineWrapper			colorPipeline										(vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType);
 
-		preparePipelineWrapper(colorPipeline, *pipelineLayout, *renderPass, 1, *vertexModule, *fragmentColorModule, renderSize, true);
+		preparePipelineWrapper(colorPipeline, pipelineLayout, *renderPass, 1, vertexModule, fragmentColorModule, renderSize, true);
+
+		std::vector<VkImage> images =
+		{
+			*colorImage,
+			*stencilImage,
+		};
 
 		const VkImageView attachments[] =
 		{
 			*colorAttachment,
 			*stencilAttachment,
 		};
-		Move<VkFramebuffer>				framebuffer				= makeFramebuffer			(vk, device, *renderPass, 2u, &attachments[0], renderSize.x(), renderSize.y());
+		renderPass.createFramebuffer(vk, device, 2u, &images[0], &attachments[0], renderSize.x(), renderSize.y());
 
 		Move<VkCommandPool>				cmdPool					= createCommandPool			(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex());
 		Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer		(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -527,10 +538,10 @@ tcu::TestStatus testStencilExportReplace (Context& context, TestParams params)
 			std::ostringstream shaderName;
 			shaderName << "frag-stencil" << stencilModeNdx;
 
-			Move<VkShaderModule>			fragmentStencilModule	= createShaderModule(vk, device, context.getBinaryCollection().get(shaderName.str()), 0);
-			GraphicsPipelineWrapper			stencilPipeline			(vk, device, params.pipelineConstructionType);
+			ShaderWrapper					fragmentStencilModule	= ShaderWrapper(vk, device, context.getBinaryCollection().get(shaderName.str()), 0);
+			GraphicsPipelineWrapper			stencilPipeline			(vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType);
 
-			preparePipelineWrapper(stencilPipeline, *pipelineLayout, *renderPass, 0, *vertexModule, *fragmentStencilModule, renderSize, false);
+			preparePipelineWrapper(stencilPipeline, pipelineLayout, *renderPass, 0, vertexModule, fragmentStencilModule, renderSize, false);
 			beginCommandBuffer(vk, *cmdBuffer);
 			if (params.early_and_late)
 			{
@@ -538,31 +549,31 @@ tcu::TestStatus testStencilExportReplace (Context& context, TestParams params)
 				{
 				case MODE_STENCIL_REF_GREATER_FRONT_AMD:
 				case MODE_STENCIL_REF_GREATER_BACK_AMD:
-					beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 1u);//0
+					renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 1u);//0
 					break;
 				case MODE_STENCIL_REF_LESS_FRONT_AMD:
 				case MODE_STENCIL_REF_LESS_BACK_AMD:
-					beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 1u);//10
+					renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 1u);//10
 					break;
 				default:
-					beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 1u);
+					renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 1u);
 					break;
 				}
 			}
 			else
 			{
-				beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 0u);
+				renderPass.begin(vk, *cmdBuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor, 0.0, 0u);
 			}
 
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, stencilPipeline.getPipeline());
+			stencilPipeline.bind(*cmdBuffer);
 			vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
 
-			vk.cmdNextSubpass(*cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			renderPass.nextSubpass(vk, *cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, colorPipeline.getPipeline());
+			colorPipeline.bind(*cmdBuffer);
 			vk.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
 
-			endRenderPass(vk, *cmdBuffer);
+			renderPass.end(vk, *cmdBuffer);
 
 			copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, tcu::IVec2(renderSize.x(), renderSize.y()));
 
@@ -589,7 +600,7 @@ void checkSupport (Context& context, TestParams params)
 	if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), params.stencilFormat))
 		TCU_THROW(NotSupportedError, "Image format not supported");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 
 #ifndef CTS_USES_VULKANSC
 	if (params.early_and_late)
@@ -623,15 +634,15 @@ tcu::TestCaseGroup* createStencilExportTests (tcu::TestContext& testCtx, Pipelin
 		false
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_stencil_export", ""));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_stencil_export"));
 	for (int fmtIdx = 0; fmtIdx < DE_LENGTH_OF_ARRAY(kFormats); ++fmtIdx)
 	{
 		params.stencilFormat = kFormats[fmtIdx].format;
-		de::MovePtr<tcu::TestCaseGroup> formatGroup (new tcu::TestCaseGroup(testCtx, kFormats[fmtIdx].name.c_str(), ""));
-		addFunctionCaseWithPrograms(formatGroup.get(), "op_replace", "", checkSupport, initPrograms, testStencilExportReplace, params);
+		de::MovePtr<tcu::TestCaseGroup> formatGroup (new tcu::TestCaseGroup(testCtx, kFormats[fmtIdx].name.c_str()));
+		addFunctionCaseWithPrograms(formatGroup.get(), "op_replace", checkSupport, initPrograms, testStencilExportReplace, params);
 #ifndef CTS_USES_VULKANSC
 		params.early_and_late = true;
-		addFunctionCaseWithPrograms(formatGroup.get(), "op_replace_early_and_late", "", checkSupport, initPrograms, testStencilExportReplace, params);
+		addFunctionCaseWithPrograms(formatGroup.get(), "op_replace_early_and_late", checkSupport, initPrograms, testStencilExportReplace, params);
 		params.early_and_late = false;
 #endif
 		group->addChild(formatGroup.release());

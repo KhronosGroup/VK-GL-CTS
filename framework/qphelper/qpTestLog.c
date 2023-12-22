@@ -32,6 +32,8 @@
 
 #include "deMutex.h"
 
+#include "deClock.h"
+
 #if defined(QP_SUPPORT_PNG)
 #	include <png.h>
 #endif
@@ -44,6 +46,10 @@
 #	include <windows.h>
 #	include <io.h>
 #endif
+
+static deUint64 sessionStartTime;
+
+
 
 #if defined(DE_DEBUG)
 
@@ -172,6 +178,7 @@ static const qpKeyStringMap s_qpTestResultMap[] =
 	{ QP_TEST_RESULT_CRASH,						"Crash"					},
 	{ QP_TEST_RESULT_TIMEOUT,					"Timeout"				},
 	{ QP_TEST_RESULT_WAIVER,					"Waiver"				},
+	{ QP_TEST_RESULT_DEVICE_LOST,			"DeviceLost"		},
 
 	/* Add new values here if needed, remember to update qpTestResult enumeration. */
 
@@ -306,6 +313,10 @@ static deBool endSession (qpTestLog* log)
 	/* Make sure xml is flushed. */
 	qpXmlWriter_flush(log->writer);
 
+	deUint64 duration = deGetMicroseconds() - sessionStartTime;
+
+	fprintf(log->outputFile, "\nRun took %.2f seconds\n", (float)duration / 1000000.0f);
+
 	/* Write out #endSession. */
 	fprintf(log->outputFile, "\n#endSession\n");
 	qpTestLog_flushFile(log);
@@ -384,6 +395,12 @@ deBool qpTestLog_beginSession(qpTestLog* log, const char* additionalSessionInfo)
 	fprintf(log->outputFile, "#sessionInfo releaseName %s\n", qpGetReleaseName());
 	fprintf(log->outputFile, "#sessionInfo releaseId 0x%08x\n", qpGetReleaseId());
 	fprintf(log->outputFile, "#sessionInfo targetName \"%s\"\n", qpGetTargetName());
+	char* compactStr = "";
+	if(qpTestLog_isCompact(log))
+	{
+		compactStr = "-compact";
+	}
+	fprintf(log->outputFile, "#sessionInfo logFormatVersion \"%s%s\"\n", LOG_FORMAT_VERSION, compactStr);
 
 	if (strlen(additionalSessionInfo) > 1)
 		fprintf(log->outputFile, "%s\n", additionalSessionInfo);
@@ -391,6 +408,7 @@ deBool qpTestLog_beginSession(qpTestLog* log, const char* additionalSessionInfo)
 	/* Write out #beginSession. */
 	fprintf(log->outputFile, "#beginSession\n");
 	qpTestLog_flushFile(log);
+	sessionStartTime = deGetMicroseconds();
 
 	log->isSessionOpen = DE_TRUE;
 
@@ -441,18 +459,24 @@ deBool qpTestLog_startCase (qpTestLog* log, const char* testCasePath, qpTestCase
 
 	/* Flush XML and write out #beginTestCaseResult. */
 	qpXmlWriter_flush(log->writer);
-	fprintf(log->outputFile, "\n#beginTestCaseResult %s\n", testCasePath);
+	if (!qpTestLog_isCompact(log))
+	{
+		fprintf(log->outputFile, "\n#beginTestCaseResult %s\n", testCasePath);
+	}
 	if (!(log->flags & QP_TEST_LOG_NO_FLUSH))
 		qpTestLog_flushFile(log);
 
 	log->isCaseOpen = DE_TRUE;
 
 	/* Fill in attributes. */
-	resultAttribs[numResultAttribs++] = qpSetStringAttrib("Version", LOG_FORMAT_VERSION);
 	resultAttribs[numResultAttribs++] = qpSetStringAttrib("CasePath", testCasePath);
-	resultAttribs[numResultAttribs++] = qpSetStringAttrib("CaseType", typeStr);
+	if (!qpTestLog_isCompact(log))
+	{
+		resultAttribs[numResultAttribs++] = qpSetStringAttrib("Version", LOG_FORMAT_VERSION);
+		resultAttribs[numResultAttribs++] = qpSetStringAttrib("CaseType", typeStr);
+	}
 
-	if (!qpXmlWriter_startDocument(log->writer) ||
+	if (!qpXmlWriter_startDocument(log->writer, !qpTestLog_isCompact(log)) ||
 		!qpXmlWriter_startElement(log->writer, "TestCaseResult", numResultAttribs, resultAttribs))
 	{
 		qpPrintf("qpTestLog_startCase(): Writing XML failed\n");
@@ -497,7 +521,10 @@ deBool qpTestLog_endCase (qpTestLog* log, qpTestResult result, const char* resul
 
 	/* Flush XML and write #endTestCaseResult. */
 	qpXmlWriter_flush(log->writer);
-	fprintf(log->outputFile, "\n#endTestCaseResult\n");
+	if(!qpTestLog_isCompact(log))
+	{
+		fprintf(log->outputFile, "\n#endTestCaseResult\n");
+	}
 	if (!(log->flags & QP_TEST_LOG_NO_FLUSH))
 		qpTestLog_flushFile(log);
 
@@ -518,7 +545,7 @@ deBool qpTestLog_startTestsCasesTime (qpTestLog* log)
 
 	log->isCaseOpen = DE_TRUE;
 
-	if (!qpXmlWriter_startDocument(log->writer) ||
+	if (!qpXmlWriter_startDocument(log->writer, !qpTestLog_isCompact(log)) ||
 		!qpXmlWriter_startElement(log->writer, "TestsCasesTime", 0, (const qpXmlAttribute*)DE_NULL))
 	{
 		qpPrintf("qpTestLog_startTestsCasesTime(): Writing XML failed\n");
@@ -1556,4 +1583,9 @@ deUint32 qpTestLog_getLogFlags (const qpTestLog* log)
 const char* qpGetTestResultName (qpTestResult result)
 {
 	return QP_LOOKUP_STRING(s_qpTestResultMap, result);
+}
+
+deBool qpTestLog_isCompact(qpTestLog *log)
+{
+	return (log->flags & QP_TEST_LOG_COMPACT) != 0;
 }

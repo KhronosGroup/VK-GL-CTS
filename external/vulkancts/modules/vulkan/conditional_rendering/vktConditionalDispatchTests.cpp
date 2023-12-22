@@ -74,7 +74,6 @@ class ConditionalDispatchTest : public vkt::TestCase
 public:
 						ConditionalDispatchTest	(tcu::TestContext&			testCtx,
 												 const std::string&			name,
-												 const std::string&			description,
 												 const ConditionalTestSpec&	testSpec);
 
 	void				initPrograms			(vk::SourceCollections&	sourceCollections) const;
@@ -103,9 +102,8 @@ protected:
 
 ConditionalDispatchTest::ConditionalDispatchTest(tcu::TestContext&			testCtx,
 												 const std::string&			name,
-												 const std::string&			description,
 												 const ConditionalTestSpec&	testSpec)
-	: TestCase		(testCtx, name, description)
+	: TestCase		(testCtx, name)
 	, m_testSpec	(testSpec)
 {
 }
@@ -224,6 +222,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	const vk::Unique<vk::VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
 	const vk::Unique<vk::VkCommandBuffer>	cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const vk::Unique<vk::VkCommandBuffer>	secondaryCmdBuffer	(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY));
+	const vk::Unique<vk::VkCommandBuffer>	nestedCmdBuffer		(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY));
 
 	// Create indirect buffer
 	const vk::VkDispatchIndirectCommand dispatchCommands[] = { { 1u, 1u, 1u } };
@@ -275,6 +274,10 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 			&inheritanceInfo
 		};
 
+		if (m_conditionalData.secondaryCommandBufferNested) {
+			VK_CHECK(vk.beginCommandBuffer(*nestedCmdBuffer, &commandBufferBeginInfo));
+		}
+
 		VK_CHECK(vk.beginCommandBuffer(*secondaryCmdBuffer, &commandBufferBeginInfo));
 
 		targetCmdBuffer = *secondaryCmdBuffer;
@@ -291,11 +294,19 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 		recordDispatch(vk, *secondaryCmdBuffer, indirectBuffer);
 		vk.cmdEndConditionalRenderingEXT(*secondaryCmdBuffer);
 		vk.endCommandBuffer(*secondaryCmdBuffer);
+		if (m_conditionalData.secondaryCommandBufferNested) {
+			vk.cmdExecuteCommands(*nestedCmdBuffer, 1, &secondaryCmdBuffer.get());
+			vk.endCommandBuffer(*nestedCmdBuffer);
+		}
 	}
 	else if (m_conditionalData.conditionInherited)
 	{
 		recordDispatch(vk, *secondaryCmdBuffer, indirectBuffer);
 		vk.endCommandBuffer(*secondaryCmdBuffer);
+		if (m_conditionalData.secondaryCommandBufferNested) {
+			vk.cmdExecuteCommands(*nestedCmdBuffer, 1, &secondaryCmdBuffer.get());
+			vk.endCommandBuffer(*nestedCmdBuffer);
+		}
 	}
 
 	if (m_conditionalData.conditionInPrimaryCommandBuffer)
@@ -304,7 +315,11 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 
 		if (m_conditionalData.conditionInherited)
 		{
-			vk.cmdExecuteCommands(*cmdBuffer, 1, &secondaryCmdBuffer.get());
+			if (m_conditionalData.secondaryCommandBufferNested) {
+				vk.cmdExecuteCommands(*cmdBuffer, 1, &nestedCmdBuffer.get());
+			} else {
+				vk.cmdExecuteCommands(*cmdBuffer, 1, &secondaryCmdBuffer.get());
+			}
 		}
 		else
 		{
@@ -315,7 +330,11 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	}
 	else if (useSecondaryCmdBuffer)
 	{
-		vk.cmdExecuteCommands(*cmdBuffer, 1, &secondaryCmdBuffer.get());
+		if (m_conditionalData.secondaryCommandBufferNested) {
+			vk.cmdExecuteCommands(*cmdBuffer, 1, &nestedCmdBuffer.get());
+		} else {
+			vk.cmdExecuteCommands(*cmdBuffer, 1, &secondaryCmdBuffer.get());
+		}
 	}
 
 	const vk::VkBufferMemoryBarrier outputBufferMemoryBarrier =
@@ -358,7 +377,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 }	// anonymous
 
 ConditionalDispatchTests::ConditionalDispatchTests (tcu::TestContext &testCtx)
-	: TestCaseGroup	(testCtx, "dispatch", "Conditional Rendering Of Dispatch Commands")
+	: TestCaseGroup	(testCtx, "dispatch")
 {
 	/* Left blank on purpose */
 }
@@ -374,7 +393,7 @@ void ConditionalDispatchTests::init (void)
 		if (conditionData.clearInRenderPass)
 			continue;
 
-		de::MovePtr<tcu::TestCaseGroup> conditionalDrawRootGroup(new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str(), "Conditionaly execute dispatch calls"));
+		de::MovePtr<tcu::TestCaseGroup> conditionalDrawRootGroup(new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str()));
 
 		for (deUint32 commandTypeIdx = 0; commandTypeIdx < DISPATCH_COMMAND_TYPE_DISPATCH_LAST; ++commandTypeIdx)
 		{
@@ -385,7 +404,7 @@ void ConditionalDispatchTests::init (void)
 			testSpec.numCalls = 3;
 			testSpec.conditionalData = conditionData;
 
-			conditionalDrawRootGroup->addChild(new ConditionalDispatchTest(m_testCtx, getDispatchCommandTypeName(command), "", testSpec));
+			conditionalDrawRootGroup->addChild(new ConditionalDispatchTest(m_testCtx, getDispatchCommandTypeName(command), testSpec));
 		}
 
 		addChild(conditionalDrawRootGroup.release());
@@ -401,7 +420,7 @@ void ConditionalDispatchTests::init (void)
 
 	// Tests verifying the condition is interpreted as a 32-bit value.
 	{
-		de::MovePtr<tcu::TestCaseGroup> conditionSizeGroup(new tcu::TestCaseGroup(m_testCtx, "condition_size", "Tests verifying the condition is being read as a 32-bit value"));
+		de::MovePtr<tcu::TestCaseGroup> conditionSizeGroup(new tcu::TestCaseGroup(m_testCtx, "condition_size"));
 
 		struct ValuePaddingExecution
 		{
@@ -438,7 +457,7 @@ void ConditionalDispatchTests::init (void)
 		{
 			const auto& subcase = kConditionLocationSubcase[subcaseNdx];
 
-			de::MovePtr<tcu::TestCaseGroup> subcaseGroup(new tcu::TestCaseGroup(m_testCtx, subcase.name, ""));
+			de::MovePtr<tcu::TestCaseGroup> subcaseGroup(new tcu::TestCaseGroup(m_testCtx, subcase.name));
 
 			ConditionalData conditionalData		= {};
 			conditionalData.conditionInverted	= false;
@@ -487,7 +506,7 @@ void ConditionalDispatchTests::init (void)
 				spec.numCalls			= 1;
 				spec.conditionalData	= conditionalData;
 
-				subcaseGroup->addChild(new ConditionalDispatchTest(m_testCtx, valueResults.name, "", spec));
+				subcaseGroup->addChild(new ConditionalDispatchTest(m_testCtx, valueResults.name, spec));
 			}
 
 			conditionSizeGroup->addChild(subcaseGroup.release());
@@ -498,7 +517,7 @@ void ConditionalDispatchTests::init (void)
 
 	// Tests checking the buffer allocation offset is applied correctly when reading the condition.
 	{
-		de::MovePtr<tcu::TestCaseGroup> allocOffsetGroup(new tcu::TestCaseGroup(m_testCtx, "alloc_offset", "Tests verifying the buffer allocation offset is applied correctly"));
+		de::MovePtr<tcu::TestCaseGroup> allocOffsetGroup(new tcu::TestCaseGroup(m_testCtx, "alloc_offset"));
 
 		const struct
 		{
@@ -534,11 +553,11 @@ void ConditionalDispatchTests::init (void)
 
 		for (const auto& locationCase : kLocationCases)
 		{
-			de::MovePtr<tcu::TestCaseGroup> locationSubGroup(new tcu::TestCaseGroup(m_testCtx, locationCase.name, ""));
+			de::MovePtr<tcu::TestCaseGroup> locationSubGroup(new tcu::TestCaseGroup(m_testCtx, locationCase.name));
 
 			for (const auto& activeCase : kActiveCases)
 			{
-				de::MovePtr<tcu::TestCaseGroup> activeSubGroup(new tcu::TestCaseGroup(m_testCtx, activeCase.name, ""));
+				de::MovePtr<tcu::TestCaseGroup> activeSubGroup(new tcu::TestCaseGroup(m_testCtx, activeCase.name));
 
 				for (const auto& memoryTypeCase : kMemoryTypeCases)
 				{
@@ -553,6 +572,7 @@ void ConditionalDispatchTests::init (void)
 						true,						//	bool					allocationOffset;
 						false,						//	bool					clearInRenderPass;
 						false,						//	bool					expectCommandExecution;
+						false,						//	bool					secondaryCommandBufferNested;
 						memoryTypeCase.memoryType,	//	ConditionalBufferMemory	memoryType;
 					};
 
@@ -597,7 +617,7 @@ void ConditionalDispatchTests::init (void)
 						conditionalData,				//	ConditionalData		conditionalData;
 					};
 
-					activeSubGroup->addChild(new ConditionalDispatchTest(m_testCtx, memoryTypeCase.name, "", spec));
+					activeSubGroup->addChild(new ConditionalDispatchTest(m_testCtx, memoryTypeCase.name, spec));
 				}
 
 				locationSubGroup->addChild(activeSubGroup.release());

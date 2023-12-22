@@ -68,12 +68,14 @@ VkMemoryRequirements							getImageMemoryRequirements						(const DeviceInterfac
 VkMemoryRequirements							getImagePlaneMemoryRequirements					(const DeviceInterface& vk, VkDevice device, VkImage image, VkImageAspectFlagBits planeAspect);
 #ifndef CTS_USES_VULKANSC
 std::vector<VkSparseImageMemoryRequirements>	getImageSparseMemoryRequirements				(const DeviceInterface& vk, VkDevice device, VkImage image);
+std::vector<vk::VkSparseImageMemoryRequirements>getDeviceImageSparseMemoryRequirements			(const DeviceInterface& vk, VkDevice device, const VkImageCreateInfo& imageCreateInfo, VkImageAspectFlagBits planeAspect);
 #endif // CTS_USES_VULKANSC
 
 std::vector<VkLayerProperties>					enumerateInstanceLayerProperties				(const PlatformInterface& vkp);
 std::vector<VkExtensionProperties>				enumerateInstanceExtensionProperties			(const PlatformInterface& vkp, const char* layerName);
 std::vector<VkLayerProperties>					enumerateDeviceLayerProperties					(const InstanceInterface& vki, VkPhysicalDevice physicalDevice);
 std::vector<VkExtensionProperties>				enumerateDeviceExtensionProperties				(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const char* layerName);
+const std::vector<VkExtensionProperties>&		enumerateCachedDeviceExtensionProperties		(const InstanceInterface& vki, VkPhysicalDevice physicalDevice);
 
 VkQueue											getDeviceQueue									(const DeviceInterface& vkd, VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex);
 VkQueue											getDeviceQueue2									(const DeviceInterface& vkd, VkDevice device, const VkDeviceQueueInfo2 *queueInfo);
@@ -172,6 +174,16 @@ private:
 
 template<class StructType>
 void addToChainVulkanStructure (void***	chainPNextPtr, StructType&	structType)
+{
+	DE_ASSERT(chainPNextPtr != DE_NULL);
+
+	(**chainPNextPtr) = &structType;
+
+	(*chainPNextPtr) = &structType.pNext;
+}
+
+template<class StructType>
+void addToChainVulkanStructure (const void***	chainPNextPtr, StructType&	structType)
 {
 	DE_ASSERT(chainPNextPtr != DE_NULL);
 

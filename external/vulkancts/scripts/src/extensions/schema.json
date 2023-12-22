@@ -77,8 +77,43 @@
 				"additionalProperties": { "type": "string" }
 			},
 			"additionalProperties": false
+		},
+		"mandatory_extensions":
+		{
+			"type": "array",
+			"description": "When this section is present it specifies mandatory extensions for the given features",
+			"items":
+			{
+				"type": "object",
+				"properties":
+				{
+					"extension":
+					{
+						"type": "string"
+					},
+					"requirements":
+					{
+						"type": "array",
+						"description": "List of requirements (other features, extensions, vulkan version). This list can be empty.",
+						"minItems": 1,
+						"items":
+						{
+							"type": "string"
+						}
+					},
+					"mandatory_variant":
+					{
+						"type": "array",
+						"description": "When this section is present it specifies mandatory features variant.",
+						"items": {
+							"type": "string",
+							"enum": ["vulkan", "vulkansc"]
+						}
+					}
+				},
+				"additionalProperties": false
+			}
 		}
-
 	},
 	"additionalProperties": false
 }

@@ -79,7 +79,7 @@ public:
 	// determine if the test should be supported:
 	//  - If any of the extensions registered via |addRequirement| is not
 	//    supported then throw a NotSupported exception.
-	//  - Otherwise, we do a secondary sanity check depending on code inside
+	//  - Otherwise, we do a secondary quick check depending on code inside
 	//    Amber itself: if the Amber test says it is not supported, then
 	//    throw an internal error exception.
 	// A function pointer for a custom checkSupport function can also be
@@ -132,6 +132,14 @@ protected:
 	std::vector<BufferRequirement>				m_bufferRequirements;
 	std::function<void(Context&, std::string)>	m_checkSupportCallback	= nullptr;
 };
+
+AmberTestCase* createAmberTestCase (tcu::TestContext&							testCtx,
+									const char*									name,
+									const char*									category,
+									const std::string&							filename,
+									const std::vector<std::string>				requirements = std::vector<std::string>(),
+									const std::vector<vk::VkImageCreateInfo>	imageRequirements = std::vector<vk::VkImageCreateInfo>(),
+									const std::vector<BufferRequirement>		bufferRequirements = std::vector<BufferRequirement>());
 
 AmberTestCase* createAmberTestCase (tcu::TestContext&							testCtx,
 									const char*									name,

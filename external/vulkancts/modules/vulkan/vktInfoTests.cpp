@@ -29,12 +29,16 @@
 #include "tcuFormatUtil.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuPlatform.hpp"
+#include "deDefs.h"
 #include "deStringUtil.hpp"
 #include "vktApiFeatureInfo.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include <iomanip>
 
 namespace vkt
+{
+namespace info
 {
 
 namespace
@@ -84,6 +88,8 @@ std::string getCpuName (int cpu)
 		case DE_CPU_ARM_64:		return "DE_CPU_ARM_64";
 		case DE_CPU_MIPS:		return "DE_CPU_MIPS";
 		case DE_CPU_MIPS_64:	return "DE_CPU_MIPS_64";
+		case DE_CPU_RISCV_32:	return "DE_CPU_RISCV_32";
+		case DE_CPU_RISCV_64:	return "DE_CPU_RISCV_64";
 		default:
 			return de::toString(cpu);
 	}
@@ -180,14 +186,16 @@ const SizeUnit* getBestSizeUnit (deUint64 value)
 	{
 		// \note Must be ordered from largest to smallest
 		{ "TiB",	1ull<<40ull		},
-		{ "MiB",	1ull<<20ull		},
 		{ "GiB",	1ull<<30ull		},
+		{ "MiB",	1ull<<20ull		},
 		{ "KiB",	1ull<<10ull		},
 	};
 	static const SizeUnit s_defaultUnit	= { "B", 1u };
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_units); ++ndx)
 	{
+		DE_ASSERT(ndx == (DE_LENGTH_OF_ARRAY(s_units) - 1) ||
+		          s_units[ndx].value > s_units[ndx + 1].value);
 		if (value >= s_units[ndx].value)
 			return &s_units[ndx];
 	}
@@ -236,18 +244,24 @@ tcu::TestStatus logPlatformMemoryLimits (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
-} // anonymous
-
 void createInfoTests (tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "build",			"Build Info",				logBuildInfo);
-	addFunctionCase(testGroup, "device",		"Device Info",				logDeviceInfo);
-	addFunctionCase(testGroup, "platform",		"Platform Info",			logPlatformInfo);
-	addFunctionCase(testGroup, "memory_limits",	"Platform Memory Limits",	logPlatformMemoryLimits);
+	addFunctionCase(testGroup, "build", logBuildInfo);
+	addFunctionCase(testGroup, "device", logDeviceInfo);
+	addFunctionCase(testGroup, "platform", logPlatformInfo);
+	addFunctionCase(testGroup, "memory_limits", logPlatformMemoryLimits);
 
-	api::createFeatureInfoInstanceTests		(testGroup);
-	api::createFeatureInfoDeviceTests		(testGroup);
-	api::createFeatureInfoDeviceGroupTests	(testGroup);
+	api::createFeatureInfoInstanceTests(testGroup);
+	api::createFeatureInfoDeviceTests(testGroup);
+	api::createFeatureInfoDeviceGroupTests(testGroup);
 }
 
+} // anonymous
+
+tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
+{
+	return createTestGroup(testCtx, name.c_str(), createInfoTests);
+}
+
+} // info
 } // vkt

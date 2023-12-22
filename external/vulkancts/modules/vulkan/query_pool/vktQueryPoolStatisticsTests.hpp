@@ -34,8 +34,8 @@ class QueryPoolStatisticsTests : public tcu::TestCaseGroup
 {
 public:
 	QueryPoolStatisticsTests	(tcu::TestContext &testCtx);
-	~QueryPoolStatisticsTests	(void)	{}
-	void init					(void);
+	void init					(void) override;
+	void deinit					(void) override;
 
 private:
 	QueryPoolStatisticsTests				(const QueryPoolStatisticsTests &other);

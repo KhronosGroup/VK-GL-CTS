@@ -125,6 +125,7 @@ struct Environment
 	const BinaryCollection&		programBinaries;
 	const tcu::CommandLine&		commandLine;
 	const CallbackRecorder*		recorder;
+	const uint32_t				usedApiVersion;
 
 	Environment (const PlatformInterface&	vkp_,
 				 const InstanceInterface&	vki_,
@@ -135,7 +136,8 @@ struct Environment
 				 deUint32					queueFamilyIndex_,
 				 const BinaryCollection&	programBinaries_,
 				 const tcu::CommandLine&	commandLine_,
-				 const CallbackRecorder*	recorder_)
+				 const CallbackRecorder*	recorder_,
+				 const uint32_t				usedApiVersion_)
 		: vkp				(vkp_)
 		, vki				(vki_)
 		, instance			(instance_)
@@ -146,6 +148,7 @@ struct Environment
 		, programBinaries	(programBinaries_)
 		, commandLine		(commandLine_)
 		, recorder			(recorder_)
+		, usedApiVersion	(usedApiVersion_)
 	{
 	}
 };
@@ -196,6 +199,9 @@ static Move<VkDevice> createDeviceWithMemoryReport (deBool								isValidationEn
 		queueCount,																// deUint32								queueCount;
 		&queuePriority,															// const float*							pQueuePriorities;
 	};
+	// Enable all available features since some tests require them to be enabled, VK_IMAGE_VIEW_CUBE_ARRAY for example
+	vk::VkPhysicalDeviceFeatures2						enabledFeatures					= vk::initVulkanStructure();
+	vki.getPhysicalDeviceFeatures(physicalDevice, &enabledFeatures.features);
 	const VkDeviceCreateInfo							deviceCreateInfo				=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,									// VkStructureType						sType;
@@ -207,7 +213,7 @@ static Move<VkDevice> createDeviceWithMemoryReport (deBool								isValidationEn
 		DE_NULL,																// const char* const*					ppEnabledLayerNames
 		DE_LENGTH_OF_ARRAY(enabledExtensions),									// uint32_t								enabledExtensionCount
 		DE_ARRAY_BEGIN(enabledExtensions),										// const char* const*					ppEnabledExtensionNames
-		DE_NULL,																// const VkPhysicalDeviceFeatures*		pEnabledFeatures
+		&enabledFeatures.features,												// const VkPhysicalDeviceFeatures*		pEnabledFeatures
 	};
 
 	return createCustomDevice(isValidationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
@@ -1584,9 +1590,50 @@ struct CaseDescriptions
 	CaseDescription<CommandBuffer>			commandBuffer;
 };
 
-template<typename Object>
-static void checkSupport (Context& context, typename Object::Parameters)
+static void checkSupport(Context& context)
 {
+	const auto& extensions = enumerateCachedDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+
+	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
+	{
+		if (deStringEqual("VK_EXT_device_memory_report", extensions[extNdx].extensionName))
+		{
+			VkPhysicalDeviceDeviceMemoryReportFeaturesEXT deviceMemoryReportFeatures =
+			{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT,
+				DE_NULL,
+				VK_FALSE
+			};
+
+			VkPhysicalDeviceFeatures2 availFeatures;
+			availFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+			availFeatures.pNext = &deviceMemoryReportFeatures;
+
+			context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &availFeatures);
+
+			if (deviceMemoryReportFeatures.deviceMemoryReport == VK_FALSE)
+			{
+				TCU_THROW(NotSupportedError, "VK_EXT_device_memory_report not supported");
+			}
+			return;
+		}
+	}
+
+	TCU_THROW(NotSupportedError, "VK_EXT_device_memory_report not supported");
+}
+
+template<typename Object>
+void checkSupport (Context& context, typename Object::Parameters)
+{
+	checkSupport(context);
+}
+
+template<>
+void checkSupport<ImageView> (Context& context, ImageView::Parameters parameters)
+{
+	if (parameters.viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(vkt::DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+
 	context.requireDeviceFunctionality("VK_EXT_device_memory_report");
 }
 
@@ -1595,7 +1642,7 @@ void addCases (const MovePtr<tcu::TestCaseGroup>& group, const CaseDescription<O
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; cur++)
 	{
-		addFunctionCase(group.get(), cur->name, "", checkSupport<Object>, cases.function, cur->parameters);
+		addFunctionCase(group.get(), cur->name, checkSupport<Object>, cases.function, cur->parameters);
 	}
 }
 
@@ -1604,13 +1651,13 @@ void addCasesWithProgs (const MovePtr<tcu::TestCaseGroup>& group, const CaseDesc
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; cur++)
 	{
-		addFunctionCaseWithPrograms(group.get(), cur->name, "", checkSupport<Object>, Object::initPrograms, cases.function, cur->parameters);
+		addFunctionCaseWithPrograms(group.get(), cur->name, checkSupport<Object>, Object::initPrograms, cases.function, cur->parameters);
 	}
 }
 
-tcu::TestCaseGroup* createObjectTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc, const CaseDescriptions& cases)
+tcu::TestCaseGroup* createObjectTestsGroup (tcu::TestContext& testCtx, const char* name, const CaseDescriptions& cases)
 {
-	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
+	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name));
 
 	addCases			(group, cases.device);
 	addCases			(group, cases.deviceMemory);
@@ -1705,8 +1752,8 @@ struct EnvClone
 
 	EnvClone (const Environment& parent)
 		: device	(Device::create(parent, Device::Resources(parent, Device::Parameters()), Device::Parameters()))
-		, vkd		(parent.vkp, parent.instance, *device)
-		, env		(parent.vkp, parent.vki, parent.instance, parent.physicalDevice, vkd, *device, parent.queueFamilyIndex, parent.programBinaries, parent.commandLine, nullptr)
+		, vkd		(parent.vkp, parent.instance, *device, parent.usedApiVersion)
+		, env		(parent.vkp, parent.vki, parent.instance, parent.physicalDevice, vkd, *device, parent.queueFamilyIndex, parent.programBinaries, parent.commandLine, nullptr, parent.usedApiVersion)
 	{
 	}
 };
@@ -1724,7 +1771,8 @@ tcu::TestStatus createDestroyObjectTest (Context& context, typename Object::Para
 							 context.getUniversalQueueFamilyIndex(),
 							 context.getBinaryCollection(),
 							 context.getTestContext().getCommandLine(),
-							 &recorder);
+							 &recorder,
+							 context.getUsedApiVersion());
 
 	if (std::is_same<Object, Device>::value)
 	{
@@ -1756,7 +1804,7 @@ tcu::TestStatus vkDeviceMemoryAllocateAndFreeTest (Context& context)
 	const deUint32							queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	const deBool							isValidationEnabled	= context.getTestContext().getCommandLine().isValidationEnabled();
 	const Unique<VkDevice>					device				(createDeviceWithMemoryReport(isValidationEnabled, vkp, instance, vki, physicalDevice, queueFamilyIndex, &recorder));
-	const DeviceDriver						vkd					(vkp, instance, *device);
+	const DeviceDriver						vkd					(vkp, instance, *device, context.getUsedApiVersion());
 	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 	const VkDeviceSize						testSize			= 1024;
 	const deUint32							testTypeIndex		= 0;
@@ -1773,7 +1821,7 @@ tcu::TestStatus vkDeviceMemoryAllocateAndFreeTest (Context& context)
 			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType	sType;
 			DE_NULL,								// const void*		pNext;
 			testSize,								// VkDeviceSize		allocationSize;
-			testHeapIndex,							// uint32_t			memoryTypeIndex;
+			testTypeIndex,							// uint32_t			memoryTypeIndex;
 		};
 
 		result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory);
@@ -1827,100 +1875,20 @@ tcu::TestStatus vkDeviceMemoryAllocateAndFreeTest (Context& context)
 	return tcu::TestStatus::pass("Ok");
 }
 
-tcu::TestStatus vkDeviceMemoryAllocationFailedTest (Context& context)
+tcu::TestCaseGroup* createVkDeviceMemoryTestsGroup (tcu::TestContext& testCtx, const char* name)
 {
-	CallbackRecorder						recorder;
-	const PlatformInterface&				vkp					= context.getPlatformInterface();
-	const VkInstance						instance			= context.getInstance();
-	const InstanceInterface&				vki					= context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
-	const deUint32							queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	const deBool							isValidationEnabled	= context.getTestContext().getCommandLine().isValidationEnabled();
-	const Unique<VkDevice>					device				(createDeviceWithMemoryReport(isValidationEnabled, vkp, instance, vki, physicalDevice, queueFamilyIndex, &recorder));
-	const DeviceDriver						vkd					(vkp, instance, *device);
-	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
-	const deUint32							testTypeIndex		= 0;
-	const deUint32							testHeapIndex		= memoryProperties.memoryTypes[testTypeIndex].heapIndex;
-	const VkDeviceSize						testSize			= memoryProperties.memoryHeaps[testHeapIndex].size;
+	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name));
 
-	{
-		recorder.setCallbackMarker(MARKER_ALLOCATION_FAILED);
-
-		VkDeviceMemory			memory1 = DE_NULL;
-		VkDeviceMemory			memory2 = DE_NULL;
-		VkMemoryAllocateInfo	memoryAllocateInfo
-		{
-			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType	sType;
-			DE_NULL,								// const void*		pNext;
-			128,									// VkDeviceSize		allocationSize;
-			testHeapIndex,							// uint32_t			memoryTypeIndex;
-		};
-
-		// first do a small allocation to prevent LowMemoryKiller on android from culling this app
-		VkResult result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory1);
-		if (result != VK_SUCCESS)
-			TCU_THROW(NotSupportedError, "Unable to do a small allocation");
-
-		// if small allocation succeeded then we can try to trigger an allocation failure by allocating as much memory as there is on the heap
-		memoryAllocateInfo.allocationSize = testSize;
-		result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory2);
-		if (result == VK_SUCCESS)
-		{
-			vkd.freeMemory(*device, memory1, DE_NULL);
-			vkd.freeMemory(*device, memory2, DE_NULL);
-			return tcu::TestStatus::fail(std::string("Should not be able to allocate ") + std::to_string(testSize) + " bytes of memory");
-		}
-
-		recorder.setCallbackMarker(MARKER_UNKNOWN);
-
-		if (!!memory1)
-			vkd.freeMemory(*device, memory1, DE_NULL);
-		if (!!memory2)
-			vkd.freeMemory(*device, memory2, DE_NULL);
-	}
-
-	deBool	allocationFailedEvent	= false;
-
-	for (auto iter = recorder.getRecordsBegin(); iter != recorder.getRecordsEnd(); iter++)
-	{
-		const VkDeviceMemoryReportCallbackDataEXT&	record	= iter->first;
-		const CallbackMarker						marker	= iter->second;
-
-		if (record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATION_FAILED_EXT)
-		{
-			TCU_CHECK(marker == MARKER_ALLOCATION_FAILED);
-			TCU_CHECK(record.objectType == VK_OBJECT_TYPE_DEVICE_MEMORY);
-			TCU_CHECK_MSG(record.size >= testSize, ("record.size=" + de::toString(record.size) + ", testSize=" + de::toString(testSize)).c_str());
-			TCU_CHECK(record.heapIndex == testHeapIndex);
-
-			allocationFailedEvent	= true;
-		}
-	}
-
-	TCU_CHECK(allocationFailedEvent);
-
-	return tcu::TestStatus::pass("Ok");
-}
-
-static void checkSupport (Context& context)
-{
-	context.requireDeviceFunctionality("VK_EXT_device_memory_report");
-}
-
-tcu::TestCaseGroup* createVkDeviceMemoryTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc)
-{
-	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
-
-	addFunctionCase(group.get(), "allocate_and_free",	"", checkSupport, vkDeviceMemoryAllocateAndFreeTest);
-	addFunctionCase(group.get(), "allocation_failed",	"", checkSupport, vkDeviceMemoryAllocationFailedTest);
+	addFunctionCase(group.get(), "allocate_and_free", checkSupport, vkDeviceMemoryAllocateAndFreeTest);
 
 	return group.release();
 }
 
 static void checkSupport (Context& context, VkExternalMemoryHandleTypeFlagBits externalMemoryType)
 {
+	checkSupport(context);
+
 	context.requireInstanceFunctionality("VK_KHR_external_memory_capabilities");
-	context.requireDeviceFunctionality("VK_EXT_device_memory_report");
 	context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 	context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
 
@@ -2107,7 +2075,7 @@ tcu::TestStatus testImportAndUnimportExternalMemory (Context& context, VkExterna
 																				queueFamilyIndex,
 																				externalMemoryType,
 																				&recorder));
-	const DeviceDriver			vkd					(vkp, instance, *device);
+	const DeviceDriver			vkd					(vkp, instance, *device, context.getUsedApiVersion());
 	const VkBufferUsageFlags	usage				= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const VkDeviceSize			bufferSize			= 1024;
 
@@ -2237,9 +2205,9 @@ tcu::TestStatus testImportAndUnimportExternalMemory (Context& context, VkExterna
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestCaseGroup* createExternalMemoryTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc)
+tcu::TestCaseGroup* createExternalMemoryTestsGroup (tcu::TestContext& testCtx, const char* name)
 {
-	MovePtr<tcu::TestCaseGroup>	group (new tcu::TestCaseGroup(testCtx, name, desc));
+	MovePtr<tcu::TestCaseGroup>	group (new tcu::TestCaseGroup(testCtx, name));
 
 	const std::vector<VkExternalMemoryHandleTypeFlagBits>	externalMemoryTypes	=
 	{
@@ -2254,7 +2222,7 @@ tcu::TestCaseGroup* createExternalMemoryTestsGroup (tcu::TestContext& testCtx, c
 	{
 		const std::string	testName	= std::string("import_and_unimport_") + std::string(externalMemoryTypeToName(externalMemoryType));
 
-		addFunctionCase(group.get(), testName.c_str(), "", checkSupport, testImportAndUnimportExternalMemory, externalMemoryType);
+		addFunctionCase(group.get(), testName.c_str(), checkSupport, testImportAndUnimportExternalMemory, externalMemoryType);
 	}
 
 	return group.release();
@@ -2264,7 +2232,7 @@ tcu::TestCaseGroup* createExternalMemoryTestsGroup (tcu::TestContext& testCtx, c
 
 tcu::TestCaseGroup* createDeviceMemoryReportTests (tcu::TestContext& testCtx)
 {
-	MovePtr<tcu::TestCaseGroup>	deviceMemoryReportTests (new tcu::TestCaseGroup(testCtx, "device_memory_report", "Device Memory Report tests"));
+	MovePtr<tcu::TestCaseGroup>	deviceMemoryReportTests (new tcu::TestCaseGroup(testCtx, "device_memory_report"));
 
 	const Image::Parameters		img1D			(0u,
 												 VK_IMAGE_TYPE_1D,
@@ -2480,9 +2448,12 @@ tcu::TestCaseGroup* createDeviceMemoryReportTests (tcu::TestContext& testCtx)
 		CASE_DESC(createDestroyObjectTest	<CommandPool>,			s_commandPoolCases),
 		CASE_DESC(createDestroyObjectTest	<CommandBuffer>,		s_commandBufferCases),
 	};
-	deviceMemoryReportTests->addChild(createObjectTestsGroup(testCtx, "create_and_destroy_object", "Check emitted callbacks are properly paired", s_createDestroyObjectGroup));
-	deviceMemoryReportTests->addChild(createVkDeviceMemoryTestsGroup(testCtx, "vk_device_memory", "Check callbacks are emitted properly for VkDeviceMemory"));
-	deviceMemoryReportTests->addChild(createExternalMemoryTestsGroup(testCtx, "external_memory", "Check callbacks are emitted properly for external memory"));
+	// Check emitted callbacks are properly paired
+	deviceMemoryReportTests->addChild(createObjectTestsGroup(testCtx, "create_and_destroy_object", s_createDestroyObjectGroup));
+	// Check callbacks are emitted properly for VkDeviceMemory
+	deviceMemoryReportTests->addChild(createVkDeviceMemoryTestsGroup(testCtx, "vk_device_memory"));
+	// Check callbacks are emitted properly for external memory
+	deviceMemoryReportTests->addChild(createExternalMemoryTestsGroup(testCtx, "external_memory"));
 
 	return deviceMemoryReportTests.release();
 }

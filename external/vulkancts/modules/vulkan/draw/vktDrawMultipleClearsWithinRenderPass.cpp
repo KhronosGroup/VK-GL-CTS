@@ -376,7 +376,7 @@ MultipleClearsTest::MultipleClearsTest (Context &context, const TestParams& para
 		hasColor,
 		(hasColor ? &m_params.colorFormat : DE_NULL),
 		m_params.depthFormat,
-		m_params.depthFormat
+		VK_FORMAT_UNDEFINED
 	};
 
 	if (m_params.groupParams->useDynamicRendering)
@@ -718,8 +718,8 @@ tcu::TestStatus MultipleClearsTest::iterate (void)
 class MultipleClearsWithinRenderPassTest : public TestCase
 {
 public:
-	MultipleClearsWithinRenderPassTest (tcu::TestContext& testCtx, const string& name, const string& description, const TestParams& params)
-		: TestCase(testCtx, name, description)
+	MultipleClearsWithinRenderPassTest (tcu::TestContext& testCtx, const string& name, const TestParams& params)
+		: TestCase(testCtx, name)
 		, m_params(params)
 	{
 		DE_ASSERT(m_params.steps.size() <= static_cast<size_t>(TEST_MAX_STEPS_COUNT));
@@ -779,6 +779,11 @@ public:
 			const auto	colorUsage	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 			if (vki.getPhysicalDeviceImageFormatProperties(vkd, m_params.colorFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, colorUsage, 0u, &imageFormatProperties) != VK_SUCCESS)
 				TCU_THROW(NotSupportedError, "Color format not supported");
+
+			vk::VkFormatProperties formatProperties;
+			vki.getPhysicalDeviceFormatProperties(vkd, m_params.colorFormat, &formatProperties);
+			if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT) == 0)
+				TCU_THROW(NotSupportedError, "Color format not supported");
 		}
 		if (m_params.depthFormat != VK_FORMAT_UNDEFINED)
 		{
@@ -803,7 +808,7 @@ private:
 }	// anonymous
 
 MultipleClearsWithinRenderPassTests::MultipleClearsWithinRenderPassTests (tcu::TestContext &testCtx, const SharedGroupParams groupParams)
-	: TestCaseGroup	(testCtx, "multiple_clears_within_render_pass", "Tests for multiple clears within render pass")
+	: TestCaseGroup	(testCtx, "multiple_clears_within_render_pass")
 	, m_groupParams	(groupParams)
 {
 }
@@ -847,7 +852,8 @@ void MultipleClearsWithinRenderPassTests::init ()
 						{ ClearOp::DRAW		, Vec4(0.0f, 0.0f, 1.0f, 0.5f)	, 0.9f }
 					}
 				};
-				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "load_clear_draw" + testNameSuffix, "Multiple clears within same render pass, methods: load, clear, draw", params));
+				// Multiple clears within same render pass, methods: load, clear, draw
+				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "load_clear_draw" + testNameSuffix, params));
 			}
 			{
 				const TestParams params
@@ -868,7 +874,8 @@ void MultipleClearsWithinRenderPassTests::init ()
 						{ ClearOp::DRAW		, Vec4(0.0f, 0.0f, 1.0f, 0.5f)	, 0.9f }
 					}
 				};
-				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "draw_clear_draw" + testNameSuffix, "Multiple clears within same render pass, methods: draw, clear, draw", params));
+				// Multiple clears within same render pass, methods: draw, clear, draw
+				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "draw_clear_draw" + testNameSuffix, params));
 			}
 			{
 				const TestParams params
@@ -889,7 +896,8 @@ void MultipleClearsWithinRenderPassTests::init ()
 						{ ClearOp::DRAW		, Vec4(0.0f, 0.0f, 1.0f, 0.5f)	, 0.9f }
 					}
 				};
-				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "clear_clear_draw" + testNameSuffix, "Multiple clears within same render pass, methods: clear, clear, draw", params));
+				// Multiple clears within same render pass, methods: clear, clear, draw
+				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "clear_clear_draw" + testNameSuffix, params));
 			}
 			{
 				const TestParams params
@@ -909,7 +917,8 @@ void MultipleClearsWithinRenderPassTests::init ()
 						{ ClearOp::CLEAR	, Vec4(0.0f, 1.0f, 0.0f, 1.0f)	, 0.9f }
 					}
 				};
-				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "load_clear" + testNameSuffix, "Multiple clears within same render pass, methods: load, clear", params));
+				// Multiple clears within same render pass, methods: load, clear
+				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "load_clear" + testNameSuffix, params));
 			}
 			{
 				const TestParams params
@@ -929,7 +938,8 @@ void MultipleClearsWithinRenderPassTests::init ()
 						{ ClearOp::CLEAR	, Vec4(0.0f, 1.0f, 0.0f, 1.0f)	, 0.9f }
 					}
 				};
-				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "draw_clear" + testNameSuffix, "Multiple clears within same render pass, methods: draw, clear", params));
+				// Multiple clears within same render pass, methods: draw, clear
+				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "draw_clear" + testNameSuffix, params));
 			}
 			{
 				const TestParams params
@@ -949,7 +959,8 @@ void MultipleClearsWithinRenderPassTests::init ()
 						{ ClearOp::CLEAR	, Vec4(0.0f, 1.0f, 0.0f, 1.0f)	, 0.9f }
 					}
 				};
-				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "clear_clear" + testNameSuffix, "Multiple clears within same render pass, methods: clear, clear", params));
+				// Multiple clears within same render pass, methods: clear, clear
+				addChild(new MultipleClearsWithinRenderPassTest(m_testCtx, "clear_clear" + testNameSuffix, params));
 			}
 		}
 	}

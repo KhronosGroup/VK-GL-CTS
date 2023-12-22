@@ -386,6 +386,8 @@ void initVertexTestPrograms (SourceCollections& programCollection, const TestPar
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		programCollection.glslSources.add("vert_1_2") << glu::VertexSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
+
 	}
 
 	// Fragment shader
@@ -425,6 +427,7 @@ void initTessellationTestPrograms (SourceCollections& programCollection, const T
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		programCollection.glslSources.add("vert_1_2") << glu::VertexSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 	}
 
 	// Tessellation control shader
@@ -478,6 +481,7 @@ void initTessellationTestPrograms (SourceCollections& programCollection, const T
 			<< "}\n";
 
 		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+		programCollection.glslSources.add("tese_1_2") << glu::TessellationEvaluationSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, true);
 	}
 
 	// Fragment shader
@@ -643,10 +647,17 @@ public:
 		if (shader == TESSELLATION)
 		{
 			m_tessellationControlModule		= createShaderModule	(vk, device, context.getBinaryCollection().get("tesc"), 0u);
-			m_tessellationEvaluationModule	= createShaderModule	(vk, device, context.getBinaryCollection().get("tese"), 0u);
+			if (context.contextSupports(VK_API_VERSION_1_2))
+				m_tessellationEvaluationModule	= createShaderModule	(vk, device, context.getBinaryCollection().get("tese_1_2"), 0u);
+			else
+				m_tessellationEvaluationModule = createShaderModule(vk, device, context.getBinaryCollection().get("tese"), 0u);
 		}
 
-		m_vertexModule		= createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u);
+		if (context.contextSupports(VK_API_VERSION_1_2))
+			m_vertexModule = createShaderModule(vk, device, context.getBinaryCollection().get("vert_1_2"), 0u);
+		else
+			m_vertexModule = createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u);
+
 		m_fragmentModule	= createShaderModule	(vk, device, context.getBinaryCollection().get("frag"), 0u);
 
 		if (!m_groupParams->useDynamicRendering)
@@ -755,7 +766,7 @@ protected:
 		{
 			const DeviceInterface& vk = context.getDeviceInterface();
 			initialTransitionColor2DImage(vk, cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-										  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+										  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, m_colorSubresourceRange.layerCount);
 		}
 	}
 
@@ -992,7 +1003,7 @@ tcu::TestStatus testTessellationShader (Context& context, const TestParams param
 
 tcu::TestCaseGroup* createShaderLayerTests	(tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_layer", ""));
+	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_layer"));
 
 	int numLayersToTest[] =
 	{
@@ -1020,7 +1031,7 @@ tcu::TestCaseGroup* createShaderLayerTests	(tcu::TestContext& testCtx, const Sha
 			continue;
 
 		parmas.numLayers = numLayersToTest[i];
-		addFunctionCaseWithPrograms<TestParams>(group.get(), "vertex_shader_" + de::toString(parmas.numLayers), "", checkRequirements, initVertexTestPrograms, testVertexShader, parmas);
+		addFunctionCaseWithPrograms<TestParams>(group.get(), "vertex_shader_" + de::toString(parmas.numLayers), checkRequirements, initVertexTestPrograms, testVertexShader, parmas);
 	}
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(numLayersToTest); ++i)
@@ -1030,7 +1041,7 @@ tcu::TestCaseGroup* createShaderLayerTests	(tcu::TestContext& testCtx, const Sha
 			continue;
 
 		parmas.numLayers = numLayersToTest[i];
-		addFunctionCaseWithPrograms<TestParams>(group.get(), "tessellation_shader_" + de::toString(parmas.numLayers), "", checkRequirements, initTessellationTestPrograms, testTessellationShader, parmas);
+		addFunctionCaseWithPrograms<TestParams>(group.get(), "tessellation_shader_" + de::toString(parmas.numLayers), checkRequirements, initTessellationTestPrograms, testTessellationShader, parmas);
 	}
 
 	return group.release();

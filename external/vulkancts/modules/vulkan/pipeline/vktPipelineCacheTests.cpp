@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 ARM Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +30,7 @@
 #include "vktPipelineVertexUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
-#include "vkPipelineBinariesUtil.hpp"
+#include "vkPipelineBinaryUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
@@ -100,7 +102,6 @@ public:
 																 bool						useShaderStagesWithBinaries = true);
 	virtual						~TestParam						(void) = default;
 	virtual const std::string	generateTestName				(void)	const;
-	virtual const std::string	generateTestDescription			(void)	const;
 	TestMode					getMode							(void)	const	{ return m_mode; }
 	PipelineConstructionType	getPipelineConstructionType		(void)	const	{ return m_pipelineConstructionType; };
 	VkShaderStageFlags			getShaderFlags					(void)	const	{ return m_shaders; }
@@ -142,22 +143,12 @@ const std::string TestParam::generateTestName (void) const
 	return name;
 }
 
-const std::string TestParam::generateTestDescription (void) const
-{
-	std::string description = getShaderFlagStr(m_shaders, true);
-	if (m_pipelineCacheCreateFlags == VK_PIPELINE_CACHE_CREATE_EXTERNALLY_SYNCHRONIZED_BIT) {
-		description += "with externally synchronized bit";
-	}
-	return description;
-}
-
 template <class Test>
 vkt::TestCase* newTestCase (tcu::TestContext&		testContext,
 							const TestParam*	testParam)
 {
 	return new Test(testContext,
 					testParam->generateTestName().c_str(),
-					testParam->generateTestDescription().c_str(),
 					testParam);
 }
 
@@ -232,9 +223,8 @@ class BaseTestCase : public vkt::TestCase
 public:
 	BaseTestCase						(tcu::TestContext&		testContext,
 										 const std::string&		name,
-										 const std::string&		description,
 										 const TestParam*		param)
-							  : vkt::TestCase (testContext, name, description)
+							  : vkt::TestCase (testContext, name)
 							  , m_param (*param)
 							  { }
 	virtual					~BaseTestCase (void) = default;
@@ -269,13 +259,13 @@ protected:
 	Move<VkPipelineCache>	m_cache;
 
 	// binary related structures are used when m_mode is set to TestMode::BINARIES
-	de::MovePtr<PipelineBinariesWrapper> m_binaries;
+	de::MovePtr<PipelineBinaryWrapper> m_binaries;
 };
 
 void BaseTestCase::checkSupport (Context& context) const
 {
 	if (m_param.getMode() == TestMode::BINARIES)
-		context.requireDeviceFunctionality("VK_KHR_pipeline_binaries");
+		context.requireDeviceFunctionality("VK_KHR_pipeline_binary");
 }
 
 BaseTestInstance::BaseTestInstance (Context&				context,
@@ -308,7 +298,7 @@ BaseTestInstance::BaseTestInstance (Context&				context,
 		m_cache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
 	}
 	else
-		m_binaries = de::MovePtr<PipelineBinariesWrapper>(new PipelineBinariesWrapper(vk, vkDevice));
+		m_binaries = de::MovePtr<PipelineBinaryWrapper>(new PipelineBinaryWrapper(vk, vkDevice));
 }
 
 tcu::TestStatus BaseTestInstance::iterate (void)
@@ -329,9 +319,8 @@ class GraphicsTest : public BaseTestCase
 public:
 							GraphicsTest		(tcu::TestContext&		testContext,
 												 const std::string&		name,
-												 const std::string&		description,
 												 const TestParam*		param)
-								: BaseTestCase(testContext, name, description, param)
+								: BaseTestCase(testContext, name, param)
 								{ }
 	virtual					~GraphicsTest		(void) { }
 	virtual void			initPrograms		(SourceCollections&		programCollection) const;
@@ -358,7 +347,7 @@ protected:
 														 VkPipelineBinaryInfoKHR*	fragmentOutputBinaryInfo);
 	virtual void			preparePipelines			(void);
 			void			preparePipelinesForBinaries	(bool createFromBlobs, bool incompleteBlobs, bool useShaderStages);
-			void			prepareRenderPass			(VkFramebuffer framebuffer, VkPipeline pipeline);
+			void			prepareRenderPass			(const RenderPassWrapper& renderPassFramebuffer, GraphicsPipelineWrapper& pipeline);
 	virtual void			prepareCommandBuffer		(void);
 	virtual tcu::TestStatus	verifyTestResult			(void);
 
@@ -366,7 +355,7 @@ protected:
 	const tcu::UVec2				m_renderSize;
 	const VkFormat					m_colorFormat;
 	const VkFormat					m_depthFormat;
-	Move<VkPipelineLayout>			m_pipelineLayout;
+	PipelineLayoutWrapper			m_pipelineLayout;
 
 	Move<VkImage>					m_depthImage;
 	de::MovePtr<Allocation>			m_depthImageAlloc;
@@ -379,11 +368,10 @@ protected:
 	std::vector<Vertex4RGBA>		m_vertices;
 
 	GraphicsPipelineWrapper			m_pipeline[PIPELINE_NDX_COUNT];
-	Move<VkRenderPass>				m_renderPass;
 
 	Move<VkImage>					m_colorImage[PIPELINE_NDX_COUNT];
 	Move<VkImageView>				m_colorAttachmentView[PIPELINE_NDX_COUNT];
-	Move<VkFramebuffer>				m_framebuffer[PIPELINE_NDX_COUNT];
+	RenderPassWrapper				m_renderPassFramebuffer[PIPELINE_NDX_COUNT];
 };
 
 void GraphicsTest::initPrograms (SourceCollections& programCollection) const
@@ -407,10 +395,11 @@ void GraphicsTest::initPrograms (SourceCollections& programCollection) const
 		const std::string missSuffix = (shaderOp == SHADERS_CACHE_OP_HIT ? "" : "_miss");
 
 		programCollection.glslSources.add("color_vert" + missSuffix) << glu::VertexSource(
-			"#version 310 es\n"
+			"#version 450\n"
 			"layout(location = 0) in vec4 position;\n"
 			"layout(location = 1) in vec4 color;\n"
 			"layout(location = 0) out highp vec4 vtxColor;\n"
+			"out gl_PerVertex { vec4 gl_Position; };\n"
 			"void main (void)\n"
 			"{\n"
 			"  gl_Position = position;\n"
@@ -501,7 +490,7 @@ void GraphicsTest::initPrograms (SourceCollections& programCollection) const
 void GraphicsTest::checkSupport (Context& context) const
 {
 	if (m_param.getMode() == TestMode::BINARIES)
-		context.requireDeviceFunctionality("VK_KHR_pipeline_binaries");
+		context.requireDeviceFunctionality("VK_KHR_pipeline_binary");
 
 	if (m_param.getShaderFlags() & VK_SHADER_STAGE_GEOMETRY_BIT)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
@@ -509,7 +498,7 @@ void GraphicsTest::checkSupport (Context& context) const
 		(m_param.getShaderFlags() & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT))
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.getPipelineConstructionType());
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_param.getPipelineConstructionType());
 }
 
 TestInstance* GraphicsTest::createInstance (Context& context) const
@@ -525,18 +514,18 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 	, m_depthFormat			(VK_FORMAT_D16_UNORM)
 	, m_pipeline
 	{
-		{
-			context.getDeviceInterface(), context.getDevice(), param->getPipelineConstructionType(),
-			(param->getMode() == TestMode::CACHE ? VkPipelineCreateFlags(0) : VkPipelineCreateFlags(VK_PIPELINE_CREATE_CAPTURE_DATA_BIT_KHR)), true
-		},
-		{
-			context.getDeviceInterface(), context.getDevice(), param->getPipelineConstructionType(),
-			(param->getMode() == TestMode::CACHE ? VkPipelineCreateFlags(0) : VkPipelineCreateFlags(VK_PIPELINE_CREATE_CAPTURE_DATA_BIT_KHR))
-		},
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), param->getPipelineConstructionType() },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), param->getPipelineConstructionType() },
 	}
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			vkDevice	= m_context.getDevice();
+
+	if (param->getMode() == TestMode::BINARIES)
+	{
+		m_pipeline[PIPELINE_NDX_NO_BLOBS].setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR);
+		m_pipeline[PIPELINE_NDX_USE_BLOBS].setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR);
+	}
 
 	// Create vertex buffer
 	{
@@ -549,7 +538,8 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_depthFormat);
+	m_renderPassFramebuffer[PIPELINE_NDX_NO_BLOBS] = RenderPassWrapper(m_param->getPipelineConstructionType(), vk, vkDevice, m_colorFormat, m_depthFormat);
+	m_renderPassFramebuffer[PIPELINE_NDX_USE_BLOBS] = RenderPassWrapper(m_param->getPipelineConstructionType(), vk, vkDevice, m_colorFormat, m_depthFormat);
 
 	const VkComponentMapping ComponentMappingRGBA = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 	// Create color image
@@ -657,29 +647,35 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 
 	// Create framebuffer
 	{
+		std::vector<VkImage> images = {
+			*m_colorImage[PIPELINE_NDX_NO_BLOBS],
+			*m_depthImage,
+		};
 		VkImageView attachmentBindInfos[2] =
 		{
 			*m_colorAttachmentView[PIPELINE_NDX_NO_BLOBS],
 			*m_depthAttachmentView,
 		};
 
-		const VkFramebufferCreateInfo framebufferParams =
+		VkFramebufferCreateInfo framebufferParams =
 		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType              sType;
-			DE_NULL,									// const void*                  pNext;
-			0u,											// VkFramebufferCreateFlags     flags;
-			*m_renderPass,								// VkRenderPass                 renderPass;
-			2u,											// deUint32                     attachmentCount;
-			attachmentBindInfos,						// const VkImageView*           pAttachments;
-			(deUint32)m_renderSize.x(),					// deUint32                     width;
-			(deUint32)m_renderSize.y(),					// deUint32                     height;
-			1u,											// deUint32                     layers;
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,				// VkStructureType              sType;
+			DE_NULL,												// const void*                  pNext;
+			0u,														// VkFramebufferCreateFlags     flags;
+			*m_renderPassFramebuffer[PIPELINE_NDX_USE_BLOBS],		// VkRenderPass                 renderPass;
+			2u,														// deUint32                     attachmentCount;
+			attachmentBindInfos,									// const VkImageView*           pAttachments;
+			(deUint32)m_renderSize.x(),								// deUint32                     width;
+			(deUint32)m_renderSize.y(),								// deUint32                     height;
+			1u,														// deUint32                     layers;
 		};
 
-		m_framebuffer[PIPELINE_NDX_NO_BLOBS] = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPassFramebuffer[PIPELINE_NDX_NO_BLOBS].createFramebuffer(vk, vkDevice, &framebufferParams, images);
 
+		framebufferParams.renderPass = *m_renderPassFramebuffer[PIPELINE_NDX_USE_BLOBS];
+		images[0] = *m_colorImage[PIPELINE_NDX_USE_BLOBS];
 		attachmentBindInfos[0] = *m_colorAttachmentView[PIPELINE_NDX_USE_BLOBS];
-		m_framebuffer[PIPELINE_NDX_USE_BLOBS] = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPassFramebuffer[PIPELINE_NDX_USE_BLOBS].createFramebuffer(vk, vkDevice, &framebufferParams, images);
 	}
 
 	// Create pipeline layout
@@ -695,7 +691,7 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 			DE_NULL											// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(m_param->getPipelineConstructionType(), vk, vkDevice, &pipelineLayoutParams);
 	}
 }
 
@@ -781,15 +777,15 @@ void GraphicsTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&	gpw,
 
 	auto createModule = [&vk, vkDevice, &postfix](Context& context, std::string shaderName)
 	{
-		return createShaderModule(vk, vkDevice, context.getBinaryCollection().get(shaderName + postfix), 0);
+		return ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get(shaderName + postfix), 0);
 	};
 
 	// Bind shader stages
-	Move<VkShaderModule> vertShaderModule;
-	Move<VkShaderModule> fragShaderModule;
-	Move<VkShaderModule> tescShaderModule;
-	Move<VkShaderModule> teseShaderModule;
-	Move<VkShaderModule> geomShaderModule;
+	ShaderWrapper vertShaderModule = createModule(m_context, "color_vert");
+	ShaderWrapper fragShaderModule = createModule(m_context, "color_frag");
+	ShaderWrapper tescShaderModule;
+	ShaderWrapper teseShaderModule;
+	ShaderWrapper geomShaderModule;
 
 	if (useShaderStages)
 	{
@@ -812,23 +808,23 @@ void GraphicsTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&	gpw,
 		.setDefaultRasterizationState()
 		.setDefaultColorBlendState()
 		.setDefaultMultisampleState()
-		.setMonolithicPipelineLayout(*m_pipelineLayout)
+		.setMonolithicPipelineLayout(m_pipelineLayout)
 		.setMonolithicPipelineBinaries(monolithicBinaryInfo)
-		.setupVertexInputStete(&defaultVertexInputStateParams, 0, 0, 0, vertexPartBinaryInfo)
+		.setupVertexInputState(&defaultVertexInputStateParams, 0, 0, 0, vertexPartBinaryInfo)
 		.setupPreRasterizationShaderState3(viewport,
 										  scissor,
-										  *m_pipelineLayout,
-										  *m_renderPass,
+										  m_pipelineLayout,
+										  *m_renderPassFramebuffer[0],
 										  0u,
-										  *vertShaderModule, 0,
+										  vertShaderModule, 0,
 										  DE_NULL,
-										  *tescShaderModule, 0,
-										  *teseShaderModule, 0,
-										  *geomShaderModule, 0,
+										  tescShaderModule, 0,
+										  teseShaderModule, 0,
+										  geomShaderModule, 0,
 										  0, 0, 0, 0, 0, 0, 0, 0, preRasterizationPartBinaryInfo)
-		.setupFragmentShaderState2(*m_pipelineLayout, *m_renderPass, 0u, *fragShaderModule, 0, &defaultDepthStencilState,
+		.setupFragmentShaderState2(m_pipelineLayout, *m_renderPassFramebuffer[0], 0u, fragShaderModule, 0, &defaultDepthStencilState,
 								   0, 0, 0, 0, fragmentShaderBinaryInfo)
-		.setupFragmentOutputState(*m_renderPass, 0, 0, 0, 0, 0, fragmentOutputBinaryInfo)
+		.setupFragmentOutputState(*m_renderPassFramebuffer[0], 0, 0, 0, 0, 0, fragmentOutputBinaryInfo)
 		.buildPipeline(cache);
 }
 
@@ -931,24 +927,24 @@ void GraphicsTestInstance::preparePipelines (void)
 		preparePipelinesForBinaries();
 }
 
-void GraphicsTestInstance::prepareRenderPass (VkFramebuffer framebuffer, VkPipeline pipeline)
+void GraphicsTestInstance::prepareRenderPass (const RenderPassWrapper& renderPassFramebuffer, GraphicsPipelineWrapper& pipeline)
 {
 	const DeviceInterface&	vk							= m_context.getDeviceInterface();
 
-	const VkClearValue		attachmentClearValues[2]	=
+	const VkClearValue		attachmentClearValues[2]
 	{
 		defaultClearValue(m_colorFormat),
 		defaultClearValue(m_depthFormat),
 	};
 
-	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
+	renderPassFramebuffer.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
-	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	pipeline.bind(*m_cmdBuffer);
 	VkDeviceSize offsets = 0u;
 	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
 	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1u, 0u, 0u);
 
-	endRenderPass(vk, *m_cmdBuffer);
+	renderPassFramebuffer.end(vk, *m_cmdBuffer);
 }
 
 void GraphicsTestInstance::prepareCommandBuffer (void)
@@ -962,11 +958,11 @@ void GraphicsTestInstance::prepareCommandBuffer (void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
-	prepareRenderPass(*m_framebuffer[PIPELINE_NDX_NO_BLOBS], m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipeline());
+	prepareRenderPass(m_renderPassFramebuffer[PIPELINE_NDX_NO_BLOBS], m_pipeline[PIPELINE_NDX_NO_BLOBS]);
 
 	// After the first render pass, the images are in correct layouts
 
-	prepareRenderPass(*m_framebuffer[PIPELINE_NDX_USE_BLOBS], m_pipeline[PIPELINE_NDX_USE_BLOBS].getPipeline());
+	prepareRenderPass(m_renderPassFramebuffer[PIPELINE_NDX_USE_BLOBS], m_pipeline[PIPELINE_NDX_USE_BLOBS]);
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
@@ -1014,9 +1010,8 @@ class ComputeTest : public BaseTestCase
 public:
 							ComputeTest			(tcu::TestContext&		testContext,
 												 const std::string&		name,
-												 const std::string&		description,
 												 const TestParam*		param)
-								: BaseTestCase (testContext, name, description, param)
+								: BaseTestCase (testContext, name, param)
 								{ }
 	virtual					~ComputeTest		(void) = default;
 	virtual void			initPrograms		(SourceCollections&		programCollection) const;
@@ -1202,13 +1197,14 @@ void ComputeTestInstance::buildPipeline (deUint32 ndx)
 		DE_NULL,												// const VkSpecializationInfo*         pSpecializationInfo;
 	};
 
-	const VkPipelineCreateFlags createFlags = (m_param->getMode() == TestMode::BINARIES) ?
-		VkPipelineCreateFlags(VK_PIPELINE_CREATE_CAPTURE_DATA_BIT_KHR) : VkPipelineCreateFlags(0u);
+	VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+	if (m_param->getMode() == TestMode::BINARIES)
+		pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR;
 	VkComputePipelineCreateInfo pipelineCreateInfo
 	{
 		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType						sType;
-		DE_NULL,												// const void*							pNext;
-		createFlags,											// VkPipelineCreateFlags				flags;
+		&pipelineFlags2CreateInfo,								// const void*							pNext;
+		0,														// VkPipelineCreateFlags				flags;
 		stageCreateInfo,										// VkPipelineShaderStageCreateInfo		stage;
 		*m_pipelineLayout[ndx],									// VkPipelineLayout						layout;
 		(VkPipeline)0,											// VkPipeline							basePipelineHandle;
@@ -1299,13 +1295,13 @@ tcu::TestStatus ComputeTestInstance::verifyTestResult (void)
 class PipelineFromBlobsTest : public GraphicsTest
 {
 public:
-							PipelineFromBlobsTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const TestParam* param);
+							PipelineFromBlobsTest		(tcu::TestContext& testContext, const std::string& name, const TestParam* param);
 	virtual					~PipelineFromBlobsTest		(void) = default;
 	virtual TestInstance*	createInstance				(Context& context) const;
 };
 
-PipelineFromBlobsTest::PipelineFromBlobsTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const TestParam* param)
-	: GraphicsTest(testContext, name, description, param)
+PipelineFromBlobsTest::PipelineFromBlobsTest (tcu::TestContext& testContext, const std::string& name, const TestParam* param)
+	: GraphicsTest(testContext, name, param)
 {
 }
 
@@ -1377,13 +1373,13 @@ void PipelineFromBlobsTestInstance::preparePipelines (void)
 class PipelineFromIncompleteBlobsTest : public GraphicsTest
 {
 public:
-							PipelineFromIncompleteBlobsTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const TestParam* param);
+							PipelineFromIncompleteBlobsTest		(tcu::TestContext& testContext, const std::string& name, const TestParam* param);
 	virtual					~PipelineFromIncompleteBlobsTest	(void) = default;
 	virtual TestInstance*	createInstance						(Context& context) const;
 };
 
-PipelineFromIncompleteBlobsTest::PipelineFromIncompleteBlobsTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const TestParam* param)
-	: GraphicsTest(testContext, name, description, param)
+PipelineFromIncompleteBlobsTest::PipelineFromIncompleteBlobsTest (tcu::TestContext& testContext, const std::string& name, const TestParam* param)
+	: GraphicsTest(testContext, name, param)
 {
 }
 
@@ -1512,10 +1508,9 @@ class MergeBlobsTest : public GraphicsTest
 public:
 								MergeBlobsTest	(tcu::TestContext&			testContext,
 												 const std::string&			name,
-												 const std::string&			description,
 												 const TestParam*			param,
 												 const MergeBlobsTestParam* mergeBlobsParam)
-									: GraphicsTest		(testContext, name, description, param)
+									: GraphicsTest		(testContext, name, param)
 									, m_mergeBlobsParam	(*mergeBlobsParam)
 									{ }
 	virtual						~MergeBlobsTest	(void) { }
@@ -1531,16 +1526,16 @@ public:
 													 const TestParam*			param,
 													 const MergeBlobsTestParam* mergeBlobsParam);
 private:
-	Move<VkPipelineCache>	createPipelineCache		(const DeviceInterface& vk, VkDevice device, MergeBlobsType type);
-	void					createPipelineBinaries	(const DeviceInterface& vk, VkDevice device, PipelineBinariesWrapper* binaries, MergeBlobsType type);
+	Move<VkPipelineCache>	createPipelineCache		(const InstanceInterface& vki, const DeviceInterface& vk, VkPhysicalDevice physicalDevice, VkDevice device, MergeBlobsType type);
+	void					createPipelineBinaries	(const InstanceInterface& vki, const DeviceInterface& vk, VkPhysicalDevice physicalDevice, VkDevice device, PipelineBinaryWrapper* binaries, MergeBlobsType type);
 
 protected:
 	void					preparePipelines		(void);
 
 protected:
-	const MergeBlobsTestParam				m_mergeBlobsParam;
-	Move<VkPipelineCache>					m_cacheMerged;
-	de::MovePtr<PipelineBinariesWrapper>	m_secondBinaries;
+	const MergeBlobsTestParam			m_mergeBlobsParam;
+	Move<VkPipelineCache>				m_cacheMerged;
+	de::MovePtr<PipelineBinaryWrapper>	m_secondBinaries;
 
 };
 
@@ -1553,13 +1548,15 @@ MergeBlobsTestInstance::MergeBlobsTestInstance(Context& context, const TestParam
 	: GraphicsTestInstance	(context, param)
 	, m_mergeBlobsParam		(*mergeBlobsParam)
 {
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const DeviceInterface&		vk				= m_context.getDeviceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const VkDevice				vkDevice		= m_context.getDevice();
 
 	if (m_param->getMode() == TestMode::CACHE)
 	{
 		// Create a merge destination cache
-		m_cacheMerged = createPipelineCache(vk, vkDevice, mergeBlobsParam->destBlobsType);
+		m_cacheMerged = createPipelineCache(vki, vk, physicalDevice, vkDevice, mergeBlobsParam->destBlobsType);
 
 		// Create more pipeline caches
 		std::vector<VkPipelineCache>	sourceCaches	(mergeBlobsParam->srcBlobTypes.size());
@@ -1570,7 +1567,7 @@ MergeBlobsTestInstance::MergeBlobsTestInstance(Context& context, const TestParam
 			{
 				// vk::Move is not copyable, so create it on heap and wrap into de::SharedPtr
 				PipelineCachePtr	pipelineCachePtr	(new Move<VkPipelineCache>());
-				*pipelineCachePtr = createPipelineCache(vk, vkDevice, mergeBlobsParam->srcBlobTypes[sourceIdx]);
+				*pipelineCachePtr = createPipelineCache	(vki, vk, physicalDevice, vkDevice, mergeBlobsParam->srcBlobTypes[sourceIdx]);
 
 				sourceCachePtrs[sourceIdx]	= pipelineCachePtr;
 				sourceCaches[sourceIdx]		= **pipelineCachePtr;
@@ -1581,10 +1578,10 @@ MergeBlobsTestInstance::MergeBlobsTestInstance(Context& context, const TestParam
 		VK_CHECK(vk.mergePipelineCaches(vkDevice, *m_cacheMerged, static_cast<deUint32>(sourceCaches.size()), &sourceCaches[0]));
 	}
 	else
-		m_secondBinaries = de::MovePtr<PipelineBinariesWrapper>(new PipelineBinariesWrapper(vk, vkDevice));
+		m_secondBinaries = de::MovePtr<PipelineBinaryWrapper>(new PipelineBinaryWrapper(vk, vkDevice));
 }
 
-Move<VkPipelineCache> MergeBlobsTestInstance::createPipelineCache (const DeviceInterface& vk, VkDevice device, MergeBlobsType type)
+Move<VkPipelineCache> MergeBlobsTestInstance::createPipelineCache (const InstanceInterface& vki, const DeviceInterface& vk, VkPhysicalDevice physicalDevice, VkDevice device, MergeBlobsType type)
 {
 	VkPipelineCacheCreateInfo pipelineCacheCreateInfo
 	{
@@ -1595,8 +1592,8 @@ Move<VkPipelineCache> MergeBlobsTestInstance::createPipelineCache (const DeviceI
 		DE_NULL,										// const void*                 pInitialData;
 	};
 
-	GraphicsPipelineWrapper localPipeline		(vk, device, m_param->getPipelineConstructionType());
-	GraphicsPipelineWrapper localMissPipeline	(vk, device, m_param->getPipelineConstructionType());
+	GraphicsPipelineWrapper localPipeline		(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_param->getPipelineConstructionType());
+	GraphicsPipelineWrapper localMissPipeline	(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_param->getPipelineConstructionType());
 
 	switch (type)
 	{
@@ -1619,7 +1616,7 @@ Move<VkPipelineCache> MergeBlobsTestInstance::createPipelineCache (const DeviceI
 		}
 		case MergeBlobsType::HIT:
 		{
-			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MergeBlobsType::EMPTY);
+			Move<VkPipelineCache> ret = createPipelineCache(vki, vk, physicalDevice, device, MergeBlobsType::EMPTY);
 
 			preparePipelineWrapper(localPipeline, *ret);
 
@@ -1627,7 +1624,7 @@ Move<VkPipelineCache> MergeBlobsTestInstance::createPipelineCache (const DeviceI
 		}
 		case MergeBlobsType::MISS:
 		{
-			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MergeBlobsType::EMPTY);
+			Move<VkPipelineCache> ret = createPipelineCache(vki, vk, physicalDevice, device, MergeBlobsType::EMPTY);
 
 			preparePipelineWrapper(localMissPipeline, *ret, true);
 
@@ -1635,7 +1632,7 @@ Move<VkPipelineCache> MergeBlobsTestInstance::createPipelineCache (const DeviceI
 		}
 		case MergeBlobsType::MISS_AND_HIT:
 		{
-			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MergeBlobsType::EMPTY);
+			Move<VkPipelineCache> ret = createPipelineCache(vki, vk, physicalDevice, device, MergeBlobsType::EMPTY);
 
 			preparePipelineWrapper(localPipeline, *ret);
 			preparePipelineWrapper(localMissPipeline, *ret, true);
@@ -1644,9 +1641,9 @@ Move<VkPipelineCache> MergeBlobsTestInstance::createPipelineCache (const DeviceI
 		}
 		case MergeBlobsType::MERGED:
 		{
-			Move<VkPipelineCache>	cache1			= createPipelineCache(vk, device, MergeBlobsType::FROM_DATA);
-			Move<VkPipelineCache>	cache2			= createPipelineCache(vk, device, MergeBlobsType::HIT);
-			Move<VkPipelineCache>	cache3			= createPipelineCache(vk, device, MergeBlobsType::MISS);
+			Move<VkPipelineCache>	cache1			= createPipelineCache(vki, vk, physicalDevice, device, MergeBlobsType::FROM_DATA);
+			Move<VkPipelineCache>	cache2			= createPipelineCache(vki, vk, physicalDevice, device, MergeBlobsType::HIT);
+			Move<VkPipelineCache>	cache3			= createPipelineCache(vki, vk, physicalDevice, device, MergeBlobsType::MISS);
 
 			const VkPipelineCache	sourceCaches[]	=
 			{
@@ -1655,7 +1652,7 @@ Move<VkPipelineCache> MergeBlobsTestInstance::createPipelineCache (const DeviceI
 				*cache3
 			};
 
-			Move<VkPipelineCache>	ret				= createPipelineCache(vk, device, MergeBlobsType::EMPTY);
+			Move<VkPipelineCache>	ret				= createPipelineCache(vki, vk, physicalDevice, device, MergeBlobsType::EMPTY);
 
 			// Merge the caches
 			VK_CHECK(vk.mergePipelineCaches(device, *ret, DE_LENGTH_OF_ARRAY(sourceCaches), sourceCaches));
@@ -1666,19 +1663,20 @@ Move<VkPipelineCache> MergeBlobsTestInstance::createPipelineCache (const DeviceI
 	TCU_FAIL("unhandled merge cache type");
 }
 
-void MergeBlobsTestInstance::createPipelineBinaries(const DeviceInterface& vk, VkDevice device, PipelineBinariesWrapper* binaries, MergeBlobsType type)
+void MergeBlobsTestInstance::createPipelineBinaries(const InstanceInterface& vki, const DeviceInterface& vk, VkPhysicalDevice physicalDevice, VkDevice device, PipelineBinaryWrapper* binaries, MergeBlobsType type)
 {
-	GraphicsPipelineWrapper localPipeline(vk, device, m_param->getPipelineConstructionType(), VK_PIPELINE_CREATE_CAPTURE_DATA_BIT_KHR, true);
+	GraphicsPipelineWrapper localPipeline(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(), m_param->getPipelineConstructionType());
+	localPipeline.setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR);
 
 	switch (type)
 	{
 	case MergeBlobsType::FROM_DATA:
 	{
 		const std::vector<VkViewport>	viewport{ makeViewport(m_renderSize) };
-		const std::vector<VkRect2D>		scissor{ makeRect2D(m_renderSize) };
+		const std::vector<VkRect2D>		scissor	{ makeRect2D(m_renderSize) };
 
-		Move<VkShaderModule> vertShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("color_vert"), 0);
-		Move<VkShaderModule> fragShaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("color_frag"), 0);
+		ShaderWrapper vertShaderModule(vk, device, m_context.getBinaryCollection().get("color_vert"), 0);
+		ShaderWrapper fragShaderModule(vk, device, m_context.getBinaryCollection().get("color_frag"), 0);
 
 		// create local pipeline that has same shaders as final pipeline
 		localPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
@@ -1686,16 +1684,16 @@ void MergeBlobsTestInstance::createPipelineBinaries(const DeviceInterface& vk, V
 			.setDefaultDepthStencilState()
 			.setDefaultColorBlendState()
 			.setDefaultMultisampleState()
-			.setMonolithicPipelineLayout(*m_pipelineLayout)
-			.setupVertexInputStete()
+			.setMonolithicPipelineLayout(m_pipelineLayout)
+			.setupVertexInputState()
 			.setupPreRasterizationShaderState3(viewport,
 				scissor,
-				*m_pipelineLayout,
-				*m_renderPass,
+				m_pipelineLayout,
+				*m_renderPassFramebuffer[PIPELINE_NDX_NO_BLOBS],
 				0u,
-				*vertShaderModule)
-			.setupFragmentShaderState2(*m_pipelineLayout, *m_renderPass, 0u, *fragShaderModule)
-			.setupFragmentOutputState(*m_renderPass)
+				vertShaderModule)
+			.setupFragmentShaderState2(m_pipelineLayout, *m_renderPassFramebuffer[PIPELINE_NDX_NO_BLOBS], 0u, fragShaderModule)
+			.setupFragmentOutputState(*m_renderPassFramebuffer[PIPELINE_NDX_NO_BLOBS])
 			.buildPipeline();
 
 		const auto& pipelineCreateInfo = localPipeline.getPipelineCreateInfo();
@@ -1755,11 +1753,13 @@ void MergeBlobsTestInstance::preparePipelines(void)
 	}
 	else
 	{
-		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkDevice			vkDevice	= m_context.getDevice();
+		const InstanceInterface&	vki				= m_context.getInstanceInterface();
+		const DeviceInterface&		vk				= m_context.getDeviceInterface();
+		const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
+		const VkDevice				vkDevice		= m_context.getDevice();
 
-		createPipelineBinaries(vk, vkDevice, m_binaries.get(), m_mergeBlobsParam.destBlobsType);
-		createPipelineBinaries(vk, vkDevice, m_secondBinaries.get(), m_mergeBlobsParam.srcBlobTypes[0]);
+		createPipelineBinaries(vki, vk, physicalDevice, vkDevice, m_binaries.get(), m_mergeBlobsParam.destBlobsType);
+		createPipelineBinaries(vki, vk, physicalDevice, vkDevice, m_secondBinaries.get(), m_mergeBlobsParam.srcBlobTypes[0]);
 
 		VkPipelineBinaryInfoKHR pipelineBinaryInfo = m_binaries->preparePipelineBinaryInfo();
 		VkPipelineBinaryInfoKHR secondPipelineBinaryInfo = m_secondBinaries->preparePipelineBinaryInfo();
@@ -1797,9 +1797,8 @@ class CacheHeaderTest : public GraphicsTest
 public:
 			CacheHeaderTest		(tcu::TestContext&		testContext,
 								 const std::string&		name,
-								 const std::string&		description,
 								 const TestParam*		param)
-								: GraphicsTest(testContext, name, description, param)
+								: GraphicsTest(testContext, name, param)
 	{ }
 	virtual	~CacheHeaderTest	(void) { }
 	virtual	TestInstance*		createInstance(Context& context) const;
@@ -1875,13 +1874,13 @@ CacheHeaderTestInstance::~CacheHeaderTestInstance (void)
 class InvalidSizeTest : public GraphicsTest
 {
 public:
-							InvalidSizeTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const TestParam* param);
+							InvalidSizeTest		(tcu::TestContext& testContext, const std::string& name, const TestParam* param);
 	virtual					~InvalidSizeTest	(void) {}
 	virtual TestInstance*	createInstance		(Context& context) const;
 };
 
-InvalidSizeTest::InvalidSizeTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const TestParam* param)
-	: GraphicsTest(testContext, name, description, param)
+InvalidSizeTest::InvalidSizeTest (tcu::TestContext& testContext, const std::string& name, const TestParam* param)
+	: GraphicsTest(testContext, name, param)
 {
 }
 
@@ -1962,13 +1961,13 @@ InvalidSizeTestInstance::~InvalidSizeTestInstance (void)
 class ZeroSizeTest : public GraphicsTest
 {
 public:
-							ZeroSizeTest	(tcu::TestContext& testContext, const std::string& name, const std::string& description, const TestParam* param);
+							ZeroSizeTest	(tcu::TestContext& testContext, const std::string& name, const TestParam* param);
 	virtual					~ZeroSizeTest	(void) {}
 	virtual TestInstance*	createInstance	(Context& context) const;
 };
 
-ZeroSizeTest::ZeroSizeTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const TestParam* param)
-	: GraphicsTest(testContext, name, description, param)
+ZeroSizeTest::ZeroSizeTest (tcu::TestContext& testContext, const std::string& name, const TestParam* param)
+	: GraphicsTest(testContext, name, param)
 {
 }
 
@@ -2040,13 +2039,13 @@ ZeroSizeTestInstance::~ZeroSizeTestInstance (void)
 class InvalidBlobTest : public GraphicsTest
 {
 public:
-							InvalidBlobTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const TestParam* param);
+							InvalidBlobTest		(tcu::TestContext& testContext, const std::string& name, const TestParam* param);
 	virtual					~InvalidBlobTest	(void) {}
 	virtual TestInstance*	createInstance		(Context& context) const;
 };
 
-InvalidBlobTest::InvalidBlobTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const TestParam* param)
-	: GraphicsTest(testContext, name, description, param)
+InvalidBlobTest::InvalidBlobTest (tcu::TestContext& testContext, const std::string& name, const TestParam* param)
+	: GraphicsTest(testContext, name, param)
 {
 }
 
@@ -2136,7 +2135,7 @@ InvalidBlobTestInstance::~InvalidBlobTestInstance (void)
 
 tcu::TestCaseGroup* createPipelineBlobTestsInternal(tcu::TestContext& testCtx, TestMode testMode, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> blobTests (new tcu::TestCaseGroup(testCtx, testMode == TestMode::CACHE ? "cache" : "binaries", "pipeline blob tests"));
+	de::MovePtr<tcu::TestCaseGroup> blobTests (new tcu::TestCaseGroup(testCtx, testMode == TestMode::CACHE ? "cache" : "binaries"));
 
 	const VkShaderStageFlags vertFragStages			= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	const VkShaderStageFlags vertGeomFragStages		= vertFragStages | VK_SHADER_STAGE_GEOMETRY_BIT;
@@ -2144,7 +2143,7 @@ tcu::TestCaseGroup* createPipelineBlobTestsInternal(tcu::TestContext& testCtx, T
 
 	// Graphics Pipeline Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics_tests", "Test pipeline blob with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics_tests"));
 
 		const TestParam testParams[]
 		{
@@ -2168,7 +2167,7 @@ tcu::TestCaseGroup* createPipelineBlobTestsInternal(tcu::TestContext& testCtx, T
 
 	// Graphics Pipeline Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_get_data", "Test pipeline blob with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_get_data"));
 
 		const TestParam testParams[]
 		{
@@ -2203,7 +2202,7 @@ tcu::TestCaseGroup* createPipelineBlobTestsInternal(tcu::TestContext& testCtx, T
 
 	// Graphics Pipeline Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_incomplete_get_data", "Test pipeline blob with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests(new tcu::TestCaseGroup(testCtx, "pipeline_from_incomplete_get_data"));
 
 		const TestParam testParams[]
 		{
@@ -2221,7 +2220,7 @@ tcu::TestCaseGroup* createPipelineBlobTestsInternal(tcu::TestContext& testCtx, T
 	// Compute Pipeline Tests - don't repeat those tests for graphics pipeline library
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute_tests", "Test pipeline blob with compute pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute_tests"));
 
 		const TestParam testParams = { testMode, pipelineConstructionType, VK_SHADER_STAGE_COMPUTE_BIT, false };
 		computeTests->addChild(newTestCase<ComputeTest>(testCtx, &testParams));
@@ -2231,7 +2230,7 @@ tcu::TestCaseGroup* createPipelineBlobTestsInternal(tcu::TestContext& testCtx, T
 
 	// Merge blobs tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> mergeTests (new tcu::TestCaseGroup(testCtx, "merge", "Blob merging tests"));
+		de::MovePtr<tcu::TestCaseGroup> mergeTests (new tcu::TestCaseGroup(testCtx, "merge"));
 
 		const TestParam testParams[]
 		{
@@ -2252,7 +2251,7 @@ tcu::TestCaseGroup* createPipelineBlobTestsInternal(tcu::TestContext& testCtx, T
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> mergeStagesTests(new tcu::TestCaseGroup(testCtx, testParams[i].generateTestName().c_str(), testParams[i].generateTestDescription().c_str()));
+			de::MovePtr<tcu::TestCaseGroup> mergeStagesTests(new tcu::TestCaseGroup(testCtx, testParams[i].generateTestName().c_str()));
 
 			for (deUint32 destTypeIdx = firstTypeIdx; destTypeIdx <= lastTypeIdx; destTypeIdx++)
 			for (deUint32 srcType1Idx = firstTypeIdx; srcType1Idx <= lastTypeIdx; srcType1Idx++)
@@ -2266,7 +2265,6 @@ tcu::TestCaseGroup* createPipelineBlobTestsInternal(tcu::TestContext& testCtx, T
 					std::string testName = "src_" + getMergeBlobsTypesStr(mergeTestParam.srcBlobTypes) + "_dst_" + getMergeBlobsTypeStr(mergeTestParam.destBlobsType);
 					mergeStagesTests->addChild(new MergeBlobsTest(testCtx,
 															testName.c_str(),
-															"Merge the blobs test.",
 															&testParams[i],
 															&mergeTestParam));
 				}
@@ -2283,7 +2281,6 @@ tcu::TestCaseGroup* createPipelineBlobTestsInternal(tcu::TestContext& testCtx, T
 						std::string testName = "src_" + getMergeBlobsTypesStr(cacheTestParamTwoCaches.srcBlobTypes) + "_dst_" + getMergeBlobsTypeStr(cacheTestParamTwoCaches.destBlobsType);
 						mergeStagesTests->addChild(new MergeBlobsTest(testCtx,
 															   testName.c_str(),
-															   "Merge the blobs test.",
 															   &testParams[i],
 															   &cacheTestParamTwoCaches));
 					}
@@ -2297,28 +2294,24 @@ tcu::TestCaseGroup* createPipelineBlobTestsInternal(tcu::TestContext& testCtx, T
 	// Misc Tests
 	if (testMode == TestMode::CACHE)
 	{
-		de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc_tests", "Misc tests that can not be categorized to other group."));
+		de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc_tests"));
 
 		const TestParam testParam(testMode, pipelineConstructionType, vertFragStages, false);
 
 		miscTests->addChild(new CacheHeaderTest(testCtx,
 												"cache_header_test",
-												"Cache header test.",
 												&testParam));
 
 		miscTests->addChild(new InvalidSizeTest(testCtx,
 												"invalid_size_test",
-												"Invalid size test.",
 												&testParam));
 
 		miscTests->addChild(new ZeroSizeTest(testCtx,
 												"zero_size_test",
-												"Zero size test.",
 												&testParam));
 
 		miscTests->addChild(new InvalidBlobTest(testCtx,
 												"invalid_blob_test",
-												"Invalid cache blob test.",
 												&testParam));
 
 		blobTests->addChild(miscTests.release());

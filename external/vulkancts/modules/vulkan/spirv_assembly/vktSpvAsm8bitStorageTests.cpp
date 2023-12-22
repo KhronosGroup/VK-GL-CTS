@@ -1091,7 +1091,7 @@ void addCompute8bitStorage32To8Group (tcu::TestCaseGroup* group)
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 			spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[STORAGE_BUFFER_TEST].name);
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 		}
 	}
 }
@@ -1249,7 +1249,7 @@ void addCompute8bitUniform8To32Group (tcu::TestCaseGroup* group)
 			else
 				spec.verifyIO = checkUniformsArray<deInt8, deInt32, 1>;
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 		}
 	}
 }
@@ -1411,7 +1411,7 @@ void addCompute8bitStoragePushConstant8To32Group (tcu::TestCaseGroup* group)
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 			spec.requestedVulkanFeatures.ext8BitStorage.storagePushConstant8 = true;
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName, testName, spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName, spec));
 		}
 	}
 }
@@ -1569,7 +1569,7 @@ void addCompute8bitStorage16To8Group (tcu::TestCaseGroup* group)
 			spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[STORAGE_BUFFER_TEST].name);
 			spec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 		}
 	}
 }
@@ -1732,7 +1732,7 @@ void addCompute8bitUniform8To16Group (tcu::TestCaseGroup* group)
 			else
 				spec.verifyIO = checkUniformsArray<deInt8, deInt16, 1>;
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 		}
 	}
 }
@@ -1899,7 +1899,7 @@ void addCompute8bitStoragePushConstant8To16Group (tcu::TestCaseGroup* group)
 			spec.requestedVulkanFeatures.ext8BitStorage.storagePushConstant8 = true;
 			spec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName, testName, spec));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName, spec));
 		}
 	}
 }
@@ -1984,7 +1984,7 @@ void addCompute8bitStorageBuffer8To8Group (tcu::TestCaseGroup* group)
 	spec.extensions.push_back("VK_KHR_8bit_storage");
 	spec.requestedVulkanFeatures.ext8BitStorage.storageBuffer8BitAccess = true;
 
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "stress_test", "Granularity stress test", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "stress_test", spec));
 }
 
 void addCompute8bitStorageUniform8StructTo32StructGroup (tcu::TestCaseGroup* group)
@@ -2202,7 +2202,7 @@ void addCompute8bitStorageUniform8StructTo32StructGroup (tcu::TestCaseGroup* gro
 		spec.extensions.push_back("VK_KHR_8bit_storage");
 		spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -2428,7 +2428,7 @@ void addCompute8bitStorageUniform32StructTo8StructGroup (tcu::TestCaseGroup* gro
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[STORAGE_BUFFER_TEST].name);
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -2660,7 +2660,7 @@ void addCompute8bitStorage8bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		spec.extensions.push_back		("VK_KHR_storage_buffer_storage_class");
 		spec.requestedVulkanFeatures	= get8BitStorageFeatures(CAPABILITIES[capIdx].name);
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -3659,7 +3659,7 @@ void addGraphics8BitStorageUniformInt16To8Group (tcu::TestCaseGroup* testGroup)
 		resources.inputs.clear();
 		resources.outputs.clear();
 		vector<deInt16>						inputs	= getInt16s(rnd, ((arrayStrideInBytesUniform / static_cast<deUint32>(sizeof(deInt16))) * numDataPoints) / categories[catIdx].numElements);
-		vector<deInt8>						outputs	(numDataPoints/ categories[catIdx].numElements);
+		vector<deInt8>						outputs	(numDataPoints);
 
 		switch (categories[catIdx].numElements)
 		{
@@ -5104,40 +5104,61 @@ void addGraphics8bitStorage8bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* create8BitStorageComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "8bit_storage", "Compute tests for VK_KHR_8bit_storage extension"));
+	// Compute tests for VK_KHR_8bit_storage extension
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "8bit_storage"));
 
-	addTestGroup(group.get(), "storagebuffer_32_to_8",	"32bit ints to 8bit tests under capability StorageBuffer8BitAccess",			addCompute8bitStorage32To8Group);
-	addTestGroup(group.get(), "uniform_8_to_32",		"8bit ints to 32bit tests under capability UniformAndStorageBuffer8BitAccess",	addCompute8bitUniform8To32Group);
-	addTestGroup(group.get(), "push_constant_8_to_32",	"8bit ints to 32bit tests under capability StoragePushConstant8",				addCompute8bitStoragePushConstant8To32Group);
+	// 32bit ints to 8bit tests under capability StorageBuffer8BitAccess
+	addTestGroup(group.get(), "storagebuffer_32_to_8", addCompute8bitStorage32To8Group);
+	// 8bit ints to 32bit tests under capability UniformAndStorageBuffer8BitAccess
+	addTestGroup(group.get(), "uniform_8_to_32", addCompute8bitUniform8To32Group);
+	// 8bit ints to 32bit tests under capability StoragePushConstant8
+	addTestGroup(group.get(), "push_constant_8_to_32", addCompute8bitStoragePushConstant8To32Group);
 
-	addTestGroup(group.get(), "storagebuffer_16_to_8",	"16bit ints to 8bit tests under capability StorageBuffer8BitAccess",			addCompute8bitStorage16To8Group);
-	addTestGroup(group.get(), "uniform_8_to_16",		"8bit ints to 16bit tests under capability UniformAndStorageBuffer8BitAccess",	addCompute8bitUniform8To16Group);
-	addTestGroup(group.get(), "push_constant_8_to_16",	"8bit ints to 16bit tests under capability StoragePushConstant8",				addCompute8bitStoragePushConstant8To16Group);
+	// 16bit ints to 8bit tests under capability StorageBuffer8BitAccess
+	addTestGroup(group.get(), "storagebuffer_16_to_8", addCompute8bitStorage16To8Group);
+	// 8bit ints to 16bit tests under capability UniformAndStorageBuffer8BitAccess
+	addTestGroup(group.get(), "uniform_8_to_16", addCompute8bitUniform8To16Group);
+	// 8bit ints to 16bit tests under capability StoragePushConstant8
+	addTestGroup(group.get(), "push_constant_8_to_16", addCompute8bitStoragePushConstant8To16Group);
 
-	addTestGroup(group.get(), "uniform_8_to_8",			"8bit ints to 8bit tests under capability UniformAndStorageBuffer8BitAccess",	addCompute8bitStorageBuffer8To8Group);
+	// 8bit ints to 8bit tests under capability UniformAndStorageBuffer8BitAccess
+	addTestGroup(group.get(), "uniform_8_to_8", addCompute8bitStorageBuffer8To8Group);
 
-	addTestGroup(group.get(), "uniform_8struct_to_32struct",		"8bit floats struct to 32bit tests under capability UniformAndStorageBuffer8BitAccess",	addCompute8bitStorageUniform8StructTo32StructGroup);
-	addTestGroup(group.get(), "storagebuffer_32struct_to_8struct",	"32bit floats struct to 8bit tests under capability StorageBuffer8BitAccess",			addCompute8bitStorageUniform32StructTo8StructGroup);
-	addTestGroup(group.get(), "struct_mixed_types",					"mixed type of 8bit and 32bit struct",													addCompute8bitStorage8bitStructMixedTypesGroup);
+	// 8bit floats struct to 32bit tests under capability UniformAndStorageBuffer8BitAccess
+	addTestGroup(group.get(), "uniform_8struct_to_32struct", addCompute8bitStorageUniform8StructTo32StructGroup);
+	// 32bit floats struct to 8bit tests under capability StorageBuffer8BitAccess
+	addTestGroup(group.get(), "storagebuffer_32struct_to_8struct", addCompute8bitStorageUniform32StructTo8StructGroup);
+	// mixed type of 8bit and 32bit struct
+	addTestGroup(group.get(), "struct_mixed_types", addCompute8bitStorage8bitStructMixedTypesGroup);
 
 	return group.release();
 }
 
 tcu::TestCaseGroup* create8BitStorageGraphicsGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "8bit_storage", "Graphics tests for VK_KHR_8bit_storage extension"));
+	// Graphics tests for VK_KHR_8bit_storage extension
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "8bit_storage"));
 
-	addTestGroup(group.get(), "storagebuffer_int_32_to_8",	"32-bit int into 8-bit tests under capability StorageBuffer8BitAccess",				addGraphics8BitStorageUniformInt32To8Group);
-	addTestGroup(group.get(), "uniform_int_8_to_32",		"8-bit int into 32-bit tests under capability UniformAndStorageBuffer8BitAccess",	addGraphics8BitStorageUniformInt8To32Group);
-	addTestGroup(group.get(), "push_constant_int_8_to_32",	"8-bit int into 32-bit tests under capability StoragePushConstant8",				addGraphics8BitStoragePushConstantInt8To32Group);
+	// 32-bit int into 8-bit tests under capability StorageBuffer8BitAccess
+	addTestGroup(group.get(), "storagebuffer_int_32_to_8", addGraphics8BitStorageUniformInt32To8Group);
+	// 8-bit int into 32-bit tests under capability UniformAndStorageBuffer8BitAccess
+	addTestGroup(group.get(), "uniform_int_8_to_32", addGraphics8BitStorageUniformInt8To32Group);
+	// 8-bit int into 32-bit tests under capability StoragePushConstant8
+	addTestGroup(group.get(), "push_constant_int_8_to_32", addGraphics8BitStoragePushConstantInt8To32Group);
 
-	addTestGroup(group.get(), "storagebuffer_int_16_to_8",	"16-bit int into 8-bit tests under capability StorageBuffer8BitAccess",				addGraphics8BitStorageUniformInt16To8Group);
-	addTestGroup(group.get(), "uniform_int_8_to_16",		"8-bit int into 16-bit tests under capability UniformAndStorageBuffer8BitAccess",	addGraphics8BitStorageUniformInt8To16Group);
-	addTestGroup(group.get(), "push_constant_int_8_to_16",	"8-bit int into 16-bit tests under capability StoragePushConstant8",				addGraphics8BitStoragePushConstantInt8To16Group);
+	// 16-bit int into 8-bit tests under capability StorageBuffer8BitAccess
+	addTestGroup(group.get(), "storagebuffer_int_16_to_8", addGraphics8BitStorageUniformInt16To8Group);
+	// 8-bit int into 16-bit tests under capability UniformAndStorageBuffer8BitAccess
+	addTestGroup(group.get(), "uniform_int_8_to_16", addGraphics8BitStorageUniformInt8To16Group);
+	// 8-bit int into 16-bit tests under capability StoragePushConstant8
+	addTestGroup(group.get(), "push_constant_int_8_to_16", addGraphics8BitStoragePushConstantInt8To16Group);
 
-	addTestGroup(group.get(), "8struct_to_32struct",		"8bit floats struct to 32bit tests ",												addGraphics8BitStorageUniformStruct8To32Group);
-	addTestGroup(group.get(), "32struct_to_8struct",		"32bit floats struct to 8bit tests ",												addGraphics8BitStorageUniformStruct32To8Group);
-	addTestGroup(group.get(), "struct_mixed_types",			"mixed type of 8bit and 32bit struc",												addGraphics8bitStorage8bitStructMixedTypesGroup);
+	// 8bit floats struct to 32bit tests
+	addTestGroup(group.get(), "8struct_to_32struct", addGraphics8BitStorageUniformStruct8To32Group);
+	// 32bit floats struct to 8bit tests
+	addTestGroup(group.get(), "32struct_to_8struct", addGraphics8BitStorageUniformStruct32To8Group);
+	// mixed type of 8bit and 32bit struc
+	addTestGroup(group.get(), "struct_mixed_types", addGraphics8bitStorage8bitStructMixedTypesGroup);
 
 	return group.release();
 }

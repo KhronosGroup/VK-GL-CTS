@@ -100,18 +100,20 @@ public:
 	GetUint32Case (tcu::TestContext& testCtx, const char* name, const char* description, GetUint32Func func)
 		: tcu::TestCase	(testCtx, name, description)
 		, m_func		(func)
+		, m_description	(description)
 	{
 	}
 
 	IterateResult iterate (void)
 	{
-		m_testCtx.getLog() << TestLog::Message << getDescription() << " returned " << m_func() << TestLog::EndMessage;
+		m_testCtx.getLog() << TestLog::Message << m_description << " returned " << m_func() << TestLog::EndMessage;
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 		return STOP;
 	}
 
 private:
 	GetUint32Func	m_func;
+	const char *	m_description;
 };
 
 class DethreadTests : public tcu::TestCaseGroup

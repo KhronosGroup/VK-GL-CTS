@@ -100,7 +100,7 @@ struct TestParameters
 	}
 };
 
-ShaderSpec getShaderSpec (const TestParameters& params)
+ShaderSpec getShaderSpec (const TestParameters& params, const SourceCollections* programCollection = nullptr)
 {
 	ShaderSpec		spec;
 	const char*		expr		= DE_NULL;
@@ -132,6 +132,14 @@ ShaderSpec getShaderSpec (const TestParameters& params)
 
 	spec.source =
 		string("result = ") + expr + ";\n";
+
+	const bool isMeshShadingStage = (params.shaderType == glu::SHADERTYPE_MESH || params.shaderType == glu::SHADERTYPE_TASK);
+
+	if (isMeshShadingStage && programCollection)
+	{
+		const ShaderBuildOptions buildOptions (programCollection->usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+		spec.buildOptions = buildOptions;
+	}
 
 	return spec;
 }
@@ -758,7 +766,7 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 
 void initImageQueryPrograms (SourceCollections& dst, TestParameters params)
 {
-	const ShaderSpec	spec	= getShaderSpec(params);
+	const ShaderSpec	spec	= getShaderSpec(params, &dst);
 
 	generateSources(params.shaderType, spec, dst);
 }
@@ -797,7 +805,6 @@ void addImageQueryCase (tcu::TestCaseGroup* group, const TestParameters& params)
 
 	addFunctionCaseWithPrograms(group,
 								name,
-								"",
 								checkSupport,
 								isLod ? initImageQueryLodPrograms : initImageQueryPrograms,
 								isLod ? testImageQueryLod : testImageQuery,
@@ -858,22 +865,25 @@ void populateQueryGroup (tcu::TestCaseGroup* group, QueryType query)
 		if (!executorSupported(shaderType))
 			continue;
 
-		addTestGroup(group, glu::getShaderTypeName(shaderType), "", populateQueryInShaderGroup, QueryGroupParams(query, shaderType));
+		addTestGroup(group, glu::getShaderTypeName(shaderType), populateQueryInShaderGroup, QueryGroupParams(query, shaderType));
 	}
 }
 
 void populateImageQueryGroup (tcu::TestCaseGroup* group)
 {
-	addTestGroup(group, "size_lod",	"OpImageQuerySizeLod",	populateQueryGroup, QUERY_TYPE_IMAGE_SIZE_LOD);
-	addTestGroup(group, "lod",		"OpImageQueryLod",		populateQueryGroup, QUERY_TYPE_IMAGE_LOD);
-	addTestGroup(group, "levels",	"OpImageQueryLevels",	populateQueryGroup, QUERY_TYPE_IMAGE_LEVELS);
+	// OpImageQuerySizeLod
+	addTestGroup(group, "size_lod", populateQueryGroup, QUERY_TYPE_IMAGE_SIZE_LOD);
+	// OpImageQueryLod
+	addTestGroup(group, "lod", populateQueryGroup, QUERY_TYPE_IMAGE_LOD);
+	// OpImageQueryLevels
+	addTestGroup(group, "levels", populateQueryGroup, QUERY_TYPE_IMAGE_LEVELS);
 }
 
 } // namespace
 
 tcu::TestCaseGroup* createImageQueryTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "query", "Image Query Tests", populateImageQueryGroup);
+	return createTestGroup(testCtx, "query", populateImageQueryGroup);
 }
 
 } // ycbcr

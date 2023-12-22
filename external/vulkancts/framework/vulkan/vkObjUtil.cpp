@@ -32,6 +32,8 @@
 
 #include "deSTLUtil.hpp"
 
+#include <algorithm>
+
 namespace vk
 {
 
@@ -39,15 +41,23 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 									  const VkDevice							device,
 									  const VkPipelineLayout					pipelineLayout,
 									  const VkPipelineCreateFlags				pipelineFlags,
+									  const void*								pipelinePNext,
 									  const VkShaderModule						shaderModule,
 									  const VkPipelineShaderStageCreateFlags	shaderFlags,
 									  const VkSpecializationInfo*				specializationInfo,
-									  const VkPipelineCache						pipelineCache)
+									  const VkPipelineCache						pipelineCache,
+									  const uint32_t							subgroupSize)
 {
+	const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,	// VkStructureType	sType;
+		DE_NULL,																		// void*			pNext;
+		subgroupSize																	// uint32_t			requiredSubgroupSize;
+	};
 	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-		nullptr,												// const void*							pNext;
+		subgroupSize != 0 ? &subgroupSizeCreateInfo : nullptr,	// const void*							pNext;
 		shaderFlags,											// VkPipelineShaderStageCreateFlags		flags;
 		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
 		shaderModule,											// VkShaderModule						module;
@@ -57,7 +67,7 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 	const VkComputePipelineCreateInfo pipelineCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
-		nullptr,											// const void*						pNext;
+		pipelinePNext,										// const void*						pNext;
 		pipelineFlags,										// VkPipelineCreateFlags			flags;
 		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
 		pipelineLayout,										// VkPipelineLayout					layout;
@@ -76,6 +86,7 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
 							   device,
 							   pipelineLayout,
 							   static_cast<VkPipelineCreateFlags>(0u),
+							   DE_NULL,
 							   shaderModule,
 							   static_cast<VkPipelineShaderStageCreateFlags>(0u),
 							   DE_NULL);
@@ -392,7 +403,6 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 }
 
 #ifndef CTS_USES_VULKANSC
-
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkDevice									device,
 									   const VkPipelineLayout							pipelineLayout,
@@ -408,10 +418,9 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo,
 									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo,
 									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo,
-									   const VkPipelineCreateFlags						pipelineCreateFlags)
+									   const VkPipelineCreateFlags						pipelineCreateFlags,
+									   const void*										pNext)
 {
-	const VkBool32									disableRasterization				= (fragmentShaderModule == DE_NULL);
-
 	VkPipelineShaderStageCreateInfo					stageCreateInfo						=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType
@@ -427,13 +436,13 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 
 	if (taskShaderModule != DE_NULL)
 	{
-		stageCreateInfo.stage	= VK_SHADER_STAGE_TASK_BIT_NV;
+		stageCreateInfo.stage	= VK_SHADER_STAGE_TASK_BIT_EXT;
 		stageCreateInfo.module	= taskShaderModule;
 		pipelineShaderStageParams.push_back(stageCreateInfo);
 	}
 
 	{
-		stageCreateInfo.stage	= VK_SHADER_STAGE_MESH_BIT_NV;
+		stageCreateInfo.stage	= VK_SHADER_STAGE_MESH_BIT_EXT;
 		stageCreateInfo.module	= meshShaderModule;
 		pipelineShaderStageParams.push_back(stageCreateInfo);
 	}
@@ -444,6 +453,59 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 		stageCreateInfo.module	= fragmentShaderModule;
 		pipelineShaderStageParams.push_back(stageCreateInfo);
 	}
+
+	return makeGraphicsPipeline(
+		vk,
+		device,
+		DE_NULL,
+		pipelineLayout,
+		pipelineCreateFlags,
+		pipelineShaderStageParams,
+		renderPass,
+		viewports,
+		scissors,
+		subpass,
+		rasterizationStateCreateInfo,
+		multisampleStateCreateInfo,
+		depthStencilStateCreateInfo,
+		colorBlendStateCreateInfo,
+		dynamicStateCreateInfo,
+		pNext);
+}
+#endif // CTS_USES_VULKANSC
+
+namespace
+{
+
+// Returns true if the shader stage create info structure contains information on the fragment shader.
+// We could do this with a lambda but it's a bit more clear this way.
+bool isFragShaderInfo (const VkPipelineShaderStageCreateInfo& shaderInfo)
+{
+	return (shaderInfo.stage == VK_SHADER_STAGE_FRAGMENT_BIT);
+}
+
+}
+
+Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&								vk,
+									   const VkDevice										device,
+									   const VkPipeline										basePipelineHandle,
+									   const VkPipelineLayout								pipelineLayout,
+									   const VkPipelineCreateFlags							pipelineCreateFlags,
+									   const std::vector<VkPipelineShaderStageCreateInfo>&	pipelineShaderStageParams,
+									   const VkRenderPass									renderPass,
+									   const std::vector<VkViewport>&						viewports,
+									   const std::vector<VkRect2D>&							scissors,
+									   const deUint32										subpass,
+									   const VkPipelineRasterizationStateCreateInfo*		rasterizationStateCreateInfo,
+									   const VkPipelineMultisampleStateCreateInfo*			multisampleStateCreateInfo,
+									   const VkPipelineDepthStencilStateCreateInfo*			depthStencilStateCreateInfo,
+									   const VkPipelineColorBlendStateCreateInfo*			colorBlendStateCreateInfo,
+									   const VkPipelineDynamicStateCreateInfo*				dynamicStateCreateInfo,
+									   const void*											pNext)
+{
+	// Disable rasterization if no fragment shader info is found in pipelineShaderStageParams.
+	const auto										fragFound							= std::any_of(begin(pipelineShaderStageParams), end(pipelineShaderStageParams), isFragShaderInfo);
+	const VkBool32									disableRasterization				= (!fragFound);
 
 	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = initVulkanStructure();
 	viewportStateCreateInfo.viewportCount	= static_cast<uint32_t>(viewports.size());
@@ -485,7 +547,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 	const VkGraphicsPipelineCreateInfo		pipelineCreateInfo					=
 	{
 		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,														// VkStructureType                                  sType
-		nullptr,																								// const void*                                      pNext
+		pNext,																									// const void*                                      pNext
 		pipelineCreateFlags,																					// VkPipelineCreateFlags                            flags
 		static_cast<uint32_t>(pipelineShaderStageParams.size()),												// deUint32                                         stageCount
 		de::dataOrNull(pipelineShaderStageParams),																// const VkPipelineShaderStageCreateInfo*           pStages
@@ -501,14 +563,12 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 		pipelineLayout,																							// VkPipelineLayout                                 layout
 		renderPass,																								// VkRenderPass                                     renderPass
 		subpass,																								// deUint32                                         subpass
-		DE_NULL,																								// VkPipeline                                       basePipelineHandle
-		0																										// deInt32                                          basePipelineIndex;
+		basePipelineHandle,																						// VkPipeline                                       basePipelineHandle
+		-1																										// deInt32                                          basePipelineIndex;
 	};
 
 	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
-
-#endif // CTS_USES_VULKANSC
 
 Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 								   const VkDevice						device,
@@ -519,7 +579,8 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 								   const VkImageLayout					finalLayoutDepthStencil,
 								   const VkImageLayout					subpassLayoutColor,
 								   const VkImageLayout					subpassLayoutDepthStencil,
-								   const VkAllocationCallbacks* const	allocationCallbacks)
+								   const VkAllocationCallbacks* const	allocationCallbacks,
+								   const void*							pNext)
 {
 	const bool								hasColor							= colorFormat != VK_FORMAT_UNDEFINED;
 	const bool								hasDepthStencil						= depthStencilFormat != VK_FORMAT_UNDEFINED;
@@ -588,7 +649,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 	const VkRenderPassCreateInfo			renderPassInfo						=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,									// VkStructureType                   sType
-		DE_NULL,																	// const void*                       pNext
+		pNext,																		// const void*                       pNext
 		(VkRenderPassCreateFlags)0,													// VkRenderPassCreateFlags           flags
 		(deUint32)attachmentDescriptions.size(),									// deUint32                          attachmentCount
 		attachmentDescriptions.size() > 0 ? &attachmentDescriptions[0] : DE_NULL,	// const VkAttachmentDescription*    pAttachments
@@ -702,9 +763,22 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize				size,
 
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,
-										   const VkDescriptorSetLayout	descriptorSetLayout)
+										   const VkDescriptorSetLayout	descriptorSetLayout,
+										   const VkPushConstantRange*	pushConstantRange)
 {
-	return makePipelineLayout(vk, device, (descriptorSetLayout == DE_NULL) ? 0u : 1u, &descriptorSetLayout);
+	const uint32_t layoutCount	= ((descriptorSetLayout == DE_NULL) ? 0u : 1u);
+	const uint32_t rangeCount	= ((pushConstantRange == nullptr) ? 0u : 1u);
+	return makePipelineLayout(vk, device, layoutCount, &descriptorSetLayout, rangeCount, pushConstantRange);
+}
+
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&					vk,
+										   const VkDevice							device,
+										   const std::vector<VkDescriptorSetLayout>	&descriptorSetLayouts)
+{
+	const deUint32					setLayoutCount		= descriptorSetLayouts.empty() ? 0u : (deUint32)descriptorSetLayouts.size();
+	const VkDescriptorSetLayout*	descriptorSetLayout	= descriptorSetLayouts.empty() ? DE_NULL : descriptorSetLayouts.data();
+
+	return makePipelineLayout(vk, device, setLayoutCount, descriptorSetLayout);
 }
 
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&								vk,
@@ -826,6 +900,14 @@ VkBufferImageCopy makeBufferImageCopy (const VkExtent3D					extent,
 		extent,					//	VkExtent3D					imageExtent;
 	};
 	return copyParams;
+}
+
+CommandPoolWithBuffer::CommandPoolWithBuffer (
+										const DeviceInterface& vkd,
+										const VkDevice         device,
+										const deUint32         queueFamilyIndex) {
+	cmdPool		= makeCommandPool(vkd, device, queueFamilyIndex);
+	cmdBuffer	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
 } // vk

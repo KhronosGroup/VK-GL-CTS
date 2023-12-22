@@ -8,16 +8,38 @@ set(DEQP_VK_MESH_SHADER_SRCS
 	vktMeshShaderTests.hpp
 	vktMeshShaderSyncTests.cpp
 	vktMeshShaderSyncTests.hpp
+	vktMeshShaderSyncTestsEXT.cpp
+	vktMeshShaderSyncTestsEXT.hpp
 	vktMeshShaderSmokeTests.cpp
 	vktMeshShaderSmokeTests.hpp
+	vktMeshShaderSmokeTestsEXT.cpp
+	vktMeshShaderSmokeTestsEXT.hpp
 	vktMeshShaderApiTests.cpp
 	vktMeshShaderApiTests.hpp
+	vktMeshShaderApiTestsEXT.cpp
+	vktMeshShaderApiTestsEXT.hpp
 	vktMeshShaderPropertyTests.cpp
 	vktMeshShaderPropertyTests.hpp
 	vktMeshShaderBuiltinTests.cpp
 	vktMeshShaderBuiltinTests.hpp
+	vktMeshShaderBuiltinTestsEXT.cpp
+	vktMeshShaderBuiltinTestsEXT.hpp
 	vktMeshShaderMiscTests.cpp
 	vktMeshShaderMiscTests.hpp
+	vktMeshShaderMiscTestsEXT.cpp
+	vktMeshShaderMiscTestsEXT.hpp
+	vktMeshShaderInOutTestsEXT.cpp
+	vktMeshShaderInOutTestsEXT.hpp
+	vktMeshShaderPropertyTestsEXT.cpp
+	vktMeshShaderPropertyTestsEXT.hpp
+	vktMeshShaderConditionalRenderingTestsEXT.cpp
+	vktMeshShaderConditionalRenderingTestsEXT.hpp
+	vktMeshShaderProvokingVertexTestsEXT.cpp
+	vktMeshShaderProvokingVertexTestsEXT.hpp
+	vktMeshShaderQueryTestsEXT.cpp
+	vktMeshShaderQueryTestsEXT.hpp
+	vktMeshShaderUtil.cpp
+	vktMeshShaderUtil.hpp
 	)
 
 set(DEQP_VK_MESH_SHADER_LIBS

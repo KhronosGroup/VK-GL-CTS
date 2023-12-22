@@ -3,6 +3,8 @@
 * ------------------------
 *
 * Copyright (c) 2016 The Khronos Group Inc.
+* Copyright (c) 2023 LunarG, Inc.
+* Copyright (c) 2023 Nintendo
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -179,7 +181,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 		DE_NULL												// const VkSubpassDependency*		pDependencies;
 	};
 
-	const Unique<VkRenderPass> renderPass(createRenderPass(deviceInterface, device, &renderPassInfo));
+	RenderPassWrapper renderPass (m_imageMSParams.pipelineConstructionType, deviceInterface, device, &renderPassInfo);
 
 	const VkImageSubresourceRange fullImageRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, imageMSInfo.mipLevels, 0u, imageMSInfo.arrayLayers);
 
@@ -187,6 +189,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 	const Unique<VkImageView> imageMSView(makeImageView(deviceInterface, device, **imageMS, mapImageViewType(m_imageType), imageMSInfo.format, fullImageRange));
 	const Unique<VkImageView> imageRSView(makeImageView(deviceInterface, device, **imageRS, mapImageViewType(m_imageType), imageMSInfo.format, fullImageRange));
 
+	std::vector<VkImage> images = { **imageMS, **imageRS};
 	const VkImageView attachmentsViews[] = { *imageMSView, *imageRSView };
 
 	// Create framebuffer
@@ -203,7 +206,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 		imageMSInfo.arrayLayers,					// uint32_t                                    layers;
 	};
 
-	const Unique<VkFramebuffer> framebuffer(createFramebuffer(deviceInterface, device, &framebufferInfo));
+	renderPass.createFramebuffer(deviceInterface, device, &framebufferInfo, images);
 
 	std::vector<vk::VkPushConstantRange>	pushConstantRanges;
 
@@ -230,7 +233,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 		(pushConstantRanges.empty() ? nullptr : pushConstantRanges.data()),	// const VkPushConstantRange*		pPushConstantRanges;
 	};
 
-	const Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(deviceInterface, device, &pipelineLayoutParams));
+	const PipelineLayoutWrapper pipelineLayout(m_imageMSParams.pipelineConstructionType, deviceInterface, device, &pipelineLayoutParams);
 
 	// Create vertex attributes data
 	const VertexDataDesc vertexDataDesc = getVertexDataDescripton();
@@ -276,25 +279,25 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 		VK_FALSE,														// VkBool32									alphaToOneEnable;
 	};
 
-	const Unique<VkShaderModule> vsModule(createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("vertex_shader"), (VkShaderModuleCreateFlags)0));
-	const Unique<VkShaderModule> fsModule(createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("fragment_shader"), (VkShaderModuleCreateFlags)0));
+	const ShaderWrapper vsModule(ShaderWrapper(deviceInterface, device, m_context.getBinaryCollection().get("vertex_shader"), (VkShaderModuleCreateFlags)0));
+	const ShaderWrapper fsModule(ShaderWrapper(deviceInterface, device, m_context.getBinaryCollection().get("fragment_shader"), (VkShaderModuleCreateFlags)0));
 
 	// Create graphics pipeline
-	GraphicsPipelineWrapper graphicsPipeline(deviceInterface, device, m_imageMSParams.pipelineConstructionType);
+	GraphicsPipelineWrapper graphicsPipeline(instance, deviceInterface, physicalDevice, device, m_context.getDeviceExtensions(), m_imageMSParams.pipelineConstructionType);
 	graphicsPipeline.setDefaultRasterizationState()
 					.setDefaultColorBlendState()
 					.setDefaultDepthStencilState()
 					.setDefaultTopology(vertexDataDesc.primitiveTopology)
-					.setupVertexInputStete(&vertexInputStateInfo)
+					.setupVertexInputState(&vertexInputStateInfo)
 					.setupPreRasterizationShaderState(viewports,
 						scissors,
-						*pipelineLayout,
+						pipelineLayout,
 						*renderPass,
 						0u,
-						*vsModule)
-					.setupFragmentShaderState(*pipelineLayout, *renderPass, 0u, *fsModule, DE_NULL, &multisampleStateInfo)
+						vsModule)
+					.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fsModule, DE_NULL, &multisampleStateInfo)
 					.setupFragmentOutputState(*renderPass, 0, DE_NULL, &multisampleStateInfo)
-					.setMonolithicPipelineLayout(*pipelineLayout)
+					.setMonolithicPipelineLayout(pipelineLayout)
 					.buildPipeline();
 
 	// Create command buffer for compute and transfer oparations
@@ -337,10 +340,10 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 		clearValues.push_back(makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)));
 		clearValues.push_back(makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)));
 
-		beginRenderPass(deviceInterface, *commandBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, imageMSInfo.extent.width, imageMSInfo.extent.height), (deUint32)clearValues.size(), &clearValues[0]);
+		renderPass.begin(deviceInterface, *commandBuffer, makeRect2D(0, 0, imageMSInfo.extent.width, imageMSInfo.extent.height), (deUint32)clearValues.size(), &clearValues[0]);
 
 		// Bind graphics pipeline
-		deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getPipeline());
+		graphicsPipeline.bind(*commandBuffer);
 
 		// Bind vertex buffer
 		deviceInterface.cmdBindVertexBuffers(*commandBuffer, 0u, 1u, &vertexBuffer->get(), &vertexStartOffset);
@@ -353,7 +356,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 		deviceInterface.cmdDraw(*commandBuffer, vertexDataDesc.verticesCount, 1u, 0u, 0u);
 
 		// End render pass
-		endRenderPass(deviceInterface, *commandBuffer);
+		renderPass.end(deviceInterface, *commandBuffer);
 	}
 
 	const VkImage sourceImage = m_imageMSParams.numSamples == VK_SAMPLE_COUNT_1_BIT ? **imageMS : **imageRS;

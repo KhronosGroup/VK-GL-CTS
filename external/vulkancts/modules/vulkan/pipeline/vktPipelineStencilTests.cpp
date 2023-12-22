@@ -4,6 +4,8 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2023 LunarG, Inc.
+ * Copyright (c) 2023 Nintendo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +113,6 @@ public:
 
 											StencilTest				(tcu::TestContext&			testContext,
 																	 const std::string&			name,
-																	 const std::string&			description,
 																	 PipelineConstructionType	pipelineConstructionType,
 																	 VkFormat					stencilFormat,
 																	 const VkStencilOpState&	stencilOpStateFront,
@@ -164,17 +165,17 @@ private:
 	de::MovePtr<Allocation>				m_stencilImageAlloc;
 	Move<VkImageView>					m_colorAttachmentView;
 	Move<VkImageView>					m_stencilAttachmentView;
-	Move<VkRenderPass>					m_renderPass;
+	RenderPassWrapper					m_renderPass;
 	Move<VkFramebuffer>					m_framebuffer;
 
-	Move<VkShaderModule>				m_vertexShaderModule;
-	Move<VkShaderModule>				m_fragmentShaderModule;
+	ShaderWrapper						m_vertexShaderModule;
+	ShaderWrapper						m_fragmentShaderModule;
 
 	Move<VkBuffer>						m_vertexBuffer;
 	std::vector<Vertex4RGBA>			m_vertices;
 	de::MovePtr<Allocation>				m_vertexBufferAlloc;
 
-	Move<VkPipelineLayout>				m_pipelineLayout;
+	PipelineLayoutWrapper				m_pipelineLayout;
 	GraphicsPipelineWrapper				m_graphicsPipelines[StencilTest::QUAD_COUNT];
 
 	Move<VkCommandPool>					m_cmdPool;
@@ -267,14 +268,13 @@ const float StencilTest::s_quadDepths[QUAD_COUNT] =
 
 StencilTest::StencilTest (tcu::TestContext&			testContext,
 						  const std::string&		name,
-						  const std::string&		description,
 						  PipelineConstructionType	pipelineConstructionType,
 						  VkFormat					stencilFormat,
 						  const VkStencilOpState&	stencilOpStateFront,
 						  const VkStencilOpState&	stencilOpStateBack,
 						  const bool				colorAttachmentEnable,
 						  const bool				separateDepthStencilLayouts)
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_stencilFormat				(stencilFormat)
 	, m_stencilOpStateFront			(stencilOpStateFront)
@@ -292,7 +292,7 @@ void StencilTest::checkSupport (Context& context) const
 	if (m_separateDepthStencilLayouts && !context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
 		TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
 
-	checkPipelineLibraryRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 
 #ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().separateStencilMaskRef)
@@ -362,10 +362,10 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 	, m_stencilFormat				(stencilFormat)
 	, m_graphicsPipelines
 	{
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType },
-		{ context.getDeviceInterface(), context.getDevice(), pipelineConstructionType }
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType },
+		{ context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType }
 	}
 {
 	const DeviceInterface&		vk						= context.getDeviceInterface();
@@ -474,15 +474,20 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_stencilFormat);
+	m_renderPass = RenderPassWrapper(pipelineConstructionType, vk, vkDevice, m_colorFormat, m_stencilFormat);
 
 	// Create framebuffer
 	{
+		std::vector<VkImage>			images;
 		std::vector<VkImageView>		attachmentBindInfos;
 
 		if (m_colorAttachmentEnable)
+		{
+			images.push_back(*m_colorImage);
 			attachmentBindInfos.push_back(*m_colorAttachmentView);
+		}
 
+		images.push_back(*m_stencilImage);
 		attachmentBindInfos.push_back(*m_stencilAttachmentView);
 
 		const VkFramebufferCreateInfo	framebufferParams =
@@ -498,7 +503,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			1u													// deUint32					layers;
 		};
 
-		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+		m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, images);
 	}
 
 	// Create pipeline layout
@@ -514,12 +519,12 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			DE_NULL												// const VkPushConstantRange*	pPushConstantRanges;
 		};
 
-		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
+		m_pipelineLayout = PipelineLayoutWrapper(pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
 	}
 
-	m_vertexShaderModule		= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
+	m_vertexShaderModule		= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_vert"), 0);
 	if (m_colorAttachmentEnable)
-		m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
+		m_fragmentShaderModule	= ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("color_frag"), 0);
 
 	// Create pipeline
 	{
@@ -596,6 +601,21 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			1.0f,															//	float									lineWidth;
 		};
 
+		const vk::VkPipelineColorBlendAttachmentState blendState
+		{
+			VK_FALSE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_OP_ADD,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_FACTOR_ONE,
+			VK_BLEND_OP_ADD,
+			VK_COLOR_COMPONENT_R_BIT |
+			VK_COLOR_COMPONENT_G_BIT |
+			VK_COLOR_COMPONENT_B_BIT |
+			VK_COLOR_COMPONENT_A_BIT,
+
+		};
 		const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateParams
 		{
 			vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType
@@ -603,8 +623,8 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 			0u,																// VkPipelineColorBlendStateCreateFlags			flags
 			VK_FALSE,														// VkBool32										logicOpEnable
 			vk::VK_LOGIC_OP_CLEAR,											// VkLogicOp									logicOp
-			0u,																// deUint32										attachmentCount
-			DE_NULL,														// const VkPipelineColorBlendAttachmentState*	pAttachments
+			m_colorAttachmentEnable ? 1u : 0u,								// deUint32										attachmentCount
+			&blendState,													// const VkPipelineColorBlendAttachmentState*	pAttachments
 			{ 1.0f, 1.0f, 1.0f, 1.0f }										// float										blendConstants[4]
 		};
 
@@ -625,17 +645,17 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 
 			m_graphicsPipelines[quadNdx].setDefaultRasterizerDiscardEnable(!m_colorAttachmentEnable)
 										.setDefaultMultisampleState()
-										.setupVertexInputStete(&vertexInputStateParams)
+										.setupVertexInputState(&vertexInputStateParams)
 										.setupPreRasterizationShaderState(viewports,
 																		  scissors,
-																		  *m_pipelineLayout,
+																		  m_pipelineLayout,
 																		  *m_renderPass,
 																		  0u,
-																		  *m_vertexShaderModule,
+																		  m_vertexShaderModule,
 																		  &rasterizationStateParams)
-										.setupFragmentShaderState(*m_pipelineLayout, *m_renderPass, 0u, *m_fragmentShaderModule, &depthStencilStateParams)
-										.setupFragmentOutputState(*m_renderPass, 0, (m_colorAttachmentEnable ? DE_NULL : &colorBlendStateParams))
-										.setMonolithicPipelineLayout(*m_pipelineLayout)
+										.setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule, &depthStencilStateParams)
+										.setupFragmentOutputState(*m_renderPass, 0, (m_colorAttachmentEnable ? &colorBlendStateParams : DE_NULL))
+										.setMonolithicPipelineLayout(m_pipelineLayout)
 										.buildPipeline();
 		}
 	}
@@ -730,7 +750,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, (deUint32)imageLayoutBarriers.size(), imageLayoutBarriers.data());
 
-		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)attachmentClearValues.size(), attachmentClearValues.data());
+		m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)attachmentClearValues.size(), attachmentClearValues.data());
 
 		const VkDeviceSize		quadOffset		= (m_vertices.size() / StencilTest::QUAD_COUNT) * sizeof(Vertex4RGBA);
 
@@ -738,12 +758,12 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 		{
 			VkDeviceSize vertexBufferOffset = quadOffset * quadNdx;
 
-			vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelines[quadNdx].getPipeline());
+			m_graphicsPipelines[quadNdx].bind(*m_cmdBuffer);
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_vertices.size() / StencilTest::QUAD_COUNT), 1, 0, 0);
 		}
 
-		endRenderPass(vk, *m_cmdBuffer);
+		m_renderPass.end(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
@@ -895,17 +915,6 @@ const char* getShortName (VkStencilOp stencilOp)
 	return DE_NULL;
 }
 
-std::string getStencilStateSetDescription(const VkStencilOpState& stencilOpStateFront,
-										  const VkStencilOpState& stencilOpStateBack)
-{
-	std::ostringstream desc;
-
-	desc << "\nFront faces:\n" << stencilOpStateFront;
-	desc << "Back faces:\n" << stencilOpStateBack;
-
-	return desc.str();
-}
-
 std::string getFormatCaseName (VkFormat format)
 {
 	const std::string fullName = getFormatName(format);
@@ -942,14 +951,16 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConst
 		"comp_always"
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>		stencilTests				(new tcu::TestCaseGroup(testCtx, "stencil", "Stencil tests"));
-	de::MovePtr<tcu::TestCaseGroup>		noColorAttachmentTests		(new tcu::TestCaseGroup(testCtx, "nocolor", "Stencil tests with no color attachment"));
+	// Stencil tests
+	de::MovePtr<tcu::TestCaseGroup>		stencilTests				(new tcu::TestCaseGroup(testCtx, "stencil"));
+	// Stencil tests with no color attachment
+	de::MovePtr<tcu::TestCaseGroup>		noColorAttachmentTests		(new tcu::TestCaseGroup(testCtx, "nocolor"));
 	const bool							colorAttachmentEnabled[]	= { true, false };
 
 	for (deUint32 colorAttachmentEnabledIdx = 0; colorAttachmentEnabledIdx < DE_LENGTH_OF_ARRAY(colorAttachmentEnabled); colorAttachmentEnabledIdx++)
 	{
 		const bool							colorEnabled				= colorAttachmentEnabled[colorAttachmentEnabledIdx];
-		de::MovePtr<tcu::TestCaseGroup>		formatTests					(new tcu::TestCaseGroup(testCtx, "format", "Uses different stencil formats"));
+		de::MovePtr<tcu::TestCaseGroup>		formatTests					(new tcu::TestCaseGroup(testCtx, "format"));
 		StencilOpStateUniqueRandomIterator	stencilOpItr				(123);
 
 		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(stencilFormats); formatNdx++)
@@ -964,8 +975,7 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConst
 				const bool			useSeparateDepthStencilLayouts	= bool(separateDepthStencilLayouts);
 
 				de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-																						(getFormatCaseName(stencilFormat) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "")).c_str(),
-																						(std::string("Uses format ") + getFormatName(stencilFormat) + ((useSeparateDepthStencilLayouts) ? " with separate depth/stencil layouts" : "")).c_str()));
+																						(getFormatCaseName(stencilFormat) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "")).c_str()));
 
 				de::MovePtr<tcu::TestCaseGroup>	stencilStateTests;
 				{
@@ -986,7 +996,7 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConst
 							 << "backRef = " << stencilConfig.backRef;
 					}
 
-					stencilStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states", desc.str().c_str()));
+					stencilStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
 				}
 
 				stencilOpItr.reset();
@@ -994,17 +1004,17 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConst
 				for (deUint32 failOpNdx = 0u; failOpNdx < DE_LENGTH_OF_ARRAY(stencilOps); failOpNdx++)
 				{
 					const std::string				failOpName	= std::string("fail_") + getShortName(stencilOps[failOpNdx]);
-					de::MovePtr<tcu::TestCaseGroup>	failOpTest	(new tcu::TestCaseGroup(testCtx, failOpName.c_str(), ""));
+					de::MovePtr<tcu::TestCaseGroup>	failOpTest	(new tcu::TestCaseGroup(testCtx, failOpName.c_str()));
 
 					for (deUint32 passOpNdx = 0u; passOpNdx < DE_LENGTH_OF_ARRAY(stencilOps); passOpNdx++)
 					{
 						const std::string				passOpName	= std::string("pass_") + getShortName(stencilOps[passOpNdx]);
-						de::MovePtr<tcu::TestCaseGroup>	passOpTest	(new tcu::TestCaseGroup(testCtx, passOpName.c_str(), ""));
+						de::MovePtr<tcu::TestCaseGroup>	passOpTest	(new tcu::TestCaseGroup(testCtx, passOpName.c_str()));
 
 						for (deUint32 dFailOpNdx = 0u; dFailOpNdx < DE_LENGTH_OF_ARRAY(stencilOps); dFailOpNdx++)
 						{
 							const std::string				dFailOpName	= std::string("dfail_") + getShortName(stencilOps[dFailOpNdx]);
-							de::MovePtr<tcu::TestCaseGroup>	dFailOpTest	(new tcu::TestCaseGroup(testCtx, dFailOpName.c_str(), ""));
+							de::MovePtr<tcu::TestCaseGroup>	dFailOpTest	(new tcu::TestCaseGroup(testCtx, dFailOpName.c_str()));
 
 							for (deUint32 compareOpNdx = 0u; compareOpNdx < DE_LENGTH_OF_ARRAY(compareOps); compareOpNdx++)
 							{
@@ -1023,9 +1033,8 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx, PipelineConst
 								// Iterate back set of stencil state in random order
 								const VkStencilOpState	stencilStateBack	= stencilOpItr.next();
 								const std::string		caseName			= compareOpNames[compareOpNdx];
-								const std::string		caseDesc			= getStencilStateSetDescription(stencilStateFront, stencilStateBack);
 
-								dFailOpTest->addChild(new StencilTest(testCtx, caseName, caseDesc, pipelineConstructionType, stencilFormat, stencilStateFront, stencilStateBack, colorEnabled, useSeparateDepthStencilLayouts));
+								dFailOpTest->addChild(new StencilTest(testCtx, caseName, pipelineConstructionType, stencilFormat, stencilStateFront, stencilStateBack, colorEnabled, useSeparateDepthStencilLayouts));
 							}
 							passOpTest->addChild(dFailOpTest.release());
 						}

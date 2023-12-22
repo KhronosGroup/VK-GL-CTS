@@ -231,6 +231,7 @@ std::ostream&	operator<<	(std::ostream& os, const Interval& interval);
 
 #define TCU_SET_INTERVAL_BOUNDS(DST, VAR, SETLOW, SETHIGH) do	\
 {																\
+	DE_FENV_ACCESS_ON											\
 	::tcu::ScopedRoundingMode	VAR##_ctx_;						\
 	::tcu::Interval&			VAR##_dst_	= (DST);			\
 	::tcu::Interval				VAR##_lo_;						\

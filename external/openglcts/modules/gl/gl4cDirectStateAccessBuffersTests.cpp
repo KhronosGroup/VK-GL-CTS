@@ -3380,7 +3380,7 @@ bool ErrorsTest::TestErrorsOfCreateBuffers()
 
 	is_ok &= ErrorCheckAndLog("glCreateBuffers", GL_INVALID_VALUE, " if n is negative.");
 
-	/* Sanity check. */
+	/* Quick check. */
 	if (buffer)
 	{
 		gl.deleteBuffers(1, &buffer);

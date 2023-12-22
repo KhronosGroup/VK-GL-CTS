@@ -229,8 +229,7 @@ class MultipleDispatchesUniformSubgroupSize : public TestCase
 {
 public:
 						MultipleDispatchesUniformSubgroupSize (tcu::TestContext&	testCtx,
-															   const std::string&	name,
-															   const std::string&	description);
+															   const std::string&	name);
 
 	void				initPrograms						  (SourceCollections&	programCollection) const;
 	TestInstance*		createInstance						  (Context&				context) const;
@@ -239,9 +238,8 @@ public:
 };
 
 MultipleDispatchesUniformSubgroupSize::MultipleDispatchesUniformSubgroupSize (tcu::TestContext&	testCtx,
-																			  const std::string&	name,
-																			  const std::string&	description)
-	: TestCase	(testCtx, name, description)
+																			  const std::string&	name)
+	: TestCase	(testCtx, name)
 {
 }
 
@@ -290,9 +288,10 @@ TestInstance* MultipleDispatchesUniformSubgroupSize::createInstance (Context& co
 
 tcu::TestCaseGroup* createMultipleDispatchesUniformSubgroupSizeTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "multiple_dispatches", "Multiple dispatches uniform subgroup size tests"));
+	// Multiple dispatches uniform subgroup size tests
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "multiple_dispatches"));
 
-	testGroup->addChild(new MultipleDispatchesUniformSubgroupSize(testCtx, "uniform_subgroup_size", ""));
+	testGroup->addChild(new MultipleDispatchesUniformSubgroupSize(testCtx, "uniform_subgroup_size"));
 	return testGroup.release();
 }
 

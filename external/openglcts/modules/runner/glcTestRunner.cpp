@@ -498,7 +498,6 @@ static void getTestRunsForSingleConfigGL(glu::ApiType type, vector<TestRunParams
 
 static void getTestRunsForESForGL(glu::ApiType type, vector<TestRunParams>& runs, const ConfigList& configs)
 {
-	DE_UNREF(type);
 #include "glcKhronosMustpassAospForGl.hpp"
 
 	vector<Config>::const_iterator cfgIter = configs.configs.begin();
@@ -507,6 +506,9 @@ static void getTestRunsForESForGL(glu::ApiType type, vector<TestRunParams>& runs
 
 	for (int i = 0; i < numRunParams; ++i)
 	{
+		if (!glu::contextSupports(glu::ContextType(type), runParams[i].apiType))
+			continue;
+
 		const char* apiName = getApiName(runParams[i].apiType);
 
 		const int width  = runParams[i].surfaceWidth;
@@ -652,7 +654,7 @@ static void writeRunSummary(const TestRunSummary& summary, const char* filename)
 	if (!writer)
 		throw std::bad_alloc();
 
-	XML_CHECK(qpXmlWriter_startDocument(writer.get()));
+	XML_CHECK(qpXmlWriter_startDocument(writer.get(), true));
 
 	{
 		qpXmlAttribute attribs[2];
@@ -857,7 +859,7 @@ void TestRunner::deinitSession(void)
 	const tcu::TestRunStatus& result = m_curSession->getResult();
 	bool isOk = result.numFailed == 0 && result.isComplete;
 
-	DE_ASSERT(result.numExecuted == result.numPassed + result.numFailed + result.numNotSupported + result.numWarnings + result.numWaived);
+	DE_ASSERT(result.numExecuted == result.numPassed + result.numFailed + result.numNotSupported + result.numWarnings + result.numWaived + result.numDeviceLost);
 
 	m_sessionsExecuted += 1;
 	(isOk ? m_sessionsPassed : m_sessionsFailed) += 1;

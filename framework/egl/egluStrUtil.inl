@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 3338ed0db494d6a4db7f76627b38f0b1892db096.
+ * Generated from Khronos EGL API description (egl.xml) revision 6550e9b12e0b4f11182bda30ae2a8dd56d0b02c8.
  */
 
 const char* getBooleanName (int value)
@@ -105,6 +105,7 @@ const char* getConfigAttribName (int value)
 		case EGL_TRANSPARENT_GREEN_VALUE:	return "EGL_TRANSPARENT_GREEN_VALUE";
 		case EGL_TRANSPARENT_BLUE_VALUE:	return "EGL_TRANSPARENT_BLUE_VALUE";
 		case EGL_COLOR_COMPONENT_TYPE_EXT:	return "EGL_COLOR_COMPONENT_TYPE_EXT";
+		case EGL_RECORDABLE_ANDROID:		return "EGL_RECORDABLE_ANDROID";
 		default:							return DE_NULL;
 	}
 }

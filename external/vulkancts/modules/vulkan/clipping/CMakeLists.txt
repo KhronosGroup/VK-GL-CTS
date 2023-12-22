@@ -13,5 +13,4 @@ add_library(deqp-vk-clipping STATIC ${DEQP_VK_CLIPPING_SRCS})
 target_link_libraries(deqp-vk-clipping deqp-vk-util tcutil vkutil)
 
 add_library(deqp-vksc-clipping STATIC ${DEQP_VK_CLIPPING_SRCS})
-target_include_directories(deqp-vksc-clipping BEFORE PUBLIC ${CMAKE_SOURCE_DIR}/external/vulkancts/framework/vulkan/generated/vulkansc)
 target_link_libraries(deqp-vksc-clipping PUBLIC deqp-vksc-util tcutil vkscutil)
