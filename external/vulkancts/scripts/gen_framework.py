@@ -834,7 +834,7 @@ class API:
 						if enumerator.extends is None:
 							continue
 						# find enum in api.enums
-						matchedEnum = [enum for enum in api.enums if enumerator.extends == enum.name][0]
+						matchedEnum = [enum for enum in self.enums if enumerator.extends == enum.name][0]
 						# add enumerator only when it is not already in enum
 						if len([e for e in matchedEnum.enumeratorList if e.name == enumerator.name]) == 0:
 							if enumerator.alias == None:
@@ -3443,6 +3443,10 @@ def writeExtensionList(api, filename, extensionType):
 		# make sure that this extension was registered
 		if 'register_extension' not in data.keys():
 			continue
+		# skip extensions that are not supported in Vulkan SC
+		if api.apiName == 'vulkansc':
+			if any(ext.name == extensionName for ext in api.notSupportedExtensions):
+				continue
 		# make sure extension is intended for the vulkan variant
 		is_sc_only = False
 
