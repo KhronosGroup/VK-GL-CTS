@@ -22,8 +22,8 @@
 const char* mustpassDir = "gl_cts/data/mustpass/gl/aosp_mustpass/main/";
 
 static const RunParams khronos_mustpass_aosp_for_gl_first_cfg[] = {
-	{ glu::ApiType::core(4, 5), "es3-master", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
-	{ glu::ApiType::core(4, 5), "es31-master", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
+	{ glu::ApiType::core(4, 5), "es3-main", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
+	{ glu::ApiType::core(4, 5), "es31-main", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
 };
 
 #endif // _GLCKHRONOSMUSTPASSAOSPFORGL_HPP
