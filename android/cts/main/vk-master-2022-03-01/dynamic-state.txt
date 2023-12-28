@@ -1,2 +1,0 @@
-dEQP-VK.dynamic_state.monolithic.rs_state.nonzero_depth_bias_clamp
-dEQP-VK.dynamic_state.monolithic.rs_state.nonzero_depth_bias_constant

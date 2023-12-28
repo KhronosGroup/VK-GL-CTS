@@ -171,7 +171,7 @@ COMP_RESULTS_DIR = PARENT_DIR / "comparison_results"
 
 VK_GL_CTS_ROOT_DIR = Path(ARGS.vk_gl_cts)
 VK_GL_CTS_BUILD_DIR = Path(ARGS.vk_gl_cts_build)
-MUSTPASS_LIST = VK_GL_CTS_ROOT_DIR / "external" / "vulkancts" / "mustpass" / "master" / "vk-default.txt"
+MUSTPASS_LIST = VK_GL_CTS_ROOT_DIR / "external" / "vulkancts" / "mustpass" / "main" / "vk-default.txt"
 if ARGS.deqp_vk is None:
     DEQP_VK_BINARY = VK_GL_CTS_BUILD_DIR / "external" / "vulkancts" / "modules" / "vulkan" / "deqp-vk"
 else:

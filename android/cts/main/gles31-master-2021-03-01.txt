@@ -1,3 +1,0 @@
-dEQP-GLES31.functional.fbo.color.tex2d.r16
-dEQP-GLES31.functional.fbo.color.tex2d.rg16
-dEQP-GLES31.functional.fbo.color.tex2d.rgba16
