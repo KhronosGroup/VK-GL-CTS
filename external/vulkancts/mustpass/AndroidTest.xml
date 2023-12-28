@@ -20,6 +20,19 @@
 		<option name="cleanup-apks" value="true"/>
 		<option name="test-file-name" value="com.drawelements.deqp.apk"/>
 	</target_preparer>
+	<target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
+		<option name="cleanup" value="true"/>
+		<option name="disable" value="true"/>
+		<option name="push" value="deqp-binary32-&gt;/data/local/tmp/deqp-binary32"/>
+		<option name="push" value="deqp-binary64-&gt;/data/local/tmp/deqp-binary64"/>
+		<option name="push" value="gles2-&gt;/data/local/tmp/gles2"/>
+		<option name="push" value="gles3-&gt;/data/local/tmp/gles3"/>
+		<option name="push" value="gles3-incremental-deqp.txt-&gt;/data/local/tmp/gles3-incremental-deqp.txt"/>
+		<option name="push" value="gles31-&gt;/data/local/tmp/gles31"/>
+		<option name="push" value="internal-&gt;/data/local/tmp/internal"/>
+		<option name="push" value="vk-incremental-deqp.txt-&gt;/data/local/tmp/vk-incremental-deqp.txt"/>
+		<option name="push" value="vulkan-&gt;/data/local/tmp/vulkan"/>
+	</target_preparer>
 	<target_preparer class="com.android.compatibility.common.tradefed.targetprep.IncrementalDeqpPreparer">
 		<option name="disable" value="true"/>
 	</target_preparer>
@@ -45,5 +58,6 @@
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-VKSC"/>
 		<option name="deqp-caselist-file" value="vksc-default.txt"/>
+		<option name="incremental-deqp-include-file" value="vk-incremental-deqp.txt"/>
 	</test>
 </configuration>
