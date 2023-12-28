@@ -22,7 +22,7 @@
 const char* mustpassDir = "gl_cts/data/mustpass/egl/aosp_mustpass/main/";
 
 static const RunParams aosp_mustpass_egl_first_cfg[] = {
-	{ glu::ApiType(), "master", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
+	{ glu::ApiType(), "main", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
 };
 
 #endif // _GLCAOSPMUSTPASSEGL_HPP

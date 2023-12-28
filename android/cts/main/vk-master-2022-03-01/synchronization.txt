@@ -1,2 +1,0 @@
-dEQP-VK.synchronization.basic.fence.multiple_signaled
-dEQP-VK.synchronization.basic.fence.one_signaled

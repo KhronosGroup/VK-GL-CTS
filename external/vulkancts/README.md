@@ -136,7 +136,7 @@ Current Vulkan mustpass is checked into repository and can be found at:
 
 Current Vulkan SC mustpass can be found at:
 
-	external/vulkancts/mustpass/master/vksc-default.txt
+	external/vulkancts/mustpass/main/vksc-default.txt
 
 This file contains list of files located in vk-default or vksc-default subdirectory. Those files contain
 tests from bigest test groups and together they contain all test cases that should pass.
@@ -155,7 +155,7 @@ Following command line options MUST be used when running CTS:
 	--deqp-log-images=disable
 	--deqp-log-shader-sources=disable
 
-If an implementation ships with [implicit layers](https://github.com/KhronosGroup/Vulkan-Loader/blob/master/loader/LoaderAndLayerInterface.md#implicit-vs-explicit-layers) enabled, then such layers must be enabled
+If an implementation ships with [implicit layers](https://github.com/KhronosGroup/Vulkan-Loader/blob/main/loader/LoaderAndLayerInterface.md#implicit-vs-explicit-layers) enabled, then such layers must be enabled
 when running CTS.
 
 In addition, on multi-device systems the device for which conformance is claimed
@@ -663,7 +663,7 @@ to Vulkan SC requirements:
 
 - Vulkan SC CTS contains its own mustpass list
 
-  external/vulkancts/mustpass/master/vksc-default.txt
+  external/vulkancts/mustpass/main/vksc-default.txt
 
 - Vulkan SC CTS uses its own executable module to perform tests: deqp-vksc
 

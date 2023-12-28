@@ -1,3 +1,0 @@
-dEQP-VK.memory_model.message_passing.permuted_index.barrier
-dEQP-VK.memory_model.message_passing.permuted_index.release_acquire
-dEQP-VK.memory_model.message_passing.permuted_index.release_acquire_atomic_payload
