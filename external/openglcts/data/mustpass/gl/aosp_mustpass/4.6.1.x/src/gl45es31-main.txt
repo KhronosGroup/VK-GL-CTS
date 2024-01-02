@@ -1,0 +1,2 @@
+dEQP-GL45-ES31.info.*
+dEQP-GL45-ES31.functional.*

@@ -28,7 +28,7 @@ group custom "Custom loop tests"
 
 end # custom
 
-# https://github.com/KhronosGroup/WebGL/blob/master/sdk/tests/conformance2/glsl3/short-circuiting-in-loop-condition.html
+# https://github.com/KhronosGroup/WebGL/blob/main/sdk/tests/conformance2/glsl3/short-circuiting-in-loop-condition.html
 group short_circuit "Short-circuiting operator in a loop using a function call with side effects"
 
 	case while

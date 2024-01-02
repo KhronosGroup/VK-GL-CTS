@@ -45,5 +45,6 @@
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-VKSC"/>
 		<option name="deqp-caselist-file" value="vksc-default.txt"/>
+		<option name="incremental-deqp-include-file" value="vk-incremental-deqp.txt"/>
 	</test>
 </configuration>

@@ -53,9 +53,9 @@ BUILD_CONFIG		= getBuildConfig(DEFAULT_BUILD_DIR, DEFAULT_TARGET, "Debug")
 # main
 
 VULKAN_MAIN_PKG	= Package(module = VULKAN_MODULE, configurations = [
-		  # Master
+		  # Main
 		  Configuration(name					= "default",
-						filters					= [include("master.txt"),
+						filters					= [include("main.txt"),
 												   exclude("test-issues.txt"),
 												   exclude("excluded-tests.txt"),
 												   exclude("android-tests.txt")],
@@ -65,9 +65,9 @@ VULKAN_MAIN_PKG	= Package(module = VULKAN_MODULE, configurations = [
 	 ])
 
 VULKAN_SC_MAIN_PKG	= Package(module = VULKAN_SC_MODULE, configurations = [
-		  # Master
+		  # Main
 		  Configuration(name					= "default",
-						filters					= [include("master_sc.txt"),
+						filters					= [include("main_sc.txt"),
 												   exclude("android-tests-sc.txt")],
 						listOfGroupsToSplit		= ["dEQP-VKSC"]),
 	])
