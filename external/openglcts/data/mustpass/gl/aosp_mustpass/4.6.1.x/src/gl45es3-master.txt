@@ -1,2 +1,0 @@
-dEQP-GL45-ES3.info.*
-dEQP-GL45-ES3.functional.*

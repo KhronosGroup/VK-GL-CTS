@@ -1,2 +1,0 @@
-dEQP-VK.query_pool.concurrent_queries.primary_command_buffer
-dEQP-VK.query_pool.concurrent_queries.secondary_command_buffer

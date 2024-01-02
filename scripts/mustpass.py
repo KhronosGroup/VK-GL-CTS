@@ -611,7 +611,7 @@ def genMustpass (mustpass, moduleCaseDicts):
 	writeFile(specFilename, prettifyXML(specXML).decode())
 
 	# TODO: Which is the best selector mechanism?
-	if (mustpass.version == "master"):
+	if (mustpass.version == "main"):
 		androidTestXML		= genAndroidTestXml(mustpass)
 		androidTestFilename	= os.path.join(mustpass.project.path, "AndroidTest.xml")
 

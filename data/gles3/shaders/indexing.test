@@ -1,4 +1,4 @@
-# https://github.com/KhronosGroup/WebGL/blob/master/sdk/tests/conformance2/glsl3/vector-dynamic-indexing.html
+# https://github.com/KhronosGroup/WebGL/blob/main/sdk/tests/conformance2/glsl3/vector-dynamic-indexing.html
 group moredynamic "More dynamic indexing tests"
 
 	case matrix_twice
