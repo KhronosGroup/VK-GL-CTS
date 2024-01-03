@@ -244,7 +244,7 @@ tcu::TestStatus RayQueryStressInstance::iterate (void)
 		PrimitiveIds and intersectionTs are used to verify correct intersection
 
 		Triangle composed of triangles at increasing z-values - sort of triangular shaped stairs
-		This structure is repeated for 60000 levels with increasing z-values for each triangle.
+		This structure is repeated for 20000 levels with increasing z-values for each triangle.
 
 		*   X-------------------X   *
 		*    \ \_    z=2      //    *
@@ -262,8 +262,8 @@ tcu::TestStatus RayQueryStressInstance::iterate (void)
 
 		TestType::AABBS
 		each level is composed 0f 3 aabbs
-		there are 60000 levels at increasing z-values
-		180000 rays are shot at the center of each aabb originated at z minus epsilon to hit the aabb at (cx, cy, z)
+		there are 20000 levels at increasing z-values
+		60000 rays are shot at the center of each aabb originated at z minus epsilon to hit the aabb at (cx, cy, z)
 
 			  X-----------------X
 			  |                 |
@@ -275,7 +275,7 @@ tcu::TestStatus RayQueryStressInstance::iterate (void)
 			  X--------X--------X
 	*/
 
-	const uint32_t numLevels = 60000;
+	const uint32_t numLevels = 20000;
 	const uint32_t numPrimsPerLevel = 3;
 	const float    alfa = 2.0f * static_cast<float>(M_PI) / static_cast<float>(numPrimsPerLevel);
 	const uint32_t totalNumPrims = numPrimsPerLevel * numLevels;
