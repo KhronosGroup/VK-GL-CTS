@@ -88,6 +88,7 @@ MODULES = [
 	Module("KHR-Single-GL45","GL45"),
 	Module("KHR-Single-GL46","GL46"),
 	Module("KHR-Single-GLES32","GLES32"),
+	Module("KHR-GLESEXT","GLES32"),
 ]
 GLCTS_BIN_NAME = "glcts"
 GLCTS_DIR_NAME = "external/openglcts/modules/"

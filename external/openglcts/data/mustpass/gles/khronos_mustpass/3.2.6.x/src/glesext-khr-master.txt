@@ -1,0 +1,4 @@
+KHR-GLESEXT.draw_elements_base_vertex_tests.*
+KHR-GLESEXT.viewport_array.*
+KHR-GLESEXT.disjoint_timer_query.*
+KHR-GLESEXT.fragment_shading_rate.*
