@@ -1137,7 +1137,7 @@ protected:
 LocalReadTestCase::LocalReadTestCase(tcu::TestContext&		context,
 									 const std::string&		name,
 									 TestType				testType)
-	: vkt::TestCase		(context, name, "")
+	: vkt::TestCase		(context, name)
 	, m_testType		(testType)
 {
 }

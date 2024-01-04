@@ -260,9 +260,8 @@ public:
 
 						SnormLinearClampTestCase	(tcu::TestContext&	testCtx,
 													 const std::string&	name,
-													 const std::string&	description,
 													 ParamsSp			params)
-		: TestCase	(testCtx, name, description)
+		: TestCase	(testCtx, name)
 		, m_params	(params)
 	{
 	}
@@ -319,7 +318,7 @@ void populateUfloatNegativeValuesTests (tcu::TestCaseGroup* group)
 		VK_IMAGE_LAYOUT_UNDEFINED				// VkImageLayout            initialLayout
 	};
 
-	group->addChild(cts_amber::createAmberTestCase(testCtx, "b10g11r11", "", "texture/conversion/ufloat_negative_values", "b10g11r11-ufloat-pack32.amber",
+	group->addChild(cts_amber::createAmberTestCase(testCtx, "b10g11r11", "texture/conversion/ufloat_negative_values", "b10g11r11-ufloat-pack32.amber",
 					std::vector<std::string>(), std::vector<VkImageCreateInfo>(1, info)));
 #else
 	DE_UNREF(group);
@@ -376,7 +375,7 @@ void populateSnormClampTests (tcu::TestCaseGroup* group)
 	for (const auto& param : params)
 	{
 		info.format = param.format;
-		group->addChild(cts_amber::createAmberTestCase(testCtx, param.testName.c_str(), "", "texture/conversion/snorm_clamp", param.amberFile.c_str(),
+		group->addChild(cts_amber::createAmberTestCase(testCtx, param.testName.c_str(), "texture/conversion/snorm_clamp", param.amberFile.c_str(),
 						std::vector<std::string>(), std::vector<VkImageCreateInfo>(1, info)));
 	}
 #else
@@ -417,7 +416,7 @@ void populateSnormLinearClampTests (tcu::TestCaseGroup* group)
 		const int		th					= SnormLinearClampInstance::textureHeight * sizeMultipler;
 
 		de::SharedPtr<SnormLinearClampInstance::Params> params(new SnormLinearClampInstance::Params{testParam.format, tw, th});
-		group->addChild(new SnormLinearClampTestCase(testCtx, testParam.testName, {}, params));
+		group->addChild(new SnormLinearClampTestCase(testCtx, testParam.testName, params));
 
 		sizeMultipler += 2;
 	}
@@ -427,16 +426,19 @@ void populateTextureConversionTests (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
-	group->addChild(createTestGroup(testCtx, "ufloat_negative_values", "Tests for converting negative floats to unsigned floats", populateUfloatNegativeValuesTests));
-	group->addChild(createTestGroup(testCtx, "snorm_clamp", "Tests for SNORM corner cases when smallest negative number gets clamped to -1", populateSnormClampTests));
-	group->addChild(createTestGroup(testCtx, "snorm_clamp_linear", "Tests for SNORM corner cases when negative number gets clamped to -1 after applying linear filtering", populateSnormLinearClampTests));
+	// Tests for converting negative floats to unsigned floats
+	group->addChild(createTestGroup(testCtx, "ufloat_negative_values", populateUfloatNegativeValuesTests));
+	// Tests for SNORM corner cases when smallest negative number gets clamped to -1
+	group->addChild(createTestGroup(testCtx, "snorm_clamp", populateSnormClampTests));
+	// Tests for SNORM corner cases when negative number gets clamped to -1 after applying linear filtering
+	group->addChild(createTestGroup(testCtx, "snorm_clamp_linear", populateSnormLinearClampTests));
 }
 
 } // anonymous namespace
 
 tcu::TestCaseGroup* createTextureConversionTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "conversion", "Texture conversion tests.", populateTextureConversionTests);
+	return createTestGroup(testCtx, "conversion", populateTextureConversionTests);
 }
 
 } // texture

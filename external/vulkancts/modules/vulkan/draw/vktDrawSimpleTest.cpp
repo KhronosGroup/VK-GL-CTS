@@ -385,7 +385,7 @@ void checkSupport(Context& context, SimpleDraw::TestSpec testSpec)
 }	// anonymous
 
 SimpleDrawTests::SimpleDrawTests (tcu::TestContext &testCtx, const SharedGroupParams groupParams)
-	: TestCaseGroup			(testCtx, "simple_draw", "drawing simple geometry")
+	: TestCaseGroup			(testCtx, "simple_draw")
 	, m_groupParams			(groupParams)
 {
 	/* Left blank on purpose */
@@ -407,10 +407,10 @@ void SimpleDrawTests::init (void)
 		};
 
 		addChild(new InstanceFactory<SimpleDraw, FunctionSupport1<SimpleDraw::TestSpec> >
-			(m_testCtx, "simple_draw_triangle_list", "Draws triangle list", testSpec, FunctionSupport1<SimpleDraw::TestSpec>::Args(checkSupport, testSpec)));
+			(m_testCtx, "simple_draw_triangle_list", testSpec, FunctionSupport1<SimpleDraw::TestSpec>::Args(checkSupport, testSpec)));
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 		addChild(new InstanceFactory<SimpleDraw, FunctionSupport1<SimpleDraw::TestSpec> >
-			(m_testCtx, "simple_draw_triangle_strip", "Draws triangle strip", testSpec, FunctionSupport1<SimpleDraw::TestSpec>::Args(checkSupport, testSpec)));
+			(m_testCtx, "simple_draw_triangle_strip", testSpec, FunctionSupport1<SimpleDraw::TestSpec>::Args(checkSupport, testSpec)));
 	}
 	{
 		SimpleDrawInstanced::TestSpec testSpec
@@ -424,10 +424,10 @@ void SimpleDrawTests::init (void)
 		};
 
 		addChild(new InstanceFactory<SimpleDrawInstanced, FunctionSupport1<SimpleDrawInstanced::TestSpec> >
-			(m_testCtx, "simple_draw_instanced_triangle_list", "Draws an instanced triangle list", testSpec, FunctionSupport1<SimpleDrawInstanced::TestSpec>::Args(checkSupport, testSpec)));
+			(m_testCtx, "simple_draw_instanced_triangle_list", testSpec, FunctionSupport1<SimpleDrawInstanced::TestSpec>::Args(checkSupport, testSpec)));
 		testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 		addChild(new InstanceFactory<SimpleDrawInstanced, FunctionSupport1<SimpleDrawInstanced::TestSpec> >
-			(m_testCtx, "simple_draw_instanced_triangle_strip", "Draws an instanced triangle strip", testSpec, FunctionSupport1<SimpleDrawInstanced::TestSpec>::Args(checkSupport, testSpec)));
+			(m_testCtx, "simple_draw_instanced_triangle_strip", testSpec, FunctionSupport1<SimpleDrawInstanced::TestSpec>::Args(checkSupport, testSpec)));
 	}
 }
 

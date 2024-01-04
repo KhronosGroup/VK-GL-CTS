@@ -55,11 +55,10 @@ static std::string genName (char first, char last, int ndx)
 
 RandomInterfaceBlockCase::RandomInterfaceBlockCase (tcu::TestContext&		testCtx,
 													const std::string&		name,
-													const std::string&		description,
 													const TestStageFlags	testStageFlags,
 													deUint32				features,
 													deUint32				seed)
-	: InterfaceBlockCase		(testCtx, name, description, LOAD_FULL_MATRIX, testStageFlags, (features & FEATURE_OUT_OF_ORDER_OFFSETS) != 0u)
+	: InterfaceBlockCase		(testCtx, name, LOAD_FULL_MATRIX, testStageFlags, (features & FEATURE_OUT_OF_ORDER_OFFSETS) != 0u)
 	, m_features				(features)
 	, m_explicitXfbOffsets		((features & (FEATURE_OUT_OF_ORDER_OFFSETS | FEATURE_MISSING_BLOCK_MEMBERS)) != 0u)
 	, m_maxBlocks				(3)

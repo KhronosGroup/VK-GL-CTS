@@ -318,7 +318,6 @@ class InterfaceBlockCase : public vkt::TestCase
 public:
 							InterfaceBlockCase			(tcu::TestContext&		testCtx,
 														 const std::string&		name,
-														 const std::string&		description,
 														 MatrixLoadFlags		matrixLoadFlag,
 														 TestStageFlags			testStageFlag,
 														 bool					shuffleInterfaceMembers = false);

@@ -40,8 +40,8 @@ EGL_WRAPPER_DIR		= os.path.normpath(os.path.join(EGL_DIR, "wrapper"))
 EGL_SOURCE			= khr_util.registry_cache.RegistrySource(
 						"https://raw.githubusercontent.com/KhronosGroup/EGL-Registry",
 						"api/egl.xml",
-						"3338ed0db494d6a4db7f76627b38f0b1892db096",
-						"863db99411edfd83ba1d875fb0e13e021e155689d3eae5199a9b1ec969f368e9")
+						"6550e9b12e0b4f11182bda30ae2a8dd56d0b02c8",
+						"cb965fcee1335723beb11e2e174a5cf69d2f896e459cc25be8074356eb59871c")
 
 VERSION				= '1.5'
 
@@ -72,6 +72,7 @@ EXTENSIONS			= [
 	"EGL_KHR_gl_colorspace",
 	"EGL_EXT_gl_colorspace_bt2020_linear",
 	"EGL_EXT_gl_colorspace_bt2020_pq",
+	"EGL_EXT_gl_colorspace_bt2020_hlg",
 	"EGL_EXT_gl_colorspace_display_p3",
 	"EGL_EXT_gl_colorspace_display_p3_linear",
 	"EGL_EXT_gl_colorspace_display_p3_passthrough",
@@ -79,8 +80,6 @@ EXTENSIONS			= [
 	"EGL_EXT_gl_colorspace_scrgb_linear",
 	"EGL_EXT_surface_SMPTE2086_metadata",
 	"EGL_EXT_surface_CTA861_3_metadata",
-	"EGL_EXT_gl_colorspace_bt2020_linear",
-	"EGL_EXT_gl_colorspace_bt2020_pq",
 	"EGL_ANDROID_recordable"
 ]
 PROTECTS			= [

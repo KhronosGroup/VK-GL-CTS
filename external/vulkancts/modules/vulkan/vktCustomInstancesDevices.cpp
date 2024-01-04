@@ -225,7 +225,7 @@ UncheckedInstance::~UncheckedInstance ()
 	if (m_instance != DE_NULL)
 	{
 #ifndef CTS_USES_VULKANSC
-		m_callback.~Move<vk::VkDebugReportCallbackEXT>();
+		m_callback = vk::Move<vk::VkDebugReportCallbackEXT>();
 		m_recorder.reset(nullptr);
 #endif // CTS_USES_VULKANSC
 		m_driver->destroyInstance(m_instance, m_allocator);
@@ -910,7 +910,7 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	};
 
 	m_logicalDevice			= createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-	m_deviceDriver			= de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(vkp, instance, *m_logicalDevice, apiVersion));
+	m_deviceDriver			= de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(vkp, instance, *m_logicalDevice, apiVersion, m_context.getTestContext().getCommandLine()));
 	m_allocator				= de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	m_queueFamilyTransfer	= queueFamilyTransfer;
 	m_queueFamilyDecode		= queueFamilyDecode;

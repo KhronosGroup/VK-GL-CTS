@@ -1,0 +1,62 @@
+#!amber
+
+DEVICE_FEATURE geometryShader
+
+SHADER vertex vert GLSL
+#version 460
+layout (location=0) in vec4 inPos;
+
+void main()
+{
+    gl_Position = inPos;
+}
+
+END
+
+SHADER fragment frag GLSL
+#version 460
+layout (location=0) out vec4 outColor;
+
+void main()
+{
+    if (gl_Layer == 0)
+        outColor = vec4(0.0,1.0,0.0,0.0);
+    else
+        outColor = vec4(1.0,0.0,0.0,0.0);
+}
+
+END
+
+BUFFER position DATA_TYPE vec4<float> DATA
+-1 -1 0 1
+ 1 -1 0 1
+-1  0 0 1
+
+-1  0 0 1
+ 1 -1 0 1
+ 1  0 0 1
+
+-1  0 0 1
+ 1  0 0 1
+-1  1 0 1
+
+-1  1 0 1
+ 1  0 0 1
+ 1  1 0 1
+
+END
+
+BUFFER framebuffer FORMAT R8G8B8A8_UNORM
+
+PIPELINE graphics graphics_pipeline
+  ATTACH vert
+  ATTACH frag
+  VERTEX_DATA position LOCATION 0
+  FRAMEBUFFER_SIZE 1 1
+  BIND BUFFER framebuffer AS color LOCATION 0
+END
+
+CLEAR_COLOR graphics_pipeline 255 255 255 255
+CLEAR graphics_pipeline
+RUN graphics_pipeline DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 12
+EXPECT framebuffer IDX 0 0 SIZE 1 1 EQ_RGBA 0 255 0 0

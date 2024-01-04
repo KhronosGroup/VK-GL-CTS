@@ -108,6 +108,8 @@ typedef enum
 	TT_MATRIXMULADD_SATURATED,
 	TT_MATRIXMULADD_WRAPPING,
 	TT_MATRIXMULADD_STRIDE0,
+	TT_MULTICOMPONENT_LOAD,
+	TT_MULTICOMPONENT_SAVE,
 } TestType;
 
 typedef enum
@@ -142,6 +144,8 @@ struct CaseDef
 	UseType								useType;
 	SubgroupSizeMode					subgroupSizeMode;
 	vk::ComputePipelineConstructionType	computePipelineConstructionType;
+	deUint32							inputComponentCount;
+	deUint32							outputComponentCount;
 };
 
 bool isKhr (UseType useType)
@@ -282,7 +286,7 @@ CooperativeMatrixTestInstance::~CooperativeMatrixTestInstance (void)
 class CooperativeMatrixTestCase : public TestCase
 {
 	public:
-								CooperativeMatrixTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+								CooperativeMatrixTestCase		(tcu::TestContext& context, const char* name, const CaseDef data);
 								~CooperativeMatrixTestCase	(void);
 	virtual	void				initPrograms		(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance		(Context& context) const;
@@ -292,8 +296,8 @@ private:
 	CaseDef					m_data;
 };
 
-CooperativeMatrixTestCase::CooperativeMatrixTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+CooperativeMatrixTestCase::CooperativeMatrixTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -348,6 +352,8 @@ void CooperativeMatrixTestCase::checkSupport (Context& context) const
 
 	std::vector<VkCooperativeMatrixPropertiesKHR>	properties		= getCooperativeMatrixPropertiesConverted(context, isKhr(m_data.useType));
 	bool											supported[2]	= { false, false };
+	const auto										isMMA			= isMatrixMulAddOp(m_data.testType);
+	const auto										isMMASat		= m_data.testType == TT_MATRIXMULADD_SATURATED;
 
 	for (size_t i = 0; i < properties.size(); ++i)
 	{
@@ -356,10 +362,10 @@ void CooperativeMatrixTestCase::checkSupport (Context& context) const
 		if (p->scope != VK_SCOPE_SUBGROUP_KHR)
 			continue;
 
-		if (m_data.testType == TT_MATRIXMULADD_SATURATED && p->saturatingAccumulation == DE_FALSE)
+		if (isMMA && isMMASat != static_cast<bool>(p->saturatingAccumulation))
 			continue;
 
-		if (isMatrixMulAddOp(m_data.testType))
+		if (isMMA)
 		{
 			if (p->AType == m_data.inputType &&
 				p->BType == m_data.inputType &&
@@ -527,6 +533,49 @@ void CooperativeMatrixTestCase::initPrograms (SourceCollections& programCollecti
 	const char *typeStrB = componentTypeInfo[m_data.inputType].typeName;
 	const char *typeStrC = componentTypeInfo[m_data.outputType].typeName;
 	const char *typeStrO = componentTypeInfo[m_data.outputType].typeName;
+	string inputType;
+	string outputType;
+	string divisorA;
+	string divisorB;
+	string divisorC;
+	string divisorO;
+	string* divisors[4] = { &divisorA, &divisorB, &divisorC, &divisorO };
+
+	if (m_data.testType == TT_MULTICOMPONENT_LOAD)
+	{
+		const char* componentSuffix	= m_data.inputComponentCount == 2 ? "vec2"
+									: m_data.inputComponentCount == 4 ? "vec4"
+									: "";
+
+		inputType	= string(1, componentTypeInfo[m_data.inputType].coopmatTypeName[0])
+					+ de::toString(componentTypeInfo[m_data.inputType].bits)
+					+ componentSuffix;
+
+		typeStrA = inputType.c_str();
+		typeStrB = inputType.c_str();
+		divisorA = m_data.inputComponentCount == 2 ? "/2"
+				 : m_data.inputComponentCount == 4 ? "/4"
+				 : "";
+		divisorB = divisorA;
+	}
+
+	if (m_data.testType == TT_MULTICOMPONENT_SAVE)
+	{
+		const char* componentSuffix	= m_data.outputComponentCount == 2 ? "vec2"
+									: m_data.outputComponentCount == 4 ? "vec4"
+									: "";
+
+		outputType	= string(1, componentTypeInfo[m_data.outputType].coopmatTypeName[0])
+					+ de::toString(componentTypeInfo[m_data.outputType].bits)
+					+ componentSuffix;
+
+		typeStrC = outputType.c_str();
+		typeStrO = outputType.c_str();
+		divisorC = m_data.outputComponentCount == 2 ? "/2"
+				 : m_data.outputComponentCount == 4 ? "/4"
+				 : "";
+		divisorO = divisorC;
+	}
 
 	css << "const int workgroupsX = " << m_data.workgroupsX << ";\n";
 	css << "const uvec2 subgroupsPerWG = uvec2(" << m_data.subgroupsPerWorkgroupX << ", " << m_data.subgroupsPerWorkgroupY << ");\n";
@@ -616,10 +665,10 @@ void CooperativeMatrixTestCase::initPrograms (SourceCollections& programCollecti
 
 	// element<i> is the starting element in buffer memory.
 	// elementS<i> is the starting element in shared memory.
-	css << "   uint element0 = " << strides[0] << " * " << (m_data.colMajor ? dims[0].cols : dims[0].rows) << " * matrixID.y + " << (m_data.colMajor ? dims[0].rows : dims[0].cols) << " * matrixID.x;\n"
-		   "   uint element1 = " << strides[1] << " * " << (m_data.colMajor ? dims[1].cols : dims[1].rows) << " * matrixID.y + " << (m_data.colMajor ? dims[1].rows : dims[1].cols) << " * matrixID.x;\n"
-		   "   uint element2 = " << strides[2] << " * " << (m_data.colMajor ? dims[2].cols : dims[2].rows) << " * matrixID.y + " << (m_data.colMajor ? dims[2].rows : dims[2].cols) << " * matrixID.x;\n"
-		   "   uint element3 = " << strides[3] << " * " << (m_data.colMajor ? dims[3].cols : dims[3].rows) << " * matrixID.y + " << (m_data.colMajor ? dims[3].rows : dims[3].cols) << " * matrixID.x;\n"
+	css << "   uint element0 = (" << strides[0] << " * " << (m_data.colMajor ? dims[0].cols : dims[0].rows) << " * matrixID.y + " << (m_data.colMajor ? dims[0].rows : dims[0].cols) << " * matrixID.x)" << divisorA << ";\n"
+		   "   uint element1 = (" << strides[1] << " * " << (m_data.colMajor ? dims[1].cols : dims[1].rows) << " * matrixID.y + " << (m_data.colMajor ? dims[1].rows : dims[1].cols) << " * matrixID.x)" << divisorB << ";\n"
+		   "   uint element2 = (" << strides[2] << " * " << (m_data.colMajor ? dims[2].cols : dims[2].rows) << " * matrixID.y + " << (m_data.colMajor ? dims[2].rows : dims[2].cols) << " * matrixID.x)" << divisorC << ";\n"
+		   "   uint element3 = (" << strides[3] << " * " << (m_data.colMajor ? dims[3].cols : dims[3].rows) << " * matrixID.y + " << (m_data.colMajor ? dims[3].rows : dims[3].cols) << " * matrixID.x)" << divisorO << ";\n"
 		   "   uint elementS0, elementS1, elementS2, elementS3;\n";
 
 	// For shared memory tests, copy the matrix from buffer memory into
@@ -641,7 +690,7 @@ void CooperativeMatrixTestCase::initPrograms (SourceCollections& programCollecti
 		for (deUint32 m = 0; m < 4; ++m)
 		{
 			string sharedStride = strides[m] + " / workgroupsX";
-			css << "       elementS" << m << " = " << sharedStride << " * " << (m_data.colMajor ? dims[m].cols : dims[m].rows) << " * subgroupXY.y + " << (m_data.colMajor ? dims[m].rows : dims[m].cols) << " * subgroupXY.x;\n";
+			css << "       elementS" << m << " = (" << sharedStride << " * " << (m_data.colMajor ? dims[m].cols : dims[m].rows) << " * subgroupXY.y + " << (m_data.colMajor ? dims[m].rows : dims[m].cols) << " * subgroupXY.x)" << *divisors[m] << ";\n";
 		}
 		css << "   if (subgroupElect()) {\n";
 		// copy all three input buffers.
@@ -650,8 +699,8 @@ void CooperativeMatrixTestCase::initPrograms (SourceCollections& programCollecti
 			string sharedStride = strides[m] + " / workgroupsX";
 			css <<  "       for (int i = 0; i < " << dims[m].rows << "; ++i) {\n"
 					"       for (int j = 0; j < " << dims[m].cols << "; ++j) {\n"
-					"           int localElementInput = " << strides[m] << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j") << ";\n"
-					"           int localElementShared = " << sharedStride << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j") << ";\n"
+					"           int localElementInput = (" << strides[m] << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j") << ")" << *divisors[m] << ";\n"
+					"           int localElementShared = (" << sharedStride << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j") << ")" << *divisors[m] << ";\n"
 					"           " << name[m] << "[elementS" << m << " + localElementShared] = " << inputName[m] << ".x[element" << m << " + localElementInput];\n"
 					"       }\n"
 					"       }\n";
@@ -665,7 +714,7 @@ void CooperativeMatrixTestCase::initPrograms (SourceCollections& programCollecti
 	const char* colMajorKHR = (m_data.colMajor ? "gl_CooperativeMatrixLayoutColumnMajor" : "gl_CooperativeMatrixLayoutRowMajor");
 	const char* colMajor    = (isKhr(m_data.useType) ? colMajorKHR : colMajorNV);
 
-	string loadStrides[3] = { strides[0], strides[1], strides[2] };
+	string loadStrides[3] = { strides[0] + divisorA, strides[1] + divisorB, strides[2] + divisorC };
 	// Load with a stride of 0
 	if (m_data.testType == TT_MATRIXMULADD_STRIDE0)
 		loadStrides[0] = loadStrides[1] = loadStrides[2] = "0";
@@ -758,6 +807,12 @@ void CooperativeMatrixTestCase::initPrograms (SourceCollections& programCollecti
 	case TT_MATRIXMULADD_ARRAY:
 		css << "   matOArr[1] = coopMatMulAdd" << suffix << "(matAArr[1], matBArr[1], matCArr[1]);\n";
 		break;
+	case TT_MULTICOMPONENT_LOAD:
+		css << "   matO = matA;\n";
+		break;
+	case TT_MULTICOMPONENT_SAVE:
+		css << "   matO = matA;\n";
+		break;
 	}
 
 	if (m_data.testType == TT_COMPOSITE_ARRAY ||
@@ -770,13 +825,13 @@ void CooperativeMatrixTestCase::initPrograms (SourceCollections& programCollecti
 	if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
 	{
 		string sharedStride = strides[3] + " / workgroupsX";
-		css << "   coopMatStore" << suffix << "(matO, sharedO, elementS3, " << sharedStride << ", " << colMajor << ");\n";
+		css << "   coopMatStore" << suffix << "(matO, sharedO, elementS3, " << sharedStride << divisorO << ", " << colMajor << ");\n";
 		css << "   controlBarrier(gl_ScopeSubgroup, gl_ScopeSubgroup, gl_StorageSemanticsShared, gl_SemanticsAcquireRelease);\n";
 		css << "   if (subgroupElect()) {\n";
 		css << "       for (int i = 0; i < " << dims[3].rows << "; ++i) {\n"
 			   "       for (int j = 0; j < " << dims[3].cols << "; ++j) {\n"
-			   "           int localElementInput = " << strides[3] << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j") << ";\n"
-			   "           int localElementShared = " << sharedStride << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j") << ";\n"
+			   "           int localElementInput = (" << strides[3] << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j") << ")" << *divisors[3] << ";\n"
+			   "           int localElementShared = (" << sharedStride << " * " << (m_data.colMajor ? "j" : "i") << " + " << (m_data.colMajor ? "i" : "j") << ")" << *divisors[3] << ";\n"
 			   "           outputO.x[element3 + localElementInput] = sharedO[elementS3 + localElementShared];\n"
 			   "       }\n"
 			   "       }\n";
@@ -784,7 +839,7 @@ void CooperativeMatrixTestCase::initPrograms (SourceCollections& programCollecti
 	}
 	else
 	{
-		css << "   coopMatStore" << suffix << "(matO, outputO.x, element3, " << strides[3] << ", " << colMajor << ");\n";
+		css << "   coopMatStore" << suffix << "(matO, outputO.x, element3, " << strides[3] << divisorO << ", " << colMajor << ");\n";
 	}
 
 	css <<
@@ -1313,6 +1368,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 		ComputePipelineWrapper			pipeline(vk, device, m_data.computePipelineConstructionType, m_context.getBinaryCollection().get("test"));
 		pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
 		pipeline.setSpecializationInfo(specInfo);
+		pipeline.setSubgroupSize(m_data.subgroupSizeMode == SUBGROUP_SIZE_NONE ? 0 : getSubgroupSizeFromMode(m_context, m_data.subgroupSizeMode));
 		pipeline.buildPipeline();
 
 		const VkQueue					queue					= m_context.getUniversalQueue();
@@ -1453,8 +1509,20 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 						if (output != 6.0*inputA)
 							res = QP_TEST_RESULT_FAIL;
 						break;
-					default:
+					case TT_MULTICOMPONENT_LOAD:
+					{
+						if (output != inputA)
+							res = QP_TEST_RESULT_FAIL;
 						break;
+					}
+					case TT_MULTICOMPONENT_SAVE:
+					{
+						if (output != inputA)
+							res = QP_TEST_RESULT_FAIL;
+						break;
+					}
+					default:
+						TCU_THROW(InternalError, "Unimplemented");
 					}
 				}
 			}
@@ -1584,8 +1652,20 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 							res = QP_TEST_RESULT_FAIL;
 						}
 						break;
-					default:
+					case TT_MULTICOMPONENT_LOAD:
+					{
+						if (output != inputA)
+							res = QP_TEST_RESULT_FAIL;
 						break;
+					}
+					case TT_MULTICOMPONENT_SAVE:
+					{
+						if (output != inputA)
+							res = QP_TEST_RESULT_FAIL;
+						break;
+					}
+					default:
+						TCU_THROW(InternalError, "Unimplemented");
 					}
 				}
 			}
@@ -1706,85 +1786,134 @@ const char* getUseType (UseType useType)
 
 tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType, UseType useType)
 {
-	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, getUseType(useType), ""));
+	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, getUseType(useType)));
 
 	typedef struct
 	{
 		deUint32				value;
 		const char*				name;
-		const char*				description;
 	} TestGroupCase;
 
 	typedef struct
 	{
 		deUint32				value[2];
 		const char*				name;
-		const char*				description;
 	} TestGroupCase2;
 
 	typedef struct
 	{
 		SubgroupSizeMode		value;
 		const char*				name;
-		const char*				description;
 	} SubGroubSizes;
+
+	typedef struct
+	{
+		const char*				name;
+		const char*				description;
+		uint32_t				componentCount;
+	} MulticomponentTypes;
+
+	typedef struct
+	{
+		const char*				name;
+		const char*				description;
+		TestType				testType;
+	} IOTypes;
 
 	TestGroupCase ttCases[] =
 	{
-		{ TT_LENGTH,				"length",					"OpCooperativeMatrixLength"					},
-		{ TT_CONSTANT,				"constant",					"OpConstantComposite"						},
-		{ TT_COMPOSITE,				"composite",				"OpCompositeConstruct"						},
-		{ TT_COMPOSITE_RVALUE,		"composite_rvalue",			"OpCompositeExtract"						},
-		{ TT_ADD,					"add",						"OpFAdd/OpIAdd"								},
-		{ TT_SUB,					"sub",						"OpFSub/OpISub"								},
-		{ TT_DIV,					"div",						"OpFDiv/OpSDiv/OpUDiv"						},
-		{ TT_MUL,					"mul",						"OpFMul/OpIMul"								},
-		{ TT_NEGATE,				"negate",					"OpFNegate/OpSNegate"						},
-		{ TT_MATRIXTIMESSCALAR,		"matrixtimesscalar",		"OpMatrixTimesScalar"						},
-		{ TT_FUNC,					"func",						"OpFunctionParameter"						},
-		{ TT_MATRIXMULADD,			"matrixmuladd",				"OpCooperativeMatrixMulAdd"					},
-		{ TT_COMPOSITE_ARRAY,		"composite_array",			"OpCompositeConstruct w/array"				},
-		{ TT_MATRIXMULADD_ARRAY,	"matrixmuladd_array",		"OpCooperativeMatrixMulAdd w/array"			},
-		{ TT_MATRIXMULADD_SATURATED,"matrixmuladd_saturated",	"OpCooperativeMatrixMulAdd w/saturations"	},
-		{ TT_MATRIXMULADD_WRAPPING,	"matrixmuladd_wrapping",	"OpCooperativeMatrixMulAdd w/wrapping"		},
-		{ TT_MATRIXMULADD_STRIDE0,	"matrixmuladd_stride0",		"OpCooperativeMatrixMulAdd w/stride==0"		},
+		// OpCooperativeMatrixLength
+		{ TT_LENGTH,				"length"},
+		// OpConstantComposite
+		{ TT_CONSTANT,				"constant"},
+		// OpCompositeConstruct
+		{ TT_COMPOSITE,				"composite"},
+		// OpCompositeExtract
+		{ TT_COMPOSITE_RVALUE,		"composite_rvalue"},
+		// OpFAdd/OpIAdd
+		{ TT_ADD,					"add"},
+		// OpFSub/OpISub
+		{ TT_SUB,					"sub"},
+		// OpFDiv/OpSDiv/OpUDiv
+		{ TT_DIV,					"div"},
+		// OpFMul/OpIMul
+		{ TT_MUL,					"mul"},
+		// OpFNegate/OpSNegate
+		{ TT_NEGATE,				"negate"},
+		// OpMatrixTimesScalar
+		{ TT_MATRIXTIMESSCALAR,		"matrixtimesscalar"},
+		// OpFunctionParameter
+		{ TT_FUNC,					"func"},
+		// OpCooperativeMatrixMulAdd
+		{ TT_MATRIXMULADD,			"matrixmuladd"},
+		// OpCompositeConstruct w/array
+		{ TT_COMPOSITE_ARRAY,		"composite_array"},
+		// OpCooperativeMatrixMulAdd w/array
+		{ TT_MATRIXMULADD_ARRAY,	"matrixmuladd_array"},
+		// OpCooperativeMatrixMulAdd w/saturations
+		{ TT_MATRIXMULADD_SATURATED,"matrixmuladd_saturated"},
+		// OpCooperativeMatrixMulAdd w/wrapping
+		{ TT_MATRIXMULADD_WRAPPING,	"matrixmuladd_wrapping"},
+		// OpCooperativeMatrixMulAdd w/stride==0
+		{ TT_MATRIXMULADD_STRIDE0,	"matrixmuladd_stride0"},
 	};
 	TestGroupCase2 dtCases[] =
 	{
-		{ { VK_COMPONENT_TYPE_FLOAT32_KHR,	VK_COMPONENT_TYPE_FLOAT32_KHR },	"float32_float32",	"A/B are fp32 C/D are fp32"		},
-		{ { VK_COMPONENT_TYPE_FLOAT32_KHR,	VK_COMPONENT_TYPE_FLOAT16_KHR },	"float32_float16",	"A/B are fp32 C/D are fp16"		},
-		{ { VK_COMPONENT_TYPE_FLOAT16_KHR,	VK_COMPONENT_TYPE_FLOAT32_KHR },	"float16_float32",	"A/B are fp16 C/D are fp32"		},
-		{ { VK_COMPONENT_TYPE_FLOAT16_KHR,	VK_COMPONENT_TYPE_FLOAT16_KHR },	"float16_float16",	"A/B are fp16 C/D are fp16"		},
-		{ { VK_COMPONENT_TYPE_UINT8_KHR,	VK_COMPONENT_TYPE_UINT8_KHR },		"uint8_uint8",		"A/B are u8 C/D are u8"			},
-		{ { VK_COMPONENT_TYPE_UINT8_KHR,	VK_COMPONENT_TYPE_UINT32_KHR },		"uint8_uint32",		"A/B are u8 C/D are u32"		},
-		{ { VK_COMPONENT_TYPE_SINT8_KHR,	VK_COMPONENT_TYPE_SINT8_KHR },		"sint8_sint8",		"A/B are s8 C/D are s8"			},
-		{ { VK_COMPONENT_TYPE_SINT8_KHR,	VK_COMPONENT_TYPE_SINT32_KHR },		"sint8_sint32",		"A/B are s8 C/D are s32"		},
-		{ { VK_COMPONENT_TYPE_UINT8_KHR,	VK_COMPONENT_TYPE_SINT32_KHR },		"uint8_sint32",		"A/B are u8 C/D are s32"		},
-		{ { VK_COMPONENT_TYPE_UINT32_KHR,	VK_COMPONENT_TYPE_UINT32_KHR },		"uint32_uint32",	"A/B are u32 C/D are u32"		},
-		{ { VK_COMPONENT_TYPE_UINT32_KHR,	VK_COMPONENT_TYPE_UINT8_KHR },		"uint32_uint8",		"A/B are u32 C/D are u8"		},
-		{ { VK_COMPONENT_TYPE_SINT32_KHR,	VK_COMPONENT_TYPE_SINT32_KHR },		"sint32_sint32",	"A/B are s32 C/D are s32"		},
-		{ { VK_COMPONENT_TYPE_SINT32_KHR,	VK_COMPONENT_TYPE_SINT8_KHR },		"sint32_sint8",		"A/B are s32 C/D are s8"		},
+		// A/B are fp32 C/D are fp32
+		{ { VK_COMPONENT_TYPE_FLOAT32_KHR,	VK_COMPONENT_TYPE_FLOAT32_KHR },	"float32_float32"},
+		// A/B are fp32 C/D are fp16
+		{ { VK_COMPONENT_TYPE_FLOAT32_KHR,	VK_COMPONENT_TYPE_FLOAT16_KHR },	"float32_float16"},
+		// A/B are fp16 C/D are fp32
+		{ { VK_COMPONENT_TYPE_FLOAT16_KHR,	VK_COMPONENT_TYPE_FLOAT32_KHR },	"float16_float32"},
+		// A/B are fp16 C/D are fp16
+		{ { VK_COMPONENT_TYPE_FLOAT16_KHR,	VK_COMPONENT_TYPE_FLOAT16_KHR },	"float16_float16"},
+		// A/B are u8 C/D are u8
+		{ { VK_COMPONENT_TYPE_UINT8_KHR,	VK_COMPONENT_TYPE_UINT8_KHR },		"uint8_uint8"},
+		// A/B are u8 C/D are u32
+		{ { VK_COMPONENT_TYPE_UINT8_KHR,	VK_COMPONENT_TYPE_UINT32_KHR },		"uint8_uint32"},
+		// A/B are s8 C/D are s8
+		{ { VK_COMPONENT_TYPE_SINT8_KHR,	VK_COMPONENT_TYPE_SINT8_KHR },		"sint8_sint8"},
+		// A/B are s8 C/D are s32
+		{ { VK_COMPONENT_TYPE_SINT8_KHR,	VK_COMPONENT_TYPE_SINT32_KHR },		"sint8_sint32"},
+		// A/B are u8 C/D are s32
+		{ { VK_COMPONENT_TYPE_UINT8_KHR,	VK_COMPONENT_TYPE_SINT32_KHR },		"uint8_sint32"},
+		// A/B are u32 C/D are u32
+		{ { VK_COMPONENT_TYPE_UINT32_KHR,	VK_COMPONENT_TYPE_UINT32_KHR },		"uint32_uint32"},
+		// A/B are u32 C/D are u8
+		{ { VK_COMPONENT_TYPE_UINT32_KHR,	VK_COMPONENT_TYPE_UINT8_KHR },		"uint32_uint8"},
+		// A/B are s32 C/D are s32
+		{ { VK_COMPONENT_TYPE_SINT32_KHR,	VK_COMPONENT_TYPE_SINT32_KHR },		"sint32_sint32"},
+		// A/B are s32 C/D are s8
+		{ { VK_COMPONENT_TYPE_SINT32_KHR,	VK_COMPONENT_TYPE_SINT8_KHR },		"sint32_sint8"},
 	};
 	SubGroubSizes sgsCases[] =
 	{
-		{ SUBGROUP_SIZE_NONE,	"",		"Default subgroup size" },
-		{ SUBGROUP_SIZE_MIN,	"_min",	"Minimum subgroup size" },
-		{ SUBGROUP_SIZE_MAX,	"_max",	"Maximum subgroup size" },
+		// Default subgroup size
+		{ SUBGROUP_SIZE_NONE,	"" },
+		// Minimum subgroup size
+		{ SUBGROUP_SIZE_MIN,	"_min"},
+		// Maximum subgroup size
+		{ SUBGROUP_SIZE_MAX,	"_max"},
 	};
 
 	TestGroupCase colCases[] =
 	{
-		{ 0,		"rowmajor",	"row major"		},
-		{ 1,		"colmajor",	"col major"		},
+		{ 0,		"rowmajor"},
+		{ 1,		"colmajor"},
 	};
 
 	TestGroupCase scCases[] =
 	{
-		{ SC_BUFFER,						"buffer",			"SSBO"				},
-		{ SC_WORKGROUP,						"workgroup",		"shared memory"		},
-		{ SC_BUFFER_VARIABLE_POINTERS,		"buffer_varptr",	"SSBO w/variable pointers"		},
-		{ SC_WORKGROUP_VARIABLE_POINTERS,	"workgroup_varptr",	"shared memory w/variable pointers"		},
-		{ SC_PHYSICAL_STORAGE_BUFFER,		"physical_buffer",	"physical_storage_buffer"				},
+		// SSBO
+		{ SC_BUFFER,						"buffer"},
+		// shared memory
+		{ SC_WORKGROUP,						"workgroup"},
+		// SSBO w/variable pointers
+		{ SC_BUFFER_VARIABLE_POINTERS,		"buffer_varptr"},
+		// shared memory w/variable pointers
+		{ SC_WORKGROUP_VARIABLE_POINTERS,	"workgroup_varptr"},
+		// physical_storage_buffer
+		{ SC_PHYSICAL_STORAGE_BUFFER,		"physical_buffer"},
 	};
 
 	// Types tested for conversions. Excludes 64b types.
@@ -1800,6 +1929,20 @@ tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& test
 		VK_COMPONENT_TYPE_UINT32_KHR,
 	};
 
+	// Types tested for load/store from/into multicomponent types
+	MulticomponentTypes multicomponentTypes[] =
+	{
+		{ "vec2", "2-component vector type as input or output", 2},
+		{ "vec4", "4-component vector type as input or output", 4},
+	};
+
+	// Types tested for load/store from/into multicomponent types
+	IOTypes ioTypes[] =
+	{
+		{ "load", "Test multicomponent type as input in load operation",   TT_MULTICOMPONENT_LOAD},
+		{ "save", "Test multicomponent type as output in store operation", TT_MULTICOMPONENT_SAVE},
+	};
+
 	for (int ttNdx = 0; ttNdx < DE_LENGTH_OF_ARRAY(ttCases); ttNdx++)
 	{
 		const TestType	testType = (TestType)ttCases[ttNdx].value;
@@ -1813,15 +1956,14 @@ tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& test
 				continue;
 
 			const string					name	= string(ttCases[ttNdx].name) + sgsCases[sgsNdx].name;
-			const string					desc	= string(ttCases[ttNdx].description) + " " + sgsCases[sgsNdx].description;
-			de::MovePtr<tcu::TestCaseGroup>	ttGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), desc.c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	ttGroup	(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 			for (int dtNdx = 0; dtNdx < DE_LENGTH_OF_ARRAY(dtCases); dtNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, dtCases[dtNdx].name, dtCases[dtNdx].description));
+				de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, dtCases[dtNdx].name));
 				for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, scCases[scNdx].name, scCases[scNdx].description));
+					de::MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, scCases[scNdx].name));
 					for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
 					{
 						const VkComponentTypeKHR	inputType = (VkComponentTypeKHR)dtCases[dtNdx].value[0];
@@ -1873,9 +2015,11 @@ tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& test
 							useType,							//  UseType								useType;
 							sgsCases[sgsNdx].value,				//  SubgroupSizeMode					subgroupSizeMode;
 							computePipelineConstructionType,	//  vk::ComputePipelineConstructionType	computePipelineConstructionType;
+							1,									//  deUint32							inputComponentCount;
+							1,									//  deUint32							outputComponentCount;
 						};
 
-						scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, colCases[colNdx].description, c));
+						scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
 					}
 					dtGroup->addChild(scGroup.release());
 				}
@@ -1888,7 +2032,7 @@ tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& test
 	{
 		const string					name	= string("convert");
 		const string					desc	= string("OpFConvert/OpSConvert/OpUConvert/OpBitcast");
-		de::MovePtr<tcu::TestCaseGroup>	ttGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), desc.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	ttGroup	(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 		for (int dtNdx1 = 0; dtNdx1 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx1++)
 		{
@@ -1897,10 +2041,10 @@ tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& test
 				const VkComponentTypeKHR	inputType = (VkComponentTypeKHR)allTypes[dtNdx1];
 				const VkComponentTypeKHR	outputType = (VkComponentTypeKHR)allTypes[dtNdx2];
 				const string			name2	= string("input_") + string(componentTypeInfo[inputType].typeName) + string("_output_") + string(componentTypeInfo[outputType].typeName);
-				de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, name2.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, name2.c_str()));
 				for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, scCases[scNdx].name, scCases[scNdx].description));
+					de::MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, scCases[scNdx].name));
 					for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
 					{
 
@@ -1918,14 +2062,73 @@ tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& test
 							useType,							//  UseType								useType;
 							SUBGROUP_SIZE_NONE,					//  SubgroupSizeMode					subgroupSizeMode;
 							computePipelineConstructionType,	//  vk::ComputePipelineConstructionType	computePipelineConstructionType;
+							1,									//  deUint32							inputComponentCount;
+							1,									//  deUint32							outputComponentCount;
 						};
 
-						scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, colCases[colNdx].description, c));
+						scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
 					}
 					dtGroup->addChild(scGroup.release());
 				}
 				ttGroup->addChild(dtGroup.release());
 			}
+		}
+		group->addChild(ttGroup.release());
+	}
+
+	if (useType != UT_NV)
+	{
+		de::MovePtr<tcu::TestCaseGroup>	ttGroup(new tcu::TestCaseGroup(testCtx, "multicomponent", "Multicomponent types tests"));
+		for (int ctNdx = 0; ctNdx < DE_LENGTH_OF_ARRAY(multicomponentTypes); ctNdx++)
+		{
+			de::MovePtr<tcu::TestCaseGroup>	ctGroup(new tcu::TestCaseGroup(testCtx, multicomponentTypes[ctNdx].name, multicomponentTypes[ctNdx].description));
+			const uint32_t					componentCount = multicomponentTypes[ctNdx].componentCount;
+
+			for (int ioNdx = 0; ioNdx < DE_LENGTH_OF_ARRAY(ioTypes); ioNdx++)
+			{
+				de::MovePtr<tcu::TestCaseGroup>	ioGroup(new tcu::TestCaseGroup(testCtx, ioTypes[ioNdx].name, ioTypes[ioNdx].description));
+				const TestType					testType = ioTypes[ioNdx].testType;
+				const uint32_t					inputComponentCount  = testType == TT_MULTICOMPONENT_LOAD ? componentCount : 1;
+				const uint32_t					outputComponentCount = testType == TT_MULTICOMPONENT_LOAD ? 1 : componentCount;
+
+				for (int dtNdx = 0; dtNdx < DE_LENGTH_OF_ARRAY(allTypes); dtNdx++)
+				{
+					const VkComponentTypeKHR	inputType = allTypes[dtNdx];
+					const string				name = componentTypeInfo[inputType].typeName;
+
+					de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+					for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
+					{
+						de::MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, scCases[scNdx].name, ""));
+						for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
+						{
+							CaseDef c =
+							{
+								testType,							//  TestType							testtype;
+								2u,									//  deUint32							subgroupsPerWorkgroupX;
+								2u,									//  deUint32							subgroupsPerWorkgroupY;
+								4u,									//  deUint32							workgroupsX;
+								4u,									//  deUint32							workgroupsY;
+								inputType,							//  VkComponentTypeKHR					inputType;
+								inputType,							//  VkComponentTypeKHR					outputType;
+								!!colCases[colNdx].value,			//  bool								colMajor;
+								(StorageClass)scCases[scNdx].value,	//  StorageClass						storageClass;
+								useType,							//  UseType								useType;
+								SUBGROUP_SIZE_NONE,					//  SubgroupSizeMode					subgroupSizeMode;
+								computePipelineConstructionType,	//  vk::ComputePipelineConstructionType	computePipelineConstructionType;
+								inputComponentCount,				//  deUint32							inputComponentCount;
+								outputComponentCount,				//  deUint32							outputComponentCount;
+							};
+
+							scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
+						}
+						dtGroup->addChild(scGroup.release());
+					}
+					ioGroup->addChild(dtGroup.release());
+				}
+				ctGroup->addChild(ioGroup.release());
+			}
+			ttGroup->addChild(ctGroup.release());
 		}
 		group->addChild(ttGroup.release());
 	}
@@ -1937,7 +2140,7 @@ tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& test
 
 tcu::TestCaseGroup* createCooperativeMatrixTests (tcu::TestContext& testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "cooperative_matrix", "Cooperative matrix tests"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "cooperative_matrix"));
 
 	group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_NV));
 	group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_A));

@@ -121,7 +121,7 @@ void addComputeSameLabelsTest (tcu::TestCaseGroup* group)
 
 		spec.outputs.push_back(Resource(BufferSp(new Buffer<deUint32>(outputData))));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), "Tests both labels pointing to a same branch.", spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -221,7 +221,8 @@ void addGraphicsSameLabelsTest (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createConditionalBranchComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "conditional_branch", "Compute tests for OpBranchConditional."));
+	// Compute tests for OpBranchConditional.
+	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "conditional_branch"));
 	addComputeSameLabelsTest(group.get());
 
 	return group.release();
@@ -229,7 +230,8 @@ tcu::TestCaseGroup* createConditionalBranchComputeGroup (tcu::TestContext& testC
 
 tcu::TestCaseGroup* createConditionalBranchGraphicsGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "conditional_branch", "Graphics tests for OpBranchConditional."));
+	// Graphics tests for OpBranchConditional.
+	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "conditional_branch"));
 	addGraphicsSameLabelsTest(group.get());
 
 	return group.release();

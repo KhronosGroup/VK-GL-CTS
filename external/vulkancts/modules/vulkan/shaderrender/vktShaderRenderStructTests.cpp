@@ -40,7 +40,6 @@ class ShaderStructCase : public ShaderRenderCase
 public:
 						ShaderStructCase		(tcu::TestContext&	testCtx,
 												 const std::string&	name,
-												 const std::string&	description,
 												 bool				isVertexCase,
 												 ShaderEvalFunc		evalFunc,
 												 UniformSetupFunc	setupUniformsFunc,
@@ -55,13 +54,12 @@ private:
 
 ShaderStructCase::ShaderStructCase (tcu::TestContext&	testCtx,
 									const std::string&	name,
-									const std::string&	description,
 									bool				isVertexCase,
 									ShaderEvalFunc		evalFunc,
 									UniformSetupFunc	setupUniformsFunc,
 									const std::string&	vertShaderSource,
 									const std::string&	fragShaderSource)
-	: ShaderRenderCase	(testCtx, name, description, isVertexCase, evalFunc, new UniformSetup(setupUniformsFunc), DE_NULL)
+	: ShaderRenderCase	(testCtx, name, isVertexCase, evalFunc, new UniformSetup(setupUniformsFunc), DE_NULL)
 {
 	m_vertShaderSource	= vertShaderSource;
 	m_fragShaderSource	= fragShaderSource;
@@ -71,7 +69,7 @@ ShaderStructCase::~ShaderStructCase (void)
 {
 }
 
-static de::MovePtr<ShaderStructCase> createStructCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, bool isVertexCase, ShaderEvalFunc evalFunc, UniformSetupFunc uniformFunc, const LineStream& shaderSrc)
+static de::MovePtr<ShaderStructCase> createStructCase (tcu::TestContext& testCtx, const std::string& name, bool isVertexCase, ShaderEvalFunc evalFunc, UniformSetupFunc uniformFunc, const LineStream& shaderSrc)
 {
 	static std::string defaultVertSrc =
 		"#version 310 es\n"
@@ -125,14 +123,14 @@ static de::MovePtr<ShaderStructCase> createStructCase (tcu::TestContext& testCtx
 		fragSrc = tcu::StringTemplate(shaderSrc.str()).specialize(spParams);
 	}
 
-	return de::MovePtr<ShaderStructCase>(new ShaderStructCase(testCtx, name, description, isVertexCase, evalFunc, uniformFunc, vertSrc, fragSrc));
+	return de::MovePtr<ShaderStructCase>(new ShaderStructCase(testCtx, name, isVertexCase, evalFunc, uniformFunc, vertSrc, fragSrc));
 }
 
 class LocalStructTests : public tcu::TestCaseGroup
 {
 public:
 	LocalStructTests (tcu::TestContext& testCtx)
-		: TestCaseGroup(testCtx, "local", "Local structs")
+		: TestCaseGroup(testCtx, "local")
 	{
 	}
 
@@ -145,15 +143,16 @@ public:
 
 void LocalStructTests::init (void)
 {
-	#define LOCAL_STRUCT_CASE(NAME, DESCRIPTION, SHADER_SRC, SET_UNIFORMS_BODY, EVAL_FUNC_BODY)																				\
+	#define LOCAL_STRUCT_CASE(NAME, SHADER_SRC, SET_UNIFORMS_BODY, EVAL_FUNC_BODY)																				\
 		do {																																								\
 			struct SetUniforms_##NAME { static void setUniforms (ShaderRenderCaseInstance& instance, const tcu::Vec4&) SET_UNIFORMS_BODY }; /* NOLINT(SET_UNIFORMS_BODY) */ \
 			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };	/* NOLINT(EVAL_FUNC_BODY) */													\
-			addChild(createStructCase(m_testCtx, #NAME "_vertex", DESCRIPTION, true, &Eval_##NAME::eval, &SetUniforms_##NAME::setUniforms, SHADER_SRC).release());			\
-			addChild(createStructCase(m_testCtx, #NAME "_fragment", DESCRIPTION, false, &Eval_##NAME::eval, &SetUniforms_##NAME::setUniforms, SHADER_SRC).release());		\
+			addChild(createStructCase(m_testCtx, #NAME "_vertex", true, &Eval_##NAME::eval, &SetUniforms_##NAME::setUniforms, SHADER_SRC).release());			\
+			addChild(createStructCase(m_testCtx, #NAME "_fragment", false, &Eval_##NAME::eval, &SetUniforms_##NAME::setUniforms, SHADER_SRC).release());		\
 		} while (deGetFalse())
 
-	LOCAL_STRUCT_CASE(basic, "Basic struct usage",
+	// Basic struct usage
+	LOCAL_STRUCT_CASE(basic,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_one; };"
@@ -178,7 +177,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(0, 1, 2);
 		});
 
-	LOCAL_STRUCT_CASE(nested, "Nested struct",
+	// Nested struct
+	LOCAL_STRUCT_CASE(nested,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -209,7 +209,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(0, 1, 2);
 		});
 
-	LOCAL_STRUCT_CASE(array_member, "Struct with array member",
+	// Struct with array member
+	LOCAL_STRUCT_CASE(array_member,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_one; };"
@@ -238,7 +239,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(3, 2, 1);
 		});
 
-	LOCAL_STRUCT_CASE(array_member_dynamic_index, "Struct with array member, dynamic indexing",
+	// Struct with array member, dynamic indexing
+	LOCAL_STRUCT_CASE(array_member_dynamic_index,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -271,7 +273,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(1,2,0);
 		});
 
-	LOCAL_STRUCT_CASE(struct_array, "Struct array",
+	// Struct array
+	LOCAL_STRUCT_CASE(struct_array,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -302,7 +305,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(2, 1, 0);
 		});
 
-	LOCAL_STRUCT_CASE(struct_array_dynamic_index, "Struct array with dynamic indexing",
+	// Struct array with dynamic indexing
+	LOCAL_STRUCT_CASE(struct_array_dynamic_index,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -333,7 +337,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(2, 1, 0);
 		});
 
-	LOCAL_STRUCT_CASE(nested_struct_array, "Nested struct array",
+	// Nested struct array
+	LOCAL_STRUCT_CASE(nested_struct_array,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -408,7 +413,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(2, 0, 3);
 		});
 
-	LOCAL_STRUCT_CASE(nested_struct_array_dynamic_index, "Nested struct array with dynamic indexing",
+	// Nested struct array with dynamic indexing
+	LOCAL_STRUCT_CASE(nested_struct_array_dynamic_index,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -483,7 +489,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(2, 0, 3);
 		});
 
-	LOCAL_STRUCT_CASE(parameter, "Struct as a function parameter",
+	// Struct as a function parameter
+	LOCAL_STRUCT_CASE(parameter,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_one; };"
@@ -513,7 +520,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(0, 1, 2);
 		});
 
-	LOCAL_STRUCT_CASE(parameter_nested, "Nested struct as a function parameter",
+	// Nested struct as a function parameter
+	LOCAL_STRUCT_CASE(parameter_nested,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -549,7 +557,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(0, 1, 2);
 		});
 
-	LOCAL_STRUCT_CASE(return, "Struct as a return value",
+	// Struct as a return value
+	LOCAL_STRUCT_CASE(return,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_one; };"
@@ -580,7 +589,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(0, 1, 2);
 		});
 
-	LOCAL_STRUCT_CASE(return_nested, "Nested struct",
+	// Nested struct
+	LOCAL_STRUCT_CASE(return_nested,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -617,7 +627,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(0, 1, 2);
 		});
 
-	LOCAL_STRUCT_CASE(conditional_assignment, "Conditional struct assignment",
+	// Conditional struct assignment
+	LOCAL_STRUCT_CASE(conditional_assignment,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -647,7 +658,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(3, 2, 1);
 		});
 
-	LOCAL_STRUCT_CASE(loop_assignment, "Struct assignment in loop",
+	// Struct assignment in loop
+	LOCAL_STRUCT_CASE(loop_assignment,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -678,7 +690,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(3, 2, 1);
 		});
 
-	LOCAL_STRUCT_CASE(dynamic_loop_assignment, "Struct assignment in loop",
+	// Struct assignment in loop
+	LOCAL_STRUCT_CASE(dynamic_loop_assignment,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -711,7 +724,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(3, 2, 1);
 		});
 
-	LOCAL_STRUCT_CASE(nested_conditional_assignment, "Conditional assignment of nested struct",
+	// Conditional assignment of nested struct
+	LOCAL_STRUCT_CASE(nested_conditional_assignment,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -745,7 +759,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(0, 2, 3);
 		});
 
-	LOCAL_STRUCT_CASE(nested_loop_assignment, "Nested struct assignment in loop",
+	// Nested struct assignment in loop
+	LOCAL_STRUCT_CASE(nested_loop_assignment,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -782,7 +797,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(0, 2, 3);
 		});
 
-	LOCAL_STRUCT_CASE(nested_dynamic_loop_assignment, "Nested struct assignment in dynamic loop",
+	// Nested struct assignment in dynamic loop
+	LOCAL_STRUCT_CASE(nested_dynamic_loop_assignment,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -821,7 +837,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(0, 2, 3);
 		});
 
-	LOCAL_STRUCT_CASE(loop_struct_array, "Struct array usage in loop",
+	// Struct array usage in loop
+	LOCAL_STRUCT_CASE(loop_struct_array,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -860,7 +877,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(2, 1, 0);
 		});
 
-	LOCAL_STRUCT_CASE(loop_nested_struct_array, "Nested struct array usage in loop",
+	// Nested struct array usage in loop
+	LOCAL_STRUCT_CASE(loop_nested_struct_array,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -947,7 +965,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = (c.coords.swizzle(0, 1, 2) + c.coords.swizzle(1, 2, 3)) * 0.5f;
 		});
 
-	LOCAL_STRUCT_CASE(dynamic_loop_struct_array, "Struct array usage in dynamic loop",
+	// Struct array usage in dynamic loop
+	LOCAL_STRUCT_CASE(dynamic_loop_struct_array,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -988,7 +1007,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(2, 1, 0);
 		});
 
-	LOCAL_STRUCT_CASE(dynamic_loop_nested_struct_array, "Nested struct array usage in dynamic loop",
+	// Nested struct array usage in dynamic loop
+	LOCAL_STRUCT_CASE(dynamic_loop_nested_struct_array,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -1075,7 +1095,8 @@ void LocalStructTests::init (void)
 			c.color.xyz() = (c.coords.swizzle(0, 1, 2) + c.coords.swizzle(1, 2, 3)) * 0.5f;
 		});
 
-	LOCAL_STRUCT_CASE(basic_equal, "Basic struct equality",
+	// Basic struct equality
+	LOCAL_STRUCT_CASE(basic_equal,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_one; };"
@@ -1110,7 +1131,8 @@ void LocalStructTests::init (void)
 				c.color.y() = 1.0f;
 		});
 
-	LOCAL_STRUCT_CASE(basic_not_equal, "Basic struct equality",
+	// Basic struct equality
+	LOCAL_STRUCT_CASE(basic_not_equal,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_one; };"
@@ -1146,7 +1168,8 @@ void LocalStructTests::init (void)
 			c.color.z() = 1.0f;
 		});
 
-	LOCAL_STRUCT_CASE(nested_equal, "Nested struct struct equality",
+	// Nested struct struct equality
+	LOCAL_STRUCT_CASE(nested_equal,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_one; };"
@@ -1185,7 +1208,8 @@ void LocalStructTests::init (void)
 				c.color.y() = 1.0f;
 		});
 
-	LOCAL_STRUCT_CASE(nested_not_equal, "Nested struct struct equality",
+	// Nested struct struct equality
+	LOCAL_STRUCT_CASE(nested_not_equal,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_one; };"
@@ -1230,7 +1254,7 @@ class UniformStructTests : public tcu::TestCaseGroup
 {
 public:
 	UniformStructTests (tcu::TestContext& testCtx)
-		: TestCaseGroup(testCtx, "uniform", "Uniform structs")
+		: TestCaseGroup(testCtx, "uniform")
 	{
 	}
 
@@ -1243,17 +1267,18 @@ public:
 
 void UniformStructTests::init (void)
 {
-	#define UNIFORM_STRUCT_CASE(NAME, DESCRIPTION, SHADER_SRC, SET_UNIFORMS_BODY, EVAL_FUNC_BODY)																\
+	#define UNIFORM_STRUCT_CASE(NAME, SHADER_SRC, SET_UNIFORMS_BODY, EVAL_FUNC_BODY)																\
 		do {																																							\
 			struct SetUniforms_##NAME {																																	\
 				 static void setUniforms (ShaderRenderCaseInstance& instance, const tcu::Vec4& constCoords) SET_UNIFORMS_BODY  /* NOLINT(SET_UNIFORMS_BODY) */			\
 			};																																							\
 			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };  /* NOLINT(EVAL_FUNC_BODY) */												\
-			addChild(createStructCase(m_testCtx, #NAME "_vertex", DESCRIPTION, true, Eval_##NAME::eval, SetUniforms_##NAME::setUniforms, SHADER_SRC).release());		\
-			addChild(createStructCase(m_testCtx, #NAME "_fragment", DESCRIPTION, false, Eval_##NAME::eval, SetUniforms_##NAME::setUniforms, SHADER_SRC).release());		\
+			addChild(createStructCase(m_testCtx, #NAME "_vertex", true, Eval_##NAME::eval, SetUniforms_##NAME::setUniforms, SHADER_SRC).release());		\
+			addChild(createStructCase(m_testCtx, #NAME "_fragment", false, Eval_##NAME::eval, SetUniforms_##NAME::setUniforms, SHADER_SRC).release());		\
 		} while (deGetFalse())
 
-	UNIFORM_STRUCT_CASE(basic, "Basic struct usage",
+	// Basic struct usage
+	UNIFORM_STRUCT_CASE(basic,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_one; };"
@@ -1290,7 +1315,8 @@ void UniformStructTests::init (void)
 			c.color.xyz() = c.constCoords.swizzle(0, 1, 2);
 		});
 
-	UNIFORM_STRUCT_CASE(nested, "Nested struct",
+	// Nested struct
+	UNIFORM_STRUCT_CASE(nested,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -1341,7 +1367,8 @@ void UniformStructTests::init (void)
 			c.color.xyz() = c.constCoords.swizzle(0, 1, 2);
 		});
 
-	UNIFORM_STRUCT_CASE(array_member, "Struct with array member",
+	// Struct with array member
+	UNIFORM_STRUCT_CASE(array_member,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_one; };"
@@ -1384,7 +1411,8 @@ void UniformStructTests::init (void)
 			c.color.xyz() = c.constCoords.swizzle(3, 2, 1);
 		});
 
-	UNIFORM_STRUCT_CASE(array_member_dynamic_index, "Struct with array member, dynamic indexing",
+	// Struct with array member, dynamic indexing
+	UNIFORM_STRUCT_CASE(array_member_dynamic_index,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -1431,7 +1459,8 @@ void UniformStructTests::init (void)
 			c.color.xyz() = c.constCoords.swizzle(1, 2, 0);
 		});
 
-	UNIFORM_STRUCT_CASE(struct_array, "Struct array",
+	// Struct array
+	UNIFORM_STRUCT_CASE(struct_array,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -1473,7 +1502,8 @@ void UniformStructTests::init (void)
 			c.color.xyz() = c.constCoords.swizzle(2, 1, 0);
 		});
 
-	UNIFORM_STRUCT_CASE(struct_array_dynamic_index, "Struct array with dynamic indexing",
+	// Struct array with dynamic indexing
+	UNIFORM_STRUCT_CASE(struct_array_dynamic_index,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -1515,7 +1545,8 @@ void UniformStructTests::init (void)
 			c.color.xyz() = c.constCoords.swizzle(2, 1, 0);
 		});
 
-	UNIFORM_STRUCT_CASE(nested_struct_array, "Nested struct array",
+	// Nested struct array
+	UNIFORM_STRUCT_CASE(nested_struct_array,
 		LineStream()
 		<< "${HEADER}"
 		<< "struct T {"
@@ -1585,7 +1616,8 @@ void UniformStructTests::init (void)
 			c.color.xyz() = c.constCoords.swizzle(2, 0, 3);
 		});
 
-	UNIFORM_STRUCT_CASE(nested_struct_array_dynamic_index, "Nested struct array with dynamic indexing",
+	// Nested struct array with dynamic indexing
+	UNIFORM_STRUCT_CASE(nested_struct_array_dynamic_index,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -1660,7 +1692,8 @@ void UniformStructTests::init (void)
 		{
 			c.color.xyz() = c.constCoords.swizzle(2, 0, 3);
 		});
-	UNIFORM_STRUCT_CASE(loop_struct_array, "Struct array usage in loop",
+	// Struct array usage in loop
+	UNIFORM_STRUCT_CASE(loop_struct_array,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -1709,7 +1742,8 @@ void UniformStructTests::init (void)
 			c.color.xyz() = c.constCoords.swizzle(2, 1, 0);
 		});
 
-	UNIFORM_STRUCT_CASE(loop_nested_struct_array, "Nested struct array usage in loop",
+	// Nested struct array usage in loop
+	UNIFORM_STRUCT_CASE(loop_nested_struct_array,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -1811,7 +1845,8 @@ void UniformStructTests::init (void)
 			c.color.xyz() = (c.constCoords.swizzle(0, 1, 2) + c.constCoords.swizzle(1, 2, 3)) * 0.5f;
 		});
 
-	UNIFORM_STRUCT_CASE(dynamic_loop_struct_array, "Struct array usage in dynamic loop",
+	// Struct array usage in dynamic loop
+	UNIFORM_STRUCT_CASE(dynamic_loop_struct_array,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -1863,7 +1898,8 @@ void UniformStructTests::init (void)
 			c.color.xyz() = c.constCoords.swizzle(2, 1, 0);
 		});
 
-	UNIFORM_STRUCT_CASE(dynamic_loop_nested_struct_array, "Nested struct array usage in dynamic loop",
+	// Nested struct array usage in dynamic loop
+	UNIFORM_STRUCT_CASE(dynamic_loop_nested_struct_array,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { int ui_zero; };"
@@ -1967,7 +2003,8 @@ void UniformStructTests::init (void)
 			c.color.xyz() = (c.constCoords.swizzle(0, 1, 2) + c.constCoords.swizzle(1, 2, 3)) * 0.5f;
 		});
 
-	UNIFORM_STRUCT_CASE(equal, "Struct equality",
+	// Struct equality
+	UNIFORM_STRUCT_CASE(equal,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { mediump float uf_one; };"
@@ -2027,7 +2064,8 @@ void UniformStructTests::init (void)
 				c.color.z() = 1.0f;
 		});
 
-	UNIFORM_STRUCT_CASE(not_equal, "Struct equality",
+	// Struct equality
+	UNIFORM_STRUCT_CASE(not_equal,
 		LineStream()
 		<< "${HEADER}"
 		<< "layout (std140, set = 0, binding = 0) uniform buffer0 { mediump float uf_one; };"
@@ -2102,7 +2140,7 @@ private:
 };
 
 ShaderStructTests::ShaderStructTests (tcu::TestContext& testCtx)
-	: TestCaseGroup(testCtx, "struct", "Struct Tests")
+	: TestCaseGroup(testCtx, "struct")
 {
 }
 

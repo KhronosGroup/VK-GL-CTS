@@ -267,13 +267,12 @@ class ShaderLoopCase : public ShaderRenderCase
 public:
 	ShaderLoopCase	(tcu::TestContext&	testCtx,
 					 const std::string&	name,
-					 const std::string&	description,
 					 bool				isVertexCase,
 					 ShaderEvalFunc		evalFunc,
 					 UniformSetup*		uniformSetup,
 					 const std::string&	vertexShaderSource,
 					 const std::string&	fragmentShaderSource)
-		: ShaderRenderCase		(testCtx, name, description, isVertexCase, evalFunc, uniformSetup, DE_NULL)
+		: ShaderRenderCase		(testCtx, name, isVertexCase, evalFunc, uniformSetup, DE_NULL)
 	{
 		m_vertShaderSource = vertexShaderSource;
 		m_fragShaderSource = fragmentShaderSource;
@@ -307,7 +306,6 @@ void LoopUniformSetup::setup (ShaderRenderCaseInstance& instance, const tcu::Vec
 
 static de::MovePtr<ShaderLoopCase> createGenericLoopCase (tcu::TestContext&	testCtx,
 														const std::string&	caseName,
-														const std::string&	description,
 														bool				isVertexCase,
 														LoopType			loopType,
 														LoopCountType		loopCountType,
@@ -527,12 +525,11 @@ static de::MovePtr<ShaderLoopCase> createGenericLoopCase (tcu::TestContext&	test
 	// Create the case.
 	ShaderEvalFunc evalFunc = getLoopEvalFunc(numLoopIters);
 	UniformSetup* uniformSetup = new LoopUniformSetup(uniformInformations);
-	return de::MovePtr<ShaderLoopCase>(new ShaderLoopCase(testCtx, caseName, description, isVertexCase, evalFunc, uniformSetup, vertexShaderSource, fragmentShaderSource));
+	return de::MovePtr<ShaderLoopCase>(new ShaderLoopCase(testCtx, caseName, isVertexCase, evalFunc, uniformSetup, vertexShaderSource, fragmentShaderSource));
 }
 
 static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	testCtx,
 														const std::string&	caseName,
-														const std::string&	description,
 														bool				isVertexCase,
 														LoopCase			loopCase,
 														LoopType			loopType,
@@ -1472,7 +1469,7 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 	// Create the case.
 	UniformSetup* uniformSetup = new LoopUniformSetup(uniformInformations);
 	ShaderEvalFunc evalFunc = getLoopEvalFunc(numIters);
-	return de::MovePtr<ShaderLoopCase>(new ShaderLoopCase(testCtx, caseName, description, isVertexCase, evalFunc, uniformSetup, vertexShaderSource, fragmentShaderSource));
+	return de::MovePtr<ShaderLoopCase>(new ShaderLoopCase(testCtx, caseName, isVertexCase, evalFunc, uniformSetup, vertexShaderSource, fragmentShaderSource));
 }
 
 class ShaderLoopTests : public tcu::TestCaseGroup
@@ -1489,7 +1486,7 @@ private:
 };
 
 ShaderLoopTests::ShaderLoopTests(tcu::TestContext& testCtx)
-		: TestCaseGroup(testCtx, "loops", "Loop Tests")
+		: TestCaseGroup(testCtx, "loops")
 {
 }
 
@@ -1513,8 +1510,8 @@ void ShaderLoopTests::init (void)
 		glu::TYPE_FLOAT
 	};
 
-	TestCaseGroup* genericGroup = new TestCaseGroup(m_testCtx, "generic", "Generic loop tests.");
-	TestCaseGroup* specialGroup = new TestCaseGroup(m_testCtx, "special", "Special loop tests.");
+	TestCaseGroup* genericGroup = new TestCaseGroup(m_testCtx, "generic");
+	TestCaseGroup* specialGroup = new TestCaseGroup(m_testCtx, "special");
 	addChild(genericGroup);
 	addChild(specialGroup);
 
@@ -1528,8 +1525,8 @@ void ShaderLoopTests::init (void)
 
 			std::string groupName = std::string(loopTypeName) + "_" + std::string(loopCountName) + "_iterations";
 			std::string groupDesc = std::string("Loop tests with ") + loopCountName + " loop counter.";
-			TestCaseGroup* genericSubGroup = new TestCaseGroup(m_testCtx, groupName.c_str(), groupDesc.c_str());
-			TestCaseGroup* specialSubGroup = new TestCaseGroup(m_testCtx, groupName.c_str(), groupDesc.c_str());
+			TestCaseGroup* genericSubGroup = new TestCaseGroup(m_testCtx, groupName.c_str());
+			TestCaseGroup* specialSubGroup = new TestCaseGroup(m_testCtx, groupName.c_str());
 			genericGroup->addChild(genericSubGroup);
 			specialGroup->addChild(specialSubGroup);
 
@@ -1551,8 +1548,7 @@ void ShaderLoopTests::init (void)
 						bool		isVertexCase	= (shaderType == glu::SHADERTYPE_VERTEX);
 
 						std::string testName = std::string("basic_") + precisionName + "_" + dataTypeName + "_" + shaderTypeName;
-						std::string testDesc = std::string(loopTypeName) + " loop with " + precisionName + dataTypeName + " " + loopCountName + " iteration count in " + shaderTypeName + " shader.";
-						de::MovePtr<ShaderLoopCase> testCase(createGenericLoopCase(m_testCtx, testName.c_str(), testDesc.c_str(), isVertexCase, (LoopType)loopType, (LoopCountType)loopCountType, (glu::Precision)precision, loopDataType));
+						de::MovePtr<ShaderLoopCase> testCase(createGenericLoopCase(m_testCtx, testName.c_str(), isVertexCase, (LoopType)loopType, (LoopCountType)loopCountType, (glu::Precision)precision, loopDataType));
 						genericSubGroup->addChild(testCase.release());
 					}
 				}
@@ -1575,8 +1571,7 @@ void ShaderLoopTests::init (void)
 					bool		isVertexCase	= (shaderType == glu::SHADERTYPE_VERTEX);
 
 					std::string name = std::string(loopCaseName) + "_" + shaderTypeName;
-					std::string desc = std::string(loopCaseName) + " loop with " + loopTypeName + " iteration count in " + shaderTypeName + " shader.";
-					de::MovePtr<ShaderLoopCase> testCase(createSpecialLoopCase(m_testCtx, name.c_str(), desc.c_str(), isVertexCase, (LoopCase)loopCase, (LoopType)loopType, (LoopCountType)loopCountType));
+					de::MovePtr<ShaderLoopCase> testCase(createSpecialLoopCase(m_testCtx, name.c_str(), isVertexCase, (LoopCase)loopCase, (LoopType)loopType, (LoopCountType)loopCountType));
 					specialSubGroup->addChild(testCase.release());
 				}
 			}

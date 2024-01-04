@@ -61,6 +61,8 @@ struct CaseDefinition
 	de::SharedPtr<bool>	geometryPointSizeSupported;
 	deBool				requiredSubgroupSize;
 	ArgType				argType;
+	deBool				requires8BitUniformBuffer;
+	deBool				requires16BitUniformBuffer;
 };
 
 static bool checkVertexPipelineStages (const void*			internalData,
@@ -261,6 +263,22 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 
 	if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
 		TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+
+	if (caseDef.requires16BitUniformBuffer)
+	{
+		if (!subgroups::is16BitUBOStorageSupported(context))
+		{
+			TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+		}
+	}
+
+	if (caseDef.requires8BitUniformBuffer)
+	{
+		if (!subgroups::is8BitUBOStorageSupported(context))
+		{
+			TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+		}
+	}
 
 	if (caseDef.requiredSubgroupSize)
 	{
@@ -481,14 +499,14 @@ namespace subgroups
 {
 TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "shuffle", "Subgroup shuffle category tests"));
+	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "shuffle"));
 
-	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics", "Subgroup shuffle category tests: graphics"));
-	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup shuffle category tests: compute"));
-	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup shuffle category tests: framebuffer"));
+	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer"));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup shuffle category tests: ray tracing"));
-	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh", "Subgroup shuffle category tests: mesh shading"));
+	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing"));
+	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh"));
 #endif // CTS_USES_VULKANSC
 
 	const VkShaderStageFlags	fbStages[]			=
@@ -529,8 +547,10 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 
 		for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
 		{
-			const VkFormat	format		= formats[formatIndex];
-			const string	formatName	= subgroups::getFormatNameForGLSL(format);
+			const VkFormat	format					= formats[formatIndex];
+			const string	formatName				= subgroups::getFormatNameForGLSL(format);
+			const bool		needs8BitUBOStorage		= isFormat8bitTy(format);
+			const bool		needs16BitUBOStorage	= isFormat16BitTy(format);
 
 			for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 			{
@@ -552,9 +572,11 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 							DE_FALSE,						//  deBool				requiredSubgroupSize;
 							argCase.argType,				//  ArgType				argType;
+							DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+							DE_FALSE						//  deBool				requires16BitUniformBuffer;
 						};
 
-						addFunctionCaseWithPrograms(graphicGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+						addFunctionCaseWithPrograms(graphicGroup.get(), name, supportedCheck, initPrograms, test, caseDef);
 					}
 
 					for (size_t groupSizeNdx = 0; groupSizeNdx < DE_LENGTH_OF_ARRAY(boolValues); ++groupSizeNdx)
@@ -569,9 +591,11 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 							requiredSubgroupSize,			//  deBool				requiredSubgroupSize;
 							argCase.argType,				//  ArgType				argType;
+							DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+							DE_FALSE						//  deBool				requires16BitUniformBuffer;
 						};
 
-						addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+						addFunctionCaseWithPrograms(computeGroup.get(), testName,supportedCheck, initPrograms, test, caseDef);
 					}
 
 #ifndef CTS_USES_VULKANSC
@@ -589,9 +613,11 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 								de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 								requiredSubgroupSize,			//  deBool				requiredSubgroupSize;
 								argCase.argType,				//  ArgType				argType;
+								DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+								DE_FALSE,						//  deBool				requires16BitUniformBuffer;
 							};
 
-							addFunctionCaseWithPrograms(meshGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+							addFunctionCaseWithPrograms(meshGroup.get(), testName,supportedCheck, initPrograms, test, caseDef);
 						}
 					}
 #endif // CTS_USES_VULKANSC
@@ -606,10 +632,12 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 							DE_FALSE,						//  deBool				requiredSubgroupSize;
 							argCase.argType,				//  ArgType				argType;
+							deBool(needs8BitUBOStorage),	//  deBool				requires8BitUniformBuffer;
+							deBool(needs16BitUBOStorage)	//  deBool				requires16BitUniformBuffer;
 						};
 						const string			testName	= name + "_" + getShaderStageName(caseDef.shaderStage);
 
-						addFunctionCaseWithPrograms(framebufferGroup.get(), testName, "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+						addFunctionCaseWithPrograms(framebufferGroup.get(), testName,supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 					}
 				}
 			}
@@ -643,9 +671,11 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 						DE_FALSE,						//  deBool				requiredSubgroupSize;
 						argCase.argType,				//  ArgType				argType;
+						DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+						DE_FALSE						//  deBool				requires16BitUniformBuffer;
 					};
 
-					addFunctionCaseWithPrograms(raytracingGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(raytracingGroup.get(), name, supportedCheck, initPrograms, test, caseDef);
 				}
 			}
 		}

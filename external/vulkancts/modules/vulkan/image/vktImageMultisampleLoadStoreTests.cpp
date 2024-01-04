@@ -84,14 +84,15 @@ void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
 	const std::string	texelCoordStr		= (dimension == 1 ? "gx" : dimension == 2 ? "ivec2(gx, gy)" : dimension == 3 ? "ivec3(gx, gy, gz)" : "");
 
 	const ImageType		usedImageType		= (caseDef.singleLayerBind ? getImageTypeForSingleLayer(caseDef.texture.type()) : caseDef.texture.type());
-	const std::string	formatQualifierStr	= getShaderImageFormatQualifier(mapVkFormat(caseDef.format));
+	const bool			isAlphaOnly			= isAlphaOnlyFormat(caseDef.format);
+	const std::string	formatQualifierStr	= (isAlphaOnly ? "" : ", " + getShaderImageFormatQualifier(mapVkFormat(caseDef.format)));
 	const std::string	msImageTypeStr		= getShaderImageType(mapVkFormat(caseDef.format), usedImageType, (caseDef.texture.numSamples() > 1));
 
 	const std::string	xMax				= de::toString(caseDef.texture.size().x() - 1);
 	const std::string	yMax				= de::toString(caseDef.texture.size().y() - 1);
 	const std::string	signednessPrefix	= isUintFormat(caseDef.format) ? "u" : isIntFormat(caseDef.format) ? "i" : "";
 	const std::string	gvec4Expr			= signednessPrefix + "vec4";
-	const int			numColorComponents	= tcu::getNumUsedChannels(mapVkFormat(caseDef.format).order);
+	const int			numColorComponents	= (isAlphaOnly ? 4 : tcu::getNumUsedChannels(mapVkFormat(caseDef.format).order)); // Force 4 for A8_UNORM as per the spec.
 
 	const float			storeColorScale		= computeStoreColorScale(caseDef.format, caseDef.texture.size());
 	const float			storeColorBias		= computeStoreColorBias(caseDef.format);
@@ -99,21 +100,35 @@ void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
 
 	const std::string	colorScaleExpr		= (storeColorScale == 1.0f ? "" : "*" + de::toString(storeColorScale))
 											+ (storeColorBias == 0.0f ? "" : " + float(" + de::toString(storeColorBias) + ")");
+
+	const std::string	red					= "gx^gy^gz^(sampleNdx >> 5)^(sampleNdx & 31)";	// we "split" sampleNdx to keep this value in [0, 31] range for numSamples = 64 case
+	const std::string	green				= "(" + xMax + "-gx)^gy^gz";
+	const std::string	blue				= "gx^(" + yMax + "-gy)^gz";
+	const std::string	alpha				= "(" + xMax + "-gx)^(" + yMax + "-gy)^gz";
 	const std::string	colorExpr			=
 		gvec4Expr + "("
-		+                           "gx^gy^gz^(sampleNdx >> 5)^(sampleNdx & 31), "		// we "split" sampleNdx to keep this value in [0, 31] range for numSamples = 64 case
-		+ (numColorComponents > 1 ? "(" + xMax + "-gx)^gy^gz, "              : "0, ")
-		+ (numColorComponents > 2 ? "gx^(" + yMax + "-gy)^gz, "              : "0, ")
-		+ (numColorComponents > 3 ? "(" + xMax + "-gx)^(" + yMax + "-gy)^gz" : "1")
+		+ (							(isAlphaOnly ? alpha : red) + ", "			) // For A8_UNORM we switch the alpha and red values.
+		+ (numColorComponents > 1 ?	green + ", "						: "0, "	)
+		+ (numColorComponents > 2 ?	blue + ", "							: "0, "	)
+		+ (numColorComponents > 3 ?	(isAlphaOnly ? red : alpha)			: "1"	)
+		+ ")" + colorScaleExpr;
+
+	const std::string	expectedColorExpr	=
+		gvec4Expr + "("
+		+ (											(isAlphaOnly ? "0" : red) + ", "			) // A8_UNORM should result in RGB (0, 0, 0).
+		+ ((numColorComponents > 1 && !isAlphaOnly) ?	green + ", "					: "0, "	)
+		+ ((numColorComponents > 2 && !isAlphaOnly) ?	blue + ", "						: "0, "	)
+		+ ((numColorComponents > 3) ?				(isAlphaOnly ? red : alpha)			: "1"	)
 		+ ")" + colorScaleExpr;
 
 	// Store shader
 	{
 		std::ostringstream src;
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< (isAlphaOnly ? "#extension GL_EXT_shader_image_load_formatted : require\n" : "")
 			<< "\n"
 			<< "layout(local_size_x = 1) in;\n"
-			<< "layout(set = 0, binding = 1, " << formatQualifierStr << ") writeonly uniform " << msImageTypeStr << " u_msImage;\n";
+			<< "layout(set = 0, binding = 1" << formatQualifierStr << ") writeonly uniform " << msImageTypeStr << " u_msImage;\n";
 
 		if (caseDef.singleLayerBind)
 			src << "layout(set = 0, binding = 0) readonly uniform Constants {\n"
@@ -143,9 +158,10 @@ void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
 
 		std::ostringstream src;
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< (isAlphaOnly ? "#extension GL_EXT_shader_image_load_formatted : require\n" : "")
 			<< "\n"
 			<< "layout(local_size_x = 1) in;\n"
-			<< "layout(set = 0, binding = 1, " << formatQualifierStr << ") readonly  uniform " << msImageTypeStr << " u_msImage;\n"
+			<< "layout(set = 0, binding = 1" << formatQualifierStr << ") readonly  uniform " << msImageTypeStr << " u_msImage;\n"
 			<< "layout(set = 0, binding = 2, " << getShaderImageFormatQualifier(checksumFormat) << ") writeonly uniform " << checksumImageTypeStr << " u_checksumImage;\n";
 
 		if (caseDef.singleLayerBind)
@@ -165,10 +181,10 @@ void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
 			<< "        " << gvec4Expr << " color = imageLoad(u_msImage, " << texelCoordStr << ", sampleNdx);\n";
 
 		if (useExactCompare)
-			src << "        if (color == " << colorExpr << ")\n"
+			src << "        if (color == " << expectedColorExpr << ")\n"
 				<< "            ++checksum;\n";
 		else
-			src << "        " << gvec4Expr << " diff  = abs(abs(color) - abs(" << colorExpr << "));\n"
+			src << "        " << gvec4Expr << " diff  = abs(abs(color) - abs(" << expectedColorExpr << "));\n"
 				<< "        if (all(lessThan(diff, " << gvec4Expr << "(0.02))))\n"
 				<< "            ++checksum;\n";
 
@@ -185,15 +201,35 @@ void checkSupport (Context& context, const CaseDef caseDef)
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_MULTISAMPLE);
 
+#ifndef CTS_USES_VULKANSC
+	if (caseDef.format == VK_FORMAT_A8_UNORM_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
 	VkImageFormatProperties		imageFormatProperties;
-	const VkResult				imageFormatResult		= context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-		context.getPhysicalDevice(), caseDef.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_STORAGE_BIT, (VkImageCreateFlags)0, &imageFormatProperties);
+	const auto&					vki						= context.getInstanceInterface();
+	const auto					physicalDevice			= context.getPhysicalDevice();
+	const VkResult				imageFormatResult		= vki.getPhysicalDeviceImageFormatProperties(
+		physicalDevice, caseDef.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_STORAGE_BIT, (VkImageCreateFlags)0, &imageFormatProperties);
 
 	if (imageFormatResult == VK_ERROR_FORMAT_NOT_SUPPORTED)
 		TCU_THROW(NotSupportedError, "Format is not supported");
 
 	if ((imageFormatProperties.sampleCounts & caseDef.numSamples) != caseDef.numSamples)
 		TCU_THROW(NotSupportedError, "Requested sample count is not supported");
+
+#ifndef CTS_USES_VULKANSC
+	if (caseDef.format == VK_FORMAT_A8_UNORM_KHR)
+	{
+		const auto formatProperties = context.getFormatProperties(caseDef.format);
+
+		if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT) == 0u)
+			TCU_THROW(NotSupportedError, "Format does not support storage reads without format");
+
+		if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT) == 0u)
+			TCU_THROW(NotSupportedError, "Format does not support storage writes without format");
+	}
+#endif // CTS_USES_VULKANSC
 }
 
 //! Helper function to deal with per-layer resources.
@@ -489,6 +525,10 @@ tcu::TestCaseGroup* createImageMultisampleLoadStoreTests (tcu::TestContext& test
 		VK_FORMAT_R8G8B8A8_UNORM,
 
 		VK_FORMAT_R8G8B8A8_SNORM,
+
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 	};
 
 	static const VkSampleCountFlagBits samples[] =
@@ -501,37 +541,37 @@ tcu::TestCaseGroup* createImageMultisampleLoadStoreTests (tcu::TestContext& test
 		VK_SAMPLE_COUNT_64_BIT,
 	};
 
-	MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "load_store_multisample", "Multisampled image store and load"));
+	MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "load_store_multisample"));
 
 	for (int baseTextureNdx = 0; baseTextureNdx < DE_LENGTH_OF_ARRAY(textures); ++baseTextureNdx)
 	{
 		const Texture&				baseTexture			= textures[baseTextureNdx];
-		MovePtr<tcu::TestCaseGroup>	imageViewGroup		(new tcu::TestCaseGroup(testCtx, getImageTypeName(baseTexture.type()).c_str(), ""));
+		MovePtr<tcu::TestCaseGroup>	imageViewGroup		(new tcu::TestCaseGroup(testCtx, getImageTypeName(baseTexture.type()).c_str()));
 		const int					numLayerBindModes	= (baseTexture.numLayers() == 1 ? 1 : 2);
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); ++formatNdx)
-		for (int layerBindMode = 0; layerBindMode < numLayerBindModes; ++layerBindMode)
-		{
-			const bool					singleLayerBind	= (layerBindMode != 0);
-			const std::string			formatGroupName	= getFormatShortString(formats[formatNdx]) + (singleLayerBind ? "_single_layer" : "");
-			MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, formatGroupName.c_str(), ""));
-
-			for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); ++samplesNdx)
+			for (int layerBindMode = 0; layerBindMode < numLayerBindModes; ++layerBindMode)
 			{
-				const std::string	samplesCaseName = "samples_" + de::toString(samples[samplesNdx]);
+				const bool					singleLayerBind	= (layerBindMode != 0);
+				const std::string			formatGroupName	= getFormatShortString(formats[formatNdx]) + (singleLayerBind ? "_single_layer" : "");
+				MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, formatGroupName.c_str()));
 
-				const CaseDef		caseDef =
+				for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); ++samplesNdx)
 				{
-					Texture(baseTexture, samples[samplesNdx]),
-					formats[formatNdx],
-					samples[samplesNdx],
-					singleLayerBind,
-				};
+					const std::string	samplesCaseName = "samples_" + de::toString(samples[samplesNdx]);
 
-				addFunctionCaseWithPrograms(formatGroup.get(), samplesCaseName, "", checkSupport, initPrograms, test, caseDef);
+					const CaseDef		caseDef =
+					{
+						Texture(baseTexture, samples[samplesNdx]),
+						formats[formatNdx],
+						samples[samplesNdx],
+						singleLayerBind,
+					};
+
+					addFunctionCaseWithPrograms(formatGroup.get(), samplesCaseName, checkSupport, initPrograms, test, caseDef);
+				}
+				imageViewGroup->addChild(formatGroup.release());
 			}
-			imageViewGroup->addChild(formatGroup.release());
-		}
 		testGroup->addChild(imageViewGroup.release());
 	}
 

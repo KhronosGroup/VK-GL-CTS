@@ -24,6 +24,8 @@
 
 #include "vktRasterizationProvokingVertexTests.hpp"
 
+#include "deDefs.h"
+#include "deStringUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -90,6 +92,8 @@ static VkDeviceSize getXfbBufferSize (deUint32 vertexCount, VkPrimitiveTopology 
 }
 
 static bool verifyXfbBuffer (const tcu::Vec4* const	xfbResults,
+							 const std::vector<tcu::Vec4>& vertices,
+							 const std::vector<size_t>& provoking,
 							 deUint32				count,
 							 VkPrimitiveTopology	topology,
 							 ProvokingVertexMode	mode,
@@ -102,23 +106,28 @@ static bool verifyXfbBuffer (const tcu::Vec4* const	xfbResults,
 									? 2
 									: 3;
 
-	const tcu::Vec4	expected		(1.0f, 0.0f, 0.0f, 1.0f);
 	const deUint32	start			= (mode == PROVOKING_VERTEX_LAST)
 									? primitiveSize - 1
 									: 0;
+	const uint32_t provStart = (mode == PROVOKING_VERTEX_LAST) ?
+					((topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST) ||
+					 (topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) ||
+					 (topology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY) ||
+					 (topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY)) ? 2 : 3 : 0;
 
 	DE_ASSERT(count % primitiveSize == 0);
 
+	uint32_t i = 0;
 	for (deUint32 ndx = start; ndx < count; ndx += primitiveSize)
 	{
-		if (xfbResults[ndx] != expected)
+		if (xfbResults[ndx] != vertices[provoking[i + provStart]])
 		{
 			errorMessage =	"Vertex " + de::toString(ndx) +
-							": Expected red, got " + de::toString(xfbResults[ndx]);
+							": Expected " + de::toString(vertices[provoking[i + start]]) +  ", got " + de::toString(xfbResults[ndx]);
 			return false;
 		}
+		i++;
 	}
-
 	errorMessage = "";
 	return true;
 }
@@ -144,7 +153,6 @@ class ProvokingVertexTestCase : public TestCase
 public:
 							ProvokingVertexTestCase	(tcu::TestContext&	testCtx,
 													 const std::string&	name,
-													 const std::string&	description,
 													 const Params	params);
 	virtual void			initPrograms			(SourceCollections& programCollection) const;
 	virtual void			checkSupport			(Context& context) const;
@@ -155,9 +163,8 @@ private:
 
 ProvokingVertexTestCase::ProvokingVertexTestCase (tcu::TestContext& testCtx,
 												  const std::string& name,
-												  const std::string& description,
 												  const Params params)
-	: TestCase	(testCtx, name, description)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {
 }
@@ -178,7 +185,7 @@ void ProvokingVertexTestCase::initPrograms (SourceCollections& programCollection
 				<< "{\n";
 
 	if (m_params.transformFeedback)
-		vertShader << "    out_xfb = in_color;\n";
+		vertShader << "    out_xfb = in_position;\n";
 
 	vertShader	<< "    out_color = in_color;\n"
 				<< "    gl_Position = in_position;\n"
@@ -468,6 +475,8 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 		}
 	}
 
+	std::vector<tcu::Vec4>	vertices;
+	std::vector<size_t>		provoking;
 	// Vertex buffer
 	{
 		const tcu::Vec4			red		(1.0f, 0.0f, 0.0f, 1.0f);
@@ -476,123 +485,161 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 		const tcu::Vec4			yellow	(1.0f, 1.0f, 0.0f, 1.0f);
 		const tcu::Vec4			white	(1.0f, 1.0f, 1.0f, 1.0f);
 
-		std::vector<tcu::Vec4>	vertices;
 
 		switch (m_params.primitiveTopology)
 		{
 			case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
 				// Position												//Color
 				vertices.push_back(tcu::Vec4(-1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red);	// line 0
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
 				vertices.push_back(tcu::Vec4(-1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);	// line 1
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
 
 				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// line 1 reverse
 				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// line 0 reverse
 				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 				// Position												// Color
 				vertices.push_back(tcu::Vec4(-1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red); // line strip
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4(-1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(green);
 
 				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green); // line strip reverse
 				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
 				// Position												// Color
 				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);	// triangle 0
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4(-0.6f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4(-0.2f, 1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
 				vertices.push_back(tcu::Vec4( 0.2f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);	// triangle 1
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.6f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
 
 				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// triangle 1 reverse
 				vertices.push_back(tcu::Vec4(-0.6f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4(-0.2f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.2f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// triangle 0 reverse
 				vertices.push_back(tcu::Vec4( 0.6f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
 				// Position												// Color
 				vertices.push_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);	// triangle strip
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
 
 				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// triangle strip reverse
 				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4( 0.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
+
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
 				// Position												// Color
 				vertices.push_back(tcu::Vec4( 0.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);	// triangle fan
 				vertices.push_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
 
 				vertices.push_back(tcu::Vec4( 0.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green); // triangle fan reverse
 				vertices.push_back(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
 				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
 				// Position												// Color
 				vertices.push_back(tcu::Vec4(-1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(green);	// line 0
 				vertices.push_back(tcu::Vec4(-0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
 				vertices.push_back(tcu::Vec4( 1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(yellow);
 				vertices.push_back(tcu::Vec4(-1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(green);	// line 1
 				vertices.push_back(tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
 				vertices.push_back(tcu::Vec4( 1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(yellow);
 
 				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(yellow);	// line 1 reverse
 				vertices.push_back(tcu::Vec4(-0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
 				vertices.push_back(tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(yellow);	// line 0 reverse
 				vertices.push_back(tcu::Vec4( 0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
 				vertices.push_back(tcu::Vec4( 0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
 				// Position												// Color
 				vertices.push_back(tcu::Vec4(-1.0f,-0.5f, 0.0f, 1.0f));	vertices.push_back(green);	// line strip
 				vertices.push_back(tcu::Vec4(-0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
 				vertices.push_back(tcu::Vec4( 1.0f, 0.5f, 0.0f, 1.0f));	vertices.push_back(yellow);
 
 				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(yellow);	// line strip reverse
 				vertices.push_back(tcu::Vec4(-0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(blue);
 				vertices.push_back(tcu::Vec4(-0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f,-0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f, 0.5f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
 				// Position												// Color
 				vertices.push_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);	// triangle 0
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4(-0.6f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4(-0.2f, 1.0f, 0.0f, 1.0f));	vertices.push_back(blue);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4( 0.2f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);	// triangle 1
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4( 0.6f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
@@ -604,21 +651,26 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 				vertices.push_back(tcu::Vec4(-0.6f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4(-0.2f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4( 0.2f,-1.0f, 0.0f, 1.0f));	vertices.push_back(blue);	// triangle 0 reverse
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4( 0.6f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				break;
 			case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
 				// Position												// Color
 				vertices.push_back(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);	// triangle strip
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4(-0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4( 0.0f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4( 0.5f,-1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
@@ -630,10 +682,13 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 				vertices.push_back(tcu::Vec4(-0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(green);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4( 0.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4( 0.5f, 1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				vertices.push_back(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f));	vertices.push_back(red);
+				provoking.push_back(vertices.size() - 2);
 				vertices.push_back(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f));	vertices.push_back(white);
 				break;
 			default:
@@ -808,17 +863,17 @@ tcu::TestStatus ProvokingVertexTestInstance::iterate (void)
 
 			if (m_params.provokingVertexMode != PROVOKING_VERTEX_PER_PIPELINE)
 			{
-				if (!verifyXfbBuffer(xfbResults, count, m_params.primitiveTopology, m_params.provokingVertexMode, errorMessage))
+				if (!verifyXfbBuffer(xfbResults, vertices, provoking, count, m_params.primitiveTopology, m_params.provokingVertexMode, errorMessage))
 					return tcu::TestStatus::fail(errorMessage);
 			}
 			else
 			{
 				const deUint32 halfCount = count / 2;
 
-				if (!verifyXfbBuffer(xfbResults, halfCount, m_params.primitiveTopology, PROVOKING_VERTEX_FIRST, errorMessage))
+				if (!verifyXfbBuffer(xfbResults, vertices, provoking, halfCount, m_params.primitiveTopology, PROVOKING_VERTEX_FIRST, errorMessage))
 					return tcu::TestStatus::fail(errorMessage);
 
-				if (!verifyXfbBuffer(&xfbResults[halfCount], halfCount, m_params.primitiveTopology, PROVOKING_VERTEX_LAST, errorMessage))
+				if (!verifyXfbBuffer(&xfbResults[halfCount], vertices, provoking, halfCount, m_params.primitiveTopology, PROVOKING_VERTEX_LAST, errorMessage))
 					return tcu::TestStatus::fail(errorMessage);
 			}
 		}
@@ -916,14 +971,17 @@ void createTests (tcu::TestCaseGroup* testGroup)
 	const struct Provoking
 	{
 		const char*			name;
-		const char*			desc;
 		ProvokingVertexMode	mode;
 	} provokingVertexModes[] =
 	{
-		{ "default",		"Default provoking vertex convention",				PROVOKING_VERTEX_DEFAULT,		},
-		{ "first",			"VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT",		PROVOKING_VERTEX_FIRST,			},
-		{ "last",			"VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT",			PROVOKING_VERTEX_LAST,			},
-		{ "per_pipeline",	"Pipelines with different provokingVertexModes",	PROVOKING_VERTEX_PER_PIPELINE	}
+		// Default provoking vertex convention
+		{ "default",PROVOKING_VERTEX_DEFAULT,		},
+		// VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT
+		{ "first",PROVOKING_VERTEX_FIRST,			},
+		// VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT
+		{ "last",PROVOKING_VERTEX_LAST,			},
+		// Pipelines with different provokingVertexModes
+		{ "per_pipeline",PROVOKING_VERTEX_PER_PIPELINE	}
 	};
 
 	const struct Topology
@@ -947,17 +1005,18 @@ void createTests (tcu::TestCaseGroup* testGroup)
 	const struct TestType
 	{
 		const char*	name;
-		const char* desc;
 		bool		transformFeedback;
 	} testTypes[] =
 	{
-		{ "draw",				"Test that primitives are flat shaded with the provoking vertex color",			false	},
-		{ "transform_feedback",	"Test that transform feedback preserves the position of the provoking vertex",	true	}
+		// Test that primitives are flat shaded with the provoking vertex color
+		{ "draw",false	},
+		// Test that transform feedback preserves the position of the provoking vertex
+		{ "transform_feedback",true	}
 	};
 
 	for (const TestType& testType: testTypes)
 	{
-		tcu::TestCaseGroup* const typeGroup = new tcu::TestCaseGroup(testCtx, testType.name, testType.desc);
+		tcu::TestCaseGroup* const typeGroup = new tcu::TestCaseGroup(testCtx, testType.name);
 
 		for (const Provoking& provoking : provokingVertexModes)
 		{
@@ -965,12 +1024,11 @@ void createTests (tcu::TestCaseGroup* testGroup)
 			if (testType.transformFeedback && (provoking.mode == PROVOKING_VERTEX_DEFAULT))
 				continue;
 
-			tcu::TestCaseGroup* const provokingGroup = new tcu::TestCaseGroup(testCtx, provoking.name, provoking.desc);
+			tcu::TestCaseGroup* const provokingGroup = new tcu::TestCaseGroup(testCtx, provoking.name);
 
 			for (const Topology& topology : topologies)
 			{
 				const std::string	caseName	= topology.name;
-				const std::string	caseDesc	= getPrimitiveTopologyName(topology.type);
 
 				const Params		params		=
 				{
@@ -982,7 +1040,7 @@ void createTests (tcu::TestCaseGroup* testGroup)
 					provoking.mode						// provokingVertexMode
 				};
 
-				provokingGroup->addChild(new ProvokingVertexTestCase(testCtx, caseName, caseDesc, params));
+				provokingGroup->addChild(new ProvokingVertexTestCase(testCtx, caseName, params));
 			}
 
 			typeGroup->addChild(provokingGroup);
@@ -998,10 +1056,8 @@ tcu::TestCaseGroup* createProvokingVertexTests (tcu::TestContext& testCtx)
 {
 	return createTestGroup(testCtx,
 						   "provoking_vertex",
-						   "Tests for provoking vertex",
 						   createTests);
 }
 
 }	// rasterization
 }	// vkt
-

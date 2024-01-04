@@ -165,6 +165,33 @@ public:
 	}
 };
 
+class PhysicalDeviceImageFormatList : public PhysicalDeviceImageFormatProperties
+{
+public:
+	virtual VkResult getPhysicalDeviceImageFormatProperties(const InstanceInterface &vki, VkPhysicalDevice device, VkFormat viewFormat, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags)
+	{
+		vk::VkImageFormatListCreateInfo imageFormatList =
+		{
+			vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,	// VkStructureType	sType;
+			DE_NULL,												// const void*		pNext;
+			1u,														// uint32_t			viewFormatCount;
+			&viewFormat,											// const VkFormat*	pViewFormats;
+		};
+		VkImageFormatProperties2			formatProperties2	= initVulkanStructure();
+		VkPhysicalDeviceImageFormatInfo2	imageFormatInfo2	=
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// VkStructureType		sType
+			&imageFormatList,										// const void*			pNext
+			viewFormat,												// VkFormat				format
+			VK_IMAGE_TYPE_2D,										// VkImageType			type
+			tiling,													// VkImageTiling		tiling
+			usage,													// VkImageUsageFlags	usage
+			flags													// VkImageCreateFlags	flags
+		};
+		return vki.getPhysicalDeviceImageFormatProperties2(device, &imageFormatInfo2, &formatProperties2);
+	}
+};
+
 template<typename T>
 tcu::TestStatus testExtendedUsageBitCompatiblity (Context& context, TestParams params)
 {
@@ -245,9 +272,10 @@ void checkSupport (Context& context, TestParams params)
 
 tcu::TestCaseGroup* createImageExtendedUsageBitTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> imageExtendedUsageBitTests(new tcu::TestCaseGroup(testCtx, "extended_usage_bit_compatibility", "VK_IMAGE_CREATE_EXTENDED_USAGE_BIT tests to check format compatibility"));
-	de::MovePtr<tcu::TestCaseGroup> getPhysicalDeviceImageFormatPropertiesTests(new tcu::TestCaseGroup(testCtx, "image_format_properties", "vkGetPhysicalDeviceImageFormatProperties() tests"));
-	de::MovePtr<tcu::TestCaseGroup> getPhysicalDeviceImageFormatProperties2Tests(new tcu::TestCaseGroup(testCtx, "image_format_properties2", "vkGetPhysicalDeviceImageFormatProperties2() tests"));
+	de::MovePtr<tcu::TestCaseGroup> imageExtendedUsageBitTests(new tcu::TestCaseGroup(testCtx, "extended_usage_bit_compatibility"));
+	de::MovePtr<tcu::TestCaseGroup> getPhysicalDeviceImageFormatPropertiesTests(new tcu::TestCaseGroup(testCtx, "image_format_properties"));
+	de::MovePtr<tcu::TestCaseGroup> getPhysicalDeviceImageFormatProperties2Tests(new tcu::TestCaseGroup(testCtx, "image_format_properties2"));
+	de::MovePtr<tcu::TestCaseGroup> getPhysicalDeviceImageFormatListTests(new tcu::TestCaseGroup(testCtx, "image_format_list"));
 
 	struct ImageUsageFlags
 	{
@@ -300,14 +328,17 @@ tcu::TestCaseGroup* createImageExtendedUsageBitTests (tcu::TestContext& testCtx)
 				std::ostringstream name;
 				std::string usageName = usages[usageNdx].name;
 				name << getFormatShortString(imageFormat) << "_" << tiling[tilingNdx].name << "_" << de::toLower(usageName.substr(15));
-				addFunctionCase(getPhysicalDeviceImageFormatPropertiesTests.get(), name.str().c_str(), "Checks usage bit format compatibility among compatible image view formats", checkSupport, testExtendedUsageBitCompatiblity<PhysicalDeviceImageFormatProperties>, params);
-				addFunctionCase(getPhysicalDeviceImageFormatProperties2Tests.get(), name.str().c_str(), "Checks usage bit format compatibility among compatible image view formats", checkSupport, testExtendedUsageBitCompatiblity<PhysicalDeviceImageFormatProperties2>, params);
+				// Checks usage bit format compatibility among compatible image view formats
+				addFunctionCase(getPhysicalDeviceImageFormatPropertiesTests.get(), name.str().c_str(), checkSupport, testExtendedUsageBitCompatiblity<PhysicalDeviceImageFormatProperties>, params);
+				addFunctionCase(getPhysicalDeviceImageFormatProperties2Tests.get(), name.str().c_str(), checkSupport, testExtendedUsageBitCompatiblity<PhysicalDeviceImageFormatProperties2>, params);
+				addFunctionCase(getPhysicalDeviceImageFormatListTests.get(), name.str().c_str(), checkSupport, testExtendedUsageBitCompatiblity<PhysicalDeviceImageFormatList>, params);
 			}
 		}
 	}
 
 	imageExtendedUsageBitTests->addChild(getPhysicalDeviceImageFormatPropertiesTests.release());
 	imageExtendedUsageBitTests->addChild(getPhysicalDeviceImageFormatProperties2Tests.release());
+	imageExtendedUsageBitTests->addChild(getPhysicalDeviceImageFormatListTests.release());
 	return imageExtendedUsageBitTests.release();
 }
 

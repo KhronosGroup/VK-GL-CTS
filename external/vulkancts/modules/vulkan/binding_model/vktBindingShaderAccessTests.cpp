@@ -3011,7 +3011,6 @@ class QuadrantRendederCase : public vkt::TestCase
 public:
 									QuadrantRendederCase		(tcu::TestContext&		testCtx,
 																 const char*			name,
-																 const char*			description,
 																 glu::GLSLVersion		glslVersion,
 																 vk::VkShaderStageFlags	exitingStages,
 																 vk::VkShaderStageFlags	activeStages,
@@ -3040,12 +3039,11 @@ protected:
 
 QuadrantRendederCase::QuadrantRendederCase (tcu::TestContext&		testCtx,
 											const char*				name,
-											const char*				description,
 											glu::GLSLVersion		glslVersion,
 											vk::VkShaderStageFlags	exitingStages,
 											vk::VkShaderStageFlags	activeStages,
 											DescriptorSetCount		descriptorSetCount)
-	: vkt::TestCase			(testCtx, name, description)
+	: vkt::TestCase			(testCtx, name)
 	, m_glslVersion			(glslVersion)
 	, m_exitingStages		(exitingStages)
 	, m_activeStages		(activeStages)
@@ -3439,7 +3437,6 @@ public:
 									BufferDescriptorCase		(tcu::TestContext&		testCtx,
 																 DescriptorUpdateMethod	updateMethod,
 																 const char*			name,
-																 const char*			description,
 																 bool					isPrimaryCmdBuf,
 																 vk::VkDescriptorType	descriptorType,
 																 vk::VkShaderStageFlags	exitingStages,
@@ -3469,7 +3466,6 @@ private:
 BufferDescriptorCase::BufferDescriptorCase (tcu::TestContext&		testCtx,
 											DescriptorUpdateMethod	updateMethod,
 											const char*				name,
-											const char*				description,
 											bool					isPrimaryCmdBuf,
 											vk::VkDescriptorType	descriptorType,
 											vk::VkShaderStageFlags	exitingStages,
@@ -3477,7 +3473,7 @@ BufferDescriptorCase::BufferDescriptorCase (tcu::TestContext&		testCtx,
 											DescriptorSetCount		descriptorSetCount,
 											ShaderInputInterface	shaderInterface,
 											deUint32				flags)
-	: QuadrantRendederCase		(testCtx, name, description, glu::GLSL_VERSION_310_ES, exitingStages, activeStages, descriptorSetCount)
+	: QuadrantRendederCase		(testCtx, name, glu::GLSL_VERSION_310_ES, exitingStages, activeStages, descriptorSetCount)
 	, m_updateMethod			(updateMethod)
 	, m_viewOffset				((flags & FLAG_VIEW_OFFSET) != 0u)
 	, m_dynamicOffsetSet		((flags & (FLAG_DYNAMIC_OFFSET_ZERO | FLAG_DYNAMIC_OFFSET_NONZERO)) != 0u)
@@ -6012,11 +6008,17 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSet (const vk::DeviceInter
 														   DescriptorUpdateMethod			updateMethod)
 {
 	const vk::VkDescriptorImageInfo		imageInfo			= makeDescriptorImageInfo(images.getImageView(setNdx), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	const vk::VkDescriptorImageInfo		samplersInfos[2]	=
+	vk::VkDescriptorImageInfo			samplersInfos[2]	=
 	{
 		makeDescriptorImageInfo(images.getSampler(setNdx * getInterfaceNumResources(shaderInterface))),
 		makeDescriptorImageInfo(images.getSampler(setNdx * getInterfaceNumResources(shaderInterface) + 1)),
 	};
+
+	if (isImmutable)
+	{
+		samplersInfos[0].sampler = VK_NULL_HANDLE;
+		samplersInfos[1].sampler = VK_NULL_HANDLE;
+	}
 
 	const deUint32						samplerLocation		= shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS ? 1u : 0u;
 	deUint32							numDescriptors		= 1u;
@@ -7272,7 +7274,6 @@ public:
 
 								ImageDescriptorCase			(tcu::TestContext&		testCtx,
 															 const char*			name,
-															 const char*			description,
 															 bool					isPrimaryCmdBuf,
 															 DescriptorUpdateMethod updateMethod,
 															 vk::VkDescriptorType	descriptorType,
@@ -7307,7 +7308,6 @@ private:
 
 ImageDescriptorCase::ImageDescriptorCase (tcu::TestContext&			testCtx,
 										  const char*				name,
-										  const char*				description,
 										  bool						isPrimaryCmdBuf,
 										  DescriptorUpdateMethod	updateMethod,
 										  vk::VkDescriptorType		descriptorType,
@@ -7317,7 +7317,7 @@ ImageDescriptorCase::ImageDescriptorCase (tcu::TestContext&			testCtx,
 										  ShaderInputInterface		shaderInterface,
 										  vk::VkImageViewType		viewType,
 										  deUint32					flags)
-	: QuadrantRendederCase	(testCtx, name, description,
+	: QuadrantRendederCase	(testCtx, name,
 							 // \note 1D textures are not supported in ES
 							 (viewType == vk::VK_IMAGE_VIEW_TYPE_1D || viewType == vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY) ? glu::GLSL_VERSION_440 : glu::GLSL_VERSION_310_ES,
 							 exitingStages, activeStages, descriptorSetCount)
@@ -9179,7 +9179,6 @@ public:
 								TexelBufferDescriptorCase	(tcu::TestContext&		testCtx,
 															 DescriptorUpdateMethod	updateMethod,
 															 const char*			name,
-															 const char*			description,
 															 bool					isPrimaryCmdBuf,
 															 vk::VkDescriptorType	descriptorType,
 															 vk::VkShaderStageFlags	exitingStages,
@@ -9207,7 +9206,6 @@ private:
 TexelBufferDescriptorCase::TexelBufferDescriptorCase (tcu::TestContext&			testCtx,
 													  DescriptorUpdateMethod	updateMethod,
 													  const char*				name,
-													  const char*				description,
 													  bool						isPrimaryCmdBuf,
 													  vk::VkDescriptorType		descriptorType,
 													  vk::VkShaderStageFlags	exitingStages,
@@ -9215,7 +9213,7 @@ TexelBufferDescriptorCase::TexelBufferDescriptorCase (tcu::TestContext&			testCt
 													  DescriptorSetCount		descriptorSetCount,
 													  ShaderInputInterface		shaderInterface,
 													  deUint32					flags)
-	: QuadrantRendederCase	(testCtx, name, description, glu::GLSL_VERSION_310_ES, exitingStages, activeStages, descriptorSetCount)
+	: QuadrantRendederCase	(testCtx, name, glu::GLSL_VERSION_310_ES, exitingStages, activeStages, descriptorSetCount)
 	, m_updateMethod		(updateMethod)
 	, m_isPrimaryCmdBuf		(isPrimaryCmdBuf)
 	, m_descriptorType		(descriptorType)
@@ -9355,37 +9353,36 @@ void createShaderAccessImageTests (tcu::TestCaseGroup*		group,
 	{
 		vk::VkImageViewType	viewType;
 		const char*			name;
-		const char*			description;
 		deUint32			flags;
 	} s_imageTypes[] =
 	{
-		{ vk::VK_IMAGE_VIEW_TYPE_1D,			"1d",						"1D image view",								0u										},
-		{ vk::VK_IMAGE_VIEW_TYPE_1D,			"1d_base_mip",				"1D image subview with base mip level",			ImageDescriptorCase::FLAG_BASE_MIP		},
-		{ vk::VK_IMAGE_VIEW_TYPE_1D,			"1d_base_slice",			"1D image subview with base array slice",		ImageDescriptorCase::FLAG_BASE_SLICE	},
+		{ vk::VK_IMAGE_VIEW_TYPE_1D,			"1d",					0u										},
+		{ vk::VK_IMAGE_VIEW_TYPE_1D,			"1d_base_mip",		ImageDescriptorCase::FLAG_BASE_MIP		},
+		{ vk::VK_IMAGE_VIEW_TYPE_1D,			"1d_base_slice",		ImageDescriptorCase::FLAG_BASE_SLICE	},
 
-		{ vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array",					"1D array image view",							0u										},
-		{ vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array_base_mip",		"1D array image subview with base mip level",	ImageDescriptorCase::FLAG_BASE_MIP		},
-		{ vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array_base_slice",		"1D array image subview with base array slice",	ImageDescriptorCase::FLAG_BASE_SLICE	},
+		{ vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array",			0u										},
+		{ vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array_base_mip",		ImageDescriptorCase::FLAG_BASE_MIP		},
+		{ vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array_base_slice",	ImageDescriptorCase::FLAG_BASE_SLICE	},
 
-		{ vk::VK_IMAGE_VIEW_TYPE_2D,			"2d",						"2D image view",								0u										},
-		{ vk::VK_IMAGE_VIEW_TYPE_2D,			"2d_base_mip",				"2D image subview with base mip level",			ImageDescriptorCase::FLAG_BASE_MIP		},
-		{ vk::VK_IMAGE_VIEW_TYPE_2D,			"2d_base_slice",			"2D image subview with base array slice",		ImageDescriptorCase::FLAG_BASE_SLICE	},
+		{ vk::VK_IMAGE_VIEW_TYPE_2D,			"2d",						0u										},
+		{ vk::VK_IMAGE_VIEW_TYPE_2D,			"2d_base_mip",			ImageDescriptorCase::FLAG_BASE_MIP		},
+		{ vk::VK_IMAGE_VIEW_TYPE_2D,			"2d_base_slice",			ImageDescriptorCase::FLAG_BASE_SLICE	},
 
-		{ vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array",					"2D array image view",							0u										},
-		{ vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array_base_mip",		"2D array image subview with base mip level",	ImageDescriptorCase::FLAG_BASE_MIP		},
-		{ vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array_base_slice",		"2D array image subview with base array slice",	ImageDescriptorCase::FLAG_BASE_SLICE	},
+		{ vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array",				0u										},
+		{ vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array_base_mip",		ImageDescriptorCase::FLAG_BASE_MIP		},
+		{ vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array_base_slice",	ImageDescriptorCase::FLAG_BASE_SLICE	},
 
-		{ vk::VK_IMAGE_VIEW_TYPE_3D,			"3d",						"3D image view",								0u										},
-		{ vk::VK_IMAGE_VIEW_TYPE_3D,			"3d_base_mip",				"3D image subview with base mip level",			ImageDescriptorCase::FLAG_BASE_MIP		},
+		{ vk::VK_IMAGE_VIEW_TYPE_3D,			"3d",						0u										},
+		{ vk::VK_IMAGE_VIEW_TYPE_3D,			"3d_base_mip",			ImageDescriptorCase::FLAG_BASE_MIP		},
 		// no 3d array textures
 
-		{ vk::VK_IMAGE_VIEW_TYPE_CUBE,			"cube",						"Cube image view",								0u										},
-		{ vk::VK_IMAGE_VIEW_TYPE_CUBE,			"cube_base_mip",			"Cube image subview with base mip level",		ImageDescriptorCase::FLAG_BASE_MIP		},
-		{ vk::VK_IMAGE_VIEW_TYPE_CUBE,			"cube_base_slice",			"Cube image subview with base array slice",		ImageDescriptorCase::FLAG_BASE_SLICE	},
+		{ vk::VK_IMAGE_VIEW_TYPE_CUBE,			"cube",					0u										},
+		{ vk::VK_IMAGE_VIEW_TYPE_CUBE,			"cube_base_mip",			ImageDescriptorCase::FLAG_BASE_MIP		},
+		{ vk::VK_IMAGE_VIEW_TYPE_CUBE,			"cube_base_slice",		ImageDescriptorCase::FLAG_BASE_SLICE	},
 
-		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array",				"Cube image view",								0u										},
-		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array_base_mip",		"Cube image subview with base mip level",		ImageDescriptorCase::FLAG_BASE_MIP		},
-		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array_base_slice",	"Cube image subview with base array slice",		ImageDescriptorCase::FLAG_BASE_SLICE	}
+		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array",				0u										},
+		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array_base_mip",	ImageDescriptorCase::FLAG_BASE_MIP		},
+		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array_base_slice",	ImageDescriptorCase::FLAG_BASE_SLICE	}
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_imageTypes); ++ndx)
@@ -9408,7 +9405,6 @@ void createShaderAccessImageTests (tcu::TestCaseGroup*		group,
 
 		group->addChild(new ImageDescriptorCase(group->getTestContext(),
 												s_imageTypes[ndx].name,
-												s_imageTypes[ndx].description,
 												isPrimaryCmdBuf,
 												updateMethod,
 												descriptorType,
@@ -9437,12 +9433,13 @@ void createShaderAccessTexelBufferTests (tcu::TestCaseGroup*	group,
 	static const struct
 	{
 		const char*	name;
-		const char*	description;
 		deUint32	flags;
 	} s_texelBufferTypes[] =
 	{
-		{ "offset_zero",		"View offset is zero",		0u											},
-		{ "offset_nonzero",		"View offset is non-zero",	TexelBufferDescriptorCase::FLAG_VIEW_OFFSET	},
+		// View offset is zero
+		{ "offset_zero",0u											},
+		// View offset is non-zero
+		{ "offset_nonzero",TexelBufferDescriptorCase::FLAG_VIEW_OFFSET	},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_texelBufferTypes); ++ndx)
@@ -9450,7 +9447,6 @@ void createShaderAccessTexelBufferTests (tcu::TestCaseGroup*	group,
 		group->addChild(new TexelBufferDescriptorCase(group->getTestContext(),
 													  updateMethod,
 													  s_texelBufferTypes[ndx].name,
-													  s_texelBufferTypes[ndx].description,
 													  isPrimaryCmdBuf,
 													  descriptorType,
 													  exitingStages,
@@ -9477,18 +9473,17 @@ void createShaderAccessBufferTests (tcu::TestCaseGroup*		group,
 	static const struct
 	{
 		const char*	name;
-		const char*	description;
 		bool		isForDynamicCases;
 		deUint32	flags;
 	} s_bufferTypes[] =
 	{
-		{ "offset_view_zero",						"View offset is zero",									false,	0u																							},
-		{ "offset_view_nonzero",					"View offset is non-zero",								false,	BufferDescriptorCase::FLAG_VIEW_OFFSET														},
+		{ "offset_view_zero",						false,	0u																							},
+		{ "offset_view_nonzero",					false,	BufferDescriptorCase::FLAG_VIEW_OFFSET														},
 
-		{ "offset_view_zero_dynamic_zero",			"View offset is zero, dynamic offset is zero",			true,	BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_ZERO												},
-		{ "offset_view_zero_dynamic_nonzero",		"View offset is zero, dynamic offset is non-zero",		true,	BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_NONZERO											},
-		{ "offset_view_nonzero_dynamic_zero",		"View offset is non-zero, dynamic offset is zero",		true,	BufferDescriptorCase::FLAG_VIEW_OFFSET | BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_ZERO		},
-		{ "offset_view_nonzero_dynamic_nonzero",	"View offset is non-zero, dynamic offset is non-zero",	true,	BufferDescriptorCase::FLAG_VIEW_OFFSET | BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_NONZERO	},
+		{ "offset_view_zero_dynamic_zero",		true,	BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_ZERO												},
+		{ "offset_view_zero_dynamic_nonzero",		true,	BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_NONZERO											},
+		{ "offset_view_nonzero_dynamic_zero",		true,	BufferDescriptorCase::FLAG_VIEW_OFFSET | BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_ZERO		},
+		{ "offset_view_nonzero_dynamic_nonzero",	true,	BufferDescriptorCase::FLAG_VIEW_OFFSET | BufferDescriptorCase::FLAG_DYNAMIC_OFFSET_NONZERO	},
 	};
 
 	const bool isDynamicCase = isDynamicDescriptorType(descriptorType);
@@ -9508,7 +9503,6 @@ void createShaderAccessBufferTests (tcu::TestCaseGroup*		group,
 			group->addChild(new BufferDescriptorCase(group->getTestContext(),
 													 updateMethod,
 													 s_bufferTypes[ndx].name,
-													 s_bufferTypes[ndx].description,
 													 isPrimaryCmdBuf,
 													 descriptorType,
 													 exitingStages,
@@ -9527,24 +9521,27 @@ tcu::TestCaseGroup* createShaderAccessTests (tcu::TestContext& testCtx)
 	{
 		const bool	isPrimary;
 		const char*	name;
-		const char*	description;
 	} s_bindTypes[] =
 	{
-		{ true,		"primary_cmd_buf",		"Bind in primary command buffer"	},
-		{ false,	"secondary_cmd_buf",	"Bind in secondary command buffer"	},
+		// Bind in primary command buffer
+		{ true,		"primary_cmd_buf"},
+		// Bind in secondary command buffer
+		{ false,	"secondary_cmd_buf"},
 	};
 	static const struct
 	{
 		const DescriptorUpdateMethod	method;
 		const char*						name;
-		const char*						description;
 	} s_updateMethods[] =
 	{
-		{  DESCRIPTOR_UPDATE_METHOD_NORMAL,				"",						"Use regular descriptor updates" },
+		{  DESCRIPTOR_UPDATE_METHOD_NORMAL,				""},
 #ifndef CTS_USES_VULKANSC
-		{  DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE,		"with_template",		"Use descriptor update templates" },
-		{  DESCRIPTOR_UPDATE_METHOD_WITH_PUSH,			"with_push",			"Use push descriptor updates" },
-		{  DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE, "with_push_template",	"Use push descriptor update templates" },
+		// Use descriptor update templates
+		{  DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE,		"with_template"},
+		// Use push descriptor updates
+		{  DESCRIPTOR_UPDATE_METHOD_WITH_PUSH,			"with_push"},
+		// Use push descriptor update templates
+		{  DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE, "with_push_template"},
 #endif
 	};
 	static const struct
@@ -9572,65 +9569,56 @@ tcu::TestCaseGroup* createShaderAccessTests (tcu::TestContext& testCtx)
 	static const struct
 	{
 		const char*				name;
-		const char*				description;
 		vk::VkShaderStageFlags	existingStages;				//!< stages that exists
 		vk::VkShaderStageFlags	activeStages;				//!< stages that access resource
 		bool					supportsSecondaryCmdBufs;
 	} s_shaderStages[] =
 	{
+		// No accessing stages
 		{
-			"no_access",
-			"No accessing stages",
-			vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			"no_access",vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
 			0u,
 			true,
 		},
+		// Vertex stage
 		{
-			"vertex",
-			"Vertex stage",
-			vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			"vertex",vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
 			vk::VK_SHADER_STAGE_VERTEX_BIT,
 			true,
 		},
+		// Tessellation control stage
 		{
-			"tess_ctrl",
-			"Tessellation control stage",
-			vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			"tess_ctrl",vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
 			vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
 			true,
 		},
+		// Tessellation evaluation stage
 		{
-			"tess_eval",
-			"Tessellation evaluation stage",
-			vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			"tess_eval",vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
 			vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
 			true,
 		},
+		// Geometry stage
 		{
-			"geometry",
-			"Geometry stage",
-			vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_GEOMETRY_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			"geometry",vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_GEOMETRY_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
 			vk::VK_SHADER_STAGE_GEOMETRY_BIT,
 			true,
 		},
+		// Fragment stage
 		{
-			"fragment",
-			"Fragment stage",
-			vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			"fragment",vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
 			vk::VK_SHADER_STAGE_FRAGMENT_BIT,
 			true,
 		},
+		// Compute stage
 		{
-			"compute",
-			"Compute stage",
-			vk::VK_SHADER_STAGE_COMPUTE_BIT,
+			"compute",vk::VK_SHADER_STAGE_COMPUTE_BIT,
 			vk::VK_SHADER_STAGE_COMPUTE_BIT,
 			false,
 		},
+		// Vertex and fragment stages
 		{
-			"vertex_fragment",
-			"Vertex and fragment stages",
-			vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
+			"vertex_fragment",vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
 			vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT,
 			true,
 		}
@@ -9639,45 +9627,44 @@ tcu::TestCaseGroup* createShaderAccessTests (tcu::TestContext& testCtx)
 	{
 		ShaderInputInterface	dimension;
 		const char*				name;
-		const char*				description;
 	} s_variableDimensions[] =
 	{
-		{ SHADER_INPUT_SINGLE_DESCRIPTOR,					"single_descriptor",					"Single descriptor"		},
-		{ SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS,		"multiple_contiguous_descriptors",		"Multiple descriptors"	},
-		{ SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS,	"multiple_discontiguous_descriptors",	"Multiple descriptors"	},
-		{ SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS,		"multiple_arbitrary_descriptors",		"Multiple descriptors"	},
-		{ SHADER_INPUT_DESCRIPTOR_ARRAY,					"descriptor_array",						"Descriptor array"		},
+		{ SHADER_INPUT_SINGLE_DESCRIPTOR,					"single_descriptor"},
+		{ SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS,		"multiple_contiguous_descriptors"},
+		{ SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS,	"multiple_discontiguous_descriptors"},
+		{ SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS,		"multiple_arbitrary_descriptors"},
+		{ SHADER_INPUT_DESCRIPTOR_ARRAY,					"descriptor_array"},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "shader_access", "Access resource via descriptor in a single descriptor set"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "shader_access"));
 
 	// .primary_cmd_buf...
 	for (int bindTypeNdx = 0; bindTypeNdx < DE_LENGTH_OF_ARRAY(s_bindTypes); ++bindTypeNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> bindGroup(new tcu::TestCaseGroup(testCtx, s_bindTypes[bindTypeNdx].name, s_bindTypes[bindTypeNdx].description));
+		de::MovePtr<tcu::TestCaseGroup> bindGroup(new tcu::TestCaseGroup(testCtx, s_bindTypes[bindTypeNdx].name));
 
 		for (int updateMethodNdx = 0; updateMethodNdx < DE_LENGTH_OF_ARRAY(s_updateMethods); ++updateMethodNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> updateMethodGroup(new tcu::TestCaseGroup(testCtx, s_updateMethods[updateMethodNdx].name, s_updateMethods[updateMethodNdx].description));
+			de::MovePtr<tcu::TestCaseGroup> updateMethodGroup(new tcu::TestCaseGroup(testCtx, s_updateMethods[updateMethodNdx].name));
 
 			// .sampler, .combined_image_sampler, other resource types ...
 			for (int descriptorNdx = 0; descriptorNdx < DE_LENGTH_OF_ARRAY(s_descriptorTypes); ++descriptorNdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup> typeGroup(new tcu::TestCaseGroup(testCtx, s_descriptorTypes[descriptorNdx].name, s_descriptorTypes[descriptorNdx].description));
+				de::MovePtr<tcu::TestCaseGroup> typeGroup(new tcu::TestCaseGroup(testCtx, s_descriptorTypes[descriptorNdx].name));
 
 				for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(s_shaderStages); ++stageNdx)
 				{
 					if (s_bindTypes[bindTypeNdx].isPrimary || s_shaderStages[stageNdx].supportsSecondaryCmdBufs)
 					{
-						de::MovePtr<tcu::TestCaseGroup>	stageGroup					(new tcu::TestCaseGroup(testCtx, s_shaderStages[stageNdx].name, s_shaderStages[stageNdx].description));
-						de::MovePtr<tcu::TestCaseGroup>	multipleGroup				(new tcu::TestCaseGroup(testCtx, "multiple_descriptor_sets", "Multiple descriptor sets"));
-						de::MovePtr<tcu::TestCaseGroup>	multipleDiscontiguousGroup	(new tcu::TestCaseGroup(testCtx, "multiple_discontiguous_descriptor_sets", "Multiple discontiguous descriptor sets"));
+						de::MovePtr<tcu::TestCaseGroup>	stageGroup					(new tcu::TestCaseGroup(testCtx, s_shaderStages[stageNdx].name));
+						de::MovePtr<tcu::TestCaseGroup>	multipleGroup				(new tcu::TestCaseGroup(testCtx, "multiple_descriptor_sets"));
+						de::MovePtr<tcu::TestCaseGroup>	multipleDiscontiguousGroup	(new tcu::TestCaseGroup(testCtx, "multiple_discontiguous_descriptor_sets"));
 
 						for (int dimensionNdx = 0; dimensionNdx < DE_LENGTH_OF_ARRAY(s_variableDimensions); ++dimensionNdx)
 						{
-							de::MovePtr<tcu::TestCaseGroup>	dimensionSingleDescriptorSetGroup					(new tcu::TestCaseGroup(testCtx, s_variableDimensions[dimensionNdx].name, s_variableDimensions[dimensionNdx].description));
-							de::MovePtr<tcu::TestCaseGroup>	dimensionMultipleDescriptorSetsGroup				(new tcu::TestCaseGroup(testCtx, s_variableDimensions[dimensionNdx].name, s_variableDimensions[dimensionNdx].description));
-							de::MovePtr<tcu::TestCaseGroup>	dimensionMultipleDiscontiguousDescriptorSetsGroup	(new tcu::TestCaseGroup(testCtx, s_variableDimensions[dimensionNdx].name, s_variableDimensions[dimensionNdx].description));
+							de::MovePtr<tcu::TestCaseGroup>	dimensionSingleDescriptorSetGroup					(new tcu::TestCaseGroup(testCtx, s_variableDimensions[dimensionNdx].name));
+							de::MovePtr<tcu::TestCaseGroup>	dimensionMultipleDescriptorSetsGroup				(new tcu::TestCaseGroup(testCtx, s_variableDimensions[dimensionNdx].name));
+							de::MovePtr<tcu::TestCaseGroup>	dimensionMultipleDiscontiguousDescriptorSetsGroup	(new tcu::TestCaseGroup(testCtx, s_variableDimensions[dimensionNdx].name));
 							void							(*createTestsFunc)(tcu::TestCaseGroup*		group,
 																			   bool						isPrimaryCmdBuf,
 																			   DescriptorUpdateMethod	updateMethod,

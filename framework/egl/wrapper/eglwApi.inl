@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 3338ed0db494d6a4db7f76627b38f0b1892db096.
+ * Generated from Khronos EGL API description (egl.xml) revision 6550e9b12e0b4f11182bda30ae2a8dd56d0b02c8.
  */
 #define										eglBindAPI							eglwBindAPI
 #define										eglBindTexImage						eglwBindTexImage
@@ -112,7 +112,7 @@ EGLBoolean									eglwSetDamageRegionKHR				(EGLDisplay dpy, EGLSurface surface
 EGLBoolean									eglwSignalSyncKHR					(EGLDisplay dpy, EGLSyncKHR sync, EGLenum mode);
 EGLBoolean									eglwSurfaceAttrib					(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint value);
 EGLBoolean									eglwSwapBuffers						(EGLDisplay dpy, EGLSurface surface);
-EGLBoolean									eglwSwapBuffersWithDamageKHR		(EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects);
+EGLBoolean									eglwSwapBuffersWithDamageKHR		(EGLDisplay dpy, EGLSurface surface, const EGLint *rects, EGLint n_rects);
 EGLBoolean									eglwSwapInterval					(EGLDisplay dpy, EGLint interval);
 EGLBoolean									eglwTerminate						(EGLDisplay dpy);
 EGLBoolean									eglwUnlockSurfaceKHR				(EGLDisplay dpy, EGLSurface surface);

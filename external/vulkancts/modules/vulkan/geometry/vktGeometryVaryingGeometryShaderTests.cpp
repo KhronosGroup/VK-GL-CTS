@@ -62,7 +62,6 @@ struct VaryingTestSpec
 	VertexOutputs	vertexOutputs;
 	GeometryOutputs	geometryOutputs;
 	const string	name;
-	const string	desc;
 };
 
 class GeometryVaryingTestInstance : public GeometryExpanderRenderTestInstance
@@ -109,7 +108,7 @@ protected:
 };
 
 VaryingTest::VaryingTest (TestContext& testCtx, const VaryingTestSpec& varyingTestSpec)
-	: TestCase			(testCtx, varyingTestSpec.name, varyingTestSpec.desc)
+	: TestCase			(testCtx, varyingTestSpec.name)
 	, m_varyingTestSpec	(varyingTestSpec)
 
 {
@@ -266,17 +265,17 @@ TestInstance* VaryingTest::createInstance (Context& context) const
 
 TestCaseGroup* createVaryingGeometryShaderTests (TestContext& testCtx)
 {
-	MovePtr<TestCaseGroup> varyingGroup	(new TestCaseGroup(testCtx, "varying",  "Test varyings."));
+	MovePtr<TestCaseGroup> varyingGroup	(new TestCaseGroup(testCtx, "varying"));
 
 	// varying
 	{
 		static const VaryingTestSpec varyingTests[] =
 		{
-			{ VERTEXT_NO_OP,	GEOMETRY_ONE,	"vertex_no_op_geometry_out_1", "vertex_no_op_geometry_out_1" },
-			{ VERTEXT_ZERO,		GEOMETRY_ONE,	"vertex_out_0_geometry_out_1", "vertex_out_0_geometry_out_1" },
-			{ VERTEXT_ZERO,		GEOMETRY_TWO,	"vertex_out_0_geometry_out_2", "vertex_out_0_geometry_out_2" },
-			{ VERTEXT_ONE,		GEOMETRY_ZERO,	"vertex_out_1_geometry_out_0", "vertex_out_1_geometry_out_0" },
-			{ VERTEXT_ONE,		GEOMETRY_TWO,	"vertex_out_1_geometry_out_2", "vertex_out_1_geometry_out_2" },
+			{ VERTEXT_NO_OP,	GEOMETRY_ONE,	"vertex_no_op_geometry_out_1"},
+			{ VERTEXT_ZERO,		GEOMETRY_ONE,	"vertex_out_0_geometry_out_1" },
+			{ VERTEXT_ZERO,		GEOMETRY_TWO,	"vertex_out_0_geometry_out_2" },
+			{ VERTEXT_ONE,		GEOMETRY_ZERO,	"vertex_out_1_geometry_out_0" },
+			{ VERTEXT_ONE,		GEOMETRY_TWO,	"vertex_out_1_geometry_out_2" },
 		};
 
 		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(varyingTests); ++ndx)

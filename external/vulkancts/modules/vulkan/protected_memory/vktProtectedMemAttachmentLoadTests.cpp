@@ -78,7 +78,7 @@ public:
 													 const std::string&		name,
 													 vk::VkClearValue		clearValue,
 													 ValidationData			data)
-								: TestCase		(testCtx, name, "Clear on render pass initialization.")
+								: TestCase		(testCtx, name)
 								, m_clearValue	(clearValue)
 								, m_refData		(data)
 							{
@@ -290,7 +290,8 @@ tcu::TestCaseGroup*	createAttachmentLoadTests (tcu::TestContext& testCtx)
 		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	loadStaticTests	(new tcu::TestCaseGroup(testCtx, "static", "Attachment Load Op Tests with static input"));
+	// Attachment Load Op Tests with static input
+	de::MovePtr<tcu::TestCaseGroup>	loadStaticTests	(new tcu::TestCaseGroup(testCtx, "static"));
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(testData); ++ndx)
 	{
@@ -299,7 +300,8 @@ tcu::TestCaseGroup*	createAttachmentLoadTests (tcu::TestContext& testCtx)
 	}
 
 	/* Add a few randomized tests */
-	de::MovePtr<tcu::TestCaseGroup>	loadRandomTests		(new tcu::TestCaseGroup(testCtx, "random", "Attachment Load Op Tests with random input"));
+	// Attachment Load Op Tests with random input
+	de::MovePtr<tcu::TestCaseGroup>	loadRandomTests		(new tcu::TestCaseGroup(testCtx, "random"));
 	const int						testCount			= 10;
 	de::Random						rnd					(testCtx.getCommandLine().getBaseSeed());
 	for (int ndx = 0; ndx < testCount; ++ndx)
@@ -320,7 +322,7 @@ tcu::TestCaseGroup*	createAttachmentLoadTests (tcu::TestContext& testCtx)
 		loadRandomTests->addChild(new AttachmentLoadTestCase(testCtx, name.c_str(), clearValue, data));
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> loadTests (new tcu::TestCaseGroup(testCtx, "load_op", "Attachment Load Op Tests"));
+	de::MovePtr<tcu::TestCaseGroup> loadTests (new tcu::TestCaseGroup(testCtx, "load_op"));
 	loadTests->addChild(loadStaticTests.release());
 	loadTests->addChild(loadRandomTests.release());
 	return loadTests.release();

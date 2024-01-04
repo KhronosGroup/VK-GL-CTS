@@ -11,8 +11,8 @@ vk-master-2019-03-01/geometry.txt
 vk-master-2019-03-01/glsl.txt
 vk-master-2019-03-01/image.txt
 vk-master-2019-03-01/info.txt
-vk-master-2019-03-01/memory-model.txt
 vk-master-2019-03-01/memory.txt
+vk-master-2019-03-01/memory-model.txt
 vk-master-2019-03-01/multiview.txt
 vk-master-2019-03-01/pipeline.txt
 vk-master-2019-03-01/protected-memory.txt

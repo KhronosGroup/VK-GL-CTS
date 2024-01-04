@@ -113,14 +113,12 @@ public:
 
 	static UseAfterFreeTestCase*		UBOToSSBOInvertCase		(tcu::TestContext&	testCtx,
 																const std::string&  name,
-																const std::string&  description,
 																const deUint32		numValues,
 																const tcu::IVec3&	localSize,
 																const tcu::IVec3&	workSize);
 
 	static UseAfterFreeTestCase*		CopyInvertSSBOCase		(tcu::TestContext&	testCtx,
 																const std::string&	name,
-																const std::string&	description,
 																const deUint32		numValues,
 																const tcu::IVec3&	localSize,
 																const tcu::IVec3&	workSize);
@@ -128,7 +126,6 @@ public:
 private:
 										UseAfterFreeTestCase	(tcu::TestContext&	testCtx,
 																const std::string& name,
-																const std::string& description,
 																const deUint32		numValues,
 																const tcu::IVec3&	localSize,
 																const tcu::IVec3&	workSize,
@@ -169,12 +166,11 @@ T multiplyComponents(const tcu::Vector<T, size>& v)
 
 UseAfterFreeTestCase::UseAfterFreeTestCase (tcu::TestContext&	testCtx,
 											const std::string&	name,
-											const std::string&	description,
 											const deUint32		numValues,
 											const tcu::IVec3&	localSize,
 											const tcu::IVec3&	workSize,
 											const BufferType		bufferType)
-	: TestCase		(testCtx, name, description)
+	: TestCase		(testCtx, name)
 	, m_bufferType	(bufferType)
 	, m_numValues	(numValues)
 	, m_localSize	(localSize)
@@ -186,22 +182,20 @@ UseAfterFreeTestCase::UseAfterFreeTestCase (tcu::TestContext&	testCtx,
 
 UseAfterFreeTestCase* UseAfterFreeTestCase::UBOToSSBOInvertCase (tcu::TestContext&	testCtx,
 																const std::string&	name,
-																const std::string&	description,
 																const deUint32		numValues,
 																const tcu::IVec3&	localSize,
 																const tcu::IVec3&	workSize)
 {
-	return new UseAfterFreeTestCase(testCtx, name, description, numValues, localSize, workSize, BUFFER_TYPE_UNIFORM);
+	return new UseAfterFreeTestCase(testCtx, name, numValues, localSize, workSize, BUFFER_TYPE_UNIFORM);
 }
 
 UseAfterFreeTestCase* UseAfterFreeTestCase::CopyInvertSSBOCase (tcu::TestContext&	testCtx,
 																const std::string&	name,
-																const std::string&	description,
 																const deUint32		numValues,
 																const tcu::IVec3&	localSize,
 																const tcu::IVec3&	workSize)
 {
-	return new UseAfterFreeTestCase(testCtx, name, description, numValues, localSize, workSize, BUFFER_TYPE_SSBO);
+	return new UseAfterFreeTestCase(testCtx, name, numValues, localSize, workSize, BUFFER_TYPE_SSBO);
 }
 
 void UseAfterFreeTestCase::initPrograms	(SourceCollections& sourceCollections) const
@@ -367,10 +361,13 @@ tcu::TestStatus UseAfterFreeTestInstance::iterate(void)
 
 tcu::TestCaseGroup* createUseAfterFreeTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> useAfterFreeGroup(new tcu::TestCaseGroup(testCtx, "use_after_free", "Use buffer after free."));
+	// Use buffer after free.
+	de::MovePtr<tcu::TestCaseGroup> useAfterFreeGroup(new tcu::TestCaseGroup(testCtx, "use_after_free"));
 
-	useAfterFreeGroup->addChild(UseAfterFreeTestCase::UBOToSSBOInvertCase(testCtx, "ubo_to_ssbo_single_invocation", "Copy from UBO to SSBO, inverting bits", 256, tcu::IVec3(1, 1, 1), tcu::IVec3(1, 1, 1)));
-	useAfterFreeGroup->addChild(UseAfterFreeTestCase::CopyInvertSSBOCase (testCtx, "ssbo_to_ssbo_single_invocation", "Copy from SSBO to SSBO, inverting bits", 256, tcu::IVec3(1, 1, 1), tcu::IVec3(1, 1, 1)));
+	// Copy from UBO to SSBO, inverting bits
+	useAfterFreeGroup->addChild(UseAfterFreeTestCase::UBOToSSBOInvertCase(testCtx, "ubo_to_ssbo_single_invocation", 256, tcu::IVec3(1, 1, 1), tcu::IVec3(1, 1, 1)));
+	// Copy from SSBO to SSBO, inverting bits
+	useAfterFreeGroup->addChild(UseAfterFreeTestCase::CopyInvertSSBOCase (testCtx, "ssbo_to_ssbo_single_invocation", 256, tcu::IVec3(1, 1, 1), tcu::IVec3(1, 1, 1)));
 
 	return useAfterFreeGroup.release();
 }

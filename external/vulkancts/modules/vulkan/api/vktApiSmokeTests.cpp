@@ -896,14 +896,14 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest (Context& context)
 
 tcu::TestCaseGroup* createSmokeTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	smokeTests	(new tcu::TestCaseGroup(testCtx, "smoke", "Smoke Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	smokeTests	(new tcu::TestCaseGroup(testCtx, "smoke"));
 
-	addFunctionCase				(smokeTests.get(), "create_sampler",			"",	createSamplerTest);
-	addFunctionCaseWithPrograms	(smokeTests.get(), "create_shader",				"", createShaderProgs,		createShaderModuleTest);
-	addFunctionCaseWithPrograms	(smokeTests.get(), "triangle",					"", createTriangleProgs,	renderTriangleTest);
-	addFunctionCaseWithPrograms	(smokeTests.get(), "asm_triangle",				"", createTriangleAsmProgs,	renderTriangleTest);
-	addFunctionCaseWithPrograms	(smokeTests.get(), "asm_triangle_no_opname",	"", createProgsNoOpName,	renderTriangleTest);
-	addFunctionCaseWithPrograms	(smokeTests.get(), "unused_resolve_attachment",	"", createTriangleProgs,	renderTriangleUnusedResolveAttachmentTest);
+	addFunctionCase				(smokeTests.get(), "create_sampler",			createSamplerTest);
+	addFunctionCaseWithPrograms	(smokeTests.get(), "create_shader",				createShaderProgs,		createShaderModuleTest);
+	addFunctionCaseWithPrograms	(smokeTests.get(), "triangle",					createTriangleProgs,	renderTriangleTest);
+	addFunctionCaseWithPrograms	(smokeTests.get(), "asm_triangle",				createTriangleAsmProgs,	renderTriangleTest);
+	addFunctionCaseWithPrograms	(smokeTests.get(), "asm_triangle_no_opname",	createProgsNoOpName,	renderTriangleTest);
+	addFunctionCaseWithPrograms	(smokeTests.get(), "unused_resolve_attachment",	createTriangleProgs,	renderTriangleUnusedResolveAttachmentTest);
 
 	return smokeTests.release();
 }

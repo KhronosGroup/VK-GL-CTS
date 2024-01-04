@@ -108,7 +108,6 @@ class ShaderDiscardCase : public ShaderRenderCase
 public:
 							ShaderDiscardCase			(tcu::TestContext&		testCtx,
 														 const char*			name,
-														 const char*			description,
 														 const char*			shaderSource,
 														 const ShaderEvalFunc	evalFunc,
 														 bool					usesTexture,
@@ -133,13 +132,12 @@ private:
 
 ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext&		testCtx,
 									  const char*			name,
-									  const char*			description,
 									  const char*			shaderSource,
 									  const ShaderEvalFunc	evalFunc,
 									  bool					usesTexture,
 									  bool					fuzzyCompare,
 									  bool					demote)
-	: ShaderRenderCase	(testCtx, name, description, false, evalFunc, new SamplerUniformSetup(usesTexture), DE_NULL)
+	: ShaderRenderCase	(testCtx, name, false, evalFunc, new SamplerUniformSetup(usesTexture), DE_NULL)
 	, m_usesTexture		(usesTexture)
 	, m_fuzzyCompare	(fuzzyCompare)
 #ifndef CTS_USES_VULKANSC
@@ -346,37 +344,6 @@ static const char* getModeName (DiscardMode mode)
 	}
 }
 
-static const char* getTemplateDesc (DiscardTemplate variant)
-{
-	switch (variant)
-	{
-		case DISCARDTEMPLATE_MAIN_BASIC:			return "main";
-		case DISCARDTEMPLATE_FUNCTION_BASIC:		return "function";
-		case DISCARDTEMPLATE_MAIN_STATIC_LOOP:		return "static loop";
-		case DISCARDTEMPLATE_MAIN_DYNAMIC_LOOP:		return "dynamic loop";
-		case DISCARDTEMPLATE_FUNCTION_STATIC_LOOP:	return "static loop in function";
-		default:
-			DE_ASSERT(DE_FALSE);
-			return DE_NULL;
-	}
-}
-
-static const char* getModeDesc (DiscardMode mode)
-{
-	switch (mode)
-	{
-		case DISCARDMODE_ALWAYS:	return "Always discard";
-		case DISCARDMODE_NEVER:		return "Never discard";
-		case DISCARDMODE_UNIFORM:	return "Discard based on uniform value";
-		case DISCARDMODE_DYNAMIC:	return "Discard based on varying values";
-		case DISCARDMODE_TEXTURE:	return "Discard based on texture value";
-		case DISCARDMODE_DERIV:		return "Discard based on derivatives after an earlier discard";
-		default:
-			DE_ASSERT(DE_FALSE);
-			return DE_NULL;
-	}
-}
-
 de::MovePtr<ShaderDiscardCase> makeDiscardCase (tcu::TestContext& testCtx, DiscardTemplate tmpl, DiscardMode mode, const std::string& discardStr)
 {
 	StringTemplate shaderTemplate(getTemplate(tmpl));
@@ -414,10 +381,8 @@ de::MovePtr<ShaderDiscardCase> makeDiscardCase (tcu::TestContext& testCtx, Disca
 	}
 
 	std::string name		= std::string(getTemplateName(tmpl)) + "_" + getModeName(mode);
-	std::string description	= std::string(getModeDesc(mode)) + " in " + getTemplateDesc(tmpl);
 
 	return de::MovePtr<ShaderDiscardCase>(new ShaderDiscardCase(testCtx, name.c_str(),
-																description.c_str(),
 																shaderTemplate.specialize(params).c_str(),
 																getEvalFunc(mode),
 																mode == DISCARDMODE_TEXTURE,		// usesTexture
@@ -440,7 +405,7 @@ private:
 };
 
 ShaderDiscardTests::ShaderDiscardTests (tcu::TestContext& testCtx, const char *groupName)
-	: TestCaseGroup(testCtx, groupName, "Discard statement tests")
+	: TestCaseGroup(testCtx, groupName)
 	, m_groupName(groupName)
 {
 }

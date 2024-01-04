@@ -572,7 +572,7 @@ tcu::TestStatus LinearFilteringTestInstance::iterate(void)
 class LinearFilteringTestCase : public vkt::TestCase
 {
 public:
-	LinearFilteringTestCase(tcu::TestContext &context, const char* name, const char* description, VkFormat format, VkFilter chromaFiltering);
+	LinearFilteringTestCase(tcu::TestContext &context, const char* name, VkFormat format, VkFilter chromaFiltering);
 
 protected:
 	void				checkSupport(Context& context) const;
@@ -584,8 +584,8 @@ private:
 	VkFilter			m_chromaFiltering;
 };
 
-LinearFilteringTestCase::LinearFilteringTestCase(tcu::TestContext &context, const char* name, const char* description, VkFormat format, VkFilter chromaFiltering)
-	: TestCase(context, name, description)
+LinearFilteringTestCase::LinearFilteringTestCase(tcu::TestContext &context, const char* name, VkFormat format, VkFilter chromaFiltering)
+	: TestCase(context, name)
 	, m_format(format)
 	, m_chromaFiltering(chromaFiltering)
 {
@@ -670,18 +670,19 @@ tcu::TestCaseGroup* createFilteringTests (tcu::TestContext& testCtx)
 		{ "g8_b8r8_2plane_420_unorm",	VK_FORMAT_G8_B8R8_2PLANE_420_UNORM		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> filteringTests(new tcu::TestCaseGroup(testCtx, "filtering",	"YCbCr filtering tests"));
+	// YCbCr filtering tests
+	de::MovePtr<tcu::TestCaseGroup> filteringTests(new tcu::TestCaseGroup(testCtx, "filtering"));
 
 	for (const auto& ycbcrFormat : ycbcrFormats)
 	{
 		{
 			const std::string name = std::string("linear_sampler_") + ycbcrFormat.name;
-			filteringTests->addChild(new LinearFilteringTestCase(filteringTests->getTestContext(), name.c_str(), "", ycbcrFormat.format, VK_FILTER_NEAREST));
+			filteringTests->addChild(new LinearFilteringTestCase(filteringTests->getTestContext(), name.c_str(), ycbcrFormat.format, VK_FILTER_NEAREST));
 		}
 
 		{
 			const std::string name = std::string("linear_sampler_with_chroma_linear_filtering_") + ycbcrFormat.name;
-			filteringTests->addChild(new LinearFilteringTestCase(filteringTests->getTestContext(), name.c_str(), "", ycbcrFormat.format, VK_FILTER_LINEAR));
+			filteringTests->addChild(new LinearFilteringTestCase(filteringTests->getTestContext(), name.c_str(), ycbcrFormat.format, VK_FILTER_LINEAR));
 		}
 	}
 

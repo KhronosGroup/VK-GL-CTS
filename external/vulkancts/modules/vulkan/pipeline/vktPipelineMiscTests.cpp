@@ -97,7 +97,6 @@ void addMonolithicAmberTests (tcu::TestCaseGroup* tests)
 	// Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/pipeline/<basename>.amber
 	struct Case {
 		const char*			basename;
-		const char*			description;
 		AmberFeatureFlags	flags;
 	};
 
@@ -105,20 +104,23 @@ void addMonolithicAmberTests (tcu::TestCaseGroup* tests)
 	{
 		{
 			"position_to_ssbo",
-			"Write position data into ssbo using only the vertex shader in a pipeline",
 			(AMBER_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS),
 		},
 		{
 			"primitive_id_from_tess",
-			"Read primitive id from tessellation shaders without a geometry shader",
 			(AMBER_FEATURE_TESSELATION_SHADER | AMBER_FEATURE_GEOMETRY_SHADER),
+		},
+		// Read gl_layer from fragment shaders without previous writes
+		{
+			"layer_read_from_frag",
+			(AMBER_FEATURE_GEOMETRY_SHADER),
 		},
 	};
 	for (unsigned i = 0; i < DE_LENGTH_OF_ARRAY(cases) ; ++i)
 	{
 		std::string					file			= std::string(cases[i].basename) + ".amber";
 		std::vector<std::string>	requirements	= getFeatureList(cases[i].flags);
-		cts_amber::AmberTestCase	*testCase		= cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, "pipeline", file, requirements);
+		cts_amber::AmberTestCase	*testCase		= cts_amber::createAmberTestCase(testCtx, cases[i].basename, "pipeline", file, requirements);
 
 		tests->addChild(testCase);
 	}
@@ -132,10 +134,9 @@ class ImplicitPrimitiveIDPassthroughCase : public vkt::TestCase
 public:
 	ImplicitPrimitiveIDPassthroughCase		(tcu::TestContext&                  testCtx,
 											 const std::string&                 name,
-											 const std::string&                 description,
 											 const PipelineConstructionType		pipelineConstructionType,
 											 bool withTessellation)
-		: vkt::TestCase(testCtx, name, description)
+		: vkt::TestCase(testCtx, name)
 		, m_pipelineConstructionType(pipelineConstructionType)
 		, m_withTessellationPassthrough(withTessellation)
 	{
@@ -435,8 +436,8 @@ struct UnusedShaderStageParams
 class UnusedShaderStagesCase : public vkt::TestCase
 {
 public:
-					UnusedShaderStagesCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const UnusedShaderStageParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					UnusedShaderStagesCase	(tcu::TestContext& testCtx, const std::string& name, const UnusedShaderStageParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 	virtual			~UnusedShaderStagesCase	(void) {}
@@ -1034,7 +1035,7 @@ tcu::TestStatus UnusedShaderStagesInstance::iterate ()
 class PipelineLibraryInterpolateAtSampleTestCase : public vkt::TestCase
 {
 public:
-	PipelineLibraryInterpolateAtSampleTestCase(tcu::TestContext& context, const std::string& name, const std::string& description);
+	PipelineLibraryInterpolateAtSampleTestCase(tcu::TestContext& context, const std::string& name);
 	void            initPrograms            (vk::SourceCollections& programCollection) const override;
 	TestInstance*   createInstance          (Context& context) const override;
 	void            checkSupport            (Context& context) const override;
@@ -1054,8 +1055,8 @@ public:
 	virtual tcu::TestStatus iterate(void);
 };
 
-PipelineLibraryInterpolateAtSampleTestCase::PipelineLibraryInterpolateAtSampleTestCase(tcu::TestContext& context, const std::string& name, const std::string& description):
-	vkt::TestCase(context, name, description) { }
+PipelineLibraryInterpolateAtSampleTestCase::PipelineLibraryInterpolateAtSampleTestCase(tcu::TestContext& context, const std::string& name):
+	vkt::TestCase(context, name) { }
 
 void PipelineLibraryInterpolateAtSampleTestCase::checkSupport(Context& context) const
 {
@@ -1384,9 +1385,8 @@ class PipelineLayoutBindingTestCases : public vkt::TestCase
 public:
 	PipelineLayoutBindingTestCases		(tcu::TestContext&                  testCtx,
 											 const std::string&                 name,
-											 const std::string&                 description,
 											 const BindingTestConfig&			config)
-		: vkt::TestCase(testCtx, name, description)
+		: vkt::TestCase(testCtx, name)
 		, m_config(config)
 	{
 	}
@@ -1676,25 +1676,702 @@ tcu::TestStatus PipelineLayoutBindingTestInstance::iterate ()
 	return tcu::TestStatus::pass("Pass");
 }
 
+void initCompatibleRenderPassPrograms (SourceCollections& dst, PipelineConstructionType)
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "vec2 positions[] = vec2[](\n"
+		<< "    vec2(-1.0, -1.0),\n"
+		<< "    vec2( 3.0, -1.0),\n"
+		<< "    vec2(-1.0,  3.0)\n"
+		<< ");\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = vec4(positions[gl_VertexIndex % 3], 0.0, 1.0);\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+void checkCompatibleRenderPassSupport (Context& context, PipelineConstructionType pipelineConstructionType)
+{
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	checkPipelineConstructionRequirements(vki, physicalDevice, pipelineConstructionType);
+}
+
+tcu::TestStatus compatibleRenderPassTest (Context& context, PipelineConstructionType pipelineConstructionType)
+{
+	const auto&			ctx			= context.getContextCommonData();
+	const tcu::IVec3	fbExtent	(1, 1, 1);
+	const auto			vkExtent	= makeExtent3D(fbExtent);
+	const auto			fbFormat	= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat	= mapVkFormat(fbFormat);
+	const auto			fbUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const tcu::Vec4		clearColor	(0.0f, 0.0f, 0.0f, 1.0f);
+	const tcu::Vec4		geomColor	(0.0f, 0.0f, 1.0f, 1.0f); // Must match frag shader.
+	const tcu::Vec4		threshold	(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+
+	// Color buffer with verification buffer.
+	ImageWithBuffer colorBuffer (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		vkExtent,
+		fbFormat,
+		fbUsage,
+		VK_IMAGE_TYPE_2D);
+
+	const PipelineLayoutWrapper	pipelineLayout	(pipelineConstructionType, ctx.vkd, ctx.device);
+	auto						renderPass		= makeRenderPass(ctx.vkd, ctx.device, fbFormat);
+	const auto					compatibleRP	= makeRenderPass(ctx.vkd, ctx.device, fbFormat);
+	const auto					framebuffer		= makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
+
+	// Modules.
+	const auto&			binaries	= context.getBinaryCollection();
+	const ShaderWrapper	vertModule	(ctx.vkd, ctx.device, binaries.get("vert"));
+	const ShaderWrapper	fragModule	(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	// Empty vertex input state.
+	const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
+
+	GraphicsPipelineWrapper pipelineWrapper (ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(), pipelineConstructionType);
+
+	pipelineWrapper
+		.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+		.setDefaultRasterizationState()
+		.setDefaultColorBlendState()
+		.setDefaultMultisampleState()
+		.setDefaultDepthStencilState()
+		.setupVertexInputState(&vertexInputStateCreateInfo)
+		.setupPreRasterizationShaderState(viewports,
+										  scissors,
+										  pipelineLayout,
+										  *renderPass,
+										  0u,
+										  vertModule)
+		.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
+		.setupFragmentOutputState(*renderPass);
+
+	// Important: at this point, the 4 libraries should have been created. Now we destroy the original render pass to make sure it's
+	// no longer used, and use the compatible one for the remainder of the test.
+	renderPass = Move<VkRenderPass>();
+
+	// Finally, we link the complete pipeline and use the compatible render pass in the command buffer.
+	DE_ASSERT(isConstructionTypeLibrary(pipelineConstructionType));
+	pipelineWrapper
+		.setMonolithicPipelineLayout(pipelineLayout)
+		.buildPipeline();
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	beginRenderPass(ctx.vkd, cmdBuffer, *compatibleRP, *framebuffer, scissors.at(0u), clearColor);
+	pipelineWrapper.bind(cmdBuffer);
+	ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+	endRenderPass(ctx.vkd, cmdBuffer);
+	copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(),
+		fbExtent.swizzle(0, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+		VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color output.
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+	tcu::PixelBufferAccess resultAccess (tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+	tcu::TextureLevel	referenceLevel	(tcuFormat, fbExtent.x(), fbExtent.y());
+	auto				referenceAccess	= referenceLevel.getAccess();
+	tcu::clear(referenceAccess, geomColor);
+
+	auto& log = context.getTestContext().getLog();
+	if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+#ifndef CTS_USES_VULKANSC
+struct VaryingSamplesFragParams
+{
+	const PipelineConstructionType	constructionType;
+	const VkSampleCountFlagBits		multiSampleCount;
+};
+
+void initVaryingSamplesFragPrograms (SourceCollections& dst, VaryingSamplesFragParams)
+{
+	// The framebuffer will contain a single pixel and we will draw a quad using the 4 pixel corners. inSamplePos will contain 0s
+	// and 1s in the X and Y values so that the value at each corner will match its corresponding sample location. The result is
+	// that interpolating outSamplePos for a sample will give you the corresponding standard sample location.
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "layout (location=0) in vec4 inPos;\n"
+		<< "layout (location=1) in vec4 inSamplePos;\n"
+		<< "layout (location=0) out vec2 outSamplePos;\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = inPos;\n"
+		<< "    outSamplePos = inSamplePos.xy;\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	// Each frag shader invocation will interpolate the sample position for every sample, and will store the results of every
+	// interpolation in the positions buffer. So if we work with 4 samples but get 2 actual invocations (e.g.):
+	// - sampleCount from the push constants will be 4.
+	// - mySampleId will end up containing 2.
+	// - samplePositions will have 2 blocks of 4 results each, with the 4 interpolations for the first and second invocations.
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) in vec2 inSamplePos;\n"
+		<< "layout (push_constant, std430) uniform PushConstantBlock { int sampleCount; } pc;\n"
+		<< "layout (set=0, binding=0, std430) buffer MySampleIdBlock { int mySampleId; } atomicBuffer;\n"
+		<< "layout (set=0, binding=1, std430) buffer SamplePositionsBlock { vec2 samplePositions[]; } positionsBuffer;\n"
+		<< "void main (void) {\n"
+		<< "    const int sampleId = atomicAdd(atomicBuffer.mySampleId, 1);\n"
+		<< "    memoryBarrier();\n"
+		<< "    const int bufferOffset = pc.sampleCount * sampleId;\n"
+		<< "    for (int idx = 0; idx < pc.sampleCount; ++idx) {\n"
+		<< "        positionsBuffer.samplePositions[bufferOffset + idx] = interpolateAtSample(inSamplePos, idx);\n"
+		<< "    }\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+void checkVaryingSamplesFragSupport (Context& context, VaryingSamplesFragParams params)
+{
+	const auto ctx = context.getContextCommonData();
+
+	checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, params.constructionType);
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+	context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+	// Check sample count support.
+	const auto allowedSampleCounts = context.getDeviceProperties().limits.framebufferNoAttachmentsSampleCounts;
+	if ((allowedSampleCounts & params.multiSampleCount) == 0u)
+		TCU_THROW(NotSupportedError, "Requested sample count not supported");
+}
+
+// This test creates a fragment shader pipeline library using a fragment shader that doesn't have sample shading enabled. In
+// addition, thanks to using dynamic rendering, no multisample information is included when creating such library. Then, the library
+// is included in two final pipelines: in one of them the multisample information indicates single-sample and, in the other one, it
+// indicates multisample.
+//
+// Then, the test runs two render loops: one for the single-sample pipeline and one for the multisample one. We expect that the
+// fragment shader produces the right results in both cases, even if the amount of samples was not available when the fragment
+// shader pipeline library was created.
+//
+// The fragment shader has been written in a way such that, when used with a single-pixel framebuffer, each invocation writes the
+// pixel locations of all available samples to an output buffer (note: so if 4 samples result in 4 invocations, we end up with a
+// maximum of 16 sample locations in the buffer). See the frag shader above.
+tcu::TestStatus varyingSamplesFragTest (Context& context, VaryingSamplesFragParams params)
+{
+	const auto&			ctx					= context.getContextCommonData();
+	const tcu::IVec3	fbExtent			(1, 1, 1);
+	const auto&			vkExtent			= makeExtent3D(fbExtent);
+	const auto			descType			= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	const auto			bindPoint			= VK_PIPELINE_BIND_POINT_GRAPHICS;
+	const auto			dataStages			= VK_SHADER_STAGE_FRAGMENT_BIT;
+	const auto			kBufferCount		= 2u; // Matches frag shader: atomic buffer and positions buffer.
+	const bool			isOptimized			= (params.constructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY);
+
+	struct PositionSampleCoords
+	{
+		const tcu::Vec4 position;
+		const tcu::Vec4 sampleCoords;
+	};
+
+	// Vertices.
+	const std::vector<PositionSampleCoords> vertices
+	{
+		PositionSampleCoords{ tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f) },
+		PositionSampleCoords{ tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 0.0f, 0.0f) },
+		PositionSampleCoords{ tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f), tcu::Vec4(1.0f, 0.0f, 0.0f, 0.0f) },
+		PositionSampleCoords{ tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f), tcu::Vec4(1.0f, 1.0f, 0.0f, 0.0f) },
+	};
+
+	// Vertex buffer
+	const auto			vbSize			= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vbInfo			= makeBufferCreateInfo(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	BufferWithMemory	vertexBuffer	(ctx.vkd, ctx.device, ctx.allocator, vbInfo, MemoryRequirement::HostVisible);
+	const auto			vbAlloc			= vertexBuffer.getAllocation();
+	void*				vbData			= vbAlloc.getHostPtr();
+	const auto			vbOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(vbData, de::dataOrNull(vertices), de::dataSize(vertices));
+	flushAlloc(ctx.vkd, ctx.device, vbAlloc); // strictly speaking, not needed.
+
+	// Storage buffers used in the fragment shader: atomic buffer and positions buffer.
+	int32_t				invocationCount = 0;
+	const auto			abSize			= static_cast<VkDeviceSize>(sizeof(invocationCount));
+	const auto			abInfo			= makeBufferCreateInfo(abSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	BufferWithMemory	atomicBuffer	(ctx.vkd, ctx.device, ctx.allocator, abInfo, MemoryRequirement::HostVisible);
+	const auto			abAlloc			= atomicBuffer.getAllocation();
+	void*				abData			= abAlloc.getHostPtr();
+	const auto			abOffset		= static_cast<VkDeviceSize>(0);
+
+	const auto				maxPositions	= params.multiSampleCount * params.multiSampleCount;
+	std::vector<tcu::Vec2>	samplePositions	(maxPositions, tcu::Vec2(-1.0f, -1.0f));
+	const auto				pbSize			= static_cast<VkDeviceSize>(de::dataSize(samplePositions));
+	const auto				pbInfo			= makeBufferCreateInfo(pbSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	BufferWithMemory		positionsBuffer	(ctx.vkd, ctx.device, ctx.allocator, pbInfo, MemoryRequirement::HostVisible);
+	const auto				pbAlloc			= positionsBuffer.getAllocation();
+	void*					pbData			= pbAlloc.getHostPtr();
+	const auto				pbOffset		= static_cast<VkDeviceSize>(0);
+
+	// Descriptor pool, set, layout, etc.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(descType, kBufferCount);
+	const auto descriptorPool	= poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+	DescriptorSetLayoutBuilder layoutBuilder;
+	for (uint32_t i = 0u; i < kBufferCount; ++i)
+		layoutBuilder.addSingleBinding(descType, dataStages);
+	const auto setLayout		= layoutBuilder.build(ctx.vkd, ctx.device);
+	const auto descriptorSet	= makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+	DescriptorSetUpdateBuilder updateBuilder;
+	const auto abDescInfo = makeDescriptorBufferInfo(atomicBuffer.get(), abOffset, abSize);
+	const auto pbDescInfo = makeDescriptorBufferInfo(positionsBuffer.get(), pbOffset, pbSize);
+	updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType, &abDescInfo);
+	updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), descType, &pbDescInfo);
+	updateBuilder.update(ctx.vkd, ctx.device);
+
+	// Push constants.
+	const auto pcSize	= static_cast<uint32_t>(sizeof(int32_t));
+	const auto pcRange	= makePushConstantRange(dataStages, 0u, pcSize);
+
+	// Pipeline layout.
+	const auto pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device, *setLayout, &pcRange);
+
+	// Modules.
+	const auto&	binaries		= context.getBinaryCollection();
+	const auto	vertModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	// Pipeline state.
+
+	const auto bindingDesc = makeVertexInputBindingDescription(0u, static_cast<uint32_t>(sizeof(PositionSampleCoords)), VK_VERTEX_INPUT_RATE_VERTEX);
+
+	const std::vector<VkVertexInputAttributeDescription> inputAttributes
+	{
+		makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, static_cast<uint32_t>(offsetof(PositionSampleCoords, position))),
+		makeVertexInputAttributeDescription(1u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, static_cast<uint32_t>(offsetof(PositionSampleCoords, sampleCoords))),
+	};
+
+	const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	VkStructureType								sType;
+		nullptr,													//	const void*									pNext;
+		0u,															//	VkPipelineVertexInputStateCreateFlags		flags;
+		1u,															//	uint32_t									vertexBindingDescriptionCount;
+		&bindingDesc,												//	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+		de::sizeU32(inputAttributes),								//	uint32_t									vertexAttributeDescriptionCount;
+		de::dataOrNull(inputAttributes),							//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,														//	const void*								pNext;
+		0u,																//	VkPipelineInputAssemblyStateCreateFlags	flags;
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,							//	VkPrimitiveTopology						topology;
+		VK_FALSE,														//	VkBool32								primitiveRestartEnable;
+	};
+
+	const VkPipelineViewportStateCreateInfo viewportStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,												//	const void*							pNext;
+		0u,														//	VkPipelineViewportStateCreateFlags	flags;
+		de::sizeU32(viewports),									//	uint32_t							viewportCount;
+		de::dataOrNull(viewports),								//	const VkViewport*					pViewports;
+		de::sizeU32(scissors),									//	uint32_t							scissorCount;
+		de::dataOrNull(scissors),								//	const VkRect2D*						pScissors;
+	};
+
+	const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		//	VkStructureType							sType;
+		nullptr,														//	const void*								pNext;
+		0u,																//	VkPipelineRasterizationStateCreateFlags	flags;
+		VK_FALSE,														//	VkBool32								depthClampEnable;
+		VK_FALSE,														//	VkBool32								rasterizerDiscardEnable;
+		VK_POLYGON_MODE_FILL,											//	VkPolygonMode							polygonMode;
+		VK_CULL_MODE_BACK_BIT,											//	VkCullModeFlags							cullMode;
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,								//	VkFrontFace								frontFace;
+		VK_FALSE,														//	VkBool32								depthBiasEnable;
+		0.0f,															//	float									depthBiasConstantFactor;
+		0.0f,															//	float									depthBiasClamp;
+		0.0f,															//	float									depthBiasSlopeFactor;
+		1.0f,															//	float									lineWidth;
+	};
+
+	// We will use two pipelines: one will be single-sample and the other one will be multisample.
+	VkPipelineMultisampleStateCreateInfo multisampleStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,													//	const void*								pNext;
+		0u,															//	VkPipelineMultisampleStateCreateFlags	flags;
+		params.multiSampleCount,									//	VkSampleCountFlagBits					rasterizationSamples;
+		VK_FALSE,													//	VkBool32								sampleShadingEnable;
+		1.0f,														//	float									minSampleShading;
+		nullptr,													//	const VkSampleMask*						pSampleMask;
+		VK_FALSE,													//	VkBool32								alphaToCoverageEnable;
+		VK_FALSE,													//	VkBool32								alphaToOneEnable;
+	};
+
+	const VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo = initVulkanStructure();
+
+	const VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = initVulkanStructure();
+
+	const VkPipelineRenderingCreateInfo renderingCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,	//	VkStructureType	sType;
+		nullptr,											//	const void*		pNext;
+		0u,													//	uint32_t		viewMask;
+		0u,													//	uint32_t		colorAttachmentCount;
+		nullptr,											//	const VkFormat*	pColorAttachmentFormats;
+		VK_FORMAT_UNDEFINED,								//	VkFormat		depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,								//	VkFormat		stencilAttachmentFormat;
+	};
+
+	// Create a library with the vertex input state and the pre-rasterization shader state.
+	Move<VkPipeline> preFragLib;
+	Move<VkPipeline> fragShaderLib;
+	Move<VkPipeline> fragOutputLibMulti;
+	Move<VkPipeline> fragOutputLibSingle;
+
+	VkPipelineCreateFlags libCreationFlags	= VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+	VkPipelineCreateFlags linkFlags			= 0u;
+
+	if (isOptimized)
+	{
+		libCreationFlags	|= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
+		linkFlags			|= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
+	}
+
+	// Vertex input state and pre-rasterization shader state library.
+	{
+		VkGraphicsPipelineLibraryCreateInfoEXT vertexInputLibInfo	= initVulkanStructureConst(&renderingCreateInfo);
+		vertexInputLibInfo.flags									|= (VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT
+																	|  VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
+
+		VkGraphicsPipelineCreateInfo preFragPipelineInfo	= initVulkanStructure(&vertexInputLibInfo);
+		preFragPipelineInfo.flags							= libCreationFlags;
+		preFragPipelineInfo.pVertexInputState				= &vertexInputStateInfo;
+		preFragPipelineInfo.pInputAssemblyState				= &inputAssemblyStateInfo;
+
+		preFragPipelineInfo.layout							= pipelineLayout.get();
+		preFragPipelineInfo.pViewportState					= &viewportStateInfo;
+		preFragPipelineInfo.pRasterizationState				= &rasterizationStateInfo;
+
+		const auto vertexStageInfo = makePipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertModule.get());
+
+		preFragPipelineInfo.stageCount	= 1u;
+		preFragPipelineInfo.pStages		= &vertexStageInfo;
+
+		preFragLib = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &preFragPipelineInfo);
+	}
+
+	// Fragment shader stage library. Note we skip including multisample information here.
+	{
+		VkGraphicsPipelineLibraryCreateInfoEXT fragShaderLibInfo	= initVulkanStructureConst(&renderingCreateInfo);
+		fragShaderLibInfo.flags										|= VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT;
+
+		VkGraphicsPipelineCreateInfo fragShaderPipelineInfo	= initVulkanStructure(&fragShaderLibInfo);
+		fragShaderPipelineInfo.flags						= libCreationFlags;
+		fragShaderPipelineInfo.layout						= pipelineLayout.get();
+		fragShaderPipelineInfo.pDepthStencilState			= &depthStencilStateInfo;
+
+		const auto fragStageInfo = makePipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragModule.get());
+
+		fragShaderPipelineInfo.stageCount	= 1u;
+		fragShaderPipelineInfo.pStages		= &fragStageInfo;
+
+		fragShaderLib = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &fragShaderPipelineInfo);
+	}
+
+	// Fragment output libraries.
+	{
+		VkGraphicsPipelineLibraryCreateInfoEXT fragOutputLibInfo	= initVulkanStructureConst(&renderingCreateInfo);
+		fragOutputLibInfo.flags										|= VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT;
+
+		VkGraphicsPipelineCreateInfo fragOutputPipelineInfo	= initVulkanStructure(&fragOutputLibInfo);
+		fragOutputPipelineInfo.flags						= libCreationFlags;
+		fragOutputPipelineInfo.pColorBlendState				= &colorBlendStateInfo;
+		fragOutputPipelineInfo.pMultisampleState			= &multisampleStateInfo;
+
+		fragOutputLibMulti = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &fragOutputPipelineInfo);
+
+		multisampleStateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		fragOutputLibSingle = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &fragOutputPipelineInfo);
+	}
+
+	// Linked pipelines.
+	Move<VkPipeline> pipelineMulti;
+	Move<VkPipeline> pipelineSingle;
+
+	{
+		const std::vector<VkPipeline> libraryHandlesMulti
+		{
+			preFragLib.get(),
+			fragShaderLib.get(),
+			fragOutputLibMulti.get(),
+		};
+
+		VkPipelineLibraryCreateInfoKHR linkedPipelineLibraryInfo	= initVulkanStructure();
+		linkedPipelineLibraryInfo.libraryCount						= de::sizeU32(libraryHandlesMulti);
+		linkedPipelineLibraryInfo.pLibraries						= de::dataOrNull(libraryHandlesMulti);
+
+		VkGraphicsPipelineCreateInfo linkedPipelineInfo	= initVulkanStructure(&linkedPipelineLibraryInfo);
+		linkedPipelineInfo.flags						= linkFlags;
+		linkedPipelineInfo.layout						= pipelineLayout.get();
+
+		pipelineMulti = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &linkedPipelineInfo);
+	}
+	{
+		const std::vector<VkPipeline> libraryHandlesSingle
+		{
+			preFragLib.get(),
+			fragShaderLib.get(),
+			fragOutputLibSingle.get(),
+		};
+
+		VkPipelineLibraryCreateInfoKHR linkedPipelineLibraryInfo	= initVulkanStructure();
+		linkedPipelineLibraryInfo.libraryCount						= de::sizeU32(libraryHandlesSingle);
+		linkedPipelineLibraryInfo.pLibraries						= de::dataOrNull(libraryHandlesSingle);
+
+		VkGraphicsPipelineCreateInfo linkedPipelineInfo	= initVulkanStructure(&linkedPipelineLibraryInfo);
+		linkedPipelineInfo.flags						= linkFlags;
+		linkedPipelineInfo.layout						= pipelineLayout.get();
+
+		pipelineSingle = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &linkedPipelineInfo);
+	}
+
+	// Standard sample locations
+	using LocationsVec = std::vector<tcu::Vec2>;
+
+	const LocationsVec locationSamples1
+	{
+		tcu::Vec2(0.5f, 0.5f),
+	};
+
+	const LocationsVec locationSamples2
+	{
+		tcu::Vec2(0.75f, 0.75f),
+		tcu::Vec2(0.25f, 0.25f),
+	};
+
+	const LocationsVec locationSamples4
+	{
+		tcu::Vec2(0.375f, 0.125f),
+		tcu::Vec2(0.875f, 0.375f),
+		tcu::Vec2(0.125f, 0.625f),
+		tcu::Vec2(0.625f, 0.875f),
+	};
+
+	const LocationsVec locationSamples8
+	{
+		tcu::Vec2(0.5625f, 0.3125f),
+		tcu::Vec2(0.4375f, 0.6875f),
+		tcu::Vec2(0.8125f, 0.5625f),
+		tcu::Vec2(0.3125f, 0.1875f),
+		tcu::Vec2(0.1875f, 0.8125f),
+		tcu::Vec2(0.0625f, 0.4375f),
+		tcu::Vec2(0.6875f, 0.9375f),
+		tcu::Vec2(0.9375f, 0.0625f),
+	};
+
+	const LocationsVec locationSamples16
+	{
+		tcu::Vec2(0.5625f, 0.5625f),
+		tcu::Vec2(0.4375f, 0.3125f),
+		tcu::Vec2(0.3125f, 0.625f),
+		tcu::Vec2(0.75f,   0.4375f),
+		tcu::Vec2(0.1875f, 0.375f),
+		tcu::Vec2(0.625f,  0.8125f),
+		tcu::Vec2(0.8125f, 0.6875f),
+		tcu::Vec2(0.6875f, 0.1875f),
+		tcu::Vec2(0.375f,  0.875f),
+		tcu::Vec2(0.5f,    0.0625f),
+		tcu::Vec2(0.25f,   0.125f),
+		tcu::Vec2(0.125f,  0.75f),
+		tcu::Vec2(0.0f,    0.5f),
+		tcu::Vec2(0.9375f, 0.25f),
+		tcu::Vec2(0.875f,  0.9375f),
+		tcu::Vec2(0.0625f, 0.0f),
+	};
+
+	const auto locationThreshold = 0.00001f;
+
+	const std::map<VkSampleCountFlagBits, const LocationsVec*> locationsByCount
+	{
+		std::make_pair(VK_SAMPLE_COUNT_1_BIT,	&locationSamples1),
+		std::make_pair(VK_SAMPLE_COUNT_2_BIT,	&locationSamples2),
+		std::make_pair(VK_SAMPLE_COUNT_4_BIT,	&locationSamples4),
+		std::make_pair(VK_SAMPLE_COUNT_8_BIT,	&locationSamples8),
+		std::make_pair(VK_SAMPLE_COUNT_16_BIT,	&locationSamples16),
+	};
+
+	const VkRenderingInfo renderingInfo =
+	{
+		VK_STRUCTURE_TYPE_RENDERING_INFO,	//	VkStructureType						sType;
+		nullptr,							//	const void*							pNext;
+		0u,									//	VkRenderingFlags					flags;
+		scissors.at(0u),					//	VkRect2D							renderArea;
+		1u,									//	uint32_t							layerCount;
+		0u,									//	uint32_t							viewMask;
+		0u,									//	uint32_t							colorAttachmentCount;
+		nullptr,							//	const VkRenderingAttachmentInfo*	pColorAttachments;
+		nullptr,							//	const VkRenderingAttachmentInfo*	pDepthAttachment;
+		nullptr,							//	const VkRenderingAttachmentInfo*	pStencilAttachment;
+	};
+
+	const auto hostToFragBarrier = makeMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, (VK_ACCESS_SHADER_READ_BIT|VK_ACCESS_SHADER_WRITE_BIT));
+	const auto fragToHostBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+
+	for (const auto multiSample : { false, true })
+	{
+		// Reset data in buffers.
+		invocationCount = 0;
+		deMemset(de::dataOrNull(samplePositions), 0, de::dataSize(samplePositions));
+
+		deMemcpy(abData, &invocationCount, sizeof(invocationCount));
+		flushAlloc(ctx.vkd, ctx.device, abAlloc);
+
+		deMemcpy(pbData, de::dataOrNull(samplePositions), de::dataSize(samplePositions));
+		flushAlloc(ctx.vkd, ctx.device, pbAlloc);
+
+		CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+		const auto cmdBuffer = *cmd.cmdBuffer;
+
+		const auto vkSampleCount	= (multiSample ? params.multiSampleCount : VK_SAMPLE_COUNT_1_BIT);
+		const auto sampleCount		= static_cast<int32_t>(vkSampleCount);
+
+		beginCommandBuffer(ctx.vkd, cmdBuffer);
+		cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, &hostToFragBarrier);
+		ctx.vkd.cmdBeginRendering(cmdBuffer, &renderingInfo);
+		ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+		ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+		ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, (multiSample ? *pipelineMulti : *pipelineSingle));
+		ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, dataStages, 0u, pcSize, &sampleCount);
+		ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+		ctx.vkd.cmdEndRendering(cmdBuffer);
+		cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &fragToHostBarrier);
+		endCommandBuffer(ctx.vkd, cmdBuffer);
+		submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+		// Verify buffer contents.
+		invalidateAlloc(ctx.vkd, ctx.device, abAlloc);
+		invalidateAlloc(ctx.vkd, ctx.device, pbAlloc);
+
+		deMemcpy(&invocationCount, abData, sizeof(invocationCount));
+		if (invocationCount <= 0 || invocationCount > sampleCount)
+		{
+			const auto prefix = (multiSample ? "[MultiSample]" : "[Single-Sample]");
+			std::ostringstream msg;
+			msg << prefix << " Invalid invocation count found in atomic buffer: expected value in range [1, "
+				<< sampleCount << "] but found " << invocationCount;
+			TCU_FAIL(msg.str());
+		}
+
+		const auto itr = locationsByCount.find(vkSampleCount);
+		DE_ASSERT(itr != locationsByCount.end());
+		const auto expectedLocations = itr->second;
+
+		deMemcpy(de::dataOrNull(samplePositions), pbData, de::dataSize(samplePositions));
+		for (int32_t invocationIdx = 0; invocationIdx < invocationCount; ++invocationIdx)
+		{
+			DE_ASSERT(expectedLocations->size() == static_cast<size_t>(vkSampleCount));
+			const auto bufferOffset = invocationIdx * sampleCount;
+			for (int32_t sampleIdx = 0; sampleIdx < sampleCount; ++sampleIdx)
+			{
+				const auto& result		= samplePositions[bufferOffset + sampleIdx];
+				const auto& expected	= expectedLocations->at(sampleIdx);
+
+				if (!tcu::boolAll(tcu::lessThanEqual(tcu::absDiff(result, expected), tcu::Vec2(locationThreshold, locationThreshold))))
+				{
+					const auto prefix = (multiSample ? "[MultiSample]" : "[Single-Sample]");
+					std::ostringstream msg;
+					msg << prefix << " Unexpected position found for invocation " << invocationIdx << " sample " << sampleIdx
+						<< ": expected " << expected << " but found " << result;
+					TCU_FAIL(msg.str());
+				}
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+#endif // CTS_USES_VULKANSC
+
 } // anonymous
 
 tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> miscTests (new tcu::TestCaseGroup(testCtx, "misc", ""));
+	de::MovePtr<tcu::TestCaseGroup> miscTests (new tcu::TestCaseGroup(testCtx, "misc"));
 
 	// Location of the Amber script files under the data/vulkan/amber source tree.
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 		addMonolithicAmberTests(miscTests.get());
 
-	miscTests->addChild(new ImplicitPrimitiveIDPassthroughCase(testCtx, "implicit_primitive_id", "Verify implicit access to gl_PrimtiveID works", pipelineConstructionType, false));
-	miscTests->addChild(new ImplicitPrimitiveIDPassthroughCase(testCtx, "implicit_primitive_id_with_tessellation", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", pipelineConstructionType, true));
-	#ifndef CTS_USES_VULKANSC
-	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY) {
-		miscTests->addChild(new PipelineLibraryInterpolateAtSampleTestCase(testCtx, "interpolate_at_sample_no_sample_shading", "Check if interpolateAtSample works as expected when using a pipeline library and null MSAA state in the fragment shader"));
+	// Verify implicit access to gl_PrimtiveID works
+	miscTests->addChild(new ImplicitPrimitiveIDPassthroughCase(testCtx, "implicit_primitive_id", pipelineConstructionType, false));
+	// Verify implicit access to gl_PrimtiveID works with a tessellation shader
+	miscTests->addChild(new ImplicitPrimitiveIDPassthroughCase(testCtx, "implicit_primitive_id_with_tessellation", pipelineConstructionType, true));
+
+	if (isConstructionTypeLibrary(pipelineConstructionType))
+	{
+		addFunctionCaseWithPrograms(miscTests.get(), "compatible_render_pass", checkCompatibleRenderPassSupport, initCompatibleRenderPassPrograms, compatibleRenderPassTest, pipelineConstructionType);
 	}
-	#endif
 
 #ifndef CTS_USES_VULKANSC
+	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY) {
+		// Check if interpolateAtSample works as expected when using a pipeline library and null MSAA state in the fragment shader"
+		miscTests->addChild(new PipelineLibraryInterpolateAtSampleTestCase(testCtx, "interpolate_at_sample_no_sample_shading"));
+	}
+
+	if (isConstructionTypeLibrary(pipelineConstructionType))
+	{
+		const VkSampleCountFlagBits sampleCounts[] =
+		{
+			VK_SAMPLE_COUNT_2_BIT,
+			VK_SAMPLE_COUNT_4_BIT,
+			VK_SAMPLE_COUNT_8_BIT,
+			VK_SAMPLE_COUNT_16_BIT,
+		};
+		for (const auto sampleCount : sampleCounts)
+		{
+			const auto						testName	= "frag_lib_varying_samples_" + std::to_string(static_cast<int>(sampleCount));
+			const VaryingSamplesFragParams	params		{ pipelineConstructionType, sampleCount };
+
+			addFunctionCaseWithPrograms(miscTests.get(), testName,
+				checkVaryingSamplesFragSupport, initVaryingSamplesFragPrograms, varyingSamplesFragTest,
+				params);
+		}
+	}
+
 	if (isConstructionTypeLibrary(pipelineConstructionType))
 	{
 		for (int useTessIdx = 0; useTessIdx < 2; ++useTessIdx)
@@ -1712,7 +2389,7 @@ tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstruc
 					testName += "_include_geom";
 
 				const UnusedShaderStageParams params { pipelineConstructionType, useTess, useGeom };
-				miscTests->addChild(new UnusedShaderStagesCase(testCtx, testName, "", params));
+				miscTests->addChild(new UnusedShaderStagesCase(testCtx, testName, params));
 			}
 	}
 #endif // CTS_USES_VULKANSC
@@ -1721,9 +2398,12 @@ tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstruc
 	BindingTestConfig config1 = {pipelineConstructionType, false, true};
 	BindingTestConfig config2 = {pipelineConstructionType, true, true};
 
-	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", config0));
-	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_holes", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", config1));
-	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards_holes", "Verify implicit access to gl_PrimtiveID works with a tessellation shader", config2));
+	// Verify implicit access to gl_PrimtiveID works with a tessellation shader
+	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards", config0));
+	// Verify implicit access to gl_PrimtiveID works with a tessellation shader
+	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_holes", config1));
+	// Verify implicit access to gl_PrimtiveID works with a tessellation shader
+	miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards_holes", config2));
 
 	return miscTests.release();
 }

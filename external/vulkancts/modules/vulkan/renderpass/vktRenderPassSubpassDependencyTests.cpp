@@ -4237,12 +4237,12 @@ void initTests (tcu::TestCaseGroup* group, const renderpass::SharedGroupParams g
 			UVec2(512, 512)
 		};
 
-		de::MovePtr<tcu::TestCaseGroup>	externalGroup	(new tcu::TestCaseGroup(testCtx, "external_subpass", "external_subpass"));
+		de::MovePtr<tcu::TestCaseGroup>	externalGroup	(new tcu::TestCaseGroup(testCtx, "external_subpass"));
 
 		for (size_t renderSizeNdx = 0; renderSizeNdx < DE_LENGTH_OF_ARRAY(renderSizes); renderSizeNdx++)
 		{
 			string groupName ("render_size_" + de::toString(renderSizes[renderSizeNdx].x()) + "_" + de::toString(renderSizes[renderSizeNdx].y()));
-			de::MovePtr<tcu::TestCaseGroup> renderSizeGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupName.c_str()));
+			de::MovePtr<tcu::TestCaseGroup> renderSizeGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 			for (size_t renderPassCountNdx = 0; renderPassCountNdx < DE_LENGTH_OF_ARRAY(renderPassCounts); renderPassCountNdx++)
 			{
@@ -4304,12 +4304,12 @@ void initTests (tcu::TestCaseGroup* group, const renderpass::SharedGroupParams g
 					blurKernel
 				};
 
-				renderSizeGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+				renderSizeGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, testName.c_str(), testConfig));
 				if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
 				{
 					testName += "_sync_2";
 					testConfig.synchronizationType = SYNCHRONIZATION_TYPE_SYNCHRONIZATION2;
-					renderSizeGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+					renderSizeGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, testName.c_str(), testConfig));
 				}
 			}
 
@@ -4324,7 +4324,7 @@ void initTests (tcu::TestCaseGroup* group, const renderpass::SharedGroupParams g
 	{
 		const deUint32					renderPassCounts[]		= { 2u, 3u, 5u };
 
-		de::MovePtr<tcu::TestCaseGroup>	implicitGroup			(new tcu::TestCaseGroup(testCtx, "implicit_dependencies", "implicit_dependencies"));
+		de::MovePtr<tcu::TestCaseGroup>	implicitGroup			(new tcu::TestCaseGroup(testCtx, "implicit_dependencies"));
 
 		for (size_t renderPassCountNdx = 0; renderPassCountNdx < DE_LENGTH_OF_ARRAY(renderPassCounts); renderPassCountNdx++)
 		{
@@ -4376,7 +4376,7 @@ void initTests (tcu::TestCaseGroup* group, const renderpass::SharedGroupParams g
 			const ExternalTestConfig	testConfig	(VK_FORMAT_R8G8B8A8_UNORM, UVec2(128, 128), renderPasses, groupParams, SYNCHRONIZATION_TYPE_LEGACY, blurKernel);
 			const string				testName	("render_passes_" + de::toString(renderPassCounts[renderPassCountNdx]));
 
-			implicitGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+			implicitGroup->addChild(new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(testCtx, testName.c_str(), testConfig));
 		}
 
 		group->addChild(implicitGroup.release());
@@ -4402,17 +4402,17 @@ void initTests (tcu::TestCaseGroup* group, const renderpass::SharedGroupParams g
 			VK_FORMAT_D32_SFLOAT_S8_UINT
 		};
 
-		de::MovePtr<tcu::TestCaseGroup>	lateFragmentTestsGroup (new tcu::TestCaseGroup(testCtx, "late_fragment_tests", "wait for late fragment tests"));
+		de::MovePtr<tcu::TestCaseGroup>	lateFragmentTestsGroup (new tcu::TestCaseGroup(testCtx, "late_fragment_tests"));
 
 		for (size_t renderSizeNdx = 0; renderSizeNdx < DE_LENGTH_OF_ARRAY(renderSizes); renderSizeNdx++)
 		{
 			string							renderSizeGroupName	("render_size_" + de::toString(renderSizes[renderSizeNdx].x()) + "_" + de::toString(renderSizes[renderSizeNdx].y()));
-			de::MovePtr<tcu::TestCaseGroup>	renderSizeGroup		(new tcu::TestCaseGroup(testCtx, renderSizeGroupName.c_str(), renderSizeGroupName.c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	renderSizeGroup		(new tcu::TestCaseGroup(testCtx, renderSizeGroupName.c_str()));
 
 			for (size_t subpassCountNdx = 0; subpassCountNdx < DE_LENGTH_OF_ARRAY(subpassCounts); subpassCountNdx++)
 			{
 				string							subpassGroupName	("subpass_count_" + de::toString(subpassCounts[subpassCountNdx]));
-				de::MovePtr<tcu::TestCaseGroup>	subpassCountGroup	(new tcu::TestCaseGroup(testCtx, subpassGroupName.c_str(), subpassGroupName.c_str()));
+				de::MovePtr<tcu::TestCaseGroup>	subpassCountGroup	(new tcu::TestCaseGroup(testCtx, subpassGroupName.c_str()));
 
 				for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 				{
@@ -4483,7 +4483,7 @@ void initTests (tcu::TestCaseGroup* group, const renderpass::SharedGroupParams g
 					const string			format		(formatToName(formats[formatNdx]).c_str());
 
 					subpassCountGroup->addChild(new InstanceFactory1WithSupport<SubpassDependencyTestInstance, SubpassTestConfig, FunctionSupport1<SubpassTestConfig>, SubpassPrograms>
-						(testCtx, tcu::NODETYPE_SELF_VALIDATE, format, format, testConfig, typename FunctionSupport1<SubpassTestConfig>::Args(checkSupport<SubpassTestConfig>, testConfig)));
+						(testCtx, format, testConfig, typename FunctionSupport1<SubpassTestConfig>::Args(checkSupport<SubpassTestConfig>, testConfig)));
 				}
 
 				renderSizeGroup->addChild(subpassCountGroup.release());
@@ -4505,15 +4505,15 @@ void initTests (tcu::TestCaseGroup* group, const renderpass::SharedGroupParams g
 			UVec2(512, 512)
 		};
 
-		de::MovePtr<tcu::TestCaseGroup>	selfDependencyGroup	(new tcu::TestCaseGroup(testCtx, "self_dependency", "self_dependency"));
+		de::MovePtr<tcu::TestCaseGroup>	selfDependencyGroup	(new tcu::TestCaseGroup(testCtx, "self_dependency"));
 
 		for (size_t renderSizeNdx = 0; renderSizeNdx < DE_LENGTH_OF_ARRAY(renderSizes); renderSizeNdx++)
 		{
 			string groupName	("render_size_" + de::toString(renderSizes[renderSizeNdx].x()) + "_" + de::toString(renderSizes[renderSizeNdx].y()));
-			de::MovePtr<tcu::TestCaseGroup>	renderSizeGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupName.c_str()));
+			de::MovePtr<tcu::TestCaseGroup>	renderSizeGroup	(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 			const SubpassSelfDependencyBackwardsTestConfig	testConfig	(VK_FORMAT_R8G8B8A8_UNORM, renderSizes[renderSizeNdx], groupParams->renderingType);
-			renderSizeGroup->addChild(new InstanceFactory1<SubpassSelfDependencyBackwardsTestInstance, SubpassSelfDependencyBackwardsTestConfig, SubpassSelfDependencyBackwardsPrograms>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "geometry_to_indirectdraw", "", testConfig));
+			renderSizeGroup->addChild(new InstanceFactory1<SubpassSelfDependencyBackwardsTestInstance, SubpassSelfDependencyBackwardsTestConfig, SubpassSelfDependencyBackwardsPrograms>(testCtx, "geometry_to_indirectdraw", testConfig));
 
 			selfDependencyGroup->addChild(renderSizeGroup.release());
 		}
@@ -4523,7 +4523,7 @@ void initTests (tcu::TestCaseGroup* group, const renderpass::SharedGroupParams g
 
 	// Test using a single attachment with reads and writes using separate channels. This should work without subpass self-dependency.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	separateChannelsGroup	(new tcu::TestCaseGroup(testCtx, "separate_channels", "separate_channels"));
+		de::MovePtr<tcu::TestCaseGroup>	separateChannelsGroup	(new tcu::TestCaseGroup(testCtx, "separate_channels"));
 
 		struct TestConfig
 		{
@@ -4542,7 +4542,7 @@ void initTests (tcu::TestCaseGroup* group, const renderpass::SharedGroupParams g
 			const SeparateChannelsTestConfig testConfig(configs[configIdx].format, groupParams);
 
 			separateChannelsGroup->addChild(new InstanceFactory1WithSupport<SeparateChannelsTestInstance, SeparateChannelsTestConfig, FunctionSupport1<SeparateChannelsTestConfig>, SeparateChannelsPrograms>
-				(testCtx, tcu::NODETYPE_SELF_VALIDATE, configs[configIdx].name, "", testConfig, typename FunctionSupport1<SeparateChannelsTestConfig>::Args(checkSupport<SeparateChannelsTestConfig>, testConfig)));
+				(testCtx, configs[configIdx].name, testConfig, typename FunctionSupport1<SeparateChannelsTestConfig>::Args(checkSupport<SeparateChannelsTestConfig>, testConfig)));
 		}
 
 		group->addChild(separateChannelsGroup.release());
@@ -4550,7 +4550,7 @@ void initTests (tcu::TestCaseGroup* group, const renderpass::SharedGroupParams g
 
 	// Test using a single attachment for input and output.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	singleAttachmentGroup	(new tcu::TestCaseGroup(testCtx, "single_attachment", "single_attachment"));
+		de::MovePtr<tcu::TestCaseGroup>	singleAttachmentGroup	(new tcu::TestCaseGroup(testCtx, "single_attachment"));
 
 		struct TestConfig
 		{
@@ -4570,7 +4570,7 @@ void initTests (tcu::TestCaseGroup* group, const renderpass::SharedGroupParams g
 			const SingleAttachmentTestConfig testConfig(configs[configIdx].format, groupParams);
 
 			singleAttachmentGroup->addChild(new InstanceFactory1WithSupport<SingleAttachmentTestInstance, SingleAttachmentTestConfig, FunctionSupport1<SingleAttachmentTestConfig>, SingleAttachmentPrograms>
-				(testCtx, tcu::NODETYPE_SELF_VALIDATE, configs[configIdx].name, "", testConfig, typename FunctionSupport1<SingleAttachmentTestConfig>::Args(checkSupport<SingleAttachmentTestConfig>, testConfig)));
+				(testCtx, configs[configIdx].name, testConfig, typename FunctionSupport1<SingleAttachmentTestConfig>::Args(checkSupport<SingleAttachmentTestConfig>, testConfig)));
 		}
 
 		group->addChild(singleAttachmentGroup.release());
@@ -4580,7 +4580,7 @@ void initTests (tcu::TestCaseGroup* group, const renderpass::SharedGroupParams g
 
 tcu::TestCaseGroup* createRenderPassSubpassDependencyTests(tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams)
 {
-	return createTestGroup(testCtx, "subpass_dependencies", "Subpass dependency tests", initTests, groupParams);
+	return createTestGroup(testCtx, "subpass_dependencies", initTests, groupParams);
 }
 
 } // vkt

@@ -160,7 +160,6 @@ public:
 																 deBool							testInternalRepresentations);
 	virtual						~ExecutablePropertiesTestParam	(void)	= default;
 	virtual const std::string	generateTestName				(void)	const;
-	virtual const std::string	generateTestDescription			(void)	const;
 	PipelineConstructionType	getPipelineConstructionType		(void)	const	{ return m_pipelineConstructionType; }
 	VkShaderStageFlags			getShaderFlags					(void)	const	{ return m_shaders; }
 	deBool						getTestStatistics				(void)	const	{ return m_testStatistics; }
@@ -193,38 +192,12 @@ const std::string ExecutablePropertiesTestParam::generateTestName (void) const
 	return result;
 }
 
-const std::string ExecutablePropertiesTestParam::generateTestDescription (void) const
-{
-	std::string result;
-	if (m_testStatistics)
-	{
-		result += "Get pipeline executable statistics";
-		if (m_testInternalRepresentations)
-		{
-			result += " and internal representations";
-		}
-	}
-	else if (m_testInternalRepresentations)
-	{
-		result += "Get pipeline executable internal representations";
-	}
-	else
-	{
-		result += "Get pipeline executable properties";
-	}
-
-	result += " with " + getShaderFlagStr(m_shaders, true);
-
-	return result;
-}
-
 template <class Test>
 vkt::TestCase* newTestCase (tcu::TestContext&		testContext,
 							const ExecutablePropertiesTestParam*	testParam)
 {
 	return new Test(testContext,
 					testParam->generateTestName().c_str(),
-					testParam->generateTestDescription().c_str(),
 					testParam);
 }
 
@@ -234,9 +207,8 @@ class ExecutablePropertiesTest : public vkt::TestCase
 public:
 							ExecutablePropertiesTest(tcu::TestContext&		testContext,
 										   const std::string&		name,
-										   const std::string&		description,
 										   const ExecutablePropertiesTestParam*	param)
-								: vkt::TestCase (testContext, name, description)
+								: vkt::TestCase (testContext, name)
 								, m_param (*param)
 								{ }
 	virtual					~ExecutablePropertiesTest (void) { }
@@ -758,9 +730,8 @@ class GraphicsExecutablePropertiesTest : public ExecutablePropertiesTest
 public:
 							GraphicsExecutablePropertiesTest	(tcu::TestContext&		testContext,
 													 const std::string&	name,
-													 const std::string&	description,
 													 const ExecutablePropertiesTestParam*	param)
-								: ExecutablePropertiesTest (testContext, name, description, param)
+								: ExecutablePropertiesTest (testContext, name, param)
 								{ }
 	virtual					~GraphicsExecutablePropertiesTest	(void) { }
 	virtual void			initPrograms		(SourceCollections&	programCollection) const;
@@ -1104,9 +1075,8 @@ class ComputeExecutablePropertiesTest : public ExecutablePropertiesTest
 public:
 							ComputeExecutablePropertiesTest	(tcu::TestContext&		testContext,
 													 const std::string&		name,
-													 const std::string&		description,
 													 const ExecutablePropertiesTestParam*	param)
-								: ExecutablePropertiesTest	(testContext, name, description, param)
+								: ExecutablePropertiesTest	(testContext, name, param)
 								{ }
 	virtual					~ComputeExecutablePropertiesTest	(void) { }
 	virtual void			initPrograms			(SourceCollections&	programCollection) const;
@@ -1272,11 +1242,11 @@ ComputeExecutablePropertiesTestInstance::~ComputeExecutablePropertiesTestInstanc
 tcu::TestCaseGroup* createExecutablePropertiesTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
 
-	de::MovePtr<tcu::TestCaseGroup> binaryInfoTests (new tcu::TestCaseGroup(testCtx, "executable_properties", "pipeline binary statistics tests"));
+	de::MovePtr<tcu::TestCaseGroup> binaryInfoTests (new tcu::TestCaseGroup(testCtx, "executable_properties"));
 
 	// Graphics Pipeline Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics", "Test pipeline binary info with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics"));
 
 		const VkShaderStageFlags vertFragStages		= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		const VkShaderStageFlags vertGeomFragStages	= vertFragStages | VK_SHADER_STAGE_GEOMETRY_BIT;
@@ -1307,7 +1277,7 @@ tcu::TestCaseGroup* createExecutablePropertiesTests (tcu::TestContext& testCtx, 
 	// Compute Pipeline Tests - don't repeat those tests for graphics pipeline library
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute", "Test pipeline binary info with compute pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute"));
 
 		const ExecutablePropertiesTestParam testParams[]
 		{

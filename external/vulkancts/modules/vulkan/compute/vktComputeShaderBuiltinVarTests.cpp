@@ -185,7 +185,7 @@ private:
 };
 
 ComputeBuiltinVarCase::ComputeBuiltinVarCase (tcu::TestContext& context, const string& name, const char* varName, glu::DataType varType, bool readByComponent, const vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCase							(context, name + (readByComponent ? "_component" : ""), varName)
+	: TestCase							(context, name + (readByComponent ? "_component" : ""))
 	, m_varName							(varName)
 	, m_varType							(varType)
 	, m_subCaseNdx						(0)
@@ -592,7 +592,7 @@ private:
 };
 
 ComputeShaderBuiltinVarTests::ComputeShaderBuiltinVarTests (tcu::TestContext& context, vk::ComputePipelineConstructionType computePipelineConstructionType)
-	: TestCaseGroup						(context, "builtin_var", "Shader builtin var tests")
+	: TestCaseGroup						(context, "builtin_var")
 	, m_computePipelineConstructionType	(computePipelineConstructionType)
 {
 }

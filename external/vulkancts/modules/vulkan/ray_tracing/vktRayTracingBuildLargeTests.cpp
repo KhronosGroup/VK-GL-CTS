@@ -174,7 +174,7 @@ RayTracingBuildLargeTestInstance::~RayTracingBuildLargeTestInstance (void)
 class RayTracingTestCase : public TestCase
 {
 	public:
-							RayTracingTestCase	(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+							RayTracingTestCase	(tcu::TestContext& context, const char* name, const CaseDef data);
 							~RayTracingTestCase	(void);
 
 	virtual	void			initPrograms		(SourceCollections& programCollection) const;
@@ -186,8 +186,8 @@ private:
 	CaseDef					m_data;
 };
 
-RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 	DE_ASSERT((m_data.width * m_data.height) == (m_data.squaresGroupCount * m_data.geometriesGroupCount * m_data.instancesGroupCount));
@@ -537,7 +537,8 @@ tcu::TestStatus RayTracingBuildLargeTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createBuildLargeShaderSetTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "large_shader_set", "Build large shader set using CPU host threading"));
+	// Build large shader set using CPU host threading
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "large_shader_set"));
 
 	const deUint32	sizes[]		= { 8, 16, 32, 64 };
 	const struct
@@ -555,7 +556,7 @@ tcu::TestCaseGroup*	createBuildLargeShaderSetTests (tcu::TestContext& testCtx)
 
 	for (size_t buildNdx = 0; buildNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(testCtx, buildTypes[buildNdx].buildTypeName, ""));
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(testCtx, buildTypes[buildNdx].buildTypeName));
 
 		for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 		{
@@ -576,7 +577,7 @@ tcu::TestCaseGroup*	createBuildLargeShaderSetTests (tcu::TestContext& testCtx)
 			};
 			const std::string	testName			= de::toString(largestGroup);
 
-			buildTypeGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+			buildTypeGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 		}
 
 		group->addChild(buildTypeGroup.release());
@@ -591,7 +592,7 @@ tcu::TestCaseGroup*	createBuildLargeShaderSetTests (tcu::TestContext& testCtx)
 
 			const std::string				suffix				= threads[threadsNdx] == std::numeric_limits<deUint32>::max() ? "max" : de::toString(threads[threadsNdx]);
 			const std::string				buildTypeGroupName	= std::string(buildTypes[buildNdx].buildTypeName) + '_' + suffix;
-			de::MovePtr<tcu::TestCaseGroup> buildTypeGroup		  (new tcu::TestCaseGroup(testCtx, buildTypeGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> buildTypeGroup		  (new tcu::TestCaseGroup(testCtx, buildTypeGroupName.c_str()));
 
 			for (size_t sizesNdx = 0; sizesNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizesNdx)
 			{
@@ -612,7 +613,7 @@ tcu::TestCaseGroup*	createBuildLargeShaderSetTests (tcu::TestContext& testCtx)
 				};
 				const std::string	testName			= de::toString(largestGroup);
 
-				buildTypeGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+				buildTypeGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 			}
 
 			group->addChild(buildTypeGroup.release());

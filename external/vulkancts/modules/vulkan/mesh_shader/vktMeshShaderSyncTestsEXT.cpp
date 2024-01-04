@@ -516,8 +516,8 @@ public:
 class MeshShaderSyncCase : public vkt::TestCase
 {
 public:
-					MeshShaderSyncCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-						: vkt::TestCase (testCtx, name, description), m_params (params)
+					MeshShaderSyncCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+						: vkt::TestCase (testCtx, name), m_params (params)
 						{}
 
 	virtual			~MeshShaderSyncCase		(void) {}
@@ -1432,8 +1432,8 @@ tcu::TestStatus MeshShaderSyncInstance::iterate (void)
 class BarrierAcrossSecondaryCase : public vkt::TestCase
 {
 public:
-					BarrierAcrossSecondaryCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: vkt::TestCase(testCtx, name, description)
+					BarrierAcrossSecondaryCase	(tcu::TestContext& testCtx, const std::string& name)
+						: vkt::TestCase(testCtx, name)
 						{}
 	virtual			~BarrierAcrossSecondaryCase	(void) {}
 
@@ -1592,7 +1592,7 @@ tcu::TestStatus BarrierAcrossSecondaryInstance::iterate (void)
 	const auto	taskModule	= createShaderModule(vkd, device, binaries.get("task"));
 	const auto	meshModule	= createShaderModule(vkd, device, binaries.get("mesh"));
 
-	const auto computePipeline	= makeComputePipeline(vkd, device, pipelineLayout.get(), 0u, compModule.get(), 0u, nullptr);
+	const auto computePipeline	= makeComputePipeline(vkd, device, pipelineLayout.get(), compModule.get());
 	const auto meshPipeline		= makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
 		taskModule.get(), meshModule.get(), DE_NULL,
 		renderPass.get(), viewports, scissors);
@@ -1730,12 +1730,12 @@ tcu::TestCaseGroup* createMeshShaderSyncTestsEXT (tcu::TestContext& testCtx)
 
 	uint32_t testValue = 1628510124u;
 
-	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "synchronization", "Mesh Shader synchronization tests"));
+	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "synchronization"));
 
 	for (const auto& stageCombination : stageCombinations)
 	{
 		const std::string	combinationName		= de::toString(stageCombination.fromStage) + "_to_" + de::toString(stageCombination.toStage);
-		GroupPtr			combinationGroup	(new tcu::TestCaseGroup(testCtx, combinationName.c_str(), ""));
+		GroupPtr			combinationGroup	(new tcu::TestCaseGroup(testCtx, combinationName.c_str()));
 
 		for (const auto& resourceCase : resourceTypes)
 		{
@@ -1745,7 +1745,7 @@ tcu::TestCaseGroup* createMeshShaderSyncTestsEXT (tcu::TestContext& testCtx)
 			if (!canReadFrom(stageCombination.toStage, resourceCase.resourceType))
 				continue;
 
-			GroupPtr resourceGroup (new tcu::TestCaseGroup(testCtx, resourceCase.name, ""));
+			GroupPtr resourceGroup (new tcu::TestCaseGroup(testCtx, resourceCase.name));
 
 			for (const auto& barrierCase : barrierTypes)
 			{
@@ -1756,7 +1756,7 @@ tcu::TestCaseGroup* createMeshShaderSyncTestsEXT (tcu::TestContext& testCtx)
 				if (barrierIsDependency && !shaderToShader)
 						continue;
 
-				GroupPtr barrierGroup (new tcu::TestCaseGroup(testCtx, barrierCase.name, ""));
+				GroupPtr barrierGroup (new tcu::TestCaseGroup(testCtx, barrierCase.name));
 
 				for (const auto& writeCase	: writeAccesses)
 				for (const auto& readCase	: readAccesses)
@@ -1783,7 +1783,7 @@ tcu::TestCaseGroup* createMeshShaderSyncTestsEXT (tcu::TestContext& testCtx)
 						testValue++,				//	uint32_t		testValue;
 					};
 
-					barrierGroup->addChild(new MeshShaderSyncCase(testCtx, accessCaseName, "", testParams));
+					barrierGroup->addChild(new MeshShaderSyncCase(testCtx, accessCaseName, testParams));
 				}
 
 				resourceGroup->addChild(barrierGroup.release());
@@ -1796,9 +1796,11 @@ tcu::TestCaseGroup* createMeshShaderSyncTestsEXT (tcu::TestContext& testCtx)
 	}
 
 	{
-		GroupPtr otherGroup (new tcu::TestCaseGroup(testCtx, "other", "Additional synchronization tests"));
+		// Additional synchronization tests
+		GroupPtr otherGroup (new tcu::TestCaseGroup(testCtx, "other"));
 
-		otherGroup->addChild(new BarrierAcrossSecondaryCase(testCtx, "barrier_across_secondary", "Check synchronizing compute to task across secondary command buffer boundaries"));
+		// Check synchronizing compute to task across secondary command buffer boundaries
+		otherGroup->addChild(new BarrierAcrossSecondaryCase(testCtx, "barrier_across_secondary"));
 
 		mainGroup->addChild(otherGroup.release());
 	}

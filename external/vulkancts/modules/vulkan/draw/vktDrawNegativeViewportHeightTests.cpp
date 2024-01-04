@@ -594,8 +594,8 @@ tcu::TestStatus NegativeViewportHeightTestInstance::iterate (void)
 class NegativeViewportHeightTest : public TestCase
 {
 public:
-	NegativeViewportHeightTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-		: TestCase	(testCtx, name, description)
+	NegativeViewportHeightTest (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+		: TestCase	(testCtx, name)
 		, m_params	(params)
 	{
 	}
@@ -700,7 +700,7 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup, SubGroupParams subGroupPa
 		std::ostringstream	name;
 		name << frontFace[ndxFrontFace].name << "_" << cullMode[ndxCullMode].name;
 
-		testGroup->addChild(new NegativeViewportHeightTest(testGroup->getTestContext(), name.str(), "", params));
+		testGroup->addChild(new NegativeViewportHeightTest(testGroup->getTestContext(), name.str(), params));
 	}
 }
 
@@ -764,8 +764,8 @@ public:
 		return axisRange;
 	}
 
-					OffScreenViewportCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const OffScreenParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					OffScreenViewportCase	(tcu::TestContext& testCtx, const std::string& name, const OffScreenParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 
@@ -984,13 +984,15 @@ tcu::TestStatus OffScreenViewportInstance::iterate (void)
 tcu::TestCaseGroup*	createNegativeViewportHeightTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
 	SubGroupParams subGroupParams { false, groupParams };
-	return createTestGroup(testCtx, "negative_viewport_height", "Negative viewport height (VK_KHR_maintenance1)", populateTestGroup, subGroupParams);
+	// Negative viewport height (VK_KHR_maintenance1)
+	return createTestGroup(testCtx, "negative_viewport_height", populateTestGroup, subGroupParams);
 }
 
 tcu::TestCaseGroup*	createZeroViewportHeightTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
 	SubGroupParams subGroupParams{ false, groupParams };
-	return createTestGroup(testCtx, "zero_viewport_height", "Zero viewport height (VK_KHR_maintenance1)", populateTestGroup, subGroupParams);
+	// Zero viewport height (VK_KHR_maintenance1)
+	return createTestGroup(testCtx, "zero_viewport_height", populateTestGroup, subGroupParams);
 }
 
 tcu::TestCaseGroup* createOffScreenViewportTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
@@ -1019,7 +1021,8 @@ tcu::TestCaseGroup* createOffScreenViewportTests (tcu::TestContext& testCtx, con
 	};
 
 	uint32_t seed	= 1674229780;
-	GroupPtr group	(new tcu::TestCaseGroup(testCtx, "offscreen_viewport", "Test using off-screen viewports"));
+	// Test using off-screen viewports
+	GroupPtr group	(new tcu::TestCaseGroup(testCtx, "offscreen_viewport"));
 
 	for (const auto& xCase : axisCases)
 		for (const auto& yCase : axisCases)
@@ -1034,7 +1037,7 @@ tcu::TestCaseGroup* createOffScreenViewportTests (tcu::TestContext& testCtx, con
 				++seed;
 
 				const auto testName = std::string("x") + xCase.suffix + "_y" + yCase.suffix + negHeightCase.suffix;
-				group->addChild(new OffScreenViewportCase(testCtx, testName, "", params));
+				group->addChild(new OffScreenViewportCase(testCtx, testName, params));
 			}
 		}
 	return group.release();

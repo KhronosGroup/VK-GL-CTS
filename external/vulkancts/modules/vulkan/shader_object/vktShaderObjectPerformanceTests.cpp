@@ -320,6 +320,8 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 	const auto							deviceExtensions			= vk::removeUnsupportedShaderObjectExtensions(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
 	const bool							tessellationSupported		= m_context.getDeviceFeatures().tessellationShader;
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
+	const bool							taskSupported				= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported				= m_context.getMeshShaderFeatures().meshShader;
 
 	vk::VkFormat						colorAttachmentFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
 	const auto							subresourceRange			= makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -376,6 +378,25 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 		createInfos.push_back(vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_GEOMETRY_BIT, binaries.get("geom"), tessellationSupported, geometrySupported));
 	}
 
+	if (tessellationSupported)
+	{
+		createInfos[0].nextStage = vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+		createInfos[2].nextStage = vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		if (geometrySupported)
+			createInfos[3].nextStage = vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+		else
+			createInfos[3].nextStage = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+	}
+	else if (geometrySupported)
+	{
+		createInfos[0].nextStage = vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+		createInfos[geomIndex].nextStage = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+	}
+	else
+	{
+		createInfos[0].nextStage = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+	}
+
 	vk::Move<vk::VkShaderEXT>		vertShader		 = vk::createShader(vk, device, createInfos[0]);
 	vk::Move<vk::VkShaderEXT>		fragShader		 = vk::createShader(vk, device, createInfos[1]);
 	vk::Move<vk::VkShaderEXT>		tescShader;
@@ -418,19 +439,22 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 		}
 	}
 
-	vk::Move<vk::VkShaderEXT>		linkedVertShader = vk::createShader(vk, device, createInfos[0]);
-	vk::Move<vk::VkShaderEXT>		linkedFragShader = vk::createShader(vk, device, createInfos[1]);
+	vk::VkShaderEXT linkedShaders[5];
+	vk.createShadersEXT(device, static_cast<uint32_t>(createInfos.size()), createInfos.data(), nullptr, linkedShaders);
+
+	vk::Move<vk::VkShaderEXT>		linkedVertShader = vk::Move<vk::VkShaderEXT>(vk::check<vk::VkShaderEXT>(linkedShaders[0]), vk::Deleter<vk::VkShaderEXT>(vk, device, DE_NULL));
+	vk::Move<vk::VkShaderEXT>		linkedFragShader = vk::Move<vk::VkShaderEXT>(vk::check<vk::VkShaderEXT>(linkedShaders[1]), vk::Deleter<vk::VkShaderEXT>(vk, device, DE_NULL));
 	vk::Move<vk::VkShaderEXT>		linkedTescShader;
 	vk::Move<vk::VkShaderEXT>		linkedTeseShader;
 	vk::Move<vk::VkShaderEXT>		linkedGeomShader;
 	if (tessellationSupported)
 	{
-		linkedTescShader = vk::createShader(vk, device, createInfos[2]);
-		linkedTeseShader = vk::createShader(vk, device, createInfos[3]);
+		linkedTescShader = vk::Move<vk::VkShaderEXT>(vk::check<vk::VkShaderEXT>(linkedShaders[2]), vk::Deleter<vk::VkShaderEXT>(vk, device, DE_NULL));
+		linkedTeseShader = vk::Move<vk::VkShaderEXT>(vk::check<vk::VkShaderEXT>(linkedShaders[3]), vk::Deleter<vk::VkShaderEXT>(vk, device, DE_NULL));
 	}
 	if (geometrySupported)
 	{
-		linkedGeomShader = vk::createShader(vk, device, createInfos[geomIndex]);
+		linkedGeomShader = vk::Move<vk::VkShaderEXT>(vk::check<vk::VkShaderEXT>(linkedShaders[geomIndex]), vk::Deleter<vk::VkShaderEXT>(vk, device, DE_NULL));
 	}
 
 	vk::Move<vk::VkShaderModule>		vertShaderModule = createShaderModule(vk, device, binaries.get("vert"));
@@ -494,7 +518,7 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 	const vk::VkViewport								viewport	= vk::makeViewport((float)renderArea.extent.width, 0.0f, (float)renderArea.extent.width, (float)renderArea.extent.height, 0.0f, 1.0f);
 	const vk::VkRect2D									scissor		= vk::makeRect2D(renderArea.extent);
 
-	const vk::VkPipelineViewportStateCreateInfo			viewportStateCreateInfo =
+	vk::VkPipelineViewportStateCreateInfo				viewportStateCreateInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                             sType
 		DE_NULL,													// const void*                                 pNext
@@ -520,6 +544,8 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 
 	const auto							pipeline			= makeGraphicsPipeline(vk, device, emptyPipelineLayout.get(), vertShaderModule.get(), tescShaderModule.get(), teseShaderModule.get(), geomShaderModule.get(), fragShaderModule.get(), VK_NULL_HANDLE, 0u, &vertexInputStateParams, &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, DE_NULL, DE_NULL, DE_NULL, DE_NULL, pDynamicStateCreateInfo, &pipelineRenderingCreateInfo);
 	pipelineInputAssemblyStateInfo.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+	viewportStateCreateInfo.viewportCount = 1u;
+	viewportStateCreateInfo.scissorCount = 1u;
 	const auto							dummyPipeline		= makeGraphicsPipeline(vk, device, emptyPipelineLayout.get(), dummyVertShaderModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, dummyFragShaderModule.get(), VK_NULL_HANDLE, 0u, &vertexInputStateParams, &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL, &pipelineRenderingCreateInfo);
 
 	const vk::VkClearValue				clearValue			= vk::makeClearValueColor({ 0.0f, 0.0f, 0.0f, 1.0f });
@@ -555,6 +581,9 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 	indexDataPtr[2] = 2u;
 	indexDataPtr[3] = 3u;
 
+	const vk::VkDeviceSize				bufferSize			= 64;
+	de::MovePtr<vk::BufferWithMemory>	buffer				= de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(vk, device, alloc, vk::makeBufferCreateInfo(bufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), vk::MemoryRequirement::HostVisible));
+
 	// Do a dummy run, to ensure memory allocations are done with before performance testing
 	{
 		vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
@@ -580,20 +609,20 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 		{
 			vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
 			const auto shaderObjectStart = std::chrono::high_resolution_clock::now();
-			vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader);
+			vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader, taskSupported, meshSupported);
 			currentTime = std::chrono::high_resolution_clock::now() - shaderObjectStart;
 			vk::endCommandBuffer(vk, *cmdBuffer);
 
 			vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
 			const auto refShaderObjectStart = std::chrono::high_resolution_clock::now();
-			vk::bindGraphicsShaders(vk, *cmdBuffer, refShaders[0], refShaders[2], refShaders[3], refShaders[4], refShaders[1]);
+			vk::bindGraphicsShaders(vk, *cmdBuffer, refShaders[0], refShaders[2], refShaders[3], refShaders[4], refShaders[1], taskSupported, meshSupported);
 			currentRefTime = std::chrono::high_resolution_clock::now() - refShaderObjectStart;
 			vk::endCommandBuffer(vk, *cmdBuffer);
 		}
 		else
 		{
 			vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
-			vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader);
+			vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, *tescShader, *teseShader, *geomShader, *fragShader, taskSupported, meshSupported);
 			vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, topology, false, !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
 			vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
 			currentTime = draw(vk, *cmdBuffer, *indexBuffer, *indirectBuffer, *countBuffer);
@@ -604,7 +633,7 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 			if (m_type == DRAW_LINKED_SHADERS || m_type == DRAW_BINARY)
 			{
 				vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
-				vk::bindGraphicsShaders(vk, *cmdBuffer, refShaders[0], refShaders[2], refShaders[3], refShaders[4], refShaders[1]);
+				vk::bindGraphicsShaders(vk, *cmdBuffer, refShaders[0], refShaders[2], refShaders[3], refShaders[4], refShaders[1], taskSupported, meshSupported);
 				vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, topology, false, !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
 				vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
 				currentRefTime = draw(vk, *cmdBuffer, *indexBuffer, *indirectBuffer, *countBuffer);
@@ -615,8 +644,11 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 			else
 			{
 				vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
-				vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+				vk::VkDeviceSize offset = 0u;
+				vk::VkDeviceSize stride = 16u;
+				vk.cmdBindVertexBuffers2(*cmdBuffer, 0u, 1u, &**buffer, &offset, &bufferSize, &stride);
 				vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, topology, false, !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
+				vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 				vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
 				currentRefTime = draw(vk, *cmdBuffer, *indexBuffer, *indirectBuffer, *countBuffer);
 				vk::endRendering(vk, *cmdBuffer);
@@ -689,8 +721,8 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate (void)
 class ShaderObjectPerformanceCase : public vkt::TestCase
 {
 public:
-	ShaderObjectPerformanceCase(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const DrawType drawType, const TestType& type)
-		: vkt::TestCase	(testCtx, name, description)
+	ShaderObjectPerformanceCase(tcu::TestContext& testCtx, const std::string& name, const DrawType drawType, const TestType& type)
+		: vkt::TestCase	(testCtx, name)
 		, m_drawType	(drawType)
 		, m_type		(type)
 	{}
@@ -792,7 +824,7 @@ tcu::TestStatus ShaderObjectDispatchPerformanceInstance::iterate (void)
 
 	const auto							compShader		= vk::createShader(vk, device, vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_COMPUTE_BIT, binaries.get("comp"), tessellationSupported, geometrySupported, &*descriptorSetLayout));
 	const vk::VkPipelineCreateFlags		pipelineFlags	= (m_dispatchType == DISPATCH) ? (vk::VkPipelineCreateFlags)0u : (vk::VkPipelineCreateFlags)vk::VK_PIPELINE_CREATE_DISPATCH_BASE_BIT;
-	const auto							computePipeline	= vk::makeComputePipeline(vk, device, pipelineLayout.get(), pipelineFlags, compShaderModule.get(), (vk::VkPipelineShaderStageCreateFlags)0u);
+	const auto							computePipeline	= vk::makeComputePipeline(vk, device, pipelineLayout.get(), pipelineFlags, nullptr, compShaderModule.get(), (vk::VkPipelineShaderStageCreateFlags)0u);
 
 	const vk::Move<vk::VkCommandPool>	cmdPool			(createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const vk::Move<vk::VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -873,8 +905,8 @@ tcu::TestStatus ShaderObjectDispatchPerformanceInstance::iterate (void)
 class ShaderObjectDispatchPerformanceCase : public vkt::TestCase
 {
 public:
-					ShaderObjectDispatchPerformanceCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const DispatchType dispatchType)
-															: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectDispatchPerformanceCase		(tcu::TestContext& testCtx, const std::string& name, const DispatchType dispatchType)
+															: vkt::TestCase		(testCtx, name)
 															, m_dispatchType	(dispatchType)
 															{}
 	virtual			~ShaderObjectDispatchPerformanceCase	(void) {}
@@ -1002,8 +1034,8 @@ tcu::TestStatus ShaderObjectBinaryPerformanceInstance::iterate (void)
 class ShaderObjectBinaryPerformanceCase : public vkt::TestCase
 {
 public:
-					ShaderObjectBinaryPerformanceCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, BinaryType type)
-														: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectBinaryPerformanceCase	(tcu::TestContext& testCtx, const std::string& name, BinaryType type)
+														: vkt::TestCase		(testCtx, name)
 														, m_type			(type)
 														{}
 	virtual			~ShaderObjectBinaryPerformanceCase	(void) {}
@@ -1030,7 +1062,7 @@ void ShaderObjectBinaryPerformanceCase::initPrograms (vk::SourceCollections& pro
 
 tcu::TestCaseGroup* createShaderObjectPerformanceTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> performanceGroup(new tcu::TestCaseGroup(testCtx, "performance", ""));
+	de::MovePtr<tcu::TestCaseGroup> performanceGroup(new tcu::TestCaseGroup(testCtx, "performance"));
 
 	const struct
 	{
@@ -1062,17 +1094,17 @@ tcu::TestCaseGroup* createShaderObjectPerformanceTests (tcu::TestContext& testCt
 	{
 		for (const auto& typeTest : typeTests)
 		{
-			performanceGroup->addChild(new ShaderObjectPerformanceCase(testCtx, std::string(drawType.name) + "_" + std::string(typeTest.name), "", drawType.drawType, typeTest.testTpye));
+			performanceGroup->addChild(new ShaderObjectPerformanceCase(testCtx, std::string(drawType.name) + "_" + std::string(typeTest.name), drawType.drawType, typeTest.testTpye));
 		}
 	}
-	performanceGroup->addChild(new ShaderObjectPerformanceCase(testCtx, "binary_bind_shaders", "", DRAW, DRAW_BINARY_BIND));
+	performanceGroup->addChild(new ShaderObjectPerformanceCase(testCtx, "binary_bind_shaders", DRAW, DRAW_BINARY_BIND));
 
-	performanceGroup->addChild(new ShaderObjectDispatchPerformanceCase(testCtx, "dispatch", "", DISPATCH));
-	performanceGroup->addChild(new ShaderObjectDispatchPerformanceCase(testCtx, "dispatch_base", "", DISPATCH_BASE));
-	performanceGroup->addChild(new ShaderObjectDispatchPerformanceCase(testCtx, "dispatch_indirect", "", DISPATCH_INDIRECT));
+	performanceGroup->addChild(new ShaderObjectDispatchPerformanceCase(testCtx, "dispatch", DISPATCH));
+	performanceGroup->addChild(new ShaderObjectDispatchPerformanceCase(testCtx, "dispatch_base", DISPATCH_BASE));
+	performanceGroup->addChild(new ShaderObjectDispatchPerformanceCase(testCtx, "dispatch_indirect", DISPATCH_INDIRECT));
 
-	performanceGroup->addChild(new ShaderObjectBinaryPerformanceCase(testCtx, "binary_shader_create", "", BINARY_SHADER_CREATE));
-	performanceGroup->addChild(new ShaderObjectBinaryPerformanceCase(testCtx, "binary_memcpy", "", BINARY_MEMCPY));
+	performanceGroup->addChild(new ShaderObjectBinaryPerformanceCase(testCtx, "binary_shader_create", BINARY_SHADER_CREATE));
+	performanceGroup->addChild(new ShaderObjectBinaryPerformanceCase(testCtx, "binary_memcpy", BINARY_MEMCPY));
 
 	return performanceGroup.release();
 }

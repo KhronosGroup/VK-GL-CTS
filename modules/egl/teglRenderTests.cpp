@@ -354,7 +354,8 @@ tcu::TextureFormat getColorFormat (const tcu::PixelFormat& colorBits)
 		case PACK_FMT(4,4,4,4):		return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_SHORT_4444);
 		case PACK_FMT(5,5,5,1):		return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_SHORT_5551);
 		case PACK_FMT(5,6,5,0):		return TextureFormat(TextureFormat::RGB,	TextureFormat::UNORM_SHORT_565);
-
+		case PACK_FMT(10,10,10,2):	return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_INT_1010102_REV);
+		case PACK_FMT(10,10,10,0):	return TextureFormat(TextureFormat::RGB,	TextureFormat::UNORM_INT_101010);
 		// \note Defaults to RGBA8
 		default:					return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_INT8);
 	}
@@ -764,7 +765,23 @@ void SingleThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface 
 	// Generate draw ops.
 	drawOps.resize(numContexts*drawsPerCtx*numIters);
 	for (vector<DrawPrimitiveOp>::iterator drawOp = drawOps.begin(); drawOp != drawOps.end(); ++drawOp)
-		randomizeDrawOp(rnd, *drawOp, (pixelFmt.alphaBits == 1));
+	{
+		// The randomized draws force us to use the fuzzyCompare algorithm to check for possible rasterization differences between
+		// our rasterizer and the one used by the implementation. However, fuzzyCompare only takes a single float as the error
+		// threshold. As per the comments in the code, that threshold doesn't have a direct equivalent to a difference in color
+		// values. Instead, it's related to an accumulated quadratic error. Also according to these comments, this works well for
+		// rgba8 (the only case it was originally designed for), and it can also be made to work for other formats in which all
+		// used channels have a roughly similar number of bits.
+		//
+		// However, in some of these tests we will run this code using formats such as rgb10a2, in which the alpha can only have
+		// values of 0, 0.33, 0.66 and 1.0 while other channels have much more precission. Any small difference in the rounding
+		// applied by CTS and the implementation could result in wildly different alpha values that make using the single floating
+		// point threshold risky, because we can't separate the alpha errors from the rgb errors. If we increase the threshold to
+		// a point which is acceptable for alpha errors, the kind of errors we allow in the colors would be huge.
+		//
+		// For this reason, with 2 bits for alpha we restrict ourselves to alpha values of 1.0 and 0.0, as if alphabits was 1.
+		randomizeDrawOp(rnd, *drawOp, (pixelFmt.alphaBits <= 2));
+	}
 
 	// Create and setup programs per context
 	for (int ctxNdx = 0; ctxNdx < numContexts; ctxNdx++)
@@ -979,7 +996,23 @@ void MultiThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface s
 
 	// Create draw ops.
 	for (vector<DrawPrimitiveOp>::iterator drawOp = drawOps.begin(); drawOp != drawOps.end(); ++drawOp)
-		randomizeDrawOp(rnd, *drawOp, (pixelFmt.alphaBits == 1));
+	{
+		// The randomized draws force us to use the fuzzyCompare algorithm to check for possible rasterization differences between
+		// our rasterizer and the one used by the implementation. However, fuzzyCompare only takes a single float as the error
+		// threshold. As per the comments in the code, that threshold doesn't have a direct equivalent to a difference in color
+		// values. Instead, it's related to an accumulated quadratic error. Also according to these comments, this works well for
+		// rgba8 (the only case it was originally designed for), and it can also be made to work for other formats in which all
+		// used channels have a roughly similar number of bits.
+		//
+		// However, in some of these tests we will run this code using formats such as rgb10a2, in which the alpha can only have
+		// values of 0, 0.33, 0.66 and 1.0 while other channels have much more precission. Any small difference in the rounding
+		// applied by CTS and the implementation could result in wildly different alpha values that make using the single floating
+		// point threshold risky, because we can't separate the alpha errors from the rgb errors. If we increase the threshold to
+		// a point which is acceptable for alpha errors, the kind of errors we allow in the colors would be huge.
+		//
+		// For this reason, with 2 bits for alpha we restrict ourselves to alpha values of 1.0 and 0.0, as if alphabits was 1.
+		randomizeDrawOp(rnd, *drawOp, (pixelFmt.alphaBits <= 2));
+	}
 
 	// Create packets.
 	for (int threadNdx = 0; threadNdx < numThreads; threadNdx++)

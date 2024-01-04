@@ -642,8 +642,8 @@ struct Decorations
 class CrossStageBasicTestsCase : public vkt::TestCase
 {
 public:
-	CrossStageBasicTestsCase (tcu::TestContext &context, const char *name, const char *description, const TestParameters& parameters)
-		: TestCase			(context, name, description)
+	CrossStageBasicTestsCase (tcu::TestContext &context, const char *name, const TestParameters& parameters)
+		: TestCase			(context, name)
 		, m_parameters		(parameters)
 	{
 	}
@@ -1761,8 +1761,8 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 class CrossStageInterfaceTestsCase : public vkt::TestCase
 {
 public:
-	CrossStageInterfaceTestsCase (tcu::TestContext &context, const char *name, const char *description, const TestParameters& parameters)
-		: TestCase			(context, name, description)
+	CrossStageInterfaceTestsCase (tcu::TestContext &context, const char *name, const TestParameters& parameters)
+		: TestCase			(context, name)
 		, m_parameters		(parameters)
 	{
 	}
@@ -2693,28 +2693,28 @@ void CrossStageInterfaceTestsCase::initPrograms (SourceCollections& programColle
 
 tcu::TestCaseGroup* createCrossStageInterfaceTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "cross_stage", ""));
+	de::MovePtr<tcu::TestCaseGroup>		testGroup(new tcu::TestCaseGroup(testCtx, "cross_stage"));
 	{
-		de::MovePtr<tcu::TestCaseGroup>		basicGroup(new tcu::TestCaseGroup(testCtx, "basic_type", ""));
-		de::MovePtr<tcu::TestCaseGroup>		interfaceGroup(new tcu::TestCaseGroup(testCtx, "interface_blocks", ""));
+		de::MovePtr<tcu::TestCaseGroup>		basicGroup(new tcu::TestCaseGroup(testCtx, "basic_type"));
+		de::MovePtr<tcu::TestCaseGroup>		interfaceGroup(new tcu::TestCaseGroup(testCtx, "interface_blocks"));
 		{
 			TestParameters parm(TEST_TYPE_FLAT,3);
 			for (int ndx = 0; ndx < CrossStageTestInstance::DECORATION_LAST; ++ndx)
 				parm.testOptions[ndx] = ndx;
 
-			basicGroup->addChild(new CrossStageBasicTestsCase(testCtx, "flat", "", parm));
-			interfaceGroup->addChild(new CrossStageInterfaceTestsCase(testCtx, "flat", "", parm));
+			basicGroup->addChild(new CrossStageBasicTestsCase(testCtx, "flat", parm));
+			interfaceGroup->addChild(new CrossStageInterfaceTestsCase(testCtx, "flat", parm));
 
 			parm.qualifier = TEST_TYPE_NOPERSPECTIVE;
-			basicGroup->addChild(new CrossStageBasicTestsCase(testCtx, "no_perspective", "", parm));
-			interfaceGroup->addChild(new CrossStageInterfaceTestsCase(testCtx, "no_perspective", "", parm));
+			basicGroup->addChild(new CrossStageBasicTestsCase(testCtx, "no_perspective", parm));
+			interfaceGroup->addChild(new CrossStageInterfaceTestsCase(testCtx, "no_perspective", parm));
 		}
 
 		{
 			TestParameters parm(TEST_TYPE_RELAXEDPRECISION,1);
 			parm.testOptions[0] = CrossStageTestInstance::DECORATION_IN_ALL_SHADERS;
-			basicGroup->addChild(new CrossStageBasicTestsCase(testCtx, "relaxedprecision", "", parm));
-			interfaceGroup->addChild(new CrossStageInterfaceTestsCase(testCtx, "relaxedprecision", "", parm));
+			basicGroup->addChild(new CrossStageBasicTestsCase(testCtx, "relaxedprecision", parm));
+			interfaceGroup->addChild(new CrossStageInterfaceTestsCase(testCtx, "relaxedprecision", parm));
 		}
 		testGroup->addChild(basicGroup.release());
 		testGroup->addChild(interfaceGroup.release());

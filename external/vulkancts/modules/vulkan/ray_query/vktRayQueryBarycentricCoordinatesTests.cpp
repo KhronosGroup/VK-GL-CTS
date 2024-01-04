@@ -65,7 +65,7 @@ constexpr deUint32	kNumRays	= 20u;
 class BarycentricCoordinatesCase : public TestCase
 {
 public:
-							BarycentricCoordinatesCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							BarycentricCoordinatesCase	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~BarycentricCoordinatesCase	(void) {}
 
 	virtual void			checkSupport				(Context& context) const;
@@ -88,8 +88,8 @@ protected:
 	TestParams					m_params;
 };
 
-BarycentricCoordinatesCase::BarycentricCoordinatesCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: TestCase	(testCtx, name, description)
+BarycentricCoordinatesCase::BarycentricCoordinatesCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {}
 
@@ -370,14 +370,14 @@ tcu::TestCaseGroup*	createBarycentricCoordinatesTests (tcu::TestContext& testCtx
 {
 	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-	GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "barycentric_coordinates", "Test barycentric coordinates reported by the ray query"));
+	// Test barycentric coordinates reported by the ray query
+	GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "barycentric_coordinates"));
 
 	deUint32 seed = 1614674687u;
-	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "compute", "", TestParams{seed++}));
+	mainGroup->addChild(new BarycentricCoordinatesCase(testCtx, "compute", TestParams{seed++}));
 
 	return mainGroup.release();
 }
 
 } // RayQuery
 } // vkt
-

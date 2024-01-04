@@ -112,7 +112,7 @@ public:
 											 const tcu::UVec3&			imageSize,
 											 const vk::VkFormat			format,
 											 const std::string&			operand)
-		: TestCase(testCtx, name, "")
+		: TestCase(testCtx, name)
 		, m_function(function)
 		, m_imageType(imageType)
 		, m_imageSize(imageSize)

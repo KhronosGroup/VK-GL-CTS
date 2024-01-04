@@ -127,6 +127,8 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate (void)
 	const auto							deviceExtensions			= vk::removeUnsupportedShaderObjectExtensions(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
 	const bool							tessellationSupported		= m_context.getDeviceFeatures().tessellationShader;
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
+	const bool							taskSupported				= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported				= m_context.getMeshShaderFeatures().meshShader;
 
 	const auto							subresourceRange			= makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 
@@ -441,14 +443,12 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate (void)
 		.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
 		.update(vk, device);
 
-	bool dynamicRendering = true;
 	vk::VkPipelineRenderingCreateInfo*		pPipelineRenderingCreateInfo	= &pipelineRenderingCreateInfo;
 	vk::VkRenderPass						renderPassHandle				= VK_NULL_HANDLE;
 	if (m_params.testType == RENDER_PASS_PIPELINE_SHADER_OBJECT || m_params.testType == RENDER_PASS_PIPELINE_SHADER_OBJECT_AFTER_BEGIN)
 	{
 		pPipelineRenderingCreateInfo = DE_NULL;
 		renderPassHandle = *renderPass;
-		dynamicRendering = false;
 	}
 
 	const auto					pipeline1				= makeGraphicsPipeline(vk, device, pipelineLayout.get(), vertShaderModule1.get(), tescShaderModule.get(), teseShaderModule.get(), geomShaderModule.get(), fragShaderModule1.get(), renderPassHandle, 0u, &vertexInputStateParams, &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, DE_NULL, DE_NULL, DE_NULL, DE_NULL, pipelineDynamicState, pPipelineRenderingCreateInfo);
@@ -458,6 +458,10 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate (void)
 
 	const vk::VkClearValue		clearValue				= vk::makeClearValueColor({ 0.0f, 0.0f, 0.0f, 1.0f });
 	vk::VkImageMemoryBarrier	initialBarrier			= vk::makeImageMemoryBarrier(0, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
+
+	const vk::VkDeviceSize				bufferSize		= 64;
+	de::MovePtr<vk::BufferWithMemory>	buffer			= de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(
+		vk, device, alloc, vk::makeBufferCreateInfo(bufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), vk::MemoryRequirement::HostVisible));
 
 	vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
 
@@ -470,18 +474,18 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate (void)
 	}
 
 	if (m_params.testType != COMPUTE_SHADER_OBJECT_MIN_PIPELINE && m_params.testType != SHADER_OBJECT_COMPUTE_PIPELINE)
-	{
-		if (dynamicRendering)
-			vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
-		else
-			vk::beginRenderPass(vk, *cmdBuffer, renderPassHandle, *framebuffer, renderArea, clearValue);
-	}
+		vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
 
 	vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, false, !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
+	vk::bindNullTaskMeshShaders(vk, *cmdBuffer, m_context.getMeshShaderFeaturesEXT());
+
+	vk::VkDeviceSize offset = 0u;
+	vk::VkDeviceSize stride = 16u;
+	vk.cmdBindVertexBuffers2(*cmdBuffer, 0u, 1u, &**buffer, &offset, &bufferSize, &stride);
 
 	if (m_params.testType == SHADER_OBJECT)
 	{
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1, taskSupported, meshSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 	}
 	else if (m_params.testType == MAX_PIPELINE)
@@ -494,7 +498,7 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate (void)
 		vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline1);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader2, *tescShader, *teseShader, *geomShader, *fragShader2);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader2, *tescShader, *teseShader, *geomShader, *fragShader2, taskSupported, meshSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
 		vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline3);
@@ -502,13 +506,13 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate (void)
 	}
 	else if (m_params.testType == SHADER_OBJECT_MAX_PIPELINE_SHADER_OBJECT)
 	{
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1, taskSupported, meshSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
 		vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline2);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader3, *tescShader, *teseShader, *geomShader, *fragShader3);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader3, *tescShader, *teseShader, *geomShader, *fragShader3, taskSupported, meshSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 	}
 	else if (m_params.testType == MIN_PIPELINE_SHADER_OBJECT)
@@ -516,23 +520,23 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate (void)
 		vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline1);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader2, *tescShader, *teseShader, *geomShader, *fragShader2);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader2, *tescShader, *teseShader, *geomShader, *fragShader2, taskSupported, meshSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 	}
 	else if (m_params.testType == RENDER_PASS_PIPELINE_SHADER_OBJECT)
 	{
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1, taskSupported, meshSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 	}
 	else if (m_params.testType == RENDER_PASS_PIPELINE_SHADER_OBJECT_AFTER_BEGIN)
 	{
 		vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline1);
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1, taskSupported, meshSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 	}
 	else if (m_params.testType == SHADER_OBJECT_MIN_PIPELINE)
 	{
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1, taskSupported, meshSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
 		vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline2);
@@ -556,7 +560,7 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate (void)
 		vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout.get(), 0, 1, &descriptorSet.get(), 0, DE_NULL);
 
 		vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
-		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1);
+		vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader1, *tescShader, *teseShader, *geomShader, *fragShader1, taskSupported, meshSupported);
 		vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 		vk::endRendering(vk, *cmdBuffer);
 
@@ -565,12 +569,7 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate (void)
 	}
 
 	if (m_params.testType != COMPUTE_SHADER_OBJECT_MIN_PIPELINE && m_params.testType != SHADER_OBJECT_COMPUTE_PIPELINE)
-	{
-		if (dynamicRendering)
-			vk::endRendering(vk, *cmdBuffer);
-		else
-			vk::endRenderPass(vk, *cmdBuffer);
-	}
+		vk::endRendering(vk, *cmdBuffer);
 
 	vk::endCommandBuffer(vk, *cmdBuffer);
 
@@ -655,8 +654,8 @@ bool ShaderObjectPipelineInteractionInstance::verifyImage (de::MovePtr<vk::Buffe
 class ShaderObjectPipelineInteractionCase : public vkt::TestCase
 {
 public:
-					ShaderObjectPipelineInteractionCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-															: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectPipelineInteractionCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+															: vkt::TestCase		(testCtx, name)
 															, m_params			(params)
 															{}
 	virtual			~ShaderObjectPipelineInteractionCase	(void) {}
@@ -826,6 +825,8 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate (void)
 	const auto							deviceExtensions			= vk::removeUnsupportedShaderObjectExtensions(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
 	const bool							tessellationSupported		= m_context.getDeviceFeatures().tessellationShader;
 	const bool							geometrySupported			= m_context.getDeviceFeatures().geometryShader;
+	const bool							taskSupported				= m_context.getMeshShaderFeatures().taskShader;
+	const bool							meshSupported				= m_context.getMeshShaderFeatures().meshShader;
 
 	const auto							subresourceRange			= makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 
@@ -1017,7 +1018,9 @@ tcu::TestStatus ShaderObjectStageBindingInstance::iterate (void)
 		(m_params.tessShader) ? *tescShader : VK_NULL_HANDLE,
 		(m_params.tessShader) ? *teseShader : VK_NULL_HANDLE,
 		(m_params.geomShader) ? *geomShader : VK_NULL_HANDLE,
-		(m_params.fragShader) ? *fragShader : VK_NULL_HANDLE);
+		(m_params.fragShader) ? *fragShader : VK_NULL_HANDLE,
+		taskSupported,
+		meshSupported);
 
 	vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
@@ -1104,8 +1107,8 @@ bool ShaderObjectStageBindingInstance::verifyImage (de::MovePtr<vk::BufferWithMe
 class ShaderObjectStageBindingCase : public vkt::TestCase
 {
 public:
-					ShaderObjectStageBindingCase			(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const StageTestParams& params)
-															: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectStageBindingCase			(tcu::TestContext& testCtx, const std::string& name, const StageTestParams& params)
+															: vkt::TestCase		(testCtx, name)
 															, m_params			(params)
 															{}
 	virtual			~ShaderObjectStageBindingCase			(void) {}
@@ -1309,7 +1312,7 @@ void ShaderObjectStageBindingCase::initPrograms(vk::SourceCollections& programCo
 
 tcu::TestCaseGroup* createShaderObjectPipelineInteractionTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> pipelineInteractionGroup(new tcu::TestCaseGroup(testCtx, "pipeline_interaction", ""));
+	de::MovePtr<tcu::TestCaseGroup> pipelineInteractionGroup(new tcu::TestCaseGroup(testCtx, "pipeline_interaction"));
 
 	const struct
 	{
@@ -1334,7 +1337,7 @@ tcu::TestCaseGroup* createShaderObjectPipelineInteractionTests (tcu::TestContext
 		TestParams params;
 		params.testType = test.testType;
 
-		pipelineInteractionGroup->addChild(new ShaderObjectPipelineInteractionCase(testCtx, test.name, "", params));
+		pipelineInteractionGroup->addChild(new ShaderObjectPipelineInteractionCase(testCtx, test.name, params));
 	}
 
 	const struct
@@ -1355,7 +1358,7 @@ tcu::TestCaseGroup* createShaderObjectPipelineInteractionTests (tcu::TestContext
 
 	for (const auto& shaderBindTest : shaderBindTests)
 	{
-		pipelineInteractionGroup->addChild(new ShaderObjectStageBindingCase(testCtx, shaderBindTest.name, "", shaderBindTest.shaders));
+		pipelineInteractionGroup->addChild(new ShaderObjectStageBindingCase(testCtx, shaderBindTest.name, shaderBindTest.shaders));
 	}
 
 	return pipelineInteractionGroup.release();

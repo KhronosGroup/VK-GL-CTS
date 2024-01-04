@@ -1,0 +1,2 @@
+dEQP-VK.protected_memory.image.access.misc.maintenance5_no_protected_access
+dEQP-VK.protected_memory.image.access.misc.maintenance5_protected_access

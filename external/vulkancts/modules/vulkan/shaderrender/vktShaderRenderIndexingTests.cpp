@@ -221,7 +221,6 @@ class ShaderIndexingCase : public ShaderRenderCase
 public:
 								ShaderIndexingCase		(tcu::TestContext&			testCtx,
 														const std::string&			name,
-														const std::string&			description,
 														bool						isVertexCase,
 														const ShaderEvalFunc		evalFunc,
 														const std::string&			vertShaderSource,
@@ -237,14 +236,13 @@ private:
 
 ShaderIndexingCase::ShaderIndexingCase (tcu::TestContext&			testCtx,
 										const std::string&			name,
-										const std::string&			description,
 										const bool					isVertexCase,
 										const ShaderEvalFunc		evalFunc,
 										const std::string&			vertShaderSource,
 										const std::string&			fragShaderSource,
 										const DataType				varType,
 										const bool					usesArray)
-	: ShaderRenderCase(testCtx, name, description, isVertexCase, evalFunc, new IndexingTestUniformSetup(varType, usesArray), DE_NULL)
+	: ShaderRenderCase(testCtx, name, isVertexCase, evalFunc, new IndexingTestUniformSetup(varType, usesArray), DE_NULL)
 {
 	m_vertShaderSource	= vertShaderSource;
 	m_fragShaderSource	= fragShaderSource;
@@ -258,7 +256,6 @@ ShaderIndexingCase::~ShaderIndexingCase (void)
 
 static de::MovePtr<ShaderIndexingCase> createVaryingArrayCase (tcu::TestContext&	context,
 															const std::string&		caseName,
-															const std::string&		description,
 															DataType				varType,
 															IndexAccessType			vertAccess,
 															IndexAccessType			fragAccess)
@@ -383,12 +380,11 @@ static de::MovePtr<ShaderIndexingCase> createVaryingArrayCase (tcu::TestContext&
 	string fragmentShaderSource = fragTemplate.specialize(params);
 
 	ShaderEvalFunc evalFunc = getArrayCoordsEvalFunc(varType);
-	return de::MovePtr<ShaderIndexingCase>(new ShaderIndexingCase(context, caseName, description, true, evalFunc, vertexShaderSource, fragmentShaderSource, varType, false));
+	return de::MovePtr<ShaderIndexingCase>(new ShaderIndexingCase(context, caseName, true, evalFunc, vertexShaderSource, fragmentShaderSource, varType, false));
 }
 
 static de::MovePtr<ShaderIndexingCase> createUniformArrayCase (tcu::TestContext&	context,
 															const std::string&		caseName,
-															const std::string&		description,
 															bool					isVertexCase,
 															DataType				varType,
 															IndexAccessType			readAccess)
@@ -499,12 +495,11 @@ static de::MovePtr<ShaderIndexingCase> createUniformArrayCase (tcu::TestContext&
 	string fragmentShaderSource = fragTemplate.specialize(params);
 
 	ShaderEvalFunc evalFunc = getArrayUniformEvalFunc(varType);
-	return de::MovePtr<ShaderIndexingCase>(new ShaderIndexingCase(context, caseName, description, isVertexCase, evalFunc, vertexShaderSource, fragmentShaderSource, varType, true));
+	return de::MovePtr<ShaderIndexingCase>(new ShaderIndexingCase(context, caseName, isVertexCase, evalFunc, vertexShaderSource, fragmentShaderSource, varType, true));
 }
 
 static de::MovePtr<ShaderIndexingCase> createTmpArrayCase (tcu::TestContext&	context,
 														const std::string&		caseName,
-														const std::string&		description,
 														bool					isVertexCase,
 														DataType				varType,
 														IndexAccessType			writeAccess,
@@ -691,7 +686,7 @@ static de::MovePtr<ShaderIndexingCase> createTmpArrayCase (tcu::TestContext&	con
 	else
 		evalFunc = getArrayCoordsEvalFunc(varType);
 
-	return de::MovePtr<ShaderIndexingCase>(new ShaderIndexingCase(context, caseName, description, isVertexCase, evalFunc, vertexShaderSource, fragmentShaderSource, varType, false));
+	return de::MovePtr<ShaderIndexingCase>(new ShaderIndexingCase(context, caseName, isVertexCase, evalFunc, vertexShaderSource, fragmentShaderSource, varType, false));
 }
 
 // VECTOR SUBSCRIPT.
@@ -712,7 +707,6 @@ static ShaderEvalFunc getVectorSubscriptEvalFunc (DataType dataType)
 
 static de::MovePtr<ShaderIndexingCase> createVectorSubscriptCase (tcu::TestContext&		context,
 																const std::string&		caseName,
-																const std::string&		description,
 																bool					isVertexCase,
 																DataType				varType,
 																VectorAccessType		writeAccess,
@@ -878,7 +872,7 @@ static de::MovePtr<ShaderIndexingCase> createVectorSubscriptCase (tcu::TestConte
 	string fragmentShaderSource = fragTemplate.specialize(params);
 
 	ShaderEvalFunc evalFunc = getVectorSubscriptEvalFunc(varType);
-	return de::MovePtr<ShaderIndexingCase>(new ShaderIndexingCase(context, caseName, description, isVertexCase, evalFunc, vertexShaderSource, fragmentShaderSource, varType, false));
+	return de::MovePtr<ShaderIndexingCase>(new ShaderIndexingCase(context, caseName, isVertexCase, evalFunc, vertexShaderSource, fragmentShaderSource, varType, false));
 }
 
 // MATRIX SUBSCRIPT.
@@ -917,7 +911,6 @@ static ShaderEvalFunc getMatrixSubscriptEvalFunc (DataType dataType)
 
 static de::MovePtr<ShaderIndexingCase> createMatrixSubscriptCase (tcu::TestContext&		context,
 																const std::string&		caseName,
-																const std::string&		description,
 																bool					isVertexCase,
 																DataType				varType,
 																IndexAccessType			writeAccess,
@@ -1070,7 +1063,7 @@ static de::MovePtr<ShaderIndexingCase> createMatrixSubscriptCase (tcu::TestConte
 	string fragmentShaderSource = fragTemplate.specialize(params);
 
 	ShaderEvalFunc evalFunc = getMatrixSubscriptEvalFunc(varType);
-	return de::MovePtr<ShaderIndexingCase>(new ShaderIndexingCase(context, caseName, description, isVertexCase, evalFunc, vertexShaderSource, fragmentShaderSource, varType, false));
+	return de::MovePtr<ShaderIndexingCase>(new ShaderIndexingCase(context, caseName, isVertexCase, evalFunc, vertexShaderSource, fragmentShaderSource, varType, false));
 }
 
 // ShaderIndexingTests.
@@ -1089,7 +1082,7 @@ private:
 };
 
 ShaderIndexingTests::ShaderIndexingTests(tcu::TestContext& context)
-	: TestCaseGroup(context, "indexing", "Indexing Tests")
+	: TestCaseGroup(context, "indexing")
 {
 }
 
@@ -1115,7 +1108,7 @@ void ShaderIndexingTests::init (void)
 
 	// Varying array access cases.
 	{
-		de::MovePtr<TestCaseGroup> varyingGroup(new TestCaseGroup(m_testCtx, "varying_array", "Varying array access tests."));
+		de::MovePtr<TestCaseGroup> varyingGroup(new TestCaseGroup(m_testCtx, "varying_array"));
 
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_floatAndVecTypes); typeNdx++)
 		{
@@ -1127,8 +1120,7 @@ void ShaderIndexingTests::init (void)
 					const char* vertAccessName = getIndexAccessTypeName((IndexAccessType)vertAccess);
 					const char* fragAccessName = getIndexAccessTypeName((IndexAccessType)fragAccess);
 					string name = string(getDataTypeName(varType)) + "_" + vertAccessName + "_write_" + fragAccessName + "_read";
-					string desc = string("Varying array with ") + vertAccessName + " write in vertex shader and " + fragAccessName + " read in fragment shader.";
-					de::MovePtr<ShaderIndexingCase> testCase(createVaryingArrayCase(m_testCtx, name, desc, varType, (IndexAccessType)vertAccess, (IndexAccessType)fragAccess));
+					de::MovePtr<ShaderIndexingCase> testCase(createVaryingArrayCase(m_testCtx, name, varType, (IndexAccessType)vertAccess, (IndexAccessType)fragAccess));
 					varyingGroup->addChild(testCase.release());
 				}
 			}
@@ -1139,7 +1131,7 @@ void ShaderIndexingTests::init (void)
 
 	// Uniform array access cases.
 	{
-		de::MovePtr<TestCaseGroup> uniformGroup(new TestCaseGroup(m_testCtx, "uniform_array", "Uniform array access tests."));
+		de::MovePtr<TestCaseGroup> uniformGroup(new TestCaseGroup(m_testCtx, "uniform_array"));
 
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_floatAndVecTypes); typeNdx++)
 		{
@@ -1152,9 +1144,8 @@ void ShaderIndexingTests::init (void)
 					ShaderType	shaderType		= s_shaderTypes[shaderTypeNdx];
 					const char*	shaderTypeName	= getShaderTypeName(shaderType);
 					string		name			= string(getDataTypeName(varType)) + "_" + readAccessName + "_read_" + shaderTypeName;
-					string		desc			= string("Uniform array with ") + readAccessName + " read in " + shaderTypeName + " shader.";
 					bool isVertexCase = ((ShaderType)shaderType == SHADERTYPE_VERTEX);
-					de::MovePtr<ShaderIndexingCase> testCase(createUniformArrayCase(m_testCtx, name, desc, isVertexCase, varType, (IndexAccessType)readAccess));
+					de::MovePtr<ShaderIndexingCase> testCase(createUniformArrayCase(m_testCtx, name, isVertexCase, varType, (IndexAccessType)readAccess));
 					uniformGroup->addChild(testCase.release());
 				}
 			}
@@ -1165,7 +1156,7 @@ void ShaderIndexingTests::init (void)
 
 	// Temporary array access cases.
 	{
-		de::MovePtr<TestCaseGroup> tmpGroup(new TestCaseGroup(m_testCtx, "tmp_array", "Temporary array access tests."));
+		de::MovePtr<TestCaseGroup> tmpGroup(new TestCaseGroup(m_testCtx, "tmp_array"));
 
 		for (int typeNdx = 0; typeNdx < DE_LENGTH_OF_ARRAY(s_floatAndVecTypes); typeNdx++)
 		{
@@ -1182,9 +1173,8 @@ void ShaderIndexingTests::init (void)
 						ShaderType	shaderType		= s_shaderTypes[shaderTypeNdx];
 						const char* shaderTypeName	= getShaderTypeName(shaderType);
 						string		name			= string(getDataTypeName(varType)) + "_" + writeAccessName + "_write_" + readAccessName + "_read_" + shaderTypeName;
-						string		desc			= string("Temporary array with ") + writeAccessName + " write and " + readAccessName + " read in " + shaderTypeName + " shader.";
 						bool		isVertexCase	= ((ShaderType)shaderType == SHADERTYPE_VERTEX);
-						de::MovePtr<ShaderIndexingCase> testCase(createTmpArrayCase(m_testCtx, name, desc, isVertexCase, varType, (IndexAccessType)writeAccess, (IndexAccessType)readAccess));
+						de::MovePtr<ShaderIndexingCase> testCase(createTmpArrayCase(m_testCtx, name, isVertexCase, varType, (IndexAccessType)writeAccess, (IndexAccessType)readAccess));
 						tmpGroup->addChild(testCase.release());
 					}
 				}
@@ -1196,7 +1186,7 @@ void ShaderIndexingTests::init (void)
 
 	// Vector indexing with subscripts.
 	{
-		de::MovePtr<TestCaseGroup> vecGroup(new TestCaseGroup(m_testCtx, "vector_subscript", "Vector subscript indexing."));
+		de::MovePtr<TestCaseGroup> vecGroup(new TestCaseGroup(m_testCtx, "vector_subscript"));
 
 		static const DataType s_vectorTypes[] =
 		{
@@ -1220,9 +1210,8 @@ void ShaderIndexingTests::init (void)
 						ShaderType	shaderType		= s_shaderTypes[shaderTypeNdx];
 						const char* shaderTypeName	= getShaderTypeName(shaderType);
 						string		name			= string(getDataTypeName(varType)) + "_" + writeAccessName + "_write_" + readAccessName + "_read_" + shaderTypeName;
-						string		desc			= string("Vector subscript access with ") + writeAccessName + " write and " + readAccessName + " read in " + shaderTypeName + " shader.";
 						bool		isVertexCase	= ((ShaderType)shaderType == SHADERTYPE_VERTEX);
-						de::MovePtr<ShaderIndexingCase> testCase(createVectorSubscriptCase(m_testCtx, name.c_str(), desc.c_str(), isVertexCase, varType, (VectorAccessType)writeAccess, (VectorAccessType)readAccess));
+						de::MovePtr<ShaderIndexingCase> testCase(createVectorSubscriptCase(m_testCtx, name.c_str(), isVertexCase, varType, (VectorAccessType)writeAccess, (VectorAccessType)readAccess));
 						vecGroup->addChild(testCase.release());
 					}
 				}
@@ -1234,7 +1223,7 @@ void ShaderIndexingTests::init (void)
 
 	// Matrix indexing with subscripts.
 	{
-		de::MovePtr<TestCaseGroup> matGroup(new TestCaseGroup(m_testCtx, "matrix_subscript", "Matrix subscript indexing."));
+		de::MovePtr<TestCaseGroup> matGroup(new TestCaseGroup(m_testCtx, "matrix_subscript"));
 
 		static const DataType s_matrixTypes[] =
 		{
@@ -1264,9 +1253,8 @@ void ShaderIndexingTests::init (void)
 						ShaderType	shaderType		= s_shaderTypes[shaderTypeNdx];
 						const char* shaderTypeName	= getShaderTypeName(shaderType);
 						string		name			= string(getDataTypeName(varType)) + "_" + writeAccessName + "_write_" + readAccessName + "_read_" + shaderTypeName;
-						string		desc			= string("Vector subscript access with ") + writeAccessName + " write and " + readAccessName + " read in " + shaderTypeName + " shader.";
 						bool		isVertexCase	= ((ShaderType)shaderType == SHADERTYPE_VERTEX);
-						de::MovePtr<ShaderIndexingCase> testCase(createMatrixSubscriptCase(m_testCtx, name.c_str(), desc.c_str(), isVertexCase, varType, (IndexAccessType)writeAccess, (IndexAccessType)readAccess));
+						de::MovePtr<ShaderIndexingCase> testCase(createMatrixSubscriptCase(m_testCtx, name.c_str(), isVertexCase, varType, (IndexAccessType)writeAccess, (IndexAccessType)readAccess));
 						matGroup->addChild(testCase.release());
 					}
 				}

@@ -107,14 +107,15 @@ static tcu::TestStatus testDeviceDrmProperties (Context& context, const TestType
 
 static void createTestCases (tcu::TestCaseGroup* group)
 {
-	addFunctionCase(group, "drm_files_exist",		"Verify device files for major/minor nodes exist",		checkSupport,	testDeviceDrmProperties,	TEST_FILES_EXIST);
+	// Verify device files for major/minor nodes exist
+	addFunctionCase(group, "drm_files_exist", checkSupport,	testDeviceDrmProperties,	TEST_FILES_EXIST);
 }
 
 } // anonymous
 
 tcu::TestCaseGroup*	createDeviceDrmPropertiesTests(tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "device_drm_properties", "VK_EXT_device_drm_properties tests", createTestCases);
+	return createTestGroup(testCtx, "device_drm_properties", createTestCases);
 }
 
 } // api

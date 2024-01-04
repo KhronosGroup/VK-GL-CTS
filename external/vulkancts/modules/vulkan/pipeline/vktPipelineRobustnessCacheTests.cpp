@@ -523,8 +523,8 @@ tcu::TestStatus PipelineCacheTestInstance::iterate (void)
 class PipelineCacheTestCase : public vkt::TestCase
 {
 public:
-	PipelineCacheTestCase (tcu::TestContext& context, const char* name, const char* description, vk::PipelineConstructionType pipelineConstructionType, RobustnessBehaviour robustnessBufferBehaviour, RobustnessType type)
-		: TestCase						(context, name, description)
+	PipelineCacheTestCase (tcu::TestContext& context, const char* name, vk::PipelineConstructionType pipelineConstructionType, RobustnessBehaviour robustnessBufferBehaviour, RobustnessType type)
+		: TestCase						(context, name)
 		, m_pipelineConstructionType	(pipelineConstructionType)
 		, m_robustnessBufferBehaviour	(robustnessBufferBehaviour)
 		, m_type						(type)
@@ -677,7 +677,8 @@ void PipelineCacheTestCase::initPrograms(vk::SourceCollections& programCollectio
 
 tcu::TestCaseGroup* createPipelineRobustnessCacheTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup	(new tcu::TestCaseGroup(testCtx, "pipeline_cache", "Test pipeline cache with different robustness enabled"));
+	// Test pipeline cache with different robustness enabled
+	de::MovePtr<tcu::TestCaseGroup> testGroup	(new tcu::TestCaseGroup(testCtx, "pipeline_cache"));
 
 	const struct
 	{
@@ -703,10 +704,10 @@ tcu::TestCaseGroup* createPipelineRobustnessCacheTests (tcu::TestContext& testCt
 
 	for (const auto& robustnessTest : robustnessTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> robustnessGroup(new tcu::TestCaseGroup(testCtx, robustnessTest.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> robustnessGroup(new tcu::TestCaseGroup(testCtx, robustnessTest.name));
 		for (const auto& typeTest : typeTests)
 		{
-			robustnessGroup->addChild(new PipelineCacheTestCase(testCtx, typeTest.name, "", pipelineConstructionType, robustnessTest.robustnessBehaviour, typeTest.type));
+			robustnessGroup->addChild(new PipelineCacheTestCase(testCtx, typeTest.name, pipelineConstructionType, robustnessTest.robustnessBehaviour, typeTest.type));
 		}
 		testGroup->addChild(robustnessGroup.release());
 	}

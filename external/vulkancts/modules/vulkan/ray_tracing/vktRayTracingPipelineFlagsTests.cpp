@@ -87,6 +87,7 @@ struct TestParams
 	VkBool32				onHhost;
 	VkPipelineCreateFlags	flags;
 	bool					useLibs;
+	bool					useMaintenance5;
 	deUint32				instCount;
 	GeometryTypes			geomTypes;
 	deUint32				geomCount;
@@ -320,6 +321,9 @@ public:
 			m_isectModule = createShaderModule(m_vkd, m_device, m_context.getBinaryCollection().get("isect"), 0);
 
 		setCreateFlags(m_params.flags);
+		if (m_params.useMaintenance5)
+			setCreateFlags2(translateCreateFlag(m_params.flags));
+
 		setMaxPayloadSize(sizeof(PipelineFlagsInstance::ShaderRecordEXT::retValue));
 		setMaxAttributeSize(sizeof(PipelineFlagsInstance::ShaderRecordEXT::retValue));
 	}
@@ -533,7 +537,7 @@ auto makeStdBeginEnd(T* p, deUint32 n) -> std::pair<R, R>
 }
 
 PipelineFlagsCase::PipelineFlagsCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
-	: TestCase					(testCtx, name, std::string())
+	: TestCase					(testCtx, name)
 	, shaderGroupHandleSize		(m_shaderGroupHandleSize)
 	, shaderGroupBaseAlignment	(m_shaderGroupBaseAlignment)
 	, m_params					(params)
@@ -565,6 +569,9 @@ void PipelineFlagsCase::checkSupport (Context& context) const
 
 	if (m_params.useLibs && !context.isDeviceFunctionalitySupported("VK_KHR_pipeline_library"))
 		TCU_FAIL("VK_KHR_pipeline_library not supported but VK_KHR_ray_tracing_pipeline supported");
+
+	if (m_params.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
 	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR& rayTracingPipelineFeaturesKHR = context.getRayTracingPipelineFeatures();
 	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
@@ -839,6 +846,7 @@ PipelineFlagsInstance::createBottomLevelAccelerationStructs (VkCommandBuffer cmd
 		for (deUint32 inst = 0, idx = 0; inst < m_params.instCount; ++inst)
 		{
 			auto blas = makeBottomLevelAccelerationStructure();
+			blas->setUseMaintenance5(m_params.useMaintenance5);
 			blas->setBuildType(m_params.onHhost ? VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR : VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR);
 
 			for (deUint32 geom = 0; geom < m_params.geomCount; ++geom, ++idx)
@@ -1265,7 +1273,6 @@ tcu::TestStatus PipelineFlagsInstance::iterate(void)
 	const Move<VkDescriptorSet>				descriptorSet = makeDescriptorSet(vkd, device, *descriptorPool, *descriptorSetLayout);
 
 	de::MovePtr<RayTracingTestPipeline>		rayTracingPipeline = de::newMovePtr<RayTracingTestPipeline>(std::ref(m_context), std::cref(*this), m_params);
-
 	const Move<VkPipelineLayout>			pipelineLayout = makePipelineLayout(vkd, device, *descriptorSetLayout);
 	Move<VkPipeline>						pipeline = rayTracingPipeline->createPipeline(*pipelineLayout);
 
@@ -1419,44 +1426,45 @@ tcu::TestCaseGroup*	createPipelineFlagsTests (tcu::TestContext& testCtx)
 
 	TestParams		p;
 #ifdef INTERNAL_DEBUG
-	p.width			= 30;
-	p.height		= 8;
-	p.accuracy		= 0.80f;
+	p.width				= 30;
+	p.height			= 8;
+	p.accuracy			= 0.80f;
 #else
-	p.width			= 256;
-	p.height		= 256;
-	p.accuracy		= 0.95f;
+	p.width				= 256;
+	p.height			= 256;
+	p.accuracy			= 0.95f;
 #endif
-	p.onHhost		= false;
-	p.useLibs		= false;
-	p.flags			= 0;
-	p.geomTypes		= GeometryTypes::None;
-	p.instCount		= 3;
-	p.geomCount		= 2;
-	p.stbRecStride	= 0;
-	p.stbRecOffset	= 0;
+	p.onHhost			= false;
+	p.useLibs			= false;
+	p.useMaintenance5	= false;
+	p.flags				= 0;
+	p.geomTypes			= GeometryTypes::None;
+	p.instCount			= 3;
+	p.geomCount			= 2;
+	p.stbRecStride		= 0;
+	p.stbRecOffset		= 0;
 
-	auto group = new tcu::TestCaseGroup(testCtx, "pipeline_no_null_shaders_flag", "Pipeline NO_NULL_*_SHADER flags tests");
+	auto group = new tcu::TestCaseGroup(testCtx, "pipeline_no_null_shaders_flag");
 
 	for (auto& processor : processors)
 	{
-		auto processorGroup = new tcu::TestCaseGroup(testCtx, processor.name, "");
+		auto processorGroup = new tcu::TestCaseGroup(testCtx, processor.name);
 
 		for (auto& geometry : geometries)
 		{
-			auto geometryGroup = new tcu::TestCaseGroup(testCtx, geometry.name, "");
+			auto geometryGroup = new tcu::TestCaseGroup(testCtx, geometry.name);
 
 			for (auto& stride : strides)
 			{
-				auto strideGroup = new tcu::TestCaseGroup(testCtx, ("stride_" + std::to_string(stride)).c_str(), "");
+				auto strideGroup = new tcu::TestCaseGroup(testCtx, ("stride_" + std::to_string(stride)).c_str());
 
 				for (auto& offset : offsets)
 				{
-					auto offsetGroup = new tcu::TestCaseGroup(testCtx, ("offset_" + std::to_string(offset)).c_str(), "");
+					auto offsetGroup = new tcu::TestCaseGroup(testCtx, ("offset_" + std::to_string(offset)).c_str());
 
 					for (auto& lib : libs)
 					{
-						auto libGroup = new tcu::TestCaseGroup(testCtx, lib.name, "");
+						auto libGroup = new tcu::TestCaseGroup(testCtx, lib.name);
 
 						VkPipelineCreateFlags	flags;
 
@@ -1486,6 +1494,23 @@ tcu::TestCaseGroup*	createPipelineFlagsTests (tcu::TestContext& testCtx)
 		}
 		group->addChild(processorGroup);
 	}
+
+	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
+
+	p.onHhost			= false;
+	p.geomTypes			= GeometryTypes::Box;
+	p.stbRecStride		= 3;
+	p.stbRecOffset		= 7;
+	p.useLibs			= true;
+	p.useMaintenance5	= true;
+
+	for(const auto flag : NoNullShadersFlagGenerator::bits)
+	{
+		p.flags = flag.bit;
+		miscGroup->addChild(new PipelineFlagsCase(testCtx, std::string(flag.name) + "_maintenance5", p));
+	}
+
+	group->addChild(miscGroup.release());
 
 	return group;
 }

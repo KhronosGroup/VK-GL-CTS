@@ -79,7 +79,7 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate	(void)
 	const vk::VkDescriptorSetLayoutBinding layoutBinding =
 	{
 		0u,														// deUint32					binding;
-		vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,			// VkDescriptorType			descriptorType;
+		vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,					// VkDescriptorType			descriptorType;
 		1u,														// deUint32					arraySize;
 		vk::VK_SHADER_STAGE_COMPUTE_BIT,						// VkShaderStageFlags		stageFlags;
 		DE_NULL													// const VkSampler*			pImmutableSamplers;
@@ -300,6 +300,8 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate	(void)
 			break;
 	}
 
+	for (const auto& shader : shadersSeparate)
+		vk.destroyShaderEXT(device, shader, DE_NULL);
 	for (const auto& shader : shadersTogether)
 		vk.destroyShaderEXT(device, shader, DE_NULL);
 
@@ -312,8 +314,8 @@ tcu::TestStatus ShaderObjectCreateInstance::iterate	(void)
 class ShaderObjectCreateCase : public vkt::TestCase
 {
 public:
-					ShaderObjectCreateCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const bool useMeshShaders)
-						: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectCreateCase	(tcu::TestContext& testCtx, const std::string& name, const bool useMeshShaders)
+						: vkt::TestCase		(testCtx, name)
 						, m_useMeshShaders	(useMeshShaders)
 						{}
 	virtual			~ShaderObjectCreateCase	(void) {}
@@ -621,8 +623,8 @@ tcu::TestStatus ShaderObjectStageInstance::iterate (void)
 class ShaderObjectStageCase : public vkt::TestCase
 {
 public:
-					ShaderObjectStageCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const vk::VkShaderStageFlagBits stage, const bool fail, const bool useMeshShaders)
-						: vkt::TestCase		(testCtx, name, description)
+					ShaderObjectStageCase	(tcu::TestContext& testCtx, const std::string& name, const vk::VkShaderStageFlagBits stage, const bool fail, const bool useMeshShaders)
+						: vkt::TestCase		(testCtx, name)
 						, m_stage			(stage)
 						, m_fail			(fail)
 						, m_useMeshShaders	(useMeshShaders)
@@ -780,12 +782,12 @@ void ShaderObjectStageCase::initPrograms (vk::SourceCollections& programCollecti
 
 tcu::TestCaseGroup* createShaderObjectCreateTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> createGroup(new tcu::TestCaseGroup(testCtx, "create", ""));
+	de::MovePtr<tcu::TestCaseGroup> createGroup(new tcu::TestCaseGroup(testCtx, "create"));
 
-	de::MovePtr<tcu::TestCaseGroup> multipleGroup(new tcu::TestCaseGroup(testCtx, "multiple", ""));
+	de::MovePtr<tcu::TestCaseGroup> multipleGroup(new tcu::TestCaseGroup(testCtx, "multiple"));
 
-	multipleGroup->addChild(new ShaderObjectCreateCase(testCtx, "all", "", false));
-	multipleGroup->addChild(new ShaderObjectCreateCase(testCtx, "all_with_mesh", "", true));
+	multipleGroup->addChild(new ShaderObjectCreateCase(testCtx, "all", false));
+	multipleGroup->addChild(new ShaderObjectCreateCase(testCtx, "all_with_mesh", true));
 
 	createGroup->addChild(multipleGroup.release());
 
@@ -820,10 +822,10 @@ tcu::TestCaseGroup* createShaderObjectCreateTests (tcu::TestContext& testCtx)
 
 	for (const auto& stage : stageTests)
 	{
-		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stage.name));
 		for (const auto& failTest : failTests)
 		{
-			stageGroup->addChild(new ShaderObjectStageCase(testCtx, failTest.name, "", stage.stage, failTest.fail, stage.useMeshShaders));
+			stageGroup->addChild(new ShaderObjectStageCase(testCtx, failTest.name, stage.stage, failTest.fail, stage.useMeshShaders));
 		}
 		createGroup->addChild(stageGroup.release());
 	}

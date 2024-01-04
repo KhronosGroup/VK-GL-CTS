@@ -1166,7 +1166,7 @@ VkClearValue RayTracingConfiguration::getClearValue ()
 class RayQueryCullRayFlagsTestCase : public TestCase
 {
 	public:
-							RayQueryCullRayFlagsTestCase			(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
+							RayQueryCullRayFlagsTestCase			(tcu::TestContext& context, const char* name, const TestParams data);
 							~RayQueryCullRayFlagsTestCase			(void);
 
 	virtual void			checkSupport								(Context& context) const;
@@ -1187,8 +1187,8 @@ private:
 	TestParams														m_data;
 };
 
-RayQueryCullRayFlagsTestCase::RayQueryCullRayFlagsTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams data)
-	: vkt::TestCase	(context, name, desc)
+RayQueryCullRayFlagsTestCase::RayQueryCullRayFlagsTestCase (tcu::TestContext& context, const char* name, const TestParams data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -2033,7 +2033,8 @@ tcu::TestStatus TraversalControlTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createCullRayFlagsTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ray_flags", "Tests verifying ray flags in ray query extension"));
+	// Tests verifying ray flags in ray query extension
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ray_flags"));
 
 	struct ShaderSourceTypeData
 	{
@@ -2093,15 +2094,15 @@ tcu::TestCaseGroup*	createCullRayFlagsTests(tcu::TestContext& testCtx)
 
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name));
 
 		for (size_t shaderTestNdx = 0; shaderTestNdx < DE_LENGTH_OF_ARRAY(shaderTestTypes); ++shaderTestNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> testTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderTestTypes[shaderTestNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> testTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderTestTypes[shaderTestNdx].name));
 
 			for (size_t testTypeNdx = 0; testTypeNdx < shaderTestTypes[shaderTestNdx].flag.size(); ++testTypeNdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup> bottomTestTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), bottomTestTypes[testTypeNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup> bottomTestTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), bottomTestTypes[testTypeNdx].name));
 
 				const auto& flags = shaderTestTypes[shaderTestNdx].flag[testTypeNdx];
 
@@ -2121,7 +2122,7 @@ tcu::TestCaseGroup*	createCullRayFlagsTests(tcu::TestContext& testCtx)
 						RF_None,
 						bottomTestTypes[testTypeNdx].testType
 					};
-					bottomTestTypeGroup->addChild(new RayQueryCullRayFlagsTestCase(group->getTestContext(), testName.str().c_str(), "", testParams));
+					bottomTestTypeGroup->addChild(new RayQueryCullRayFlagsTestCase(group->getTestContext(), testName.str().c_str(), testParams));
 				}
 
 				std::vector<tcu::TestNode*> tests;

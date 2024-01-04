@@ -270,7 +270,7 @@ tcu::TestStatus createDeviceTest (Context& context, TestParams testParams)
 
 		if (device)
 		{
-			const DeviceDriver deviceIface(platformInterface, instance, device, context.getUsedApiVersion());
+			const DeviceDriver deviceIface(platformInterface, instance, device, context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 			deviceIface.destroyDevice(device, DE_NULL/*pAllocator*/);
 		}
 
@@ -355,7 +355,7 @@ tcu::TestStatus createInstanceTest (Context& context, TestParams testParams)
 
 tcu::TestCaseGroup*	createApplicationParametersTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "application_parameters", "Tests VK_EXT_application_parameters"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "application_parameters"));
 
 	const struct
 	{
@@ -382,16 +382,16 @@ tcu::TestCaseGroup*	createApplicationParametersTests (tcu::TestContext& testCtx)
 
 	for (int groupIdx = 0; groupIdx < DE_LENGTH_OF_ARRAY(groups); ++groupIdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> createGroup(new tcu::TestCaseGroup(testCtx, groups[groupIdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> createGroup(new tcu::TestCaseGroup(testCtx, groups[groupIdx].name));
 
 		for (int testIdx = 0; testIdx < DE_LENGTH_OF_ARRAY(tests); ++testIdx)
 		{
 			TestParams testParams = { groups[groupIdx].createType, tests[testIdx].testType };
 
 			if (testParams.createType == INSTANCE)
-				addFunctionCase(createGroup.get(), tests[testIdx].name, "", checkSupport, createInstanceTest, testParams);
+				addFunctionCase(createGroup.get(), tests[testIdx].name, checkSupport, createInstanceTest, testParams);
 			else
-				addFunctionCase(createGroup.get(), tests[testIdx].name, "", checkSupport, createDeviceTest, testParams);
+				addFunctionCase(createGroup.get(), tests[testIdx].name, checkSupport, createDeviceTest, testParams);
 		}
 
 		group->addChild(createGroup.release());

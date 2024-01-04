@@ -237,24 +237,39 @@ tcu::TestStatus testInvocations (Context& context, const TestParams params)
 	uint32_t queryResult = 0u;
 	VK_CHECK(ctx.vkd.getQueryPoolResults(ctx.device, queryPool.get(), 0u, 1u, sizeof(queryResult), &queryResult, static_cast<VkDeviceSize>(sizeof(queryResult)), VK_QUERY_RESULT_WAIT_BIT));
 
-	const auto expectedResult	= vkExtent.width * vkExtent.height * vkExtent.depth;
-	const bool needsExact		= (!isInvQuery);
-
-	if (needsExact)
+	if (isInvQuery)
 	{
-		if (expectedResult != queryResult)
+		// Implementations are allowed to reuse fragment shader invocations to shade different fragments under some circumstances:
+		// - The frag shader statically computes the same value for different framebuffer locations, and
+		// - It does not write to any storage resources.
+		//
+		// The spec does not mention a minimum number of invocations, but in practice we're tying this to enabling fragment shading
+		// rate support automatically. We'll suppose implementations not supporting fragment shading rate will not do this, and
+		// those supporting it will not run less invocations than the whole framebuffer divided into areas of maxFramentSize pixels.
+		// If this proves problematic, we can relax the check later.
+		const auto	maxFragmentSize		= (context.isDeviceFunctionalitySupported("VK_KHR_fragment_shading_rate")
+										? context.getFragmentShadingRateProperties().maxFragmentSize
+										: makeExtent2D(1u, 1u));
+		const auto	maxFragmentWidth	= std::max(maxFragmentSize.width, 1u);	// In case an implementation reports zero.
+		const auto	maxFragmentHeight	= std::max(maxFragmentSize.height, 1u);	// Ditto.
+		const auto	minCols				= vkExtent.width / maxFragmentWidth;
+		const auto	minRows				= vkExtent.height / maxFragmentHeight;
+		const auto	minCount			= minCols * minRows * vkExtent.depth;
+
+		if (queryResult < minCount)
 		{
 			std::ostringstream msg;
-			msg << "Framebuffer size: " << vkExtent.width << "x" << vkExtent.height << "; expected query result to be " << expectedResult << " but found " << queryResult;
+			msg << "Framebuffer size: " << vkExtent.width << "x" << vkExtent.height << "; expected query result to be at least " << minCount << " but found " << queryResult;
 			return tcu::TestStatus::fail(msg.str());
 		}
 	}
 	else
 	{
-		if (queryResult < expectedResult)
+		const auto pixelCount = vkExtent.width * vkExtent.height * vkExtent.depth;
+		if (pixelCount != queryResult)
 		{
 			std::ostringstream msg;
-			msg << "Framebuffer size: " << vkExtent.width << "x" << vkExtent.height << "; expected query result to be at least " << expectedResult << " but found " << queryResult;
+			msg << "Framebuffer size: " << vkExtent.width << "x" << vkExtent.height << "; expected query result to be " << pixelCount << " but found " << queryResult;
 			return tcu::TestStatus::fail(msg.str());
 		}
 	}
@@ -276,18 +291,19 @@ tcu::TestCaseGroup* createFragInvocationTests (tcu::TestContext& testContext)
 {
 	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-	GroupPtr mainGroup (new tcu::TestCaseGroup(testContext, "frag_invocations", "Test implementations do not optimize out fragment shader invocations"));
+	// Test implementations do not optimize out fragment shader invocations
+	GroupPtr mainGroup (new tcu::TestCaseGroup(testContext, "frag_invocations"));
 
 	for (const auto queryType : { QueryType::OCCLUSION, QueryType::INVOCATIONS })
 	{
 		const auto groupName = getQueryTypeName(queryType);
-		GroupPtr queryTypeGroup (new tcu::TestCaseGroup(testContext, groupName.c_str(), ""));
+		GroupPtr queryTypeGroup (new tcu::TestCaseGroup(testContext, groupName.c_str()));
 
 		for (const auto secondaryCase : { false, true })
 		{
 			const auto testName = (secondaryCase ? "secondary" : "primary");
 			const TestParams params { queryType, secondaryCase };
-			addFunctionCaseWithPrograms(queryTypeGroup.get(), testName, "", checkSupport, initPrograms, testInvocations, params);
+			addFunctionCaseWithPrograms(queryTypeGroup.get(), testName, checkSupport, initPrograms, testInvocations, params);
 		}
 
 		mainGroup->addChild(queryTypeGroup.release());
@@ -298,4 +314,3 @@ tcu::TestCaseGroup* createFragInvocationTests (tcu::TestContext& testContext)
 
 } // QueryPool
 } // vkt
-

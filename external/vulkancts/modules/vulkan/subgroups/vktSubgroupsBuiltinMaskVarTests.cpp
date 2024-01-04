@@ -1354,13 +1354,13 @@ TestStatus test(Context& context, const CaseDefinition caseDef)
 
 TestCaseGroup* createSubgroupsBuiltinMaskVarTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup>	group					(new TestCaseGroup(testCtx, "builtin_mask_var", "Subgroup builtin mask variable tests"));
-	de::MovePtr<TestCaseGroup>	graphicGroup			(new TestCaseGroup(testCtx, "graphics", "Subgroup builtin mask category tests: graphics"));
-	de::MovePtr<TestCaseGroup>	computeGroup			(new TestCaseGroup(testCtx, "compute", "Subgroup builtin mask category tests: compute"));
-	de::MovePtr<TestCaseGroup>	framebufferGroup		(new TestCaseGroup(testCtx, "framebuffer", "Subgroup builtin mask category tests: framebuffer"));
+	de::MovePtr<TestCaseGroup>	group					(new TestCaseGroup(testCtx, "builtin_mask_var"));
+	de::MovePtr<TestCaseGroup>	graphicGroup			(new TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<TestCaseGroup>	computeGroup			(new TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<TestCaseGroup>	framebufferGroup		(new TestCaseGroup(testCtx, "framebuffer"));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<TestCaseGroup>	raytracingGroup			(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup builtin mask category tests: ray tracing"));
-	de::MovePtr<TestCaseGroup>	meshGroup				(new TestCaseGroup(testCtx, "mesh", "Subgroup builtin mask category tests: mesh shading"));
+	de::MovePtr<TestCaseGroup>	raytracingGroup			(new TestCaseGroup(testCtx, "ray_tracing"));
+	de::MovePtr<TestCaseGroup>	meshGroup				(new TestCaseGroup(testCtx, "mesh"));
 #endif // CTS_USES_VULKANSC
 	const TestType				allStagesBuiltinVars[]	=
 	{
@@ -1404,7 +1404,7 @@ TestCaseGroup* createSubgroupsBuiltinMaskVarTests (TestContext& testCtx)
 				DE_FALSE						//  deBool				requiredSubgroupSize;
 			};
 
-			addFunctionCaseWithPrograms(graphicGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(graphicGroup.get(), name,  supportedCheck, initPrograms, test, caseDef);
 		}
 
 #ifndef CTS_USES_VULKANSC
@@ -1417,7 +1417,7 @@ TestCaseGroup* createSubgroupsBuiltinMaskVarTests (TestContext& testCtx)
 				DE_FALSE						//  deBool				requiredSubgroupSize;
 			};
 
-			addFunctionCaseWithPrograms(raytracingGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(raytracingGroup.get(), name,  supportedCheck, initPrograms, test, caseDef);
 		}
 #endif // CTS_USES_VULKANSC
 
@@ -1433,7 +1433,7 @@ TestCaseGroup* createSubgroupsBuiltinMaskVarTests (TestContext& testCtx)
 				requiredSubgroupSize			//  deBool				requiredSubgroupSize;
 			};
 
-			addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(computeGroup.get(), testName,  supportedCheck, initPrograms, test, caseDef);
 		}
 
 #ifndef CTS_USES_VULKANSC
@@ -1451,7 +1451,7 @@ TestCaseGroup* createSubgroupsBuiltinMaskVarTests (TestContext& testCtx)
 					requiredSubgroupSize			//  deBool				requiredSubgroupSize;
 				};
 
-				addFunctionCaseWithPrograms(meshGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(meshGroup.get(), testName,  supportedCheck, initPrograms, test, caseDef);
 			}
 		}
 #endif // CTS_USES_VULKANSC
@@ -1467,7 +1467,7 @@ TestCaseGroup* createSubgroupsBuiltinMaskVarTests (TestContext& testCtx)
 			};
 			const string			testName	= name + + "_" + getShaderStageName(caseDef.shaderStage);
 
-			addFunctionCaseWithPrograms(framebufferGroup.get(), testName, "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+			addFunctionCaseWithPrograms(framebufferGroup.get(), testName,  supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
 	}
 

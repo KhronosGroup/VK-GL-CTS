@@ -82,7 +82,7 @@ struct TestParams
 class OpacityMicromapCase : public TestCase
 {
 public:
-	OpacityMicromapCase(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+	OpacityMicromapCase(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~OpacityMicromapCase(void) {}
 
 	virtual void			checkSupport(Context& context) const;
@@ -105,8 +105,8 @@ protected:
 	TestParams					m_params;
 };
 
-OpacityMicromapCase::OpacityMicromapCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: TestCase	(testCtx, name, description)
+OpacityMicromapCase::OpacityMicromapCase (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {}
 
@@ -443,12 +443,10 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 		0ull										  // VkDeviceAddress				deviceAddress;
 	};
 
-	VkMicromapEXT micromap;
-
-	VK_CHECK(vkd.createMicromapEXT(device, &maCreateInfo, nullptr, &micromap));
+	Move<VkMicromapEXT> micromap = vk::createMicromapEXT(vkd, device, &maCreateInfo);
 
 	// Do the build
-	mmBuildInfo.dstMicromap = micromap;
+	mmBuildInfo.dstMicromap = *micromap;
 	mmBuildInfo.data = makeDeviceOrHostAddressConstKHR(vkd, device, micromapDataBuffer.get(), DataOffset);
 	mmBuildInfo.triangleArray = makeDeviceOrHostAddressConstKHR(vkd, device, micromapDataBuffer.get(), TriangleOffset);
 	mmBuildInfo.scratchData = makeDeviceOrHostAddressKHR(vkd, device, micromapScratchBuffer.get(), 0);
@@ -485,7 +483,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 		1u,																						//uint32_t							usageCountsCount;
 		& mmUsage,																				//const VkMicromapUsageEXT*			pUsageCounts;
 		DE_NULL,																				//const VkMicromapUsageEXT* const*	ppUsageCounts;
-		micromap																				//VkMicromapEXT						micromap;
+		*micromap																				//VkMicromapEXT						micromap;
 	};
 
 	const std::vector<tcu::Vec3> triangle =
@@ -744,7 +742,8 @@ constexpr deUint32 kMaxSubdivisionLevel = 15;
 
 tcu::TestCaseGroup*	createOpacityMicromapTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "opacity_micromap", "Test acceleration structures using opacity micromap with ray pipelines"));
+	// Test acceleration structures using opacity micromap with ray pipelines
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "opacity_micromap"));
 
 	deUint32 seed = 1614343620u;
 
@@ -774,11 +773,11 @@ tcu::TestCaseGroup*	createOpacityMicromapTests (tcu::TestContext& testCtx)
 		if (maskName == "")
 			maskName = "NoFlags";
 
-		de::MovePtr<tcu::TestCaseGroup> testFlagGroup(new tcu::TestCaseGroup(group->getTestContext(), maskName.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> testFlagGroup(new tcu::TestCaseGroup(group->getTestContext(), maskName.c_str()));
 
 		for (size_t specialIndexNdx = 0; specialIndexNdx < DE_LENGTH_OF_ARRAY(specialIndexUse); ++specialIndexNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> specialGroup(new tcu::TestCaseGroup(testFlagGroup->getTestContext(), specialIndexUse[specialIndexNdx].name.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> specialGroup(new tcu::TestCaseGroup(testFlagGroup->getTestContext(), specialIndexUse[specialIndexNdx].name.c_str()));
 
 			if (specialIndexUse[specialIndexNdx].useSpecialIndex)
 			{
@@ -795,7 +794,7 @@ tcu::TestCaseGroup*	createOpacityMicromapTests (tcu::TestContext& testCtx)
 					std::stringstream css;
 					css << specialIndex;
 
-					specialGroup->addChild(new OpacityMicromapCase(testCtx, css.str().c_str(), "", testParams));
+					specialGroup->addChild(new OpacityMicromapCase(testCtx, css.str().c_str(), testParams));
 				}
 				testFlagGroup->addChild(specialGroup.release());
 			}
@@ -811,7 +810,7 @@ tcu::TestCaseGroup*	createOpacityMicromapTests (tcu::TestContext& testCtx)
 				};
 				for (deUint32 modeNdx = 0; modeNdx < DE_LENGTH_OF_ARRAY(modes); ++modeNdx)
 				{
-					de::MovePtr<tcu::TestCaseGroup> modeGroup(new tcu::TestCaseGroup(testFlagGroup->getTestContext(), modes[modeNdx].name.c_str(), ""));
+					de::MovePtr<tcu::TestCaseGroup> modeGroup(new tcu::TestCaseGroup(testFlagGroup->getTestContext(), modes[modeNdx].name.c_str()));
 
 					for (deUint32 level = 0; level <= kMaxSubdivisionLevel; level++)
 					{
@@ -827,7 +826,7 @@ tcu::TestCaseGroup*	createOpacityMicromapTests (tcu::TestContext& testCtx)
 						std::stringstream css;
 						css << "level_" << level;
 
-						modeGroup->addChild(new OpacityMicromapCase(testCtx, css.str().c_str(), "", testParams));
+						modeGroup->addChild(new OpacityMicromapCase(testCtx, css.str().c_str(), testParams));
 					}
 					specialGroup->addChild(modeGroup.release());
 				}
@@ -844,4 +843,3 @@ tcu::TestCaseGroup*	createOpacityMicromapTests (tcu::TestContext& testCtx)
 
 } // RayTracing
 } // vkt
-

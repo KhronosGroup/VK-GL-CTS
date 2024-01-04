@@ -356,8 +356,8 @@ tcu::TestStatus MeshShaderBuiltinInstance::iterate ()
 class MeshShaderBuiltinCase : public vkt::TestCase
 {
 public:
-					MeshShaderBuiltinCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, bool taskNeeded)
-						: vkt::TestCase	(testCtx, name, description)
+					MeshShaderBuiltinCase	(tcu::TestContext& testCtx, const std::string& name, bool taskNeeded)
+						: vkt::TestCase	(testCtx, name)
 						, m_taskNeeded	(taskNeeded)
 						{}
 	virtual			~MeshShaderBuiltinCase	(void) {}
@@ -534,8 +534,8 @@ void PixelsInstance::verifyResults (const tcu::ConstPixelBufferAccess& result)
 class PrimitiveIdCase : public MeshShaderBuiltinCase
 {
 public:
-					PrimitiveIdCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, bool glslFrag)
-						: MeshShaderBuiltinCase (testCtx, name, description, false/*taskNeeded*/)
+					PrimitiveIdCase		(tcu::TestContext& testCtx, const std::string& name, bool glslFrag)
+						: MeshShaderBuiltinCase (testCtx, name, false/*taskNeeded*/)
 						, m_glslFrag			(glslFrag)
 						{}
 	virtual			~PrimitiveIdCase	(void) {}
@@ -685,8 +685,8 @@ TestInstance* PrimitiveIdCase::createInstance (Context& context) const
 class LayerCase : public MeshShaderBuiltinCase
 {
 public:
-					LayerCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, bool shareVertices)
-						: MeshShaderBuiltinCase	(testCtx, name, description, false/*taskNeeded*/)
+					LayerCase		(tcu::TestContext& testCtx, const std::string& name, bool shareVertices)
+						: MeshShaderBuiltinCase	(testCtx, name, false/*taskNeeded*/)
 						, m_shareVertices		(shareVertices)
 						{}
 	virtual			~LayerCase	(void) {}
@@ -810,8 +810,8 @@ TestInstance* LayerCase::createInstance (Context& context) const
 class ViewportIndexCase : public MeshShaderBuiltinCase
 {
 public:
-					ViewportIndexCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, bool shareVertices)
-						: MeshShaderBuiltinCase	(testCtx, name, description, false/*taskNeeded*/)
+					ViewportIndexCase	(tcu::TestContext& testCtx, const std::string& name, bool shareVertices)
+						: MeshShaderBuiltinCase	(testCtx, name, false/*taskNeeded*/)
 						, m_shareVertices		(shareVertices)
 						{}
 	virtual			~ViewportIndexCase	(void) {}
@@ -948,8 +948,8 @@ TestInstance* ViewportIndexCase::createInstance (Context& context) const
 class PositionCase : public MeshShaderBuiltinCase
 {
 public:
-					PositionCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: MeshShaderBuiltinCase (testCtx, name, description, false/*taskNeeded*/)
+					PositionCase		(tcu::TestContext& testCtx, const std::string& name)
+						: MeshShaderBuiltinCase (testCtx, name, false/*taskNeeded*/)
 						{}
 	virtual			~PositionCase	(void) {}
 
@@ -1035,8 +1035,8 @@ TestInstance* PositionCase::createInstance (Context& context) const
 class PointSizeCase : public MeshShaderBuiltinCase
 {
 public:
-					PointSizeCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: MeshShaderBuiltinCase (testCtx, name, description, false/*taskNeeded*/)
+					PointSizeCase		(tcu::TestContext& testCtx, const std::string& name)
+						: MeshShaderBuiltinCase (testCtx, name, false/*taskNeeded*/)
 						{}
 	virtual			~PointSizeCase	(void) {}
 
@@ -1111,8 +1111,8 @@ void PointSizeCase::checkSupport (Context& context) const
 class ClipDistanceCase : public MeshShaderBuiltinCase
 {
 public:
-					ClipDistanceCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: MeshShaderBuiltinCase (testCtx, name, description, false/*taskNeeded*/)
+					ClipDistanceCase		(tcu::TestContext& testCtx, const std::string& name)
+						: MeshShaderBuiltinCase (testCtx, name, false/*taskNeeded*/)
 						{}
 	virtual			~ClipDistanceCase	(void) {}
 
@@ -1219,8 +1219,8 @@ void ClipDistanceCase::checkSupport (Context& context) const
 class CullDistanceCase : public MeshShaderBuiltinCase
 {
 public:
-					CullDistanceCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-						: MeshShaderBuiltinCase (testCtx, name, description, false/*taskNeeded*/)
+					CullDistanceCase		(tcu::TestContext& testCtx, const std::string& name)
+						: MeshShaderBuiltinCase (testCtx, name, false/*taskNeeded*/)
 						{}
 	virtual			~CullDistanceCase	(void) {}
 
@@ -1366,8 +1366,8 @@ std::string triangleForPixel(const std::string& pixel, const std::string& len, c
 class WorkGroupIdCase : public MeshShaderBuiltinCase
 {
 public:
-					WorkGroupIdCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, bool taskNeeded)
-						: MeshShaderBuiltinCase (testCtx, name, description, taskNeeded)
+					WorkGroupIdCase		(tcu::TestContext& testCtx, const std::string& name, bool taskNeeded)
+						: MeshShaderBuiltinCase (testCtx, name, taskNeeded)
 						, m_extent				(getLinearExtent())
 						{}
 	virtual			~WorkGroupIdCase	(void) {}
@@ -1465,8 +1465,8 @@ enum class LocalInvocation { ID=0, INDEX };
 class LocalInvocationCase : public MeshShaderBuiltinCase
 {
 public:
-					LocalInvocationCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, bool taskNeeded, LocalInvocation variable)
-						: MeshShaderBuiltinCase (testCtx, name, description, taskNeeded)
+					LocalInvocationCase		(tcu::TestContext& testCtx, const std::string& name, bool taskNeeded, LocalInvocation variable)
+						: MeshShaderBuiltinCase (testCtx, name, taskNeeded)
 						, m_extent				(getLinearExtent())
 						, m_variable			(variable)
 						{}
@@ -1573,8 +1573,8 @@ TestInstance* LocalInvocationCase::createInstance (Context& context) const
 class GlobalInvocationIdCase : public MeshShaderBuiltinCase
 {
 public:
-					GlobalInvocationIdCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, bool taskNeeded)
-						: MeshShaderBuiltinCase (testCtx, name, description, taskNeeded)
+					GlobalInvocationIdCase		(tcu::TestContext& testCtx, const std::string& name, bool taskNeeded)
+						: MeshShaderBuiltinCase (testCtx, name, taskNeeded)
 						, m_jobSize				(getLargeJobSize())
 						, m_extent				{m_jobSize.numTasks * m_jobSize.localSize, 1u}
 						{}
@@ -1678,8 +1678,8 @@ TestInstance* GlobalInvocationIdCase::createInstance (Context& context) const
 class DrawIndexCase : public MeshShaderBuiltinCase
 {
 public:
-					DrawIndexCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, bool taskNeeded)
-						: MeshShaderBuiltinCase (testCtx, name, description, taskNeeded)
+					DrawIndexCase		(tcu::TestContext& testCtx, const std::string& name, bool taskNeeded)
+						: MeshShaderBuiltinCase (testCtx, name, taskNeeded)
 						, m_extent				(getLinearExtent())
 						{}
 	virtual			~DrawIndexCase	(void) {}
@@ -1777,8 +1777,8 @@ TestInstance* DrawIndexCase::createInstance (Context& context) const
 class PrimitiveShadingRateCase : public MeshShaderBuiltinCase
 {
 public:
-					PrimitiveShadingRateCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, FragmentSize topSize, FragmentSize bottomSize)
-						: MeshShaderBuiltinCase	(testCtx, name, description, false/*taskNeeded*/)
+					PrimitiveShadingRateCase	(tcu::TestContext& testCtx, const std::string& name, FragmentSize topSize, FragmentSize bottomSize)
+						: MeshShaderBuiltinCase	(testCtx, name, false/*taskNeeded*/)
 						, m_topSize				(topSize)
 						, m_bottomSize			(bottomSize)
 						{}
@@ -2054,28 +2054,28 @@ TestInstance* PrimitiveShadingRateCase::createInstance (Context& context) const
 
 tcu::TestCaseGroup* createMeshShaderBuiltinTests (tcu::TestContext& testCtx)
 {
-	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "builtin", "Mesh Shader Builtin Tests"));
+	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "builtin"));
 
-	mainGroup->addChild(new PositionCase				(testCtx, "position", ""));
-	mainGroup->addChild(new PointSizeCase				(testCtx, "point_size", ""));
-	mainGroup->addChild(new ClipDistanceCase			(testCtx, "clip_distance", ""));
-	mainGroup->addChild(new CullDistanceCase			(testCtx, "cull_distance", ""));
-	mainGroup->addChild(new PrimitiveIdCase				(testCtx, "primitive_id_glsl", "", true/*glslFrag*/));
-	mainGroup->addChild(new PrimitiveIdCase				(testCtx, "primitive_id_spirv", "", false/*glslFrag*/));
-	mainGroup->addChild(new LayerCase					(testCtx, "layer", "", false/*shareVertices*/));
-	mainGroup->addChild(new LayerCase					(testCtx, "layer_shared", "", true/*shareVertices*/));
-	mainGroup->addChild(new ViewportIndexCase			(testCtx, "viewport_index", "", false/*shareVertices*/));
-	mainGroup->addChild(new ViewportIndexCase			(testCtx, "viewport_index_shared", "", true/*shareVertices*/));
-	mainGroup->addChild(new WorkGroupIdCase				(testCtx, "work_group_id_in_mesh", "", false/*taskNeeded*/));
-	mainGroup->addChild(new WorkGroupIdCase				(testCtx, "work_group_id_in_task", "", true/*taskNeeded*/));
-	mainGroup->addChild(new LocalInvocationCase			(testCtx, "local_invocation_id_in_mesh", "", false/*taskNeeded*/, LocalInvocation::ID));
-	mainGroup->addChild(new LocalInvocationCase			(testCtx, "local_invocation_id_in_task", "", true/*taskNeeded*/, LocalInvocation::ID));
-	mainGroup->addChild(new LocalInvocationCase			(testCtx, "local_invocation_index_in_task", "", true/*taskNeeded*/, LocalInvocation::INDEX));
-	mainGroup->addChild(new LocalInvocationCase			(testCtx, "local_invocation_index_in_mesh", "", false/*taskNeeded*/, LocalInvocation::INDEX));
-	mainGroup->addChild(new GlobalInvocationIdCase		(testCtx, "global_invocation_id_in_mesh", "", false/*taskNeeded*/));
-	mainGroup->addChild(new GlobalInvocationIdCase		(testCtx, "global_invocation_id_in_task", "", true/*taskNeeded*/));
-	mainGroup->addChild(new DrawIndexCase				(testCtx, "draw_index_in_mesh", "", false/*taskNeeded*/));
-	mainGroup->addChild(new DrawIndexCase				(testCtx, "draw_index_in_task", "", true/*taskNeeded*/));
+	mainGroup->addChild(new PositionCase				(testCtx, "position"));
+	mainGroup->addChild(new PointSizeCase				(testCtx, "point_size"));
+	mainGroup->addChild(new ClipDistanceCase			(testCtx, "clip_distance"));
+	mainGroup->addChild(new CullDistanceCase			(testCtx, "cull_distance"));
+	mainGroup->addChild(new PrimitiveIdCase				(testCtx, "primitive_id_glsl", true/*glslFrag*/));
+	mainGroup->addChild(new PrimitiveIdCase				(testCtx, "primitive_id_spirv", false/*glslFrag*/));
+	mainGroup->addChild(new LayerCase					(testCtx, "layer", false/*shareVertices*/));
+	mainGroup->addChild(new LayerCase					(testCtx, "layer_shared", true/*shareVertices*/));
+	mainGroup->addChild(new ViewportIndexCase			(testCtx, "viewport_index", false/*shareVertices*/));
+	mainGroup->addChild(new ViewportIndexCase			(testCtx, "viewport_index_shared", true/*shareVertices*/));
+	mainGroup->addChild(new WorkGroupIdCase				(testCtx, "work_group_id_in_mesh", false/*taskNeeded*/));
+	mainGroup->addChild(new WorkGroupIdCase				(testCtx, "work_group_id_in_task", true/*taskNeeded*/));
+	mainGroup->addChild(new LocalInvocationCase			(testCtx, "local_invocation_id_in_mesh", false/*taskNeeded*/, LocalInvocation::ID));
+	mainGroup->addChild(new LocalInvocationCase			(testCtx, "local_invocation_id_in_task", true/*taskNeeded*/, LocalInvocation::ID));
+	mainGroup->addChild(new LocalInvocationCase			(testCtx, "local_invocation_index_in_task", true/*taskNeeded*/, LocalInvocation::INDEX));
+	mainGroup->addChild(new LocalInvocationCase			(testCtx, "local_invocation_index_in_mesh", false/*taskNeeded*/, LocalInvocation::INDEX));
+	mainGroup->addChild(new GlobalInvocationIdCase		(testCtx, "global_invocation_id_in_mesh", false/*taskNeeded*/));
+	mainGroup->addChild(new GlobalInvocationIdCase		(testCtx, "global_invocation_id_in_task", true/*taskNeeded*/));
+	mainGroup->addChild(new DrawIndexCase				(testCtx, "draw_index_in_mesh", false/*taskNeeded*/));
+	mainGroup->addChild(new DrawIndexCase				(testCtx, "draw_index_in_task", true/*taskNeeded*/));
 
 	// Primitive shading rate tests.
 	{
@@ -2096,7 +2096,7 @@ tcu::TestCaseGroup* createMeshShaderBuiltinTests (tcu::TestContext& testCtx)
 										+ std::to_string(bottomExtent.width) + "x" + std::to_string(bottomExtent.height)
 									;
 
-			mainGroup->addChild(new PrimitiveShadingRateCase(testCtx, testName, "", topSize, bottomSize));
+			mainGroup->addChild(new PrimitiveShadingRateCase(testCtx, testName, topSize, bottomSize));
 		}
 	}
 

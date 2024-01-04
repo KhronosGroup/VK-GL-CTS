@@ -1223,7 +1223,7 @@ VkClearValue RayTracingConfiguration::getClearValue ()
 class RayQueryTraversalControlTestCase : public TestCase
 {
 	public:
-							RayQueryTraversalControlTestCase			(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
+							RayQueryTraversalControlTestCase			(tcu::TestContext& context, const char* name, const TestParams data);
 							~RayQueryTraversalControlTestCase			(void);
 
 	virtual void			checkSupport								(Context& context) const;
@@ -1244,8 +1244,8 @@ private:
 	TestParams														m_data;
 };
 
-RayQueryTraversalControlTestCase::RayQueryTraversalControlTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams data)
-	: vkt::TestCase	(context, name, desc)
+RayQueryTraversalControlTestCase::RayQueryTraversalControlTestCase (tcu::TestContext& context, const char* name, const TestParams data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -2004,7 +2004,8 @@ tcu::TestStatus TraversalControlTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createTraversalControlTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "traversal_control", "Tests verifying traversal control in RT hit shaders"));
+	// Tests verifying traversal control in RT hit shaders
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "traversal_control"));
 
 	struct ShaderSourceTypeData
 	{
@@ -2049,11 +2050,11 @@ tcu::TestCaseGroup*	createTraversalControlTests(tcu::TestContext& testCtx)
 
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name));
 
 		for (size_t shaderTestNdx = 0; shaderTestNdx < DE_LENGTH_OF_ARRAY(shaderTestTypes); ++shaderTestNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> testTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderTestTypes[shaderTestNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> testTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderTestTypes[shaderTestNdx].name));
 
 			for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
 			{
@@ -2066,7 +2067,7 @@ tcu::TestCaseGroup*	createTraversalControlTests(tcu::TestContext& testCtx)
 					shaderTestTypes[shaderTestNdx].shaderTestType,
 					bottomTestTypes[testTypeNdx].testType
 				};
-				testTypeGroup->addChild(new RayQueryTraversalControlTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, "", testParams));
+				testTypeGroup->addChild(new RayQueryTraversalControlTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, testParams));
 			}
 			sourceTypeGroup->addChild(testTypeGroup.release());
 		}

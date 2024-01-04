@@ -178,7 +178,6 @@ public:
 
 						SizeTest			(tcu::TestContext&	testCtx,
 											 const std::string&	name,
-											 const std::string&	description,
 											 const Texture&		texture,
 											 const VkFormat		format,
 											 const deUint32		flags,
@@ -198,12 +197,11 @@ private:
 
 SizeTest::SizeTest (tcu::TestContext&		testCtx,
 					const std::string&		name,
-					const std::string&		description,
 					const Texture&			texture,
 					const VkFormat			format,
 					const deUint32			flags,
 					const bool				is2DViewOf3D)
-	: TestCase			(testCtx, name, description)
+	: TestCase			(testCtx, name)
 	, m_texture			(texture)
 	, m_format			(format)
 	, m_useReadonly		((flags & FLAG_READONLY_IMAGE) != 0)
@@ -572,13 +570,13 @@ tcu::TestCaseGroup* createImageSizeTests (tcu::TestContext& testCtx)
 		SizeTest::FLAG_READONLY_IMAGE | SizeTest::FLAG_WRITEONLY_IMAGE,
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_size", "imageSize() cases"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_size"));
 
 	const VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
 
 	for (const auto& imageType : s_imageTypes)
 	{
-		de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str()));
 
 		for (const auto& flags : s_flags)
 			for (const auto& baseImageSize : s_baseImageSizes)
@@ -598,7 +596,7 @@ tcu::TestCaseGroup* createImageSizeTests (tcu::TestContext& testCtx)
 					const Texture	texture		= getTexture(imageType, baseImageSize);
 					const auto		caseName	= getCaseName(texture, flags, is2DViewOf3D);
 
-					imageGroup->addChild(new SizeTest(testCtx, caseName, "", texture, format, flags, is2DViewOf3D));
+					imageGroup->addChild(new SizeTest(testCtx, caseName, texture, format, flags, is2DViewOf3D));
 				}
 
 		testGroup->addChild(imageGroup.release());

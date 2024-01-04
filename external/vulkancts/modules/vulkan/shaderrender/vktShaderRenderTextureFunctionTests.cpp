@@ -1199,7 +1199,6 @@ class ShaderTextureFunctionCase : public ShaderRenderCase
 public:
 								ShaderTextureFunctionCase		(tcu::TestContext&				testCtx,
 																 const std::string&				name,
-																 const std::string&				desc,
 																 const TextureLookupSpec&		lookup,
 																 const TextureSpec&				texture,
 																 TexEvalFunc					evalFunc,
@@ -1219,12 +1218,11 @@ protected:
 
 ShaderTextureFunctionCase::ShaderTextureFunctionCase (tcu::TestContext&				testCtx,
 													  const std::string&			name,
-													  const std::string&			desc,
 													  const TextureLookupSpec&		lookup,
 													  const TextureSpec&			texture,
 													  TexEvalFunc					evalFunc,
 													  bool							isVertexCase)
-	: ShaderRenderCase		(testCtx, name, desc, isVertexCase, new TexLookupEvaluator(evalFunc, m_lookupParams), NULL, NULL)
+	: ShaderRenderCase		(testCtx, name, isVertexCase, new TexLookupEvaluator(evalFunc, m_lookupParams), NULL, NULL)
 	, m_lookupSpec			(lookup)
 	, m_textureSpec			(texture)
 {
@@ -2938,7 +2936,6 @@ class TextureQueryCase : public ShaderRenderCase
 public:
 								TextureQueryCase				(tcu::TestContext&			testCtx,
 																 const std::string&			name,
-																 const std::string&			desc,
 																 const std::string&			samplerType,
 																 const TextureSpec&			texture,
 																 bool						isVertexCase,
@@ -2960,13 +2957,12 @@ protected:
 
 TextureQueryCase::TextureQueryCase (tcu::TestContext&		testCtx,
 									const std::string&		name,
-									const std::string&		desc,
 									const std::string&		samplerType,
 									const TextureSpec&		texture,
 									bool					isVertexCase,
 									QueryFunction			function,
 									TestMode				mode)
-	: ShaderRenderCase	(testCtx, name, desc, isVertexCase, (ShaderEvaluator*)DE_NULL, DE_NULL, DE_NULL)
+	: ShaderRenderCase	(testCtx, name, isVertexCase, (ShaderEvaluator*)DE_NULL, DE_NULL, DE_NULL)
 	, m_samplerTypeStr	(samplerType)
 	, m_textureSpec		(texture)
 	, m_function		(function)
@@ -3281,7 +3277,7 @@ private:
 };
 
 ShaderTextureFunctionTests::ShaderTextureFunctionTests (tcu::TestContext& context)
-	: TestCaseGroup(context, "texture_functions", "Texture Access Function Tests")
+	: TestCaseGroup(context, "texture_functions")
 {
 }
 
@@ -3358,7 +3354,6 @@ class SparseShaderTextureFunctionCase : public ShaderTextureFunctionCase
 public:
 							SparseShaderTextureFunctionCase		(tcu::TestContext&			testCtx,
 																const std::string&			name,
-																const std::string&			desc,
 																const TextureLookupSpec&	lookup,
 																const TextureSpec&			texture,
 																TexEvalFunc					evalFunc,
@@ -3374,12 +3369,11 @@ protected:
 
 SparseShaderTextureFunctionCase::SparseShaderTextureFunctionCase (tcu::TestContext&				testCtx,
 																  const std::string&			name,
-																  const std::string&			desc,
 																  const TextureLookupSpec&		lookup,
 																  const TextureSpec&			texture,
 																  TexEvalFunc					evalFunc,
 																  bool							isVertexCase)
-	: ShaderTextureFunctionCase		(testCtx, name, desc, lookup, texture, evalFunc, isVertexCase)
+	: ShaderTextureFunctionCase		(testCtx, name, lookup, texture, evalFunc, isVertexCase)
 {
 	initShaderSources();
 }
@@ -3618,9 +3612,9 @@ void SparseShaderTextureFunctionCase::checkSupport(Context& context) const
 
 #endif // CTS_USES_VULKANSC
 
-static void createCaseGroup (tcu::TestCaseGroup* parent, const char* groupName, const char* groupDesc, const TexFuncCaseSpec* cases, int numCases)
+static void createCaseGroup (tcu::TestCaseGroup* parent, const char* groupName, const TexFuncCaseSpec* cases, int numCases)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(parent->getTestContext(), groupName, groupDesc));
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(parent->getTestContext(), groupName));
 
 	for (int ndx = 0; ndx < numCases; ndx++)
 	{
@@ -3636,20 +3630,20 @@ static void createCaseGroup (tcu::TestCaseGroup* parent, const char* groupName, 
 		{
 #ifndef CTS_USES_VULKANSC
 			if (sparseSupported)
-				group->addChild(new SparseShaderTextureFunctionCase(parent->getTestContext(), ("sparse_" + name + "_vertex"),   "", cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, true ));
+				group->addChild(new SparseShaderTextureFunctionCase(parent->getTestContext(), ("sparse_" + name + "_vertex"), cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, true ));
 #endif // CTS_USES_VULKANSC
 
-			group->addChild(new ShaderTextureFunctionCase(parent->getTestContext(), (name + "_vertex"),   "", cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, true ));
+			group->addChild(new ShaderTextureFunctionCase(parent->getTestContext(), (name + "_vertex"), cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, true ));
 		}
 
 		if (cases[ndx].flags & FRAGMENT)
 		{
 #ifndef CTS_USES_VULKANSC
 			if (sparseSupported)
-				group->addChild(new SparseShaderTextureFunctionCase(parent->getTestContext(), ("sparse_" + name + "_fragment"), "", cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, false));
+				group->addChild(new SparseShaderTextureFunctionCase(parent->getTestContext(), ("sparse_" + name + "_fragment"), cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, false));
 #endif // CTS_USES_VULKANSC
 
-			group->addChild(new ShaderTextureFunctionCase(parent->getTestContext(), (name + "_fragment"), "", cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, false));
+			group->addChild(new ShaderTextureFunctionCase(parent->getTestContext(), (name + "_fragment"), cases[ndx].lookupSpec, cases[ndx].texSpec, cases[ndx].evalFunc, false));
 		}
 	}
 
@@ -3921,7 +3915,7 @@ void ShaderTextureFunctionTests::init (void)
 
 		CASE_SPEC(samplercubearrayshadow,		FUNCTION_TEXTURE,	Vec4(-1.0f, -1.0f,  1.01f, -0.5f),	Vec4( 1.0f,  1.0f,  1.01f,  1.5f),	false,	0.0f,	0.0f,	false,	IVec3(0),	texCubeArrayMipmapShadow,	evalTextureCubeArrayShadow,		FRAGMENT),
 	};
-	createCaseGroup(this, "texture", "texture() Tests", textureCases, DE_LENGTH_OF_ARRAY(textureCases));
+	createCaseGroup(this, "texture", textureCases, DE_LENGTH_OF_ARRAY(textureCases));
 
 	// textureClampARB() cases
 	static const TexFuncCaseSpec textureClampARBCases[] =
@@ -3967,7 +3961,7 @@ void ShaderTextureFunctionTests::init (void)
 		CLAMP_CASE_SPEC(sampler1dshadow_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4( 1.0f,  0.0f,  1.0f,  0.0f),	true,	0.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex1DMipmapShadow,			evalTexture1DShadowBiasClamp,		FRAGMENT),
 		CLAMP_CASE_SPEC(sampler1darrayshadow_bias,		FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4( 1.0f,  4.0f,  1.0f,  0.0f),	true,	0.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex1DArrayMipmapShadow,		evalTexture1DArrayShadowBiasClamp,	FRAGMENT),
 	};
-	createCaseGroup(this, "textureclamp", "textureClampARB() Tests", textureClampARBCases, DE_LENGTH_OF_ARRAY(textureClampARBCases));
+	createCaseGroup(this, "textureclamp", textureClampARBCases, DE_LENGTH_OF_ARRAY(textureClampARBCases));
 
 	// textureOffset() cases
 	// \note _bias variants are not using mipmap thanks to wide allowed range for LOD computation
@@ -4056,7 +4050,7 @@ void ShaderTextureFunctionTests::init (void)
 		CASE_SPEC(sampler1darrayshadow,			FUNCTION_TEXTURE,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	false,	0.0f,	0.0f,	true,	IVec3( 7, 0, 0),	tex1DArrayMipmapShadow,	evalTexture1DArrayShadowOffset,		FRAGMENT),
 		CASE_SPEC(sampler1darrayshadow_bias,	FUNCTION_TEXTURE,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	true,	-2.0f,	2.0f,	true,	IVec3(-8, 0, 0),	tex1DArrayShadow,		evalTexture1DArrayShadowOffsetBias,	FRAGMENT),
 	};
-	createCaseGroup(this, "textureoffset", "textureOffset() Tests", textureOffsetCases, DE_LENGTH_OF_ARRAY(textureOffsetCases));
+	createCaseGroup(this, "textureoffset", textureOffsetCases, DE_LENGTH_OF_ARRAY(textureOffsetCases));
 
 	// textureOffsetClampARB() cases
 	static const TexFuncCaseSpec textureOffsetClampARBCases[] =
@@ -4091,7 +4085,7 @@ void ShaderTextureFunctionTests::init (void)
 		CLAMP_CASE_SPEC(sampler1dshadow_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4( 1.0f,  0.0f,  1.0f,  0.0f),	true,	0.0f,	5.0f,	true,	IVec3(-8, 0, 0),	7.0f,	tex1DMipmapShadow,			evalTexture1DShadowOffsetBiasClamp,			FRAGMENT),
 		CLAMP_CASE_SPEC(sampler1darrayshadow_bias,		FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4( 1.0f,  4.0f,  1.0f,  0.0f),	true,	0.0f,	5.0f,	true,	IVec3(-8, 0, 0),	7.0f,	tex1DArrayMipmapShadow,		evalTexture1DArrayShadowOffsetBiasClamp,	FRAGMENT),
 	};
-	createCaseGroup(this, "textureoffsetclamp", "textureOffsetClampARB() Tests", textureOffsetClampARBCases, DE_LENGTH_OF_ARRAY(textureOffsetClampARBCases));
+	createCaseGroup(this, "textureoffsetclamp", textureOffsetClampARBCases, DE_LENGTH_OF_ARRAY(textureOffsetClampARBCases));
 
 	// textureProj() cases
 	// \note Currently uses constant divider!
@@ -4175,7 +4169,7 @@ void ShaderTextureFunctionTests::init (void)
 		CASE_SPEC(sampler1dshadow,				FUNCTION_TEXTUREPROJ,	Vec4( 0.2f, 0.0f,  0.0f,  1.5f),	Vec4(-2.25f,   0.0f, 1.5f,  1.5f),	false,	0.0f,	0.0f,	false,	IVec3(0),	tex1DMipmapShadow,		evalTexture1DShadowProj,		FRAGMENT),
 		CASE_SPEC(sampler1dshadow_bias,			FUNCTION_TEXTUREPROJ,	Vec4( 0.2f, 0.0f,  0.0f,  1.5f),	Vec4(-2.25f,   0.0f, 1.5f,  1.5f),	true,	-2.0f,	2.0f,	false,	IVec3(0),	tex1DMipmapShadow,		evalTexture1DShadowProjBias,	FRAGMENT),
 	};
-	createCaseGroup(this, "textureproj", "textureProj() Tests", textureProjCases, DE_LENGTH_OF_ARRAY(textureProjCases));
+	createCaseGroup(this, "textureproj", textureProjCases, DE_LENGTH_OF_ARRAY(textureProjCases));
 
 	// textureProjOffset() cases
 	// \note Currently uses constant divider!
@@ -4259,7 +4253,7 @@ void ShaderTextureFunctionTests::init (void)
 		CASE_SPEC(sampler1dshadow,				FUNCTION_TEXTUREPROJ,	Vec4( 0.2f, 0.0f,  0.0f,  1.5f),	Vec4(-2.25f,   0.0f, 1.5f,  1.5f),	false,	0.0f,	0.0f,	true,	IVec3(7,  0, 0),	tex1DMipmapShadow,		evalTexture1DShadowProjOffset,		FRAGMENT),
 		CASE_SPEC(sampler1dshadow_bias,			FUNCTION_TEXTUREPROJ,	Vec4( 0.2f, 0.0f,  0.0f,  1.5f),	Vec4(-2.25f,   0.0f, 1.5f,  1.5f),	true,	-2.0f,	2.0f,	true,	IVec3(-8, 0, 0),	tex1DShadow,			evalTexture1DShadowProjOffsetBias,	FRAGMENT),
 	};
-	createCaseGroup(this, "textureprojoffset", "textureOffsetProj() Tests", textureProjOffsetCases, DE_LENGTH_OF_ARRAY(textureProjOffsetCases));
+	createCaseGroup(this, "textureprojoffset", textureProjOffsetCases, DE_LENGTH_OF_ARRAY(textureProjOffsetCases));
 
 	// textureLod() cases
 	static const TexFuncCaseSpec textureLodCases[] =
@@ -4304,7 +4298,7 @@ void ShaderTextureFunctionTests::init (void)
 		CASE_SPEC(sampler1dshadow,				FUNCTION_TEXTURELOD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  1.0f,  0.0f),	false,	-1.0f,	9.0f,	false,	IVec3(0),	tex1DMipmapShadow,		evalTexture1DShadowLod,			BOTH),
 		CASE_SPEC(sampler1darrayshadow,			FUNCTION_TEXTURELOD,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	false,	-1.0f,	9.0f,	false,	IVec3(0),	tex1DArrayMipmapShadow,	evalTexture1DArrayShadowLod,	BOTH),
 	};
-	createCaseGroup(this, "texturelod", "textureLod() Tests", textureLodCases, DE_LENGTH_OF_ARRAY(textureLodCases));
+	createCaseGroup(this, "texturelod", textureLodCases, DE_LENGTH_OF_ARRAY(textureLodCases));
 
 	// textureLodOffset() cases
 	static const TexFuncCaseSpec textureLodOffsetCases[] =
@@ -4339,7 +4333,7 @@ void ShaderTextureFunctionTests::init (void)
 		CASE_SPEC(sampler1dshadow,				FUNCTION_TEXTURELOD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  1.0f,  0.0f),	false,	-1.0f,	9.0f,	true,	IVec3(-8, 0, 0),	tex1DMipmapShadow,		evalTexture1DShadowLodOffset,		BOTH),
 		CASE_SPEC(sampler1darrayshadow,			FUNCTION_TEXTURELOD,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	false,	-1.0f,	9.0f,	true,	IVec3(7,  0, 0),	tex1DArrayMipmapShadow,	evalTexture1DArrayShadowLodOffset,	BOTH),
 	};
-	createCaseGroup(this, "texturelodoffset", "textureLodOffset() Tests", textureLodOffsetCases, DE_LENGTH_OF_ARRAY(textureLodOffsetCases));
+	createCaseGroup(this, "texturelodoffset", textureLodOffsetCases, DE_LENGTH_OF_ARRAY(textureLodOffsetCases));
 
 	// textureProjLod() cases
 	static const TexFuncCaseSpec textureProjLodCases[] =
@@ -4373,7 +4367,7 @@ void ShaderTextureFunctionTests::init (void)
 		CASE_SPEC(sampler2dshadow,				FUNCTION_TEXTUREPROJLOD,	Vec4( 0.2f, 0.6f,  0.0f,  1.5f),	Vec4(-2.25f, -3.45f, 1.5f,  1.5f),	false,	-1.0f,	9.0f,	false,	IVec3(0),	tex2DMipmapShadow,		evalTexture2DShadowProjLod,	BOTH),
 		CASE_SPEC(sampler1dshadow,				FUNCTION_TEXTUREPROJLOD,	Vec4( 0.2f, 0.0f,  0.0f,  1.5f),	Vec4(-2.25f,  0.0f,  0.0f,  1.5f),	false,	-1.0f,	9.0f,	false,	IVec3(0),	tex1DMipmapShadow,		evalTexture1DShadowProjLod,	BOTH),
 	};
-	createCaseGroup(this, "textureprojlod", "textureProjLod() Tests", textureProjLodCases, DE_LENGTH_OF_ARRAY(textureProjLodCases));
+	createCaseGroup(this, "textureprojlod", textureProjLodCases, DE_LENGTH_OF_ARRAY(textureProjLodCases));
 
 	// textureProjLodOffset() cases
 	static const TexFuncCaseSpec textureProjLodOffsetCases[] =
@@ -4407,7 +4401,7 @@ void ShaderTextureFunctionTests::init (void)
 		CASE_SPEC(sampler2dshadow,				FUNCTION_TEXTUREPROJLOD,	Vec4( 0.2f, 0.6f,  0.0f,  1.5f),	Vec4(-2.25f, -3.45f, 1.5f,  1.5f),	false,	-1.0f,	9.0f,	true,	IVec3(-8, 7, 0),	tex2DMipmapShadow,		evalTexture2DShadowProjLodOffset,	BOTH),
 		CASE_SPEC(sampler1dshadow,				FUNCTION_TEXTUREPROJLOD,	Vec4( 0.2f, 0.0f,  0.0f,  1.5f),	Vec4(-2.25f,  0.0f,  1.5f,  1.5f),	false,	-1.0f,	9.0f,	true,	IVec3(7,  0, 0),	tex1DMipmapShadow,		evalTexture1DShadowProjLodOffset,	BOTH),
 	};
-	createCaseGroup(this, "textureprojlodoffset", "textureProjLodOffset() Tests", textureProjLodOffsetCases, DE_LENGTH_OF_ARRAY(textureProjLodOffsetCases));
+	createCaseGroup(this, "textureprojlodoffset", textureProjLodOffsetCases, DE_LENGTH_OF_ARRAY(textureProjLodOffsetCases));
 
 	// textureGrad() cases
 	// \note Only one of dudx, dudy, dvdx, dvdy is non-zero since spec allows approximating p from derivates by various methods.
@@ -4459,7 +4453,7 @@ void ShaderTextureFunctionTests::init (void)
 		GRAD_CASE_SPEC(sampler1darrayshadow,	FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	false,	IVec3(0),	tex1DArrayMipmapShadow,	evalTexture1DArrayShadowGrad,	VERTEX),
 		GRAD_CASE_SPEC(sampler1darrayshadow,	FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	false,	IVec3(0),	tex1DArrayMipmapShadow,	evalTexture1DArrayShadowGrad,	FRAGMENT),
 	};
-	createCaseGroup(this, "texturegrad", "textureGrad() Tests", textureGradCases, DE_LENGTH_OF_ARRAY(textureGradCases));
+	createCaseGroup(this, "texturegrad", textureGradCases, DE_LENGTH_OF_ARRAY(textureGradCases));
 
 	// textureGradClampARB() cases
 	static const TexFuncCaseSpec textureGradClampCases[] =
@@ -4506,7 +4500,7 @@ void ShaderTextureFunctionTests::init (void)
 		GRADCLAMP_CASE_SPEC(sampler1dshadow,			FUNCTION_TEXTUREGRAD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex1DMipmapShadow,			evalTexture1DShadowGradClamp,		FRAGMENT),
 		GRADCLAMP_CASE_SPEC(sampler1darrayshadow,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex1DArrayMipmapShadow,		evalTexture1DArrayShadowGradClamp,	FRAGMENT),
 	};
-	createCaseGroup(this, "texturegradclamp", "textureGradClampARB() Tests", textureGradClampCases, DE_LENGTH_OF_ARRAY(textureGradClampCases));
+	createCaseGroup(this, "texturegradclamp", textureGradClampCases, DE_LENGTH_OF_ARRAY(textureGradClampCases));
 
 	// textureGradOffset() cases
 	static const TexFuncCaseSpec textureGradOffsetCases[] =
@@ -4548,7 +4542,7 @@ void ShaderTextureFunctionTests::init (void)
 		GRAD_CASE_SPEC(sampler1darrayshadow,	FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	true,	IVec3(-8, 0, 0),	tex1DArrayMipmapShadow,	evalTexture1DArrayShadowGradOffset,	VERTEX),
 		GRAD_CASE_SPEC(sampler1darrayshadow,	FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	true,	IVec3(7,  0, 0),	tex1DArrayMipmapShadow,	evalTexture1DArrayShadowGradOffset,	FRAGMENT),
 	};
-	createCaseGroup(this, "texturegradoffset", "textureGradOffset() Tests", textureGradOffsetCases, DE_LENGTH_OF_ARRAY(textureGradOffsetCases));
+	createCaseGroup(this, "texturegradoffset", textureGradOffsetCases, DE_LENGTH_OF_ARRAY(textureGradOffsetCases));
 
 	// textureGradOffsetClampARB() cases
 	static const TexFuncCaseSpec textureGradOffsetClampCases[] =
@@ -4584,7 +4578,7 @@ void ShaderTextureFunctionTests::init (void)
 		GRADCLAMP_CASE_SPEC(sampler1dshadow,		FUNCTION_TEXTUREGRAD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(7,  0, 0),	5.0f,	tex1DMipmapShadow,		evalTexture1DShadowGradOffsetClamp,			FRAGMENT),
 		GRADCLAMP_CASE_SPEC(sampler1darrayshadow,	FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	true,	IVec3(7,  0, 0),	5.0f,	tex1DArrayMipmapShadow,	evalTexture1DArrayShadowGradOffsetClamp,	FRAGMENT),
 	};
-	createCaseGroup(this, "texturegradoffsetclamp", "textureGradOffsetClampARB() Tests", textureGradOffsetClampCases, DE_LENGTH_OF_ARRAY(textureGradOffsetClampCases));
+	createCaseGroup(this, "texturegradoffsetclamp", textureGradOffsetClampCases, DE_LENGTH_OF_ARRAY(textureGradOffsetClampCases));
 
 
 	// textureProjGrad() cases
@@ -4623,7 +4617,7 @@ void ShaderTextureFunctionTests::init (void)
 		GRAD_CASE_SPEC(sampler1dshadow,			FUNCTION_TEXTUREPROJGRAD,	Vec4( 0.2f, 0.0f,  0.0f,  -1.5f),	Vec4(-2.25f,   0.0f, -1.5f, -1.5f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	tex1DMipmapShadow,		evalTexture1DShadowProjGrad,	VERTEX),
 		GRAD_CASE_SPEC(sampler1dshadow,			FUNCTION_TEXTUREPROJGRAD,	Vec4( 0.2f, 0.0f,  0.0f,  -1.5f),	Vec4(-2.25f,   0.0f, -1.5f, -1.5f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	false,	IVec3(0),	tex1DMipmapShadow,		evalTexture1DShadowProjGrad,	FRAGMENT),
 	};
-	createCaseGroup(this, "textureprojgrad", "textureProjGrad() Tests", textureProjGradCases, DE_LENGTH_OF_ARRAY(textureProjGradCases));
+	createCaseGroup(this, "textureprojgrad", textureProjGradCases, DE_LENGTH_OF_ARRAY(textureProjGradCases));
 
 	// textureProjGradOffset() cases
 	static const TexFuncCaseSpec textureProjGradOffsetCases[] =
@@ -4661,7 +4655,7 @@ void ShaderTextureFunctionTests::init (void)
 		GRAD_CASE_SPEC(sampler1dshadow,			FUNCTION_TEXTUREPROJGRAD,	Vec4( 0.2f, 0.0f,  0.0f,  -1.5f),	Vec4(-2.25f,   0.0f, -1.5f, -1.5f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(-8, 7, 0),	tex1DMipmapShadow,		evalTexture1DShadowProjGradOffset,	VERTEX),
 		GRAD_CASE_SPEC(sampler1dshadow,			FUNCTION_TEXTUREPROJGRAD,	Vec4( 0.2f, 0.0f,  0.0f,  -1.5f),	Vec4(-2.25f,   0.0f, -1.5f, -1.5f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	true,	IVec3(7, -8, 0),	tex1DMipmapShadow,		evalTexture1DShadowProjGradOffset,	FRAGMENT),
 	};
-	createCaseGroup(this, "textureprojgradoffset", "textureProjGradOffset() Tests", textureProjGradOffsetCases, DE_LENGTH_OF_ARRAY(textureProjGradOffsetCases));
+	createCaseGroup(this, "textureprojgradoffset", textureProjGradOffsetCases, DE_LENGTH_OF_ARRAY(textureProjGradOffsetCases));
 
 	// texelFetch() cases
 	// \note Level is constant across quad
@@ -4693,7 +4687,7 @@ void ShaderTextureFunctionTests::init (void)
 		CASE_SPEC(isampler1darray,				FUNCTION_TEXELFETCH,	Vec4(0.0f, 0.0f, 0.0f, 0.0f),	Vec4( 63.9f,   3.9f,  0.0f,  0.0f),	false,	2.0f,	2.0f,	false,	IVec3(0),	tex1DArrayTexelFetchInt,	evalTexelFetch1DArray,	BOTH),
 		CASE_SPEC(usampler1darray,				FUNCTION_TEXELFETCH,	Vec4(0.0f, 0.0f, 0.0f, 0.0f),	Vec4( 15.9f,   3.9f,  0.0f,  0.0f),	false,	4.0f,	4.0f,	false,	IVec3(0),	tex1DArrayTexelFetchUint,	evalTexelFetch1DArray,	BOTH),
 	};
-	createCaseGroup(this, "texelfetch", "texelFetch() Tests", texelFetchCases, DE_LENGTH_OF_ARRAY(texelFetchCases));
+	createCaseGroup(this, "texelfetch", texelFetchCases, DE_LENGTH_OF_ARRAY(texelFetchCases));
 
 	// texelFetchOffset() cases
 	static const TexFuncCaseSpec texelFetchOffsetCases[] =
@@ -4724,7 +4718,7 @@ void ShaderTextureFunctionTests::init (void)
 		CASE_SPEC(isampler1darray,				FUNCTION_TEXELFETCH,	Vec4( 8.0f,  0.0f, 0.0f, 0.0f),	Vec4( 39.9f,   3.9f,  0.0f,  0.0f),	false,	2.0f,	2.0f,	true,	IVec3(-8, 0, 0),	tex1DArrayTexelFetchInt,	evalTexelFetch1DArray,	BOTH),
 		CASE_SPEC(usampler1darray,				FUNCTION_TEXELFETCH,	Vec4(-7.0f,  0.0f, 0.0f, 0.0f),	Vec4(  8.9f,   3.9f,  0.0f,  0.0f),	false,	3.0f,	3.0f,	true,	IVec3(7,  0, 0),	tex1DArrayTexelFetchUint,	evalTexelFetch1DArray,	BOTH),
 	};
-	createCaseGroup(this, "texelfetchoffset", "texelFetchOffset() Tests", texelFetchOffsetCases, DE_LENGTH_OF_ARRAY(texelFetchOffsetCases));
+	createCaseGroup(this, "texelfetchoffset", texelFetchOffsetCases, DE_LENGTH_OF_ARRAY(texelFetchOffsetCases));
 
 	// texture query functions
 	{
@@ -4735,7 +4729,7 @@ void ShaderTextureFunctionTests::init (void)
 			TextureSpec		textureSpec;
 		};
 
-		de::MovePtr<tcu::TestCaseGroup>			queryGroup	(new tcu::TestCaseGroup(m_testCtx, "query", "Texture query function tests"));
+		de::MovePtr<tcu::TestCaseGroup>			queryGroup	(new tcu::TestCaseGroup(m_testCtx, "query"));
 
 		// textureSize() cases
 		{
@@ -4777,18 +4771,18 @@ void ShaderTextureFunctionTests::init (void)
 				{ "sampler1darrayshadow",		"sampler1DArrayShadow",		tex1DArrayShadow	},
 			};
 
-			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturesize", "textureSize() Tests"));
+			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturesize"));
 
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(textureSizeCases); ++ndx)
 			{
 				const TexQueryFuncCaseSpec&		caseSpec	= textureSizeCases[ndx];
 
-				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"),   "", caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTURESIZE));
-				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTURESIZE));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"), caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTURESIZE));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTURESIZE));
 			}
 
 			// additional coverage for textureSize special cases
-			addFunctionCaseWithPrograms(group.get(), "oob_lod", "", SpecialCases::textureSizeOOBPrograms, SpecialCases::textureSizeOOBTest);
+			addFunctionCaseWithPrograms(group.get(), "oob_lod", SpecialCases::textureSizeOOBPrograms, SpecialCases::textureSizeOOBTest);
 
 			queryGroup->addChild(group.release());
 		}
@@ -4807,14 +4801,14 @@ void ShaderTextureFunctionTests::init (void)
 				{ "usampler2dmsarray",			"usampler2DMSArray",		tex2DArrayUint		},
 			};
 
-			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturesizems", "textureSize() Tests for Multisample Textures"));
+			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturesizems"));
 
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(textureSizeMSCases); ++ndx)
 			{
 				const TexQueryFuncCaseSpec&		caseSpec	= textureSizeMSCases[ndx];
 
-				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"),   "", caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTURESIZEMS));
-				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTURESIZEMS));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"), caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTURESIZEMS));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTURESIZEMS));
 			}
 
 			queryGroup->addChild(group.release());
@@ -4834,14 +4828,14 @@ void ShaderTextureFunctionTests::init (void)
 				{ "usampler2dmsarray",			"usampler2DMSArray",		tex2DArrayUint		},
 			};
 
-			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturesamples", "textureSamples() Tests"));
+			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturesamples"));
 
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(textureSamplesCases); ++ndx)
 			{
 				const TexQueryFuncCaseSpec&		caseSpec	= textureSamplesCases[ndx];
 
-				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"),   "", caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTURESAMPLES));
-				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTURESAMPLES));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"), caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTURESAMPLES));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTURESAMPLES));
 			}
 
 			queryGroup->addChild(group.release());
@@ -4887,14 +4881,14 @@ void ShaderTextureFunctionTests::init (void)
 				{ "sampler1darrayshadow",		"sampler1DArrayShadow",		tex1DArrayShadow	},
 			};
 
-			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturequerylevels", "textureQueryLevels() Tests"));
+			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturequerylevels"));
 
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(textureQueryLevelsCases); ++ndx)
 			{
 				const TexQueryFuncCaseSpec&		caseSpec	= textureQueryLevelsCases[ndx];
 
-				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"),   "", caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTUREQUERYLEVELS));
-				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLEVELS));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_vertex"), caseSpec.samplerName, caseSpec.textureSpec, true,  QUERYFUNCTION_TEXTUREQUERYLEVELS));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLEVELS));
 			}
 
 			queryGroup->addChild(group.release());
@@ -4940,15 +4934,15 @@ void ShaderTextureFunctionTests::init (void)
 				{ "sampler1darrayshadow",		"sampler1DArrayShadow",		tex1DArrayMipmapShadow		},
 			};
 
-			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturequerylod", "textureQueryLod() Tests"));
+			de::MovePtr<tcu::TestCaseGroup>		group		(new tcu::TestCaseGroup(m_testCtx, "texturequerylod"));
 
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(textureQueryLodCases); ++ndx)
 			{
 				const TexQueryFuncCaseSpec&		caseSpec	= textureQueryLodCases[ndx];
 
 				// available only in fragment shader
-				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLOD));
-				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_zero_uv_width_fragment"), "", caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLOD, QLODTM_ZERO_UV_WIDTH));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"), caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLOD));
+				group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_zero_uv_width_fragment"), caseSpec.samplerName, caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLOD, QLODTM_ZERO_UV_WIDTH));
 			}
 
 			queryGroup->addChild(group.release());

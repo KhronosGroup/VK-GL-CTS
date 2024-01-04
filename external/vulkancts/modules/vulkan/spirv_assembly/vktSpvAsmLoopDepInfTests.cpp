@@ -193,8 +193,8 @@ SpvAsmLoopControlDependencyInfiniteInstance::SpvAsmLoopControlDependencyInfinite
 {
 }
 
-SpvAsmLoopControlDependencyInfiniteCase::SpvAsmLoopControlDependencyInfiniteCase (tcu::TestContext& testCtx, const char* name, const char* description)
-	: TestCase			(testCtx, name, description)
+SpvAsmLoopControlDependencyInfiniteCase::SpvAsmLoopControlDependencyInfiniteCase (tcu::TestContext& testCtx, const char* name)
+	: TestCase			(testCtx, name)
 {
 }
 

@@ -408,6 +408,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_IMG_relaxed_line_rasterization")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shared_presentable_image")
 	{
 		return;
@@ -1039,6 +1043,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NV_cuda_kernel_launch")
+	{
+		return;
+	}
 	if (extName == "VK_NV_low_latency")
 	{
 		return;
@@ -1197,6 +1205,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_frame_boundary")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_multisampled_render_to_single_sampled")
 	{
 		return;
@@ -1279,6 +1291,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_ARM_scheduling_controls")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_sliced_view_of_3d")
 	{
 		return;
@@ -1292,6 +1308,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_non_seamless_cube_map")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_render_pass_striped")
 	{
 		return;
 	}
@@ -1324,6 +1344,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_QCOM_image_processing")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_nested_command_buffer")
 	{
 		return;
 	}
@@ -1364,6 +1388,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_ANDROID_external_format_resolve")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_maintenance5")
 	{
 		return;
@@ -1392,7 +1420,15 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_NV_extended_sparse_address_space")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_mutable_descriptor_type")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_layer_settings")
 	{
 		return;
 	}
@@ -1405,6 +1441,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_dynamic_rendering_unused_attachments")
+	{
+		return;
+	}
+	if (extName == "VK_NV_low_latency2")
 	{
 		return;
 	}
@@ -1437,8 +1477,21 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_vertex_attribute_divisor")
+	{
+		return;
+	}
 	if (extName == "VK_QNX_external_memory_screen_buffer")
 	{
+		return;
+	}
+	if (extName == "VK_MSFT_layered_driver")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_calibrated_timestamps")
+	{
+		functions.push_back("vkGetPhysicalDeviceCalibrateableTimeDomainsKHR");
 		return;
 	}
 	if (extName == "VK_NV_descriptor_pool_overallocation")
@@ -1918,6 +1971,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdBeginRenderPass2KHR");
 		functions.push_back("vkCmdNextSubpass2KHR");
 		functions.push_back("vkCmdEndRenderPass2KHR");
+		return;
+	}
+	if (extName == "VK_IMG_relaxed_line_rasterization")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_shared_presentable_image")
@@ -2680,6 +2737,16 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_NV_cuda_kernel_launch")
+	{
+		functions.push_back("vkCreateCudaModuleNV");
+		functions.push_back("vkGetCudaModuleCacheNV");
+		functions.push_back("vkCreateCudaFunctionNV");
+		functions.push_back("vkDestroyCudaModuleNV");
+		functions.push_back("vkDestroyCudaFunctionNV");
+		functions.push_back("vkCmdCudaLaunchKernelNV");
+		return;
+	}
 	if (extName == "VK_NV_low_latency")
 	{
 		return;
@@ -2881,6 +2948,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetPipelinePropertiesEXT");
 		return;
 	}
+	if (extName == "VK_EXT_frame_boundary")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_multisampled_render_to_single_sampled")
 	{
 		return;
@@ -2990,6 +3061,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_ARM_scheduling_controls")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_sliced_view_of_3d")
 	{
 		return;
@@ -3005,6 +3080,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_non_seamless_cube_map")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_render_pass_striped")
 	{
 		return;
 	}
@@ -3044,6 +3123,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_QCOM_image_processing")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_nested_command_buffer")
 	{
 		return;
 	}
@@ -3107,6 +3190,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_pipeline_protected_access")
+	{
+		return;
+	}
+	if (extName == "VK_ANDROID_external_format_resolve")
 	{
 		return;
 	}
@@ -3187,7 +3274,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_NV_extended_sparse_address_space")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_mutable_descriptor_type")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_layer_settings")
 	{
 		return;
 	}
@@ -3201,6 +3296,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	}
 	if (extName == "VK_EXT_dynamic_rendering_unused_attachments")
 	{
+		return;
+	}
+	if (extName == "VK_NV_low_latency2")
+	{
+		functions.push_back("vkSetLatencySleepModeNV");
+		functions.push_back("vkLatencySleepNV");
+		functions.push_back("vkSetLatencyMarkerNV");
+		functions.push_back("vkGetLatencyTimingsNV");
+		functions.push_back("vkQueueNotifyOutOfBandNV");
 		return;
 	}
 	if (extName == "VK_KHR_cooperative_matrix")
@@ -3232,9 +3336,22 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetAttachmentFeedbackLoopEnableEXT");
 		return;
 	}
+	if (extName == "VK_KHR_vertex_attribute_divisor")
+	{
+		return;
+	}
 	if (extName == "VK_QNX_external_memory_screen_buffer")
 	{
 		functions.push_back("vkGetScreenBufferPropertiesQNX");
+		return;
+	}
+	if (extName == "VK_MSFT_layered_driver")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_calibrated_timestamps")
+	{
+		functions.push_back("vkGetCalibratedTimestampsKHR");
 		return;
 	}
 	if (extName == "VK_NV_descriptor_pool_overallocation")
@@ -3311,6 +3428,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_portability_enumeration",
 	"VK_GOOGLE_surfaceless_query",
 	"VK_LUNARG_direct_driver_loading",
+	"VK_EXT_layer_settings",
 };
 
 ::std::string deviceExtensionNames[] =
@@ -3384,6 +3502,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_hdr_metadata",
 	"VK_KHR_imageless_framebuffer",
 	"VK_KHR_create_renderpass2",
+	"VK_IMG_relaxed_line_rasterization",
 	"VK_KHR_shared_presentable_image",
 	"VK_KHR_external_fence",
 	"VK_KHR_external_fence_win32",
@@ -3522,6 +3641,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_KHR_video_encode_queue",
 	"VK_NV_device_diagnostics_config",
 	"VK_QCOM_render_pass_store_ops",
+	"VK_NV_cuda_kernel_launch",
 	"VK_NV_low_latency",
 	"VK_EXT_metal_objects",
 	"VK_KHR_synchronization2",
@@ -3561,6 +3681,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_HUAWEI_invocation_mask",
 	"VK_NV_external_memory_rdma",
 	"VK_EXT_pipeline_properties",
+	"VK_EXT_frame_boundary",
 	"VK_EXT_multisampled_render_to_single_sampled",
 	"VK_EXT_extended_dynamic_state2",
 	"VK_EXT_color_write_enable",
@@ -3579,10 +3700,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_EXT_pageable_device_local_memory",
 	"VK_KHR_maintenance4",
 	"VK_ARM_shader_core_properties",
+	"VK_ARM_scheduling_controls",
 	"VK_EXT_image_sliced_view_of_3d",
 	"VK_VALVE_descriptor_set_host_mapping",
 	"VK_EXT_depth_clamp_zero_one",
 	"VK_EXT_non_seamless_cube_map",
+	"VK_ARM_render_pass_striped",
 	"VK_QCOM_fragment_density_map_offset",
 	"VK_NV_copy_memory_indirect",
 	"VK_NV_memory_decompression",
@@ -3590,6 +3713,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_linear_color_attachment",
 	"VK_EXT_image_compression_control_swapchain",
 	"VK_QCOM_image_processing",
+	"VK_EXT_nested_command_buffer",
 	"VK_EXT_external_memory_acquire_unmodified",
 	"VK_EXT_extended_dynamic_state3",
 	"VK_EXT_subpass_merge_feedback",
@@ -3598,6 +3722,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_NV_optical_flow",
 	"VK_EXT_legacy_dithering",
 	"VK_EXT_pipeline_protected_access",
+	"VK_ANDROID_external_format_resolve",
 	"VK_KHR_maintenance5",
 	"VK_KHR_ray_tracing_position_fetch",
 	"VK_EXT_shader_object",
@@ -3605,10 +3730,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_SEC_amigo_profiling",
 	"VK_QCOM_multiview_per_view_viewports",
 	"VK_NV_ray_tracing_invocation_reorder",
+	"VK_NV_extended_sparse_address_space",
 	"VK_EXT_mutable_descriptor_type",
 	"VK_ARM_shader_core_builtins",
 	"VK_EXT_pipeline_library_group_handles",
 	"VK_EXT_dynamic_rendering_unused_attachments",
+	"VK_NV_low_latency2",
 	"VK_KHR_cooperative_matrix",
 	"VK_QCOM_multiview_per_view_render_areas",
 	"VK_QCOM_image_processing2",
@@ -3616,6 +3743,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 	"VK_QCOM_ycbcr_degamma",
 	"VK_QCOM_filter_cubic_clamp",
 	"VK_EXT_attachment_feedback_loop_dynamic_state",
+	"VK_KHR_vertex_attribute_divisor",
 	"VK_QNX_external_memory_screen_buffer",
+	"VK_MSFT_layered_driver",
+	"VK_KHR_calibrated_timestamps",
 	"VK_NV_descriptor_pool_overallocation",
 };

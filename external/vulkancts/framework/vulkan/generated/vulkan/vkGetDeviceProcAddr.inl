@@ -54,18 +54,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
-
-	const std::vector<std::string> loaderExceptions{
-		"vkSetDebugUtilsObjectNameEXT",
-		"vkSetDebugUtilsObjectTagEXT",
-		"vkQueueBeginDebugUtilsLabelEXT",
-		"vkQueueEndDebugUtilsLabelEXT",
-		"vkQueueInsertDebugUtilsLabelEXT",
-		"vkCmdBeginDebugUtilsLabelEXT",
-		"vkCmdEndDebugUtilsLabelEXT",
-		"vkCmdInsertDebugUtilsLabelEXT",
-	};
+	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
 	const std::vector<std::string> functions{
 		"vkDestroySurfaceKHR",
@@ -379,6 +368,12 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR",
 		"vkGetEncodedVideoSessionParametersKHR",
 		"vkCmdEncodeVideoKHR",
+		"vkCreateCudaModuleNV",
+		"vkGetCudaModuleCacheNV",
+		"vkCreateCudaFunctionNV",
+		"vkDestroyCudaModuleNV",
+		"vkDestroyCudaFunctionNV",
+		"vkCmdCudaLaunchKernelNV",
 		"vkExportMetalObjectsEXT",
 		"vkCmdSetEvent2KHR",
 		"vkCmdResetEvent2KHR",
@@ -565,18 +560,21 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdSetCoverageReductionModeNV",
 		"vkGetFramebufferTilePropertiesQCOM",
 		"vkGetDynamicRenderingTilePropertiesQCOM",
+		"vkSetLatencySleepModeNV",
+		"vkLatencySleepNV",
+		"vkSetLatencyMarkerNV",
+		"vkGetLatencyTimingsNV",
+		"vkQueueNotifyOutOfBandNV",
 		"vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR",
 		"vkCmdSetAttachmentFeedbackLoopEnableEXT",
 		"vkGetScreenBufferPropertiesQNX",
+		"vkGetPhysicalDeviceCalibrateableTimeDomainsKHR",
+		"vkGetCalibratedTimestampsKHR",
 	};
 
 	bool fail = false;
 	for (const auto& function : functions)
 	{
-		if (std::find(loaderExceptions.begin(), loaderExceptions.end(), function) != loaderExceptions.end())
-		{
-			continue;
-		}
 		if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != DE_NULL)
 		{
 			fail = true;
@@ -590,7 +588,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 
 void addGetDeviceProcAddrTests (tcu::TestCaseGroup* testGroup)
 {
-	addFunctionCase(testGroup, "non_enabled", "GetDeviceProcAddr", testGetDeviceProcAddr);
+	addFunctionCase(testGroup, "non_enabled", testGetDeviceProcAddr);
 }
 
 }

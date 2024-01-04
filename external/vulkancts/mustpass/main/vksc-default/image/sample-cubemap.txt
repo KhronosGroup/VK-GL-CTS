@@ -1,0 +1,1 @@
+dEQP-VKSC.image.sample_cubemap.write_face_0

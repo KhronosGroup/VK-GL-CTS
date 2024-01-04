@@ -58,6 +58,8 @@ set(DEQP_VK_VKSC_API_SRCS
 	vktApiBufferMemoryRequirementsTests.cpp
 	vktApiBufferMemoryRequirementsTests.hpp
 	vktApiBufferMemoryRequirementsTestsUtils.hpp
+	vktApiExtensionDuplicatesTests.cpp
+	vktApiExtensionDuplicatesTests.hpp
 	)
 
 set(DEQP_VK_API_SRCS
@@ -77,6 +79,10 @@ set(DEQP_VK_API_SRCS
 	vktApiImageCompressionControlTests.hpp
 	vktApiGetDeviceProcAddrTests.hpp
 	vktApiGetDeviceProcAddrTests.cpp
+	vktApiPhysicalDeviceFormatPropertiesMaint5Tests.cpp
+	vktApiPhysicalDeviceFormatPropertiesMaint5Tests.hpp
+	vktApiFrameBoundaryTests.cpp
+	vktApiFrameBoundaryTests.hpp
 	)
 
 PCH(DEQP_VK_API_SRCS ../pch.cpp)

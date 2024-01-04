@@ -455,8 +455,8 @@ private:
 class FConvertTestCase : public TestCase
 {
 public:
-								FConvertTestCase	(tcu::TestContext& context, const std::string& name, const std::string& desc, const TestParams& params)
-									: TestCase	(context, name, desc)
+								FConvertTestCase	(tcu::TestContext& context, const std::string& name, const TestParams& params)
+									: TestCase	(context, name)
 									, m_params	(params)
 									{}
 
@@ -888,7 +888,7 @@ tcu::TestStatus FConvertTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createPrecisionFconvertGroup (tcu::TestContext& testCtx)
 {
-	tcu::TestCaseGroup* newGroup = new tcu::TestCaseGroup(testCtx, "precision_fconvert", "OpFConvert precision tests");
+	tcu::TestCaseGroup* newGroup = new tcu::TestCaseGroup(testCtx, "precision_fconvert");
 
 	for (int i = 0; i < FLOAT_TYPE_MAX_ENUM; ++i)
 	for (int j = 0; j < FLOAT_TYPE_MAX_ENUM; ++j)
@@ -905,9 +905,8 @@ tcu::TestCaseGroup*	createPrecisionFconvertGroup (tcu::TestContext& testCtx)
 		};
 
 		std::string testName = std::string() + kFloatNames[i] + "_to_" + kFloatNames[j] + "_size_" + std::to_string(k);
-		std::string testDescription = std::string("Conversion from ") + kFloatNames[i] + " to " + kFloatNames[j] + " with vectors of size " + std::to_string(k);
 
-		newGroup->addChild(new FConvertTestCase(testCtx, testName, testDescription, params));
+		newGroup->addChild(new FConvertTestCase(testCtx, testName, params));
 	}
 
 	return newGroup;

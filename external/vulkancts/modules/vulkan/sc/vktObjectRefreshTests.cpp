@@ -219,7 +219,7 @@ tcu::TestStatus refreshObjects(Context& context, bool individualRefresh)
 	};
 	vk::Move<vk::VkPipelineCache>			pipelineCache		= createPipelineCache(vkd, device, &pipelineCacheCreateInfo);
 	vk::Move<vk::VkPipelineLayout>			pipelineLayout		= makePipelineLayout(vkd, device);
-	vk::Move<vk::VkPipeline>				pipeline			= makeComputePipeline(vkd, device, *pipelineLayout, 0u, *shaderModule, 0u, DE_NULL);
+	vk::Move<vk::VkPipeline>				pipeline			= makeComputePipeline(vkd, device, *pipelineLayout, *shaderModule);
 	const vk::VkDescriptorPoolSize			descriptorPoolSize
 	{
 		vk::VK_DESCRIPTOR_TYPE_SAMPLER,										// VkDescriptorType						type;
@@ -381,11 +381,12 @@ void checkRefreshSupport(Context& context)
 
 tcu::TestCaseGroup* createObjectRefreshTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "object_refresh", "Tests VK_KHR_object_refresh"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "object_refresh"));
 
-	addFunctionCase(group.get(),				"query_refreshable_objects",	"Test VK_KHR_object_refresh extension", checkRefreshSupport, queryRefreshableObjects);
-	addFunctionCaseWithPrograms(group.get(),	"refresh_individual_objects",	"Test VK_KHR_object_refresh extension", checkRefreshSupport, createComputeSource, refreshIndividualObjects);
-	addFunctionCaseWithPrograms(group.get(),	"refresh_all_objects",			"Test VK_KHR_object_refresh extension", checkRefreshSupport, createComputeSource, refreshAllObjects);
+	// Test VK_KHR_object_refresh extension
+	addFunctionCase(group.get(),				"query_refreshable_objects", checkRefreshSupport, queryRefreshableObjects);
+	addFunctionCaseWithPrograms(group.get(),	"refresh_individual_objects",checkRefreshSupport, createComputeSource, refreshIndividualObjects);
+	addFunctionCaseWithPrograms(group.get(),	"refresh_all_objects",	 checkRefreshSupport, createComputeSource, refreshAllObjects);
 
 	return group.release();
 }

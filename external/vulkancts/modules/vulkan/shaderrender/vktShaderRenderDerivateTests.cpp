@@ -360,7 +360,8 @@ static bool verifyConstantDerivate (tcu::TestLog&						log,
 									const tcu::Vec4&					threshold,
 									const tcu::Vec4&					scale,
 									const tcu::Vec4&					bias,
-									VerificationLogging					logPolicy = LOG_ALL)
+									VerificationLogging					logPolicy = LOG_ALL,
+									bool								demoteToHelperInvocation = false)
 {
 	const int			numComps		= glu::getDataTypeFloatScalars(dataType);
 	const tcu::BVec4	mask			= tcu::logicalNot(getDerivateMask(dataType));
@@ -374,6 +375,9 @@ static bool verifyConstantDerivate (tcu::TestLog&						log,
 		for (int x = 0; x < result.getWidth(); x++)
 		{
 			if (isSkippedPixel(result, x, y))
+				continue;
+
+			if (demoteToHelperInvocation && deMod(y, 2) == 1)
 				continue;
 
 			const tcu::Vec4		resDerivate		= readDerivate(result, scale, bias, x, y);
@@ -549,14 +553,15 @@ struct DerivateCaseDefinition
 {
 	DerivateCaseDefinition (void)
 	{
-		func					= DERIVATE_LAST;
-		dataType				= glu::TYPE_LAST;
-		precision				= glu::PRECISION_LAST;
-		inNonUniformControlFlow	= false;
-		coordDataType			= glu::TYPE_LAST;
-		coordPrecision			= glu::PRECISION_LAST;
-		surfaceType				= SURFACETYPE_UNORM_FBO;
-		numSamples				= 0;
+		func						= DERIVATE_LAST;
+		dataType					= glu::TYPE_LAST;
+		precision					= glu::PRECISION_LAST;
+		inNonUniformControlFlow		= false;
+		coordDataType				= glu::TYPE_LAST;
+		coordPrecision				= glu::PRECISION_LAST;
+		surfaceType					= SURFACETYPE_UNORM_FBO;
+		numSamples					= 0;
+		demoteToHelperInvocation	= false;
 	}
 
 	DerivateFunc			func;
@@ -569,6 +574,8 @@ struct DerivateCaseDefinition
 
 	SurfaceType				surfaceType;
 	int						numSamples;
+
+	bool					demoteToHelperInvocation;
 };
 
 struct DerivateCaseValues
@@ -703,34 +710,6 @@ tcu::TestStatus TriangleDerivateCaseInstance::iterate (void)
 	const deUint16				indices[]		= { 0, 2, 1, 2, 3, 1 };
 	tcu::TextureLevel			resultImage;
 
-	if (m_definitions.inNonUniformControlFlow || isSubgroupFunc(m_definitions.func))
-	{
-		const std::string errorPrefix = m_definitions.inNonUniformControlFlow ? "Derivatives in dynamic control flow" :
-																				"Manual derivatives with subgroup operations";
-		if (!m_context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
-			throw tcu::NotSupportedError(errorPrefix + " require Vulkan 1.1");
-
-		vk::VkPhysicalDeviceSubgroupProperties subgroupProperties;
-		deMemset(&subgroupProperties, 0, sizeof(subgroupProperties));
-		subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-
-		vk::VkPhysicalDeviceProperties2 properties2;
-		deMemset(&properties2, 0, sizeof(properties2));
-		properties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		properties2.pNext = &subgroupProperties;
-
-		m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties2);
-
-		if (subgroupProperties.subgroupSize < 4)
-			throw tcu::NotSupportedError(errorPrefix + " require subgroupSize >= 4");
-
-		if ((subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT) == 0)
-			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_BALLOT_BIT");
-
-		if (isSubgroupFunc(m_definitions.func) && (subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT) == 0)
-			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_QUAD_BIT");
-	}
-
 	setup();
 
 	render(numVertices, numTriangles, indices);
@@ -794,26 +773,57 @@ class TriangleDerivateCase : public ShaderRenderCase
 public:
 									TriangleDerivateCase	(tcu::TestContext&		testCtx,
 															 const std::string&		name,
-															 const std::string&		description,
 															 const UniformSetup*	uniformSetup);
 	virtual							~TriangleDerivateCase	(void);
 
+	void							checkSupport			(Context& context) const override;
+
 protected:
-	mutable DerivateCaseDefinition	m_definitions;
-	mutable DerivateCaseValues		m_values;
+	DerivateCaseDefinition	m_definitions;
+	DerivateCaseValues		m_values;
 };
 
 TriangleDerivateCase::TriangleDerivateCase (tcu::TestContext&		testCtx,
 											const std::string&		name,
-											const std::string&		description,
 											const UniformSetup*		uniformSetup)
-	: ShaderRenderCase		(testCtx, name, description, false, (ShaderEvaluator*)DE_NULL, uniformSetup, DE_NULL)
+	: ShaderRenderCase		(testCtx, name, false, (ShaderEvaluator*)DE_NULL, uniformSetup, DE_NULL)
 	, m_definitions			()
 {
 }
 
 TriangleDerivateCase::~TriangleDerivateCase (void)
 {
+}
+
+void TriangleDerivateCase::checkSupport (Context& context) const
+{
+	ShaderRenderCase::checkSupport(context);
+
+	const bool subgroupFunc = isSubgroupFunc(m_definitions.func);
+
+	if (m_definitions.inNonUniformControlFlow || subgroupFunc)
+	{
+		const std::string errorPrefix	= m_definitions.inNonUniformControlFlow
+										? "Derivatives in dynamic control flow"
+										: "Manual derivatives with subgroup operations";
+
+		if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
+			throw tcu::NotSupportedError(errorPrefix + " require Vulkan 1.1");
+
+		const auto& subgroupProperties = context.getSubgroupProperties();
+
+		if (subgroupProperties.subgroupSize < 4)
+			throw tcu::NotSupportedError(errorPrefix + " require subgroupSize >= 4");
+
+		if ((subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT) == 0)
+			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_BALLOT_BIT");
+
+		if ((subgroupProperties.supportedStages & VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
+			throw tcu::NotSupportedError(errorPrefix + " tests require subgroup supported stage including VK_SHADER_STAGE_FRAGMENT_BIT");
+
+		if (subgroupFunc && (subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT) == 0)
+			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_QUAD_BIT");
+	}
 }
 
 static std::string genVertexSource (glu::DataType coordType, glu::Precision precision)
@@ -887,7 +897,6 @@ class ConstantDerivateCase : public TriangleDerivateCase
 public:
 							ConstantDerivateCase		(tcu::TestContext&		testCtx,
 														 const std::string&		name,
-														 const std::string&		description,
 														 DerivateFunc			func,
 														 glu::DataType			type);
 	virtual					~ConstantDerivateCase		(void);
@@ -898,14 +907,16 @@ public:
 
 ConstantDerivateCase::ConstantDerivateCase (tcu::TestContext&		testCtx,
 											const std::string&		name,
-											const std::string&		description,
 											DerivateFunc			func,
 											glu::DataType			type)
-	: TriangleDerivateCase	(testCtx, name, description, new DerivateUniformSetup(false))
+	: TriangleDerivateCase	(testCtx, name, new DerivateUniformSetup(false))
 {
 	m_definitions.func				= func;
 	m_definitions.dataType			= type;
 	m_definitions.precision			= glu::PRECISION_HIGHP;
+
+	m_values.derivScale		= tcu::Vec4(1e3f, 1e3f, 1e3f, 1e3f);
+	m_values.derivBias		= tcu::Vec4(0.5f, 0.5f, 0.5f, 0.5f);
 }
 
 ConstantDerivateCase::~ConstantDerivateCase (void)
@@ -947,9 +958,6 @@ void ConstantDerivateCase::initPrograms (vk::SourceCollections& programCollectio
 	std::string fragmentSrc = tcu::StringTemplate(fragmentTmpl).specialize(fragmentParams);
 	programCollection.glslSources.add("vert") << glu::VertexSource(genVertexSource(m_definitions.coordDataType, m_definitions.coordPrecision));
 	programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSrc);
-
-	m_values.derivScale		= tcu::Vec4(1e3f, 1e3f, 1e3f, 1e3f);
-	m_values.derivBias		= tcu::Vec4(0.5f, 0.5f, 0.5f, 0.5f);
 }
 
 // Linear cases
@@ -1047,7 +1055,7 @@ bool LinearDerivateCaseInstance::verify (const tcu::ConstPixelBufferAccess& resu
 		// This improves performance significantly.
 		if (verifyConstantDerivate(m_context.getTestContext().getLog(), result, errorMask, m_definitions.dataType,
 								   reference, threshold, m_values.derivScale, m_values.derivBias,
-								   LOG_NOTHING))
+								   LOG_NOTHING, m_definitions.demoteToHelperInvocation))
 		{
 			m_context.getTestContext().getLog()
 				<< tcu::TestLog::Message
@@ -1109,7 +1117,6 @@ class LinearDerivateCase : public TriangleDerivateCase
 public:
 							LinearDerivateCase			(tcu::TestContext&		testCtx,
 														 const std::string&		name,
-														 const std::string&		description,
 														 DerivateFunc			func,
 														 glu::DataType			type,
 														 glu::Precision			precision,
@@ -1117,11 +1124,17 @@ public:
 														 SurfaceType			surfaceType,
 														 int					numSamples,
 														 const std::string&		fragmentSrcTmpl,
-														 BaseUniformType		usedDefaultUniform);
+														 BaseUniformType		usedDefaultUniform,
+														 bool					demoteToHelperInvocaiton);
 	virtual					~LinearDerivateCase			(void);
 
 	virtual	void			initPrograms				(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance				(Context& context) const;
+	virtual void			checkSupport				(Context& context) const {
+		if (m_definitions.demoteToHelperInvocation) {
+			context.requireDeviceFunctionality("VK_EXT_shader_demote_to_helper_invocation");
+		}
+	}
 
 private:
 	const std::string		m_fragmentTmpl;
@@ -1129,7 +1142,6 @@ private:
 
 LinearDerivateCase::LinearDerivateCase (tcu::TestContext&		testCtx,
 										const std::string&		name,
-										const std::string&		description,
 										DerivateFunc			func,
 										glu::DataType			type,
 										glu::Precision			precision,
@@ -1137,8 +1149,9 @@ LinearDerivateCase::LinearDerivateCase (tcu::TestContext&		testCtx,
 										SurfaceType				surfaceType,
 										int						numSamples,
 										const std::string&		fragmentSrcTmpl,
-										BaseUniformType			usedDefaultUniform)
-	: TriangleDerivateCase	(testCtx, name, description, new LinearDerivateUniformSetup(false, usedDefaultUniform))
+										BaseUniformType			usedDefaultUniform,
+										bool					demoteToHelperInvocaiton)
+	: TriangleDerivateCase	(testCtx, name, new LinearDerivateUniformSetup(false, usedDefaultUniform))
 	, m_fragmentTmpl		(fragmentSrcTmpl)
 {
 	m_definitions.func						= func;
@@ -1149,6 +1162,56 @@ LinearDerivateCase::LinearDerivateCase (tcu::TestContext&		testCtx,
 	m_definitions.coordPrecision			= m_definitions.precision;
 	m_definitions.surfaceType				= surfaceType;
 	m_definitions.numSamples				= numSamples;
+	m_definitions.demoteToHelperInvocation	= demoteToHelperInvocaiton;
+
+	const tcu::UVec2	viewportSize	(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+	const float			w				= float(viewportSize.x());
+	const float			h				= float(viewportSize.y());
+
+	switch (m_definitions.precision)
+	{
+		case glu::PRECISION_HIGHP:
+			m_values.coordMin = tcu::Vec4(-97.f, 0.2f, 71.f, 74.f);
+			m_values.coordMax = tcu::Vec4(-13.2f, -77.f, 44.f, 76.f);
+			break;
+
+		case glu::PRECISION_MEDIUMP:
+			m_values.coordMin = tcu::Vec4(-37.0f, 47.f, -7.f, 0.0f);
+			m_values.coordMax = tcu::Vec4(-1.0f, 12.f, 7.f, 19.f);
+			break;
+
+		case glu::PRECISION_LOWP:
+			m_values.coordMin = tcu::Vec4(0.0f, -1.0f, 0.0f, 1.0f);
+			m_values.coordMax = tcu::Vec4(1.0f, 1.0f, -1.0f, -1.0f);
+			break;
+
+		default:
+			DE_ASSERT(false);
+	}
+
+	if (m_definitions.surfaceType == SURFACETYPE_FLOAT_FBO)
+	{
+		// No scale or bias used for accuracy.
+		m_values.derivScale	= tcu::Vec4(1.0f);
+		m_values.derivBias	= tcu::Vec4(0.0f);
+	}
+	else
+	{
+		// Compute scale - bias that normalizes to 0..1 range.
+		const tcu::Vec4 dx = (m_values.coordMax - m_values.coordMin) / tcu::Vec4(w, w, w*0.5f, -w*0.5f);
+		const tcu::Vec4 dy = (m_values.coordMax - m_values.coordMin) / tcu::Vec4(h, h, h*0.5f, -h*0.5f);
+
+		if (isDfdxFunc(m_definitions.func))
+			m_values.derivScale = 0.5f / dx;
+		else if (isDfdyFunc(m_definitions.func))
+			m_values.derivScale = 0.5f / dy;
+		else if (isFwidthFunc(m_definitions.func))
+			m_values.derivScale = 0.5f / (tcu::abs(dx) + tcu::abs(dy));
+		else
+			DE_ASSERT(false);
+
+		m_values.derivBias = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	}
 }
 
 LinearDerivateCase::~LinearDerivateCase (void)
@@ -1166,9 +1229,6 @@ void LinearDerivateCase::initPrograms (vk::SourceCollections& programCollection)
 	const SpirvVersion				spirvVersion = (m_definitions.inNonUniformControlFlow || isSubgroupFunc(m_definitions.func)) ? vk::SPIRV_VERSION_1_3 : vk::SPIRV_VERSION_1_0;
 	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
 
-	const tcu::UVec2	viewportSize	(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
-	const float			w				= float(viewportSize.x());
-	const float			h				= float(viewportSize.y());
 	const bool			packToInt		= m_definitions.surfaceType == SURFACETYPE_FLOAT_FBO;
 	map<string, string>	fragmentParams;
 
@@ -1196,51 +1256,6 @@ void LinearDerivateCase::initPrograms (vk::SourceCollections& programCollection)
 	std::string fragmentSrc = tcu::StringTemplate(m_fragmentTmpl).specialize(fragmentParams);
 	programCollection.glslSources.add("vert") << glu::VertexSource(genVertexSource(m_definitions.coordDataType, m_definitions.coordPrecision));
 	programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSrc) << buildOptions;
-
-	switch (m_definitions.precision)
-	{
-		case glu::PRECISION_HIGHP:
-			m_values.coordMin = tcu::Vec4(-97.f, 0.2f, 71.f, 74.f);
-			m_values.coordMax = tcu::Vec4(-13.2f, -77.f, 44.f, 76.f);
-			break;
-
-		case glu::PRECISION_MEDIUMP:
-			m_values.coordMin = tcu::Vec4(-37.0f, 47.f, -7.f, 0.0f);
-			m_values.coordMax = tcu::Vec4(-1.0f, 12.f, 7.f, 19.f);
-			break;
-
-		case glu::PRECISION_LOWP:
-			m_values.coordMin = tcu::Vec4(0.0f, -1.0f, 0.0f, 1.0f);
-			m_values.coordMax = tcu::Vec4(1.0f, 1.0f, -1.0f, -1.0f);
-			break;
-
-		default:
-			DE_ASSERT(false);
-	}
-
-	if (m_definitions.surfaceType == SURFACETYPE_FLOAT_FBO)
-	{
-		// No scale or bias used for accuracy.
-		m_values.derivScale	= tcu::Vec4(1.0f);
-		m_values.derivBias		= tcu::Vec4(0.0f);
-	}
-	else
-	{
-		// Compute scale - bias that normalizes to 0..1 range.
-		const tcu::Vec4 dx = (m_values.coordMax - m_values.coordMin) / tcu::Vec4(w, w, w*0.5f, -w*0.5f);
-		const tcu::Vec4 dy = (m_values.coordMax - m_values.coordMin) / tcu::Vec4(h, h, h*0.5f, -h*0.5f);
-
-		if (isDfdxFunc(m_definitions.func))
-			m_values.derivScale = 0.5f / dx;
-		else if (isDfdyFunc(m_definitions.func))
-			m_values.derivScale = 0.5f / dy;
-		else if (isFwidthFunc(m_definitions.func))
-			m_values.derivScale = 0.5f / (tcu::abs(dx) + tcu::abs(dy));
-		else
-			DE_ASSERT(false);
-
-		m_values.derivBias = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
-	}
 }
 
 // TextureDerivateCaseInstance
@@ -1409,7 +1424,6 @@ class TextureDerivateCase : public TriangleDerivateCase
 public:
 							TextureDerivateCase			(tcu::TestContext&		testCtx,
 														 const std::string&		name,
-														 const std::string&		description,
 														 DerivateFunc			func,
 														 glu::DataType			type,
 														 glu::Precision			precision,
@@ -1421,18 +1435,17 @@ public:
 	virtual TestInstance*	createInstance				(Context& context) const;
 
 private:
-	mutable TextureCaseValues	m_textureValues;
+	TextureCaseValues		m_textureValues;
 };
 
 TextureDerivateCase::TextureDerivateCase (tcu::TestContext&		testCtx,
 										  const std::string&	name,
-										  const std::string&	description,
 										  DerivateFunc			func,
 										  glu::DataType			type,
 										  glu::Precision		precision,
 										  SurfaceType			surfaceType,
 										  int					numSamples)
-	: TriangleDerivateCase	(testCtx, name, description, new DerivateUniformSetup(true))
+	: TriangleDerivateCase	(testCtx, name, new DerivateUniformSetup(true))
 {
 	m_definitions.dataType			= type;
 	m_definitions.func				= func;
@@ -1441,6 +1454,63 @@ TextureDerivateCase::TextureDerivateCase (tcu::TestContext&		testCtx,
 	m_definitions.coordPrecision	= glu::PRECISION_HIGHP;
 	m_definitions.surfaceType		= surfaceType;
 	m_definitions.numSamples		= numSamples;
+
+	// Texture size matches viewport and nearest sampling is used. Thus texture sampling
+	// is equal to just interpolating the texture value range.
+
+	// Determine value range for texture.
+
+	switch (m_definitions.precision)
+	{
+		case glu::PRECISION_HIGHP:
+			m_textureValues.texValueMin = tcu::Vec4(-97.f, 0.2f, 71.f, 74.f);
+			m_textureValues.texValueMax = tcu::Vec4(-13.2f, -77.f, 44.f, 76.f);
+			break;
+
+		case glu::PRECISION_MEDIUMP:
+			m_textureValues.texValueMin = tcu::Vec4(-37.0f, 47.f, -7.f, 0.0f);
+			m_textureValues.texValueMax = tcu::Vec4(-1.0f, 12.f, 7.f, 19.f);
+			break;
+
+		case glu::PRECISION_LOWP:
+			m_textureValues.texValueMin = tcu::Vec4(0.0f, -1.0f, 0.0f, 1.0f);
+			m_textureValues.texValueMax = tcu::Vec4(1.0f, 1.0f, -1.0f, -1.0f);
+			break;
+
+		default:
+			DE_ASSERT(false);
+	}
+
+	// Texture coordinates
+	m_values.coordMin = tcu::Vec4(0.0f);
+	m_values.coordMax = tcu::Vec4(1.0f);
+
+	if (m_definitions.surfaceType == SURFACETYPE_FLOAT_FBO)
+	{
+		// No scale or bias used for accuracy.
+		m_values.derivScale		= tcu::Vec4(1.0f);
+		m_values.derivBias		= tcu::Vec4(0.0f);
+	}
+	else
+	{
+		// Compute scale - bias that normalizes to 0..1 range.
+		const tcu::UVec2	viewportSize	(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+		const float			w				= float(viewportSize.x());
+		const float			h				= float(viewportSize.y());
+		const tcu::Vec4		dx				= (m_textureValues.texValueMax - m_textureValues.texValueMin) / tcu::Vec4(w, w, w*0.5f, -w*0.5f);
+		const tcu::Vec4		dy				= (m_textureValues.texValueMax - m_textureValues.texValueMin) / tcu::Vec4(h, h, h*0.5f, -h*0.5f);
+
+		if (isDfdxFunc(m_definitions.func))
+			m_values.derivScale = 0.5f / dx;
+		else if (isDfdyFunc(m_definitions.func))
+			m_values.derivScale = 0.5f / dy;
+		else if (isFwidthFunc(m_definitions.func))
+			m_values.derivScale = 0.5f / (tcu::abs(dx) + tcu::abs(dy));
+		else
+			DE_ASSERT(false);
+
+		m_values.derivBias = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	}
 }
 
 TextureDerivateCase::~TextureDerivateCase (void)
@@ -1503,63 +1573,6 @@ void TextureDerivateCase::initPrograms (vk::SourceCollections& programCollection
 		programCollection.glslSources.add("vert") << glu::VertexSource(genVertexSource(m_definitions.coordDataType, m_definitions.coordPrecision));
 		programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSrc);
 	}
-
-	// Texture size matches viewport and nearest sampling is used. Thus texture sampling
-	// is equal to just interpolating the texture value range.
-
-	// Determine value range for texture.
-
-	switch (m_definitions.precision)
-	{
-		case glu::PRECISION_HIGHP:
-			m_textureValues.texValueMin = tcu::Vec4(-97.f, 0.2f, 71.f, 74.f);
-			m_textureValues.texValueMax = tcu::Vec4(-13.2f, -77.f, 44.f, 76.f);
-			break;
-
-		case glu::PRECISION_MEDIUMP:
-			m_textureValues.texValueMin = tcu::Vec4(-37.0f, 47.f, -7.f, 0.0f);
-			m_textureValues.texValueMax = tcu::Vec4(-1.0f, 12.f, 7.f, 19.f);
-			break;
-
-		case glu::PRECISION_LOWP:
-			m_textureValues.texValueMin = tcu::Vec4(0.0f, -1.0f, 0.0f, 1.0f);
-			m_textureValues.texValueMax = tcu::Vec4(1.0f, 1.0f, -1.0f, -1.0f);
-			break;
-
-		default:
-			DE_ASSERT(false);
-	}
-
-	// Texture coordinates
-	m_values.coordMin = tcu::Vec4(0.0f);
-	m_values.coordMax = tcu::Vec4(1.0f);
-
-	if (m_definitions.surfaceType == SURFACETYPE_FLOAT_FBO)
-	{
-		// No scale or bias used for accuracy.
-		m_values.derivScale		= tcu::Vec4(1.0f);
-		m_values.derivBias		= tcu::Vec4(0.0f);
-	}
-	else
-	{
-		// Compute scale - bias that normalizes to 0..1 range.
-		const tcu::UVec2	viewportSize	(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
-		const float			w				= float(viewportSize.x());
-		const float			h				= float(viewportSize.y());
-		const tcu::Vec4		dx				= (m_textureValues.texValueMax - m_textureValues.texValueMin) / tcu::Vec4(w, w, w*0.5f, -w*0.5f);
-		const tcu::Vec4		dy				= (m_textureValues.texValueMax - m_textureValues.texValueMin) / tcu::Vec4(h, h, h*0.5f, -h*0.5f);
-
-		if (isDfdxFunc(m_definitions.func))
-			m_values.derivScale = 0.5f / dx;
-		else if (isDfdyFunc(m_definitions.func))
-			m_values.derivScale = 0.5f / dy;
-		else if (isFwidthFunc(m_definitions.func))
-			m_values.derivScale = 0.5f / (tcu::abs(dx) + tcu::abs(dy));
-		else
-			DE_ASSERT(false);
-
-		m_values.derivBias = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
-	}
 }
 
 // ShaderDerivateTests
@@ -1578,7 +1591,7 @@ private:
 };
 
 ShaderDerivateTests::ShaderDerivateTests (tcu::TestContext& testCtx)
-	: TestCaseGroup(testCtx, "derivate", "Derivate Function Tests")
+	: TestCaseGroup(testCtx, "derivate")
 {
 }
 
@@ -1611,6 +1624,7 @@ void ShaderDerivateTests::init (void)
 		const char*			source;
 		BaseUniformType		usedDefaultUniform;
 		bool				inNonUniformControlFlow;
+		bool				demoteToHelperInvocation;
 	} s_linearDerivateCases[] =
 	{
 		{
@@ -1629,6 +1643,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			U_LAST,
+			false,
 			false
 		},
 		{
@@ -1653,6 +1668,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			U_LAST,
+			false,
 			false
 		},
 		{
@@ -1675,6 +1691,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			U_LAST,
+			false,
 			false
 		},
 		{
@@ -1696,6 +1713,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			U_LAST,
+			false,
 			false
 		},
 		{
@@ -1719,6 +1737,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			U_LAST,
+			false,
 			false
 		},
 		{
@@ -1742,6 +1761,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			UB_TRUE,
+			false,
 			false
 		},
 		{
@@ -1764,6 +1784,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			UI_TWO,
+			false,
 			false
 		},
 		{
@@ -1788,6 +1809,7 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			UI_ONE,
+			false,
 			false
 		},
 		{
@@ -1816,7 +1838,8 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			UI_ONE,
-			true
+			true,
+			false
 		},
 		{
 			"dynamic_loop",
@@ -1843,7 +1866,8 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			UI_ONE,
-			true
+			true,
+			false
 		},
 		{
 			"dynamic_switch",
@@ -1872,6 +1896,51 @@ void ShaderDerivateTests::init (void)
 			"}\n",
 
 			UI_ONE,
+			true,
+			false
+		},
+		{
+			"output_store",
+			"Store variable to output and read it before using in a derivative",
+
+			"#version 450\n"
+			"layout(location = 0) in ${PRECISION} ${DATATYPE} v_coord;\n"
+			"layout(location = 0) out ${OUTPUT_PREC} ${OUTPUT_TYPE} o_color;\n"
+			"layout(location = 1) out ${PRECISION} ${DATATYPE} intermediateStore;\n"
+			"layout(binding = 0, std140) uniform Scale { ${PRECISION} ${DATATYPE} u_scale; };\n"
+			"layout(binding = 1, std140) uniform Bias { ${PRECISION} ${DATATYPE} u_bias; };\n"
+			"void main (void)\n"
+			"{\n"
+			"	intermediateStore = v_coord;\n"
+			"	${PRECISION} ${DATATYPE} res = ${FUNC}(intermediateStore) * u_scale + u_bias;\n"
+			"	o_color = ${CAST_TO_OUTPUT};\n"
+			"}\n",
+
+			U_LAST,
+			false,
+			true
+		},
+		{
+			"private_store",
+			"Store variable to global and read it before using in a derivative",
+
+			"#version 450\n"
+			"#extension GL_EXT_demote_to_helper_invocation : enable\n"
+			"layout(location = 0) in ${PRECISION} ${DATATYPE} v_coord;\n"
+			"layout(location = 0) out ${OUTPUT_PREC} ${OUTPUT_TYPE} o_color;\n"
+			"layout(binding = 0, std140) uniform Scale { ${PRECISION} ${DATATYPE} u_scale; };\n"
+			"layout(binding = 1, std140) uniform Bias { ${PRECISION} ${DATATYPE} u_bias; };\n"
+			"${PRECISION} ${DATATYPE} intermediateStore;\n"
+			"void main (void)\n"
+			"{\n"
+			"	intermediateStore = v_coord;\n"
+			"	if (mod(gl_FragCoord.y, 2.0f) == 1.0f) demote;\n"
+			"	${PRECISION} ${DATATYPE} res = ${FUNC}(intermediateStore) * u_scale + u_bias;\n"
+			"	o_color = ${CAST_TO_OUTPUT};\n"
+			"}\n",
+
+			U_LAST,
+			false,
 			true
 		},
 	};
@@ -1962,17 +2031,18 @@ void ShaderDerivateTests::init (void)
 	for (int funcNdx = 0; funcNdx < DERIVATE_LAST; funcNdx++)
 	{
 		const DerivateFunc					function		= DerivateFunc(funcNdx);
-		de::MovePtr<tcu::TestCaseGroup>		functionGroup	(new tcu::TestCaseGroup(m_testCtx, getDerivateFuncCaseName(function), getDerivateFuncName(function)));
+		de::MovePtr<tcu::TestCaseGroup>		functionGroup	(new tcu::TestCaseGroup(m_testCtx, getDerivateFuncCaseName(function)));
 
 		// .constant - no precision variants and no subgroup derivatives, checks that derivate of constant arguments is 0
 		if (!isSubgroupFunc(function))
 		{
-			de::MovePtr<tcu::TestCaseGroup>	constantGroup	(new tcu::TestCaseGroup(m_testCtx, "constant", "Derivate of constant argument"));
+			// Derivate of constant argument
+			de::MovePtr<tcu::TestCaseGroup>	constantGroup	(new tcu::TestCaseGroup(m_testCtx, "constant"));
 
 			for (int vecSize = 1; vecSize <= 4; vecSize++)
 			{
 				const glu::DataType			dataType		= vecSize > 1 ? glu::getDataTypeFloatVec(vecSize) : glu::TYPE_FLOAT;
-				constantGroup->addChild(new ConstantDerivateCase(m_testCtx, glu::getDataTypeName(dataType), "", function, dataType));
+				constantGroup->addChild(new ConstantDerivateCase(m_testCtx, glu::getDataTypeName(dataType), function, dataType));
 			}
 
 			functionGroup->addChild(constantGroup.release());
@@ -1983,7 +2053,7 @@ void ShaderDerivateTests::init (void)
 		{
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(s_linearDerivateCases); caseNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	linearCaseGroup	(new tcu::TestCaseGroup(m_testCtx, s_linearDerivateCases[caseNdx].name, s_linearDerivateCases[caseNdx].description));
+				de::MovePtr<tcu::TestCaseGroup>	linearCaseGroup	(new tcu::TestCaseGroup(m_testCtx, s_linearDerivateCases[caseNdx].name));
 				const char*						source			= s_linearDerivateCases[caseNdx].source;
 
 				for (int vecSize = 1; vecSize <= 4; vecSize++)
@@ -2001,7 +2071,7 @@ void ShaderDerivateTests::init (void)
 
 						caseName << glu::getDataTypeName(dataType) << "_" << glu::getPrecisionName(precision);
 
-						linearCaseGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, s_linearDerivateCases[caseNdx].inNonUniformControlFlow, surfaceType, numSamples, source, s_linearDerivateCases[caseNdx].usedDefaultUniform));
+						linearCaseGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), function, dataType, precision, s_linearDerivateCases[caseNdx].inNonUniformControlFlow, surfaceType, numSamples, source, s_linearDerivateCases[caseNdx].usedDefaultUniform, s_linearDerivateCases[caseNdx].demoteToHelperInvocation));
 					}
 				}
 
@@ -2012,7 +2082,8 @@ void ShaderDerivateTests::init (void)
 		// Fbo cases
 		for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(s_fboConfigs); caseNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	fboGroup		(new tcu::TestCaseGroup(m_testCtx, s_fboConfigs[caseNdx].name, "Derivate usage when rendering into FBO"));
+			// Derivate usage when rendering into FBO
+			de::MovePtr<tcu::TestCaseGroup>	fboGroup		(new tcu::TestCaseGroup(m_testCtx, s_fboConfigs[caseNdx].name));
 			// use source from subgroup source or source from .linear group
 			const char*						source			= function == DERIVATE_DFDXSUBGROUP ? dFdxSubgroupSource :
 															  function == DERIVATE_DFDYSUBGROUP ? dFdySubgroupSource :
@@ -2033,7 +2104,7 @@ void ShaderDerivateTests::init (void)
 
 					caseName << glu::getDataTypeName(dataType) << "_" << glu::getPrecisionName(precision);
 
-					fboGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, false, surfaceType, numSamples, source, U_LAST));
+					fboGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), function, dataType, precision, false, surfaceType, numSamples, source, U_LAST, false));
 				}
 			}
 
@@ -2043,11 +2114,11 @@ void ShaderDerivateTests::init (void)
 		// .texture
 		if (!isSubgroupFunc(function))
 		{
-			de::MovePtr<tcu::TestCaseGroup>		textureGroup	(new tcu::TestCaseGroup(m_testCtx, "texture", "Derivate of texture lookup result"));
+			de::MovePtr<tcu::TestCaseGroup>		textureGroup	(new tcu::TestCaseGroup(m_testCtx, "texture"));
 
 			for (int texCaseNdx = 0; texCaseNdx < DE_LENGTH_OF_ARRAY(s_textureConfigs); texCaseNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	caseGroup		(new tcu::TestCaseGroup(m_testCtx, s_textureConfigs[texCaseNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	caseGroup		(new tcu::TestCaseGroup(m_testCtx, s_textureConfigs[texCaseNdx].name));
 				const SurfaceType				surfaceType		= s_textureConfigs[texCaseNdx].surfaceType;
 				const int						numSamples		= s_textureConfigs[texCaseNdx].numSamples;
 
@@ -2064,7 +2135,7 @@ void ShaderDerivateTests::init (void)
 
 						caseName << glu::getDataTypeName(dataType) << "_" << glu::getPrecisionName(precision);
 
-						caseGroup->addChild(new TextureDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, surfaceType, numSamples));
+						caseGroup->addChild(new TextureDerivateCase(m_testCtx, caseName.str(), function, dataType, precision, surfaceType, numSamples));
 					}
 				}
 

@@ -43,7 +43,7 @@ const char*	getDescriptorUpdateTemplateTypeName		(VkDescriptorUpdateTemplateType
 const char*	getDiscardRectangleModeEXTName			(VkDiscardRectangleModeEXT value);
 const char*	getPointClippingBehaviorName			(VkPointClippingBehavior value);
 const char*	getQueueGlobalPriorityKHRName			(VkQueueGlobalPriorityKHR value);
-const char*	getTimeDomainEXTName					(VkTimeDomainEXT value);
+const char*	getTimeDomainKHRName					(VkTimeDomainKHR value);
 const char*	getConservativeRasterizationModeEXTName	(VkConservativeRasterizationModeEXT value);
 const char*	getSemaphoreTypeName					(VkSemaphoreType value);
 const char*	getPerformanceCounterScopeKHRName		(VkPerformanceCounterScopeKHR value);
@@ -115,7 +115,7 @@ inline tcu::Format::Enum<VkDescriptorUpdateTemplateType>		getDescriptorUpdateTem
 inline tcu::Format::Enum<VkDiscardRectangleModeEXT>				getDiscardRectangleModeEXTStr			(VkDiscardRectangleModeEXT value)			{ return tcu::Format::Enum<VkDiscardRectangleModeEXT>(getDiscardRectangleModeEXTName, value);					}
 inline tcu::Format::Enum<VkPointClippingBehavior>				getPointClippingBehaviorStr				(VkPointClippingBehavior value)				{ return tcu::Format::Enum<VkPointClippingBehavior>(getPointClippingBehaviorName, value);						}
 inline tcu::Format::Enum<VkQueueGlobalPriorityKHR>				getQueueGlobalPriorityKHRStr			(VkQueueGlobalPriorityKHR value)			{ return tcu::Format::Enum<VkQueueGlobalPriorityKHR>(getQueueGlobalPriorityKHRName, value);						}
-inline tcu::Format::Enum<VkTimeDomainEXT>						getTimeDomainEXTStr						(VkTimeDomainEXT value)						{ return tcu::Format::Enum<VkTimeDomainEXT>(getTimeDomainEXTName, value);										}
+inline tcu::Format::Enum<VkTimeDomainKHR>						getTimeDomainKHRStr						(VkTimeDomainKHR value)						{ return tcu::Format::Enum<VkTimeDomainKHR>(getTimeDomainKHRName, value);										}
 inline tcu::Format::Enum<VkConservativeRasterizationModeEXT>	getConservativeRasterizationModeEXTStr	(VkConservativeRasterizationModeEXT value)	{ return tcu::Format::Enum<VkConservativeRasterizationModeEXT>(getConservativeRasterizationModeEXTName, value);	}
 inline tcu::Format::Enum<VkSemaphoreType>						getSemaphoreTypeStr						(VkSemaphoreType value)						{ return tcu::Format::Enum<VkSemaphoreType>(getSemaphoreTypeName, value);										}
 inline tcu::Format::Enum<VkPerformanceCounterScopeKHR>			getPerformanceCounterScopeKHRStr		(VkPerformanceCounterScopeKHR value)		{ return tcu::Format::Enum<VkPerformanceCounterScopeKHR>(getPerformanceCounterScopeKHRName, value);				}
@@ -187,7 +187,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkDescriptorUpdateTemplateType
 inline std::ostream&	operator<<	(std::ostream& s, VkDiscardRectangleModeEXT value)			{ return s << getDiscardRectangleModeEXTStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkPointClippingBehavior value)			{ return s << getPointClippingBehaviorStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkQueueGlobalPriorityKHR value)			{ return s << getQueueGlobalPriorityKHRStr(value);				}
-inline std::ostream&	operator<<	(std::ostream& s, VkTimeDomainEXT value)					{ return s << getTimeDomainEXTStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkTimeDomainKHR value)					{ return s << getTimeDomainKHRStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkConservativeRasterizationModeEXT value)	{ return s << getConservativeRasterizationModeEXTStr(value);	}
 inline std::ostream&	operator<<	(std::ostream& s, VkSemaphoreType value)					{ return s << getSemaphoreTypeStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterScopeKHR value)		{ return s << getPerformanceCounterScopeKHRStr(value);			}
@@ -375,9 +375,11 @@ tcu::Format::Bitfield<32>	getOpticalFlowGridSizeFlagsNVStr							(VkOpticalFlowG
 tcu::Format::Bitfield<32>	getOpticalFlowUsageFlagsNVStr								(VkOpticalFlowUsageFlagsNV value);
 tcu::Format::Bitfield<32>	getOpticalFlowSessionCreateFlagsNVStr						(VkOpticalFlowSessionCreateFlagsNV value);
 tcu::Format::Bitfield<32>	getOpticalFlowExecuteFlagsNVStr								(VkOpticalFlowExecuteFlagsNV value);
+tcu::Format::Bitfield<32>	getFrameBoundaryFlagsEXTStr									(VkFrameBoundaryFlagsEXT value);
 tcu::Format::Bitfield<32>	getPresentScalingFlagsEXTStr								(VkPresentScalingFlagsEXT value);
 tcu::Format::Bitfield<32>	getPresentGravityFlagsEXTStr								(VkPresentGravityFlagsEXT value);
 tcu::Format::Bitfield<32>	getShaderCreateFlagsEXTStr									(VkShaderCreateFlagsEXT value);
+tcu::Format::Bitfield<64>	getPhysicalDeviceSchedulingControlsFlagsARMStr				(VkPhysicalDeviceSchedulingControlsFlagsARM value);
 tcu::Format::Bitfield<32>	getVideoCodecOperationFlagsKHRStr							(VkVideoCodecOperationFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoCapabilityFlagsKHRStr								(VkVideoCapabilityFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoSessionCreateFlagsKHRStr							(VkVideoSessionCreateFlagsKHR value);
@@ -683,7 +685,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkImportMemoryHostPointerInfoEX
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryHostPointerPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryHostPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceConservativeRasterizationPropertiesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkCalibratedTimestampInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCalibratedTimestampInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationConservativeStateCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDescriptorIndexingFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDescriptorIndexingProperties& value);
@@ -703,15 +705,15 @@ std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreTypeCreateInfo& valu
 std::ostream&	operator<<	(std::ostream& s, const VkTimelineSemaphoreSubmitInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreWaitInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreSignalInfo& value);
-std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDivisorDescriptionEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDivisorDescriptionKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePCIBusInfoPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice8BitStorageFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkanMemoryModelFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicInt64Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyCheckpointPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCheckpointDataNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthStencilResolveProperties& value);

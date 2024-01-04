@@ -99,7 +99,7 @@ class APIVersionTestCase : public TestCase
 {
 public:
 							APIVersionTestCase	(tcu::TestContext&		testCtx)
-								: TestCase	(testCtx, "version", "Prints out API info.")
+								: TestCase	(testCtx, "version")
 	{}
 
 	virtual					~APIVersionTestCase	(void)
@@ -177,7 +177,6 @@ public:
 				extFunctions.push_back(FunctionInfo("vkTrimCommandPoolKHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkCmdPushDescriptorSetKHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkCreateSamplerYcbcrConversionKHR", FUNCTIONORIGIN_DEVICE));
-				extFunctions.push_back(FunctionInfo("vkGetSwapchainStatusKHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkCreateSwapchainKHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkGetImageSparseMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkBindBufferMemory2KHR", FUNCTIONORIGIN_DEVICE));
@@ -342,7 +341,7 @@ private:
 		VkPhysicalDevice			physicalDevice	= chooseDevice(context.getInstanceInterface(), instance, cmdLine);
 		vector<const char*>			extensionPtrs;
 		const float					queuePriority	= 1.0f;
-		const deUint32				queueIndex		= findQueueFamilyIndex(vki, physicalDevice, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+		const deUint32				queueIndex		= findQueueFamilyIndex(vki, physicalDevice, cmdLine.isComputeOnly() ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
 		for (size_t i = 0; i < extensions.size(); i++)
 			extensionPtrs.push_back(extensions[i].c_str());
@@ -509,6 +508,15 @@ private:
 				&& !isSupportedDeviceExt("VK_KHR_draw_indirect_count", apiVersion))
 				continue;
 
+			// vkCmdPushDescriptorSetWithTemplateKHR is available if:
+			// - VK_KHR_push_descriptor is supported AND
+			//   - API >= VK_VERSION_1_1 OR
+			//   - VK_KHR_descriptor_update_template is supported
+			if (deStringEqual(funcName, "vkCmdPushDescriptorSetWithTemplateKHR") &&
+			    (!isSupportedDeviceExt("VK_KHR_push_descriptor", apiVersion) ||
+			      (apiVersion < VK_API_VERSION_1_1 && !isSupportedDeviceExt("VK_KHR_descriptor_update_template", apiVersion))))
+				continue;
+
 			if (funcType == FUNCTIONORIGIN_PLATFORM)
 			{
 				checkPlatformFunction(ctx, log, funcName, DE_TRUE, failsQuantity);
@@ -533,7 +541,7 @@ class APIEntryPointsTestCase : public TestCase
 {
 public:
 							APIEntryPointsTestCase			(tcu::TestContext&		testCtx)
-								: TestCase	(testCtx, "entry_points", "Prints out API info.")
+								: TestCase	(testCtx, "entry_points")
 	{}
 
 	virtual					~APIEntryPointsTestCase			(void)
@@ -546,13 +554,160 @@ public:
 private:
 };
 
+class APIUnavailableEntryPointsTestInstance : public TestInstance
+{
+public:
+	APIUnavailableEntryPointsTestInstance(Context& ctx): TestInstance(ctx)
+	{}
+
+	virtual tcu::TestStatus iterate(void)
+	{
+		const vk::PlatformInterface&	vkp						= m_context.getPlatformInterface();
+		tcu::TestLog&					log						= m_context.getTestContext().getLog();
+		const auto						supportedApiVersion		= m_context.getUsedApiVersion();
+		bool							testPassed				= true;
+
+		ApisMap functionsPerVersion;
+		initApisMap(functionsPerVersion);
+
+		// create custom instance for each api version
+		for (const auto& testedApiVersion : functionsPerVersion)
+		{
+			// we cant test api versions that are higher then api version support by this device
+			if (testedApiVersion.first > supportedApiVersion)
+				break;
+
+			// there is no api version above the last api version
+			if (testedApiVersion.first == functionsPerVersion.rbegin()->first)
+				break;
+
+			VkApplicationInfo appInfo	= initVulkanStructure();
+			appInfo.pApplicationName	= "a";
+			appInfo.pEngineName			= "b";
+			appInfo.apiVersion			= testedApiVersion.first;
+			VkInstanceCreateInfo instanceCreateInfo	= initVulkanStructure();
+			instanceCreateInfo.pApplicationInfo		= &appInfo;
+
+#ifndef CTS_USES_VULKANSC
+			char const * requiredExtensionForVk10 = "VK_KHR_get_physical_device_properties2";
+			if (appInfo.apiVersion == VK_API_VERSION_1_0)
+			{
+				instanceCreateInfo.enabledExtensionCount = 1U;
+				instanceCreateInfo.ppEnabledExtensionNames = &requiredExtensionForVk10;
+			}
+#endif // CTS_USES_VULKANSC
+
+			// create instance for currentluy tested vulkan version
+			Move<VkInstance>					customInstance			(vk::createInstance(vkp, &instanceCreateInfo, DE_NULL));
+			std::unique_ptr<vk::InstanceDriver>	instanceDriver			(new InstanceDriver(vkp, *customInstance));
+			const VkPhysicalDevice				physicalDevice			= chooseDevice(*instanceDriver, *customInstance, m_context.getTestContext().getCommandLine());
+			const auto							queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(*instanceDriver, physicalDevice);
+
+			const float queuePriority = 1.0f;
+			VkDeviceQueueCreateInfo deviceQueueCreateInfo	= initVulkanStructure();
+			deviceQueueCreateInfo.queueCount				= 1;
+			deviceQueueCreateInfo.pQueuePriorities			= &queuePriority;
+
+			VkDeviceCreateInfo deviceCreateInfo				= initVulkanStructure();
+			deviceCreateInfo.queueCreateInfoCount			= 1u;
+			deviceCreateInfo.pQueueCreateInfos				= &deviceQueueCreateInfo;
+
+#ifndef CTS_USES_VULKANSC
+			char const * extensionName						= "VK_KHR_maintenance5";
+			deviceCreateInfo.enabledExtensionCount			= 1u;
+			deviceCreateInfo.ppEnabledExtensionNames		= &extensionName;
+
+			vk::VkPhysicalDeviceMaintenance5FeaturesKHR maint5 = initVulkanStructure();
+			vk::VkPhysicalDeviceFeatures2 features2			= initVulkanStructure(&maint5);
+			instanceDriver->getPhysicalDeviceFeatures2(physicalDevice, &features2);
+			deviceCreateInfo.pNext							= &features2;
+#endif // CTS_USES_VULKANSC
+
+			// create custom device
+			const Unique<VkDevice>	device			(createCustomDevice(false, vkp, *customInstance, *instanceDriver, physicalDevice, &deviceCreateInfo));
+			const DeviceDriver		deviceDriver	(vkp, *customInstance, *device, supportedApiVersion, m_context.getTestContext().getCommandLine());
+
+			log << tcu::TestLog::Message << "Checking apiVersion("
+				<< VK_API_VERSION_MAJOR(testedApiVersion.first) << ", "
+				<< VK_API_VERSION_MINOR(testedApiVersion.first) << ")" << tcu::TestLog::EndMessage;
+
+			// iterate over api versions that are above tested api version
+			auto& previousVersionFunctions = functionsPerVersion[VK_API_VERSION_1_0];
+			for (const auto& versionFunctions : functionsPerVersion)
+			{
+				// skip api versions that are not above tested api version
+				if (versionFunctions.first <= testedApiVersion.first)
+				{
+					previousVersionFunctions = versionFunctions.second;
+					continue;
+				}
+
+				// iterate over all functions
+				for (const auto& function : versionFunctions.second)
+				{
+					// we are interested only in device functions
+					if (function.second != FUNCTIONORIGIN_DEVICE)
+						continue;
+
+					// skip functions that are present in previous version;
+					// functionsPerVersion contains all functions that are
+					// available in vulkan version, not only ones that were added
+					const auto&	funcName	= function.first;
+					const auto	isMatch		= [&funcName](const FunctionInfo& fi) { return !strcmp(funcName, fi.first); };
+					auto matchIt = std::find_if(begin(previousVersionFunctions), end(previousVersionFunctions), isMatch);
+					if (matchIt != previousVersionFunctions.end())
+						continue;
+
+					// check if returned function pointer is NULL
+					if (deviceDriver.getDeviceProcAddr(*device, funcName) != DE_NULL)
+					{
+						log << tcu::TestLog::Message << "getDeviceProcAddr(" << funcName
+							<< ") returned non-null pointer, expected NULL" << tcu::TestLog::EndMessage;
+						testPassed = false;
+					}
+				}
+
+				previousVersionFunctions = versionFunctions.second;
+			}
+		}
+
+		if (testPassed)
+			return tcu::TestStatus::pass("Pass");
+		return tcu::TestStatus::fail("Fail");
+	}
+};
+
+class APIUnavailableEntryPointsTestCase : public TestCase
+{
+public:
+	// Check if vkGetDeviceProcAddr returns NULL for functions beyond app version.
+	APIUnavailableEntryPointsTestCase(tcu::TestContext& testCtx)
+		: TestCase(testCtx, "unavailable_entry_points")
+	{}
+
+	virtual void			checkSupport(Context& context) const
+	{
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+	}
+
+	virtual TestInstance*	createInstance(Context& ctx) const
+	{
+		return new APIUnavailableEntryPointsTestInstance(ctx);
+	}
+};
+
 } // anonymous
 
 tcu::TestCaseGroup*			createVersionSanityCheckTests	(tcu::TestContext & testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	versionTests	(new tcu::TestCaseGroup(testCtx, "version_check", "API Version Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	versionTests	(new tcu::TestCaseGroup(testCtx, "version_check"));
 	versionTests->addChild(new APIVersionTestCase(testCtx));
 	versionTests->addChild(new APIEntryPointsTestCase(testCtx));
+
+#ifndef CTS_USES_VULKANSC
+	versionTests->addChild(new APIUnavailableEntryPointsTestCase(testCtx));
+#endif
+
 	return versionTests.release();
 }
 

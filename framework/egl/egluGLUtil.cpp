@@ -235,6 +235,15 @@ static bool configMatches (const eglw::Library& egl, eglw::EGLDisplay display, e
 			return false;
 	}
 
+	if (renderConfig.componentType != glu::RenderConfig::COMPONENT_TYPE_DONT_CARE)
+	{
+		EGLint componentType = 0;
+		EGLU_CHECK_CALL(egl, getConfigAttrib(display, eglConfig, EGL_COLOR_COMPONENT_TYPE_EXT, &componentType));
+
+		if (componentType != glu::toEGLComponentType(renderConfig.componentType))
+			return false;
+	}
+
 	{
 		static const struct
 		{

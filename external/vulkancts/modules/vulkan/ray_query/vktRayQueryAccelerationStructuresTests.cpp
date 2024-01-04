@@ -1511,7 +1511,7 @@ void commonASTestsCheckSupport(Context& context)
 class RayQueryASBasicTestCase : public TestCase
 {
 public:
-							RayQueryASBasicTestCase		(tcu::TestContext& context, const char* name, const char* desc, const TestParams& data);
+							RayQueryASBasicTestCase		(tcu::TestContext& context, const char* name, const TestParams& data);
 							~RayQueryASBasicTestCase	(void);
 
 	virtual void			checkSupport				(Context& context) const;
@@ -1524,7 +1524,7 @@ protected:
 class RayQueryASFuncArgTestCase : public RayQueryASBasicTestCase
 {
 public:
-							RayQueryASFuncArgTestCase		(tcu::TestContext& context, const char* name, const char* desc, const TestParams& data);
+							RayQueryASFuncArgTestCase		(tcu::TestContext& context, const char* name, const TestParams& data);
 							~RayQueryASFuncArgTestCase		(void) {}
 
 	virtual	void			initPrograms					(SourceCollections& programCollection) const;
@@ -1549,8 +1549,8 @@ private:
 	TestParams														m_data;
 };
 
-RayQueryASBasicTestCase::RayQueryASBasicTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams& data)
-	: vkt::TestCase	(context, name, desc)
+RayQueryASBasicTestCase::RayQueryASBasicTestCase (tcu::TestContext& context, const char* name, const TestParams& data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -2144,8 +2144,8 @@ TestInstance* RayQueryASBasicTestCase::createInstance (Context& context) const
 	return new RayQueryASBasicTestInstance(context, m_data);
 }
 
-RayQueryASFuncArgTestCase::RayQueryASFuncArgTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams& data)
-	: RayQueryASBasicTestCase (context, name, desc, data)
+RayQueryASFuncArgTestCase::RayQueryASFuncArgTestCase (tcu::TestContext& context, const char* name, const TestParams& data)
+	: RayQueryASBasicTestCase (context, name, data)
 {
 }
 
@@ -2882,7 +2882,7 @@ public:
 };
 
 RayQueryASDynamicIndexingTestCase::RayQueryASDynamicIndexingTestCase(tcu::TestContext& context, const char* name)
-	: TestCase(context, name, "")
+	: TestCase(context, name)
 {
 }
 
@@ -3487,23 +3487,23 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name));
 
 		for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
 
 			for (size_t bottomNdx = 0; bottomNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++bottomNdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup> bottomGroup(new tcu::TestCaseGroup(group->getTestContext(), bottomTestTypes[bottomNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup> bottomGroup(new tcu::TestCaseGroup(group->getTestContext(), bottomTestTypes[bottomNdx].name));
 
 				for (size_t topNdx = 0; topNdx < DE_LENGTH_OF_ARRAY(topTestTypes); ++topNdx)
 				{
-					de::MovePtr<tcu::TestCaseGroup> topGroup(new tcu::TestCaseGroup(group->getTestContext(), topTestTypes[topNdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup> topGroup(new tcu::TestCaseGroup(group->getTestContext(), topTestTypes[topNdx].name));
 
 					for (int paddingTypeIdx = 0; paddingTypeIdx < DE_LENGTH_OF_ARRAY(paddingType); ++paddingTypeIdx)
 					{
-						de::MovePtr<tcu::TestCaseGroup> paddingTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), paddingType[paddingTypeIdx].name, ""));
+						de::MovePtr<tcu::TestCaseGroup> paddingTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), paddingType[paddingTypeIdx].name));
 
 						for (size_t optimizationNdx = 0; optimizationNdx < DE_LENGTH_OF_ARRAY(optimizationTypes); ++optimizationNdx)
 						{
@@ -3550,7 +3550,7 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 												0u,
 												EmptyAccelerationStructureCase::NOT_EMPTY,
 											};
-											paddingTypeGroup->addChild(new RayQueryASBasicTestCase(group->getTestContext(), testName.c_str(), "", testParams));
+											paddingTypeGroup->addChild(new RayQueryASBasicTestCase(group->getTestContext(), testName.c_str(), testParams));
 										}
 									}
 								}
@@ -3646,22 +3646,22 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name));
 
 		for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
 
 			for (size_t vertexFormatNdx = 0; vertexFormatNdx < DE_LENGTH_OF_ARRAY(vertexFormats); ++vertexFormatNdx)
 			{
 				const auto format		= vertexFormats[vertexFormatNdx];
 				const auto formatName	= getFormatSimpleName(format);
 
-				de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(new tcu::TestCaseGroup(group->getTestContext(), formatName.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(new tcu::TestCaseGroup(group->getTestContext(), formatName.c_str()));
 
 				for (int paddingIdx = 0; paddingIdx < DE_LENGTH_OF_ARRAY(paddingType); ++paddingIdx)
 				{
-					de::MovePtr<tcu::TestCaseGroup> paddingGroup(new tcu::TestCaseGroup(group->getTestContext(), paddingType[paddingIdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup> paddingGroup(new tcu::TestCaseGroup(group->getTestContext(), paddingType[paddingIdx].name));
 
 					for (size_t indexFormatNdx = 0; indexFormatNdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatNdx)
 					{
@@ -3690,7 +3690,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 							0u,
 							EmptyAccelerationStructureCase::NOT_EMPTY,
 						};
-						paddingGroup->addChild(new RayQueryASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
+						paddingGroup->addChild(new RayQueryASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, testParams));
 					}
 					vertexFormatGroup->addChild(paddingGroup.release());
 				}
@@ -3768,7 +3768,7 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name));
 
 		for (size_t operationTypeNdx = 0; operationTypeNdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypeNdx)
 		{
@@ -3776,18 +3776,18 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 				if (operationTypes[operationTypeNdx].operationType != OP_COPY && operationTypes[operationTypeNdx].operationType != OP_SERIALIZE)
 					continue;
 
-			de::MovePtr<tcu::TestCaseGroup> operationTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTypes[operationTypeNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> operationTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTypes[operationTypeNdx].name));
 
 			for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 			{
 				if (workerThreads > 0 && buildTypes[buildTypeNdx].buildType != VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR)
 					continue;
 
-				de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name));
 
 				for (size_t operationTargetNdx = 0; operationTargetNdx < DE_LENGTH_OF_ARRAY(operationTargets); ++operationTargetNdx)
 				{
-					de::MovePtr<tcu::TestCaseGroup> operationTargetGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTargets[operationTargetNdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup> operationTargetGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTargets[operationTargetNdx].name));
 
 					for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(bottomTestTypes); ++testTypeNdx)
 					{
@@ -3818,7 +3818,7 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 							workerThreads,
 							EmptyAccelerationStructureCase::NOT_EMPTY,
 						};
-						operationTargetGroup->addChild(new RayQueryASBasicTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, "", testParams));
+						operationTargetGroup->addChild(new RayQueryASBasicTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, testParams));
 					}
 					buildGroup->addChild(operationTargetGroup.release());
 				}
@@ -3845,7 +3845,7 @@ void addHostThreadingOperationTests (tcu::TestCaseGroup* group)
 									? de::toString(threads[threadsNdx])
 									: "max";
 
-		de::MovePtr<tcu::TestCaseGroup> threadGroup(new tcu::TestCaseGroup(group->getTestContext(), groupName.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> threadGroup(new tcu::TestCaseGroup(group->getTestContext(), groupName.c_str()));
 
 		addOperationTestsImpl(threadGroup.get(), threads[threadsNdx]);
 
@@ -3895,7 +3895,7 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 			EmptyAccelerationStructureCase::NOT_EMPTY,
 		};
 
-		group->addChild(new RayQueryASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, "", testParams));
+		group->addChild(new RayQueryASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, testParams));
 	}
 }
 
@@ -3969,15 +3969,15 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 
 	for (int shaderSourceIdx = 0; shaderSourceIdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceIdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> shaderSourceGroup(new tcu::TestCaseGroup(ctx, shaderSourceTypes[shaderSourceIdx].name.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> shaderSourceGroup(new tcu::TestCaseGroup(ctx, shaderSourceTypes[shaderSourceIdx].name.c_str()));
 
 		for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str()));
 
 			for (int indexFormatIdx = 0; indexFormatIdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatIdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup> indexTypeGroup(new tcu::TestCaseGroup(ctx, indexFormats[indexFormatIdx].name.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> indexTypeGroup(new tcu::TestCaseGroup(ctx, indexFormats[indexFormatIdx].name.c_str()));
 
 				for (int topTypeIdx = 0; topTypeIdx < DE_LENGTH_OF_ARRAY(topType); ++topTypeIdx)
 				{
@@ -4010,7 +4010,7 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 							0u,
 							EmptyAccelerationStructureCase::NOT_EMPTY,
 						};
-						indexTypeGroup->addChild(new RayQueryASBasicTestCase(ctx, testName.c_str(), "", testParams));
+						indexTypeGroup->addChild(new RayQueryASBasicTestCase(ctx, testName.c_str(), testParams));
 					}
 				}
 				buildTypeGroup->addChild(indexTypeGroup.release());
@@ -4047,7 +4047,7 @@ void addInstanceUpdateTests (tcu::TestCaseGroup* group)
 
 	for (int buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeNdx].name.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeNdx].name.c_str()));
 
 		for (int operationTypesIdx = 0; operationTypesIdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypesIdx)
 		{
@@ -4077,7 +4077,7 @@ void addInstanceUpdateTests (tcu::TestCaseGroup* group)
 				EmptyAccelerationStructureCase::NOT_EMPTY,
 			};
 
-			buildTypeGroup->addChild(new RayQueryASFuncArgTestCase(ctx, operationTypes[operationTypesIdx].name, "", testParams));
+			buildTypeGroup->addChild(new RayQueryASFuncArgTestCase(ctx, operationTypes[operationTypesIdx].name, testParams));
 		}
 		group->addChild(buildTypeGroup.release());
 	}
@@ -4150,15 +4150,15 @@ void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(ctx, shaderSourceTypes[shaderSourceNdx].name.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(ctx, shaderSourceTypes[shaderSourceNdx].name.c_str()));
 
 		for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str()));
 
 			for (int indexFormatIdx = 0; indexFormatIdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatIdx)
 			{
-				de::MovePtr<tcu::TestCaseGroup> indexTypeGroup(new tcu::TestCaseGroup(ctx, indexFormats[indexFormatIdx].name.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> indexTypeGroup(new tcu::TestCaseGroup(ctx, indexFormats[indexFormatIdx].name.c_str()));
 
 				for (int emptyCaseIdx = 0; emptyCaseIdx < DE_LENGTH_OF_ARRAY(emptyCases); ++emptyCaseIdx)
 				{
@@ -4187,7 +4187,7 @@ void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 								0u,
 								emptyCases[emptyCaseIdx].emptyASCase,
 							};
-					indexTypeGroup->addChild(new RayQueryASBasicTestCase(ctx, emptyCases[emptyCaseIdx].name.c_str(), "", testParams));
+					indexTypeGroup->addChild(new RayQueryASBasicTestCase(ctx, emptyCases[emptyCaseIdx].name.c_str(), testParams));
 				}
 				buildTypeGroup->addChild(indexTypeGroup.release());
 			}
@@ -4199,17 +4199,27 @@ void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "acceleration_structures", "Acceleration structure tests using rayQuery feature"));
+	// Acceleration structure tests using rayQuery feature
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "acceleration_structures"));
 
-	addTestGroup(group.get(), "flags", "Test building AS with different build types, build flags and geometries/instances using arrays or arrays of pointers", addBasicBuildingTests);
-	addTestGroup(group.get(), "format", "Test building AS with different vertex and index formats", addVertexIndexFormatsTests);
-	addTestGroup(group.get(), "operations", "Test copying, compaction and serialization of AS", addOperationTests);
-	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
-	addTestGroup(group.get(), "function_argument", "Test using AS as function argument using both pointers and bare values", addFuncArgTests);
-	addTestGroup(group.get(), "instance_triangle_culling", "Test building AS with counterclockwise triangles and/or disabling face culling", addInstanceTriangleCullingTests);
-	addTestGroup(group.get(), "instance_update", "Test updating instance index using both in-place and separate src/dst acceleration structures", addInstanceUpdateTests);
-	addTestGroup(group.get(), "dynamic_indexing", "Exercise dynamic indexing of acceleration structures", addDynamicIndexingTests);
-	addTestGroup(group.get(), "empty", "Test building empty acceleration structures using different methods", addEmptyAccelerationStructureTests);
+	// Test building AS with different build types, build flags and geometries/instances using arrays or arrays of pointers
+	addTestGroup(group.get(), "flags", addBasicBuildingTests);
+	// Test building AS with different vertex and index formats
+	addTestGroup(group.get(), "format", addVertexIndexFormatsTests);
+	// Test copying, compaction and serialization of AS
+	addTestGroup(group.get(), "operations", addOperationTests);
+	// Test host threading operations
+	addTestGroup(group.get(), "host_threading", addHostThreadingOperationTests);
+	// Test using AS as function argument using both pointers and bare values
+	addTestGroup(group.get(), "function_argument", addFuncArgTests);
+	// Test building AS with counterclockwise triangles and/or disabling face culling
+	addTestGroup(group.get(), "instance_triangle_culling", addInstanceTriangleCullingTests);
+	// Test updating instance index using both in-place and separate src/dst acceleration structures
+	addTestGroup(group.get(), "instance_update", addInstanceUpdateTests);
+	// Exercise dynamic indexing of acceleration structures
+	addTestGroup(group.get(), "dynamic_indexing", addDynamicIndexingTests);
+	// Test building empty acceleration structures using different methods
+	addTestGroup(group.get(), "empty", addEmptyAccelerationStructureTests);
 
 	return group.release();
 }

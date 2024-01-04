@@ -409,6 +409,8 @@ NoneStageTestInstance::NoneStageTestInstance(Context& context, const TestParams&
 			if ((readAspect | writeAspect) == VK_IMAGE_ASPECT_STENCIL_BIT || (readAspect == IMAGE_ASPECT_DEPTH_STENCIL && readStencilFromCombinedDepthStencil))
 				m_readFragShaderName		 = "frag-stencil-to-color";
 		}
+		if (m_useInputAttachmentToRead && (m_testParams.readLayout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL || m_testParams.readLayout == VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL))
+			m_referenceImageUsage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	}
 }
 
@@ -1169,7 +1171,7 @@ private:
 };
 
 NoneStageTestCase::NoneStageTestCase(tcu::TestContext&	testContext, const std::string&	name, const TestParams&	testParams)
-	: vkt::TestCase	(testContext, name, "")
+	: vkt::TestCase	(testContext, name)
 	, m_testParams	(testParams)
 {
 }
@@ -1363,6 +1365,9 @@ void NoneStageTestCase::checkSupport(Context& context) const
 			if (!usePipelineToWrite && (readAspect & VK_IMAGE_ASPECT_STENCIL_BIT))
 				formatsToCheck[0].usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		}
+		if ((readAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) && (readAspect != IMAGE_ASPECT_DEPTH_STENCIL))
+			if ((m_testParams.readLayout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL || m_testParams.readLayout == VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL))
+				formatsToCheck[0].usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	}
 
 	// it simplifies logic to pop image to write then to add conditions everywhere above
@@ -1392,7 +1397,7 @@ void NoneStageTestCase::checkSupport(Context& context) const
 
 tcu::TestCaseGroup* createNoneStageTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> noneStageTests(new tcu::TestCaseGroup(testCtx, "none_stage", ""));
+	de::MovePtr<tcu::TestCaseGroup> noneStageTests(new tcu::TestCaseGroup(testCtx, "none_stage"));
 
 	struct LayoutData
 	{

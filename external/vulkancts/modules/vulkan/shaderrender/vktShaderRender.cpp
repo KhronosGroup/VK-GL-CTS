@@ -504,12 +504,11 @@ void UniformSetup::setup (ShaderRenderCaseInstance& instance, const tcu::Vec4& c
 
 ShaderRenderCase::ShaderRenderCase (tcu::TestContext&			testCtx,
 									const std::string&			name,
-									const std::string&			description,
 									const bool					isVertexCase,
 									const ShaderEvalFunc		evalFunc,
 									const UniformSetup*			uniformSetup,
 									const AttributeSetupFunc	attribFunc)
-	: vkt::TestCase		(testCtx, name, description)
+	: vkt::TestCase		(testCtx, name)
 	, m_isVertexCase	(isVertexCase)
 	, m_evaluator		(new ShaderEvaluator(evalFunc))
 	, m_uniformSetup	(uniformSetup ? uniformSetup : new UniformSetup())
@@ -518,12 +517,11 @@ ShaderRenderCase::ShaderRenderCase (tcu::TestContext&			testCtx,
 
 ShaderRenderCase::ShaderRenderCase (tcu::TestContext&			testCtx,
 									const std::string&			name,
-									const std::string&			description,
 									const bool					isVertexCase,
 									const ShaderEvaluator*		evaluator,
 									const UniformSetup*			uniformSetup,
 									const AttributeSetupFunc	attribFunc)
-	: vkt::TestCase		(testCtx, name, description)
+	: vkt::TestCase		(testCtx, name)
 	, m_isVertexCase	(isVertexCase)
 	, m_evaluator		(evaluator)
 	, m_uniformSetup	(uniformSetup ? uniformSetup : new UniformSetup())

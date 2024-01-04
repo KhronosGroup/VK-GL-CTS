@@ -53,10 +53,14 @@ struct TestParams
 {
 	PipelineConstructionType	pipelineConstructionType;
 	bool						usePipelineCache;
+	bool						useMaintenance5;
 };
 
 void checkSupport(Context& context, TestParams testParams)
 {
+	if (testParams.useMaintenance5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
 	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), testParams.pipelineConstructionType);
 }
 
@@ -94,7 +98,6 @@ tcu::TestStatus testEarlyDestroy (Context& context, const TestParams& params, bo
 	const VkPhysicalDevice								physicalDevice					= context.getPhysicalDevice();
 	const VkDevice										vkDevice						= context.getDevice();
 	const ShaderWrapper									vertexShaderModule				(ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("color_vert"), 0));
-	const ShaderWrapper									fragmentShaderModule			(ShaderWrapper(vk, vkDevice, context.getBinaryCollection().get("color_frag"), 0));
 
 	const Unique<VkCommandPool>							cmdPool							(createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
 	const Unique<VkCommandBuffer>						cmdBuffer						(allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -193,6 +196,11 @@ tcu::TestStatus testEarlyDestroy (Context& context, const TestParams& params, bo
 		const std::vector<VkRect2D>						scissors						{};
 		GraphicsPipelineWrapper							graphicsPipeline				(vki, vk, physicalDevice, vkDevice, context.getDeviceExtensions(), params.pipelineConstructionType, VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT);
 
+#ifndef CTS_USES_VULKANSC
+		if (params.useMaintenance5)
+			graphicsPipeline.setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_DISABLE_OPTIMIZATION_BIT_KHR);
+#endif // CTS_USES_VULKANSC
+
 		graphicsPipeline.disableViewportState()
 						.setDefaultMultisampleState()
 						.setDefaultDepthStencilState()
@@ -204,7 +212,9 @@ tcu::TestStatus testEarlyDestroy (Context& context, const TestParams& params, bo
 														  0u,
 														  vertexShaderModule,
 														  &rasterizationStateCreateInfo)
-						.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragmentShaderModule)
+						// Uninitialized so the pipeline wrapper does not add fragment stage.
+						// This avoids running into VUID-VkGraphicsPipelineCreateInfo-pStages-06894 due to enabled rasterizerDiscard
+						.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, vk::ShaderWrapper())
 						.setupFragmentOutputState(*renderPass, 0u, &colorBlendStateCreateInfo)
 						.setMonolithicPipelineLayout(pipelineLayout)
 						.buildPipeline(params.usePipelineCache ? *pipelineCache : DE_NULL);
@@ -330,23 +340,26 @@ void addEarlyDestroyTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineC
 	TestParams params
 	{
 		pipelineConstructionType,
-		true
+		true,
+		false,
 	};
 
-	addFunctionCaseWithPrograms(group, "cache", "", checkSupport, initPrograms, testEarlyDestroyKeepLayout, params);
+	addFunctionCaseWithPrograms(group, "cache", checkSupport, initPrograms, testEarlyDestroyKeepLayout, params);
 	params.usePipelineCache = false;
-	addFunctionCaseWithPrograms(group, "no_cache", "", checkSupport, initPrograms, testEarlyDestroyKeepLayout, params);
+	addFunctionCaseWithPrograms(group, "no_cache", checkSupport, initPrograms, testEarlyDestroyKeepLayout, params);
 	params.usePipelineCache = true;
-	addFunctionCaseWithPrograms(group, "cache_destroy_layout", "", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
+	addFunctionCaseWithPrograms(group, "cache_destroy_layout", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
 	params.usePipelineCache = false;
-	addFunctionCaseWithPrograms(group, "no_cache_destroy_layout", "", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
+	addFunctionCaseWithPrograms(group, "no_cache_destroy_layout", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
+	params.useMaintenance5 = true;
+	addFunctionCaseWithPrograms(group, "no_cache_destroy_layout_maintenance5", checkSupport, initPrograms, testEarlyDestroyDestroyLayout, params);
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createEarlyDestroyTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "early_destroy", "Tests where pipeline is destroyed early", addEarlyDestroyTestCasesWithFunctions, pipelineConstructionType);
+	return createTestGroup(testCtx, "early_destroy", addEarlyDestroyTestCasesWithFunctions, pipelineConstructionType);
 }
 
 } // pipeline

@@ -295,7 +295,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Float64Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Float64Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "float64", "", spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "float64", spec));
 	}
 
 	// float32
@@ -321,7 +321,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "float32", "", spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "float32", spec));
 	}
 
 	// float16
@@ -356,7 +356,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Float16Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Float16Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "float16", "", spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "float16", spec));
 	}
 
 	// int64
@@ -386,7 +386,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Int64Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Int64Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "int64", "", spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "int64", spec));
 	}
 
 	// int32
@@ -411,7 +411,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Int32Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Int32Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "int32", "", spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "int32", spec));
 	}
 
 	// int16
@@ -444,7 +444,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Int16Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Int16Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "int16", "", spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "int16", spec));
 	}
 
 	// int8
@@ -478,7 +478,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Int8Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Int8Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "int8", "", spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "int8", spec));
 	}
 
 	// uint64
@@ -512,7 +512,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Uint64Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Uint64Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "uint64", "", spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "uint64", spec));
 	}
 
 	// uint32
@@ -541,7 +541,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Uint32Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Uint32Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "uint32", "", spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "uint32", spec));
 	}
 
 	// uint16
@@ -578,7 +578,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Uint16Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Uint16Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "uint16", "", spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "uint16", spec));
 	}
 
 	// uint8
@@ -616,7 +616,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.inputs.push_back(Resource(BufferSp(new Uint8Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Uint8Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, "uint8", "", spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, "uint8", spec));
 	}
 }
 
@@ -624,7 +624,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createWorkgroupMemoryComputeGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "workgroup_memory", "Compute tests for workgroup memory.."));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "workgroup_memory"));
 	addComputeWorkgroupMemoryTests(group.get());
 
 	return group.release();

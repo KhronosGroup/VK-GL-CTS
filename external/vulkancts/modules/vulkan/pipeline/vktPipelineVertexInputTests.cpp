@@ -52,6 +52,7 @@
 #include <sstream>
 #include <vector>
 #include <map>
+#include <memory>
 
 namespace vkt
 {
@@ -206,7 +207,6 @@ public:
 
 											VertexInputTest				(tcu::TestContext&					testContext,
 																		 const std::string&					name,
-																		 const std::string&					description,
 																		 const PipelineConstructionType		pipelineConstructionType,
 																		 const std::vector<AttributeInfo>&	attributeInfos,
 																		 BindingMapping						bindingMapping,
@@ -401,7 +401,6 @@ deUint32 getConsumedLocations (const VertexInputTest::AttributeInfo& attributeIn
 
 VertexInputTest::VertexInputTest (tcu::TestContext&						testContext,
 								  const std::string&					name,
-								  const std::string&					description,
 								  const PipelineConstructionType		pipelineConstructionType,
 								  const std::vector<AttributeInfo>&		attributeInfos,
 								  BindingMapping						bindingMapping,
@@ -409,7 +408,7 @@ VertexInputTest::VertexInputTest (tcu::TestContext&						testContext,
 								  LayoutSkip							layoutSkip,
 								  LayoutOrder							layoutOrder,
 								  const bool							testMissingComponents)
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_attributeInfos				(attributeInfos)
 	, m_bindingMapping				(bindingMapping)
@@ -1771,32 +1770,6 @@ std::string getAttributeInfoCaseName (const VertexInputTest::AttributeInfo& attr
 	return caseName.str();
 }
 
-std::string getAttributeInfoDescription (const VertexInputTest::AttributeInfo& attributeInfo)
-{
-	std::ostringstream caseDesc;
-
-	caseDesc << std::string(VertexInputTest::s_glslTypeDescriptions[attributeInfo.glslType].name) << " from type " << getFormatName(attributeInfo.vkType) <<  " with ";
-
-	if (attributeInfo.inputRate == VK_VERTEX_INPUT_RATE_VERTEX)
-		caseDesc <<  "vertex input rate ";
-	else
-		caseDesc <<  "instance input rate ";
-
-	return caseDesc.str();
-}
-
-std::string getAttributeInfosDescription (const std::vector<VertexInputTest::AttributeInfo>& attributeInfos)
-{
-	std::ostringstream caseDesc;
-
-	caseDesc << "Uses vertex attributes:\n";
-
-	for (size_t attributeNdx = 0; attributeNdx < attributeInfos.size(); attributeNdx++)
-		caseDesc << "\t- " << getAttributeInfoDescription (attributeInfos[attributeNdx]) << "\n";
-
-	return caseDesc.str();
-}
-
 struct CompatibleFormats
 {
 	VertexInputTest::GlslType	glslType;
@@ -1915,7 +1888,6 @@ void createSingleAttributeCases (tcu::TestCaseGroup* singleAttributeTests, Pipel
 
 				singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
 																getAttributeInfoCaseName(attributeInfo),
-																getAttributeInfoDescription(attributeInfo),
 																pipelineConstructionType,
 																std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
 																VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
@@ -1926,7 +1898,6 @@ void createSingleAttributeCases (tcu::TestCaseGroup* singleAttributeTests, Pipel
 
 				singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
 																getAttributeInfoCaseName(attributeInfo),
-																getAttributeInfoDescription(attributeInfo),
 																pipelineConstructionType,
 																std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
 																VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
@@ -1943,11 +1914,9 @@ void createSingleAttributeCases (tcu::TestCaseGroup* singleAttributeTests, Pipel
 				attributeInfo.glslType = glslType;
 				attributeInfo.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 				const auto nameSuffix = "_missing_components";
-				const auto descSuffix = " using missing components";
 
 				singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
 																getAttributeInfoCaseName(attributeInfo) + nameSuffix,
-																getAttributeInfoDescription(attributeInfo) + descSuffix,
 																pipelineConstructionType,
 																std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
 																VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
@@ -1961,7 +1930,6 @@ void createSingleAttributeCases (tcu::TestCaseGroup* singleAttributeTests, Pipel
 
 				singleAttributeTests->addChild(new VertexInputTest(singleAttributeTests->getTestContext(),
 																getAttributeInfoCaseName(attributeInfo) + nameSuffix,
-																getAttributeInfoDescription(attributeInfo) + descSuffix,
 																pipelineConstructionType,
 																std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo),
 																VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
@@ -1979,7 +1947,7 @@ void createSingleAttributeTests (tcu::TestCaseGroup* singleAttributeTests, Pipel
 	for (int glslTypeNdx = 0; glslTypeNdx < VertexInputTest::GLSL_TYPE_COUNT; glslTypeNdx++)
 	{
 		VertexInputTest::GlslType glslType = (VertexInputTest::GlslType)glslTypeNdx;
-		addTestGroup(singleAttributeTests, VertexInputTest::s_glslTypeDescriptions[glslType].name, "", createSingleAttributeCases, pipelineConstructionType, glslType);
+		addTestGroup(singleAttributeTests, VertexInputTest::s_glslTypeDescriptions[glslType].name, createSingleAttributeCases, pipelineConstructionType, glslType);
 	}
 }
 
@@ -2013,15 +1981,14 @@ void createMultipleAttributeCases (PipelineConstructionType pipelineConstruction
 			}
 
 			const std::string caseName = VertexInputTest::s_glslTypeDescriptions[currentNdx].name;
-			const std::string caseDesc = getAttributeInfosDescription(newAttributeInfos);
 
-			testGroup.addChild(new VertexInputTest(testCtx, caseName, caseDesc, pipelineConstructionType, newAttributeInfos, bindingMapping, attributeLayout, layoutSkip, layoutOrder));
+			testGroup.addChild(new VertexInputTest(testCtx, caseName, pipelineConstructionType, newAttributeInfos, bindingMapping, attributeLayout, layoutSkip, layoutOrder));
 		}
 		// Add test group
 		else
 		{
 			const std::string				name			= VertexInputTest::s_glslTypeDescriptions[currentNdx].name;
-			de::MovePtr<tcu::TestCaseGroup>	newTestGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	newTestGroup	(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 			createMultipleAttributeCases(pipelineConstructionType, depth - 1u, currentNdx + 1u, compatibleFormats, randomFunc, *newTestGroup, bindingMapping, attributeLayout, layoutSkip, layoutOrder, newAttributeInfos);
 			testGroup.addChild(newTestGroup.release());
@@ -2114,9 +2081,9 @@ void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests, P
 	{
 		const VertexInputTest::LayoutSkip	layoutSkip	= layoutSkips[layoutSkipNdx];
 		const VertexInputTest::LayoutOrder	layoutOrder	= layoutOrders[layoutOrderNdx];
-		de::MovePtr<tcu::TestCaseGroup> oneToOneAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes", ""));
-		de::MovePtr<tcu::TestCaseGroup> oneToManyAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes", ""));
-		de::MovePtr<tcu::TestCaseGroup> oneToManySequentialAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes_sequential", ""));
+		de::MovePtr<tcu::TestCaseGroup> oneToOneAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes"));
+		de::MovePtr<tcu::TestCaseGroup> oneToManyAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes"));
+		de::MovePtr<tcu::TestCaseGroup> oneToManySequentialAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes_sequential"));
 
 		if (layoutSkip == VertexInputTest::LAYOUT_SKIP_ENABLED && layoutOrder == VertexInputTest::LAYOUT_ORDER_OUT_OF_ORDER)
 			continue;
@@ -2127,13 +2094,15 @@ void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests, P
 
 		if (layoutSkip == VertexInputTest::LAYOUT_SKIP_ENABLED)
 		{
-			de::MovePtr<tcu::TestCaseGroup> layoutSkipTests(new tcu::TestCaseGroup(testCtx, "layout_skip", "Skip one layout after each attribute"));
+			// Skip one layout after each attribute
+			de::MovePtr<tcu::TestCaseGroup> layoutSkipTests(new tcu::TestCaseGroup(testCtx, "layout_skip"));
 
-			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
+			// Each attribute uses a unique binding
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one"));
 			bindingOneToOneTests->addChild(oneToOneAttributeTests.release());
 			layoutSkipTests->addChild(bindingOneToOneTests.release());
 
-			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many"));
 			bindingOneToManyTests->addChild(oneToManyAttributeTests.release());
 			bindingOneToManyTests->addChild(oneToManySequentialAttributeTests.release());
 			layoutSkipTests->addChild(bindingOneToManyTests.release());
@@ -2141,13 +2110,13 @@ void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests, P
 		}
 		else if (layoutOrder == VertexInputTest::LAYOUT_ORDER_OUT_OF_ORDER)
 		{
-			de::MovePtr<tcu::TestCaseGroup> layoutOutOfOrderTests(new tcu::TestCaseGroup(testCtx, "out_of_order", "Layout slots out of order"));
+			de::MovePtr<tcu::TestCaseGroup> layoutOutOfOrderTests(new tcu::TestCaseGroup(testCtx, "out_of_order"));
 
-			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one"));
 			bindingOneToOneTests->addChild(oneToOneAttributeTests.release());
 			layoutOutOfOrderTests->addChild(bindingOneToOneTests.release());
 
-			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many"));
 			bindingOneToManyTests->addChild(oneToManyAttributeTests.release());
 			bindingOneToManyTests->addChild(oneToManySequentialAttributeTests.release());
 			layoutOutOfOrderTests->addChild(bindingOneToManyTests.release());
@@ -2155,11 +2124,11 @@ void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests, P
 		}
 		else
 		{
-			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one"));
 			bindingOneToOneTests->addChild(oneToOneAttributeTests.release());
 			multipleAttributeTests->addChild(bindingOneToOneTests.release());
 
-			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many"));
 			bindingOneToManyTests->addChild(oneToManyAttributeTests.release());
 			bindingOneToManyTests->addChild(oneToManySequentialAttributeTests.release());
 			multipleAttributeTests->addChild(bindingOneToManyTests.release());
@@ -2242,9 +2211,9 @@ void createMaxAttributeTests (tcu::TestCaseGroup* maxAttributeTests, PipelineCon
 		const std::string							groupName = (attributeCount[attributeCountNdx] == 0 ? "query_max" : de::toString(attributeCount[attributeCountNdx])) + "_attributes";
 		const std::string							groupDesc = de::toString(attributeCount[attributeCountNdx]) + " vertex input attributes";
 
-		de::MovePtr<tcu::TestCaseGroup>				numAttributeTests(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
-		de::MovePtr<tcu::TestCaseGroup>				bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
-		de::MovePtr<tcu::TestCaseGroup>				bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
+		de::MovePtr<tcu::TestCaseGroup>				numAttributeTests(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>				bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one"));
+		de::MovePtr<tcu::TestCaseGroup>				bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many"));
 
 		std::vector<VertexInputTest::AttributeInfo>	attributeInfos(attributeCount[attributeCountNdx]);
 
@@ -2260,9 +2229,12 @@ void createMaxAttributeTests (tcu::TestCaseGroup* maxAttributeTests, PipelineCon
 			attributeInfos[attributeNdx].vkType			= format;
 		}
 
-		bindingOneToOneTests->addChild(new VertexInputTest(testCtx, "interleaved", "Interleaved attribute layout", pipelineConstructionType, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_ONE, VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
-		bindingOneToManyTests->addChild(new VertexInputTest(testCtx, "interleaved", "Interleaved attribute layout", pipelineConstructionType, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY, VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
-		bindingOneToManyTests->addChild(new VertexInputTest(testCtx, "sequential", "Sequential attribute layout", pipelineConstructionType, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY, VertexInputTest::ATTRIBUTE_LAYOUT_SEQUENTIAL));
+		// Interleaved attribute layout
+		bindingOneToOneTests->addChild(new VertexInputTest(testCtx, "interleaved", pipelineConstructionType, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_ONE, VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
+		// Interleaved attribute layout
+		bindingOneToManyTests->addChild(new VertexInputTest(testCtx, "interleaved", pipelineConstructionType, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY, VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
+		// Sequential attribute layout
+		bindingOneToManyTests->addChild(new VertexInputTest(testCtx, "sequential", pipelineConstructionType, attributeInfos, VertexInputTest::BINDING_MAPPING_ONE_TO_MANY, VertexInputTest::ATTRIBUTE_LAYOUT_SEQUENTIAL));
 
 		numAttributeTests->addChild(bindingOneToOneTests.release());
 		numAttributeTests->addChild(bindingOneToManyTests.release());
@@ -2270,13 +2242,385 @@ void createMaxAttributeTests (tcu::TestCaseGroup* maxAttributeTests, PipelineCon
 	}
 }
 
+// The goal of the stride change tests are checking a sequence like the following one:
+//
+// CmdBindVertexBuffers()
+// CmdBindPipeline(VS+FS)
+// CmdDraw()
+// CmdBindPipeline(VS+GS+FS)
+// CmdDraw()
+//
+// Where the second pipeline bind needs different vertex buffer info (like binding stride) that doesn't require a new
+// CmdBindVertexBuffers.
+//
+// We will draw a full screen quad with two triangles, and use one triangle per draw call. The vertex buffer will be set up such
+// that the vertices for the first triangle will be contiguous in memory, but the ones for the second triangle will use two extra
+// vertices for padding, so it looks like:
+//
+// FIRST0, FIRST1, FIRST2, SECOND0, PADDING, PADDING, SECOND1, PADDING, PADDING, SECOND2, PADDING, PADDING
+//
+// The stride in the first pipeline will be sizeof(vec4) and, for the second one, sizeof(vec4)*3.
+// Draw calls parameters will be:
+// 1. vkCmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+// 2. vkCmdDraw(cmdBuffer, 3u, 1u, 1u, 0u); // firstVertex == 1u so that FIRST0, FIRST1, FIRST2 are skipped with the new stride.
+//
+struct StrideChangeParams
+{
+	PipelineConstructionType	pipelineConstructionType;
+	bool						useTessellation;			// In the second bind.
+	bool						useGeometry;				// In the second bind.
+};
+
+class StrideChangeTest : public vkt::TestInstance
+{
+public:
+						StrideChangeTest	(Context& context, const StrideChangeParams& params)
+							: vkt::TestInstance	(context)
+							, m_params			(params)
+							{}
+	virtual				~StrideChangeTest	(void) {}
+
+	tcu::TestStatus		iterate				(void) override;
+
+protected:
+	const StrideChangeParams m_params;
+};
+
+class StrideChangeCase : public vkt::TestCase
+{
+public:
+					StrideChangeCase	(tcu::TestContext& testCtx, const std::string& name, const StrideChangeParams& params)
+						: vkt::TestCase	(testCtx, name)
+						, m_params		(params)
+						{}
+	virtual			~StrideChangeCase	(void) {}
+
+	void			initPrograms		(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance		(Context& context) const override;
+	void			checkSupport		(Context& context) const override;
+
+protected:
+	const StrideChangeParams m_params;
+};
+
+void StrideChangeCase::initPrograms (SourceCollections& dst) const
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "layout (location=0) in vec4 inPos;\n"
+		<< "out gl_PerVertex\n"
+		<< "{\n"
+		<< "    vec4 gl_Position;\n"
+		<< "};\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = inPos;\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	if (m_params.useTessellation)
+	{
+		std::ostringstream tesc;
+		tesc
+			<< "#version 460\n"
+			<< "layout (vertices=3) out;\n"
+			<< "in gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "} gl_out[];\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    gl_TessLevelInner[0] = 1.0;\n"
+			<< "    gl_TessLevelInner[1] = 1.0;\n"
+			<< "    gl_TessLevelOuter[0] = 1.0;\n"
+			<< "    gl_TessLevelOuter[1] = 1.0;\n"
+			<< "    gl_TessLevelOuter[2] = 1.0;\n"
+			<< "    gl_TessLevelOuter[3] = 1.0;\n"
+			<< "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+			<< "}\n"
+			;
+		dst.glslSources.add("tesc") << glu::TessellationControlSource(tesc.str());
+
+		std::ostringstream tese;
+		tese
+			<< "#version 460\n"
+			<< "layout (triangles, fractional_odd_spacing, cw) in;\n"
+			<< "in gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "} gl_in[gl_MaxPatchVertices];\n"
+			<< "out gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "};\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    gl_Position = (gl_TessCoord.x * gl_in[0].gl_Position) +\n"
+			<< "                  (gl_TessCoord.y * gl_in[1].gl_Position) +\n"
+			<< "                  (gl_TessCoord.z * gl_in[2].gl_Position);\n"
+			<< "}\n"
+			;
+		dst.glslSources.add("tese") << glu::TessellationEvaluationSource(tese.str());
+	}
+
+	if (m_params.useGeometry)
+	{
+		std::ostringstream geom;
+		geom
+			<< "#version 460\n"
+			<< "layout (triangles) in;\n"
+			<< "layout (triangle_strip, max_vertices=3) out;\n"
+			<< "in gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "} gl_in[3];\n"
+			<< "out gl_PerVertex\n"
+			<< "{\n"
+			<< "    vec4 gl_Position;\n"
+			<< "};\n"
+			<< "void main ()\n"
+			<< "{\n"
+			<< "    gl_Position = gl_in[0].gl_Position; EmitVertex();\n"
+			<< "    gl_Position = gl_in[1].gl_Position; EmitVertex();\n"
+			<< "    gl_Position = gl_in[2].gl_Position; EmitVertex();\n"
+			<< "}\n"
+			;
+		dst.glslSources.add("geom") << glu::GeometrySource(geom.str());
+	}
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance* StrideChangeCase::createInstance (Context& context) const
+{
+	return new StrideChangeTest(context, m_params);
+}
+
+void StrideChangeCase::checkSupport (Context& context) const
+{
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	checkPipelineConstructionRequirements(vki, physicalDevice, m_params.pipelineConstructionType);
+
+	if (m_params.useTessellation)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+
+	if (m_params.useGeometry)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+}
+
+tcu::TestStatus StrideChangeTest::iterate (void)
+{
+	const auto&			ctx			= m_context.getContextCommonData();
+	const tcu::IVec3	fbExtent	(4, 4, 1);
+	const auto			vkExtent	= makeExtent3D(fbExtent);
+	const auto			fbFormat	= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat	= mapVkFormat(fbFormat);
+	const auto			fbUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const tcu::Vec4		clearColor	(0.0f, 0.0f, 0.0f, 1.0f);
+	const tcu::Vec4		geomColor	(0.0f, 0.0f, 1.0f, 1.0f); // Must match frag shader.
+	const tcu::Vec4		threshold	(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+	const auto			kTriVtx		= 3u; // 3 vertices per triangle.
+
+	// Color buffer with verification buffer.
+	ImageWithBuffer colorBuffer (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		vkExtent,
+		fbFormat,
+		fbUsage,
+		VK_IMAGE_TYPE_2D);
+
+	// Vertices. See the test description above about padding and real vertices.
+	const std::vector<tcu::Vec4> vertices
+	{
+		tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), // First triangle, vertex 0.
+		tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f), // First triangle, vertex 1.
+		tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f), // First triangle, vertex 2.
+
+		tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f), // Second triangle, vertex 0.  |
+		tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), // Padding.                    | Padding such that it's the first triangle again.
+		tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f), // Padding.                    |
+
+		tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f), // Second triangle, vertex 1.  |
+		tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f), // Padding.                    | Padding such that it's the first triangle again.
+		tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), // Padding.                    |
+
+		tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f), // Second triangle, vertex 2.  |
+		tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f), // Padding.                    | Padding such that it's a zero-area triangle.
+		tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f), // Padding.                    |
+	};
+
+	// Vertex buffer
+	const auto			vbSize			= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vbInfo			= makeBufferCreateInfo(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	BufferWithMemory	vertexBuffer	(ctx.vkd, ctx.device, ctx.allocator, vbInfo, MemoryRequirement::HostVisible);
+	const auto			vbAlloc			= vertexBuffer.getAllocation();
+	void*				vbData			= vbAlloc.getHostPtr();
+	const auto			vbOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(vbData, de::dataOrNull(vertices), de::dataSize(vertices));
+	flushAlloc(ctx.vkd, ctx.device, vbAlloc); // strictly speaking, not needed.
+
+	const auto	pipelineLayout	= PipelineLayoutWrapper(m_params.pipelineConstructionType, ctx.vkd, ctx.device);
+	auto		renderPass		= RenderPassWrapper(m_params.pipelineConstructionType, ctx.vkd, ctx.device, fbFormat);
+	renderPass.createFramebuffer(ctx.vkd, ctx.device, colorBuffer.getImage(), colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
+
+	// Modules.
+	const auto&	binaries	= m_context.getBinaryCollection();
+	const auto	nullModule	= ShaderWrapper();
+	const auto	vertModule	= ShaderWrapper(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	tescModule	= (m_params.useTessellation ? ShaderWrapper(ctx.vkd, ctx.device, binaries.get("tesc")) : nullModule);
+	const auto	teseModule	= (m_params.useTessellation ? ShaderWrapper(ctx.vkd, ctx.device, binaries.get("tese")) : nullModule);
+	const auto	geomModule	= (m_params.useGeometry ? ShaderWrapper(ctx.vkd, ctx.device, binaries.get("geom")) : nullModule);
+	const auto	fragModule	= ShaderWrapper(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	const std::vector<uint32_t> vertexStrides
+	{
+		static_cast<uint32_t>(sizeof(tcu::Vec4)),				// Short stride for the first draw.
+		static_cast<uint32_t>(sizeof(tcu::Vec4) * kTriVtx),		// Long stride for the second draw.
+	};
+
+	const std::vector<uint32_t> firstVertices { 0u, 1u };		// First vertices for the vkCmdDraw() calls, see comment above.
+
+	const std::vector<bool> useTessellation	{ false, m_params.useTessellation };
+	const std::vector<bool> useGeometry		{ false, m_params.useGeometry };
+
+	using PipelinePtr = std::unique_ptr<GraphicsPipelineWrapper>;
+	std::vector<PipelinePtr> pipelines;
+
+	const auto inputAttribute = makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, 0u);
+
+	DE_ASSERT(vertexStrides.size() == useTessellation.size());
+	DE_ASSERT(vertexStrides.size() == useGeometry.size());
+
+	for (size_t i = 0u; i < vertexStrides.size(); ++i)
+	{
+		const auto vtxStride	= vertexStrides.at(i);
+		const auto useTess		= useTessellation.at(i);
+		const auto useGeom		= useGeometry.at(i);
+		const auto topology		= (useTess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+		const auto inputBinding = makeVertexInputBindingDescription(0u, vtxStride, VK_VERTEX_INPUT_RATE_VERTEX);
+
+		const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	VkStructureType								sType;
+			nullptr,													//	const void*									pNext;
+			0u,															//	VkPipelineVertexInputStateCreateFlags		flags;
+			1u,															//	uint32_t									vertexBindingDescriptionCount;
+			&inputBinding,												//	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+			1u,															//	uint32_t									vertexAttributeDescriptionCount;
+			&inputAttribute,											//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+		};
+
+		pipelines.emplace_back(new GraphicsPipelineWrapper(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(), m_params.pipelineConstructionType));
+		auto& pipeline = *pipelines.back();
+		pipeline
+			.setDefaultTopology(topology)
+			.setDefaultRasterizationState()
+			.setDefaultDepthStencilState()
+			.setDefaultMultisampleState()
+			.setDefaultColorBlendState()
+			.setupVertexInputState(&vertexInputStateCreateInfo)
+			.setupPreRasterizationShaderState(
+				viewports, scissors,
+				pipelineLayout, *renderPass, 0u,
+				vertModule, nullptr,
+				(useTess ? tescModule : nullModule),
+				(useTess ? teseModule : nullModule),
+				(useGeom ? geomModule : nullModule))
+			.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
+			.setupFragmentOutputState(*renderPass)
+			.buildPipeline();
+			;
+	}
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearColor);
+	ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+	DE_ASSERT(pipelines.size() == firstVertices.size());
+	for (size_t i = 0; i < pipelines.size(); ++i)
+	{
+		pipelines.at(i)->bind(cmdBuffer);
+		ctx.vkd.cmdDraw(cmdBuffer, kTriVtx, 1u, firstVertices.at(i), 0u);
+	}
+	renderPass.end(ctx.vkd, cmdBuffer);
+	copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(),
+		fbExtent.swizzle(0, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+		VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color output.
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+	tcu::PixelBufferAccess resultAccess (tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+	tcu::TextureLevel	referenceLevel	(tcuFormat, fbExtent.x(), fbExtent.y());
+	auto				referenceAccess	= referenceLevel.getAccess();
+	tcu::clear(referenceAccess, geomColor);
+
+	auto& log = m_context.getTestContext().getLog();
+	if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+void createMiscVertexInputTests (tcu::TestCaseGroup* miscTests, PipelineConstructionType pipelineConstructionType)
+{
+	auto& testCtx = miscTests->getTestContext();
+
+	for (const auto useTess : { false, true })
+		for (const auto useGeom : { false, true })
+		{
+			const StrideChangeParams params
+			{
+				pipelineConstructionType,
+				useTess,
+				useGeom,
+			};
+			const auto testName = std::string("stride_change_vert")
+				+ (useTess ? "_tess" : "")
+				+ (useGeom ? "_geom" : "")
+				+ "_frag";
+			miscTests->addChild(new StrideChangeCase(testCtx, testName, params));
+		}
+}
+
 } // anonymous
 
 void createVertexInputTests (tcu::TestCaseGroup* vertexInputTests, PipelineConstructionType pipelineConstructionType)
 {
-	addTestGroup(vertexInputTests, "single_attribute", "Uses one attribute", createSingleAttributeTests, pipelineConstructionType);
-	addTestGroup(vertexInputTests, "multiple_attributes", "Uses more than one attribute", createMultipleAttributeTests, pipelineConstructionType);
-	addTestGroup(vertexInputTests, "max_attributes", "Implementations can use as many vertex input attributes as they advertise", createMaxAttributeTests, pipelineConstructionType);
+	// Uses one attribute
+	addTestGroup(vertexInputTests, "single_attribute", createSingleAttributeTests, pipelineConstructionType);
+	// Uses more than one attribute
+	addTestGroup(vertexInputTests, "multiple_attributes", createMultipleAttributeTests, pipelineConstructionType);
+	// Implementations can use as many vertex input attributes as they advertise
+	addTestGroup(vertexInputTests, "max_attributes", createMaxAttributeTests, pipelineConstructionType);
+
+	// Miscellaneous tests.
+	addTestGroup(vertexInputTests, "misc", createMiscVertexInputTests, pipelineConstructionType);
 }
 
 } // pipeline

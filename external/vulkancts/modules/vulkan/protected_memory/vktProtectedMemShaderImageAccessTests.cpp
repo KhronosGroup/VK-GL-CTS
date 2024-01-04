@@ -93,6 +93,7 @@ struct Params
 	vk::VkFormat				imageFormat;
 	AtomicOperation				atomicOperation;
 	bool						pipelineProtectedAccess;
+	bool						useMaintenance5;
 	vk::VkPipelineCreateFlags	flags;
 	ProtectionMode				protectionMode;
 
@@ -102,6 +103,7 @@ struct Params
 		, imageFormat				(vk::VK_FORMAT_UNDEFINED)
 		, atomicOperation			(ATOMIC_OPERATION_LAST)
 		, pipelineProtectedAccess	(false)
+		, useMaintenance5			(false)
 		, flags						((vk::VkPipelineCreateFlags)0u)
 		, protectionMode			(PROTECTION_ENABLED)
 	{}
@@ -265,9 +267,8 @@ class ImageAccessTestCase : public TestCase
 public:
 								ImageAccessTestCase		(tcu::TestContext&		testCtx,
 														 const std::string&		name,
-														 const std::string&		description,
 														 const Params&			params)
-									: TestCase		(testCtx, name, description)
+									: TestCase		(testCtx, name)
 									, m_validator	(params.imageFormat)
 									, m_params		(params)
 								{
@@ -282,6 +283,8 @@ public:
 	virtual void				checkSupport			(Context& context) const
 								{
 									checkProtectedQueueSupport(context);
+									if (m_params.useMaintenance5)
+										context.requireDeviceFunctionality("VK_KHR_maintenance5");
 								}
 
 private:
@@ -697,8 +700,41 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest (void)
 
 	// Create validation compute commands & submit
 	{
+		const vk::VkPipelineShaderStageCreateInfo pipelineShaderStageParams
+		{
+			vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+			nullptr,													// const void*							pNext;
+			0u,															// VkPipelineShaderStageCreateFlags		flags;
+			vk::VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
+			*computeShader,												// VkShaderModule						module;
+			"main",														// const char*							pName;
+			DE_NULL,													// const VkSpecializationInfo*			pSpecializationInfo;
+		};
+
+		vk::VkComputePipelineCreateInfo pipelineCreateInfo
+		{
+			vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType					sType;
+			nullptr,													// const void*						pNext;
+			m_params.flags,												// VkPipelineCreateFlags			flags;
+			pipelineShaderStageParams,									// VkPipelineShaderStageCreateInfo	stage;
+			*pipelineLayout,											// VkPipelineLayout					layout;
+			DE_NULL,													// VkPipeline						basePipelineHandle;
+			0,															// deInt32							basePipelineIndex;
+		};
+
+#ifndef CTS_USES_VULKANSC
+		vk::VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = vk::initVulkanStructure();
+		if (m_params.useMaintenance5)
+		{
+			pipelineFlags2CreateInfo.flags = (vk::VkPipelineCreateFlagBits2KHR)m_params.flags;
+			pipelineCreateInfo.pNext = &pipelineFlags2CreateInfo;
+			pipelineCreateInfo.flags = 0;
+		}
+#endif // CTS_USES_VULKANSC
+
+		vk::Unique<vk::VkPipeline>			pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+
 		const vk::Unique<vk::VkFence>		fence		(vk::createFence(vk, device));
-		vk::Unique<vk::VkPipeline>			pipeline	(makeComputePipeline(vk, device, *pipelineLayout, m_params.flags, *computeShader, (vk::VkPipelineShaderStageCreateFlags)0u));
 		vk::Unique<vk::VkCommandBuffer>		cmdBuffer	(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 		beginCommandBuffer(vk, *cmdBuffer);
@@ -1168,31 +1204,36 @@ tcu::TestStatus ImageAccessTestInstance::validateResult (vk::VkImage image, vk::
 
 tcu::TestCaseGroup*	createShaderImageAccessTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> accessGroup (new tcu::TestCaseGroup(testCtx, "access", "Shader Image Access Tests"));
+	de::MovePtr<tcu::TestCaseGroup> accessGroup (new tcu::TestCaseGroup(testCtx, "access"));
 
 	static const struct
 	{
 		glu::ShaderType	type;
 		const char*		name;
-		const char*		desc;
 	} shaderTypes[] =
 	{
-		{ glu::SHADERTYPE_FRAGMENT,		"fragment",			"Image access from fragment shader"		},
-		{ glu::SHADERTYPE_COMPUTE,		"compute",			"Image access from compute shader"		},
+		// Image access from fragment shader
+		{ glu::SHADERTYPE_FRAGMENT,		"fragment"},
+		// Image access from compute shader
+		{ glu::SHADERTYPE_COMPUTE,		"compute"},
 	};
 
 	static const struct
 	{
 		AccessType		type;
 		const char*		name;
-		const char*		desc;
 	} accessTypes[] =
 	{
-		{ ACCESS_TYPE_SAMPLING,			"sampling",			"Sampling test"			},
-		{ ACCESS_TYPE_TEXEL_FETCH,		"texelfetch",		"Texel fetch test"		},
-		{ ACCESS_TYPE_IMAGE_LOAD,		"imageload",		"Image load test"		},
-		{ ACCESS_TYPE_IMAGE_STORE,		"imagestore",		"Image store test"		},
-		{ ACCESS_TYPE_IMAGE_ATOMICS,	"imageatomics",		"Image atomics test"	},
+		// Sampling test
+		{ ACCESS_TYPE_SAMPLING,			"sampling"},
+		// Texel fetch test
+		{ ACCESS_TYPE_TEXEL_FETCH,		"texelfetch"},
+		// Image load test
+		{ ACCESS_TYPE_IMAGE_LOAD,		"imageload"},
+		// Image store test
+		{ ACCESS_TYPE_IMAGE_STORE,		"imagestore"},
+		// Image atomics test
+		{ ACCESS_TYPE_IMAGE_ATOMICS,	"imageatomics"},
 	};
 
 	static const struct
@@ -1233,12 +1274,12 @@ tcu::TestCaseGroup*	createShaderImageAccessTests (tcu::TestContext& testCtx)
 	for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(shaderTypes); ++shaderTypeNdx)
 	{
 		const glu::ShaderType				shaderType = shaderTypes[shaderTypeNdx].type;
-		de::MovePtr<tcu::TestCaseGroup>		shaderGroup(new tcu::TestCaseGroup(testCtx, shaderTypes[shaderTypeNdx].name, shaderTypes[shaderTypeNdx].desc));
+		de::MovePtr<tcu::TestCaseGroup>		shaderGroup(new tcu::TestCaseGroup(testCtx, shaderTypes[shaderTypeNdx].name));
 
 		for (int protectedAccessNdx = 0; protectedAccessNdx < DE_LENGTH_OF_ARRAY(protectedAccess); ++protectedAccessNdx) {
-			de::MovePtr<tcu::TestCaseGroup>		protectedAccessGroup(new tcu::TestCaseGroup(testCtx, protectedAccess[protectedAccessNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup>		protectedAccessGroup(new tcu::TestCaseGroup(testCtx, protectedAccess[protectedAccessNdx].name));
 			for (int flagsNdx = 0; flagsNdx < DE_LENGTH_OF_ARRAY(flags); ++flagsNdx) {
-				de::MovePtr<tcu::TestCaseGroup>		flagsGroup(new tcu::TestCaseGroup(testCtx, flags[flagsNdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>		flagsGroup(new tcu::TestCaseGroup(testCtx, flags[flagsNdx].name));
 				if (!protectedAccess[protectedAccessNdx].pipelineProtectedAccess && flags[flagsNdx].flags != 0u) continue;
 				for (int accessNdx = 0; accessNdx < DE_LENGTH_OF_ARRAY(accessTypes); ++accessNdx)
 				{
@@ -1247,14 +1288,14 @@ tcu::TestCaseGroup*	createShaderImageAccessTests (tcu::TestContext& testCtx)
 					if (shaderType == glu::SHADERTYPE_COMPUTE && accessType == ACCESS_TYPE_IMAGE_STORE) // \note already tested in other tests
 						continue;
 
-					de::MovePtr<tcu::TestCaseGroup>		accessTypeGroup(new tcu::TestCaseGroup(testCtx, accessTypes[accessNdx].name, accessTypes[accessNdx].desc));
+					de::MovePtr<tcu::TestCaseGroup>		accessTypeGroup(new tcu::TestCaseGroup(testCtx, accessTypes[accessNdx].name));
 
 					if (accessType == ACCESS_TYPE_IMAGE_ATOMICS)
 					{
 						for (deUint32 atomicOpI = 0; atomicOpI < ATOMIC_OPERATION_LAST; ++atomicOpI)
 						{
 							const AtomicOperation				atomicOp = (AtomicOperation)atomicOpI;
-							de::MovePtr<tcu::TestCaseGroup>		operationGroup(new tcu::TestCaseGroup(testCtx, getAtomicOperationCaseName(atomicOp).c_str(), ""));
+							de::MovePtr<tcu::TestCaseGroup>		operationGroup(new tcu::TestCaseGroup(testCtx, getAtomicOperationCaseName(atomicOp).c_str()));
 
 							for (deUint32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 							{
@@ -1263,7 +1304,7 @@ tcu::TestCaseGroup*	createShaderImageAccessTests (tcu::TestContext& testCtx)
 								if (format != vk::VK_FORMAT_R32_UINT && format != vk::VK_FORMAT_R32_SINT)
 									continue;
 
-								operationGroup->addChild(new ImageAccessTestCase(testCtx, formats[formatNdx].name, "", Params(shaderType, accessType, format, atomicOp, protectedAccess[protectedAccessNdx].pipelineProtectedAccess, flags[flagsNdx].flags)));
+								operationGroup->addChild(new ImageAccessTestCase(testCtx, formats[formatNdx].name, Params(shaderType, accessType, format, atomicOp, protectedAccess[protectedAccessNdx].pipelineProtectedAccess, flags[flagsNdx].flags)));
 							}
 
 							accessTypeGroup->addChild(operationGroup.release());
@@ -1275,7 +1316,7 @@ tcu::TestCaseGroup*	createShaderImageAccessTests (tcu::TestContext& testCtx)
 						{
 							const vk::VkFormat		format = formats[formatNdx].format;
 
-							accessTypeGroup->addChild(new ImageAccessTestCase(testCtx, formats[formatNdx].name, "", Params(shaderType, accessType, format, ATOMIC_OPERATION_LAST, protectedAccess[protectedAccessNdx].pipelineProtectedAccess, flags[flagsNdx].flags)));
+							accessTypeGroup->addChild(new ImageAccessTestCase(testCtx, formats[formatNdx].name, Params(shaderType, accessType, format, ATOMIC_OPERATION_LAST, protectedAccess[protectedAccessNdx].pipelineProtectedAccess, flags[flagsNdx].flags)));
 						}
 					}
 
@@ -1289,6 +1330,17 @@ tcu::TestCaseGroup*	createShaderImageAccessTests (tcu::TestContext& testCtx)
 		accessGroup->addChild(shaderGroup.release());
 	}
 
+#ifndef CTS_USES_VULKANSC
+	{
+		Params params(glu::SHADERTYPE_COMPUTE, ACCESS_TYPE_IMAGE_LOAD, vk::VK_FORMAT_R8G8B8A8_UNORM, ATOMIC_OPERATION_LAST, false, vk::VK_PIPELINE_CREATE_PROTECTED_ACCESS_ONLY_BIT_EXT);
+		params.useMaintenance5 = true;
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
+		miscGroup->addChild(new ImageAccessTestCase(testCtx, "maintenance5_protected_access", params));
+		params.flags = vk::VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT;
+		miscGroup->addChild(new ImageAccessTestCase(testCtx, "maintenance5_no_protected_access", params));
+		accessGroup->addChild(miscGroup.release());
+	}
+#endif // CTS_USES_VULKANSC
 
 	return accessGroup.release();
 }

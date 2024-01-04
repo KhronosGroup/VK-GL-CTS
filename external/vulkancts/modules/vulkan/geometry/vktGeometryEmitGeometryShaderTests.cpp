@@ -109,7 +109,7 @@ protected:
 };
 
 EmitTest::EmitTest (TestContext& testCtx, const EmitTestSpec& emitTestSpec)
-	: TestCase			(testCtx, emitTestSpec.name, emitTestSpec.desc)
+	: TestCase			(testCtx, emitTestSpec.name)
 	, m_emitTestSpec	(emitTestSpec)
 
 {
@@ -215,7 +215,7 @@ string EmitTest::shaderGeometry (bool pointSize) const
 
 TestCaseGroup* createEmitGeometryShaderTests (TestContext& testCtx)
 {
-	MovePtr<TestCaseGroup> emitGroup	(new TestCaseGroup(testCtx, "emit", "Different emit counts."));
+	MovePtr<TestCaseGroup> emitGroup	(new TestCaseGroup(testCtx, "emit"));
 
 	// emit different amounts
 	{

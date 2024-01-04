@@ -90,13 +90,17 @@ typedef PointerWrapper<VkPipelineRenderingCreateInfoKHR> PipelineRenderingCreate
 typedef PointerWrapper<VkPipelineCreationFeedbackCreateInfoEXT> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV> PipelineRepresentativeFragmentTestCreateInfoWrapper;
+typedef VkPipelineCreateFlags2KHR PipelineCreateFlags2;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
+typedef uint64_t PipelineCreateFlags2;
 #endif
+
+PipelineCreateFlags2 translateCreateFlag(VkPipelineCreateFlags flagToTranslate);
 
 class PipelineLayoutWrapper
 {
@@ -113,7 +117,7 @@ public:
 	const VkPipelineLayout			operator*						(void) const { return *m_pipelineLayout; }
 	const VkPipelineLayout			get								(void) const { return *m_pipelineLayout; }
 	PipelineLayoutWrapper&			operator=						(PipelineLayoutWrapper&& rhs);
-	void							destroy							(void) { m_pipelineLayout.disown(); }
+	void							destroy							(void) { m_pipelineLayout = vk::Move<VkPipelineLayout>{}; }
 
 	deUint32						getSetLayoutCount				(void) const { return m_setLayoutCount; }
 	const VkDescriptorSetLayout*	getSetLayouts					(void) const { return m_setLayouts.data(); }
@@ -138,6 +142,7 @@ class RenderPassWrapper
 {
 public:
 									RenderPassWrapper				() = default;
+									RenderPassWrapper				(const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo, bool dynamicRendering);
 									RenderPassWrapper				(PipelineConstructionType pipelineConstructionType, const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo* pCreateInfo);
 									RenderPassWrapper				(PipelineConstructionType pipelineConstructionType, const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo);
 									RenderPassWrapper				(PipelineConstructionType			pipelineConstructionType,
@@ -206,7 +211,7 @@ public:
 private:
 	void							beginRendering					(const DeviceInterface& vk, const VkCommandBuffer commandBuffer) const;
 
-	PipelineConstructionType			m_pipelineConstructionType;
+	bool								m_isDynamicRendering;
 	vk::Move<vk::VkRenderPass>			m_renderPass;
 	vk::Move<vk::VkFramebuffer>			m_framebuffer;
 
@@ -226,7 +231,22 @@ private:
 		mutable VkSubpassDescriptionDepthStencilResolve m_dsr = {};
 		mutable VkAttachmentReference2		m_depthStencilResolveAttachment = {};
 	};
+	struct SubpassDependency
+	{
+		SubpassDependency (const VkSubpassDependency& dependency);
+		SubpassDependency (const VkSubpassDependency2& dependency);
+
+		uint32_t				srcSubpass;
+		uint32_t				dstSubpass;
+		VkPipelineStageFlags2	srcStageMask;
+		VkPipelineStageFlags2	dstStageMask;
+		VkAccessFlags2			srcAccessMask;
+		VkAccessFlags2			dstAccessMask;
+		VkDependencyFlags		dependencyFlags;
+		bool					sync2;
+	};
 	std::vector<Subpass>					m_subpasses;
+	std::vector<SubpassDependency>			m_dependencies;
 	std::vector<vk::VkAttachmentDescription2> m_attachments;
 	std::vector<vk::VkImage>				m_images;
 	std::vector<vk::VkImageView>			m_imageViews;
@@ -241,6 +261,7 @@ private:
 	void									clearAttachments				(const DeviceInterface& vk, const VkCommandBuffer commandBuffer) const;
 	void									updateLayout					(VkImage updatedImage, VkImageLayout newLayout) const;
 	void									transitionLayouts				(const DeviceInterface& vk, const VkCommandBuffer commandBuffer, const Subpass& subpass, bool renderPassBegin) const;
+	void									insertDependencies				(const DeviceInterface& vk, const VkCommandBuffer commandBuffer, uint32_t subpassIdx) const;
 
 public:
 	void									fillInheritanceRenderingInfo	(deUint32 subpassIndex, std::vector<vk::VkFormat>* colorFormats, vk::VkCommandBufferInheritanceRenderingInfo* inheritanceRenderingInfo) const;
@@ -338,6 +359,10 @@ public:
 
 	// Specify the representative fragment test state.
 	GraphicsPipelineWrapper&	setRepresentativeFragmentTestState	(PipelineRepresentativeFragmentTestCreateInfoWrapper representativeFragmentTestState);
+
+	// Specifying how a pipeline is created using VkPipelineCreateFlags2CreateInfoKHR.
+	GraphicsPipelineWrapper&	setPipelineCreateFlags2				(PipelineCreateFlags2 pipelineFlags2);
+
 
 	// Specify topology that is used by default InputAssemblyState in vertex input state. This needs to be
 	// specified only when there is no custom InputAssemblyState provided in setupVertexInputState and when
@@ -507,7 +532,8 @@ public:
 																	 void*												pNext = DE_NULL);
 	// Create shader objects if used
 #ifndef CTS_USES_VULKANSC
-	vk::VkShaderCreateInfoEXT	makeShaderCreateInfo				(VkShaderStageFlagBits stage, ShaderWrapper& shader, bool link, bool binary);
+	vk::VkShaderStageFlags		getNextStages						(vk::VkShaderStageFlagBits shaderStage, bool tessellationShaders, bool geometryShaders, bool link);
+	vk::VkShaderCreateInfoEXT	makeShaderCreateInfo				(VkShaderStageFlagBits stage, ShaderWrapper& shader, bool link, bool binary, ShaderWrapper& other);
 	void						createShaders						(bool linked, bool binary);
 #endif
 

@@ -40,6 +40,7 @@
 #include "vkImageWithMemory.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuImageCompare.hpp"
 #include "vktApiCommandBuffersTests.hpp"
 #include "vktApiBufferComputeInstance.hpp"
 #include "vktApiComputeInstanceResultBuffer.hpp"
@@ -125,9 +126,11 @@ public:
 	VkFramebuffer							getFrameBuffer							(void) const { return *m_frameBuffer; }
 	VkCommandBuffer							getPrimaryCommandBuffer					(void) const { return getCommandBuffer(0); }
 	VkCommandBuffer							getSecondaryCommandBuffer				(void) const { return *m_secondaryCommandBuffer; }
+	VkCommandBuffer							getNestedCommandBuffer					(void) const { return *m_nestedCommandBuffer; }
 
 	void									beginPrimaryCommandBuffer				(VkCommandBufferUsageFlags usageFlags);
 	void									beginSecondaryCommandBuffer				(VkCommandBufferUsageFlags usageFlags, bool framebufferHint);
+	void									beginNestedCommandBuffer				(VkCommandBufferUsageFlags usageFlags, bool framebufferHint);
 	void									beginRenderPass							(VkSubpassContents content);
 	void									submitPrimaryCommandBuffer				(void);
 	de::MovePtr<tcu::TextureLevel>			readColorAttachment						(void);
@@ -146,6 +149,7 @@ protected:
 	de::MovePtr<Allocation>					m_colorImageMemory;
 	Move<VkCommandPool>						m_secCommandPool;
 	Move<VkCommandBuffer>					m_secondaryCommandBuffer;
+	Move<VkCommandBuffer>					m_nestedCommandBuffer;
 
 };
 
@@ -253,6 +257,7 @@ CommandBufferRenderPassTestEnvironment::CommandBufferRenderPassTestEnvironment(C
 		};
 
 		m_secondaryCommandBuffer = allocateCommandBuffer(m_vkd, m_device, &cmdBufferAllocateInfo);
+		m_nestedCommandBuffer = allocateCommandBuffer(m_vkd, m_device, &cmdBufferAllocateInfo);
 
 	}
 }
@@ -290,6 +295,32 @@ void CommandBufferRenderPassTestEnvironment::beginSecondaryCommandBuffer(VkComma
 	};
 
 	VK_CHECK(m_vkd.beginCommandBuffer(*m_secondaryCommandBuffer, &commandBufferBeginInfo));
+
+}
+
+void CommandBufferRenderPassTestEnvironment::beginNestedCommandBuffer(VkCommandBufferUsageFlags usageFlags, bool framebufferHint)
+{
+	const VkCommandBufferInheritanceInfo	commandBufferInheritanceInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,		// VkStructureType                  sType;
+		DE_NULL,												// const void*                      pNext;
+		*m_renderPass,											// VkRenderPass                     renderPass;
+		0u,														// deUint32                         subpass;
+		(framebufferHint ? *m_frameBuffer : DE_NULL),			// VkFramebuffer                    framebuffer;
+		VK_FALSE,												// VkBool32                         occlusionQueryEnable;
+		0u,														// VkQueryControlFlags              queryFlags;
+		0u														// VkQueryPipelineStatisticFlags    pipelineStatistics;
+	};
+
+	const VkCommandBufferBeginInfo			commandBufferBeginInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// VkStructureType                          sType;
+		DE_NULL,												// const void*                              pNext;
+		usageFlags,												// VkCommandBufferUsageFlags                flags;
+		&commandBufferInheritanceInfo							// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+	};
+
+	VK_CHECK(m_vkd.beginCommandBuffer(*m_nestedCommandBuffer, &commandBufferBeginInfo));
 
 }
 
@@ -1962,6 +1993,453 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context& cont
 		return tcu::TestStatus::fail("Simultaneous Secondary Command Buffer Execution FAILED");
 }
 
+tcu::TestStatus renderPassContinueNestedTest(Context& context, bool framebufferHint)
+{
+	context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+#ifndef CTS_USES_VULKANSC
+	const auto& features = *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+	if (!features.nestedCommandBuffer)
+#endif // CTS_USES_VULKANSC
+		TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+#ifndef CTS_USES_VULKANSC
+	if (!features.nestedCommandBufferRendering)
+#endif // CTS_USES_VULKANSC
+		TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
+
+	const DeviceInterface&					vkd						= context.getDeviceInterface();
+	CommandBufferRenderPassTestEnvironment	env						(context, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+
+	VkCommandBuffer							primaryCommandBuffer	= env.getPrimaryCommandBuffer();
+	VkCommandBuffer							secondaryCommandBuffer	= env.getSecondaryCommandBuffer();
+	VkCommandBuffer							nestedCommandBuffer		= env.getNestedCommandBuffer();
+	const deUint32							clearColor[4]			= { 2, 47, 131, 211 };
+
+	const VkClearAttachment					clearAttachment			=
+	{
+		VK_IMAGE_ASPECT_COLOR_BIT,									// VkImageAspectFlags	aspectMask;
+		0,															// deUint32				colorAttachment;
+		makeClearValueColorU32(clearColor[0],
+							   clearColor[1],
+							   clearColor[2],
+							   clearColor[3])						// VkClearValue			clearValue;
+	};
+
+	const uint32_t clearRectWidth = CommandBufferRenderPassTestEnvironment::DEFAULT_IMAGE_SIZE.width / 2;
+	const uint32_t clearRectHeight = CommandBufferRenderPassTestEnvironment::DEFAULT_IMAGE_SIZE.height / 2;
+	const int32_t clearRectOffsetX = clearRectWidth;
+	const int32_t clearRectOffsetY = clearRectHeight;
+
+	const VkRect2D							clearRectArea[4]		=
+	{
+		{
+			{0u, 0u},												//	VkOffset2D	offset;
+			{clearRectWidth, clearRectHeight},						//	VkExtent2D	extent;
+		},
+		{
+			{0u, clearRectOffsetY},									//	VkOffset2D	offset;
+			{clearRectWidth, clearRectHeight + 1},					//	VkExtent2D	extent;
+		},
+		{
+			{clearRectOffsetX, 0u},									//	VkOffset2D	offset;
+			{clearRectWidth + 1, clearRectHeight},					//	VkExtent2D	extent;
+		},
+		{
+			{clearRectOffsetX, clearRectOffsetY},					//	VkOffset2D	offset;
+			{clearRectWidth + 1, clearRectHeight + 1},				//	VkExtent2D	extent;
+		}
+	};
+
+	const VkClearRect						clearRect[4]			=
+	{
+		{
+			clearRectArea[0],										// VkRect2D	rect;
+			0u,														// deUint32	baseArrayLayer;
+			1u														// deUint32	layerCount;
+		},
+		{
+			clearRectArea[1],										// VkRect2D	rect;
+			0u,														// deUint32	baseArrayLayer;
+			1u														// deUint32	layerCount;
+		},
+		{
+			clearRectArea[2],										// VkRect2D	rect;
+			0u,														// deUint32	baseArrayLayer;
+			1u														// deUint32	layerCount;
+		},
+		{
+			clearRectArea[3],										// VkRect2D	rect;
+			0u,														// deUint32	baseArrayLayer;
+			1u														// deUint32	layerCount;
+		}
+	};
+
+	env.beginSecondaryCommandBuffer(VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, framebufferHint);
+	vkd.cmdClearAttachments(secondaryCommandBuffer, 1, &clearAttachment, 1, &clearRect[0]);
+	endCommandBuffer(vkd, secondaryCommandBuffer);
+
+	env.beginNestedCommandBuffer(VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, framebufferHint);
+	vkd.cmdExecuteCommands(nestedCommandBuffer, 1, &secondaryCommandBuffer);
+	vkd.cmdClearAttachments(nestedCommandBuffer, 1, &clearAttachment, 1, &clearRect[1]);
+	endCommandBuffer(vkd, nestedCommandBuffer);
+
+	env.beginPrimaryCommandBuffer(0);
+#ifndef CTS_USES_VULKANSC
+	env.beginRenderPass(VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_EXT);
+#endif // CTS_USES_VULKANSC
+	vkd.cmdClearAttachments(primaryCommandBuffer, 1, &clearAttachment, 1, &clearRect[2]);
+	vkd.cmdExecuteCommands(primaryCommandBuffer, 1, &nestedCommandBuffer);
+	vkd.cmdClearAttachments(primaryCommandBuffer, 1, &clearAttachment, 1, &clearRect[3]);
+	endRenderPass(vkd, primaryCommandBuffer);
+
+	endCommandBuffer(vkd, primaryCommandBuffer);
+
+	env.submitPrimaryCommandBuffer();
+	context.resetCommandPoolForVKSC(context.getDevice(), env.getCommandPool());
+
+	de::MovePtr<tcu::TextureLevel>			result					= env.readColorAttachment();
+	tcu::PixelBufferAccess					pixelBufferAccess		= result->getAccess();
+
+	for (deUint32 i = 0; i < (CommandBufferRenderPassTestEnvironment::DEFAULT_IMAGE_SIZE.width * CommandBufferRenderPassTestEnvironment::DEFAULT_IMAGE_SIZE.height); ++i)
+	{
+		deUint8* colorData = reinterpret_cast<deUint8*>(pixelBufferAccess.getDataPtr());
+		for (int colorComponent = 0; colorComponent < 4; ++colorComponent)
+			if (colorData[i * 4 + colorComponent] != clearColor[colorComponent])
+				return tcu::TestStatus::fail("clear value mismatch");
+	}
+
+	return tcu::TestStatus::pass("render pass continue in nested command buffer test passed");
+}
+
+tcu::TestStatus simultaneousUseNestedSecondaryBufferTest(Context& context)
+{
+	const VkDevice							vkDevice = context.getDevice();
+	const DeviceInterface&					vk = context.getDeviceInterface();
+	const VkQueue							queue = context.getUniversalQueue();
+	const deUint32							queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+	Allocator&								allocator = context.getDefaultAllocator();
+	const ComputeInstanceResultBuffer		result(vk, vkDevice, allocator, 0.0f);
+
+	const VkCommandPoolCreateInfo			cmdPoolParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					//	VkStructureType				sType;
+		DE_NULL,													//	const void*					pNext;
+		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			//	VkCommandPoolCreateFlags	flags;
+		queueFamilyIndex,											//	deUint32					queueFamilyIndex;
+	};
+	const Unique<VkCommandPool>				cmdPool(createCommandPool(vk, vkDevice, &cmdPoolParams));
+
+	// Command buffer
+	const VkCommandBufferAllocateInfo		cmdBufParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				//	VkStructureType			sType;
+		DE_NULL,													//	const void*				pNext;
+		*cmdPool,													//	VkCommandPool				pool;
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							//	VkCommandBufferLevel		level;
+		1u,															//	uint32_t					bufferCount;
+	};
+	const Unique<VkCommandBuffer>			primCmdBuf(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
+
+	// Secondary Command buffer params
+	const VkCommandBufferAllocateInfo		secCmdBufParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				//	VkStructureType			sType;
+		DE_NULL,													//	const void*				pNext;
+		*cmdPool,													//	VkCommandPool				pool;
+		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							//	VkCommandBufferLevel		level;
+		1u,															//	uint32_t					bufferCount;
+	};
+	const Unique<VkCommandBuffer>			secCmdBuf(allocateCommandBuffer(vk, vkDevice, &secCmdBufParams));
+	const Unique<VkCommandBuffer>			nestedCmdBuf(allocateCommandBuffer(vk, vkDevice, &secCmdBufParams));
+
+	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
+		(VkRenderPass)0u,
+		0u,															// subpass
+		(VkFramebuffer)0u,
+		VK_FALSE,													// occlusionQueryEnable
+		(VkQueryControlFlags)0u,
+		(VkQueryPipelineStatisticFlags)0u,
+	};
+	const VkCommandBufferBeginInfo			secCmdBufBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		DE_NULL,
+		VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,				// flags
+		&secCmdBufInheritInfo,
+	};
+
+	const deUint32							offset = (0u);
+	const deUint32							addressableSize = 256;
+	const deUint32							dataSize = 8;
+	de::MovePtr<Allocation>					bufferMem;
+	const Unique<VkBuffer>					buffer(createDataBuffer(context, offset, addressableSize, 0x00, dataSize, 0x5A, &bufferMem));
+	// Secondary command buffer will have a compute shader that does an atomic increment to make sure that all instances of secondary buffers execute
+	const Unique<VkDescriptorSetLayout>		descriptorSetLayout(createDescriptorSetLayout(context));
+	const Unique<VkDescriptorPool>			descriptorPool(createDescriptorPool(context));
+	const Unique<VkDescriptorSet>			descriptorSet(createDescriptorSet(context, *descriptorPool, *descriptorSetLayout, *buffer, offset, result.getBuffer()));
+	const VkDescriptorSet					descriptorSets[] = { *descriptorSet };
+	const int								numDescriptorSets = DE_LENGTH_OF_ARRAY(descriptorSets);
+
+	const VkPipelineLayoutCreateInfo layoutCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,				// sType
+		DE_NULL,													// pNext
+		(VkPipelineLayoutCreateFlags)0,
+		numDescriptorSets,											// setLayoutCount
+		&descriptorSetLayout.get(),									// pSetLayouts
+		0u,															// pushConstantRangeCount
+		DE_NULL,													// pPushConstantRanges
+	};
+	Unique<VkPipelineLayout>				pipelineLayout(createPipelineLayout(vk, vkDevice, &layoutCreateInfo));
+
+	const Unique<VkShaderModule>			computeModule(createShaderModule(vk, vkDevice, context.getBinaryCollection().get("compute_increment"), (VkShaderModuleCreateFlags)0u));
+
+	const VkPipelineShaderStageCreateInfo	shaderCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		DE_NULL,
+		(VkPipelineShaderStageCreateFlags)0,
+		VK_SHADER_STAGE_COMPUTE_BIT,								// stage
+		*computeModule,												// shader
+		"main",
+		DE_NULL,													// pSpecializationInfo
+	};
+
+	const VkComputePipelineCreateInfo		pipelineCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+		DE_NULL,
+		0u,															// flags
+		shaderCreateInfo,											// cs
+		*pipelineLayout,											// layout
+		(vk::VkPipeline)0,											// basePipelineHandle
+		0u,															// basePipelineIndex
+	};
+
+	const VkBufferMemoryBarrier				bufferBarrier =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// sType
+		DE_NULL,													// pNext
+		VK_ACCESS_SHADER_WRITE_BIT,									// srcAccessMask
+		VK_ACCESS_HOST_READ_BIT,									// dstAccessMask
+		VK_QUEUE_FAMILY_IGNORED,									// srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,									// destQueueFamilyIndex
+		*buffer,													// buffer
+		(VkDeviceSize)0u,											// offset
+		(VkDeviceSize)VK_WHOLE_SIZE,								// size
+	};
+
+	const Unique<VkPipeline>				pipeline(createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo));
+
+	// record secondary command buffer
+	VK_CHECK(vk.beginCommandBuffer(*secCmdBuf, &secCmdBufBeginInfo));
+	{
+		vk.cmdBindPipeline(*secCmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+		vk.cmdBindDescriptorSets(*secCmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, numDescriptorSets, descriptorSets, 0, 0);
+		vk.cmdDispatch(*secCmdBuf, 1u, 1u, 1u);
+		vk.cmdPipelineBarrier(*secCmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  1, &bufferBarrier,
+						  0, (const VkImageMemoryBarrier*)DE_NULL);
+	}
+	// end recording of secondary buffer
+	endCommandBuffer(vk, *secCmdBuf);
+
+	// record another secondary command buffer to nest the other into
+	VK_CHECK(vk.beginCommandBuffer(*nestedCmdBuf, &secCmdBufBeginInfo));
+	{
+		// execute nested secondary buffer twice in same secondary buffer
+		vk.cmdExecuteCommands(*nestedCmdBuf, 1, &secCmdBuf.get());
+		vk.cmdExecuteCommands(*nestedCmdBuf, 1, &secCmdBuf.get());
+	}
+	endCommandBuffer(vk, *nestedCmdBuf);
+
+	// record primary command buffer
+	beginCommandBuffer(vk, *primCmdBuf, 0u);
+	{
+		// execute nested buffer
+		vk.cmdExecuteCommands(*primCmdBuf, 1, &nestedCmdBuf.get());
+	}
+	endCommandBuffer(vk, *primCmdBuf);
+
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
+
+	deUint32 resultCount;
+	result.readResultContentsTo(&resultCount);
+	// check if secondary buffer has been executed
+	if (resultCount == 2)
+		return tcu::TestStatus::pass("Simultaneous Nested Command Buffer Execution succeeded");
+	else
+		return tcu::TestStatus::fail("Simultaneous Nested Command Buffer Execution FAILED");
+}
+
+tcu::TestStatus simultaneousUseNestedSecondaryBufferTwiceTest(Context& context)
+{
+	const VkDevice							vkDevice = context.getDevice();
+	const DeviceInterface&					vk = context.getDeviceInterface();
+	const VkQueue							queue = context.getUniversalQueue();
+	const deUint32							queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+	Allocator&								allocator = context.getDefaultAllocator();
+	const ComputeInstanceResultBuffer		result(vk, vkDevice, allocator, 0.0f);
+
+	const VkCommandPoolCreateInfo			cmdPoolParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					//	VkStructureType				sType;
+		DE_NULL,													//	const void*					pNext;
+		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			//	VkCommandPoolCreateFlags	flags;
+		queueFamilyIndex,											//	deUint32					queueFamilyIndex;
+	};
+	const Unique<VkCommandPool>				cmdPool(createCommandPool(vk, vkDevice, &cmdPoolParams));
+
+	// Command buffer
+	const VkCommandBufferAllocateInfo		cmdBufParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				//	VkStructureType			sType;
+		DE_NULL,													//	const void*				pNext;
+		*cmdPool,													//	VkCommandPool				pool;
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							//	VkCommandBufferLevel		level;
+		1u,															//	uint32_t					bufferCount;
+	};
+	const Unique<VkCommandBuffer>			primCmdBuf(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
+
+	// Secondary Command buffer params
+	const VkCommandBufferAllocateInfo		secCmdBufParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				//	VkStructureType			sType;
+		DE_NULL,													//	const void*				pNext;
+		*cmdPool,													//	VkCommandPool				pool;
+		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							//	VkCommandBufferLevel		level;
+		1u,															//	uint32_t					bufferCount;
+	};
+	const Unique<VkCommandBuffer>			secCmdBuf(allocateCommandBuffer(vk, vkDevice, &secCmdBufParams));
+	const Unique<VkCommandBuffer>			nestedCmdBuf(allocateCommandBuffer(vk, vkDevice, &secCmdBufParams));
+
+	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
+		(VkRenderPass)0u,
+		0u,															// subpass
+		(VkFramebuffer)0u,
+		VK_FALSE,													// occlusionQueryEnable
+		(VkQueryControlFlags)0u,
+		(VkQueryPipelineStatisticFlags)0u,
+	};
+	const VkCommandBufferBeginInfo			secCmdBufBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		DE_NULL,
+		VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,				// flags
+		&secCmdBufInheritInfo,
+	};
+
+	const deUint32							offset = (0u);
+	const deUint32							addressableSize = 256;
+	const deUint32							dataSize = 8;
+	de::MovePtr<Allocation>					bufferMem;
+	const Unique<VkBuffer>					buffer(createDataBuffer(context, offset, addressableSize, 0x00, dataSize, 0x5A, &bufferMem));
+	// Secondary command buffer will have a compute shader that does an atomic increment to make sure that all instances of secondary buffers execute
+	const Unique<VkDescriptorSetLayout>		descriptorSetLayout(createDescriptorSetLayout(context));
+	const Unique<VkDescriptorPool>			descriptorPool(createDescriptorPool(context));
+	const Unique<VkDescriptorSet>			descriptorSet(createDescriptorSet(context, *descriptorPool, *descriptorSetLayout, *buffer, offset, result.getBuffer()));
+	const VkDescriptorSet					descriptorSets[] = { *descriptorSet };
+	const int								numDescriptorSets = DE_LENGTH_OF_ARRAY(descriptorSets);
+
+	const VkPipelineLayoutCreateInfo layoutCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,				// sType
+		DE_NULL,													// pNext
+		(VkPipelineLayoutCreateFlags)0,
+		numDescriptorSets,											// setLayoutCount
+		&descriptorSetLayout.get(),									// pSetLayouts
+		0u,															// pushConstantRangeCount
+		DE_NULL,													// pPushConstantRanges
+	};
+	Unique<VkPipelineLayout>				pipelineLayout(createPipelineLayout(vk, vkDevice, &layoutCreateInfo));
+
+	const Unique<VkShaderModule>			computeModule(createShaderModule(vk, vkDevice, context.getBinaryCollection().get("compute_increment"), (VkShaderModuleCreateFlags)0u));
+
+	const VkPipelineShaderStageCreateInfo	shaderCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		DE_NULL,
+		(VkPipelineShaderStageCreateFlags)0,
+		VK_SHADER_STAGE_COMPUTE_BIT,								// stage
+		*computeModule,												// shader
+		"main",
+		DE_NULL,													// pSpecializationInfo
+	};
+
+	const VkComputePipelineCreateInfo		pipelineCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+		DE_NULL,
+		0u,															// flags
+		shaderCreateInfo,											// cs
+		*pipelineLayout,											// layout
+		(vk::VkPipeline)0,											// basePipelineHandle
+		0u,															// basePipelineIndex
+	};
+
+	const VkBufferMemoryBarrier				bufferBarrier =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// sType
+		DE_NULL,													// pNext
+		VK_ACCESS_SHADER_WRITE_BIT,									// srcAccessMask
+		VK_ACCESS_HOST_READ_BIT,									// dstAccessMask
+		VK_QUEUE_FAMILY_IGNORED,									// srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,									// destQueueFamilyIndex
+		*buffer,													// buffer
+		(VkDeviceSize)0u,											// offset
+		(VkDeviceSize)VK_WHOLE_SIZE,								// size
+	};
+
+	const Unique<VkPipeline>				pipeline(createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo));
+
+	// record secondary command buffer
+	VK_CHECK(vk.beginCommandBuffer(*secCmdBuf, &secCmdBufBeginInfo));
+	{
+		vk.cmdBindPipeline(*secCmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+		vk.cmdBindDescriptorSets(*secCmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, numDescriptorSets, descriptorSets, 0, 0);
+		vk.cmdDispatch(*secCmdBuf, 1u, 1u, 1u);
+		vk.cmdPipelineBarrier(*secCmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  1, &bufferBarrier,
+						  0, (const VkImageMemoryBarrier*)DE_NULL);
+	}
+	// end recording of secondary buffer
+	endCommandBuffer(vk, *secCmdBuf);
+
+	// record another secondary command buffer to nest the other into
+	VK_CHECK(vk.beginCommandBuffer(*nestedCmdBuf, &secCmdBufBeginInfo));
+	{
+		// execute nested secondary buffer
+		vk.cmdExecuteCommands(*nestedCmdBuf, 1, &secCmdBuf.get());
+	}
+	endCommandBuffer(vk, *nestedCmdBuf);
+
+	// record primary command buffer
+	beginCommandBuffer(vk, *primCmdBuf, 0u);
+	{
+		// execute nested secondary buffers twice in same primary buffer
+		vk.cmdExecuteCommands(*primCmdBuf, 1, &nestedCmdBuf.get());
+		vk.cmdExecuteCommands(*primCmdBuf, 1, &nestedCmdBuf.get());
+	}
+	endCommandBuffer(vk, *primCmdBuf);
+
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
+
+	deUint32 resultCount;
+	result.readResultContentsTo(&resultCount);
+	// check if secondary buffer has been executed
+	if (resultCount == 2)
+		return tcu::TestStatus::pass("Simultaneous Nested Command Buffer Execution succeeded");
+	else
+		return tcu::TestStatus::fail("Simultaneous Nested Command Buffer Execution FAILED");
+}
+
 enum class BadInheritanceInfoCase
 {
 	RANDOM_PTR = 0,
@@ -3403,6 +3881,257 @@ tcu::TestStatus executeSecondaryBufferTest(Context& context)
 	return tcu::TestStatus::fail("executeSecondaryBufferTest FAILED");
 }
 
+tcu::TestStatus executeNestedBufferTest(Context& context)
+{
+	const VkDevice							vkDevice = context.getDevice();
+	const DeviceInterface&					vk = context.getDeviceInterface();
+	const VkQueue							queue = context.getUniversalQueue();
+	const deUint32							queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+	const VkCommandPoolCreateInfo			cmdPoolParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// sType;
+		DE_NULL,													// pNext;
+		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			// flags;
+		queueFamilyIndex,											// queueFamilyIndex;
+	};
+	const Unique<VkCommandPool>				cmdPool(createCommandPool(vk, vkDevice, &cmdPoolParams));
+
+	// Command buffer
+	const VkCommandBufferAllocateInfo		cmdBufParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// sType;
+		DE_NULL,													// pNext;
+		*cmdPool,													// commandPool;
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							// level;
+		1u,															// bufferCount;
+	};
+	const Unique<VkCommandBuffer>			primCmdBuf(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
+
+	// Secondary Command buffer
+	const VkCommandBufferAllocateInfo		secCmdBufParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// sType;
+		DE_NULL,													// pNext;
+		*cmdPool,													// commandPool;
+		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							// level;
+		1u,															// bufferCount;
+	};
+	const Unique<VkCommandBuffer>			secCmdBuf(allocateCommandBuffer(vk, vkDevice, &secCmdBufParams));
+
+	// Nested secondary Command buffer
+	const VkCommandBufferAllocateInfo		nestedCmdBufParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// sType;
+		DE_NULL,													// pNext;
+		*cmdPool,													// commandPool;
+		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							// level;
+		1u,															// bufferCount;
+	};
+	const Unique<VkCommandBuffer>			nestedCmdBuf(allocateCommandBuffer(vk, vkDevice, &nestedCmdBufParams));
+
+	const VkCommandBufferBeginInfo			primCmdBufBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
+		DE_NULL,													// pNext
+		0u,															// flags
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
+	};
+
+	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
+		DE_NULL,													// renderPass
+		0u,															// subpass
+		DE_NULL,													// framebuffer
+		VK_FALSE,													// occlusionQueryEnable
+		(VkQueryControlFlags)0u,									// queryFlags
+		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+	};
+	const VkCommandBufferBeginInfo			secCmdBufBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
+		DE_NULL,													// pNext
+		0u,															// flags
+		&secCmdBufInheritInfo,
+	};
+
+	const VkCommandBufferInheritanceInfo	nestedCmdBufInheritInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
+		DE_NULL,													// renderPass
+		0u,															// subpass
+		DE_NULL,													// framebuffer
+		VK_FALSE,													// occlusionQueryEnable
+		(VkQueryControlFlags)0u,									// queryFlags
+		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+	};
+	const VkCommandBufferBeginInfo			nestedCmdBufBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
+		DE_NULL,													// pNext
+		0u,															// flags
+		& nestedCmdBufInheritInfo,
+	};
+
+	// create event that will be used to check if nested command buffer has been executed
+	const Unique<VkEvent>					event(createEvent(vk, vkDevice));
+
+	// reset event
+	VK_CHECK(vk.resetEvent(vkDevice, *event));
+
+	// record nested command buffer
+	VK_CHECK(vk.beginCommandBuffer(*nestedCmdBuf, &nestedCmdBufBeginInfo));
+	{
+		// allow execution of event during every stage of pipeline
+		VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+		// record setting event
+		vk.cmdSetEvent(*nestedCmdBuf, *event, stageMask);
+	}
+	// end recording of the secondary buffer
+	endCommandBuffer(vk, *nestedCmdBuf);
+
+	// record secondary command buffer
+	VK_CHECK(vk.beginCommandBuffer(*secCmdBuf, &secCmdBufBeginInfo));
+	{
+		// execute nested buffer
+		vk.cmdExecuteCommands(*secCmdBuf, 1u, &nestedCmdBuf.get());
+	}
+	// end recording of the secondary buffer
+	endCommandBuffer(vk, *secCmdBuf);
+
+	// record primary command buffer
+	VK_CHECK(vk.beginCommandBuffer(*primCmdBuf, &primCmdBufBeginInfo));
+	{
+		// execute secondary buffer
+		vk.cmdExecuteCommands(*primCmdBuf, 1u, &secCmdBuf.get());
+	}
+	endCommandBuffer(vk, *primCmdBuf);
+
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
+
+	// check if secondary buffer has been executed
+	VkResult result = vk.getEventStatus(vkDevice, *event);
+	if (result == VK_EVENT_SET)
+		return tcu::TestStatus::pass("executeNestedBufferTest succeeded");
+
+	return tcu::TestStatus::fail("executeNestedBufferTest FAILED");
+}
+
+tcu::TestStatus executeMultipleLevelsNestedBufferTest(Context& context)
+{
+	const deUint32							BUFFER_COUNT = 2u;
+	const VkDevice							vkDevice = context.getDevice();
+	const DeviceInterface&					vk = context.getDeviceInterface();
+	const VkQueue							queue = context.getUniversalQueue();
+	const deUint32							queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+
+	const VkCommandPoolCreateInfo			cmdPoolParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// sType;
+		DE_NULL,													// pNext;
+		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			// flags;
+		queueFamilyIndex,											// queueFamilyIndex;
+	};
+	const Unique<VkCommandPool>				cmdPool(createCommandPool(vk, vkDevice, &cmdPoolParams));
+
+	// Command buffer
+	const VkCommandBufferAllocateInfo		cmdBufParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// sType;
+		DE_NULL,													// pNext;
+		*cmdPool,													// commandPool;
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							// level;
+		1u,															// bufferCount;
+	};
+	const Unique<VkCommandBuffer>			primCmdBuf(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
+
+	// Secondary Command buffers
+	const VkCommandBufferAllocateInfo		secCmdBufParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				//	VkStructureType			sType;
+		DE_NULL,													//	const void*				pNext;
+		*cmdPool,													//	VkCommandPool				pool;
+		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							//	VkCommandBufferLevel		level;
+		BUFFER_COUNT,												//	uint32_t					bufferCount;
+	};
+	Move<VkCommandBuffer> nestedBuffers[BUFFER_COUNT];
+	allocateCommandBuffers(vk, vkDevice, &secCmdBufParams, nestedBuffers);
+
+	const VkCommandBufferBeginInfo			primCmdBufBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
+		DE_NULL,													// pNext
+		0u,															// flags
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
+	};
+
+	const VkCommandBufferInheritanceInfo	nestedCmdBufInheritInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
+		DE_NULL,													// renderPass
+		0u,															// subpass
+		DE_NULL,													// framebuffer
+		VK_FALSE,													// occlusionQueryEnable
+		(VkQueryControlFlags)0u,									// queryFlags
+		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+	};
+	const VkCommandBufferBeginInfo			nestedCmdBufBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// sType
+		DE_NULL,													// pNext
+		0u,															// flags
+		&nestedCmdBufInheritInfo,
+	};
+
+	// create event that will be used to check if secondary command buffer has been executed
+	const Unique<VkEvent>					event(createEvent(vk, vkDevice));
+
+	// reset event
+	VK_CHECK(vk.resetEvent(vkDevice, *event));
+
+	// record nested secondary command buffers
+	VK_CHECK(vk.beginCommandBuffer(*(nestedBuffers[0]), &nestedCmdBufBeginInfo));
+	{
+		// allow execution of event during every stage of pipeline
+		VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+		// record setting event
+		vk.cmdSetEvent(*(nestedBuffers[0]), *event, stageMask);
+	}
+	// end recording of the secondary buffer
+	endCommandBuffer(vk, *(nestedBuffers[0]));
+
+	for (deUint32 ndx = 1; ndx < BUFFER_COUNT; ndx++) {
+		VK_CHECK(vk.beginCommandBuffer(*(nestedBuffers[ndx]), &nestedCmdBufBeginInfo));
+		{
+			// execute nested buffer
+			vk.cmdExecuteCommands(*(nestedBuffers[ndx]), 1u, &(nestedBuffers[ndx - 1]).get());
+		}
+		// end recording of the secondary buffer
+		endCommandBuffer(vk, *(nestedBuffers[ndx]));
+	}
+
+	// record primary command buffer
+	VK_CHECK(vk.beginCommandBuffer(*primCmdBuf, &primCmdBufBeginInfo));
+	{
+		// execute secondary buffer
+		vk.cmdExecuteCommands(*primCmdBuf, 1u, &(nestedBuffers[BUFFER_COUNT - 1]).get());
+	}
+	endCommandBuffer(vk, *primCmdBuf);
+
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
+
+	// check if secondary buffer has been executed
+	VkResult result = vk.getEventStatus(vkDevice, *event);
+	if (result == VK_EVENT_SET)
+		return tcu::TestStatus::pass("executeMultipleLevelsNestedBufferTest succeeded");
+
+	return tcu::TestStatus::fail("executeMultipleLevelsNestedBufferTest FAILED");
+}
+
 tcu::TestStatus executeSecondaryBufferTwiceTest(Context& context)
 {
 	const deUint32							BUFFER_COUNT			= 10u;
@@ -4080,6 +4809,52 @@ void checkEventAndTimelineSemaphoreAndSimultaneousUseAndSecondaryCommandBufferNu
 	checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport(context);
 }
 
+void checkNestedCommandBufferSupport(Context& context)
+{
+	checkEventAndSecondaryCommandBufferNullFramebufferSupport(context);
+	context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+
+#ifndef CTS_USES_VULKANSC
+	const auto& features = *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+	if (!features.nestedCommandBuffer)
+#endif // CTS_USES_VULKANSC
+		TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+}
+
+void checkNestedCommandBufferDepthSupport(Context& context)
+{
+	checkNestedCommandBufferSupport(context);
+
+#ifndef CTS_USES_VULKANSC
+	const auto& properties = *findStructure<VkPhysicalDeviceNestedCommandBufferPropertiesEXT>(&context.getDeviceProperties2());
+	if (properties.maxCommandBufferNestingLevel <= 1)
+#endif // CTS_USES_VULKANSC
+		TCU_THROW(NotSupportedError, "nestedCommandBuffer with nesting level greater than 1 is not supported");
+}
+
+void checkNestedCommandBufferRenderPassContinueSupport(Context& context, bool value)
+{
+	checkNestedCommandBufferSupport(context);
+
+	DE_UNREF(value);
+#ifndef CTS_USES_VULKANSC
+	const auto& features = *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+	if (!features.nestedCommandBufferRendering)
+#endif // CTS_USES_VULKANSC
+		TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
+}
+
+void checkSimultaneousUseAndNestedCommandBufferNullFramebufferSupport(Context& context)
+{
+	checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport(context);
+	checkNestedCommandBufferSupport(context);
+#ifndef CTS_USES_VULKANSC
+	const auto& features = *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+	if (!features.nestedCommandBufferSimultaneousUse)
+#endif // CTS_USES_VULKANSC
+		TCU_THROW(NotSupportedError, "nestedCommandBufferSimultaneousUse is not supported");
+}
+
 #ifndef CTS_USES_VULKANSC
 void checkEventSupport (Context& context, const VkCommandBufferLevel)
 {
@@ -4129,7 +4904,7 @@ VkFormat getSupportedDepthStencilFormat (const InstanceInterface& vki, VkPhysica
 class ManyDrawsCase : public TestCase
 {
 public:
-							ManyDrawsCase			(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const ManyDrawsParams& params);
+							ManyDrawsCase			(tcu::TestContext& testCtx, const std::string& name, const ManyDrawsParams& params);
 	virtual					~ManyDrawsCase			(void) {}
 
 	virtual void			checkSupport			(Context& context) const;
@@ -4261,8 +5036,8 @@ struct ManyDrawsAllocatedData
 	}
 };
 
-ManyDrawsCase::ManyDrawsCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const ManyDrawsParams& params)
-	: TestCase	(testCtx, name, description)
+ManyDrawsCase::ManyDrawsCase (tcu::TestContext& testCtx, const std::string& name, const ManyDrawsParams& params)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {}
 
@@ -4677,91 +5452,375 @@ tcu::TestStatus ManyDrawsInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+void initManyIndirectDrawsPrograms (SourceCollections& dst)
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "layout (location=0) in vec4 inPos;\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = inPos;\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus manyIndirectDrawsTest (Context& context)
+{
+	const auto&			ctx			= context.getContextCommonData();
+	const tcu::IVec3	fbExtent	(64, 64, 1);
+	const auto			vkExtent	= makeExtent3D(fbExtent);
+	const auto			floatExt	= fbExtent.cast<float>();
+	const auto			pixelCount	= vkExtent.width * vkExtent.height;
+	const auto			fbFormat	= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat	= mapVkFormat(fbFormat);
+	const auto			fbUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const tcu::Vec4		clearColor	(0.0f, 0.0f, 0.0f, 1.0f);
+	const tcu::Vec4		geomColor	(0.0f, 0.0f, 1.0f, 1.0f); // Must match fragment shader.
+	const tcu::Vec4		threshold	(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+	const auto			bindPoint	= VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+	// Color buffer with verification buffer.
+	ImageWithBuffer colorBuffer (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		vkExtent,
+		fbFormat,
+		fbUsage,
+		VK_IMAGE_TYPE_2D);
+
+	// Vertices for each point.
+	std::vector<tcu::Vec4> vertices;
+	vertices.reserve(pixelCount);
+	for (int y = 0; y < fbExtent.y(); ++y)
+		for (int x = 0; x < fbExtent.x(); ++x)
+		{
+			const auto xCoord = ((static_cast<float>(x) + 0.5f) / floatExt.x()) * 2.0f - 1.0f;
+			const auto yCoord = ((static_cast<float>(y) + 0.5f) / floatExt.y()) * 2.0f - 1.0f;
+			vertices.push_back(tcu::Vec4(xCoord, yCoord, 0.0f, 1.0f));
+		};
+
+	// Vertex buffer
+	const auto			vbSize			= static_cast<VkDeviceSize>(de::dataSize(vertices));
+	const auto			vbInfo			= makeBufferCreateInfo(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	BufferWithMemory	vertexBuffer	(ctx.vkd, ctx.device, ctx.allocator, vbInfo, MemoryRequirement::HostVisible);
+	const auto			vbAlloc			= vertexBuffer.getAllocation();
+	void*				vbData			= vbAlloc.getHostPtr();
+	const auto			vbOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(vbData, de::dataOrNull(vertices), de::dataSize(vertices));
+	flushAlloc(ctx.vkd, ctx.device, vbAlloc);
+
+	std::vector<VkDrawIndirectCommand> indirectCommands;
+	indirectCommands.reserve(pixelCount);
+	const auto indirectCmdSize = static_cast<uint32_t>(sizeof(decltype(indirectCommands)::value_type));
+
+	for (uint32_t i = 0u; i < pixelCount; ++i)
+	{
+		indirectCommands.push_back({
+			1u,	//	uint32_t	vertexCount;
+			1u,	//	uint32_t	instanceCount;
+			i,	//	uint32_t	firstVertex;
+			0u,	//	uint32_t	firstInstance;
+		});
+	}
+
+	// Indirect draw buffer.
+	const auto			ibSize			= static_cast<VkDeviceSize>(de::dataSize(indirectCommands));
+	const auto			ibInfo			= makeBufferCreateInfo(ibSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+	BufferWithMemory	indirectBuffer	(ctx.vkd, ctx.device, ctx.allocator, ibInfo, MemoryRequirement::HostVisible);
+	const auto			ibAlloc			= indirectBuffer.getAllocation();
+	void*				ibData			= ibAlloc.getHostPtr();
+
+	deMemcpy(ibData, de::dataOrNull(indirectCommands), de::dataSize(indirectCommands));
+	flushAlloc(ctx.vkd, ctx.device, ibAlloc);
+
+	const auto pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device);
+	const auto renderPass		= makeRenderPass(ctx.vkd, ctx.device, fbFormat);
+	const auto framebuffer		= makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
+
+	// Modules.
+	const auto&	binaries		= context.getBinaryCollection();
+	const auto	vertModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	// Other default values work for the current setup, including the vertex input data format.
+	const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout,
+		*vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule,
+		*renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+
+	CommandPoolWithBuffer	cmd				(ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto				cmdBuffer		= *cmd.cmdBuffer;
+	const auto				secCmdBuffer	= allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+	beginSecondaryCommandBuffer(ctx.vkd, *secCmdBuffer, *renderPass, *framebuffer);
+	ctx.vkd.cmdBindVertexBuffers(*secCmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+	ctx.vkd.cmdBindPipeline(*secCmdBuffer, bindPoint, *pipeline);
+	for (uint32_t i = 0; i < pixelCount; ++i)
+		ctx.vkd.cmdDrawIndirect(*secCmdBuffer, indirectBuffer.get(), static_cast<VkDeviceSize>(i * indirectCmdSize), 1u, indirectCmdSize);
+	endCommandBuffer(ctx.vkd, *secCmdBuffer);
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), clearColor, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+	ctx.vkd.cmdExecuteCommands(cmdBuffer, 1u, &(*secCmdBuffer));
+	endRenderPass(ctx.vkd, cmdBuffer);
+	copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(),
+		fbExtent.swizzle(0, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+		VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color output.
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+	tcu::PixelBufferAccess resultAccess (tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+	tcu::TextureLevel	referenceLevel	(tcuFormat, fbExtent.x(), fbExtent.y());
+	auto				referenceAccess	= referenceLevel.getAccess();
+	tcu::clear(referenceAccess, geomColor);
+
+	auto& log = context.getTestContext().getLog();
+	if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+constexpr uint32_t kIndirectDispatchValueOffset = 1000000u;
+
+void initManyIndirectDispatchesPrograms (SourceCollections& dst)
+{
+	std::ostringstream comp;
+	comp
+		<< "#version 460\n"
+		<< "layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
+		<< "layout (push_constant, std430) uniform PushConstantBlock { uint index; } pc;\n"
+		<< "layout (set=0, binding=0, std430) buffer OutputBlock { uint data[]; } outputValues;\n"
+		<< "void main (void) {\n"
+		<< "    outputValues.data[pc.index] += pc.index + " << kIndirectDispatchValueOffset << "u;\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+void checkManyIndirectDispatchesSupport (Context& context)
+{
+	// The device must have support for a compute queue.
+	// getComputeQueue() will throw NotSupportedError if the device doesn't have one.
+	context.getComputeQueue();
+}
+
+tcu::TestStatus manyIndirectDispatchesTest (Context& context)
+{
+	const auto&			ctx			= context.getContextCommonData();
+	const auto			descType	= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	const auto			bindPoint	= VK_PIPELINE_BIND_POINT_COMPUTE;
+	const auto			dataStages	= VK_SHADER_STAGE_COMPUTE_BIT;
+	const auto			valueCount	= 4096u;
+	const auto			qfIndex		= context.getComputeQueueFamilyIndex();
+	const auto			queue		= context.getComputeQueue();
+
+	// Host-side buffer values.
+	std::vector<uint32_t> bufferValues (valueCount, 0u);
+
+	// Storage buffer.
+	const auto			sbSize			= static_cast<VkDeviceSize>(de::dataSize(bufferValues));
+	const auto			sbInfo			= makeBufferCreateInfo(sbSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	BufferWithMemory	storageBuffer	(ctx.vkd, ctx.device, ctx.allocator, sbInfo, MemoryRequirement::HostVisible);
+	const auto			sbAlloc			= storageBuffer.getAllocation();
+	void*				sbData			= sbAlloc.getHostPtr();
+	const auto			sbOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(sbData, de::dataOrNull(bufferValues), de::dataSize(bufferValues));
+	flushAlloc(ctx.vkd, ctx.device, sbAlloc);
+
+	// Indirect dispatch buffer. We'll pretend to have 4096 indirect commands but all of them will launch 1 group with 1 invocation.
+	const VkDispatchIndirectCommand					defaultCommand		{ 1u, 1u, 1u };
+	const std::vector<VkDispatchIndirectCommand>	indirectCommands	(valueCount, defaultCommand);
+
+	const auto			ibSize			= static_cast<VkDeviceSize>(de::dataSize(indirectCommands));
+	const auto			ibInfo			= makeBufferCreateInfo(ibSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+	BufferWithMemory	indirectBuffer	(ctx.vkd, ctx.device, ctx.allocator, ibInfo, MemoryRequirement::HostVisible);
+	const auto			ibAlloc			= indirectBuffer.getAllocation();
+	void*				ibData			= ibAlloc.getHostPtr();
+
+	deMemcpy(ibData, de::dataOrNull(indirectCommands), de::dataSize(indirectCommands));
+	flushAlloc(ctx.vkd, ctx.device, ibAlloc);
+
+	// Descriptor pool, set, layout, etc.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(descType);
+	const auto descriptorPool	= poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+	DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(descType, dataStages);
+	const auto setLayout		= layoutBuilder.build(ctx.vkd, ctx.device);
+	const auto descriptorSet	= makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+	DescriptorSetUpdateBuilder updateBuilder;
+	const auto dbDescInfo = makeDescriptorBufferInfo(storageBuffer.get(), sbOffset, sbSize);
+	updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType, &dbDescInfo);
+	updateBuilder.update(ctx.vkd, ctx.device);
+
+	// Push constants.
+	const auto pcSize	= static_cast<uint32_t>(sizeof(uint32_t));
+	const auto pcRange	= makePushConstantRange(dataStages, 0u, pcSize);
+
+	// Layout and pipeline.
+	const auto	pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device, *setLayout, &pcRange);
+	const auto&	binaries		= context.getBinaryCollection();
+	const auto	compModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
+	const auto	pipeline		= makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compModule);
+
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+	const auto secCmdBufferPtr = allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+	const auto secCmdBuffer = *secCmdBufferPtr;
+
+	beginSecondaryCommandBuffer(ctx.vkd, secCmdBuffer);
+	ctx.vkd.cmdBindPipeline(secCmdBuffer, bindPoint, *pipeline);
+	ctx.vkd.cmdBindDescriptorSets(secCmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	for (uint32_t i = 0; i < valueCount; ++i)
+	{
+		ctx.vkd.cmdPushConstants(secCmdBuffer, *pipelineLayout, dataStages, 0u, pcSize, &i);
+		const auto dispatchOffset = static_cast<VkDeviceSize>(i * sizeof(VkDispatchIndirectCommand));
+		ctx.vkd.cmdDispatchIndirect(secCmdBuffer, indirectBuffer.get(), dispatchOffset);
+	}
+	endCommandBuffer(ctx.vkd, secCmdBuffer);
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	ctx.vkd.cmdExecuteCommands(cmdBuffer, 1u, &secCmdBuffer);
+	{
+		const auto compute2Host = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+		cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &compute2Host);
+	}
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, queue, cmdBuffer);
+
+	// Verify values.
+	std::vector<uint32_t> outputValues (valueCount, 0u);
+	invalidateAlloc(ctx.vkd, ctx.device, sbAlloc);
+	deMemcpy(outputValues.data(), sbData, de::dataSize(outputValues));
+
+	for (uint32_t i = 0u; i < valueCount; ++i)
+	{
+		const auto refValue = bufferValues[i] + i + kIndirectDispatchValueOffset;
+		if (outputValues[i] != refValue)
+		{
+			std::ostringstream msg;
+			msg << "Unexpected value found at position " << i << ": expected " << refValue << " but found " << outputValues[i];
+			TCU_FAIL(msg.str());
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	commandBuffersTests	(new tcu::TestCaseGroup(testCtx, "command_buffers", "Command Buffers Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	commandBuffersTests	(new tcu::TestCaseGroup(testCtx, "command_buffers"));
 
 	/* 19.1. Command Pools (5.1 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "pool_create_null_params",			"",	createPoolNullParamsTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_create_null_params",			createPoolNullParamsTest);
 #ifndef CTS_USES_VULKANSC
 	// VkAllocationCallbacks must be NULL in Vulkan SC
-	addFunctionCase				(commandBuffersTests.get(), "pool_create_non_null_allocator",	"",	createPoolNonNullAllocatorTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_create_non_null_allocator",	createPoolNonNullAllocatorTest);
 #endif // CTS_USES_VULKANSC
-	addFunctionCase				(commandBuffersTests.get(), "pool_create_transient_bit",		"",	createPoolTransientBitTest);
-	addFunctionCase				(commandBuffersTests.get(), "pool_create_reset_bit",			"",	createPoolResetBitTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_create_transient_bit",		createPoolTransientBitTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_create_reset_bit",			createPoolResetBitTest);
 #ifndef CTS_USES_VULKANSC
-	addFunctionCase				(commandBuffersTests.get(), "pool_reset_release_res",			"",	resetPoolReleaseResourcesBitTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_reset_release_res",			resetPoolReleaseResourcesBitTest);
 #endif // CTS_USES_VULKANSC
-	addFunctionCase				(commandBuffersTests.get(), "pool_reset_no_flags_res",			"",	resetPoolNoFlagsTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_reset_no_flags_res",			resetPoolNoFlagsTest);
 #ifndef CTS_USES_VULKANSC
-	addFunctionCase				(commandBuffersTests.get(), "pool_reset_reuse",					"",	checkEventSupport, resetPoolReuseTest);
+	addFunctionCase				(commandBuffersTests.get(), "pool_reset_reuse",					checkEventSupport, resetPoolReuseTest);
 #endif // CTS_USES_VULKANSC
 	/* 19.2. Command Buffer Lifetime (5.2 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "allocate_single_primary",			"", allocatePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "allocate_many_primary",			"",	allocateManyPrimaryBuffersTest);
-	addFunctionCase				(commandBuffersTests.get(), "allocate_single_secondary",		"", allocateSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "allocate_many_secondary",			"", allocateManySecondaryBuffersTest);
-	addFunctionCase				(commandBuffersTests.get(), "execute_small_primary",			"", checkEventSupport, executePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "execute_large_primary",			"",	checkEventSupport, executeLargePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "reset_implicit",					"", checkEventSupport, resetBufferImplicitlyTest);
+	addFunctionCase				(commandBuffersTests.get(), "allocate_single_primary",			allocatePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "allocate_many_primary",			allocateManyPrimaryBuffersTest);
+	addFunctionCase				(commandBuffersTests.get(), "allocate_single_secondary",		allocateSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "allocate_many_secondary",			allocateManySecondaryBuffersTest);
+	addFunctionCase				(commandBuffersTests.get(), "execute_small_primary",			checkEventSupport, executePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "execute_large_primary",			checkEventSupport, executeLargePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "reset_implicit",					checkEventSupport, resetBufferImplicitlyTest);
 #ifndef CTS_USES_VULKANSC
-	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool",				"", checkEventSupport, trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool_secondary",		"", checkEventSupport, trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool",				checkEventSupport, trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	addFunctionCase				(commandBuffersTests.get(), "trim_command_pool_secondary",		checkEventSupport, trimCommandPoolTest, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 #endif // CTS_USES_VULKANSC
 	/* 19.3. Command Buffer Recording (5.3 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "record_single_primary",			"",	checkEventSupport, recordSinglePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_many_primary",				"", checkEventSupport, recordLargePrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_single_secondary",			"", checkEventAndSecondaryCommandBufferNullFramebufferSupport, recordSingleSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_many_secondary",			"", checkEventAndSecondaryCommandBufferNullFramebufferSupport, recordLargeSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_single_primary",			checkEventSupport, recordSinglePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_many_primary",				checkEventSupport, recordLargePrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_single_secondary",			checkEventAndSecondaryCommandBufferNullFramebufferSupport, recordSingleSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_many_secondary",			checkEventAndSecondaryCommandBufferNullFramebufferSupport, recordLargeSecondaryBufferTest);
 	{
 		deUint32	seed		= 1614182419u;
 		const auto	smallExtent	= makeExtent3D(128u, 128u, 1u);
 		const auto	largeExtent	= makeExtent3D(512u, 256u, 1u);
 
-		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_1",		"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	smallExtent,	seed++)));
-		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_2",		"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	largeExtent,	seed++)));
-		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_secondary_1",	"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY,	smallExtent,	seed++)));
-		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_secondary_2",	"", ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY,	largeExtent,	seed++)));
+		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_1",		ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	smallExtent,	seed++)));
+		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_primary_2",		ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_PRIMARY,	largeExtent,	seed++)));
+		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_secondary_1",	ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY,	smallExtent,	seed++)));
+		commandBuffersTests->addChild(new ManyDrawsCase(testCtx, "record_many_draws_secondary_2",	ManyDrawsParams(VK_COMMAND_BUFFER_LEVEL_SECONDARY,	largeExtent,	seed++)));
 	}
-	addFunctionCase				(commandBuffersTests.get(), "submit_twice_primary",				"",	checkEventSupport, submitPrimaryBufferTwiceTest);
-	addFunctionCase				(commandBuffersTests.get(), "submit_twice_secondary",			"", checkEventAndSecondaryCommandBufferNullFramebufferSupport, submitSecondaryBufferTwiceTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_primary",	"",	checkEventSupport, oneTimeSubmitFlagPrimaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_secondary",	"", checkEventAndSecondaryCommandBufferNullFramebufferSupport, oneTimeSubmitFlagSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue",				"",	renderPassContinueTest, true);
-	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue_no_fb",		"", checkSecondaryCommandBufferNullOrImagelessFramebufferSupport1, renderPassContinueTest, false);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_secondary_one_primary", "", checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, genComputeIncrementSource, simultaneousUseSecondaryBufferOnePrimaryBufferTest);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_secondary_two_primary", "", checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, genComputeIncrementSource, simultaneousUseSecondaryBufferTwoPrimaryBuffersTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_query_precise_w_flag",		"", checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryPreciseWithFlagTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_query_imprecise_w_flag",	"", checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryImpreciseWithFlagTest);
-	addFunctionCase				(commandBuffersTests.get(), "record_query_imprecise_wo_flag",	"", checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryImpreciseWithoutFlagTest);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random",		"", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_PTR);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random_cont",	"", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_PTR_CONTINUATION);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random_data",	"", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_DATA_PTR);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_invalid_type", "", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::INVALID_STRUCTURE_TYPE);
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_valid_nonsense_type", "", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::VALID_NONSENSE_TYPE);
+	addFunctionCase				(commandBuffersTests.get(), "submit_twice_primary",				checkEventSupport, submitPrimaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "submit_twice_secondary",			checkEventAndSecondaryCommandBufferNullFramebufferSupport, submitSecondaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_primary",	checkEventSupport, oneTimeSubmitFlagPrimaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_secondary",	checkEventAndSecondaryCommandBufferNullFramebufferSupport, oneTimeSubmitFlagSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue",				renderPassContinueTest, true);
+	addFunctionCase				(commandBuffersTests.get(), "nested_render_pass_continue",		checkNestedCommandBufferRenderPassContinueSupport, renderPassContinueNestedTest, true);
+	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue_no_fb",		checkSecondaryCommandBufferNullOrImagelessFramebufferSupport1, renderPassContinueTest, false);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_secondary_one_primary", checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, genComputeIncrementSource, simultaneousUseSecondaryBufferOnePrimaryBufferTest);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_secondary_two_primary", checkSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, genComputeIncrementSource, simultaneousUseSecondaryBufferTwoPrimaryBuffersTest);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_nested",			checkSimultaneousUseAndNestedCommandBufferNullFramebufferSupport, genComputeIncrementSource, simultaneousUseNestedSecondaryBufferTest);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_twice_nested",	checkSimultaneousUseAndNestedCommandBufferNullFramebufferSupport, genComputeIncrementSource, simultaneousUseNestedSecondaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_query_precise_w_flag",		checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryPreciseWithFlagTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_query_imprecise_w_flag",	checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryImpreciseWithFlagTest);
+	addFunctionCase				(commandBuffersTests.get(), "record_query_imprecise_wo_flag",	checkSecondaryCommandBufferNullOrImagelessFramebufferSupport, recordBufferQueryImpreciseWithoutFlagTest);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random",		genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_PTR);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random_cont",	genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_PTR_CONTINUATION);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_random_data",	genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::RANDOM_DATA_PTR);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_invalid_type", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::INVALID_STRUCTURE_TYPE);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "bad_inheritance_info_valid_nonsense_type", genComputeIncrementSourceBadInheritance, badInheritanceInfoTest, BadInheritanceInfoCase::VALID_NONSENSE_TYPE);
 	/* 19.4. Command Buffer Submission (5.4 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "submit_count_non_zero",			"", checkEventSupport, submitBufferCountNonZero);
-	addFunctionCase				(commandBuffersTests.get(), "submit_count_equal_zero",			"", checkEventSupport, submitBufferCountEqualZero);
-	addFunctionCase				(commandBuffersTests.get(), "submit_wait_single_semaphore",		"", checkEventSupport, submitBufferWaitSingleSemaphore);
-	addFunctionCase				(commandBuffersTests.get(), "submit_wait_many_semaphores",		"", checkEventSupport, submitBufferWaitManySemaphores);
-	addFunctionCase				(commandBuffersTests.get(), "submit_null_fence",				"", checkEventSupport, submitBufferNullFence);
-	addFunctionCase				(commandBuffersTests.get(), "submit_two_buffers_one_buffer_null_with_fence", "", checkEventSupport, submitTwoBuffersOneBufferNullWithFence);
+	addFunctionCase				(commandBuffersTests.get(), "submit_count_non_zero",			checkEventSupport, submitBufferCountNonZero);
+	addFunctionCase				(commandBuffersTests.get(), "submit_count_equal_zero",			checkEventSupport, submitBufferCountEqualZero);
+	addFunctionCase				(commandBuffersTests.get(), "submit_wait_single_semaphore",		checkEventSupport, submitBufferWaitSingleSemaphore);
+	addFunctionCase				(commandBuffersTests.get(), "submit_wait_many_semaphores",		checkEventSupport, submitBufferWaitManySemaphores);
+	addFunctionCase				(commandBuffersTests.get(), "submit_null_fence",				checkEventSupport, submitBufferNullFence);
+	addFunctionCase				(commandBuffersTests.get(), "submit_two_buffers_one_buffer_null_with_fence", checkEventSupport, submitTwoBuffersOneBufferNullWithFence);
 	/* 19.5. Secondary Command Buffer Execution (5.6 in VK 1.0 Spec) */
-	addFunctionCase				(commandBuffersTests.get(), "secondary_execute",				"", checkEventAndSecondaryCommandBufferNullFramebufferSupport, executeSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "secondary_execute_twice",			"", checkEventAndTimelineSemaphoreAndSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, executeSecondaryBufferTwiceTest);
+	addFunctionCase				(commandBuffersTests.get(), "secondary_execute",				checkEventAndSecondaryCommandBufferNullFramebufferSupport, executeSecondaryBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "secondary_execute_twice",			checkEventAndTimelineSemaphoreAndSimultaneousUseAndSecondaryCommandBufferNullFramebufferSupport, executeSecondaryBufferTwiceTest);
 	/* 19.6. Commands Allowed Inside Command Buffers (? in VK 1.0 Spec) */
-	addFunctionCaseWithPrograms (commandBuffersTests.get(), "order_bind_pipeline",				"", genComputeSource, orderBindPipelineTest);
+	addFunctionCaseWithPrograms (commandBuffersTests.get(), "order_bind_pipeline",				genComputeSource, orderBindPipelineTest);
 	/* Verify untested transitions between command buffer states */
-	addFunctionCase				(commandBuffersTests.get(), "recording_to_ininitial",			"", executeStateTransitionTest, STT_RECORDING_TO_INITIAL);
-	addFunctionCase				(commandBuffersTests.get(), "executable_to_ininitial",			"", executeStateTransitionTest, STT_EXECUTABLE_TO_INITIAL);
-	addFunctionCase				(commandBuffersTests.get(), "recording_to_invalid",				"", executeStateTransitionTest, STT_RECORDING_TO_INVALID);
-	addFunctionCase				(commandBuffersTests.get(), "executable_to_invalid",			"", executeStateTransitionTest, STT_EXECUTABLE_TO_INVALID);
+	addFunctionCase				(commandBuffersTests.get(), "recording_to_ininitial",			executeStateTransitionTest, STT_RECORDING_TO_INITIAL);
+	addFunctionCase				(commandBuffersTests.get(), "executable_to_ininitial",			executeStateTransitionTest, STT_EXECUTABLE_TO_INITIAL);
+	addFunctionCase				(commandBuffersTests.get(), "recording_to_invalid",				executeStateTransitionTest, STT_RECORDING_TO_INVALID);
+	addFunctionCase				(commandBuffersTests.get(), "executable_to_invalid",			executeStateTransitionTest, STT_EXECUTABLE_TO_INVALID);
+	addFunctionCaseWithPrograms	(commandBuffersTests.get(), "many_indirect_draws_on_secondary",	initManyIndirectDrawsPrograms, manyIndirectDrawsTest);
+	addFunctionCaseWithPrograms	(commandBuffersTests.get(), "many_indirect_disps_on_secondary",	checkManyIndirectDispatchesSupport, initManyIndirectDispatchesPrograms, manyIndirectDispatchesTest);
+
+	addFunctionCase				(commandBuffersTests.get(), "nested_execute",					checkNestedCommandBufferSupport, executeNestedBufferTest);
+	addFunctionCase				(commandBuffersTests.get(), "nested_execute_multiple_levels",	checkNestedCommandBufferDepthSupport, executeMultipleLevelsNestedBufferTest);
 
 	return commandBuffersTests.release();
 }
 
 } // api
 } // vkt
-

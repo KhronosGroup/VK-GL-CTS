@@ -215,7 +215,7 @@ RayTracingBuildTestInstance::~RayTracingBuildTestInstance (void)
 class RayTracingTestCase : public TestCase
 {
 	public:
-										RayTracingTestCase			(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+										RayTracingTestCase			(tcu::TestContext& context, const char* name, const CaseDef data);
 										~RayTracingTestCase			(void);
 
 	virtual	void						initPrograms				(SourceCollections& programCollection) const;
@@ -230,8 +230,8 @@ private:
 	CaseDef					m_data;
 };
 
-RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 	DE_ASSERT((m_data.width * m_data.height) == (m_data.squaresGroupCount * m_data.geometriesGroupCount * m_data.instancesGroupCount));
@@ -806,11 +806,12 @@ tcu::TestCaseGroup*	createMemGuaranteeTests (tcu::TestContext& testCtx)
 		{ "between",	TEST_TYPE_BETWEEN_STAGES	},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "memguarantee", "Ray tracing memory guarantee tests"));
+	// Ray tracing memory guarantee tests
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "memguarantee"));
 
 	for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> testTypeGroup(new tcu::TestCaseGroup(testCtx, testTypes[testTypeNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> testTypeGroup(new tcu::TestCaseGroup(testCtx, testTypes[testTypeNdx].name));
 
 		for (size_t stagesNdx = 0; stagesNdx < DE_LENGTH_OF_ARRAY(stages); ++stagesNdx)
 		{
@@ -831,7 +832,7 @@ tcu::TestCaseGroup*	createMemGuaranteeTests (tcu::TestContext& testCtx)
 			};
 			const std::string	testName	= de::toString(stages[stagesNdx].name);
 
-			testTypeGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+			testTypeGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 		}
 
 		group->addChild(testTypeGroup.release());

@@ -195,7 +195,6 @@ class InputAttachmentSparseFillingTest : public vkt::TestCase
 public:
 										InputAttachmentSparseFillingTest	(tcu::TestContext&	testContext,
 																			 const std::string&	name,
-																			 const std::string&	description,
 																			 const TestParams&	testParams);
 	virtual								~InputAttachmentSparseFillingTest	(void) = default;
 	virtual void						initPrograms						(SourceCollections&	sourceCollections) const;
@@ -271,9 +270,8 @@ private:
 
 InputAttachmentSparseFillingTest::InputAttachmentSparseFillingTest (tcu::TestContext&	testContext,
 																	const std::string&	name,
-																	const std::string&	description,
 																	const TestParams&	testParams)
-	: vkt::TestCase	(testContext, name, description), m_testParams(testParams)
+	: vkt::TestCase	(testContext, name), m_testParams(testParams)
 {
 }
 
@@ -978,7 +976,8 @@ tcu::TestStatus InputAttachmentSparseFillingTestInstance::verifyImage (void)
 
 tcu::TestCaseGroup* createRenderPassUnusedAttachmentSparseFillingTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	de::MovePtr<tcu::TestCaseGroup>		unusedAttTests		(new tcu::TestCaseGroup(testCtx, "attachment_sparse_filling", "Unused attachment tests"));
+	// Unused attachment tests
+	de::MovePtr<tcu::TestCaseGroup>		unusedAttTests		(new tcu::TestCaseGroup(testCtx, "attachment_sparse_filling"));
 
 	const std::vector<deUint32> activeInputAttachmentCount
 	{
@@ -994,7 +993,7 @@ tcu::TestCaseGroup* createRenderPassUnusedAttachmentSparseFillingTests (tcu::Tes
 	for (std::size_t attachmentNdx = 0; attachmentNdx < activeInputAttachmentCount.size(); ++attachmentNdx)
 	{
 		TestParams testParams{ groupParams, activeInputAttachmentCount[attachmentNdx] };
-		unusedAttTests->addChild(new InputAttachmentSparseFillingTest(testCtx, std::string("input_attachment_") + de::toString(activeInputAttachmentCount[attachmentNdx]), "", testParams));
+		unusedAttTests->addChild(new InputAttachmentSparseFillingTest(testCtx, std::string("input_attachment_") + de::toString(activeInputAttachmentCount[attachmentNdx]), testParams));
 	}
 
 	return unusedAttTests.release();
