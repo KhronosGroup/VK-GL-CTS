@@ -144,7 +144,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createCreationFeedbackTests			(testCtx, pipelineConstructionType));
 	group->addChild(createDepthRangeUnrestrictedTests	(testCtx, pipelineConstructionType));
-	if (isNotExtraShaderObjectVariant)
+	if (isNotShaderObjectVariant)
 	{
 		group->addChild(createExecutablePropertiesTests(testCtx, pipelineConstructionType));
 	}
