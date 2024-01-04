@@ -366,16 +366,18 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			DE_NULL,
-			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
-			vk::VK_ACCESS_TRANSFER_READ_BIT | vk::VK_ACCESS_TRANSFER_WRITE_BIT,
-			isFirst ? vk::VK_IMAGE_LAYOUT_UNDEFINED : vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			0u,
+			0u,
+			(isFirst ? vk::VK_IMAGE_LAYOUT_UNDEFINED : vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR),
 			vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			VK_QUEUE_FAMILY_IGNORED,
 			VK_QUEUE_FAMILY_IGNORED,
 			image,
 			subRange
 		};
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+		const vk::VkPipelineStageFlags srcStages = (vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT | vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+		const vk::VkPipelineStageFlags dstStages = vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		vkd.cmdPipelineBarrier(*commandBuffer, srcStages, dstStages, 0u, 0u, nullptr, 0u, nullptr, 1u, &barrier);
 	}
 
 	beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, vk::makeRect2D(imageWidth, imageHeight), tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
@@ -938,7 +940,7 @@ void IncrementalPresentTestInstance::render (void)
 	deUint32			imageIndex;
 
 	// Acquire next image
-	VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, (vk::VkFence)0, &imageIndex));
+	VK_CHECK_WSI(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, (vk::VkFence)0, &imageIndex));
 
 	// Create command buffer
 	{
