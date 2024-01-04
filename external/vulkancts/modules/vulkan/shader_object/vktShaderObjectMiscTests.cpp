@@ -1618,6 +1618,8 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 
 	if (m_params.fragShader && !m_params.rasterizerDiscardEnable)
 	{
+		bool usesSrcOneDstOneBlending = (!m_params.pipeline && m_params.fragShader && !m_params.rasterizerDiscardEnable) || hasDynamicState(getDynamicStates(), vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
+
 		for (deInt32 j = 0; j < height; ++j)
 		{
 			for (deInt32 i = 0; i < width; ++i)
@@ -1636,7 +1638,14 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 						if (m_params.alphaToOne)
 							expectedColor.w() = 1.0f;
 						if (m_params.colorBlendEnable && secondDraw && !m_params.logicOpEnable && !m_params.stencilTestEnable)
-							expectedColor = tcu::Vec4(1.0f);
+						{
+							if (usesSrcOneDstOneBlending)
+							{
+								// using src_factor=ONE dst_factor=ONE blending from dynamic state
+								expectedColor = tcu::Vec4(1.0f);
+							}
+							// otherwise dst_factor=ZERO, so expect 'whiteColor'
+						}
 					}
 				}
 
