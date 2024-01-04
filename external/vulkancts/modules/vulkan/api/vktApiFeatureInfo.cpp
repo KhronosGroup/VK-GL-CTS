@@ -1,4 +1,4 @@
-/*-------------------------------------------------------------------------
+eeeeeeeeee/*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
@@ -1367,7 +1367,7 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
 #ifndef CTS_USES_VULKANSC
 	const InstanceInterface&									vki									= context.getInstanceInterface();
 	const VkPhysicalDevice										physicalDevice						= context.getPhysicalDevice();
-	vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT		vertexAttributeDivisorProperties	= vk::initVulkanStructure();
+	vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR		vertexAttributeDivisorProperties	= vk::initVulkanStructure();
 	vk::VkPhysicalDeviceProperties2								properties2							= vk::initVulkanStructure(&vertexAttributeDivisorProperties);
 	vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 #else
