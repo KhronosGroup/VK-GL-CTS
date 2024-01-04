@@ -5832,8 +5832,8 @@ void DiscardTestInstance::drawPrimitivesDiscard (tcu::Surface& result, const std
 	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &m_descriptorSet.get(), 0u, DE_NULL);
 	vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
 	vkd.cmdDraw(*commandBuffer, (deUint32)positionData.size(), 1, 0, 0);
-	endRenderPass(vkd, *commandBuffer);
 	vkd.cmdEndQuery(*commandBuffer, *queryPool, 0u);
+	endRenderPass(vkd, *commandBuffer);
 
 	// Copy Image
 	copyImageToBuffer(vkd, *commandBuffer, m_multisampling ? *m_resolvedImage : *m_image, *m_resultBuffer, tcu::IVec2(m_renderSize, m_renderSize));

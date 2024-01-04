@@ -1557,13 +1557,13 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 
 	if (m_inputType == TYPE_I8 || m_inputType == TYPE_U8)
 	{
-		requiredFeatures.ext8BitStorage.storageBuffer8BitAccess = true;
+		requiredFeatures.ext8BitStorage.uniformAndStorageBuffer8BitAccess = true;
 		spirvExtensions					+= "OpExtension \"SPV_KHR_8bit_storage\"\n";
 	}
 
 	if (m_inputType == TYPE_I16 || m_inputType == TYPE_U16)
 	{
-		requiredFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
+		requiredFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
 		spirvExtensions						+= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 	}
 
@@ -2319,13 +2319,13 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 
 	if (m_inputType == TYPE_I8 || m_inputType == TYPE_U8)
 	{
-		requiredFeatures.ext8BitStorage.storageBuffer8BitAccess = true;
+		requiredFeatures.ext8BitStorage.uniformAndStorageBuffer8BitAccess = true;
 		spirvExtensions						+= "OpExtension \"SPV_KHR_8bit_storage\"\n";
 	}
 
 	if (m_inputType == TYPE_I16 || m_inputType == TYPE_U16)
 	{
-		requiredFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
+		requiredFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
 		spirvExtensions						+= "OpExtension \"SPV_KHR_16bit_storage\"\n";
 	}
 
