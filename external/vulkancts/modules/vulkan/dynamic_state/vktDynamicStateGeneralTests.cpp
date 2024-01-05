@@ -657,7 +657,7 @@ tcu::TestStatus staticStencilMaskZeroProgramsTest (Context& context, vk::Pipelin
 		vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	//	VkStructureType							sType;
 		nullptr,														//	const void*								pNext;
 		0u,																//	VkPipelineDepthStencilStateCreateFlags	flags;
-		VK_TRUE,														//	VkBool32								depthTestEnable;
+		VK_FALSE,														//	VkBool32								depthTestEnable;
 		VK_TRUE,														//	VkBool32								depthWriteEnable;
 		vk::VK_COMPARE_OP_LESS,											//	VkCompareOp								depthCompareOp;
 		VK_FALSE,														//	VkBool32								depthBoundsTestEnable;
@@ -688,6 +688,7 @@ tcu::TestStatus staticStencilMaskZeroProgramsTest (Context& context, vk::Pipelin
 		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertModule)
 		.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule, &depthStencilState)
 		.setupFragmentOutputState(*renderPass)
+		.setMonolithicPipelineLayout(pipelineLayout)
 		.buildPipeline()
 		;
 
@@ -793,7 +794,7 @@ tcu::TestStatus staticStencilMaskZeroProgramsTest (Context& context, vk::Pipelin
 	tcu::clearStencil(refStencilAccess, static_cast<int>(clearStenc));	// All fragments should have been discarded.
 
 	if (!tcu::dsThresholdCompare(log, "StencilResult", "", refStencilAccess, resStencilAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR))
-		return tcu::TestStatus::fail("Unexpected depth in result buffer; check log for details");
+		return tcu::TestStatus::fail("Unexpected stencil value in result buffer; check log for details");
 
 	return tcu::TestStatus::pass("Pass");
 }
