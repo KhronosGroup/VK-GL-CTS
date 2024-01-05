@@ -1867,6 +1867,10 @@ void checkVaryingSamplesFragSupport (Context& context, VaryingSamplesFragParams 
 	const auto allowedSampleCounts = context.getDeviceProperties().limits.framebufferNoAttachmentsSampleCounts;
 	if ((allowedSampleCounts & params.multiSampleCount) == 0u)
 		TCU_THROW(NotSupportedError, "Requested sample count not supported");
+
+	// Check for standard sample locations.
+	if (!context.getDeviceProperties().limits.standardSampleLocations)
+		TCU_THROW(NotSupportedError, "Standard sample locations required");
 }
 
 // This test creates a fragment shader pipeline library using a fragment shader that doesn't have sample shading enabled. In
