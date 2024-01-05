@@ -3477,6 +3477,9 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	deBool			outFp16WithoutStorage	= (outFloatType == FP16) && testCase.fp16Without16BitStorage;
 	deBool			inFp16WithoutStorage	= (inFloatType == FP16) && testCase.fp16Without16BitStorage;
 
+	// The feature is required if OpCapability StorageUniform16 is used in the shader.
+	deBool requiresUniformAndStorage16BitBufferAccess = false;
+
 	// UnpackHalf2x16 is a corner case - it returns two 32-bit floats but
 	// internaly operates on fp16 and this type should be used by float controls
 	FloatType		inFloatTypeForCaps		= inFloatType;
@@ -3524,6 +3527,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 		else
 		{
 			ioDefinitions	+= outTypeSnippets->outputDefinitionsSnippet;
+
+			requiresUniformAndStorage16BitBufferAccess |= (outFloatType == FP16);
 		}
 	}
 
@@ -3547,6 +3552,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 		{
 			capabilities	+= inTypeSnippets->capabilities;
 			extensions		+= inTypeSnippets->extensions;
+
+			requiresUniformAndStorage16BitBufferAccess |= (inFloatType == FP16);
 		}
 
 		inFp16TypeUsage	= inTypeSnippets->loadStoreRequiresShaderFloat16;
@@ -3619,10 +3626,10 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	csSpec.extensions.push_back("VK_KHR_shader_float_controls");
 	bool needShaderFloat16 = float16CapabilityAlreadyAdded;
 
-	if (float16FeatureRequired && !testCase.fp16Without16BitStorage)
+	if (float16FeatureRequired && requiresUniformAndStorage16BitBufferAccess)
 	{
 		csSpec.extensions.push_back("VK_KHR_16bit_storage");
-		csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
+		csSpec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
 		needShaderFloat16 |= testOperation.floatUsage == FLOAT_ARITHMETIC;
 	}
 	needShaderFloat16 |= usesFP16Constants;
@@ -3839,7 +3846,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCas
 			saveResult		+= fp16Data.snippets->multiStoreResultsSnippet;
 
 			csSpec.extensions.push_back("VK_KHR_16bit_storage");
-			csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
+			csSpec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
 		}
 
 		fp16Data.values->fillInputData(addArgs, inputData, inputOffset);
@@ -4224,6 +4231,9 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	deBool			outFp16WithoutStorage	= (outFloatType == FP16) && testCase.fp16Without16BitStorage;
 	deBool			inFp16WithoutStorage	= (inFloatType == FP16) && testCase.fp16Without16BitStorage;
 
+	// The feature is required if OpCapability StorageUniform16 is used in the shader.
+	deBool			requiresUniformAndStorage16BitBufferAccess = false;
+
 	// There may be several reasons why we need the shaderFloat16 Vulkan feature.
 	bool needsShaderFloat16 = inFp16WithoutStorage || outFp16WithoutStorage;
 	// There are some weird cases where we need the constants, but would otherwise drop them.
@@ -4297,6 +4307,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 			fragTypes			= outTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->varyingsTypesSnippet;
 			vertConstants		= inTypeSnippets->constantsDefinitionsSnippet + outTypeSnippets->constantsDefinitionsSnippet;
 			fragConstants		= outTypeSnippets->constantsDefinitionsSnippet;
+
+			requiresUniformAndStorage16BitBufferAccess |= (inFloatType == FP16);
 		}
 		else
 		{
@@ -4311,6 +4323,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 			vertConstants		= outTypeSnippets->constantsDefinitionsSnippet;
 			fragConstants		= outTypeSnippets->constantsDefinitionsSnippet;
 		}
+
+		requiresUniformAndStorage16BitBufferAccess |= (outFloatType == FP16);
 
 		if (outFloatType != FP32)
 		{
@@ -4370,6 +4384,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 				(outFp16WithoutStorage ? outTypeSnippets->extensionsFp16Without16BitStorage : outTypeSnippets->extensions);
 			fragTypes			= inTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->typeDefinitionsSnippet;
 			fragConstants		= inTypeSnippets->constantsDefinitionsSnippet + outTypeSnippets->constantsDefinitionsSnippet;
+;
+			requiresUniformAndStorage16BitBufferAccess |= ((inFloatType == FP16) && (testCase.fp16Without16BitStorage == DE_FALSE));
 		}
 		else
 		{
@@ -4383,6 +4399,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 			fragTypes			= outTypeSnippets->typeDefinitionsSnippet;
 			fragConstants		= outTypeSnippets->constantsDefinitionsSnippet;
 		}
+
+		requiresUniformAndStorage16BitBufferAccess |= ((outFloatType == FP16) && (testCase.fp16Without16BitStorage == DE_FALSE));
 
 		// varying is not used but it needs to be specified so lets use type_i32 for it
 		string unusedVertVarying = "%BP_vertex_result     = OpVariable %type_i32_optr Output\n";
@@ -4550,10 +4568,10 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 		extensions.push_back("VK_KHR_shader_float16_int8");
 		vulkanFeatures.extFloat16Int8.shaderFloat16 = true;
 	}
-	if (float16FeatureRequired && !testCase.fp16Without16BitStorage)
+	if (float16FeatureRequired && requiresUniformAndStorage16BitBufferAccess)
 	{
 		extensions.push_back("VK_KHR_16bit_storage");
-		vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
+		vulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
 	}
 
 	InstanceContext ctx(defaultColors,
