@@ -5551,6 +5551,8 @@ class AdvancedSyncImageAccess2 : public ShaderImageLoadStoreBase
 		glUniform4f(glGetUniformLocation(m_store_program, "g_color"), 0.0f, 1.0f, 0.0f, 1.0f);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+		glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBindTexture(GL_TEXTURE_2D, m_texture);
 		glUseProgram(m_draw_program);
