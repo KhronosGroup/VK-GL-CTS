@@ -458,7 +458,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		shaderSpec["capabilities"]	= "OpCapability UniformAndStorageBuffer8BitAccess\nOpCapability Int8\n";
 		shaderSpec["extensions"]	= "OpExtension \"SPV_KHR_8bit_storage\"\n";
 
-		features.ext8BitStorage.storageBuffer8BitAccess = true;
+		features.ext8BitStorage.uniformAndStorageBuffer8BitAccess = true;
 		features.extFloat16Int8.shaderInt8 = true;
 
 		vector<deInt8>		inputData	= getInt8s(rnd, numElements);
@@ -592,7 +592,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		shaderSpec["capabilities"]	= "OpCapability UniformAndStorageBuffer8BitAccess\nOpCapability Int8\n";
 		shaderSpec["extensions"]	= "OpExtension \"SPV_KHR_8bit_storage\"\n";
 
-		features.ext8BitStorage.storageBuffer8BitAccess = true;
+		features.ext8BitStorage.uniformAndStorageBuffer8BitAccess = true;
 		features.extFloat16Int8.shaderInt8 = true;
 
 		vector<deUint8>		inputData;

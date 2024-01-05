@@ -407,6 +407,8 @@ tcu::Vec4 getPixel (const DeviceInterface&		vkd,
 	endCommandBuffer(vkd, *commandBuffer);
 	submitCommandsAndWait(vkd, device, queue, commandBuffer.get());
 
+	invalidateMappedMemoryRange(vkd, device, resultBufferMemory->getMemory(), 0, VK_WHOLE_SIZE);
+
 	tcu::ConstPixelBufferAccess	resultAccess(textureFormat,
 											 tcu::IVec3(size.x(), size.y(), 1),
 											 resultBufferMemory->getHostPtr());
