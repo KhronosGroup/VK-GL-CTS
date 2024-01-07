@@ -61,7 +61,6 @@ public:
 																 const tcu::IVec3&			imageSize,
 																 int						imageCount,
 																 int						arraySize,
-																 bool						pipelineProtectedAccess,
 																 bool						pipelineProtectedFlag);
 
 	ImageSamplingInstanceParams	getImageSamplingInstanceParams	(AllocationKind		allocationKind,
@@ -94,7 +93,6 @@ private:
 	tcu::IVec3					m_imageSize;
 	int							m_imageCount;
 	int							m_arraySize;
-	bool						m_pipelineProtectedAccess;
 	bool						m_pipelineProtectedFlag;
 };
 
@@ -108,7 +106,6 @@ ImageTest::ImageTest (tcu::TestContext&	testContext,
 					  const tcu::IVec3&			imageSize,
 					  int						imageCount,
 					  int						arraySize,
-					  bool						pipelineProtectedAccess,
 					  bool						pipelineProtectedFlag)
 
 	: vkt::TestCase					(testContext, name)
@@ -120,7 +117,6 @@ ImageTest::ImageTest (tcu::TestContext&	testContext,
 	, m_imageSize					(imageSize)
 	, m_imageCount					(imageCount)
 	, m_arraySize					(arraySize)
-	, m_pipelineProtectedAccess		(pipelineProtectedAccess)
 	, m_pipelineProtectedFlag		(pipelineProtectedFlag)
 {
 }
@@ -139,7 +135,7 @@ void ImageTest::checkSupport (Context& context) const
 	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
 	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_allocationKind, m_samplingType, m_imageViewType, m_imageFormat, m_imageSize, m_imageCount, m_arraySize));
 
-	if (m_pipelineProtectedAccess)
+	if (m_pipelineProtectedFlag)
 	{
 #ifndef CTS_USES_VULKANSC
 		context.requireDeviceFunctionality("VK_EXT_pipeline_protected_access");
@@ -442,13 +438,10 @@ std::string getFormatCaseName (const VkFormat format)
 	return de::toLower(fullName.substr(10));
 }
 
-std::string getSizeName (VkImageViewType viewType, const tcu::IVec3& size, int arraySize, bool pipelineProtectedAccess, bool pipelineProtectedFlag)
+std::string getSizeName (VkImageViewType viewType, const tcu::IVec3& size, int arraySize, bool pipelineProtectedFlag)
 {
 	std::ostringstream	caseName;
 
-	if (pipelineProtectedAccess) {
-		caseName << "pipeline_protected_access_";
-	}
 	if (pipelineProtectedFlag) {
 		caseName << "pipeline_protected_flag_";
 	}
@@ -617,27 +610,26 @@ de::MovePtr<tcu::TestCaseGroup> createImageSizeTests (tcu::TestContext& testCtx,
 			break;
 	}
 
-	for (size_t protectedNdx = 0; protectedNdx < DE_LENGTH_OF_ARRAY(pipelineProtectedAccess); ++protectedNdx) {
-		for (size_t flagNdx = 0; flagNdx < DE_LENGTH_OF_ARRAY(pipelineProtectedAccess); ++flagNdx) {
-			if (!pipelineProtectedAccess[protectedNdx] && pipelineProtectedFlag[flagNdx]) continue;
+	for (size_t flagNdx = 0; flagNdx < DE_LENGTH_OF_ARRAY(pipelineProtectedAccess); ++flagNdx) {
 
-			for (size_t sizeNdx = 0; sizeNdx < imageSizes.size(); sizeNdx++)
+		/* VK_EXT_pipeline_protected_access doesn't apply to shader objects */
+		if (pipelineProtectedFlag[flagNdx] && isConstructionTypeShaderObject(pipelineConstructionType)) continue;
+
+		for (size_t sizeNdx = 0; sizeNdx < imageSizes.size(); sizeNdx++)
+		{
+			for (size_t arraySizeNdx = 0; arraySizeNdx < arraySizes.size(); arraySizeNdx++)
 			{
-				for (size_t arraySizeNdx = 0; arraySizeNdx < arraySizes.size(); arraySizeNdx++)
-				{
-					imageSizeTests->addChild(new ImageTest(testCtx,
-														   getSizeName(imageViewType, imageSizes[sizeNdx], arraySizes[arraySizeNdx], pipelineProtectedAccess[protectedNdx], pipelineProtectedFlag[flagNdx]).c_str(),
-														   allocationKind,
-														   pipelineConstructionType,
-														   samplingType,
-														   imageViewType,
-														   imageFormat,
-														   imageSizes[sizeNdx],
-														   imageCount,
-														   arraySizes[arraySizeNdx],
-														   pipelineProtectedAccess[protectedNdx],
-														   pipelineProtectedFlag[flagNdx]));
-				}
+				imageSizeTests->addChild(new ImageTest(testCtx,
+														getSizeName(imageViewType, imageSizes[sizeNdx], arraySizes[arraySizeNdx], pipelineProtectedFlag[flagNdx]).c_str(),
+														allocationKind,
+														pipelineConstructionType,
+														samplingType,
+														imageViewType,
+														imageFormat,
+														imageSizes[sizeNdx],
+														imageCount,
+														arraySizes[arraySizeNdx],
+														pipelineProtectedFlag[flagNdx]));
 			}
 		}
 	}
