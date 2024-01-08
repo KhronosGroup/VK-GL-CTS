@@ -749,36 +749,36 @@ inline VkMutableDescriptorTypeListEXT makeMutableDescriptorTypeListEXT (uint32_t
 	return res;
 }
 
-inline VkVideoEncodeH264QpEXT makeVideoEncodeH264QpEXT (int32_t qpI, int32_t qpP, int32_t qpB)
+inline VkVideoEncodeH264QpKHR makeVideoEncodeH264QpKHR (int32_t qpI, int32_t qpP, int32_t qpB)
 {
-	VkVideoEncodeH264QpEXT res;
+	VkVideoEncodeH264QpKHR res;
 	res.qpI	= qpI;
 	res.qpP	= qpP;
 	res.qpB	= qpB;
 	return res;
 }
 
-inline VkVideoEncodeH264FrameSizeEXT makeVideoEncodeH264FrameSizeEXT (uint32_t frameISize, uint32_t framePSize, uint32_t frameBSize)
+inline VkVideoEncodeH264FrameSizeKHR makeVideoEncodeH264FrameSizeKHR (uint32_t frameISize, uint32_t framePSize, uint32_t frameBSize)
 {
-	VkVideoEncodeH264FrameSizeEXT res;
+	VkVideoEncodeH264FrameSizeKHR res;
 	res.frameISize	= frameISize;
 	res.framePSize	= framePSize;
 	res.frameBSize	= frameBSize;
 	return res;
 }
 
-inline VkVideoEncodeH265QpEXT makeVideoEncodeH265QpEXT (int32_t qpI, int32_t qpP, int32_t qpB)
+inline VkVideoEncodeH265QpKHR makeVideoEncodeH265QpKHR (int32_t qpI, int32_t qpP, int32_t qpB)
 {
-	VkVideoEncodeH265QpEXT res;
+	VkVideoEncodeH265QpKHR res;
 	res.qpI	= qpI;
 	res.qpP	= qpP;
 	res.qpB	= qpB;
 	return res;
 }
 
-inline VkVideoEncodeH265FrameSizeEXT makeVideoEncodeH265FrameSizeEXT (uint32_t frameISize, uint32_t framePSize, uint32_t frameBSize)
+inline VkVideoEncodeH265FrameSizeKHR makeVideoEncodeH265FrameSizeKHR (uint32_t frameISize, uint32_t framePSize, uint32_t frameBSize)
 {
-	VkVideoEncodeH265FrameSizeEXT res;
+	VkVideoEncodeH265FrameSizeKHR res;
 	res.frameISize	= frameISize;
 	res.framePSize	= framePSize;
 	res.frameBSize	= frameBSize;

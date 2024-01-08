@@ -3251,42 +3251,42 @@ tcu::Format::Bitfield<32> getVideoComponentBitDepthFlagsKHRStr (VkVideoComponent
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsEXTStr (VkVideoEncodeH264CapabilityFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsKHRStr (VkVideoEncodeH264CapabilityFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH264StdFlagsEXTStr (VkVideoEncodeH264StdFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH264StdFlagsKHRStr (VkVideoEncodeH264StdFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH264RateControlFlagsEXTStr (VkVideoEncodeH264RateControlFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH264RateControlFlagsKHRStr (VkVideoEncodeH264RateControlFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsEXTStr (VkVideoEncodeH265CapabilityFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsKHRStr (VkVideoEncodeH265CapabilityFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265StdFlagsEXTStr (VkVideoEncodeH265StdFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265StdFlagsKHRStr (VkVideoEncodeH265StdFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265RateControlFlagsEXTStr (VkVideoEncodeH265RateControlFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265RateControlFlagsKHRStr (VkVideoEncodeH265RateControlFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265CtbSizeFlagsEXTStr (VkVideoEncodeH265CtbSizeFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265CtbSizeFlagsKHRStr (VkVideoEncodeH265CtbSizeFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsEXTStr (VkVideoEncodeH265TransformBlockSizeFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsKHRStr (VkVideoEncodeH265TransformBlockSizeFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }

@@ -188,11 +188,11 @@ VideoFormatPropertiesQueryTestInstance<ProfileOperation>::VideoFormatPropertiesQ
 		case TEST_TYPE_H264_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
 		case TEST_TYPE_H264_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR; break;
 		case TEST_TYPE_H264_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
-		case TEST_TYPE_H264_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT; break;
+		case TEST_TYPE_H264_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR; break;
 		case TEST_TYPE_H265_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
 		case TEST_TYPE_H265_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR; break;
 		case TEST_TYPE_H265_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
-		case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT; break;
+		case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR; break;
 		default: TCU_THROW(InternalError, "Unknown testType");
 	}
 
@@ -222,7 +222,7 @@ VkVideoDecodeH264ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<VkVideoDe
 }
 
 template<>
-VkVideoEncodeH264ProfileInfoEXT VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH264ProfileInfoEXT>::getProfileOperation ()
+VkVideoEncodeH264ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH264ProfileInfoKHR>::getProfileOperation ()
 {
 	return getProfileOperationH264Encode();
 }
@@ -234,7 +234,7 @@ VkVideoDecodeH265ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<VkVideoDe
 }
 
 template<>
-VkVideoEncodeH265ProfileInfoEXT VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH265ProfileInfoEXT>::getProfileOperation ()
+VkVideoEncodeH265ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH265ProfileInfoKHR>::getProfileOperation ()
 {
 	return getProfileOperationH265Encode();
 }
@@ -358,9 +358,9 @@ tcu::TestStatus VideoFormatPropertiesQueryTestInstance<ProfileOperation>::iterat
 }
 
 typedef VideoFormatPropertiesQueryTestInstance<VkVideoDecodeH264ProfileInfoKHR> VideoFormatPropertiesQueryH264DecodeTestInstance;
-typedef VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH264ProfileInfoEXT> VideoFormatPropertiesQueryH264EncodeTestInstance;
+typedef VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH264ProfileInfoKHR> VideoFormatPropertiesQueryH264EncodeTestInstance;
 typedef VideoFormatPropertiesQueryTestInstance<VkVideoDecodeH265ProfileInfoKHR> VideoFormatPropertiesQueryH265DecodeTestInstance;
-typedef VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH265ProfileInfoEXT> VideoFormatPropertiesQueryH265EncodeTestInstance;
+typedef VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH265ProfileInfoKHR> VideoFormatPropertiesQueryH265EncodeTestInstance;
 
 class VideoCapabilitiesQueryTestInstance : public VideoBaseTestInstance
 {
@@ -598,8 +598,8 @@ public:
 	tcu::TestStatus	iterate											(void);
 
 private:
-	void			validateVideoCapabilitiesExt					(const VkVideoEncodeH264CapabilitiesEXT&	videoCapabilitiesKHR,
-																	 const VkVideoEncodeH264CapabilitiesEXT&	videoCapabilitiesKHRSecond);
+	void			validateVideoCapabilitiesExt					(const VkVideoEncodeH264CapabilitiesKHR&	videoCapabilitiesKHR,
+																	 const VkVideoEncodeH264CapabilitiesKHR&	videoCapabilitiesKHRSecond);
 };
 
 VideoCapabilitiesQueryH264EncodeTestInstance::VideoCapabilitiesQueryH264EncodeTestInstance (Context& context, const CaseDef& data)
@@ -615,10 +615,10 @@ tcu::TestStatus VideoCapabilitiesQueryH264EncodeTestInstance::iterate (void)
 {
 	const InstanceInterface&				vk						= m_context.getInstanceInterface();
 	const VkPhysicalDevice					physicalDevice			= m_context.getPhysicalDevice();
-	const VkVideoCodecOperationFlagBitsKHR	videoCodecOperation		= VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT;
-	const VkVideoEncodeH264ProfileInfoEXT		videoProfileOperation	=
+	const VkVideoCodecOperationFlagBitsKHR	videoCodecOperation		= VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR;
+	const VkVideoEncodeH264ProfileInfoKHR		videoProfileOperation	=
 	{
-		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT,	//  VkStructureType			sType;
+		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_KHR,	//  VkStructureType			sType;
 		DE_NULL,											//  const void*				pNext;
 		STD_VIDEO_H264_PROFILE_IDC_BASELINE,				//  StdVideoH264ProfileIdc	stdProfileIdc;
 	};
@@ -631,7 +631,7 @@ tcu::TestStatus VideoCapabilitiesQueryH264EncodeTestInstance::iterate (void)
 		VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,			//  VkVideoComponentBitDepthFlagsKHR	lumaBitDepth;
 		VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,			//  VkVideoComponentBitDepthFlagsKHR	chromaBitDepth;
 	};
-	VkVideoEncodeH264CapabilitiesEXT	videoEncodeH264Capabilities[2];
+	VkVideoEncodeH264CapabilitiesKHR	videoEncodeH264Capabilities[2];
 	VkVideoEncodeCapabilitiesKHR		videoEncodeCapabilities[2];
 	VkVideoCapabilitiesKHR				videoCapabilites[2];
 
@@ -647,7 +647,7 @@ tcu::TestStatus VideoCapabilitiesQueryH264EncodeTestInstance::iterate (void)
 		videoCapabilites[ndx].pNext				= &videoEncodeCapabilities[ndx];
 		videoEncodeCapabilities[ndx].sType		= VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
 		videoEncodeCapabilities[ndx].pNext		= &videoEncodeH264Capabilities[ndx];
-		videoEncodeH264Capabilities[ndx].sType	= VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_EXT;
+		videoEncodeH264Capabilities[ndx].sType	= VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR;
 		videoEncodeH264Capabilities[ndx].pNext	= DE_NULL;
 
 		VkResult result = vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
@@ -670,17 +670,17 @@ tcu::TestStatus VideoCapabilitiesQueryH264EncodeTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
-void VideoCapabilitiesQueryH264EncodeTestInstance::validateVideoCapabilitiesExt (const VkVideoEncodeH264CapabilitiesEXT& videoCapabilitiesKHR, const VkVideoEncodeH264CapabilitiesEXT& videoCapabilitiesKHRSecond)
+void VideoCapabilitiesQueryH264EncodeTestInstance::validateVideoCapabilitiesExt (const VkVideoEncodeH264CapabilitiesKHR& videoCapabilitiesKHR, const VkVideoEncodeH264CapabilitiesKHR& videoCapabilitiesKHRSecond)
 {
-	const VkVideoEncodeH264CapabilityFlagsEXT	videoCapabilityFlags			= VK_VIDEO_ENCODE_H264_CAPABILITY_HRD_COMPLIANCE_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_PREDICTION_WEIGHT_TABLE_GENERATED_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_ROW_UNALIGNED_SLICE_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_DIFFERENT_SLICE_TYPE_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_B_FRAME_IN_L0_LIST_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_B_FRAME_IN_L1_LIST_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_PER_PICTURE_TYPE_MIN_MAX_QP_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_PER_SLICE_CONSTANT_QP_BIT_EXT
-																				| VK_VIDEO_ENCODE_H264_CAPABILITY_GENERATE_PREFIX_NALU_BIT_EXT;
+	const VkVideoEncodeH264CapabilityFlagsKHR	videoCapabilityFlags			= VK_VIDEO_ENCODE_H264_CAPABILITY_HRD_COMPLIANCE_BIT_KHR
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_PREDICTION_WEIGHT_TABLE_GENERATED_BIT_KHR
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_ROW_UNALIGNED_SLICE_BIT_KHR
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_DIFFERENT_SLICE_TYPE_BIT_KHR
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_B_FRAME_IN_L0_LIST_BIT_KHR
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_B_FRAME_IN_L1_LIST_BIT_KHR
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_PER_PICTURE_TYPE_MIN_MAX_QP_BIT_KHR
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_PER_SLICE_CONSTANT_QP_BIT_KHR
+																				| VK_VIDEO_ENCODE_H264_CAPABILITY_GENERATE_PREFIX_NALU_BIT_KHR;
 
 
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, sType);
@@ -800,8 +800,8 @@ public:
 	tcu::TestStatus	iterate											(void);
 
 protected:
-	void			validateVideoCapabilitiesExt					(const VkVideoEncodeH265CapabilitiesEXT&	videoCapabilitiesKHR,
-																	 const VkVideoEncodeH265CapabilitiesEXT&	videoCapabilitiesKHRSecond);
+	void			validateVideoCapabilitiesExt					(const VkVideoEncodeH265CapabilitiesKHR&	videoCapabilitiesKHR,
+																	 const VkVideoEncodeH265CapabilitiesKHR&	videoCapabilitiesKHRSecond);
 };
 
 VideoCapabilitiesQueryH265EncodeTestInstance::VideoCapabilitiesQueryH265EncodeTestInstance (Context& context, const CaseDef& data)
@@ -817,10 +817,10 @@ tcu::TestStatus VideoCapabilitiesQueryH265EncodeTestInstance::iterate (void)
 {
 	const InstanceInterface&				vk						= m_context.getInstanceInterface();
 	const VkPhysicalDevice					physicalDevice			= m_context.getPhysicalDevice();
-	const VkVideoCodecOperationFlagBitsKHR	videoCodecOperation		= VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT;
-	const VkVideoEncodeH265ProfileInfoEXT		videoProfileOperation	=
+	const VkVideoCodecOperationFlagBitsKHR	videoCodecOperation		= VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR;
+	const VkVideoEncodeH265ProfileInfoKHR		videoProfileOperation	=
 	{
-		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_INFO_EXT,	//  VkStructureType			sType;
+		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_INFO_KHR,	//  VkStructureType			sType;
 		DE_NULL,											//  const void*				pNext;
 		STD_VIDEO_H265_PROFILE_IDC_MAIN,					//  StdVideoH265ProfileIdc	stdProfileIdc;
 	};
@@ -833,7 +833,7 @@ tcu::TestStatus VideoCapabilitiesQueryH265EncodeTestInstance::iterate (void)
 		VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,			//  VkVideoComponentBitDepthFlagsKHR	lumaBitDepth;
 		VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,			//  VkVideoComponentBitDepthFlagsKHR	chromaBitDepth;
 	};
-	VkVideoEncodeH265CapabilitiesEXT	videoEncodeH265Capabilities[2];
+	VkVideoEncodeH265CapabilitiesKHR	videoEncodeH265Capabilities[2];
 	VkVideoEncodeCapabilitiesKHR		videoEncodeCapabilities[2];
 	VkVideoCapabilitiesKHR				videoCapabilites[2];
 
@@ -849,7 +849,7 @@ tcu::TestStatus VideoCapabilitiesQueryH265EncodeTestInstance::iterate (void)
 		videoCapabilites[ndx].pNext				= &videoEncodeCapabilities[ndx];
 		videoEncodeCapabilities[ndx].sType		= VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
 		videoEncodeCapabilities[ndx].pNext		= &videoEncodeH265Capabilities[ndx];
-		videoEncodeH265Capabilities[ndx].sType	= VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_EXT;
+		videoEncodeH265Capabilities[ndx].sType	= VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_KHR;
 		videoEncodeH265Capabilities[ndx].pNext	= DE_NULL;
 
 		VkResult result = vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
@@ -872,16 +872,16 @@ tcu::TestStatus VideoCapabilitiesQueryH265EncodeTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
-void VideoCapabilitiesQueryH265EncodeTestInstance::validateVideoCapabilitiesExt (const VkVideoEncodeH265CapabilitiesEXT&	videoCapabilitiesKHR,
-																				 const VkVideoEncodeH265CapabilitiesEXT&	videoCapabilitiesKHRSecond)
+void VideoCapabilitiesQueryH265EncodeTestInstance::validateVideoCapabilitiesExt (const VkVideoEncodeH265CapabilitiesKHR&	videoCapabilitiesKHR,
+																				 const VkVideoEncodeH265CapabilitiesKHR&	videoCapabilitiesKHRSecond)
 {
-	const VkVideoEncodeH265CtbSizeFlagsEXT				ctbSizeFlags			= VK_VIDEO_ENCODE_H265_CTB_SIZE_16_BIT_EXT
-																				| VK_VIDEO_ENCODE_H265_CTB_SIZE_32_BIT_EXT
-																				| VK_VIDEO_ENCODE_H265_CTB_SIZE_64_BIT_EXT;
-	const VkVideoEncodeH265TransformBlockSizeFlagsEXT	transformBlockSizes		= VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_4_BIT_EXT
-																				| VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_8_BIT_EXT
-																				| VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_16_BIT_EXT
-																				| VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_32_BIT_EXT;
+	const VkVideoEncodeH265CtbSizeFlagsKHR				ctbSizeFlags			= VK_VIDEO_ENCODE_H265_CTB_SIZE_16_BIT_KHR
+																				| VK_VIDEO_ENCODE_H265_CTB_SIZE_32_BIT_KHR
+																				| VK_VIDEO_ENCODE_H265_CTB_SIZE_64_BIT_KHR;
+	const VkVideoEncodeH265TransformBlockSizeFlagsKHR	transformBlockSizes		= VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_4_BIT_KHR
+																				| VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_8_BIT_KHR
+																				| VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_16_BIT_KHR
+																				| VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_32_BIT_KHR;
 
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, sType);
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, flags);

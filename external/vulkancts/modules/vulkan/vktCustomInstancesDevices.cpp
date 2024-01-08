@@ -555,10 +555,10 @@ void VideoDevice::checkSupport (Context&						context,
 	if (isVideoDecodeOperation(videoCodecOperation))
 		context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
 
-	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT) != 0)
+	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR) != 0)
 		context.requireDeviceFunctionality("VK_EXT_video_encode_h264");
 
-	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT) != 0)
+	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR) != 0)
 		context.requireDeviceFunctionality("VK_EXT_video_encode_h265");
 
 	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR) != 0)
@@ -626,8 +626,8 @@ vk::VkQueueFlags VideoDevice::getQueueFlags (const VideoCodecOperationFlags vide
 bool VideoDevice::isVideoEncodeOperation (const VideoCodecOperationFlags videoCodecOperationFlags)
 {
 #ifndef CTS_USES_VULKANSC
-	const vk::VkVideoCodecOperationFlagsKHR	encodeOperations	= vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT
-																| vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT;
+	const vk::VkVideoCodecOperationFlagsKHR	encodeOperations	= vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR
+																| vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR;
 
 	return (encodeOperations & videoCodecOperationFlags) != 0;
 #else
@@ -687,11 +687,11 @@ void VideoDevice::addVideoDeviceExtensions (std::vector<const char*>&		deviceExt
 		if (!vk::isCoreDeviceExtension(apiVersion, videoDecodeQueue))
 			deviceExtensions.push_back(videoDecodeQueue);
 
-	if ((videoCodecOperationFlags & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT) != 0)
+	if ((videoCodecOperationFlags & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR) != 0)
 		if (!vk::isCoreDeviceExtension(apiVersion, videoEncodeH264))
 			deviceExtensions.push_back(videoEncodeH264);
 
-	if ((videoCodecOperationFlags & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT) != 0)
+	if ((videoCodecOperationFlags & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR) != 0)
 		if (!vk::isCoreDeviceExtension(apiVersion, videoEncodeH265))
 			deviceExtensions.push_back(videoEncodeH265);
 

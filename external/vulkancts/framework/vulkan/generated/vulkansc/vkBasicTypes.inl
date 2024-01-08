@@ -2871,21 +2871,21 @@ typedef uint32_t VkVideoChromaSubsamplingFlagsKHR;
 
 typedef uint32_t VkVideoComponentBitDepthFlagsKHR;
 
-typedef uint32_t VkVideoEncodeH264CapabilityFlagsEXT;
+typedef uint32_t VkVideoEncodeH264CapabilityFlagsKHR;
 
-typedef uint32_t VkVideoEncodeH264StdFlagsEXT;
+typedef uint32_t VkVideoEncodeH264StdFlagsKHR;
 
-typedef uint32_t VkVideoEncodeH264RateControlFlagsEXT;
+typedef uint32_t VkVideoEncodeH264RateControlFlagsKHR;
 
-typedef uint32_t VkVideoEncodeH265CapabilityFlagsEXT;
+typedef uint32_t VkVideoEncodeH265CapabilityFlagsKHR;
 
-typedef uint32_t VkVideoEncodeH265StdFlagsEXT;
+typedef uint32_t VkVideoEncodeH265StdFlagsKHR;
 
-typedef uint32_t VkVideoEncodeH265RateControlFlagsEXT;
+typedef uint32_t VkVideoEncodeH265RateControlFlagsKHR;
 
-typedef uint32_t VkVideoEncodeH265CtbSizeFlagsEXT;
+typedef uint32_t VkVideoEncodeH265CtbSizeFlagsKHR;
 
-typedef uint32_t VkVideoEncodeH265TransformBlockSizeFlagsEXT;
+typedef uint32_t VkVideoEncodeH265TransformBlockSizeFlagsKHR;
 
 
 VK_DEFINE_PLATFORM_TYPE(XlibDisplayPtr,				void*)

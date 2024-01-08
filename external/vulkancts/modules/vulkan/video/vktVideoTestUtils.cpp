@@ -187,8 +187,8 @@ const VkExtensionProperties* getVideoExtensionProperties (const VkVideoCodecOper
 {
 	switch (codecOperation)
 	{
-		case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT:	return &EXTENSION_PROPERTIES_H264_ENCODE;
-		case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT:	return &EXTENSION_PROPERTIES_H265_ENCODE;
+		case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:	return &EXTENSION_PROPERTIES_H264_ENCODE;
+		case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:	return &EXTENSION_PROPERTIES_H265_ENCODE;
 		case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:	return &EXTENSION_PROPERTIES_H264_DECODE;
 		case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:	return &EXTENSION_PROPERTIES_H265_DECODE;
 		default:											TCU_THROW(InternalError, "Unkown codec operation");
@@ -366,11 +366,11 @@ VkVideoDecodeH264ProfileInfoKHR getProfileOperationH264Decode (StdVideoH264Profi
 	return videoProfileOperation;
 }
 
-VkVideoEncodeH264ProfileInfoEXT getProfileOperationH264Encode (StdVideoH264ProfileIdc stdProfileIdc)
+VkVideoEncodeH264ProfileInfoKHR getProfileOperationH264Encode (StdVideoH264ProfileIdc stdProfileIdc)
 {
-	const VkVideoEncodeH264ProfileInfoEXT	videoProfileOperation	=
+	const VkVideoEncodeH264ProfileInfoKHR	videoProfileOperation	=
 	{
-		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT,	//  VkStructureType			sType;
+		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_KHR,	//  VkStructureType			sType;
 		DE_NULL,												//  const void*				pNext;
 		stdProfileIdc,											//  StdVideoH264ProfileIdc	stdProfileIdc;
 	};
@@ -390,11 +390,11 @@ VkVideoDecodeH265ProfileInfoKHR getProfileOperationH265Decode (StdVideoH265Profi
 	return videoProfileOperation;
 }
 
-VkVideoEncodeH265ProfileInfoEXT getProfileOperationH265Encode (StdVideoH265ProfileIdc stdProfileIdc)
+VkVideoEncodeH265ProfileInfoKHR getProfileOperationH265Encode (StdVideoH265ProfileIdc stdProfileIdc)
 {
-	const VkVideoEncodeH265ProfileInfoEXT	videoProfileOperation	=
+	const VkVideoEncodeH265ProfileInfoKHR	videoProfileOperation	=
 	{
-		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_INFO_EXT,	//  VkStructureType			sType;
+		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_INFO_KHR,	//  VkStructureType			sType;
 		DE_NULL,												//  const void*				pNext;
 		stdProfileIdc,											//  StdVideoH265ProfileIdc	stdProfileIdc;
 	};
@@ -735,9 +735,9 @@ const char* codecToName(VkVideoCodecOperationFlagBitsKHR codec)
 			return "decode h.264";
 		case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
 			return "decode h.265";
-		case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT:
+		case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
 			return "encode h.264";
-		case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT:
+		case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
 			return "encode h.265";
 		default:
 			tcu::die("Unknown video codec");

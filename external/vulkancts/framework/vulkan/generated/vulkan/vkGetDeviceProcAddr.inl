@@ -568,6 +568,12 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetScreenBufferPropertiesQNX",
 		"vkGetPhysicalDeviceCalibrateableTimeDomainsKHR",
 		"vkGetCalibratedTimestampsKHR",
+		"vkCmdBindDescriptorSets2KHR",
+		"vkCmdPushConstants2KHR",
+		"vkCmdPushDescriptorSet2KHR",
+		"vkCmdPushDescriptorSetWithTemplate2KHR",
+		"vkCmdSetDescriptorBufferOffsets2EXT",
+		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
 	};
 
 	bool fail = false;

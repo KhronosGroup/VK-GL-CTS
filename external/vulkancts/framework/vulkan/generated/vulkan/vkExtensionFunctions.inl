@@ -174,11 +174,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
-	if (extName == "VK_EXT_video_encode_h264")
+	if (extName == "VK_KHR_video_encode_h264")
 	{
 		return;
 	}
-	if (extName == "VK_EXT_video_encode_h265")
+	if (extName == "VK_KHR_video_encode_h265")
 	{
 		return;
 	}
@@ -1481,6 +1481,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_maintenance1")
+	{
+		return;
+	}
+	if (extName == "VK_NV_per_stage_descriptor_set")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_image_processing2")
 	{
 		return;
@@ -1516,6 +1524,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	if (extName == "VK_KHR_calibrated_timestamps")
 	{
 		functions.push_back("vkGetPhysicalDeviceCalibrateableTimeDomainsKHR");
+		return;
+	}
+	if (extName == "VK_KHR_maintenance6")
+	{
 		return;
 	}
 	if (extName == "VK_NV_descriptor_pool_overallocation")
@@ -1716,11 +1728,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
-	if (extName == "VK_EXT_video_encode_h264")
+	if (extName == "VK_KHR_video_encode_h264")
 	{
 		return;
 	}
-	if (extName == "VK_EXT_video_encode_h265")
+	if (extName == "VK_KHR_video_encode_h265")
 	{
 		return;
 	}
@@ -3435,6 +3447,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_maintenance1")
+	{
+		return;
+	}
+	if (extName == "VK_NV_per_stage_descriptor_set")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_image_processing2")
 	{
 		return;
@@ -3472,6 +3492,22 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_KHR_calibrated_timestamps")
 	{
 		functions.push_back("vkGetCalibratedTimestampsKHR");
+		return;
+	}
+	if (extName == "VK_KHR_maintenance6")
+	{
+		functions.push_back("vkCmdBindDescriptorSets2KHR");
+		functions.push_back("vkCmdPushConstants2KHR");
+		// Dependencies: VK_KHR_push_descriptor
+		if (extensionIsSupported(vDEP, "VK_KHR_push_descriptor")) {
+			functions.push_back("vkCmdPushDescriptorSet2KHR");
+			functions.push_back("vkCmdPushDescriptorSetWithTemplate2KHR");
+		}
+		// Dependencies: VK_EXT_descriptor_buffer
+		if (extensionIsSupported(vDEP, "VK_EXT_descriptor_buffer")) {
+			functions.push_back("vkCmdSetDescriptorBufferOffsets2EXT");
+			functions.push_back("vkCmdBindDescriptorBufferEmbeddedSamplers2EXT");
+		}
 		return;
 	}
 	if (extName == "VK_NV_descriptor_pool_overallocation")
@@ -3574,8 +3610,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_AMD_negative_viewport_height",
 	"VK_AMD_gpu_shader_half_float",
 	"VK_AMD_shader_ballot",
-	"VK_EXT_video_encode_h264",
-	"VK_EXT_video_encode_h265",
+	"VK_KHR_video_encode_h264",
+	"VK_KHR_video_encode_h265",
 	"VK_KHR_video_decode_h264",
 	"VK_AMD_texture_gather_bias_lod",
 	"VK_AMD_shader_info",
@@ -3857,6 +3893,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_low_latency2",
 	"VK_KHR_cooperative_matrix",
 	"VK_QCOM_multiview_per_view_render_areas",
+	"VK_KHR_video_maintenance1",
+	"VK_NV_per_stage_descriptor_set",
 	"VK_QCOM_image_processing2",
 	"VK_QCOM_filter_cubic_weights",
 	"VK_QCOM_ycbcr_degamma",
@@ -3866,5 +3904,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_QNX_external_memory_screen_buffer",
 	"VK_MSFT_layered_driver",
 	"VK_KHR_calibrated_timestamps",
+	"VK_KHR_maintenance6",
 	"VK_NV_descriptor_pool_overallocation",
 };
