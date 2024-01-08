@@ -1774,6 +1774,8 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 				endRenderPass(vk, cmdBuffer);
 
 				beginRenderPass(vk, cmdBuffer, *renderPass, *framebuffer, makeRect2D(makeExtent2D(m_imageWidth, m_imageHeight)), clearColor);
+				vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+				vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vtxBuffer.get(), &vertexBufferOffset);
 				draw(vk, cmdBuffer, vertexCount, indirectBuffer->get());
 				endRenderPass(vk, cmdBuffer);
 
