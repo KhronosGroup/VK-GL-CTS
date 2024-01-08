@@ -356,4 +356,3 @@ dEQP-VK.ray_tracing_pipeline.position_fetch.gpu_built.r8g8b8_snorm.NoFlags
 dEQP-VK.ray_tracing_pipeline.position_fetch.gpu_built.r8g8b8_snorm.instance_transform
 dEQP-VK.ray_tracing_pipeline.position_fetch.gpu_built.r8g8b8a8_snorm.NoFlags
 dEQP-VK.ray_tracing_pipeline.position_fetch.gpu_built.r8g8b8a8_snorm.instance_transform
-dEQP-VK.ray_tracing_pipeline.procedural_geometry.pipeline_binary

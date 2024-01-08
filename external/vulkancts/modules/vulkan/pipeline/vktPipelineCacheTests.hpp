@@ -21,22 +21,20 @@
  *
  *//*!
  * \file
- * \brief Pipeline Cache and Pipeline Binaries Tests
+ * \brief Pipeline Cache and Pipeline Binary Tests
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
 #include "vkPipelineConstructionUtil.hpp"
 
-namespace vkt
-{
-namespace pipeline
+namespace vkt::pipeline
 {
 
 tcu::TestCaseGroup *createCacheTests(tcu::TestContext &testCtx, vk::PipelineConstructionType pipelineConstructionType);
-tcu::TestCaseGroup *createBinariesTests(tcu::TestContext &testCtx,
-                                        vk::PipelineConstructionType pipelineConstructionType);
+de::MovePtr<tcu::TestCaseGroup> addPipelineBinaryBasicTests(tcu::TestContext &testCtx,
+                                                            vk::PipelineConstructionType pipelineConstructionType,
+                                                            de::MovePtr<tcu::TestCaseGroup> binaryGroup);
 
-} // namespace pipeline
-} // namespace vkt
+} // namespace vkt::pipeline
 
 #endif // _VKTPIPELINECACHETESTS_HPP

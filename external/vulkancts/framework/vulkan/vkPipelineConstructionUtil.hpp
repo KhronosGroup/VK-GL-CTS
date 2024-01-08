@@ -492,6 +492,10 @@ public:
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback   = PipelineCreationFeedbackCreateInfoWrapper(),
         PipelineBinaryInfoWrapper partBinaries = PipelineBinaryInfoWrapper(), const bool useNullPtrs = false);
 
+    // When disableShaderModules is used module attributes in VkPipelineShaderStageCreateInfo will be set to NULL.
+    // This is needed for VK_KHR_pipeline_binary tests where we need to construct a pipeline from pipeline binaries without using modules.
+    GraphicsPipelineWrapper &disableShaderModules(const bool disable = true);
+
     // Setup pre-rasterization shader state.
     GraphicsPipelineWrapper &setupPreRasterizationShaderState(
         const std::vector<VkViewport> &viewports, const std::vector<VkRect2D> &scissors,

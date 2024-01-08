@@ -290,6 +290,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/multiview/vktMultiViewTests.cpp",
         "external/vulkancts/modules/vulkan/pch.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineAttachmentFeedbackLoopLayoutTests.cpp",
+        "external/vulkancts/modules/vulkan/pipeline/vktPipelineBinaryTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineBindPointTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineBindVertexBuffers2Tests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendOperationAdvancedTests.cpp",

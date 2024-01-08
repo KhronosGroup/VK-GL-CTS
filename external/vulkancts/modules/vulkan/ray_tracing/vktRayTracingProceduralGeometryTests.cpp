@@ -23,7 +23,6 @@
 
 #include "vktRayTracingProceduralGeometryTests.hpp"
 #include "vktCustomInstancesDevices.hpp"
-#include "vkPipelineBinaryUtil.hpp"
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -59,8 +58,7 @@ static const VkFlags ALL_RAY_TRACING_STAGES = VK_SHADER_STAGE_RAYGEN_BIT_KHR | V
 enum class TestType
 {
     OBJECT_BEHIND_BOUNDING_BOX = 0,
-    TRIANGLE_IN_BETWEEN,
-    PIPELINE_BINARY,
+    TRIANGLE_IN_BETWEEN
 };
 
 struct DeviceHelper
@@ -71,7 +69,7 @@ struct DeviceHelper
     VkQueue queue;
     de::MovePtr<SimpleAllocator> allocator;
 
-    DeviceHelper(Context &context, bool usePipelineBinary)
+    DeviceHelper(Context &context)
     {
         const auto &vkp           = context.getPlatformInterface();
         const auto &vki           = context.getInstanceInterface();
@@ -86,21 +84,7 @@ struct DeviceHelper
             initVulkanStructure(&rayTracingPipelineFeatures);
         VkPhysicalDeviceBufferDeviceAddressFeaturesKHR deviceAddressFeatures =
             initVulkanStructure(&accelerationStructureFeatures);
-        VkPhysicalDevicePipelineBinaryFeaturesKHR pipelineBinaryFeatures = initVulkanStructure(&deviceAddressFeatures);
-        VkPhysicalDeviceFeatures2 deviceFeatures                         = initVulkanStructure(&deviceAddressFeatures);
-
-        // Required extensions - create device with VK_KHR_ray_tracing_pipeline but
-        // without VK_KHR_pipeline_library to also test that that combination works
-        std::vector<const char *> requiredExtensions{"VK_KHR_ray_tracing_pipeline",     "VK_KHR_acceleration_structure",
-                                                     "VK_KHR_deferred_host_operations", "VK_KHR_buffer_device_address",
-                                                     "VK_EXT_descriptor_indexing",      "VK_KHR_spirv_1_4",
-                                                     "VK_KHR_shader_float_controls"};
-
-        if (usePipelineBinary)
-        {
-            deviceFeatures.pNext = &pipelineBinaryFeatures;
-            requiredExtensions.push_back("VK_KHR_pipeline_binary");
-        }
+        VkPhysicalDeviceFeatures2 deviceFeatures = initVulkanStructure(&deviceAddressFeatures);
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
 
@@ -116,6 +100,13 @@ struct DeviceHelper
             1u,                                         // uint32_t queueCount;
             &queuePriority,                             // const float* pQueuePriorities;
         };
+
+        // Required extensions - create device with VK_KHR_ray_tracing_pipeline but
+        // without VK_KHR_pipeline_library to also test that that combination works
+        std::vector<const char *> requiredExtensions{"VK_KHR_ray_tracing_pipeline",     "VK_KHR_acceleration_structure",
+                                                     "VK_KHR_deferred_host_operations", "VK_KHR_buffer_device_address",
+                                                     "VK_EXT_descriptor_indexing",      "VK_KHR_spirv_1_4",
+                                                     "VK_KHR_shader_float_controls"};
 
         const VkDeviceCreateInfo createInfo{
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,             // VkStructureType sType;
@@ -144,7 +135,7 @@ struct DeviceHelper
 class RayTracingProceduralGeometryTestBase : public TestInstance
 {
 public:
-    RayTracingProceduralGeometryTestBase(Context &context, bool usePipelineBinaries = false);
+    RayTracingProceduralGeometryTestBase(Context &context);
     ~RayTracingProceduralGeometryTestBase(void) = default;
 
     tcu::TestStatus iterate(void) override;
@@ -152,11 +143,6 @@ public:
 protected:
     virtual void setupRayTracingPipeline()     = 0;
     virtual void setupAccelerationStructures() = 0;
-    virtual void traceRays(VkDescriptorSet referenceDescriptorSet, VkDescriptorSet resultDescriptorSet,
-                           const VkStridedDeviceAddressRegionKHR *raygenShaderBindingTableRegion,
-                           const VkStridedDeviceAddressRegionKHR *missShaderBindingTableRegion,
-                           const VkStridedDeviceAddressRegionKHR *hitShaderBindingTableRegion,
-                           const VkStridedDeviceAddressRegionKHR *callableShaderBindingTableRegion, uint32_t imageSize);
 
 private:
     VkWriteDescriptorSetAccelerationStructureKHR makeASWriteDescriptorSet(
@@ -181,9 +167,9 @@ protected:
     de::SharedPtr<TopLevelAccelerationStructure> m_resultTLAS;
 };
 
-RayTracingProceduralGeometryTestBase::RayTracingProceduralGeometryTestBase(Context &context, bool usePipelineBinaries)
+RayTracingProceduralGeometryTestBase::RayTracingProceduralGeometryTestBase(Context &context)
     : vkt::TestInstance(context)
-    , m_customDevice(context, usePipelineBinaries)
+    , m_customDevice(context)
     , m_referenceTLAS(makeTopLevelAccelerationStructure().release())
     , m_resultTLAS(makeTopLevelAccelerationStructure().release())
 {
@@ -284,8 +270,17 @@ tcu::TestStatus RayTracingProceduralGeometryTestBase::iterate(void)
         cmdPipelineMemoryBarrier(vkd, *m_cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
                                  VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &asBuildBarrier, 1u);
 
-        traceRays(*referenceDescriptorSet, *resultDescriptorSet, &rgenSBTR, &missSBTR, &chitSBTR, &callableSBTR,
-                  imageSize);
+        vkd.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipeline);
+
+        // generate reference
+        vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipelineLayout, 0, 1,
+                                  &referenceDescriptorSet.get(), 0, DE_NULL);
+        cmdTraceRays(vkd, *m_cmdBuffer, &rgenSBTR, &missSBTR, &chitSBTR, &callableSBTR, imageSize, imageSize, 1);
+
+        // generate result
+        vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipelineLayout, 0, 1,
+                                  &resultDescriptorSet.get(), 0, DE_NULL);
+        cmdTraceRays(vkd, *m_cmdBuffer, &rgenSBTR, &missSBTR, &chitSBTR, &callableSBTR, imageSize, imageSize, 1);
 
         const VkMemoryBarrier postTraceMemoryBarrier =
             makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
@@ -313,29 +308,6 @@ tcu::TestStatus RayTracingProceduralGeometryTestBase::iterate(void)
                                  resultAccess, tcu::UVec4(0), tcu::COMPARE_LOG_EVERYTHING))
         return tcu::TestStatus::pass("Pass");
     return tcu::TestStatus::fail("Fail");
-}
-
-void RayTracingProceduralGeometryTestBase::traceRays(VkDescriptorSet referenceDescriptorSet,
-                                                     VkDescriptorSet resultDescriptorSet,
-                                                     const VkStridedDeviceAddressRegionKHR *rgenSBTR,
-                                                     const VkStridedDeviceAddressRegionKHR *missSBTR,
-                                                     const VkStridedDeviceAddressRegionKHR *chitSBTR,
-                                                     const VkStridedDeviceAddressRegionKHR *callableSBTR,
-                                                     uint32_t imageSize)
-{
-    const DeviceInterface &vkd = *m_customDevice.vkd;
-
-    vkd.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipeline);
-
-    // generate reference
-    vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipelineLayout, 0, 1,
-                              &referenceDescriptorSet, 0, DE_NULL);
-    cmdTraceRays(vkd, *m_cmdBuffer, rgenSBTR, missSBTR, chitSBTR, callableSBTR, imageSize, imageSize, 1);
-
-    // generate result
-    vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipelineLayout, 0, 1,
-                              &resultDescriptorSet, 0, DE_NULL);
-    cmdTraceRays(vkd, *m_cmdBuffer, rgenSBTR, missSBTR, chitSBTR, callableSBTR, imageSize, imageSize, 1);
 }
 
 VkWriteDescriptorSetAccelerationStructureKHR RayTracingProceduralGeometryTestBase::makeASWriteDescriptorSet(
@@ -383,12 +355,14 @@ void ObjectBehindBoundingBoxInstance::setupRayTracingPipeline()
     const uint32_t sgHandleSize    = m_context.getRayTracingPipelineProperties().shaderGroupHandleSize;
     const uint32_t sgBaseAlignment = m_context.getRayTracingPipelineProperties().shaderGroupBaseAlignment;
 
-    m_rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, createShaderModule(vkd, device, bc.get("rgen")), 0);
+    m_rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, createShaderModule(vkd, device, bc.get("rgen"), 0),
+                                    0);
     m_rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
-                                    createShaderModule(vkd, device, bc.get("isec")), 1);
+                                    createShaderModule(vkd, device, bc.get("isec"), 0), 1);
     m_rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
-                                    createShaderModule(vkd, device, bc.get("chit")), 1);
-    m_rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, createShaderModule(vkd, device, bc.get("miss")), 2);
+                                    createShaderModule(vkd, device, bc.get("chit"), 0), 1);
+    m_rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, createShaderModule(vkd, device, bc.get("miss"), 0),
+                                    2);
 
     m_pipelineLayout = makePipelineLayout(vkd, device, m_descriptorSetLayout.get());
     m_pipeline       = m_rayTracingPipeline->createPipeline(vkd, device, *m_pipelineLayout);
@@ -465,14 +439,16 @@ void TriangleInBeteenInstance::setupRayTracingPipeline()
     const uint32_t sgHandleSize    = m_context.getRayTracingPipelineProperties().shaderGroupHandleSize;
     const uint32_t sgBaseAlignment = m_context.getRayTracingPipelineProperties().shaderGroupBaseAlignment;
 
-    m_rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, createShaderModule(vkd, device, bc.get("rgen")), 0);
+    m_rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, createShaderModule(vkd, device, bc.get("rgen"), 0),
+                                    0);
     m_rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
-                                    createShaderModule(vkd, device, bc.get("isec")), 1);
+                                    createShaderModule(vkd, device, bc.get("isec"), 0), 1);
     m_rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
-                                    createShaderModule(vkd, device, bc.get("chit")), 1);
+                                    createShaderModule(vkd, device, bc.get("chit"), 0), 1);
     m_rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
-                                    createShaderModule(vkd, device, bc.get("chit_triangle")), 2);
-    m_rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, createShaderModule(vkd, device, bc.get("miss")), 3);
+                                    createShaderModule(vkd, device, bc.get("chit_triangle"), 0), 2);
+    m_rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, createShaderModule(vkd, device, bc.get("miss"), 0),
+                                    3);
 
     m_pipelineLayout = makePipelineLayout(vkd, device, m_descriptorSetLayout.get());
     m_pipeline       = m_rayTracingPipeline->createPipeline(vkd, device, *m_pipelineLayout);
@@ -538,172 +514,6 @@ void TriangleInBeteenInstance::setupAccelerationStructures()
     m_resultTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
 }
 
-class PipelineBinaryInstance : public RayTracingProceduralGeometryTestBase
-{
-public:
-    PipelineBinaryInstance(Context &context);
-
-    void setupRayTracingPipeline() override;
-    void setupAccelerationStructures() override;
-    void traceRays(VkDescriptorSet referenceDescriptorSet, VkDescriptorSet resultDescriptorSet,
-                   const VkStridedDeviceAddressRegionKHR *rgenSBTR, const VkStridedDeviceAddressRegionKHR *missSBTR,
-                   const VkStridedDeviceAddressRegionKHR *chitSBTR, const VkStridedDeviceAddressRegionKHR *callableSBTR,
-                   uint32_t imageSize) override;
-
-protected:
-    Move<VkShaderModule> m_shaderModules[4];
-    Move<VkPipeline> m_secondPipeline;
-    PipelineBinaryWrapper m_binaries;
-};
-
-PipelineBinaryInstance::PipelineBinaryInstance(Context &context)
-    : RayTracingProceduralGeometryTestBase(context, true)
-    , m_binaries(*m_customDevice.vkd, *m_customDevice.device)
-{
-}
-
-void PipelineBinaryInstance::setupRayTracingPipeline()
-{
-    const DeviceInterface &vkd     = *m_customDevice.vkd;
-    const VkDevice device          = *m_customDevice.device;
-    Allocator &allocator           = *m_customDevice.allocator;
-    vk::BinaryCollection &bc       = m_context.getBinaryCollection();
-    const uint32_t sgHandleSize    = m_context.getRayTracingPipelineProperties().shaderGroupHandleSize;
-    const uint32_t sgBaseAlignment = m_context.getRayTracingPipelineProperties().shaderGroupBaseAlignment;
-
-    m_pipelineLayout   = makePipelineLayout(vkd, device, m_descriptorSetLayout.get());
-    m_shaderModules[0] = createShaderModule(vkd, device, bc.get("rgen"));
-    m_shaderModules[1] = createShaderModule(vkd, device, bc.get("isec"));
-    m_shaderModules[2] = createShaderModule(vkd, device, bc.get("chit"));
-    m_shaderModules[3] = createShaderModule(vkd, device, bc.get("miss"));
-
-    // define shader stages
-    VkPipelineShaderStageCreateInfo defaultShaderCreateInfo = initVulkanStructure();
-    defaultShaderCreateInfo.pName                           = "main";
-    std::vector<VkPipelineShaderStageCreateInfo> shaderCreateInfoVect(4, defaultShaderCreateInfo);
-    const VkShaderStageFlagBits stageVect[] = {VK_SHADER_STAGE_RAYGEN_BIT_KHR, VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
-                                               VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, VK_SHADER_STAGE_MISS_BIT_KHR};
-    for (uint32_t index = 0; index < 4u; ++index)
-    {
-        auto &shaderCreateInfo  = shaderCreateInfoVect[index];
-        shaderCreateInfo.stage  = stageVect[index];
-        shaderCreateInfo.module = *m_shaderModules[index];
-    }
-
-    // define three shader groups
-    const VkRayTracingShaderGroupCreateInfoKHR defaultShaderGroupCreateInfo{
-        VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                    //  const void* pNext;
-        VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,               //  VkRayTracingShaderGroupTypeKHR type;
-        VK_SHADER_UNUSED_KHR,                                       //  uint32_t generalShader;
-        VK_SHADER_UNUSED_KHR,                                       //  uint32_t closestHitShader;
-        VK_SHADER_UNUSED_KHR,                                       //  uint32_t anyHitShader;
-        VK_SHADER_UNUSED_KHR,                                       //  uint32_t intersectionShader;
-        DE_NULL,                                                    //  const void* pShaderGroupCaptureReplayHandle;
-    };
-    std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroupCreateInfoVect(3, defaultShaderGroupCreateInfo);
-    shaderGroupCreateInfoVect[0].generalShader      = 0u;
-    shaderGroupCreateInfoVect[1].type               = VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR;
-    shaderGroupCreateInfoVect[1].intersectionShader = 1u;
-    shaderGroupCreateInfoVect[1].closestHitShader   = 2u;
-    shaderGroupCreateInfoVect[2].generalShader      = 3u;
-
-    // create ray tracing pipeline that will capture its data
-    VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
-    pipelineFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR;
-    VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo{
-        VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR, //  VkStructureType sType;
-        &pipelineFlags2CreateInfo,                              //  const void* pNext;
-        0,                                                      //  VkPipelineCreateFlags flags;
-        4u,                                                     //  uint32_t stageCount;
-        shaderCreateInfoVect.data(),                            //  const VkPipelineShaderStageCreateInfo* pStages;
-        3u,                                                     //  uint32_t groupCount;
-        shaderGroupCreateInfoVect.data(),                       //  const VkRayTracingShaderGroupCreateInfoKHR* pGroups;
-        1u,                                                     //  uint32_t maxRecursionDepth;
-        DE_NULL,                                                //  VkPipelineLibraryCreateInfoKHR* pLibraryInfo;
-        DE_NULL,                          //  VkRayTracingPipelineInterfaceCreateInfoKHR* pLibraryInterface;
-        DE_NULL,                          //  const VkPipelineDynamicStateCreateInfo* pDynamicState;
-        *m_pipelineLayout,                //  VkPipelineLayout layout;
-        static_cast<VkPipeline>(DE_NULL), //  VkPipeline basePipelineHandle;
-        0,                                //  int32_t basePipelineIndex;
-    };
-    VkPipeline object = DE_NULL;
-    vkd.createRayTracingPipelinesKHR(device, DE_NULL, DE_NULL, 1u, &pipelineCreateInfo, DE_NULL, &object);
-    m_pipeline = Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vkd, device, DE_NULL));
-
-    // create pipeline binary objects
-    m_binaries.createPipelineBinariesFromPipeline(object);
-    VkPipelineBinaryInfoKHR pipelineBinaryInfo = m_binaries.preparePipelineBinaryInfo();
-
-    // clear shader modules in CreateInfo to make sure that we will be able to create pipeline without them
-    object                   = DE_NULL;
-    pipelineCreateInfo.pNext = &pipelineBinaryInfo;
-    pipelineCreateInfo.flags = 0;
-    for (auto &shaderCreateInfo : shaderCreateInfoVect)
-        shaderCreateInfo.module = 0;
-
-    // create second pipeline using pipeline binaries
-    vkd.createRayTracingPipelinesKHR(device, DE_NULL, DE_NULL, 1u, &pipelineCreateInfo, DE_NULL, &object);
-    m_secondPipeline = Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vkd, device, DE_NULL));
-
-    // create shader binding tables
-    m_rgenShaderBT = m_rayTracingPipeline->createShaderBindingTable(vkd, device, *m_pipeline, allocator, sgHandleSize,
-                                                                    sgBaseAlignment, 0, 1);
-    m_chitShaderBT = m_rayTracingPipeline->createShaderBindingTable(vkd, device, *m_pipeline, allocator, sgHandleSize,
-                                                                    sgBaseAlignment, 1, 1);
-    m_missShaderBT = m_rayTracingPipeline->createShaderBindingTable(vkd, device, *m_pipeline, allocator, sgHandleSize,
-                                                                    sgBaseAlignment, 2, 1);
-}
-
-void PipelineBinaryInstance::setupAccelerationStructures()
-{
-    const DeviceInterface &vkd = *m_customDevice.vkd;
-    const VkDevice device      = *m_customDevice.device;
-    Allocator &allocator       = *m_customDevice.allocator;
-
-    // build acceleration structure - single aabb big enough to fit whole procedural geometry
-    de::SharedPtr<BottomLevelAccelerationStructure> fullBLAS(makeBottomLevelAccelerationStructure().release());
-    fullBLAS->setGeometryData(
-        {
-            {0.0, 0.0, -64.0},
-            {64.0, 64.0, -16.0},
-        },
-        false, 0);
-    fullBLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
-    m_blasVect.push_back(fullBLAS);
-
-    m_referenceTLAS->setInstanceCount(1);
-    m_referenceTLAS->addInstance(fullBLAS);
-    m_referenceTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
-
-    m_resultTLAS->setInstanceCount(1);
-    m_resultTLAS->addInstance(fullBLAS);
-    m_resultTLAS->createAndBuild(vkd, device, *m_cmdBuffer, allocator);
-}
-
-void PipelineBinaryInstance::traceRays(VkDescriptorSet referenceDescriptorSet, VkDescriptorSet resultDescriptorSet,
-                                       const VkStridedDeviceAddressRegionKHR *rgenSBTR,
-                                       const VkStridedDeviceAddressRegionKHR *missSBTR,
-                                       const VkStridedDeviceAddressRegionKHR *chitSBTR,
-                                       const VkStridedDeviceAddressRegionKHR *callableSBTR, uint32_t imageSize)
-{
-    const DeviceInterface &vkd = *m_customDevice.vkd;
-
-    vkd.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipeline);
-
-    // generate reference
-    vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipelineLayout, 0, 1,
-                              &referenceDescriptorSet, 0, DE_NULL);
-    cmdTraceRays(vkd, *m_cmdBuffer, rgenSBTR, missSBTR, chitSBTR, callableSBTR, imageSize, imageSize, 1);
-
-    vkd.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_secondPipeline);
-
-    // generate result
-    vkd.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *m_pipelineLayout, 0, 1,
-                              &resultDescriptorSet, 0, DE_NULL);
-    cmdTraceRays(vkd, *m_cmdBuffer, rgenSBTR, missSBTR, chitSBTR, callableSBTR, imageSize, imageSize, 1);
-}
-
 class RayTracingProceduralGeometryTestCase : public TestCase
 {
 public:
@@ -729,9 +539,6 @@ void RayTracingProceduralGeometryTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
     context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
-
-    if (m_testType == TestType::PIPELINE_BINARY)
-        context.requireDeviceFunctionality("VK_KHR_pipeline_binary");
 
     if (!context.getRayTracingPipelineFeatures().rayTracingPipeline)
         TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
@@ -840,9 +647,6 @@ TestInstance *RayTracingProceduralGeometryTestCase::createInstance(Context &cont
     if (m_testType == TestType::TRIANGLE_IN_BETWEEN)
         return new TriangleInBeteenInstance(context);
 
-    if (m_testType == TestType::PIPELINE_BINARY)
-        return new PipelineBinaryInstance(context);
-
     // TestType::OBJECT_BEHIND_BOUNDING_BOX
     return new ObjectBehindBoundingBoxInstance(context);
 }
@@ -858,7 +662,6 @@ tcu::TestCaseGroup *createProceduralGeometryTests(tcu::TestContext &testCtx)
                                                              TestType::OBJECT_BEHIND_BOUNDING_BOX));
     group->addChild(
         new RayTracingProceduralGeometryTestCase(testCtx, "triangle_in_between", TestType::TRIANGLE_IN_BETWEEN));
-    group->addChild(new RayTracingProceduralGeometryTestCase(testCtx, "pipeline_binary", TestType::PIPELINE_BINARY));
 
     return group.release();
 }
