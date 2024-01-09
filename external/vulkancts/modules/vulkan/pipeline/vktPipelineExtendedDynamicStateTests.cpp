@@ -4419,17 +4419,17 @@ public:
 		};
 
 #ifndef CTS_USES_VULKANSC
-		const auto&	contextMeshFeatures	= context.getMeshShaderFeaturesEXT();
-		const auto&	contextGPLFeatures	= context.getGraphicsPipelineLibraryFeaturesEXT();
-		const auto&	contextDBCFeatures	= context.getDepthBiasControlFeaturesEXT();
-		const auto&	contextSOFeatures	= context.getShaderObjectFeaturesEXT();
+		const auto&	contextMeshFeatures		= context.getMeshShaderFeaturesEXT();
+		const auto&	contextGPLFeatures		= context.getGraphicsPipelineLibraryFeaturesEXT();
+		const auto&	contextDBCFeatures		= context.getDepthBiasControlFeaturesEXT();
+		const auto&	contextSOFeatures		= context.getShaderObjectFeaturesEXT();
 		const auto&	contextBlendFeatures    = context.getBlendOperationAdvancedFeaturesEXT();
 
-		const bool	meshShaderSupport	= contextMeshFeatures.meshShader;
-		const bool	gplSupport		= contextGPLFeatures.graphicsPipelineLibrary;
-		const bool	dbcSupport		= contextDBCFeatures.depthBiasControl;
-		const bool	shaderObjectSupport	= contextSOFeatures.shaderObject;
-		const bool	eds3Support		= context.isDeviceFunctionalitySupported("VK_EXT_extended_dynamic_state3");
+		const bool	meshShaderSupport		= contextMeshFeatures.meshShader;
+		const bool	gplSupport				= contextGPLFeatures.graphicsPipelineLibrary;
+		const bool	dbcSupport				= contextDBCFeatures.depthBiasControl;
+		const bool	shaderObjectSupport		= contextSOFeatures.shaderObject;
+		const bool	eds3Support				= context.isDeviceFunctionalitySupported("VK_EXT_extended_dynamic_state3");
 		const bool	blendFeaturesSupport	= contextBlendFeatures.advancedBlendCoherentOperations;
 
 		// Mandatory.
@@ -4444,7 +4444,8 @@ public:
 		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures					= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures		= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceDynamicRenderingFeatures			dynamicRenderingFeatures	= vk::initVulkanStructure();
-		vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT	blendOperationAdvFeatures		= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT	blendOperationAdvFeatures	= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR		fragmentShadingRateFeatures = vk::initVulkanStructure();
 
 		const auto addFeatures = vk::makeStructChainAdder(&features2);
 
@@ -4488,6 +4489,11 @@ public:
 			// If primitiveFragmentShadingRateMeshShader is enabled then
 			// VkPhysicalDeviceFragmentShadingRateFeaturesKHR::primitiveFragmentShadingRate must also be enabled
 			meshFeatures.primitiveFragmentShadingRateMeshShader = VK_FALSE;
+		}
+		else if (meshFeatures.primitiveFragmentShadingRateMeshShader)
+		{
+			addFeatures(&fragmentShadingRateFeatures);
+			fragmentShadingRateFeatures.primitiveFragmentShadingRate = VK_TRUE;
 		}
 
 		// Disable alpha-to-one if requested by options.
