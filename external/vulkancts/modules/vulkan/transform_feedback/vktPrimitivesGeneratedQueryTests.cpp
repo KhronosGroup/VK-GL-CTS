@@ -2245,6 +2245,14 @@ void ConcurrentPrimitivesGeneratedQueryTestCase::checkSupport (vkt::Context& con
 
 	if (xfbProperties.transformFeedbackQueries != VK_TRUE)
 		TCU_THROW(NotSupportedError, "transformFeedbackQueries not supported");
+
+	if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_1
+		|| m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_2
+		|| m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
+	{
+		if (!context.getDeviceFeatures().pipelineStatisticsQuery)
+			TCU_THROW(NotSupportedError, "pipelineStatisticsQuery not supported");
+	}
 }
 
 void ConcurrentPrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollections& programCollection) const
