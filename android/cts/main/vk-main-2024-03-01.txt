@@ -20,6 +20,7 @@ vk-main-2024-03-01/image/load-store-multisample.txt
 vk-main-2024-03-01/image/queue-transfer.txt
 vk-main-2024-03-01/image/store.txt
 vk-main-2024-03-01/image/subresource-layout.txt
+vk-main-2024-03-01/image/texel-view-compatible.txt
 vk-main-2024-03-01/memory.txt
 vk-main-2024-03-01/mesh-shader.txt
 vk-main-2024-03-01/multiview.txt
