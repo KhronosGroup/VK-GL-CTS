@@ -3086,7 +3086,8 @@ void TwoCmdBuffersTestInstance::configCommandBuffer (void)
 		VK_CHECK(vk.beginCommandBuffer(*m_secondCmdBuffer, &cmdBufferBeginInfoSecondary));
 		if (!m_hostQueryReset)
 			vk.cmdResetQueryPool(*m_secondCmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
-		vk.cmdWriteTimestamp(*m_secondCmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, *m_queryPool, 0);
+		vk::VkPipelineStageFlagBits pipelineStage = m_transferOnlyQueue ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+		vk.cmdWriteTimestamp(*m_secondCmdBuffer, pipelineStage, *m_queryPool, 0);
 		VK_CHECK(vk.endCommandBuffer(*m_secondCmdBuffer));
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 		vk.cmdExecuteCommands(m_cmdBuffer.get(), 1u, &m_secondCmdBuffer.get());
