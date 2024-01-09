@@ -45,6 +45,8 @@
 #include "tcuVectorUtil.hpp"
 #include "tcuTextureUtil.hpp"
 
+#include <set>
+
 namespace vkt
 {
 namespace image
@@ -2915,6 +2917,8 @@ void testGenerator(tcu::TestCaseGroup* group)
 		{ DRAW,		vk::VK_FORMAT_R8G8B8A8_UNORM,				vk::VK_FORMAT_R8G8B8A8_UNORM		},
 		{ DRAW,		vk::VK_FORMAT_R8G8_UNORM,					vk::VK_FORMAT_R8G8_UNORM			},
 		{ DRAW,		vk::VK_FORMAT_R32G32B32A32_SFLOAT,			vk::VK_FORMAT_R32G32B32A32_SFLOAT	},
+		{ DRAW,		vk::VK_FORMAT_R8_UNORM,						vk::VK_FORMAT_R8_UNORM				},
+		{ DRAW,		vk::VK_FORMAT_R32G32_SFLOAT,				vk::VK_FORMAT_R32G32_SFLOAT			},
 		{ DRAW,		vk::VK_FORMAT_R16_UNORM,					vk::VK_FORMAT_R16_UNORM				},
 		{ DRAW,		vk::VK_FORMAT_D16_UNORM,					vk::VK_FORMAT_R16_UNORM				},
 		{ DRAW,		vk::VK_FORMAT_D32_SFLOAT,					vk::VK_FORMAT_R32_SFLOAT			},
@@ -2924,6 +2928,13 @@ void testGenerator(tcu::TestCaseGroup* group)
 		{ DISPATCH,	vk::VK_FORMAT_R10X6_UNORM_PACK16,			vk::VK_FORMAT_R10X6_UNORM_PACK16	},
 		{ DISPATCH,	vk::VK_FORMAT_R8G8B8A8_UNORM,				vk::VK_FORMAT_R8G8B8A8_UNORM		},
 		{ DISPATCH,	vk::VK_FORMAT_R8G8B8A8_UNORM,				vk::VK_FORMAT_R8G8B8A8_UINT			},
+	};
+
+	const std::set<vk::VkFormat> restrictedCombinationsFmt
+	{
+		vk::VK_FORMAT_R8G8_UNORM,
+		vk::VK_FORMAT_R8_UNORM,
+		vk::VK_FORMAT_R32G32_SFLOAT,
 	};
 
 	const struct ImageSizes
@@ -3040,8 +3051,8 @@ void testGenerator(tcu::TestCaseGroup* group)
 											if (sparseImage && isCompressedFormat(formatAndCommand.sampled))
 												continue;
 
-											// This format was added later, with restricted combinations interesting for the HW.
-											if (formatAndCommand.sampled == VK_FORMAT_R8G8_UNORM)
+											// These formats were added later, with restricted combinations considered interesting.
+											if (restrictedCombinationsFmt.find(formatAndCommand.sampled) != restrictedCombinationsFmt.end())
 											{
 												// Layouts are not that important.
 												if (!transition.host)
