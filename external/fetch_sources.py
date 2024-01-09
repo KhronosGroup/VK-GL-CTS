@@ -31,6 +31,7 @@ import subprocess
 import ssl
 import stat
 import platform
+import logging
 
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "scripts")
 sys.path.insert(0, scriptPath)
@@ -58,8 +59,10 @@ class Source:
 		# Remove read-only first
 		readonlydir = os.path.join(fullDstPath, ".git")
 		if os.path.exists(readonlydir):
+			logging.debug("Deleting " + readonlydir)
 			shutil.rmtree(readonlydir, onerror = onReadonlyRemoveError)
 		if os.path.exists(fullDstPath):
+			logging.debug("Deleting " + fullDstPath)
 			shutil.rmtree(fullDstPath, ignore_errors=False)
 
 class SourcePackage (Source):
@@ -87,6 +90,7 @@ class SourcePackage (Source):
 	def removeArchives (self):
 		archiveDir = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.archiveDir)
 		if os.path.exists(archiveDir):
+			logging.debug("Deleting " + archiveDir)
 			shutil.rmtree(archiveDir, ignore_errors=False)
 
 	def isArchiveUpToDate (self):
@@ -251,6 +255,7 @@ class GitRepo (Source):
 			execute(["git", "clone", "--no-checkout", url, fullDstPath])
 
 		pushWorkingDir(fullDstPath)
+		print("Directory: " + fullDstPath)
 		try:
 			for tag in self.removeTags:
 				proc = subprocess.Popen(['git', 'tag', '-l', tag], stdout=subprocess.PIPE)
@@ -363,7 +368,10 @@ def parseArgs ():
 						help="Select protocol to checkout git repositories.")
 	parser.add_argument('--force', dest='force', action='store_true', default=False,
 						help="Pass --force to git fetch and checkout commands")
-
+	parser.add_argument("-v", "--verbose",
+						dest="verbose",
+						action="store_true",
+						help="Enable verbose logging")
 	args = parser.parse_args()
 
 	if args.insecure:
@@ -395,6 +403,7 @@ def run(*popenargs, **kwargs):
 
 if __name__ == "__main__":
 	args = parseArgs()
+	initializeLogger(args.verbose)
 
 	for pkg in PACKAGES:
 		if args.clean:

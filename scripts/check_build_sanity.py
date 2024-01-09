@@ -154,7 +154,7 @@ CLANG_VERSION		= getClangVersion()
 
 # Always ran before any receipe
 PREREQUISITES		= [
-	RunScript(os.path.join("external", "fetch_sources.py"), lambda env: ["--force"])
+	RunScript(os.path.join("external", "fetch_sources.py"), lambda env: ["--force"] + (["--verbose"] if env.verbose else []))
 ]
 
 # Always ran after any receipe
