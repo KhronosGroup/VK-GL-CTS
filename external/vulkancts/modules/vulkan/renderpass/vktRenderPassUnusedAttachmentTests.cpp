@@ -1107,12 +1107,8 @@ void UnusedAttachmentTestInstance::createCommandBufferDynamicRendering(const Dev
 		endCommandBuffer(vk, secCmdBuffer);
 
 		// record primary command buffer
-		renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass0;
-		renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices = colorAttachmentInputIndicesSubpass1;
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preRenderCommands(vk, *m_cmdBuffer);
-		vk.cmdSetRenderingAttachmentLocationsKHR(*m_cmdBuffer, &renderingAttachmentLocationInfo);
-		vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
 		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
