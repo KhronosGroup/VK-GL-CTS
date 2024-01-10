@@ -493,7 +493,8 @@ tcu::TestCaseGroup* createSynchronization2BasicEventTests (tcu::TestContext& tes
 	// Wait and set event mutli submission on device
 	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", checkSupport, multiSubmissionCase, config);
 	// Event used on secondary command buffer
-	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", checkSecondaryBufferSupport, secondaryCommandBufferCase, config);
+	if (!videoCodecOperationFlags)
+		addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", checkSecondaryBufferSupport, secondaryCommandBufferCase, config);
 	// Event set and reset using the none pipeline stage
 	addFunctionCase(basicTests.get(), "none_set_reset", checkSupport, eventSetResetNoneStage, config);
 
