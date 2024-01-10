@@ -784,6 +784,7 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	const bool													queryWithStatusForDecodeSupport				= (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT) != 0;
 	const bool													requireYCBCRorNotSupported					= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_YCBCR_OR_NOT_SUPPORTED) != 0;
 	const bool													requireSync2orNotSupported					= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED) != 0;
+	const bool													requireTimelineSemOrNotSupported			= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_TIMELINE_OR_NOT_SUPPORTED) != 0;
 	const float													queueFamilyPriority							= 1.0f;
 	deUint32													queueFamilyPropertiesCount					= 0u;
 	deUint32													queueFamilyTransfer							= VK_QUEUE_FAMILY_IGNORED;
@@ -896,6 +897,10 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_synchronization2"))
 			deviceExtensions.push_back("VK_KHR_synchronization2");
 
+	if (requireTimelineSemOrNotSupported)
+		if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
+			deviceExtensions.push_back("VK_KHR_timeline_semaphore");
+
 	vk::VkPhysicalDeviceSynchronization2FeaturesKHR		synchronization2Features		=
 	{
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR,	//  VkStructureType	sType;
@@ -908,6 +913,14 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 		DE_NULL,																	//  void*			pNext;
 		DE_FALSE,																	//  VkBool32		samplerYcbcrConversion;
 	};
+
+	vk::VkPhysicalDeviceTimelineSemaphoreFeatures	timelineSemaphoreFeatures			=
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,			//	VkStructureType	sType;
+		DE_NULL,																	//	void*			pNext;
+		DE_TRUE																	//	VkBool32		timelineSemaphore;
+	};
+
 	vk::VkPhysicalDeviceFeatures2						features2						=
 	{
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,	//  VkStructureType				sType;
@@ -921,6 +934,10 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	if (requireSync2orNotSupported)
 		appendStructurePtrToVulkanChain((const void**)&features2.pNext, &synchronization2Features);
 
+	if (requireTimelineSemOrNotSupported)
+		if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
+			appendStructurePtrToVulkanChain((const void**)&features2.pNext, &timelineSemaphoreFeatures);
+
 	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
 	if (requireYCBCRorNotSupported && samplerYcbcrConversionFeatures.samplerYcbcrConversion == DE_FALSE)
@@ -928,6 +945,9 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 
 	if (requireSync2orNotSupported && synchronization2Features.synchronization2 == DE_FALSE)
 		TCU_THROW(NotSupportedError, "synchronization2Features.synchronization2 is required");
+
+	if (requireTimelineSemOrNotSupported && timelineSemaphoreFeatures.timelineSemaphore == DE_FALSE)
+		TCU_THROW(NotSupportedError, "timelineSemaphore extension is required");
 
 	features2.features.robustBufferAccess = DE_FALSE;
 
