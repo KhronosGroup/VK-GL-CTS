@@ -2549,6 +2549,7 @@ tcu::TestStatus StrideChangeTest::iterate (void)
 				(useGeom ? geomModule : nullModule))
 			.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
 			.setupFragmentOutputState(*renderPass)
+			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
 			;
 	}
