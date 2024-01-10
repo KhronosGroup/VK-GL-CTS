@@ -909,9 +909,13 @@ TestStatus testInstance(Context& context, const TestParams& testParameter)
 			for (deUint32 ci = 0; ci < createInfos.size(); ++ci)
 			{
 				flags2CreateInfo[ci].flags	= translateCreateFlag(createInfos[ci].flags);
-				flags2CreateInfo[ci].pNext  = createInfos[ci].pNext;
-				createInfos[ci].flags		= 0;
-				createInfos[ci].pNext		= &flags2CreateInfo[ci];
+				// VUID-VkPipelineCreateFlags2CreateInfoKHR-flags-requiredbitmask says it it not valid to have 0 flags in VkPipelineCreateFlags2CreateInfoKHR
+				// Only add flags2 if it's not 0
+				if (flags2CreateInfo[ci].flags != 0u) {
+					flags2CreateInfo[ci].pNext  = createInfos[ci].pNext;
+					createInfos[ci].flags		= 0;
+					createInfos[ci].pNext		= &flags2CreateInfo[ci];
+				}
 			}
 		}
 #endif // CTS_USES_VULKANSC
