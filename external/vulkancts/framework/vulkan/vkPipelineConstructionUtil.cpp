@@ -3839,8 +3839,16 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			linkingInfo.libraryCount	= static_cast<uint32_t>(rawPipelines.size());
 			linkingInfo.pLibraries		= de::dataOrNull(rawPipelines);
 
-			linkedCreateInfo.flags		= m_internalData->pipelineFlags;
+			// If a test hits the following assert, it's likely missing a call
+			// to the setMonolithicPipelineLayout() method. Related VUs:
+			//   * VUID-VkGraphicsPipelineCreateInfo-flags-06642
+			//   * VUID-VkGraphicsPipelineCreateInfo-None-07826
+			//   * VUID-VkGraphicsPipelineCreateInfo-layout-07827
+			//   * VUID-VkGraphicsPipelineCreateInfo-flags-06729
+			//   * VUID-VkGraphicsPipelineCreateInfo-flags-06730
+			DE_ASSERT(m_internalData->monolithicPipelineCreateInfo.layout != VK_NULL_HANDLE);
 			linkedCreateInfo.layout		= m_internalData->monolithicPipelineCreateInfo.layout;
+			linkedCreateInfo.flags		= m_internalData->pipelineFlags;
 			linkedCreateInfo.pNext		= &linkingInfo;
 
 			pointerToCreateInfo			= &linkedCreateInfo;
