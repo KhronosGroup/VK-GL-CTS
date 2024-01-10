@@ -1,9 +1,17 @@
 dEQP-VKSC.query_pool.concurrent_queries.primary_command_buffer
 dEQP-VKSC.query_pool.concurrent_queries.secondary_command_buffer
 dEQP-VKSC.query_pool.frag_invocations.frag_invs.primary
+dEQP-VKSC.query_pool.frag_invocations.frag_invs.primary_with_atomic_counter
+dEQP-VKSC.query_pool.frag_invocations.frag_invs.primary_with_vertex_color
 dEQP-VKSC.query_pool.frag_invocations.frag_invs.secondary
+dEQP-VKSC.query_pool.frag_invocations.frag_invs.secondary_with_atomic_counter
+dEQP-VKSC.query_pool.frag_invocations.frag_invs.secondary_with_vertex_color
 dEQP-VKSC.query_pool.frag_invocations.occlusion.primary
+dEQP-VKSC.query_pool.frag_invocations.occlusion.primary_with_atomic_counter
+dEQP-VKSC.query_pool.frag_invocations.occlusion.primary_with_vertex_color
 dEQP-VKSC.query_pool.frag_invocations.occlusion.secondary
+dEQP-VKSC.query_pool.frag_invocations.occlusion.secondary_with_atomic_counter
+dEQP-VKSC.query_pool.frag_invocations.occlusion.secondary_with_vertex_color
 dEQP-VKSC.query_pool.occlusion_query.basic_conservative
 dEQP-VKSC.query_pool.occlusion_query.basic_precise
 dEQP-VKSC.query_pool.occlusion_query.copy_reset_results_conservative_size_32_wait_query_with_availability_draw_points
