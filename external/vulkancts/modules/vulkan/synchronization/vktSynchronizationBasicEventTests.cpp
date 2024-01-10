@@ -92,7 +92,7 @@ tcu::TestStatus hostResetSetEventCase (Context& context, TestConfig config)
 
 tcu::TestStatus deviceResetSetEventCase (Context& context, TestConfig config)
 {
-	de::MovePtr<VideoDevice>			videoDevice				(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	de::MovePtr<VideoDevice>			videoDevice				(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags, config.type == SynchronizationType::SYNCHRONIZATION2 ? VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED : 0) : DE_NULL);
 	const VkDevice						device					= getSyncDevice(videoDevice, context);
 	const DeviceInterface&				vk						= getSyncDeviceInterface(videoDevice, context);
 	const VkQueue						queue					= getSyncQueue(videoDevice, context);
@@ -235,7 +235,7 @@ tcu::TestStatus eventSetResetNoneStage (Context& context, TestConfig)
 tcu::TestStatus singleSubmissionCase (Context& context, TestConfig config)
 {
 	enum {SET=0, WAIT, COUNT};
-	de::MovePtr<VideoDevice>		videoDevice					(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	de::MovePtr<VideoDevice>			videoDevice				(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags, config.type == SynchronizationType::SYNCHRONIZATION2 ? VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED : 0) : DE_NULL);
 	const DeviceInterface&			vk							= getSyncDeviceInterface(videoDevice, context);
 	const VkDevice					device						= getSyncDevice(videoDevice, context);
 	const VkQueue					queue						= getSyncQueue(videoDevice, context);
@@ -280,7 +280,7 @@ tcu::TestStatus singleSubmissionCase (Context& context, TestConfig config)
 tcu::TestStatus multiSubmissionCase(Context& context, TestConfig config)
 {
 	enum { SET = 0, WAIT, COUNT };
-	de::MovePtr<VideoDevice>		videoDevice			(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : DE_NULL);
+	de::MovePtr<VideoDevice>			videoDevice				(config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags, config.type == SynchronizationType::SYNCHRONIZATION2 ? VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED : 0) : DE_NULL);
 	const DeviceInterface&			vk					= getSyncDeviceInterface(videoDevice, context);
 	const VkDevice					device				= getSyncDevice(videoDevice, context);
 	const VkQueue					queue				= getSyncQueue(videoDevice, context);
