@@ -326,7 +326,7 @@ static GraphicsPipelinePtr makeGraphicsPipeline (PipelineConstructionType			pipe
 		.setDynamicState(pDynamicStateCreateInfo)
 		.setupVertexInputState(pVertexInputStateCreateInfo)
 		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass, 0u, vertShaderModule, &rasterizationStateCreateInfo)
-		.setupFragmentShaderState(pipelineLayout, renderPass, 0u, fragShaderModule)
+		.setupFragmentShaderState(pipelineLayout, renderPass, 0u, fragShaderModule, nullptr, isMultiSample ? &multisampleStateInfo : nullptr)
 		.setupFragmentOutputState(renderPass, 0u, nullptr, &multisampleStateInfo)
 		.buildPipeline();
 
