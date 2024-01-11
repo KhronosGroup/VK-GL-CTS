@@ -195,16 +195,18 @@ string getTestSrc (const CaseDefinition& caseDef)
 {
 	const string indexVars = getIndexVars(caseDef);
 
-	return	"  uvec4 mask = subgroupBallot(true);\n"
+	string shader = "  uvec4 mask = subgroupBallot(true);\n"
 			+ indexVars +
 			"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " ref = "
 			+ getIdentity(caseDef.op, caseDef.format) + ";\n"
 			"  tempRes = 0;\n"
+			"  uint identityOnly = 0x3\n;"
 			"  for (uint index = start; index < end; index++)\n"
 			"  {\n"
 			"    if (subgroupBallotBitExtract(mask, index))\n"
 			"    {\n"
 			"      ref = " + getOpOperation(caseDef.op, caseDef.format, "ref", "data[index]") + ";\n"
+			"      identityOnly &= ~0x1;\n"
 			"    }\n"
 			"  }\n"
 			"  tempRes = " + getCompare(caseDef.op, caseDef.format, "ref", getOpTypeName(caseDef.op, caseDef.scanType) + "(data[gl_SubgroupInvocationID])") + " ? 0x1 : 0;\n"
@@ -217,6 +219,7 @@ string getTestSrc (const CaseDefinition& caseDef)
 			"      if (subgroupBallotBitExtract(mask, index))\n"
 			"      {\n"
 			"        ref = " + getOpOperation(caseDef.op, caseDef.format, "ref", "data[index]") + ";\n"
+			"        identityOnly &= ~0x2;\n"
 			"      }\n"
 			"    }\n"
 			"    tempRes |= " + getCompare(caseDef.op, caseDef.format, "ref", getOpTypeName(caseDef.op, caseDef.scanType) + "(data[gl_SubgroupInvocationID])") + " ? 0x2 : 0;\n"
@@ -225,6 +228,13 @@ string getTestSrc (const CaseDefinition& caseDef)
 			"  {\n"
 			"    tempRes |= 0x2;\n"
 			"  }\n";
+
+	// Can't test max or min identity as they are +/-inf, which the SPIR-V
+	// compiler is allowed to assume don't occur in the program
+	if (caseDef.op == OPERATOR_MIN || caseDef.op == OPERATOR_MAX)
+		shader += "  tempRes |= identityOnly;\n";
+
+	return shader;
 }
 
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
