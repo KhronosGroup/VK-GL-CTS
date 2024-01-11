@@ -1263,11 +1263,11 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"hitAttributeEXT vec3 unusedAttribute;\n"
 				"\n"
 				+ de::toString(hitPropsDefinition) +
 				"\n"
-				"layout(location = 0) rayPayloadInEXT      uint   dummy;\n"
+				"layout(location = 0) rayPayloadInEXT      uint   unusedPayload;\n"
 				"layout(set      = 0, binding = 0, std430) buffer result\n"
 				"{\n"
 				"    uint     nHitsRegistered;\n"
@@ -1338,7 +1338,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"layout(location = 0)              rayPayloadEXT uint               dummy;\n"
+				"layout(location = 0)              rayPayloadEXT uint               unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
 				"\n"
 				"void main()\n"
@@ -1579,7 +1579,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"hitAttributeEXT vec3 unusedAttribute;\n"
 				"\n"
 				+ de::toString(hitPropsDefinition) +
 				"\n"
@@ -1965,7 +1965,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"layout(location = 128) rayPayloadInEXT uint dummy;\n"
+				"layout(location = 128) rayPayloadInEXT uint unusedPayload;\n"
 				"\n"
 				"void main()\n"
 				"{\n"
@@ -2053,7 +2053,7 @@ public:
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
 				+ de::toString(callableDataDefinitions.at(0) ) +
-				"layout(location = 128)            rayPayloadEXT uint               dummy;\n"
+				"layout(location = 128)            rayPayloadEXT uint               unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
 				"\n"
 				"void main()\n"
@@ -2549,7 +2549,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"hitAttributeEXT vec3 unusedAttribute;\n"
 				"\n"
 				+ de::toString(hitPropsDefinition) +
 				"\n"
@@ -2926,7 +2926,7 @@ public:
 				+ de::toString(constantDefinitions)
 				+ de::toString(hitAttributeDefinition) +
 				"\n"
-				"layout(location = 0) rayPayloadInEXT uint dummy;\n"
+				"layout(location = 0) rayPayloadInEXT uint unusedPayload;\n"
 				+ de::toString(resultBufferDefinition) +
 				"\n"
 				"void main()\n"
@@ -3027,7 +3027,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"layout(location = 0)              rayPayloadEXT uint               dummy;\n"
+				"layout(location = 0)              rayPayloadEXT uint               unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
 				"\n"
 				"void main()\n"
@@ -3258,11 +3258,11 @@ class MAXRTInvocationsSupportedTest :	public TestBase,
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"hitAttributeEXT vec3 unusedAttribute;\n"
 				"\n"
 				+ de::toString(hitPropsDefinition) +
 				"\n"
-				"layout(location = 0) rayPayloadInEXT      uint   dummy;\n"
+				"layout(location = 0) rayPayloadInEXT      uint   unusedPayload;\n"
 				"layout(set      = 0, binding = 0, std430) buffer result\n"
 				"{\n"
 				"    uint     nHitsRegistered;\n"
@@ -3335,7 +3335,7 @@ class MAXRTInvocationsSupportedTest :	public TestBase,
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"layout(location = 0)              rayPayloadEXT uint               dummy;\n"
+				"layout(location = 0)              rayPayloadEXT uint               unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
 				"\n"
 				"void main()\n"
@@ -3520,11 +3520,11 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"hitAttributeEXT vec3 unusedAttribute;\n"
 				"\n"
 				+ hitPropertiesDefinition +
 				"\n"
-				"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
+				"layout(location = 0) rayPayloadInEXT      vec3 unusedPayload;\n"
 				"layout(set      = 0, binding = 0, std430) buffer result\n"
 				"{\n"
 				"    HitProperties rayToHitProps[" << de::toString(m_nRaysToTrace) << "];\n"
@@ -3570,7 +3570,7 @@ public:
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
 				+ hitPropertiesDefinition +
-				"layout(location = 0) rayPayloadInEXT      vec3   dummy;\n"
+				"layout(location = 0) rayPayloadInEXT      vec3   unusedPayload;\n"
 				"layout(set      = 0, binding = 0, std430) buffer result\n"
 				"{\n"
 				"    HitProperties rayToHitProps[" << de::toString(m_nRaysToTrace) << "];\n"
@@ -3595,7 +3595,7 @@ public:
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
 				+ hitPropertiesDefinition +
-				"layout(location = 0)              rayPayloadEXT vec3                     dummy;\n"
+				"layout(location = 0)              rayPayloadEXT vec3                     unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform       accelerationStructureEXT topLevelAS;\n"
 				"\n"
 				"void main()\n"
@@ -4004,8 +4004,8 @@ public:
 			css << preamble
 				<<
 				"\n"
-				"                     hitAttributeEXT         vec3 dummyAttribute;\n"
-				"layout(location = 0) rayPayloadInEXT dummy { vec3 dummyVec;};\n"
+				"                     hitAttributeEXT vec3 unusedAttribute;\n"
+				"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 				"\n"				+
 				inputBufferGLSL		+
 				outputBufferGLSL	+
@@ -4024,7 +4024,7 @@ public:
 			css << preamble
 				<<
 				"\n"
-				"layout(location = 0) rayPayloadInEXT dummy { vec3 dummyVec;};\n"	+
+				"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"	+
 				inputBufferGLSL														+
 				outputBufferGLSL													+
 				"\n"
@@ -4063,7 +4063,7 @@ public:
 			css << preamble
 				<<
 				"\n"
-				"layout(location = 0) rayPayloadInEXT vec3 dummy;\n"
+				"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 				"\n"				+
 				inputBufferGLSL		+
 				outputBufferGLSL	+
@@ -4083,7 +4083,7 @@ public:
 
 			css << preamble
 				<<
-				"layout(location = 0)                      rayPayloadEXT vec3       dummy;\n"
+				"layout(location = 0)                      rayPayloadEXT vec3       unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
 				"\n"
 				"void main()\n"
@@ -6970,11 +6970,11 @@ public:
 			"\n"
 			"#extension GL_EXT_ray_tracing : require\n"
 			"\n"
-			"hitAttributeEXT vec3 dummyAttribute;\n"
+			"hitAttributeEXT vec3 unusedAttribute;\n"
 			"\n"
 			+ hitPropertiesDefinition +
 			"\n"
-			"layout(location = 0) rayPayloadInEXT dummy { vec3 dummyVec;};\n"
+			"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			+ hitPropertiesDeclaration +
 			"\n"
 			"void main()\n"
@@ -7018,7 +7018,7 @@ public:
 			"#extension GL_EXT_ray_tracing : require\n"
 			"\n"
 			+ hitPropertiesDefinition +
-			"layout(location = 0) rayPayloadInEXT vec3 dummy;\n"
+			"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			+ hitPropertiesDeclaration +
 			"\n"
 			"void main()\n"
@@ -7032,7 +7032,7 @@ public:
 			"#extension GL_EXT_ray_tracing : require\n"
 			"\n"
 			+ hitPropertiesDefinition +
-			"layout(location = 0)              rayPayloadEXT vec3                     dummy;\n"
+			"layout(location = 0)              rayPayloadEXT vec3                     unusedPayload;\n"
 			"layout(set      = 0, binding = 1) uniform       accelerationStructureEXT topLevelAS;\n"
 			"\n"
 			"void main()\n"
@@ -7549,9 +7549,9 @@ public:
 						"\n"
 						"#extension GL_EXT_ray_tracing : require\n"
 						"\n"
-						"hitAttributeEXT vec3 dummyAttribute;\n"
+						"hitAttributeEXT vec3 unusedAttribute;\n"
 						"\n"
-						"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
+						"layout(location = 0) rayPayloadInEXT      vec3 unusedPayload;\n"
 						"layout(set      = 0, binding = 0, std430) buffer result\n"
 						"{\n"
 						"    uint resultData[" + resultBufferSizeString + "];\n"
@@ -7583,9 +7583,9 @@ public:
 						"\n"
 						"#extension GL_EXT_ray_tracing : require\n"
 						"\n"
-						"hitAttributeEXT vec3 dummyAttribute;\n"
+						"hitAttributeEXT vec3 unusedAttribute;\n"
 						"\n"
-						"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
+						"layout(location = 0) rayPayloadInEXT      vec3 unusedPayload;\n"
 						"layout(set      = 0, binding = 0, std430) buffer result\n"
 						"{\n"
 						"    uint resultData[" + resultBufferSizeString + "];\n"
@@ -7613,9 +7613,9 @@ public:
 						"\n"
 						"#extension GL_EXT_ray_tracing : require\n"
 						"\n"
-						"hitAttributeEXT vec3 dummyAttribute;\n"
+						"hitAttributeEXT vec3 unusedAttribute;\n"
 						"\n"
-						"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
+						"layout(location = 0) rayPayloadInEXT      vec3 unusedPayload;\n"
 						"layout(set      = 0, binding = 0, std430) buffer result\n"
 						"{\n"
 						"    uint resultData[" + resultBufferSizeString + "];\n"
@@ -7647,9 +7647,9 @@ public:
 						"\n"
 						"#extension GL_EXT_ray_tracing : require\n"
 						"\n"
-						"hitAttributeEXT vec3 dummyAttribute;\n"
+						"hitAttributeEXT vec3 unusedAttribute;\n"
 						"\n"
-						"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
+						"layout(location = 0) rayPayloadInEXT      vec3 unusedPayload;\n"
 						"layout(set      = 0, binding = 0, std430) buffer result\n"
 						"{\n"
 						"    uint resultData[" + resultBufferSizeString + "];\n"
@@ -7677,9 +7677,9 @@ public:
 						"\n"
 						"#extension GL_EXT_ray_tracing : require\n"
 						"\n"
-						"hitAttributeEXT vec3 dummyAttribute;\n"
+						"hitAttributeEXT vec3 unusedAttribute;\n"
 						"\n"
-						"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
+						"layout(location = 0) rayPayloadInEXT      vec3 unusedPayload;\n"
 						"layout(set      = 0, binding = 0, std430) buffer result\n"
 						"{\n"
 						"    uint resultData[" + resultBufferSizeString + "];\n"
@@ -7766,7 +7766,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"layout(location = 0) rayPayloadInEXT      vec3   dummy;\n"
+				"layout(location = 0) rayPayloadInEXT      vec3   unusedPayload;\n"
 				"layout(set      = 0, binding = 0, std430) buffer result\n"
 				"{\n"
 				"    uint resultData[2];\n"
@@ -7788,7 +7788,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"layout(location = 0)              rayPayloadEXT vec3                     dummy;\n"
+				"layout(location = 0)              rayPayloadEXT vec3                     unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform       accelerationStructureEXT topLevelAS;\n"
 				"\n"
 				"void main()\n"
