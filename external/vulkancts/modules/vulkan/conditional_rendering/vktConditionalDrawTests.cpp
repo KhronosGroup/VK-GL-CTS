@@ -630,7 +630,7 @@ void ConditionalDrawTests::init (void)
 	{
 		const ConditionalData& conditionData = conditional::s_testsData[conditionNdx];
 
-		tcu::TestCaseGroup* conditionalDrawRootGroup = new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str(), "Conditionaly execute draw calls");
+		tcu::TestCaseGroup* conditionalDrawRootGroup = new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str());
 
 		for (deUint32 commandTypeIdx = 0; commandTypeIdx < DRAW_COMMAND_TYPE_DRAW_LAST; ++commandTypeIdx)
 		{

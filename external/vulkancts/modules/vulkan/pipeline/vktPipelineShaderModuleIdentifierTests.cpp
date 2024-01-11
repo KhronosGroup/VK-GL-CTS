@@ -1547,7 +1547,7 @@ struct DeviceHelper
 
 		// Create custom device and related objects
 		device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-		vkd.reset(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion()));
+		vkd.reset(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 		queue = getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
 		allocator.reset(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
@@ -3785,7 +3785,7 @@ tcu::TestCaseGroup* createShaderModuleIdentifierTests (tcu::TestContext& testCtx
 			static_cast<CapturedPropertiesFlags>(CapturedPropertiesBits::STATS));
 		baseParams.graphicsShaders = graphicsShadersCases[1];
 
-		GroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
+		GroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 
 		BaseParamsPtr params = baseParams.copy(1);
 		miscGroup->addChild(new CreateAndUseIdsCase(testCtx, "capture_statistics_maintenance5", std::move(params)));

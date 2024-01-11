@@ -321,8 +321,10 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetLayoutSupportFunc)					
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDescriptorSetLayoutSupportKHRFunc)									(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetShaderInfoAMDFunc)													(VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* SetLocalDimmingAMDFunc)												(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc)						(VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetCalibratedTimestampsEXTFunc)										(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCalibrateableTimeDomainsKHRFunc)						(VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainKHR* pTimeDomains);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc)						(VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainKHR* pTimeDomains);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetCalibratedTimestampsKHRFunc)										(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetCalibratedTimestampsEXTFunc)										(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetDebugUtilsObjectNameEXTFunc)										(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetDebugUtilsObjectTagEXTFunc)											(VkDevice device, const VkDebugUtilsObjectTagInfoEXT* pTagInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* QueueBeginDebugUtilsLabelEXTFunc)										(VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo);
@@ -665,8 +667,14 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdInitializeGraphScratchMemoryAMDXFunc
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchGraphAMDXFunc)												(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchGraphIndirectAMDXFunc)										(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, const VkDispatchGraphCountInfoAMDX* pCountInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDispatchGraphIndirectCountAMDXFunc)									(VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceAddress countInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindDescriptorSets2KHRFunc)											(VkCommandBuffer commandBuffer, const VkBindDescriptorSetsInfoKHR* pBindDescriptorSetsInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPushConstants2KHRFunc)												(VkCommandBuffer commandBuffer, const VkPushConstantsInfoKHR* pPushConstantsInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPushDescriptorSet2KHRFunc)											(VkCommandBuffer commandBuffer, const VkPushDescriptorSetInfoKHR* pPushDescriptorSetInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPushDescriptorSetWithTemplate2KHRFunc)								(VkCommandBuffer commandBuffer, const VkPushDescriptorSetWithTemplateInfoKHR* pPushDescriptorSetWithTemplateInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDescriptorBufferOffsets2EXTFunc)									(VkCommandBuffer commandBuffer, const VkSetDescriptorBufferOffsetsInfoEXT* pSetDescriptorBufferOffsetsInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindDescriptorBufferEmbeddedSamplers2EXTFunc)						(VkCommandBuffer commandBuffer, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* SetLatencySleepModeNVFunc)												(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* LatencySleepNVFunc)													(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* SetLatencyMarkerNVFunc)												(VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo);
-typedef VKAPI_ATTR void					(VKAPI_CALL* GetLatencyTimingsNVFunc)												(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pTimingCount, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetLatencyTimingsNVFunc)												(VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* QueueNotifyOutOfBandNVFunc)											(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo);

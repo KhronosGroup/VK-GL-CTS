@@ -219,7 +219,7 @@ struct DeviceHelper
 												 queueFamilyIndex,
 												 pAllocator,
 												 context.getTestContext().getCommandLine().isValidationEnabled()))
-		, vkd				(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
+		, vkd				(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
 		, queue				(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}
@@ -406,6 +406,8 @@ tcu::Vec4 getPixel (const DeviceInterface&		vkd,
 	}
 	endCommandBuffer(vkd, *commandBuffer);
 	submitCommandsAndWait(vkd, device, queue, commandBuffer.get());
+
+	invalidateMappedMemoryRange(vkd, device, resultBufferMemory->getMemory(), 0, VK_WHOLE_SIZE);
 
 	tcu::ConstPixelBufferAccess	resultAccess(textureFormat,
 											 tcu::IVec3(size.x(), size.y(), 1),
@@ -781,6 +783,7 @@ tcu::TestStatus surfaceFormatRenderTests (Context& context, Type wsiType)
 	for (vector<VkSurfaceFormatKHR>::const_iterator curFmt = formats.begin(); curFmt != formats.end(); ++curFmt)
 	{
 		surfaceFormatRenderTest(context, wsiType, instHelper, devHelper, *surface, *curFmt);
+		context.getTestContext().touchWatchdog();
 	}
 	return tcu::TestStatus::pass("Rendering tests succeeded");
 }
@@ -802,6 +805,7 @@ tcu::TestStatus surfaceFormatRenderWithHdrTests (Context& context, Type wsiType)
 	for (vector<VkSurfaceFormatKHR>::const_iterator curFmt = formats.begin(); curFmt != formats.end(); ++curFmt)
 	{
 		surfaceFormatRenderTest(context, wsiType, instHelper, devHelper, *surface, *curFmt, true);
+		context.getTestContext().touchWatchdog();
 	}
 	return tcu::TestStatus::pass("Rendering tests succeeded");
 }

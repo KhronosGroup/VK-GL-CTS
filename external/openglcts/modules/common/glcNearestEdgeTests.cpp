@@ -138,6 +138,7 @@ tcu::TextureFormat NearestEdgeTestCase::toTextureFormat (deqp::Context& context,
 		{ tcu::PixelFormat(5,5,5,1),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_SHORT_5551)		},
 		{ tcu::PixelFormat(5,6,5,0),	tcu::TextureFormat(tcu::TextureFormat::RGB,		tcu::TextureFormat::UNORM_SHORT_565)		},
 		{ tcu::PixelFormat(10,10,10,2), tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_INT_1010102_REV)	},
+		{ tcu::PixelFormat(10,10,10,0), tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_INT_1010102_REV)	},
 		{ tcu::PixelFormat(16,16,16,16), tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::HALF_FLOAT)				},
 	};
 

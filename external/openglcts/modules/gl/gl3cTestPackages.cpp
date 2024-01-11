@@ -50,7 +50,9 @@
 #include "glcNearestEdgeTests.hpp"
 #include "glcGLSLVectorConstructorTests.hpp"
 #include "gluStateReset.hpp"
+#include "qpTestLog.h"
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 #include "tcuWaiverUtil.hpp"
 
 #include "../glesext/texture_shadow_lod/esextcTextureShadowLodFunctionsTest.hpp"
@@ -97,6 +99,16 @@ tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
 	}
 
 	const tcu::TestCase::IterateResult result = testCase->iterate();
+
+	{
+		if (testCtx.getCommandLine().isTerminateOnDeviceLostEnabled()) {
+			const glw::Functions& gl = renderCtx.getFunctions();
+			auto res = gl.getGraphicsResetStatus();
+			if (res != GL_NO_ERROR) {
+				testCtx.setTestResult(QP_TEST_RESULT_DEVICE_LOST, "Device Lost");
+			}
+		}
+	}
 
 	// Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
 	try

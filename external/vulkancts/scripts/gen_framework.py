@@ -28,6 +28,8 @@ import json
 import argparse
 import datetime
 import collections
+import ast
+import logging
 from lxml import etree
 
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
@@ -144,6 +146,48 @@ EXTENSION_POSTFIXES_STANDARD	= ["KHR", "EXT"]
 EXTENSION_POSTFIXES_VENDOR		= ["AMD", "ARM", "NV", 'INTEL', "NVX", "KHX", "NN", "MVK", "FUCHSIA", 'QCOM', "GGP", "QNX", "ANDROID", 'VALVE', 'HUAWEI']
 EXTENSION_POSTFIXES				= EXTENSION_POSTFIXES_STANDARD + EXTENSION_POSTFIXES_VENDOR
 
+# Converts the dependecies expression into an Abstract Syntax Tree that uses boolean operators
+def parseDependsEpression(string):
+	try:
+		# Parse the input string into an abstract syntax tree (AST)
+		tree = ast.parse(string.replace('+', ' and ').replace(',', ' or '), mode='eval')
+		expression = tree.body
+		return expression
+	except SyntaxError as e:
+		print(f"Syntax error in the input string: {e}")
+		return None
+
+# Checks the dependencies AST against the passed extensions
+def checkDependencyAST(node, extensions):
+	if isinstance(node, ast.BoolOp):
+		assert(len(node.values) >= 2)
+		value = checkDependencyAST(node.values.pop(), extensions)
+		while node.values:
+			nextValue = checkDependencyAST(node.values.pop(), extensions)
+			if isinstance(node.op, ast.And):
+				value = value and nextValue
+			if isinstance(node.op, ast.Or):
+				value = value or nextValue
+		return value
+	elif isinstance(node, ast.Name):
+		if '_VERSION_' in node.id:
+			return True
+		for ext in extensions:
+			if node.id == ext.name:
+				return True
+		return False
+	elif isinstance(node, ast.Constant):
+		return node.value
+
+# helper function that check if dependency is in list of extension
+def isDependencyMet(dependsExpression, extensionList):
+	if dependsExpression is None:
+		return True
+	tree = parseDependsEpression(dependsExpression)
+	# check if requirement dependencies are meet; if not then struct/function is not used
+	ret = checkDependencyAST(tree, extensionList)
+	return ret
+
 def substituteType(object):		# both CompositeMember and FunctionArgument can be passed to this function
 	for src, dst in TYPE_SUBSTITUTIONS:
 		object.type = object.type.replace(src, dst)
@@ -253,6 +297,7 @@ class Function:
 	def __init__ (self, name, returnType = None, arguments = None):
 		self.name			= name
 		self.aliasList		= []
+		self.queuesList		= []
 		self.returnType		= returnType
 		self.arguments		= arguments				# list of FunctionArgument objects
 		self.functionType	= Function.TYPE_PLATFORM
@@ -442,6 +487,8 @@ class API:
 			return
 		# memorize all parameters
 		functionParams = []
+		queuesList = []
+
 		for paramNode in commandNode:
 			# memorize prototype node
 			if paramNode.tag == "proto":
@@ -463,12 +510,20 @@ class API:
 				nameNode.tail,
 				lenAttr
 			))
+
+		queuesAttr = commandNode.get("queues")
+		if queuesAttr:
+			queuesList = queuesAttr.split(",")
+
 		# memorize whole function
-		self.functions.append(Function(
+		func = Function(
 			protoNode.find("name").text,
 			protoNode.find("type").text,
 			functionParams,
-		))
+		)
+
+		func.queuesList = queuesList
+		self.functions.append(func)
 
 	def readExtension (self, extensionNode):
 		# check to which list this extension should be added
@@ -767,30 +822,19 @@ class API:
 				self.notSupportedExtensions.remove(formatFeatureFlags2)
 
 		# add new enumerators that were added by extensions to api.enums
-		# we have to do it at the end for SC becouse some enums are dependednt from extensions/api versions
+		# we have to do it at the end for SC because some enums are dependent from extensions/api versions
 		# and those dependencies can be checked only after all extensions were read
 		for ext in self.extensions:
 			for requirement in ext.requirementsList:
 				# check if this requirement is supported by current implementation
-				isRequirementSupported = True
-				dependencies = requirement.depends
-				if dependencies is not None:
-					# check if dependency extension or api version is part of this api
-					# note: this logic will have to changed if there are dependencies with "and/or" grammar
-					assert((',' not in dependencies) or ('+' not in dependencies))
-					isRequirementSupported = '_VERSION_' in dependencies
-					if isRequirementSupported == False:
-						for e in self.extensions:
-							if e.name in dependencies:
-								isRequirementSupported = True
-								break
+				isRequirementSupported = isDependencyMet(requirement.depends, self.extensions)
 				# add enumerator to proper enum from api.enums
 				if isRequirementSupported:
 					for enumerator in requirement.extendedEnums:
 						if enumerator.extends is None:
 							continue
 						# find enum in api.enums
-						matchedEnum = [enum for enum in api.enums if enumerator.extends == enum.name][0]
+						matchedEnum = [enum for enum in self.enums if enumerator.extends == enum.name][0]
 						# add enumerator only when it is not already in enum
 						if len([e for e in matchedEnum.enumeratorList if e.name == enumerator.name]) == 0:
 							if enumerator.alias == None:
@@ -806,6 +850,8 @@ class API:
 								# we might not be able to add alias as we might be missing what we are aliasing
 								# this will hapen when aliased enum is added later then definition of alias
 								self.tempAliasesList.append((matchedEnum, enumerator.name, enumerator.alias))
+				else:
+					logging.warning("Skipping requirement in extension %s because dependencies are not met: %s" % (ext.name, requirement.depends))
 
 		# add aliases to enumerators that were defined after alias definition
 		for enum, name, alias in self.tempAliasesList:
@@ -977,20 +1023,6 @@ class API:
 		for er in enumsToRemove:
 			self.enums.remove(er)
 
-		# helper function that check if dependency is in list of extension
-		def isDependencyMeet(dependency, extensionList):
-			if dependency == None:
-				return True
-			# check if requirement dependencies are meet; if not then struct/function is not used
-			# note: this logic will have to changed if there are dependencies with "and/or" grammar
-			if '_VERSION_' in dependency:
-				return True
-			dependency = dependency.split(',')[0]
-			for e in extensionList:
-				if dependency == e.name:
-					return True
-			return False
-
 		# remove structures that are not part of any vulkan version nor extension
 		# (SC specific structures are in vk.xml without any attribute identifying that they are SC specific)
 		def isStructUsed(featureList, extensionList, structNameList):
@@ -1003,7 +1035,7 @@ class API:
 				for requirement in ext.requirementsList:
 					for newType in requirement.newTypes:
 						if newType.name in structNameList:
-							return isDependencyMeet(requirement.depends, extensionList)
+							return isDependencyMet(requirement.depends, extensionList)
 			return False
 
 		structsToRemove = []
@@ -1027,7 +1059,7 @@ class API:
 				for requirement in ext.requirementsList:
 					for newCommand in requirement.newCommands:
 						if newCommand.name in functionNameList:
-							return isDependencyMeet(requirement.depends, extensionList)
+							return isDependencyMet(requirement.depends, extensionList)
 			return False
 
 		functionsToRemove = []
@@ -1037,6 +1069,7 @@ class API:
 				continue
 			functionsToRemove.append(fun)
 		for fun in functionsToRemove:
+			logging.debug("Removing function %s because not used" % (fun.name))
 			self.functions.remove(fun)
 
 		# remove handles that are not part of any vulkan command or structure
@@ -1507,13 +1540,48 @@ def writeInitFunctionPointers (api, filename, functionTypes, cond = None):
 	lines = makeInitFunctionPointers()
 	writeInlFile(filename, INL_HEADER, lines)
 
+# List pre filled manually with commands forbidden for computation only implementations
+computeOnlyForbiddenCommands = [
+	"destroyRenderPass",
+	"createRenderPass2",
+	"createRenderPass",
+	"createGraphicsPipelines"
+]
+
+computeOnlyRestrictedCommands = {
+	"createComputePipelines"	: "\t\tfor (deUint32 i=0; i<createInfoCount; ++i)\n\t\t\tif ((pCreateInfos[i].stage.stage & VK_SHADER_STAGE_ALL_GRAPHICS) != 0) THROW_NOT_SUPPORTED_COMPUTE_ONLY();",
+	"createBuffer"				: "\t\tif ((pCreateInfo->usage & ( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT )) !=0) THROW_NOT_SUPPORTED_COMPUTE_ONLY();",
+}
+
 def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
+
+	# populate compute only forbidden commands
+	for fun in api.functions:
+		if "graphics" in fun.queuesList and "compute" not in fun.queuesList:
+			# remove the 'vk' prefix and change the first character of the remaining string to lowercase
+			commandName = fun.name[2:3].lower() + fun.name[3:]
+			computeOnlyForbiddenCommands.append(commandName)
+
+			# if the command has an alias, also add it
+			for alias_name in fun.aliasList:
+				alias_name_without_vk = alias_name[2:3].lower() + alias_name[3:]
+				computeOnlyForbiddenCommands.append(alias_name_without_vk)
+
 	def makeFuncPtrInterfaceImpl ():
 		for function in api.functions:
 			if function.getType() in functionTypes:
 				yield ""
 				yield "%s %s::%s (%s) const" % (function.returnType, className, getInterfaceName(function.name), argListToStr(function.arguments))
 				yield "{"
+				# Check for compute only forbidden commands
+				if getInterfaceName(function.name) in computeOnlyForbiddenCommands:
+					yield "	if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();"
+				# Check for compute only restricted commands
+				if getInterfaceName(function.name) in computeOnlyRestrictedCommands:
+					yield "\tif( m_computeOnlyMode )"
+					yield "\t{"
+					yield computeOnlyRestrictedCommands[getInterfaceName(function.name)]
+					yield "\t}"
 				if function.name == "vkEnumerateInstanceVersion":
 					yield "	if (m_vk.enumerateInstanceVersion)"
 					yield "		return m_vk.enumerateInstanceVersion(pApiVersion);"
@@ -1610,6 +1678,7 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 		"VkDeviceAddress"	: "return 0u;",
 		"uint64_t"			: "return 0u;",
 	}
+
 	def makeFuncPtrInterfaceStatisticsImpl ():
 		for function in api.functions:
 			if function.getType() in functionTypes:
@@ -1617,6 +1686,15 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 				yield ""
 				yield "%s %s::%s (%s) const" % (function.returnType, className, ifaceName, argListToStr(function.arguments))
 				yield "{"
+				# Check for compute only forbidden commands
+				if ifaceName in computeOnlyForbiddenCommands:
+					yield "\tif( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();"
+				# Check for compute only restricted commands
+				if ifaceName in computeOnlyRestrictedCommands:
+					yield "\tif( m_computeOnlyMode )"
+					yield "\t{"
+					yield computeOnlyRestrictedCommands[ifaceName]
+					yield "\t}"
 				if ( ifaceName in normFuncs ) or ( ifaceName in statFuncs ):
 					yield "\tstd::lock_guard<std::mutex> lock(functionMutex);"
 				if ifaceName != "getDeviceProcAddr" :
@@ -2214,14 +2292,17 @@ def writeExtensionFunctions (api, filename):
 		isFirstWrite = True
 		dg_list = []	# Device groups functions need special casing, as Vulkan 1.0 keeps them in VK_KHR_device_groups whereas 1.1 moved them into VK_KHR_swapchain
 		if functionType == Function.TYPE_INSTANCE:
-			yield 'void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::std::vector<const char*>& functions)\n{'
+			yield 'void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::string> vIEP, const std::vector<std::string> vDEP, const std::string extName, ::std::vector<const char*>& functions)\n{'
+			yield '\t(void)vIEP;\n(void)vDEP;'
 			dg_list = ["vkGetPhysicalDevicePresentRectanglesKHR"]
 		elif functionType == Function.TYPE_DEVICE:
-			yield 'void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::std::vector<const char*>& functions)\n{'
+			yield 'void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::string> vIEP, const std::vector<std::string> vDEP, const std::string extName, ::std::vector<const char*>& functions)\n{'
+			yield '\t(void)vIEP;\n(void)vDEP;'
 			dg_list = ["vkGetDeviceGroupPresentCapabilitiesKHR", "vkGetDeviceGroupSurfacePresentModesKHR", "vkAcquireNextImage2KHR"]
 		for ext in api.extensions:
-			funcNames = []
+			parsedRequirements = []
 			for requirement in ext.requirementsList:
+				funcNames = []
 				for requiredCommand in requirement.newCommands:
 					commandName = requiredCommand.name
 					# find function that has specified name
@@ -2242,22 +2323,36 @@ def writeExtensionFunctions (api, filename):
 						if api.apiName == "vulkansc":
 							continue
 						# something went wrong, for "vulkan" func should always be found
+						logging.error("%s in %s not valid" % (commandName, ext.name))
 						assert(False)
 					if func.getType() == functionType:
-						# only add functions with same vendor as extension
-						# this is a workaround for entrypoints requiring more
-						# than one extension and lack of the dependency in vk.xml
-						vendor = ext.name.split('_')[1]
-						if commandName.endswith(vendor):
-							funcNames.append(commandName)
+						funcNames.append(commandName)
+				condition = None
+				if requirement.depends is not None:
+					try:
+						condition = transformDependsToCondition(requirement.depends, api, 'checkVersion(%s, %s, apiVersion)', 'extensionIsSupported(%s, "%s")')
+					except Exception as e:
+						if api.apiName != "vulkansc":
+							raise e
+				parsedRequirements.append((requirement.depends, condition, funcNames))
 			if ext.name:
 				yield '\tif (extName == "%s")' % ext.name
 				yield '\t{'
-				for funcName in funcNames:
-					if funcName in dg_list:
-						yield '\t\tif(apiVersion >= VK_API_VERSION_1_1) functions.push_back("%s");' % funcName
-					else:
-						yield '\t\tfunctions.push_back("%s");' % funcName
+				for depends, condition, funcNames in parsedRequirements:
+					if len(funcNames) == 0:
+						continue
+					indent = '\t\t'
+					if depends is not None:
+						yield '\t\t// Dependencies: %s' % depends
+						yield '\t\tif (%s) {' % condition
+						indent = '\t\t\t'
+					for funcName in funcNames:
+						if funcName in dg_list:
+							yield '%sif(apiVersion >= VK_API_VERSION_1_1) functions.push_back("%s");' % (indent, funcName)
+						else:
+							yield '%sfunctions.push_back("%s");' % (indent, funcName)
+					if depends is not None:
+						yield '\t\t}'
 				if ext.name == "VK_KHR_device_group":
 					for dg_func in dg_list:
 						yield '\t\tif(apiVersion < VK_API_VERSION_1_1) functions.push_back("%s");' % dg_func
@@ -2268,7 +2363,28 @@ def writeExtensionFunctions (api, filename):
 			yield '\tDE_FATAL("Extension name not found");'
 			yield '}'
 
+	def genHelperFunctions():
+		yield 'bool checkVersion(deUint32 major, deUint32 minor, const uint32_t testedApiVersion)'
+		yield '{'
+		yield '\tuint32_t testedMajor = VK_API_VERSION_MAJOR(testedApiVersion);'
+		yield '\tuint32_t testedMinor = VK_API_VERSION_MINOR(testedApiVersion);'
+		yield '\t// return true when tested api version is greater'
+		yield '\t// or equal to version represented by two uints'
+		yield '\tif (major == testedMajor)'
+		yield '\t\treturn minor <= testedMinor;'
+		yield '\treturn major < testedMajor;'
+		yield '}\n'
+		yield 'bool extensionIsSupported(const std::vector<std::string> extNames, const std::string& ext)'
+		yield '{'
+		yield '\tfor (const std::string& supportedExtension : extNames)'
+		yield '\t{'
+		yield '\t\tif (supportedExtension == ext) return true;'
+		yield '\t}'
+		yield '\treturn false;'
+		yield '}\n'
+
 	lines = ['']
+	lines.extend(genHelperFunctions())
 	for line in writeExtensionFunctions(Function.TYPE_INSTANCE):
 		lines += [line]
 	lines += ['']
@@ -2583,7 +2699,7 @@ def writeDeviceFeatures2(api, filename):
 	};
 
 	const Unique<VkDevice>			device			(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
+	const DeviceDriver				deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 	const VkQueue					queue			= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -2832,7 +2948,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 	const DeviceFeatures					deviceFeaturesAll		(context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), DE_TRUE);
 	const VkPhysicalDeviceFeatures2			deviceFeatures2			= deviceFeaturesAll.getCoreFeatures2();
 	int										numErrors				= 0;
-	bool                                                                    isSubProcess                    = context.getTestContext().getCommandLine().isSubProcess();
+	const tcu::CommandLine&					commandLine				= context.getTestContext().getCommandLine();
+	bool									isSubProcess			= context.getTestContext().getCommandLine().isSubProcess();
 {6}
 
 	VkPhysicalDeviceFeatures emptyDeviceFeatures;
@@ -2849,7 +2966,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 {1}
 		}};
 		auto* supportedFeatures = reinterpret_cast<const {0}*>(featuresStruct);
-		checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {5}, context.getUsedApiVersion());
+		checkFeatures(vkp, instance, instanceDriver, physicalDevice, {2}, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, {3}, emptyDeviceFeatures, {5}, context.getUsedApiVersion(), commandLine);
 	}}
 
 	if (numErrors > 0)
@@ -3363,6 +3480,10 @@ def writeExtensionList(api, filename, extensionType):
 		# make sure that this extension was registered
 		if 'register_extension' not in data.keys():
 			continue
+		# skip extensions that are not supported in Vulkan SC
+		if api.apiName == 'vulkansc':
+			if any(ext.name == extensionName for ext in api.notSupportedExtensions):
+				continue
 		# make sure extension is intended for the vulkan variant
 		is_sc_only = False
 
@@ -3392,6 +3513,58 @@ def writeExtensionList(api, filename, extensionType):
 		stream.append('\t"' + n + '",')
 	stream.append('};\n')
 	writeInlFile(filename, INL_HEADER, stream)
+
+def transformDependsToCondition(depends, api, checkVersionString, checkExtensionString):
+	depList = re.split(r'(\W+)', depends)
+	for idx, depPart in enumerate(depList):
+		if ',' in depPart:
+			depList[idx] = depList[idx].replace(',', ' || ')
+		elif '+' in depPart:
+			depList[idx] = depList[idx].replace('+', ' && ')
+		elif 'VK_' in depPart:
+			if 'VK_VERSION' in depPart:
+				if idx > 0 and ' || ' in depList[idx-1]:
+					# some vk.xml entries include "promoted to" version preceded by logical OR operator in the extension "depends" attribute
+					# script don't rely on this optional information and will find "promoted to" versions for all dependencies of all extensions in the below code
+					# accordingly the one from vk.xml is ignored to avoid redundant isCompatibile() checks
+					depList[idx-1] = depList[idx-1].replace(' || ', '')
+					depList[idx] = ''
+					continue
+				# when dependency is vulkan version then replace it with proper condition
+				depList[idx] = checkVersionString % (depPart[-3], depPart[-1])
+			else:
+				# when dependency is extension check if it was promoted
+				extNotFound = True
+				for dExt in api.extensions:
+					if depPart == dExt.name:
+						depExtVector = 'vDEP' if dExt.type == 'device' else 'vIEP'
+						isSupportedCheck = checkExtensionString % (depExtVector, depPart)
+						if dExt.promotedto is not None:
+							p = dExt.promotedto
+							# check if dependency was promoted to vulkan version or other extension
+							if 'VK_VERSION' in p:
+								depList[idx] = f'({checkVersionString % (p[-3], p[-1])} || {isSupportedCheck})'
+							else:
+								depList[idx] = f'({checkExtensionString % (depExtVector, depPart)} || {isSupportedCheck})'
+						else:
+							depList[idx] = isSupportedCheck
+						extNotFound = False
+						break
+				# for SC when extension was not found try checking also not supported
+				# extensions and see if this extension is part of core
+				if extNotFound and api.apiName == "vulkansc":
+					for dExt in api.notSupportedExtensions:
+						if depPart == dExt.name:
+							p = dExt.promotedto
+							if p is None:
+								break
+							if int(p[-1]) > 2:
+								break
+							extNotFound = False
+							depList[idx] = "true"
+				if extNotFound:
+					assert False, f"{depPart} from dependencies ({depends}) not found"
+	return ''.join(depList)
 
 def writeApiExtensionDependencyInfo(api, filename):
 
@@ -3446,58 +3619,9 @@ def writeApiExtensionDependencyInfo(api, filename):
 			yield f'\n\tif (!isSupported({extVector}, "{ext.name}"))'
 			yield '\t\treturn true;\n'
 			# replace dependent extensions/versions with proper conditions
-			depList = re.split(r'(\W+)', ext.depends)
-			for idx, depPart in enumerate(depList):
-				if ',' in depPart:
-					depList[idx] = depList[idx].replace(',', ' || ')
-				elif '+' in depPart:
-					depList[idx] = depList[idx].replace('+', ' && ')
-				elif 'VK_' in depPart:
-					if 'VK_VERSION' in depPart:
-						if idx > 0 and ' || ' in depList[idx-1]:
-							# some vk.xml entries include "promoted to" version preceded by logical OR operator in the extension "depends" attribute
-							# script don't rely on this optional information and will find "promoted to" versions for all dependencies of all extensions in the below code
-							# accordingly the one from vk.xml is ignored to avoid redundant isCompatibile() checks
-							depList[idx-1] = depList[idx-1].replace(' || ', '')
-							depList[idx] = ''
-							continue
-						# when dependency is vulkan version then replace it with proper condition
-						depList[idx] = f'isCompatibile({depPart[-3]}, {depPart[-1]}, v)'
-					else:
-						# when dependency is extension check if it was promoted
-						extNotFound = True
-						for dExt in api.extensions:
-							if depPart == dExt.name:
-								depExtVector = 'vDEP' if dExt.type == 'device' else 'vIEP'
-								isSupportedCheck = f'isSupported({depExtVector}, "{depPart}")'
-								if dExt.promotedto is not None:
-									p = dExt.promotedto
-									# check if dependency was promoted to vulkan version or other extension
-									if 'VK_VERSION' in p:
-										depList[idx] = f'(isCompatibile({p[-3]}, {p[-1]}, v) || {isSupportedCheck})'
-									else:
-										depList[idx] = f'(isSupported({depExtVector}, "{p}") || {isSupportedCheck})'
-								else:
-									depList[idx] = isSupportedCheck
-								extNotFound = False
-								break
-						# for SC when extension was not found try checking also not supported
-						# extensions and see if this extension is part of core
-						if extNotFound and api.apiName == "vulkansc":
-							for dExt in api.notSupportedExtensions:
-								if depPart == dExt.name:
-									p = dExt.promotedto
-									if p is None:
-										break
-									if int(p[-1]) > 2:
-										break
-									extNotFound = False
-									depList[idx] = "true"
-						if extNotFound:
-							assert False, f"{depPart} from dependencies not found"
+			finalCondition = transformDependsToCondition(ext.depends, api, 'isCompatibile(%s, %s, v)', 'isSupported(%s, "%s")')
 			yield f'\t// depends attribute in xml: {ext.depends}'
-			finalConditon = ''.join(depList)
-			yield f'\treturn {finalConditon};'
+			yield f'\treturn {finalCondition};'
 			yield '}\n'
 		# save list of all device/instance extensions
 		yield 'static const DependencyCheckVect {}ExtensionDependencies'.format(extType)
@@ -3655,7 +3779,7 @@ def writeGetDeviceProcAddr(api, filename):
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
+	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
 	const std::vector<std::string> functions{'''
 	testBlockEnd = '''	};

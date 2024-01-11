@@ -69,7 +69,7 @@ static amber::EngineConfig* createEngineConfig (Context& ctx, vk::VkDevice custo
 {
 	vk::VkDevice dev = customDevice != nullptr ? customDevice : ctx.getDevice();
 	vk::VkQueue  queue;
-	vk::DeviceDriver vk(ctx.getPlatformInterface(), ctx.getInstance(), dev, ctx.getUsedApiVersion());
+	vk::DeviceDriver vk(ctx.getPlatformInterface(), ctx.getInstance(), dev, ctx.getUsedApiVersion(), ctx.getTestContext().getCommandLine());
 	vk.getDeviceQueue(dev, ctx.getUniversalQueueFamilyIndex(), 0, &queue);
 
 	amber::EngineConfig* vkConfig = GetVulkanConfig(ctx.getInstance(),
@@ -404,6 +404,20 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 	amber_options.engine			= amber::kEngineTypeVulkan;
 	amber_options.config			= createEngineConfig(m_context, m_customDevice);
 	amber_options.execution_type	= amber::ExecutionType::kExecute;
+
+	// Amber should not execute any graphic related shaders when using --deqp-compute-only=enable flag
+	if (m_context.getTestContext().getCommandLine().isComputeOnly())
+	{
+		std::vector<amber::ShaderInfo> shaders_info = m_recipe->GetShaderInfo();
+
+		for (amber::ShaderInfo info : shaders_info)
+		{
+			if (info.type != amber::ShaderType::kShaderTypeCompute)
+			{
+				TCU_THROW(NotSupportedError, "Non compute shaders are not allow when using --deqp-compute-only=enable");
+			}
+		}
+	}
 
 	// Check for extensions as declared by the Amber script itself.  Throw an internal
 	// error if that's more demanding.

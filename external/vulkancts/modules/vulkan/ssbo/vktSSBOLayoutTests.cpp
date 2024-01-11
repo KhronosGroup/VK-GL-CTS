@@ -1831,7 +1831,7 @@ void createUnsizedArrayTests (tcu::TestCaseGroup* testGroup)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> ssboTestGroup (new tcu::TestCaseGroup(testCtx, name.c_str(), "Shader Storage Buffer Object Tests"));
+	de::MovePtr<tcu::TestCaseGroup> ssboTestGroup (new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	ssboTestGroup->addChild(new SSBOLayoutTests(testCtx, false, false));
 	// SSBO unsized array length tests
@@ -1842,7 +1842,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 	readonlyGroup->addChild(new SSBOLayoutTests(testCtx, false, true));
 	ssboTestGroup->addChild(readonlyGroup.release());
 
-	de::MovePtr<tcu::TestCaseGroup> physGroup(new tcu::TestCaseGroup(testCtx, "phys", "Physical Storage Buffer Pointer Tests"));
+	de::MovePtr<tcu::TestCaseGroup> physGroup(new tcu::TestCaseGroup(testCtx, "phys"));
 	physGroup->addChild(new SSBOLayoutTests(testCtx, true, false));
 	ssboTestGroup->addChild(physGroup.release());
 

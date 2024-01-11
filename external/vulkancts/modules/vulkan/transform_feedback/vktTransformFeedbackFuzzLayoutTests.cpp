@@ -497,7 +497,7 @@ void InterfaceBlockTests::init (void)
 
 	// .2_level_struct_array
 	{
-		tcu::TestCaseGroup* structArrayArrayGroup = new tcu::TestCaseGroup(m_testCtx, "2_level_struct_array", "Struct array in one interface block");
+		tcu::TestCaseGroup* structArrayArrayGroup = new tcu::TestCaseGroup(m_testCtx, "2_level_struct_array");
 		addChild(structArrayArrayGroup);
 
 		for (int isArray = 0; isArray < 2; isArray++)
@@ -512,7 +512,7 @@ void InterfaceBlockTests::init (void)
 
 	// .single_basic_type
 	{
-		tcu::TestCaseGroup* singleBasicTypeGroup = new tcu::TestCaseGroup(m_testCtx, "single_basic_type", "Single basic variable in single buffer");
+		tcu::TestCaseGroup* singleBasicTypeGroup = new tcu::TestCaseGroup(m_testCtx, "single_basic_type");
 		addChild(singleBasicTypeGroup);
 
 		for (int basicTypeNdx = 0; basicTypeNdx < DE_LENGTH_OF_ARRAY(basicTypes); basicTypeNdx++)
@@ -542,7 +542,7 @@ void InterfaceBlockTests::init (void)
 
 	// .single_basic_array
 	{
-		tcu::TestCaseGroup* singleBasicArrayGroup = new tcu::TestCaseGroup(m_testCtx, "single_basic_array", "Single basic array variable in single buffer");
+		tcu::TestCaseGroup* singleBasicArrayGroup = new tcu::TestCaseGroup(m_testCtx, "single_basic_array");
 		addChild(singleBasicArrayGroup);
 
 		for (int basicTypeNdx = 0; basicTypeNdx < DE_LENGTH_OF_ARRAY(basicTypes); basicTypeNdx++)
@@ -559,7 +559,7 @@ void InterfaceBlockTests::init (void)
 
 	// .single_struct
 	{
-		tcu::TestCaseGroup* singleStructGroup = new tcu::TestCaseGroup(m_testCtx, "single_struct", "Single struct in interface block");
+		tcu::TestCaseGroup* singleStructGroup = new tcu::TestCaseGroup(m_testCtx, "single_struct");
 		addChild(singleStructGroup);
 
 		for (int isArray = 0; isArray < 2; isArray++)
@@ -574,7 +574,7 @@ void InterfaceBlockTests::init (void)
 
 	// .single_struct_array
 	{
-		tcu::TestCaseGroup* singleStructArrayGroup = new tcu::TestCaseGroup(m_testCtx, "single_struct_array", "Struct array in one interface block");
+		tcu::TestCaseGroup* singleStructArrayGroup = new tcu::TestCaseGroup(m_testCtx, "single_struct_array");
 		addChild(singleStructArrayGroup);
 
 		for (int isArray = 0; isArray < 2; isArray++)
@@ -589,7 +589,7 @@ void InterfaceBlockTests::init (void)
 
 	// .single_nested_struct
 	{
-		tcu::TestCaseGroup* singleNestedStructGroup = new tcu::TestCaseGroup(m_testCtx, "single_nested_struct", "Nested struct in one interface block");
+		tcu::TestCaseGroup* singleNestedStructGroup = new tcu::TestCaseGroup(m_testCtx, "single_nested_struct");
 		addChild(singleNestedStructGroup);
 
 		for (int isArray = 0; isArray < 2; isArray++)
@@ -604,7 +604,7 @@ void InterfaceBlockTests::init (void)
 
 	// .single_nested_struct_array
 	{
-		tcu::TestCaseGroup* singleNestedStructArrayGroup = new tcu::TestCaseGroup(m_testCtx, "single_nested_struct_array", "Nested struct array in one interface block");
+		tcu::TestCaseGroup* singleNestedStructArrayGroup = new tcu::TestCaseGroup(m_testCtx, "single_nested_struct_array");
 		addChild(singleNestedStructArrayGroup);
 
 		for (int isArray = 0; isArray < 2; isArray++)
@@ -619,7 +619,7 @@ void InterfaceBlockTests::init (void)
 
 	// .instance_array_basic_type
 	{
-		tcu::TestCaseGroup* instanceArrayBasicTypeGroup = new tcu::TestCaseGroup(m_testCtx, "instance_array_basic_type", "Single basic variable in instance array");
+		tcu::TestCaseGroup* instanceArrayBasicTypeGroup = new tcu::TestCaseGroup(m_testCtx, "instance_array_basic_type");
 		addChild(instanceArrayBasicTypeGroup);
 
 		for (int basicTypeNdx = 0; basicTypeNdx < DE_LENGTH_OF_ARRAY(basicTypes); basicTypeNdx++)
@@ -636,7 +636,7 @@ void InterfaceBlockTests::init (void)
 
 	// .multi_basic_types
 	{
-		tcu::TestCaseGroup* multiBasicTypesGroup = new tcu::TestCaseGroup(m_testCtx, "multi_basic_types", "Multiple buffers with basic types");
+		tcu::TestCaseGroup* multiBasicTypesGroup = new tcu::TestCaseGroup(m_testCtx, "multi_basic_types");
 		addChild(multiBasicTypesGroup);
 
 		for (int isArray = 0; isArray < 2; isArray++)
@@ -651,7 +651,7 @@ void InterfaceBlockTests::init (void)
 
 	// .multi_nested_struct
 	{
-		tcu::TestCaseGroup* multiNestedStructGroup = new tcu::TestCaseGroup(m_testCtx, "multi_nested_struct", "Multiple buffers with nested structs");
+		tcu::TestCaseGroup* multiNestedStructGroup = new tcu::TestCaseGroup(m_testCtx, "multi_nested_struct");
 		addChild(multiNestedStructGroup);
 
 		for (int isArray = 0; isArray < 2; isArray++)
@@ -680,7 +680,7 @@ void InterfaceBlockTests::init (void)
 			{ "110",	1,	1,	0	},
 		};
 
-		tcu::TestCaseGroup* multiNestedStructGroup = new tcu::TestCaseGroup(m_testCtx, "various_buffers", "Output data into several transform feedback buffers");
+		tcu::TestCaseGroup* multiNestedStructGroup = new tcu::TestCaseGroup(m_testCtx, "various_buffers");
 		addChild(multiNestedStructGroup);
 
 		for (int xfbBufferNdx = 0; xfbBufferNdx < DE_LENGTH_OF_ARRAY(xfbBufferNumbers); xfbBufferNdx++)
@@ -726,7 +726,7 @@ void InterfaceBlockTests::init (void)
 			const deUint32			allFeatures		= ~disabled;
 			const deUint32			numCases		= 50;
 
-			tcu::TestCaseGroup* group = new tcu::TestCaseGroup(m_testCtx, groupName.c_str(), "Random Interface Block cases");
+			tcu::TestCaseGroup* group = new tcu::TestCaseGroup(m_testCtx, groupName.c_str());
 			addChild(group);
 
 			// Scalar types only, per-block buffers

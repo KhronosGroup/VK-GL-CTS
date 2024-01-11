@@ -477,9 +477,9 @@ tcu::TestCaseGroup* createGranularityQueryTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	single				(new tcu::TestCaseGroup(testCtx, "single"));
 	// Multiple textures with same format granularity tests.
 	de::MovePtr<tcu::TestCaseGroup>	multi				(new tcu::TestCaseGroup(testCtx, "multi"));
-	de::MovePtr<tcu::TestCaseGroup>	random				(new tcu::TestCaseGroup(testCtx, "random", "Multiple textures with a guaranteed format occurence."));
-	de::MovePtr<tcu::TestCaseGroup>	inRenderPass		(new tcu::TestCaseGroup(testCtx, "in_render_pass", "Single texture granularity tests, inside render pass"));
-	de::MovePtr<tcu::TestCaseGroup>	inDynamicRenderPass	(new tcu::TestCaseGroup(testCtx, "in_dynamic_render_pass", "Single texture granularity tests, inside dynamic render pass"));
+	de::MovePtr<tcu::TestCaseGroup>	random				(new tcu::TestCaseGroup(testCtx, "random"));
+	de::MovePtr<tcu::TestCaseGroup>	inRenderPass		(new tcu::TestCaseGroup(testCtx, "in_render_pass"));
+	de::MovePtr<tcu::TestCaseGroup>	inDynamicRenderPass	(new tcu::TestCaseGroup(testCtx, "in_dynamic_render_pass"));
 
 	de::Random	rnd(215);
 

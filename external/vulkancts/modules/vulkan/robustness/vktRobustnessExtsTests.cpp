@@ -81,6 +81,9 @@ class SingletonDevice
 {
 	SingletonDevice	(Context& context)
 		: m_context(context)
+#ifdef CTS_USES_VULKANSC
+		, m_customInstance(createCustomInstanceFromContext(context))
+#endif // CTS_USES_VULKANSC
 		, m_logicalDevice()
 	{
 		// Note we are already checking the needed features are available in checkSupport().
@@ -155,10 +158,14 @@ class SingletonDevice
 		if (FEATURES & RF_PIPELINE_ROBUSTNESS)
 			features2.features.robustBufferAccess = VK_FALSE;
 #endif
-		m_logicalDevice = createRobustBufferAccessDevice(context, &features2);
+		m_logicalDevice = createRobustBufferAccessDevice(context,
+#ifdef CTS_USES_VULKANSC
+														m_customInstance,
+#endif // CTS_USES_VULKANSC
+														&features2);
 
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *m_logicalDevice, context.getUsedApiVersion()));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *m_logicalDevice, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
@@ -191,10 +198,13 @@ public:
 
 private:
 	const Context&								m_context;
-	Move<vk::VkDevice>							m_logicalDevice;
 #ifndef CTS_USES_VULKANSC
+	Move<vk::VkDevice>							m_logicalDevice;
 	de::MovePtr<vk::DeviceDriver>				m_deviceDriver;
 #else
+	// Construction needs to happen in this exact order to ensure proper resource destruction
+	CustomInstance								m_customInstance;
+	Move<vk::VkDevice>							m_logicalDevice;
 	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
 #endif // CTS_USES_VULKANSC
 

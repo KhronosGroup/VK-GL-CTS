@@ -1752,7 +1752,7 @@ public:
 	tcu::TestCaseGroup* createGroup (const string& name, const std::string& description, const vector<tcu::TestNode*>& children)
 	{
 		(void)description;
-		return new tcu::TestCaseGroup(m_testCtx, name.c_str(), "", children);
+		return new tcu::TestCaseGroup(m_testCtx, name.c_str(), children);
 	}
 
 	tcu::TestCase* createCase (const string& name, const std::string& description, const ShaderCaseSpecification& spec)

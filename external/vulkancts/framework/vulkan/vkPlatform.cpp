@@ -147,7 +147,9 @@ VkResult InstanceDriverSC::createDevice (VkPhysicalDevice						physicalDevice,
 DeviceDriver::DeviceDriver (const PlatformInterface&	platformInterface,
 							VkInstance					instance,
 							VkDevice					device,
-							uint32_t					usedApiVersion)
+							uint32_t					usedApiVersion,
+							const tcu::CommandLine&		cmdLine)
+	: m_computeOnlyMode(cmdLine.isComputeOnly())
 {
 	deMemset(&m_vk, 0, sizeof(m_vk));
 
@@ -187,7 +189,7 @@ DeviceDriverSC::DeviceDriverSC (const PlatformInterface&					platformInterface,
 								const VkPhysicalDeviceVulkanSC10Properties&	physicalDeviceVulkanSC10Properties,
 								const VkPhysicalDeviceProperties&			physicalDeviceProperties,
 								const uint32_t								usedApiVersion)
-	: DeviceDriver(platformInterface, instance, device, usedApiVersion)
+	: DeviceDriver(platformInterface, instance, device, usedApiVersion, cmdLine)
 	, m_normalMode(cmdLine.isSubProcess())
 	, m_resourceInterface(resourceInterface)
 	, m_physicalDeviceVulkanSC10Properties(physicalDeviceVulkanSC10Properties)

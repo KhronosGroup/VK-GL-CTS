@@ -497,7 +497,7 @@ void DrawTestInstanceBase::initPipeline (const vk::VkDevice device)
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR,
 		pipelineCreateInfo.pNext,
-		0
+		vk::VK_PIPELINE_CREATE_2_ALLOW_DERIVATIVES_BIT_KHR
 	};
 	if (m_data.useMaintenance5)
 	{

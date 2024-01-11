@@ -249,7 +249,7 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate (void)
 }	// anonymous
 
 ConditionalClearAttachmentTests::ConditionalClearAttachmentTests (tcu::TestContext &testCtx)
-	: TestCaseGroup	(testCtx, "clear_attachments", "vkCmdClearAttachments with conditional rendering")
+	: TestCaseGroup	(testCtx, "clear_attachments")
 {
 	/* Left blank on purpose */
 }

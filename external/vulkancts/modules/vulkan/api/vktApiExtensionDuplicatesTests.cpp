@@ -32,6 +32,8 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vktApiExtensionDuplicatesTests.hpp"
+#include "vkSafetyCriticalUtil.hpp"
+#include "vkDeviceUtil.hpp"
 
 #include <set>
 #include <sstream>
@@ -252,9 +254,15 @@ tcu::TestStatus InstanceExtensionDuplicatesInstance::iterate (void)
 
 tcu::TestStatus DeviceExtensionDuplicatesInstance::iterate (void)
 {
-	const InstanceInterface&		vki	= m_context.getInstanceInterface();
+#ifdef CTS_USES_VULKANSC
+	CustomInstance					customInstance			= createCustomInstanceFromContext(m_context);
+	const vk::InstanceInterface&	vki						= customInstance.getDriver();
+	const VkPhysicalDevice			phd						= chooseDevice(vki, customInstance, m_context.getTestContext().getCommandLine());
+#else
+	const vk::InstanceInterface&	vki						= m_context.getInstanceInterface();
+	const VkPhysicalDevice			phd						= m_context.getPhysicalDevice();
+#endif // CTS_USES_VULKANSC
 	const DeviceInterface&			vkd	= m_context.getDeviceInterface();
-	const VkPhysicalDevice			phd = m_context.getPhysicalDevice();
 	const deUint32					idx	= m_context.getUniversalQueueFamilyIndex();
 	const tcu::CommandLine&			cmd	= m_context.getTestContext().getCommandLine();
 	const float						qpr	= 1.0f;
@@ -279,10 +287,21 @@ tcu::TestStatus DeviceExtensionDuplicatesInstance::iterate (void)
 		&qpr										// const float*				pQueuePriorities;
 	};
 
+	void* pNext												= DE_NULL;
+#ifdef CTS_USES_VULKANSC
+	VkDeviceObjectReservationCreateInfo memReservationInfo	= m_context.getTestContext().getCommandLine().isSubProcess() ? m_context.getResourceInterface()->getStatMax() : resetDeviceObjectReservationCreateInfo();
+	memReservationInfo.pNext								= pNext;
+	pNext													= &memReservationInfo;
+
+	VkPhysicalDeviceVulkanSC10Features sc10Features			= createDefaultSC10Features();
+	sc10Features.pNext										= pNext;
+	pNext													= &sc10Features;
+#endif // CTS_USES_VULKANSC
+
 	const VkDeviceCreateInfo		deviceCreateInfo
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,		// VkStructureType					sType;
-		nullptr,									// const void*						pNext;
+		pNext,										// const void*						pNext;
 		VkDeviceCreateFlags(0),						// VkDeviceCreateFlags				flags;
 		1u,											// uint32_t							queueCreateInfoCount;
 		&queueCreateInfo,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
@@ -341,7 +360,7 @@ tcu::TestCaseGroup* createExtensionDuplicatesTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	rootGroup(new tcu::TestCaseGroup(testCtx, "extension_duplicates"));
 	for (const item_t& type : types)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	typeGroup(new tcu::TestCaseGroup(testCtx, type.first, ""));
+		de::MovePtr<tcu::TestCaseGroup>	typeGroup(new tcu::TestCaseGroup(testCtx, type.first));
 		for (const item_t& meth : methods)
 		{
 			typeGroup->addChild(new ExtensionDuplicatesCase(testCtx, meth.first, type.second, meth.second));

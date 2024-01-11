@@ -49,7 +49,11 @@ using namespace vk;
 using std::vector;
 using std::string;
 
-Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysicalDeviceFeatures2* enabledFeatures2)
+Move<VkDevice> createRobustBufferAccessDevice (Context& context,
+#ifdef CTS_USES_VULKANSC
+											   const vkt::CustomInstance& customInstance,
+#endif // CTS_USES_VULKANSC
+											   const VkPhysicalDeviceFeatures2* enabledFeatures2)
 {
 	const float queuePriority = 1.0f;
 
@@ -126,9 +130,16 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysica
 	// We are creating a custom device with a potentially large amount of extensions and features enabled, using the default device
 	// as a reference. Some implementations may only enable certain device extensions if some instance extensions are enabled, so in
 	// this case it's important to reuse the context instance when creating the device.
-	const auto&	vki				= context.getInstanceInterface();
-	const auto	instance		= context.getInstance();
-	const auto	physicalDevice	= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+
+#ifdef CTS_USES_VULKANSC
+	vk::VkInstance	instance		= customInstance;
+	const auto&		vki				= customInstance.getDriver();
+	const auto		physicalDevice	= chooseDevice(vki, instance, context.getTestContext().getCommandLine());
+#else
+	vk::VkInstance	instance		= context.getInstance();
+	const auto&		vki				= context.getInstanceInterface();
+	const auto		physicalDevice	= context.getPhysicalDevice();
+#endif // CTS_USES_VULKANSC
 
 	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
 							  instance, vki, physicalDevice, &deviceParams);

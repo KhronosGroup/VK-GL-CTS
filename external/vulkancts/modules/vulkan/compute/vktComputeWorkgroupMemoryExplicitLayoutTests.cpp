@@ -49,6 +49,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <cassert>
 
 using namespace vk;
 
@@ -563,89 +564,11 @@ void AddAliasTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionTyp
 	CASE_EXTRA(L, R, E, D2, T2, V2, D1, T1, V1)
 
 #define CASE_WITH_REVERSE(L, R, D1, T1, V1, D2, T2, V2)	CASE_EXTRA_WITH_REVERSE(L, R, "", D1, T1, V1, D2, T2, V2)
-#define CASE_SAME_TYPE(R, D, T, V)						CASE_EXTRA(ALL, R, "", D, T, V, D, T, V)
 #define CASE(L, R, D1, T1, V1, D2, T2, V2)				CASE_EXTRA(L, R, "", D1, T1, V1, D2, T2, V2)
 
 
 	const std::vector<AliasTest::CaseDef> cases
 	{
-		CASE_SAME_TYPE(0,		"bool_true",	"bool v",		"true"),
-		CASE_SAME_TYPE(0,		"bool_false",	"bool v",		"false"),
-		CASE_SAME_TYPE(0,		"bvec2",		"bvec2 v",		"bvec2(false, true)"),
-		CASE_SAME_TYPE(0,		"bvec3",		"bvec3 v",		"bvec3(false, true, true)"),
-		CASE_SAME_TYPE(0,		"bvec4",		"bvec4 v",		"bvec4(false, true, true, false)"),
-		CASE_SAME_TYPE(INT8,	"u8",			"uint8_t v",	"uint8_t(10)"),
-		CASE_SAME_TYPE(INT8,	"u8vec2",		"u8vec2 v",		"u8vec2(10, 20)"),
-		CASE_SAME_TYPE(INT8,	"u8vec3",		"u8vec3 v",		"u8vec3(10, 20, 30)"),
-		CASE_SAME_TYPE(INT8,	"u8vec4",		"u8vec4 v",		"u8vec4(10, 20, 30, 40)"),
-		CASE_SAME_TYPE(INT8,	"i8",			"int8_t v",		"int8_t(-10)"),
-		CASE_SAME_TYPE(INT8,	"i8vec2",		"i8vec2 v",		"i8vec2(-10, 20)"),
-		CASE_SAME_TYPE(INT8,	"i8vec3",		"i8vec3 v",		"i8vec3(-10, 20, -30)"),
-		CASE_SAME_TYPE(INT8,	"i8vec4",		"i8vec4 v",		"i8vec4(-10, 20, -30, 40)"),
-		CASE_SAME_TYPE(INT16,	"u16",			"uint16_t v",	"uint16_t(1000)"),
-		CASE_SAME_TYPE(INT16,	"u16vec2",		"u16vec2 v",	"u16vec2(1000, 2000)"),
-		CASE_SAME_TYPE(INT16,	"u16vec3",		"u16vec3 v",	"u16vec3(1000, 2000, 3000)"),
-		CASE_SAME_TYPE(INT16,	"u16vec4",		"u16vec4 v",	"u16vec4(1000, 2000, 3000, 4000)"),
-		CASE_SAME_TYPE(INT16,	"i16",			"int16_t v",	"int16_t(-1000)"),
-		CASE_SAME_TYPE(INT16,	"i16vec2",		"i16vec2 v",	"i16vec2(-1000, 2000)"),
-		CASE_SAME_TYPE(INT16,	"i16vec3",		"i16vec3 v",	"i16vec3(-1000, 2000, -3000)"),
-		CASE_SAME_TYPE(INT16,	"i16vec4",		"i16vec4 v",	"i16vec4(-1000, 2000, -3000, 4000)"),
-		CASE_SAME_TYPE(0,		"u32",			"uint32_t v",	"uint32_t(100)"),
-		CASE_SAME_TYPE(0,		"uvec2",		"uvec2 v",		"uvec2(100, 200)"),
-		CASE_SAME_TYPE(0,		"uvec3",		"uvec3 v",		"uvec3(100, 200, 300)"),
-		CASE_SAME_TYPE(0,		"uvec4",		"uvec4 v",		"uvec4(100, 200, 300, 400)"),
-		CASE_SAME_TYPE(0,		"i32",			"int32_t v",	"int32_t(-100)"),
-		CASE_SAME_TYPE(0,		"ivec2",		"ivec2 v",		"ivec2(-100, 200)"),
-		CASE_SAME_TYPE(0,		"ivec3",		"ivec3 v",		"ivec3(-100, 200, -300)"),
-		CASE_SAME_TYPE(0,		"ivec4",		"ivec4 v",		"ivec4(-100, 200, -300, 400)"),
-		CASE_SAME_TYPE(INT64,	"u64",			"uint64_t v",	"uint64_t(1000)"),
-		CASE_SAME_TYPE(INT64,	"u64vec2",		"u64vec2 v",	"u64vec2(1000, 2000)"),
-		CASE_SAME_TYPE(INT64,	"u64vec3",		"u64vec3 v",	"u64vec3(1000, 2000, 3000)"),
-		CASE_SAME_TYPE(INT64,	"u64vec4",		"u64vec4 v",	"u64vec4(1000, 2000, 3000, 4000)"),
-		CASE_SAME_TYPE(INT64,	"i64",			"int64_t v",	"int64_t(-1000)"),
-		CASE_SAME_TYPE(INT64,	"i64vec2",		"i64vec2 v",	"i64vec2(-1000, 2000)"),
-		CASE_SAME_TYPE(INT64,	"i64vec3",		"i64vec3 v",	"i64vec3(-1000, 2000, -3000)"),
-		CASE_SAME_TYPE(INT64,	"i64vec4",		"i64vec4 v",	"i64vec4(-1000, 2000, -3000, 4000)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16",			"float16_t v",	"float16_t(-100.0)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16vec2",		"f16vec2 v",	"f16vec2(100.0, -200.0)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16vec3",		"f16vec3 v",	"f16vec3(100.0, -200.0, 300.0)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16vec4",		"f16vec4 v",	"f16vec4(100.0, -200.0, 300.0, -400.0)"),
-		CASE_SAME_TYPE(0,		"f32",			"float32_t v",	"float32_t(-100.0)"),
-		CASE_SAME_TYPE(0,		"f32vec2",		"f32vec2 v",	"f32vec2(100.0, -200.0)"),
-		CASE_SAME_TYPE(0,		"f32vec3",		"f32vec3 v",	"f32vec3(100.0, -200.0, 300.0)"),
-		CASE_SAME_TYPE(0,		"f32vec4",		"f32vec4 v",	"f32vec4(100.0, -200.0, 300.0, -400.0)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64",			"float64_t v",	"float32_t(-100.0)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64vec2",		"f64vec2 v",	"f64vec2(100.0, -200.0)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64vec3",		"f64vec3 v",	"f64vec3(100.0, -200.0, 300.0)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64vec4",		"f64vec4 v",	"f64vec4(100.0, -200.0, 300.0, -400.0)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16mat2x2",	"f16mat2x2 v",	"f16mat2x2(1, 2, 3, 4)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16mat2x3",	"f16mat2x3 v",	"f16mat2x3(1, 2, 3, 4, 5, 6)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16mat2x4",	"f16mat2x4 v",	"f16mat2x4(1, 2, 3, 4, 5, 6, 7, 8)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16mat3x2",	"f16mat3x2 v",	"f16mat3x2(1, 2, 3, 4, 5, 6)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16mat3x3",	"f16mat3x3 v",	"f16mat3x3(1, 2, 3, 4, 5, 6, 7, 8, 9)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16mat3x4",	"f16mat3x4 v",	"f16mat3x4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16mat4x2",	"f16mat4x2 v",	"f16mat4x2(1, 2, 3, 4, 5, 6, 7, 8)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16mat4x3",	"f16mat4x3 v",	"f16mat4x3(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)"),
-		CASE_SAME_TYPE(FLOAT16,	"f16mat4x4",	"f16mat4x4 v",	"f16mat4x4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)"),
-		CASE_SAME_TYPE(0,		"f32mat2x2",	"f32mat2x2 v",	"f32mat2x2(1, 2, 3, 4)"),
-		CASE_SAME_TYPE(0,		"f32mat2x3",	"f32mat2x3 v",	"f32mat2x3(1, 2, 3, 4, 5, 6)"),
-		CASE_SAME_TYPE(0,		"f32mat2x4",	"f32mat2x4 v",	"f32mat2x4(1, 2, 3, 4, 5, 6, 7, 8)"),
-		CASE_SAME_TYPE(0,		"f32mat3x2",	"f32mat3x2 v",	"f32mat3x2(1, 2, 3, 4, 5, 6)"),
-		CASE_SAME_TYPE(0,		"f32mat3x3",	"f32mat3x3 v",	"f32mat3x3(1, 2, 3, 4, 5, 6, 7, 8, 9)"),
-		CASE_SAME_TYPE(0,		"f32mat3x4",	"f32mat3x4 v",	"f32mat3x4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)"),
-		CASE_SAME_TYPE(0,		"f32mat4x2",	"f32mat4x2 v",	"f32mat4x2(1, 2, 3, 4, 5, 6, 7, 8)"),
-		CASE_SAME_TYPE(0,		"f32mat4x3",	"f32mat4x3 v",	"f32mat4x3(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)"),
-		CASE_SAME_TYPE(0,		"f32mat4x4",	"f32mat4x4 v",	"f32mat4x4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64mat2x2",	"f64mat2x2 v",	"f64mat2x2(1, 2, 3, 4)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64mat2x3",	"f64mat2x3 v",	"f64mat2x3(1, 2, 3, 4, 5, 6)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64mat2x4",	"f64mat2x4 v",	"f64mat2x4(1, 2, 3, 4, 5, 6, 7, 8)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64mat3x2",	"f64mat3x2 v",	"f64mat3x2(1, 2, 3, 4, 5, 6)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64mat3x3",	"f64mat3x3 v",	"f64mat3x3(1, 2, 3, 4, 5, 6, 7, 8, 9)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64mat3x4",	"f64mat3x4 v",	"f64mat3x4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64mat4x2",	"f64mat4x2 v",	"f64mat4x2(1, 2, 3, 4, 5, 6, 7, 8)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64mat4x3",	"f64mat4x3 v",	"f64mat4x3(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)"),
-		CASE_SAME_TYPE(FLOAT64,	"f64mat4x4",	"f64mat4x4 v",	"f64mat4x4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)"),
-
 		CASE_WITH_REVERSE(ALL, INT8,
 			"i8",			"int8_t v",			"int8_t(-2)",
 			"u8",			"uint8_t v",		"uint8_t(0xFE)"),
@@ -756,7 +679,6 @@ void AddAliasTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionTyp
 #undef CASE_EXTRA
 #undef CASE_EXTRA_WITH_REVERSE
 #undef CASE_WITH_REVERSE
-#undef CASE_SAME_TYPE
 #undef CASE
 
 	for (deUint32 i = 0; i < cases.size(); i++)
@@ -775,8 +697,7 @@ void AddAliasTests(tcu::TestCaseGroup* group, vk::ComputePipelineConstructionTyp
 
 					AliasTest::CaseDef c = cases[i];
 
-					if (c.writeDesc == c.readDesc)
-						continue;
+					assert(c.writeDesc != c.readDesc);
 
 					if ((c.layout & layout) == 0)
 						continue;
@@ -1411,19 +1332,19 @@ tcu::TestCaseGroup* createWorkgroupMemoryExplicitLayoutTests(tcu::TestContext& t
 	AddZeroTests(zero, computePipelineConstructionType);
 	tests->addChild(zero);
 
-	tcu::TestCaseGroup* padding = new tcu::TestCaseGroup(testCtx, "padding", "Padding as part of the explicit layout");
+	tcu::TestCaseGroup* padding = new tcu::TestCaseGroup(testCtx, "padding");
 	AddPaddingTests(padding, computePipelineConstructionType);
 	tests->addChild(padding);
 
-	tcu::TestCaseGroup* size = new tcu::TestCaseGroup(testCtx, "size", "Test blocks of various sizes");
+	tcu::TestCaseGroup* size = new tcu::TestCaseGroup(testCtx, "size");
 	AddSizeTests(size, computePipelineConstructionType);
 	tests->addChild(size);
 
-	tcu::TestCaseGroup* copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory", "Test OpCopyMemory with Workgroup memory");
+	tcu::TestCaseGroup* copy_memory = new tcu::TestCaseGroup(testCtx, "copy_memory");
 	AddCopyMemoryTests(copy_memory, computePipelineConstructionType);
 	tests->addChild(copy_memory);
 
-	tcu::TestCaseGroup* zero_ext = new tcu::TestCaseGroup(testCtx, "zero_ext", "Test interaction with VK_KHR_zero_initialize_workgroup_memory");
+	tcu::TestCaseGroup* zero_ext = new tcu::TestCaseGroup(testCtx, "zero_ext");
 	AddZeroInitializeExtensionTests(zero_ext, computePipelineConstructionType);
 	tests->addChild(zero_ext);
 

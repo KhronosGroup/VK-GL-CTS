@@ -452,8 +452,7 @@ tcu::TestCaseGroup*	createBlitImageTests (tcu::TestContext& testCtx, CmdBufferTy
 	}
 
 	std::string groupName = getCmdBufferTypeStr(cmdBufferType);
-	std::string groupDesc = "Blit Image Tests with " + groupName + " command buffer";
-	de::MovePtr<tcu::TestCaseGroup> blitTests (new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> blitTests (new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 	blitTests->addChild(blitStaticTests.release());
 	blitTests->addChild(blitRandomTests.release());
 	return blitTests.release();
@@ -463,7 +462,7 @@ tcu::TestCaseGroup*	createBlitImageTests (tcu::TestContext& testCtx, CmdBufferTy
 
 tcu::TestCaseGroup*	createBlitImageTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> blitTests (new tcu::TestCaseGroup(testCtx, "blit", "Blit Image Tests"));
+	de::MovePtr<tcu::TestCaseGroup> blitTests (new tcu::TestCaseGroup(testCtx, "blit"));
 
 	blitTests->addChild(createBlitImageTests(testCtx, CMD_BUFFER_PRIMARY));
 	blitTests->addChild(createBlitImageTests(testCtx, CMD_BUFFER_SECONDARY));

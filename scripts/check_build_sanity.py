@@ -20,6 +20,7 @@
 #
 #-------------------------------------------------------------------------
 
+import itertools
 import os
 import argparse
 import tempfile
@@ -61,6 +62,9 @@ class RunScript(BuildTestStep):
 			args += self.getExtraArgs(env)
 
 		execute(args)
+
+	def __repr__(self):
+		return "RunScript:%s" % (self.scriptPath)
 
 def makeCflagsArgs (cflags):
 	cflagsStr = " ".join(cflags)
@@ -150,7 +154,7 @@ CLANG_VERSION		= getClangVersion()
 
 # Always ran before any receipe
 PREREQUISITES		= [
-	RunScript(os.path.join("external", "fetch_sources.py"), lambda env: ["--force"])
+	RunScript(os.path.join("external", "fetch_sources.py"), lambda env: ["--force"] + (["--verbose"] if env.verbose else []))
 ]
 
 # Always ran after any receipe
@@ -193,18 +197,18 @@ EARLY_SPECIAL_RECIPES	= [
 			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py")),
 			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py"), lambda env: ["--api", "SC"] ),
 			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py"), lambda env: ["--api", "SC"] ),
-			RunScript(os.path.join("scripts", "gen_android_mk.py"))
+			RunScript(os.path.join("scripts", "gen_android_bp.py"))
 		]),
 ]
 
 LATE_SPECIAL_RECIPES	= [
 	('android-mustpass', [
 			RunScript(os.path.join("scripts", "build_android_mustpass.py"),
-					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "android-mustpass")] + ["--verbose"] if env.verbose else []),
+					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "android-mustpass")] + (["--verbose"] if env.verbose else [])),
 		]),
 	('vulkan-mustpass', [
 			RunScript(os.path.join("external", "vulkancts", "scripts", "build_mustpass.py"),
-					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "vulkan-mustpass")] + ["--verbose"] if env.verbose else []),
+					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "vulkan-mustpass")] + (["--verbose"] if env.verbose else [])),
 		]),
 	('spirv-binaries', [
 			RunScript(os.path.join("external", "vulkancts", "scripts", "build_spirv_binaries.py"),
@@ -227,20 +231,23 @@ def getBuildRecipes ():
 	return [(b.getName(), [b]) for b in BUILD_TARGETS]
 
 def getAllRecipe (recipes):
-	allSteps = []
+	allSteps = {}
 	for name, steps in recipes:
-		allSteps += steps
-	return ("all", allSteps)
+		allSteps[name] = steps
+	return allSteps
 
 def getRecipes ():
 	recipes = EARLY_SPECIAL_RECIPES + getBuildRecipes() + LATE_SPECIAL_RECIPES
 	return recipes
 
-def getRecipe (recipes, recipeName):
-	for curName, steps in recipes:
-		if curName == recipeName:
-			return (curName, steps)
-	return None
+def getRecipesByName (recipes, recipeNames):
+	selectedRecipes = {}
+	for recipeName in recipeNames:
+		for curName, steps in recipes:
+			logging.debug("Evaluating %s against %s" % (recipeName, curName))
+			if curName == recipeName:
+				selectedRecipes[curName] = steps
+	return selectedRecipes
 
 RECIPES			= getRecipes()
 
@@ -259,7 +266,8 @@ def parseArgs ():
 						help="Temporary directory")
 	parser.add_argument("-r",
 						"--recipe",
-						dest="recipe",
+						dest="recipes",
+						nargs='+',
 						choices=[n for n, s in RECIPES] + ["all"],
 						default="all",
 						help="Build / test recipe")
@@ -295,12 +303,12 @@ if __name__ == "__main__":
 					print(name)
 					break
 	else:
-		name, steps	= getAllRecipe(RECIPES) if args.recipe == "all" \
-					  else getRecipe(RECIPES, args.recipe)
+		selectedRecipes	= getAllRecipe(RECIPES) if args.recipes == "all" \
+						else getRecipesByName(RECIPES, args.recipes)
 
-		print("Running %s" % name)
-
-		allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + steps + (POST_CHECKS if (args.skipPostCheck == False) else [])
+		print("Running %s" % ','.join(selectedRecipes.keys()))
+		selectedSteps = list(itertools.chain.from_iterable(selectedRecipes.values()))
+		allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + selectedSteps + (POST_CHECKS if (args.skipPostCheck == False) else [])
 		runSteps(allSteps)
 
 		print("All steps completed successfully")

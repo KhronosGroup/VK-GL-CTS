@@ -843,11 +843,38 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 	TCU_CHECK(properties.drmFormatModifier == modifiers.front());
 	inputImageMemFd	= vkt::ExternalMemoryUtil::getMemoryFd(vkd, device, *dstMemory, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
 
-	Move<VkImage>				importedSrcImage		(createImageWithDrmFormatModifiers(vkd, device, VK_IMAGE_TYPE_2D,
+	ExplicitModifier explicitModifier =
+	{
+		modifier.drmFormatModifier,
+		modifier.drmFormatModifierPlaneCount,
+		DE_NULL,								// pPlaneLayouts
+	};
+	std::vector<VkSubresourceLayout>	planeLayouts;
+	for (uint32_t i = 0; i < modifier.drmFormatModifierPlaneCount; i++)
+	{
+		VkImageSubresource imageSubresource;
+		VkSubresourceLayout subresourceLayout;
+
+		deMemset(&imageSubresource, 0, sizeof(imageSubresource));
+
+		imageSubresource.aspectMask = VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT << i;
+
+		vkd.getImageSubresourceLayout(device, *dstImage, &imageSubresource, &subresourceLayout);
+
+		subresourceLayout.size = 0;
+		subresourceLayout.arrayPitch = 0;
+		subresourceLayout.depthPitch = 0;
+
+		planeLayouts.push_back(subresourceLayout);
+
+	}
+	explicitModifier.pPlaneLayouts = planeLayouts.data();
+
+	Move<VkImage>				importedSrcImage		(createImageWithDrmFormatExplicitModifier(vkd, device, VK_IMAGE_TYPE_2D,
 																																						 VK_IMAGE_USAGE_TRANSFER_DST_BIT |
 																																						 VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 																																						 VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
-																																						 {format}, UVec2(64, 64), modifiers));
+																																						 {format}, UVec2(64, 64), explicitModifier));
 
 	VkMemoryRequirements importedSrcImageMemoryReq = getImageMemoryRequirements(vkd, device, *importedSrcImage);
 
@@ -1120,8 +1147,8 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "create_list_modifiers", "Check that creating images with modifier list is functional"));
-		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "create_list_modifiers_fmt_features2", "Check that creating images with modifier list is functional with VK_KHR_format_feature_flags2"));
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "create_list_modifiers"));
+		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "create_list_modifiers_fmt_features2"));
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
@@ -1136,8 +1163,8 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "create_explicit_modifier", "Check that creating images with an explicit modifier is functional"));
-		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "create_explicit_modifier_fmt_features2", "Check that creating images with an explicit modifier is functional with VK_KHR_format_feature_flags2"));
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "create_explicit_modifier"));
+		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "create_explicit_modifier_fmt_features2"));
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
@@ -1152,8 +1179,8 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "export_import", "Test exporting/importing images with modifiers"));
-		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "export_import_fmt_features2", "Test exporting/importing images with modifiers with VK_KHR_format_feature_flags2"));
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "export_import"));
+		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "export_import_fmt_features2"));
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{

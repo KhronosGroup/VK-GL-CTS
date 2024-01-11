@@ -1254,7 +1254,7 @@ class UniformStructTests : public tcu::TestCaseGroup
 {
 public:
 	UniformStructTests (tcu::TestContext& testCtx)
-		: TestCaseGroup(testCtx, "uniform", "Uniform structs")
+		: TestCaseGroup(testCtx, "uniform")
 	{
 	}
 

@@ -330,8 +330,8 @@ tcu::TestCaseGroup*	createMaintenance5Tests	(tcu::TestContext& testCtx)
 	};
 	// Checks vkGetPhysicalDevice*FormatProperties* API functions
 	de::MovePtr<tcu::TestCaseGroup> gRoot(new tcu::TestCaseGroup(testCtx, "maintenance5"));
-	de::MovePtr<tcu::TestCaseGroup> gFormat(new tcu::TestCaseGroup(testCtx, "format", ""));
-	de::MovePtr<tcu::TestCaseGroup> gFlags(new tcu::TestCaseGroup(testCtx, "flags", ""));
+	de::MovePtr<tcu::TestCaseGroup> gFormat(new tcu::TestCaseGroup(testCtx, "format"));
+	de::MovePtr<tcu::TestCaseGroup> gFlags(new tcu::TestCaseGroup(testCtx, "flags"));
 	for (const auto& func : funcs)
 	{
 		TestParams p;

@@ -82,6 +82,7 @@ private:
 class TestError : public TestException
 {
 public:
+                    TestError (const char* message, const char* expr, const char* file, int line, qpTestResult result);
 					TestError			(const char* message, const char* expr, const char* file, int line);
 					TestError			(const std::string& message, const char* expr, const char* file, int line);
 					TestError			(const std::string& message);

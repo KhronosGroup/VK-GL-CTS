@@ -1192,15 +1192,11 @@ bool VideoBaseDecoder::DecodePicture (VkParserPictureData* pd,
 		pStdPictureInfo->pps_seq_parameter_set_id   = pin->seq_parameter_set_id;       // SPS ID
 		pStdPictureInfo->sps_video_parameter_set_id = pin->vps_video_parameter_set_id; // VPS ID
 
-		// hevc->irapPicFlag = m_slh.nal_unit_type >= NUT_BLA_W_LP &&
-		// m_slh.nal_unit_type <= NUT_CRA_NUT;
 		pStdPictureInfo->flags.IrapPicFlag = pin->IrapPicFlag; // Intra Random Access Point for current picture.
-		// hevc->idrPicFlag = m_slh.nal_unit_type == NUT_IDR_W_RADL ||
-		// m_slh.nal_unit_type == NUT_IDR_N_LP;
 		pStdPictureInfo->flags.IdrPicFlag = pin->IdrPicFlag; // Instantaneous Decoding Refresh for current picture.
+		pStdPictureInfo->flags.IsReference = pd->ref_pic_flag;
+		pStdPictureInfo->flags.short_term_ref_pic_set_sps_flag = pin->short_term_ref_pic_set_sps_flag;
 
-		// NumBitsForShortTermRPSInSlice = s->sh.short_term_rps ?
-		// s->sh.short_term_ref_pic_set_size : 0
 		pStdPictureInfo->NumBitsForSTRefPicSetInSlice = pin->NumBitsForShortTermRPSInSlice;
 
 		// NumDeltaPocsOfRefRpsIdx = s->sh.short_term_rps ?
@@ -2314,7 +2310,8 @@ deUint32 VideoBaseDecoder::FillDpbH265State (const VkParserPictureData* pd,
 	*pCurrAllocatedSlotIndex = dpbSlot;
 	DE_ASSERT(!(dpbSlot < 0));
 	if (dpbSlot >= 0) {
-		DE_ASSERT(pd->ref_pic_flag);
+		// TODO: The NVIDIA DPB management is quite broken, and always wants to allocate DPBs even for non-reference frames.
+		//DE_ASSERT(pd->ref_pic_flag);
 	}
 
 	return numUsedRef;
@@ -2410,10 +2407,10 @@ VkResult VulkanVideoSession::Create(DeviceContext& vkDevCtx,
 		case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
 			createInfo.pStdHeaderVersion = &h265DecodeStdExtensionVersion;
 			break;
-		case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT:
+		case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
 			createInfo.pStdHeaderVersion = &h264EncodeStdExtensionVersion;
 			break;
-		case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT:
+		case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
 			createInfo.pStdHeaderVersion = &h265EncodeStdExtensionVersion;
 			break;
 		default:

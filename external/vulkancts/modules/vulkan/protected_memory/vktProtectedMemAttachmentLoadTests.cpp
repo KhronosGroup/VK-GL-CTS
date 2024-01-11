@@ -322,7 +322,7 @@ tcu::TestCaseGroup*	createAttachmentLoadTests (tcu::TestContext& testCtx)
 		loadRandomTests->addChild(new AttachmentLoadTestCase(testCtx, name.c_str(), clearValue, data));
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> loadTests (new tcu::TestCaseGroup(testCtx, "load_op", "Attachment Load Op Tests"));
+	de::MovePtr<tcu::TestCaseGroup> loadTests (new tcu::TestCaseGroup(testCtx, "load_op"));
 	loadTests->addChild(loadStaticTests.release());
 	loadTests->addChild(loadRandomTests.release());
 	return loadTests.release();

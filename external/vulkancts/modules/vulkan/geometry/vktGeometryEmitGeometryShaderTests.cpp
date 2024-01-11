@@ -215,7 +215,7 @@ string EmitTest::shaderGeometry (bool pointSize) const
 
 TestCaseGroup* createEmitGeometryShaderTests (TestContext& testCtx)
 {
-	MovePtr<TestCaseGroup> emitGroup	(new TestCaseGroup(testCtx, "emit", "Different emit counts."));
+	MovePtr<TestCaseGroup> emitGroup	(new TestCaseGroup(testCtx, "emit"));
 
 	// emit different amounts
 	{

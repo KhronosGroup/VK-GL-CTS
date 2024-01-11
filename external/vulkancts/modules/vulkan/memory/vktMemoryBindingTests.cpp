@@ -60,6 +60,9 @@ typedef de::SharedPtr<Move<VkImage> >										ImagePtr;
 typedef std::vector<ImagePtr>												ImagesList;
 typedef std::vector<VkBindBufferMemoryInfo>									BindBufferMemoryInfosList;
 typedef std::vector<VkBindImageMemoryInfo>									BindImageMemoryInfosList;
+#ifndef CTS_USES_VULKANSC
+typedef std::vector<VkBindMemoryStatusKHR>									BindMemoryStatusList;
+#endif // CTS_USES_VULKANSC
 
 class MemoryMappingRAII
 {
@@ -159,13 +162,15 @@ struct BindingCaseParameters
 	deUint32							targetsCount;
 	VkImageCreateFlags					imageCreateFlags;
 	PriorityMode						priorityMode;
+	deBool								checkIndividualResult;
 };
 
 BindingCaseParameters					makeBindingCaseParameters			(deUint32				targetsCount,
 																			 deUint32				width,
 																			 deUint32				height,
 																			 VkImageCreateFlags		imageCreateFlags,
-																			 PriorityMode			priorityMode)
+																			 PriorityMode			priorityMode,
+																			 deBool					checkIndividualResult)
 {
 	BindingCaseParameters				params;
 	deMemset(&params, 0, sizeof(BindingCaseParameters));
@@ -177,6 +182,7 @@ BindingCaseParameters					makeBindingCaseParameters			(deUint32				targetsCount,
 	params.targetsCount = targetsCount;
 	params.imageCreateFlags = imageCreateFlags;
 	params.priorityMode = priorityMode;
+	params.checkIndividualResult = checkIndividualResult;
 	return params;
 }
 
@@ -185,7 +191,8 @@ BindingCaseParameters					makeBindingCaseParameters			(deUint32				targetsCount,
 																			 VkSharingMode			sharing,
 																			 VkDeviceSize			bufferSize,
 																			 VkImageCreateFlags		imageCreateFlags,
-																			 PriorityMode			priorityMode)
+																			 PriorityMode			priorityMode,
+																			 deBool					checkIndividualResult)
 {
 	BindingCaseParameters				params								=
 	{
@@ -197,6 +204,7 @@ BindingCaseParameters					makeBindingCaseParameters			(deUint32				targetsCount,
 		targetsCount,														// deUint32				targetsCount;
 		imageCreateFlags,													// VkImageCreateFlags	imageCreateFlags
 		priorityMode,														// PriorityMode			priorityMode
+		checkIndividualResult												// deBool				checkIndividualResult
 	};
 	return params;
 }
@@ -324,12 +332,13 @@ ConstDedicatedInfo						makeDedicatedAllocationInfo			(VkImage				image)
 }
 
 const VkBindBufferMemoryInfo			makeBufferMemoryBindingInfo			(VkBuffer				buffer,
-																			 VkDeviceMemory			memory)
+																			 VkDeviceMemory			memory,
+																			 const void *			pNext)
 {
 	const VkBindBufferMemoryInfo		bufferMemoryBinding					=
 	{
 		VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO,							// VkStructureType		sType;
-		DE_NULL,															// const void*			pNext;
+		pNext,																// const void*			pNext;
 		buffer,																// VkBuffer				buffer;
 		memory,																// VkDeviceMemory		memory;
 		0u,																	// VkDeviceSize			memoryOffset;
@@ -338,12 +347,13 @@ const VkBindBufferMemoryInfo			makeBufferMemoryBindingInfo			(VkBuffer				buffer
 }
 
 const VkBindImageMemoryInfo				makeImageMemoryBindingInfo			(VkImage				image,
-																			 VkDeviceMemory			memory)
+																			 VkDeviceMemory			memory,
+																			 const void *			pNext)
 {
 	const VkBindImageMemoryInfo		imageMemoryBinding					=
 	{
 		VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,							// VkStructureType		sType;
-		DE_NULL,															// const void*			pNext;
+		pNext,																// const void*			pNext;
 		image,																// VkImage				image;
 		memory,																// VkDeviceMemory		memory;
 		0u,																	// VkDeviceSize			memoryOffset;
@@ -362,6 +372,17 @@ const VkMemoryPriorityAllocateInfoEXT	makeMemoryPriorityAllocateInfo		(const voi
 		priority,															// float				priority
 	};
 	return info;
+}
+
+const VkBindMemoryStatusKHR makeBindMemoryStatus(VkResult *pResult)
+{
+	const VkBindMemoryStatusKHR		bindMemoryStatus				=
+	{
+		VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS_KHR,							// VkStructureType		sType;
+		DE_NULL,															// const void*			pNext;
+		pResult,															// VkResult*			pResult;
+	};
+	return bindMemoryStatus;
 }
 #endif
 
@@ -459,6 +480,15 @@ public:
 				VK_FALSE,																		// VkBool32							pageableDeviceLocalMemory;
 			};
 
+			VkPhysicalDeviceMaintenance6FeaturesKHR maintenance6Feature		=
+			{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR,					// VkStructureType					sType
+				DE_NULL,																		// const void*						pNext
+				VK_FALSE,																		// VkBool32							maintenance6;
+			};
+			if (m_params.checkIndividualResult)
+				pageableDeviceLocalMemoryFeature.pNext = &maintenance6Feature;
+
 			VkPhysicalDeviceFeatures				features;
 			deMemset(&features, 0, sizeof(vk::VkPhysicalDeviceFeatures));
 
@@ -474,11 +504,16 @@ public:
 			if (!pageableDeviceLocalMemoryFeature.pageableDeviceLocalMemory)
 				TCU_FAIL("pageableDeviceLocalMemory feature not supported but VK_EXT_pageable_device_local_memory advertised");
 
+			if (m_params.checkIndividualResult && !maintenance6Feature.maintenance6)
+				TCU_FAIL("maintenance6 feature not supported but VK_KHR_maintenance6 advertised");
+
 			pageableDeviceLocalMemoryFeature.pageableDeviceLocalMemory = VK_TRUE;
 
 			std::vector<const char*>						deviceExtensions;
 			deviceExtensions.push_back("VK_EXT_memory_priority");
 			deviceExtensions.push_back("VK_EXT_pageable_device_local_memory");
+			if (m_params.checkIndividualResult)
+				deviceExtensions.push_back("VK_KHR_maintenance6");
 
 			VkDeviceQueueCreateInfo							queueInfo		=
 			{
@@ -507,7 +542,7 @@ public:
 			m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, m_context.getPhysicalDevice(), &deviceInfo);
 		}
 #endif // CTS_USES_VULKANSC
-		m_logicalDeviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), getDevice(), m_context.getUsedApiVersion()));
+		m_logicalDeviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), getDevice(), m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
 		m_logicalDeviceInterface->getDeviceQueue(getDevice(), m_context.getUniversalQueueFamilyIndex(), 0, &m_logicalDeviceQueue);
 	};
 
@@ -736,13 +771,41 @@ void					BaseTestInstance::makeBinding<VkBuffer>				(BuffersList&			targets,
 	const VkDevice						vkDevice							= getDevice();
 	const DeviceInterface&				vk									= getDeviceInterface();
 	BindBufferMemoryInfosList			bindMemoryInfos;
+#ifndef CTS_USES_VULKANSC
+	std::vector<VkResult> bindResults;
+	BindMemoryStatusList bindMemoryStatus;
+
+	if (m_params.checkIndividualResult)
+	{
+		bindResults.reserve(count);
+		for (deUint32 i = 0; i < count; ++i)
+		{
+			bindResults.push_back(VK_ERROR_UNKNOWN);
+			bindMemoryStatus.push_back(makeBindMemoryStatus(&bindResults[i]));
+		}
+	}
+#endif // CTS_USES_VULKANSC
 
 	for (deUint32 i = 0; i < count; ++i)
 	{
-		bindMemoryInfos.push_back(makeBufferMemoryBindingInfo(**targets[i], **memory[i]));
+#ifndef CTS_USES_VULKANSC
+		VkBindBufferMemoryInfo bindMemoryInfo = makeBufferMemoryBindingInfo(**targets[i], **memory[i], m_params.checkIndividualResult ? &bindMemoryStatus[i] : nullptr);
+#else
+		VkBindBufferMemoryInfo bindMemoryInfo = makeBufferMemoryBindingInfo(**targets[i], **memory[i], nullptr);
+#endif // CTS_USES_VULKANSC
+		bindMemoryInfos.push_back(bindMemoryInfo);
 	}
 
 	VK_CHECK(vk.bindBufferMemory2(vkDevice, count, &bindMemoryInfos.front()));
+#ifndef CTS_USES_VULKANSC
+	if (m_params.checkIndividualResult)
+	{
+		for (deUint32 i = 0; i < count; ++i)
+		{
+			VK_CHECK(*bindMemoryStatus[i].pResult);
+		}
+	}
+#endif // CTS_USES_VULKANSC
 }
 
 template<>
@@ -753,13 +816,42 @@ void					BaseTestInstance::makeBinding<VkImage>				(ImagesList&			targets,
 	const VkDevice						vkDevice							= getDevice();
 	const DeviceInterface&				vk									= getDeviceInterface();
 	BindImageMemoryInfosList			bindMemoryInfos;
+#ifndef CTS_USES_VULKANSC
+	std::vector<VkResult> bindResults;
+	BindMemoryStatusList bindMemoryStatus;
+
+	if (m_params.checkIndividualResult)
+	{
+		bindResults.reserve(count);
+		for (deUint32 i = 0; i < count; ++i)
+		{
+			bindResults.push_back(VK_ERROR_UNKNOWN);
+			bindMemoryStatus.push_back(makeBindMemoryStatus(&bindResults[i]));
+		}
+	}
+#endif // CTS_USES_VULKANSC
 
 	for (deUint32 i = 0; i < count; ++i)
 	{
-		bindMemoryInfos.push_back(makeImageMemoryBindingInfo(**targets[i], **memory[i]));
+#ifndef CTS_USES_VULKANSC
+		VkBindImageMemoryInfo bindMemoryInfo = makeImageMemoryBindingInfo(**targets[i], **memory[i], m_params.checkIndividualResult ? &bindMemoryStatus[i] : nullptr);
+#else
+		VkBindImageMemoryInfo bindMemoryInfo = makeImageMemoryBindingInfo(**targets[i], **memory[i], nullptr);
+#endif // CTS_USES_VULKANSC
+		bindMemoryInfos.push_back(bindMemoryInfo);
 	}
 
 	VK_CHECK(vk.bindImageMemory2(vkDevice, count, &bindMemoryInfos.front()));
+
+#ifndef CTS_USES_VULKANSC
+	if (m_params.checkIndividualResult)
+	{
+		for (deUint32 i = 0; i < count; ++i)
+		{
+			VK_CHECK(*bindMemoryStatus[i].pResult);
+		}
+	}
+#endif // CTS_USES_VULKANSC
 }
 
 template <>
@@ -1066,6 +1158,8 @@ public:
 			TCU_THROW(NotSupportedError, "VK_EXT_memory_priority Not supported");
 		if ((m_params.priorityMode == PRIORITY_MODE_DYNAMIC) &&  !ctx.isDeviceFunctionalitySupported("VK_EXT_pageable_device_local_memory"))
 			TCU_THROW(NotSupportedError, "VK_EXT_pageable_device_local_memory Not supported");
+		if (m_params.checkIndividualResult)
+			ctx.requireDeviceFunctionality("VK_KHR_maintenance6");
 #endif
 	}
 
@@ -1077,35 +1171,37 @@ private:
 
 tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>		group								(new tcu::TestCaseGroup(testCtx, "binding"));
+	de::MovePtr<tcu::TestCaseGroup>		group								(new tcu::TestCaseGroup(testCtx, "binding", "Memory binding tests."));
+	de::MovePtr<tcu::TestCaseGroup>		maint6								(new tcu::TestCaseGroup(testCtx, "maintenance6", "Maintenance6 memory binding tests."));
 
 #ifdef CTS_USES_VULKANSC
 	const int iterations = 1;
 #else
-	const int iterations = 3;
+	const int iterations = 6;
 #endif
 
 	for (int i = 0; i < iterations; ++i)
 	{
-		PriorityMode priorityMode = PriorityMode(i);
+		PriorityMode priorityMode = PriorityMode(i % 3);
+		deBool checkIndividualBindResults = i / 3;
 
 		// Basic memory binding tests.
 		de::MovePtr<tcu::TestCaseGroup>		regular								(new tcu::TestCaseGroup(testCtx, "regular"));
 		// Memory binding tests with aliasing of two resources.
 		de::MovePtr<tcu::TestCaseGroup>		aliasing							(new tcu::TestCaseGroup(testCtx, "aliasing"));
 
-		de::MovePtr<tcu::TestCaseGroup>		regular_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated", "Basic memory binding tests with suballocated memory."));
-		de::MovePtr<tcu::TestCaseGroup>		regular_dedicated					(new tcu::TestCaseGroup(testCtx, "dedicated", "Basic memory binding tests with deditatedly allocated memory."));
+		de::MovePtr<tcu::TestCaseGroup>		regular_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated"));
+		de::MovePtr<tcu::TestCaseGroup>		regular_dedicated					(new tcu::TestCaseGroup(testCtx, "dedicated"));
 
-		de::MovePtr<tcu::TestCaseGroup>		aliasing_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated", "Memory binding tests with aliasing of two resources with suballocated mamory."));
+		de::MovePtr<tcu::TestCaseGroup>		aliasing_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated"));
 
 		const VkDeviceSize					allocationSizes[]					= {	33, 257, 4087, 8095, 1*1024*1024 + 1	};
 
 		for (deUint32 sizeNdx = 0u; sizeNdx < DE_LENGTH_OF_ARRAY(allocationSizes); ++sizeNdx )
 		{
 			const VkDeviceSize				bufferSize							= allocationSizes[sizeNdx];
-			const BindingCaseParameters		params								= makeBindingCaseParameters(10, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_SHARING_MODE_EXCLUSIVE, bufferSize, 0u, priorityMode);
-			const BindingCaseParameters		aliasparams							= makeBindingCaseParameters(10, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_SHARING_MODE_EXCLUSIVE, bufferSize, VK_IMAGE_CREATE_ALIAS_BIT, priorityMode);
+			const BindingCaseParameters		params								= makeBindingCaseParameters(10, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_SHARING_MODE_EXCLUSIVE, bufferSize, 0u, priorityMode, checkIndividualBindResults);
+			const BindingCaseParameters		aliasparams							= makeBindingCaseParameters(10, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_SHARING_MODE_EXCLUSIVE, bufferSize, VK_IMAGE_CREATE_ALIAS_BIT, priorityMode, checkIndividualBindResults);
 			std::ostringstream				testName;
 
 			testName << "buffer_" << bufferSize;
@@ -1121,8 +1217,8 @@ tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 		{
 			const deUint32					width								= imageSizes[widthNdx];
 			const deUint32					height								= imageSizes[heightNdx];
-			const BindingCaseParameters		regularparams						= makeBindingCaseParameters(10, width, height, 0u, priorityMode);
-			const BindingCaseParameters		aliasparams							= makeBindingCaseParameters(10, width, height, VK_IMAGE_CREATE_ALIAS_BIT, priorityMode);
+			const BindingCaseParameters		regularparams						= makeBindingCaseParameters(10, width, height, 0u, priorityMode, checkIndividualBindResults);
+			const BindingCaseParameters		aliasparams							= makeBindingCaseParameters(10, width, height, VK_IMAGE_CREATE_ALIAS_BIT, priorityMode, checkIndividualBindResults);
 			std::ostringstream				testName;
 
 			testName << "image_" << width << '_' << height;
@@ -1135,17 +1231,19 @@ tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 		regular->addChild(regular_dedicated.release());
 
 		aliasing->addChild(aliasing_suballocated.release());
+
+		tcu::TestCaseGroup* parent = checkIndividualBindResults ? maint6.get() : group.get();
 		if (priorityMode != PRIORITY_MODE_DEFAULT) {
-			de::MovePtr<tcu::TestCaseGroup>		priority	(new tcu::TestCaseGroup(testCtx, (priorityMode == PRIORITY_MODE_DYNAMIC) ? "priority_dynamic" : "priority"));
+			de::MovePtr<tcu::TestCaseGroup> priority(new tcu::TestCaseGroup(testCtx, (priorityMode == PRIORITY_MODE_DYNAMIC) ? "priority_dynamic" : "priority", (priorityMode == PRIORITY_MODE_DYNAMIC) ? "Using VK_EXT_pageable_device_local_memory" : "Using VK_EXT_memory_priority."));
 			priority->addChild(regular.release());
 			priority->addChild(aliasing.release());
-			group->addChild(priority.release());
+			parent->addChild(priority.release());
 		} else {
-			group->addChild(regular.release());
-			group->addChild(aliasing.release());
+			parent->addChild(regular.release());
+			parent->addChild(aliasing.release());
 		}
 	}
-
+	group->addChild(maint6.release());
 	return group.release();
 }
 

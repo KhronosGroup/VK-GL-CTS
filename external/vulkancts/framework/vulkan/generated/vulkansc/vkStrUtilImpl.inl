@@ -1875,14 +1875,14 @@ const char* getQueueGlobalPriorityKHRName (VkQueueGlobalPriorityKHR value)
 	}
 }
 
-const char* getTimeDomainEXTName (VkTimeDomainEXT value)
+const char* getTimeDomainKHRName (VkTimeDomainKHR value)
 {
 	switch (value)
 	{
-		case VK_TIME_DOMAIN_DEVICE_EXT:						return "VK_TIME_DOMAIN_DEVICE_EXT";
-		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT:			return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT";
-		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT:		return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT";
-		case VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT:	return "VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT";
+		case VK_TIME_DOMAIN_DEVICE_KHR:						return "VK_TIME_DOMAIN_DEVICE_KHR";
+		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR:			return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR";
+		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR:		return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR";
+		case VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR:	return "VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR";
 		default:											return DE_NULL;
 	}
 }
@@ -3251,42 +3251,42 @@ tcu::Format::Bitfield<32> getVideoComponentBitDepthFlagsKHRStr (VkVideoComponent
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsEXTStr (VkVideoEncodeH264CapabilityFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsKHRStr (VkVideoEncodeH264CapabilityFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH264StdFlagsEXTStr (VkVideoEncodeH264StdFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH264StdFlagsKHRStr (VkVideoEncodeH264StdFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH264RateControlFlagsEXTStr (VkVideoEncodeH264RateControlFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH264RateControlFlagsKHRStr (VkVideoEncodeH264RateControlFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsEXTStr (VkVideoEncodeH265CapabilityFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsKHRStr (VkVideoEncodeH265CapabilityFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265StdFlagsEXTStr (VkVideoEncodeH265StdFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265StdFlagsKHRStr (VkVideoEncodeH265StdFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265RateControlFlagsEXTStr (VkVideoEncodeH265RateControlFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265RateControlFlagsKHRStr (VkVideoEncodeH265RateControlFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265CtbSizeFlagsEXTStr (VkVideoEncodeH265CtbSizeFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265CtbSizeFlagsKHRStr (VkVideoEncodeH265CtbSizeFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsEXTStr (VkVideoEncodeH265TransformBlockSizeFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsKHRStr (VkVideoEncodeH265TransformBlockSizeFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -6737,9 +6737,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceConservativeRas
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkCalibratedTimestampInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkCalibratedTimestampInfoKHR& value)
 {
-	s << "VkCalibratedTimestampInfoEXT = {\n";
+	s << "VkCalibratedTimestampInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\ttimeDomain = " << value.timeDomain << '\n';
@@ -7024,18 +7024,18 @@ std::ostream& operator<< (std::ostream& s, const VkSemaphoreSignalInfo& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVertexInputBindingDivisorDescriptionEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkVertexInputBindingDivisorDescriptionKHR& value)
 {
-	s << "VkVertexInputBindingDivisorDescriptionEXT = {\n";
+	s << "VkVertexInputBindingDivisorDescriptionKHR = {\n";
 	s << "\tbinding = " << value.binding << '\n';
 	s << "\tdivisor = " << value.divisor << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoKHR& value)
 {
-	s << "VkPipelineVertexInputDivisorStateCreateInfoEXT = {\n";
+	s << "VkPipelineVertexInputDivisorStateCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvertexBindingDivisorCount = " << value.vertexBindingDivisorCount << '\n';
@@ -7123,9 +7123,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAtomicFlo
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT = {\n";
+	s << "VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvertexAttributeInstanceRateDivisor = " << value.vertexAttributeInstanceRateDivisor << '\n';

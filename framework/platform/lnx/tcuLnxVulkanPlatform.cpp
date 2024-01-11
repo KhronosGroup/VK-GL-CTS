@@ -252,7 +252,11 @@ public:
 struct VulkanWindowDirectDrm : public vk::wsi::Window
 {
 public:
-	void resize (const UVec2&)
+	void setVisible (bool visible) override
+	{
+		DE_UNREF(visible);
+	}
+	void resize (const UVec2&) override
 	{
 	}
 };

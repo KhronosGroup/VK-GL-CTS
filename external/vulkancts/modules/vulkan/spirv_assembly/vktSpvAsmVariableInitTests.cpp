@@ -669,7 +669,7 @@ tcu::TestCaseGroup* createVariableInitComputeGroup (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createVariableInitGraphicsGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "variable_init", "Graphics tests for OpVariable initialization."));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "variable_init"));
 	addGraphicsVariableInitPrivateTest(group.get());
 	addGraphicsVariableInitOutputTest(group.get());
 

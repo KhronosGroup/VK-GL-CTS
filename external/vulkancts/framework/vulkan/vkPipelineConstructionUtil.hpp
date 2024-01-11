@@ -142,6 +142,7 @@ class RenderPassWrapper
 {
 public:
 									RenderPassWrapper				() = default;
+									RenderPassWrapper				(const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo, bool dynamicRendering);
 									RenderPassWrapper				(PipelineConstructionType pipelineConstructionType, const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo* pCreateInfo);
 									RenderPassWrapper				(PipelineConstructionType pipelineConstructionType, const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo);
 									RenderPassWrapper				(PipelineConstructionType			pipelineConstructionType,
@@ -210,7 +211,7 @@ public:
 private:
 	void							beginRendering					(const DeviceInterface& vk, const VkCommandBuffer commandBuffer) const;
 
-	PipelineConstructionType			m_pipelineConstructionType;
+	bool								m_isDynamicRendering;
 	vk::Move<vk::VkRenderPass>			m_renderPass;
 	vk::Move<vk::VkFramebuffer>			m_framebuffer;
 

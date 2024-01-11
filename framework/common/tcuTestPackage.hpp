@@ -41,6 +41,7 @@ public:
 		numExecuted		= 0;
 		numPassed		= 0;
 		numFailed		= 0;
+		numDeviceLost	= 0;
 		numNotSupported	= 0;
 		numWarnings		= 0;
 		numWaived		= 0;
@@ -53,6 +54,7 @@ public:
 	int		numNotSupported;	//!< Number of cases not supported.
 	int		numWarnings;		//!< Number of QualityWarning / CompatibilityWarning results.
 	int		numWaived;			//!< Number of waived tests.
+	int		numDeviceLost;		//!< Number of cases that caused a device lost
 	bool	isComplete;			//!< Is run complete.
 };
 

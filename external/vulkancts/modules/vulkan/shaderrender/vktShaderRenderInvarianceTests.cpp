@@ -423,7 +423,7 @@ tcu::TestCaseGroup* createShaderInvarianceTests (tcu::TestContext& testCtx)
 		tcu::TestCaseGroup* varGroup[VAR_GROUP_SIZE];
 		// Invariance tests using gl_Position variable
 		varGroup[0] = new tcu::TestCaseGroup(testCtx, "gl_position");
-		varGroup[1] = new tcu::TestCaseGroup(testCtx, "user_defined", "Invariance tests using user defined variable");
+		varGroup[1] = new tcu::TestCaseGroup(testCtx, "user_defined");
 		FormatArgumentList	args[VAR_GROUP_SIZE];
 		for (deUint32 groupNdx = 0u; groupNdx < VAR_GROUP_SIZE; ++groupNdx)
 		{

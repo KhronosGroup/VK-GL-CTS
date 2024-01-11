@@ -93,6 +93,11 @@ TestException::TestException (const std::string& message, qpTestResult result)
 {
 }
 
+TestError::TestError (const char* message, const char* expr, const char* file, int line, qpTestResult result)
+        : TestException(message, expr, file, line, result)
+{
+}
+
 TestError::TestError (const char* message, const char* expr, const char* file, int line)
 	: TestException(message, expr, file, line, QP_TEST_RESULT_FAIL)
 {

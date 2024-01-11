@@ -1099,7 +1099,7 @@ tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, c
 
 	// Depth/stencil tests. Ensure dithering works with depth/stencil and it does not affect depth/stencil.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	depthStencilTests	(new tcu::TestCaseGroup(testCtx, "depth_stencil", "Test dithering works with depth/stencil and it does not affect depth/stencil"));
+		de::MovePtr<tcu::TestCaseGroup>	depthStencilTests	(new tcu::TestCaseGroup(testCtx, "depth_stencil"));
 
 		const std::string				names[]				= { "Less", "Greater", "Equal" };
 		const deUint32					stencilValues[]		= { 0x80, 0x82, 0x81 };
@@ -1142,7 +1142,7 @@ tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, c
 
 	// Blend tests. Ensure dithering works with blending.
 	{
-		de::MovePtr<tcu::TestCaseGroup>	blendTests			(new tcu::TestCaseGroup(testCtx, "blend", "Test dithering works with blending"));
+		de::MovePtr<tcu::TestCaseGroup>	blendTests			(new tcu::TestCaseGroup(testCtx, "blend"));
 
 		testParams.blending = true;
 		for (deUint32 i = 0; i < testFormatCount; ++i)

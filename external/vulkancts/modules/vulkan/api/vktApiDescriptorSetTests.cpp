@@ -668,7 +668,7 @@ tcu::TestCaseGroup* createEmptyDescriptorSetLayoutTests (tcu::TestContext& testC
 
 tcu::TestCaseGroup* createDescriptorSetLayoutBindingOrderingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> descriptorSetLayoutBindingOrderingTests(new tcu::TestCaseGroup(testCtx, "descriptor_set_layout_binding", "Create descriptor set layout ordering tests"));
+	de::MovePtr<tcu::TestCaseGroup> descriptorSetLayoutBindingOrderingTests(new tcu::TestCaseGroup(testCtx, "descriptor_set_layout_binding"));
 	// Test subsequent binding update with remaining elements
 	addFunctionCaseWithPrograms(descriptorSetLayoutBindingOrderingTests.get(), "update_subsequent_binding", createDescriptorSetLayoutBindingOrderingSource, descriptorSetLayoutBindingOrderingTest);
 
@@ -682,7 +682,7 @@ tcu::TestCaseGroup* createDescriptorSetLayoutBindingOrderingTests (tcu::TestCont
 
 tcu::TestCaseGroup* createDescriptorSetLayoutTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> descriptorSetLayoutTests(new tcu::TestCaseGroup(testCtx, "descriptor_set_layout", "Descriptor set layout tests"));
+	de::MovePtr<tcu::TestCaseGroup> descriptorSetLayoutTests(new tcu::TestCaseGroup(testCtx, "descriptor_set_layout"));
 
 	descriptorSetLayoutTests->addChild(createEmptyDescriptorSetLayoutTests(testCtx));
 
@@ -691,7 +691,7 @@ tcu::TestCaseGroup* createDescriptorSetLayoutTests (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createDescriptorSetTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> descriptorSetTests(new tcu::TestCaseGroup(testCtx, "descriptor_set", "Descriptor set tests"));
+	de::MovePtr<tcu::TestCaseGroup> descriptorSetTests(new tcu::TestCaseGroup(testCtx, "descriptor_set"));
 
 	descriptorSetTests->addChild(createDescriptorSetLayoutLifetimeTests(testCtx));
 	descriptorSetTests->addChild(createDescriptorSetLayoutTests(testCtx));

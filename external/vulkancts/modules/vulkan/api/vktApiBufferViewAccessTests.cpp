@@ -1002,13 +1002,24 @@ public:
 	virtual	void					initPrograms						(SourceCollections&			programCollection) const;
 	virtual void					checkSupport						(Context&					context) const
 	{
+		const InstanceInterface&	vki				= context.getInstanceInterface();
+		const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+
 #ifndef CTS_USES_VULKANSC
 		if ((m_bufferViewTestInfo.format == VK_FORMAT_A8_UNORM_KHR) ||
 			(m_bufferViewTestInfo.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR))
 			context.requireDeviceFunctionality("VK_KHR_maintenance5");
-#else
-		DE_UNREF(context);
 #endif // CTS_USES_VULKANSC
+
+		if ((m_bufferViewTestInfo.createUsage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) != 0)
+		{
+			VkFormatProperties					properties;
+			properties = getPhysicalDeviceFormatProperties(vki, physicalDevice, m_bufferViewTestInfo.format);
+			if ((properties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT) == 0)
+			{
+				TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT not supported for format");
+			}
+		}
 	}
 
 	virtual TestInstance*			createInstance						(Context&					context) const
@@ -1332,14 +1343,14 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 
 		for (deUint32 usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(createUsage); ++usageNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx], ""));
+			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx]));
 
 			for (deUint32 formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); formatIdx++)
 			{
 				const auto			skip	= strlen("VK_FORMAT_");
 				const std::string	fmtName	= de::toLower(std::string(getFormatName(testFormats[formatIdx])).substr(skip));
 
-				de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, fmtName.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, fmtName.c_str()));
 
 				if (createUsage[usageNdx] == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT && !isSupportedImageLoadStore(mapVkFormat(testFormats[formatIdx])))
 					continue;
@@ -1367,7 +1378,7 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 	}
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<tcu::TestCaseGroup> uniformStorageGroup		(new tcu::TestCaseGroup(testCtx, "uniform_storage_texel_buffer", ""));
+	de::MovePtr<tcu::TestCaseGroup> uniformStorageGroup		(new tcu::TestCaseGroup(testCtx, "uniform_storage_texel_buffer"));
 	{
 
 		const char* const					usageName[]	= { "bind_as_uniform", "bind_as_storage" };
@@ -1378,14 +1389,14 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 
 		for (deUint32 usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(usageName); ++usageNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx], ""));
+			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx]));
 
 			for (deUint32 formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); formatIdx++)
 			{
 				const auto			skip	= strlen("VK_FORMAT_");
 				const std::string	fmtName	= de::toLower(std::string(getFormatName(testFormats[formatIdx])).substr(skip));
 
-				de::MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(testCtx, fmtName.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(testCtx, fmtName.c_str()));
 
 				if (bindUsage[usageNdx] == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT && !isSupportedImageLoadStore(mapVkFormat(testFormats[formatIdx])))
 					continue;

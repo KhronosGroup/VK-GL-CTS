@@ -1193,6 +1193,8 @@ std::string	getCompareOpsName (const VkCompareOp quadDepthOps[DepthTest::QUAD_CO
 
 tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
+	const auto genFormatTests = (!vk::isConstructionTypeShaderObject(pipelineConstructionType) || pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV);
+
 	const VkFormat			depthFormats[]						=
 	{
 		VK_FORMAT_D16_UNORM,
@@ -1323,6 +1325,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 		const bool colorEnabled = colorAttachmentEnabled[colorAttachmentEnabledIdx];
 
 		// Tests for format and compare operators
+		if (genFormatTests)
 		{
 			// Uses different depth formats
 			de::MovePtr<tcu::TestCaseGroup> formatTests (new tcu::TestCaseGroup(testCtx, "format"));
@@ -1338,8 +1341,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 					const bool			useSeparateDepthStencilLayouts	= bool(separateDepthStencilLayouts);
 
 					de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-								(getFormatCaseName(depthFormats[formatNdx]) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "")).c_str(),
-								(std::string("Uses format ") + getFormatName(depthFormats[formatNdx]) + ((useSeparateDepthStencilLayouts) ? " with separate depth/stencil layouts" : "")).c_str()));
+								(getFormatCaseName(depthFormats[formatNdx]) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "")).c_str()));
 					// Combines depth compare operators
 					de::MovePtr<tcu::TestCaseGroup>	compareOpsTests	(new tcu::TestCaseGroup(testCtx, "compare_ops"));
 
@@ -1414,7 +1416,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 					formatTest->addChild(depthTestDisabled.release());
 
 					// Test case with depth buffer placed in local memory
-					de::MovePtr<tcu::TestCaseGroup>	hostVisibleTests(new tcu::TestCaseGroup(testCtx, "host_visible", "Test for disabled depth test"));
+					de::MovePtr<tcu::TestCaseGroup>	hostVisibleTests(new tcu::TestCaseGroup(testCtx, "host_visible"));
 					{
 						const VkCompareOp hostVisibleOps[DepthTest::QUAD_COUNT] = { VK_COMPARE_OP_NEVER, VK_COMPARE_OP_LESS, VK_COMPARE_OP_GREATER, VK_COMPARE_OP_ALWAYS };
 
@@ -1446,10 +1448,11 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 				noColorAttachmentTests->addChild(formatTests.release());
 		}
 	}
-	depthTests->addChild(noColorAttachmentTests.release());
+	if (genFormatTests)
+		depthTests->addChild(noColorAttachmentTests.release());
 
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<tcu::TestCaseGroup>	depthClipControlTests		(new tcu::TestCaseGroup(testCtx, "depth_clip_control", "Depth tests with depth clip control enabled"));
+	de::MovePtr<tcu::TestCaseGroup>	depthClipControlTests		(new tcu::TestCaseGroup(testCtx, "depth_clip_control"));
 	{
 		const VkCompareOp compareOps[] = { VK_COMPARE_OP_ALWAYS, VK_COMPARE_OP_LESS };
 

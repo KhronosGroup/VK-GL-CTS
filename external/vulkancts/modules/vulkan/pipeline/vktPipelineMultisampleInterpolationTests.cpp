@@ -1099,14 +1099,14 @@ tcu::TestCaseGroup* createMultisampleInterpolationTests (tcu::TestContext& testC
 	// there is no support for pipelineConstructionType in amber
 	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> reInterpolationGroup(new tcu::TestCaseGroup(testCtx, "reinterpolation_consistency", "Test consistency in reinterpolation"));
+		de::MovePtr<tcu::TestCaseGroup> reInterpolationGroup(new tcu::TestCaseGroup(testCtx, "reinterpolation_consistency"));
 		std::vector<std::string> requirements;
 		requirements.push_back("Features.sampleRateShading");
 		reInterpolationGroup->addChild(cts_amber::createAmberTestCase(testCtx, "interpolate_at_centroid", "", "pipeline", "reinterpolate_at_centroid.amber", requirements));
 		reInterpolationGroup->addChild(cts_amber::createAmberTestCase(testCtx, "interpolate_at_sample", "", "pipeline", "reinterpolate_at_sample.amber", requirements));
 		testGroup->addChild(reInterpolationGroup.release());
 
-		de::MovePtr<tcu::TestCaseGroup> nonuniformInterpolantIndexingGroup(new tcu::TestCaseGroup(testCtx, "nonuniform_interpolant_indexing", "Test nonuniform interpolant indexing"));
+		de::MovePtr<tcu::TestCaseGroup> nonuniformInterpolantIndexingGroup(new tcu::TestCaseGroup(testCtx, "nonuniform_interpolant_indexing"));
 		std::vector<std::string> requirementsNonuniformIntepolantIndexing;
 		requirementsNonuniformIntepolantIndexing.push_back("Features.sampleRateShading");
 		nonuniformInterpolantIndexingGroup->addChild(cts_amber::createAmberTestCase(testCtx, "centroid",  "pipeline/nonuniform_interpolant_indexing", "centroid.amber", requirementsNonuniformIntepolantIndexing));
@@ -1119,7 +1119,7 @@ tcu::TestCaseGroup* createMultisampleInterpolationTests (tcu::TestContext& testC
 #endif // CTS_USES_VULKANSC
 	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetPixelCenter> >	(testCtx, "offset_interpolate_at_pixel_center",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount));
 
-	de::MovePtr<tcu::TestCaseGroup> offsetGroup(new tcu::TestCaseGroup(testCtx, "offset_interpolation_at_sample_position", "Test interpolation at offset function works for sample positions"));
+	de::MovePtr<tcu::TestCaseGroup> offsetGroup(new tcu::TestCaseGroup(testCtx, "offset_interpolation_at_sample_position"));
 	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "all_components",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount));
 	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "component_0",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 0u}));
 	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "component_1",		pipelineConstructionType, imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 1u}));

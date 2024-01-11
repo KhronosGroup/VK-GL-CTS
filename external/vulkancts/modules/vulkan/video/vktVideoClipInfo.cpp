@@ -25,8 +25,6 @@
  *--------------------------------------------------------------------*/
 
 #include "vktVideoClipInfo.hpp"
-#include "vktVideoTestUtils.hpp"
-
 
 namespace vkt {
 namespace video

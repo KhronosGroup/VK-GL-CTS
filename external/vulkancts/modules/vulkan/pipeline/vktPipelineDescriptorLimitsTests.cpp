@@ -843,9 +843,15 @@ void DescriptorLimitTest::initPrograms (SourceCollections& sourceCollections) co
 
 void DescriptorLimitTest::checkSupport (Context& context) const
 {
-	const InstanceInterface&		vki				= context.getInstanceInterface();
-	const VkPhysicalDevice			physDevice		= context.getPhysicalDevice();
-	const VkPhysicalDeviceLimits	limits			= getPhysicalDeviceProperties(vki, physDevice).limits;
+	const InstanceInterface&		vki					= context.getInstanceInterface();
+	const VkPhysicalDevice			physDevice			= context.getPhysicalDevice();
+	const VkPhysicalDeviceLimits	limits				= getPhysicalDeviceProperties(vki, physDevice).limits;
+#ifdef CTS_USES_VULKANSC
+	const VkPhysicalDeviceVulkanSC10Properties	scProps	= getPhysicalDeviceVulkanSC10Properties(vki, physDevice);
+
+	if (m_params.m_descCount > scProps.maxDescriptorSetLayoutBindings)
+		TCU_THROW(NotSupportedError, "maxDescriptorSetLayoutBindings (" + std::to_string(scProps.maxDescriptorSetLayoutBindings) + ")");
+#endif // CTS_USES_VULKANSC
 
 	// We have to make sure, that we don't bind anything outside of valid descriptor binding locations determined by maxPerStageResources.
 	if (m_params.m_descCount > limits.maxPerStageResources - 1u)

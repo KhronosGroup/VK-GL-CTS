@@ -674,11 +674,12 @@ static void writeRunSummary(const TestRunSummary& summary, const char* filename)
 	}
 
 	// Record test run parameters (log filename & command line).
+	size_t sessionIndex = 0;
 	for (vector<TestRunParams>::const_iterator runIter = summary.runParams.begin(); runIter != summary.runParams.end();
 		 ++runIter)
 	{
 		string		   cmdLine;
-		qpXmlAttribute attribs[2];
+		qpXmlAttribute attribs[7];
 
 		for (vector<string>::const_iterator argIter = runIter->args.begin(); argIter != runIter->args.end(); ++argIter)
 		{
@@ -690,8 +691,20 @@ static void writeRunSummary(const TestRunSummary& summary, const char* filename)
 		attribs[0] = qpSetStringAttrib("FileName", runIter->logFilename.c_str());
 		attribs[1] = qpSetStringAttrib("CmdLine", cmdLine.c_str());
 
-		XML_CHECK(qpXmlWriter_startElement(writer.get(), "TestRun", DE_LENGTH_OF_ARRAY(attribs), attribs) &&
-				  qpXmlWriter_endElement(writer.get(), "TestRun"));
+		XML_CHECK(qpXmlWriter_startElement(writer.get(), "TestRun", 2, attribs));
+		if (++sessionIndex < summary.results.size()) {
+			const tcu::TestRunStatus& results = summary.results[sessionIndex];
+			attribs[0] = qpSetIntAttrib("Passed", results.numPassed);
+			attribs[1] = qpSetIntAttrib("Failed", results.numFailed);
+			attribs[2] = qpSetIntAttrib("NotSupported", results.numNotSupported);
+			attribs[3] = qpSetIntAttrib("Warnings", results.numWarnings);
+			attribs[4] = qpSetIntAttrib("Waived", results.numWaived);
+			attribs[5] = qpSetIntAttrib("DeviceLost", results.numDeviceLost);
+			attribs[6] = qpSetIntAttrib("Executed", results.numExecuted);
+			XML_CHECK(qpXmlWriter_startElement(writer.get(), "TestResult", DE_LENGTH_OF_ARRAY(attribs), attribs));
+			XML_CHECK(qpXmlWriter_endElement(writer.get(), "TestResult"));
+		}
+		XML_CHECK(qpXmlWriter_endElement(writer.get(), "TestRun"));
 	}
 
 	XML_CHECK(qpXmlWriter_endElement(writer.get(), "Summary"));
@@ -859,10 +872,12 @@ void TestRunner::deinitSession(void)
 	const tcu::TestRunStatus& result = m_curSession->getResult();
 	bool isOk = result.numFailed == 0 && result.isComplete;
 
-	DE_ASSERT(result.numExecuted == result.numPassed + result.numFailed + result.numNotSupported + result.numWarnings + result.numWaived);
+	DE_ASSERT(result.numExecuted == result.numPassed + result.numFailed + result.numNotSupported + result.numWarnings + result.numWaived + result.numDeviceLost);
 
 	m_sessionsExecuted += 1;
 	(isOk ? m_sessionsPassed : m_sessionsFailed) += 1;
+
+	m_summary.results.push_back(result);
 
 	delete m_curSession;
 	m_curSession = DE_NULL;

@@ -623,7 +623,7 @@ public:
 		const VkDevice&										deviceA						= m_context.getDevice();
 		const Unique<VkDevice>&								deviceB						(SingletonDevice::getDevice(m_context));
 		const DeviceInterface&								vkA							= m_context.getDeviceInterface();
-		const DeviceDriver									vkB							(m_context.getPlatformInterface(), m_context.getInstance(), *deviceB, m_context.getUsedApiVersion());
+		const DeviceDriver									vkB							(m_context.getPlatformInterface(), m_context.getInstance(), *deviceB, m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine());
 		UniquePtr<SimpleAllocator>							allocatorA					(new SimpleAllocator(vkA, deviceA, vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(),
 																																								 m_context.getPhysicalDevice())));
 		UniquePtr<SimpleAllocator>							allocatorB					(new SimpleAllocator(vkB, *deviceB, vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(),
@@ -1126,7 +1126,7 @@ class QueueSubmitSignalOrderSharedTests : public tcu::TestCaseGroup
 {
 public:
 	QueueSubmitSignalOrderSharedTests (tcu::TestContext& testCtx, SynchronizationType type, VkSemaphoreType semaphoreType, const char *name)
-		: tcu::TestCaseGroup	(testCtx, name, "Signal ordering of semaphores")
+		: tcu::TestCaseGroup	(testCtx, name)
 		, m_type				(type)
 		, m_semaphoreType		(semaphoreType)
 	{
@@ -1302,7 +1302,7 @@ public:
 		, m_resourceDesc		(resourceDesc)
 		, m_semaphoreType		(semaphoreType)
 		, m_device				(SingletonDevice::getDevice(context))
-		, m_deviceInterface		(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion())
+		, m_deviceInterface		(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
 		, m_allocator			(new SimpleAllocator(m_deviceInterface,
 													 *m_device,
 													 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
@@ -1685,7 +1685,7 @@ class QueueSubmitSignalOrderTests : public tcu::TestCaseGroup
 {
 public:
 	QueueSubmitSignalOrderTests (tcu::TestContext& testCtx, SynchronizationType type, VkSemaphoreType semaphoreType, const char *name)
-		: tcu::TestCaseGroup	(testCtx, name, "Signal ordering of semaphores")
+		: tcu::TestCaseGroup	(testCtx, name)
 		, m_type				(type)
 		, m_semaphoreType		(semaphoreType)
 	{

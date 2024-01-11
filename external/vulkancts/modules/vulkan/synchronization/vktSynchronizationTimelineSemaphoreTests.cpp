@@ -1233,7 +1233,7 @@ public:
 	{
 		initCommonTests();
 
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc", ""));
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc"));
 		// Timeline semaphore properties test
 		addFunctionCase(miscGroup.get(), "max_difference_value", checkSupport, maxDifferenceValueCase, m_type);
 		// Timeline semaphore initial value test
@@ -1254,7 +1254,7 @@ public:
 	{
 		initCommonTests();
 
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc", ""));
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(m_testCtx, "misc"));
 		// Timeline semaphore properties test
 		addFunctionCase(miscGroup.get(), "max_difference_value", checkSupport, maxDifferenceValueCase, m_type);
 		addChild(miscGroup.release());
@@ -1449,7 +1449,7 @@ public:
 		, m_device			(SingletonDevice::getDevice(context, type))
 		, m_context			(context)
 #ifndef CTS_USES_VULKANSC
-		, m_deviceDriver	(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion())))
+		, m_deviceDriver	(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())))
 #else
 		, m_deviceDriver	(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
 #endif // CTS_USES_VULKANSC
@@ -1495,6 +1495,10 @@ public:
 						VkQueueFlags				copyOpQueueFlags	= copyOpSupport->getQueueFlags(m_opContext);
 
 						if ((copyOpQueueFlags & queueFamilyProperties[familyIdx].queueFlags) != copyOpQueueFlags)
+							continue;
+
+						// Barriers use VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT pipeline stage so queue must have VK_QUEUE_GRAPHICS_BIT
+						if ((copyOpQueueFlags & VK_QUEUE_GRAPHICS_BIT) == 0u)
 							continue;
 
 						m_iterations.push_back(makeSharedPtr(new QueueTimelineIteration(copyOpSupport, m_iterations.back()->timelineValue,
@@ -1883,7 +1887,7 @@ public:
 		, m_device			(SingletonDevice::getDevice(context, type))
 		, m_context			(context)
 #ifndef CTS_USES_VULKANSC
-		, m_deviceDriver(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion())))
+		, m_deviceDriver(de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())))
 #else
 		, m_deviceDriver(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *m_device, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_device)))
 #endif // CTS_USES_VULKANSC
@@ -1927,6 +1931,15 @@ public:
 						if ((copyOpQueueFlags & queueFamilyProperties[familyIdx].queueFlags) != copyOpQueueFlags)
 							continue;
 
+						VkShaderStageFlagBits writeStage = writeOp->getShaderStage();
+						if (writeStage != VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM && !isStageSupported(writeStage, copyOpQueueFlags)) {
+							continue;
+						}
+						VkShaderStageFlagBits readStage = readOp->getShaderStage();
+						if (readStage != VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM && !isStageSupported(readStage, copyOpQueueFlags)) {
+							continue;
+						}
+
 						m_copyIterations.push_back(makeSharedPtr(new QueueTimelineIteration(copyOpSupport, lastSubmitValue,
 																							getDeviceQueue(vk, device, familyIdx, instanceIdx),
 																							familyIdx, rng)));
@@ -1943,7 +1956,20 @@ public:
 			for (deUint32 familyIdx = 0; familyIdx < queueFamilyProperties.size() && !added; familyIdx++) {
 				for (deUint32 instanceIdx = 0; instanceIdx < queueFamilyProperties[familyIdx].queueCount && !added; instanceIdx++) {
 					VkQueueFlags	readOpQueueFlags	= readOp->getQueueFlags(m_opContext);
-
+					// Explicitly check if the readOp requires a graphics queue
+					if ((readOpQueueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
+						// If none of the queue families support graphics, report unsupported
+						bool graphicsSupported = false;
+						for (const auto& prop : queueFamilyProperties) {
+							if ((prop.queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
+								graphicsSupported = true;
+								break;
+							}
+						}
+						if (!graphicsSupported) {
+							TCU_THROW(NotSupportedError, "Graphics queue required but not supported by the driver");
+						}
+					}
 					// If the readOpQueueFlags contain the transfer bit set then check if the queue supports graphics or compute operations before skipping this iteration.
 					// Because reporting transfer functionality is optional if a queue supports graphics or compute operations.
 					if (((readOpQueueFlags & queueFamilyProperties[familyIdx].queueFlags) != readOpQueueFlags) &&

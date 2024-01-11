@@ -108,6 +108,7 @@ DE_DECLARE_COMMAND_LINE_OPT(CaseFractionMandatoryTests,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(WaiverFile,					std::string);
 DE_DECLARE_COMMAND_LINE_OPT(RunnerType,					tcu::TestRunnerType);
 DE_DECLARE_COMMAND_LINE_OPT(TerminateOnFail,			bool);
+DE_DECLARE_COMMAND_LINE_OPT(TerminateOnDeviceLost,		bool);
 DE_DECLARE_COMMAND_LINE_OPT(SubProcess,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(SubprocessTestCount,		int);
 DE_DECLARE_COMMAND_LINE_OPT(SubprocessConfigFile,		std::string);
@@ -124,7 +125,8 @@ DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerLogFile,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerFilePrefix,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(VkLibraryPath,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(ApplicationParametersInputFile,	std::string);
-
+DE_DECLARE_COMMAND_LINE_OPT(QuietStdout,				bool);
+DE_DECLARE_COMMAND_LINE_OPT(ComputeOnly,				bool);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -186,6 +188,7 @@ void registerOptions (de::cmdline::Parser& parser)
 	};
 
 	parser
+		<< Option<QuietStdout>					("q",		"quiet",									"Suppress messages to standard output")
 		<< Option<CasePath>						("n",		"deqp-case",								"Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)")
 		<< Option<CaseList>						(DE_NULL,	"deqp-caselist",							"Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})")
 		<< Option<CaseListFile>					(DE_NULL,	"deqp-caselist-file",						"Read case list (in trie format) from given file")
@@ -238,6 +241,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<WaiverFile>					(DE_NULL,	"deqp-waiver-file",							"Read waived tests from given file",									"")
 		<< Option<RunnerType>					(DE_NULL,	"deqp-runner-type",							"Filter test cases based on runner",				s_runnerTypes,		"any")
 		<< Option<TerminateOnFail>				(DE_NULL,	"deqp-terminate-on-fail",					"Terminate the run on first failure",				s_enableNames,		"disable")
+		<< Option<TerminateOnDeviceLost>		(DE_NULL,	"deqp-terminate-on-device-lost",			"Terminate the run on a device lost error",			s_enableNames,		"disable")
 		<< Option<SubProcess>					(DE_NULL,	"deqp-subprocess",							"Inform app that it works as subprocess (Vulkan SC only, do not use manually)", s_enableNames, "disable")
 		<< Option<SubprocessTestCount>			(DE_NULL,	"deqp-subprocess-test-count",				"Define default number of tests performed in subprocess for specific test cases(Vulkan SC only)",	"65536")
 		<< Option<SubprocessConfigFile>			(DE_NULL,	"deqp-subprocess-cfg-file",					"Config file defining number of tests performed in subprocess for specific test branches (Vulkan SC only)", "")
@@ -253,7 +257,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<PipelineCompilerLogFile>		(DE_NULL,	"deqp-pipeline-logfile",					"Log file for pipeline compiler (Vulkan SC only, do not use manually)", "")
 		<< Option<PipelineCompilerFilePrefix>	(DE_NULL,	"deqp-pipeline-prefix",						"Prefix for input pipeline compiler files (Vulkan SC only, do not use manually)", "")
 		<< Option<VkLibraryPath>				(DE_NULL,	"deqp-vk-library-path",						"Path to Vulkan library (e.g. loader library vulkan-1.dll)", "")
-		<< Option<ApplicationParametersInputFile>    (DE_NULL,       "deqp-app-params-input-file",				"File that provides a default set of application parameters");
+		<< Option<ApplicationParametersInputFile>    (DE_NULL,       "deqp-app-params-input-file",				"File that provides a default set of application parameters")
+		<< Option<ComputeOnly>					(DE_NULL,	"deqp-compute-only",						"Perform tests for devices implementing compute-only functionality", s_enableNames, "disable");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -281,7 +286,13 @@ static uint64_t MurmurHash64B ( const void * key, int len, uint64_t seed )
 	uint32_t h1 = uint32_t(seed) ^ len;
 	uint32_t h2 = uint32_t(seed >> 32);
 
-	const uint32_t * data = (const uint32_t *)key;
+	// Ensure that unaligned accesses to data are allowed.
+#ifdef WIN32
+	typedef __declspec(align(1)) uint32_t uint32_t_unaligned;
+#else
+	typedef __attribute__((aligned(1))) uint32_t uint32_t_unaligned;
+#endif
+	const uint32_t_unaligned * data = (const uint32_t_unaligned *)key;
 
 	while(len >= 8)
 	{
@@ -1044,6 +1055,7 @@ bool CommandLine::parse (const std::string& cmdLine)
 	return isOk;
 }
 
+bool					CommandLine::quietMode						(void) const	{ return m_cmdLine.getOption<opt::QuietStdout>();							}
 const char*				CommandLine::getLogFileName					(void) const	{ return m_cmdLine.getOption<opt::LogFilename>().c_str();					}
 deUint32				CommandLine::getLogFlags					(void) const	{ return m_logFlags;														}
 RunMode					CommandLine::getRunMode						(void) const	{ return m_cmdLine.getOption<opt::RunMode>();								}
@@ -1079,12 +1091,14 @@ const char*				CommandLine::getCaseFractionMandatoryTests	(void) const	{ return 
 const char*				CommandLine::getArchiveDir					(void) const	{ return m_cmdLine.getOption<opt::ArchiveDir>().c_str();					}
 tcu::TestRunnerType		CommandLine::getRunnerType					(void) const	{ return m_cmdLine.getOption<opt::RunnerType>();							}
 bool					CommandLine::isTerminateOnFailEnabled		(void) const	{ return m_cmdLine.getOption<opt::TerminateOnFail>();						}
+bool					CommandLine::isTerminateOnDeviceLostEnabled	(void) const	{ return m_cmdLine.getOption<opt::TerminateOnDeviceLost>();					}
 bool					CommandLine::isSubProcess					(void) const	{ return m_cmdLine.getOption<opt::SubProcess>();							}
 int						CommandLine::getSubprocessTestCount			(void) const	{ return m_cmdLine.getOption<opt::SubprocessTestCount>();					}
 int						CommandLine::getCommandPoolMinSize			(void) const	{ return m_cmdLine.getOption<opt::CommandPoolMinSize>();					}
 int						CommandLine::getCommandBufferMinSize		(void) const	{ return m_cmdLine.getOption<opt::CommandBufferMinSize>();					}
 int						CommandLine::getCommandDefaultSize			(void) const	{ return m_cmdLine.getOption<opt::CommandDefaultSize>();					}
 int						CommandLine::getPipelineDefaultSize			(void) const	{ return m_cmdLine.getOption<opt::PipelineDefaultSize>();					}
+bool					CommandLine::isComputeOnly					(void) const	{ return m_cmdLine.getOption<opt::ComputeOnly>();							}
 
 const char* CommandLine::getGLContextType (void) const
 {

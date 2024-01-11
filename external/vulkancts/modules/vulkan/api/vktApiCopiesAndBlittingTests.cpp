@@ -1663,6 +1663,10 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
 	const VkDevice				vkDevice			= m_device;
+	VkQueue						queue				= VK_NULL_HANDLE;
+	VkCommandBuffer				commandBuffer		= VK_NULL_HANDLE;
+	VkCommandPool				commandPool			= VK_NULL_HANDLE;
+	std::tie(queue, commandBuffer, commandPool)		= activeExecutionCtx();
 
 	std::vector<VkImageCopy>		imageCopies;
 	std::vector<VkImageCopy2KHR>	imageCopies2KHR;
@@ -1741,12 +1745,12 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 		},
 	};
 
-	beginCommandBuffer(vk, *m_universalCmdBuffer);
-	vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
+	beginCommandBuffer(vk, commandBuffer);
+	vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
 
 	if (!(m_params.extensionFlags & COPY_COMMANDS_2))
 	{
-		vk.cmdCopyImage(*m_universalCmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
+		vk.cmdCopyImage(commandBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 	}
 	else
 	{
@@ -1763,13 +1767,13 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 			imageCopies2KHR.data()						// const VkImageCopy2KHR*	pRegions;
 		};
 
-		vk.cmdCopyImage2(*m_universalCmdBuffer, &copyImageInfo2KHR);
+		vk.cmdCopyImage2(commandBuffer, &copyImageInfo2KHR);
 	}
 
-	endCommandBuffer(vk, *m_universalCmdBuffer);
+	endCommandBuffer(vk, commandBuffer);
 
-	submitCommandsAndWait (vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
-	m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
+	submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
 	for (deUint32 miplevel = 0; miplevel < m_params.mipLevels; miplevel++)
 	{
@@ -2087,7 +2091,11 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 	uploadBuffer(m_sourceTextureLevel->getAccess(), *m_sourceBufferAlloc);
 	uploadBuffer(m_destinationTextureLevel->getAccess(), *m_destinationBufferAlloc);
 
-	const DeviceInterface&		vk			= m_context.getDeviceInterface();
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	VkQueue						queue				= VK_NULL_HANDLE;
+	VkCommandBuffer				commandBuffer		= VK_NULL_HANDLE;
+	VkCommandPool				commandPool			= VK_NULL_HANDLE;
+	std::tie(queue, commandBuffer, commandPool)		= activeExecutionCtx();
 
 	const VkBufferMemoryBarrier		srcBufferBarrier	=
 	{
@@ -2130,12 +2138,12 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 		}
 	}
 
-	beginCommandBuffer(vk, *m_universalCmdBuffer);
-	vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &srcBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+	beginCommandBuffer(vk, commandBuffer);
+	vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &srcBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
 	if (!(m_params.extensionFlags & COPY_COMMANDS_2))
 	{
-		vk.cmdCopyBuffer(*m_universalCmdBuffer, m_source.get(), m_destination.get(), (deUint32)m_params.regions.size(), &bufferCopies[0]);
+		vk.cmdCopyBuffer(commandBuffer, m_source.get(), m_destination.get(), (deUint32)m_params.regions.size(), &bufferCopies[0]);
 	}
 	else
 	{
@@ -2150,13 +2158,13 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 			&bufferCopies2KHR[0]						// const VkBufferCopy2KHR*	pRegions;
 		};
 
-		vk.cmdCopyBuffer2(*m_universalCmdBuffer, &copyBufferInfo2KHR);
+		vk.cmdCopyBuffer2(commandBuffer, &copyBufferInfo2KHR);
 	}
 
-	vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
-	endCommandBuffer(vk, *m_universalCmdBuffer);
-	submitCommandsAndWait(vk, m_device, m_universalQueue, *m_universalCmdBuffer);
-	m_context.resetCommandPoolForVKSC(m_device, *m_universalCmdPool);
+	vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+	endCommandBuffer(vk, commandBuffer);
+	submitCommandsAndWait(vk, m_device, queue, commandBuffer);
+	m_context.resetCommandPoolForVKSC(m_device, commandPool);
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), dstLevelWidth, 1));
@@ -2290,8 +2298,12 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 	uploadImage(m_sourceTextureLevel->getAccess(), *m_source, m_params.src.image);
 	uploadBuffer(m_destinationTextureLevel->getAccess(), *m_destinationBufferAlloc);
 
-	const DeviceInterface&		vk			= m_context.getDeviceInterface();
-	const VkDevice				vkDevice	= m_device;
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const VkDevice			vkDevice			= m_device;
+	VkQueue					queue				= VK_NULL_HANDLE;
+	VkCommandBuffer			commandBuffer		= VK_NULL_HANDLE;
+	VkCommandPool			commandPool			= VK_NULL_HANDLE;
+	std::tie(queue, commandBuffer, commandPool) = activeExecutionCtx();
 
 	// Barriers for copying image to buffer
 	const VkImageMemoryBarrier		imageBarrier		=
@@ -2343,12 +2355,12 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 		}
 	}
 
-	beginCommandBuffer(vk, *m_universalCmdBuffer);
-	vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
+	beginCommandBuffer(vk, commandBuffer);
+	vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 
 	if (!(m_params.extensionFlags & COPY_COMMANDS_2))
 	{
-		vk.cmdCopyImageToBuffer(*m_universalCmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), (deUint32)m_params.regions.size(), &bufferImageCopies[0]);
+		vk.cmdCopyImageToBuffer(commandBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), (deUint32)m_params.regions.size(), &bufferImageCopies[0]);
 	}
 	else
 	{
@@ -2364,14 +2376,14 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 			&bufferImageCopies2KHR[0]							// const VkBufferImageCopy2KHR*	pRegions;
 		};
 
-		vk.cmdCopyImageToBuffer2(*m_universalCmdBuffer, &copyImageToBufferInfo2KHR);
+		vk.cmdCopyImageToBuffer2(commandBuffer, &copyImageToBufferInfo2KHR);
 	}
 
-	vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
-	endCommandBuffer(vk, *m_universalCmdBuffer);
+	vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+	endCommandBuffer(vk, commandBuffer);
 
-	submitCommandsAndWait (vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
-	m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
+	submitCommandsAndWait (vk, vkDevice, queue, commandBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(m_textureFormat, (int)m_params.dst.buffer.size, 1));
@@ -2509,7 +2521,7 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate (void)
 	m_texture->write(reinterpret_cast<deUint8*>(m_sourceBuffer->getAllocation().getHostPtr()));
 	flushAlloc(vk, vkDevice, m_sourceBuffer->getAllocation());
 	std::vector<VkBufferImageCopy>	copyRegions			= m_texture->getBufferCopyRegions();
-	copyBufferToImage(vk, vkDevice, queue, m_context.getUniversalQueueFamilyIndex(), m_sourceBuffer->get(), m_texture->getCompressedSize(), copyRegions, nullptr, VK_IMAGE_ASPECT_COLOR_BIT, m_texture->getNumLevels(), m_texture->getArraySize(), m_source->get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT, &commandPool, 0);
+	copyBufferToImage(vk, vkDevice, queue, activeQueueFamilyIndex(), m_sourceBuffer->get(), m_texture->getCompressedSize(), copyRegions, nullptr, VK_IMAGE_ASPECT_COLOR_BIT, m_texture->getNumLevels(), m_texture->getArraySize(), m_source->get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT, &commandPool, 0);
 
 	// VKSC requires static allocation, so allocate a large enough buffer for each individual mip level of
 	// the compressed source image, rather than creating a corresponding buffer for each level in the loop
@@ -2752,8 +2764,12 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 	uploadBuffer(m_sourceTextureLevel->getAccess(), *m_sourceBufferAlloc);
 	uploadImage(m_destinationTextureLevel->getAccess(), *m_destination, m_params.dst.image);
 
-	const DeviceInterface&		vk			= m_context.getDeviceInterface();
-	const VkDevice				vkDevice	= m_device;
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const VkDevice				vkDevice			= m_device;
+	VkQueue						queue				= VK_NULL_HANDLE;
+	VkCommandBuffer				commandBuffer		= VK_NULL_HANDLE;
+	VkCommandPool				commandPool			= VK_NULL_HANDLE;
+	std::tie(queue, commandBuffer, commandPool) = activeExecutionCtx();
 
 	const VkImageMemoryBarrier	imageBarrier	=
 	{
@@ -2791,12 +2807,12 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 		}
 	}
 
-	beginCommandBuffer(vk, *m_universalCmdBuffer);
-	vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
+	beginCommandBuffer(vk, commandBuffer);
+	vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 
 	if (!(m_params.extensionFlags & COPY_COMMANDS_2))
 	{
-		vk.cmdCopyBufferToImage(*m_universalCmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), bufferImageCopies.data());
+		vk.cmdCopyBufferToImage(commandBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), bufferImageCopies.data());
 	}
 	else
 	{
@@ -2812,13 +2828,13 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 			bufferImageCopies2KHR.data()						// const VkBufferImageCopy2KHR*	pRegions;
 		};
 
-		vk.cmdCopyBufferToImage2(*m_universalCmdBuffer, &copyBufferToImageInfo2KHR);
+		vk.cmdCopyBufferToImage2(commandBuffer, &copyBufferToImageInfo2KHR);
 	}
 
-	endCommandBuffer(vk, *m_universalCmdBuffer);
+	endCommandBuffer(vk, commandBuffer);
 
-	submitCommandsAndWait (vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
-	m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
+	submitCommandsAndWait (vk, vkDevice, queue, commandBuffer);
+	m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel	= readImage(*m_destination, m_params.dst.image);
 	return checkTestResult(resultLevel->getAccess());
@@ -3165,6 +3181,9 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 			// Issue a a copy command per region defined by the test.
 			for (deUint32 i = 0; i < bufferImageCopies.size(); i++)
 			{
+				if (i > 0)
+					vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
+
 				vk.cmdCopyBufferToImage(*m_universalCmdBuffer, m_source.get(), m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopies[i]);
 			}
 		}
@@ -3193,6 +3212,9 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 			// Issue a a copy command per region defined by the test.
 			for (deUint32 i = 0; i < bufferImageCopies2KHR.size(); i++)
 			{
+				if (i > 0)
+					vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
+
 				const VkCopyBufferToImageInfo2KHR copyBufferToImageInfo2KHR =
 				{
 					VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR,	// VkStructureType				sType;
@@ -3999,11 +4021,35 @@ bool BlittingImages::checkCompressedNonNearestFilteredResult(const tcu::ConstPix
 //! Utility to encapsulate coordinate computation and loops.
 struct CompareEachPixelInEachRegion
 {
+protected:
+	void getUsedZRange (int32_t range[2], const ImageParms& imgParams, const VkImageSubresourceLayers& layers, const VkOffset3D offsets[2]) const
+	{
+		if (imgParams.imageType == VK_IMAGE_TYPE_3D)
+		{
+			range[0] = offsets[0].z;
+			range[1] = offsets[1].z;
+		}
+		else if (imgParams.imageType == VK_IMAGE_TYPE_2D)
+		{
+			range[0] = static_cast<int32_t>(layers.baseArrayLayer);
+			range[1] = static_cast<int32_t>(layers.baseArrayLayer + (
+				(layers.layerCount == VK_REMAINING_ARRAY_LAYERS)
+				? (getArraySize(imgParams) - layers.baseArrayLayer)
+				: layers.layerCount));
+		}
+		else
+		{
+			range[0] = 0;
+			range[1] = 1;
+		}
+	}
+
+public:
 	virtual		 ~CompareEachPixelInEachRegion  (void) {}
 	virtual bool compare								(const void* pUserData, const int x, const int y, const int z, const tcu::Vec3& srcNormCoord) const = 0;
 
 	bool forEach (const void*							pUserData,
-				  const std::vector<CopyRegion>&		regions,
+				  const TestParams&						params,
 				  const int								sourceWidth,
 				  const int								sourceHeight,
 				  const int								sourceDepth,
@@ -4011,19 +4057,25 @@ struct CompareEachPixelInEachRegion
 	{
 		bool compareOk = true;
 
-		for (std::vector<CopyRegion>::const_iterator regionIter = regions.begin(); regionIter != regions.end(); ++regionIter)
+		for (std::vector<CopyRegion>::const_iterator regionIter = params.regions.begin(); regionIter != params.regions.end(); ++regionIter)
 		{
 			const VkImageBlit& blit = regionIter->imageBlit;
 
+			int32_t srcZ[2];
+			int32_t dstZ[2];
+
+			getUsedZRange(srcZ, params.src.image, blit.srcSubresource, blit.srcOffsets);
+			getUsedZRange(dstZ, params.dst.image, blit.dstSubresource, blit.dstOffsets);
+
 			const int	xStart	= deMin32(blit.dstOffsets[0].x, blit.dstOffsets[1].x);
 			const int	yStart	= deMin32(blit.dstOffsets[0].y, blit.dstOffsets[1].y);
-			const int	zStart	= deMin32(blit.dstOffsets[0].z, blit.dstOffsets[1].z);
+			const int	zStart	= deMin32(dstZ[0], dstZ[1]);
 			const int	xEnd	= deMax32(blit.dstOffsets[0].x, blit.dstOffsets[1].x);
 			const int	yEnd	= deMax32(blit.dstOffsets[0].y, blit.dstOffsets[1].y);
-			const int	zEnd	= deMax32(blit.dstOffsets[0].z, blit.dstOffsets[1].z);
+			const int	zEnd	= deMax32(dstZ[0], dstZ[1]);
 			const float	xScale	= static_cast<float>(blit.srcOffsets[1].x - blit.srcOffsets[0].x) / static_cast<float>(blit.dstOffsets[1].x - blit.dstOffsets[0].x);
 			const float	yScale	= static_cast<float>(blit.srcOffsets[1].y - blit.srcOffsets[0].y) / static_cast<float>(blit.dstOffsets[1].y - blit.dstOffsets[0].y);
-			const float	zScale	= static_cast<float>(blit.srcOffsets[1].z - blit.srcOffsets[0].z) / static_cast<float>(blit.dstOffsets[1].z - blit.dstOffsets[0].z);
+			const float	zScale	= static_cast<float>(srcZ[1] - srcZ[0]) / static_cast<float>(dstZ[1] - dstZ[0]);
 			const float srcInvW	= 1.0f / static_cast<float>(sourceWidth);
 			const float srcInvH	= 1.0f / static_cast<float>(sourceHeight);
 			const float srcInvD	= 1.0f / static_cast<float>(sourceDepth);
@@ -4036,7 +4088,7 @@ struct CompareEachPixelInEachRegion
 				(
 					(xScale * (static_cast<float>(x - blit.dstOffsets[0].x) + 0.5f) + static_cast<float>(blit.srcOffsets[0].x)) * srcInvW,
 					(yScale * (static_cast<float>(y - blit.dstOffsets[0].y) + 0.5f) + static_cast<float>(blit.srcOffsets[0].y)) * srcInvH,
-					(zScale * (static_cast<float>(z - blit.dstOffsets[0].z) + 0.5f) + static_cast<float>(blit.srcOffsets[0].z)) * srcInvD
+					(zScale * (static_cast<float>(z - dstZ[0]) + 0.5f) + static_cast<float>(srcZ[0])) * srcInvD
 				);
 
 				if (!compare(pUserData, x, y, z, srcNormCoord))
@@ -4088,7 +4140,7 @@ bool floatNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
 							  const tcu::Vec4&						sourceThreshold,
 							  const tcu::Vec4&						resultThreshold,
 							  const tcu::PixelBufferAccess&			errorMask,
-							  const std::vector<CopyRegion>&		regions)
+							  const TestParams&						params)
 {
 	const tcu::Sampler		sampler		(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
 										 0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
@@ -4104,10 +4156,11 @@ bool floatNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
 		const tcu::ConstPixelBufferAccess&	result;
 		const tcu::Sampler&					sampler;
 		const tcu::LookupPrecision&			precision;
+		const TestParams&					params;
 		const bool							isSRGB;
 	} capture =
 	{
-		source, result, sampler, precision, tcu::isSRGB(result.getFormat())
+		source, result, sampler, precision, params, tcu::isSRGB(result.getFormat())
 	};
 
 	const struct Loop : CompareEachPixelInEachRegion
@@ -4128,13 +4181,13 @@ bool floatNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
 		}
 	} loop;
 
-	return loop.forEach(&capture, regions, source.getWidth(), source.getHeight(), source.getDepth(), errorMask);
+	return loop.forEach(&capture, params, source.getWidth(), source.getHeight(), source.getDepth(), errorMask);
 }
 
 bool intNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
 							const tcu::ConstPixelBufferAccess&	result,
 							const tcu::PixelBufferAccess&		errorMask,
-							const std::vector<CopyRegion>&		regions)
+							const TestParams&					params)
 {
 	const tcu::Sampler		sampler		(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::NEAREST, tcu::Sampler::NEAREST,
 										 0.0f, true, tcu::Sampler::COMPAREMODE_NONE, 0, tcu::Vec4(0.0f), true);
@@ -4185,7 +4238,7 @@ bool intNearestBlitCompare (const tcu::ConstPixelBufferAccess&	source,
 		}
 	} loop;
 
-	return loop.forEach(&capture, regions, source.getWidth(), source.getHeight(), source.getDepth(), errorMask);
+	return loop.forEach(&capture, params, source.getWidth(), source.getHeight(), source.getDepth(), errorMask);
 }
 
 bool BlittingImages::checkNearestFilteredResult (const tcu::ConstPixelBufferAccess&	result,
@@ -4218,13 +4271,13 @@ bool BlittingImages::checkNearestFilteredResult (const tcu::ConstPixelBufferAcce
 
 	if (dstImageIsIntClass)
 	{
-		ok = intNearestBlitCompare(source, result, errorMask, m_params.regions);
+		ok = intNearestBlitCompare(source, result, errorMask, m_params);
 	}
 	else
 	{
 		const tcu::Vec4 srcMaxDiff = getFloatOrFixedPointFormatThreshold(source.getFormat());
 		const tcu::Vec4 dstMaxDiff = getFloatOrFixedPointFormatThreshold(result.getFormat());
-		ok = floatNearestBlitCompare(source, result, srcMaxDiff, dstMaxDiff, errorMask, m_params.regions);
+		ok = floatNearestBlitCompare(source, result, srcMaxDiff, dstMaxDiff, errorMask, m_params);
 	}
 
 	if (result.getFormat() != tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8))
@@ -4364,7 +4417,7 @@ bool BlittingImages::checkCompressedNearestFilteredResult (const tcu::ConstPixel
 	const tcu::ConstPixelBufferAccess src = clampSource ? clampedSourceLevel.getAccess() : source;
 	const tcu::ConstPixelBufferAccess res = clampResult ? clampedResultLevel.getAccess() : result;
 
-	if (floatNearestBlitCompare(src, res, srcMaxDiff, dstMaxDiff, errorMask, m_params.regions))
+	if (floatNearestBlitCompare(src, res, srcMaxDiff, dstMaxDiff, errorMask, m_params))
 	{
 		log << tcu::TestLog::EndImageSet;
 		return true;
@@ -5395,6 +5448,10 @@ bool BlittingMipmaps::checkNearestFilteredResult (void)
 			if (m_params.regions.at(regionNdx).imageBlit.dstSubresource.mipLevel == mipLevelNdx)
 				mipLevelRegions.push_back(m_params.regions.at(regionNdx));
 
+		// Use the calculated regions instead of the original ones.
+		TestParams newParams = m_params;
+		newParams.regions = mipLevelRegions;
+
 		tcu::TextureLevel				errorMaskStorage	(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), result.getWidth(), result.getHeight(), result.getDepth());
 		tcu::PixelBufferAccess			errorMask			= errorMaskStorage.getAccess();
 		tcu::Vec4						pixelBias			(0.0f, 0.0f, 0.0f, 0.0f);
@@ -5405,14 +5462,14 @@ bool BlittingMipmaps::checkNearestFilteredResult (void)
 		if (dstChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
 			dstChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
 		{
-			singleLevelOk = intNearestBlitCompare(source, result, errorMask, mipLevelRegions);
+			singleLevelOk = intNearestBlitCompare(source, result, errorMask, newParams);
 		}
 		else
 		{
 			const tcu::Vec4 srcMaxDiff = getFloatOrFixedPointFormatThreshold(source.getFormat());
 			const tcu::Vec4 dstMaxDiff = getFloatOrFixedPointFormatThreshold(result.getFormat());
 
-			singleLevelOk = floatNearestBlitCompare(source, result, srcMaxDiff, dstMaxDiff, errorMask, mipLevelRegions);
+			singleLevelOk = floatNearestBlitCompare(source, result, srcMaxDiff, dstMaxDiff, errorMask, newParams);
 		}
 
 		if (dstFormat != tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8))
@@ -9593,7 +9650,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 1D to 3D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_3d", "1D to 3D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_3d"));
 
 		TestParams	params;
 		params.src.image.imageType	 = VK_IMAGE_TYPE_1D;
@@ -9653,7 +9710,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 2D to 1D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_1d", "2D to 1D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_1d"));
 
 		TestParams	params;
 		params.src.image.imageType	 = VK_IMAGE_TYPE_2D;
@@ -9710,7 +9767,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 2D to 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_2d", "2D to 2D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_2d"));
 
 		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_2D;
@@ -9766,7 +9823,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 2D to 3D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_3d", "2D to 3D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_3d"));
 
 		TestParams	params;
 		params.src.image.imageType	 = VK_IMAGE_TYPE_2D;
@@ -9823,7 +9880,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 3D to 1D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_1d", "3D to 1D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_1d"));
 
 		TestParams	params;
 		params.src.image.imageType	 = VK_IMAGE_TYPE_3D;
@@ -9883,7 +9940,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 3D to 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_2d", "3D to 2D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_2d"));
 
 		TestParams	params;
 		params.src.image.imageType	 = VK_IMAGE_TYPE_3D;
@@ -9943,7 +10000,7 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, TestGroupPa
 
 	// 3D to 3D tests. Note we use smaller dimensions here for performance reasons.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_3d", "3D to 3D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_3d"));
 
 		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_3D;
@@ -10135,7 +10192,7 @@ void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, TestGroupParamsP
 
 		const std::string	dimensionStr		= "src" + de::toString(testParams.params.src.image.extent.width) + "x" + de::toString(testParams.params.src.image.extent.height)
 												  + "_dst" + de::toString(testParams.params.dst.image.extent.width) + "x" + de::toString(testParams.params.dst.image.extent.height);
-		tcu::TestCaseGroup*	imageSizeGroup		= new tcu::TestCaseGroup(testCtx, dimensionStr.c_str(), ("Image sizes " + dimensionStr).c_str());
+		tcu::TestCaseGroup*	imageSizeGroup		= new tcu::TestCaseGroup(testCtx, dimensionStr.c_str());
 
 		// Compatible formats for copying
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(testFormats); compatibleFormatsIndex++)
@@ -10243,7 +10300,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 1D to 1D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_1d", "1D to 1D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_1d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -10319,7 +10376,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 1D to 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_2d", "1D to 2D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_2d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -10396,7 +10453,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 1D to 3D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_3d", "1D to 3D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_3d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -10476,7 +10533,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 2D to 1D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_1d", "2D to 1D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_1d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -10584,7 +10641,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 2D to 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_2d", "2D to 2D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_2d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -10691,7 +10748,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 2D to 3D tests.
 	{
-	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_3d", "2D to 3D copies"));
+	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_3d"));
 
 	for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 	{
@@ -10799,7 +10856,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 3D to 1D tests.
 	{
-	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_1d", "3D to 1D copies"));
+	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_1d"));
 
 	for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 	{
@@ -10879,7 +10936,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 3D to 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_2d", "3D to 2D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_2d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -10959,7 +11016,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Test
 
 	// 3D tests. Note we use smaller dimensions here for performance reasons.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_3d", "3D to 3D copies"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_3d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -13783,8 +13840,6 @@ void addBlittingImageArrayTests (tcu::TestCaseGroup* group, TestParams params)
 		params.dst.image.extent			 = defaultExtent;
 		params.src.image.extent.depth	 = layerCount;
 		params.dst.image.extent.depth	 = layerCount;
-		params.src.image.fillMode		 = FILL_MODE_RED;
-		params.dst.image.fillMode		 = FILL_MODE_RED;
 		params.filter					 = VK_FILTER_NEAREST;
 		params.extensionFlags			|= MAINTENANCE_5;
 
@@ -14682,7 +14737,7 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 
 	// 2D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d", "2D blitting tests"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d"));
 
 		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_2D;
@@ -14746,7 +14801,7 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 
 	// 1D tests.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d", "1D blitting tests"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d"));
 
 		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_1D;
@@ -14827,7 +14882,7 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 
 	// 3D tests. Note we use smaller dimensions here for performance reasons.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d", "3D blitting tests"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d"));
 
 		TestParams	params;
 		params.src.image.imageType	= VK_IMAGE_TYPE_3D;
@@ -14956,7 +15011,7 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 
 	// 2D tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d", "2D blitting tests"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -15072,7 +15127,7 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 
 	// 1D tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d", "1D blitting tests"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -15188,7 +15243,7 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 
 	// 3D tests. Note we use smaller dimensions here for performance reasons.
 	{
-		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d", "3D blitting tests"));
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d"));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
@@ -15414,9 +15469,8 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, 
 	{
 		const int						layerCount		= layerCountsToTest[layerCountIndex];
 		const std::string				layerGroupName	= "layercount_" + de::toString(layerCount);
-		const std::string				layerGroupDesc	= "Blit mipmaps with layerCount = " + de::toString(layerCount);
 
-		de::MovePtr<tcu::TestCaseGroup>	layerCountGroup	(new tcu::TestCaseGroup(group->getTestContext(), layerGroupName.c_str(), layerGroupDesc.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	layerCountGroup	(new tcu::TestCaseGroup(group->getTestContext(), layerGroupName.c_str()));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
 		{
@@ -15526,9 +15580,8 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 	{
 		const int						layerCount		= layerCountsToTest[layerCountIndex];
 		const std::string				layerGroupName	= "layercount_" + de::toString(layerCount);
-		const std::string				layerGroupDesc	= "Blit mipmaps with layerCount = " + de::toString(layerCount);
 
-		de::MovePtr<tcu::TestCaseGroup>	layerCountGroup	(new tcu::TestCaseGroup(group->getTestContext(), layerGroupName.c_str(), layerGroupDesc.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	layerCountGroup	(new tcu::TestCaseGroup(group->getTestContext(), layerGroupName.c_str()));
 
 		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
 		{
@@ -15573,10 +15626,9 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 		{
 			if (layerCount != 1 || barrierCount != 1)
 			{
-				const std::string				barrierGroupName = (multiLayer ? "layerbarriercount_" : "mipbarriercount_") + de::toString(barrierCount);
-				const std::string				barrierGroupDesc = "Use " + de::toString(barrierCount) + " image barriers";
+				const std::string barrierGroupName = (multiLayer ? "layerbarriercount_" : "mipbarriercount_") + de::toString(barrierCount);
 
-				de::MovePtr<tcu::TestCaseGroup>	barrierCountGroup(new tcu::TestCaseGroup(group->getTestContext(), barrierGroupName.c_str(), barrierGroupDesc.c_str()));
+				de::MovePtr<tcu::TestCaseGroup>	barrierCountGroup(new tcu::TestCaseGroup(group->getTestContext(), barrierGroupName.c_str()));
 
 				params.barrierCount = barrierCount;
 
@@ -15844,8 +15896,8 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 
 void addComputeAndTransferQueueTests (tcu::TestCaseGroup* group, AllocationKind allocationKind, deUint32 extensionFlags)
 {
-	de::MovePtr<tcu::TestCaseGroup>		computeGroup	(new tcu::TestCaseGroup(group->getTestContext(), "whole_copy_before_resolving_compute", "Resolve from image to image using compute queue (whole copy before resolving)"));
-	de::MovePtr<tcu::TestCaseGroup>		transferGroup	(new tcu::TestCaseGroup(group->getTestContext(), "whole_copy_before_resolving_transfer", "Resolve from image to image using compute queue (whole copy before resolving)"));
+	de::MovePtr<tcu::TestCaseGroup>		computeGroup	(new tcu::TestCaseGroup(group->getTestContext(), "whole_copy_before_resolving_compute"));
+	de::MovePtr<tcu::TestCaseGroup>		transferGroup	(new tcu::TestCaseGroup(group->getTestContext(), "whole_copy_before_resolving_transfer"));
 
 	TestParams	params;
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
@@ -16534,7 +16586,7 @@ void addDepthStencilCopyMSAATestGroup (tcu::TestCaseGroup* group, AllocationKind
 
 void addBufferCopyOffsetTests (tcu::TestCaseGroup* group)
 {
-	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "buffer_to_buffer_with_offset", "Copy from buffer to buffer using different offsets in the source and destination buffers"));
+	de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "buffer_to_buffer_with_offset"));
 
 	for (deUint32 srcOffset = 0u; srcOffset < BufferOffsetParams::kMaxOffset; ++srcOffset)
 	for (deUint32 dstOffset = 0u; dstOffset < BufferOffsetParams::kMaxOffset; ++dstOffset)
@@ -16624,7 +16676,7 @@ static void cleanupGroup(tcu::TestCaseGroup*)
 
 tcu::TestCaseGroup* createCopiesAndBlittingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	copiesAndBlittingTests(new tcu::TestCaseGroup(testCtx, "copy_and_blit", "Copies And Blitting Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	copiesAndBlittingTests(new tcu::TestCaseGroup(testCtx, "copy_and_blit"));
 
 	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "core", addCoreCopiesAndBlittingTests, cleanupGroup));
 	copiesAndBlittingTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	addDedicatedAllocationCopiesAndBlittingTests, cleanupGroup));

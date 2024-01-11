@@ -1740,11 +1740,11 @@ static void createRasterizationOrderAttachmentAccessFormatTests(tcu::TestContext
 
 	if (integerFormat)
 	{
-		formatGr = new tcu::TestCaseGroup(testCtx, "format_integer", "Tests with an integer format" );
+		formatGr = new tcu::TestCaseGroup(testCtx, "format_integer" );
 	}
 	else
 	{
-		formatGr = new tcu::TestCaseGroup(testCtx, "format_float", "Tests with an float format" );
+		formatGr = new tcu::TestCaseGroup(testCtx, "format_float" );
 	}
 
 	for (deUint32 i = 0; i < inputNumSize; i++)
@@ -1767,8 +1767,8 @@ tcu::TestCaseGroup* createRasterizationOrderAttachmentAccessTests(tcu::TestConte
 	createRasterizationOrderAttachmentAccessFormatTests(testCtx, gr, true);
 
 	/* Add the D/S tests */
-	tcu::TestCaseGroup *depth_gr = new tcu::TestCaseGroup(testCtx, "depth", "Tests depth rasterization order" );
-	tcu::TestCaseGroup *stencil_gr = new tcu::TestCaseGroup(testCtx, "stencil", "Tests stencil rasterization order" );
+	tcu::TestCaseGroup *depth_gr = new tcu::TestCaseGroup(testCtx, "depth" );
+	tcu::TestCaseGroup *stencil_gr = new tcu::TestCaseGroup(testCtx, "stencil" );
 	string name_prefix = "";
 	string desc_prefix = "Tests with ";
 	createRasterizationOrderAttachmentAccessTestVariations(testCtx, depth_gr, name_prefix, desc_prefix, 1, false, true, false);

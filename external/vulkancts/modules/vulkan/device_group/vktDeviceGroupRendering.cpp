@@ -215,7 +215,7 @@ bool DeviceGroupTestInstance::isPeerFetchAllowed (deUint32 memoryTypeIndex, deUi
 {
 	VkPeerMemoryFeatureFlags				peerMemFeatures1;
 	VkPeerMemoryFeatureFlags				peerMemFeatures2;
-	const DeviceDriver						vk						(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getUsedApiVersion());
+	const DeviceDriver						vk						(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine());
 	const VkPhysicalDeviceMemoryProperties	deviceMemProps1			= getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), m_physicalDevices[firstdeviceID]);
 	const VkPhysicalDeviceMemoryProperties	deviceMemProps2			= getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), m_physicalDevices[seconddeviceID]);
 	vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps2.memoryTypes[memoryTypeIndex].heapIndex, firstdeviceID, seconddeviceID, &peerMemFeatures1);
@@ -375,7 +375,7 @@ void DeviceGroupTestInstance::init (void)
 		};
 		m_deviceGroup = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_instanceWrapper->instance, instanceDriver, physicalDevice, &deviceCreateInfo);
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getUsedApiVersion()));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
 #else
 		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_deviceGroup));
 #endif // CTS_USES_VULKANSC
@@ -1866,7 +1866,7 @@ private:
 };
 
 DeviceGroupTestRendering::DeviceGroupTestRendering (tcu::TestContext& testCtx, const std::string& name)
-	: TestCaseGroup (testCtx, name.c_str(), "Testing device group test cases")
+	: TestCaseGroup (testCtx, name.c_str())
 {
 	// Left blank on purpose
 }

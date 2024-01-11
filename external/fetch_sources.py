@@ -31,6 +31,7 @@ import subprocess
 import ssl
 import stat
 import platform
+import logging
 
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "scripts")
 sys.path.insert(0, scriptPath)
@@ -58,8 +59,10 @@ class Source:
 		# Remove read-only first
 		readonlydir = os.path.join(fullDstPath, ".git")
 		if os.path.exists(readonlydir):
+			logging.debug("Deleting " + readonlydir)
 			shutil.rmtree(readonlydir, onerror = onReadonlyRemoveError)
 		if os.path.exists(fullDstPath):
+			logging.debug("Deleting " + fullDstPath)
 			shutil.rmtree(fullDstPath, ignore_errors=False)
 
 class SourcePackage (Source):
@@ -87,6 +90,7 @@ class SourcePackage (Source):
 	def removeArchives (self):
 		archiveDir = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.archiveDir)
 		if os.path.exists(archiveDir):
+			logging.debug("Deleting " + archiveDir)
 			shutil.rmtree(archiveDir, ignore_errors=False)
 
 	def isArchiveUpToDate (self):
@@ -251,6 +255,7 @@ class GitRepo (Source):
 			execute(["git", "clone", "--no-checkout", url, fullDstPath])
 
 		pushWorkingDir(fullDstPath)
+		print("Directory: " + fullDstPath)
 		try:
 			for tag in self.removeTags:
 				proc = subprocess.Popen(['git', 'tag', '-l', tag], stdout=subprocess.PIPE)
@@ -306,23 +311,23 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		"git@github.com:KhronosGroup/SPIRV-Tools.git",
-		"4f014aff9c653e5e16de1cc5f7130e99e02982e5",
+		"c7affa1707b9c517ea028bf9070c97e6842a6749",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"8fa46582ec517911d053d7c49c8087d8717e191a",
+		"db4d6f85afb8cf6aa404a141855f556d172c1ed2",
 		"glslang",
 		removeTags = ["main-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		"git@github.com:KhronosGroup/SPIRV-Headers.git",
-		"88bc5e321c2839707df8b1ab534e243e00744177",
+		"1bfd27101e4578d0284061bdf8f09fb4755c7c2d",
 		"spirv-headers"),
 	GitRepo(
 		"https://github.com/KhronosGroup/Vulkan-Docs.git",
 		"git@github.com:KhronosGroup/Vulkan-Docs.git",
-		"463f8c616f49fb83ae4736de0d84b0048a7c76e2",
+		"9b94c27d65dc7d11e50a7c00581b89f1983d34ff",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
@@ -340,7 +345,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/vk_video_samples.git",
 		"git@github.com:Igalia/vk_video_samples.git",
-		"cts-integration-0.9.9-2",
+		"b907158533534585d9182cb0becdaec055aa7e12",
 		"nvidia-video-samples"),
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",
@@ -363,7 +368,10 @@ def parseArgs ():
 						help="Select protocol to checkout git repositories.")
 	parser.add_argument('--force', dest='force', action='store_true', default=False,
 						help="Pass --force to git fetch and checkout commands")
-
+	parser.add_argument("-v", "--verbose",
+						dest="verbose",
+						action="store_true",
+						help="Enable verbose logging")
 	args = parser.parse_args()
 
 	if args.insecure:
@@ -395,6 +403,7 @@ def run(*popenargs, **kwargs):
 
 if __name__ == "__main__":
 	args = parseArgs()
+	initializeLogger(args.verbose)
 
 	for pkg in PACKAGES:
 		if args.clean:

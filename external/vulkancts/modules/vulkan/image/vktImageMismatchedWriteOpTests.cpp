@@ -1008,7 +1008,7 @@ tcu::TestCaseGroup* createImageWriteOpTests (tcu::TestContext& testCtx)
 	auto testGroup						= new tcu::TestCaseGroup(testCtx, "mismatched_write_op");
 	// Case OpImageWrite operation on mismatched vector sizes.
 	auto testGroupMismatchedVectorSizes	= new tcu::TestCaseGroup(testCtx, "mismatched_vector_sizes");
-	auto testGroupMismatchedSignedness	= new tcu::TestCaseGroup(testCtx, "mismatched_signedness_and_type",	"Case OpImageWrite operation on mismatched signedness and values.");
+	auto testGroupMismatchedSignedness	= new tcu::TestCaseGroup(testCtx, "mismatched_signedness_and_type");
 
 	for (const VkFormat& f : allFormats)
 	{

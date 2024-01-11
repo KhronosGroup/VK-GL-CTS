@@ -39,7 +39,7 @@ public:
 													 const std::string&		name,
 													 CreateChildrenFunc		createChildren,
 													 CleanupGroupFunc		cleanupGroup)
-									: tcu::TestCaseGroup(testCtx, name.c_str(), "")
+									: tcu::TestCaseGroup(testCtx, name.c_str())
 									, m_createChildren(createChildren)
 									, m_cleanupGroup(cleanupGroup)
 								{

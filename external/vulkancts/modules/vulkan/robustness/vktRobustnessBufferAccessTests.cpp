@@ -175,6 +175,7 @@ public:
 #ifndef CTS_USES_VULKANSC
 																	 de::MovePtr<vk::DeviceDriver>	deviceDriver,
 #else
+																	 de::MovePtr<CustomInstance>	customInstance,
 																	 de::MovePtr<vk::DeviceDriverSC,vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 																	 ShaderType			shaderType,
@@ -197,12 +198,17 @@ private:
 	bool							isOutBufferValueUnchanged		(VkDeviceSize offsetInBytes, VkDeviceSize valueSize);
 
 protected:
-	Move<VkDevice>					m_device;
+
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
+	Move<VkDevice>						m_device;
+	de::MovePtr<vk::DeviceDriver>		m_deviceDriver;
 #else
+	// Construction needs to happen in this exact order to ensure proper resource destruction
+	de::MovePtr<CustomInstance>			m_customInstance;
+	Move<VkDevice>						m_device;
 	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
 #endif // CTS_USES_VULKANSC
+
 	de::MovePtr<TestEnvironment>	m_testEnvironment;
 
 	const ShaderType				m_shaderType;
@@ -253,6 +259,7 @@ public:
 #ifndef CTS_USES_VULKANSC
 																 de::MovePtr<vk::DeviceDriver>		deviceDriver,
 #else
+																 de::MovePtr<CustomInstance>	customInstance,
 																 de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 																 ShaderType				shaderType,
@@ -276,6 +283,7 @@ public:
 #ifndef CTS_USES_VULKANSC
 																 de::MovePtr<vk::DeviceDriver>		deviceDriver,
 #else
+																 de::MovePtr<CustomInstance>	customInstance,
 																 de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 																 ShaderType				shaderType,
@@ -767,14 +775,20 @@ TestInstance* RobustBufferReadTest::createInstance (Context& context) const
 
 	const bool useFeatures2 = (m_testPipelineRobustness || is64BitsTest_ || isVertexTest_ || isFragmentTest_);
 
-	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, (useFeatures2 ? &features2 : nullptr));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
+	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, (useFeatures2 ? &features2 : nullptr));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
+	de::MovePtr<CustomInstance> customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
+	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, *customInstance, (useFeatures2 ? &features2 : nullptr));
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
 #endif // CTS_USES_VULKANSC
 
-	return new BufferReadInstance(context, device, deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_readFromStorage, m_readAccessRange, m_accessOutOfBackingMemory, m_testPipelineRobustness);
+	return new BufferReadInstance(context, device,
+#ifdef CTS_USES_VULKANSC
+								  customInstance,
+#endif // CTS_USES_VULKANSC
+								  deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_readFromStorage, m_readAccessRange, m_accessOutOfBackingMemory, m_testPipelineRobustness);
 }
 
 // RobustBufferWriteTest
@@ -837,14 +851,20 @@ TestInstance* RobustBufferWriteTest::createInstance (Context& context) const
 
 	const bool useFeatures2 = (m_testPipelineRobustness || is64BitsTest_ || isVertexTest_ || isFragmentTest_);
 
-	Move<VkDevice>	device = createRobustBufferAccessDevice(context, (useFeatures2 ? &features2 : nullptr));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
+	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, (useFeatures2 ? &features2 : nullptr));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
-	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC,DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), DeinitDeviceDeleter(context.getResourceInterface().get(), *device));
+	de::MovePtr<CustomInstance> customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
+	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, *customInstance, (useFeatures2 ? &features2 : nullptr));
+	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
 #endif // CTS_USES_VULKANSC
 
-	return new BufferWriteInstance(context, device, deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_writeAccessRange, m_accessOutOfBackingMemory, m_testPipelineRobustness);
+	return new BufferWriteInstance(context, device,
+#ifdef CTS_USES_VULKANSC
+								   customInstance,
+#endif // CTS_USES_VULKANSC
+								   deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_writeAccessRange, m_accessOutOfBackingMemory, m_testPipelineRobustness);
 }
 
 // BufferAccessInstance
@@ -854,6 +874,7 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 #ifndef CTS_USES_VULKANSC
 											de::MovePtr<vk::DeviceDriver>	deviceDriver,
 #else
+											de::MovePtr<CustomInstance>	customInstance,
 											de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 											ShaderType			shaderType,
@@ -865,6 +886,9 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 											bool				accessOutOfBackingMemory,
 											bool				testPipelineRobustness)
 	: vkt::TestInstance				(context)
+#ifdef CTS_USES_VULKANSC
+	, m_customInstance				(customInstance)
+#endif // CTS_USES_VULKANSC
 	, m_device						(device)
 	, m_deviceDriver				(deviceDriver)
 	, m_shaderType					(shaderType)
@@ -1560,6 +1584,7 @@ BufferReadInstance::BufferReadInstance (Context&			context,
 #ifndef CTS_USES_VULKANSC
 										de::MovePtr<vk::DeviceDriver>	deviceDriver,
 #else
+										de::MovePtr<CustomInstance>	customInstance,
 										de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 										ShaderType			shaderType,
@@ -1570,7 +1595,11 @@ BufferReadInstance::BufferReadInstance (Context&			context,
 										bool				accessOutOfBackingMemory,
 										bool				testPipelineRobustness)
 
-	: BufferAccessInstance	(context, device, deviceDriver, shaderType, shaderStage, bufferFormat,
+	: BufferAccessInstance	(context, device,
+#ifdef CTS_USES_VULKANSC
+							 customInstance,
+#endif // CTS_USES_VULKANSC
+							 deviceDriver, shaderType, shaderStage, bufferFormat,
 							 readFromStorage ? BUFFER_ACCESS_TYPE_READ_FROM_STORAGE : BUFFER_ACCESS_TYPE_READ,
 							 inBufferAccessRange,
 							 RobustBufferAccessTest::getNumberOfBytesAccesssed(shaderType),	// outBufferAccessRange
@@ -1586,6 +1615,7 @@ BufferWriteInstance::BufferWriteInstance (Context&				context,
 #ifndef CTS_USES_VULKANSC
 										  de::MovePtr<vk::DeviceDriver>		deviceDriver,
 #else
+										  de::MovePtr<CustomInstance>	customInstance,
 										  de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	deviceDriver,
 #endif // CTS_USES_VULKANSC
 										  ShaderType			shaderType,
@@ -1595,7 +1625,11 @@ BufferWriteInstance::BufferWriteInstance (Context&				context,
 										  bool					accessOutOfBackingMemory,
 										  bool					testPipelineRobustness)
 
-	: BufferAccessInstance	(context, device, deviceDriver, shaderType, shaderStage, bufferFormat,
+	: BufferAccessInstance	(context, device,
+#ifdef CTS_USES_VULKANSC
+							 customInstance,
+#endif // CTS_USES_VULKANSC
+							 deviceDriver, shaderType, shaderStage, bufferFormat,
 							 BUFFER_ACCESS_TYPE_WRITE,
 							 RobustBufferAccessTest::getNumberOfBytesAccesssed(shaderType),	// inBufferAccessRange
 							 writeBufferAccessRange,

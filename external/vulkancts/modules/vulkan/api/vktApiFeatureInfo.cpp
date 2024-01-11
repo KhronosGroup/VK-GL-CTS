@@ -1351,24 +1351,37 @@ tcu::TestStatus validateLimitsExtInlineUniformBlock (Context& context)
 #endif // CTS_USES_VULKANSC
 
 
-void checkSupportExtVertexAttributeDivisor (Context& context)
+void checkSupportExtVertexAttributeDivisorEXT (Context& context)
 {
 	context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
+}
+
+void checkSupportExtVertexAttributeDivisorKHR (Context& context)
+{
+	context.requireDeviceFunctionality("VK_KHR_vertex_attribute_divisor");
 }
 
 tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
 {
 	const VkBool32												checkAlways							= VK_TRUE;
-	const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&	vertexAttributeDivisorPropertiesEXT	= context.getVertexAttributeDivisorPropertiesEXT();
+#ifndef CTS_USES_VULKANSC
+	const InstanceInterface&									vki									= context.getInstanceInterface();
+	const VkPhysicalDevice										physicalDevice						= context.getPhysicalDevice();
+	vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT		vertexAttributeDivisorProperties	= vk::initVulkanStructure();
+	vk::VkPhysicalDeviceProperties2								properties2							= vk::initVulkanStructure(&vertexAttributeDivisorProperties);
+	vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+#else
+	const auto													vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorPropertiesEXT();
+#endif
 	TestLog&													log									= context.getTestContext().getLog();
 	bool														limitsOk							= true;
 
 	FeatureLimitTableItem featureLimitTable[] =
 	{
-		{ PN(checkAlways),	PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),	LIM_MIN_UINT32((1<<16) - 1) },
+		{ PN(checkAlways),	PN(vertexAttributeDivisorProperties.maxVertexAttribDivisor),	LIM_MIN_UINT32((1<<16) - 1) },
 	};
 
-	log << TestLog::Message << vertexAttributeDivisorPropertiesEXT << TestLog::EndMessage;
+	log << TestLog::Message << vertexAttributeDivisorProperties << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
 		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
@@ -1869,7 +1882,7 @@ void createTestDevice (Context& context, void* pNext, const char* const* ppEnabl
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device					(createCustomDevice(validationEnabled, platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver			(platformInterface, instance.get(), device.get(), context.getUsedApiVersion());
+	const DeviceDriver						deviceDriver			(platformInterface, instance.get(), device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 	const VkQueue							queue					= getDeviceQueue(deviceDriver, *device,  queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -3183,7 +3196,7 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	};
 
 	Move<VkDevice>		deviceGroup = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
-	const DeviceDriver	vk	(vkp, instance, *deviceGroup, context.getUsedApiVersion());
+	const DeviceDriver	vk	(vkp, instance, *deviceGroup, context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 	context.getInstanceInterface().getPhysicalDeviceMemoryProperties(deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &memProps);
 
 	peerMemFeatures = reinterpret_cast<VkPeerMemoryFeatureFlags*>(buffer);
@@ -6776,10 +6789,12 @@ tcu::TestStatus testNoUnknownExtensions (Context& context)
 
 	// All known extensions should be added to allowedExtensions:
 	// allowedExtensions.insert("VK_GOOGLE_extension1");
+	allowedDeviceExtensions.insert("VK_ANDROID_external_format_resolve");
 	allowedDeviceExtensions.insert("VK_ANDROID_external_memory_android_hardware_buffer");
 	allowedDeviceExtensions.insert("VK_GOOGLE_display_timing");
 	allowedDeviceExtensions.insert("VK_GOOGLE_decorate_string");
 	allowedDeviceExtensions.insert("VK_GOOGLE_hlsl_functionality1");
+	allowedDeviceExtensions.insert("VK_GOOGLE_user_type");
 	allowedInstanceExtensions.insert("VK_GOOGLE_surfaceless_query");
 
 	// Instance extensions
@@ -6911,7 +6926,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "get_physical_device_properties2"));
 
 		{
-			de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, "features", ""));
+			de::MovePtr<tcu::TestCaseGroup>	subgroup(new tcu::TestCaseGroup(testCtx, "features"));
 			// Extended Device Features
 			addFunctionCase(subgroup.get(), "core", deviceFeatures2);
 			addSeparateFeatureTests(subgroup.get());
@@ -6954,7 +6969,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 #endif // CTS_USES_VULKANSC
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests (new tcu::TestCaseGroup(testCtx, "vulkan1p2_limits_validation", "Vulkan 1.2 and core extensions limits validation"));
+		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests (new tcu::TestCaseGroup(testCtx, "vulkan1p2_limits_validation"));
 
 		addFunctionCase(limitsValidationTests.get(), "general",							checkApiVersionSupport<1, 2>,				validateLimits12);
 #ifndef CTS_USES_VULKANSC
@@ -6973,7 +6988,8 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		// Removed from Vulkan SC test set: VK_EXT_inline_uniform_block extension removed from Vulkan SC
 		addFunctionCase(limitsValidationTests.get(), "ext_inline_uniform_block",		checkSupportExtInlineUniformBlock,			validateLimitsExtInlineUniformBlock);
 #endif // CTS_USES_VULKANSC
-		addFunctionCase(limitsValidationTests.get(), "ext_vertex_attribute_divisor",	checkSupportExtVertexAttributeDivisor,		validateLimitsExtVertexAttributeDivisor);
+		addFunctionCase(limitsValidationTests.get(), "ext_vertex_attribute_divisor",	checkSupportExtVertexAttributeDivisorEXT,	validateLimitsExtVertexAttributeDivisor);
+		addFunctionCase(limitsValidationTests.get(), "khr_vertex_attribute_divisor",	checkSupportExtVertexAttributeDivisorKHR,	validateLimitsExtVertexAttributeDivisor);
 #ifndef CTS_USES_VULKANSC
 		// Removed from Vulkan SC test set: extensions VK_NV_mesh_shader, VK_EXT_transform_feedback, VK_EXT_fragment_density_map, VK_NV_ray_tracing extension removed from Vulkan SC
 		addFunctionCase(limitsValidationTests.get(), "nv_mesh_shader",					checkSupportNvMeshShader,					validateLimitsNvMeshShader);
@@ -6989,7 +7005,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests(new tcu::TestCaseGroup(testCtx, "vulkan1p3_limits_validation", "Vulkan 1.3 and core extensions limits validation"));
+		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests(new tcu::TestCaseGroup(testCtx, "vulkan1p3_limits_validation"));
 
 #ifndef CTS_USES_VULKANSC
 		addFunctionCase(limitsValidationTests.get(), "khr_maintenance4",				checkSupportKhrMaintenance4,				validateLimitsKhrMaintenance4);
@@ -7014,7 +7030,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 #endif // CTS_USES_VULKANSC
 
 	{
-		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
+		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android"));
 
 		// Test that all mandatory extensions are supported
 		addFunctionCase(androidTests.get(),	"mandatory_extensions", android::checkSupportAndroid,	android::testMandatoryExtensions);

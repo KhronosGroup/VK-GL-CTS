@@ -753,9 +753,9 @@ tcu::TestCaseGroup* createIndexingComputeGroup (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createIndexingGraphicsGroup (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> indexingGroup	(new tcu::TestCaseGroup(testCtx, "indexing", "Graphics tests for data indexing."));
-	de::MovePtr<tcu::TestCaseGroup> inputGroup		(new tcu::TestCaseGroup(testCtx, "input", "Tests for indexing input data."));
-	de::MovePtr<tcu::TestCaseGroup> outputGroup		(new tcu::TestCaseGroup(testCtx, "output", "Tests for indexing output data."));
+	de::MovePtr<tcu::TestCaseGroup> indexingGroup	(new tcu::TestCaseGroup(testCtx, "indexing"));
+	de::MovePtr<tcu::TestCaseGroup> inputGroup		(new tcu::TestCaseGroup(testCtx, "input"));
+	de::MovePtr<tcu::TestCaseGroup> outputGroup		(new tcu::TestCaseGroup(testCtx, "output"));
 
 	addGraphicsIndexingStructTests(inputGroup.get());
 	addGraphicsOutputComponentIndexingTests(outputGroup.get());

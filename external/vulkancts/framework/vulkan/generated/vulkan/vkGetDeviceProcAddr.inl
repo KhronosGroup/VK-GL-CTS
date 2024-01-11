@@ -54,7 +54,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
+	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
 	const std::vector<std::string> functions{
 		"vkDestroySurfaceKHR",
@@ -566,6 +566,14 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR",
 		"vkCmdSetAttachmentFeedbackLoopEnableEXT",
 		"vkGetScreenBufferPropertiesQNX",
+		"vkGetPhysicalDeviceCalibrateableTimeDomainsKHR",
+		"vkGetCalibratedTimestampsKHR",
+		"vkCmdBindDescriptorSets2KHR",
+		"vkCmdPushConstants2KHR",
+		"vkCmdPushDescriptorSet2KHR",
+		"vkCmdPushDescriptorSetWithTemplate2KHR",
+		"vkCmdSetDescriptorBufferOffsets2EXT",
+		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
 	};
 
 	bool fail = false;

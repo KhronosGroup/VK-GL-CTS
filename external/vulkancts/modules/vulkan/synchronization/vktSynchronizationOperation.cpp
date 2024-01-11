@@ -1107,6 +1107,10 @@ public:
 		const auto&					features		= ((imgResource.tiling == VK_IMAGE_TILING_LINEAR) ? formatProps.linearTilingFeatures : formatProps.optimalTilingFeatures);
 		const VkFormatFeatureFlags	requiredFlags	= (VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_BLIT_DST_BIT);
 
+		// Blit image command not allowed when using --deqp-compute-only=enable
+		if (m_context.isComputeOnly())
+			THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+
 		// SRC and DST blit is required because both images are using the same format.
 		if ((features & requiredFlags) != requiredFlags)
 			TCU_THROW(NotSupportedError, "Format doesn't support blits");
@@ -1854,6 +1858,8 @@ public:
 		setHostBufferData(m_context, *m_hostBuffer, data);
 	}
 
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
+
 private:
 	OperationContext&			m_context;
 	Resource&					m_resource;
@@ -2127,6 +2133,8 @@ public:
 		DE_ASSERT(m_mode == ACCESS_MODE_WRITE);
 		setHostBufferData(m_context, *m_hostBuffer, data);
 	}
+
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
 
 private:
 	OperationContext&			m_context;
@@ -2413,6 +2421,8 @@ public:
 		return de::MovePtr<Operation>();
 	}
 
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
+
 private:
 	const ResourceDescription	m_resourceDesc;
 	const BufferType			m_bufferType;
@@ -2501,6 +2511,8 @@ public:
 		DE_ASSERT(0);
 		return de::MovePtr<Operation>();
 	}
+
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
 
 private:
 	const ResourceDescription	m_resourceDesc;
@@ -2607,6 +2619,8 @@ public:
 		DE_ASSERT(0);
 	}
 
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
+
 private:
 	OperationContext&			m_context;
 	Resource&					m_inResource;
@@ -2697,6 +2711,8 @@ public:
 		else
 			return de::MovePtr<Operation>(new BufferCopyImplementation(context, inResource, outResource, m_stage, m_bufferType, m_shaderPrefix, m_specializedAccess, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
 	}
+
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
 
 private:
 	const ResourceDescription	m_resourceDesc;
@@ -2843,6 +2859,8 @@ public:
 		DE_ASSERT(0);
 	}
 
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
+
 private:
 	OperationContext&			m_context;
 	Resource&					m_inResource;
@@ -2934,6 +2952,8 @@ public:
 		else
 			return de::MovePtr<Operation>(new CopyImageImplementation(context, inResource, outResource, m_stage, m_shaderPrefix, m_specializedAccess, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
 	}
+
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
 
 private:
 	const ResourceDescription	m_resourceDesc;
@@ -4740,6 +4760,8 @@ public:
 		DE_ASSERT(0);
 	}
 
+	vk::VkShaderStageFlagBits getShaderStage (void) { return m_stage; }
+
 private:
 	OperationContext&			m_context;
 	Resource&					m_resource;
@@ -5850,6 +5872,26 @@ de::MovePtr<OperationSupport> makeOperationSupport (const OperationName opName, 
 			DE_ASSERT(0);
 			return de::MovePtr<OperationSupport>();
 	}
+}
+
+bool isStageSupported (const vk::VkShaderStageFlagBits stage, const vk::VkQueueFlags queueFlags) {
+	switch (stage) {
+	case vk::VK_SHADER_STAGE_VERTEX_BIT:
+	case vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+	case vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+	case vk::VK_SHADER_STAGE_GEOMETRY_BIT:
+	case vk::VK_SHADER_STAGE_FRAGMENT_BIT:
+		if ((queueFlags & (vk::VK_QUEUE_GRAPHICS_BIT)) == 0)
+			return false;
+		break;
+	case vk::VK_SHADER_STAGE_COMPUTE_BIT:
+		if ((queueFlags & (vk::VK_QUEUE_COMPUTE_BIT)) == 0)
+			return false;
+		break;
+	default:
+		break;
+	}
+	return true;
 }
 
 } // synchronization

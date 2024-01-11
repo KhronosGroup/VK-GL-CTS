@@ -6081,8 +6081,8 @@ void DiscardTestInstance::drawPrimitivesDiscard (tcu::Surface& result, const std
 	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &m_descriptorSet.get(), 0u, DE_NULL);
 	vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
 	vkd.cmdDraw(*commandBuffer, (deUint32)positionData.size(), 1, 0, 0);
-	endRenderPass(vkd, *commandBuffer);
 	vkd.cmdEndQuery(*commandBuffer, *queryPool, 0u);
+	endRenderPass(vkd, *commandBuffer);
 
 	// Copy Image
 	copyImageToBuffer(vkd, *commandBuffer, m_multisampling ? *m_resolvedImage : *m_image, *m_resultBuffer, tcu::IVec2(m_renderSize, m_renderSize));
@@ -8130,7 +8130,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 #ifndef CTS_USES_VULKANSC
 			// .polygons_as_points
 			{
-				tcu::TestCaseGroup* const polygonsAsPoints = new tcu::TestCaseGroup(testCtx, "polygon_as_points", "Default point size for polygons as points");
+				tcu::TestCaseGroup* const polygonsAsPoints = new tcu::TestCaseGroup(testCtx, "polygon_as_points");
 				for (int k = 0; k < 2; ++k)
 				{
 					for (int j = 0; j < 2; ++j)
@@ -8175,7 +8175,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 #ifndef CTS_USES_VULKANSC
 	// .polygon_as_large_points
 	{
-		de::MovePtr<tcu::TestCaseGroup> polygonModeLargePointsGroup (new tcu::TestCaseGroup(testCtx, "polygon_as_large_points", "Test polygons rendered as large points"));
+		de::MovePtr<tcu::TestCaseGroup> polygonModeLargePointsGroup (new tcu::TestCaseGroup(testCtx, "polygon_as_large_points"));
 
 		for (int k = 0; k < 2; ++k)
 			for (int j = 0; j < 2; ++j)
@@ -8311,7 +8311,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			{ DE_TRUE,	"query_pipeline_true"	},
 		};
 
-		tcu::TestCaseGroup* const discard = new tcu::TestCaseGroup(testCtx, "discard", "Rasterizer discard");
+		tcu::TestCaseGroup* const discard = new tcu::TestCaseGroup(testCtx, "discard");
 
 		for (int primitiveNdx = 0; primitiveNdx < DE_LENGTH_OF_ARRAY(primitiveTypes); ++primitiveNdx)
 		{
@@ -8394,12 +8394,12 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			VK_SAMPLE_COUNT_64_BIT
 		};
 
-		tcu::TestCaseGroup* const conservative = new tcu::TestCaseGroup(testCtx, "conservative", "Conservative rasterization tests");
+		tcu::TestCaseGroup* const conservative = new tcu::TestCaseGroup(testCtx, "conservative");
 
 		rasterizationTests->addChild(conservative);
 
 		{
-			tcu::TestCaseGroup* const overestimate = new tcu::TestCaseGroup(testCtx, "overestimate", "Overestimate tests");
+			tcu::TestCaseGroup* const overestimate = new tcu::TestCaseGroup(testCtx, "overestimate");
 
 			conservative->addChild(overestimate);
 
@@ -8407,18 +8407,18 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			{
 				const std::string samplesGroupName = "samples_" + de::toString(samples[samplesNdx]);
 
-				tcu::TestCaseGroup* const samplesGroup = new tcu::TestCaseGroup(testCtx, samplesGroupName.c_str(), "Samples tests");
+				tcu::TestCaseGroup* const samplesGroup = new tcu::TestCaseGroup(testCtx, samplesGroupName.c_str());
 
 				overestimate->addChild(samplesGroup);
 
 				for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitiveTypes); ++primitiveTypeNdx)
 				{
-					tcu::TestCaseGroup* const primitiveGroup = new tcu::TestCaseGroup(testCtx, primitiveTypes[primitiveTypeNdx].name, "Primitive tests");
+					tcu::TestCaseGroup* const primitiveGroup = new tcu::TestCaseGroup(testCtx, primitiveTypes[primitiveTypeNdx].name);
 
 					samplesGroup->addChild(primitiveGroup);
 
 					{
-						tcu::TestCaseGroup* const normal = new tcu::TestCaseGroup(testCtx, "normal", "Normal conservative rasterization tests");
+						tcu::TestCaseGroup* const normal = new tcu::TestCaseGroup(testCtx, "normal");
 
 						primitiveGroup->addChild(normal);
 
@@ -8457,7 +8457,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 					}
 
 					{
-						tcu::TestCaseGroup* const degenerate = new tcu::TestCaseGroup(testCtx, "degenerate", "Degenerate primitives conservative rasterization tests");
+						tcu::TestCaseGroup* const degenerate = new tcu::TestCaseGroup(testCtx, "degenerate");
 
 						primitiveGroup->addChild(degenerate);
 
@@ -8493,7 +8493,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 		}
 
 		{
-			tcu::TestCaseGroup* const underestimate = new tcu::TestCaseGroup(testCtx, "underestimate", "Underestimate tests");
+			tcu::TestCaseGroup* const underestimate = new tcu::TestCaseGroup(testCtx, "underestimate");
 
 			conservative->addChild(underestimate);
 
@@ -8501,18 +8501,18 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			{
 				const std::string samplesGroupName = "samples_" + de::toString(samples[samplesNdx]);
 
-				tcu::TestCaseGroup* const samplesGroup = new tcu::TestCaseGroup(testCtx, samplesGroupName.c_str(), "Samples tests");
+				tcu::TestCaseGroup* const samplesGroup = new tcu::TestCaseGroup(testCtx, samplesGroupName.c_str());
 
 				underestimate->addChild(samplesGroup);
 
 				for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitiveTypes); ++primitiveTypeNdx)
 				{
-					tcu::TestCaseGroup* const primitiveGroup = new tcu::TestCaseGroup(testCtx, primitiveTypes[primitiveTypeNdx].name, "Primitive tests");
+					tcu::TestCaseGroup* const primitiveGroup = new tcu::TestCaseGroup(testCtx, primitiveTypes[primitiveTypeNdx].name);
 
 					samplesGroup->addChild(primitiveGroup);
 
 					{
-						tcu::TestCaseGroup* const normal = new tcu::TestCaseGroup(testCtx, "normal", "Normal conservative rasterization tests");
+						tcu::TestCaseGroup* const normal = new tcu::TestCaseGroup(testCtx, "normal");
 
 						primitiveGroup->addChild(normal);
 
@@ -8600,13 +8600,13 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 	// .interpolation
 	{
-		tcu::TestCaseGroup* const interpolation = new tcu::TestCaseGroup(testCtx, "interpolation", "Test interpolation");
+		tcu::TestCaseGroup* const interpolation = new tcu::TestCaseGroup(testCtx, "interpolation");
 
 		rasterizationTests->addChild(interpolation);
 
 		// .basic
 		{
-			tcu::TestCaseGroup* const basic = new tcu::TestCaseGroup(testCtx, "basic", "Non-projective interpolation");
+			tcu::TestCaseGroup* const basic = new tcu::TestCaseGroup(testCtx, "basic");
 
 			interpolation->addChild(basic);
 
@@ -8646,7 +8646,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 		// .projected
 		{
-			tcu::TestCaseGroup* const projected = new tcu::TestCaseGroup(testCtx, "projected", "Projective interpolation");
+			tcu::TestCaseGroup* const projected = new tcu::TestCaseGroup(testCtx, "projected");
 
 			interpolation->addChild(projected);
 
@@ -8687,7 +8687,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 	// .flatshading
 	{
-		tcu::TestCaseGroup* const flatshading = new tcu::TestCaseGroup(testCtx, "flatshading", "Test flatshading");
+		tcu::TestCaseGroup* const flatshading = new tcu::TestCaseGroup(testCtx, "flatshading");
 
 		rasterizationTests->addChild(flatshading);
 
@@ -8743,13 +8743,13 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 		// .primitives
 		{
-			tcu::TestCaseGroup* const primitives = new tcu::TestCaseGroup(testCtx, ("primitives" + caseName.str()).c_str(), "Primitive rasterization");
+			tcu::TestCaseGroup* const primitives = new tcu::TestCaseGroup(testCtx, ("primitives" + caseName.str()).c_str());
 
 			rasterizationTests->addChild(primitives);
 
-			tcu::TestCaseGroup* const nostippleTests = new tcu::TestCaseGroup(testCtx, "no_stipple", "No stipple");
-			tcu::TestCaseGroup* const stippleStaticTests = new tcu::TestCaseGroup(testCtx, "static_stipple", "Line stipple static");
-			tcu::TestCaseGroup* const stippleDynamicTests = new tcu::TestCaseGroup(testCtx, "dynamic_stipple", "Line stipple dynamic");
+			tcu::TestCaseGroup* const nostippleTests = new tcu::TestCaseGroup(testCtx, "no_stipple");
+			tcu::TestCaseGroup* const stippleStaticTests = new tcu::TestCaseGroup(testCtx, "static_stipple");
+			tcu::TestCaseGroup* const stippleDynamicTests = new tcu::TestCaseGroup(testCtx, "dynamic_stipple");
 
 			primitives->addChild(nostippleTests);
 			primitives->addChild(stippleStaticTests);
@@ -8824,7 +8824,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 		// .fill_rules
 		{
-			tcu::TestCaseGroup* const fillRules = new tcu::TestCaseGroup(testCtx, ("fill_rules" + caseName.str()).c_str(), "Primitive fill rules");
+			tcu::TestCaseGroup* const fillRules = new tcu::TestCaseGroup(testCtx, ("fill_rules" + caseName.str()).c_str());
 
 			rasterizationTests->addChild(fillRules);
 
@@ -8842,7 +8842,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 		// .interpolation
 		{
-			tcu::TestCaseGroup* const interpolation = new tcu::TestCaseGroup(testCtx, ("interpolation" + caseName.str()).c_str(), "Test interpolation");
+			tcu::TestCaseGroup* const interpolation = new tcu::TestCaseGroup(testCtx, ("interpolation" + caseName.str()).c_str());
 
 			rasterizationTests->addChild(interpolation);
 
@@ -8875,7 +8875,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	// .line_continuity
 #ifndef CTS_USES_VULKANSC
 	{
-		tcu::TestCaseGroup* const	lineContinuity	= new tcu::TestCaseGroup(testCtx, "line_continuity", "Test line continuity");
+		tcu::TestCaseGroup* const	lineContinuity	= new tcu::TestCaseGroup(testCtx, "line_continuity");
 		static const char			dataDir[]		= "rasterization/line_continuity";
 
 		struct Case
@@ -9008,7 +9008,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	// .maintenance5
 	{
 		//NonStrictLineStripMaintenance5TestInstance
-		tcu::TestCaseGroup* const maintenance5tests = new tcu::TestCaseGroup(testCtx, "maintenance5", "Primitive rasterization");
+		tcu::TestCaseGroup* const maintenance5tests = new tcu::TestCaseGroup(testCtx, "maintenance5");
 		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result
 		maintenance5tests->addChild(new NonStrictLinesMaintenance5TestCase<NonStrictLinesMaintenance5TestInstance>(testCtx, "non_strict_lines_narrow", PRIMITIVEWIDENESS_NARROW));
 		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result

@@ -465,9 +465,9 @@ tcu::TestCaseGroup* createImageMismatchedFormatsTests (tcu::TestContext& testCtx
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "mismatched_formats"));
 	// perform OpImageRead
 	de::MovePtr<tcu::TestCaseGroup> testGroupOpRead(new tcu::TestCaseGroup(testCtx, "image_read"));
-	de::MovePtr<tcu::TestCaseGroup> testGroupOpWrite(new tcu::TestCaseGroup(testCtx, "image_write", "perform OpImageWrite"));
+	de::MovePtr<tcu::TestCaseGroup> testGroupOpWrite(new tcu::TestCaseGroup(testCtx, "image_write"));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<tcu::TestCaseGroup> testGroupOpSparseRead(new tcu::TestCaseGroup(testCtx, "sparse_image_read", "perform OpSparseImageRead"));
+	de::MovePtr<tcu::TestCaseGroup> testGroupOpSparseRead(new tcu::TestCaseGroup(testCtx, "sparse_image_read"));
 #endif // CTS_USES_VULKANSC
 
 	for (VkFormat format = VK_FORMAT_R4G4_UNORM_PACK8; format < VK_CORE_FORMAT_LAST; format = static_cast<VkFormat>(format+1))

@@ -598,7 +598,7 @@ struct DeviceHelper
 									 physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL),
 									 additionalExtensions, queueFamilyIndex,
 									 context.getTestContext().getCommandLine().isValidationEnabled(), pAllocator))
-		, vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion())
+		, vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
 		, queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}

@@ -158,7 +158,7 @@ CreateSamplerYcbcrConversionFunc			createSamplerYcbcrConversion;
 DestroySamplerYcbcrConversionFunc			destroySamplerYcbcrConversion;
 GetDeviceQueue2Func							getDeviceQueue2;
 GetDescriptorSetLayoutSupportFunc			getDescriptorSetLayoutSupport;
-GetCalibratedTimestampsEXTFunc				getCalibratedTimestampsEXT;
+GetCalibratedTimestampsKHRFunc				getCalibratedTimestampsKHR;
 SetDebugUtilsObjectNameEXTFunc				setDebugUtilsObjectNameEXT;
 SetDebugUtilsObjectTagEXTFunc				setDebugUtilsObjectTagEXT;
 QueueBeginDebugUtilsLabelEXTFunc			queueBeginDebugUtilsLabelEXT;

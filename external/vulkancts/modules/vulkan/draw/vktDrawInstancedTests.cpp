@@ -52,6 +52,12 @@ static const int	QUAD_GRID_SIZE	= 8;
 static const int	WIDTH			= 128;
 static const int	HEIGHT			= 128;
 
+enum AttributeDivisor {
+	ATTRIBUTE_DIVISOR_NONE,
+	ATTRIBUTE_DIVISOR_EXT,
+	ATTRIBUTE_DIVISOR_KHR,
+};
+
 struct TestParams
 {
 	enum DrawFunction
@@ -68,7 +74,7 @@ struct TestParams
 	vk::VkPrimitiveTopology	topology;
 	const SharedGroupParams	groupParams;
 
-	deBool					testAttribDivisor;
+	AttributeDivisor		testAttribDivisor;
 	deUint32				attribDivisor;
 
 	deBool					testMultiview;
@@ -122,8 +128,10 @@ std::ostream & operator<<(std::ostream & str, TestParams const & v)
 
 	string << "_" << de::toString(v.topology);
 
-	if (v.testAttribDivisor)
+	if (v.testAttribDivisor == ATTRIBUTE_DIVISOR_EXT)
 		string << "_attrib_divisor_" << v.attribDivisor;
+	else if (v.testAttribDivisor == ATTRIBUTE_DIVISOR_KHR)
+		string << "_khr_attrib_divisor_" << v.attribDivisor;
 
 	if (v.testMultiview)
 		string << "_multiview";
@@ -325,11 +333,24 @@ public:
 			if (!physicalVertexInputDynamicState.vertexInputDynamicState)
 				TCU_THROW(NotSupportedError, "Implementation does not support vertexInputDynamicState");
 		}
-		if (m_params.testAttribDivisor)
+		if (m_params.testAttribDivisor == ATTRIBUTE_DIVISOR_EXT)
 		{
 			context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
 
-			const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeaturesEXT();
+			const auto& vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
+			if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
+				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");
+
+			if (m_params.attribDivisor == 0 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateZeroDivisor)
+				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisorZero");
+
+		}
+#ifndef CTS_USES_VULKANSC
+		else if (m_params.testAttribDivisor == ATTRIBUTE_DIVISOR_KHR)
+		{
+			context.requireDeviceFunctionality("VK_KHR_vertex_attribute_divisor");
+
+			const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR& vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
 
 			if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
 				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");
@@ -337,15 +358,21 @@ public:
 			if (m_params.attribDivisor == 0 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateZeroDivisor)
 				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisorZero");
 
-			if (m_params.testMultiview)
-			{
-				context.requireDeviceFunctionality("VK_KHR_multiview");
+			const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR& vertexAttributeDivisorProperties = context.getVertexAttributeDivisorProperties();
 
-				const vk::VkPhysicalDeviceMultiviewFeatures& multiviewFeatures = context.getMultiviewFeatures();
+			if (!vertexAttributeDivisorProperties.supportsNonZeroFirstInstance)
+				TCU_THROW(NotSupportedError, "Implementation does not support supportsNonZeroFirstInstance");
+		}
+#endif
 
-				if (!multiviewFeatures.multiview)
-					TCU_THROW(NotSupportedError, "Implementation does not support multiview feature");
-			}
+		if (m_params.testMultiview)
+		{
+			context.requireDeviceFunctionality("VK_KHR_multiview");
+
+			const vk::VkPhysicalDeviceMultiviewFeatures& multiviewFeatures = context.getMultiviewFeatures();
+
+			if (!multiviewFeatures.multiview)
+				TCU_THROW(NotSupportedError, "Implementation does not support multiview feature");
 		}
 
 #ifndef CTS_USES_VULKANSC
@@ -525,7 +552,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 		m_params.attribDivisor,
 	};
 
-	if (m_params.testAttribDivisor)
+	if (m_params.testAttribDivisor != ATTRIBUTE_DIVISOR_NONE)
 		m_vertexInputState.addDivisors(1, &vertexInputBindingDivisorDescription);
 
 	const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
@@ -628,7 +655,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			const deUint32				prepareCount			= de::max(instanceCount, 1u);
 			const deUint32				firstInstance			= firstInstanceIndices[firstInstanceIndexNdx];
 
-			prepareVertexData(prepareCount, firstInstance, m_params.testAttribDivisor ? m_params.attribDivisor : 1);
+			prepareVertexData(prepareCount, firstInstance, (m_params.testAttribDivisor != ATTRIBUTE_DIVISOR_NONE) ? m_params.attribDivisor : 1);
 			const de::SharedPtr<Buffer>	vertexBuffer			= createAndUploadBuffer(m_data, m_vk, m_context, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 			const de::SharedPtr<Buffer>	instancedVertexBuffer	= createAndUploadBuffer(m_instancedColor, m_vk, m_context, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
@@ -766,7 +793,7 @@ void InstancedDrawInstance::beginRender(vk::VkCommandBuffer cmdBuffer, const vk:
 				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0, &vetrices[0]),
 				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0, &colors[0]),
 				// The reference renderer treats a divisor of 0 as meaning per-vertex.  Use INT_MAX instead; it should work just as well.
-				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), m_params.testAttribDivisor ? (m_params.attribDivisor == 0 ? INT_MAX : m_params.attribDivisor) : 1, &m_instancedColor[0])
+				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), (m_params.testAttribDivisor != ATTRIBUTE_DIVISOR_NONE) ? (m_params.attribDivisor == 0 ? INT_MAX : m_params.attribDivisor) : 1, &m_instancedColor[0])
 			};
 
 			if (m_params.function == TestParams::FUNCTION_DRAW || m_params.function == TestParams::FUNCTION_DRAW_INDIRECT)
@@ -1113,6 +1140,14 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 		TestParams::FUNCTION_DRAW_INDIRECT,
 		TestParams::FUNCTION_DRAW_INDEXED_INDIRECT,
 	};
+	static const AttributeDivisor			attribDivisors[]		=
+	{
+		ATTRIBUTE_DIVISOR_NONE,
+		ATTRIBUTE_DIVISOR_EXT,
+#ifndef CTS_USES_VULKANSC
+		ATTRIBUTE_DIVISOR_KHR,
+#endif
+	};
 
 	static const deBool multiviews[] = { DE_FALSE, DE_TRUE };
 
@@ -1127,8 +1162,9 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 
 			for (int functionNdx = 0; functionNdx < DE_LENGTH_OF_ARRAY(functions); functionNdx++)
 			{
-				for (int testAttribDivisor = 0; testAttribDivisor < 2; testAttribDivisor++)
+				for (int testAttribDivisor = 0; testAttribDivisor < DE_LENGTH_OF_ARRAY(attribDivisors); testAttribDivisor++)
 				{
+					AttributeDivisor attribDivisor = attribDivisors[testAttribDivisor];
 					for (int divisorNdx = 0; divisorNdx < DE_LENGTH_OF_ARRAY(divisors); divisorNdx++)
 					{
 						// reduce number of tests for dynamic rendering cases where secondary command buffer is used
@@ -1137,8 +1173,8 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 
 						for (int multiviewNdx = 0; multiviewNdx < DE_LENGTH_OF_ARRAY(multiviews); multiviewNdx++)
 						{
-							// If we don't have VK_EXT_vertex_attribute_divisor, we only get a divisor or 1.
-							if (!testAttribDivisor && divisors[divisorNdx] != 1)
+							// If we don't have VK_EXT_vertex_attribute_divisor or VK_KHR_vertex_attribute_divisor, we only get a divisor or 1.
+							if (attribDivisor == ATTRIBUTE_DIVISOR_NONE && divisors[divisorNdx] != 1)
 								continue;
 
 							TestParams param
@@ -1146,7 +1182,7 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 								functions[functionNdx],						// DrawFunction				function;
 								topologies[topologyNdx],					// vk::VkPrimitiveTopology	topology;
 								groupParams,								// const SharedGroupParams	groupParams;
-								testAttribDivisor ? DE_TRUE : DE_FALSE,		// deBool					testAttribDivisor;
+								attribDivisor,								// AttributeDivisor			testAttribDivisor;
 								divisors[divisorNdx],						// deUint32					attribDivisor;
 								multiviews[multiviewNdx],					// deBool					testMultiview;
 								dynState == 0 ? false : true,				// deBool					dynamicState;

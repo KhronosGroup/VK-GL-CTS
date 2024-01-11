@@ -395,7 +395,9 @@ if (!m_vk.getDescriptorSetLayoutSupport)
     m_vk.getDescriptorSetLayoutSupport = (GetDescriptorSetLayoutSupportFunc) GET_PROC_ADDR("vkGetDescriptorSetLayoutSupportKHR");
 m_vk.getShaderInfoAMD = (GetShaderInfoAMDFunc) GET_PROC_ADDR("vkGetShaderInfoAMD");
 m_vk.setLocalDimmingAMD = (SetLocalDimmingAMDFunc) GET_PROC_ADDR("vkSetLocalDimmingAMD");
-m_vk.getCalibratedTimestampsEXT = (GetCalibratedTimestampsEXTFunc) GET_PROC_ADDR("vkGetCalibratedTimestampsEXT");
+m_vk.getCalibratedTimestampsKHR = (GetCalibratedTimestampsKHRFunc) GET_PROC_ADDR("vkGetCalibratedTimestampsKHR");
+if (!m_vk.getCalibratedTimestampsKHR)
+    m_vk.getCalibratedTimestampsKHR = (GetCalibratedTimestampsKHRFunc) GET_PROC_ADDR("vkGetCalibratedTimestampsEXT");
 m_vk.setDebugUtilsObjectNameEXT = (SetDebugUtilsObjectNameEXTFunc) GET_PROC_ADDR("vkSetDebugUtilsObjectNameEXT");
 m_vk.setDebugUtilsObjectTagEXT = (SetDebugUtilsObjectTagEXTFunc) GET_PROC_ADDR("vkSetDebugUtilsObjectTagEXT");
 m_vk.queueBeginDebugUtilsLabelEXT = (QueueBeginDebugUtilsLabelEXTFunc) GET_PROC_ADDR("vkQueueBeginDebugUtilsLabelEXT");
@@ -814,6 +816,12 @@ m_vk.cmdInitializeGraphScratchMemoryAMDX = (CmdInitializeGraphScratchMemoryAMDXF
 m_vk.cmdDispatchGraphAMDX = (CmdDispatchGraphAMDXFunc) GET_PROC_ADDR("vkCmdDispatchGraphAMDX");
 m_vk.cmdDispatchGraphIndirectAMDX = (CmdDispatchGraphIndirectAMDXFunc) GET_PROC_ADDR("vkCmdDispatchGraphIndirectAMDX");
 m_vk.cmdDispatchGraphIndirectCountAMDX = (CmdDispatchGraphIndirectCountAMDXFunc) GET_PROC_ADDR("vkCmdDispatchGraphIndirectCountAMDX");
+m_vk.cmdBindDescriptorSets2KHR = (CmdBindDescriptorSets2KHRFunc) GET_PROC_ADDR("vkCmdBindDescriptorSets2KHR");
+m_vk.cmdPushConstants2KHR = (CmdPushConstants2KHRFunc) GET_PROC_ADDR("vkCmdPushConstants2KHR");
+m_vk.cmdPushDescriptorSet2KHR = (CmdPushDescriptorSet2KHRFunc) GET_PROC_ADDR("vkCmdPushDescriptorSet2KHR");
+m_vk.cmdPushDescriptorSetWithTemplate2KHR = (CmdPushDescriptorSetWithTemplate2KHRFunc) GET_PROC_ADDR("vkCmdPushDescriptorSetWithTemplate2KHR");
+m_vk.cmdSetDescriptorBufferOffsets2EXT = (CmdSetDescriptorBufferOffsets2EXTFunc) GET_PROC_ADDR("vkCmdSetDescriptorBufferOffsets2EXT");
+m_vk.cmdBindDescriptorBufferEmbeddedSamplers2EXT = (CmdBindDescriptorBufferEmbeddedSamplers2EXTFunc) GET_PROC_ADDR("vkCmdBindDescriptorBufferEmbeddedSamplers2EXT");
 m_vk.setLatencySleepModeNV = (SetLatencySleepModeNVFunc) GET_PROC_ADDR("vkSetLatencySleepModeNV");
 m_vk.latencySleepNV = (LatencySleepNVFunc) GET_PROC_ADDR("vkLatencySleepNV");
 m_vk.setLatencyMarkerNV = (SetLatencyMarkerNVFunc) GET_PROC_ADDR("vkSetLatencyMarkerNV");

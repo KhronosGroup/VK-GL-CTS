@@ -5851,13 +5851,13 @@ void addQueryPoolResultsTests (TestCaseGroup* group)
 	auto& testContext = group->getTestContext();
 	for (const auto& buildType : buildTypes)
 	{
-		auto buildTypeGroup = makeMovePtr<TestCaseGroup>(testContext, buildType.second, "");
+		auto buildTypeGroup = makeMovePtr<TestCaseGroup>(testContext, buildType.second);
 		for (const auto& compacted : buildWithCompacted)
 		{
-			auto buildCompactedGroup = makeMovePtr<TestCaseGroup>(testContext, compacted.second, "");
+			auto buildCompactedGroup = makeMovePtr<TestCaseGroup>(testContext, compacted.second);
 			for (const auto& storeType : storeTypes)
 			{
-				auto storeTypeGroup = makeMovePtr<TestCaseGroup>(testContext, storeType.second, "");
+				auto storeTypeGroup = makeMovePtr<TestCaseGroup>(testContext, storeType.second);
 				for (const auto& queryType : queryTypes)
 				{
 					QueryPoolResultsParams	p;
@@ -5896,7 +5896,7 @@ void addCopyWithinPipelineTests (TestCaseGroup* group)
 	auto& testContext = group->getTestContext();
 	for (const auto& buildType : buildTypes)
 	{
-		auto buildTypeGroup	= makeMovePtr<TestCaseGroup>(testContext, buildType.second, "");
+		auto buildTypeGroup	= makeMovePtr<TestCaseGroup>(testContext, buildType.second);
 		for (const auto& testType : testTypes)
 		{
 			CopyWithinPipelineParams	p;

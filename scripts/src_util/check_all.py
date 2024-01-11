@@ -28,7 +28,7 @@ from	check_encoding			import	checkEncoding
 from	check_whitespace		import	checkWhitespace
 from	check_license			import	checkLicense
 from	check_boms				import	checkBOMs
-from	check_file_size_limit	import checkFilesSizeLimit
+from	check_file_size_limit	import	checkFilesSizeLimit
 
 if __name__ == "__main__":
 	parser = ArgumentParser()

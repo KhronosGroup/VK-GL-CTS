@@ -47,6 +47,7 @@
 #include "vktDrawDepthClampTests.hpp"
 #include "vktDrawMultipleClearsWithinRenderPass.hpp"
 #include "vktDrawSampleAttributeTests.hpp"
+#include "vktDrawVertexAttribDivisorTests.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktDrawOutputLocationTests.hpp"
 #include "vktDrawDepthBiasTests.hpp"
@@ -54,6 +55,7 @@
 #include "vktDrawAhbExternalFormatResolveTests.hpp"
 #include "vktDrawMultiExtTests.hpp"
 #endif // CTS_USES_VULKANSC
+#include "vktDrawPointClampTests.hpp"
 
 namespace vkt
 {
@@ -90,6 +92,7 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, const
 		group->addChild(createDepthClampTests						(testCtx, groupParams));
 		group->addChild(new MultipleClearsWithinRenderPassTests		(testCtx, groupParams));
 		group->addChild(createSampleAttributeTests					(testCtx, groupParams));
+		group->addChild(createVertexAttributeDivisorTests(testCtx, groupParams));
 		// NOTE: all new draw tests should handle SharedGroupParams
 
 #ifndef CTS_USES_VULKANSC
@@ -115,7 +118,7 @@ void createChildren (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, const
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup> mainGroup						(new tcu::TestCaseGroup(testCtx, name.c_str(), "Simple Draw tests"));
+	de::MovePtr<tcu::TestCaseGroup> mainGroup						(new tcu::TestCaseGroup(testCtx, name.c_str()));
 	// Draw using renderpass object
 	de::MovePtr<tcu::TestCaseGroup> renderpassGroup					(new tcu::TestCaseGroup(testCtx, "renderpass"));
 
@@ -127,16 +130,19 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 			false,			// bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
 			false,			// bool nestedSecondaryCmdBuffer;
 		}));
+
+	renderpassGroup->addChild(createDrawPointClampTests(testCtx));
+
 	mainGroup->addChild(renderpassGroup.release());
 
 #ifndef CTS_USES_VULKANSC
 	// Draw using VK_KHR_dynamic_rendering
 	de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup			(new tcu::TestCaseGroup(testCtx, "dynamic_rendering"));
-	de::MovePtr<tcu::TestCaseGroup> drPrimaryCmdBuffGroup			(new tcu::TestCaseGroup(testCtx, "primary_cmd_buff", ""));
-	de::MovePtr<tcu::TestCaseGroup> drPartialSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "partial_secondary_cmd_buff", "Secondary command buffer doesn't include begin/endRendering"));
-	de::MovePtr<tcu::TestCaseGroup> drCompleteSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "complete_secondary_cmd_buff", "Secondary command buffer contains completely dynamic renderpass"));
-	de::MovePtr<tcu::TestCaseGroup> drNestedPartialSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "nested_partial_secondary_cmd_buff", "Secondary command buffer doesn't include begin/endRendering and is nested"));
-	de::MovePtr<tcu::TestCaseGroup> drNestedCompleteSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "nested_complete_secondary_cmd_buff", "Secondary command buffer contains completely dynamic renderpass and is nested"));
+	de::MovePtr<tcu::TestCaseGroup> drPrimaryCmdBuffGroup			(new tcu::TestCaseGroup(testCtx, "primary_cmd_buff"));
+	de::MovePtr<tcu::TestCaseGroup> drPartialSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "partial_secondary_cmd_buff"));
+	de::MovePtr<tcu::TestCaseGroup> drCompleteSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "complete_secondary_cmd_buff"));
+	de::MovePtr<tcu::TestCaseGroup> drNestedPartialSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "nested_partial_secondary_cmd_buff"));
+	de::MovePtr<tcu::TestCaseGroup> drNestedCompleteSecondaryCmdBuffGroup	(new tcu::TestCaseGroup(testCtx, "nested_complete_secondary_cmd_buff"));
 
 	createChildren(testCtx, drPrimaryCmdBuffGroup.get(), SharedGroupParams(
 		new GroupParams

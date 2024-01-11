@@ -1296,13 +1296,15 @@ TestInstance* BindVertexBuffers2Case::createInstance (Context& context) const
 		vk::VkPhysicalDeviceFeatures2							features2				= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features		= vk::initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
+		vk::VkPhysicalDeviceMaintenance5FeaturesKHR				maintenance5Features	= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures				= vk::initVulkanStructure();
-		vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures = vk::initVulkanStructure();
+		vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures	= vk::initVulkanStructure();
 #endif // CTS_USES_VULKANSC
 
 		features2.features.robustBufferAccess		= VK_TRUE;
 		robustness2Features.robustBufferAccess2		= VK_TRUE;
 #ifndef CTS_USES_VULKANSC
+		maintenance5Features.maintenance5			= VK_TRUE;
 		gplFeatures.graphicsPipelineLibrary			= VK_TRUE;
 		shaderObjectFeatures.shaderObject			= VK_TRUE;
 #endif // CTS_USES_VULKANSC
@@ -1311,6 +1313,7 @@ TestInstance* BindVertexBuffers2Case::createInstance (Context& context) const
 		addFeatures(&robustness2Features);
 
 #ifndef CTS_USES_VULKANSC
+		addFeatures(&maintenance5Features);
 		if (vk::isConstructionTypeLibrary(m_pipelineConstructionType))
 			addFeatures(&gplFeatures);
 		else if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
@@ -1322,7 +1325,7 @@ TestInstance* BindVertexBuffers2Case::createInstance (Context& context) const
 		device = createRobustBufferAccessDevice(context, &features2);
 		driver =
 #ifndef CTS_USES_VULKANSC
-			DeviceDriverPtr(new vk::DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
+			DeviceDriverPtr(new vk::DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 			DeviceDriverPtr(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(),
 				context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()),
@@ -1421,21 +1424,21 @@ tcu::TestCaseGroup* createCmdBindVertexBuffers2Tests (tcu::TestContext& testCtx,
 	const deUint32 defaultWidth = 32;
 	const deUint32 defaultHeight = 32;
 
-	de::MovePtr<tcu::TestCaseGroup> rootGroup(new tcu::TestCaseGroup(testCtx, "maintenance5", ""));
+	de::MovePtr<tcu::TestCaseGroup> rootGroup(new tcu::TestCaseGroup(testCtx, "maintenance5"));
 
 	for (const auto& topo : topos)
 	{
-		de::MovePtr<tcu::TestCaseGroup> topoGroup(new tcu::TestCaseGroup(testCtx, topo.second, ""));
+		de::MovePtr<tcu::TestCaseGroup> topoGroup(new tcu::TestCaseGroup(testCtx, topo.second));
 
 		for (deUint32 count : counts)
 		{
 			name = "buffers" + std::to_string(count);
-			de::MovePtr<tcu::TestCaseGroup> countGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> countGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 			for (deUint32 random : randoms)
 			{
 				name = "stride_offset_rnd" + std::to_string(random);
-				de::MovePtr<tcu::TestCaseGroup> randomGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> randomGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 				for (const auto& size : sizes)
 				{
@@ -1457,24 +1460,24 @@ tcu::TestCaseGroup* createCmdBindVertexBuffers2Tests (tcu::TestContext& testCtx,
 		rootGroup->addChild(topoGroup.release());
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> robustGroup(new tcu::TestCaseGroup(testCtx, "robustness2", ""));
+	de::MovePtr<tcu::TestCaseGroup> robustGroup(new tcu::TestCaseGroup(testCtx, "robustness2"));
 	for (const auto& topo : topos)
 	{
-		de::MovePtr<tcu::TestCaseGroup> topoGroup(new tcu::TestCaseGroup(testCtx, topo.second, ""));
+		de::MovePtr<tcu::TestCaseGroup> topoGroup(new tcu::TestCaseGroup(testCtx, topo.second));
 
 		for (deUint32 count : counts)
 		{
 			name = "buffers" + std::to_string(count);
-			de::MovePtr<tcu::TestCaseGroup> countGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> countGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 			for (deUint32 random : robustRandoms)
 			{
 				name = "stride_offset_rnd" + std::to_string(random);
-				de::MovePtr<tcu::TestCaseGroup> randomGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup> randomGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 				for (const auto& size : sizes)
 				{
-					de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, size.second, ""));
+					de::MovePtr<tcu::TestCaseGroup> sizeGroup(new tcu::TestCaseGroup(testCtx, size.second));
 
 					TestParamsMaint5 p;
 					p.width			= defaultWidth;

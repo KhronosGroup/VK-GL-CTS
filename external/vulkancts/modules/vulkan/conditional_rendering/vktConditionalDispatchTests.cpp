@@ -377,7 +377,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 }	// anonymous
 
 ConditionalDispatchTests::ConditionalDispatchTests (tcu::TestContext &testCtx)
-	: TestCaseGroup	(testCtx, "dispatch", "Conditional Rendering Of Dispatch Commands")
+	: TestCaseGroup	(testCtx, "dispatch")
 {
 	/* Left blank on purpose */
 }
@@ -393,7 +393,7 @@ void ConditionalDispatchTests::init (void)
 		if (conditionData.clearInRenderPass)
 			continue;
 
-		de::MovePtr<tcu::TestCaseGroup> conditionalDrawRootGroup(new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str(), "Conditionaly execute dispatch calls"));
+		de::MovePtr<tcu::TestCaseGroup> conditionalDrawRootGroup(new tcu::TestCaseGroup(m_testCtx, de::toString(conditionData).c_str()));
 
 		for (deUint32 commandTypeIdx = 0; commandTypeIdx < DISPATCH_COMMAND_TYPE_DISPATCH_LAST; ++commandTypeIdx)
 		{

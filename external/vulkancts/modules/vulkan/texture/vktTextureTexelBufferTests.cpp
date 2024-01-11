@@ -183,7 +183,7 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createTextureTexelBufferTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> texelBuffer (new tcu::TestCaseGroup(testCtx, "texel_buffer", "Test texel buffer"));
+	de::MovePtr<tcu::TestCaseGroup> texelBuffer (new tcu::TestCaseGroup(testCtx, "texel_buffer"));
 
 	texelBuffer->addChild(createUniformTexelBufferTests(testCtx));
 

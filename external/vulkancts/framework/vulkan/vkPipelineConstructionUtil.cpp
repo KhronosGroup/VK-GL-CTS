@@ -497,13 +497,13 @@ RenderPassWrapper::SubpassDependency::SubpassDependency (const VkSubpassDependen
 #endif // CTS_USES_VULKANSC
 
 RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstructionType, const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo* pCreateInfo)
-	: m_pipelineConstructionType	(pipelineConstructionType)
+	: m_isDynamicRendering			(vk::isConstructionTypeShaderObject(pipelineConstructionType))
 #ifndef CTS_USES_VULKANSC
 	, m_renderingInfo				()
 	, m_secondaryCommandBuffers		(false)
 #endif
 {
-	if (!isConstructionTypeShaderObject(pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		m_renderPass = vk::createRenderPass(vk, device, pCreateInfo);
 	}
@@ -629,14 +629,18 @@ RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstruct
 }
 
 RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstructionType, const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo)
-	: m_pipelineConstructionType	(pipelineConstructionType)
+	: RenderPassWrapper (vk, device, pCreateInfo, isConstructionTypeShaderObject(pipelineConstructionType))
+	{}
+
+RenderPassWrapper::RenderPassWrapper (const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo, bool dynamicRendering)
+	: m_isDynamicRendering			(dynamicRendering)
 #ifndef CTS_USES_VULKANSC
 	, m_renderingInfo				()
 	, m_secondaryCommandBuffers		(false)
 #endif
 {
 
-	if (!isConstructionTypeShaderObject(pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		m_renderPass = vk::createRenderPass2(vk, device, pCreateInfo);
 	}
@@ -769,13 +773,13 @@ RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstruct
 
 RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstructionType, const DeviceInterface& vk, const VkDevice device, const VkFormat colorFormat, const VkFormat depthStencilFormat, const VkAttachmentLoadOp loadOperation, const VkImageLayout finalLayoutColor,
 	const VkImageLayout finalLayoutDepthStencil, const VkImageLayout subpassLayoutColor, const VkImageLayout subpassLayoutDepthStencil, const VkAllocationCallbacks* const allocationCallbacks)
-	: m_pipelineConstructionType	(pipelineConstructionType)
+	: m_isDynamicRendering			(isConstructionTypeShaderObject(pipelineConstructionType))
 #ifndef CTS_USES_VULKANSC
 	, m_renderingInfo				()
 #endif
 {
 
-	if (!isConstructionTypeShaderObject(pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		m_renderPass = vk::makeRenderPass(vk, device, colorFormat, depthStencilFormat, loadOperation, finalLayoutColor, finalLayoutDepthStencil, subpassLayoutColor, subpassLayoutDepthStencil, allocationCallbacks);
 	}
@@ -862,7 +866,7 @@ RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstruct
 }
 
 RenderPassWrapper::RenderPassWrapper (RenderPassWrapper&& rhs) noexcept
-	: m_pipelineConstructionType	(rhs.m_pipelineConstructionType)
+	: m_isDynamicRendering			(rhs.m_isDynamicRendering)
 	, m_renderPass					(rhs.m_renderPass)
 	, m_framebuffer					(rhs.m_framebuffer)
 #ifndef CTS_USES_VULKANSC
@@ -885,7 +889,7 @@ RenderPassWrapper::RenderPassWrapper (RenderPassWrapper&& rhs) noexcept
 
 RenderPassWrapper& RenderPassWrapper::operator=	(RenderPassWrapper&& rhs) noexcept
 {
-	m_pipelineConstructionType = rhs.m_pipelineConstructionType;
+	m_isDynamicRendering = rhs.m_isDynamicRendering;
 	m_renderPass = rhs.m_renderPass;
 	m_framebuffer = rhs.m_framebuffer;
 #ifndef CTS_USES_VULKANSC
@@ -1281,7 +1285,7 @@ void RenderPassWrapper::begin (const DeviceInterface&	vk,
 							   const VkSubpassContents	contents,
 							   const void*				pNext) const
 {
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		beginRenderPass(vk, commandBuffer, *m_renderPass, *m_framebuffer, renderArea, clearValueCount, clearValues, contents, pNext);
 	}
@@ -1350,7 +1354,7 @@ void RenderPassWrapper::begin(const DeviceInterface& vk, const VkCommandBuffer c
 
 void RenderPassWrapper::end (const DeviceInterface& vk, const VkCommandBuffer commandBuffer) const
 {
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		vk.cmdEndRenderPass(commandBuffer);
 	}
@@ -1510,7 +1514,7 @@ void RenderPassWrapper::beginRendering (const DeviceInterface& vk, const VkComma
 
 void RenderPassWrapper::nextSubpass (const DeviceInterface& vk, const VkCommandBuffer commandBuffer, const VkSubpassContents contents) const
 {
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		vk.cmdNextSubpass(commandBuffer, contents);
 	}
@@ -1535,7 +1539,7 @@ void RenderPassWrapper::nextSubpass (const DeviceInterface& vk, const VkCommandB
 void RenderPassWrapper::createFramebuffer (const DeviceInterface& vk, const VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const std::vector<vk::VkImage>& images)
 {
 	DE_UNREF(images);
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		m_framebuffer = vk::createFramebuffer(vk, device, pCreateInfo);
 	}
@@ -1576,7 +1580,7 @@ void RenderPassWrapper::createFramebuffer (const DeviceInterface& vk, const VkDe
 {
 	DE_UNREF(colorImage);
 	DE_UNREF(depthStencilImage);
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		m_framebuffer = vk::createFramebuffer(vk, device, pCreateInfo);
 	}
@@ -1609,7 +1613,7 @@ void RenderPassWrapper::createFramebuffer (const DeviceInterface& vk, const VkDe
 void RenderPassWrapper::createFramebuffer (const DeviceInterface& vk, const VkDevice device, const VkImage colorImage, const VkImageView colorAttachment, const deUint32 width, const deUint32 height, const deUint32 layers)
 {
 	DE_UNREF(colorImage);
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		VkFramebufferCreateInfo createInfo = initVulkanStructure();
 		createInfo.flags = (VkFramebufferCreateFlags)0u;
@@ -1641,7 +1645,7 @@ void RenderPassWrapper::createFramebuffer (const DeviceInterface& vk, const VkDe
 void RenderPassWrapper::createFramebuffer (const DeviceInterface& vk, const VkDevice device, const deUint32 attachmentCount, const VkImage* imagesArray, const VkImageView* attachmentsArray, const deUint32 width, const deUint32 height, const deUint32 layers)
 {
 	DE_UNREF(imagesArray);
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		VkFramebufferCreateInfo createInfo = initVulkanStructure();
 		createInfo.flags = (VkFramebufferCreateFlags)0u;

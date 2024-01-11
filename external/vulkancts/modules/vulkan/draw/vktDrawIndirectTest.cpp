@@ -212,6 +212,13 @@ void IndirectDraw::setVertexBuffer (void)
 			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
 			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
 			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refVertexIndex++));
+
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::red().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::red().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::red().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::red().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::red().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::red().toVec(), refVertexIndex++));
 			break;
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
 			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::blue().toVec(), refVertexIndex++));
@@ -222,6 +229,15 @@ void IndirectDraw::setVertexBuffer (void)
 			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.3f, 1.0f, 1.0f),	 tcu::RGBA::blue().toVec(), refVertexIndex++));
 			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::blue().toVec(), refVertexIndex++));
 			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::blue().toVec(), refVertexIndex++));
+
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	-0.3f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.3f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refVertexIndex++));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refVertexIndex++));
 			break;
 		default:
 			DE_FATAL("Unknown topology");
@@ -262,6 +278,17 @@ void IndirectDraw::setFirstInstanceVertexBuffer (void)
 			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refInstanceIndex));
 			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refInstanceIndex));
 			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::blue().toVec(), refInstanceIndex));
+
+
+			refInstanceIndex = 1;
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::red().toVec(), refInstanceIndex));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::red().toVec(), refInstanceIndex));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::red().toVec(), refInstanceIndex));
+
+			refInstanceIndex = 0;
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f), tcu::RGBA::red().toVec(), refInstanceIndex));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::red().toVec(), refInstanceIndex));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f), tcu::RGBA::red().toVec(), refInstanceIndex));
 			break;
 		}
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
@@ -277,6 +304,19 @@ void IndirectDraw::setFirstInstanceVertexBuffer (void)
 			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.3f, 1.0f, 1.0f),	 tcu::RGBA::blue().toVec(), refInstanceIndex));
 			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::blue().toVec(), refInstanceIndex));
 			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::blue().toVec(), refInstanceIndex));
+
+
+			refInstanceIndex = 1;
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refInstanceIndex));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refInstanceIndex));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	-0.3f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refInstanceIndex));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	-0.3f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refInstanceIndex));
+
+			refInstanceIndex = 0;
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.3f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refInstanceIndex));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.3f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refInstanceIndex));
+			m_data.push_back(VertexElementData(tcu::Vec4(-0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refInstanceIndex));
+			m_data.push_back(VertexElementData(tcu::Vec4( 0.3f,	 0.0f, 1.0f, 1.0f),	 tcu::RGBA::red().toVec(), refInstanceIndex));
 			break;
 		}
 		default:
@@ -537,6 +577,18 @@ tcu::TestStatus IndirectDraw::iterate (void)
 					1u,									//instanceCount
 					5u,									//firstVertex
 					0u									//firstInstance
+				},
+				{
+					3u,									//vertexCount
+					1u,									//instanceCount
+					8u,									//firstVertex
+					0u									//firstInstance
+				},
+				{
+					3u,									//vertexCount
+					1u,									//instanceCount
+					11u,								//firstVertex
+					0u									//firstInstance
 				}
 			};
 			addCommand(drawCommands[0]);
@@ -548,7 +600,9 @@ tcu::TestStatus IndirectDraw::iterate (void)
 				// Add padding data to the buffer to make sure it's large enough.
 				for (deUint32 i = 0; i < m_bufferDrawCount; ++i)
 				{
+					addCommand(drawCommands[3]);
 					addCommand(drawCommands[1]);
+					addCommand(drawCommands[4]);
 					addCommand(drawCommands[1]);
 				}
 			}
@@ -570,6 +624,18 @@ tcu::TestStatus IndirectDraw::iterate (void)
 					1u,									//instanceCount
 					6u,									//firstVertex
 					0u									//firstInstance
+				},
+				{
+					4u,									//vertexCount
+					1u,									//instanceCount
+					10u,								//firstVertex
+					0u									//firstInstance
+				},
+				{
+					4u,									//vertexCount
+					1u,									//instanceCount
+					14u,								//firstVertex
+					0u									//firstInstance
 				}
 			};
 			addCommand(drawCommands[0]);
@@ -581,7 +647,9 @@ tcu::TestStatus IndirectDraw::iterate (void)
 				// Add padding data to the buffer to make sure it's large enough.
 				for (deUint32 i = 0; i < m_bufferDrawCount; ++i)
 				{
+					addCommand(drawCommands[3]);
 					addCommand(drawCommands[1]);
+					addCommand(drawCommands[4]);
 					addCommand(drawCommands[1]);
 				}
 			}
@@ -615,6 +683,20 @@ tcu::TestStatus IndirectDraw::iterate (void)
 					5u,									// firstIndex
 					VERTEX_OFFSET,						// vertexOffset
 					0u									// firstInstance
+				},
+				{
+					3u,									//vertexCount
+					1u,									//instanceCount
+					8u,									//firstVertex
+					VERTEX_OFFSET,						//vertexOffset
+					0u									//firstInstance
+				},
+				{
+					3u,									//vertexCount
+					1u,									//instanceCount
+					11u,								//firstVertex
+					VERTEX_OFFSET,						//vertexOffset
+					0u									//firstInstance
 				}
 			};
 			addCommand(drawCommands[0]);
@@ -626,7 +708,9 @@ tcu::TestStatus IndirectDraw::iterate (void)
 				// Add padding data to the buffer to make sure it's large enough.
 				for (deUint32 i = 0; i < m_bufferDrawCount; ++i)
 				{
+					addCommand(drawCommands[3]);
 					addCommand(drawCommands[1]);
+					addCommand(drawCommands[4]);
 					addCommand(drawCommands[1]);
 				}
 			}
@@ -650,6 +734,20 @@ tcu::TestStatus IndirectDraw::iterate (void)
 					6u,									// firstIndex
 					VERTEX_OFFSET,						// vertexOffset
 					0u									// firstInstance
+				},
+				{
+					4u,									//vertexCount
+					1u,									//instanceCount
+					10u,								//firstVertex
+					VERTEX_OFFSET,						//vertexOffset
+					0u									//firstInstance
+				},
+				{
+					4u,									//vertexCount
+					1u,									//instanceCount
+					14u,								//firstVertex
+					VERTEX_OFFSET,						//vertexOffset
+					0u									//firstInstance
 				}
 			};
 			addCommand(drawCommands[0]);
@@ -661,7 +759,9 @@ tcu::TestStatus IndirectDraw::iterate (void)
 				// Add padding data to the buffer to make sure it's large enough.
 				for (deUint32 i = 0; i < m_bufferDrawCount; ++i)
 				{
+					addCommand(drawCommands[3]);
 					addCommand(drawCommands[1]);
+					addCommand(drawCommands[4]);
 					addCommand(drawCommands[1]);
 				}
 			}
@@ -907,17 +1007,32 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 						4,											//instanceCount
 						5,											//firstVertex
 						FirstInstanceSupport::getFirstInstance()	//firstInstance
+					},
+					{
+						3u,											//vertexCount
+						4u,											//instanceCount
+						8u,											//firstVertex
+						FirstInstanceSupport::getFirstInstance()	//firstInstance
+					},
+					{
+						3u,											//vertexCount
+						4u,											//instanceCount
+						11u,										//firstVertex
+						FirstInstanceSupport::getFirstInstance()	//firstInstance
 					}
 				};
 				addCommand(drawCmd[0]);
 				addCommand(drawCmd[1]);
 				addCommand(drawCmd[2]);
+				addCommand(drawCmd[1]);
 				if (m_testIndirectCountExt != IndirectCountType::NONE)
 				{
 					// Add padding data to the buffer to make sure it's large enough.
 					for (deUint32 i = 0; i < m_bufferDrawCount; ++i)
 					{
+						addCommand(drawCmd[3]);
 						addCommand(drawCmd[1]);
+						addCommand(drawCmd[4]);
 						addCommand(drawCmd[1]);
 					}
 				}
@@ -939,17 +1054,32 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 						4,											//instanceCount
 						6,											//firstVertex
 						FirstInstanceSupport::getFirstInstance()	//firstInstance
+					},
+					{
+						4u,											//vertexCount
+						4u,											//instanceCount
+						10u,										//firstVertex
+						FirstInstanceSupport::getFirstInstance()	//firstInstance
+					},
+					{
+						4u,											//vertexCount
+						4u,											//instanceCount
+						14u,										//firstVertex
+						FirstInstanceSupport::getFirstInstance()	//firstInstance
 					}
 				};
 				addCommand(drawCmd[0]);
 				addCommand(drawCmd[1]);
 				addCommand(drawCmd[2]);
+				addCommand(drawCmd[1]);
 				if (m_testIndirectCountExt != IndirectCountType::NONE)
 				{
 					// Add padding data to the buffer to make sure it's large enough.
 					for (deUint32 i = 0; i < m_bufferDrawCount; ++i)
 					{
+						addCommand(drawCmd[3]);
 						addCommand(drawCmd[1]);
+						addCommand(drawCmd[4]);
 						addCommand(drawCmd[1]);
 					}
 				}
@@ -984,17 +1114,34 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 						5,											// firstIndex
 						VERTEX_OFFSET,								// vertexOffset
 						FirstInstanceSupport::getFirstInstance()	// firstInstance
+					},
+					{
+						3u,											// vertexCount
+						4u,											// instanceCount
+						8u,											// firstVertex
+						VERTEX_OFFSET,								// vertexOffset
+						FirstInstanceSupport::getFirstInstance()	// firstInstance
+					},
+					{
+						3u,											// vertexCount
+						4u,											// instanceCount
+						11u,										// firstVertex
+						VERTEX_OFFSET,								// vertexOffset
+						FirstInstanceSupport::getFirstInstance()	// firstInstance
 					}
 				};
 				addCommand(drawCmd[0]);
 				addCommand(drawCmd[1]);
 				addCommand(drawCmd[2]);
+				addCommand(drawCmd[1]);
 				if (m_testIndirectCountExt != IndirectCountType::NONE)
 				{
 					// Add padding data to the buffer to make sure it's large enough.
 					for (deUint32 i = 0; i < m_bufferDrawCount; ++i)
 					{
+						addCommand(drawCmd[3]);
 						addCommand(drawCmd[1]);
+						addCommand(drawCmd[4]);
 						addCommand(drawCmd[1]);
 					}
 				}
@@ -1018,17 +1165,34 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 						6,											// firstIndex
 						VERTEX_OFFSET,								// vertexOffset
 						FirstInstanceSupport::getFirstInstance()	// firstInstance
+					},
+					{
+						4u,											// vertexCount
+						4u,											// instanceCount
+						10u,										// firstVertex
+						VERTEX_OFFSET,								// vertexOffset
+						FirstInstanceSupport::getFirstInstance()	// firstInstance
+					},
+					{
+						4u,											// vertexCount
+						4u,											// instanceCount
+						14u,										// firstVertex
+						VERTEX_OFFSET,								// vertexOffset
+						FirstInstanceSupport::getFirstInstance()	// firstInstance
 					}
 				};
 				addCommand(drawCmd[0]);
 				addCommand(drawCmd[1]);
 				addCommand(drawCmd[2]);
+				addCommand(drawCmd[1]);
 				if (m_testIndirectCountExt != IndirectCountType::NONE)
 				{
 					// Add padding data to the buffer to make sure it's large enough.
 					for (deUint32 i = 0; i < m_bufferDrawCount; ++i)
 					{
+						addCommand(drawCmd[3]);
 						addCommand(drawCmd[1]);
+						addCommand(drawCmd[4]);
 						addCommand(drawCmd[1]);
 					}
 				}
@@ -1302,8 +1466,8 @@ void IndirectDrawTests::init (void)
 			tcu::TestCaseGroup* indirectDrawGroup			= new tcu::TestCaseGroup(m_testCtx, "indirect_draw");
 			// Draws geometry with VK_KHR_draw_indirect_count extension
 			tcu::TestCaseGroup* indirectDrawCountGroup		= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_count");
-			tcu::TestCaseGroup* indirectDrawParamCountGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count", "Draws geometry with VK_KHR_draw_indirect_count extension and limit draws count with call parameter");
-			tcu::TestCaseGroup* indirectDrawMultiviewGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_multiview", "Draws geometry with indirect draws and multiview");
+			tcu::TestCaseGroup* indirectDrawParamCountGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count");
+			tcu::TestCaseGroup* indirectDrawMultiviewGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_multiview");
 			{
 				IndirectDraw::TestSpec testSpec(m_groupParams);
 				testSpec.drawType = static_cast<DrawType>(drawTypeIdx);
@@ -1411,11 +1575,11 @@ void IndirectDrawTests::init (void)
 				drawTypeGroup->addChild(indirectDrawParamCountFirstInstanceGroup);
 			}
 
-			tcu::TestCaseGroup* indirectDrawInstancedGroup				= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_instanced", "Draws an instanced geometry");
-			tcu::TestCaseGroup* indirectDrawCountInstancedGroup			= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_count_instanced", "Draws an instanced geometry with VK_KHR_draw_indirect_count extension");
-			tcu::TestCaseGroup* indirectDrawParamCountInstancedGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count_instanced", "Draws an instanced geometry with VK_KHR_draw_indirect_count extension and limit draws count with call parameter");
+			tcu::TestCaseGroup* indirectDrawInstancedGroup				= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_instanced");
+			tcu::TestCaseGroup* indirectDrawCountInstancedGroup			= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_count_instanced");
+			tcu::TestCaseGroup* indirectDrawParamCountInstancedGroup	= new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count_instanced");
 			{
-				tcu::TestCaseGroup*	indirectDrawNoFirstInstanceGroup			= new tcu::TestCaseGroup(m_testCtx, "no_first_instance", "Use 0 as firstInstance");
+				tcu::TestCaseGroup*	indirectDrawNoFirstInstanceGroup			= new tcu::TestCaseGroup(m_testCtx, "no_first_instance");
 				tcu::TestCaseGroup*	indirectDrawCountNoFirstInstanceGroup		= new tcu::TestCaseGroup(m_testCtx, "no_first_instance");
 				tcu::TestCaseGroup*	indirectDrawParamCountNoFirstInstanceGroup	= new tcu::TestCaseGroup(m_testCtx, "no_first_instance");
 				{
@@ -1459,7 +1623,7 @@ void IndirectDrawTests::init (void)
 				indirectDrawCountInstancedGroup->addChild(indirectDrawCountNoFirstInstanceGroup);
 				indirectDrawParamCountInstancedGroup->addChild(indirectDrawParamCountNoFirstInstanceGroup);
 
-				tcu::TestCaseGroup*	indirectDrawFirstInstanceGroup				= new tcu::TestCaseGroup(m_testCtx, "first_instance", "Use drawIndirectFirstInstance optional feature");
+				tcu::TestCaseGroup*	indirectDrawFirstInstanceGroup				= new tcu::TestCaseGroup(m_testCtx, "first_instance");
 				tcu::TestCaseGroup*	indirectDrawCountFirstInstanceGroup			= new tcu::TestCaseGroup(m_testCtx, "first_instance");
 				tcu::TestCaseGroup*	indirectDrawParamCountFirstInstanceGroup	= new tcu::TestCaseGroup(m_testCtx, "first_instance");
 				{

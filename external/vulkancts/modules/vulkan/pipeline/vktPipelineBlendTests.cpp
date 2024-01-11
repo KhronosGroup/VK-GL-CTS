@@ -2075,6 +2075,8 @@ std::string getFormatCaseName (VkFormat format)
 
 tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
+	const auto genFormatTests = (!vk::isConstructionTypeShaderObject(pipelineConstructionType) || pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV);
+
 	const deUint32 blendStatesPerFormat = 100 * BlendTest::QUAD_COUNT;
 
 	// Formats that are dEQP-compatible, non-integer and uncompressed
@@ -2128,94 +2130,95 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 	de::MovePtr<tcu::TestCaseGroup>				blendTests				(new tcu::TestCaseGroup(testCtx, "blend"));
 	// Uses different blend formats
 	de::MovePtr<tcu::TestCaseGroup>				formatTests				(new tcu::TestCaseGroup(testCtx, "format"));
-	de::MovePtr<tcu::TestCaseGroup>				clampTests				(new tcu::TestCaseGroup(testCtx, "clamp", "Verifies clamping for normalized formats"));
-	de::MovePtr<tcu::TestCaseGroup>				dualSourceBlendTests	(new tcu::TestCaseGroup(testCtx, "dual_source", "Blend tests taking into account dual-source blend factors"));
-	de::MovePtr<tcu::TestCaseGroup>				dualSourceFormatTests	(new tcu::TestCaseGroup(testCtx, "format", "Uses different blend formats"));
+	de::MovePtr<tcu::TestCaseGroup>				clampTests				(new tcu::TestCaseGroup(testCtx, "clamp"));
+	de::MovePtr<tcu::TestCaseGroup>				dualSourceBlendTests	(new tcu::TestCaseGroup(testCtx, "dual_source"));
+	de::MovePtr<tcu::TestCaseGroup>				dualSourceFormatTests	(new tcu::TestCaseGroup(testCtx, "format"));
 
 
 	BlendStateUniqueRandomIterator				blendStateItr			(blendStatesPerFormat, 123);
 	BlendStateUniqueRandomIteratorDualSource	dualSourceBlendStateItr	(blendStatesPerFormat, 123);
 
-	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(blendFormats); formatNdx++)
+	if (genFormatTests)
 	{
-		const VkFormat					format			= blendFormats[formatNdx];
-
-		// Blend tests
+		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(blendFormats); formatNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-																					getFormatCaseName(format).c_str(),
-																					(std::string("Uses format ") + getFormatName(format)).c_str()));
-			de::MovePtr<tcu::TestCaseGroup>	blendStateTests;
+			const VkFormat					format			= blendFormats[formatNdx];
+
+			// Blend tests
 			{
-				std::ostringstream blendStateDescription;
-				blendStateDescription << "Combines blend factors, operators and channel write masks. The constant color used in all tests is " << BlendTest::s_blendConst;
-				blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
-			}
-
-			blendStateItr.reset();
-
-			while (blendStateItr.hasNext())
-			{
-				VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
-
-				for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
+				de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
+																					getFormatCaseName(format).c_str()));
+				de::MovePtr<tcu::TestCaseGroup>	blendStateTests;
 				{
-					quadBlendConfigs[quadNdx]					= blendStateItr.next();
-					quadBlendConfigs[quadNdx].colorWriteMask	= BlendTest::s_colorWriteMasks[quadNdx];
+					std::ostringstream blendStateDescription;
+					blendStateDescription << "Combines blend factors, operators and channel write masks. The constant color used in all tests is " << BlendTest::s_blendConst;
+					blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
 				}
 
-				blendStateTests->addChild(new BlendTest(testCtx,
-														getBlendStateSetName(quadBlendConfigs),
-														pipelineConstructionType,
-														format,
-														quadBlendConfigs));
-			}
-			formatTest->addChild(blendStateTests.release());
-			formatTests->addChild(formatTest.release());
-		}
+				blendStateItr.reset();
 
-		// Dual-Source blending tests
-		{
-			de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-																					getFormatCaseName(format).c_str(),
-																					(std::string("Uses format ") + getFormatName(format)).c_str()));
-			de::MovePtr<tcu::TestCaseGroup>	blendStateTests;
-			{
-				std::ostringstream blendStateDescription;
-				blendStateDescription << "Combines blend factors, operators and channel write masks. The constant color used in all tests is " << BlendTest::s_blendConst;
-				blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
-			}
-
-			dualSourceBlendStateItr.reset();
-
-			while (dualSourceBlendStateItr.hasNext())
-			{
-				VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
-				deBool isDualSourceBlendTest = DE_FALSE;
-				for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
+				while (blendStateItr.hasNext())
 				{
-					quadBlendConfigs[quadNdx]					= dualSourceBlendStateItr.next();
-					quadBlendConfigs[quadNdx].colorWriteMask	= BlendTest::s_colorWriteMasks[quadNdx];
-					isDualSourceBlendTest =
-						isDualSourceBlendTest ||
-						isSrc1BlendFactor(quadBlendConfigs[quadNdx].srcColorBlendFactor) ||
-						isSrc1BlendFactor(quadBlendConfigs[quadNdx].dstColorBlendFactor) ||
-						isSrc1BlendFactor(quadBlendConfigs[quadNdx].srcAlphaBlendFactor) ||
-						isSrc1BlendFactor(quadBlendConfigs[quadNdx].dstAlphaBlendFactor);
+					VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
+
+					for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
+					{
+						quadBlendConfigs[quadNdx]					= blendStateItr.next();
+						quadBlendConfigs[quadNdx].colorWriteMask	= BlendTest::s_colorWriteMasks[quadNdx];
+					}
+
+					blendStateTests->addChild(new BlendTest(testCtx,
+															getBlendStateSetName(quadBlendConfigs),
+															pipelineConstructionType,
+															format,
+															quadBlendConfigs));
+				}
+				formatTest->addChild(blendStateTests.release());
+				formatTests->addChild(formatTest.release());
+			}
+
+			// Dual-Source blending tests
+			{
+				de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
+																					getFormatCaseName(format).c_str()));
+				de::MovePtr<tcu::TestCaseGroup>	blendStateTests;
+				{
+					std::ostringstream blendStateDescription;
+					blendStateDescription << "Combines blend factors, operators and channel write masks. The constant color used in all tests is " << BlendTest::s_blendConst;
+					blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
 				}
 
-				// Skip tests that don't have dual-source blend factors as they are already tested.
-				if (!isDualSourceBlendTest)
-					continue;
+				dualSourceBlendStateItr.reset();
 
-				blendStateTests->addChild(new DualSourceBlendTest(testCtx,
-																  getBlendStateSetName(quadBlendConfigs),
-																  pipelineConstructionType,
-																  format,
-																  quadBlendConfigs));
+				while (dualSourceBlendStateItr.hasNext())
+				{
+					VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
+					deBool isDualSourceBlendTest = DE_FALSE;
+					for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
+					{
+						quadBlendConfigs[quadNdx]					= dualSourceBlendStateItr.next();
+						quadBlendConfigs[quadNdx].colorWriteMask	= BlendTest::s_colorWriteMasks[quadNdx];
+						isDualSourceBlendTest =
+							isDualSourceBlendTest ||
+							isSrc1BlendFactor(quadBlendConfigs[quadNdx].srcColorBlendFactor) ||
+							isSrc1BlendFactor(quadBlendConfigs[quadNdx].dstColorBlendFactor) ||
+							isSrc1BlendFactor(quadBlendConfigs[quadNdx].srcAlphaBlendFactor) ||
+							isSrc1BlendFactor(quadBlendConfigs[quadNdx].dstAlphaBlendFactor);
+					}
+
+					// Skip tests that don't have dual-source blend factors as they are already tested.
+					if (!isDualSourceBlendTest)
+						continue;
+
+					blendStateTests->addChild(new DualSourceBlendTest(testCtx,
+																	  getBlendStateSetName(quadBlendConfigs),
+																	  pipelineConstructionType,
+																	  format,
+																	  quadBlendConfigs));
+				}
+				formatTest->addChild(blendStateTests.release());
+				dualSourceFormatTests->addChild(formatTest.release());
 			}
-			formatTest->addChild(blendStateTests.release());
-			dualSourceFormatTests->addChild(formatTest.release());
 		}
 	}
 
@@ -2266,11 +2269,15 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx, PipelineConstru
 		clampTests->addChild(new ClampTest(testCtx, getFormatCaseName(format), testParams));
 	}
 
-	blendTests->addChild(formatTests.release());
+	if (genFormatTests)
+		blendTests->addChild(formatTests.release());
 	blendTests->addChild(clampTests.release());
 
-	dualSourceBlendTests->addChild(dualSourceFormatTests.release());
-	blendTests->addChild(dualSourceBlendTests.release());
+	if (genFormatTests)
+	{
+		dualSourceBlendTests->addChild(dualSourceFormatTests.release());
+		blendTests->addChild(dualSourceBlendTests.release());
+	}
 
 	return blendTests.release();
 }

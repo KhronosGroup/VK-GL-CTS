@@ -828,7 +828,7 @@ tcu::TestStatus TrinaryMinMaxInstance::iterate (void)
 tcu::TestCaseGroup* createTrinaryMinMaxGroup (tcu::TestContext& testCtx)
 {
 	deUint32 seed = 0xFEE768FCu;
-	de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, "amd_trinary_minmax", "Tests for VK_AMD_trinary_minmax operations"}};
+	de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, "amd_trinary_minmax"}};
 
 	static const std::vector<std::pair<OperationType, std::string>> operationTypes =
 	{
@@ -862,8 +862,7 @@ tcu::TestCaseGroup* createTrinaryMinMaxGroup (tcu::TestContext& testCtx)
 
 	for (const auto& opType : operationTypes)
 	{
-		const std::string opDesc = "Tests for " + opType.second + " operation";
-		de::MovePtr<tcu::TestCaseGroup> opGroup{new tcu::TestCaseGroup{testCtx, opType.second.c_str(), opDesc.c_str()}};
+		de::MovePtr<tcu::TestCaseGroup> opGroup{new tcu::TestCaseGroup{testCtx, opType.second.c_str()}};
 
 		for (const auto& baseType : baseTypes)
 		for (const auto& typeSize : typeSizes)
@@ -873,9 +872,8 @@ tcu::TestCaseGroup* createTrinaryMinMaxGroup (tcu::TestContext& testCtx)
 				continue;
 
 			const std::string typeName = baseType.second + typeSize.second;
-			const std::string typeDesc = "Tests using " + typeName + " data";
 
-			de::MovePtr<tcu::TestCaseGroup> typeGroup{new tcu::TestCaseGroup{testCtx, typeName.c_str(), typeDesc.c_str()}};
+			de::MovePtr<tcu::TestCaseGroup> typeGroup{new tcu::TestCaseGroup{testCtx, typeName.c_str()}};
 
 			for (const auto& aggType : aggregationTypes)
 			{

@@ -1667,8 +1667,8 @@ void createAhbExternalFormatResolveDrawTests (tcu::TestCaseGroup* testGroup, con
 	tcu::TextureFormat	invalidTextureFormat	= AndroidHardwareBufferInstance::formatToTextureFormat(AndroidHardwareBufferInstance::Format::UNASSIGNED);
 	// Draw tests
 	tcu::TestCaseGroup*	drawGroup				= new tcu::TestCaseGroup(testGroup->getTestContext(), "draw");
-	tcu::TestCaseGroup*	inputAttachment			= new tcu::TestCaseGroup(testGroup->getTestContext(), "input_attachment", "Draw tests with input attachment");
-	tcu::TestCaseGroup*	clearGroup				= new tcu::TestCaseGroup(testGroup->getTestContext(), "clear", "Clear only tests");
+	tcu::TestCaseGroup*	inputAttachment			= new tcu::TestCaseGroup(testGroup->getTestContext(), "input_attachment");
+	tcu::TestCaseGroup*	clearGroup				= new tcu::TestCaseGroup(testGroup->getTestContext(), "clear");
 	for (deUint32 i = 0; i < AndroidHardwareBufferInstance::Format::COUNT; ++i)
 	{
 		params.m_format	= static_cast<AndroidHardwareBufferInstance::Format>(i);
@@ -1687,8 +1687,7 @@ void createAhbExternalFormatResolveDrawTests (tcu::TestCaseGroup* testGroup, con
 		// CPU side validation requires valid tcu::TextureFormat
 		if (hasValidTextureFormat)
 		{
-			const std::string	formatGroupDesc	= "Draw to external format " + formatName;
-			tcu::TestCaseGroup*	formatGroup		= new tcu::TestCaseGroup(testGroup->getTestContext(), formatName.c_str(), formatGroupDesc.c_str());
+			tcu::TestCaseGroup*	formatGroup		= new tcu::TestCaseGroup(testGroup->getTestContext(), formatName.c_str());
 
 			params.m_renderArea	= defaultRenderArea;
 			// Draw to full render area of external format

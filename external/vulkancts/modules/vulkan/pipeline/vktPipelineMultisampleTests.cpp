@@ -5540,11 +5540,16 @@ struct ZExportParams
 	const PipelineConstructionType	pipelineConstructionType;
 	const ZExportFlags				testFlags;
 	const bool						dynamicAlphaToCoverage;
+	const bool						dynamicRendering;
 
-	ZExportParams (PipelineConstructionType pipelineConstructionType_, ZExportFlags testFlags_, bool dynamicAlphaToCoverage_)
+	ZExportParams (PipelineConstructionType	pipelineConstructionType_,
+				   ZExportFlags				testFlags_,
+				   bool						dynamicAlphaToCoverage_,
+				   bool						dynamicRendering_)
 		: pipelineConstructionType	(pipelineConstructionType_)
 		, testFlags					(testFlags_)
 		, dynamicAlphaToCoverage	(dynamicAlphaToCoverage_)
+		, dynamicRendering			(dynamicRendering_)
 	{}
 
 	bool testDepth		(void) const	{ return hasFlag(ZEXP_DEPTH_BIT);		}
@@ -5573,8 +5578,15 @@ void ZExportCheckSupport (Context& context, const ZExportParams params)
 {
 	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), params.pipelineConstructionType);
 
-	context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
-	context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
+	if (params.dynamicRendering)
+	{
+		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+	}
+	else
+	{
+		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+		context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
+	}
 
 	const auto& dsResolveProperties = context.getDepthStencilResolveProperties();
 
@@ -5872,7 +5884,7 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 		dsResolveAttachmentView.get(),
 	};
 
-	RenderPassWrapper renderPass	(params.pipelineConstructionType, ctx.vkd, ctx.device, &renderPassCreateInfo);
+	RenderPassWrapper renderPass (ctx.vkd, ctx.device, &renderPassCreateInfo, (params.dynamicRendering || isConstructionTypeShaderObject(params.pipelineConstructionType)));
 	renderPass.createFramebuffer(ctx.vkd, ctx.device, de::sizeU32(attachmentViews), de::dataOrNull(images), de::dataOrNull(attachmentViews), fbExtent.width, fbExtent.height);
 
 	// Pipeline layout.
@@ -5882,6 +5894,7 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 	const auto&	binaries	= context.getBinaryCollection();
 	const auto	vertShader	= ShaderWrapper(ctx.vkd, ctx.device, binaries.get("vert"));
 	const auto	fragShader	= ShaderWrapper(ctx.vkd, ctx.device, binaries.get("frag"));
+	const auto	nullShader	= ShaderWrapper();
 
 	// Viewports and scissors.
 	const std::vector<VkViewport>	viewports	(1u, makeViewport(fbExtent));
@@ -5950,6 +5963,25 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 		de::dataOrNull(dynamicStates),							//	const VkDynamicState*				pDynamicStates;
 	};
 
+#ifndef CTS_USES_VULKANSC
+	VkPipelineRenderingCreateInfo renderingCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,	//	VkStructureType	sType;
+		nullptr,											//	const void*		pNext;
+		0u,													//	uint32_t		viewMask;
+		1u,													//	uint32_t		colorAttachmentCount;
+		&colorFormat,										//	const VkFormat*	pColorAttachmentFormats;
+		dsFormat,											//	VkFormat		depthAttachmentFormat;
+		dsFormat,											//	VkFormat		stencilAttachmentFormat;
+	};
+
+	PipelineRenderingCreateInfoWrapper renderingCreateInfoPtr (params.dynamicRendering ? &renderingCreateInfo : nullptr);
+#else
+	PipelineRenderingCreateInfoWrapper renderingCreateInfoPtr (nullptr);
+#endif // CTS_USES_VULKANSC
+
+	const auto fragShaderStateMSPtr = (params.dynamicRendering ? nullptr : &multisampleStateCreateInfo);
+
 	GraphicsPipelineWrapper pipelineWrapper (ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(), params.pipelineConstructionType);
 	pipelineWrapper
 			.setDefaultRasterizationState()
@@ -5961,8 +5993,12 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 				pipelineLayout,
 				*renderPass,
 				0u,
-				vertShader)
-			.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShader, &dsStateInfo, &multisampleStateCreateInfo)
+				vertShader,
+				nullptr,
+				nullShader, nullShader, nullShader, nullptr, nullptr,
+				renderingCreateInfoPtr)
+			.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShader, &dsStateInfo, fragShaderStateMSPtr,
+				nullptr, VK_NULL_HANDLE)
 			.setupFragmentOutputState(*renderPass, 0u, nullptr, &multisampleStateCreateInfo)
 			.setMonolithicPipelineLayout(pipelineLayout)
 			.buildPipeline();
@@ -6738,19 +6774,22 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 
 			for (const auto& flagsCase : flagsCases)
 			{
-				for (int i = 0; i < 2; ++i)
-				{
-					const bool dynamicAlphaToCoverage = (i > 0);
-
+				for (const bool dynamicAlphaToCoverage : { false, true })
+					for (const bool dynamicRendering : { false, true })
+					{
 #ifdef CTS_USES_VULKANSC
-					if (dynamicAlphaToCoverage)
-						continue;
+						if (dynamicAlphaToCoverage || dynamicRendering)
+							continue;
 #endif // CTS_USES_VULKANSC
+						if (dynamicRendering && !isConstructionTypeLibrary(pipelineConstructionType))
+							continue;
 
-					const auto			testName	= std::string(flagsCase.name) + "_" + (dynamicAlphaToCoverage ? "dynamic" : "static") + "_atc"; // atc = alpha to coverage
-					const ZExportParams	params		(pipelineConstructionType, flagsCase.flags, dynamicAlphaToCoverage);
+						const auto			testName	= std::string(flagsCase.name) + "_"
+														+ (dynamicAlphaToCoverage ? "dynamic" : "static") + "_atc" // atc = alpha to coverage
+														+ (dynamicRendering ? "_dynamic_rendering" : "");
+						const ZExportParams	params		(pipelineConstructionType, flagsCase.flags, dynamicAlphaToCoverage, dynamicRendering);
 
-					addFunctionCaseWithPrograms(zExportGroup.get(), testName, ZExportCheckSupport, ZExportInitPrograms, ZExportIterate, params);
+						addFunctionCaseWithPrograms(zExportGroup.get(), testName, ZExportCheckSupport, ZExportInitPrograms, ZExportIterate, params);
 				}
 			}
 
