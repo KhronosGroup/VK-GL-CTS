@@ -340,7 +340,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		css <<
 			"#version 460 core\n"
 			"#extension GL_EXT_ray_tracing : require\n"
-			"layout(location = 0) rayPayloadInEXT dummyPayload { vec4 dummy; };\n"
+			"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			"layout(set = 0, binding = 0, r32ui) uniform uimage3D result;\n"
 			"void main()\n"
 			"{\n"
