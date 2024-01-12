@@ -1823,6 +1823,7 @@ struct GraphicsPipelineWrapper::InternalData
 	deBool												useDefaultVertexInputState;
 	bool												failOnCompileWhenLinking;
 
+	bool												explicitLinkPipelineLayoutSet;
 	VkGraphicsPipelineCreateInfo						monolithicPipelineCreateInfo;
 
 	ShaderWrapper										vertexShader;
@@ -1993,6 +1994,7 @@ struct GraphicsPipelineWrapper::InternalData
 		, useDefaultMultisampleState	(DE_FALSE)
 		, useDefaultVertexInputState	(DE_TRUE)
 		, failOnCompileWhenLinking		(false)
+		, explicitLinkPipelineLayoutSet	(false)
 		, tessellationShaderFeature		(false)
 		, geometryShaderFeature			(false)
 		, taskShaderFeature				(false)
@@ -2032,6 +2034,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setMonolithicPipelineLayout(co
 	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
 
 	m_internalData->monolithicPipelineCreateInfo.layout = *layout;
+	m_internalData->explicitLinkPipelineLayoutSet = true;
 
 	return *this;
 }
@@ -2689,12 +2692,13 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 		}
 	}
 
+	// if pipeline layout was not specified with setupMonolithicPipelineLayout
+	// then use layout from setupPreRasterizationShaderState for link pipeline
+	if (!m_internalData->explicitLinkPipelineLayoutSet)
+		m_internalData->monolithicPipelineCreateInfo.layout = *layout;
+
 	if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		// make sure we dont overwrite layout specified with setupMonolithicPipelineLayout
-		if (m_internalData->monolithicPipelineCreateInfo.layout == 0)
-			m_internalData->monolithicPipelineCreateInfo.layout = *layout;
-
 		m_internalData->monolithicPipelineCreateInfo.renderPass				= renderPass;
 		m_internalData->monolithicPipelineCreateInfo.subpass				= subpass;
 		m_internalData->monolithicPipelineCreateInfo.pRasterizationState	= pRasterizationState;
@@ -2857,12 +2861,13 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShade
 		}
 	}
 
+	// if pipeline layout was not specified with setupMonolithicPipelineLayout
+	// then use layout from setupPreRasterizationMeshShaderState for link pipeline
+	if (!m_internalData->explicitLinkPipelineLayoutSet)
+		m_internalData->monolithicPipelineCreateInfo.layout = *layout;
+
 	if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		// make sure we dont overwrite layout specified with setupMonolithicPipelineLayout
-		if (m_internalData->monolithicPipelineCreateInfo.layout == 0)
-			m_internalData->monolithicPipelineCreateInfo.layout = *layout;
-
 		m_internalData->monolithicPipelineCreateInfo.renderPass				= renderPass;
 		m_internalData->monolithicPipelineCreateInfo.subpass				= subpass;
 		m_internalData->monolithicPipelineCreateInfo.pRasterizationState	= pRasterizationState;
