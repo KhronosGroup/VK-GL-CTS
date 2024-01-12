@@ -252,6 +252,7 @@ protected:
 	std::vector<TextureBinding>	m_textures;
 
 	glu::ShaderProgram*			m_program;
+	int					m_gridSize;
 };
 
 // Helpers.
