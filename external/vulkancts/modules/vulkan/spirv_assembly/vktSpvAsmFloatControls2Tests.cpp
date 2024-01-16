@@ -2197,6 +2197,7 @@ bool compareBytes(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, Test
 			return true;
 
 		log << TestLog::Message << "Expected -1, -0, +0 or +1" << TestLog::EndMessage;
+		return false;
 	}
 
 	if (expectedValueId == V_ZERO_OR_MINUS_ZERO)
