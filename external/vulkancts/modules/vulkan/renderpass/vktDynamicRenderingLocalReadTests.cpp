@@ -202,11 +202,13 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context&		context,
 	}
 	case TestType::MAX_ATTACHMENTS_REMAPPED_REPEATEDLY:
 	{
-		m_colorAttachmentCount	= deMinu32(properties.limits.maxColorAttachments, properties.limits.maxPerStageDescriptorInputAttachments - 2u);
-		m_inputDrawsCount		= m_colorAttachmentCount / 2u;
-		m_colorAttachmentCount	= m_inputDrawsCount * 2u;
-		m_outputDrawsCount		= 3;
-		m_readFragName			+= "_" + std::to_string(m_colorAttachmentCount + 2u);	// +2 because depth and stencil are read too
+		m_colorAttachmentCount			= deMinu32(properties.limits.maxColorAttachments, properties.limits.maxPerStageDescriptorInputAttachments - 2u);
+		m_inputDrawsCount				= m_colorAttachmentCount / 2u;
+		m_colorAttachmentCount			= m_inputDrawsCount * 2u;
+		m_outputDrawsCount				= 3;
+		m_readFragName					+= "_" + std::to_string(m_colorAttachmentCount + 2u);	// +2 because depth and stencil are read too
+		m_depthInputAttachmentIndex		= m_colorAttachmentCount;
+		m_stencilInputAttachmentIndex	= m_colorAttachmentCount + 1;
 
 		// each input draw uses just two color attachments; each time its different pair that is always mapped to location 0 and 1
 		m_colorAttachmentLocations.clear();
@@ -580,8 +582,8 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 		barrier.srcAccessMask	= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		barrier.dstAccessMask	= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
 	}
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0, DE_NULL, 0, DE_NULL, (deUint32)colorImageBarriers.size(), colorImageBarriers.data());
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0, DE_NULL, 0, DE_NULL, 1u, &dsImageBarrier);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0, DE_NULL, 0, DE_NULL, (deUint32)colorImageBarriers.size(), colorImageBarriers.data());
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 0, DE_NULL, 0, DE_NULL, 1u, &dsImageBarrier);
 
 	// draw using read pipelines
 	for (deUint32 pipelineIndex = 0; pipelineIndex < m_outputDrawsCount; ++pipelineIndex)
@@ -718,7 +720,7 @@ tcu::TestStatus SampledImageLocalReadTestInstance::iterate()
 	for (deUint32 i = 0; i < inputImageCount; ++i)
 	{
 		// create images and image views for input attachments
-		images[i]		= createImage(m_context, m_renderSize, imageFormat, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+		images[i]		= createImage(m_context, m_renderSize, imageFormat, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
 		imageViews[i]	= VkImageViewSp(new vk::Move<VkImageView>(makeImageView(vk, device, **images[i], VK_IMAGE_VIEW_TYPE_2D, imageFormat, colorSRR)));
 
 		// define buffers that will be used to copy data to image; first buffer will also be reused for output;
