@@ -98,20 +98,51 @@ std::vector<Vertex> createFullscreenTriangle (void)
 	return vertices;
 }
 
-void generateInputAttachmentParams(deUint32 activeAttachmentCount, deUint32 allAttachmentCount, std::vector<deUint32>& attachmentIndices, std::vector<deUint32>& descriptorBindings)
+void generateInputAttachmentParams(RenderingType renderingType, deUint32 activeAttachmentCount, deUint32 allAttachmentCount, std::vector<deUint32>& attachmentIndices, std::vector<deUint32>& descriptorBindings)
 {
-	attachmentIndices.resize(allAttachmentCount);
-	std::iota(begin(attachmentIndices), begin(attachmentIndices) + activeAttachmentCount, 0);
-	std::fill(begin(attachmentIndices) + activeAttachmentCount, end(attachmentIndices), VK_ATTACHMENT_UNUSED);
-	de::Random random(DEFAULT_SEED);
-	random.shuffle(begin(attachmentIndices), end(attachmentIndices));
+	DE_ASSERT(attachmentIndices.empty());
+	DE_ASSERT(descriptorBindings.empty());
 
-	descriptorBindings.resize(activeAttachmentCount+1);
-	descriptorBindings[0] = VK_ATTACHMENT_UNUSED;
-	for (deUint32 i = 0, lastBinding = 1; i < allAttachmentCount; ++i)
+	attachmentIndices.resize(allAttachmentCount, VK_ATTACHMENT_UNUSED);
+	descriptorBindings.resize(activeAttachmentCount + 1, VK_ATTACHMENT_UNUSED);
+
+	de::Random random(DEFAULT_SEED);
+
+	// there is diference in test logic for dynamic rendering cases where attachment indices
+	// needed to be from range <0; 2 * activeAttachmentCount - 1> where for renderpass cases
+	// attachment indices had to be from range <0; activeAttachmentCount - 1>
+	if (renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 	{
-		if (attachmentIndices[i] != VK_ATTACHMENT_UNUSED)
-			descriptorBindings[lastBinding++] = i;
+		// fill all indices and shuffle them
+		std::iota(begin(attachmentIndices), end(attachmentIndices), 0);
+		random.shuffle(begin(attachmentIndices), end(attachmentIndices));
+
+		// set every other attachment as unused
+		for (deUint32 i = 0; i < (deUint32)attachmentIndices.size(); i += 2)
+			attachmentIndices[i] = VK_ATTACHMENT_UNUSED;
+
+		// shuffle once again
+		random.shuffle(begin(attachmentIndices), end(attachmentIndices));
+
+		for (deUint32 i = 0, lastBinding = 1; i < allAttachmentCount; ++i)
+		{
+			if (attachmentIndices[i] != VK_ATTACHMENT_UNUSED)
+				descriptorBindings[lastBinding++] = attachmentIndices[i];
+		}
+	}
+	else
+	{
+		// fill half of indices
+		std::iota(begin(attachmentIndices), begin(attachmentIndices) + activeAttachmentCount, 0);
+
+		// shuffle values with remaining unused indices
+		random.shuffle(begin(attachmentIndices), end(attachmentIndices));
+
+		for (deUint32 i = 0, lastBinding = 1; i < allAttachmentCount; ++i)
+		{
+			if (attachmentIndices[i] != VK_ATTACHMENT_UNUSED)
+				descriptorBindings[lastBinding++] = i;
+		}
 	}
 }
 
@@ -132,21 +163,19 @@ VkImageLayout chooseInputImageLayout(const SharedGroupParams groupParams)
 }
 
 #ifndef CTS_USES_VULKANSC
-void beginSecondaryCmdBuffer(const DeviceInterface&	vk,
-							 VkCommandBuffer		secCmdBuffer,
-							 deUint32				colorAttachmentsCount,
-							 const void*			additionalInheritanceRenderingInfo)
+void beginSecondaryCmdBuffer(const DeviceInterface&		vk,
+							 VkCommandBuffer			secCmdBuffer,
+							 std::vector<VkFormat>		colorAttachmentFormats,
+							 const void*				additionalInheritanceRenderingInfo = DE_NULL,
+							 VkCommandBufferUsageFlags	usageFlags = 0)
 {
-	VkCommandBufferUsageFlags	usageFlags				(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-	const std::vector<VkFormat>	colorAttachmentFormats	(colorAttachmentsCount, VK_FORMAT_R8G8B8A8_UNORM);
-
 	const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,		// VkStructureType					sType;
 		additionalInheritanceRenderingInfo,										// const void*						pNext;
 		0u,																		// VkRenderingFlagsKHR				flags;
 		0u,																		// uint32_t							viewMask;
-		colorAttachmentsCount,													// uint32_t							colorAttachmentCount;
+		(deUint32)colorAttachmentFormats.size(),								// uint32_t							colorAttachmentCount;
 		colorAttachmentFormats.data(),											// const VkFormat*					pColorAttachmentFormats;
 		VK_FORMAT_UNDEFINED,													// VkFormat							depthAttachmentFormat;
 		VK_FORMAT_UNDEFINED,													// VkFormat							stencilAttachmentFormat;
@@ -163,6 +192,7 @@ void beginSecondaryCmdBuffer(const DeviceInterface&	vk,
 		(VkQueryControlFlags)0u,												// VkQueryControlFlags				queryFlags;
 		(VkQueryPipelineStatisticFlags)0u										// VkQueryPipelineStatisticFlags	pipelineStatistics;
 	};
+	usageFlags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 	const VkCommandBufferBeginInfo commandBufBeginParams
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,							// VkStructureType							sType;
@@ -173,10 +203,10 @@ void beginSecondaryCmdBuffer(const DeviceInterface&	vk,
 	VK_CHECK(vk.beginCommandBuffer(secCmdBuffer, &commandBufBeginParams));
 }
 
-VkRenderingInputAttachmentIndexInfoKHR getRenderingInputAttachmentIndexInfo(deUint32 activeAttachmentCount, std::vector<uint32_t>& inputAttachments)
+VkRenderingInputAttachmentIndexInfoKHR getRenderingInputAttachmentIndexInfo(RenderingType renderingType, deUint32 activeAttachmentCount, std::vector<uint32_t>& inputAttachments)
 {
-	std::vector<deUint32> unnededIndices;
-	generateInputAttachmentParams(activeAttachmentCount, 2u * activeAttachmentCount, unnededIndices, inputAttachments);
+	std::vector<deUint32> unnededBindings;
+	generateInputAttachmentParams(renderingType, activeAttachmentCount, 2u * activeAttachmentCount, inputAttachments, unnededBindings);
 
 	return
 	{
@@ -294,7 +324,8 @@ void InputAttachmentSparseFillingTest::initPrograms (SourceCollections& sourceCo
 		<< "layout(binding = 0, rg32ui) uniform uimage2D resultImage;\n";
 
 	std::vector<deUint32> attachmentIndices, descriptorBindings;
-	generateInputAttachmentParams(m_testParams.activeInputAttachmentCount, 2u * m_testParams.activeInputAttachmentCount, attachmentIndices, descriptorBindings);
+	generateInputAttachmentParams(m_testParams.groupParams->renderingType, m_testParams.activeInputAttachmentCount,
+								  2u * m_testParams.activeInputAttachmentCount, attachmentIndices, descriptorBindings);
 
 	for (std::size_t i = 1; i < descriptorBindings.size(); ++i)
 		str << "layout(binding = " << i << ", input_attachment_index = " << descriptorBindings[i] <<") uniform subpassInput attach" << i <<";\n";
@@ -594,7 +625,7 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
 		deMemset(&colorBlendAttachmentState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
 		colorBlendAttachmentState.colorWriteMask = 0xF;
 
-		deUint32 colorAttachmentsCount = (*m_renderPass == DE_NULL) ? m_testParams.activeInputAttachmentCount : 1u;
+		deUint32 colorAttachmentsCount = (*m_renderPass == DE_NULL) ? 2u * m_testParams.activeInputAttachmentCount : 1u;
 		const std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(colorAttachmentsCount, colorBlendAttachmentState);
 		VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfoDefault = initVulkanStructure();
 		colorBlendStateCreateInfoDefault.attachmentCount = deUint32(colorBlendAttachmentStates.size());
@@ -607,7 +638,8 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
 
 #ifndef CTS_USES_VULKANSC
 		std::vector<deUint32> inputAttachments;
-		auto renderingInputAttachmentIndexInfo = getRenderingInputAttachmentIndexInfo(m_testParams.activeInputAttachmentCount, inputAttachments);
+		auto renderingInputAttachmentIndexInfo = getRenderingInputAttachmentIndexInfo(m_testParams.groupParams->renderingType,
+																			m_testParams.activeInputAttachmentCount, inputAttachments);
 
 		const std::vector<VkFormat> colorAttachmentFormats(colorAttachmentsCount, VK_FORMAT_R8G8B8A8_UNORM);
 		VkPipelineRenderingCreateInfo renderingCreateInfo
@@ -725,7 +757,14 @@ void InputAttachmentSparseFillingTestInstance::createCommandBuffer (const Device
 void InputAttachmentSparseFillingTestInstance::createCommandBufferDynamicRendering(const DeviceInterface& vk, VkDevice vkDevice)
 {
 #ifndef CTS_USES_VULKANSC
-	std::vector<VkRenderingAttachmentInfo> colorAttachments(m_testParams.activeInputAttachmentCount,
+
+	std::vector<deUint32>	inputAttachments;
+	const auto				renderingInputAttachmentIndexInfo = getRenderingInputAttachmentIndexInfo(m_testParams.groupParams->renderingType,
+																					m_testParams.activeInputAttachmentCount, inputAttachments);
+
+	deUint32 colorAttachmentCount = 2u * m_testParams.activeInputAttachmentCount;
+	std::vector<VkFormat> colorAttachmentFormats(colorAttachmentCount, VK_FORMAT_UNDEFINED);
+	std::vector<VkRenderingAttachmentInfo> colorAttachments(colorAttachmentCount,
 		{
 			VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,		// VkStructureType			sType;
 			DE_NULL,											// const void*				pNext;
@@ -738,11 +777,16 @@ void InputAttachmentSparseFillingTestInstance::createCommandBufferDynamicRenderi
 			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp		storeOp;
 			makeClearValueColorU32(0, 0, 0, 0)					// VkClearValue				clearValue;
 		});
-	for (std::size_t i = 0; i < m_testParams.activeInputAttachmentCount; ++i)
-		colorAttachments[i].imageView = **m_inputImageViews[i];
+	deUint32 imageViewIndex = 0;
+	for (deUint32 index = 0; index < (deUint32)inputAttachments.size(); ++index)
+	{
+		if (inputAttachments[index] == VK_ATTACHMENT_UNUSED)
+			continue;
 
-	std::vector<deUint32> inputAttachments;
-	const auto renderingInputAttachmentIndexInfo = getRenderingInputAttachmentIndexInfo(m_testParams.activeInputAttachmentCount, inputAttachments);
+		colorAttachments[index].imageView = **m_inputImageViews[imageViewIndex];
+		colorAttachmentFormats[index] = VK_FORMAT_R8G8B8A8_UNORM;
+		++imageViewIndex;
+	}
 
 	VkRenderingInfo renderingInfo
 	{
@@ -765,8 +809,9 @@ void InputAttachmentSparseFillingTestInstance::createCommandBufferDynamicRenderi
 		m_secCmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
 		// record secondary command buffer
-		beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, m_testParams.activeInputAttachmentCount, &renderingInputAttachmentIndexInfo);
+		beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, colorAttachmentFormats);
 		vk.cmdBeginRendering(*m_secCmdBuffer, &renderingInfo);
+		vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_secCmdBuffer, &renderingInputAttachmentIndexInfo);
 		drawCommands(vk, *m_secCmdBuffer);
 		vk.cmdEndRendering(*m_secCmdBuffer);
 		endCommandBuffer(vk, *m_secCmdBuffer);
@@ -774,8 +819,27 @@ void InputAttachmentSparseFillingTestInstance::createCommandBufferDynamicRenderi
 		// record primary command buffer
 		beginCommandBuffer(vk, *m_cmdBuffer);
 		preRenderCommands(vk, *m_cmdBuffer);
+		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+		postRenderCommands(vk, *m_cmdBuffer);
+		endCommandBuffer(vk, *m_cmdBuffer);
+	}
+	else if (m_testParams.groupParams->useSecondaryCmdBuffer)
+	{
+		m_secCmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		renderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR;
+
+		// record secondary command buffer
+		beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, colorAttachmentFormats, &renderingInputAttachmentIndexInfo, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
+		drawCommands(vk, *m_secCmdBuffer);
+		endCommandBuffer(vk, *m_secCmdBuffer);
+
+		// record primary command buffer
+		beginCommandBuffer(vk, *m_cmdBuffer);
+		preRenderCommands(vk, *m_cmdBuffer);
+		vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 		vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
 		vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
+		vk.cmdEndRendering(*m_cmdBuffer);
 		postRenderCommands(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
@@ -852,13 +916,14 @@ template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, 
 Move<VkRenderPass> InputAttachmentSparseFillingTestInstance::createRenderPass (const DeviceInterface&	vk,
 																			   VkDevice					vkDevice)
 {
-	const VkImageAspectFlags	aspectMask						= m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY ? 0 : VK_IMAGE_ASPECT_COLOR_BIT;
+	const auto					renderingType					= m_testParams.groupParams->renderingType;
+	const VkImageAspectFlags	aspectMask						= renderingType == RENDERING_TYPE_RENDERPASS_LEGACY ? 0 : VK_IMAGE_ASPECT_COLOR_BIT;
 	std::vector<AttachmentDesc>	attachmentDescriptions;
 	std::vector<AttachmentRef>	attachmentRefs;
 
 	std::vector<deUint32>		attachmentIndices;
 	std::vector<deUint32>		descriptorBindings;
-	generateInputAttachmentParams(m_testParams.activeInputAttachmentCount, 2u * m_testParams.activeInputAttachmentCount, attachmentIndices, descriptorBindings);
+	generateInputAttachmentParams(renderingType, m_testParams.activeInputAttachmentCount, 2u * m_testParams.activeInputAttachmentCount, attachmentIndices, descriptorBindings);
 
 	for (deUint32 i = 0; i < m_testParams.activeInputAttachmentCount; ++i)
 	{

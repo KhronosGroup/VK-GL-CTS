@@ -8392,9 +8392,9 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, co
 		suballocationTestGroup->addChild(createRenderPassSampleReadTests(testCtx, groupParams));
 		suballocationTestGroup->addChild(createRenderPassMultisampleTests(testCtx, groupParams));
 		suballocationTestGroup->addChild(createRenderPassUnusedAttachmentTests(testCtx, groupParams));
-		suballocationTestGroup->addChild(createRenderPassUnusedAttachmentSparseFillingTests(testCtx, groupParams));
 	}
 
+	suballocationTestGroup->addChild(createRenderPassUnusedAttachmentSparseFillingTests(testCtx, groupParams));
 	suballocationTestGroup->addChild(createRenderPassSubpassDependencyTests(testCtx, groupParams));
 	suballocationTestGroup->addChild(createRenderPassMultisampleResolveTests(testCtx, groupParams));
 #ifndef CTS_USES_VULKANSC
