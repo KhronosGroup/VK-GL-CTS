@@ -22,3 +22,6 @@ dEQP-VK.glsl.texture_functions.texturegradoffset.mirrored.usampler2darray_vertex
 
 # Issue 4372
 dEQP-VK.subgroups.subgroup_uniform_control_flow.*partial*
+
+# Issue 4894
+dEQP-VK.image.extended_usage_bit_compatibility.image_format_list.*
