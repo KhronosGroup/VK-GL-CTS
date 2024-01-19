@@ -1441,7 +1441,10 @@ AccessInstance::AccessInstance (Context&			context,
 
 	if (m_bufferFormat == VK_FORMAT_R64_UINT || m_bufferFormat == VK_FORMAT_R64_SINT)
 	{
-		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+		if (!context.getDeviceFeatures().shaderInt64)
+		{
+			TCU_THROW(NotSupportedError, "64-bit integers not supported");
+		}
 	}
 
 	// Check storage support

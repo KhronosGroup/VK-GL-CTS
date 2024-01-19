@@ -148,10 +148,14 @@ Move<VkDevice> createDeviceWithPushDescriptor (const Context&				context,
 	}
 	else if (isConstructionTypeShaderObject(params.pipelineConstructionType))
 	{
+		if (context.getUsedApiVersion() < VK_API_VERSION_1_3)
+			requiredExtensionsStr.push_back("VK_KHR_dynamic_rendering");
 		requiredExtensionsStr.push_back("VK_EXT_shader_object");
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 		if (!shaderObjectFeaturesEXT.shaderObject)
 			TCU_THROW(NotSupportedError, "shaderObjectFeaturesEXT.shaderObject required");
+		if (!dynamicRenderingFeaturesKHR.dynamicRendering)
+			TCU_THROW(NotSupportedError, "dynamicRendering required");
 	}
 	vector<const char *>			requiredExtensions;
 	checkAllSupported(supportedExtensions, requiredExtensionsStr);
