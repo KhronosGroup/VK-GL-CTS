@@ -843,7 +843,15 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_dynamic_rendering_local_read")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_image_atomic_int64")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_quad_control")
 	{
 		return;
 	}
@@ -1315,6 +1323,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_subgroup_rotate")
+	{
+		return;
+	}
 	if (extName == "VK_ARM_scheduling_controls")
 	{
 		return;
@@ -1360,6 +1372,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_GOOGLE_surfaceless_query")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_maximal_reconvergence")
 	{
 		return;
 	}
@@ -1513,6 +1529,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_load_store_op_none")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_float_controls2")
+	{
+		return;
+	}
 	if (extName == "VK_QNX_external_memory_screen_buffer")
 	{
 		return;
@@ -1521,9 +1545,21 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_index_type_uint8")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_line_rasterization")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_calibrated_timestamps")
 	{
 		functions.push_back("vkGetPhysicalDeviceCalibrateableTimeDomainsKHR");
+		return;
+	}
+	if (extName == "VK_KHR_shader_expect_assume")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_maintenance6")
@@ -2519,7 +2555,17 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_dynamic_rendering_local_read")
+	{
+		functions.push_back("vkCmdSetRenderingAttachmentLocationsKHR");
+		functions.push_back("vkCmdSetRenderingInputAttachmentIndicesKHR");
+		return;
+	}
 	if (extName == "VK_EXT_shader_image_atomic_int64")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_quad_control")
 	{
 		return;
 	}
@@ -3131,6 +3177,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_subgroup_rotate")
+	{
+		return;
+	}
 	if (extName == "VK_ARM_scheduling_controls")
 	{
 		return;
@@ -3185,6 +3235,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_GOOGLE_surfaceless_query")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_maximal_reconvergence")
 	{
 		return;
 	}
@@ -3480,6 +3534,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_load_store_op_none")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_float_controls2")
+	{
+		return;
+	}
 	if (extName == "VK_QNX_external_memory_screen_buffer")
 	{
 		functions.push_back("vkGetScreenBufferPropertiesQNX");
@@ -3489,9 +3551,22 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_index_type_uint8")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_line_rasterization")
+	{
+		functions.push_back("vkCmdSetLineStippleKHR");
+		return;
+	}
 	if (extName == "VK_KHR_calibrated_timestamps")
 	{
 		functions.push_back("vkGetCalibratedTimestampsKHR");
+		return;
+	}
+	if (extName == "VK_KHR_shader_expect_assume")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_maintenance6")
@@ -3747,7 +3822,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_fragment_shading_rate",
 	"VK_AMD_shader_core_properties2",
 	"VK_AMD_device_coherent_memory",
+	"VK_KHR_dynamic_rendering_local_read",
 	"VK_EXT_shader_image_atomic_int64",
+	"VK_KHR_shader_quad_control",
 	"VK_KHR_spirv_1_4",
 	"VK_EXT_memory_budget",
 	"VK_EXT_memory_priority",
@@ -3855,6 +3932,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_pageable_device_local_memory",
 	"VK_KHR_maintenance4",
 	"VK_ARM_shader_core_properties",
+	"VK_KHR_shader_subgroup_rotate",
 	"VK_ARM_scheduling_controls",
 	"VK_EXT_image_sliced_view_of_3d",
 	"VK_VALVE_descriptor_set_host_mapping",
@@ -3866,6 +3944,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_memory_decompression",
 	"VK_NV_device_generated_commands_compute",
 	"VK_NV_linear_color_attachment",
+	"VK_KHR_shader_maximal_reconvergence",
 	"VK_EXT_image_compression_control_swapchain",
 	"VK_QCOM_image_processing",
 	"VK_EXT_nested_command_buffer",
@@ -3901,9 +3980,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_QCOM_filter_cubic_clamp",
 	"VK_EXT_attachment_feedback_loop_dynamic_state",
 	"VK_KHR_vertex_attribute_divisor",
+	"VK_KHR_load_store_op_none",
+	"VK_KHR_shader_float_controls2",
 	"VK_QNX_external_memory_screen_buffer",
 	"VK_MSFT_layered_driver",
+	"VK_KHR_index_type_uint8",
+	"VK_KHR_line_rasterization",
 	"VK_KHR_calibrated_timestamps",
+	"VK_KHR_shader_expect_assume",
 	"VK_KHR_maintenance6",
 	"VK_NV_descriptor_pool_overallocation",
 };

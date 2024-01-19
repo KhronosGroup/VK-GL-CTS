@@ -101,7 +101,7 @@ const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
 		case VK_ATTACHMENT_LOAD_OP_LOAD:		return "VK_ATTACHMENT_LOAD_OP_LOAD";
 		case VK_ATTACHMENT_LOAD_OP_CLEAR:		return "VK_ATTACHMENT_LOAD_OP_CLEAR";
 		case VK_ATTACHMENT_LOAD_OP_DONT_CARE:	return "VK_ATTACHMENT_LOAD_OP_DONT_CARE";
-		case VK_ATTACHMENT_LOAD_OP_NONE_EXT:	return "VK_ATTACHMENT_LOAD_OP_NONE_EXT";
+		case VK_ATTACHMENT_LOAD_OP_NONE_KHR:	return "VK_ATTACHMENT_LOAD_OP_NONE_KHR";
 		default:								return DE_NULL;
 	}
 }
@@ -513,7 +513,7 @@ const char* getDynamicStateName (VkDynamicState value)
 		case VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV:				return "VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV";
 		case VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV:						return "VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV";
 		case VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR:				return "VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR";
-		case VK_DYNAMIC_STATE_LINE_STIPPLE_EXT:							return "VK_DYNAMIC_STATE_LINE_STIPPLE_EXT";
+		case VK_DYNAMIC_STATE_LINE_STIPPLE_KHR:							return "VK_DYNAMIC_STATE_LINE_STIPPLE_KHR";
 		case VK_DYNAMIC_STATE_CULL_MODE:								return "VK_DYNAMIC_STATE_CULL_MODE";
 		case VK_DYNAMIC_STATE_FRONT_FACE:								return "VK_DYNAMIC_STATE_FRONT_FACE";
 		case VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY:						return "VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY";
@@ -968,6 +968,7 @@ const char* getImageLayoutName (VkImageLayout value)
 		case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:	return "VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL";
 		case VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR:	return "VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR";
 		case VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT:				return "VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT";
+		case VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR:						return "VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR";
 		case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:						return "VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL";
 		case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL:						return "VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL";
 		case VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL:					return "VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL";
@@ -1076,7 +1077,7 @@ const char* getIndexTypeName (VkIndexType value)
 		case VK_INDEX_TYPE_UINT16:		return "VK_INDEX_TYPE_UINT16";
 		case VK_INDEX_TYPE_UINT32:		return "VK_INDEX_TYPE_UINT32";
 		case VK_INDEX_TYPE_NONE_KHR:	return "VK_INDEX_TYPE_NONE_KHR";
-		case VK_INDEX_TYPE_UINT8_EXT:	return "VK_INDEX_TYPE_UINT8_EXT";
+		case VK_INDEX_TYPE_UINT8_KHR:	return "VK_INDEX_TYPE_UINT8_KHR";
 		default:						return DE_NULL;
 	}
 }
@@ -1930,7 +1931,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR:								return "VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR";
+		case VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR:							return "VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_QUAD_CONTROL_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_QUAD_CONTROL_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT";
@@ -1966,12 +1971,12 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_BUFFER_OPAQUE_CAPTURE_ADDRESS_CREATE_INFO:							return "VK_STRUCTURE_TYPE_BUFFER_OPAQUE_CAPTURE_ADDRESS_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO:							return "VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO";
 		case VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO:							return "VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT";
-		case VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT:					return "VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_KHR:					return "VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR:													return "VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR";
@@ -2220,6 +2225,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS:									return "VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS";
 		case VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS:									return "VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_DEVICE_QUEUE_SHADER_CORE_CONTROL_CREATE_INFO_ARM:					return "VK_STRUCTURE_TYPE_DEVICE_QUEUE_SHADER_CORE_CONTROL_CREATE_INFO_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_FEATURES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_PROPERTIES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_PROPERTIES_ARM";
@@ -2246,6 +2252,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_INDIRECT_BUFFER_INFO_NV:							return "VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_INDIRECT_BUFFER_INFO_NV";
 		case VK_STRUCTURE_TYPE_PIPELINE_INDIRECT_DEVICE_ADDRESS_INFO_NV:							return "VK_STRUCTURE_TYPE_PIPELINE_INDIRECT_DEVICE_ADDRESS_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_FEATURES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_PROPERTIES_QCOM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_PROPERTIES_QCOM";
@@ -2329,12 +2336,14 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_CLAMP_FEATURES_QCOM:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_CLAMP_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT_CONTROLS_2_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT_CONTROLS_2_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX:										return "VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX";
 		case VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX:									return "VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX";
 		case VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX:										return "VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX";
 		case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX:													return "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_DRIVER_PROPERTIES_MSFT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_DRIVER_PROPERTIES_MSFT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS_KHR:												return "VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS_KHR";
@@ -3121,14 +3130,14 @@ const char* getPerformanceValueTypeINTELName (VkPerformanceValueTypeINTEL value)
 	}
 }
 
-const char* getLineRasterizationModeEXTName (VkLineRasterizationModeEXT value)
+const char* getLineRasterizationModeKHRName (VkLineRasterizationModeKHR value)
 {
 	switch (value)
 	{
-		case VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT:			return "VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT";
-		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT:		return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT";
-		case VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT:			return "VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT";
-		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT:	return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT";
+		case VK_LINE_RASTERIZATION_MODE_DEFAULT_KHR:			return "VK_LINE_RASTERIZATION_MODE_DEFAULT_KHR";
+		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR:		return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR";
+		case VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR:			return "VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR";
+		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR:	return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR";
 		default:												return DE_NULL;
 	}
 }
@@ -12249,9 +12258,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderClockFeat
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceIndexTypeUint8FeaturesEXT = {\n";
+	s << "VkPhysicalDeviceIndexTypeUint8FeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tindexTypeUint8 = " << value.indexTypeUint8 << '\n';
@@ -12537,9 +12546,9 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceMemoryOpaqueCaptureAddr
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceLineRasterizationFeaturesEXT = {\n";
+	s << "VkPhysicalDeviceLineRasterizationFeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trectangularLines = " << value.rectangularLines << '\n';
@@ -12552,9 +12561,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizati
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationPropertiesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationPropertiesKHR& value)
 {
-	s << "VkPhysicalDeviceLineRasterizationPropertiesEXT = {\n";
+	s << "VkPhysicalDeviceLineRasterizationPropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tlineSubPixelPrecisionBits = " << value.lineSubPixelPrecisionBits << '\n';
@@ -12562,9 +12571,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizati
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationLineStateCreateInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationLineStateCreateInfoKHR& value)
 {
-	s << "VkPipelineRasterizationLineStateCreateInfoEXT = {\n";
+	s << "VkPipelineRasterizationLineStateCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tlineRasterizationMode = " << value.lineRasterizationMode << '\n';
@@ -18115,6 +18124,91 @@ std::ostream& operator<< (std::ostream& s, const VkRenderPassStripeSubmitInfoARM
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tstripeSemaphoreInfoCount = " << value.stripeSemaphoreInfoCount << '\n';
 	s << "\tpStripeSemaphoreInfos = " << value.pStripeSemaphoreInfos << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderMaximalReconvergence = " << value.shaderMaximalReconvergence << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderSubgroupRotate = " << value.shaderSubgroupRotate << '\n';
+	s << "\tshaderSubgroupRotateClustered = " << value.shaderSubgroupRotateClustered << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderExpectAssumeFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderExpectAssumeFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderExpectAssume = " << value.shaderExpectAssume << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderFloatControls2FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderFloatControls2FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderFloatControls2 = " << value.shaderFloatControls2 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdynamicRenderingLocalRead = " << value.dynamicRenderingLocalRead << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderingAttachmentLocationInfoKHR& value)
+{
+	s << "VkRenderingAttachmentLocationInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcolorAttachmentCount = " << value.colorAttachmentCount << '\n';
+	s << "\tpColorAttachmentLocations = " << value.pColorAttachmentLocations << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderingInputAttachmentIndexInfoKHR& value)
+{
+	s << "VkRenderingInputAttachmentIndexInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcolorAttachmentCount = " << value.colorAttachmentCount << '\n';
+	s << "\tpColorAttachmentInputIndices = " << value.pColorAttachmentInputIndices << '\n';
+	s << "\tpDepthInputAttachmentIndex = " << value.pDepthInputAttachmentIndex << '\n';
+	s << "\tpStencilInputAttachmentIndex = " << value.pStencilInputAttachmentIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderQuadControlFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderQuadControlFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderQuadControl = " << value.shaderQuadControl << '\n';
 	s << '}';
 	return s;
 }

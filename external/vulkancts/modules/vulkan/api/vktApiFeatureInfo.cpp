@@ -1588,7 +1588,7 @@ void checkSupportExtLineRasterization (Context& context)
 tcu::TestStatus validateLimitsExtLineRasterization (Context& context)
 {
 	const VkBool32											checkAlways						= VK_TRUE;
-	const VkPhysicalDeviceLineRasterizationPropertiesEXT&	lineRasterizationPropertiesEXT	= context.getLineRasterizationPropertiesEXT();
+	const VkPhysicalDeviceLineRasterizationPropertiesEXT&	lineRasterizationPropertiesEXT	= context.getLineRasterizationProperties();
 	TestLog&												log								= context.getTestContext().getLog();
 	bool													limitsOk						= true;
 

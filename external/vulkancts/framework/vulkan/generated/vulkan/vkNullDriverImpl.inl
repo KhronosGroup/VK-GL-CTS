@@ -2941,7 +2941,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutableInternalRepresentationsKHR (
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern)
+VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleKHR (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(lineStippleFactor);
@@ -4202,6 +4202,18 @@ VKAPI_ATTR void VKAPI_CALL queueNotifyOutOfBandNV (VkQueue queue, const VkOutOfB
 	DE_UNREF(pQueueTypeInfo);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdSetRenderingAttachmentLocationsKHR (VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pLocationInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pLocationInfo);
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -4613,7 +4625,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutablePropertiesKHR,						getPipelineExecutablePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableStatisticsKHR,						getPipelineExecutableStatisticsKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableInternalRepresentationsKHR,			getPipelineExecutableInternalRepresentationsKHR),
-	VK_NULL_FUNC_ENTRY(vkCmdSetLineStippleEXT,										cmdSetLineStippleEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetLineStippleKHR,										cmdSetLineStippleKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureKHR,							createAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresKHR,							cmdBuildAccelerationStructuresKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresIndirectKHR,					cmdBuildAccelerationStructuresIndirectKHR),
@@ -4804,5 +4816,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkSetLatencyMarkerNV,										setLatencyMarkerNV),
 	VK_NULL_FUNC_ENTRY(vkGetLatencyTimingsNV,										getLatencyTimingsNV),
 	VK_NULL_FUNC_ENTRY(vkQueueNotifyOutOfBandNV,									queueNotifyOutOfBandNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetRenderingAttachmentLocationsKHR,						cmdSetRenderingAttachmentLocationsKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdSetRenderingInputAttachmentIndicesKHR,					cmdSetRenderingInputAttachmentIndicesKHR),
 };
 

@@ -325,14 +325,14 @@ PACKAGES = [
 		"1bfd27101e4578d0284061bdf8f09fb4755c7c2d",
 		"spirv-headers"),
 	GitRepo(
-		"https://github.com/KhronosGroup/Vulkan-Docs.git",
-		"git@github.com:KhronosGroup/Vulkan-Docs.git",
-		"9b94c27d65dc7d11e50a7c00581b89f1983d34ff",
+		None,
+		"git@gitlab.khronos.org:vulkan/vulkan.git",
+		"93846b6bf4b77cc9b70daea6d82bfec532b447e3",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
 		"git@github.com:google/amber.git",
-		"933ecb4d6288675a92eb1650e0f52b1d7afe8273",
+		"8e90b2d2f532bcd4a80069e3f37a9698209a21bc",
 		"amber"),
 	GitRepo(
 		"https://github.com/open-source-parsers/jsoncpp.git",

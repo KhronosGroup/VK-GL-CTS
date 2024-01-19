@@ -4166,7 +4166,7 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			break;
 		case vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT:
 			if (stippledLineEnabled)
-				vk.cmdSetLineStippleEXT(cmdBuffer, state->lineStippleFactor, state->lineStipplePattern);
+				vk.cmdSetLineStippleKHR(cmdBuffer, state->lineStippleFactor, state->lineStipplePattern);
 			break;
 		case vk::VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT:
 			if (rasterizerDiscardDisabled)

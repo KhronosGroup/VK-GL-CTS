@@ -13,7 +13,7 @@ const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		getVertexAttributeDi
 const VkPhysicalDevicePCIBusInfoPropertiesEXT&					getPCIBusInfoPropertiesEXT					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePCIBusInfoPropertiesEXT>();				}
 const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			getSubgroupSizeControlPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupSizeControlPropertiesEXT>();		}
 const VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>();		}
-const VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLineRasterizationPropertiesEXT>();			}
+const VkPhysicalDeviceLineRasterizationPropertiesKHR&			getLineRasterizationProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLineRasterizationPropertiesKHR>();			}
 const VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		getTexelBufferAlignmentPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT>();		}
 const VkPhysicalDeviceRobustness2PropertiesEXT&					getRobustness2PropertiesEXT					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRobustness2PropertiesEXT>();				}
 const VkPhysicalDeviceCustomBorderColorPropertiesEXT&			getCustomBorderColorPropertiesEXT			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCustomBorderColorPropertiesEXT>();			}

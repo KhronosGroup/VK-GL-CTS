@@ -310,7 +310,7 @@ GetDeviceMemoryOpaqueCaptureAddressFunc						getDeviceMemoryOpaqueCaptureAddress
 GetPipelineExecutablePropertiesKHRFunc						getPipelineExecutablePropertiesKHR;
 GetPipelineExecutableStatisticsKHRFunc						getPipelineExecutableStatisticsKHR;
 GetPipelineExecutableInternalRepresentationsKHRFunc			getPipelineExecutableInternalRepresentationsKHR;
-CmdSetLineStippleEXTFunc									cmdSetLineStippleEXT;
+CmdSetLineStippleKHRFunc									cmdSetLineStippleKHR;
 CreateAccelerationStructureKHRFunc							createAccelerationStructureKHR;
 CmdBuildAccelerationStructuresKHRFunc						cmdBuildAccelerationStructuresKHR;
 CmdBuildAccelerationStructuresIndirectKHRFunc				cmdBuildAccelerationStructuresIndirectKHR;
@@ -501,3 +501,5 @@ LatencySleepNVFunc											latencySleepNV;
 SetLatencyMarkerNVFunc										setLatencyMarkerNV;
 GetLatencyTimingsNVFunc										getLatencyTimingsNV;
 QueueNotifyOutOfBandNVFunc									queueNotifyOutOfBandNV;
+CmdSetRenderingAttachmentLocationsKHRFunc					cmdSetRenderingAttachmentLocationsKHR;
+CmdSetRenderingInputAttachmentIndicesKHRFunc				cmdSetRenderingInputAttachmentIndicesKHR;

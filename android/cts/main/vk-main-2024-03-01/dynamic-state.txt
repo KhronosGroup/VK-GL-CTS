@@ -10,6 +10,10 @@ dEQP-VK.dynamic_state.fast_linked_library.line_width.static_dyna.list3_strip4
 dEQP-VK.dynamic_state.fast_linked_library.line_width.static_dyna.list7_list8
 dEQP-VK.dynamic_state.fast_linked_library.line_width.static_dyna.strip11_list12
 dEQP-VK.dynamic_state.fast_linked_library.line_width.static_dyna.strip15_strip16
+dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.line_stipple_khr.after
+dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.line_stipple_khr.before
+dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.line_stipple_khr.after
+dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.line_stipple_khr.before
 dEQP-VK.dynamic_state.monolithic.general_state.double_static_bind
 dEQP-VK.dynamic_state.monolithic.general_state.static_stencil_mask_zero
 dEQP-VK.dynamic_state.monolithic.inheritance.nested
@@ -244,8 +248,8 @@ dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compu
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.fragment_shading_rate_khr.before
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.front_face.after
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.front_face.before
-dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_stipple_ext.after
-dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_stipple_ext.before
+dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_stipple_khr.after
+dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_stipple_khr.before
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_width.after
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_width.before
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.primitive_topology.after
@@ -304,8 +308,8 @@ dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.trans
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.fragment_shading_rate_khr.before
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.front_face.after
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.front_face.before
-dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_stipple_ext.after
-dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_stipple_ext.before
+dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_stipple_khr.after
+dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_stipple_khr.before
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_width.after
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_width.before
 dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.primitive_topology.after

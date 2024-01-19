@@ -185,7 +185,7 @@ virtual VkResult			getImageDrmFormatModifierPropertiesEXT	(VkDevice device, VkIm
 virtual uint64_t			getBufferOpaqueCaptureAddress			(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const;
 virtual VkDeviceAddress		getBufferDeviceAddress					(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const;
 virtual uint64_t			getDeviceMemoryOpaqueCaptureAddress		(VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo) const;
-virtual void				cmdSetLineStippleEXT					(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const;
+virtual void				cmdSetLineStippleKHR					(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const;
 virtual VkResult			getFaultData							(VkDevice device, VkFaultQueryBehavior faultQueryBehavior, VkBool32* pUnrecordedFaults, uint32_t* pFaultCount, VkFaultData* pFaults) const;
 virtual void				cmdSetCullModeEXT						(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const;
 virtual void				cmdSetFrontFaceEXT						(VkCommandBuffer commandBuffer, VkFrontFace frontFace) const;

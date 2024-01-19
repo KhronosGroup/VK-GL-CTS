@@ -1965,7 +1965,11 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_KHR = 1000226004,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD = 1000227000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD = 1000229000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR = 1000232000,
+    VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR = 1000232001,
+    VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR = 1000232002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT = 1000234000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_QUAD_CONTROL_FEATURES_KHR = 1000235000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT = 1000237000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT = 1000238000,
     VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT = 1000238001,
@@ -1990,11 +1994,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_FULL_SCREEN_EXCLUSIVE_EXT = 1000255002,
     VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT = 1000255001,
     VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT = 1000256000,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT = 1000259000,
-    VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT = 1000259001,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT = 1000259002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT = 1000260000,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT = 1000265000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT = 1000267000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR = 1000269000,
     VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR = 1000269001,
@@ -2206,6 +2206,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT = 1000411001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT = 1000412000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_ARM = 1000415000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES_KHR = 1000416000,
     VK_STRUCTURE_TYPE_DEVICE_QUEUE_SHADER_CORE_CONTROL_CREATE_INFO_ARM = 1000417000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_FEATURES_ARM = 1000417001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_PROPERTIES_ARM = 1000417002,
@@ -2232,6 +2233,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_INDIRECT_BUFFER_INFO_NV = 1000428001,
     VK_STRUCTURE_TYPE_PIPELINE_INDIRECT_DEVICE_ADDRESS_INFO_NV = 1000428002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV = 1000430000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR = 1000434000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT = 1000437000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_FEATURES_QCOM = 1000440000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_PROCESSING_PROPERTIES_QCOM = 1000440001,
@@ -2322,13 +2324,19 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_KHR = 1000525000,
     VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR = 1000190001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR = 1000190002,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT_CONTROLS_2_FEATURES_KHR = 1000528000,
     VK_STRUCTURE_TYPE_SCREEN_BUFFER_PROPERTIES_QNX = 1000529000,
     VK_STRUCTURE_TYPE_SCREEN_BUFFER_FORMAT_PROPERTIES_QNX = 1000529001,
     VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX = 1000529002,
     VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX = 1000529003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX = 1000529004,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_DRIVER_PROPERTIES_MSFT = 1000530000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_KHR = 1000265000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR = 1000259000,
+    VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_KHR = 1000259001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR = 1000259002,
     VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_KHR = 1000184000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES_KHR = 1000544000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR = 1000545000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES_KHR = 1000545001,
     VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS_KHR = 1000545002,
@@ -2474,7 +2482,11 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_BUFFER_OPAQUE_CAPTURE_ADDRESS_CREATE_INFO_KHR = VK_STRUCTURE_TYPE_BUFFER_OPAQUE_CAPTURE_ADDRESS_CREATE_INFO,
     VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO_KHR = VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO,
     VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO_KHR = VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR,
+    VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_KHR,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_KHR,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES,
@@ -2551,6 +2563,7 @@ typedef enum VkImageLayout {
     VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR = 1000111000,
     VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT = 1000218000,
     VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR = 1000164003,
+    VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR = 1000232000,
     VK_IMAGE_LAYOUT_VIDEO_ENCODE_DST_KHR = 1000299000,
     VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR = 1000299001,
     VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR = 1000299002,
@@ -3156,7 +3169,6 @@ typedef enum VkDynamicState {
     VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV = 1000205000,
     VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV = 1000205001,
     VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR = 1000226000,
-    VK_DYNAMIC_STATE_LINE_STIPPLE_EXT = 1000259000,
     VK_DYNAMIC_STATE_VERTEX_INPUT_EXT = 1000352000,
     VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT = 1000377000,
     VK_DYNAMIC_STATE_LOGIC_OP_EXT = 1000377003,
@@ -3193,6 +3205,8 @@ typedef enum VkDynamicState {
     VK_DYNAMIC_STATE_REPRESENTATIVE_FRAGMENT_TEST_ENABLE_NV = 1000455031,
     VK_DYNAMIC_STATE_COVERAGE_REDUCTION_MODE_NV = 1000455032,
     VK_DYNAMIC_STATE_ATTACHMENT_FEEDBACK_LOOP_ENABLE_EXT = 1000524000,
+    VK_DYNAMIC_STATE_LINE_STIPPLE_KHR = 1000259000,
+    VK_DYNAMIC_STATE_LINE_STIPPLE_EXT = VK_DYNAMIC_STATE_LINE_STIPPLE_KHR,
     VK_DYNAMIC_STATE_CULL_MODE_EXT = VK_DYNAMIC_STATE_CULL_MODE,
     VK_DYNAMIC_STATE_FRONT_FACE_EXT = VK_DYNAMIC_STATE_FRONT_FACE,
     VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT = VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY,
@@ -3341,7 +3355,8 @@ typedef enum VkAttachmentLoadOp {
     VK_ATTACHMENT_LOAD_OP_LOAD = 0,
     VK_ATTACHMENT_LOAD_OP_CLEAR = 1,
     VK_ATTACHMENT_LOAD_OP_DONT_CARE = 2,
-    VK_ATTACHMENT_LOAD_OP_NONE_EXT = 1000400000,
+    VK_ATTACHMENT_LOAD_OP_NONE_KHR = 1000400000,
+    VK_ATTACHMENT_LOAD_OP_NONE_EXT = VK_ATTACHMENT_LOAD_OP_NONE_KHR,
     VK_ATTACHMENT_LOAD_OP_MAX_ENUM = 0x7FFFFFFF
 } VkAttachmentLoadOp;
 
@@ -3377,8 +3392,9 @@ typedef enum VkIndexType {
     VK_INDEX_TYPE_UINT16 = 0,
     VK_INDEX_TYPE_UINT32 = 1,
     VK_INDEX_TYPE_NONE_KHR = 1000165000,
-    VK_INDEX_TYPE_UINT8_EXT = 1000265000,
+    VK_INDEX_TYPE_UINT8_KHR = 1000265000,
     VK_INDEX_TYPE_NONE_NV = VK_INDEX_TYPE_NONE_KHR,
+    VK_INDEX_TYPE_UINT8_EXT = VK_INDEX_TYPE_UINT8_KHR,
     VK_INDEX_TYPE_MAX_ENUM = 0x7FFFFFFF
 } VkIndexType;
 
@@ -11443,6 +11459,58 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetFragmentShadingRateKHR(
 #endif
 
 
+// VK_KHR_dynamic_rendering_local_read is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_dynamic_rendering_local_read 1
+#define VK_KHR_DYNAMIC_RENDERING_LOCAL_READ_SPEC_VERSION 1
+#define VK_KHR_DYNAMIC_RENDERING_LOCAL_READ_EXTENSION_NAME "VK_KHR_dynamic_rendering_local_read"
+typedef struct VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           dynamicRenderingLocalRead;
+} VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR;
+
+typedef struct VkRenderingAttachmentLocationInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    deUint32           colorAttachmentCount;
+    const deUint32*    pColorAttachmentLocations;
+} VkRenderingAttachmentLocationInfoKHR;
+
+typedef struct VkRenderingInputAttachmentIndexInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    deUint32           colorAttachmentCount;
+    const deUint32*    pColorAttachmentInputIndices;
+    const deUint32*    pDepthInputAttachmentIndex;
+    const deUint32*    pStencilInputAttachmentIndex;
+} VkRenderingInputAttachmentIndexInfoKHR;
+
+typedef void (VKAPI_PTR *PFN_vkCmdSetRenderingAttachmentLocationsKHR)(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdSetRenderingInputAttachmentIndicesKHR)(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkCmdSetRenderingAttachmentLocationsKHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkRenderingAttachmentLocationInfoKHR* pLocationInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdSetRenderingInputAttachmentIndicesKHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo);
+#endif
+
+
+// VK_KHR_shader_quad_control is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_shader_quad_control 1
+#define VK_KHR_SHADER_QUAD_CONTROL_SPEC_VERSION 1
+#define VK_KHR_SHADER_QUAD_CONTROL_EXTENSION_NAME "VK_KHR_shader_quad_control"
+typedef struct VkPhysicalDeviceShaderQuadControlFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderQuadControl;
+} VkPhysicalDeviceShaderQuadControlFeaturesKHR;
+
+
+
 // VK_KHR_spirv_1_4 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_spirv_1_4 1
 #define VK_KHR_SPIRV_1_4_SPEC_VERSION     1
@@ -12223,6 +12291,31 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceImageSparseMemoryRequirementsKHR(
 #endif
 
 
+// VK_KHR_shader_subgroup_rotate is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_shader_subgroup_rotate 1
+#define VK_KHR_SHADER_SUBGROUP_ROTATE_SPEC_VERSION 1
+#define VK_KHR_SHADER_SUBGROUP_ROTATE_EXTENSION_NAME "VK_KHR_shader_subgroup_rotate"
+typedef struct VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderSubgroupRotate;
+    VkBool32           shaderSubgroupRotateClustered;
+} VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR;
+
+
+
+// VK_KHR_shader_maximal_reconvergence is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_shader_maximal_reconvergence 1
+#define VK_KHR_SHADER_MAXIMAL_RECONVERGENCE_SPEC_VERSION 1
+#define VK_KHR_SHADER_MAXIMAL_RECONVERGENCE_EXTENSION_NAME "VK_KHR_shader_maximal_reconvergence"
+typedef struct VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderMaximalReconvergence;
+} VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR;
+
+
+
 // VK_KHR_maintenance5 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_maintenance5 1
 #define VK_KHR_MAINTENANCE_5_SPEC_VERSION 1
@@ -12531,6 +12624,88 @@ typedef struct VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR {
 
 
 
+// VK_KHR_load_store_op_none is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_load_store_op_none 1
+#define VK_KHR_LOAD_STORE_OP_NONE_SPEC_VERSION 1
+#define VK_KHR_LOAD_STORE_OP_NONE_EXTENSION_NAME "VK_KHR_load_store_op_none"
+
+
+// VK_KHR_shader_float_controls2 is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_shader_float_controls2 1
+#define VK_KHR_SHADER_FLOAT_CONTROLS_2_SPEC_VERSION 1
+#define VK_KHR_SHADER_FLOAT_CONTROLS_2_EXTENSION_NAME "VK_KHR_shader_float_controls2"
+typedef struct VkPhysicalDeviceShaderFloatControls2FeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderFloatControls2;
+} VkPhysicalDeviceShaderFloatControls2FeaturesKHR;
+
+
+
+// VK_KHR_index_type_uint8 is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_index_type_uint8 1
+#define VK_KHR_INDEX_TYPE_UINT8_SPEC_VERSION 1
+#define VK_KHR_INDEX_TYPE_UINT8_EXTENSION_NAME "VK_KHR_index_type_uint8"
+typedef struct VkPhysicalDeviceIndexTypeUint8FeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           indexTypeUint8;
+} VkPhysicalDeviceIndexTypeUint8FeaturesKHR;
+
+
+
+// VK_KHR_line_rasterization is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_line_rasterization 1
+#define VK_KHR_LINE_RASTERIZATION_SPEC_VERSION 1
+#define VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME "VK_KHR_line_rasterization"
+
+typedef enum VkLineRasterizationModeKHR {
+    VK_LINE_RASTERIZATION_MODE_DEFAULT_KHR = 0,
+    VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR = 1,
+    VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR = 2,
+    VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR = 3,
+    VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT = VK_LINE_RASTERIZATION_MODE_DEFAULT_KHR,
+    VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT = VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR,
+    VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT = VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR,
+    VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT = VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR,
+    VK_LINE_RASTERIZATION_MODE_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkLineRasterizationModeKHR;
+typedef struct VkPhysicalDeviceLineRasterizationFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           rectangularLines;
+    VkBool32           bresenhamLines;
+    VkBool32           smoothLines;
+    VkBool32           stippledRectangularLines;
+    VkBool32           stippledBresenhamLines;
+    VkBool32           stippledSmoothLines;
+} VkPhysicalDeviceLineRasterizationFeaturesKHR;
+
+typedef struct VkPhysicalDeviceLineRasterizationPropertiesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    deUint32           lineSubPixelPrecisionBits;
+} VkPhysicalDeviceLineRasterizationPropertiesKHR;
+
+typedef struct VkPipelineRasterizationLineStateCreateInfoKHR {
+    VkStructureType               sType;
+    const void*                   pNext;
+    VkLineRasterizationModeKHR    lineRasterizationMode;
+    VkBool32                      stippledLineEnable;
+    deUint32                      lineStippleFactor;
+    deUint16                      lineStipplePattern;
+} VkPipelineRasterizationLineStateCreateInfoKHR;
+
+typedef void (VKAPI_PTR *PFN_vkCmdSetLineStippleKHR)(VkCommandBuffer commandBuffer, deUint32 lineStippleFactor, deUint16 lineStipplePattern);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkCmdSetLineStippleKHR(
+    VkCommandBuffer                             commandBuffer,
+    deUint32                                    lineStippleFactor,
+    deUint16                                    lineStipplePattern);
+#endif
+
+
 // VK_KHR_calibrated_timestamps is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_calibrated_timestamps 1
 #define VK_KHR_CALIBRATED_TIMESTAMPS_SPEC_VERSION 1
@@ -12569,6 +12744,18 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetCalibratedTimestampsKHR(
     deUint64*                                   pTimestamps,
     deUint64*                                   pMaxDeviation);
 #endif
+
+
+// VK_KHR_shader_expect_assume is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_shader_expect_assume 1
+#define VK_KHR_SHADER_EXPECT_ASSUME_SPEC_VERSION 1
+#define VK_KHR_SHADER_EXPECT_ASSUME_EXTENSION_NAME "VK_KHR_shader_expect_assume"
+typedef struct VkPhysicalDeviceShaderExpectAssumeFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderExpectAssume;
+} VkPhysicalDeviceShaderExpectAssumeFeaturesKHR;
+
 
 
 // VK_KHR_maintenance6 is a preprocessor guard. Do not pass it to API calls.
@@ -15899,39 +16086,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateHeadlessSurfaceEXT(
 #define VK_EXT_line_rasterization 1
 #define VK_EXT_LINE_RASTERIZATION_SPEC_VERSION 1
 #define VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME "VK_EXT_line_rasterization"
+typedef VkLineRasterizationModeKHR VkLineRasterizationModeEXT;
 
-typedef enum VkLineRasterizationModeEXT {
-    VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT = 0,
-    VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT = 1,
-    VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT = 2,
-    VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT = 3,
-    VK_LINE_RASTERIZATION_MODE_MAX_ENUM_EXT = 0x7FFFFFFF
-} VkLineRasterizationModeEXT;
-typedef struct VkPhysicalDeviceLineRasterizationFeaturesEXT {
-    VkStructureType    sType;
-    void*              pNext;
-    VkBool32           rectangularLines;
-    VkBool32           bresenhamLines;
-    VkBool32           smoothLines;
-    VkBool32           stippledRectangularLines;
-    VkBool32           stippledBresenhamLines;
-    VkBool32           stippledSmoothLines;
-} VkPhysicalDeviceLineRasterizationFeaturesEXT;
+typedef VkPhysicalDeviceLineRasterizationFeaturesKHR VkPhysicalDeviceLineRasterizationFeaturesEXT;
 
-typedef struct VkPhysicalDeviceLineRasterizationPropertiesEXT {
-    VkStructureType    sType;
-    void*              pNext;
-    deUint32           lineSubPixelPrecisionBits;
-} VkPhysicalDeviceLineRasterizationPropertiesEXT;
+typedef VkPhysicalDeviceLineRasterizationPropertiesKHR VkPhysicalDeviceLineRasterizationPropertiesEXT;
 
-typedef struct VkPipelineRasterizationLineStateCreateInfoEXT {
-    VkStructureType               sType;
-    const void*                   pNext;
-    VkLineRasterizationModeEXT    lineRasterizationMode;
-    VkBool32                      stippledLineEnable;
-    deUint32                      lineStippleFactor;
-    deUint16                      lineStipplePattern;
-} VkPipelineRasterizationLineStateCreateInfoEXT;
+typedef VkPipelineRasterizationLineStateCreateInfoKHR VkPipelineRasterizationLineStateCreateInfoEXT;
 
 typedef void (VKAPI_PTR *PFN_vkCmdSetLineStippleEXT)(VkCommandBuffer commandBuffer, deUint32 lineStippleFactor, deUint16 lineStipplePattern);
 
@@ -15987,11 +16148,7 @@ VKAPI_ATTR void VKAPI_CALL vkResetQueryPoolEXT(
 #define VK_EXT_index_type_uint8 1
 #define VK_EXT_INDEX_TYPE_UINT8_SPEC_VERSION 1
 #define VK_EXT_INDEX_TYPE_UINT8_EXTENSION_NAME "VK_EXT_index_type_uint8"
-typedef struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT {
-    VkStructureType    sType;
-    void*              pNext;
-    VkBool32           indexTypeUint8;
-} VkPhysicalDeviceIndexTypeUint8FeaturesEXT;
+typedef VkPhysicalDeviceIndexTypeUint8FeaturesKHR VkPhysicalDeviceIndexTypeUint8FeaturesEXT;
 
 
 

@@ -2158,9 +2158,9 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderClockFeaturesK
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesEXT> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSMBuiltinsPropertiesNV> (void)
@@ -2283,19 +2283,19 @@ template<> VkStructureType getStructureType<VkDeviceMemoryOpaqueCaptureAddressIn
 	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceLineRasterizationFeaturesEXT> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceLineRasterizationFeaturesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceLineRasterizationPropertiesEXT> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceLineRasterizationPropertiesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR;
 }
 
-template<> VkStructureType getStructureType<VkPipelineRasterizationLineStateCreateInfoEXT> (void)
+template<> VkStructureType getStructureType<VkPipelineRasterizationLineStateCreateInfoKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT;
+	return VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDevicePipelineCreationCacheControlFeatures> (void)
@@ -4361,5 +4361,45 @@ template<> VkStructureType getStructureType<VkRenderPassStripeBeginInfoARM> (voi
 template<> VkStructureType getStructureType<VkRenderPassStripeSubmitInfoARM> (void)
 {
 	return VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_SUBMIT_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderExpectAssumeFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderFloatControls2FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT_CONTROLS_2_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkRenderingAttachmentLocationInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkRenderingInputAttachmentIndexInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderQuadControlFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_QUAD_CONTROL_FEATURES_KHR;
 }
 

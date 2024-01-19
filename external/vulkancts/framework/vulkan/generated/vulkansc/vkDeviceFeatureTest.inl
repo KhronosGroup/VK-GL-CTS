@@ -1319,7 +1319,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR (C
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesKHR (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -1344,13 +1344,13 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT
 	const auto& extensionNames = context.getDeviceCreationExtensions();
 	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesEXT>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesKHR>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceIndexTypeUint8FeaturesEXT, indexTypeUint8),
+		FEATURE_ITEM (VkPhysicalDeviceIndexTypeUint8FeaturesKHR, indexTypeUint8),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceIndexTypeUint8FeaturesEXT*>(featuresStruct);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceIndexTypeUint8FeaturesKHR*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion(), commandLine);
 	}
 
@@ -1574,7 +1574,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeatur
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesKHR (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
 	tcu::TestLog&							log						= context.getTestContext().getLog();
@@ -1599,18 +1599,18 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLineRasterizationFeatures
 	const auto& extensionNames = context.getDeviceCreationExtensions();
 	DE_UNREF(extensionNames); // In some cases this is not used.
 
-	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceLineRasterizationFeaturesEXT>()))
+	if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceLineRasterizationFeaturesKHR>()))
 	{
 		static const Feature features[] =
 		{
-		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, rectangularLines),
-		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, bresenhamLines),
-		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, smoothLines),
-		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, stippledRectangularLines),
-		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, stippledBresenhamLines),
-		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesEXT, stippledSmoothLines),
+		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesKHR, rectangularLines),
+		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesKHR, bresenhamLines),
+		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesKHR, smoothLines),
+		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesKHR, stippledRectangularLines),
+		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesKHR, stippledBresenhamLines),
+		FEATURE_ITEM (VkPhysicalDeviceLineRasterizationFeaturesKHR, stippledSmoothLines),
 		};
-		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceLineRasterizationFeaturesEXT*>(featuresStruct);
+		auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceLineRasterizationFeaturesKHR*>(featuresStruct);
 		checkFeatures(vkp, instance, instanceDriver, physicalDevice, 6, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion(), commandLine);
 	}
 
@@ -2490,13 +2490,13 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "ycbcr_image_arrays_features_ext", createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesEXT);
 	addFunctionCase(testGroup, "performance_query_features_khr", createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesKHR);
 	addFunctionCase(testGroup, "shader_clock_features_khr", createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR);
-	addFunctionCase(testGroup, "index_type_uint8_features_ext", createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesEXT);
+	addFunctionCase(testGroup, "index_type_uint8_features_khr", createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesKHR);
 	addFunctionCase(testGroup, "fragment_shader_interlock_features_ext", createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFeaturesEXT);
 	addFunctionCase(testGroup, "separate_depth_stencil_layouts_features", createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayoutsFeatures);
 	addFunctionCase(testGroup, "shader_demote_to_helper_invocation_features_ext", createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvocationFeaturesEXT);
 	addFunctionCase(testGroup, "texel_buffer_alignment_features_ext", createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeaturesEXT);
 	addFunctionCase(testGroup, "subgroup_size_control_features_ext", createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeaturesEXT);
-	addFunctionCase(testGroup, "line_rasterization_features_ext", createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesEXT);
+	addFunctionCase(testGroup, "line_rasterization_features_khr", createDeviceWithUnsupportedFeaturesTestLineRasterizationFeaturesKHR);
 	addFunctionCase(testGroup, "vulkan11_features", createDeviceWithUnsupportedFeaturesTestVulkan11Features);
 	addFunctionCase(testGroup, "vulkan12_features", createDeviceWithUnsupportedFeaturesTestVulkan12Features);
 	addFunctionCase(testGroup, "vulkan13_features", createDeviceWithUnsupportedFeaturesTestVulkan13Features);

@@ -49,7 +49,7 @@ const char*	getSemaphoreTypeName					(VkSemaphoreType value);
 const char*	getPerformanceCounterScopeKHRName		(VkPerformanceCounterScopeKHR value);
 const char*	getPerformanceCounterUnitKHRName		(VkPerformanceCounterUnitKHR value);
 const char*	getPerformanceCounterStorageKHRName		(VkPerformanceCounterStorageKHR value);
-const char*	getLineRasterizationModeEXTName			(VkLineRasterizationModeEXT value);
+const char*	getLineRasterizationModeKHRName			(VkLineRasterizationModeKHR value);
 const char*	getFaultLevelName						(VkFaultLevel value);
 const char*	getFaultTypeName						(VkFaultType value);
 const char*	getFaultQueryBehaviorName				(VkFaultQueryBehavior value);
@@ -121,7 +121,7 @@ inline tcu::Format::Enum<VkSemaphoreType>						getSemaphoreTypeStr						(VkSemap
 inline tcu::Format::Enum<VkPerformanceCounterScopeKHR>			getPerformanceCounterScopeKHRStr		(VkPerformanceCounterScopeKHR value)		{ return tcu::Format::Enum<VkPerformanceCounterScopeKHR>(getPerformanceCounterScopeKHRName, value);				}
 inline tcu::Format::Enum<VkPerformanceCounterUnitKHR>			getPerformanceCounterUnitKHRStr			(VkPerformanceCounterUnitKHR value)			{ return tcu::Format::Enum<VkPerformanceCounterUnitKHR>(getPerformanceCounterUnitKHRName, value);				}
 inline tcu::Format::Enum<VkPerformanceCounterStorageKHR>		getPerformanceCounterStorageKHRStr		(VkPerformanceCounterStorageKHR value)		{ return tcu::Format::Enum<VkPerformanceCounterStorageKHR>(getPerformanceCounterStorageKHRName, value);			}
-inline tcu::Format::Enum<VkLineRasterizationModeEXT>			getLineRasterizationModeEXTStr			(VkLineRasterizationModeEXT value)			{ return tcu::Format::Enum<VkLineRasterizationModeEXT>(getLineRasterizationModeEXTName, value);					}
+inline tcu::Format::Enum<VkLineRasterizationModeKHR>			getLineRasterizationModeKHRStr			(VkLineRasterizationModeKHR value)			{ return tcu::Format::Enum<VkLineRasterizationModeKHR>(getLineRasterizationModeKHRName, value);					}
 inline tcu::Format::Enum<VkFaultLevel>							getFaultLevelStr						(VkFaultLevel value)						{ return tcu::Format::Enum<VkFaultLevel>(getFaultLevelName, value);												}
 inline tcu::Format::Enum<VkFaultType>							getFaultTypeStr							(VkFaultType value)							{ return tcu::Format::Enum<VkFaultType>(getFaultTypeName, value);												}
 inline tcu::Format::Enum<VkFaultQueryBehavior>					getFaultQueryBehaviorStr				(VkFaultQueryBehavior value)				{ return tcu::Format::Enum<VkFaultQueryBehavior>(getFaultQueryBehaviorName, value);								}
@@ -193,7 +193,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkSemaphoreType value)					{ r
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterScopeKHR value)		{ return s << getPerformanceCounterScopeKHRStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterUnitKHR value)		{ return s << getPerformanceCounterUnitKHRStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterStorageKHR value)		{ return s << getPerformanceCounterStorageKHRStr(value);		}
-inline std::ostream&	operator<<	(std::ostream& s, VkLineRasterizationModeEXT value)			{ return s << getLineRasterizationModeEXTStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkLineRasterizationModeKHR value)			{ return s << getLineRasterizationModeKHRStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkFaultLevel value)						{ return s << getFaultLevelStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkFaultType value)						{ return s << getFaultTypeStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkFaultQueryBehavior value)				{ return s << getFaultQueryBehaviorStr(value);					}
@@ -754,7 +754,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPerformanceQuerySubmitInfoKHR
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceQueryReservationInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkHeadlessSurfaceCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderClockFeaturesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAttachmentReferenceStencilLayout& value);
@@ -767,9 +767,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubgroupSizeCon
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryOpaqueCaptureAddressAllocateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceMemoryOpaqueCaptureAddressInfo& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationPropertiesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationLineStateCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationLineStateCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkan11Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkan11Properties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkan12Features& value);

@@ -16,9 +16,9 @@ const vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR&				getFragmentShadingR
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&			getShaderImageAtomicInt64FeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			getFragmentShaderInterlockFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					getYcbcrImageArraysFeaturesEXT					(void) const;
-const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					getLineRasterizationFeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceLineRasterizationFeaturesKHR&					getLineRasterizationFeatures					(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&					getShaderAtomicFloatFeaturesEXT					(void) const;
-const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					getIndexTypeUint8FeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceIndexTypeUint8FeaturesKHR&					getIndexTypeUint8Features						(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				getExtendedDynamicStateFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&	getShaderDemoteToHelperInvocationFeaturesEXT	(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&				getTexelBufferAlignmentFeaturesEXT				(void) const;

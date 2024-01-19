@@ -1605,10 +1605,10 @@ VkResult DeviceDriver::getPipelineExecutableInternalRepresentationsKHR (VkDevice
 	return m_vk.getPipelineExecutableInternalRepresentationsKHR(device, pExecutableInfo, pInternalRepresentationCount, pInternalRepresentations);
 }
 
-void DeviceDriver::cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const
+void DeviceDriver::cmdSetLineStippleKHR (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const
 {
 	if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-	m_vk.cmdSetLineStippleEXT(commandBuffer, lineStippleFactor, lineStipplePattern);
+	m_vk.cmdSetLineStippleKHR(commandBuffer, lineStippleFactor, lineStipplePattern);
 }
 
 VkResult DeviceDriver::createAccelerationStructureKHR (VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const
@@ -2617,4 +2617,16 @@ void DeviceDriver::getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchai
 void DeviceDriver::queueNotifyOutOfBandNV (VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const
 {
 	m_vk.queueNotifyOutOfBandNV(queue, pQueueTypeInfo);
+}
+
+void DeviceDriver::cmdSetRenderingAttachmentLocationsKHR (VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo) const
+{
+	if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+	m_vk.cmdSetRenderingAttachmentLocationsKHR(commandBuffer, pLocationInfo);
+}
+
+void DeviceDriver::cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo) const
+{
+	if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+	m_vk.cmdSetRenderingInputAttachmentIndicesKHR(commandBuffer, pLocationInfo);
 }

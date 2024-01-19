@@ -131,6 +131,8 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return ctx.get16BitStorageFeatures().storageBuffer16BitAccess;
 	if (feature == "Storage8BitFeatures.storageBuffer8BitAccess")
 		return ctx.get8BitStorageFeatures().storageBuffer8BitAccess;
+	if (feature == "IndexTypeUint8Features.indexTypeUint8")
+		return ctx.getIndexTypeUint8Features().indexTypeUint8;
 
 	std::string message = std::string("Unexpected feature name: ") + feature;
 	TCU_THROW(InternalError, message.c_str());

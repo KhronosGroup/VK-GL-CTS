@@ -4999,7 +4999,7 @@ struct VkPhysicalDeviceShaderClockFeaturesKHR
 	VkBool32		shaderDeviceClock;
 };
 
-struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT
+struct VkPhysicalDeviceIndexTypeUint8FeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -5209,7 +5209,7 @@ struct VkDeviceMemoryOpaqueCaptureAddressInfo
 	VkDeviceMemory	memory;
 };
 
-struct VkPhysicalDeviceLineRasterizationFeaturesEXT
+struct VkPhysicalDeviceLineRasterizationFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -5221,18 +5221,18 @@ struct VkPhysicalDeviceLineRasterizationFeaturesEXT
 	VkBool32		stippledSmoothLines;
 };
 
-struct VkPhysicalDeviceLineRasterizationPropertiesEXT
+struct VkPhysicalDeviceLineRasterizationPropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	uint32_t		lineSubPixelPrecisionBits;
 };
 
-struct VkPipelineRasterizationLineStateCreateInfoEXT
+struct VkPipelineRasterizationLineStateCreateInfoKHR
 {
 	VkStructureType				sType;
 	const void*					pNext;
-	VkLineRasterizationModeEXT	lineRasterizationMode;
+	VkLineRasterizationModeKHR	lineRasterizationMode;
 	VkBool32					stippledLineEnable;
 	uint32_t					lineStippleFactor;
 	uint16_t					lineStipplePattern;
@@ -9300,6 +9300,67 @@ struct VkRenderPassStripeSubmitInfoARM
 	const VkSemaphoreSubmitInfo*	pStripeSemaphoreInfos;
 };
 
+struct VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderMaximalReconvergence;
+};
+
+struct VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSubgroupRotate;
+	VkBool32		shaderSubgroupRotateClustered;
+};
+
+struct VkPhysicalDeviceShaderExpectAssumeFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderExpectAssume;
+};
+
+struct VkPhysicalDeviceShaderFloatControls2FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderFloatControls2;
+};
+
+struct VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		dynamicRenderingLocalRead;
+};
+
+struct VkRenderingAttachmentLocationInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		colorAttachmentCount;
+	const uint32_t*	pColorAttachmentLocations;
+};
+
+struct VkRenderingInputAttachmentIndexInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		colorAttachmentCount;
+	const uint32_t*	pColorAttachmentInputIndices;
+	const uint32_t*	pDepthInputAttachmentIndex;
+	const uint32_t*	pStencilInputAttachmentIndex;
+};
+
+struct VkPhysicalDeviceShaderQuadControlFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderQuadControl;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;
@@ -10527,6 +10588,8 @@ typedef VkPipelineCreationFeedbackCreateInfo VkPipelineCreationFeedbackCreateInf
 
 typedef VkQueryPoolPerformanceQueryCreateInfoINTEL VkQueryPoolCreateInfoINTEL;
 
+typedef VkPhysicalDeviceIndexTypeUint8FeaturesKHR VkPhysicalDeviceIndexTypeUint8FeaturesEXT;
+
 typedef VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR;
 
 typedef VkAttachmentReferenceStencilLayout VkAttachmentReferenceStencilLayoutKHR;
@@ -10550,6 +10613,12 @@ typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfo VkShaderRequiredSubg
 typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAllocateInfoKHR;
 
 typedef VkDeviceMemoryOpaqueCaptureAddressInfo VkDeviceMemoryOpaqueCaptureAddressInfoKHR;
+
+typedef VkPhysicalDeviceLineRasterizationFeaturesKHR VkPhysicalDeviceLineRasterizationFeaturesEXT;
+
+typedef VkPhysicalDeviceLineRasterizationPropertiesKHR VkPhysicalDeviceLineRasterizationPropertiesEXT;
+
+typedef VkPipelineRasterizationLineStateCreateInfoKHR VkPipelineRasterizationLineStateCreateInfoEXT;
 
 typedef VkPhysicalDevicePipelineCreationCacheControlFeatures VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT;
 

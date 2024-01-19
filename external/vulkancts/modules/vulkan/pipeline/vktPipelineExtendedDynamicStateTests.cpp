@@ -3339,7 +3339,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	if (m_testConfig.lineRasterizationExt())
 	{
 		// Check the implementation supports some type of stippled line.
-		const auto&	lineRastFeatures	= context.getLineRasterizationFeaturesEXT();
+		const auto&	lineRastFeatures	= context.getLineRasterizationFeatures();
 		const auto	rasterMode			= selectLineRasterizationMode(lineRastFeatures, m_testConfig.lineStippleSupportRequired(), m_testConfig.lineRasterModeConfig.staticValue);
 
 		if (rasterMode == LineRasterizationMode::NONE)
@@ -4067,7 +4067,7 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.lineStippleParamsConfig.dynamicValue && static_cast<bool>(testConfig.lineStippleParamsConfig.dynamicValue.get()))
 	{
 		const auto& stippleParams = testConfig.lineStippleParamsConfig.dynamicValue->get();
-		vkd.cmdSetLineStippleEXT(cmdBuffer, stippleParams.factor, stippleParams.pattern);
+		vkd.cmdSetLineStippleKHR(cmdBuffer, stippleParams.factor, stippleParams.pattern);
 	}
 
 #ifndef CTS_USES_VULKANSC
@@ -5385,7 +5385,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		pLineRasterModeInfo = LineRasterModePtr(new vk::VkPipelineRasterizationLineStateCreateInfoEXT(vk::initVulkanStructure(rasterizationPnext)));
 		rasterizationPnext = pLineRasterModeInfo.get();
 
-		const auto&	lineRasterFeatures	= m_context.getLineRasterizationFeaturesEXT();
+		const auto&	lineRasterFeatures	= m_context.getLineRasterizationFeatures();
 		const auto	lineRasterMode		= selectLineRasterizationMode(lineRasterFeatures, m_testConfig.lineStippleSupportRequired(), m_testConfig.lineRasterModeConfig.staticValue);
 		const auto&	staticParams		= m_testConfig.lineStippleParamsConfig.staticValue.get();
 
