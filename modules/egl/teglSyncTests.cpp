@@ -374,12 +374,12 @@ class CreateLongRunningSyncTest : public SyncTest {
 				m_testCtx.getCommandLine());
 		TestLog& log = m_testCtx.getLog();
 
+		m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(3, 1));
+
 		m_eglDisplay =
 			eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
 		m_eglConfig = eglu::chooseSingleConfig(egl, m_eglDisplay,
 							displayAttribList);
-
-		m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(3, 1));
 
 		m_extensions = (Extension)(m_extensions | getSyncTypeExtension(m_syncType));
 
