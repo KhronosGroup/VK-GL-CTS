@@ -176,17 +176,28 @@ Move<VkImage> createImage (const DeviceInterface&	vk,
 						   VkImageLayout			initialLayout,
 						   TestSeparateUsage		separateStencilUsage)
 {
-	VkImageUsageFlags depthUsage	= (separateStencilUsage == TEST_DEPTH)	 ? usage : (VkImageUsageFlags)VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	VkImageUsageFlags stencilUsage	= (separateStencilUsage == TEST_STENCIL) ? usage : (VkImageUsageFlags)VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	VkImageUsageFlags depthUsage	(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	VkImageUsageFlags stencilUsage	(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	VkImageUsageFlags imageUsage	(usage);
 
-	const VkImageStencilUsageCreateInfo stencilUsageInfo =
+	if (separateStencilUsage)
+	{
+		if (separateStencilUsage == TEST_DEPTH)
+			depthUsage = usage;
+		else // (separateStencilUsage == TEST_STENCIL)
+			stencilUsage = usage;
+
+		imageUsage = depthUsage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+	}
+
+	const VkImageStencilUsageCreateInfo stencilUsageInfo
 	{
 		VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO,
 		DE_NULL,
 		stencilUsage
 	};
 
-	const VkImageCreateInfo pCreateInfo =
+	const VkImageCreateInfo pCreateInfo
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		separateStencilUsage ? &stencilUsageInfo : DE_NULL,
@@ -198,7 +209,7 @@ Move<VkImage> createImage (const DeviceInterface&	vk,
 		arrayLayers,
 		samples,
 		tiling,
-		separateStencilUsage ? depthUsage : usage,
+		imageUsage,
 		sharingMode,
 		queueFamilyCount,
 		pQueueFamilyIndices,
@@ -1099,7 +1110,11 @@ VkRenderingInputAttachmentIndexInfoKHR getRenderingInputAttachmentIndexInfo(std:
 {
 	depthAttachmentInputIndex		= 0u;
 	stencilAttachmentInputIndex		= 0u;
-	colorAttachmentInputIndices[0]	= (isDepthFormat || isStencilFormat) ? VK_ATTACHMENT_UNUSED : 0;
+
+	std::fill(colorAttachmentInputIndices.begin(), colorAttachmentInputIndices.end(), VK_ATTACHMENT_UNUSED);
+	if (!isDepthFormat && !isStencilFormat)
+		colorAttachmentInputIndices[0] = 0;
+
 	return
 	{
 		VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR,
