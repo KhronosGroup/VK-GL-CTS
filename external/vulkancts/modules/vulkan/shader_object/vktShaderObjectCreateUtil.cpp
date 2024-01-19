@@ -335,11 +335,11 @@ void setDefaultShaderObjectDynamicStates (const vk::DeviceInterface& vk, vk::VkC
 		vk.cmdSetColorBlendAdvancedEXT(cmdBuffer, 0, 1, &colorBlendAdvanced);
 	if (extensionEnabled(deviceExtensions, "VK_EXT_provoking_vertex"))
 		vk.cmdSetProvokingVertexModeEXT(cmdBuffer, vk::VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT);
-	if (extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization"))
-		vk.cmdSetLineRasterizationModeEXT(cmdBuffer, vk::VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT);
-	if (extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization"))
+	if (extensionEnabled(deviceExtensions, "VK_KHR_line_rasterization") || extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization"))
+		vk.cmdSetLineRasterizationModeEXT(cmdBuffer, vk::VK_LINE_RASTERIZATION_MODE_DEFAULT_KHR);
+	if (extensionEnabled(deviceExtensions, "VK_KHR_line_rasterization") || extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization"))
 		vk.cmdSetLineStippleEnableEXT(cmdBuffer, VK_FALSE);
-	if (extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization"))
+	if (extensionEnabled(deviceExtensions, "VK_KHR_line_rasterization") || extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization"))
 		vk.cmdSetLineStippleKHR(cmdBuffer, 1u, 0x0F0F);
 	if (extensionEnabled(deviceExtensions, "VK_EXT_depth_clip_control"))
 		vk.cmdSetDepthClipNegativeOneToOneEXT(cmdBuffer, VK_FALSE);

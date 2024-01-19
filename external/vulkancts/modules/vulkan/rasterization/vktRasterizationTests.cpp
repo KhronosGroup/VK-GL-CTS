@@ -1198,11 +1198,11 @@ BaseLineTestInstance::BaseLineTestInstance (Context&					context,
 
 	if (m_lineRasterizationMode != VK_LINE_RASTERIZATION_MODE_KHR_LAST)
 	{
-		if (context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization"))
+		if (context.isDeviceFunctionalitySupported("VK_KHR_line_rasterization") || context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization"))
 		{
-			VkPhysicalDeviceLineRasterizationPropertiesEXT lineRasterizationProperties =
+			VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProperties =
 			{
-				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT,	// VkStructureType	sType;
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR,	// VkStructureType	sType;
 				DE_NULL,																// void*			pNext;
 				0u,																		// deUint32			lineSubPixelPrecisionBits;
 			};
@@ -2683,7 +2683,8 @@ protected:
 template <typename ConcreteTestInstance>
 bool ConservativeTestCase<ConcreteTestInstance>::isUseLineSubPixel (Context& context) const
 {
-	return (isPrimitiveTopologyLine(m_conservativeTestConfig.primitiveTopology) && context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization"));
+	return (isPrimitiveTopologyLine(m_conservativeTestConfig.primitiveTopology) &&
+		(context.isDeviceFunctionalitySupported("VK_KHR_line_rasterization") || context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization")));
 }
 
 template <typename ConcreteTestInstance>
@@ -2691,9 +2692,9 @@ deUint32 ConservativeTestCase<ConcreteTestInstance>::getSubPixelResolution (Cont
 {
 	if (isUseLineSubPixel(context))
 	{
-		const VkPhysicalDeviceLineRasterizationPropertiesEXT	lineRasterizationPropertiesEXT	= context.getLineRasterizationProperties();
+		const VkPhysicalDeviceLineRasterizationPropertiesKHR	lineRasterizationProperties	= context.getLineRasterizationProperties();
 
-		return lineRasterizationPropertiesEXT.lineSubPixelPrecisionBits;
+		return lineRasterizationProperties.lineSubPixelPrecisionBits;
 	}
 	else
 	{

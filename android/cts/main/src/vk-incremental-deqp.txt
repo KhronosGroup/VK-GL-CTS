@@ -194,7 +194,7 @@ dEQP-VK.api.info.get_physical_device_properties2.features.index_type_uint8_featu
 dEQP-VK.api.info.get_physical_device_properties2.features.imageless_framebuffer_features
 dEQP-VK.api.info.get_physical_device_properties2.features.image_robustness_features
 dEQP-VK.api.info.get_physical_device_properties2.features.host_query_reset_features
-dEQP-VK.api.info.get_physical_device_properties2.features.line_rasterization_features_ext
+dEQP-VK.api.info.get_physical_device_properties2.features.line_rasterization_features_khr
 dEQP-VK.api.info.get_physical_device_properties2.features.maintenance4_features
 dEQP-VK.api.info.get_physical_device_properties2.features.multiview_features
 dEQP-VK.api.info.get_physical_device_properties2.features.multi_draw_features_ext

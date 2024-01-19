@@ -2848,7 +2848,7 @@ struct TestConfig
 
 		if (lineRasterizationExt())
 		{
-			extensions.push_back("VK_EXT_line_rasterization");
+			extensions.push_back("VK_KHR_or_EXT_line_rasterization");
 		}
 
 		if (colorBlendEquationConfig.staticValue.isAdvanced())
@@ -3063,8 +3063,15 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 
 	// Check extension support.
 	const auto requiredExtensions = m_testConfig.getRequiredExtensions();
-	for (const auto& extension : requiredExtensions)
-		context.requireDeviceFunctionality(extension);
+	for (const auto& extension : requiredExtensions) {
+		if (extension == "VK_KHR_or_EXT_line_rasterization") {
+			if (!context.isDeviceFunctionalitySupported("VK_KHR_line_rasterization") && !context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization")) {
+				TCU_THROW(NotSupportedError, "VK_KHR_line_rasterization and VK_EXT_line_rasterization are not supported");
+			}
+		} else {
+			context.requireDeviceFunctionality(extension);
+		}
+	}
 
 	// Check support needed for the vertex generators.
 	m_testConfig.vertexGenerator.staticValue->checkSupport(context);

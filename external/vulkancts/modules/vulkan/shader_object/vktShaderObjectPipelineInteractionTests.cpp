@@ -386,11 +386,11 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate (void)
 		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT);
 	if (extensionEnabled(deviceExtensions, "VK_EXT_conservative_rasterization") && eds3Features.extendedDynamicState3ExtraPrimitiveOverestimationSize)
 		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT);
-	if (extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization") && eds3Features.extendedDynamicState3LineRasterizationMode)
+	if ((extensionEnabled(deviceExtensions, "VK_KHR_line_rasterization") || extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization")) && eds3Features.extendedDynamicState3LineRasterizationMode)
 		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT);
-	if (extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization") && eds3Features.extendedDynamicState3LineStippleEnable)
+	if ((extensionEnabled(deviceExtensions, "VK_KHR_line_rasterization") || extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization")) && eds3Features.extendedDynamicState3LineStippleEnable)
 		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT);
-	if (extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization"))
+	if ((extensionEnabled(deviceExtensions, "VK_KHR_line_rasterization") || extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization")))
 		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT);
 	if (extensionEnabled(deviceExtensions, "VK_EXT_provoking_vertex") && eds3Features.extendedDynamicState3ProvokingVertexMode)
 		dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT);
