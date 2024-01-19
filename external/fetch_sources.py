@@ -230,9 +230,9 @@ def postExtractLibpng (path):
 
 PACKAGES = [
 	SourcePackage(
-		"https://zlib.net/fossils/zlib-1.2.11.tar.gz",
-		"zlib-1.2.11.tar.gz",
-		"c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
+		"https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz",
+		"zlib-1.2.13.tar.gz",
+		"b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
 		"zlib"),
 	SourcePackage(
 		"http://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
