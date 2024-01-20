@@ -192,22 +192,29 @@ void ComputePipelineWrapper::buildPipeline (void)
 #ifndef CTS_USES_VULKANSC
 		DE_ASSERT(m_shader.get() == DE_NULL);
 		buildPipelineLayout();
+
+		VkShaderRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo = {
+			VK_STRUCTURE_TYPE_SHADER_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,	// VkStructureType	sType;
+			DE_NULL,															// void*			pNext;
+			m_subgroupSize,														// uint32_t			requiredSubgroupSize;
+		};
+
 		vk::VkShaderCreateInfoEXT		createInfo =
 		{
-			vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,	// VkStructureType				sType;
-			DE_NULL,										// const void*					pNext;
-			0u,												// VkShaderCreateFlagsEXT		flags;
-			vk::VK_SHADER_STAGE_COMPUTE_BIT,				// VkShaderStageFlagBits		stage;
-			0u,												// VkShaderStageFlags			nextStage;
-			vk::VK_SHADER_CODE_TYPE_SPIRV_EXT,				// VkShaderCodeTypeEXT			codeType;
-			m_programBinary->getSize(),						// size_t						codeSize;
-			m_programBinary->getBinary(),					// const void*					pCode;
-			"main",											// const char*					pName;
-			(deUint32)m_descriptorSetLayouts.size(),		// uint32_t						setLayoutCount;
-			m_descriptorSetLayouts.data(),					// VkDescriptorSetLayout*		pSetLayouts;
-			0u,												// uint32_t						pushConstantRangeCount;
-			DE_NULL,										// const VkPushConstantRange*	pPushConstantRanges;
-			specializationInfo,								// const VkSpecializationInfo*	pSpecializationInfo;
+			vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,				// VkStructureType				sType;
+			m_subgroupSize != 0 ? &subgroupSizeCreateInfo : DE_NULL,	// const void*					pNext;
+			0u,															// VkShaderCreateFlagsEXT		flags;
+			vk::VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits		stage;
+			0u,															// VkShaderStageFlags			nextStage;
+			vk::VK_SHADER_CODE_TYPE_SPIRV_EXT,							// VkShaderCodeTypeEXT			codeType;
+			m_programBinary->getSize(),									// size_t						codeSize;
+			m_programBinary->getBinary(),								// const void*					pCode;
+			"main",														// const char*					pName;
+			(deUint32)m_descriptorSetLayouts.size(),					// uint32_t						setLayoutCount;
+			m_descriptorSetLayouts.data(),								// VkDescriptorSetLayout*		pSetLayouts;
+			0u,															// uint32_t						pushConstantRangeCount;
+			DE_NULL,													// const VkPushConstantRange*	pPushConstantRanges;
+			specializationInfo,											// const VkSpecializationInfo*	pSpecializationInfo;
 		};
 
 		m_shader = createShader(vk, device, createInfo);
