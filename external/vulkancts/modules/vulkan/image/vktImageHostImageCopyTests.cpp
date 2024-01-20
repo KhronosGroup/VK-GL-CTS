@@ -1703,6 +1703,17 @@ tcu::TestStatus PropertiesTestInstance::iterate (void) {
 	if (layoutSupported == false)
 		return tcu::TestStatus::fail("VK_IMAGE_LAYOUT_GENERAL not supported for dst host copy");
 
+	bool UUIDZero = true;
+	for (uint32_t i = 0; i < VK_UUID_SIZE; ++i) {
+		if (hostImageCopyProperties.optimalTilingLayoutUUID[i] != 0)
+		{
+			UUIDZero = false;
+			break;
+		}
+	}
+	if (UUIDZero)
+		return tcu::TestStatus::fail("All bytes of optimalTilingLayoutUUID are 0");
+
 	return tcu::TestStatus::pass("Pass");
 }
 
