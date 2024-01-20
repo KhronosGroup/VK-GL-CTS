@@ -10671,6 +10671,7 @@ dEQP-VK.pipeline.fast_linked_library.misc.frag_lib_varying_samples_16
 dEQP-VK.pipeline.fast_linked_library.misc.frag_lib_varying_samples_2
 dEQP-VK.pipeline.fast_linked_library.misc.frag_lib_varying_samples_4
 dEQP-VK.pipeline.fast_linked_library.misc.frag_lib_varying_samples_8
+dEQP-VK.pipeline.fast_linked_library.misc.no_rendering
 dEQP-VK.pipeline.fast_linked_library.multisample.alpha_to_coverage.samples_16.alpha_invisible_check_depth
 dEQP-VK.pipeline.fast_linked_library.multisample.alpha_to_coverage.samples_16.alpha_invisible_sparse_check_depth
 dEQP-VK.pipeline.fast_linked_library.multisample.alpha_to_coverage.samples_2.alpha_invisible_check_depth

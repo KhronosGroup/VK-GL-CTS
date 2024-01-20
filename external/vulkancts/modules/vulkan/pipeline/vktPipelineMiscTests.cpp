@@ -1827,6 +1827,186 @@ tcu::TestStatus varyingSamplesFragTest(Context &context, VaryingSamplesFragParam
 
     return tcu::TestStatus::pass("Pass");
 }
+
+class PipelineNoRenderingTestInstance : public vkt::TestInstance
+{
+public:
+    PipelineNoRenderingTestInstance(Context &context, const PipelineConstructionType pipelineConstructionType)
+        : vkt::TestInstance(context)
+        , m_pipelineConstructionType(pipelineConstructionType)
+    {
+    }
+    ~PipelineNoRenderingTestInstance(void)
+    {
+    }
+    tcu::TestStatus iterate(void) override;
+
+private:
+    PipelineConstructionType m_pipelineConstructionType;
+};
+
+tcu::TestStatus PipelineNoRenderingTestInstance::iterate()
+{
+    const auto &vki       = m_context.getInstanceInterface();
+    const auto &vkd       = m_context.getDeviceInterface();
+    const auto physDevice = m_context.getPhysicalDevice();
+    const auto device     = m_context.getDevice();
+    const auto qIndex     = m_context.getUniversalQueueFamilyIndex();
+    const auto queue      = m_context.getUniversalQueue();
+    Allocator &alloc      = m_context.getDefaultAllocator();
+
+    const auto cmdPool   = makeCommandPool(vkd, device, qIndex);
+    const auto cmdBuffer = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(32u, 32u));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(32u, 32u));
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState     = initVulkanStructure();
+    const VkPipelineRasterizationStateCreateInfo rasterizationState = {
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                          sType;
+        DE_NULL,                                                    // const void*                              pNext;
+        (VkPipelineRasterizationStateCreateFlags)0,                 // VkPipelineRasterizationStateCreateFlags  flags;
+        VK_FALSE,                // VkBool32                                 depthClampEnable;
+        VK_FALSE,                // VkBool32                                 rasterizerDiscardEnable;
+        VK_POLYGON_MODE_FILL,    // VkPolygonMode							polygonMode;
+        VK_CULL_MODE_NONE,       // VkCullModeFlags							cullMode;
+        VK_FRONT_FACE_CLOCKWISE, // VkFrontFace								frontFace;
+        VK_FALSE,                // VkBool32									depthBiasEnable;
+        0.0f,                    // float									depthBiasConstantFactor;
+        0.0f,                    // float									depthBiasClamp;
+        0.0f,                    // float									depthBiasSlopeFactor;
+        1.0f,                    // float									lineWidth;
+    };
+
+    const auto &binaries  = m_context.getBinaryCollection();
+    const auto vertModule = ShaderWrapper(vkd, device, binaries.get("vert"));
+    const auto fragModule = ShaderWrapper(vkd, device, binaries.get("frag"));
+    const PipelineLayoutWrapper pipelineLayout(m_pipelineConstructionType, vkd, device);
+
+    vk::GraphicsPipelineWrapper pipeline(vki, vkd, physDevice, device, m_context.getDeviceExtensions(),
+                                         m_pipelineConstructionType);
+    pipeline.setDefaultRasterizationState()
+        .setupVertexInputState(&vertexInputState)
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, VK_NULL_HANDLE, 0u, vertModule,
+                                          &rasterizationState)
+        .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragModule)
+        .setupFragmentOutputState(VK_NULL_HANDLE)
+        .setMonolithicPipelineLayout(pipelineLayout)
+        .buildPipeline();
+
+    auto imageExtent            = vk::makeExtent3D(32u, 32u, 1u);
+    const auto subresourceRange = vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    const auto imageUsage       = static_cast<vk::VkImageUsageFlags>(vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                                               vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const vk::VkImageCreateInfo imageCreateInfo = {
+        vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                 // const void* pNext;
+        0u,                                      // VkImageCreateFlags flags;
+        vk::VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
+        vk::VK_FORMAT_R8G8B8A8_UNORM,            // VkFormat format;
+        imageExtent,                             // VkExtent3D extent;
+        1u,                                      // uint32_t mipLevels;
+        1u,                                      // uint32_t arrayLayers;
+        vk::VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
+        vk::VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
+        imageUsage,                              // VkImageUsageFlags usage;
+        vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
+        1u,                                      // uint32_t queueFamilyIndexCount;
+        &qIndex,                                 // const uint32_t* pQueueFamilyIndices;
+        vk::VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
+    };
+
+    auto colorAttachment = de::MovePtr<vk::ImageWithMemory>(
+        new vk::ImageWithMemory(vkd, device, alloc, imageCreateInfo, vk::MemoryRequirement::Any));
+    auto colorAttachmentView = vk::makeImageView(vkd, device, colorAttachment->get(), vk::VK_IMAGE_VIEW_TYPE_2D,
+                                                 imageCreateInfo.format, subresourceRange);
+
+    const auto clearValueColor = vk::makeClearValueColor(tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+    const vk::VkRect2D renderArea = {{0u, 0u}, {imageExtent.width, imageExtent.height}};
+
+    const vk::VkRenderingAttachmentInfoKHR colorAttachments = {
+        vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
+        nullptr,                                             // const void* pNext;
+        colorAttachmentView.get(),                           // VkImageView imageView;
+        vk::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,          // VkImageLayout imageLayout;
+        vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
+        VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
+        vk::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,          // VkImageLayout resolveImageLayout;
+        vk::VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
+        vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
+        clearValueColor                                      // VkClearValue clearValue;
+    };
+    const VkRenderingInfoKHR render_info = {
+        VK_STRUCTURE_TYPE_RENDERING_INFO_KHR, 0, 0, renderArea, 1, 0, 1, &colorAttachments, nullptr, nullptr};
+
+    beginCommandBuffer(vkd, *cmdBuffer);
+    vkd.cmdBeginRendering(*cmdBuffer, &render_info);
+    pipeline.bind(*cmdBuffer);
+    vkd.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
+    vkd.cmdEndRendering(*cmdBuffer);
+    endCommandBuffer(vkd, *cmdBuffer);
+    submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class PipelineNoRenderingTestCase : public vkt::TestCase
+{
+public:
+    PipelineNoRenderingTestCase(tcu::TestContext &testCtx, const std::string &name,
+                                PipelineConstructionType pipelineConstructionType)
+        : vkt::TestCase(testCtx, name)
+        , m_pipelineConstructionType(pipelineConstructionType)
+    {
+    }
+    ~PipelineNoRenderingTestCase(void)
+    {
+    }
+    void initPrograms(SourceCollections &programCollection) const override;
+    void checkSupport(Context &context) const override;
+    TestInstance *createInstance(Context &context) const override;
+
+private:
+    const PipelineConstructionType m_pipelineConstructionType;
+};
+
+TestInstance *PipelineNoRenderingTestCase::createInstance(Context &context) const
+{
+    return new PipelineNoRenderingTestInstance(context, m_pipelineConstructionType);
+}
+
+void PipelineNoRenderingTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                          m_pipelineConstructionType);
+}
+
+void PipelineNoRenderingTestCase::initPrograms(SourceCollections &sources) const
+{
+    std::stringstream vert;
+    std::stringstream frag;
+
+    vert << "#version 450\n"
+         << "void main() {\n"
+         << "    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
+         << "    gl_Position = vec4(pos - 0.5f, 0.0f, 1.0f);\n"
+         << "}\n";
+
+    frag << "#version 450\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main() {\n"
+         << "    outColor = vec4(1.0f);\n"
+         << "}\n";
+
+    sources.glslSources.add("vert") << glu::VertexSource(vert.str());
+    sources.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
 #endif // CTS_USES_VULKANSC
 
 } // namespace
@@ -1893,6 +2073,13 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx, PipelineConstruct
     miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_holes", config1));
     // Verify implicit access to gl_PrimtiveID works with a tessellation shader
     miscTests->addChild(new PipelineLayoutBindingTestCases(testCtx, "descriptor_bind_test_backwards_holes", config2));
+
+#ifndef CTS_USES_VULKANSC
+    if (!isConstructionTypeShaderObject(pipelineConstructionType))
+    {
+        miscTests->addChild(new PipelineNoRenderingTestCase(testCtx, "no_rendering", pipelineConstructionType));
+    }
+#endif
 
     return miscTests.release();
 }
