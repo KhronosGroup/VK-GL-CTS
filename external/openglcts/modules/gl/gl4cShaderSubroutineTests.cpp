@@ -8814,14 +8814,14 @@ void FunctionalTest16::verifySubroutineUniformValuesForShaderStage(
 
 	if (verification == SUBROUTINE_UNIFORMS_SET_TO_VALID_VALUES)
 	{
-		if (!((result_values[0] == (GLuint)shader_stage.subroutine1_uniform_location ||
-			   result_values[0] == (GLuint)shader_stage.subroutine2_uniform_location) &&
-			  (result_values[1] == (GLuint)shader_stage.subroutine1_uniform_location ||
-			   result_values[1] == (GLuint)shader_stage.subroutine2_uniform_location) &&
-			  (result_values[2] == (GLuint)shader_stage.subroutine3_uniform_location ||
-			   result_values[2] == (GLuint)shader_stage.subroutine4_uniform_location) &&
-			  (result_values[3] == (GLuint)shader_stage.subroutine3_uniform_location ||
-			   result_values[3] == (GLuint)shader_stage.subroutine4_uniform_location)))
+		if (!((result_values[0] == (GLuint)shader_stage.function1_index ||
+			   result_values[0] == (GLuint)shader_stage.function2_index) &&
+			  (result_values[1] == (GLuint)shader_stage.function1_index ||
+			   result_values[1] == (GLuint)shader_stage.function2_index) &&
+			  (result_values[2] == (GLuint)shader_stage.function3_index ||
+			   result_values[2] == (GLuint)shader_stage.function4_index) &&
+			  (result_values[3] == (GLuint)shader_stage.function3_index ||
+			   result_values[3] == (GLuint)shader_stage.function4_index)))
 		{
 			m_testCtx.getLog() << tcu::TestLog::Message << "SUBROUTINE_UNIFORMS_SET_TO_VALID_VALUES validation failed. "
 														   "Shader stage:["
