@@ -1613,6 +1613,50 @@ void CopyImageToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src,
     }
 }
 
+static void checkTransferQueueGranularity(Context &context, const VkExtent3D &extent, VkImageType imageType)
+{
+    const auto queueIndex = context.getTransferQueueFamilyIndex();
+    if (queueIndex == -1)
+        TCU_THROW(NotSupportedError, "No queue family found that only supports transfer queue.");
+
+    const std::vector<VkQueueFamilyProperties> queueProps =
+        getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+    DE_ASSERT((int)queueProps.size() > queueIndex);
+    const VkQueueFamilyProperties *xferProps = &queueProps[queueIndex];
+
+    std::ostringstream ss;
+    switch (imageType)
+    {
+    case VK_IMAGE_TYPE_1D:
+        if (extent.width < xferProps->minImageTransferGranularity.width)
+        {
+            ss << "1d copy extent " << extent.width << " too small for queue granularity";
+            TCU_THROW(NotSupportedError, ss.str());
+        }
+        break;
+    case VK_IMAGE_TYPE_2D:
+        if (extent.width < xferProps->minImageTransferGranularity.width ||
+            extent.height < xferProps->minImageTransferGranularity.height)
+        {
+            ss << "2d copy extent (" << extent.width << ", " << extent.height << ") too small for queue granularity";
+            TCU_THROW(NotSupportedError, ss.str());
+        }
+        break;
+    case VK_IMAGE_TYPE_3D:
+        if (extent.width < xferProps->minImageTransferGranularity.width ||
+            extent.height < xferProps->minImageTransferGranularity.height ||
+            extent.depth < xferProps->minImageTransferGranularity.depth)
+        {
+            ss << "3d copy extent (" << extent.width << ", " << extent.height << ", " << extent.depth
+               << ") too small for queue granularity";
+            TCU_THROW(NotSupportedError, ss.str());
+        }
+        break;
+    default:
+        DE_ASSERT(false && "Unexpected image type");
+    }
+}
+
 class CopyImageToImageTestCase : public vkt::TestCase
 {
 public:
@@ -1704,6 +1748,18 @@ public:
                  m_params.src.image.extent.depth > limits.maxImageDimension3D))
             {
                 TCU_THROW(NotSupportedError, "Requested 3D dst image dimensions not supported");
+            }
+        }
+
+        // Check queue transfer granularity requirements
+        if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+        {
+            for (const auto &res : {m_params.src, m_params.dst})
+                checkTransferQueueGranularity(context, res.image.extent, res.image.imageType);
+            for (const auto &region : m_params.regions)
+            {
+                checkTransferQueueGranularity(context, region.imageCopy.extent, m_params.src.image.imageType);
+                checkTransferQueueGranularity(context, region.imageCopy.extent, m_params.dst.image.imageType);
             }
         }
     }
@@ -2226,6 +2282,11 @@ public:
                 TCU_THROW(NotSupportedError, "Requested 3D dst image dimensions not supported");
             }
         }
+
+        // Check queue transfer granularity requirements
+        if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+            for (const auto &res : {m_params.src, m_params.dst})
+                checkTransferQueueGranularity(context, res.image.extent, res.image.imageType);
     }
 
 private:
@@ -2686,6 +2747,16 @@ public:
     virtual void checkSupport(Context &context) const
     {
         checkExtensionSupport(context, m_params.extensionFlags);
+        // Check queue transfer granularity requirements
+        if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+        {
+            checkTransferQueueGranularity(context, m_params.src.image.extent, m_params.src.image.imageType);
+            for (const auto &region : m_params.regions)
+            {
+                checkTransferQueueGranularity(context, region.bufferImageCopy.imageExtent,
+                                              m_params.src.image.imageType);
+            }
+        }
     }
 
 private:
@@ -3199,6 +3270,16 @@ public:
     virtual void checkSupport(Context &context) const
     {
         checkExtensionSupport(context, m_params.extensionFlags);
+        // Check queue transfer granularity requirements
+        if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+        {
+            checkTransferQueueGranularity(context, m_params.dst.image.extent, m_params.dst.image.imageType);
+            for (const auto &region : m_params.regions)
+            {
+                checkTransferQueueGranularity(context, region.bufferImageCopy.imageExtent,
+                                              m_params.dst.image.imageType);
+            }
+        }
     }
 
 private:
