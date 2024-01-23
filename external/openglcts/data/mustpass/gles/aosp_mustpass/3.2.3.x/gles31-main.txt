@@ -12120,7 +12120,6 @@ dEQP-GLES31.functional.stencil_texturing.render.depth32f_stencil8_clear
 dEQP-GLES31.functional.stencil_texturing.render.depth32f_stencil8_draw
 dEQP-GLES31.functional.stencil_texturing.render.depth24_stencil8_clear
 dEQP-GLES31.functional.stencil_texturing.render.depth24_stencil8_draw
-dEQP-GLES31.functional.stencil_texturing.misc.compare_mode_effect
 dEQP-GLES31.functional.stencil_texturing.misc.base_level
 dEQP-GLES31.functional.texture.filtering.cube_array.formats.rgba16f_nearest
 dEQP-GLES31.functional.texture.filtering.cube_array.formats.rgba16f_linear
