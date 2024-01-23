@@ -956,7 +956,7 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 		vk.cmdBindVertexBuffers2(cmdBuffer, 0, 0, DE_NULL, DE_NULL, DE_NULL, DE_NULL);
 	if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_CULL_MODE))
 		vk.cmdSetCullMode(cmdBuffer, m_params.cull ? vk::VK_CULL_MODE_FRONT_AND_BACK : vk::VK_CULL_MODE_NONE);
-	if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.depthBounds) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS))
+	if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && m_params.depthBounds) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE))
 		vk.cmdSetDepthBoundsTestEnable(cmdBuffer, m_params.depthBoundsTestEnable ? VK_TRUE : VK_FALSE);
 	if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_COMPARE_OP))
 		vk.cmdSetDepthCompareOp(cmdBuffer, vk::VK_COMPARE_OP_LESS);
