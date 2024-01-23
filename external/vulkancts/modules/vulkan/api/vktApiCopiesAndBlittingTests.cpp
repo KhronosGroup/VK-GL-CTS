@@ -1402,7 +1402,12 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 		endCommandBuffer(vk, cmdbuf);
 	}
 
-	submitCommandsAndWait (vk, vkDevice, queue, cmdbuf);
+	if (m_params.useSparseBinding) {
+		const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+		submitCommandsAndWait(vk, vkDevice, queue, cmdbuf, false, 1u, 1u, &*m_sparseSemaphore, stageBits);
+	} else {
+		submitCommandsAndWait(vk, vkDevice, queue, cmdbuf);
+	}
 	m_context.resetCommandPoolForVKSC(vkDevice, cmdpool);
 
 	if (m_params.useSecondaryCmdBuffer)
@@ -1843,7 +1848,13 @@ tcu::TestStatus CopyImageToImageMipmap::iterate (void)
 
 	endCommandBuffer(vk, commandBuffer);
 
-	submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+	if (m_params.useSparseBinding) {
+		const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+		submitCommandsAndWait(vk, vkDevice, queue, commandBuffer, false, 1u, 1u, &*m_sparseSemaphore, stageBits);
+	} else {
+		submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+	}
+
 	m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
 	for (deUint32 miplevel = 0; miplevel < m_params.mipLevels; miplevel++)
@@ -2472,7 +2483,13 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 	vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	endCommandBuffer(vk, commandBuffer);
 
-	submitCommandsAndWait (vk, vkDevice, queue, commandBuffer);
+	if (m_params.useSparseBinding) {
+		const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+		submitCommandsAndWait(vk, vkDevice, queue, commandBuffer, false, 1u, 1u, &*m_sparseSemaphore, stageBits);
+	} else {
+		submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+	}
+
 	m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
 	// Read buffer data
@@ -2940,7 +2957,13 @@ tcu::TestStatus CopyBufferToImage::iterate (void)
 
 	endCommandBuffer(vk, commandBuffer);
 
-	submitCommandsAndWait (vk, vkDevice, queue, commandBuffer);
+	if (m_params.useSparseBinding) {
+		const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+		submitCommandsAndWait(vk, vkDevice, queue, commandBuffer, false, 1u, 1u, &*m_sparseSemaphore, stageBits);
+	} else {
+		submitCommandsAndWait(vk, vkDevice, queue, commandBuffer);
+	}
+
 	m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel	= readImage(*m_destination, m_params.dst.image);
@@ -3359,7 +3382,13 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 
 	endCommandBuffer(vk, *m_universalCmdBuffer);
 
-	submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+	if (m_params.useSparseBinding) {
+		const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+		submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, false, 1u, 1u, &*m_sparseSemaphore, stageBits);
+	} else {
+		submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+	}
+
 	m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel = readImage(*m_destination, m_params.dst.image);
@@ -3783,7 +3812,12 @@ tcu::TestStatus BlittingImages::iterate (void)
 	}
 
 	endCommandBuffer(vk, *m_universalCmdBuffer);
-	submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+	if (m_params.useSparseBinding) {
+		const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+		submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, false, 1u, 1u, &*m_sparseSemaphore, stageBits);
+	} else {
+		submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+	}
 	m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel		= readImage(*m_destination, dstImageParams);
@@ -5464,7 +5498,14 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 	}
 
 	endCommandBuffer(vk, *m_universalCmdBuffer);
-	submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+
+	if (m_params.useSparseBinding) {
+		const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+		submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, false, 1u, 1u, &*m_sparseSemaphore, stageBits);
+	} else {
+		submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
+	}
+
 	m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
 
 	return checkTestResult();
@@ -6396,11 +6437,14 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 			endCommandBuffer(vk, *m_universalCmdBuffer);
 		}
 
-		// Queue submit.
-		{
-			submitCommandsAndWait (vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
-			m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
+		if (m_params.useSparseBinding) {
+			const VkPipelineStageFlags stageBits[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+			submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, false, 1u, 1u, &*m_sparseSemaphore, stageBits);
+		} else {
+			submitCommandsAndWait(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer);
 		}
+
+		m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
 	}
 }
 
