@@ -373,8 +373,6 @@ enum OperationId
 	OID_INV_SQRT,
 	OID_MODF,
 	OID_MODF_ST,
-	OID_FREXP,
-	OID_FREXP_ST,
 	OID_LENGTH,
 	OID_NORMALIZE,
 	OID_REFLECT,
@@ -2602,27 +2600,6 @@ void TestCasesBuilder::init()
 											"%tmpStructPtr       = OpVariable %struct_ff_fptr Function\n",
 											"",
 											"%tmpStruct          = OpExtInst %struct_ff %std450 ModfStruct %arg1\n"
-											"                      OpStore %tmpStructPtr %tmpStruct\n"
-											"%tmpLoc             = OpAccessChain %type_valueType_fptr %tmpStructPtr %c_i32_0\n"
-											"%result             = OpLoad %type_valueType %tmpLoc\n",
-											B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[OID_FREXP]		= Op("frexp",		FLOAT_ARITHMETIC,
-											"",
-											"",
-											"",
-											"%tmpVarPtr          = OpVariable %type_i32_fptr Function\n",
-											"",
-											"%result             = OpExtInst %type_valueType %std450 Frexp %arg1 %tmpVarPtr\n",
-											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[OID_FREXP_ST]	= Op("frexp_st",	FLOAT_ARITHMETIC,
-											"OpMemberDecorate %struct_fi 0 Offset 0\n"
-											"OpMemberDecorate %struct_fi 1 Offset ${float_width}\n",
-											"%struct_fi          = OpTypeStruct %type_valueType %type_i32\n"
-											"%struct_fi_fptr     = OpTypePointer Function %struct_fi\n",
-											"",
-											"%tmpStructPtr       = OpVariable %struct_fi_fptr Function\n",
-											"",
-											"%tmpStruct          = OpExtInst %struct_fi %std450 FrexpStruct %arg1\n"
 											"                      OpStore %tmpStructPtr %tmpStruct\n"
 											"%tmpLoc             = OpAccessChain %type_valueType_fptr %tmpStructPtr %c_i32_0\n"
 											"%result             = OpLoad %type_valueType %tmpLoc\n",
