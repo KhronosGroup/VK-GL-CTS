@@ -5306,8 +5306,9 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 class RenderPassNoDrawLoadStoreTestCase : public vkt::TestCase
 {
 public:
-	RenderPassNoDrawLoadStoreTestCase(tcu::TestContext& context, const std::string& name, const std::string& description, bool useRenderPass2);
-	TestInstance*   createInstance          (Context& context) const override;
+	RenderPassNoDrawLoadStoreTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, bool useRenderPass2);
+	TestInstance*	createInstance		(Context& context) const override;
+	void			checkSupport		(Context& context) const override;
 private:
 	bool m_renderPass2;
 };
@@ -5331,6 +5332,12 @@ RenderPassNoDrawLoadStoreTestInstance::RenderPassNoDrawLoadStoreTestInstance(Con
 
 TestInstance* RenderPassNoDrawLoadStoreTestCase::createInstance(Context& context) const {
 	return new RenderPassNoDrawLoadStoreTestInstance(context, m_renderPass2);
+}
+
+void RenderPassNoDrawLoadStoreTestCase::checkSupport(Context& context) const
+{
+	if (m_renderPass2)
+		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 }
 
 template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
@@ -5444,11 +5451,11 @@ tcu::TestStatus RenderPassNoDrawLoadStoreTestInstance::iterate() {
 
 	Move<VkRenderPass> renderPass;
 	if (m_renderPass2) {
-		renderPass = createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>
-			(vkd, device, RENDERING_TYPE_RENDERPASS_LEGACY);
-	} else {
 		renderPass = createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>
 			(vkd, device, RENDERING_TYPE_RENDERPASS2);
+	} else {
+		renderPass = createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>
+			(vkd, device, RENDERING_TYPE_RENDERPASS_LEGACY);
 	}
 
 	// Framebuffer.
