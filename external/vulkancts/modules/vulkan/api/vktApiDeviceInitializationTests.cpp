@@ -2545,6 +2545,10 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
 	deUint32					queueFamilyCount	= 0;
 	deUint32					queueFamilyIndex	= 0;
 	const float					queuePriority		= 0.0f;
+	VkInstanceCreateFlags		instanceFlags		= 0u;
+	uint32_t					instanceExtCount	= 0u;
+	const char**				instanceExtensions	= DE_NULL;
+
 	const VkAllocationCallbacks	allocationCallbacks	=
 	{
 		DE_NULL,								// userData
@@ -2565,16 +2569,27 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
 		VK_API_VERSION_1_0						// apiVersion
 	};
 
+#ifndef CTS_USES_VULKANSC
+	std::vector<vk::VkExtensionProperties> availableExtensions = vk::enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL);
+	const char* portabilityExtension[] = { "VK_KHR_portability_enumeration" };
+	if (vk::isExtensionStructSupported(availableExtensions, vk::RequiredExtension("VK_KHR_portability_enumeration")))
+	{
+		instanceExtCount = 1u;
+		instanceExtensions = portabilityExtension;
+		instanceFlags |= vk::VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+	}
+#endif // CTS_USES_VULKANSC
+
 	const VkInstanceCreateInfo	instanceCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,	// sType
 		DE_NULL,								// pNext
-		(VkInstanceCreateFlags)0u,				// flags
+		instanceFlags,							// flags
 		&appInfo,								// pApplicationInfo
 		0u,										// enabledLayerCount
 		DE_NULL,								// ppEnabledLayerNames
-		0u,										// enabledExtensionCount
-		DE_NULL									// ppEnabledExtensionNames
+		instanceExtCount,						// enabledExtensionCount
+		instanceExtensions						// ppEnabledExtensionNames
 	};
 
 	deUint32					failIndex			= 0;

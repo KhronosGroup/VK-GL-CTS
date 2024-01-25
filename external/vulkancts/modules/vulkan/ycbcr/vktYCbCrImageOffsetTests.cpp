@@ -57,6 +57,7 @@ namespace
 
 	void checkSupport (Context& context, const TestConfig config)
 	{
+		context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion"); // Required for image query
 		const vk::VkFormatProperties properties = vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
 																						context.getPhysicalDevice(), config.format);
 
