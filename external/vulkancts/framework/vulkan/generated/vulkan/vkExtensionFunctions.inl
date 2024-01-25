@@ -3260,7 +3260,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_EXT_extended_dynamic_state3")
 	{
-		functions.push_back("vkCmdSetTessellationDomainOriginEXT");
 		functions.push_back("vkCmdSetDepthClampEnableEXT");
 		functions.push_back("vkCmdSetPolygonModeEXT");
 		functions.push_back("vkCmdSetRasterizationSamplesEXT");
@@ -3271,16 +3270,44 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdSetColorBlendEnableEXT");
 		functions.push_back("vkCmdSetColorBlendEquationEXT");
 		functions.push_back("vkCmdSetColorWriteMaskEXT");
-		functions.push_back("vkCmdSetRasterizationStreamEXT");
-		functions.push_back("vkCmdSetConservativeRasterizationModeEXT");
-		functions.push_back("vkCmdSetExtraPrimitiveOverestimationSizeEXT");
-		functions.push_back("vkCmdSetDepthClipEnableEXT");
-		functions.push_back("vkCmdSetSampleLocationsEnableEXT");
-		functions.push_back("vkCmdSetColorBlendAdvancedEXT");
-		functions.push_back("vkCmdSetProvokingVertexModeEXT");
-		functions.push_back("vkCmdSetLineRasterizationModeEXT");
-		functions.push_back("vkCmdSetLineStippleEnableEXT");
-		functions.push_back("vkCmdSetDepthClipNegativeOneToOneEXT");
+		// Dependencies: VK_KHR_maintenance2,VK_VERSION_1_1
+		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_maintenance2"))) {
+			functions.push_back("vkCmdSetTessellationDomainOriginEXT");
+		}
+		// Dependencies: VK_EXT_transform_feedback
+		if (extensionIsSupported(vDEP, "VK_EXT_transform_feedback")) {
+			functions.push_back("vkCmdSetRasterizationStreamEXT");
+		}
+		// Dependencies: VK_EXT_conservative_rasterization
+		if (extensionIsSupported(vDEP, "VK_EXT_conservative_rasterization")) {
+			functions.push_back("vkCmdSetConservativeRasterizationModeEXT");
+			functions.push_back("vkCmdSetExtraPrimitiveOverestimationSizeEXT");
+		}
+		// Dependencies: VK_EXT_depth_clip_enable
+		if (extensionIsSupported(vDEP, "VK_EXT_depth_clip_enable")) {
+			functions.push_back("vkCmdSetDepthClipEnableEXT");
+		}
+		// Dependencies: VK_EXT_sample_locations
+		if (extensionIsSupported(vDEP, "VK_EXT_sample_locations")) {
+			functions.push_back("vkCmdSetSampleLocationsEnableEXT");
+		}
+		// Dependencies: VK_EXT_blend_operation_advanced
+		if (extensionIsSupported(vDEP, "VK_EXT_blend_operation_advanced")) {
+			functions.push_back("vkCmdSetColorBlendAdvancedEXT");
+		}
+		// Dependencies: VK_EXT_provoking_vertex
+		if (extensionIsSupported(vDEP, "VK_EXT_provoking_vertex")) {
+			functions.push_back("vkCmdSetProvokingVertexModeEXT");
+		}
+		// Dependencies: VK_EXT_line_rasterization
+		if (extensionIsSupported(vDEP, "VK_EXT_line_rasterization")) {
+			functions.push_back("vkCmdSetLineRasterizationModeEXT");
+			functions.push_back("vkCmdSetLineStippleEnableEXT");
+		}
+		// Dependencies: VK_EXT_depth_clip_control
+		if (extensionIsSupported(vDEP, "VK_EXT_depth_clip_control")) {
+			functions.push_back("vkCmdSetDepthClipNegativeOneToOneEXT");
+		}
 		// Dependencies: VK_NV_clip_space_w_scaling
 		if (extensionIsSupported(vDEP, "VK_NV_clip_space_w_scaling")) {
 			functions.push_back("vkCmdSetViewportWScalingEnableNV");
@@ -3399,16 +3426,40 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdSetColorBlendEnableEXT");
 		functions.push_back("vkCmdSetColorBlendEquationEXT");
 		functions.push_back("vkCmdSetColorWriteMaskEXT");
-		functions.push_back("vkCmdSetRasterizationStreamEXT");
-		functions.push_back("vkCmdSetConservativeRasterizationModeEXT");
-		functions.push_back("vkCmdSetExtraPrimitiveOverestimationSizeEXT");
-		functions.push_back("vkCmdSetDepthClipEnableEXT");
-		functions.push_back("vkCmdSetSampleLocationsEnableEXT");
-		functions.push_back("vkCmdSetColorBlendAdvancedEXT");
-		functions.push_back("vkCmdSetProvokingVertexModeEXT");
-		functions.push_back("vkCmdSetLineRasterizationModeEXT");
-		functions.push_back("vkCmdSetLineStippleEnableEXT");
-		functions.push_back("vkCmdSetDepthClipNegativeOneToOneEXT");
+		// Dependencies: VK_EXT_transform_feedback
+		if (extensionIsSupported(vDEP, "VK_EXT_transform_feedback")) {
+			functions.push_back("vkCmdSetRasterizationStreamEXT");
+		}
+		// Dependencies: VK_EXT_conservative_rasterization
+		if (extensionIsSupported(vDEP, "VK_EXT_conservative_rasterization")) {
+			functions.push_back("vkCmdSetConservativeRasterizationModeEXT");
+			functions.push_back("vkCmdSetExtraPrimitiveOverestimationSizeEXT");
+		}
+		// Dependencies: VK_EXT_depth_clip_enable
+		if (extensionIsSupported(vDEP, "VK_EXT_depth_clip_enable")) {
+			functions.push_back("vkCmdSetDepthClipEnableEXT");
+		}
+		// Dependencies: VK_EXT_sample_locations
+		if (extensionIsSupported(vDEP, "VK_EXT_sample_locations")) {
+			functions.push_back("vkCmdSetSampleLocationsEnableEXT");
+		}
+		// Dependencies: VK_EXT_blend_operation_advanced
+		if (extensionIsSupported(vDEP, "VK_EXT_blend_operation_advanced")) {
+			functions.push_back("vkCmdSetColorBlendAdvancedEXT");
+		}
+		// Dependencies: VK_EXT_provoking_vertex
+		if (extensionIsSupported(vDEP, "VK_EXT_provoking_vertex")) {
+			functions.push_back("vkCmdSetProvokingVertexModeEXT");
+		}
+		// Dependencies: VK_EXT_line_rasterization
+		if (extensionIsSupported(vDEP, "VK_EXT_line_rasterization")) {
+			functions.push_back("vkCmdSetLineRasterizationModeEXT");
+			functions.push_back("vkCmdSetLineStippleEnableEXT");
+		}
+		// Dependencies: VK_EXT_depth_clip_control
+		if (extensionIsSupported(vDEP, "VK_EXT_depth_clip_control")) {
+			functions.push_back("vkCmdSetDepthClipNegativeOneToOneEXT");
+		}
 		// Dependencies: VK_NV_clip_space_w_scaling
 		if (extensionIsSupported(vDEP, "VK_NV_clip_space_w_scaling")) {
 			functions.push_back("vkCmdSetViewportWScalingEnableNV");
