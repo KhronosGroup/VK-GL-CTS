@@ -1304,6 +1304,15 @@ tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& tes
 
 		for (deUint32 storeOpIdx = 0; storeOpIdx < DE_LENGTH_OF_ARRAY(storeOps); storeOpIdx++)
 		{
+			// for dynamic rendering we need to skip LOAD_OP_DONT_CARE+STORE_OP_STORE case
+			// because some implementations in that case will write random data to unused attachments
+			if ((groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) &&
+				(loadOps[loadOpIdx] == VK_ATTACHMENT_LOAD_OP_DONT_CARE) &&
+				(storeOps[storeOpIdx] == VK_ATTACHMENT_STORE_OP_STORE))
+			{
+				continue;
+			}
+
 			de::MovePtr<tcu::TestCaseGroup>	storeOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("storeop") + storeOpToString(storeOps[storeOpIdx])).c_str()));
 
 			for (deUint32 stencilLoadOpIdx = stencilLoadOpStartIdx; stencilLoadOpIdx < DE_LENGTH_OF_ARRAY(loadOps); stencilLoadOpIdx++)
