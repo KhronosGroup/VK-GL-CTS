@@ -1215,6 +1215,13 @@ LinearDerivateCase::~LinearDerivateCase (void)
 TestInstance* LinearDerivateCase::createInstance (Context& context) const
 {
 	DE_ASSERT(m_uniformSetup != DE_NULL);
+	if (m_fragmentTmpl.find("gl_SubgroupInvocationID") != std::string::npos) {
+		if (!subgroups::areQuadOperationsSupportedForStages(context, VK_SHADER_STAGE_FRAGMENT_BIT))
+			throw tcu::NotSupportedError("test requires VK_SUBGROUP_FEATURE_QUAD_BIT");
+
+		if (subgroups::getSubgroupSize(context) < 4)
+			throw tcu::NotSupportedError("test requires subgroupSize >= 4");
+	}
 	return new LinearDerivateCaseInstance(context, *m_uniformSetup, m_definitions, m_values);
 }
 
