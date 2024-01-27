@@ -363,7 +363,7 @@ public:
 
 	static SharedPtr<MultiQueues> getInstance(Context& context, SynchronizationType type, bool timelineSemaphore)
 	{
-		deUint32 index = (deUint32)type << 1 | timelineSemaphore;
+		deUint32 index = bool((deUint32)type << 1) | timelineSemaphore;
 		if (!m_multiQueues[index])
 			m_multiQueues[index] = SharedPtr<MultiQueues>(new MultiQueues(context, type, timelineSemaphore));
 

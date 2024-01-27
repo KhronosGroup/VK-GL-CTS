@@ -701,7 +701,7 @@ bool getSupportedImageMemoryRequirements(Context& context, const CaseDef& caseDe
 	}
 	// vkCreateImage is allowed to return VK_ERROR_OUT_OF_HOST_MEMORY if the image's
 	// memory requirements will exceed maxResourceSize.
-	catch (const vk::OutOfMemoryError& e)
+	catch (const vk::OutOfMemoryError&)
 	{
 		imageCreationPossible = false;
 	}

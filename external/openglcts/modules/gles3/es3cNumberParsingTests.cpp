@@ -375,7 +375,7 @@ NumberParsingCase::IterateResult NumberParsingCase::iterate(void)
 
 	const std::vector<glu::VertexArrayBinding> vertexArrays =
 	{
-		glu::va::Float("vPosition", 2, positions.size(), 0, positions.data()),
+		glu::va::Float("vPosition", 2, (int)positions.size(), 0, positions.data()),
 	};
 
 	gl.useProgram(program.getProgram());
