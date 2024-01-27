@@ -31,6 +31,7 @@
 
 #include "vktShaderRenderDerivateTests.hpp"
 #include "vktShaderRender.hpp"
+#include "subgroups/vktSubgroupsTestsUtils.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 
@@ -807,22 +808,14 @@ void TriangleDerivateCase::checkSupport (Context& context) const
 										? "Derivatives in dynamic control flow"
 										: "Manual derivatives with subgroup operations";
 
-		if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
-			throw tcu::NotSupportedError(errorPrefix + " require Vulkan 1.1");
+		if (!subgroups::areQuadOperationsSupportedForStages(context, VK_SHADER_STAGE_FRAGMENT_BIT))
+			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_QUAD_BIT");
 
-		const auto& subgroupProperties = context.getSubgroupProperties();
-
-		if (subgroupProperties.subgroupSize < 4)
+		if (subgroups::getSubgroupSize(context) < 4)
 			throw tcu::NotSupportedError(errorPrefix + " require subgroupSize >= 4");
 
-		if ((subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT) == 0)
+		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BALLOT_BIT))
 			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_BALLOT_BIT");
-
-		if ((subgroupProperties.supportedStages & VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
-			throw tcu::NotSupportedError(errorPrefix + " tests require subgroup supported stage including VK_SHADER_STAGE_FRAGMENT_BIT");
-
-		if (subgroupFunc && (subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT) == 0)
-			throw tcu::NotSupportedError(errorPrefix + " tests require VK_SUBGROUP_FEATURE_QUAD_BIT");
 	}
 }
 
