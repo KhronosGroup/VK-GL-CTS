@@ -20748,6 +20748,36 @@ do { \
 			return testGroup.release();
 		}
 
+		tcu::TestCaseGroup* createMixedRelaxedPrecisionOperandsTests(tcu::TestContext& testCtx)
+		{
+			de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "mixed_relaxed_precision_operands"));
+
+#ifndef CTS_USES_VULKANSC
+			static const char dataDir[] = "spirv_assembly/instruction/graphics/fragment";
+
+			static const struct Case
+			{
+				const string name;
+				const string desc;
+			} cases[] =
+					{
+							{ "mixedrelaxedprecisionoperands",		"Test OpSelect using a mix of operands with and without RelaxedPrecision." },
+					};
+
+			for (const auto& case_ : cases)
+			{
+				cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(testCtx,
+																					case_.name.c_str(),
+																					case_.desc.c_str(),
+																					dataDir,
+																					case_.name + ".amber");
+				testGroup->addChild(testCase);
+			}
+#endif // CTS_USES_VULKANSC
+
+			return testGroup.release();
+		}
+
 		tcu::TestCaseGroup* createOpMulExtendedGroup (tcu::TestContext& testCtx)
 		{
 			de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "mul_extended"));
@@ -21012,6 +21042,7 @@ do { \
 			graphicsTests->addChild(createEarlyFragmentTests(testCtx));
 			graphicsTests->addChild(createEarlyAndLateFragmentTests(testCtx));
 			graphicsTests->addChild(createOpExecutionModeTests(testCtx));
+			graphicsTests->addChild(createMixedRelaxedPrecisionOperandsTests(testCtx));
 
 			instructionTests->addChild(computeTests.release());
 			instructionTests->addChild(graphicsTests.release());
