@@ -2536,6 +2536,7 @@ public:
 		const char* extensions[] =
 		{
 			"VK_EXT_robustness2",
+			"VK_EXT_image_view_min_lod",
 		};
 
 		VkPhysicalDeviceImageViewMinLodFeaturesEXT	minLodfeatures		= initVulkanStructure();
