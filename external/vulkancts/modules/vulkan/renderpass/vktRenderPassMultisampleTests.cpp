@@ -1518,11 +1518,10 @@ void MultisampleRenderPassTestInstance::createSplitPipelines(void)
 				ShaderWrapper(),
 				nullptr,
 				nullptr,
-				renderingCreateInfoWrapper,
-				renderingAttachmentLocationInfoWrapper,
-				renderingInputAttachmentIndexInfoWrapper)
-			.setupFragmentShaderState(m_splitPipelineLayout, *m_renderPass, ndx + 1u, fragmentShaderModule, 0u, &multisampleState)
-			.setupFragmentOutputState(*m_renderPass, ndx + 1u, &blendState, &multisampleState)
+				renderingCreateInfoWrapper)
+			.setupFragmentShaderState(m_splitPipelineLayout, *m_renderPass, ndx + 1u, fragmentShaderModule,
+				0u, &multisampleState, 0, 0, {}, renderingInputAttachmentIndexInfoWrapper)
+			.setupFragmentOutputState(*m_renderPass, ndx + 1u, &blendState, &multisampleState, 0, {}, renderingAttachmentLocationInfoWrapper)
 			.setMonolithicPipelineLayout(m_splitPipelineLayout)
 			.buildPipeline();
 	}

@@ -433,8 +433,6 @@ public:
 																	 const VkSpecializationInfo*						specializationInfo = DE_NULL,
 																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState = nullptr,
 																	 PipelineRenderingCreateInfoWrapper					rendering = PipelineRenderingCreateInfoWrapper(),
-																	 RenderingAttachmentLocationInfoWrapper				renderingAttachmentLocationInfo = RenderingAttachmentLocationInfoWrapper(),
-																	 RenderingInputAttachmentIndexInfoWrapper			renderingInputAttachmentIndexInfo = RenderingInputAttachmentIndexInfoWrapper(),
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
@@ -454,8 +452,6 @@ public:
 																	 const VkSpecializationInfo*						geomSpecializationInfo = nullptr,
 																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*	fragmentShadingRateState = nullptr,
 																	 PipelineRenderingCreateInfoWrapper					rendering = PipelineRenderingCreateInfoWrapper(),
-																	 RenderingAttachmentLocationInfoWrapper				renderingAttachmentLocationInfo = RenderingAttachmentLocationInfoWrapper(),
-																	 RenderingInputAttachmentIndexInfoWrapper			renderingInputAttachmentIndexInfo = RenderingInputAttachmentIndexInfoWrapper(),
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
@@ -480,8 +476,6 @@ public:
 																	 const VkSpecializationInfo*								geomSpecializationInfo = nullptr,
 																	 VkPipelineFragmentShadingRateStateCreateInfoKHR*			fragmentShadingRateState = nullptr,
 																	 PipelineRenderingCreateInfoWrapper							rendering = PipelineRenderingCreateInfoWrapper(),
-																	 RenderingAttachmentLocationInfoWrapper						renderingAttachmentLocationInfo = RenderingAttachmentLocationInfoWrapper(),
-																	 RenderingInputAttachmentIndexInfoWrapper					renderingInputAttachmentIndexInfo = RenderingInputAttachmentIndexInfoWrapper(),
 																	 const VkPipelineCache										partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
@@ -512,7 +506,8 @@ public:
 																	 const VkPipelineMultisampleStateCreateInfo*		multisampleState = DE_NULL,
 																	 const VkSpecializationInfo*						specializationInfo = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
-																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+																	 RenderingInputAttachmentIndexInfoWrapper			renderingInputAttachmentIndexInfo = RenderingInputAttachmentIndexInfoWrapper());
 
 	// Note: VkPipelineShaderStageModuleIdentifierCreateInfoEXT::pIdentifier will not be copied. They need to continue to exist outside this wrapper.
 	GraphicsPipelineWrapper&	setupFragmentShaderState2			(const PipelineLayoutWrapper&								layout,
@@ -524,7 +519,8 @@ public:
 																	 const VkPipelineMultisampleStateCreateInfo*				multisampleState = nullptr,
 																	 const VkSpecializationInfo*								specializationInfo = nullptr,
 																	 const VkPipelineCache										partPipelineCache = DE_NULL,
-																	 PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+																	 PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+																	 RenderingInputAttachmentIndexInfoWrapper					renderingInputAttachmentIndexInfo = RenderingInputAttachmentIndexInfoWrapper());
 
 	// Setup fragment output state.
 	GraphicsPipelineWrapper&	setupFragmentOutputState			(const VkRenderPass									renderPass,
@@ -532,7 +528,8 @@ public:
 																	 const VkPipelineColorBlendStateCreateInfo*			colorBlendState = DE_NULL,
 																	 const VkPipelineMultisampleStateCreateInfo*		multisampleState = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
-																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+																	 RenderingAttachmentLocationInfoWrapper				renderingAttachmentLocationInfo = RenderingAttachmentLocationInfoWrapper());
 
 	// Build pipeline object out of provided state.
 	void						buildPipeline						(const VkPipelineCache								pipelineCache = DE_NULL,

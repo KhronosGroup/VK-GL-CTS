@@ -2936,11 +2936,11 @@ void MaxAttachmenstsRenderPassTestInstance::createRenderPipeline(GraphicsPipelin
 			geometryShaderModule,
 			DE_NULL,
 			DE_NULL,
-			renderingCreateInfoWrapper,
-			renderingAttachmentLocationInfoWrapper,
-			renderingInputAttachmentIndexInfoWrapper)
-		.setupFragmentShaderState(pipelineLayout, *m_renderPass, secondSubpass, fragmentShaderModule, &depthStencilState, &multisampleState)
-		.setupFragmentOutputState(*m_renderPass, secondSubpass, &blendState, &multisampleState)
+			renderingCreateInfoWrapper)
+		.setupFragmentShaderState(pipelineLayout, *m_renderPass, secondSubpass, fragmentShaderModule, &depthStencilState,
+			&multisampleState, 0, 0, {}, renderingInputAttachmentIndexInfoWrapper)
+		.setupFragmentOutputState(*m_renderPass, secondSubpass, &blendState, &multisampleState,
+			0, {}, renderingAttachmentLocationInfoWrapper)
 		.setMonolithicPipelineLayout(pipelineLayout)
 		.buildPipeline();
 }

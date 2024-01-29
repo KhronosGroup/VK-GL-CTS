@@ -897,10 +897,9 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 				ShaderWrapper(),
 				DE_NULL,
 				DE_NULL,
-				renderingCreateInfoWrapper,
-				renderingAttachmentLocationInfoWrapper)
+				renderingCreateInfoWrapper)
 			.setupFragmentShaderState(m_pipelineLayoutSubpass0, *m_renderPass, 0u, m_fragmentShaderModuleSubpass0)
-			.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo)
+			.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo, 0, 0, {}, renderingAttachmentLocationInfoWrapper)
 			.setMonolithicPipelineLayout(m_pipelineLayoutSubpass0)
 			.buildPipeline();
 
@@ -924,11 +923,10 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 				ShaderWrapper(),
 				DE_NULL,
 				DE_NULL,
-				renderingCreateInfoWrapper,
-				renderingAttachmentLocationInfoWrapper,
-				renderingInputAttachmentIndexInfoWrapper)
-			.setupFragmentShaderState(m_pipelineLayoutSubpass1, *m_renderPass, 1u, m_fragmentShaderModuleSubpass1)
-			.setupFragmentOutputState(*m_renderPass, 1u, &colorBlendStateCreateInfo)
+				renderingCreateInfoWrapper)
+			.setupFragmentShaderState(m_pipelineLayoutSubpass1, *m_renderPass, 1u, m_fragmentShaderModuleSubpass1,
+				0, 0, 0, 0, {}, renderingInputAttachmentIndexInfoWrapper)
+			.setupFragmentOutputState(*m_renderPass, 1u, &colorBlendStateCreateInfo, 0, 0, {}, renderingAttachmentLocationInfoWrapper)
 			.setMonolithicPipelineLayout(m_pipelineLayoutSubpass1)
 			.buildPipeline();
 	}

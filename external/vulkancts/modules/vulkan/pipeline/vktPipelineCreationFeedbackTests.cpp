@@ -658,8 +658,6 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 			DE_NULL,
 			nullptr,
 			nullptr,
-			nullptr,
-			nullptr,
 			*m_cache,
 			pipelineCreationFeedbackWrapper[1])
 	   .setupFragmentShaderState(

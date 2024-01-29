@@ -1382,11 +1382,11 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 					ShaderWrapper(),
 					DE_NULL,
 					DE_NULL,
-					renderingCreateInfoWrapper,
-					renderingAttachmentLocationInfoWrapper,
-					renderingInputAttachmentIndexInfoWrapper)
-				.setupFragmentShaderState(pipelineLayout, *m_renderPass, subpassIdx, *fragShader, &depthStencilStateParams, &multisampleStateParams)
-				.setupFragmentOutputState(*m_renderPass, subpassIdx, &colorBlendStateParams, &multisampleStateParams)
+					renderingCreateInfoWrapper)
+				.setupFragmentShaderState(pipelineLayout, *m_renderPass, subpassIdx, *fragShader, &depthStencilStateParams,
+					&multisampleStateParams, 0, 0, {}, renderingInputAttachmentIndexInfoWrapper)
+				.setupFragmentOutputState(*m_renderPass, subpassIdx, &colorBlendStateParams,
+					&multisampleStateParams, 0, {}, renderingAttachmentLocationInfoWrapper)
 				.setMonolithicPipelineLayout(pipelineLayout)
 				.buildPipeline();
 		}

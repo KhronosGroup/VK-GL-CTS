@@ -3022,11 +3022,11 @@ protected:
 				ShaderWrapper(),
 				DE_NULL,
 				DE_NULL,
-				renderingCreateInfoWrapper,
-				renderingAttachmentLocationInfoWrapper,
-				renderingInputAttachmentIndexInfoWrapper)
-			.setupFragmentShaderState(m_pipelineLayout, renderPass, subpassIndex, m_fragmentShaderModule, &depthStencilState, &multisampleState)
-			.setupFragmentOutputState(renderPass, subpassIndex, (m_renderInfo.getOmitBlendState() ? DE_NULL : &blendState), &multisampleState)
+				renderingCreateInfoWrapper)
+			.setupFragmentShaderState(m_pipelineLayout, renderPass, subpassIndex, m_fragmentShaderModule, &depthStencilState,
+				&multisampleState, 0, 0, {}, renderingInputAttachmentIndexInfoWrapper)
+			.setupFragmentOutputState(renderPass, subpassIndex, (m_renderInfo.getOmitBlendState() ? DE_NULL : &blendState),
+				&multisampleState, 0, 0, renderingAttachmentLocationInfoWrapper)
 			.setMonolithicPipelineLayout(m_pipelineLayout)
 			.buildPipeline();
 	}

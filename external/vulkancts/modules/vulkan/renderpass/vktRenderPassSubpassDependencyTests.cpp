@@ -2781,9 +2781,9 @@ void SeparateChannelsTestInstance::setup(void)
 				DE_NULL,
 				DE_NULL,
 				renderingCreateInfoWrapper,
-				DE_NULL,
-				renderingInputAttachmentIndexInfoWrapper)
-			.setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragmentShaderModule, (isDSFormat ? &depthStencilState : DE_NULL))
+				DE_NULL)
+			.setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragmentShaderModule,
+				(isDSFormat ? &depthStencilState : DE_NULL), 0, 0, 0, {}, renderingInputAttachmentIndexInfoWrapper)
 			.setupFragmentOutputState(*m_renderPass, 0u, (isDSFormat ? DE_NULL : &colorBlendState))
 			.setMonolithicPipelineLayout(m_pipelineLayout)
 			.buildPipeline();

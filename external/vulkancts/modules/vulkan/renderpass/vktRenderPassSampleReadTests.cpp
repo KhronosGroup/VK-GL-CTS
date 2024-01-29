@@ -1076,11 +1076,9 @@ void SampleReadTestInstance::createSubpassPipeline ()
 			ShaderWrapper(),
 			DE_NULL,
 			DE_NULL,
-			renderingCreateInfoWrapper,
-			renderingAttachmentLocationInfoWrapper,
-			renderingInputAttachmentIndexInfoWrapper)
-		.setupFragmentShaderState(m_subpassPipelineLayout, *m_renderPass, 1u, fragmentShaderModule, 0u, &multisampleState)
-		.setupFragmentOutputState(*m_renderPass, 1u, &colorBlendStateCreateInfo, &multisampleState)
+			renderingCreateInfoWrapper)
+		.setupFragmentShaderState(m_subpassPipelineLayout, *m_renderPass, 1u, fragmentShaderModule, 0u, &multisampleState, 0, 0, {}, renderingInputAttachmentIndexInfoWrapper)
+		.setupFragmentOutputState(*m_renderPass, 1u, &colorBlendStateCreateInfo, &multisampleState, 0, {}, renderingAttachmentLocationInfoWrapper)
 		.setMonolithicPipelineLayout(m_subpassPipelineLayout)
 		.buildPipeline();
 }

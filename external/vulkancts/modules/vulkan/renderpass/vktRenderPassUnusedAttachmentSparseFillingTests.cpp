@@ -677,9 +677,9 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
 				DE_NULL,
 				DE_NULL,
 				renderingCreateInfoWrapper,
-				DE_NULL,
-				renderingInputAttachmentIndexInfoWrapper)
-			.setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragmentShaderModule)
+				DE_NULL)
+			.setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, fragmentShaderModule,
+				0, 0, 0, 0, {}, renderingInputAttachmentIndexInfoWrapper)
 			.setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfoDefault)
 			.setMonolithicPipelineLayout(m_pipelineLayout)
 			.buildPipeline();
