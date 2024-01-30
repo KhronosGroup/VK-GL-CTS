@@ -111,6 +111,7 @@
 #include "vktImagelessFramebufferTests.hpp"
 #include "vktFragmentShaderInterlockTests.hpp"
 #include "vktShaderClockTests.hpp"
+#include "vktShaderExpectAssumeTests.hpp"
 #include "vktModifiersTests.hpp"
 #include "vktRayTracingTests.hpp"
 #include "vktRayQueryTests.hpp"
@@ -1088,6 +1089,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	// Amber GLSL tests.
 	glslTests->addChild(cts_amber::createCombinedOperationsGroup		(testCtx));
 	glslTests->addChild(cts_amber::createCrashTestGroup					(testCtx));
+	glslTests->addChild(shaderexecutor::createShaderExpectAssumeTests(testCtx));
 #endif // CTS_USES_VULKANSC
 }
 
