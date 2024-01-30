@@ -801,6 +801,18 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD.pNext;
 	}
 
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceShaderExpectAssumeFeaturesKHR physicalDeviceShaderExpectAssumeFeaturesKHR;
+	deMemset(&physicalDeviceShaderExpectAssumeFeaturesKHR, 0, sizeof(physicalDeviceShaderExpectAssumeFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_expect_assume") )
+	{
+		physicalDeviceShaderExpectAssumeFeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderExpectAssumeFeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderExpectAssumeFeaturesKHR;
+		nextPtr  = &physicalDeviceShaderExpectAssumeFeaturesKHR.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
 	vk::VkPhysicalDeviceShaderFloat16Int8Features physicalDeviceShaderFloat16Int8Features;
 	deMemset(&physicalDeviceShaderFloat16Int8Features, 0, sizeof(physicalDeviceShaderFloat16Int8Features));
 
@@ -2339,6 +2351,17 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_expect_assume")) )
+	{
+		if ( physicalDeviceShaderExpectAssumeFeaturesKHR.shaderExpectAssume == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderExpectAssume not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_float16_int8")) )
 	{
