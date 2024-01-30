@@ -55,6 +55,14 @@
 #define UNUSED
 #endif
 
+/* compatibility profile or context with GL_ARB_compatibility supports GL_QUAD_STRIP and GL_POLYGON */
+#ifndef GL_QUAD_STRIP
+#define GL_QUAD_STRIP 0x0008
+#endif
+#ifndef GL_POLYGON
+#define GL_POLYGON 0x0009
+#endif
+
 gl3cts::TransformFeedback::Tests::Tests(deqp::Context& context)
 	: TestCaseGroup(context, "transform_feedback", "Transform Feedback Test Suite")
 {
@@ -1366,6 +1374,9 @@ bool gl3cts::TransformFeedback::APIErrors::testInstanced(void)
 
 	bool is_at_least_gl_40 = (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 0)));
 	bool is_tessellation = m_context.getContextInfo().isExtensionSupported("GL_ARB_tessellation_shader");
+	bool is_compatibility =
+		glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::compatibility(3, 2)) ||
+		glu::hasExtension(gl, glu::ApiType::core(3, 1), "GL_ARB_compatibility");
 
 	bool has_patches = is_at_least_gl_40 || is_tessellation;
 
@@ -1388,6 +1399,13 @@ bool gl3cts::TransformFeedback::APIErrors::testInstanced(void)
 
 	std::set<glw::GLenum> supported_mode(_supported_mode,
 										 _supported_mode + sizeof(_supported_mode) / sizeof(_supported_mode[0]) - (has_patches ? 0 : 1));
+
+	if (is_compatibility)
+	{
+		/* compatibility profile or context with GL_ARB_compatibility supports GL_QUAD_STRIP and GL_POLYGON */
+		supported_mode.insert(GL_QUAD_STRIP);
+		supported_mode.insert(GL_POLYGON);
+	}
 
 	int mode = 0;
 

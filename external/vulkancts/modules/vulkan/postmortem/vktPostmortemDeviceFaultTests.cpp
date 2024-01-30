@@ -217,7 +217,7 @@ class FakeDeviceInterface : public DeviceDriver
 {
 public:
 	FakeDeviceInterface (Context& ctx)
-		: DeviceDriver(ctx.getPlatformInterface(), ctx.getInstance(), ctx.getDevice(), ctx.getUsedApiVersion()) {}
+		: DeviceDriver(ctx.getPlatformInterface(), ctx.getInstance(), ctx.getDevice(), ctx.getUsedApiVersion(), ctx.getTestContext().getCommandLine()) {}
 
 	struct Header : VkDeviceFaultVendorBinaryHeaderVersionOneEXT
 	{

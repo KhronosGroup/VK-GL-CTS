@@ -136,7 +136,7 @@ Current Vulkan mustpass is checked into repository and can be found at:
 
 Current Vulkan SC mustpass can be found at:
 
-	external/vulkancts/mustpass/master/vksc-default.txt
+	external/vulkancts/mustpass/main/vksc-default.txt
 
 This file contains list of files located in vk-default or vksc-default subdirectory. Those files contain
 tests from bigest test groups and together they contain all test cases that should pass.
@@ -155,7 +155,7 @@ Following command line options MUST be used when running CTS:
 	--deqp-log-images=disable
 	--deqp-log-shader-sources=disable
 
-If an implementation ships with [implicit layers](https://github.com/KhronosGroup/Vulkan-Loader/blob/master/loader/LoaderAndLayerInterface.md#implicit-vs-explicit-layers) enabled, then such layers must be enabled
+If an implementation ships with [implicit layers](https://github.com/KhronosGroup/Vulkan-Loader/blob/main/loader/LoaderAndLayerInterface.md#implicit-vs-explicit-layers) enabled, then such layers must be enabled
 when running CTS.
 
 In addition, on multi-device systems the device for which conformance is claimed
@@ -212,6 +212,10 @@ Also non-informative empty LogInfo sections can be removed
 from output into log by specifying:
 
 	--deqp-log-empty-loginfo=disable
+
+Vulkan compute-only implementations must be tested using option
+
+	--deqp-compute-only=enable
 
 There are several additional options used only in conjunction with Vulkan SC tests
 ( for Vulkan SC CTS tests deqp-vksc application should be used ).
@@ -659,7 +663,7 @@ to Vulkan SC requirements:
 
 - Vulkan SC CTS contains its own mustpass list
 
-  external/vulkancts/mustpass/master/vksc-default.txt
+  external/vulkancts/mustpass/main/vksc-default.txt
 
 - Vulkan SC CTS uses its own executable module to perform tests: deqp-vksc
 
@@ -695,6 +699,9 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
 
   -h, --help
     Show this help
+
+  -q, --quiet
+    Suppress messages to standard output
 
   -n, --deqp-case=<value>
     Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)
@@ -844,6 +851,9 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
 
   --deqp-terminate-on-device-lost=[enable|disable]
     Terminate the run on first device lost error
+
+  --deqp-compute-only=[enable|disable]
+    Perform tests for devices implementing compute-only functionality
     default: 'disable'
 
   --deqp-subprocess=[enable|disable]

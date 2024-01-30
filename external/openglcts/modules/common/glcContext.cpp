@@ -58,13 +58,6 @@ void Context::createRenderContext(glu::ContextType& contextType, glu::ContextFla
 
 		glu::parseRenderConfig(&renderCfg, m_testCtx.getCommandLine());
 
-		if (m_testCtx.getCommandLine().getRunMode() != tcu::RUNMODE_EXECUTE)
-		{
-			// \todo [2016-11-16 pyry] Create EmptyRenderContext instead to allow generating all case lists
-			//						   on a system that doesn't support some GL(ES) versions.
-			renderCfg.surfaceType = glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
-		}
-
 		m_renderCtx   = glu::createRenderContext(m_testCtx.getPlatform(), m_testCtx.getCommandLine(), renderCfg);
 		m_contextInfo = glu::ContextInfo::create(*m_renderCtx);
 

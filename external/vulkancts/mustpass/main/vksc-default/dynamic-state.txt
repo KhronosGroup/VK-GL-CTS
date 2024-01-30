@@ -9,6 +9,7 @@ dEQP-VKSC.dynamic_state.fast_linked_library.ds_state.depth_bounds_1
 dEQP-VKSC.dynamic_state.fast_linked_library.ds_state.depth_bounds_2
 dEQP-VKSC.dynamic_state.fast_linked_library.ds_state.stencil_params_advanced
 dEQP-VKSC.dynamic_state.fast_linked_library.general_state.bind_order
+dEQP-VKSC.dynamic_state.fast_linked_library.general_state.double_static_bind
 dEQP-VKSC.dynamic_state.fast_linked_library.general_state.state_persistence
 dEQP-VKSC.dynamic_state.fast_linked_library.general_state.state_switch
 dEQP-VKSC.dynamic_state.fast_linked_library.general_state.static_stencil_mask_zero
@@ -148,6 +149,7 @@ dEQP-VKSC.dynamic_state.monolithic.ds_state.depth_bounds_1
 dEQP-VKSC.dynamic_state.monolithic.ds_state.depth_bounds_2
 dEQP-VKSC.dynamic_state.monolithic.ds_state.stencil_params_advanced
 dEQP-VKSC.dynamic_state.monolithic.general_state.bind_order
+dEQP-VKSC.dynamic_state.monolithic.general_state.double_static_bind
 dEQP-VKSC.dynamic_state.monolithic.general_state.state_persistence
 dEQP-VKSC.dynamic_state.monolithic.general_state.state_switch
 dEQP-VKSC.dynamic_state.monolithic.general_state.static_stencil_mask_zero
@@ -183,6 +185,7 @@ dEQP-VKSC.dynamic_state.pipeline_library.ds_state.depth_bounds_1
 dEQP-VKSC.dynamic_state.pipeline_library.ds_state.depth_bounds_2
 dEQP-VKSC.dynamic_state.pipeline_library.ds_state.stencil_params_advanced
 dEQP-VKSC.dynamic_state.pipeline_library.general_state.bind_order
+dEQP-VKSC.dynamic_state.pipeline_library.general_state.double_static_bind
 dEQP-VKSC.dynamic_state.pipeline_library.general_state.state_persistence
 dEQP-VKSC.dynamic_state.pipeline_library.general_state.state_switch
 dEQP-VKSC.dynamic_state.pipeline_library.general_state.static_stencil_mask_zero

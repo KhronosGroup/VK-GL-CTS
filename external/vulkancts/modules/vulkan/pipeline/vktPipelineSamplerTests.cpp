@@ -2563,9 +2563,13 @@ tcu::TestCaseGroup* createMaxSamplerLodBiasTests (tcu::TestContext& testCtx, Pip
 
 tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
+	const auto genAllTests = (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC
+							  || pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV);
+
 	de::MovePtr<tcu::TestCaseGroup> samplerTests(new tcu::TestCaseGroup(testCtx, "sampler"));
 	{
-		samplerTests->addChild(createAllFormatsSamplerTests(testCtx, pipelineConstructionType));
+		if (genAllTests)
+			samplerTests->addChild(createAllFormatsSamplerTests(testCtx, pipelineConstructionType));
 		samplerTests->addChild(createExactSamplingTests(testCtx, pipelineConstructionType));
 	}
 
@@ -2578,7 +2582,8 @@ tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx, PipelineConst
 
 #ifndef CTS_USES_VULKANSC
 	// Border color swizzle tests.
-	samplerTests->addChild(createSamplerBorderSwizzleTests(testCtx, pipelineConstructionType));
+	if (genAllTests)
+		samplerTests->addChild(createSamplerBorderSwizzleTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
 
 	samplerTests->addChild(createMaxSamplerLodBiasTests(testCtx, pipelineConstructionType));

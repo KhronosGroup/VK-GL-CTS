@@ -57,6 +57,7 @@
 
 #include <limits>
 #include <algorithm>
+#include <unordered_map>
 
 #define VK_DESCRIPTOR_TYPE_LAST (VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1)
 
@@ -517,8 +518,9 @@ struct Instance
 
 	static Move<VkInstance> create (const Environment& env, const Resources&, const Parameters& params)
 	{
+		VkInstanceCreateFlags				instanceFlags		= 0u;
+		const vector<VkExtensionProperties>	instanceExts		= enumerateInstanceExtensionProperties(env.vkp, DE_NULL);
 		vector<const char*>					extensionNamePtrs;
-		const vector<VkExtensionProperties>	instanceExts = enumerateInstanceExtensionProperties(env.vkp, DE_NULL);
 		for (const auto& extName : params.instanceExtensions)
 		{
 			bool extNotInCore = !isCoreInstanceExtension(env.apiVersion, extName);
@@ -528,6 +530,15 @@ struct Instance
 			if (extNotInCore)
 				extensionNamePtrs.push_back(extName.c_str());
 		}
+
+#ifndef CTS_USES_VULKANSC
+		// Enable portability if available. Needed for portability drivers, otherwise loader will complain and make tests fail
+		if (vk::isExtensionStructSupported(instanceExts, vk::RequiredExtension("VK_KHR_portability_enumeration")))
+		{
+			extensionNamePtrs.emplace_back("VK_KHR_portability_enumeration");
+			instanceFlags |= vk::VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+		}
+#endif // CTS_USES_VULKANSC
 
 		const VkApplicationInfo		appInfo			=
 		{
@@ -544,7 +555,7 @@ struct Instance
 		{
 			VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 			DE_NULL,
-			(VkInstanceCreateFlags)0,
+			instanceFlags,
 			&appInfo,
 			0u,																// enabledLayerNameCount
 			DE_NULL,														// ppEnabledLayerNames
@@ -3093,7 +3104,7 @@ struct EnvClone
 		: deviceRes	(parent, deviceParams)
 		, device	(Device::create(parent, deviceRes, deviceParams))
 #ifndef CTS_USES_VULKANSC
-		, vkd(de::MovePtr<DeviceDriver>(new DeviceDriver(parent.vkp, parent.instance, *device, parent.apiVersion)))
+		, vkd(de::MovePtr<DeviceDriver>(new DeviceDriver(parent.vkp, parent.instance, *device, parent.apiVersion, parent.commandLine)))
 		, env(parent.vkp, parent.apiVersion, parent.instanceInterface, parent.instance, *vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers, parent.commandLine)
 #else
 		, vkd(de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(parent.vkp, parent.instance, *device, parent.commandLine, parent.resourceInterface, parent.vulkanSC10Properties, parent.properties, parent.apiVersion), vk::DeinitDeviceDeleter(parent.resourceInterface.get(), *device)))

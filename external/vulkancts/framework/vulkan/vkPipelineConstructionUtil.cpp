@@ -1823,6 +1823,7 @@ struct GraphicsPipelineWrapper::InternalData
 	deBool												useDefaultVertexInputState;
 	bool												failOnCompileWhenLinking;
 
+	bool												explicitLinkPipelineLayoutSet;
 	VkGraphicsPipelineCreateInfo						monolithicPipelineCreateInfo;
 
 	ShaderWrapper										vertexShader;
@@ -1993,6 +1994,7 @@ struct GraphicsPipelineWrapper::InternalData
 		, useDefaultMultisampleState	(DE_FALSE)
 		, useDefaultVertexInputState	(DE_TRUE)
 		, failOnCompileWhenLinking		(false)
+		, explicitLinkPipelineLayoutSet	(false)
 		, tessellationShaderFeature		(false)
 		, geometryShaderFeature			(false)
 		, taskShaderFeature				(false)
@@ -2032,6 +2034,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setMonolithicPipelineLayout(co
 	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
 
 	m_internalData->monolithicPipelineCreateInfo.layout = *layout;
+	m_internalData->explicitLinkPipelineLayoutSet = true;
 
 	return *this;
 }
@@ -2689,12 +2692,13 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 		}
 	}
 
+	// if pipeline layout was not specified with setupMonolithicPipelineLayout
+	// then use layout from setupPreRasterizationShaderState for link pipeline
+	if (!m_internalData->explicitLinkPipelineLayoutSet)
+		m_internalData->monolithicPipelineCreateInfo.layout = *layout;
+
 	if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		// make sure we dont overwrite layout specified with setupMonolithicPipelineLayout
-		if (m_internalData->monolithicPipelineCreateInfo.layout == 0)
-			m_internalData->monolithicPipelineCreateInfo.layout = *layout;
-
 		m_internalData->monolithicPipelineCreateInfo.renderPass				= renderPass;
 		m_internalData->monolithicPipelineCreateInfo.subpass				= subpass;
 		m_internalData->monolithicPipelineCreateInfo.pRasterizationState	= pRasterizationState;
@@ -2857,12 +2861,13 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShade
 		}
 	}
 
+	// if pipeline layout was not specified with setupMonolithicPipelineLayout
+	// then use layout from setupPreRasterizationMeshShaderState for link pipeline
+	if (!m_internalData->explicitLinkPipelineLayoutSet)
+		m_internalData->monolithicPipelineCreateInfo.layout = *layout;
+
 	if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		// make sure we dont overwrite layout specified with setupMonolithicPipelineLayout
-		if (m_internalData->monolithicPipelineCreateInfo.layout == 0)
-			m_internalData->monolithicPipelineCreateInfo.layout = *layout;
-
 		m_internalData->monolithicPipelineCreateInfo.renderPass				= renderPass;
 		m_internalData->monolithicPipelineCreateInfo.subpass				= subpass;
 		m_internalData->monolithicPipelineCreateInfo.pRasterizationState	= pRasterizationState;
@@ -3427,12 +3432,12 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT);
 		if (m_internalData->extensionEnabled("VK_EXT_conservative_rasterization"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT);
-		if (m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
+		if (m_internalData->extensionEnabled("VK_KHR_line_rasterization") || m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT);
-		if (m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
+		if (m_internalData->extensionEnabled("VK_KHR_line_rasterization") ||m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT);
-		if (m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
-			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT);
+		if (m_internalData->extensionEnabled("VK_KHR_line_rasterization") ||m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
+			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_KHR);
 		if (m_internalData->extensionEnabled("VK_EXT_provoking_vertex"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT);
 		if (m_internalData->extensionEnabled("VK_KHR_fragment_shading_rate"))
@@ -3839,8 +3844,16 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			linkingInfo.libraryCount	= static_cast<uint32_t>(rawPipelines.size());
 			linkingInfo.pLibraries		= de::dataOrNull(rawPipelines);
 
-			linkedCreateInfo.flags		= m_internalData->pipelineFlags;
+			// If a test hits the following assert, it's likely missing a call
+			// to the setMonolithicPipelineLayout() method. Related VUs:
+			//   * VUID-VkGraphicsPipelineCreateInfo-flags-06642
+			//   * VUID-VkGraphicsPipelineCreateInfo-None-07826
+			//   * VUID-VkGraphicsPipelineCreateInfo-layout-07827
+			//   * VUID-VkGraphicsPipelineCreateInfo-flags-06729
+			//   * VUID-VkGraphicsPipelineCreateInfo-flags-06730
+			DE_ASSERT(m_internalData->monolithicPipelineCreateInfo.layout != VK_NULL_HANDLE);
 			linkedCreateInfo.layout		= m_internalData->monolithicPipelineCreateInfo.layout;
+			linkedCreateInfo.flags		= m_internalData->pipelineFlags;
 			linkedCreateInfo.pNext		= &linkingInfo;
 
 			pointerToCreateInfo			= &linkedCreateInfo;
@@ -4158,7 +4171,7 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			break;
 		case vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT:
 			if (stippledLineEnabled)
-				vk.cmdSetLineStippleEXT(cmdBuffer, state->lineStippleFactor, state->lineStipplePattern);
+				vk.cmdSetLineStippleKHR(cmdBuffer, state->lineStippleFactor, state->lineStipplePattern);
 			break;
 		case vk::VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT:
 			if (rasterizerDiscardDisabled)

@@ -441,13 +441,12 @@ tcu::UVec3 getCompressedImageResolutionInBlocks (const vk::VkFormat format, cons
 	deUint32	blockWidth	= getBlockWidth(format);
 	deUint32	blockHeight	= getBlockHeight(format);
 
-	DE_ASSERT(size[2] == 1);
 	DE_ASSERT(blockWidth != 0 && blockHeight != 0);
 
 	deUint32	widthInBlocks	= (size[0] + blockWidth - 1) / blockWidth;
 	deUint32	heightInBlocks	= (size[1] + blockHeight - 1) / blockHeight;
 
-	return tcu::UVec3(widthInBlocks, heightInBlocks, 1);
+	return tcu::UVec3(widthInBlocks, heightInBlocks, size[2]);
 }
 
 tcu::UVec3 getCompressedImageResolutionBlockCeil (const vk::VkFormat format, const tcu::UVec3& size)

@@ -89,10 +89,15 @@ namespace
 
 void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelineConstructionType)
 {
+	const auto isNotShaderObjectVariant			= !vk::isConstructionTypeShaderObject(pipelineConstructionType);
+	const auto isNotExtraShaderObjectVariant	= (isNotShaderObjectVariant || pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV);
+	const auto isMonolithicOrBaseESOVariant		= (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC || pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV);
+
 	tcu::TestContext& testCtx = group->getTestContext();
 
 	group->addChild(createDynamicControlPointTests		(testCtx, pipelineConstructionType));
-	group->addChild(createStencilTests					(testCtx, pipelineConstructionType));
+	if (isNotExtraShaderObjectVariant)
+		group->addChild(createStencilTests				(testCtx, pipelineConstructionType));
 	group->addChild(createBlendTests					(testCtx, pipelineConstructionType));
 	group->addChild(createDepthTests					(testCtx, pipelineConstructionType));
 	group->addChild(createDescriptorLimitsTests			(testCtx, pipelineConstructionType));
@@ -101,9 +106,11 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createEarlyDestroyTests				(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
-	group->addChild(createImageTests					(testCtx, pipelineConstructionType));
+	if (isMonolithicOrBaseESOVariant)
+		group->addChild(createImageTests				(testCtx, pipelineConstructionType));
 	group->addChild(createSamplerTests					(testCtx, pipelineConstructionType));
-	group->addChild(createImageViewTests				(testCtx, pipelineConstructionType));
+	if (isMonolithicOrBaseESOVariant)
+		group->addChild(createImageViewTests			(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createImage2DViewOf3DTests			(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
@@ -119,7 +126,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	group->addChild(createMultisampleInterpolationTests	(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
 	// Input attachments aren't supported for dynamic rendering and shader objects
-	if (!vk::isConstructionTypeShaderObject(pipelineConstructionType))
+	if (isNotShaderObjectVariant)
 	{
 		group->addChild(createMultisampleShaderBuiltInTests(testCtx, pipelineConstructionType));
 	}
@@ -137,14 +144,15 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createCreationFeedbackTests			(testCtx, pipelineConstructionType));
 	group->addChild(createDepthRangeUnrestrictedTests	(testCtx, pipelineConstructionType));
-	if (!isConstructionTypeShaderObject(pipelineConstructionType))
+	if (isNotShaderObjectVariant)
 	{
 		group->addChild(createExecutablePropertiesTests(testCtx, pipelineConstructionType));
 	}
 #endif // CTS_USES_VULKANSC
 	group->addChild(createMaxVaryingsTests				(testCtx, pipelineConstructionType));
 	group->addChild(createBlendOperationAdvancedTests	(testCtx, pipelineConstructionType));
-	group->addChild(createExtendedDynamicStateTests		(testCtx, pipelineConstructionType));
+	if (isNotExtraShaderObjectVariant)
+		group->addChild(createExtendedDynamicStateTests	(testCtx, pipelineConstructionType));
 	group->addChild(createNoPositionTests				(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createBindPointTests				(testCtx, pipelineConstructionType));
@@ -152,7 +160,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	group->addChild(createColorWriteEnableTests			(testCtx, pipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
 	group->addChild(createAttachmentFeedbackLoopLayoutTests (testCtx, pipelineConstructionType));
-	if (!isConstructionTypeShaderObject(pipelineConstructionType))
+	if (isNotShaderObjectVariant)
 	{
 		group->addChild(createShaderModuleIdentifierTests	(testCtx, pipelineConstructionType));
 	}
@@ -196,6 +204,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
 	de::MovePtr<tcu::TestCaseGroup> monolithicGroup					(createTestGroup(testCtx, "monolithic", createChildren, PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC));
+#ifndef CTS_USES_VULKANSC
 	// Graphics pipeline library tests
 	de::MovePtr<tcu::TestCaseGroup> pipelineLibraryGroup			(createTestGroup(testCtx, "pipeline_library", createChildren, PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY));
 	// Fast linked graphics pipeline library tests
@@ -208,15 +217,18 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 	de::MovePtr<tcu::TestCaseGroup> shaderObjectLinkedSpirvGroup	(createTestGroup(testCtx, "shader_object_linked_spirv", createChildren, PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_SPIRV));
 	// Linked binary shader object tests
 	de::MovePtr<tcu::TestCaseGroup> shaderObjectLinkedBinaryGroup	(createTestGroup(testCtx, "shader_object_linked_binary", createChildren, PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_BINARY));
+#endif
 
 	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 	mainGroup->addChild(monolithicGroup.release());
+#ifndef CTS_USES_VULKANSC
 	mainGroup->addChild(pipelineLibraryGroup.release());
 	mainGroup->addChild(fastLinkedLibraryGroup.release());
 	mainGroup->addChild(shaderObjectUnlinkedSpirvGroup.release());
 	mainGroup->addChild(shaderObjectUnlinkedBinaryGroup.release());
 	mainGroup->addChild(shaderObjectLinkedSpirvGroup.release());
 	mainGroup->addChild(shaderObjectLinkedBinaryGroup.release());
+#endif
 	return mainGroup.release();
 }
 

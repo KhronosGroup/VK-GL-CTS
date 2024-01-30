@@ -54,7 +54,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device			(createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion());
+	const DeviceDriver						deviceDriver	(platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 
 	const std::vector<std::string> functions{
 		"vkDestroySurfaceKHR",
@@ -306,6 +306,8 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCreateMetalSurfaceEXT",
 		"vkGetPhysicalDeviceFragmentShadingRatesKHR",
 		"vkCmdSetFragmentShadingRateKHR",
+		"vkCmdSetRenderingAttachmentLocationsKHR",
+		"vkCmdSetRenderingInputAttachmentIndicesKHR",
 		"vkGetBufferDeviceAddressEXT",
 		"vkGetPhysicalDeviceToolPropertiesEXT",
 		"vkWaitForPresentKHR",
@@ -461,7 +463,6 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPipelineIndirectMemoryRequirementsNV",
 		"vkCmdUpdatePipelineIndirectBufferNV",
 		"vkGetPipelineIndirectDeviceAddressNV",
-		"vkCmdSetTessellationDomainOriginEXT",
 		"vkCmdSetDepthClampEnableEXT",
 		"vkCmdSetPolygonModeEXT",
 		"vkCmdSetRasterizationSamplesEXT",
@@ -472,6 +473,7 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkCmdSetColorBlendEnableEXT",
 		"vkCmdSetColorBlendEquationEXT",
 		"vkCmdSetColorWriteMaskEXT",
+		"vkCmdSetTessellationDomainOriginEXT",
 		"vkCmdSetRasterizationStreamEXT",
 		"vkCmdSetConservativeRasterizationModeEXT",
 		"vkCmdSetExtraPrimitiveOverestimationSizeEXT",
@@ -566,8 +568,15 @@ tcu::TestStatus		testGetDeviceProcAddr		(Context& context)
 		"vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR",
 		"vkCmdSetAttachmentFeedbackLoopEnableEXT",
 		"vkGetScreenBufferPropertiesQNX",
+		"vkCmdSetLineStippleKHR",
 		"vkGetPhysicalDeviceCalibrateableTimeDomainsKHR",
 		"vkGetCalibratedTimestampsKHR",
+		"vkCmdBindDescriptorSets2KHR",
+		"vkCmdPushConstants2KHR",
+		"vkCmdPushDescriptorSet2KHR",
+		"vkCmdPushDescriptorSetWithTemplate2KHR",
+		"vkCmdSetDescriptorBufferOffsets2EXT",
+		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
 	};
 
 	bool fail = false;

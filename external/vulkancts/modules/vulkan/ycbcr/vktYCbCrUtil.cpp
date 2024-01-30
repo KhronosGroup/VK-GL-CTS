@@ -31,7 +31,7 @@
 
 #include "tcuTextureUtil.hpp"
 #include "deMath.h"
-#include "deFloat16.h"
+#include "tcuFloat.hpp"
 #include "tcuVector.hpp"
 #include "tcuVectorUtil.hpp"
 
@@ -266,8 +266,8 @@ void fillRandomNoNaN(de::Random* randomGen, deUint8* const data, deUint32 size, 
 			}
 			else if (stride == 2)
 			{
-				deFloat16* ptr = reinterpret_cast<deFloat16*>(&data[ndx]);
-				*ptr = deFloat32To16(randomGen->getFloat());
+				tcu::float16_t *const ptr = reinterpret_cast<tcu::float16_t*>(&data[ndx]);
+				*ptr = tcu::Float16(randomGen->getFloat()).bits();
 			}
 			else if (stride == 4)
 			{

@@ -763,7 +763,12 @@ void ShaderObjectStateInstance::createDevice (void)
 		lineRasterizationFeatures.pNext = pNext;
 		pNext = &lineRasterizationFeatures;
 		lineRasterizationFeatures.rectangularLines = VK_TRUE;
-		deviceExtensions.push_back("VK_EXT_line_rasterization");
+		const auto& deviceExts = m_context.getDeviceExtensions();
+		if (std::find(deviceExts.begin(), deviceExts.end(), "VK_KHR_line_rasterization") != deviceExts.end()) {
+			deviceExtensions.push_back("VK_KHR_line_rasterization");
+		} else {
+			deviceExtensions.push_back("VK_EXT_line_rasterization");
+		}
 	}
 	if (m_params.meshShader)
 	{
@@ -800,7 +805,7 @@ void ShaderObjectStateInstance::createDevice (void)
 	};
 
 	m_customDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), m_context.getInstanceInterface(), m_context.getPhysicalDevice(), &deviceInfo);
-	m_logicalDeviceInterface = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_customDevice, m_context.getUsedApiVersion()));
+	m_logicalDeviceInterface = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_customDevice, m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
 	m_logicalDeviceInterface->getDeviceQueue(*m_customDevice, m_context.getUniversalQueueFamilyIndex(), 0, &m_logicalDeviceQueue);
 }
 
@@ -1068,7 +1073,7 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 		if (!m_params.pipeline || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT))
 			vk.cmdSetLineStippleEnableEXT(cmdBuffer, m_params.stippledLineEnable ? VK_TRUE : VK_FALSE);
 		if ((!m_params.pipeline && m_params.stippledLineEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT))
-			vk.cmdSetLineStippleEXT(cmdBuffer, 1u, 0x1);
+			vk.cmdSetLineStippleKHR(cmdBuffer, 1u, 0x1);
 	}
 	if ((!m_params.pipeline && m_params.depthClipControl) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT))
 		vk.cmdSetDepthClipNegativeOneToOneEXT(cmdBuffer, VK_TRUE);
@@ -1870,14 +1875,15 @@ void ShaderObjectStateCase::checkSupport (Context& context) const
 	}
 	if (m_params.lineRasterization)
 	{
-		context.requireDeviceFunctionality("VK_EXT_line_rasterization");
-		if (!context.getLineRasterizationFeaturesEXT().rectangularLines)
+		if (!context.isDeviceFunctionalitySupported("VK_KHR_line_rasterization") && !context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization"))
+			TCU_THROW(NotSupportedError, "VK_KHR_line_rasterization and VK_EXT_line_rasterization are not supported");
+		if (!context.getLineRasterizationFeatures().rectangularLines)
 			TCU_THROW(NotSupportedError, "rectangularLines not supported");
 		if (m_params.pipeline && !eds3Features.extendedDynamicState3LineRasterizationMode)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3LineRasterizationMode not supported");
 		if (m_params.pipeline && !eds3Features.extendedDynamicState3LineStippleEnable)
 			TCU_THROW(NotSupportedError, "extendedDynamicState3LineStippleEnable not supported");
-		if (m_params.stippledLineEnable && !context.getLineRasterizationFeaturesEXT().stippledRectangularLines)
+		if (m_params.stippledLineEnable && !context.getLineRasterizationFeatures().stippledRectangularLines)
 			TCU_THROW(NotSupportedError, "stippledRectangularLines not supported");
 	}
 	if (m_params.geomShader)

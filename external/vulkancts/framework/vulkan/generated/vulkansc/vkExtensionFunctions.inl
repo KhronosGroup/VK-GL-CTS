@@ -4,8 +4,30 @@
  */
 
 
-void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::std::vector<const char*>& functions)
+bool checkVersion(deUint32 major, deUint32 minor, const uint32_t testedApiVersion)
 {
+	uint32_t testedMajor = VK_API_VERSION_MAJOR(testedApiVersion);
+	uint32_t testedMinor = VK_API_VERSION_MINOR(testedApiVersion);
+	// return true when tested api version is greater
+	// or equal to version represented by two uints
+	if (major == testedMajor)
+		return minor <= testedMinor;
+	return major < testedMajor;
+}
+
+bool extensionIsSupported(const std::vector<std::string> extNames, const std::string& ext)
+{
+	for (const std::string& supportedExtension : extNames)
+	{
+		if (supportedExtension == ext) return true;
+	}
+	return false;
+}
+
+void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::string> vIEP, const std::vector<std::string> vDEP, const std::string extName, ::std::vector<const char*>& functions)
+{
+	(void)vIEP;
+(void)vDEP;
 	if (extName == "VK_KHR_surface")
 	{
 		functions.push_back("vkDestroySurfaceKHR");
@@ -17,7 +39,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	}
 	if (extName == "VK_KHR_swapchain")
 	{
-		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetPhysicalDevicePresentRectanglesKHR");
+		// Dependencies: VK_VERSION_1_1
+		if (checkVersion(1, 1, apiVersion)) {
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetPhysicalDevicePresentRectanglesKHR");
+		}
 		return;
 	}
 	if (extName == "VK_KHR_display")
@@ -336,8 +361,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, ::std::string extName, 
 	DE_FATAL("Extension name not found");
 }
 
-void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::std::vector<const char*>& functions)
+void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::string> vIEP, const std::vector<std::string> vDEP, const std::string extName, ::std::vector<const char*>& functions)
 {
+	(void)vIEP;
+(void)vDEP;
 	if (extName == "VK_KHR_surface")
 	{
 		return;
@@ -348,9 +375,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetSwapchainImagesKHR");
 		functions.push_back("vkAcquireNextImageKHR");
 		functions.push_back("vkQueuePresentKHR");
-		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupPresentCapabilitiesKHR");
-		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupSurfacePresentModesKHR");
-		if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkAcquireNextImage2KHR");
+		// Dependencies: VK_VERSION_1_1
+		if (checkVersion(1, 1, apiVersion)) {
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupPresentCapabilitiesKHR");
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupSurfacePresentModesKHR");
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkAcquireNextImage2KHR");
+		}
 		return;
 	}
 	if (extName == "VK_KHR_display")
@@ -630,6 +660,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdPipelineBarrier2KHR");
 		functions.push_back("vkCmdWriteTimestamp2KHR");
 		functions.push_back("vkQueueSubmit2KHR");
+		// Dependencies: VK_NV_device_diagnostic_checkpoints
+		if (extensionIsSupported(vDEP, "VK_NV_device_diagnostic_checkpoints")) {
+			functions.push_back("vkGetQueueCheckpointData2NV");
+		}
 		return;
 	}
 	if (extName == "VK_EXT_ycbcr_2plane_444_formats")

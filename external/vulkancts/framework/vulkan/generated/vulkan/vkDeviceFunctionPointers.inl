@@ -310,7 +310,7 @@ GetDeviceMemoryOpaqueCaptureAddressFunc						getDeviceMemoryOpaqueCaptureAddress
 GetPipelineExecutablePropertiesKHRFunc						getPipelineExecutablePropertiesKHR;
 GetPipelineExecutableStatisticsKHRFunc						getPipelineExecutableStatisticsKHR;
 GetPipelineExecutableInternalRepresentationsKHRFunc			getPipelineExecutableInternalRepresentationsKHR;
-CmdSetLineStippleEXTFunc									cmdSetLineStippleEXT;
+CmdSetLineStippleKHRFunc									cmdSetLineStippleKHR;
 CreateAccelerationStructureKHRFunc							createAccelerationStructureKHR;
 CmdBuildAccelerationStructuresKHRFunc						cmdBuildAccelerationStructuresKHR;
 CmdBuildAccelerationStructuresIndirectKHRFunc				cmdBuildAccelerationStructuresIndirectKHR;
@@ -490,8 +490,16 @@ CmdInitializeGraphScratchMemoryAMDXFunc						cmdInitializeGraphScratchMemoryAMDX
 CmdDispatchGraphAMDXFunc									cmdDispatchGraphAMDX;
 CmdDispatchGraphIndirectAMDXFunc							cmdDispatchGraphIndirectAMDX;
 CmdDispatchGraphIndirectCountAMDXFunc						cmdDispatchGraphIndirectCountAMDX;
+CmdBindDescriptorSets2KHRFunc								cmdBindDescriptorSets2KHR;
+CmdPushConstants2KHRFunc									cmdPushConstants2KHR;
+CmdPushDescriptorSet2KHRFunc								cmdPushDescriptorSet2KHR;
+CmdPushDescriptorSetWithTemplate2KHRFunc					cmdPushDescriptorSetWithTemplate2KHR;
+CmdSetDescriptorBufferOffsets2EXTFunc						cmdSetDescriptorBufferOffsets2EXT;
+CmdBindDescriptorBufferEmbeddedSamplers2EXTFunc				cmdBindDescriptorBufferEmbeddedSamplers2EXT;
 SetLatencySleepModeNVFunc									setLatencySleepModeNV;
 LatencySleepNVFunc											latencySleepNV;
 SetLatencyMarkerNVFunc										setLatencyMarkerNV;
 GetLatencyTimingsNVFunc										getLatencyTimingsNV;
 QueueNotifyOutOfBandNVFunc									queueNotifyOutOfBandNV;
+CmdSetRenderingAttachmentLocationsKHRFunc					cmdSetRenderingAttachmentLocationsKHR;
+CmdSetRenderingInputAttachmentIndicesKHRFunc				cmdSetRenderingInputAttachmentIndicesKHR;

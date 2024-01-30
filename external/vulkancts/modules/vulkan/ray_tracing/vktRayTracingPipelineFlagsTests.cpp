@@ -506,7 +506,7 @@ public:
 		sbt.flush();
 		buf	= sbt.get();
 		rgn = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(m_vkd, m_device, **buf, 0),
-																		sbt.getAlignment(),	m_testInstance.shaderGroupHandleSize);
+																		sbt.getAlignment(), hitGroupCount * sbt.getAlignment());
 
 		return { de::SharedPtr<BufferWithMemory>(buf.release()), rgn };
 	}

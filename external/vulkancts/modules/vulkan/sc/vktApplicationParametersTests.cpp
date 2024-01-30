@@ -270,7 +270,7 @@ tcu::TestStatus createDeviceTest (Context& context, TestParams testParams)
 
 		if (device)
 		{
-			const DeviceDriver deviceIface(platformInterface, instance, device, context.getUsedApiVersion());
+			const DeviceDriver deviceIface(platformInterface, instance, device, context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 			deviceIface.destroyDevice(device, DE_NULL/*pAllocator*/);
 		}
 

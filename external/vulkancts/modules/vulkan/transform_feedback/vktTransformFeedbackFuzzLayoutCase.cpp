@@ -33,10 +33,10 @@
 #include "tcuSurface.hpp"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
+#include "deMath.h"
 
 #include "tcuTextureUtil.hpp"
 #include "deSharedPtr.hpp"
-#include "deFloat16.h"
 
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"

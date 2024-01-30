@@ -31,6 +31,11 @@ namespace vk
 
 #include "vkTypeUtil.inl"
 
+inline VkBool32 makeVkBool (bool b)
+{
+	return (b ? VK_TRUE : VK_FALSE);
+}
+
 inline VkClearValue makeClearValueColorF32 (float r, float g, float b, float a)
 {
 	VkClearValue v;

@@ -13,5 +13,5 @@ dEQP-GLES3.functional.fence_sync.*
 dEQP-GLES3.functional.state_query.integers.implementation_color_read_*
 dEQP-GLES3.functional.state_query.integers.read_buffer_*
 
-# \note All cases currently removed from master list due to driver issues
+# \note All cases currently removed from main list due to driver issues
 # dEQP-GLES3.functional.state_query.integers.draw_buffer_*

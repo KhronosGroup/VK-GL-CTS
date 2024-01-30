@@ -22,8 +22,8 @@
 const char* mustpassDir = "gl_cts/data/mustpass/gles/aosp_mustpass/main/";
 
 static const RunParams aosp_mustpass_es_first_cfg[] = {
-	{ glu::ApiType::es(2, 0), "master", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
-	{ glu::ApiType::es(3, 0), "master", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
+	{ glu::ApiType::es(2, 0), "main", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
+	{ glu::ApiType::es(3, 0), "main", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
 #if DE_OS == DE_OS_ANDROID
 	{ glu::ApiType::es(3, 0), "rotate-portrait", "rgba8888d24s8ms0", "0", -1, DE_NULL, 256, 256 },
 #endif // DE_OS == DE_OS_ANDROID
@@ -40,7 +40,7 @@ static const RunParams aosp_mustpass_es_first_cfg[] = {
 #if DE_OS == DE_OS_ANDROID
 	{ glu::ApiType::es(3, 0), "565-no-depth-no-stencil", "rgb565d0s0ms0", "unspecified", -1, DE_NULL, 256, 256 },
 #endif // DE_OS == DE_OS_ANDROID
-	{ glu::ApiType::es(3, 1), "master", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
+	{ glu::ApiType::es(3, 1), "main", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
 #if DE_OS == DE_OS_ANDROID
 	{ glu::ApiType::es(3, 1), "rotate-portrait", "rgba8888d24s8ms0", "0", -1, DE_NULL, 256, 256 },
 #endif // DE_OS == DE_OS_ANDROID

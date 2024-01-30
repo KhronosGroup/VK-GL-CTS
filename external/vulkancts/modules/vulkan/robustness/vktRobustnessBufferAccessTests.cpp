@@ -777,7 +777,7 @@ TestInstance* RobustBufferReadTest::createInstance (Context& context) const
 
 #ifndef CTS_USES_VULKANSC
 	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, (useFeatures2 ? &features2 : nullptr));
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 	de::MovePtr<CustomInstance> customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
 	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, *customInstance, (useFeatures2 ? &features2 : nullptr));
@@ -853,7 +853,7 @@ TestInstance* RobustBufferWriteTest::createInstance (Context& context) const
 
 #ifndef CTS_USES_VULKANSC
 	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, (useFeatures2 ? &features2 : nullptr));
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 	de::MovePtr<CustomInstance> customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
 	Move<VkDevice>	device			= createRobustBufferAccessDevice(context, *customInstance, (useFeatures2 ? &features2 : nullptr));

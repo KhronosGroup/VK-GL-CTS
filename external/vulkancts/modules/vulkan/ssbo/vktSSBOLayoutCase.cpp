@@ -23,7 +23,7 @@
  * \brief SSBO layout case.
  *//*--------------------------------------------------------------------*/
 
-#include "deFloat16.h"
+#include "tcuFloat.hpp"
 #include "deInt32.h"
 #include "deMath.h"
 #include "deMemory.h"
@@ -805,7 +805,7 @@ void generateValue (const BufferVarLayoutEntry& entry, int unsizedArraySize, voi
 						case glu::TYPE_UINT8:	*((deUint8*)compPtr)	= (deUint8)rnd.getInt(0, 9);					break;
 						case glu::TYPE_INT16:	*((deInt16*)compPtr)	= (deInt16)rnd.getInt(-9, 9);					break;
 						case glu::TYPE_UINT16:	*((deUint16*)compPtr)	= (deUint16)rnd.getInt(0, 9);					break;
-						case glu::TYPE_FLOAT16:	*((deFloat16*)compPtr)	= deFloat32To16((float)rnd.getInt(-9, 9));		break;
+						case glu::TYPE_FLOAT16:	*((tcu::float16_t*)compPtr)	= tcu::Float16((float)rnd.getInt(-9, 9)).bits();	break;
 						// \note Random bit pattern is used for true values. Spec states that all non-zero values are
 						//       interpreted as true but some implementations fail this.
 						case glu::TYPE_BOOL:	*((deUint32*)compPtr)	= rnd.getBool() ? rnd.getUint32()|1u : 0u;		break;
@@ -1111,7 +1111,7 @@ void generateImmScalarVectorSrc (std::ostream& src, glu::DataType basicType, con
 
 		switch (scalarType)
 		{
-			case glu::TYPE_FLOAT16:	src << de::floatToString(deFloat16To32(*((const deFloat16*)compPtr)), 1);	break;
+			case glu::TYPE_FLOAT16:	src << de::floatToString(tcu::Float16(*((const tcu::float16_t*)compPtr)).asFloat(), 1);	break;
 			case glu::TYPE_FLOAT:	src << de::floatToString(*((const float*)compPtr), 1);			break;
 			case glu::TYPE_INT8:	src << (deUint32)*((const deInt8*)compPtr);						break;
 			case glu::TYPE_INT16:	src << *((const deInt16*)compPtr);								break;

@@ -1532,7 +1532,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 	, m_queueFamilies			(vk::getPhysicalDeviceQueueFamilyProperties(m_vki, m_physicalDevice))
 	, m_queueFamilyIndices		(getFamilyIndices(m_queueFamilies))
 	, m_device					(InstanceAndDevice::getDevice())
-	, m_vkd						(context.getPlatformInterface(), m_instance, *m_device, context.getUsedApiVersion())
+	, m_vkd						(context.getPlatformInterface(), m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
 
 	, m_memoryHandleType		((m_config.resource.type == RESOURCE_TYPE_IMAGE) ? m_config.memoryHandleTypeImage : m_config.memoryHandleTypeBuffer)
 
@@ -1541,6 +1541,10 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 
 	, m_useDedicatedAllocation	(false)
 {
+	// When using compute only mode skip universal queue
+	if (m_context.getTestContext().getCommandLine().isComputeOnly())
+		m_queueNdx = findQueueFamilyIndexWithCaps(context.getInstanceInterface(), m_physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
+
 #if (DE_OS == DE_OS_WIN32)
 	TestLog& log = m_context.getTestContext().getLog();
 

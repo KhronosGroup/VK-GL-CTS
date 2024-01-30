@@ -31,6 +31,7 @@ import subprocess
 import ssl
 import stat
 import platform
+import logging
 
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "scripts")
 sys.path.insert(0, scriptPath)
@@ -58,8 +59,10 @@ class Source:
 		# Remove read-only first
 		readonlydir = os.path.join(fullDstPath, ".git")
 		if os.path.exists(readonlydir):
+			logging.debug("Deleting " + readonlydir)
 			shutil.rmtree(readonlydir, onerror = onReadonlyRemoveError)
 		if os.path.exists(fullDstPath):
+			logging.debug("Deleting " + fullDstPath)
 			shutil.rmtree(fullDstPath, ignore_errors=False)
 
 class SourcePackage (Source):
@@ -87,6 +90,7 @@ class SourcePackage (Source):
 	def removeArchives (self):
 		archiveDir = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.archiveDir)
 		if os.path.exists(archiveDir):
+			logging.debug("Deleting " + archiveDir)
 			shutil.rmtree(archiveDir, ignore_errors=False)
 
 	def isArchiveUpToDate (self):
@@ -251,6 +255,7 @@ class GitRepo (Source):
 			execute(["git", "clone", "--no-checkout", url, fullDstPath])
 
 		pushWorkingDir(fullDstPath)
+		print("Directory: " + fullDstPath)
 		try:
 			for tag in self.removeTags:
 				proc = subprocess.Popen(['git', 'tag', '-l', tag], stdout=subprocess.PIPE)
@@ -290,7 +295,7 @@ def postExtractLibpng (path):
 
 PACKAGES = [
 	SourcePackage(
-		"http://zlib.net/fossils/zlib-1.2.13.tar.gz",
+		"https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz",
 		"b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
 		"zlib"),
 	SourcePackage(
@@ -306,28 +311,28 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		"git@github.com:KhronosGroup/SPIRV-Tools.git",
-		"4f014aff9c653e5e16de1cc5f7130e99e02982e5",
+		"80bc99c3d4a33fe07ae5dc93147bdd9495688b10",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"8fa46582ec517911d053d7c49c8087d8717e191a",
+		"9aaba3766512bea5c7723c9c56926d232a9a730a",
 		"glslang",
 		removeTags = ["main-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		"git@github.com:KhronosGroup/SPIRV-Headers.git",
-		"88bc5e321c2839707df8b1ab534e243e00744177",
+		"1c9115b562bab79ee2160fbd845f41b815b9f21f",
 		"spirv-headers"),
 	GitRepo(
 		"https://github.com/KhronosGroup/Vulkan-Docs.git",
 		"git@github.com:KhronosGroup/Vulkan-Docs.git",
-		"f8d76125ca22ec65dfcaedc7177e204f11ad7c7b",
+		"bf11e6d4ca4b71ae311bb925ae68d215fbe09a86",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
 		"git@github.com:google/amber.git",
-		"933ecb4d6288675a92eb1650e0f52b1d7afe8273",
+		"8e90b2d2f532bcd4a80069e3f37a9698209a21bc",
 		"amber"),
 	GitRepo(
 		"https://github.com/open-source-parsers/jsoncpp.git",
@@ -340,7 +345,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/vk_video_samples.git",
 		"git@github.com:Igalia/vk_video_samples.git",
-		"138bbe048221d315962ddf8413aa6a08cc62a381",
+		"b907158533534585d9182cb0becdaec055aa7e12",
 		"nvidia-video-samples"),
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",
@@ -363,7 +368,10 @@ def parseArgs ():
 						help="Select protocol to checkout git repositories.")
 	parser.add_argument('--force', dest='force', action='store_true', default=False,
 						help="Pass --force to git fetch and checkout commands")
-
+	parser.add_argument("-v", "--verbose",
+						dest="verbose",
+						action="store_true",
+						help="Enable verbose logging")
 	args = parser.parse_args()
 
 	if args.insecure:
@@ -395,6 +403,7 @@ def run(*popenargs, **kwargs):
 
 if __name__ == "__main__":
 	args = parseArgs()
+	initializeLogger(args.verbose)
 
 	for pkg in PACKAGES:
 		if args.clean:

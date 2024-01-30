@@ -234,7 +234,7 @@ struct DeviceHelper
 
 		// Create custom device and related objects.
 		device		= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion()));
+		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 		queue		= getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
 		allocator	= de::MovePtr<SimpleAllocator>(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
@@ -388,7 +388,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"#version 460 core\n"
 			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
-			"layout(location = 0) rayPayloadInEXT dummyPayload { vec4 dummy; };\n"
+			"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			"layout(r32ui, set = 0, binding = 0) uniform uimage2D result;\n"
 			"void main()\n"
 			"{\n"

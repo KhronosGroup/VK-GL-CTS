@@ -2016,14 +2016,14 @@ tcu::Format::Bitfield<32> getSemaphoreWaitFlagsStr (VkSemaphoreWaitFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-const char* getLineRasterizationModeEXTName (VkLineRasterizationModeEXT value)
+const char* getLineRasterizationModeKHRName (VkLineRasterizationModeKHR value)
 {
 	switch (value)
 	{
-		case VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT:			return "VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT";
-		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT:		return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT";
-		case VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT:			return "VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT";
-		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT:	return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT";
+		case VK_LINE_RASTERIZATION_MODE_DEFAULT_KHR:			return "VK_LINE_RASTERIZATION_MODE_DEFAULT_KHR";
+		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR:		return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR";
+		case VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR:			return "VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR";
+		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR:	return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR";
 		default:												return DE_NULL;
 	}
 }
@@ -3251,42 +3251,42 @@ tcu::Format::Bitfield<32> getVideoComponentBitDepthFlagsKHRStr (VkVideoComponent
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsEXTStr (VkVideoEncodeH264CapabilityFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsKHRStr (VkVideoEncodeH264CapabilityFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH264StdFlagsEXTStr (VkVideoEncodeH264StdFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH264StdFlagsKHRStr (VkVideoEncodeH264StdFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH264RateControlFlagsEXTStr (VkVideoEncodeH264RateControlFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH264RateControlFlagsKHRStr (VkVideoEncodeH264RateControlFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsEXTStr (VkVideoEncodeH265CapabilityFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsKHRStr (VkVideoEncodeH265CapabilityFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265StdFlagsEXTStr (VkVideoEncodeH265StdFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265StdFlagsKHRStr (VkVideoEncodeH265StdFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265RateControlFlagsEXTStr (VkVideoEncodeH265RateControlFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265RateControlFlagsKHRStr (VkVideoEncodeH265RateControlFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265CtbSizeFlagsEXTStr (VkVideoEncodeH265CtbSizeFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265CtbSizeFlagsKHRStr (VkVideoEncodeH265CtbSizeFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsEXTStr (VkVideoEncodeH265TransformBlockSizeFlagsEXT value)
+tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsKHRStr (VkVideoEncodeH265TransformBlockSizeFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -7574,9 +7574,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderClockFeat
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceIndexTypeUint8FeaturesEXT = {\n";
+	s << "VkPhysicalDeviceIndexTypeUint8FeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tindexTypeUint8 = " << value.indexTypeUint8 << '\n';
@@ -7714,9 +7714,9 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceMemoryOpaqueCaptureAddr
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceLineRasterizationFeaturesEXT = {\n";
+	s << "VkPhysicalDeviceLineRasterizationFeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trectangularLines = " << value.rectangularLines << '\n';
@@ -7729,9 +7729,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizati
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationPropertiesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationPropertiesKHR& value)
 {
-	s << "VkPhysicalDeviceLineRasterizationPropertiesEXT = {\n";
+	s << "VkPhysicalDeviceLineRasterizationPropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tlineSubPixelPrecisionBits = " << value.lineSubPixelPrecisionBits << '\n';
@@ -7739,9 +7739,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizati
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationLineStateCreateInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationLineStateCreateInfoKHR& value)
 {
-	s << "VkPipelineRasterizationLineStateCreateInfoEXT = {\n";
+	s << "VkPipelineRasterizationLineStateCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tlineRasterizationMode = " << value.lineRasterizationMode << '\n';

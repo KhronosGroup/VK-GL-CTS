@@ -211,6 +211,28 @@ std::vector<Vertex4RGBA> createQuad(const float size, const tcu::Vec4 &color)
 	return vertices;
 }
 
+void pushConstants (const DeviceInterface& vk, VkCommandBuffer cmdBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void* pValues, bool pushConstant2) {
+	if (pushConstant2)
+	{
+#ifndef CTS_USES_VULKANSC
+		vk::VkPushConstantsInfoKHR pushConstantInfo =
+		{
+			VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO_KHR,	// VkStructureType		sType;
+			DE_NULL,									// const void*			pNext;
+			layout,										// VkPipelineLayout		layout;
+			stageFlags,									// VkShaderStageFlags	stageFlags;
+			offset,										// uint32_t				offset;
+			size,										// uint32_t				size;
+			pValues,									// const void*			pValues;
+		};
+		vk.cmdPushConstants2KHR(cmdBuffer, &pushConstantInfo);
+#endif
+	}
+	else {
+		vk.cmdPushConstants(cmdBuffer, layout, stageFlags, offset, size, pValues);
+	}
+}
+
 class PushConstantGraphicsTestInstance : public vkt::TestInstance {
 public:
 												PushConstantGraphicsTestInstance	(Context&							context,
@@ -219,6 +241,7 @@ public:
 																					 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 																					 const deBool						multipleUpdate,
 																					 const IndexType					indexType,
+																					 const deBool						pushConstant2,
 																					 const PushConstantUseStage         pcUsedStage = PC_USE_STAGE_ALL);
 	virtual										~PushConstantGraphicsTestInstance	(void);
 	void										init								(void);
@@ -240,6 +263,7 @@ protected:
 	PushConstantData								m_pushConstantRange[MAX_RANGE_COUNT];
 	const IndexType									m_indexType;
 	const PushConstantUseStage                      m_pcUsedStage;
+	deBool											m_pushConstant2;
 
 private:
 	const tcu::UVec2								m_renderSize;
@@ -294,12 +318,14 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 																	const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
 																	deBool							multipleUpdate,
 																	IndexType						indexType,
+																	const deBool					pushConstant2,
 																	const PushConstantUseStage      pcUsedStage)
 	: vkt::TestInstance				(context)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_rangeCount					(rangeCount)
 	, m_indexType					(indexType)
 	, m_pcUsedStage                 (pcUsedStage)
+	, m_pushConstant2				(pushConstant2)
 	, m_renderSize					(32, 32)
 	, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_multipleUpdate				(multipleUpdate)
@@ -617,7 +643,9 @@ void PushConstantGraphicsTestInstance::init (void)
 			VkDeviceSize vertexBufferOffset = triangleOffset * triangleNdx;
 
 			if (m_multipleUpdate)
-				vk.cmdPushConstants(*m_cmdBuffer, *m_preRasterizationStatePipelineLayout, m_pushConstantRange[0].range.shaderStage, m_pushConstantRange[0].range.offset, m_pushConstantRange[0].range.size, &triangleNdx);
+			{
+				pushConstants(vk, *m_cmdBuffer, *m_preRasterizationStatePipelineLayout, m_pushConstantRange[0].range.shaderStage, m_pushConstantRange[0].range.offset, m_pushConstantRange[0].range.size, &triangleNdx, m_pushConstant2);
+			}
 
 			m_graphicsPipeline.bind(*m_cmdBuffer);
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
@@ -725,6 +753,7 @@ public:
 																				 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 																				 const deBool						multipleUpdate,
 																				 const IndexType					indexType,
+																				 const deBool						pushConstant2,
 																				 const PushConstantUseStage         pcUsedStage = PC_USE_STAGE_ALL);
 	virtual								~PushConstantGraphicsDisjointInstance	(void);
 	std::vector<VkPushConstantRange>	getPushConstantRanges					(void);
@@ -736,10 +765,11 @@ PushConstantGraphicsDisjointInstance::PushConstantGraphicsDisjointInstance (Cont
 																			const PipelineConstructionType	pipelineConstructionType,
 																			const deUint32					rangeCount,
 																			const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
-																			deBool							multipleUpdate,
-																			IndexType						indexType,
+																			const deBool					multipleUpdate,
+																			const IndexType					indexType,
+																			const deBool					pushConstant2,
 																			const PushConstantUseStage      pcUsedStage)
-	: PushConstantGraphicsTestInstance (context, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType, pcUsedStage)
+	: PushConstantGraphicsTestInstance (context, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType, pushConstant2, pcUsedStage)
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
@@ -814,12 +844,12 @@ void PushConstantGraphicsDisjointInstance::updatePushConstants (VkCommandBuffer 
 	{
 		value = (m_pushConstantRange[rangeNdx].range.size == 4u) ? (void*)(&kind) : (void*)(&color[0]);
 
-		vk.cmdPushConstants(cmdBuffer, pipelineLayout, m_pushConstantRange[rangeNdx].range.shaderStage, m_pushConstantRange[rangeNdx].range.offset, m_pushConstantRange[rangeNdx].range.size, value);
+		pushConstants(vk, cmdBuffer, pipelineLayout, m_pushConstantRange[rangeNdx].range.shaderStage, m_pushConstantRange[rangeNdx].range.offset, m_pushConstantRange[rangeNdx].range.size, value, m_pushConstant2);
 
 		if (m_pushConstantRange[rangeNdx].update.size < m_pushConstantRange[rangeNdx].range.size)
 		{
 			value = (void*)(&allOnes[0]);
-			vk.cmdPushConstants(cmdBuffer, pipelineLayout, m_pushConstantRange[rangeNdx].range.shaderStage, m_pushConstantRange[rangeNdx].update.offset, m_pushConstantRange[rangeNdx].update.size, value);
+			pushConstants(vk, cmdBuffer, pipelineLayout, m_pushConstantRange[rangeNdx].range.shaderStage, m_pushConstantRange[rangeNdx].update.offset, m_pushConstantRange[rangeNdx].update.size, value, m_pushConstant2);
 		}
 	}
 }
@@ -851,6 +881,7 @@ public:
 																					 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 																					 const deBool						multipleUpdate,
 																					 const IndexType					indexType,
+																					 const deBool						pushConstant2,
 																					 const PushConstantUseStage         pcUsedStage = PC_USE_STAGE_ALL);
 	virtual								~PushConstantGraphicsOverlapTestInstance	(void);
 	std::vector<VkPushConstantRange>	getPushConstantRanges					(void);
@@ -882,10 +913,11 @@ PushConstantGraphicsOverlapTestInstance::PushConstantGraphicsOverlapTestInstance
 																				  const PipelineConstructionType	pipelineConstructionType,
 																				  const deUint32					rangeCount,
 																				  const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
-																				  deBool							multipleUpdate,
-																				  IndexType							indexType,
+																				  const deBool						multipleUpdate,
+																				  const IndexType					indexType,
+																				  const deBool						pushConstant2,
 																				  const PushConstantUseStage        pcUsedStage)
-	: PushConstantGraphicsTestInstance	(context, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType, pcUsedStage)
+	: PushConstantGraphicsTestInstance	(context, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType, pushConstant2, pcUsedStage)
 	, m_colorData						(generateColorData(256u))
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
@@ -1026,7 +1058,7 @@ void PushConstantGraphicsOverlapTestInstance::updatePushConstants (VkCommandBuff
 			<< "const void*           pValues       " << &m_colorData[pushConstantUpdates[pushNdx].offset / 2u] << "\n"
 			<< tcu::TestLog::EndMessage;
 
-		vk.cmdPushConstants(cmdBuffer, pipelineLayout, pushConstantUpdates[pushNdx].stageFlags, pushConstantUpdates[pushNdx].offset, pushConstantUpdates[pushNdx].size, &m_colorData[pushConstantUpdates[pushNdx].offset / 2u]);
+		pushConstants(vk, cmdBuffer, pipelineLayout, pushConstantUpdates[pushNdx].stageFlags, pushConstantUpdates[pushNdx].offset, pushConstantUpdates[pushNdx].size, &m_colorData[pushConstantUpdates[pushNdx].offset / 2u], m_pushConstant2);
 
 		// Copy push constant values to reference buffer
 		DE_ASSERT((pushConstantUpdates[pushNdx].offset / 2u + pushConstantUpdates[pushNdx].size) < 4u * m_colorData.size());
@@ -1076,6 +1108,7 @@ public:
 														 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 														 const deBool						multipleUpdate,
 														 const IndexType					indexType,
+														 const deBool						pushConstant2,
 														 const PushConstantUseStage         pcUsedStage = PC_USE_STAGE_ALL);
 	virtual					~PushConstantGraphicsTest	(void);
 
@@ -1091,6 +1124,7 @@ protected:
 	PushConstantData				m_pushConstantRange[MAX_RANGE_COUNT];
 	const deBool					m_multipleUpdate;
 	const IndexType					m_indexType;
+	const deBool					m_pushConstant2;
 	const PushConstantUseStage      m_pcUsedStage;
 };
 
@@ -1101,13 +1135,15 @@ PushConstantGraphicsTest::PushConstantGraphicsTest (tcu::TestContext&					testCo
 													const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 													const deBool						multipleUpdate,
 													const IndexType						indexType,
+													const deBool						pushConstant2,
 													const PushConstantUseStage          pcUsedStage)
 	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_rangeCount					(rangeCount)
 	, m_multipleUpdate				(multipleUpdate)
 	, m_indexType					(indexType)
-	, m_pcUsedStage                  (pcUsedStage)
+	, m_pushConstant2				(pushConstant2)
+	, m_pcUsedStage					(pcUsedStage)
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
@@ -1119,6 +1155,9 @@ PushConstantGraphicsTest::~PushConstantGraphicsTest (void)
 void PushConstantGraphicsTest::checkSupport(Context &context) const
 {
 	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+
+	if (m_pushConstant2)
+		context.requireDeviceFunctionality("VK_KHR_maintenance6");
 }
 
 RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase (deUint32 rangeSize) const
@@ -1157,6 +1196,7 @@ public:
 																 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 																 const deBool						multipleUpdate,
 																 const IndexType					indexType,
+																 const deBool						pushConstant2,
 																 const PushConstantUseStage         pcUseStage = PC_USE_STAGE_ALL);
 	virtual					~PushConstantGraphicsDisjointTest	(void);
 
@@ -1171,8 +1211,9 @@ PushConstantGraphicsDisjointTest::PushConstantGraphicsDisjointTest (tcu::TestCon
 																	const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
 																	const deBool					multipleUpdate,
 																	const IndexType					indexType,
-																	const PushConstantUseStage      pcUseStage)
-	: PushConstantGraphicsTest (testContext, name, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType, pcUseStage)
+																	const deBool					pushConstant2,
+																	const PushConstantUseStage		pcUseStage)
+	: PushConstantGraphicsTest (testContext, name, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType, pushConstant2, pcUseStage)
 {
 }
 
@@ -1537,7 +1578,7 @@ void PushConstantGraphicsDisjointTest::initPrograms (SourceCollections& sourceCo
 
 TestInstance* PushConstantGraphicsDisjointTest::createInstance (Context& context) const
 {
-	return new PushConstantGraphicsDisjointInstance(context, m_pipelineConstructionType, m_rangeCount, m_pushConstantRange, m_multipleUpdate, m_indexType, m_pcUsedStage);
+	return new PushConstantGraphicsDisjointInstance(context, m_pipelineConstructionType, m_rangeCount, m_pushConstantRange, m_multipleUpdate, m_indexType, m_pushConstant2, m_pcUsedStage);
 }
 
 class PushConstantGraphicsOverlapTest : public PushConstantGraphicsTest
@@ -1548,6 +1589,7 @@ public:
 																 const PipelineConstructionType		pipelineConstructionType,
 																 const deUint32						rangeCount,
 																 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
+																 const deBool						pushConstant2,
 																 const PushConstantUseStage         pcUsedStage = PC_USE_STAGE_ALL);
 	virtual					~PushConstantGraphicsOverlapTest	(void);
 	std::string				getPushConstantDeclarationStr		(VkShaderStageFlags shaderStage) const;
@@ -1560,8 +1602,9 @@ PushConstantGraphicsOverlapTest::PushConstantGraphicsOverlapTest (tcu::TestConte
 																  const PipelineConstructionType	pipelineConstructionType,
 																  const deUint32					rangeCount,
 																  const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
+																  const deBool						pushConstant2,
 																  const PushConstantUseStage        pcUsedStage)
-	: PushConstantGraphicsTest (testContext, name, pipelineConstructionType, rangeCount, pushConstantRange, false, INDEX_TYPE_CONST_LITERAL, pcUsedStage)
+	: PushConstantGraphicsTest (testContext, name, pipelineConstructionType, rangeCount, pushConstantRange, false, INDEX_TYPE_CONST_LITERAL, pushConstant2, pcUsedStage)
 {
 }
 
@@ -1805,7 +1848,7 @@ void PushConstantGraphicsOverlapTest::initPrograms (SourceCollections& sourceCol
 
 TestInstance* PushConstantGraphicsOverlapTest::createInstance (Context& context) const
 {
-	return new PushConstantGraphicsOverlapTestInstance(context, m_pipelineConstructionType, m_rangeCount, m_pushConstantRange, false, INDEX_TYPE_CONST_LITERAL, m_pcUsedStage);
+	return new PushConstantGraphicsOverlapTestInstance(context, m_pipelineConstructionType, m_rangeCount, m_pushConstantRange, false, INDEX_TYPE_CONST_LITERAL, m_pushConstant2, m_pcUsedStage);
 }
 
 class PushConstantComputeTest : public vkt::TestCase
@@ -3502,15 +3545,27 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 
 	de::MovePtr<tcu::TestCaseGroup>	pushConstantTests	(new tcu::TestCaseGroup(testCtx, "push_constant"));
 
-	de::MovePtr<tcu::TestCaseGroup>	graphicsTests	(new tcu::TestCaseGroup(testCtx, "graphics_pipeline"));
-	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(graphicsParams); ndx++)
+	de::MovePtr<tcu::TestCaseGroup>	graphicsTests(new tcu::TestCaseGroup(testCtx, "graphics_pipeline"));
+	for (int cmd = 0; cmd < 2; ++cmd)
 	{
-		graphicsTests->addChild(new PushConstantGraphicsDisjointTest(testCtx, graphicsParams[ndx].name, pipelineConstructionType, graphicsParams[ndx].count, graphicsParams[ndx].range, graphicsParams[ndx].hasMultipleUpdates, graphicsParams[ndx].indexType));
-	}
+		bool pushConstant2 = cmd != 0;
+#ifdef CTS_USES_VULKANSC
+		if (pushConstant2)
+			continue;
+#endif
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(graphicsParams); ndx++)
+		{
+			std::string name = graphicsParams[ndx].name;
+			if (pushConstant2) name += "_command2";
+			graphicsTests->addChild(new PushConstantGraphicsDisjointTest(testCtx, name.c_str(), pipelineConstructionType, graphicsParams[ndx].count, graphicsParams[ndx].range, graphicsParams[ndx].hasMultipleUpdates, graphicsParams[ndx].indexType, pushConstant2));
+		}
 
-	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(overlapGraphicsParams); ndx++)
-	{
-		graphicsTests->addChild(new PushConstantGraphicsOverlapTest(testCtx, overlapGraphicsParams[ndx].name, pipelineConstructionType, overlapGraphicsParams[ndx].count, overlapGraphicsParams[ndx].range));
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(overlapGraphicsParams); ndx++)
+		{
+			std::string name = overlapGraphicsParams[ndx].name;
+			if (pushConstant2) name += "_command2";
+			graphicsTests->addChild(new PushConstantGraphicsOverlapTest(testCtx, name.c_str(), pipelineConstructionType, overlapGraphicsParams[ndx].count, overlapGraphicsParams[ndx].range, pushConstant2));
+		}
 	}
 	addOverwriteCase(graphicsTests.get(), testCtx, pipelineConstructionType, VK_PIPELINE_BIND_POINT_GRAPHICS);
 

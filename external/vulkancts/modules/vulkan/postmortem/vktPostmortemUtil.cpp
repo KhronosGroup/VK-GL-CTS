@@ -84,7 +84,7 @@ Move<VkDevice> createPostmortemDevice(Context& context)
 
 PostmortemTestInstance::PostmortemTestInstance(Context& context)
 	: TestInstance(context), m_logicalDevice(createPostmortemDevice(context)),
-	m_deviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice, context.getUsedApiVersion()),
+	m_deviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice, context.getUsedApiVersion(), context.getTestContext().getCommandLine()),
 	m_queueFamilyIndex(0),
 	m_queue(getDeviceQueue(m_deviceDriver, *m_logicalDevice, m_queueFamilyIndex, 0)),
 	m_allocator(m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))

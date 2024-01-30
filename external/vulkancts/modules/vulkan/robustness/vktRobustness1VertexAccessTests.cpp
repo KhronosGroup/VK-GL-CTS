@@ -897,7 +897,7 @@ TestInstance *Robustness1AccessTest::createInstance (Context &context) const
 {
 #ifndef CTS_USES_VULKANSC
 	Move<VkDevice>	device = createRobustBufferAccessDevice(context);
-	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
+	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 	de::MovePtr<CustomInstance> customInstance = de::MovePtr(new CustomInstance(createCustomInstanceFromContext(context)));
 	Move<VkDevice>	device = createRobustBufferAccessDevice(context, *customInstance);

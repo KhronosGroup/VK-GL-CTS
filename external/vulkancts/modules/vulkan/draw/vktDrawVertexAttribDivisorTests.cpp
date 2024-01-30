@@ -396,8 +396,8 @@ VertexAttributeDivisorInstance::VertexAttributeDivisorInstance (Context &context
 			"main",											//	const char*						pName;
 			0u,												//	uint32_t						setLayoutCount;
 			DE_NULL,										//	const VkDescriptorSetLayout*	pSetLayouts;
-			0u,												//	uint32_t						pushConstantRangeCount;
-			DE_NULL,										//	const VkPushConstantRange*		pPushConstantRanges;
+			1u,												//	uint32_t						pushConstantRangeCount;
+			&pushConstantRange,								//	const VkPushConstantRange*		pPushConstantRanges;
 			DE_NULL,										//	const VkSpecializationInfo*		pSpecializationInfo;
 		};
 		m_vertexShader = vk::createShader(m_vk, device, vertexCreateInfo);
@@ -415,8 +415,8 @@ VertexAttributeDivisorInstance::VertexAttributeDivisorInstance (Context &context
 			"main",											//	const char*						pName;
 			0u,												//	uint32_t						setLayoutCount;
 			DE_NULL,										//	const VkDescriptorSetLayout*	pSetLayouts;
-			0u,												//	uint32_t						pushConstantRangeCount;
-			DE_NULL,										//	const VkPushConstantRange*		pPushConstantRanges;
+			1u,												//	uint32_t						pushConstantRangeCount;
+			&pushConstantRange,								//	const VkPushConstantRange*		pPushConstantRanges;
 			DE_NULL,										//	const VkSpecializationInfo*		pSpecializationInfo;
 		};
 		m_fragmentShader = vk::createShader(m_vk, device, fragmentCreateInfo);

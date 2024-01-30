@@ -1193,6 +1193,8 @@ std::string	getCompareOpsName (const VkCompareOp quadDepthOps[DepthTest::QUAD_CO
 
 tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
+	const auto genFormatTests = (!vk::isConstructionTypeShaderObject(pipelineConstructionType) || pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV);
+
 	const VkFormat			depthFormats[]						=
 	{
 		VK_FORMAT_D16_UNORM,
@@ -1323,6 +1325,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 		const bool colorEnabled = colorAttachmentEnabled[colorAttachmentEnabledIdx];
 
 		// Tests for format and compare operators
+		if (genFormatTests)
 		{
 			// Uses different depth formats
 			de::MovePtr<tcu::TestCaseGroup> formatTests (new tcu::TestCaseGroup(testCtx, "format"));
@@ -1445,7 +1448,8 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 				noColorAttachmentTests->addChild(formatTests.release());
 		}
 	}
-	depthTests->addChild(noColorAttachmentTests.release());
+	if (genFormatTests)
+		depthTests->addChild(noColorAttachmentTests.release());
 
 #ifndef CTS_USES_VULKANSC
 	de::MovePtr<tcu::TestCaseGroup>	depthClipControlTests		(new tcu::TestCaseGroup(testCtx, "depth_clip_control"));

@@ -1774,6 +1774,8 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 				endRenderPass(vk, cmdBuffer);
 
 				beginRenderPass(vk, cmdBuffer, *renderPass, *framebuffer, makeRect2D(makeExtent2D(m_imageWidth, m_imageHeight)), clearColor);
+				vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+				vk.cmdBindVertexBuffers(cmdBuffer, 0, 1, &vtxBuffer.get(), &vertexBufferOffset);
 				draw(vk, cmdBuffer, vertexCount, indirectBuffer->get());
 				endRenderPass(vk, cmdBuffer);
 
@@ -2243,6 +2245,14 @@ void ConcurrentPrimitivesGeneratedQueryTestCase::checkSupport (vkt::Context& con
 
 	if (xfbProperties.transformFeedbackQueries != VK_TRUE)
 		TCU_THROW(NotSupportedError, "transformFeedbackQueries not supported");
+
+	if (m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_1
+		|| m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_2
+		|| m_parameters.concurrentTestType == CONCURRENT_TEST_TYPE_PIPELINE_STATISTICS_3)
+	{
+		if (!context.getDeviceFeatures().pipelineStatisticsQuery)
+			TCU_THROW(NotSupportedError, "pipelineStatisticsQuery not supported");
+	}
 }
 
 void ConcurrentPrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollections& programCollection) const

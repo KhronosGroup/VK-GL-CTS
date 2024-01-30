@@ -150,6 +150,7 @@ struct Environment
 	VkDevice					device;
 	deUint32					queueFamilyIndex;
 	const BinaryCollection&		programBinaries;
+	uint32_t					usedApiVersion;
 	const tcu::CommandLine&		commandLine;
 	const BindingCallbackRecorder*		recorder;
 
@@ -161,6 +162,7 @@ struct Environment
 				 VkDevice					device_,
 				 deUint32					queueFamilyIndex_,
 				 const BinaryCollection&	programBinaries_,
+				 uint32_t					usedApiVersion_,
 				 const tcu::CommandLine&	commandLine_,
 				 const BindingCallbackRecorder*	recorder_)
 		: vkp				(vkp_)
@@ -171,6 +173,7 @@ struct Environment
 		, device			(device_)
 		, queueFamilyIndex	(queueFamilyIndex_)
 		, programBinaries	(programBinaries_)
+		, usedApiVersion	(usedApiVersion_)
 		, commandLine		(commandLine_)
 		, recorder			(recorder_)
 	{
@@ -1719,6 +1722,20 @@ static deBool validateCallbackRecords (Context& context, const BindingCallbackRe
 	return true;
 }
 
+struct EnvClone
+{
+	Unique<VkDevice>	device;
+	DeviceDriver		vkd;
+	Environment			env;
+
+	EnvClone (const Environment& parent)
+		: device	(Device::create(parent, Device::Resources(parent, Device::Parameters()), Device::Parameters()))
+		, vkd		(parent.vkp, parent.instance, *device, parent.usedApiVersion, parent.commandLine)
+		, env		(parent.vkp, parent.vki, parent.instance, parent.physicalDevice, vkd, *device, parent.queueFamilyIndex, parent.programBinaries, parent.usedApiVersion, parent.commandLine, nullptr)
+	{
+	}
+};
+
 static std::vector<std::string> getInstanceExtensions(const deUint32 instanceVersion)
 {
 	std::vector<std::string> instanceExtensions;
@@ -1815,7 +1832,7 @@ tcu::TestStatus createDestroyObjectTest (Context& context, typename Object::Para
 			physicalDevice,
 			queueFamilyIndex);
 
-		de::MovePtr<DeviceDriver> deviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), customInstance, device.get(), context.getUsedApiVersion()));
+		de::MovePtr<DeviceDriver> deviceInterface = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), customInstance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 
 		const Environment	env	(context.getPlatformInterface(),
 								customInstance.getDriver(),
@@ -1825,6 +1842,7 @@ tcu::TestStatus createDestroyObjectTest (Context& context, typename Object::Para
 								device.get(),
 								queueFamilyIndex,
 								context.getBinaryCollection(),
+								context.getUsedApiVersion(),
 								context.getTestContext().getCommandLine(),
 								&recorder);
 

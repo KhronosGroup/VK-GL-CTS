@@ -25,7 +25,7 @@
 
 #include "vktSubgroupsTestsUtils.hpp"
 #include "vkRayTracingUtil.hpp"
-#include "deFloat16.h"
+#include "tcuFloat.hpp"
 #include "deRandom.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuStringTemplate.hpp"
@@ -2572,11 +2572,11 @@ void initializeMemory (Context& context, const Allocation& alloc, const subgroup
 			case VK_FORMAT_R16G16B16_SFLOAT:
 			case VK_FORMAT_R16G16B16A16_SFLOAT:
 			{
-				deFloat16* ptr = reinterpret_cast<deFloat16*>(alloc.getHostPtr());
+				float16_t *const ptr = reinterpret_cast<float16_t*>(alloc.getHostPtr());
 
-				for (vk::VkDeviceSize k = 0; k < (size / sizeof(deFloat16)); k++)
+				for (vk::VkDeviceSize k = 0; k < (size / sizeof(float16_t)); k++)
 				{
-					ptr[k] = deFloat32To16(rnd.getFloat());
+					ptr[k] = tcu::Float16(rnd.getFloat()).bits();
 				}
 			}
 			break;

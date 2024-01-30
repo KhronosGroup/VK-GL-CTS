@@ -112,6 +112,12 @@ struct SubpassParams
 	deUint32					numDraws;
 };
 
+enum class ExtensionPreference
+{
+	EXT,
+	KHR,
+};
+
 struct TestParams
 {
 	std::vector<AttachmentParams>	attachments;
@@ -119,6 +125,11 @@ struct TestParams
 	const SharedGroupParams			groupParams;
 	VkFormat						depthStencilFormat;
 	bool							alphaBlend;
+
+	// To ensure both VK_EXT_load_store_op_none and VK_KHR_load_store_op_none are tested, use KHR by
+	// default (if available), but have some tests use EXT (if available).  Either way, if one
+	// extension is not available, the other is always used.
+	ExtensionPreference				extPreference;
 };
 
 struct Vertex4RGBA
@@ -438,7 +449,15 @@ void LoadStoreOpNoneTest::checkSupport (Context& ctx) const
 	if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
 		ctx.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
-	ctx.requireDeviceFunctionality("VK_EXT_load_store_op_none");
+	const bool supportsExt = ctx.isDeviceFunctionalitySupported("VK_EXT_load_store_op_none");
+	const bool supportsKHR = ctx.isDeviceFunctionalitySupported("VK_KHR_load_store_op_none");
+	// Prefer VK_EXT_load_store_op_none if supported, and either explicitly preferred or KHR is not
+	// supported.  Otherwise require VK_KHR_load_store_op_none.  The tests are skipped if neither
+	// extension is supported.
+	if (supportsExt && (m_testParams.extPreference == ExtensionPreference::EXT || !supportsKHR))
+		ctx.requireDeviceFunctionality("VK_EXT_load_store_op_none");
+	else
+		ctx.requireDeviceFunctionality("VK_KHR_load_store_op_none");
 
 	// Check depth/stencil format support.
 	for (const auto& att : m_testParams.attachments)
@@ -1487,7 +1506,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 			},
 			groupParams,						// const SharedGroupParams			groupParams;
 			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
-			false								// bool								alphaBlend;
+			false,								// bool								alphaBlend;
+			ExtensionPreference::KHR,
 		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_load_store_op_none", params));
@@ -1515,7 +1535,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 			},
 			groupParams,						// const SharedGroupParams			groupParams;
 			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
-			false								// bool								alphaBlend;
+			false,								// bool								alphaBlend;
+			ExtensionPreference::EXT,
 		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none_write_off", params));
@@ -1543,7 +1564,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 			},
 			groupParams,						// const SharedGroupParams			groupParams;
 			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
-			false								// bool								alphaBlend;
+			false,								// bool								alphaBlend;
+			ExtensionPreference::KHR,
 		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none", params));
@@ -1571,7 +1593,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 			},
 			groupParams,						// const SharedGroupParams			groupParams;
 			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
-			false								// bool								alphaBlend;
+			false,								// bool								alphaBlend;
+			ExtensionPreference::EXT,
 		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_store", params));
@@ -1599,7 +1622,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 			},
 			groupParams,						// const SharedGroupParams			groupParams;
 			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
-			true								// bool								alphaBlend;
+			true,								// bool								alphaBlend;
+			ExtensionPreference::KHR,
 		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_store_alphablend", params));
@@ -1634,14 +1658,15 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 					ATTACHMENT_INIT_PRE,
 					{{VK_IMAGE_ASPECT_COLOR_BIT, true, magenta, true, green}}
 				}
-		},
-		{									// std::vector<SubpassParams>		subpasses;
-			{{{0u, ATTACHMENT_USAGE_COLOR}}, 1u},
-			{{{0u, ATTACHMENT_USAGE_INPUT}, {1u, ATTACHMENT_USAGE_COLOR}}, 1u}
-		},
-		groupParams,						// const SharedGroupParams			groupParams;
-		VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
-		false								// bool								alphaBlend;
+			},
+			{									// std::vector<SubpassParams>		subpasses;
+				{{{0u, ATTACHMENT_USAGE_COLOR}}, 1u},
+				{{{0u, ATTACHMENT_USAGE_INPUT}, {1u, ATTACHMENT_USAGE_COLOR}}, 1u}
+			},
+			groupParams,						// const SharedGroupParams			groupParams;
+			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
+			false,								// bool								alphaBlend;
+			ExtensionPreference::EXT,
 		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_dontcare", params));
@@ -1678,7 +1703,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 			},
 			groupParams,						// const SharedGroupParams			groupParams;
 			VK_FORMAT_UNDEFINED,				// VkFormat							depthStencilFormat;
-			false								// bool								alphaBlend;
+			false,								// bool								alphaBlend;
+			ExtensionPreference::KHR,
 		};
 
 		opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "color_load_op_none_store_op_none_resolve", params));
@@ -1730,7 +1756,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				},
 				groupParams,						// const SharedGroupParams			groupParams;
 				formats[f],							// VkFormat							depthStencilFormat;
-				false								// bool								alphaBlend;
+				false,								// bool								alphaBlend;
+				f % 2 == 0 ? ExtensionPreference::EXT : ExtensionPreference::KHR,
 			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_"+formatName+"_load_op_load_store_op_none", params));
@@ -1768,7 +1795,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				},
 				groupParams,						// const SharedGroupParams			groupParams;
 				formats[f],							// VkFormat							depthStencilFormat;
-				false								// bool								alphaBlend;
+				false,								// bool								alphaBlend;
+				f % 2 == 0 ? ExtensionPreference::KHR : ExtensionPreference::EXT,
 			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_none_write_off", params));
@@ -1806,7 +1834,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				},
 				groupParams,						// const SharedGroupParams			groupParams;
 				formats[f],							// VkFormat							depthStencilFormat;
-				false								// bool								alphaBlend;
+				false,								// bool								alphaBlend;
+				f % 2 == 0 ? ExtensionPreference::EXT : ExtensionPreference::KHR,
 			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_store", params));
@@ -1845,7 +1874,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				},
 				groupParams,						// const SharedGroupParams			groupParams;
 				formats[f],							// VkFormat							depthStencilFormat;
-				false								// bool								alphaBlend;
+				false,								// bool								alphaBlend;
+				f % 2 == 0 ? ExtensionPreference::KHR : ExtensionPreference::EXT,
 			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depth_" + formatName + "_load_op_none_store_op_dontcare", params));
@@ -1887,7 +1917,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				},
 				groupParams,						// const SharedGroupParams			groupParams;
 				formats[f],							// VkFormat							depthStencilFormat;
-				false								// bool								alphaBlend;
+				false,								// bool								alphaBlend;
+				f % 2 == 0 ? ExtensionPreference::EXT : ExtensionPreference::KHR,
 			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_load_store_op_none", params));
@@ -1925,7 +1956,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				},
 				groupParams,						// const SharedGroupParams			groupParams;
 				formats[f],							// VkFormat							depthStencilFormat;
-				false								// bool								alphaBlend;
+				false,								// bool								alphaBlend;
+				f % 2 == 0 ? ExtensionPreference::KHR : ExtensionPreference::EXT,
 			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_none_write_off", params));
@@ -1964,7 +1996,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				},
 				groupParams,						// const SharedGroupParams			groupParams;
 				formats[f],							// VkFormat							depthStencilFormat;
-				false								// bool								alphaBlend;
+				false,								// bool								alphaBlend;
+				f % 2 == 0 ? ExtensionPreference::EXT : ExtensionPreference::KHR,
 			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_store", params));
@@ -2003,7 +2036,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				},
 				groupParams,						// const SharedGroupParams			groupParams;
 				formats[f],							// VkFormat							depthStencilFormat;
-				false								// bool								alphaBlend;
+				false,								// bool								alphaBlend;
+				f % 2 == 0 ? ExtensionPreference::KHR : ExtensionPreference::EXT,
 			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "stencil_" + formatName + "_load_op_none_store_op_dontcare", params));
@@ -2046,7 +2080,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				},
 				groupParams,						// const SharedGroupParams			groupParams;
 				formats[f],							// VkFormat							depthStencilFormat;
-				false								// bool								alphaBlend;
+				false,								// bool								alphaBlend;
+				f % 2 == 0 ? ExtensionPreference::EXT : ExtensionPreference::KHR,
 			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_load_stencil_none_store_op_depth_store_stencil_none_stencil_test_off", params));
@@ -2089,7 +2124,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				},
 				groupParams,						// const SharedGroupParams			groupParams;
 				formats[f],							// VkFormat							depthStencilFormat;
-				false								// bool								alphaBlend;
+				false,								// bool								alphaBlend;
+				f % 2 == 0 ? ExtensionPreference::KHR : ExtensionPreference::EXT,
 			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_none_stencil_load_store_op_depth_none_stencil_store_depth_test_off", params));
@@ -2131,7 +2167,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				},
 				groupParams,						// const SharedGroupParams			groupParams;
 				formats[f],							// VkFormat							depthStencilFormat;
-				false								// bool								alphaBlend;
+				false,								// bool								alphaBlend;
+				f % 2 == 0 ? ExtensionPreference::EXT : ExtensionPreference::KHR,
 			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_load_stencil_none_store_op_depth_store_stencil_none_stencil_write_off", params));
@@ -2174,7 +2211,8 @@ tcu::TestCaseGroup* createRenderPassLoadStoreOpNoneTests (tcu::TestContext& test
 				},
 				groupParams,						// const SharedGroupParams			groupParams;
 				formats[f],							// VkFormat							depthStencilFormat;
-				false								// bool								alphaBlend;
+				false,								// bool								alphaBlend;
+				f % 2 == 0 ? ExtensionPreference::KHR : ExtensionPreference::EXT,
 			};
 
 			opNoneTests->addChild(new LoadStoreOpNoneTest(testCtx, "depthstencil_" + formatName + "_load_op_depth_none_stencil_load_store_op_depth_none_stencil_store_depth_write_off", params));

@@ -125,7 +125,8 @@ DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerLogFile,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(PipelineCompilerFilePrefix,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(VkLibraryPath,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(ApplicationParametersInputFile,	std::string);
-
+DE_DECLARE_COMMAND_LINE_OPT(QuietStdout,				bool);
+DE_DECLARE_COMMAND_LINE_OPT(ComputeOnly,				bool);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -187,6 +188,7 @@ void registerOptions (de::cmdline::Parser& parser)
 	};
 
 	parser
+		<< Option<QuietStdout>					("q",		"quiet",									"Suppress messages to standard output")
 		<< Option<CasePath>						("n",		"deqp-case",								"Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)")
 		<< Option<CaseList>						(DE_NULL,	"deqp-caselist",							"Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})")
 		<< Option<CaseListFile>					(DE_NULL,	"deqp-caselist-file",						"Read case list (in trie format) from given file")
@@ -255,7 +257,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<PipelineCompilerLogFile>		(DE_NULL,	"deqp-pipeline-logfile",					"Log file for pipeline compiler (Vulkan SC only, do not use manually)", "")
 		<< Option<PipelineCompilerFilePrefix>	(DE_NULL,	"deqp-pipeline-prefix",						"Prefix for input pipeline compiler files (Vulkan SC only, do not use manually)", "")
 		<< Option<VkLibraryPath>				(DE_NULL,	"deqp-vk-library-path",						"Path to Vulkan library (e.g. loader library vulkan-1.dll)", "")
-		<< Option<ApplicationParametersInputFile>    (DE_NULL,       "deqp-app-params-input-file",				"File that provides a default set of application parameters");
+		<< Option<ApplicationParametersInputFile>    (DE_NULL,       "deqp-app-params-input-file",				"File that provides a default set of application parameters")
+		<< Option<ComputeOnly>					(DE_NULL,	"deqp-compute-only",						"Perform tests for devices implementing compute-only functionality", s_enableNames, "disable");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -1052,6 +1055,7 @@ bool CommandLine::parse (const std::string& cmdLine)
 	return isOk;
 }
 
+bool					CommandLine::quietMode						(void) const	{ return m_cmdLine.getOption<opt::QuietStdout>();							}
 const char*				CommandLine::getLogFileName					(void) const	{ return m_cmdLine.getOption<opt::LogFilename>().c_str();					}
 deUint32				CommandLine::getLogFlags					(void) const	{ return m_logFlags;														}
 RunMode					CommandLine::getRunMode						(void) const	{ return m_cmdLine.getOption<opt::RunMode>();								}
@@ -1094,6 +1098,7 @@ int						CommandLine::getCommandPoolMinSize			(void) const	{ return m_cmdLine.ge
 int						CommandLine::getCommandBufferMinSize		(void) const	{ return m_cmdLine.getOption<opt::CommandBufferMinSize>();					}
 int						CommandLine::getCommandDefaultSize			(void) const	{ return m_cmdLine.getOption<opt::CommandDefaultSize>();					}
 int						CommandLine::getPipelineDefaultSize			(void) const	{ return m_cmdLine.getOption<opt::PipelineDefaultSize>();					}
+bool					CommandLine::isComputeOnly					(void) const	{ return m_cmdLine.getOption<opt::ComputeOnly>();							}
 
 const char* CommandLine::getGLContextType (void) const
 {

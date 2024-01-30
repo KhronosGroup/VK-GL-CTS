@@ -2848,7 +2848,7 @@ struct TestConfig
 
 		if (lineRasterizationExt())
 		{
-			extensions.push_back("VK_EXT_line_rasterization");
+			extensions.push_back("VK_KHR_or_EXT_line_rasterization");
 		}
 
 		if (colorBlendEquationConfig.staticValue.isAdvanced())
@@ -3063,8 +3063,15 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 
 	// Check extension support.
 	const auto requiredExtensions = m_testConfig.getRequiredExtensions();
-	for (const auto& extension : requiredExtensions)
-		context.requireDeviceFunctionality(extension);
+	for (const auto& extension : requiredExtensions) {
+		if (extension == "VK_KHR_or_EXT_line_rasterization") {
+			if (!context.isDeviceFunctionalitySupported("VK_KHR_line_rasterization") && !context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization")) {
+				TCU_THROW(NotSupportedError, "VK_KHR_line_rasterization and VK_EXT_line_rasterization are not supported");
+			}
+		} else {
+			context.requireDeviceFunctionality(extension);
+		}
+	}
 
 	// Check support needed for the vertex generators.
 	m_testConfig.vertexGenerator.staticValue->checkSupport(context);
@@ -3339,7 +3346,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	if (m_testConfig.lineRasterizationExt())
 	{
 		// Check the implementation supports some type of stippled line.
-		const auto&	lineRastFeatures	= context.getLineRasterizationFeaturesEXT();
+		const auto&	lineRastFeatures	= context.getLineRasterizationFeatures();
 		const auto	rasterMode			= selectLineRasterizationMode(lineRastFeatures, m_testConfig.lineStippleSupportRequired(), m_testConfig.lineRasterModeConfig.staticValue);
 
 		if (rasterMode == LineRasterizationMode::NONE)
@@ -4067,7 +4074,7 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	if (testConfig.lineStippleParamsConfig.dynamicValue && static_cast<bool>(testConfig.lineStippleParamsConfig.dynamicValue.get()))
 	{
 		const auto& stippleParams = testConfig.lineStippleParamsConfig.dynamicValue->get();
-		vkd.cmdSetLineStippleEXT(cmdBuffer, stippleParams.factor, stippleParams.pattern);
+		vkd.cmdSetLineStippleKHR(cmdBuffer, stippleParams.factor, stippleParams.pattern);
 	}
 
 #ifndef CTS_USES_VULKANSC
@@ -4419,17 +4426,17 @@ public:
 		};
 
 #ifndef CTS_USES_VULKANSC
-		const auto&	contextMeshFeatures	= context.getMeshShaderFeaturesEXT();
-		const auto&	contextGPLFeatures	= context.getGraphicsPipelineLibraryFeaturesEXT();
-		const auto&	contextDBCFeatures	= context.getDepthBiasControlFeaturesEXT();
-		const auto&	contextSOFeatures	= context.getShaderObjectFeaturesEXT();
+		const auto&	contextMeshFeatures		= context.getMeshShaderFeaturesEXT();
+		const auto&	contextGPLFeatures		= context.getGraphicsPipelineLibraryFeaturesEXT();
+		const auto&	contextDBCFeatures		= context.getDepthBiasControlFeaturesEXT();
+		const auto&	contextSOFeatures		= context.getShaderObjectFeaturesEXT();
 		const auto&	contextBlendFeatures    = context.getBlendOperationAdvancedFeaturesEXT();
 
-		const bool	meshShaderSupport	= contextMeshFeatures.meshShader;
-		const bool	gplSupport		= contextGPLFeatures.graphicsPipelineLibrary;
-		const bool	dbcSupport		= contextDBCFeatures.depthBiasControl;
-		const bool	shaderObjectSupport	= contextSOFeatures.shaderObject;
-		const bool	eds3Support		= context.isDeviceFunctionalitySupported("VK_EXT_extended_dynamic_state3");
+		const bool	meshShaderSupport		= contextMeshFeatures.meshShader;
+		const bool	gplSupport				= contextGPLFeatures.graphicsPipelineLibrary;
+		const bool	dbcSupport				= contextDBCFeatures.depthBiasControl;
+		const bool	shaderObjectSupport		= contextSOFeatures.shaderObject;
+		const bool	eds3Support				= context.isDeviceFunctionalitySupported("VK_EXT_extended_dynamic_state3");
 		const bool	blendFeaturesSupport	= contextBlendFeatures.advancedBlendCoherentOperations;
 
 		// Mandatory.
@@ -4444,7 +4451,8 @@ public:
 		vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT	gplFeatures					= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceShaderObjectFeaturesEXT				shaderObjectFeatures		= vk::initVulkanStructure();
 		vk::VkPhysicalDeviceDynamicRenderingFeatures			dynamicRenderingFeatures	= vk::initVulkanStructure();
-		vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT	blendOperationAdvFeatures		= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT	blendOperationAdvFeatures	= vk::initVulkanStructure();
+		vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR		fragmentShadingRateFeatures = vk::initVulkanStructure();
 
 		const auto addFeatures = vk::makeStructChainAdder(&features2);
 
@@ -4488,6 +4496,11 @@ public:
 			// If primitiveFragmentShadingRateMeshShader is enabled then
 			// VkPhysicalDeviceFragmentShadingRateFeaturesKHR::primitiveFragmentShadingRate must also be enabled
 			meshFeatures.primitiveFragmentShadingRateMeshShader = VK_FALSE;
+		}
+		else if (meshFeatures.primitiveFragmentShadingRateMeshShader)
+		{
+			addFeatures(&fragmentShadingRateFeatures);
+			fragmentShadingRateFeatures.primitiveFragmentShadingRate = VK_TRUE;
 		}
 
 		// Disable alpha-to-one if requested by options.
@@ -4554,7 +4567,7 @@ public:
 		};
 
 		m_device	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-		m_vkd		.reset(new vk::DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion()));
+		m_vkd		.reset(new vk::DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 		m_queue		= getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
 		m_allocator	.reset(new vk::SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 
@@ -5379,7 +5392,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		pLineRasterModeInfo = LineRasterModePtr(new vk::VkPipelineRasterizationLineStateCreateInfoEXT(vk::initVulkanStructure(rasterizationPnext)));
 		rasterizationPnext = pLineRasterModeInfo.get();
 
-		const auto&	lineRasterFeatures	= m_context.getLineRasterizationFeaturesEXT();
+		const auto&	lineRasterFeatures	= m_context.getLineRasterizationFeatures();
 		const auto	lineRasterMode		= selectLineRasterizationMode(lineRasterFeatures, m_testConfig.lineStippleSupportRequired(), m_testConfig.lineRasterModeConfig.staticValue);
 		const auto&	staticParams		= m_testConfig.lineStippleParamsConfig.staticValue.get();
 

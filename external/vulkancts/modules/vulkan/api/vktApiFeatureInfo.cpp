@@ -1585,19 +1585,24 @@ void checkSupportExtLineRasterization (Context& context)
 	context.requireDeviceFunctionality("VK_EXT_line_rasterization");
 }
 
-tcu::TestStatus validateLimitsExtLineRasterization (Context& context)
+void checkSupportKhrLineRasterization (Context& context)
+{
+	context.requireDeviceFunctionality("VK_KHR_line_rasterization");
+}
+
+tcu::TestStatus validateLimitsLineRasterization (Context& context)
 {
 	const VkBool32											checkAlways						= VK_TRUE;
-	const VkPhysicalDeviceLineRasterizationPropertiesEXT&	lineRasterizationPropertiesEXT	= context.getLineRasterizationPropertiesEXT();
+	const VkPhysicalDeviceLineRasterizationPropertiesKHR&	lineRasterizationProperties		= context.getLineRasterizationProperties();
 	TestLog&												log								= context.getTestContext().getLog();
 	bool													limitsOk						= true;
 
 	FeatureLimitTableItem featureLimitTable[] =
 	{
-		{ PN(checkAlways),	PN(lineRasterizationPropertiesEXT.lineSubPixelPrecisionBits),	LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),	PN(lineRasterizationProperties.lineSubPixelPrecisionBits),	LIM_MIN_UINT32(4) },
 	};
 
-	log << TestLog::Message << lineRasterizationPropertiesEXT << TestLog::EndMessage;
+	log << TestLog::Message << lineRasterizationProperties << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
 		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
@@ -1882,7 +1887,7 @@ void createTestDevice (Context& context, void* pNext, const char* const* ppEnabl
 		DE_NULL,									//  const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	const Unique<VkDevice>					device					(createCustomDevice(validationEnabled, platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver						deviceDriver			(platformInterface, instance.get(), device.get(), context.getUsedApiVersion());
+	const DeviceDriver						deviceDriver			(platformInterface, instance.get(), device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 	const VkQueue							queue					= getDeviceQueue(deviceDriver, *device,  queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -3196,7 +3201,7 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	};
 
 	Move<VkDevice>		deviceGroup = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
-	const DeviceDriver	vk	(vkp, instance, *deviceGroup, context.getUsedApiVersion());
+	const DeviceDriver	vk	(vkp, instance, *deviceGroup, context.getUsedApiVersion(), context.getTestContext().getCommandLine());
 	context.getInstanceInterface().getPhysicalDeviceMemoryProperties(deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &memProps);
 
 	peerMemFeatures = reinterpret_cast<VkPeerMemoryFeatureFlags*>(buffer);
@@ -6789,10 +6794,12 @@ tcu::TestStatus testNoUnknownExtensions (Context& context)
 
 	// All known extensions should be added to allowedExtensions:
 	// allowedExtensions.insert("VK_GOOGLE_extension1");
+	allowedDeviceExtensions.insert("VK_ANDROID_external_format_resolve");
 	allowedDeviceExtensions.insert("VK_ANDROID_external_memory_android_hardware_buffer");
 	allowedDeviceExtensions.insert("VK_GOOGLE_display_timing");
 	allowedDeviceExtensions.insert("VK_GOOGLE_decorate_string");
 	allowedDeviceExtensions.insert("VK_GOOGLE_hlsl_functionality1");
+	allowedDeviceExtensions.insert("VK_GOOGLE_user_type");
 	allowedInstanceExtensions.insert("VK_GOOGLE_surfaceless_query");
 
 	// Instance extensions
@@ -6996,7 +7003,8 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		addFunctionCase(limitsValidationTests.get(), "nv_ray_tracing",					checkSupportNvRayTracing,					validateLimitsNvRayTracing);
 #endif
 		addFunctionCase(limitsValidationTests.get(), "timeline_semaphore",				checkSupportKhrTimelineSemaphore,			validateLimitsKhrTimelineSemaphore);
-		addFunctionCase(limitsValidationTests.get(), "ext_line_rasterization",			checkSupportExtLineRasterization,			validateLimitsExtLineRasterization);
+		addFunctionCase(limitsValidationTests.get(), "ext_line_rasterization",			checkSupportExtLineRasterization,			validateLimitsLineRasterization);
+		addFunctionCase(limitsValidationTests.get(), "khr_line_rasterization",			checkSupportKhrLineRasterization,			validateLimitsLineRasterization);
 		addFunctionCase(limitsValidationTests.get(), "robustness2",						checkSupportRobustness2,					validateLimitsRobustness2);
 
 		infoTests->addChild(limitsValidationTests.release());
