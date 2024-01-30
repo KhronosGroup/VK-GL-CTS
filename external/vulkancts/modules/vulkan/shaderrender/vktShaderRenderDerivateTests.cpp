@@ -1131,6 +1131,7 @@ public:
 	virtual	void			initPrograms				(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance				(Context& context) const;
 	virtual void			checkSupport				(Context& context) const {
+		TriangleDerivateCase::checkSupport(context);
 		if (m_definitions.demoteToHelperInvocation) {
 			context.requireDeviceFunctionality("VK_EXT_shader_demote_to_helper_invocation");
 		}
