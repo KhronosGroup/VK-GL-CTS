@@ -310,14 +310,14 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 		0,
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,
 		0,
 		colorSRR);
 	VkImageMemoryBarrier dsImageBarrier = makeImageMemoryBarrier(
 		0,
 		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,
 		0,
 		dsSRR);
 	VkRenderingAttachmentInfo depthStencilAttachment
@@ -565,13 +565,13 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 	}
 
 	// reuse existing barrier structures to finish rendering before next subpass
-	dsImageBarrier.oldLayout		= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	dsImageBarrier.oldLayout		= VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
 	dsImageBarrier.newLayout		= VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
 	dsImageBarrier.srcAccessMask	= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 	dsImageBarrier.dstAccessMask	= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
 	for (auto& barrier : colorImageBarriers)
 	{
-		barrier.oldLayout		= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		barrier.oldLayout		= VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
 		barrier.newLayout		= VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
 		barrier.srcAccessMask	= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		barrier.dstAccessMask	= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;

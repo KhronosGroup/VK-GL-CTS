@@ -2643,6 +2643,13 @@ public:
 		vector<VkImageMemoryBarrier>	selfDeps;
 		VkPipelineStageFlags			srcStages = 0;
 		VkPipelineStageFlags			dstStages = 0;
+		VkImageLayout					inputAttachmenLayout		= VK_IMAGE_LAYOUT_GENERAL;
+
+#ifndef CTS_USES_VULKANSC
+		const bool isMultiPassDynamicRendering = (dynamicRendering && (m_renderPassInfo.getSubpasses().size() > 1u));
+		if (isMultiPassDynamicRendering)
+			inputAttachmenLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+#endif // CTS_USES_VULKANSC
 
 		for (deUint32 inputAttachmentNdx = 0; inputAttachmentNdx < m_renderInfo.getInputAttachmentCount(); inputAttachmentNdx++)
 		{
@@ -2658,8 +2665,8 @@ public:
 						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// srcAccessMask
 						VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// dstAccessMask
 
-						VK_IMAGE_LAYOUT_GENERAL,						// oldLayout
-						VK_IMAGE_LAYOUT_GENERAL,						// newLayout
+						inputAttachmenLayout,							// oldLayout
+						inputAttachmenLayout,							// newLayout
 
 						VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex
 						VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex
@@ -2733,10 +2740,10 @@ public:
 			vk.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
 
 #ifndef CTS_USES_VULKANSC
-			const deUint32				subpassIndex = m_renderInfo.getSubpassIndex();
-			const std::vector<Subpass>&	allSubapsses = m_renderPassInfo.getSubpasses();
-			if (dynamicRendering && (allSubapsses.size() > 1u) && !secondaryCommandBuffer)
+			if (isMultiPassDynamicRendering && !secondaryCommandBuffer)
 			{
+				const deUint32							subpassIndex						= m_renderInfo.getSubpassIndex();
+				const std::vector<Subpass>&				allSubapsses						= m_renderPassInfo.getSubpasses();
 				const auto&								allAttachments						= m_renderPassInfo.getAttachments();
 				const auto&								subpass								= allSubapsses[subpassIndex];
 				deUint32								colorAttachmentCount				= (deUint32)colorAttachmentIndices.size();
