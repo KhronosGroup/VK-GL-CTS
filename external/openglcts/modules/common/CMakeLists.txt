@@ -101,6 +101,8 @@ set(GLCTS_COMMON_SRCS
 	glcTestPackage.hpp
 	glcTextureCompatibilityTests.cpp
 	glcTextureCompatibilityTests.hpp
+	glcTextureLodBiasTests.cpp
+	glcTextureLodBiasTests.hpp
 	glcTextureFilterAnisotropicTests.cpp
 	glcTextureFilterAnisotropicTests.hpp
 	glcTextureLodBasicTests.cpp

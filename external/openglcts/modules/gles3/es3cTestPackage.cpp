@@ -48,6 +48,7 @@
 #include "glcShaderStructTests.hpp"
 #include "glcTextureFilterAnisotropicTests.hpp"
 #include "glcTextureLodBasicTests.hpp"
+#include "glcTextureLodBiasTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "gluStateReset.hpp"
@@ -196,6 +197,7 @@ void ES30TestPackage::init(void)
 		addChild(new es3cts::CopyTexImageConversionsTests(getContext()));
 		addChild(new es3cts::NumberParsingTests(getContext()));
 		addChild(new glcts::FramebufferBlitTests(getContext()));
+		addChild(new glcts::TextureLodBiasTests(getContext()));
 	}
 	catch (...)
 	{

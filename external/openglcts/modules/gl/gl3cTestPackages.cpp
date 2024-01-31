@@ -47,6 +47,7 @@
 #include "glcShaderNegativeTests.hpp"
 #include "glcShaderStructTests.hpp"
 #include "glcTextureLodBasicTests.hpp"
+#include "glcTextureLodBiasTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "glcNearestEdgeTests.hpp"
@@ -175,6 +176,7 @@ void GL30TestPackage::init(void)
 		addChild(new GL30ShaderTests(getContext()));
 		addChild(new deqp::Functional::TextureShadowLodTest(getContext()));
 		addChild(new glcts::FramebufferBlitTests(getContext()));
+		addChild(new glcts::TextureLodBiasTests(getContext()));
 	}
 	catch (...)
 	{
