@@ -445,7 +445,7 @@ void DrawIndexedTestCase::createDeviceAndDriver (Context& context,
 		device = createRobustBufferAccessDevice(context, &features2);
 		driver = DeviceDriverPtr(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
-		customInstance = de::MovePtr(new CustomInstance(createCustomInstanceFromContext(context)));
+		customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
 		device = createRobustBufferAccessDevice(context, *customInstance, &features2);
 		driver = DeviceDriverPtr(new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device, context.getTestContext().getCommandLine(),
 			context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()),
@@ -623,7 +623,7 @@ TestInstance* BindIndexBuffer2TestCase::createInstance (Context& context) const
 #ifndef CTS_USES_VULKANSC
 	createDeviceAndDriver(context, device, deviceDriver);
 #else
-	de::MovePtr<CustomInstance> customInstance = de::MovePtr(new CustomInstance(createCustomInstanceFromContext(context)));
+	de::MovePtr<CustomInstance> customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
 	createDeviceAndDriver(context, customInstance, device, deviceDriver);
 #endif // CTS_USES_VULKANSC
 

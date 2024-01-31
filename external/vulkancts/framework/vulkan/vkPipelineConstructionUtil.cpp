@@ -425,6 +425,18 @@ PipelineLayoutWrapper::PipelineLayoutWrapper (PipelineConstructionType pipelineC
 	m_pipelineLayout = createPipelineLayout(vk, device, &createInfo);
 }
 
+PipelineLayoutWrapper::PipelineLayoutWrapper(PipelineLayoutWrapper&& rhs) noexcept
+	: m_pipelineConstructionType	(rhs.m_pipelineConstructionType)
+	, m_vk							(rhs.m_vk)
+	, m_device						(rhs.m_device)
+	, m_flags						(rhs.m_flags)
+	, m_setLayoutCount				(rhs.m_setLayoutCount)
+	, m_setLayouts					(std::move(rhs.m_setLayouts))
+	, m_pushConstantRangeCount		(rhs.m_pushConstantRangeCount)
+	, m_pushConstantRanges			(std::move(rhs.m_pushConstantRanges))
+	, m_pipelineLayout				(rhs.m_pipelineLayout)
+{ }
+
 PipelineLayoutWrapper& PipelineLayoutWrapper::operator=	(PipelineLayoutWrapper&& rhs)
 {
 	m_pipelineConstructionType = rhs.m_pipelineConstructionType;
