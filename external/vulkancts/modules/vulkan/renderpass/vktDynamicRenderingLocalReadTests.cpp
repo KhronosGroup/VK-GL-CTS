@@ -74,12 +74,6 @@ enum class TestType
 	// Test mapping depth + stencil so only one takes an index, the other does not
 	DEPTH_MAPPING_STENCIL_NOT,
 
-	// Test binding sampled images as input attachments
-	SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS,
-
-	// Use EXT_descriptor_buffer if available
-	SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS_DESCRIPTOR_BUFFER,
-
 	// Test that blend state is using unmapped indexes
 	MAPPING_NOT_AFFECTING_BLEND_STATE
 };
@@ -666,229 +660,6 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 	return tcu::TestStatus::fail("Fail");
 }
 
-class SampledImageLocalReadTestInstance : public vkt::TestInstance
-{
-public:
-	SampledImageLocalReadTestInstance	(Context&			context,
-										 const TestType		testType);
-protected:
-	tcu::TestStatus		iterate			(void) override;
-
-private:
-	const TestType		m_testType;
-	const deUint32		m_renderSize;
-};
-
-SampledImageLocalReadTestInstance::SampledImageLocalReadTestInstance(Context& context, const TestType testType)
-	: vkt::TestInstance		(context)
-	, m_testType			(testType)
-	, m_renderSize			(16)
-{
-}
-
-tcu::TestStatus SampledImageLocalReadTestInstance::iterate()
-{
-	const DeviceInterface&				vk						= m_context.getDeviceInterface();
-	const VkDevice						device					= m_context.getDevice();
-	Allocator&							memAlloc				= m_context.getDefaultAllocator();
-	VkQueue								queue					= m_context.getUniversalQueue();
-	const deUint32						queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
-	const VkImageSubresourceRange		colorSRR				= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const VkImageSubresourceLayers		colorSL					= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
-	const std::vector<VkViewport>		viewports				{ makeViewport(m_renderSize, m_renderSize) };
-	const std::vector<VkRect2D>			scissors				{ makeRect2D(m_renderSize, m_renderSize) };
-	const VkImageMemoryBarrier			inputImageBarrier		= makeImageMemoryBarrier(0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, colorSRR);
-	const VkDeviceSize					inOutBufferSize			= static_cast<VkDeviceSize>(m_renderSize * m_renderSize * sizeof(deUint32));
-	const bool							useDescriptorBuffer		= m_testType == TestType::SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS_DESCRIPTOR_BUFFER;
-	const VkBufferUsageFlags			bufferUsage				= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | (useDescriptorBuffer ? VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT : 0);
-	const MemoryRequirement				bufferMemoryRequirement	= MemoryRequirement::HostVisible | (useDescriptorBuffer ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any);
-	const VkBufferCreateInfo			inOutBufferCreateInfo	= makeBufferCreateInfo(inOutBufferSize, bufferUsage);
-	const VkBufferImageCopy				bufferImageCopy			= makeBufferImageCopy({ m_renderSize, m_renderSize, 1u }, colorSL);
-	const deUint32						descriptorBufferIndices	= 0;
-	const VkDeviceSize					descriptorBufferoffsets	= 0;
-	const VkFormat						imageFormat				= VK_FORMAT_R8G8B8A8_UNORM;
-	const deUint32						inputImageCount			= 2;
-
-	std::vector<ImageWithMemorySp>		images					(inputImageCount, ImageWithMemorySp());
-	std::vector<VkImageViewSp>			imageViews				(inputImageCount, VkImageViewSp());
-	std::vector<BufferWithMemorySp>		inOutBuffers			(inputImageCount, BufferWithMemorySp());
-	std::vector<VkImageMemoryBarrier>	inputImageBarriers		(inputImageCount, inputImageBarrier);
-	std::vector<VkDescriptorImageInfo>	inputImageDescriptors	(inputImageCount, makeDescriptorImageInfo(DE_NULL, DE_NULL, VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR));
-	deUint32							expectedValue			= 0u;
-	BufferWithMemorySp					descriptorBuffer;
-
-	for (deUint32 i = 0; i < inputImageCount; ++i)
-	{
-		// create images and image views for input attachments
-		images[i]		= createImage(m_context, m_renderSize, imageFormat, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
-		imageViews[i]	= VkImageViewSp(new vk::Move<VkImageView>(makeImageView(vk, device, **images[i], VK_IMAGE_VIEW_TYPE_2D, imageFormat, colorSRR)));
-
-		// define buffers that will be used to copy data to image; first buffer will also be reused for output;
-		// buffers will have 240, 120, 80, 60,... - same value for all fragments and channels
-		deUint32 fillValue = 240u / (i + 1u);
-		inOutBuffers[i] = BufferWithMemorySp(new BufferWithMemory(vk, device, memAlloc, inOutBufferCreateInfo, bufferMemoryRequirement));
-		deMemset(inOutBuffers[i]->getAllocation().getHostPtr(), fillValue, static_cast<std::size_t>(inOutBufferSize));
-		flushAlloc(vk, device, inOutBuffers[i]->getAllocation());
-		expectedValue += deUint32(float(fillValue) / 255.0f * 10.0f);
-
-		// use this loop to fill other needed containers
-		inputImageBarriers[i].image			= **images[i];
-		inputImageDescriptors[i].imageView	= **imageViews[i];
-	}
-
-	Move<VkDescriptorPool>		descriptorPool;
-	Move<VkDescriptorSet>		descriptorSet;
-	Move<VkDescriptorSetLayout>	descriptorSetLayout;
-
-	// when dynamicRenderingLocalReads feature is enabled applications are able
-	// to bind a sampled image descriptor to a shader in place of an input attachment descriptor
-	DescriptorSetLayoutBuilder descriptorSetLayoutBuilder;
-	descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-							  .addSingleBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-							  .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
-
-	VkDescriptorBufferInfo				bufferInfo = makeDescriptorBufferInfo(**inOutBuffers[0], 0, VK_WHOLE_SIZE);
-	VkDescriptorBufferBindingInfoEXT	descriptorBufferBindingInfo = initVulkanStructure();
-
-	// prepare descriptors
-	if (useDescriptorBuffer)
-	{
-		// create descriptor layout with descriptor buffer flag
-		const VkPhysicalDeviceDescriptorBufferPropertiesEXT& dbProperties = m_context.getDescriptorBufferPropertiesEXT();
-		descriptorSetLayout = descriptorSetLayoutBuilder.build(vk, device, VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT);
-
-		// create descriptor buffer that will fit required descriptors
-		VkDeviceSize descriptorBufferSize;
-		vk.getDescriptorSetLayoutSizeEXT(device, *descriptorSetLayout, &descriptorBufferSize);
-		const VkBufferCreateInfo descriptorBufferCreateInfo = makeBufferCreateInfo(descriptorBufferSize, VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT |
-																										 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-		descriptorBuffer = BufferWithMemorySp(new BufferWithMemory(vk, device, memAlloc, descriptorBufferCreateInfo, bufferMemoryRequirement));
-		char* descriptorBufferHostPtr = static_cast<char*>(descriptorBuffer->getAllocation().getHostPtr());
-
-		VkBufferDeviceAddressInfo bdaInfo	= { VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, 0, **descriptorBuffer };
-		descriptorBufferBindingInfo.address	= vk.getBufferDeviceAddress(device, &bdaInfo);
-		descriptorBufferBindingInfo.usage	= VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT | VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
-
-		VkDescriptorGetInfoEXT	descriptorGetInfo	= initVulkanStructure();
-		std::size_t				size				= dbProperties.samplerDescriptorSize;
-		VkDeviceSize			offset;
-
-		// fill image descriptors
-		for (deUint32 i = 0; i < inputImageCount; ++i)
-		{
-			vk.getDescriptorSetLayoutBindingOffsetEXT(device, *descriptorSetLayout, i, &offset);
-			descriptorGetInfo.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-			descriptorGetInfo.data.pSampledImage = &inputImageDescriptors[i];
-			vk.getDescriptorEXT(device, &descriptorGetInfo, size, descriptorBufferHostPtr + offset);
-		}
-
-		bdaInfo.buffer = **inOutBuffers[0];
-		VkDescriptorAddressInfoEXT ssboDescriptorAddressInfo = initVulkanStructure();
-		ssboDescriptorAddressInfo.address	= vk.getBufferDeviceAddress(device, &bdaInfo);
-		ssboDescriptorAddressInfo.range		= inOutBufferSize;
-
-		// fill output ssbo descriptor
-		size = dbProperties.storageBufferDescriptorSize;
-		vk.getDescriptorSetLayoutBindingOffsetEXT(device, *descriptorSetLayout, inputImageCount, &offset);
-		descriptorGetInfo.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		descriptorGetInfo.data.pStorageBuffer = &ssboDescriptorAddressInfo;
-		vk.getDescriptorEXT(device, &descriptorGetInfo, size, descriptorBufferHostPtr + offset);
-
-		flushAlloc(vk, device, descriptorBuffer->getAllocation());
-	}
-	else
-	{
-		descriptorSetLayout = descriptorSetLayoutBuilder.build(vk, device);
-		descriptorPool = DescriptorPoolBuilder()
-			.addType(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2u)
-			.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u)
-			.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-		descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
-
-		// set descriptor sets for all input attachments
-		using DSLocation = DescriptorSetUpdateBuilder::Location;
-		DescriptorSetUpdateBuilder()
-			.writeSingle(*descriptorSet, DSLocation::binding(0), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &inputImageDescriptors[0])
-			.writeSingle(*descriptorSet, DSLocation::binding(1), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &inputImageDescriptors[1])
-			.writeSingle(*descriptorSet, DSLocation::binding(2), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo)
-			.update(vk, device);
-	}
-
-	// create components for pipelines
-	Move<VkPipelineLayout>	pipelineLayout		= makePipelineLayout(vk, device, *descriptorSetLayout);
-	Move<VkShaderModule>	vertShaderModule	= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
-	Move<VkShaderModule>	fragShaderModule	= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0);
-
-	// define empty VertexInputState, full screen quad will be generated in vertex shader
-	const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
-
-	// define empty PipelineRendering we are writing to ssbo
-	VkPipelineRenderingCreateInfo renderingCreateInfo = initVulkanStructure();
-
-	Move<VkPipeline>		graphicsPipeline	= makeGraphicsPipeline(vk, device, *pipelineLayout, *vertShaderModule, DE_NULL, DE_NULL, DE_NULL,
-																	   *fragShaderModule, DE_NULL, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-																	   0, 0, &vertexInputState, DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL,
-																	   &renderingCreateInfo, (useDescriptorBuffer ? VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT : 0));
-	Move<VkCommandPool>		commandPool			= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
-	Move<VkCommandBuffer>	commandBuffer		= allocateCommandBuffer(vk, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	VkCommandBuffer			cmdBuffer			= *commandBuffer;
-
-	VkRenderingInfo renderingInfo = initVulkanStructure();
-	renderingInfo.renderArea = scissors[0];
-	renderingInfo.layerCount = 1u;
-
-	// record commands
-	beginCommandBuffer(vk, cmdBuffer);
-
-	// transition all images to transfer destination layout
-	vk.cmdPipelineBarrier(cmdBuffer, 0, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, DE_NULL, 0, DE_NULL, inputImageCount, inputImageBarriers.data());
-
-	// copy data from buffers to images
-	for (deUint32 i = 0; i < inputImageCount; ++i)
-	{
-		vk.cmdCopyBufferToImage(cmdBuffer, **inOutBuffers[i], **images[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &bufferImageCopy);
-
-		inputImageBarriers[i].srcAccessMask	= VK_ACCESS_TRANSFER_WRITE_BIT;
-		inputImageBarriers[i].dstAccessMask	= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-		inputImageBarriers[i].oldLayout		= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		inputImageBarriers[i].newLayout		= VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-	}
-
-	// transition all images to local read layout
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, DE_NULL, 0, DE_NULL, inputImageCount, inputImageBarriers.data());
-
-	vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
-
-	vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
-	if (useDescriptorBuffer)
-	{
-		vk.cmdBindDescriptorBuffersEXT(cmdBuffer, 1, &descriptorBufferBindingInfo);
-		vk.cmdSetDescriptorBufferOffsetsEXT(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, 1, &descriptorBufferIndices, &descriptorBufferoffsets);
-	}
-	else
-		vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
-	vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
-
-	vk.cmdEndRendering(cmdBuffer);
-
-	endCommandBuffer(vk, cmdBuffer);
-	submitCommandsAndWait(vk, device, queue, cmdBuffer);
-
-	// verify output buffer
-	const Allocation& bufferAllocation = inOutBuffers[0]->getAllocation();
-	invalidateAlloc(vk, device, bufferAllocation);
-
-	// validate result
-	const deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
-	for (deUint32 i = 0 ; i < m_renderSize * m_renderSize; ++i)
-	{
-		if (bufferPtr[i] != expectedValue)
-			return tcu::TestStatus::fail(std::string("Expected ") + std::to_string(expectedValue) + " got " + std::to_string(bufferPtr[i]) + " at index " + std::to_string(i));
-	}
-
-	return tcu::TestStatus::pass("Pass");
-}
-
 class MappingWithBlendStateTestInstance : public vkt::TestInstance
 {
 public:
@@ -1147,8 +918,6 @@ LocalReadTestCase::LocalReadTestCase(tcu::TestContext&		context,
 void LocalReadTestCase::checkSupport (Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
-	if (m_testType == TestType::SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS_DESCRIPTOR_BUFFER)
-		context.requireDeviceFunctionality("VK_EXT_descriptor_buffer");
 }
 
 void LocalReadTestCase::initPrograms (SourceCollections& programCollection) const
@@ -1397,23 +1166,6 @@ void LocalReadTestCase::initPrograms (SourceCollections& programCollection) cons
 			glslSources.add(std::string("frag1_") + std::to_string(inputAttachmentCount)) << glu::FragmentSource(generateReadFragSource(inputAttachmentCount));
 	}
 
-	if ((m_testType == TestType::SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS) ||
-		(m_testType == TestType::SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS_DESCRIPTOR_BUFFER))
-	{
-		std::string fragSrc(
-			"#version 450\n"
-			"layout(input_attachment_index = 0, binding = 0) uniform subpassInput inColor0;\n"
-			"layout(input_attachment_index = 1, binding = 1) uniform subpassInput inColor1;\n"
-			"layout(binding=2, std430) writeonly buffer Output\n{\n"
-			"  uint v[];\n"
-			"} outBuffer;\n"
-			"void main()\n{\n"
-			"  const uvec2 i = uvec2(trunc(gl_FragCoord.xy));\n"
-			"  outBuffer.v[i.x+i.y*16] = uint(10.0 * subpassLoad(inColor0).r) + uint(10.0 * subpassLoad(inColor1).a);\n"
-			"}\n");
-		glslSources.add("frag") << glu::FragmentSource(fragSrc);
-	}
-
 	if (m_testType == TestType::MAPPING_NOT_AFFECTING_BLEND_STATE)
 	{
 		std::string fragSrc(
@@ -1436,10 +1188,7 @@ void LocalReadTestCase::initPrograms (SourceCollections& programCollection) cons
 
 TestInstance* LocalReadTestCase::createInstance (Context& context) const
 {
-	if ((m_testType == TestType::SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS) ||
-		(m_testType == TestType::SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS_DESCRIPTOR_BUFFER))
-		return new SampledImageLocalReadTestInstance(context, m_testType);
-	else if (m_testType == TestType::MAPPING_NOT_AFFECTING_BLEND_STATE)
+	if (m_testType == TestType::MAPPING_NOT_AFFECTING_BLEND_STATE)
 		return new MappingWithBlendStateTestInstance(context, m_testType);
 
 	return new BasicLocalReadTestInstance(context, m_testType);
@@ -1462,8 +1211,6 @@ tcu::TestCaseGroup* createDynamicRenderingLocalReadTests(tcu::TestContext& testC
 		{ "depth_stencil_mapping_to_no_index",						TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX },
 		{ "depth_stencil_mapping_to_same_index",					TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX },
 		{ "depth_mapping_stencil_not",								TestType::DEPTH_MAPPING_STENCIL_NOT },
-		{ "sampled_images_as_input_attachments",					TestType::SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS },
-		{ "sampled_images_as_input_attachments_descriptor_buffer",	TestType::SAMPLED_IMAGES_AS_INPUT_ATTACHMENTS_DESCRIPTOR_BUFFER },
 		{ "mapping_not_affecting_blend_state",						TestType::MAPPING_NOT_AFFECTING_BLEND_STATE },
 	};
 
