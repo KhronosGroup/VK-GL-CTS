@@ -307,6 +307,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 	const std::vector<VkRect2D>		scissors	{ makeRect2D(renderSize) };
 
 	m_graphicsPipeline.setDefaultTopology(useTess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+					  .setDefaultPatchControlPoints(useTess ? 1u : 0u)
 					  .setDefaultRasterizationState()
 					  .setDefaultDepthStencilState()
 					  .setDefaultMultisampleState()
