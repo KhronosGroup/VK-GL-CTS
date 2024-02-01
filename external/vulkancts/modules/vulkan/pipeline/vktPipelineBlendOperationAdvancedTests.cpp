@@ -2048,7 +2048,7 @@ void BlendOperationAdvancedTestCoherentInstance::prepareRenderPass (VkFramebuffe
 
 	// There are two different renderpasses, each of them draw
 	// one half of the colors.
-	deBool skippedColors = 0u;
+	deUint32 skippedColors = 0u;
 	for (deUint32 color = 0; color < DE_LENGTH_OF_ARRAY(srcColors)/2; color++)
 	{
 		// Skip ill-formed colors when we have non-premultiplied destination colors.

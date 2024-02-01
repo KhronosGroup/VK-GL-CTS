@@ -589,7 +589,7 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	{
 		int a = deRandom_getUint32(&m_random) % testCycles;
 		int b = deRandom_getUint32(&m_random) % testCycles;
-		DE_SWAP(int, order[a], order[b]);
+		std::swap(order[a], order[b]);
 	}
 
 	// Allocate objects in shuffled order
