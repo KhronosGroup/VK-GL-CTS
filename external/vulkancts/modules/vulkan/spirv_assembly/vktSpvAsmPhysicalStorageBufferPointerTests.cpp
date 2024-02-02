@@ -1056,7 +1056,7 @@ tcu::TestStatus SpvAsmPhysicalStorageBufferPushConstantsTestInstance::iterate (v
 	src.iota(m_params->elements, true);
 	dst.zero(true);
 
-	const PushConstant				 pc					= { src.getDeviceAddress(), dst.getDeviceAddress(), deInt32(m_params->elements), (m_params->method == PassMethod::PUSH_CONSTANTS_FUNCTION ? 1 : 0) };
+	const PushConstant				 pc					= { src.getDeviceAddress(), dst.getDeviceAddress(), deInt32(m_params->elements), m_params->method == PassMethod::PUSH_CONSTANTS_FUNCTION };
 
 	beginCommandBuffer(vki, *cmdBuffer);
 		vki.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
