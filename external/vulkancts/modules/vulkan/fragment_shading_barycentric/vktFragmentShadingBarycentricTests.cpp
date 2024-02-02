@@ -1666,7 +1666,7 @@ void FragmentShadingBarycentricTestCase::initMiscDataTessPrograms(SourceCollecti
 		"${dataStruct}\n"
 		"\n"
 		"layout (location=0) in ${typePrefix} inData[]${typeSuffix};\n"
-		"struct OutDataStruct {int idx; ${typePrefix} data${typeSuffix};};\n"
+		"struct OutDataStruct {uint idx; ${typePrefix} data${typeSuffix};};\n"
 		"layout (location=0) flat out OutDataStruct outParam;\n"
 		"\n"
 		"void main (void)\n"

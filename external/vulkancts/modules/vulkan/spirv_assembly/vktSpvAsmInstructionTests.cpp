@@ -87,6 +87,7 @@
 #include "vktSpvAsmTerminateInvocationTests.hpp"
 #include "vktSpvAsmMultipleShadersTests.hpp"
 #ifndef CTS_USES_VULKANSC
+#include "vktSpvAsmFloatControls2Tests.hpp"
 #include "vktSpvAsmIntegerDotProductTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktSpvAsmPhysicalStorageBufferPointerTests.hpp"
@@ -20900,6 +20901,9 @@ do { \
 			computeTests->addChild(create8BitStorageComputeGroup(testCtx));
 			computeTests->addChild(create16BitStorageComputeGroup(testCtx));
 			computeTests->addChild(createFloatControlsComputeGroup(testCtx));
+#ifndef CTS_USES_VULKANSC
+			computeTests->addChild(createFloatControls2ComputeGroup(testCtx));
+#endif // CTS_USES_VULKANSC
 			computeTests->addChild(createUboMatrixPaddingComputeGroup(testCtx));
 			computeTests->addChild(createCompositeInsertComputeGroup(testCtx));
 			computeTests->addChild(createVariableInitComputeGroup(testCtx));
@@ -20980,6 +20984,9 @@ do { \
 			graphicsTests->addChild(create8BitStorageGraphicsGroup(testCtx));
 			graphicsTests->addChild(create16BitStorageGraphicsGroup(testCtx));
 			graphicsTests->addChild(createFloatControlsGraphicsGroup(testCtx));
+#ifndef CTS_USES_VULKANSC
+			graphicsTests->addChild(createFloatControls2GraphicsGroup(testCtx));
+#endif // CTS_USES_VULKANSC
 			graphicsTests->addChild(createUboMatrixPaddingGraphicsGroup(testCtx));
 			graphicsTests->addChild(createCompositeInsertGraphicsGroup(testCtx));
 			graphicsTests->addChild(createVariableInitGraphicsGroup(testCtx));

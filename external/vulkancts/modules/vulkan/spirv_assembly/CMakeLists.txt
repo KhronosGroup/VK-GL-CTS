@@ -85,6 +85,8 @@ set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
+	vktSpvAsmFloatControls2Tests.cpp
+	vktSpvAsmFloatControls2Tests.hpp
 	vktSpvAsmIntegerDotProductTests.cpp
 	vktSpvAsmIntegerDotProductTests.hpp
 	)

@@ -501,7 +501,7 @@ struct Instance
 
 		Parameters (void) {}
 
-		Parameters (vector<string>& extensions)
+		Parameters (vector<string> extensions)
 			: instanceExtensions	(extensions)
 		{}
 	};
@@ -595,7 +595,7 @@ struct Device
 		deUint32				queueFamilyIndex;
 
 		Resources (const Environment& env, const Parameters& params)
-			: instance			(env, Instance::Parameters())
+			: instance			(env, Instance::Parameters(vector<string>{ string{"VK_KHR_get_physical_device_properties2"} }))
 #ifndef CTS_USES_VULKANSC
 			, vki(env.vkp, *instance.object)
 #else
@@ -3522,6 +3522,11 @@ void checkImageCubeArraySupport (Context& context, const ImageView::Parameters p
 		TCU_THROW(NotSupportedError, "imageCubeArray feature is not supported by this implementation");
 }
 
+void checkGetPhysicalDevicePropertiesExtension (Context& context, const Device::Parameters)
+{
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+}
+
 void checkEventSupport (Context& context, const Event::Parameters)
 {
 #ifndef CTS_USES_VULKANSC
@@ -3766,7 +3771,7 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	const CaseDescriptions	s_createSingleGroup	=
 	{
 		CASE_DESC(createSingleTest	<Instance>,					s_instanceCases,			DE_NULL),
-		CASE_DESC(createSingleTest	<Device>,					s_deviceCases,				DE_NULL),
+		CASE_DESC(createSingleTest	<Device>,					s_deviceCases,				checkGetPhysicalDevicePropertiesExtension),
 		CASE_DESC(createSingleTest	<DeviceGroup>,				s_deviceGroupCases,			DE_NULL),
 		CASE_DESC(createSingleTest	<DeviceMemory>,				s_deviceMemCases,			DE_NULL),
 		CASE_DESC(createSingleTest	<Buffer>,					s_bufferCases,				DE_NULL),
