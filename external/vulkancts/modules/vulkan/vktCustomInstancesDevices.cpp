@@ -785,6 +785,7 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	const bool													validationEnabled							= m_context.getTestContext().getCommandLine().isValidationEnabled();
 	const bool													queryWithStatusForDecodeSupport				= (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT) != 0;
 	const bool													queryWithStatusForEncodeSupport				= (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_ENCODE_SUPPORT) != 0;
+	const bool													requireMaintenance1							= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_1) != 0;
 	const bool													requireYCBCRorNotSupported					= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_YCBCR_OR_NOT_SUPPORTED) != 0;
 	const bool													requireSync2orNotSupported					= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED) != 0;
 	const bool													requireTimelineSemOrNotSupported			= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_TIMELINE_OR_NOT_SUPPORTED) != 0;
@@ -903,6 +904,10 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_synchronization2"))
 			deviceExtensions.push_back("VK_KHR_synchronization2");
 
+	if (requireMaintenance1)
+		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_video_maintenance1"))
+			deviceExtensions.push_back("VK_KHR_video_maintenance1");
+
 	if (requireTimelineSemOrNotSupported)
 		if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
 			deviceExtensions.push_back("VK_KHR_timeline_semaphore");
@@ -918,6 +923,13 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES,	//  VkStructureType	sType;
 		DE_NULL,																	//  void*			pNext;
 		DE_FALSE,																	//  VkBool32		samplerYcbcrConversion;
+	};
+
+	vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR	maintenance1Features			=
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR,	//  VkStructureType	sType;
+		DE_NULL,																//  void*			pNext;
+		DE_FALSE,																//  VkBool32		videoMaintenance1;
 	};
 
 	vk::VkPhysicalDeviceTimelineSemaphoreFeatures	timelineSemaphoreFeatures			=
@@ -940,6 +952,9 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	if (requireSync2orNotSupported)
 		appendStructurePtrToVulkanChain((const void**)&features2.pNext, &synchronization2Features);
 
+	if (requireMaintenance1)
+		appendStructurePtrToVulkanChain((const void**)&features2.pNext, &maintenance1Features);
+
 	if (requireTimelineSemOrNotSupported)
 		if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
 			appendStructurePtrToVulkanChain((const void**)&features2.pNext, &timelineSemaphoreFeatures);
@@ -954,6 +969,10 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 
 	if (requireTimelineSemOrNotSupported && timelineSemaphoreFeatures.timelineSemaphore == DE_FALSE)
 		TCU_THROW(NotSupportedError, "timelineSemaphore extension is required");
+
+	if (requireMaintenance1 && maintenance1Features.videoMaintenance1 == DE_FALSE)
+		TCU_THROW(NotSupportedError, "videoMaintenance1 feature is required");
+
 
 	features2.features.robustBufferAccess = DE_FALSE;
 
