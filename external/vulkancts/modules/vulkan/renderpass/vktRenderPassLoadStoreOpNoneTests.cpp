@@ -643,29 +643,17 @@ void LoadStoreOpNoneTestInstance::createCommandBuffer(const DeviceInterface&				
 			sampleCount = VK_SAMPLE_COUNT_4_BIT;
 			i += 1;
 		}
-		else if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_COLOR)
+		else if (m_testParams.attachments[i].usage & (ATTACHMENT_USAGE_COLOR | ATTACHMENT_USAGE_INPUT))
 		{
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_INPUT)
+				imageLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+
 			colorAttachments.push_back({
 				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,			// VkStructureType						sType;
 				DE_NULL,												// const void*							pNext;
 				*imageViews[i],											// VkImageView							imageView;
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
-				VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
-				DE_NULL,												// VkImageView							resolveImageView;
-				VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
-				m_testParams.attachments[i].loadOp,						// VkAttachmentLoadOp					loadOp;
-				m_testParams.attachments[i].storeOp,					// VkAttachmentStoreOp					storeOp;
-				makeClearValueColor(tcu::Vec4(0.0f))					// VkClearValue							clearValue;
-				});
-			colorAttachmentFormats.push_back(getFormat(m_testParams.attachments[i].usage, m_testParams.depthStencilFormat));
-		}
-		else if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_INPUT)
-		{
-			colorAttachments.push_back({
-				VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,			// VkStructureType						sType;
-				DE_NULL,												// const void*							pNext;
-				*imageViews[i],											// VkImageView							imageView;
-				VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,				// VkImageLayout						imageLayout;
+				imageLayout,											// VkImageLayout						imageLayout;
 				VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
 				DE_NULL,												// VkImageView							resolveImageView;
 				VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
@@ -822,7 +810,7 @@ void LoadStoreOpNoneTestInstance::drawCommands(VkCommandBuffer							cmdBuffer,
 				DE_ASSERT(m_testParams.subpasses.size() < 3);
 
 				// barier before next subpass
-				VkMemoryBarrier memoryBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
+				VkMemoryBarrier memoryBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
 				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 1u, &memoryBarrier, 0u, DE_NULL, 0u, DE_NULL);
 
 				VkRenderingAttachmentLocationInfoKHR	renderingAttachmentLocationInfo		= initVulkanStructure();
@@ -881,6 +869,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 	const deUint32							queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	const VkComponentMapping				componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	const bool								isDynamicRendering		= (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING);
 	bool									depthIsUndefined		= false;
 	bool									stencilIsUndefined		= false;
 
@@ -967,7 +956,8 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 		if (att.init & ATTACHMENT_INIT_PRE)
 		{
 			// Preinitialize image
-			deUint32 firstUsage = getFirstUsage((deUint32)attachmentImages.size() - 1, m_testParams.subpasses);
+			deUint32 attachmentIdx	= (deUint32)attachmentImages.size() - 1;
+			deUint32 firstUsage		= getFirstUsage(attachmentIdx, m_testParams.subpasses);
 			if (firstUsage == ATTACHMENT_USAGE_UNDEFINED)
 				firstUsage = att.usage;
 
@@ -985,7 +975,10 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 				const auto dstAccess	= (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 				const auto dstStage		= (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 				const auto clearColor	= ((att.usage & ATTACHMENT_USAGE_INTEGER) ? makeClearValueColorU32(0u, 255u, 0u, 255u).color : makeClearValueColorF32(0.0f, 1.0f, 0.0f, 1.0f).color);
-				const auto layout		= ((firstUsage & ATTACHMENT_USAGE_COLOR) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				auto layout				= ((firstUsage & ATTACHMENT_USAGE_COLOR) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+				if (isDynamicRendering && (m_testParams.attachments[attachmentIdx].usage & ATTACHMENT_USAGE_INPUT))
+					layout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
 
 				clearColorImage(vk, vkDevice, queue, queueFamilyIndex, *attachmentImages.back(), clearColor, VK_IMAGE_LAYOUT_UNDEFINED,
 								layout, dstAccess, dstStage);
@@ -993,7 +986,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 		}
 	}
 
-	if (m_testParams.groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+	if (!isDynamicRendering)
 	{
 		// Create render pass.
 		if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
@@ -1141,6 +1134,10 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 		// Update descriptor set if needed.
 		if (numInputAttachments > 0u)
 		{
+			VkImageLayout inputImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			if (isDynamicRendering)
+				inputImageLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+
 			// Assuming there's only one input attachment at most.
 			DE_ASSERT(numInputAttachments == 1u);
 
@@ -1159,11 +1156,11 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			{
 				if (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_INPUT)
 				{
-					const VkDescriptorImageInfo	inputImageInfo	=
+					const VkDescriptorImageInfo	inputImageInfo
 					{
 						DE_NULL,									// VkSampler		sampler
 						*imageViews[i],								// VkImageView		imageView
-						VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout	imageLayout
+						inputImageLayout							// VkImageLayout	imageLayout
 					};
 
 					const VkWriteDescriptorSet	descriptorWrite	=
@@ -1338,7 +1335,7 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 			std::vector<deUint32>						colorAttachmentLocations			(colorVector.size(), VK_ATTACHMENT_UNUSED);
 			std::vector<deUint32>						colorAttachmentInputs				(colorVector.size(), VK_ATTACHMENT_UNUSED);
 
-			if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+			if (isDynamicRendering)
 			{
 				renderingCreateInfo.colorAttachmentCount	= static_cast<deUint32>(colorVector.size());
 				renderingCreateInfo.pColorAttachmentFormats = colorVector.data();
@@ -1445,20 +1442,22 @@ tcu::TestStatus LoadStoreOpNoneTestInstance::iterate (void)
 
 			if (verify.aspect == VK_IMAGE_ASPECT_DEPTH_BIT)
 			{
-				VkImageLayout layout = (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !transitioned) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+				VkImageLayout layout = (isDynamicRendering && !transitioned) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 				textureLevelResult = pipeline::readDepthAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], m_testParams.depthStencilFormat, m_imageSize, layout);
 				transitioned = true;
 			}
 			else if (verify.aspect == VK_IMAGE_ASPECT_STENCIL_BIT)
 			{
-				VkImageLayout layout = (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !transitioned) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+				VkImageLayout layout = (isDynamicRendering && !transitioned) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 				textureLevelResult = pipeline::readStencilAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], m_testParams.depthStencilFormat, m_imageSize, layout);
 				transitioned = true;
 			}
 			else
 			{
 				DE_ASSERT(verify.aspect == VK_IMAGE_ASPECT_COLOR_BIT);
-				VkImageLayout layout = ((m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING && !transitioned) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				VkImageLayout layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+				if (isDynamicRendering && !transitioned)
+					layout = (m_testParams.attachments[i].usage & ATTACHMENT_USAGE_INPUT) ? VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 				textureLevelResult = pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *attachmentImages[i], format, m_imageSize, layout);
 				transitioned = true;
 			}
