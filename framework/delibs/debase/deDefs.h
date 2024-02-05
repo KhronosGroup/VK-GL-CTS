@@ -160,40 +160,19 @@
 #endif
 
 /* Sized data types. */
-typedef signed char			deInt8;
-typedef signed short		deInt16;
-typedef signed int			deInt32;
-typedef unsigned char		deUint8;
-typedef unsigned short		deUint16;
-typedef unsigned int		deUint32;
-
-#if (DE_COMPILER == DE_COMPILER_MSC)
-	typedef signed __int64		deInt64;
-	typedef unsigned __int64	deUint64;
-
-#	if (DE_OS == DE_OS_WINCE)
-#		include <basetsd.h>
-		typedef INT_PTR			deIntptr;
-		typedef UINT_PTR		deUintptr;
-#	elif (DE_OS == DE_OS_WIN32)
-#		include <crtdefs.h>
-		typedef intptr_t		deIntptr;
-		typedef uintptr_t		deUintptr;
-#	else
-#		error Define intptr types.
-#	endif
-
-#elif (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
-	/* \note stddef.h is needed for size_t definition. */
-#	include <stddef.h>
-#	include <stdint.h>
-	typedef int64_t				deInt64;
-	typedef uint64_t			deUint64;
-	typedef intptr_t			deIntptr;
-	typedef uintptr_t			deUintptr;
-#else
-#	error Define 64-bit and intptr types.
-#endif
+/* \note stddef.h is needed for size_t definition. */
+#include <stddef.h>
+#include <stdint.h>
+typedef int8_t                         deInt8;
+typedef uint8_t                                deUint8;
+typedef int16_t                                deInt16;
+typedef uint16_t                       deUint16;
+typedef int32_t                                deInt32;
+typedef uint32_t                       deUint32;
+typedef int64_t                                deInt64;
+typedef uint64_t                       deUint64;
+typedef intptr_t                       deIntptr;
+typedef uintptr_t                      deUintptr;
 
 /** Boolean type. */
 typedef int deBool;
