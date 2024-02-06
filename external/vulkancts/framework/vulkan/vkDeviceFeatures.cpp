@@ -41,6 +41,7 @@ namespace vk
 		VkPhysicalDeviceFragmentDensityMapFeaturesEXT *fragmentDensityMapFeatures = nullptr;
 		VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT *pageableDeviceLocalMemoryFeatures = nullptr;
 		VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT *mutableDescriptorTypeFeatures = nullptr;
+		VkPhysicalDeviceLegacyDitheringFeaturesEXT *legacyDitheringFeatures = nullptr;
 #endif // CTS_USES_VULKANSC
 
 		m_coreFeatures2 = initVulkanStructure();
@@ -147,6 +148,8 @@ namespace vk
 							pageableDeviceLocalMemoryFeatures = reinterpret_cast<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT *>(rawStructPtr);
 						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT)
 							mutableDescriptorTypeFeatures = reinterpret_cast<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT *>(rawStructPtr);
+						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT)
+							legacyDitheringFeatures = reinterpret_cast<VkPhysicalDeviceLegacyDitheringFeaturesEXT*>(rawStructPtr);
 #endif // CTS_USES_VULKANSC
 	   // add to chain
 						*nextPtr = rawStructPtr;
@@ -246,6 +249,13 @@ namespace vk
 			// impact performance on some hardware.
 			if (mutableDescriptorTypeFeatures)
 				mutableDescriptorTypeFeatures->mutableDescriptorType = false;
+
+			// Disable legacyDitheringFeatures by default because it interacts with
+			// dynamic_rendering. On some hardware DR tests may fail on precision.
+			// Float thresholds would need to be more lenient for low bitrate formats
+			// when DR is used togehrt with legacy dithering.
+			if (legacyDitheringFeatures)
+				legacyDitheringFeatures->legacyDithering = false;
 #endif // CTS_USES_VULKANSC
 		}
 	}

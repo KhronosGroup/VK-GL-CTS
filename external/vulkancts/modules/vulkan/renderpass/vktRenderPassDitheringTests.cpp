@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRenderPassLoadStoreOpNoneTests.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vktRenderPassTestsUtil.hpp"
 #include "pipeline/vktPipelineImageUtil.hpp"
 #include "vkRefUtil.hpp"
@@ -32,6 +33,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "tcuImageCompare.hpp"
+#include "vktTestGroupUtil.hpp"
 
 namespace vkt
 {
@@ -69,6 +71,61 @@ struct Vertex4RGBA
 	tcu::Vec4 position;
 	tcu::Vec4 color;
 };
+
+de::SharedPtr<Move<vk::VkDevice>> g_singletonDevice;
+
+VkDevice getDevice(Context& context)
+{
+	if (g_singletonDevice)
+		return g_singletonDevice->get();
+
+	// Create a universal queue that supports graphics and compute
+	const float queuePriority = 1.0f;
+	const VkDeviceQueueCreateInfo queueParams
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
+		DE_NULL,									// const void*					pNext;
+		0u,											// VkDeviceQueueCreateFlags		flags;
+		context.getUniversalQueueFamilyIndex(),		// deUint32						queueFamilyIndex;
+		1u,											// deUint32						queueCount;
+		&queuePriority								// const float*					pQueuePriorities;
+	};
+
+	// \note Extensions in core are not explicitly enabled even though
+	//		 they are in the extension list advertised to tests.
+	const auto& extensionPtrs = context.getDeviceCreationExtensions();
+
+	VkPhysicalDeviceLegacyDitheringFeaturesEXT	legacyDitheringFeatures		= initVulkanStructure();
+	VkPhysicalDeviceDynamicRenderingFeatures	dynamicRenderingFeatures	= initVulkanStructure();
+	VkPhysicalDeviceFeatures2					features2					= initVulkanStructure();
+
+	const auto addFeatures = makeStructChainAdder(&features2);
+	addFeatures(&legacyDitheringFeatures);
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_dynamic_rendering"))
+		addFeatures(&dynamicRenderingFeatures);
+
+	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+	features2.features.robustBufferAccess = VK_FALSE;
+
+	const VkDeviceCreateInfo deviceCreateInfo
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
+		&features2,														//pNext;
+		0u,																//flags
+		1,																//queueRecordCount;
+		&queueParams,													//pRequestedQueues;
+		0u,																//layerCount;
+		nullptr,														//ppEnabledLayerNames;
+		de::sizeU32(extensionPtrs),										// deUint32				enabledExtensionCount;
+		de::dataOrNull(extensionPtrs),									// const char* const*	ppEnabledExtensionNames;
+		nullptr,														//pEnabledFeatures;
+	};
+
+	Move<VkDevice> device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
+	g_singletonDevice = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
+	return g_singletonDevice->get();
+}
 
 std::vector<Vertex4RGBA> createQuad (void)
 {
@@ -275,7 +332,7 @@ DitheringTestInstance::DitheringTestInstance	(Context& context,
 												 TestParams testParams)
 	: vkt::TestInstance	(context)
 	, m_testParams		(testParams)
-	, m_memAlloc		(context.getDeviceInterface(), context.getDevice(),
+	, m_memAlloc		(context.getDeviceInterface(), getDevice(context),
 						 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
 {
 	createCommonResources();
@@ -290,9 +347,9 @@ DitheringTestInstance::~DitheringTestInstance (void)
 tcu::TestStatus DitheringTestInstance::iterate (void)
 {
 	const DeviceInterface&					vk							= m_context.getDeviceInterface();
-	const VkDevice							vkDevice					= m_context.getDevice();
-	const VkQueue							queue						= m_context.getUniversalQueue();
+	const VkDevice							vkDevice					= getDevice(m_context);
 	const deUint32							queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue							queue						= getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
 
 	for (const VkViewport& vp : m_testParams.renderAreas)
 	{
@@ -383,9 +440,9 @@ template<typename RenderpassSubpass>
 void DitheringTestInstance::render (const VkViewport& vp, bool useDithering)
 {
 	const DeviceInterface&			vk							= m_context.getDeviceInterface();
-	const VkDevice					vkDevice					= m_context.getDevice();
-	const VkQueue					queue						= m_context.getUniversalQueue();
+	const VkDevice					vkDevice					= getDevice(m_context);
 	const deUint32					queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue					queue						= getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
 
 	deUint32						resourceNdx					= useDithering ? m_ditheringNdx : m_noDitheringNdx;
 	const tcu::UVec2				imageSize					= m_testParams.imageSize;
@@ -519,7 +576,7 @@ void DitheringTestInstance::render (const VkViewport& vp, bool useDithering)
 void DitheringTestInstance::createCommonResources (void)
 {
 	const DeviceInterface&	vk							= m_context.getDeviceInterface();
-	const VkDevice			vkDevice					= m_context.getDevice();
+	const VkDevice			vkDevice					= getDevice(m_context);
 	const deUint32			queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
 
 	// Shaders.
@@ -571,9 +628,9 @@ void DitheringTestInstance::createCommonResources (void)
 void DitheringTestInstance::createDrawResources (bool useDithering)
 {
 	const DeviceInterface&			vk							= m_context.getDeviceInterface();
-	const VkDevice					vkDevice					= m_context.getDevice();
-	const VkQueue					queue						= m_context.getUniversalQueue();
+	const VkDevice					vkDevice					= getDevice(m_context);
 	const deUint32					queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue					queue						= getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
 
 	deUint32						resourceNdx					= useDithering ? m_ditheringNdx : m_noDitheringNdx;
 	const std::vector<vk::VkFormat>	colorFormats				= m_testParams.colorFormats;
@@ -883,7 +940,7 @@ template <typename AttachmentDescription, typename AttachmentReference, typename
 void DitheringTestInstance::createRenderPassFramebuffer (bool useDithering)
 {
 	const DeviceInterface&				vk						= m_context.getDeviceInterface();
-	const VkDevice						vkDevice				= m_context.getDevice();
+	const VkDevice						vkDevice				= getDevice(m_context);
 
 	deUint32							resourceNdx				= useDithering ? m_ditheringNdx : m_noDitheringNdx;
 	std::vector<VkFormat>				colorFormats			= m_testParams.colorFormats;
@@ -1006,17 +1063,16 @@ void DitheringTestInstance::createRenderPassFramebuffer (bool useDithering)
 
 } // anonymous
 
-tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
+static void createChildren (tcu::TestCaseGroup* ditheringTests, const SharedGroupParams groupParams)
 {
-	deUint32							imageDimensions				= 256u;
-	deUint32							smallRenderAreaDimensions	= 31u;
-	deUint32							maxRenderOffset				= imageDimensions - smallRenderAreaDimensions;
-	deUint32							extraRandomAreaRenderCount	= 10u;
-	TestParams							testParams;
-	VkFormat							testFormats[]				= { VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R5G6B5_UNORM_PACK16, VK_FORMAT_R4G4B4A4_UNORM_PACK16, VK_FORMAT_R5G5B5A1_UNORM_PACK16 };
-	deUint32							testFormatCount				= sizeof(testFormats) / sizeof(testFormats[0]);
-	// Tests for VK_EXT_legacy_dithering
-	de::MovePtr<tcu::TestCaseGroup>		ditheringTests				(new tcu::TestCaseGroup(testCtx, "dithering"));
+	tcu::TestContext&	testCtx						= ditheringTests->getTestContext();
+	deUint32			imageDimensions				= 256u;
+	deUint32			smallRenderAreaDimensions	= 31u;
+	deUint32			maxRenderOffset				= imageDimensions - smallRenderAreaDimensions;
+	deUint32			extraRandomAreaRenderCount	= 10u;
+	TestParams			testParams;
+	VkFormat			testFormats[]				= { VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R5G6B5_UNORM_PACK16, VK_FORMAT_R4G4B4A4_UNORM_PACK16, VK_FORMAT_R5G5B5A1_UNORM_PACK16 };
+	deUint32			testFormatCount				= sizeof(testFormats) / sizeof(testFormats[0]);
 
 	testParams.overrideColor		= tcu::Vec4(0.5f, 0.0f, 0.0f, 1.0f);
 	testParams.imageSize			= tcu::UVec2{ imageDimensions, imageDimensions };
@@ -1165,8 +1221,19 @@ tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, c
 
 		ditheringTests->addChild(blendTests.release());
 	}
+}
 
-	return ditheringTests.release();
+static void cleanupGroup(tcu::TestCaseGroup* group, const SharedGroupParams)
+{
+	DE_UNREF(group);
+	// Destroy singleton objects.
+	g_singletonDevice.clear();
+}
+
+tcu::TestCaseGroup* createRenderPassDitheringTests(tcu::TestContext& testCtx, const SharedGroupParams groupParams)
+{
+	// Tests for VK_EXT_legacy_dithering
+	return createTestGroup(testCtx, "dithering", createChildren, groupParams, cleanupGroup);
 }
 
 } // renderpass
