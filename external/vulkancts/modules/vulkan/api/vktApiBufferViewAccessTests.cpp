@@ -570,7 +570,7 @@ private:
 	int									getFetchPos								(int fetchPosNdx);
 	tcu::TestStatus						checkResult								();
 	tcu::TestStatus						checkResultFloat						();
-	void								populateSourceBuffer					(const tcu::PixelBufferAccess& access, deUint32 bufferNdx);
+	void								populateSourceBuffer					(const tcu::PixelBufferAccess& access);
 
 private:
 	enum
@@ -631,7 +631,7 @@ BufferViewAllFormatsTestInstance::~BufferViewAllFormatsTestInstance		(void)
 }
 
 /* Taken from BindingShaderAccessTests.cpp */
-void BufferViewAllFormatsTestInstance::populateSourceBuffer				(const tcu::PixelBufferAccess& access, deUint32 bufferNdx)
+void BufferViewAllFormatsTestInstance::populateSourceBuffer				(const tcu::PixelBufferAccess& access)
 {
 	DE_ASSERT(access.getHeight() == 1);
 	DE_ASSERT(access.getDepth() == 1);
@@ -648,11 +648,9 @@ void BufferViewAllFormatsTestInstance::populateSourceBuffer				(const tcu::Pixel
 		DE_ASSERT(de::inRange(green, 0, 255));
 		DE_ASSERT(de::inRange(blue, 0, 255));
 
-		if (bufferNdx % 2 == 0) red		= 255 - red;
-		if (bufferNdx % 3 == 0) green	= 255 - green;
-		if (bufferNdx % 4 == 0) blue	= 255 - blue;
-
-		access.setPixel(tcu::IVec4(red, green, blue, 255), x, 0, 0);
+		// Most formats will get tested adequately using the r, g and b values, but A8_UNORM only takes data from the
+		// alpha channel, so try to put something with maximum variation in there, rather than just 1.0f.
+		access.setPixel(tcu::IVec4(red, green, blue, red ^ green), x, 0, 0);
 	}
 }
 
@@ -708,7 +706,7 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance		(Context&			
 		const tcu::TextureFormat tcuFormat	= mapVkFormat(m_bufferFormat);
 
 		de::ArrayBuffer<deUint8> sourceBuffer(testCase.bufferSize);
-		populateSourceBuffer(tcu::PixelBufferAccess(tcuFormat, tcu::IVec3(testCase.bufferSize / tcuFormat.getPixelSize(), 1, 1), sourceBuffer.getPtr()), 0);
+		populateSourceBuffer(tcu::PixelBufferAccess(tcuFormat, tcu::IVec3(testCase.bufferSize / tcuFormat.getPixelSize(), 1, 1), sourceBuffer.getPtr()));
 
 		m_sourceBuffer = sourceBuffer;
 		m_sourceView = tcu::ConstPixelBufferAccess(tcuFormat, tcu::IVec3(64, 1, 1), m_sourceBuffer.getPtr());
