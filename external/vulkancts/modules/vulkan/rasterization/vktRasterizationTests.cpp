@@ -4787,7 +4787,8 @@ public:
 													 LineStipple				stipple,
 													 VkLineRasterizationModeEXT	lineRasterizationMode,
 													 LineStippleFactorCase		stippleFactor = LineStippleFactorCase::DEFAULT,
-													 deUint32					additionalRenderSize	= 0)
+													 deUint32					additionalRenderSize	= 0,
+													 bool withAdjacency			=	false)
 									: BaseRenderingTestCase		(context, name, sampleCount)
 									, m_wideness				(wideness)
 									, m_strictness				(strictness)
@@ -4796,6 +4797,7 @@ public:
 									, m_lineRasterizationMode	(lineRasterizationMode)
 									, m_stippleFactor			(stippleFactor)
 									, m_additionalRenderSize	(additionalRenderSize)
+									, m_withAdjacency			(withAdjacency)
 								{}
 
 	virtual TestInstance*		createInstance		(Context& context) const
@@ -4805,6 +4807,11 @@ public:
 
 	virtual	void				checkSupport		(Context& context) const
 								{
+									if (m_withAdjacency)
+									{
+										context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+									}
+
 									if (m_isLineTest)
 									{
 										if (m_stipple == LINESTIPPLE_DYNAMIC_WITH_TOPOLOGY)
@@ -4893,6 +4900,7 @@ protected:
 	const VkLineRasterizationModeEXT	m_lineRasterizationMode;
 	const LineStippleFactorCase			m_stippleFactor;
 	const deUint32						m_additionalRenderSize;
+	const bool							m_withAdjacency;
 };
 
 class LinesTestInstance : public BaseLineTestInstance
@@ -4905,7 +4913,6 @@ public:
 	VkPrimitiveTopology	getWrongTopology	(void) const override { return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP; }
 	VkPrimitiveTopology	getRightTopology	(void) const override { return VK_PRIMITIVE_TOPOLOGY_LINE_LIST; }
 	void				generateLines		(int iteration, std::vector<tcu::Vec4>& outData, std::vector<LineSceneSpec::SceneLine>& outLines) override;
-
 };
 
 void LinesTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& outData, std::vector<LineSceneSpec::SceneLine>& outLines)
@@ -4972,6 +4979,78 @@ void LinesTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& ou
 	}
 }
 
+class LinesWithAdjacencyTestInstance : public BaseLineTestInstance
+{
+public:
+						LinesWithAdjacencyTestInstance	(Context& context, PrimitiveWideness wideness, PrimitiveStrictness strictness, VkSampleCountFlagBits sampleCount, LineStipple stipple, VkLineRasterizationModeEXT lineRasterizationMode, LineStippleFactorCase stippleFactor, deUint32 additionalRenderSize = 0)
+							: BaseLineTestInstance(context, VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY, wideness, strictness, sampleCount, stipple, lineRasterizationMode, stippleFactor, additionalRenderSize)
+						{}
+
+	VkPrimitiveTopology	getWrongTopology(void) const override { return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP; }
+	VkPrimitiveTopology	getRightTopology(void) const override { return VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY; }
+	void				generateLines(int iteration, std::vector<tcu::Vec4>& outData, std::vector<LineSceneSpec::SceneLine>& outLines) override;
+};
+
+void LinesWithAdjacencyTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& outData, std::vector<LineSceneSpec::SceneLine>& outLines)
+{
+	outData.resize(8);
+
+	switch (iteration)
+	{
+		case 0:
+			// \note: these values are chosen arbitrarily
+			outData[0] = tcu::Vec4( 0.01f,  0.0f, 0.0f, 1.0f);
+			outData[1] = tcu::Vec4(  0.5f,  0.2f, 0.0f, 1.0f);
+			outData[2] = tcu::Vec4( 0.46f,  0.3f, 0.0f, 1.0f);
+			outData[3] = tcu::Vec4( -0.3f,  0.2f, 0.0f, 1.0f);
+			outData[4] = tcu::Vec4( -1.5f, -0.4f, 0.0f, 1.0f);
+			outData[5] = tcu::Vec4(  0.1f,  0.5f, 0.0f, 1.0f);
+			outData[6] = tcu::Vec4( 0.75f, -0.4f, 0.0f, 1.0f);
+			outData[7] = tcu::Vec4(  0.3f,  0.8f, 0.0f, 1.0f);
+			break;
+
+		case 1:
+			outData[0] = tcu::Vec4(-0.499f, 0.128f, 0.0f, 1.0f);
+			outData[1] = tcu::Vec4(-0.501f,  -0.3f, 0.0f, 1.0f);
+			outData[2] = tcu::Vec4(  0.11f,  -0.2f, 0.0f, 1.0f);
+			outData[3] = tcu::Vec4(  0.11f,   0.2f, 0.0f, 1.0f);
+			outData[4] = tcu::Vec4(  0.88f,   0.9f, 0.0f, 1.0f);
+			outData[5] = tcu::Vec4(  0.18f,  -0.2f, 0.0f, 1.0f);
+			outData[6] = tcu::Vec4(   0.0f,   1.0f, 0.0f, 1.0f);
+			outData[7] = tcu::Vec4(   0.0f,  -1.0f, 0.0f, 1.0f);
+			break;
+
+		case 2:
+			outData[0] = tcu::Vec4( -0.9f, -0.3f, 0.0f, 1.0f);
+			outData[1] = tcu::Vec4(  0.9f, -0.9f, 0.0f, 1.0f);
+			outData[2] = tcu::Vec4(  0.7f, -0.1f, 0.0f, 1.0f);
+			outData[3] = tcu::Vec4( 0.11f,  0.2f, 0.0f, 1.0f);
+			outData[4] = tcu::Vec4( 0.88f,  0.7f, 0.0f, 1.0f);
+			outData[5] = tcu::Vec4(  0.8f, -0.7f, 0.0f, 1.0f);
+			outData[6] = tcu::Vec4(  0.9f,  0.7f, 0.0f, 1.0f);
+			outData[7] = tcu::Vec4( -0.9f,  0.7f, 0.0f, 1.0f);
+			break;
+	}
+
+	outLines.resize(2);
+	outLines[0].positions[0] = outData[1];
+	outLines[0].positions[1] = outData[2];
+	outLines[1].positions[0] = outData[5];
+	outLines[1].positions[1] = outData[6];
+
+	// log
+	m_context.getTestContext().getLog() << tcu::TestLog::Message << "Rendering " << outLines.size() << " lines(s) with adjacency: (width = " << getLineWidth() << ")" << tcu::TestLog::EndMessage;
+	for (int lineNdx = 0; lineNdx < (int)outLines.size(); ++lineNdx)
+	{
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message
+			<< "Line " << (lineNdx+1) << ":"
+			<< "\n\t" << outLines[lineNdx].positions[0]
+			<< "\n\t" << outLines[lineNdx].positions[1]
+			<< tcu::TestLog::EndMessage;
+	}
+}
+
 class LineStripTestInstance : public BaseLineTestInstance
 {
 public:
@@ -5023,6 +5102,62 @@ void LineStripTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>
 
 	// log
 	m_context.getTestContext().getLog() << tcu::TestLog::Message << "Rendering line strip, width = " << getLineWidth() << ", " << outData.size() << " vertices." << tcu::TestLog::EndMessage;
+	for (int vtxNdx = 0; vtxNdx < (int)outData.size(); ++vtxNdx)
+	{
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message
+			<< "\t" << outData[vtxNdx]
+			<< tcu::TestLog::EndMessage;
+	}
+}
+
+class LineStripWithAdjacencyTestInstance : public BaseLineTestInstance
+{
+public:
+						LineStripWithAdjacencyTestInstance	(Context& context, PrimitiveWideness wideness, PrimitiveStrictness strictness, VkSampleCountFlagBits sampleCount, LineStipple stipple, VkLineRasterizationModeEXT lineRasterizationMode, LineStippleFactorCase stippleFactor, deUint32)
+							: BaseLineTestInstance(context, VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY, wideness, strictness, sampleCount, stipple, lineRasterizationMode, stippleFactor)
+						{}
+
+	VkPrimitiveTopology	getWrongTopology		(void) const override { return VK_PRIMITIVE_TOPOLOGY_LINE_LIST; }
+	VkPrimitiveTopology	getRightTopology		(void) const override { return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY; }
+	void				generateLines			(int iteration, std::vector<tcu::Vec4>& outData, std::vector<LineSceneSpec::SceneLine>& outLines) override;
+};
+
+void LineStripWithAdjacencyTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& outData, std::vector<LineSceneSpec::SceneLine>& outLines)
+{
+	outData.resize(4);
+
+	switch (iteration)
+	{
+		case 0:
+			// \note: these values are chosen arbitrarily
+			outData[0] = tcu::Vec4( 0.01f,  0.0f, 0.0f, 1.0f);
+			outData[1] = tcu::Vec4( 0.5f,   0.2f, 0.0f, 1.0f);
+			outData[2] = tcu::Vec4( 0.46f,  0.3f, 0.0f, 1.0f);
+			outData[3] = tcu::Vec4(-0.5f,   0.2f, 0.0f, 1.0f);
+			break;
+
+		case 1:
+			outData[0] = tcu::Vec4(-0.499f, 0.128f, 0.0f, 1.0f);
+			outData[1] = tcu::Vec4(-0.501f,  -0.3f, 0.0f, 1.0f);
+			outData[2] = tcu::Vec4(  0.11f,  -0.2f, 0.0f, 1.0f);
+			outData[3] = tcu::Vec4(  0.11f,   0.2f, 0.0f, 1.0f);
+			break;
+
+		case 2:
+			outData[0] = tcu::Vec4( -0.9f, -0.3f, 0.0f, 1.0f);
+			outData[1] = tcu::Vec4(  0.9f, -0.9f, 0.0f, 1.0f);
+			outData[2] = tcu::Vec4(  0.7f, -0.1f, 0.0f, 1.0f);
+			outData[3] = tcu::Vec4( 0.11f,  0.2f, 0.0f, 1.0f);
+			break;
+	}
+
+	outLines.resize(1);
+	outLines[0].positions[0] = outData[1];
+	outLines[0].positions[1] = outData[2];
+
+	// log
+	m_context.getTestContext().getLog() << tcu::TestLog::Message << "Rendering line strip with adjacency, width = " << getLineWidth() << ", " << outData.size() << " vertices." << tcu::TestLog::EndMessage;
 	for (int vtxNdx = 0; vtxNdx < (int)outData.size(); ++vtxNdx)
 	{
 		m_context.getTestContext().getLog()
@@ -7970,22 +8105,38 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 		nostippleTests->addChild(new WidenessTestCase<PointTestInstance>		(testCtx, "points", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, false, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT));
 
 		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode, verify rasterization result
-		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "strict_lines", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>					(testCtx, "strict_lines",							PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in strict mode, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>		(testCtx, "strict_lines_with_adjacency",			PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST, LineStippleFactorCase::DEFAULT, 0, true));
 		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in strict mode, verify rasterization result
-		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "strict_line_strip", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>				(testCtx, "strict_line_strip",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in strict mode, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>	(testCtx, "strict_line_strip_with_adjacency",		PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST, LineStippleFactorCase::DEFAULT, 0, true));
 		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in strict mode with wide lines, verify rasterization result
-		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "strict_lines_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>					(testCtx, "strict_lines_wide",						PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in strict mode with wide lines, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>		(testCtx, "strict_lines_with_adjacency_wide",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST, LineStippleFactorCase::DEFAULT, 0, true));
 		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in strict mode with wide lines, verify rasterization result
-		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "strict_line_strip_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>				(testCtx, "strict_line_strip_wide",					PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in strict mode with wide lines, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>	(testCtx, "strict_line_strip_with_adjacency_wide",	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST, LineStippleFactorCase::DEFAULT, 0, true));
 
 		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode, verify rasterization result
-		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "non_strict_lines", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>					(testCtx, "non_strict_lines",							PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in nonstrict mode, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>		(testCtx, "non_strict_lines_with_adjacency",			PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST, LineStippleFactorCase::DEFAULT, 0, true));
 		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode, verify rasterization result
-		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "non_strict_line_strip", PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>				(testCtx, "non_strict_line_strip",						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in nonstrict mode, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>	(testCtx, "non_strict_line_strip_with_adjacency",		PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST, LineStippleFactorCase::DEFAULT, 0, true));
 		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST in nonstrict mode with wide lines, verify rasterization result
-		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "non_strict_lines_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		nostippleTests->addChild(new WidenessTestCase<LinesTestInstance>					(testCtx, "non_strict_lines_wide",						PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY in nonstrict mode with wide lines, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>		(testCtx, "non_strict_lines_with_adjacency_wide",		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST, LineStippleFactorCase::DEFAULT, 0, true));
 		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP in nonstrict mode with wide lines, verify rasterization result
-		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "non_strict_line_strip_wide", PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		nostippleTests->addChild(new WidenessTestCase<LineStripTestInstance>				(testCtx, "non_strict_line_strip_wide",					PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST));
+		// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY in nonstrict mode with wide lines, verify rasterization result
+		nostippleTests->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>	(testCtx, "non_strict_line_strip_with_adjacency_wide",	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_NONSTRICT, true, VK_SAMPLE_COUNT_1_BIT, LINESTIPPLE_DISABLED, VK_LINE_RASTERIZATION_MODE_KHR_LAST, LineStippleFactorCase::DEFAULT, 0, true));
 
 		for (int i = 0; i < static_cast<int>(LINESTIPPLE_LAST); ++i) {
 
@@ -8017,40 +8168,73 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 				const auto& suffix		= sfCase.nameSuffix;
 
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor, i == 0 ? RESOLUTION_NPOT : 0));
+				g->addChild(new WidenessTestCase<LinesTestInstance>						(testCtx, "lines" + suffix,								PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor, i == 0 ? RESOLUTION_NPOT : 0));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>		(testCtx, "lines_with_adjacency" + suffix,				PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor, i == 0 ? RESOLUTION_NPOT : 0, true));
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor));
+				g->addChild(new WidenessTestCase<LineStripTestInstance>					(testCtx, "line_strip" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>	(testCtx, "line_strip_with_adjacency" + suffix,			PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor, 0, true));
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor));
+				g->addChild(new WidenessTestCase<LinesTestInstance>						(testCtx, "lines_wide" + suffix,						PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>		(testCtx, "lines_with_adjacency_wide" + suffix,			PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor, 0, true));
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor));
+				g->addChild(new WidenessTestCase<LineStripTestInstance>					(testCtx, "line_strip_wide" + suffix,					PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>	(testCtx, "line_strip_with_adjacency_wide" + suffix,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT, factor, 0, true));
 
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "rectangular_lines" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
+				g->addChild(new WidenessTestCase<LinesTestInstance>						(testCtx, "rectangular_lines" + suffix,								PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>		(testCtx, "rectangular_lines_with_adjacency" + suffix,				PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor, 0, true));
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "rectangular_line_strip" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
+				g->addChild(new WidenessTestCase<LineStripTestInstance>					(testCtx, "rectangular_line_strip" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>	(testCtx, "rectangular_line_strip_with_adjacency" + suffix,			PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor, 0, true));
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "rectangular_lines_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
+				g->addChild(new WidenessTestCase<LinesTestInstance>						(testCtx, "rectangular_lines_wide" + suffix,						PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>		(testCtx, "rectangular_lines_with_adjacency_wide" + suffix,			PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor, 0, true));
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "rectangular_line_strip_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
+				g->addChild(new WidenessTestCase<LineStripTestInstance>					(testCtx, "rectangular_line_strip_wide" + suffix,					PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>	(testCtx, "rectangular_line_strip_with_adjacency_wide" + suffix,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_STRICT, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT, factor, 0, true));
+
 
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "bresenham_lines" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
+				g->addChild(new WidenessTestCase<LinesTestInstance>						(testCtx, "bresenham_lines" + suffix,							PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>		(testCtx, "bresenham_lines_with_adjacency" + suffix,			PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor, 0, true));
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "bresenham_line_strip" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
+				g->addChild(new WidenessTestCase<LineStripTestInstance>					(testCtx, "bresenham_line_strip" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>	(testCtx, "bresenham_line_strip_with_adjacency" + suffix,		PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor, 0, true));
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "bresenham_lines_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
+				g->addChild(new WidenessTestCase<LinesTestInstance>						(testCtx, "bresenham_lines_wide" + suffix,						PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>		(testCtx, "bresenham_lines_with_adjacency_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor, 0, true));
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "bresenham_line_strip_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
+				g->addChild(new WidenessTestCase<LineStripTestInstance>					(testCtx, "bresenham_line_strip_wide" + suffix,					PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>	(testCtx, "bresenham_line_strip_with_adjacency_wide" + suffix,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT, factor, 0, true));
 
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "smooth_lines" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
+				g->addChild(new WidenessTestCase<LinesTestInstance>						(testCtx, "smooth_lines" + suffix,							PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>		(testCtx, "smooth_lines_with_adjacency" + suffix,			PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor, 0, true));
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "smooth_line_strip" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
+				g->addChild(new WidenessTestCase<LineStripTestInstance>					(testCtx, "smooth_line_strip" + suffix,						PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>	(testCtx, "smooth_line_strip_with_adjacency" + suffix,		PRIMITIVEWIDENESS_NARROW,	PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor, 0, true));
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result
-				g->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "smooth_lines_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
+				g->addChild(new WidenessTestCase<LinesTestInstance>						(testCtx, "smooth_lines_wide" + suffix,						PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LinesWithAdjacencyTestInstance>		(testCtx, "smooth_lines_with_adjacency_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor, 0, true));
 				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result
-				g->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "smooth_line_strip_wide" + suffix,		PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
+				g->addChild(new WidenessTestCase<LineStripTestInstance>					(testCtx, "smooth_line_strip_wide" + suffix,				PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor));
+				// Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY with wide lines, verify rasterization result
+				g->addChild(new WidenessTestCase<LineStripWithAdjacencyTestInstance>	(testCtx, "smooth_line_strip_with_adjacency_wide" + suffix,	PRIMITIVEWIDENESS_WIDE,		PRIMITIVESTRICTNESS_IGNORE, true, VK_SAMPLE_COUNT_1_BIT, stipple, VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT, factor, 0, true));
 			}
 		}
 	}
