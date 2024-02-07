@@ -75,7 +75,13 @@ enum class TestType
 	DEPTH_MAPPING_STENCIL_NOT,
 
 	// Test that blend state is using unmapped indexes
-	MAPPING_NOT_AFFECTING_BLEND_STATE
+	MAPPING_NOT_AFFECTING_BLEND_STATE,
+
+	// Test interaction with VK_EXT_color_write_enable
+	INTERACTION_WITH_COLOR_WRITE_ENABLE,
+
+	// Test interaction with VK_EXT_extended_dynamic_state3
+	INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3
 };
 
 // During test creation we dont know what is the maximal number of input attachments.
@@ -285,6 +291,24 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context&		context,
 		m_expectedValues[0]				= 630;
 		break;
 	}
+	case TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE:
+	{
+		m_colorAttachmentCount			= 4;
+		m_colorAttachmentLocations		= { { 0, 3, 1, 2 } };
+		m_depthInputAttachmentIndex		= 4;
+		m_stencilInputAttachmentIndex	= VK_ATTACHMENT_UNUSED;
+		m_expectedValues[0]				= 620;
+		break;
+	}
+	case TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3:
+	{
+		m_colorAttachmentCount			= 4;
+		m_colorAttachmentLocations		= { { 0, 3, 1, 2 } };
+		m_depthInputAttachmentIndex		= 4;
+		m_stencilInputAttachmentIndex	= VK_ATTACHMENT_UNUSED;
+		m_expectedValues[0]				= 627;
+		break;
+	}
 	default:
 		DE_ASSERT(false);
 		break;
@@ -293,17 +317,20 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context&		context,
 
 tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 {
-	const DeviceInterface&			vk					= m_context.getDeviceInterface();
-	const VkDevice					device				= m_context.getDevice();
-	Allocator&						memAlloc			= m_context.getDefaultAllocator();
-	VkQueue							queue				= m_context.getUniversalQueue();
-	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	const VkImageSubresourceRange	colorSRR			= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const VkImageSubresourceRange	dSRR				= makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
-	const VkImageSubresourceRange	sSRR				= makeImageSubresourceRange(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u);
-	const VkImageSubresourceRange	dsSRR				= makeImageSubresourceRange(dSRR.aspectMask | sSRR.aspectMask, 0u, 1u, 0u, 1u);
-	const std::vector<VkViewport>	viewports			{ makeViewport(m_renderSize, m_renderSize) };
-	const std::vector<VkRect2D>		scissors			{ makeRect2D(m_renderSize, m_renderSize) };
+	const DeviceInterface&			vk							= m_context.getDeviceInterface();
+	const VkDevice					device						= m_context.getDevice();
+	Allocator&						memAlloc					= m_context.getDefaultAllocator();
+	VkQueue							queue						= m_context.getUniversalQueue();
+	const deUint32					queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkImageSubresourceRange	colorSRR					= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const VkImageSubresourceRange	dSRR						= makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
+	const VkImageSubresourceRange	sSRR						= makeImageSubresourceRange(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u);
+	const VkImageSubresourceRange	dsSRR						= makeImageSubresourceRange(dSRR.aspectMask | sSRR.aspectMask, 0u, 1u, 0u, 1u);
+	const std::vector<VkViewport>	viewports					{ makeViewport(m_renderSize, m_renderSize) };
+	const std::vector<VkRect2D>		scissors					{ makeRect2D(m_renderSize, m_renderSize) };
+	const bool						useColorWriteEnable			(m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE);
+	const bool						useUseExtendedDynamicState3	(m_testType == TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3);
+	const VkBool32					colorWriteEnables[]	{ 0, 1, 0, 1 };
 
 	// define few structures that will be modified and reused in multiple places
 	VkImageMemoryBarrier colorImageBarrier = makeImageMemoryBarrier(
@@ -333,9 +360,9 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 		VK_ATTACHMENT_STORE_OP_STORE,							// VkAttachmentStoreOp					storeOp;
 		makeClearValueColor(tcu::Vec4(0.0f))					// VkClearValue							clearValue;
 	};
-	VkImageUsageFlags			imageUsage				= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-	VkDescriptorImageInfo		depthImageDescriptor	(makeDescriptorImageInfo(DE_NULL, DE_NULL, VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR));
-	VkDescriptorImageInfo		stencilImageDescriptor	(depthImageDescriptor);
+	VkImageUsageFlags			imageUsage					= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	VkDescriptorImageInfo		depthImageDescriptor		(makeDescriptorImageInfo(DE_NULL, DE_NULL, VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR));
+	VkDescriptorImageInfo		stencilImageDescriptor		(depthImageDescriptor);
 
 	// construct required containers
 	std::vector<ImageWithMemorySp>			images					(m_colorAttachmentCount + 1, ImageWithMemorySp());	// +1 for depth+stencil image
@@ -447,6 +474,11 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 	colorBlendStateCreateInfo.attachmentCount	= (deUint32)colorBlendAttachmentStates.size();
 	colorBlendStateCreateInfo.pAttachments		= colorBlendAttachmentStates.data();
 
+	// define MultisampleState, it is only needed to test if CmdSetRasterizationSamplesEXT does not affect local_read remappings
+	VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = initVulkanStructure();
+	multisampleStateCreateInfo.rasterizationSamples	= useUseExtendedDynamicState3 ? VK_SAMPLE_COUNT_2_BIT : VK_SAMPLE_COUNT_1_BIT;
+	multisampleStateCreateInfo.minSampleShading		= 1.0f;
+
 	// define DepthStencilState so that we can write to depth and stencil attachments
 	const VkStencilOpState stencilOpState
 	{
@@ -473,6 +505,21 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 		0.0f,														// float									minDepthBounds
 		1.0f,														// float									maxDepthBounds
 	};
+
+	VkDynamicState dynamicState = VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT;
+	if (useUseExtendedDynamicState3)
+		dynamicState = VK_DYNAMIC_STATE_RASTERIZATION_SAMPLES_EXT;
+	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType						sType
+		DE_NULL,													// const void*							pNext
+		0u,															// VkPipelineDynamicStateCreateFlags	flags
+		1u,															// deUint32								dynamicStateCount
+		&dynamicState												// const VkDynamicState*				pDynamicStates
+	};
+	VkPipelineDynamicStateCreateInfo* writeDynamicStateCreateInfo = nullptr;
+	if (useColorWriteEnable || useUseExtendedDynamicState3)
+		writeDynamicStateCreateInfo = &dynamicStateCreateInfo;
 
 	VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocationInfo
 	{
@@ -507,8 +554,8 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 		renderingAttachmentLocationInfo.pColorAttachmentLocations = m_colorAttachmentLocations[pipelineIndex].data();
 		writeGraphicsPipelines[pipelineIndex] = makeGraphicsPipeline(vk, device, *writePipelineLayout, *vertShaderModule, DE_NULL, DE_NULL, DE_NULL,
 																	 *writeFragShaderModule, DE_NULL, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-																	 0, 0, &vertexInputState, DE_NULL, DE_NULL, &depthStencilStateCreateInfo,
-																	 &colorBlendStateCreateInfo, DE_NULL, &renderingCreateInfo);
+																	 0, 0, &vertexInputState, DE_NULL, &multisampleStateCreateInfo, &depthStencilStateCreateInfo,
+																	 &colorBlendStateCreateInfo, writeDynamicStateCreateInfo, &renderingCreateInfo);
 
 		// writte to depth and stencil only in first pipeline
 		depthStencilStateCreateInfo.depthTestEnable		= DE_FALSE;
@@ -561,6 +608,12 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 		vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *writeGraphicsPipelines[pipelineIndex]);
 		vk.cmdPushConstants(cmdBuffer, *writePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4, &pipelineIndex);
 		vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocationInfo);
+
+		if (useColorWriteEnable)
+			vk.cmdSetColorWriteEnableEXT(cmdBuffer, 4u, colorWriteEnables);
+		if (useUseExtendedDynamicState3)
+			vk.cmdSetRasterizationSamplesEXT(cmdBuffer, VK_SAMPLE_COUNT_1_BIT);
+
 		vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
 	}
 
@@ -918,6 +971,11 @@ LocalReadTestCase::LocalReadTestCase(tcu::TestContext&		context,
 void LocalReadTestCase::checkSupport (Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+
+	if (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE)
+		context.requireDeviceFunctionality("VK_EXT_color_write_enable");
+	else if (m_testType == TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3)
+		context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state3");
 }
 
 void LocalReadTestCase::initPrograms (SourceCollections& programCollection) const
@@ -1134,7 +1192,9 @@ void LocalReadTestCase::initPrograms (SourceCollections& programCollection) cons
 			"OpReturn\n"
 			"OpFunctionEnd\n";
 	}
-	else if (m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT)
+	else if ((m_testType == TestType::DEPTH_MAPPING_STENCIL_NOT) ||
+			 (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE) ||
+			 (m_testType == TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3))
 	{
 		glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(4));
 		glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(5, false));
@@ -1212,6 +1272,8 @@ tcu::TestCaseGroup* createDynamicRenderingLocalReadTests(tcu::TestContext& testC
 		{ "depth_stencil_mapping_to_same_index",					TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX },
 		{ "depth_mapping_stencil_not",								TestType::DEPTH_MAPPING_STENCIL_NOT },
 		{ "mapping_not_affecting_blend_state",						TestType::MAPPING_NOT_AFFECTING_BLEND_STATE },
+		{ "interaction_with_color_write_enable",					TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE },
+		{ "interaction_with_extended_dynamic_state3",				TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3 },
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> mainGroup (new tcu::TestCaseGroup(testCtx, "local_read", "Test dynamic rendering local read"));
