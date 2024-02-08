@@ -343,6 +343,15 @@ inline T channelToIntType (const deUint8* value, TextureFormat::ChannelType type
 		case TextureFormat::USCALED_INT16:		return (T)*((const deUint16*)value);
 		case TextureFormat::SSCALED_INT8:		return (T)*((const deInt8*)value);
 		case TextureFormat::SSCALED_INT16:		return (T)*((const deInt16*)value);
+		// required by modifiers tests
+		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:	return (T)*((const deUint32*)value);
+		case TextureFormat::UNORM_INT_1010102_REV:			return (T)*((const deUint32*)value);
+		case TextureFormat::SNORM_INT_1010102_REV:			return (T)*((const deUint32*)value);
+		case TextureFormat::USCALED_INT_1010102_REV:		return (T)*((const deUint32*)value);
+		case TextureFormat::SSCALED_INT_1010102_REV:		return (T)*((const deUint32*)value);
+		case TextureFormat::UNSIGNED_INT_1010102_REV:		return (T)*((const deUint32*)value);
+		case TextureFormat::SIGNED_INT_1010102_REV:			return (T)*((const deUint32*)value);
+		case TextureFormat::UNSIGNED_INT_999_E5_REV:		return (T)*((const deUint32*)value);
 		default:
 			DE_ASSERT(DE_FALSE);
 			return 0;
@@ -818,6 +827,15 @@ int getChannelSize (TextureFormat::ChannelType type)
 		case TextureFormat::USCALED_INT16:		return 2;
 		case TextureFormat::SSCALED_INT8:		return 1;
 		case TextureFormat::SSCALED_INT16:		return 2;
+		// required by modifiers tests
+		case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:	return 4;
+		case TextureFormat::UNORM_INT_1010102_REV:			return 4;
+		case TextureFormat::SNORM_INT_1010102_REV:			return 4;
+		case TextureFormat::USCALED_INT_1010102_REV:		return 4;
+		case TextureFormat::SSCALED_INT_1010102_REV:		return 4;
+		case TextureFormat::UNSIGNED_INT_1010102_REV:		return 4;
+		case TextureFormat::SIGNED_INT_1010102_REV:			return 4;
+		case TextureFormat::UNSIGNED_INT_999_E5_REV:		return 4;
 		default:
 			DE_ASSERT(DE_FALSE);
 			return 0;

@@ -225,29 +225,6 @@ std::vector<ModifierProps> getExportImportCompatibleModifiers (Context& context,
 template <typename ModifierList, typename ModifierProps, VkStructureType modifierListSType>
 void checkExportImportExtensions (Context& context, VkFormat format)
 {
-	// tcuTexture.cpp getChannelSize, that is used by intThresholdCompare does not support the following formats.
-	// TODO: Add tcuTexture.cpp support for the following formats.
-	const VkFormat					skippedFormats[]				=
-	{
-		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-		VK_FORMAT_A2R10G10B10_SNORM_PACK32,
-		VK_FORMAT_A2R10G10B10_USCALED_PACK32,
-		VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
-		VK_FORMAT_A2R10G10B10_UINT_PACK32,
-		VK_FORMAT_A2R10G10B10_SINT_PACK32,
-		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-		VK_FORMAT_A2B10G10R10_SNORM_PACK32,
-		VK_FORMAT_A2B10G10R10_USCALED_PACK32,
-		VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
-		VK_FORMAT_A2B10G10R10_UINT_PACK32,
-		VK_FORMAT_A2B10G10R10_SINT_PACK32,
-		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
-	};
-
-	if (std::find(std::begin(skippedFormats), std::end(skippedFormats), format) != std::end(skippedFormats))
-		TCU_THROW(NotSupportedError, de::toString(format) + " can't be checked for correctness");
-
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_external_memory_fd"))
 		TCU_THROW(NotSupportedError, "VK_KHR_external_memory_fd not supported");
 
