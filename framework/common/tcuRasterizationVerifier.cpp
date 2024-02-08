@@ -1373,6 +1373,9 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 	tcu::TextureLevel referenceLineMap(tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT8), surface.getWidth(), surface.getHeight());
 	tcu::clear(referenceLineMap.getAccess(), tcu::IVec4(0, 0, 0, 0));
 
+	tcu::Surface errorMask(surface.getWidth(), surface.getHeight());
+	tcu::clear(errorMask.getAccess(), tcu::IVec4(0, 255, 0, 255));
+
 	genScreenSpaceLines(screenspaceLines, scene.lines, tcu::IVec2(surface.getWidth(), surface.getHeight()));
 
 	rr::SingleSampleLineRasterizer rasterizer(tcu::IVec4(0, 0, surface.getWidth(), surface.getHeight()), args.subpixelBits);
@@ -1428,12 +1431,8 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 	}
 
 	// Requirement 1: The coordinates of a fragment produced by the algorithm may not deviate by more than one unit
+	bool missingFragments = false;
 	{
-		tcu::Surface	errorMask			(surface.getWidth(), surface.getHeight());
-		bool			missingFragments	= false;
-
-		tcu::clear(errorMask.getAccess(), tcu::IVec4(0, 255, 0, 255));
-
 		log << tcu::TestLog::Message << "Searching for deviating fragments." << tcu::TestLog::EndMessage;
 
 		for (int y = 0; y < referenceLineMap.getHeight(); ++y)
@@ -1479,7 +1478,7 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 
 		if (missingFragments)
 		{
-
+			log << tcu::TestLog::Message << "Invalid deviations found - missing fragments." << tcu::TestLog::EndMessage;
 			allOK = false;
 		}
 		else
@@ -1730,11 +1729,12 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 		for (int x = 0; x < surface.getWidth(); ++x)
 			if (referenceLineMap.getAccess().getPixelInt(x, y).x())
 				reference.setPixel(x, y, tcu::RGBA::white());
-		log << tcu::TestLog::Message << "Invalid fragment count in result image." << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
 			<< tcu::TestLog::Image("Reference", "Reference",	reference)
-			<< tcu::TestLog::Image("Result", "Result", surface)
-			<< tcu::TestLog::EndImageSet;
+			<< tcu::TestLog::Image("Result", "Result", surface);
+		if (missingFragments)
+			log << tcu::TestLog::Image("ErrorMask", "ErrorMask", errorMask);
+		log << tcu::TestLog::EndImageSet;
 	}
 
 	return allOK;
