@@ -40,7 +40,6 @@ const VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRate
 const VkPhysicalDeviceShaderCoreProperties2AMD&					getShaderCoreProperties2AMD					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderCoreProperties2AMD>();					}
 const VkPhysicalDeviceCooperativeMatrixPropertiesNV&			getCooperativeMatrixPropertiesNV			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCooperativeMatrixPropertiesNV>();				}
 const VkPhysicalDeviceProvokingVertexPropertiesEXT&				getProvokingVertexPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceProvokingVertexPropertiesEXT>();				}
-const VkPhysicalDeviceLineRasterizationPropertiesKHR&			getLineRasterizationProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLineRasterizationPropertiesKHR>();				}
 const VkPhysicalDeviceHostImageCopyPropertiesEXT&				getHostImageCopyPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceHostImageCopyPropertiesEXT>();					}
 const VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		getDeviceGeneratedCommandsProperties		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV>();		}
 const VkPhysicalDeviceShaderIntegerDotProductProperties&		getShaderIntegerDotProductProperties		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderIntegerDotProductProperties>();			}
@@ -83,6 +82,7 @@ const VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			getCooperativeMatrixProp
 const VkPhysicalDeviceImageProcessing2PropertiesQCOM&			getImageProcessing2PropertiesQCOM			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceImageProcessing2PropertiesQCOM>();				}
 const VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		getVertexAttributeDivisorProperties			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR>();		}
 const VkPhysicalDeviceLayeredDriverPropertiesMSFT&				getLayeredDriverPropertiesMSFT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLayeredDriverPropertiesMSFT>();				}
+const VkPhysicalDeviceLineRasterizationPropertiesKHR&			getLineRasterizationProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLineRasterizationPropertiesKHR>();				}
 const VkPhysicalDeviceMaintenance6PropertiesKHR&				getMaintenance6Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance6PropertiesKHR>();					}
 const VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupProperties>();							}
 const VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceProtectedMemoryProperties>();					}

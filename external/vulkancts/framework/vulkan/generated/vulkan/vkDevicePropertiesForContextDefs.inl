@@ -40,7 +40,6 @@ const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			Context::getFragme
 const vk::VkPhysicalDeviceShaderCoreProperties2AMD&					Context::getShaderCoreProperties2AMD				(void) const { return m_device->getShaderCoreProperties2AMD();					}
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesNV&			Context::getCooperativeMatrixPropertiesNV			(void) const { return m_device->getCooperativeMatrixPropertiesNV();				}
 const vk::VkPhysicalDeviceProvokingVertexPropertiesEXT&				Context::getProvokingVertexPropertiesEXT			(void) const { return m_device->getProvokingVertexPropertiesEXT();				}
-const vk::VkPhysicalDeviceLineRasterizationPropertiesKHR&			Context::getLineRasterizationProperties				(void) const { return m_device->getLineRasterizationProperties();				}
 const vk::VkPhysicalDeviceHostImageCopyPropertiesEXT&				Context::getHostImageCopyPropertiesEXT				(void) const { return m_device->getHostImageCopyPropertiesEXT();				}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		Context::getDeviceGeneratedCommandsProperties		(void) const { return m_device->getDeviceGeneratedCommandsProperties();			}
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		Context::getShaderIntegerDotProductProperties		(void) const { return m_device->getShaderIntegerDotProductProperties();			}
@@ -83,6 +82,7 @@ const vk::VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			Context::getCooperat
 const vk::VkPhysicalDeviceImageProcessing2PropertiesQCOM&			Context::getImageProcessing2PropertiesQCOM			(void) const { return m_device->getImageProcessing2PropertiesQCOM();			}
 const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		Context::getVertexAttributeDivisorProperties		(void) const { return m_device->getVertexAttributeDivisorProperties();			}
 const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&				Context::getLayeredDriverPropertiesMSFT				(void) const { return m_device->getLayeredDriverPropertiesMSFT();				}
+const vk::VkPhysicalDeviceLineRasterizationPropertiesKHR&			Context::getLineRasterizationProperties				(void) const { return m_device->getLineRasterizationProperties();				}
 const vk::VkPhysicalDeviceMaintenance6PropertiesKHR&				Context::getMaintenance6Properties					(void) const { return m_device->getMaintenance6Properties();					}
 const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupProperties						(void) const { return m_device->getSubgroupProperties();						}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				Context::getProtectedMemoryProperties				(void) const { return m_device->getProtectedMemoryProperties();					}

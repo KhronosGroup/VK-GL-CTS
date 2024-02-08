@@ -2242,7 +2242,7 @@ tcu::TestStatus testPhysicalDeviceFeatureLineRasterizationFeaturesKHR (Context& 
 	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 	VkPhysicalDeviceLineRasterizationFeaturesKHR	deviceLineRasterizationFeaturesKHR[count];
-	const bool										isLineRasterizationFeaturesKHR = checkExtension(properties, "VK_EXT_line_rasterization");
+	const bool										isLineRasterizationFeaturesKHR = checkExtension(properties, "VK_KHR_line_rasterization");
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
