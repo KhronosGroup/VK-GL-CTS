@@ -463,19 +463,23 @@ rr::GenericVec4 mapToFormatColorRepresentable (const tcu::TextureFormat& texForm
 	}
 }
 
-bool isCoreFilterableFormat (deUint32 format, tcu::Sampler::DepthStencilMode mode)
+bool isCoreFilterableFormat (deUint32 format, tcu::Sampler::DepthStencilMode mode,
+							 bool is_texture_float_linear_supported=true)
 {
 	const bool	isLuminanceOrAlpha		= (format == GL_LUMINANCE || format == GL_ALPHA || format == GL_LUMINANCE_ALPHA); // special case for luminance/alpha
 	const bool	isUnsizedColorFormat	= (format == GL_BGRA);
 	const bool	isCompressed			= glu::isCompressedFormat(format);
 	const bool	isDepth					= isDepthFormat(format, mode);
 	const bool	isStencil				= isStencilFormat(format, mode);
+	const bool	isFP32Format			= (format == GL_RGBA32F || format == GL_RGB32F || format == GL_RG32F || format == GL_R32F);
 
 	// special cases
 	if (isLuminanceOrAlpha || isUnsizedColorFormat || isCompressed)
 		return true;
 	if (isStencil || isDepth)
 		return false;
+	if (isFP32Format)
+		return is_texture_float_linear_supported;
 
 	// color case
 	return glu::isGLInternalColorFormatFilterable(format);
@@ -502,7 +506,8 @@ public:
 
 	enum Flag
 	{
-		FLAG_USE_SHADOW_SAMPLER = (1u << 0),
+		FLAG_USE_SHADOW_SAMPLER			= (1u << 0),
+		FLAG_TEST_FLOAT_FILTERABLE		= (1u << 1),
 	};
 
 	struct IterationConfig
@@ -530,6 +535,7 @@ public:
 																					 int							texWidth,
 																					 int							texHeight,
 																					 SamplingFunction				samplingFunction,
+																					 deUint32						filter,
 																					 deUint32						flags				= 0);
 														~TextureBorderClampTest		(void);
 
@@ -598,6 +604,10 @@ protected:
 
 	const SamplingFunction								m_samplingFunction;
 	const bool											m_useShadowSampler;
+	const bool											m_useFloatFilterable;
+
+	const deUint32										m_filter;
+
 private:
 	enum
 	{
@@ -622,6 +632,7 @@ TextureBorderClampTest::TextureBorderClampTest (Context&						context,
 												int								texWidth,
 												int								texHeight,
 												SamplingFunction				samplingFunction,
+												deUint32						filter,
 												deUint32						flags)
 	: TestCase				(context, name, description)
 	, m_texFormat			(texFormat)
@@ -632,6 +643,8 @@ TextureBorderClampTest::TextureBorderClampTest (Context&						context,
 	, m_texWidth			(texWidth)
 	, m_samplingFunction	(samplingFunction)
 	, m_useShadowSampler	((flags & FLAG_USE_SHADOW_SAMPLER) != 0)
+	, m_useFloatFilterable  ((flags & FLAG_TEST_FLOAT_FILTERABLE) != 0)
+	, m_filter				(filter)
 	, m_iterationNdx		(0)
 	, m_result				(context.getTestContext().getLog())
 {
@@ -651,6 +664,14 @@ void TextureBorderClampTest::init (void)
 	// requirements
 	const bool supportsGL45			= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
 	const bool supportsES32orGL45	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) || supportsGL45;
+
+	// repeat filterable test with valid context
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const bool is_texture_float_linear_supported	= glu::hasExtension(gl, glu::ApiType::es(3, 0), "GL_OES_texture_float_linear");
+	const bool	coreFilterable	= isCoreFilterableFormat(m_texFormat, m_sampleMode, is_texture_float_linear_supported);
+
+	if (m_useFloatFilterable && !coreFilterable && filterRequiresFilterability(m_filter))
+		throw tcu::NotSupportedError("Test requires GL_OES_texture_float_linear extension");
 
 	if (!supportsES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_border_clamp"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_texture_border_clamp extension");
@@ -1368,7 +1389,6 @@ private:
 	IterationConfig					getIteration					(int ndx) const;
 
 	const SizeType					m_sizeType;
-	const deUint32					m_filter;
 
 	std::vector<IterationConfig>	m_iterations;
 };
@@ -1391,9 +1411,10 @@ TextureBorderClampFormatCase::TextureBorderClampFormatCase	(Context&						contex
 							 stateType,
 							 (sizeType == SIZE_POT) ? (32) : (17),
 							 (sizeType == SIZE_POT) ? (16) : (31),
-							 samplingFunction)
+							 samplingFunction,
+							 filter,
+							 FLAG_TEST_FLOAT_FILTERABLE)
 	, m_sizeType			(sizeType)
-	, m_filter				(filter)
 {
 	if (m_sizeType == SIZE_POT)
 		DE_ASSERT(deIsPowerOfTwo32(m_texWidth) && deIsPowerOfTwo32(m_texHeight));
@@ -1491,7 +1512,6 @@ private:
 	int								getNumIterations					(void) const;
 	IterationConfig					getIteration						(int ndx) const;
 
-	const deUint32					m_filter;
 	std::vector<IterationConfig>	m_iterations;
 };
 
@@ -1501,8 +1521,7 @@ TextureBorderClampRangeClampCase::TextureBorderClampRangeClampCase	(Context&				
 																	 deUint32						texFormat,
 																	 tcu::Sampler::DepthStencilMode	mode,
 																	 deUint32						filter)
-	: TextureBorderClampTest(context, name, description, texFormat, mode, TextureBorderClampTest::STATE_TEXTURE_PARAM, 8, 32, SAMPLE_FILTER)
-	, m_filter				(filter)
+	: TextureBorderClampTest(context, name, description, texFormat, mode, TextureBorderClampTest::STATE_TEXTURE_PARAM, 8, 32, SAMPLE_FILTER, filter, FLAG_TEST_FLOAT_FILTERABLE)
 {
 }
 
@@ -1688,7 +1707,6 @@ private:
 
 	const deUint32					m_texSWrap;
 	const deUint32					m_texTWrap;
-	const deUint32					m_filter;
 
 	std::vector<IterationConfig>	m_iterations;
 };
@@ -1711,10 +1729,11 @@ TextureBorderClampPerAxisCase2D::TextureBorderClampPerAxisCase2D (Context&						
 							 TextureBorderClampTest::STATE_TEXTURE_PARAM,
 							 (sizeType == SIZE_POT) ? (16) : (7),
 							 (sizeType == SIZE_POT) ? (8) : (9),
-							 samplingFunction)
+							 samplingFunction,
+							 filter,
+							 FLAG_TEST_FLOAT_FILTERABLE)
 	, m_texSWrap			(texSWrap)
 	, m_texTWrap			(texTWrap)
-	, m_filter				(filter)
 {
 }
 
@@ -1779,7 +1798,6 @@ private:
 	int								getNumIterations					(void) const;
 	IterationConfig					getIteration						(int ndx) const;
 
-	const deUint32					m_filter;
 	std::vector<IterationConfig>	m_iterations;
 };
 
@@ -1799,8 +1817,8 @@ TextureBorderClampDepthCompareCase::TextureBorderClampDepthCompareCase (Context&
 							 (sizeType == SIZE_POT) ? (32) : (13),
 							 (sizeType == SIZE_POT) ? (16) : (17),
 							 samplingFunction,
+							 filter,
 							 FLAG_USE_SHADOW_SAMPLER)
-	, m_filter				(filter)
 {
 }
 
@@ -1923,7 +1941,8 @@ TextureBorderClampUnusedChannelCase::TextureBorderClampUnusedChannelCase (Contex
 							 TextureBorderClampTest::STATE_TEXTURE_PARAM,
 							 8,
 							 8,
-							 SAMPLE_FILTER)
+							 SAMPLE_FILTER,
+							 GL_NEAREST)
 {
 }
 
@@ -2072,6 +2091,14 @@ void TextureBorderClampPerAxisCase3D::init (void)
 	const bool	isES32orGL45				= glu::contextSupports(ctxType, glu::ApiType::es(3, 2)) ||
 											  glu::contextSupports(ctxType, glu::ApiType::core(4, 5));
 	const glu::GLSLVersion	glslVersion		= glu::getContextTypeGLSLVersion(ctxType);
+
+	// repeat filterable test with valid context
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const bool is_texture_float_linear_supported	= glu::hasExtension(gl, glu::ApiType::es(3, 0), "GL_OES_texture_float_linear");
+	const bool	coreFilterable	= isCoreFilterableFormat(m_texFormat, tcu::Sampler::MODE_LAST, is_texture_float_linear_supported);
+
+	if (!coreFilterable && filterRequiresFilterability(m_filter))
+		throw tcu::NotSupportedError("Test requires GL_OES_texture_float_linear extension");
 
 	if (!isES32orGL45 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_border_clamp"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_texture_border_clamp extension");

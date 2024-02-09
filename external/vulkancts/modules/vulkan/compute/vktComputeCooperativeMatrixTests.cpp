@@ -38,7 +38,7 @@
 #include "vktTestCase.hpp"
 
 #include "deDefs.h"
-#include "deFloat16.h"
+#include "tcuFloat.hpp"
 #include "deMath.h"
 #include "deRandom.h"
 #include "deSharedPtr.hpp"
@@ -864,7 +864,7 @@ void setDataFloat (void *base, VkComponentTypeKHR dt, deUint32 i, float value)
 	else
 	{
 		DE_ASSERT(dt == VK_COMPONENT_TYPE_FLOAT16_KHR);
-		((deFloat16 *)base)[i] = deFloat32To16(value);
+		((tcu::float16_t *)base)[i] = tcu::Float16(value).bits();
 	}
 }
 
@@ -877,7 +877,7 @@ float getDataFloat (void *base, VkComponentTypeKHR dt, deUint32 i)
 	else
 	{
 		DE_ASSERT(dt == VK_COMPONENT_TYPE_FLOAT16_KHR);
-		return deFloat16To32(((deFloat16 *)base)[i]);
+		return  tcu::Float16(((const tcu::float16_t *)base)[i]).asFloat();
 	}
 }
 
@@ -935,7 +935,7 @@ T getDataConvertedToT (void *base, VkComponentTypeKHR dt, deUint32 i)
 		}
 		case VK_COMPONENT_TYPE_FLOAT16_KHR:
 		{
-			float temp = deFloat16To32(((deFloat16 *)base)[i]);
+			float temp = tcu::Float16(((tcu::float16_t *)base)[i]).asFloat();
 			if (std::numeric_limits<T>::min() == 0)
 				temp = std::max(temp, 0.0f);
 			return (T)temp;
@@ -1409,7 +1409,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 				case VK_COMPONENT_TYPE_FLOAT16_KHR:
 				{
 					float temp = getDataConvertedToT<float>(ptrs[0], dataTypes[0], i);
-					inputA = deFloat16To32(deFloat32To16(temp));
+					inputA = tcu::Float16(temp).asDouble();
 					break;
 				}
 				default: TCU_THROW(InternalError, "Unexpected type");
@@ -1426,7 +1426,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 				case VK_COMPONENT_TYPE_FLOAT16_KHR:
 				{
 					float temp = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
-					output = deFloat16To32(deFloat32To16(temp));
+					output = tcu::Float16(temp).asDouble();
 					break;
 				}
 				default: TCU_THROW(InternalError, "Unexpected type");
@@ -1486,9 +1486,9 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 					{
 						if (dataTypes[0] == VK_COMPONENT_TYPE_FLOAT16_KHR)
 						{
-							const float		expected32	= inputA * inputB;
-							const deFloat16	expected16	= deFloat32To16(expected32);
-							const float		expected	= deFloat16To32(expected16);
+							const float				expected32	= inputA * inputB;
+							const tcu::float16_t	expected16	= tcu::Float16(expected32).bits();
+							const float				expected	= tcu::Float16(expected16).asFloat();
 
 							if (output != expected)
 								res = QP_TEST_RESULT_FAIL;

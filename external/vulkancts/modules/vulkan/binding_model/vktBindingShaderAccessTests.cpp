@@ -3718,11 +3718,13 @@ public:
 																 vk::VkDescriptorType			descriptorType,
 																 vk::VkImageViewType			viewType,
 																 int							numImages,
+																 deUint32						numLevels,
 																 deUint32						baseMipLevel,
 																 deUint32						baseArraySlice);
 
 private:
 	static std::vector<tcu::TextureLevelPyramid>	createSourceImages	(int											numImages,
+																		 int											numLevels,
 																		 vk::VkImageViewType							viewType,
 																		 tcu::TextureFormat								imageFormat);
 
@@ -3778,7 +3780,6 @@ protected:
 	enum
 	{
 		IMAGE_SIZE		= 64,
-		NUM_MIP_LEVELS	= 2,
 		ARRAY_SIZE		= 2,
 	};
 
@@ -3800,13 +3801,14 @@ ImageInstanceImages::ImageInstanceImages (const vk::DeviceInterface&	vki,
 										  vk::VkDescriptorType			descriptorType,
 										  vk::VkImageViewType			viewType,
 										  int							numImages,
+										  deUint32						numLevels,
 										  deUint32						baseMipLevel,
 										  deUint32						baseArraySlice)
 	: m_viewType		(viewType)
 	, m_baseMipLevel	(baseMipLevel)
 	, m_baseArraySlice	(baseArraySlice)
 	, m_imageFormat		(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)
-	, m_sourceImage		(createSourceImages(numImages, viewType, m_imageFormat))
+	, m_sourceImage		(createSourceImages(numImages, numLevels, viewType, m_imageFormat))
 	, m_imageMemory		()
 	, m_image			(createImages(vki, device, allocator, queueFamilyIndex, queue, descriptorType, viewType, m_imageMemory, m_sourceImage))
 	, m_imageView		(createImageViews(vki, device, viewType, m_sourceImage, m_image, m_baseMipLevel, m_baseArraySlice))
@@ -3814,10 +3816,11 @@ ImageInstanceImages::ImageInstanceImages (const vk::DeviceInterface&	vki,
 }
 
 std::vector<tcu::TextureLevelPyramid> ImageInstanceImages::createSourceImages (int					numImages,
+																			   int					numLevels,
 																			   vk::VkImageViewType	viewType,
 																			   tcu::TextureFormat	imageFormat)
 {
-	std::vector<tcu::TextureLevelPyramid> sourceImages(numImages, tcu::TextureLevelPyramid(imageFormat, NUM_MIP_LEVELS));
+	std::vector<tcu::TextureLevelPyramid> sourceImages(numImages, tcu::TextureLevelPyramid(imageFormat, numLevels));
 
 	for (int imageNdx = 0; imageNdx < numImages; imageNdx++)
 		populateSourceImage(&sourceImages.at(imageNdx), viewType, imageNdx);
@@ -4062,6 +4065,7 @@ public:
 																	 DescriptorSetCount				descriptorSetCount,
 																	 ShaderInputInterface			shaderInterface,
 																	 vk::VkImageViewType			viewType,
+																	 deUint32						numLevels,
 																	 deUint32						baseMipLevel,
 																	 deUint32						baseArraySlice);
 
@@ -4108,6 +4112,7 @@ ImageFetchInstanceImages::ImageFetchInstanceImages (const vk::DeviceInterface&	v
 													DescriptorSetCount			descriptorSetCount,
 													ShaderInputInterface		shaderInterface,
 													vk::VkImageViewType			viewType,
+													deUint32					numLevels,
 													deUint32					baseMipLevel,
 													deUint32					baseArraySlice)
 	: ImageInstanceImages	(vki,
@@ -4118,6 +4123,7 @@ ImageFetchInstanceImages::ImageFetchInstanceImages (const vk::DeviceInterface&	v
 							 descriptorType,
 							 viewType,
 							 getDescriptorSetCount(descriptorSetCount) * getInterfaceNumResources(shaderInterface),	// numImages
+							 numLevels,
 							 baseMipLevel,
 							 baseArraySlice)
 	, m_shaderInterface		(shaderInterface)
@@ -4273,6 +4279,7 @@ private:
 	const vk::VkShaderStageFlags					m_stageFlags;
 	const ShaderInputInterface						m_shaderInterface;
 	const vk::VkImageViewType						m_viewType;
+	const deUint32									m_numLevels;
 	const deUint32									m_baseMipLevel;
 	const deUint32									m_baseArraySlice;
 
@@ -4307,6 +4314,7 @@ ImageFetchRenderInstance::ImageFetchRenderInstance	(vkt::Context&			context,
 	, m_stageFlags				(stageFlags)
 	, m_shaderInterface			(shaderInterface)
 	, m_viewType				(viewType)
+	, m_numLevels				(baseMipLevel + 1u)
 	, m_baseMipLevel			(baseMipLevel)
 	, m_baseArraySlice			(baseArraySlice)
 #ifndef CTS_USES_VULKANSC
@@ -4316,7 +4324,7 @@ ImageFetchRenderInstance::ImageFetchRenderInstance	(vkt::Context&			context,
 	, m_updateBuilder			()
 	, m_descriptorSetLayouts	(createDescriptorSetLayouts(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_stageFlags, m_updateMethod))
 	, m_pipelineLayout			(createPipelineLayout(m_vki, m_device, m_descriptorSetLayouts))
-	, m_images					(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice)
+	, m_images					(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_numLevels, m_baseMipLevel, m_baseArraySlice)
 	, m_descriptorPool			(createDescriptorPool(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface))
 	, m_descriptorsPerSet		()
 	, m_descriptorSets			(createDescriptorSets(m_vki, m_updateMethod, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_descriptorSetLayouts, *m_descriptorPool, m_images, m_updateBuilder,
@@ -4833,6 +4841,7 @@ private:
 	const DescriptorSetCount						m_descriptorSetCount;
 	const ShaderInputInterface						m_shaderInterface;
 	const vk::VkImageViewType						m_viewType;
+	const deUint32									m_numLevels;
 	const deUint32									m_baseMipLevel;
 	const deUint32									m_baseArraySlice;
 	const bool										m_bind2;
@@ -4868,6 +4877,7 @@ ImageFetchComputeInstance::ImageFetchComputeInstance (Context&					context,
 	, m_descriptorSetCount	(descriptorSetCount)
 	, m_shaderInterface		(shaderInterface)
 	, m_viewType			(viewType)
+	, m_numLevels			(baseMipLevel + 1u)
 	, m_baseMipLevel		(baseMipLevel)
 	, m_baseArraySlice		(baseArraySlice)
 	, m_bind2				(bind2)
@@ -4880,7 +4890,7 @@ ImageFetchComputeInstance::ImageFetchComputeInstance (Context&					context,
 	, m_queueFamilyIndex	(context.getUniversalQueueFamilyIndex())
 	, m_allocator			(context.getDefaultAllocator())
 	, m_result				(m_vki, m_device, m_allocator)
-	, m_images				(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice)
+	, m_images				(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_numLevels, m_baseMipLevel, m_baseArraySlice)
 #ifndef CTS_USES_VULKANSC
 	, m_updateRegistry		()
 #endif
@@ -5306,6 +5316,7 @@ public:
 																	 DescriptorSetCount				descriptorSetCount,
 																	 ShaderInputInterface			shaderInterface,
 																	 vk::VkImageViewType			viewType,
+																	 deUint32						numLevels,
 																	 deUint32						baseMipLevel,
 																	 deUint32						baseArraySlice,
 																	 bool							immutable);
@@ -5354,6 +5365,7 @@ ImageSampleInstanceImages::ImageSampleInstanceImages (const vk::DeviceInterface&
 													  DescriptorSetCount			descriptorSetCount,
 													  ShaderInputInterface			shaderInterface,
 													  vk::VkImageViewType			viewType,
+													  deUint32						numLevels,
 													  deUint32						baseMipLevel,
 													  deUint32						baseArraySlice,
 													  bool							immutable)
@@ -5365,6 +5377,7 @@ ImageSampleInstanceImages::ImageSampleInstanceImages (const vk::DeviceInterface&
 							 descriptorType,
 							 viewType,
 							 getNumImages(descriptorType, descriptorSetCount, shaderInterface),
+							 numLevels,
 							 baseMipLevel,
 							 baseArraySlice)
 	, m_descriptorType		(descriptorType)
@@ -5788,6 +5801,7 @@ private:
 	const vk::VkShaderStageFlags					m_stageFlags;
 	const ShaderInputInterface						m_shaderInterface;
 	const vk::VkImageViewType						m_viewType;
+	const deUint32									m_numLevels;
 	const deUint32									m_baseMipLevel;
 	const deUint32									m_baseArraySlice;
 
@@ -5823,6 +5837,7 @@ ImageSampleRenderInstance::ImageSampleRenderInstance (vkt::Context&				context,
 	, m_stageFlags				(stageFlags)
 	, m_shaderInterface			(shaderInterface)
 	, m_viewType				(viewType)
+	, m_numLevels				(baseMipLevel + 1u)
 	, m_baseMipLevel			(baseMipLevel)
 	, m_baseArraySlice			(baseArraySlice)
 #ifndef CTS_USES_VULKANSC
@@ -5830,7 +5845,7 @@ ImageSampleRenderInstance::ImageSampleRenderInstance (vkt::Context&				context,
 	, m_updateRegistry			()
 #endif
 	, m_updateBuilder			()
-	, m_images					(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice, isImmutable)
+	, m_images					(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_numLevels, m_baseMipLevel, m_baseArraySlice, isImmutable)
 	, m_descriptorSetLayouts	(createDescriptorSetLayouts(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_stageFlags, m_images, m_updateMethod))
 	, m_pipelineLayout			(createPipelineLayout(m_vki, m_device, m_descriptorSetLayouts))
 	, m_descriptorPool			(createDescriptorPool(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface))
@@ -6619,6 +6634,7 @@ private:
 	const DescriptorSetCount					m_descriptorSetCount;
 	const ShaderInputInterface					m_shaderInterface;
 	const vk::VkImageViewType					m_viewType;
+	const deUint32								m_numLevels;
 	const deUint32								m_baseMipLevel;
 	const deUint32								m_baseArraySlice;
 	const bool									m_isImmutableSampler;
@@ -6657,6 +6673,7 @@ ImageSampleComputeInstance::ImageSampleComputeInstance (Context&				context,
 	, m_descriptorSetCount	(descriptorSetCount)
 	, m_shaderInterface		(shaderInterface)
 	, m_viewType			(viewType)
+	, m_numLevels			(baseMipLevel + 1u)
 	, m_baseMipLevel		(baseMipLevel)
 	, m_baseArraySlice		(baseArraySlice)
 	, m_isImmutableSampler	(isImmutableSampler)
@@ -6670,7 +6687,7 @@ ImageSampleComputeInstance::ImageSampleComputeInstance (Context&				context,
 	, m_queueFamilyIndex	(context.getUniversalQueueFamilyIndex())
 	, m_allocator			(context.getDefaultAllocator())
 	, m_result				(m_vki, m_device, m_allocator)
-	, m_images				(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice, isImmutableSampler)
+	, m_images				(m_vki, m_device, m_queueFamilyIndex, m_queue, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_numLevels, m_baseMipLevel, m_baseArraySlice, isImmutableSampler)
 #ifndef CTS_USES_VULKANSC
 	, m_updateRegistry		()
 #endif
@@ -7420,6 +7437,24 @@ ImageDescriptorCase::ImageDescriptorCase (tcu::TestContext&			testCtx,
 
 void ImageDescriptorCase::checkSupport (Context& context) const
 {
+	if (m_baseMipLevel == 1u)
+	{
+		vk::VkImageFormatProperties	properties;
+		const auto&					vki				= context.getInstanceInterface();
+		const auto					physicalDevice	= context.getPhysicalDevice();
+		const vk::VkFormat			format			= vk::VK_FORMAT_R8G8B8A8_UNORM;
+		const vk::VkImageType		type			= viewTypeToImageType(m_viewType);
+		const vk::VkImageTiling		tiling			= vk::VK_IMAGE_TILING_OPTIMAL;
+		const bool					isStorage		= (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		const deUint32				readUsage		= (isStorage) ? (vk::VK_IMAGE_USAGE_STORAGE_BIT) : (vk::VK_IMAGE_USAGE_SAMPLED_BIT);
+		const auto					usage			= readUsage | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+		if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, format, type, tiling, usage, 0, &properties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Required format not supported");
+		if (properties.maxMipLevels < 2u)
+			TCU_THROW(NotSupportedError, "Required mipmap count not supported");
+	}
+
 	if (m_bind2)
 		context.requireDeviceFunctionality("VK_KHR_maintenance6");
 }
@@ -9466,32 +9501,32 @@ void createShaderAccessImageTests (tcu::TestCaseGroup*		group,
 		deUint32			flags;
 	} s_imageTypes[] =
 	{
-		{ vk::VK_IMAGE_VIEW_TYPE_1D,			"1d",					0u										},
-		{ vk::VK_IMAGE_VIEW_TYPE_1D,			"1d_base_mip",		ImageDescriptorCase::FLAG_BASE_MIP		},
-		{ vk::VK_IMAGE_VIEW_TYPE_1D,			"1d_base_slice",		ImageDescriptorCase::FLAG_BASE_SLICE	},
+		{ vk::VK_IMAGE_VIEW_TYPE_1D,			"1d",						0u										},
+		{ vk::VK_IMAGE_VIEW_TYPE_1D,			"1d_base_mip",				ImageDescriptorCase::FLAG_BASE_MIP		},
+		{ vk::VK_IMAGE_VIEW_TYPE_1D,			"1d_base_slice",			ImageDescriptorCase::FLAG_BASE_SLICE	},
 
-		{ vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array",			0u										},
+		{ vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array",					0u										},
 		{ vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array_base_mip",		ImageDescriptorCase::FLAG_BASE_MIP		},
-		{ vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array_base_slice",	ImageDescriptorCase::FLAG_BASE_SLICE	},
+		{ vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array_base_slice",		ImageDescriptorCase::FLAG_BASE_SLICE	},
 
 		{ vk::VK_IMAGE_VIEW_TYPE_2D,			"2d",						0u										},
-		{ vk::VK_IMAGE_VIEW_TYPE_2D,			"2d_base_mip",			ImageDescriptorCase::FLAG_BASE_MIP		},
+		{ vk::VK_IMAGE_VIEW_TYPE_2D,			"2d_base_mip",				ImageDescriptorCase::FLAG_BASE_MIP		},
 		{ vk::VK_IMAGE_VIEW_TYPE_2D,			"2d_base_slice",			ImageDescriptorCase::FLAG_BASE_SLICE	},
 
-		{ vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array",				0u										},
+		{ vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array",					0u										},
 		{ vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array_base_mip",		ImageDescriptorCase::FLAG_BASE_MIP		},
-		{ vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array_base_slice",	ImageDescriptorCase::FLAG_BASE_SLICE	},
+		{ vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array_base_slice",		ImageDescriptorCase::FLAG_BASE_SLICE	},
 
 		{ vk::VK_IMAGE_VIEW_TYPE_3D,			"3d",						0u										},
-		{ vk::VK_IMAGE_VIEW_TYPE_3D,			"3d_base_mip",			ImageDescriptorCase::FLAG_BASE_MIP		},
+		{ vk::VK_IMAGE_VIEW_TYPE_3D,			"3d_base_mip",				ImageDescriptorCase::FLAG_BASE_MIP		},
 		// no 3d array textures
 
-		{ vk::VK_IMAGE_VIEW_TYPE_CUBE,			"cube",					0u										},
+		{ vk::VK_IMAGE_VIEW_TYPE_CUBE,			"cube",						0u										},
 		{ vk::VK_IMAGE_VIEW_TYPE_CUBE,			"cube_base_mip",			ImageDescriptorCase::FLAG_BASE_MIP		},
-		{ vk::VK_IMAGE_VIEW_TYPE_CUBE,			"cube_base_slice",		ImageDescriptorCase::FLAG_BASE_SLICE	},
+		{ vk::VK_IMAGE_VIEW_TYPE_CUBE,			"cube_base_slice",			ImageDescriptorCase::FLAG_BASE_SLICE	},
 
 		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array",				0u										},
-		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array_base_mip",	ImageDescriptorCase::FLAG_BASE_MIP		},
+		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array_base_mip",		ImageDescriptorCase::FLAG_BASE_MIP		},
 		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array_base_slice",	ImageDescriptorCase::FLAG_BASE_SLICE	}
 	};
 

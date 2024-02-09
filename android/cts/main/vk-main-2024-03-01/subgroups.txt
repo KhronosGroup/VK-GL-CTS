@@ -1,3 +1,6 @@
+dEQP-VK.subgroups.shader_quad_control.divergent_condition
+dEQP-VK.subgroups.shader_quad_control.quad_derivatives
+dEQP-VK.subgroups.shader_quad_control.require_full_quads
 dEQP-VK.subgroups.shuffle.compute.subgroupclusteredrotate_bool_constant
 dEQP-VK.subgroups.shuffle.compute.subgroupclusteredrotate_bool_constant_requiredsubgroupsize
 dEQP-VK.subgroups.shuffle.compute.subgroupclusteredrotate_bool_dynamically_uniform

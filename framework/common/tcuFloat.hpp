@@ -26,6 +26,7 @@
 #include "tcuDefs.hpp"
 
 // For memcpy().
+#include <limits>
 #include <string.h>
 
 namespace tcu
@@ -419,6 +420,12 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::convert
 
 	return Float(StorageType(s | (StorageType(e + ExponentBias) << MantissaBits) | m));
 }
+
+typedef typename Float16::StorageType float16_t;
+template<class F>	inline constexpr F			floatQuietNaN					= std::numeric_limits<F>::quiet_NaN();
+template<>			inline constexpr float16_t	floatQuietNaN<float16_t>		= 0x7e01;
+template<class F>	inline constexpr F			floatSignalingNaN				= std::numeric_limits<F>::signaling_NaN();
+template<>			inline constexpr float16_t	floatSignalingNaN<float16_t>	= 0x7c01;
 
 } // tcu
 

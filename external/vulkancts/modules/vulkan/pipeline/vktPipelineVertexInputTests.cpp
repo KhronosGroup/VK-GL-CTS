@@ -43,7 +43,7 @@
 #include "vkObjUtil.hpp"
 #include "tcuFloat.hpp"
 #include "tcuImageCompare.hpp"
-#include "deFloat16.h"
+#include "tcuFloat.hpp"
 #include "deMemory.h"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
@@ -1507,7 +1507,7 @@ void writeVertexInputValueSfloat (deUint8* destPtr, VkFormat format, int compone
 	{
 		case 2:
 		{
-			deFloat16 f16 = deFloat32To16(value);
+			tcu::Float16 f16(value);
 			deMemcpy(destFormatPtr, &f16, sizeof(f16));
 			break;
 		}
@@ -1523,14 +1523,14 @@ void writeVertexInputValueSfloat (deUint8* destPtr, VkFormat format, int compone
 
 void writeVertexInputValueUfloat (deUint8* destPtr, deUint32& packedFormat, deUint32& componentOffset, VkFormat format, deUint32 componentNdx, float value)
 {
-	deFloat16		f16				= deFloat32To16(value);
+	tcu::Float16	f16				(value);
 
 	const deUint32	componentWidth	= getPackedVertexFormatComponentWidth(format, componentNdx);
 	const deUint32	componentCount	= getVertexFormatComponentCount(format);
 	const deUint32	usedBits		= ~(deUint32)0 >> ((getVertexFormatSize(format) * 8) - componentWidth);
 	// The ufloat 10 or 11 has no sign bit, but the same exponent bits than float16.
 	// The sign bit will be removed by the mask. Therefore we pick one more mantissa bit.
-	deUint32		valueUFloat		= f16 >> (16 - componentWidth - 1);
+	deUint32		valueUFloat		= f16.bits() >> (16 - componentWidth - 1);
 
 	// TODO: VK_FORMAT_E5B9G9R9_UFLOAT_PACK32 not supported.
 	DE_ASSERT(format == VK_FORMAT_B10G11R11_UFLOAT_PACK32);
