@@ -352,6 +352,13 @@ PACKAGES = [
 		"git@github.com:Igalia/ESExtractor.git",
 		"v0.3.3",
 		"ESExtractor"),
+	# SLANG git repo
+	GitRepo(
+		"https://github.com/shader-slang/slang.git",
+		"git@github.com:shader-slang/ESExtractor.git",
+		"f44da6cc5c0f211c13bd1eb0743d79c7861ea64e",
+		"slang"),
+
 ]
 
 def parseArgs ():

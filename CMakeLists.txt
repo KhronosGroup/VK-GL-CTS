@@ -150,6 +150,10 @@ endif()
 
 include_directories(${PNG_INCLUDE_PATH})
 
+# slang
+# add_subdirectory(external/slang EXCLUDE_FROM_ALL)
+include_directories(external/slang/src)
+
 # DRM (Direct Rendering Manager) Headers
 find_path(XF86DRM_H_PATH NAMES xf86drm.h)
 find_path(DRM_H_PATH NAMES drm.h PATH_SUFFIXES libdrm drm)
