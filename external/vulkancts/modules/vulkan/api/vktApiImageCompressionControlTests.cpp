@@ -334,7 +334,7 @@ static tcu::TestStatus ahbImageCreateTest(Context& context, TestParams testParam
 
 	VkImageCompressionFixedRateFlagsEXT planeFlags[3]{};
 
-	for (unsigned i{}; i < (is_fixed_rate_ex ? 24 : 1); i++)
+	for (unsigned i{}; i < (is_fixed_rate_ex ? 24u : 1u); i++)
 	{
 		planeFlags[0] ^= 3 << i;
 		planeFlags[1] ^= 5 << i;
@@ -399,7 +399,7 @@ static tcu::TestStatus imageCreateTest(Context& context, TestParams testParams)
 
 	VkImageCompressionFixedRateFlagsEXT planeFlags[3]{};
 
-	for (unsigned i{}; i < (is_fixed_rate_ex ? 24 : 1); i++)
+	for (unsigned i{}; i < (is_fixed_rate_ex ? 24u : 1u); i++)
 	{
 		planeFlags[0] ^= 3 << i;
 		planeFlags[1] ^= 5 << i;
@@ -625,7 +625,7 @@ static tcu::TestStatus swapchainCreateTest(Context& context, TestParams testPara
 	VkExtent2D							extent2d = { 16, 16 };
 	VkImageCompressionFixedRateFlagsEXT planeFlags[3]{};
 
-	for (unsigned i{}; i < (is_fixed_rate_ex ? 24 : 1); i++)
+	for (unsigned i{}; i < (is_fixed_rate_ex ? 24u : 1u); i++)
 	{
 		planeFlags[0] ^= 3 << i;
 

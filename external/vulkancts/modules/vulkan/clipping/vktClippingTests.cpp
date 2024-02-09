@@ -1457,7 +1457,7 @@ tcu::TestStatus testClipDistance (Context& context, const CaseDefinition caseDef
 	const IVec2	clipRegion				= IVec2(caseDef.numClipDistances * RENDER_SIZE / numBars, RENDER_SIZE / 2);
 	// Cull is set to > 0.75 in the shader if caseDef.readInFragmentShader is false
 	const int	barsCulled				= (int)deFloor((0.25f) / (1.0f / numBars));
-	const IVec2	cullRegion				= (caseDef.readInFragmentShader || caseDef.numCullDistances == 0) ? IVec2(0.0f, 0.0f) : IVec2(barsCulled, RENDER_SIZE);
+	const IVec2	cullRegion				= (caseDef.readInFragmentShader || caseDef.numCullDistances == 0) ? IVec2(0, 0) : IVec2(barsCulled, RENDER_SIZE);
 	const int	expectedClippedPixels	= clipRegion.x() * clipRegion.y() + cullRegion.x() * cullRegion.y();
 	// Make sure the bottom half has no black pixels (possible if image became corrupted).
 	const int	guardPixels				= countPixels(drawContext.getColorPixels(), IVec2(0, RENDER_SIZE/2), clipRegion, Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());

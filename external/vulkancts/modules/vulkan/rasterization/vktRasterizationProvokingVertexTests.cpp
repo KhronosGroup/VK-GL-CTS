@@ -123,7 +123,7 @@ static bool verifyXfbBuffer (const tcu::Vec4* const	xfbResults,
 		if (xfbResults[ndx] != vertices[provoking[i + provStart]])
 		{
 			errorMessage =	"Vertex " + de::toString(ndx) +
-							": Expected " + de::toString(vertices[provoking[i + start]]) +  ", got " + de::toString(xfbResults[ndx]);
+							": Expected " + de::toString(vertices[provoking[i + provStart]]) +  ", got " + de::toString(xfbResults[ndx]);
 			return false;
 		}
 		i++;

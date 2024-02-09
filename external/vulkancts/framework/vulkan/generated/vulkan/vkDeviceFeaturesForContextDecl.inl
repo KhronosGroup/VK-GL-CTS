@@ -63,7 +63,6 @@ const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&						getYcbcrImageArraysF
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&				getUniformBufferStandardLayoutFeatures				(void) const;
 const vk::VkPhysicalDeviceProvokingVertexFeaturesEXT&						getProvokingVertexFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&						getBufferDeviceAddressFeatures						(void) const;
-const vk::VkPhysicalDeviceLineRasterizationFeaturesKHR&						getLineRasterizationFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&						getShaderAtomicFloatFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceHostQueryResetFeatures&							getHostQueryResetFeatures							(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&					getExtendedDynamicStateFeaturesEXT					(void) const;
@@ -178,6 +177,7 @@ const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR&				getVertexAttribu
 const vk::VkPhysicalDeviceShaderFloatControls2FeaturesKHR&					getShaderFloatControls2Features						(void) const;
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			getExternalMemoryScreenBufferFeaturesQNX			(void) const;
 const vk::VkPhysicalDeviceIndexTypeUint8FeaturesKHR&						getIndexTypeUint8Features							(void) const;
+const vk::VkPhysicalDeviceLineRasterizationFeaturesKHR&						getLineRasterizationFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderExpectAssumeFeaturesKHR&					getShaderExpectAssumeFeatures						(void) const;
 const vk::VkPhysicalDeviceMaintenance6FeaturesKHR&							getMaintenance6Features								(void) const;
 const vk::VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV&			getDescriptorPoolOverallocationFeaturesNV			(void) const;

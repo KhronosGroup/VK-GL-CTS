@@ -2163,6 +2163,9 @@ def writeTypeUtil (api, filename):
 			if not isSimpleStruct(type):
 				continue
 
+			if "StdVideoAV1" in type.name or "StdVideoDecodeAV1" in type.name:
+				continue
+
 			name = type.name[2:] if type.name[:2].lower() == "vk" else type.name
 
 			yield ""

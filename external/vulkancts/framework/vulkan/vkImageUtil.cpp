@@ -453,9 +453,9 @@ bool isYCbCr422Format (VkFormat format)
 
 bool isPvrtcFormat (VkFormat format)
 {
+#ifndef CTS_USES_VULKANSC
 	switch (format)
 	{
-#ifndef CTS_USES_VULKANSC
 		case VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG:
 		case VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG:
 		case VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG:
@@ -465,10 +465,13 @@ bool isPvrtcFormat (VkFormat format)
 		case VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG:
 		case VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG:
 			return true;
-#endif
 		default:
 			return false;
 	}
+#else
+	DE_UNREF(format);
+#endif
+	return false;
 }
 
 const std::map<VkFormat, std::string> spirvFormats = {

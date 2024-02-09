@@ -1,9 +1,0 @@
-{
-	"mandatory_features":
-	{
-		"VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT":
-		[
-			{ "features": ["vertexAttributeInstanceRateDivisor"],	"requirements": ["VK_EXT_vertex_attribute_divisor"] }
-		]
-	}
-}

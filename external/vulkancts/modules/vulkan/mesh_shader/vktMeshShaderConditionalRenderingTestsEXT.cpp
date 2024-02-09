@@ -432,8 +432,8 @@ tcu::TestStatus ConditionalRenderingInstance::iterate ()
 
 	// Common conditional rendering begin info.
 	const auto									conditionalRenderingFlags	=	(m_params.inverted
-																				? VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT
-																				: static_cast<VkConditionalRenderingFlagBitsEXT>(0));
+																				? (VkConditionalRenderingFlagsEXT)VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT
+																				: static_cast<VkConditionalRenderingFlagsEXT>(0));
 	const VkConditionalRenderingBeginInfoEXT	conditionalRenderingBegin	=
 	{
 		VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT,					//	VkStructureType					sType;

@@ -373,16 +373,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVariablePointersFeatures.pNext;
 	}
 
-	vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT physicalDeviceVertexAttributeDivisorFeaturesEXT;
-	deMemset(&physicalDeviceVertexAttributeDivisorFeaturesEXT, 0, sizeof(physicalDeviceVertexAttributeDivisorFeaturesEXT));
-
-	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_vertex_attribute_divisor") )
-	{
-		physicalDeviceVertexAttributeDivisorFeaturesEXT.sType = getStructureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>();
-		*nextPtr = &physicalDeviceVertexAttributeDivisorFeaturesEXT;
-		nextPtr  = &physicalDeviceVertexAttributeDivisorFeaturesEXT.pNext;
-	}
-
 	vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR physicalDeviceVertexAttributeDivisorFeaturesKHR;
 	deMemset(&physicalDeviceVertexAttributeDivisorFeaturesKHR, 0, sizeof(physicalDeviceVertexAttributeDivisorFeaturesKHR));
 
@@ -969,15 +959,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceTextureCompressionASTCHDRFeaturesEXT.textureCompressionASTC_HDR == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature textureCompressionASTC_HDR not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_vertex_attribute_divisor")) )
-	{
-		if ( physicalDeviceVertexAttributeDivisorFeaturesEXT.vertexAttributeInstanceRateDivisor == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature vertexAttributeInstanceRateDivisor not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

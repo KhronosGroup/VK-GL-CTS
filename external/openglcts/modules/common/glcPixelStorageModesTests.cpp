@@ -481,9 +481,9 @@ void TexImageUtils::setRefcolour (glu::CallLogWrapper gl, glw::GLdouble col)
 	case GL_RGB:
 	case GL_RGBA:
 		gl.glUniform4f(gl.glGetUniformLocation(prog->getProgram(), "refcolour"),
-					   m_num_channels > 0 ? col : 0.0f,
-					   m_num_channels > 1 ? col : 0.0f,
-					   m_num_channels > 2 ? col : 0.0f,
+					   m_num_channels > 0 ? (glw::GLfloat)col : 0.0f,
+					   m_num_channels > 1 ? (glw::GLfloat)col : 0.0f,
+					   m_num_channels > 2 ? (glw::GLfloat)col : 0.0f,
 					   1.0f);
 		break;
 	default:
@@ -1149,7 +1149,7 @@ tcu::Surface TexImage3DCase::renderToSurf (int layer)
 	gl.glViewport(0, 0, m_subcuboid_w, m_subcuboid_h);
 
 	gl.glUniform1i(gl.glGetUniformLocation(prog->getProgram(), "layer"), layer);
-	glw::GLfloat refcol = 0.125 + layer * 0.125;
+	glw::GLfloat refcol = 0.125f + layer * 0.125f;
 	setRefcolour(gl, refcol);
 	glu::draw(m_context.getRenderContext(),
 			  prog->getProgram(),

@@ -27763,7 +27763,7 @@ void XFBExplicitLocationTest::getBufferDescriptors(GLuint test_case_index, buffe
 		 * are set to match the base alignment of a single array element, according to rules (1),
 		 * (2), and (3), and rounded up to the base alignment of a vec4.
 		 */
-		uniform_data.resize(Utils::align(uniform_data.size(), 16));
+		uniform_data.resize(Utils::align((glw::GLuint)uniform_data.size(), 16));
 		uniform_data.insert(uniform_data.end(), type_uniform_data.begin(), type_uniform_data.end());
 	}
 
@@ -28153,7 +28153,7 @@ void XFBExplicitLocationStructTest::getBufferDescriptors(GLuint test_case_index,
 
 		max_aligment = std::max(base_aligment, max_aligment);
 
-		uniform_data.resize(Utils::align(uniform_data.size(), base_aligment), 0);
+		uniform_data.resize(Utils::align((glw::GLuint)uniform_data.size(), base_aligment), 0);
 
 		for (GLuint i = 0; i < std::max(type.m_array_size, 1u); i++)
 		{
@@ -28162,7 +28162,7 @@ void XFBExplicitLocationStructTest::getBufferDescriptors(GLuint test_case_index,
 
 			if (type.m_array_size > 0)
 			{
-				uniform_data.resize(Utils::align(uniform_data.size(), base_aligment), 0);
+				uniform_data.resize(Utils::align((glw::GLuint)uniform_data.size(), base_aligment), 0);
 			}
 		}
 	}
@@ -28171,14 +28171,14 @@ void XFBExplicitLocationStructTest::getBufferDescriptors(GLuint test_case_index,
 
 	if (test_case.m_nested_struct)
 	{
-		uniform_data.resize(Utils::align(uniform_data.size(), struct_aligment), 0);
+		uniform_data.resize(Utils::align((glw::GLuint)uniform_data.size(), struct_aligment), 0);
 
-		const GLuint old_size = uniform_data.size();
+		const GLuint old_size = (glw::GLuint)uniform_data.size();
 		uniform_data.resize(2 * old_size);
 		std::copy_n(uniform_data.begin(), old_size, uniform_data.begin() + old_size);
 	}
 
-	uniform_data.resize(Utils::align(uniform_data.size(), struct_aligment), 0);
+	uniform_data.resize(Utils::align((glw::GLuint)uniform_data.size(), struct_aligment), 0);
 
 	Utils::s_rand = rand_start;
 	std::vector<GLubyte>	xfb_data;
@@ -28190,7 +28190,7 @@ void XFBExplicitLocationStructTest::getBufferDescriptors(GLuint test_case_index,
 		max_type_size = std::max(max_type_size, basic_type_size);
 
 		/* Align per current type's aligment requirements */
-		xfb_data.resize(Utils::align(xfb_data.size(), basic_type_size), 0);
+		xfb_data.resize(Utils::align((glw::GLuint)xfb_data.size(), basic_type_size), 0);
 
 		for (GLuint i = 0; i < std::max(type.m_array_size, 1u); i++)
 		{
@@ -28202,14 +28202,14 @@ void XFBExplicitLocationStructTest::getBufferDescriptors(GLuint test_case_index,
 	if (test_case.m_nested_struct)
 	{
 		/* Struct has aligment requirement equal to largest requirement of its members */
-		xfb_data.resize(Utils::align(xfb_data.size(), max_type_size), 0);
+		xfb_data.resize(Utils::align((glw::GLuint)xfb_data.size(), max_type_size), 0);
 
-		const GLuint old_size = xfb_data.size();
+		const GLuint old_size = (glw::GLuint)xfb_data.size();
 		xfb_data.resize(2 * old_size);
 		std::copy_n(xfb_data.begin(), old_size, xfb_data.begin() + old_size);
 	}
 
-	xfb_data.resize(Utils::align(xfb_data.size(), max_type_size), 0);
+	xfb_data.resize(Utils::align((glw::GLuint)xfb_data.size(), max_type_size), 0);
 
 	const GLuint uni_type_size = static_cast<GLuint>(uniform_data.size());
 	const GLuint xfb_type_size = static_cast<GLuint>(xfb_data.size());

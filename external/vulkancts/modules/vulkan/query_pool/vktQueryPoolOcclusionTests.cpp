@@ -836,7 +836,7 @@ void OcclusionQueryTestInstance::commandClearAttachment (const vk::DeviceInterfa
 
 	const vk::VkClearAttachment	attachment =
 	{
-		m_testVector.clearOp == CLEAR_COLOR ? vk::VK_IMAGE_ASPECT_COLOR_BIT	: vk::VK_IMAGE_ASPECT_DEPTH_BIT, // VkImageAspectFlags	aspectMask;
+		m_testVector.clearOp == CLEAR_COLOR ? (vk::VkImageAspectFlags)vk::VK_IMAGE_ASPECT_COLOR_BIT	: (vk::VkImageAspectFlags)vk::VK_IMAGE_ASPECT_DEPTH_BIT, // VkImageAspectFlags	aspectMask;
 		m_testVector.clearOp == CLEAR_COLOR ? 0u : 1u,														 // uint32_t			colorAttachment;
 		m_testVector.clearOp == CLEAR_COLOR ? vk::makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f)) :
 											  vk::makeClearValueDepthStencil(0.0f, 0u)						 // VkClearValue		clearValue;

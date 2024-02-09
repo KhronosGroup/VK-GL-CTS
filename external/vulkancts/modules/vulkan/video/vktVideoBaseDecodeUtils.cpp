@@ -616,12 +616,12 @@ deUint32 VideoBaseDecoder::ResetPicDpbSlots(deUint32 picIndexSlotValidMask)
 VideoBaseDecoder::VideoBaseDecoder(Parameters&& params)
 	: m_deviceContext(params.context)
 	, m_profile(*params.profile)
-	, m_framesToCheck(params.framesToCheck)
+	, m_framesToCheck((deUint32)params.framesToCheck)
 	, m_dpb(3)
 	, m_videoFrameBuffer(params.framebuffer)
 	// TODO: interface cleanup
 	, m_decodeFramesData(params.context->getDeviceDriver(), params.context->device, params.context->decodeQueueFamilyIdx())
-	, m_resetPictureParametersFrameTriggerHack(params.pictureParameterUpdateTriggerHack)
+	, m_resetPictureParametersFrameTriggerHack((deInt32)params.pictureParameterUpdateTriggerHack)
 	, m_queryResultWithStatus(params.queryDecodeStatus)
 	, m_outOfOrderDecoding(params.outOfOrderDecoding)
 	, m_alwaysRecreateDPB(params.alwaysRecreateDPB)
@@ -809,7 +809,7 @@ int32_t VideoBaseDecoder::StartVideoSequence (const VkParserDetectedVideoFormat*
 	m_decodeFramesData.resize(m_numDecodeSurfaces);
 
 	int32_t availableBuffers = (int32_t)m_decodeFramesData.GetBitstreamBuffersQueue().GetAvailableNodesNumber();
-	if (availableBuffers < m_numBitstreamBuffersToPreallocate) {
+	if (availableBuffers < (int32_t)m_numBitstreamBuffersToPreallocate) {
 		deUint32 allocateNumBuffers = std::min<deUint32>(
 				m_decodeFramesData.GetBitstreamBuffersQueue().GetMaxNodes(),
 				(m_numBitstreamBuffersToPreallocate - availableBuffers));
@@ -1882,7 +1882,7 @@ VkDeviceSize VideoBaseDecoder::GetBitstreamBuffer(VkDeviceSize size, VkDeviceSiz
 	if (videoLoggingEnabled() && newSize > m_maxStreamBufferSize)
 	{
 		std::cout << "\tAllocated bitstream buffer with size " << newSize << " B, " << newSize / 1024 << " KB, " << newSize / 1024 / 1024 << " MB" << std::endl;
-		m_maxStreamBufferSize = newSize;
+		m_maxStreamBufferSize = (deUint32)newSize;
 	}
 	return bitstreamBuffer->GetMaxSize();
 }

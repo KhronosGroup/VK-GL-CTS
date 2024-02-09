@@ -1497,6 +1497,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_decode_av1")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_maintenance1")
 	{
 		return;
@@ -1595,6 +1599,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "vulkan_video_codec_h265std_encode")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_av1std")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_av1std_decode")
 	{
 		return;
 	}
@@ -3300,7 +3312,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 			functions.push_back("vkCmdSetProvokingVertexModeEXT");
 		}
 		// Dependencies: VK_EXT_line_rasterization
-		if (extensionIsSupported(vDEP, "VK_EXT_line_rasterization")) {
+		if ((extensionIsSupported(vDEP, "VK_EXT_line_rasterization") || extensionIsSupported(vDEP, "VK_EXT_line_rasterization"))) {
 			functions.push_back("vkCmdSetLineRasterizationModeEXT");
 			functions.push_back("vkCmdSetLineStippleEnableEXT");
 		}
@@ -3452,7 +3464,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 			functions.push_back("vkCmdSetProvokingVertexModeEXT");
 		}
 		// Dependencies: VK_EXT_line_rasterization
-		if (extensionIsSupported(vDEP, "VK_EXT_line_rasterization")) {
+		if ((extensionIsSupported(vDEP, "VK_EXT_line_rasterization") || extensionIsSupported(vDEP, "VK_EXT_line_rasterization"))) {
 			functions.push_back("vkCmdSetLineRasterizationModeEXT");
 			functions.push_back("vkCmdSetLineStippleEnableEXT");
 		}
@@ -3549,6 +3561,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_QCOM_multiview_per_view_render_areas")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_video_decode_av1")
 	{
 		return;
 	}
@@ -3665,6 +3681,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "vulkan_video_codec_h265std_encode")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_av1std")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_av1std_decode")
 	{
 		return;
 	}
@@ -4023,6 +4047,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_low_latency2",
 	"VK_KHR_cooperative_matrix",
 	"VK_QCOM_multiview_per_view_render_areas",
+	"VK_KHR_video_decode_av1",
 	"VK_KHR_video_maintenance1",
 	"VK_NV_per_stage_descriptor_set",
 	"VK_QCOM_image_processing2",

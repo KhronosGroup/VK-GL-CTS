@@ -1333,7 +1333,7 @@ void preRenderingImageLayoutTransition (Context&				context,
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,									// VkStructureType            sType;
 		DE_NULL,																// const void*                pNext;
-		preCleared ? VK_ACCESS_TRANSFER_WRITE_BIT : (VkAccessFlagBits)0,		// VkAccessFlags              srcAccessMask;
+		preCleared ? (VkAccessFlags)VK_ACCESS_TRANSFER_WRITE_BIT : (VkAccessFlags)0,	// VkAccessFlags              srcAccessMask;
 		VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,								// VkAccessFlags              dstAccessMask;
 		preCleared
@@ -5361,7 +5361,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 
 		de::Random	rng(0x12345678);
 
-		for (deUint32 iteration = 0; iteration < (isMultisampledRenderToSingleSampled ? 1000 : 250); ++iteration)
+		for (deUint32 iteration = 0; iteration < (isMultisampledRenderToSingleSampled ? 1000u : 250u); ++iteration)
 		{
 			TestParams testParams;
 			deMemset(&testParams, 0, sizeof(testParams));
@@ -5425,7 +5425,7 @@ void createMultisampledTestsInGroup (tcu::TestCaseGroup*		rootGroup,
 
 		de::Random	rng(0x87654321);
 
-		for (deUint32 iteration = 0; iteration < (isMultisampledRenderToSingleSampled ? 1000 : 250); ++iteration)
+		for (deUint32 iteration = 0; iteration < (isMultisampledRenderToSingleSampled ? 1000u : 250u); ++iteration)
 		{
 			TestParams testParams;
 			deMemset(&testParams, 0, sizeof(testParams));

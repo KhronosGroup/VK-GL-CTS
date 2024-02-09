@@ -118,27 +118,27 @@ de::MovePtr<BufferWithMemory> LineWidthInstance::buildVertices (VkPrimitiveTopol
 	if (lineTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
 	{
 		if (horizontal) {
-			vertices.emplace_back(-1,0,0,0);
-			vertices.emplace_back(0,0,0,0);
-			vertices.emplace_back(0,0,0,0);
-			vertices.emplace_back(+1,0,0,0);
+			vertices.emplace_back(-1.0f,0.0f,0.0f,0.0f);
+			vertices.emplace_back(0.0f,0.0f,0.0f,0.0f);
+			vertices.emplace_back(0.0f,0.0f,0.0f,0.0f);
+			vertices.emplace_back(+1.0f,0.0f,0.0f,0.0f);
 		} else {
-			vertices.emplace_back(0,-1,0,0);
-			vertices.emplace_back(0,0,0,0);
-			vertices.emplace_back(0,0,0,0);
-			vertices.emplace_back(0,+1,0,0);
+			vertices.emplace_back(0.0f,-1.0f,0.0f,0.0f);
+			vertices.emplace_back(0.0f,0.0f,0.0f,0.0f);
+			vertices.emplace_back(0.0f,0.0f,0.0f,0.0f);
+			vertices.emplace_back(0.0f,+1.0f,0.0f,0.0f);
 		}
 	}
 	else if (lineTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP)
 	{
 		if (horizontal) {
-			vertices.emplace_back(-1,0,0,0);
-			vertices.emplace_back(0,0,0,0);
-			vertices.emplace_back(+1,0,0,0);
+			vertices.emplace_back(-1.0f,0.0f,0.0f,0.0f);
+			vertices.emplace_back(0.0f,0.0f,0.0f,0.0f);
+			vertices.emplace_back(+1.0f,0.0f,0.0f,0.0f);
 		} else {
-			vertices.emplace_back(0,-1,0,0);
-			vertices.emplace_back(0,0,0,0);
-			vertices.emplace_back(0,+1,0,0);
+			vertices.emplace_back(0.0f,-1.0f,0.0f,0.0f);
+			vertices.emplace_back(0.0f,0.0f,0.0f,0.0f);
+			vertices.emplace_back(0.0f,+1.0f,0.0f,0.0f);
 		}
 	}
 	else { DE_ASSERT(VK_FALSE); }
