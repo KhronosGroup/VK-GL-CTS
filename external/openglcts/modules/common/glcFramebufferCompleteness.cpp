@@ -1300,19 +1300,19 @@ void FramebufferCompletenessTestCase::init(void)
 	if (m_params.numFboIds > 0)
 	{
 		m_fboIds.resize(m_params.numFboIds);
-		gl.genFramebuffers(m_params.numFboIds, m_fboIds.data());
+		gl.genFramebuffers((glw::GLsizei)m_params.numFboIds, m_fboIds.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGenFramebuffers() failed");
 	}
 	if (m_params.numTexIds > 0)
 	{
 		m_texIds.resize(m_params.numTexIds);
-		gl.genTextures(m_params.numTexIds, m_texIds.data());
+		gl.genTextures((glw::GLsizei)m_params.numTexIds, m_texIds.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() failed");
 	}
 	if (m_params.numRboIds > 0)
 	{
 		m_rboIds.resize(m_params.numRboIds);
-		gl.genRenderbuffers(m_params.numRboIds, m_rboIds.data());
+		gl.genRenderbuffers((glw::GLsizei)m_params.numRboIds, m_rboIds.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGenRenderbuffers() failed");
 	}
 }
@@ -1324,19 +1324,19 @@ void FramebufferCompletenessTestCase::deinit(void)
 
 	if (!m_rboIds.empty())
 	{
-		gl.deleteRenderbuffers(m_params.numRboIds, m_rboIds.data());
+		gl.deleteRenderbuffers((glw::GLsizei)m_params.numRboIds, m_rboIds.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteRenderbuffers() failed");
 		m_rboIds.clear();
 	}
 	if (!m_texIds.empty())
 	{
-		gl.deleteTextures(m_params.numTexIds, m_texIds.data());
+		gl.deleteTextures((glw::GLsizei)m_params.numTexIds, m_texIds.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteTextures() failed");
 		m_texIds.clear();
 	}
 	if (!m_fboIds.empty())
 	{
-		gl.deleteFramebuffers(m_params.numFboIds, m_fboIds.data());
+		gl.deleteFramebuffers((glw::GLsizei)m_params.numFboIds, m_fboIds.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteFramebufers() failed");
 		m_fboIds.clear();
 	}

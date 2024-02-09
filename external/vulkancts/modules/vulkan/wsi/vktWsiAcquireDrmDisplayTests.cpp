@@ -304,6 +304,9 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXT (void)
 
 	VkDisplayKHR display = INVALID_PTR;
 	VkResult result = m_vki.getDrmDisplayEXT(m_physDevice, fd, connectorId, &display);
+	if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
+		TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
+
 	if (result != VK_SUCCESS)
 		TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
@@ -335,6 +338,9 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTInvalidFd (vo
 	VkDisplayKHR display = INVALID_PTR;
 	VkResult result = m_vki.getDrmDisplayEXT(m_physDevice, invalidFd, connectorId, &display);
 	close(invalidFd);
+	if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
+		TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
+
 	if (result != VK_ERROR_UNKNOWN)
 		TCU_FAIL("vkGetDrmDisplayEXT failed to return error.");
 
@@ -362,6 +368,9 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTInvalidConnec
 	deUint32 invalidConnectorId = connectorId + 1234;
 	VkDisplayKHR display = INVALID_PTR;
 	VkResult result = m_vki.getDrmDisplayEXT(m_physDevice, fd, invalidConnectorId, &display);
+	if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
+		TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
+
 	if (result != VK_ERROR_UNKNOWN)
 		TCU_FAIL("vkGetDrmDisplayEXT failed to return error.");
 
@@ -394,6 +403,9 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTNotMaster (vo
 
 	VkDisplayKHR display = INVALID_PTR;
 	VkResult result = m_vki.getDrmDisplayEXT(m_physDevice, fd, connectorId, &display);
+	if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
+		TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
+
 	if (result != VK_SUCCESS)
 		TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
@@ -443,6 +455,9 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testGetDrmDisplayEXTUnownedConnec
 
 	VkDisplayKHR display = INVALID_PTR;
 	VkResult result = m_vki.getDrmDisplayEXT(m_physDevice, leaseFd, otherConnectorId, &display);
+	if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
+		TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
+
 	if (result != VK_ERROR_UNKNOWN)
 		TCU_FAIL("vkGetDrmDisplayEXT failed to return error.");
 
@@ -482,6 +497,9 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXT (void)
 
 	VkDisplayKHR display = INVALID_PTR;
 	VkResult result = m_vki.getDrmDisplayEXT(m_physDevice, fd, connectorId, &display);
+	if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
+		TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
+
 	if (result != VK_SUCCESS)
 		TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
@@ -515,6 +533,9 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTInvalidFd
 
 	VkDisplayKHR display = INVALID_PTR;
 	VkResult result = m_vki.getDrmDisplayEXT(m_physDevice, fd, connectorId, &display);
+	if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
+		TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
+
 	if (result != VK_SUCCESS)
 		TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
@@ -553,6 +574,9 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTNotMaster
 
 	VkDisplayKHR display = INVALID_PTR;
 	VkResult result = m_vki.getDrmDisplayEXT(m_physDevice, fd, connectorId, &display);
+	if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
+		TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
+
 	if (result != VK_SUCCESS)
 		TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
@@ -607,6 +631,9 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testAcquireDrmDisplayEXTUnownedCo
 	// We know that this would fail with leaseFd, so use the original master fd.
 	VkDisplayKHR display = INVALID_PTR;
 	VkResult result = m_vki.getDrmDisplayEXT(m_physDevice, fd, otherConnectorId, &display);
+	if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
+		TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
+
 	if (result != VK_SUCCESS)
 		TCU_FAIL("vkGetDrmDisplayEXT failed.");
 
@@ -650,6 +677,9 @@ tcu::TestStatus AcquireDrmDisplayTestInstance::testReleaseDisplayEXT (void)
 
 	VkDisplayKHR display = INVALID_PTR;
 	VkResult result = m_vki.getDrmDisplayEXT(m_physDevice, fd, connectorId, &display);
+	if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
+		TCU_THROW(NotSupportedError, "VK_EXT_acquire_drm_display not supported.");
+
 	if (result != VK_SUCCESS)
 		TCU_FAIL("vkGetDrmDisplayEXT failed.");
 

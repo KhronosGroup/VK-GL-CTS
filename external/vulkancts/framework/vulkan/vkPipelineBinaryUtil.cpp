@@ -41,11 +41,12 @@ PipelineBinaryWrapper::PipelineBinaryWrapper (const DeviceInterface&	vk,
 {
 }
 
-void PipelineBinaryWrapper::generatePipelineBinaryKeys (const void* pPipelineCreateInfo, bool clearPrevious)
+void PipelineBinaryWrapper::getPipelineBinaryKeys (const void* pPipelineCreateInfo, bool clearPrevious)
 {
 	// retrieve pipeline key count
 	deUint32 keyCount = 0;
-	VK_CHECK(m_vk.generatePipelineBinaryKeysKHR(m_device, pPipelineCreateInfo, &keyCount, DE_NULL));
+	VkPipelineBinaryKeysCreateInfoKHR pipelineBinaryKeysCreateInfo = initVulkanStructure(const_cast<void*>(pPipelineCreateInfo));
+	VK_CHECK(m_vk.getPipelineBinaryKeysKHR(m_device, &pipelineBinaryKeysCreateInfo, &keyCount, DE_NULL));
 	if (keyCount == 0)
 		TCU_FAIL("Expected number of binary keys to be greater than 0");
 
@@ -61,7 +62,7 @@ void PipelineBinaryWrapper::generatePipelineBinaryKeys (const void* pPipelineCre
 	m_pipelineKeys.resize(previousSize + keyCount, defaultKey);
 
 	// retrieve pipeline keys
-	VK_CHECK(m_vk.generatePipelineBinaryKeysKHR(m_device, pPipelineCreateInfo, &keyCount, m_pipelineKeys.data() + previousSize));
+	VK_CHECK(m_vk.getPipelineBinaryKeysKHR(m_device, &pipelineBinaryKeysCreateInfo, &keyCount, m_pipelineKeys.data() + previousSize));
 }
 
 void PipelineBinaryWrapper::createPipelineBinariesFromPipeline (VkPipeline pipeline)
@@ -118,15 +119,18 @@ void PipelineBinaryWrapper::getPipelineBinaryData (std::vector<VkPipelineBinaryD
 
 	for (std::size_t i = 0; i < keyCount; ++i)
 	{
+		VkPipelineBinaryDataInfoKHR pipelineBinaryDataInfo = initVulkanStructure();
+		pipelineBinaryDataInfo.pipelineBinary = m_pipelineBinariesRaw[i];
+
 		// get binary data size
-		VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, m_pipelineBinariesRaw[i], &pipelineDataInfo[i].size, DE_NULL));
+		VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, &pipelineBinaryDataInfo, &pipelineDataInfo[i].size, DE_NULL));
 
 		// alocate space for data and store pointer for it
 		pipelineDataBlob[i].resize(pipelineDataInfo[i].size);
 		pipelineDataInfo[i].pData = pipelineDataBlob[i].data();
 
 		// get binary data
-		VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, m_pipelineBinariesRaw[i], &pipelineDataInfo[i].size, pipelineDataInfo[i].pData));
+		VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, &pipelineBinaryDataInfo, &pipelineDataInfo[i].size, pipelineDataInfo[i].pData));
 	}
 }
 

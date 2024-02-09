@@ -40,7 +40,7 @@ public:
 							PipelineBinaryWrapper					(const DeviceInterface&								vk,
 																	 const VkDevice										vkDevice);
 
-	void					generatePipelineBinaryKeys				(const void*										pPipelineCreateInfo,
+	void					getPipelineBinaryKeys					(const void*										pPipelineCreateInfo,
 																	 bool												clearPrevious = true);
 	void					createPipelineBinariesFromPipeline		(VkPipeline											pipeline);
 	void					createPipelineBinariesFromBinaryData	(const std::vector<VkPipelineBinaryDataKHR>&		pipelineDataInfo);

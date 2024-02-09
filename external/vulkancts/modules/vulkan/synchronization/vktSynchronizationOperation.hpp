@@ -175,6 +175,12 @@ public:
 	{
 		return m_context.isDeviceFunctionalitySupported(extension);
 	}
+
+	bool isComputeOnly(void)
+	{
+		return m_context.getTestContext().getCommandLine().isComputeOnly();
+	}
+
 	de::SharedPtr<vk::ResourceInterface>	getResourceInterface	(void) const { return m_context.getResourceInterface(); }
 private:
 	const vkt::Context&				m_context;

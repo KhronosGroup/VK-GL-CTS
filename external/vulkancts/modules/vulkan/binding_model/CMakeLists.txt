@@ -30,6 +30,8 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingMutableTests.hpp
 	vktBindingDescriptorBufferTests.cpp
 	vktBindingDescriptorBufferTests.hpp
+	vktBindingStagesTests.cpp
+	vktBindingStagesTests.hpp
 	)
 
 PCH(DEQP_VK_BINDING_MODEL_SRCS ../pch.cpp)

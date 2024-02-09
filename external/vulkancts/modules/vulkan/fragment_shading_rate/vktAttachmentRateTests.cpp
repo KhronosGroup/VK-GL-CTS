@@ -1755,6 +1755,8 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 	if (transferQueueFamilyIndex == std::numeric_limits<deUint32>::max())
 		TCU_THROW(NotSupportedError, "No separate transfer queue");
 
+	if (graphicsQueueFamilyIndex == std::numeric_limits<deUint32>::max())
+		TCU_THROW(NotSupportedError, "No separate graphics queue");
 	// using queueFamilies vector to determine if sr image uses exclusiv or concurrent sharing
 	std::vector<deUint32> queueFamilies;
 	if (m_params->mode == TM_SETUP_RATE_WITH_COPYING_FROM_CONCURENT_IMAGE_USING_TRANSFER_QUEUE)
@@ -1820,7 +1822,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 		};
 
 		vk::Move<VkDevice>			customDevice	= createDevice(vkp, m_context.getInstance(), vki, pd, &deviceInfo);
-		de::MovePtr<DeviceDriver>	customDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, m_context.getInstance(), *customDevice, m_context.getUsedApiVersion()));
+		de::MovePtr<DeviceDriver>	customDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, m_context.getInstance(), *customDevice, m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
 		de::MovePtr<Allocator>		customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(*customDriver, *customDevice, getPhysicalDeviceMemoryProperties(vki, pd)));
 
 		device						= *customDevice;

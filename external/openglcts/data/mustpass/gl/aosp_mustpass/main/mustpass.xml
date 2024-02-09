@@ -18,7 +18,7 @@
  * be lost! Modify the generating script instead.
  */-->
 	<TestPackage name="Khronos Mustpass AOSP for GL">
-		<Configuration caseListFile="gl45-es3-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-width=256 --deqp-surface-height=256 --deqp-watchdog=disable" name="es3-master" os="any" useForFirstEGLConfig="True"/>
-		<Configuration caseListFile="gl45-es31-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-width=256 --deqp-surface-height=256 --deqp-watchdog=disable" name="es31-master" os="any" useForFirstEGLConfig="True"/>
+		<Configuration caseListFile="gl45-es3-main.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-width=256 --deqp-surface-height=256 --deqp-watchdog=disable" name="es3-main" os="any" useForFirstEGLConfig="True"/>
+		<Configuration caseListFile="gl45-es31-main.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-width=256 --deqp-surface-height=256 --deqp-watchdog=disable" name="es31-main" os="any" useForFirstEGLConfig="True"/>
 	</TestPackage>
 </Mustpass>

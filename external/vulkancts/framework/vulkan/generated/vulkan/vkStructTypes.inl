@@ -828,6 +828,26 @@ struct VkPipelineBinaryInfoKHR
 	const VkPipelineBinaryKHR*		pPipelineBinaries;
 };
 
+struct VkCapturedPipelineDataInfoKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkPipeline		pipeline;
+};
+
+struct VkPipelineBinaryDataInfoKHR
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkPipelineBinaryKHR	pipelineBinary;
+};
+
+struct VkPipelineBinaryKeysCreateInfoKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+};
+
 struct VkPipelineLayoutCreateInfo
 {
 	VkStructureType					sType;
@@ -5031,7 +5051,7 @@ struct VkPhysicalDeviceShaderClockFeaturesKHR
 	VkBool32		shaderDeviceClock;
 };
 
-struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT
+struct VkPhysicalDeviceIndexTypeUint8FeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -5241,7 +5261,7 @@ struct VkDeviceMemoryOpaqueCaptureAddressInfo
 	VkDeviceMemory	memory;
 };
 
-struct VkPhysicalDeviceLineRasterizationFeaturesEXT
+struct VkPhysicalDeviceLineRasterizationFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -5253,18 +5273,18 @@ struct VkPhysicalDeviceLineRasterizationFeaturesEXT
 	VkBool32		stippledSmoothLines;
 };
 
-struct VkPhysicalDeviceLineRasterizationPropertiesEXT
+struct VkPhysicalDeviceLineRasterizationPropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	uint32_t		lineSubPixelPrecisionBits;
 };
 
-struct VkPipelineRasterizationLineStateCreateInfoEXT
+struct VkPipelineRasterizationLineStateCreateInfoKHR
 {
 	VkStructureType				sType;
 	const void*					pNext;
-	VkLineRasterizationModeEXT	lineRasterizationMode;
+	VkLineRasterizationModeKHR	lineRasterizationMode;
 	VkBool32					stippledLineEnable;
 	uint32_t					lineStippleFactor;
 	uint16_t					lineStipplePattern;
@@ -6746,6 +6766,21 @@ struct VkVideoDecodeH265CapabilitiesKHR
 	StdVideoH265LevelIdc	maxLevelIdc;
 };
 
+struct VkVideoDecodeAV1ProfileInfoKHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	StdVideoAV1Profile	stdProfile;
+	VkBool32			filmGrainSupport;
+};
+
+struct VkVideoDecodeAV1CapabilitiesKHR
+{
+	VkStructureType		sType;
+	void*				pNext;
+	StdVideoAV1Level	maxLevel;
+};
+
 struct VkVideoSessionCreateInfoKHR
 {
 	VkStructureType					sType;
@@ -7839,6 +7874,7 @@ struct VkPhysicalDevicePipelineBinaryPropertiesKHR
 	VkBool32		pipelineBinaryInternalCache;
 	VkBool32		pipelineBinaryPrefersInternalCache;
 	VkBool32		pipelineBinaryPrecompiledInternalCache;
+	VkBool32		pipelineBinaryCompressedData;
 	VkBool32		pipelineBinaryUniqueBinaryKeyPairs;
 };
 
@@ -9349,6 +9385,67 @@ struct VkRenderPassStripeSubmitInfoARM
 	const VkSemaphoreSubmitInfo*	pStripeSemaphoreInfos;
 };
 
+struct VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderMaximalReconvergence;
+};
+
+struct VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSubgroupRotate;
+	VkBool32		shaderSubgroupRotateClustered;
+};
+
+struct VkPhysicalDeviceShaderExpectAssumeFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderExpectAssume;
+};
+
+struct VkPhysicalDeviceShaderFloatControls2FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderFloatControls2;
+};
+
+struct VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		dynamicRenderingLocalRead;
+};
+
+struct VkRenderingAttachmentLocationInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		colorAttachmentCount;
+	const uint32_t*	pColorAttachmentLocations;
+};
+
+struct VkRenderingInputAttachmentIndexInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		colorAttachmentCount;
+	const uint32_t*	pColorAttachmentInputIndices;
+	const uint32_t*	pDepthInputAttachmentIndex;
+	const uint32_t*	pStencilInputAttachmentIndex;
+};
+
+struct VkPhysicalDeviceShaderQuadControlFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderQuadControl;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;
@@ -10312,6 +10409,313 @@ struct VkVideoEncodeH265DpbSlotInfoKHR
 	const StdVideoEncodeH265ReferenceInfo*	pStdReferenceInfo;
 };
 
+struct StdVideoAV1ColorConfigFlags
+{
+	uint32_t	mono_chrome:1;
+	uint32_t	color_range:1;
+	uint32_t	separate_uv_delta_q:1;
+	uint32_t	color_description_present_flag:1;
+	uint32_t	reserved:28;
+};
+
+struct StdVideoAV1ColorConfig
+{
+	StdVideoAV1ColorConfigFlags			flags;
+	uint8_t								BitDepth;
+	uint8_t								subsampling_x;
+	uint8_t								subsampling_y;
+	uint8_t								reserved1;
+	StdVideoAV1ColorPrimaries			color_primaries;
+	StdVideoAV1TransferCharacteristics	transfer_characteristics;
+	StdVideoAV1MatrixCoefficients		matrix_coefficients;
+	StdVideoAV1ChromaSamplePosition		chroma_sample_position;
+};
+
+struct StdVideoAV1TimingInfoFlags
+{
+	uint32_t	equal_picture_interval:1;
+	uint32_t	reserved:31;
+};
+
+struct StdVideoAV1TimingInfo
+{
+	StdVideoAV1TimingInfoFlags	flags;
+	uint32_t					num_units_in_display_tick;
+	uint32_t					time_scale;
+	uint32_t					num_ticks_per_picture_minus_1;
+};
+
+struct StdVideoAV1SequenceHeaderFlags
+{
+	uint32_t	still_picture:1;
+	uint32_t	reduced_still_picture_header:1;
+	uint32_t	use_128x128_superblock:1;
+	uint32_t	enable_filter_intra:1;
+	uint32_t	enable_intra_edge_filter:1;
+	uint32_t	enable_interintra_compound:1;
+	uint32_t	enable_masked_compound:1;
+	uint32_t	enable_warped_motion:1;
+	uint32_t	enable_dual_filter:1;
+	uint32_t	enable_order_hint:1;
+	uint32_t	enable_jnt_comp:1;
+	uint32_t	enable_ref_frame_mvs:1;
+	uint32_t	frame_id_numbers_present_flag:1;
+	uint32_t	enable_superres:1;
+	uint32_t	enable_cdef:1;
+	uint32_t	enable_restoration:1;
+	uint32_t	film_grain_params_present:1;
+	uint32_t	timing_info_present_flag:1;
+	uint32_t	initial_display_delay_present_flag:1;
+	uint32_t	reserved:13;
+};
+
+struct StdVideoAV1SequenceHeader
+{
+	StdVideoAV1SequenceHeaderFlags	flags;
+	StdVideoAV1Profile				seq_profile;
+	uint8_t							frame_width_bits_minus_1;
+	uint8_t							frame_height_bits_minus_1;
+	uint16_t						max_frame_width_minus_1;
+	uint16_t						max_frame_height_minus_1;
+	uint8_t							delta_frame_id_length_minus_2;
+	uint8_t							additional_frame_id_length_minus_1;
+	uint8_t							order_hint_bits_minus_1;
+	uint8_t							seq_force_integer_mv;
+	uint8_t							seq_force_screen_content_tools;
+	uint8_t							reserved1[5];
+	const StdVideoAV1ColorConfig*	pColorConfig;
+	const StdVideoAV1TimingInfo*	pTimingInfo;
+};
+
+struct VkVideoDecodeAV1SessionParametersCreateInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	const StdVideoAV1SequenceHeader*	pStdSequenceHeader;
+};
+
+struct StdVideoAV1LoopFilterFlags
+{
+	uint32_t	loop_filter_delta_enabled:1;
+	uint32_t	loop_filter_delta_update:1;
+	uint32_t	reserved:30;
+};
+
+struct StdVideoAV1LoopFilter
+{
+	StdVideoAV1LoopFilterFlags	flags;
+	uint8_t						loop_filter_level[STD_VIDEO_AV1_MAX_LOOP_FILTER_STRENGTHS];
+	uint8_t						loop_filter_sharpness;
+	uint8_t						update_ref_delta;
+	int8_t						loop_filter_ref_deltas[STD_VIDEO_AV1_TOTAL_REFS_PER_FRAME];
+	uint8_t						update_mode_delta;
+	int8_t						loop_filter_mode_deltas[STD_VIDEO_AV1_LOOP_FILTER_ADJUSTMENTS];
+};
+
+struct StdVideoAV1QuantizationFlags
+{
+	uint32_t	using_qmatrix:1;
+	uint32_t	diff_uv_delta:1;
+	uint32_t	reserved:30;
+};
+
+struct StdVideoAV1Quantization
+{
+	StdVideoAV1QuantizationFlags	flags;
+	uint8_t							base_q_idx;
+	int8_t							DeltaQYDc;
+	int8_t							DeltaQUDc;
+	int8_t							DeltaQUAc;
+	int8_t							DeltaQVDc;
+	int8_t							DeltaQVAc;
+	uint8_t							qm_y;
+	uint8_t							qm_u;
+	uint8_t							qm_v;
+};
+
+struct StdVideoAV1Segmentation
+{
+	uint8_t	FeatureEnabled[STD_VIDEO_AV1_MAX_SEGMENTS];
+	int16_t	FeatureData[STD_VIDEO_AV1_MAX_SEGMENTS][STD_VIDEO_AV1_SEG_LVL_MAX];
+};
+
+struct StdVideoAV1TileInfoFlags
+{
+	uint32_t	uniform_tile_spacing_flag:1;
+	uint32_t	reserved:31;
+};
+
+struct StdVideoAV1TileInfo
+{
+	StdVideoAV1TileInfoFlags	flags;
+	uint8_t						TileCols;
+	uint8_t						TileRows;
+	uint16_t					context_update_tile_id;
+	uint8_t						tile_size_bytes_minus_1;
+	uint8_t						reserved1[7];
+	const uint16_t*				pMiColStarts;
+	const uint16_t*				pMiRowStarts;
+	const uint16_t*				pWidthInSbsMinus1;
+	const uint16_t*				pHeightInSbsMinus1;
+};
+
+struct StdVideoAV1CDEF
+{
+	uint8_t	cdef_damping_minus_3;
+	uint8_t	cdef_bits;
+	uint8_t	cdef_y_pri_strength[STD_VIDEO_AV1_MAX_CDEF_FILTER_STRENGTHS];
+	uint8_t	cdef_y_sec_strength[STD_VIDEO_AV1_MAX_CDEF_FILTER_STRENGTHS];
+	uint8_t	cdef_uv_pri_strength[STD_VIDEO_AV1_MAX_CDEF_FILTER_STRENGTHS];
+	uint8_t	cdef_uv_sec_strength[STD_VIDEO_AV1_MAX_CDEF_FILTER_STRENGTHS];
+};
+
+struct StdVideoAV1LoopRestoration
+{
+	StdVideoAV1FrameRestorationType	FrameRestorationType[STD_VIDEO_AV1_MAX_NUM_PLANES];
+	uint16_t						LoopRestorationSize[STD_VIDEO_AV1_MAX_NUM_PLANES];
+};
+
+struct StdVideoAV1GlobalMotion
+{
+	uint8_t	GmType[STD_VIDEO_AV1_NUM_REF_FRAMES];
+	int32_t	gm_params[STD_VIDEO_AV1_NUM_REF_FRAMES][STD_VIDEO_AV1_GLOBAL_MOTION_PARAMS];
+};
+
+struct StdVideoAV1FilmGrainFlags
+{
+	uint32_t	chroma_scaling_from_luma:1;
+	uint32_t	overlap_flag:1;
+	uint32_t	clip_to_restricted_range:1;
+	uint32_t	update_grain:1;
+	uint32_t	reserved:28;
+};
+
+struct StdVideoAV1FilmGrain
+{
+	StdVideoAV1FilmGrainFlags	flags;
+	uint8_t						grain_scaling_minus_8;
+	uint8_t						ar_coeff_lag;
+	uint8_t						ar_coeff_shift_minus_6;
+	uint8_t						grain_scale_shift;
+	uint16_t					grain_seed;
+	uint8_t						film_grain_params_ref_idx;
+	uint8_t						num_y_points;
+	uint8_t						point_y_value[STD_VIDEO_AV1_MAX_NUM_Y_POINTS];
+	uint8_t						point_y_scaling[STD_VIDEO_AV1_MAX_NUM_Y_POINTS];
+	uint8_t						num_cb_points;
+	uint8_t						point_cb_value[STD_VIDEO_AV1_MAX_NUM_CB_POINTS];
+	uint8_t						point_cb_scaling[STD_VIDEO_AV1_MAX_NUM_CB_POINTS];
+	uint8_t						num_cr_points;
+	uint8_t						point_cr_value[STD_VIDEO_AV1_MAX_NUM_CR_POINTS];
+	uint8_t						point_cr_scaling[STD_VIDEO_AV1_MAX_NUM_CR_POINTS];
+	int8_t						ar_coeffs_y_plus_128[STD_VIDEO_AV1_MAX_NUM_POS_LUMA];
+	int8_t						ar_coeffs_cb_plus_128[STD_VIDEO_AV1_MAX_NUM_POS_CHROMA];
+	int8_t						ar_coeffs_cr_plus_128[STD_VIDEO_AV1_MAX_NUM_POS_CHROMA];
+	uint8_t						cb_mult;
+	uint8_t						cb_luma_mult;
+	uint16_t					cb_offset;
+	uint8_t						cr_mult;
+	uint8_t						cr_luma_mult;
+	uint16_t					cr_offset;
+};
+
+struct StdVideoDecodeAV1PictureInfoFlags
+{
+	uint32_t	error_resilient_mode:1;
+	uint32_t	disable_cdf_update:1;
+	uint32_t	use_superres:1;
+	uint32_t	render_and_frame_size_different:1;
+	uint32_t	allow_screen_content_tools:1;
+	uint32_t	is_filter_switchable:1;
+	uint32_t	force_integer_mv:1;
+	uint32_t	frame_size_override_flag:1;
+	uint32_t	buffer_removal_time_present_flag:1;
+	uint32_t	allow_intrabc:1;
+	uint32_t	frame_refs_short_signaling:1;
+	uint32_t	allow_high_precision_mv:1;
+	uint32_t	is_motion_mode_switchable:1;
+	uint32_t	use_ref_frame_mvs:1;
+	uint32_t	disable_frame_end_update_cdf:1;
+	uint32_t	allow_warped_motion:1;
+	uint32_t	reduced_tx_set:1;
+	uint32_t	reference_select:1;
+	uint32_t	skip_mode_present:1;
+	uint32_t	delta_q_present:1;
+	uint32_t	delta_lf_present:1;
+	uint32_t	delta_lf_multi:1;
+	uint32_t	segmentation_enabled:1;
+	uint32_t	segmentation_update_map:1;
+	uint32_t	segmentation_temporal_update:1;
+	uint32_t	segmentation_update_data:1;
+	uint32_t	UsesLr:1;
+	uint32_t	usesChromaLr:1;
+	uint32_t	apply_grain:1;
+	uint32_t	reserved:3;
+};
+
+struct StdVideoDecodeAV1PictureInfo
+{
+	StdVideoDecodeAV1PictureInfoFlags	flags;
+	StdVideoAV1FrameType				frame_type;
+	uint32_t							current_frame_id;
+	uint8_t								OrderHint;
+	uint8_t								primary_ref_frame;
+	uint8_t								refresh_frame_flags;
+	uint8_t								reserved1;
+	StdVideoAV1InterpolationFilter		interpolation_filter;
+	StdVideoAV1TxMode					TxMode;
+	uint8_t								delta_q_res;
+	uint8_t								delta_lf_res;
+	uint8_t								SkipModeFrame[STD_VIDEO_AV1_SKIP_MODE_FRAMES];
+	uint8_t								coded_denom;
+	uint8_t								reserved2[3];
+	uint8_t								OrderHints[STD_VIDEO_AV1_NUM_REF_FRAMES];
+	uint32_t							expectedFrameId[STD_VIDEO_AV1_NUM_REF_FRAMES];
+	const StdVideoAV1TileInfo*			pTileInfo;
+	const StdVideoAV1Quantization*		pQuantization;
+	const StdVideoAV1Segmentation*		pSegmentation;
+	const StdVideoAV1LoopFilter*		pLoopFilter;
+	const StdVideoAV1CDEF*				pCDEF;
+	const StdVideoAV1LoopRestoration*	pLoopRestoration;
+	const StdVideoAV1GlobalMotion*		pGlobalMotion;
+	const StdVideoAV1FilmGrain*			pFilmGrain;
+};
+
+struct VkVideoDecodeAV1PictureInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	const StdVideoDecodeAV1PictureInfo*	pStdPictureInfo;
+	int32_t								referenceNameSlotIndices[VK_MAX_VIDEO_AV1_REFERENCES_PER_FRAME_KHR];
+	uint32_t							frameHeaderOffset;
+	uint32_t							tileCount;
+	const uint32_t*						pTileOffsets;
+	const uint32_t*						pTileSizes;
+};
+
+struct StdVideoDecodeAV1ReferenceInfoFlags
+{
+	uint32_t	disable_frame_end_update_cdf:1;
+	uint32_t	segmentation_enabled:1;
+	uint32_t	reserved:30;
+};
+
+struct StdVideoDecodeAV1ReferenceInfo
+{
+	StdVideoDecodeAV1ReferenceInfoFlags	flags;
+	uint8_t								frame_type;
+	uint8_t								RefFrameSignBias;
+	uint8_t								OrderHint;
+	uint8_t								SavedOrderHints[STD_VIDEO_AV1_NUM_REF_FRAMES];
+};
+
+struct VkVideoDecodeAV1DpbSlotInfoKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	const StdVideoDecodeAV1ReferenceInfo*	pStdReferenceInfo;
+};
+
 typedef VkDevicePrivateDataCreateInfo VkDevicePrivateDataCreateInfoEXT;
 
 typedef VkPrivateDataSlotCreateInfo VkPrivateDataSlotCreateInfoEXT;
@@ -10576,6 +10980,8 @@ typedef VkPipelineCreationFeedbackCreateInfo VkPipelineCreationFeedbackCreateInf
 
 typedef VkQueryPoolPerformanceQueryCreateInfoINTEL VkQueryPoolCreateInfoINTEL;
 
+typedef VkPhysicalDeviceIndexTypeUint8FeaturesKHR VkPhysicalDeviceIndexTypeUint8FeaturesEXT;
+
 typedef VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR;
 
 typedef VkAttachmentReferenceStencilLayout VkAttachmentReferenceStencilLayoutKHR;
@@ -10599,6 +11005,12 @@ typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfo VkShaderRequiredSubg
 typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAllocateInfoKHR;
 
 typedef VkDeviceMemoryOpaqueCaptureAddressInfo VkDeviceMemoryOpaqueCaptureAddressInfoKHR;
+
+typedef VkPhysicalDeviceLineRasterizationFeaturesKHR VkPhysicalDeviceLineRasterizationFeaturesEXT;
+
+typedef VkPhysicalDeviceLineRasterizationPropertiesKHR VkPhysicalDeviceLineRasterizationPropertiesEXT;
+
+typedef VkPipelineRasterizationLineStateCreateInfoKHR VkPipelineRasterizationLineStateCreateInfoEXT;
 
 typedef VkPhysicalDevicePipelineCreationCacheControlFeatures VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT;
 

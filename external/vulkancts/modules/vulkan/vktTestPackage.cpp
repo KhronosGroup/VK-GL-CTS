@@ -111,6 +111,7 @@
 #include "vktImagelessFramebufferTests.hpp"
 #include "vktFragmentShaderInterlockTests.hpp"
 #include "vktShaderClockTests.hpp"
+#include "vktShaderExpectAssumeTests.hpp"
 #include "vktModifiersTests.hpp"
 #include "vktRayTracingTests.hpp"
 #include "vktRayQueryTests.hpp"
@@ -320,7 +321,9 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 	{
 		// Open connection with the server dedicated for standard output
 		vksc_server::OpenRemoteStandardOutput(testCtx.getCommandLine().getServerAddress());
-		restoreStandardOutput();
+
+		if (!testCtx.getCommandLine().quietMode())
+			restoreStandardOutput();
 	}
 #endif // CTS_USES_VULKANSC
 
@@ -664,7 +667,8 @@ void TestCaseExecutor::deinitTestPackage (tcu::TestContext& testCtx)
 		}
 
 		// Tests are finished. Next tests ( if any ) will come from other test package and test executor
-		restoreStandardOutput();
+		if (!testCtx.getCommandLine().quietMode())
+			restoreStandardOutput();
 		m_context->getTestContext().getLog().supressLogging(false);
 	}
 	m_resourceInterface->resetPipelineCaches();
@@ -880,7 +884,8 @@ void TestCaseExecutor::runTestsInSubprocess (tcu::TestContext& testCtx)
 	newCmdLine = newCmdLine + " --deqp-caselist-file=" + caseListName;
 
 	// restore cout and cerr
-	restoreStandardOutput();
+	if (!testCtx.getCommandLine().quietMode())
+		restoreStandardOutput();
 
 	// create subprocess which will perform real tests
 	std::string subProcessExitCodeInfo;
@@ -1084,6 +1089,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	// Amber GLSL tests.
 	glslTests->addChild(cts_amber::createCombinedOperationsGroup		(testCtx));
 	glslTests->addChild(cts_amber::createCrashTestGroup					(testCtx));
+	glslTests->addChild(shaderexecutor::createShaderExpectAssumeTests(testCtx));
 #endif // CTS_USES_VULKANSC
 }
 

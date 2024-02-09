@@ -108,7 +108,7 @@ void RingBuffer<T>::resize (int newSize)
 		m_back		= 0;
 		m_size		= newSize;
 
-		DE_SWAP(T*, buf, m_buffer);
+		std::swap(buf, m_buffer);
 		delete[] buf;
 	}
 	catch (...)

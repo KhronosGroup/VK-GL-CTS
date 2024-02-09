@@ -182,6 +182,15 @@ bool isIntegerDotProductFeaturesSupported(const Context& context, const vk::VkPh
 
 	return true;
 }
+
+bool isFloatControls2FeaturesSupported(const Context& context, const vk::VkPhysicalDeviceShaderFloatControls2FeaturesKHR& toCheck, const char **missingFeature)
+{
+	const VkPhysicalDeviceShaderFloatControls2FeaturesKHR& extensionFeatures = context.getShaderFloatControls2Features();
+
+	IS_AVAIL("ShaderFloatControls2.", shaderFloatControls2);
+
+	return true;
+}
 #endif // CTS_USES_VULKANSC
 
 #undef IS_AVAIL
@@ -291,6 +300,9 @@ bool isVulkanFeaturesSupported(const Context& context, const VulkanFeatures& req
 
 #ifndef CTS_USES_VULKANSC
 	if (!isIntegerDotProductFeaturesSupported(context, requested.extIntegerDotProduct, missingFeature))
+		return false;
+
+	if (!isFloatControls2FeaturesSupported(context, requested.extFloatControls2, missingFeature))
 		return false;
 #endif // CTS_USES_VULKANSC
 

@@ -425,6 +425,18 @@ PipelineLayoutWrapper::PipelineLayoutWrapper (PipelineConstructionType pipelineC
 	m_pipelineLayout = createPipelineLayout(vk, device, &createInfo);
 }
 
+PipelineLayoutWrapper::PipelineLayoutWrapper(PipelineLayoutWrapper&& rhs) noexcept
+	: m_pipelineConstructionType	(rhs.m_pipelineConstructionType)
+	, m_vk							(rhs.m_vk)
+	, m_device						(rhs.m_device)
+	, m_flags						(rhs.m_flags)
+	, m_setLayoutCount				(rhs.m_setLayoutCount)
+	, m_setLayouts					(std::move(rhs.m_setLayouts))
+	, m_pushConstantRangeCount		(rhs.m_pushConstantRangeCount)
+	, m_pushConstantRanges			(std::move(rhs.m_pushConstantRanges))
+	, m_pipelineLayout				(rhs.m_pipelineLayout)
+{ }
+
 PipelineLayoutWrapper& PipelineLayoutWrapper::operator=	(PipelineLayoutWrapper&& rhs)
 {
 	m_pipelineConstructionType = rhs.m_pipelineConstructionType;
@@ -1828,7 +1840,8 @@ struct GraphicsPipelineWrapper::InternalData
 	VkPipelineLibraryCreateInfoKHR						finalPipelineLibraryCreateInfo;
 #endif
 	VkGraphicsPipelineCreateInfo						pipelinePartCreateInfo[4];
-	VkGraphicsPipelineCreateInfo						finalPipelineCreateInfo;
+	bool												explicitLinkPipelineLayoutSet;
+	VkGraphicsPipelineCreateInfo						monolithicPipelineCreateInfo;
 
 	ShaderWrapper										vertexShader;
 	ShaderWrapper										tessellationControlShader;
@@ -1993,46 +2006,24 @@ struct GraphicsPipelineWrapper::InternalData
 			0u,																// VkPipelineTessellationStateCreateFlags		flags
 			3u																// deUint32										patchControlPoints
 		}
-		, pFragmentShadingRateState				(nullptr)
-		, pDynamicState							(DE_NULL)
-		, pRepresentativeFragmentTestState		(nullptr)
-		, pTessellationDomainOrigin				()
-		, useViewportState						(DE_TRUE)
-		, useDefaultRasterizationState			(DE_FALSE)
-		, useDefaultDepthStencilState			(DE_FALSE)
-		, useDefaultColorBlendState				(DE_FALSE)
-		, useDefaultMultisampleState			(DE_FALSE)
-		, useDefaultVertexInputState			(DE_TRUE)
-		, failOnCompileWhenLinking				(false)
-#ifndef CTS_USES_VULKANSC
-		, pipelinePartLibraryCreateInfo
-		{
-			makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT),
-			makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT),
-			makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT),
-			makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT)
-		}
-		, finalPipelineLibraryCreateInfo
+		, pFragmentShadingRateState		(nullptr)
+		, pDynamicState					(DE_NULL)
+		, pRepresentativeFragmentTestState(nullptr)
+		, pTessellationDomainOrigin		()
+		, useViewportState				(DE_TRUE)
+		, useDefaultRasterizationState	(DE_FALSE)
+		, useDefaultDepthStencilState	(DE_FALSE)
+		, useDefaultColorBlendState		(DE_FALSE)
+		, useDefaultMultisampleState	(DE_FALSE)
+		, useDefaultVertexInputState	(DE_TRUE)
+		, failOnCompileWhenLinking		(false)
+		, explicitLinkPipelineLayoutSet	(false)
+		, tessellationShaderFeature		(false)
+		, geometryShaderFeature			(false)
+		, taskShaderFeature				(false)
+		, meshShaderFeature				(false)
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,		// VkStructureType		sType;
-		DE_NULL,												// const void*			pNext;
-		4,														// deUint32				libraryCount;
-		DE_NULL													// const VkPipeline*	pLibraries;
-	}
-#endif
-		, pipelinePartCreateInfo
-		{
-			initVulkanStructure(),
-			initVulkanStructure(),
-			initVulkanStructure(),
-			initVulkanStructure(),
-		}
-		, finalPipelineCreateInfo				(initVulkanStructure())
-		, tessellationShaderFeature				(false)
-		, geometryShaderFeature					(false)
-		, taskShaderFeature						(false)
-		, meshShaderFeature						(false)
-	{
+		monolithicPipelineCreateInfo = initVulkanStructure();
 	}
 
 	bool extensionEnabled (const std::string& ext) const
@@ -2064,7 +2055,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setMonolithicPipelineLayout(co
 	// make sure pipeline was not already built
 	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
 
-	m_internalData->finalPipelineCreateInfo.layout = *layout;
+	m_internalData->monolithicPipelineCreateInfo.layout = *layout;
+	m_internalData->explicitLinkPipelineLayoutSet = true;
 
 	return *this;
 }
@@ -2074,7 +2066,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setMonolithicPipelineBinaries(
 	// make sure pipeline was not already built
 	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
 
-	void* firstStructInChain = static_cast<void*>(&m_internalData->finalPipelineCreateInfo);
+	void* firstStructInChain = static_cast<void*>(&m_internalData->monolithicPipelineCreateInfo);
 	addToChain(&firstStructInChain, binaries.ptr);
 
 	return *this;
@@ -2085,8 +2077,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setDynamicState(const VkPipeli
 	// make sure states are not yet setup - all pipeline states must know about dynamic state
 	DE_ASSERT(m_internalData && m_internalData->setupState == PSS_NONE);
 
-	m_internalData->pDynamicState							= dynamicState;
-	m_internalData->finalPipelineCreateInfo.pDynamicState	= dynamicState;
+	m_internalData->pDynamicState								= dynamicState;
+	m_internalData->monolithicPipelineCreateInfo.pDynamicState	= dynamicState;
 
 	return *this;
 }
@@ -2435,8 +2427,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const Vk
 
 	if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		m_internalData->finalPipelineCreateInfo.pVertexInputState	= pVertexInputState;
-		m_internalData->finalPipelineCreateInfo.pInputAssemblyState	= pInputAssemblyState;
+		m_internalData->monolithicPipelineCreateInfo.pVertexInputState		= pVertexInputState;
+		m_internalData->monolithicPipelineCreateInfo.pInputAssemblyState	= pInputAssemblyState;
 	}
 
 #ifndef CTS_USES_VULKANSC
@@ -2737,20 +2729,21 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 		}
 	}
 
+	// if pipeline layout was not specified with setupMonolithicPipelineLayout
+	// then use layout from setupPreRasterizationShaderState for link pipeline
+	if (!m_internalData->explicitLinkPipelineLayoutSet)
+		m_internalData->monolithicPipelineCreateInfo.layout = *layout;
+
 	if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		// make sure we dont overwrite layout specified with setupMonolithicPipelineLayout
-		if (m_internalData->finalPipelineCreateInfo.layout == 0)
-			m_internalData->finalPipelineCreateInfo.layout = *layout;
-
-		m_internalData->finalPipelineCreateInfo.renderPass			= renderPass;
-		m_internalData->finalPipelineCreateInfo.subpass				= subpass;
-		m_internalData->finalPipelineCreateInfo.pRasterizationState	= pRasterizationState;
-		m_internalData->finalPipelineCreateInfo.pViewportState		= pViewportState;
-		m_internalData->finalPipelineCreateInfo.stageCount			= 1u + hasTesc + hasTese + hasGeom;
-		m_internalData->finalPipelineCreateInfo.pStages				= m_internalData->pipelineShaderStages.data();
-		m_internalData->finalPipelineCreateInfo.pTessellationState	= pTessellationState;
-		m_internalData->finalPipelineCreateInfo.flags				|= shaderModuleIdFlags;
+		m_internalData->monolithicPipelineCreateInfo.renderPass				= renderPass;
+		m_internalData->monolithicPipelineCreateInfo.subpass				= subpass;
+		m_internalData->monolithicPipelineCreateInfo.pRasterizationState	= pRasterizationState;
+		m_internalData->monolithicPipelineCreateInfo.pViewportState			= pViewportState;
+		m_internalData->monolithicPipelineCreateInfo.stageCount				= 1u + hasTesc + hasTese + hasGeom;
+		m_internalData->monolithicPipelineCreateInfo.pStages				= m_internalData->pipelineShaderStages.data();
+		m_internalData->monolithicPipelineCreateInfo.pTessellationState		= pTessellationState;
+		m_internalData->monolithicPipelineCreateInfo.flags					|= shaderModuleIdFlags;
 	}
 
 #ifndef CTS_USES_VULKANSC
@@ -2906,19 +2899,20 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShade
 		}
 	}
 
+	// if pipeline layout was not specified with setupMonolithicPipelineLayout
+	// then use layout from setupPreRasterizationMeshShaderState for link pipeline
+	if (!m_internalData->explicitLinkPipelineLayoutSet)
+		m_internalData->monolithicPipelineCreateInfo.layout = *layout;
+
 	if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		// make sure we dont overwrite layout specified with setupMonolithicPipelineLayout
-		if (m_internalData->finalPipelineCreateInfo.layout == 0)
-			m_internalData->finalPipelineCreateInfo.layout = *layout;
-
-		m_internalData->finalPipelineCreateInfo.renderPass			= renderPass;
-		m_internalData->finalPipelineCreateInfo.subpass				= subpass;
-		m_internalData->finalPipelineCreateInfo.pRasterizationState	= pRasterizationState;
-		m_internalData->finalPipelineCreateInfo.pViewportState		= pViewportState;
-		m_internalData->finalPipelineCreateInfo.stageCount			= 1u + taskShaderCount;
-		m_internalData->finalPipelineCreateInfo.pStages				= m_internalData->pipelineShaderStages.data();
-		m_internalData->finalPipelineCreateInfo.pTessellationState	= pTessellationState;
+		m_internalData->monolithicPipelineCreateInfo.renderPass				= renderPass;
+		m_internalData->monolithicPipelineCreateInfo.subpass				= subpass;
+		m_internalData->monolithicPipelineCreateInfo.pRasterizationState	= pRasterizationState;
+		m_internalData->monolithicPipelineCreateInfo.pViewportState			= pViewportState;
+		m_internalData->monolithicPipelineCreateInfo.stageCount				= 1u + taskShaderCount;
+		m_internalData->monolithicPipelineCreateInfo.pStages				= m_internalData->pipelineShaderStages.data();
+		m_internalData->monolithicPipelineCreateInfo.pTessellationState		= pTessellationState;
 	}
 	else
 	{
@@ -3062,10 +3056,10 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 
 	if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		m_internalData->finalPipelineCreateInfo.pDepthStencilState	= pDepthStencilState;
-		m_internalData->finalPipelineCreateInfo.pMultisampleState	= pMultisampleState;
-		m_internalData->finalPipelineCreateInfo.stageCount			+= (hasFrag ? 1u : 0u);
-		m_internalData->finalPipelineCreateInfo.flags				|= shaderModuleIdFlags;
+		m_internalData->monolithicPipelineCreateInfo.pDepthStencilState	= pDepthStencilState;
+		m_internalData->monolithicPipelineCreateInfo.pMultisampleState	= pMultisampleState;
+		m_internalData->monolithicPipelineCreateInfo.stageCount			+= (hasFrag ? 1u : 0u);
+		m_internalData->monolithicPipelineCreateInfo.flags				|= shaderModuleIdFlags;
 	}
 
 #ifndef CTS_USES_VULKANSC
@@ -3161,10 +3155,10 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 
 	if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		m_internalData->finalPipelineCreateInfo.pNext				= firstStructInChain;
-		m_internalData->finalPipelineCreateInfo.flags				|= m_internalData->pipelineFlags;
-		m_internalData->finalPipelineCreateInfo.pColorBlendState	= pColorBlendState;
-		m_internalData->finalPipelineCreateInfo.pMultisampleState	= pMultisampleState;
+		m_internalData->monolithicPipelineCreateInfo.pNext				= firstStructInChain;
+		m_internalData->monolithicPipelineCreateInfo.flags				|= m_internalData->pipelineFlags;
+		m_internalData->monolithicPipelineCreateInfo.pColorBlendState	= pColorBlendState;
+		m_internalData->monolithicPipelineCreateInfo.pMultisampleState	= pMultisampleState;
 	}
 
 #ifndef CTS_USES_VULKANSC
@@ -3397,7 +3391,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 	DE_UNREF(creationFeedback);
 	DE_UNREF(pNext);
 
-	VkGraphicsPipelineCreateInfo*	pointerToCreateInfo	= &m_internalData->finalPipelineCreateInfo;
+	VkGraphicsPipelineCreateInfo*	pointerToCreateInfo	= &m_internalData->monolithicPipelineCreateInfo;
 
 	if (isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
 	{
@@ -3480,12 +3474,12 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT);
 		if (m_internalData->extensionEnabled("VK_EXT_conservative_rasterization"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT);
-		if (m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
+		if (m_internalData->extensionEnabled("VK_KHR_line_rasterization") || m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT);
-		if (m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
+		if (m_internalData->extensionEnabled("VK_KHR_line_rasterization") ||m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT);
-		if (m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
-			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT);
+		if (m_internalData->extensionEnabled("VK_KHR_line_rasterization") ||m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
+			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_KHR);
 		if (m_internalData->extensionEnabled("VK_EXT_provoking_vertex"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT);
 		if (m_internalData->extensionEnabled("VK_KHR_fragment_shading_rate"))
@@ -3892,8 +3886,16 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			linkingInfo.libraryCount	= static_cast<uint32_t>(rawPipelines.size());
 			linkingInfo.pLibraries		= de::dataOrNull(rawPipelines);
 
+			// If a test hits the following assert, it's likely missing a call
+			// to the setMonolithicPipelineLayout() method. Related VUs:
+			//   * VUID-VkGraphicsPipelineCreateInfo-flags-06642
+			//   * VUID-VkGraphicsPipelineCreateInfo-None-07826
+			//   * VUID-VkGraphicsPipelineCreateInfo-layout-07827
+			//   * VUID-VkGraphicsPipelineCreateInfo-flags-06729
+			//   * VUID-VkGraphicsPipelineCreateInfo-flags-06730
+			DE_ASSERT(m_internalData->monolithicPipelineCreateInfo.layout != VK_NULL_HANDLE);
+			linkedCreateInfo.layout		= m_internalData->monolithicPipelineCreateInfo.layout;
 			linkedCreateInfo.flags		= m_internalData->pipelineFlags;
-			linkedCreateInfo.layout		= m_internalData->finalPipelineCreateInfo.layout;
 			linkedCreateInfo.pNext		= &linkingInfo;
 
 			pointerToCreateInfo			= &linkedCreateInfo;
@@ -4211,7 +4213,7 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			break;
 		case vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT:
 			if (stippledLineEnabled)
-				vk.cmdSetLineStippleEXT(cmdBuffer, state->lineStippleFactor, state->lineStipplePattern);
+				vk.cmdSetLineStippleKHR(cmdBuffer, state->lineStippleFactor, state->lineStipplePattern);
 			break;
 		case vk::VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT:
 			if (rasterizerDiscardDisabled)
@@ -4412,7 +4414,7 @@ vk::VkPipeline GraphicsPipelineWrapper::getPartialPipeline(deUint32 part) const
 const VkGraphicsPipelineCreateInfo& GraphicsPipelineWrapper::getPipelineCreateInfo(void) const
 {
 	DE_ASSERT(m_internalData);
-	return m_internalData->finalPipelineCreateInfo;
+	return m_internalData->monolithicPipelineCreateInfo;
 }
 const VkGraphicsPipelineCreateInfo& GraphicsPipelineWrapper::getPartialPipelineCreateInfo(deUint32 part) const
 {

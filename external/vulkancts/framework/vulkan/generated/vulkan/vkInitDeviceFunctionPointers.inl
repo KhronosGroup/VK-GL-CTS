@@ -107,7 +107,7 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))
     m_vk.mergePipelineCaches = (MergePipelineCachesFunc) GET_PROC_ADDR("vkMergePipelineCaches");
 m_vk.createPipelineBinariesKHR = (CreatePipelineBinariesKHRFunc) GET_PROC_ADDR("vkCreatePipelineBinariesKHR");
 m_vk.destroyPipelineBinaryKHR = (DestroyPipelineBinaryKHRFunc) GET_PROC_ADDR("vkDestroyPipelineBinaryKHR");
-m_vk.generatePipelineBinaryKeysKHR = (GeneratePipelineBinaryKeysKHRFunc) GET_PROC_ADDR("vkGeneratePipelineBinaryKeysKHR");
+m_vk.getPipelineBinaryKeysKHR = (GetPipelineBinaryKeysKHRFunc) GET_PROC_ADDR("vkGetPipelineBinaryKeysKHR");
 m_vk.getPipelineBinaryDataKHR = (GetPipelineBinaryDataKHRFunc) GET_PROC_ADDR("vkGetPipelineBinaryDataKHR");
 m_vk.releaseCapturedPipelineDataKHR = (ReleaseCapturedPipelineDataKHRFunc) GET_PROC_ADDR("vkReleaseCapturedPipelineDataKHR");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))
@@ -540,7 +540,9 @@ if (!m_vk.getDeviceMemoryOpaqueCaptureAddress)
 m_vk.getPipelineExecutablePropertiesKHR = (GetPipelineExecutablePropertiesKHRFunc) GET_PROC_ADDR("vkGetPipelineExecutablePropertiesKHR");
 m_vk.getPipelineExecutableStatisticsKHR = (GetPipelineExecutableStatisticsKHRFunc) GET_PROC_ADDR("vkGetPipelineExecutableStatisticsKHR");
 m_vk.getPipelineExecutableInternalRepresentationsKHR = (GetPipelineExecutableInternalRepresentationsKHRFunc) GET_PROC_ADDR("vkGetPipelineExecutableInternalRepresentationsKHR");
-m_vk.cmdSetLineStippleEXT = (CmdSetLineStippleEXTFunc) GET_PROC_ADDR("vkCmdSetLineStippleEXT");
+m_vk.cmdSetLineStippleKHR = (CmdSetLineStippleKHRFunc) GET_PROC_ADDR("vkCmdSetLineStippleKHR");
+if (!m_vk.cmdSetLineStippleKHR)
+    m_vk.cmdSetLineStippleKHR = (CmdSetLineStippleKHRFunc) GET_PROC_ADDR("vkCmdSetLineStippleEXT");
 m_vk.createAccelerationStructureKHR = (CreateAccelerationStructureKHRFunc) GET_PROC_ADDR("vkCreateAccelerationStructureKHR");
 m_vk.cmdBuildAccelerationStructuresKHR = (CmdBuildAccelerationStructuresKHRFunc) GET_PROC_ADDR("vkCmdBuildAccelerationStructuresKHR");
 m_vk.cmdBuildAccelerationStructuresIndirectKHR = (CmdBuildAccelerationStructuresIndirectKHRFunc) GET_PROC_ADDR("vkCmdBuildAccelerationStructuresIndirectKHR");
@@ -832,3 +834,5 @@ m_vk.latencySleepNV = (LatencySleepNVFunc) GET_PROC_ADDR("vkLatencySleepNV");
 m_vk.setLatencyMarkerNV = (SetLatencyMarkerNVFunc) GET_PROC_ADDR("vkSetLatencyMarkerNV");
 m_vk.getLatencyTimingsNV = (GetLatencyTimingsNVFunc) GET_PROC_ADDR("vkGetLatencyTimingsNV");
 m_vk.queueNotifyOutOfBandNV = (QueueNotifyOutOfBandNVFunc) GET_PROC_ADDR("vkQueueNotifyOutOfBandNV");
+m_vk.cmdSetRenderingAttachmentLocationsKHR = (CmdSetRenderingAttachmentLocationsKHRFunc) GET_PROC_ADDR("vkCmdSetRenderingAttachmentLocationsKHR");
+m_vk.cmdSetRenderingInputAttachmentIndicesKHR = (CmdSetRenderingInputAttachmentIndicesKHRFunc) GET_PROC_ADDR("vkCmdSetRenderingInputAttachmentIndicesKHR");

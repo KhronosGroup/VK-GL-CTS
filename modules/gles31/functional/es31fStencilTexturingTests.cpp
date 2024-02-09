@@ -875,65 +875,6 @@ private:
 	const deUint32 m_format;
 };
 
-class CompareModeCase : public TestCase
-{
-public:
-	CompareModeCase (Context& context, const char* name, deUint32 format)
-		: TestCase	(context, name, glu::getTextureFormatName(format))
-		, m_format	(format)
-	{
-	}
-
-	IterateResult iterate (void)
-	{
-		const glu::RenderContext&	renderCtx			= m_context.getRenderContext();
-		const glw::Functions&		gl					= renderCtx.getFunctions();
-		const int					width				= 64;
-		const int					height				= 64;
-		glu::Framebuffer			fbo					(renderCtx);
-		glu::Renderbuffer			colorBuf			(renderCtx);
-		glu::Texture				depthStencilTex		(renderCtx);
-		TextureLevel				uploadLevel			(glu::mapGLInternalFormat(m_format), width, height);
-		TextureLevel				readLevel			(TextureFormat(TextureFormat::RGBA, TextureFormat::UNSIGNED_INT32), width, height);
-		TextureLevel				stencilOnlyLevel	(TextureFormat(TextureFormat::S, TextureFormat::UNSIGNED_INT8), width, height);
-
-		checkDepthStencilFormatSupport(m_context, m_format);
-
-		m_testCtx.getLog() << TestLog::Message << "NOTE: Texture compare mode has no effect when reading stencil values." << TestLog::EndMessage;
-
-		renderTestPatternReference(uploadLevel);
-		renderTestPatternReference(stencilOnlyLevel);
-
-		gl.bindTexture(GL_TEXTURE_2D, *depthStencilTex);
-		gl.texStorage2D(GL_TEXTURE_2D, 1, m_format, width, height);
-		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-		gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
-		glu::texSubImage2D(renderCtx, GL_TEXTURE_2D, 0, 0, 0, uploadLevel);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Uploading texture data failed");
-
-		gl.bindRenderbuffer(GL_RENDERBUFFER, *colorBuf);
-		gl.renderbufferStorage(GL_RENDERBUFFER, GL_R32UI, width, height);
-
-		gl.bindFramebuffer(GL_FRAMEBUFFER, *fbo);
-		gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, *colorBuf);
-		checkFramebufferStatus(gl);
-
-		blitStencilToColor2D(renderCtx, *depthStencilTex, width, height);
-		glu::readPixels(renderCtx, 0, 0, readLevel);
-
-		{
-			const bool compareOk = compareStencilToRed(m_testCtx.getLog(), stencilOnlyLevel, readLevel);
-			m_testCtx.setTestResult(compareOk ? QP_TEST_RESULT_PASS : QP_TEST_RESULT_FAIL,
-									compareOk ? "Pass"				: "Image comparison failed");
-		}
-
-		return STOP;
-	}
-
-private:
-	const deUint32 m_format;
-};
-
 class BaseLevelCase : public TestCase
 {
 public:
@@ -1042,7 +983,6 @@ void StencilTexturingTests::init (void)
 		tcu::TestCaseGroup* const miscGroup = new tcu::TestCaseGroup(m_testCtx, "misc", "Misc cases");
 		addChild(miscGroup);
 
-		miscGroup->addChild(new CompareModeCase	(m_context, "compare_mode_effect",	GL_DEPTH24_STENCIL8));
 		miscGroup->addChild(new BaseLevelCase	(m_context, "base_level",			GL_DEPTH24_STENCIL8));
 	}
 }

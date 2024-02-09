@@ -25,8 +25,6 @@
  *--------------------------------------------------------------------*/
 
 #include "vktVideoClipInfo.hpp"
-#include "vktVideoTestUtils.hpp"
-
 
 namespace vkt {
 namespace video
@@ -194,77 +192,142 @@ static const char* jellyfishHEVC[26] =
 	"87be085bd498c3f97e9bc55beed79683",
 };
 
-static auto		H264_420_8BIT_HIGH_PROFILE = VideoProfileInfo{VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR,
+static auto		H264_420_8BIT_HIGH_DECODE_PROFILE = VideoProfileInfo{VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR,
 														  VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
 														  VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
 														  VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
 														  STD_VIDEO_H264_PROFILE_IDC_HIGH};
-static auto		H264_420_8BIT_MAIN_PROFILE = VideoProfileInfo{VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR,
+static auto		H264_420_8BIT_MAIN_DECODE_PROFILE = VideoProfileInfo{VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR,
 														  VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
 														  VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
 														  VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
 														  STD_VIDEO_H264_PROFILE_IDC_MAIN};
-static auto		H265_420_8BIT_MAIN_PROFILE = VideoProfileInfo{VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR,
+static auto		H265_420_8BIT_MAIN_DECODE_PROFILE = VideoProfileInfo{VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR,
 														  VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
 														  VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
 														  VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
 														  STD_VIDEO_H265_PROFILE_IDC_MAIN};
+static auto		H264_420_8BIT_MAIN_ENCODE_PROFILE = VideoProfileInfo{VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR,
+															VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
+															VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+															VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+															STD_VIDEO_H264_PROFILE_IDC_MAIN};
+static auto		H265_420_8BIT_MAIN_ENCODE_PROFILE = VideoProfileInfo{VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR,
+															VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
+															VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+															VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+															STD_VIDEO_H265_PROFILE_IDC_MAIN};
 
 static ClipInfo Clips[] =
 {
 	{
 		CLIP_A,
 		"vulkan/video/clip-a.h264",
-		H264_420_8BIT_HIGH_PROFILE,
+		H264_420_8BIT_HIGH_DECODE_PROFILE,
+		176,
+		144,
+		30,
 		30,
 		10,
-		3,
 		clipA,
 	},
 	{
 		CLIP_B,
 		"vulkan/video/clip-b.h264",
-		H264_420_8BIT_HIGH_PROFILE,
+		H264_420_8BIT_HIGH_DECODE_PROFILE,
+		352,
+		288,
+		30,
 		30,
 		10,
-		3,
 		clipB,
 	},
 	{
 		CLIP_C,
 		"vulkan/video/clip-c.h264",
-		H264_420_8BIT_HIGH_PROFILE,
+		H264_420_8BIT_HIGH_DECODE_PROFILE,
+		352,
+		288,
+		30,
 		30,
 		10,
-		3,
 		clipC,
 	},
 	{
 		CLIP_D,
 		"vulkan/video/clip-d.h265",
-		H265_420_8BIT_MAIN_PROFILE,
+		H265_420_8BIT_MAIN_DECODE_PROFILE,
+		176,
+		144,
+		30,
 		30,
 		10,
-		3,
 		clipA,// same as clip A
+	},
+	{
+		CLIP_E,
+		"vulkan/video/176x144_30_i420.yuv",
+		H264_420_8BIT_MAIN_ENCODE_PROFILE,
+		176,
+		144,
+		24,
+	},
+	{
+		CLIP_F,
+		"vulkan/video/176x144_30_i420.yuv",
+		H265_420_8BIT_MAIN_ENCODE_PROFILE,
+		176,
+		144,
+		24,
+	},
+	{
+		CLIP_G,
+		"vulkan/video/352x288_15_i420.yuv",
+		H264_420_8BIT_MAIN_ENCODE_PROFILE,
+		352,
+		288,
+		15,
+	},
+	{
+		CLIP_H,
+		"vulkan/video/352x288_15_i420.yuv",
+		H265_420_8BIT_MAIN_ENCODE_PROFILE,
+		352,
+		288,
+		15,
 	},
 	{
 		CLIP_H264_4K_26_IBP_MAIN,
 		"vulkan/video/4k_26_ibp_main.h264",
-		H264_420_8BIT_MAIN_PROFILE,
+		H264_420_8BIT_MAIN_DECODE_PROFILE,
+		3840,
+		2160,
+		30,
 		26,
 		13,
-		2,
 		h264_4k_26_ibp_main,
 	},
 	{
 		CLIP_JELLY_HEVC,
 		"vulkan/video/jellyfish-250-mbps-4k-uhd-GOB-IPB13.h265",
-		H265_420_8BIT_MAIN_PROFILE,
+		H265_420_8BIT_MAIN_DECODE_PROFILE,
+		3840,
+		2160,
+		30,
 		26,
 		26,
-		1,
 		jellyfishHEVC,
+	},
+	{
+		CLIP_NONE_HEVC,
+		"",
+		H265_420_8BIT_MAIN_ENCODE_PROFILE,
+		0,
+		0,
+		0,
+		0,
+		0,
+		nullptr,
 	},
 };
 

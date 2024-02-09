@@ -55,9 +55,9 @@ virtual VkResult			getPipelineCacheData									(VkDevice device, VkPipelineCach
 virtual VkResult			mergePipelineCaches										(VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const VkPipelineCache* pSrcCaches) const = 0;
 virtual VkResult			createPipelineBinariesKHR								(VkDevice device, uint32_t createInfoCount, const VkPipelineBinaryCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryKHR* pPipelineBinaries) const = 0;
 virtual void				destroyPipelineBinaryKHR								(VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator) const = 0;
-virtual VkResult			generatePipelineBinaryKeysKHR							(VkDevice device, const void* pCreateInfo, uint32_t* pKeyCount, VkPipelineBinaryKeyKHR* pKeys) const = 0;
-virtual VkResult			getPipelineBinaryDataKHR								(VkDevice device, VkPipelineBinaryKHR pipelineBinary, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const = 0;
-virtual VkResult			releaseCapturedPipelineDataKHR							(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual VkResult			getPipelineBinaryKeysKHR								(VkDevice device, const VkPipelineBinaryKeysCreateInfoKHR* pCreateInfo, uint32_t* pKeyCount, VkPipelineBinaryKeyKHR* pKeys) const = 0;
+virtual VkResult			getPipelineBinaryDataKHR								(VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const = 0;
+virtual VkResult			releaseCapturedPipelineDataKHR							(VkDevice device, const VkCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			createGraphicsPipelines									(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const = 0;
 virtual VkResult			createComputePipelines									(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const = 0;
 virtual VkResult			getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI			(VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const = 0;
@@ -315,7 +315,7 @@ virtual uint64_t			getDeviceMemoryOpaqueCaptureAddress						(VkDevice device, co
 virtual VkResult			getPipelineExecutablePropertiesKHR						(VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties) const = 0;
 virtual VkResult			getPipelineExecutableStatisticsKHR						(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics) const = 0;
 virtual VkResult			getPipelineExecutableInternalRepresentationsKHR			(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations) const = 0;
-virtual void				cmdSetLineStippleEXT									(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const = 0;
+virtual void				cmdSetLineStippleKHR									(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const = 0;
 virtual VkResult			createAccelerationStructureKHR							(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const = 0;
 virtual void				cmdBuildAccelerationStructuresKHR						(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const = 0;
 virtual void				cmdBuildAccelerationStructuresIndirectKHR				(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkDeviceAddress* pIndirectDeviceAddresses, const uint32_t* pIndirectStrides, const uint32_t* const* ppMaxPrimitiveCounts) const = 0;
@@ -506,3 +506,5 @@ virtual VkResult			latencySleepNV											(VkDevice device, VkSwapchainKHR swa
 virtual void				setLatencyMarkerNV										(VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const = 0;
 virtual void				getLatencyTimingsNV										(VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const = 0;
 virtual void				queueNotifyOutOfBandNV									(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const = 0;
+virtual void				cmdSetRenderingAttachmentLocationsKHR					(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo) const = 0;
+virtual void				cmdSetRenderingInputAttachmentIndicesKHR				(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo) const = 0;

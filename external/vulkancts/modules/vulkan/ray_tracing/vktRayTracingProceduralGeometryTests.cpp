@@ -141,7 +141,7 @@ struct DeviceHelper
 
 		// Create custom device and related objects
 		device		= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion()));
+		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 		queue		= getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
 		allocator	= de::MovePtr<SimpleAllocator>(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
@@ -623,7 +623,7 @@ void PipelineBinaryInstance::setupRayTracingPipeline()
 	m_pipeline = Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vkd, device, DE_NULL));
 
 	// retrieve pipeline binary keys
-	m_binaries.generatePipelineBinaryKeys(&pipelineCreateInfo);
+	m_binaries.getPipelineBinaryKeys(&pipelineCreateInfo);
 
 	// create pipeline binary objects
 	m_binaries.createPipelineBinariesFromPipeline(object);

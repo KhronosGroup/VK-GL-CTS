@@ -475,7 +475,18 @@ DepthTestInstance::DepthTestInstance (Context&							context,
 
 		// Allocate and bind depth image memory
 		auto memReqs = MemoryRequirement::Local | MemoryRequirement::HostVisible;
-		m_depthImageAlloc = memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_depthImage), m_hostVisible ? memReqs : MemoryRequirement::Any);
+#ifdef CTS_USES_VULKANSC
+		try
+#endif // CTS_USES_VULKANSC
+		{
+			m_depthImageAlloc = memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_depthImage), m_hostVisible ? memReqs : MemoryRequirement::Any);
+#ifdef CTS_USES_VULKANSC
+		} catch (const tcu::NotSupportedError&) {
+			// For VulkanSC, let this allocation fall back to any memory, to
+			// avoid object counting getting out of sync between main and subprocess.
+			m_depthImageAlloc = memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_depthImage), MemoryRequirement::Any);
+#endif // CTS_USES_VULKANSC
+		}
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_depthImage, m_depthImageAlloc->getMemory(), m_depthImageAlloc->getOffset()));
 
 		const VkImageAspectFlags aspect = (mapVkFormat(m_depthFormat).order == tcu::TextureFormat::DS ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT
@@ -1193,6 +1204,8 @@ std::string	getCompareOpsName (const VkCompareOp quadDepthOps[DepthTest::QUAD_CO
 
 tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
+	const auto genFormatTests = (!vk::isConstructionTypeShaderObject(pipelineConstructionType) || pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV);
+
 	const VkFormat			depthFormats[]						=
 	{
 		VK_FORMAT_D16_UNORM,
@@ -1323,6 +1336,7 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 		const bool colorEnabled = colorAttachmentEnabled[colorAttachmentEnabledIdx];
 
 		// Tests for format and compare operators
+		if (genFormatTests)
 		{
 			// Uses different depth formats
 			de::MovePtr<tcu::TestCaseGroup> formatTests (new tcu::TestCaseGroup(testCtx, "format"));
@@ -1445,7 +1459,8 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx, PipelineConstru
 				noColorAttachmentTests->addChild(formatTests.release());
 		}
 	}
-	depthTests->addChild(noColorAttachmentTests.release());
+	if (genFormatTests)
+		depthTests->addChild(noColorAttachmentTests.release());
 
 #ifndef CTS_USES_VULKANSC
 	de::MovePtr<tcu::TestCaseGroup>	depthClipControlTests		(new tcu::TestCaseGroup(testCtx, "depth_clip_control"));

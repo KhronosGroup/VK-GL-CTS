@@ -341,7 +341,7 @@ public:
 		};
 
 		m_device	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-		m_vkd		.reset(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion()));
+		m_vkd		.reset(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 		m_queue		= getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
 		m_allocator	.reset(new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
@@ -1601,7 +1601,7 @@ void GraphicBasicTestInstance::commandClearAttachment (const vk::DeviceInterface
 
 	const vk::VkClearAttachment	attachment =
 	{
-		m_parametersGraphic.clearOp == CLEAR_COLOR ? vk::VK_IMAGE_ASPECT_COLOR_BIT	: vk::VK_IMAGE_ASPECT_DEPTH_BIT, // VkImageAspectFlags	aspectMask;
+		m_parametersGraphic.clearOp == CLEAR_COLOR ? (vk::VkImageAspectFlags)vk::VK_IMAGE_ASPECT_COLOR_BIT	: (vk::VkImageAspectFlags)vk::VK_IMAGE_ASPECT_DEPTH_BIT, // VkImageAspectFlags	aspectMask;
 		m_parametersGraphic.clearOp == CLEAR_COLOR ? 0u : 1u,														 // uint32_t			colorAttachment;
 		m_parametersGraphic.clearOp == CLEAR_COLOR ? vk::makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f)) :
 													 vk::makeClearValueDepthStencil(0.0f, 0u)						 // VkClearValue		clearValue;
@@ -4752,7 +4752,7 @@ tcu::TestStatus MultipleGeomStatsTestInstance::iterate (void)
 	const auto					queryPool			= createQueryPool(ctx.vkd, ctx.device, &queryPoolCreateInfo);
 	const auto					perQueryItemCount	= (2u + (m_params.availability ? 1u : 0u));
 	const VkQueryResultFlags	resultFlags			= (VK_QUERY_RESULT_WAIT_BIT | (m_params.availability ? VK_QUERY_RESULT_WITH_AVAILABILITY_BIT : 0));
-	std::vector<uint32_t>		queryResults		(perQueryItemCount, std::numeric_limits<uint32_t>::max());
+	std::vector<uint32_t>		queryResults		(perQueryItemCount, 0);
 
 	std::unique_ptr<BufferWithMemory> resultsBuffer;
 	if (m_params.copy)
@@ -4837,7 +4837,7 @@ tcu::TestStatus MultipleGeomStatsTestInstance::iterate (void)
 	{
 		const bool	isAvailabilityBit	= (m_params.availability && queryItem == perQueryItemCount - 1u);
 		const auto	minValue			= (isAvailabilityBit ? 1u : de::sizeU32(vertices) / kTriangleVertices);
-		const auto	maxValue			= (isAvailabilityBit ? 1u : std::numeric_limits<uint32_t>::max());
+		const auto	maxValue			= std::numeric_limits<uint32_t>::max();
 		const auto&	value				= queryResults.at(queryItem);
 
 		if (value < minValue || value > maxValue)

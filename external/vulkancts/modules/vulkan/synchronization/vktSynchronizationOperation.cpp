@@ -1107,6 +1107,10 @@ public:
 		const auto&					features		= ((imgResource.tiling == VK_IMAGE_TILING_LINEAR) ? formatProps.linearTilingFeatures : formatProps.optimalTilingFeatures);
 		const VkFormatFeatureFlags	requiredFlags	= (VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_BLIT_DST_BIT);
 
+		// Blit image command not allowed when using --deqp-compute-only=enable
+		if (m_context.isComputeOnly())
+			THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+
 		// SRC and DST blit is required because both images are using the same format.
 		if ((features & requiredFlags) != requiredFlags)
 			TCU_THROW(NotSupportedError, "Format doesn't support blits");

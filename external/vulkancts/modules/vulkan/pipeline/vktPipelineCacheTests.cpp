@@ -837,7 +837,7 @@ void GraphicsTestInstance::preparePipelinesForBinaries (bool createFromBlobs = f
 	if (m_param->getPipelineConstructionType() != PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 	{
 		const auto& pipelineCreateInfo = m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipelineCreateInfo();
-		m_binaries->generatePipelineBinaryKeys(&pipelineCreateInfo);
+		m_binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
 
 		if (createFromBlobs)
 		{
@@ -873,7 +873,7 @@ void GraphicsTestInstance::preparePipelinesForBinaries (bool createFromBlobs = f
 		{
 			startingKey[idx] = static_cast<deUint32>(m_binaries->getKeyCount());
 			const auto& pipelinePartCreateInfo = m_pipeline[PIPELINE_NDX_NO_BLOBS].getPartialPipelineCreateInfo(idx);
-			m_binaries->generatePipelineBinaryKeys(&pipelinePartCreateInfo, false);
+			m_binaries->getPipelineBinaryKeys(&pipelinePartCreateInfo, false);
 		}
 
 		// add aditional element to avoid if statement in next loop
@@ -1220,7 +1220,7 @@ void ComputeTestInstance::buildPipeline (deUint32 ndx)
 			// create pipeline
 			m_pipeline[ndx] = createComputePipeline(vk, vkDevice, DE_NULL, &pipelineCreateInfo);
 
-			m_binaries->generatePipelineBinaryKeys(&pipelineCreateInfo);
+			m_binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
 
 			// prepare pipeline binaries
 			m_binaries->createPipelineBinariesFromPipeline(*m_pipeline[ndx]);
@@ -1697,7 +1697,7 @@ void MergeBlobsTestInstance::createPipelineBinaries(const InstanceInterface& vki
 			.buildPipeline();
 
 		const auto& pipelineCreateInfo = localPipeline.getPipelineCreateInfo();
-		binaries->generatePipelineBinaryKeys(&pipelineCreateInfo);
+		binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
 		binaries->createPipelineBinariesFromPipeline(localPipeline.getPipeline());
 
 		// read binaries data out of the device
@@ -1717,7 +1717,7 @@ void MergeBlobsTestInstance::createPipelineBinaries(const InstanceInterface& vki
 		preparePipelineWrapper(localPipeline);
 
 		const auto& pipelineCreateInfo = localPipeline.getPipelineCreateInfo();
-		binaries->generatePipelineBinaryKeys(&pipelineCreateInfo);
+		binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
 		binaries->createPipelineBinariesFromPipeline(localPipeline.getPipeline());
 		return;
 	}
@@ -1726,7 +1726,7 @@ void MergeBlobsTestInstance::createPipelineBinaries(const InstanceInterface& vki
 		preparePipelineWrapper(localPipeline, DE_NULL, true);
 
 		const auto& pipelineCreateInfo = localPipeline.getPipelineCreateInfo();
-		binaries->generatePipelineBinaryKeys(&pipelineCreateInfo);
+		binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
 		binaries->createPipelineBinariesFromPipeline(localPipeline.getPipeline());
 		return;
 	}

@@ -994,7 +994,7 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createAttachments(	int su
 			attFormat,									// VkFormat					format;
 			makeComponentMappingRGBA(),					// VkComponentMapping		components;
 			{
-				aspect,										// VkImageAspectFlags			aspectMask;
+				(VkImageAspectFlags)aspect,					// VkImageAspectFlags			aspectMask;
 				0u,											// deUint32						baseMipLevel;
 				1u,											// deUint32						mipLevels;
 				0u,											// deUint32						baseArrayLayer;

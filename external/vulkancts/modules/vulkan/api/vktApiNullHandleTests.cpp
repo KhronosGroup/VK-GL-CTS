@@ -149,6 +149,13 @@ inline void release (Context& context, VkShaderModule shaderModule, const VkAllo
 #endif // CTS_USES_VULKANSC
 }
 
+#ifndef CTS_USES_VULKANSC
+inline void release(Context& context, VkShaderEXT shaderObject, const VkAllocationCallbacks* pAllocator)
+{
+	context.getDeviceInterface().destroyShaderEXT(context.getDevice(), shaderObject, pAllocator);
+}
+#endif // CTS_USES_VULKANSC
+
 inline void release (Context& context, VkDevice device, VkCommandPool cmdPool, deUint32 numCmdBuffers, const VkCommandBuffer* pCmdBuffers)
 {
 	DE_ASSERT(device		!= DE_NULL);
@@ -240,6 +247,15 @@ tcu::TestStatus test<VkCommandBuffer> (Context& context)
 	}
 #else
 	return reportStatus(true);
+#endif // CTS_USES_VULKANSC
+}
+
+void checkSupportShaderObject (Context& context)
+{
+#ifndef CTS_USES_VULKANSC
+	context.requireDeviceFunctionality("VK_EXT_shader_object");
+#else
+	DE_UNREF(context);
 #endif // CTS_USES_VULKANSC
 }
 
@@ -340,6 +356,9 @@ void addTestsToGroup (tcu::TestCaseGroup* group)
 	addFunctionCase(group,	"destroy_sampler", test<VkSampler>);
 	addFunctionCase(group,	"destroy_semaphore", test<VkSemaphore>);
 	addFunctionCase(group,	"destroy_shader_module", test<VkShaderModule>);
+#ifndef CTS_USES_VULKANSC
+	addFunctionCase(group,	"destroy_shader_object", checkSupportShaderObject, test<VkShaderEXT>);
+#endif // CTS_USES_VULKANSC
 	addFunctionCase(group,	"free_command_buffers", test<VkCommandBuffer>);
 	addFunctionCase(group,	"free_descriptor_sets", checkSupportFreeDescriptorSets, test<VkDescriptorSet>);
 #ifndef CTS_USES_VULKANSC

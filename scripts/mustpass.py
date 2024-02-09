@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import logging
-
 #-------------------------------------------------------------------------
 # drawElements Quality Program utilities
 # --------------------------------------
@@ -27,7 +25,7 @@ from build_caselists import Module, getModuleByName, getBuildConfig, genCaseList
 from fnmatch import fnmatch
 from copy import copy
 from collections import defaultdict
-
+import logging
 import argparse
 import re
 import xml.etree.cElementTree as ElementTree
@@ -406,7 +404,7 @@ def genMustpassFromLists (mustpass, moduleCaseLists):
 	writeFile(specFilename, prettifyXML(specXML).decode())
 
 	# TODO: Which is the best selector mechanism?
-	if (mustpass.version == "master"):
+	if (mustpass.version == "main"):
 		androidTestXML		= genAndroidTestXml(mustpass)
 		androidTestFilename	= os.path.join(mustpass.project.path, "AndroidTest.xml")
 

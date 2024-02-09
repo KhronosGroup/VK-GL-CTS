@@ -50,7 +50,6 @@
 #include "deSharedPtr.hpp"
 
 #include "deMath.h"
-#include "deFloat16.h"
 
 #include <vector>
 #include <iomanip>

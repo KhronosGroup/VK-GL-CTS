@@ -177,7 +177,6 @@ public:
 				extFunctions.push_back(FunctionInfo("vkTrimCommandPoolKHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkCmdPushDescriptorSetKHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkCreateSamplerYcbcrConversionKHR", FUNCTIONORIGIN_DEVICE));
-				extFunctions.push_back(FunctionInfo("vkGetSwapchainStatusKHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkCreateSwapchainKHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkGetImageSparseMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE));
 				extFunctions.push_back(FunctionInfo("vkBindBufferMemory2KHR", FUNCTIONORIGIN_DEVICE));
@@ -209,8 +208,10 @@ public:
 
 		// Tests with instance and device with extensions
 		{
-			CustomInstance			instance			= createCustomInstanceWithExtensions(m_context, getSupportedInstanceExtensions(instanceApiVersion), DE_NULL, false);
-			Move<VkDevice>			device				= createTestDevice(m_context, instance, getSupportedDeviceExtensions(deviceApiVersion), false);
+			const vector<string>	supportedInstanceExtensions	= getSupportedInstanceExtensions(instanceApiVersion);
+			CustomInstance			instance			= createCustomInstanceWithExtensions(m_context, supportedInstanceExtensions, DE_NULL, false);
+			const vector<string>	supportedDeviceExtensions	= getSupportedDeviceExtensions(deviceApiVersion);
+			Move<VkDevice>			device				= createTestDevice(m_context, instance, supportedDeviceExtensions, false);
 			GetInstanceProcAddrFunc	getInstanceProcAddr	= reinterpret_cast<GetInstanceProcAddrFunc>(funcLibrary.getFunction("vkGetInstanceProcAddr"));
 			GetDeviceProcAddrFunc	getDeviceProcAddr	= reinterpret_cast<GetDeviceProcAddrFunc>(getInstanceProcAddr(instance, "vkGetDeviceProcAddr"));
 			APIContext				ctx					= { instance, *device, getInstanceProcAddr, getDeviceProcAddr };
@@ -227,11 +228,11 @@ public:
 
 					if (isSupportedInstanceExt(instanceExtensionNames[instanceExtNdx], instanceApiVersion))
 					{
-						getInstanceExtensionFunctions(instanceApiVersion, instanceExtensionNames[instanceExtNdx], instanceExtFunctions);
+						getInstanceExtensionFunctions(instanceApiVersion, supportedInstanceExtensions, supportedDeviceExtensions, instanceExtensionNames[instanceExtNdx], instanceExtFunctions);
 					}
 					if (isSupportedInstanceExt(instanceExtensionNames[instanceExtNdx], deviceApiVersion))
 					{
-						getDeviceExtensionFunctions(deviceApiVersion, instanceExtensionNames[instanceExtNdx], deviceExtFunctions);
+						getDeviceExtensionFunctions(deviceApiVersion, supportedInstanceExtensions, supportedDeviceExtensions, instanceExtensionNames[instanceExtNdx], deviceExtFunctions);
 					}
 
 					for (size_t instanceFuncNdx = 0; instanceFuncNdx < instanceExtFunctions.size(); instanceFuncNdx++)
@@ -247,7 +248,7 @@ public:
 					vector<const char*> deviceExtFunctions;
 
 					if (isSupportedDeviceExt(deviceExtensionNames[deviceExtNdx], deviceApiVersion))
-						getDeviceExtensionFunctions(deviceApiVersion, deviceExtensionNames[deviceExtNdx], deviceExtFunctions);
+						getDeviceExtensionFunctions(deviceApiVersion, supportedInstanceExtensions, supportedDeviceExtensions, deviceExtensionNames[deviceExtNdx], deviceExtFunctions);
 
 					for (size_t deviceFuncNdx = 0; deviceFuncNdx < deviceExtFunctions.size(); deviceFuncNdx++)
 						extFunctions.push_back(FunctionInfo(deviceExtFunctions[deviceFuncNdx], FUNCTIONORIGIN_DEVICE));
@@ -342,7 +343,7 @@ private:
 		VkPhysicalDevice			physicalDevice	= chooseDevice(context.getInstanceInterface(), instance, cmdLine);
 		vector<const char*>			extensionPtrs;
 		const float					queuePriority	= 1.0f;
-		const deUint32				queueIndex		= findQueueFamilyIndex(vki, physicalDevice, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+		const deUint32				queueIndex		= findQueueFamilyIndex(vki, physicalDevice, cmdLine.isComputeOnly() ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
 		for (size_t i = 0; i < extensions.size(); i++)
 			extensionPtrs.push_back(extensions[i].c_str());
@@ -563,10 +564,10 @@ public:
 
 	virtual tcu::TestStatus iterate(void)
 	{
-		const vk::PlatformInterface&	vkp					= m_context.getPlatformInterface();
-		tcu::TestLog&					log					= m_context.getTestContext().getLog();
-		const auto						supportedApiVersion	= m_context.getUsedApiVersion();
-		bool							testPassed			= true;
+		const vk::PlatformInterface&	vkp						= m_context.getPlatformInterface();
+		tcu::TestLog&					log						= m_context.getTestContext().getLog();
+		const auto						supportedApiVersion		= m_context.getUsedApiVersion();
+		bool							testPassed				= true;
 
 		ApisMap functionsPerVersion;
 		initApisMap(functionsPerVersion);
@@ -626,7 +627,7 @@ public:
 
 			// create custom device
 			const Unique<VkDevice>	device			(createCustomDevice(false, vkp, *customInstance, *instanceDriver, physicalDevice, &deviceCreateInfo));
-			const DeviceDriver		deviceDriver	(vkp, *customInstance, *device, supportedApiVersion);
+			const DeviceDriver		deviceDriver	(vkp, *customInstance, *device, supportedApiVersion, m_context.getTestContext().getCommandLine());
 
 			log << tcu::TestLog::Message << "Checking apiVersion("
 				<< VK_API_VERSION_MAJOR(testedApiVersion.first) << ", "

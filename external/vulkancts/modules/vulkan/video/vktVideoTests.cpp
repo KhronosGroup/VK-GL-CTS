@@ -24,6 +24,7 @@
 #include "vktVideoTests.hpp"
 #include "vktVideoCapabilitiesTests.hpp"
 #include "vktVideoDecodeTests.hpp"
+#include "vktVideoEncodeTests.hpp"
 #include "synchronization/vktSynchronizationTests.hpp"
 
 #include "deUniquePtr.hpp"
@@ -41,6 +42,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& n
 
 	group->addChild(createVideoCapabilitiesTests(testCtx));
 	group->addChild(createVideoDecodeTests(testCtx));
+	group->addChild(createVideoEncodeTests(testCtx));
 
 	{
 		de::MovePtr<tcu::TestCaseGroup>	syncGroup(new tcu::TestCaseGroup(testCtx, "synchronization"));

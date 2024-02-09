@@ -114,10 +114,12 @@ public:
 									PipelineLayoutWrapper			(PipelineConstructionType pipelineConstructionType, const DeviceInterface& vk, VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* = DE_NULL);
 									PipelineLayoutWrapper			(PipelineConstructionType pipelineConstructionType, const DeviceInterface& vk, const VkDevice device, const deUint32 setLayoutCount, const VkDescriptorSetLayout* descriptorSetLayout, const deUint32 pushConstantRangeCount, const VkPushConstantRange* pPushConstantRanges, const VkPipelineLayoutCreateFlags flags = (VkPipelineLayoutCreateFlags)0u);
 									PipelineLayoutWrapper			(const PipelineLayoutWrapper& rhs) = delete;
+									PipelineLayoutWrapper			(PipelineLayoutWrapper&& rhs) noexcept;
 									~PipelineLayoutWrapper			() = default;
 
 	const VkPipelineLayout			operator*						(void) const { return *m_pipelineLayout; }
 	const VkPipelineLayout			get								(void) const { return *m_pipelineLayout; }
+	PipelineLayoutWrapper&			operator=						(const PipelineLayoutWrapper& rhs) = delete;
 	PipelineLayoutWrapper&			operator=						(PipelineLayoutWrapper&& rhs);
 	void							destroy							(void) { m_pipelineLayout = vk::Move<VkPipelineLayout>{}; }
 

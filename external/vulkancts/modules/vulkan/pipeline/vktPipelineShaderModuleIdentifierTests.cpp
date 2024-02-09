@@ -1547,7 +1547,7 @@ struct DeviceHelper
 
 		// Create custom device and related objects
 		device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-		vkd.reset(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion()));
+		vkd.reset(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 		queue = getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
 		allocator.reset(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
@@ -2329,7 +2329,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 				if (reqCacheMiss)
 					TCU_FAIL("Cache miss expected");
 			}
-			catch (const PipelineCompileRequiredError& err)
+			catch (const PipelineCompileRequiredError&)
 			{
 				if (reqCacheMiss)
 					return tcu::TestStatus::pass("Pass");
@@ -2732,7 +2732,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 				pipelinePtrs.emplace_back(shaderOwningPipeline->createPipeline(vkd, device, pipelineLayout.get(), emptyPipelinesVec, pipelineCache.get()));
 				pipelines.push_back(pipelinePtrs.back().get());
 			}
-			catch (const RayTracingPipeline::CompileRequiredError& err)
+			catch (const RayTracingPipeline::CompileRequiredError&)
 			{
 				if (reqCacheMiss)
 					return tcu::TestStatus::pass("Pass");
@@ -2758,7 +2758,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate (void)
 					if (reqCacheMiss)
 						TCU_FAIL("Cache miss expected");
 				}
-				catch (const RayTracingPipeline::CompileRequiredError& err)
+				catch (const RayTracingPipeline::CompileRequiredError&)
 				{
 					if (reqCacheMiss)
 						return tcu::TestStatus::pass("Pass");
@@ -3336,7 +3336,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 						.setMonolithicPipelineLayout(pipelineLayout)
 						.buildPipeline(pipelineCache.get());
 			}
-			catch (const PipelineCompileRequiredError& err)
+			catch (const PipelineCompileRequiredError&)
 			{
 				TCU_FAIL("PipelineCompileRequiredError received while priming pipeline cache");
 			}
@@ -3411,7 +3411,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate (void)
 					.setMonolithicPipelineLayout(pipelineLayout)
 					.buildPipeline(pipelineCache.get());
 		}
-		catch (const PipelineCompileRequiredError& err)
+		catch (const PipelineCompileRequiredError&)
 		{
 			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "PipelineCompileRequiredError received despite using pipeline cache");
 		}

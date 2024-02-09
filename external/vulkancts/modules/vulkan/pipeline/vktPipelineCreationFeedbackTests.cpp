@@ -532,7 +532,7 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 		if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 		{
 			const auto& pipelineCreateInfo = m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipelineCreateInfo();
-			m_binaries->generatePipelineBinaryKeys(&pipelineCreateInfo);
+			m_binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
 			m_binaries->createPipelineBinariesFromPipeline(m_pipeline[PIPELINE_NDX_NO_BLOBS].getPipeline());
 			VkPipelineBinaryInfoKHR pipelineBinaryInfo = m_binaries->preparePipelineBinaryInfo();
 
@@ -577,7 +577,7 @@ GraphicsTestInstance::GraphicsTestInstance (Context&			context,
 			{
 				startingKey[idx] = static_cast<deUint32>(m_binaries->getKeyCount());
 				const auto& pipelinePartCreateInfo = m_pipeline[PIPELINE_NDX_NO_BLOBS].getPartialPipelineCreateInfo(idx);
-				m_binaries->generatePipelineBinaryKeys(&pipelinePartCreateInfo, false);
+				m_binaries->getPipelineBinaryKeys(&pipelinePartCreateInfo, false);
 			}
 			// add element to avoid if statement in next loop
 			startingKey[4] = static_cast<deUint32>(m_binaries->getKeyCount());
@@ -1198,7 +1198,7 @@ void ComputeTestInstance::buildPipeline (const TestParam* param, deUint32 ndx)
 		{
 			// create pipeline
 			vk.createComputePipelines(vkDevice, *m_cache, 1u, &pipelineCreateInfo, DE_NULL, &m_pipeline[ndx]);
-			m_binaries->generatePipelineBinaryKeys(&pipelineCreateInfo);
+			m_binaries->getPipelineBinaryKeys(&pipelineCreateInfo);
 			// prepare pipeline binaries
 			m_binaries->createPipelineBinariesFromPipeline(m_pipeline[ndx]);
 		}

@@ -1765,6 +1765,7 @@ void NegativeShaderApiTests::init (void)
 			expectError					(GL_NO_ERROR);
 			glBeginTransformFeedback	(GL_POINTS);
 			expectError					(GL_INVALID_OPERATION);
+			glEndTransformFeedback		();
 			m_log << tcu::TestLog::EndSection;
 
 			m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if any binding point used in transform feedback mode does not have a buffer object bound.");
@@ -1783,11 +1784,12 @@ void NegativeShaderApiTests::init (void)
 
 			m_log << tcu::TestLog::Section("", "GL_INVALID_OPERATION is generated if no binding points would be used because the active program object has specified no varying variables to record.");
 			glTransformFeedbackVaryings	(program.getProgram(), 0, 0, GL_INTERLEAVED_ATTRIBS);
+			glLinkProgram				(program.getProgram());
+			expectError					(GL_NO_ERROR);
 			glBeginTransformFeedback	(GL_TRIANGLES);
 			expectError					(GL_INVALID_OPERATION);
 			m_log << tcu::TestLog::EndSection;
 
-			glEndTransformFeedback		();
 			glDeleteBuffers				(1, &buf);
 			glDeleteTransformFeedbacks	(2, tfID);
 			expectError					(GL_NO_ERROR);

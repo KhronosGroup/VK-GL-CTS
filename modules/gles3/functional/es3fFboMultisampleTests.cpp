@@ -248,7 +248,7 @@ private:
 };
 
 // Ported from WebGL [1], originally written to test a Qualcomm driver bug [2].
-// [1] https://github.com/KhronosGroup/WebGL/blob/master/sdk/tests/conformance2/renderbuffers/multisampled-renderbuffer-initialization.html
+// [1] https://github.com/KhronosGroup/WebGL/blob/main/sdk/tests/conformance2/renderbuffers/multisampled-renderbuffer-initialization.html
 // [2] http://crbug.com/696126
 class RenderbufferResizeCase : public ApiCase
 {

@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceLineRasterizationFeaturesKHR":
+		[
+			{ "features": ["rectangularLines", "bresenhamLines", "smoothLines", "stippledRectangularLines", "stippledBresenhamLines", "stippledSmoothLines"],	"requirements": ["VK_KHR_line_rasterization"] }
+		]
+	}
+}

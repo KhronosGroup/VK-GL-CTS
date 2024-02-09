@@ -58,7 +58,8 @@ BINARY_FILE_EXTENSION = [
     ".h264",
     ".h265",
     ".mp4",
-	".diff"
+	".diff",
+    ".yuv"
     ]
 
 def isTextFile (filePath):

@@ -373,8 +373,6 @@ enum OperationId
 	OID_INV_SQRT,
 	OID_MODF,
 	OID_MODF_ST,
-	OID_FREXP,
-	OID_FREXP_ST,
 	OID_LENGTH,
 	OID_NORMALIZE,
 	OID_REFLECT,
@@ -2606,27 +2604,6 @@ void TestCasesBuilder::init()
 											"%tmpLoc             = OpAccessChain %type_valueType_fptr %tmpStructPtr %c_i32_0\n"
 											"%result             = OpLoad %type_valueType %tmpLoc\n",
 											B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[OID_FREXP]		= Op("frexp",		FLOAT_ARITHMETIC,
-											"",
-											"",
-											"",
-											"%tmpVarPtr          = OpVariable %type_i32_fptr Function\n",
-											"",
-											"%result             = OpExtInst %type_valueType %std450 Frexp %arg1 %tmpVarPtr\n",
-											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-	mo[OID_FREXP_ST]	= Op("frexp_st",	FLOAT_ARITHMETIC,
-											"OpMemberDecorate %struct_fi 0 Offset 0\n"
-											"OpMemberDecorate %struct_fi 1 Offset ${float_width}\n",
-											"%struct_fi          = OpTypeStruct %type_valueType %type_i32\n"
-											"%struct_fi_fptr     = OpTypePointer Function %struct_fi\n",
-											"",
-											"%tmpStructPtr       = OpVariable %struct_fi_fptr Function\n",
-											"",
-											"%tmpStruct          = OpExtInst %struct_fi %std450 FrexpStruct %arg1\n"
-											"                      OpStore %tmpStructPtr %tmpStruct\n"
-											"%tmpLoc             = OpAccessChain %type_valueType_fptr %tmpStructPtr %c_i32_0\n"
-											"%result             = OpLoad %type_valueType %tmpLoc\n",
-											B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_LENGTH]		= Op("length",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_valueType %std450 Length %arg1\n",
 											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
@@ -4195,6 +4172,9 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	bool			outFp16WithoutStorage	= (outVariableType == FP16) && testCase.fp16Without16BitStorage;
 	bool			inFp16WithoutStorage	= (inVariableType == FP16) && testCase.fp16Without16BitStorage;
 
+	// The feature is required if OpCapability StorageUniform16 is used in the shader.
+	deBool requiresUniformAndStorage16BitBufferAccess = false;
+
 	// UnpackHalf2x16 is a corner case - it returns two 32-bit floats but
 	// internaly operates on fp16 and this type should be used by float controls
 	VariableType	inVariableTypeForCaps	= inVariableType;
@@ -4242,6 +4222,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 		else
 		{
 			ioDefinitions	+= outTypeSnippets->outputDefinitionsSnippet;
+
+			requiresUniformAndStorage16BitBufferAccess |= (outVariableType == FP16);
 		}
 	}
 
@@ -4265,6 +4247,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 		{
 			capabilities	+= inTypeSnippets->capabilities;
 			extensions		+= inTypeSnippets->extensions;
+
+			requiresUniformAndStorage16BitBufferAccess |= (inVariableType == FP16);
 		}
 
 		inFp16TypeUsage	= inTypeSnippets->loadStoreRequiresShaderFloat16;
@@ -4333,9 +4317,9 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 
 	csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = float64FeatureRequired;
 	csSpec.requestedVulkanFeatures.coreFeatures.shaderInt64 = int64FeatureRequired;
-	csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = float16FeatureRequired && !testCase.fp16Without16BitStorage;
+	csSpec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = float16FeatureRequired && requiresUniformAndStorage16BitBufferAccess;
 	csSpec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 =	float16CapabilityAlreadyAdded || usesFP16Constants ||
-																	(	float16FeatureRequired && !testCase.fp16Without16BitStorage &&
+																	(	float16FeatureRequired && requiresUniformAndStorage16BitBufferAccess &&
 																		testOperation.floatUsage == FLOAT_ARITHMETIC );
 
 	setupFloatControlsProperties(inVariableTypeForCaps,		// usualy same as inFloatType - different only for UnpackHalf2x16
@@ -4548,7 +4532,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCas
 			saveResult		+= fp16Data.snippets->multiStoreResultsSnippet;
 
 			csSpec.extensions.push_back("VK_KHR_16bit_storage");
-			csSpec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
+			csSpec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
 		}
 
 		fp16Data.values->fillInputData(addArgs, inputData, inputOffset);
@@ -4922,6 +4906,9 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	bool			outFp16WithoutStorage	= (outVariableType == FP16) && testCase.fp16Without16BitStorage;
 	bool			inFp16WithoutStorage	= (inVariableType == FP16) && testCase.fp16Without16BitStorage;
 
+	// The feature is required if OpCapability StorageUniform16 is used in the shader.
+	deBool			requiresUniformAndStorage16BitBufferAccess = false;
+
 	// There may be several reasons why we need the shaderFloat16 Vulkan feature.
 	bool needsShaderFloat16 = inFp16WithoutStorage || outFp16WithoutStorage;
 	// There are some weird cases where we need the constants, but would otherwise drop them.
@@ -4996,6 +4983,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 			fragTypes			= outTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->varyingsTypesSnippet;
 			vertConstants		= inTypeSnippets->constantsDefinitionsSnippet + outTypeSnippets->constantsDefinitionsSnippet;
 			fragConstants		= outTypeSnippets->constantsDefinitionsSnippet;
+
+			requiresUniformAndStorage16BitBufferAccess |= (inVariableType == FP16);
 		}
 		else
 		{
@@ -5010,6 +4999,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 			vertConstants		= outTypeSnippets->constantsDefinitionsSnippet;
 			fragConstants		= outTypeSnippets->constantsDefinitionsSnippet;
 		}
+
+		requiresUniformAndStorage16BitBufferAccess |= (outVariableType == FP16);
 
 		if (outVariableType != FP32)
 		{
@@ -5069,6 +5060,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 				(outFp16WithoutStorage ? outTypeSnippets->extensionsFp16Without16BitStorage : outTypeSnippets->extensions);
 			fragTypes			= inTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->typeDefinitionsSnippet;
 			fragConstants		= inTypeSnippets->constantsDefinitionsSnippet + outTypeSnippets->constantsDefinitionsSnippet;
+;
+			requiresUniformAndStorage16BitBufferAccess |= ((inVariableType == FP16) && (testCase.fp16Without16BitStorage == DE_FALSE));
 		}
 		else
 		{
@@ -5082,6 +5075,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 			fragTypes			= outTypeSnippets->typeDefinitionsSnippet;
 			fragConstants		= outTypeSnippets->constantsDefinitionsSnippet;
 		}
+
+		requiresUniformAndStorage16BitBufferAccess |= ((outVariableType == FP16) && (testCase.fp16Without16BitStorage == DE_FALSE));
 
 		// varying is not used but it needs to be specified so lets use type_i32 for it
 		string unusedVertVarying = "%BP_vertex_result     = OpVariable %type_i32_optr Output\n";
@@ -5243,7 +5238,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	vulkanFeatures.coreFeatures.shaderFloat64 = float64FeatureRequired;
 	vulkanFeatures.coreFeatures.shaderInt64 = int64FeatureRequired;
 	vulkanFeatures.extFloat16Int8.shaderFloat16 = needsShaderFloat16;
-	vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = float16FeatureRequired && !testCase.fp16Without16BitStorage;
+	vulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = float16FeatureRequired && requiresUniformAndStorage16BitBufferAccess;
 
 	vector<string> extensions;
 	extensions.push_back("VK_KHR_shader_float_controls");

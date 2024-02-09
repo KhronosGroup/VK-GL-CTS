@@ -741,14 +741,15 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			size,
 VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize				size,
 										 const VkBufferUsageFlags		usage,
 										 const std::vector<deUint32>&	queueFamilyIndices,
-										 const VkBufferCreateFlags		createFlags)
+										 const VkBufferCreateFlags		createFlags,
+										 const void*					pNext)
 {
 	const deUint32				queueFamilyIndexCount	= static_cast<deUint32>(queueFamilyIndices.size());
 	const deUint32*				pQueueFamilyIndices		= de::dataOrNull(queueFamilyIndices);
 	const VkBufferCreateInfo	bufferCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
+		pNext,								// const void*			pNext;
 		createFlags,							// VkBufferCreateFlags	flags;
 		size,									// VkDeviceSize			size;
 		usage,									// VkBufferUsageFlags	usage;

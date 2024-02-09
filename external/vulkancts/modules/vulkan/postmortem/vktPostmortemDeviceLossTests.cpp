@@ -106,7 +106,7 @@ public:
 TestStatus DeviceLossInstance::iterate (void)
 {
 	vk::Unique<vk::VkDevice>	logicalDevice		(createPostmortemDevice(m_context));
-	vk::DeviceDriver			deviceDriver		(m_context.getPlatformInterface(), m_context.getInstance(), *logicalDevice, m_context.getUsedApiVersion());
+	vk::DeviceDriver			deviceDriver		(m_context.getPlatformInterface(), m_context.getInstance(), *logicalDevice, m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine());
 	deUint32					queueFamilyIndex	(0);
 	vk::VkQueue					queue				(getDeviceQueue(deviceDriver, *logicalDevice, queueFamilyIndex, 0));
 	vk::SimpleAllocator			allocator			(deviceDriver, *logicalDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));

@@ -18,6 +18,6 @@
  * be lost! Modify the generating script instead.
  */-->
 	<TestPackage name="AOSP Mustpass EGL">
-		<Configuration caseListFile="egl-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-width=256 --deqp-surface-height=256 --deqp-watchdog=disable" name="master" os="any" useForFirstEGLConfig="True"/>
+		<Configuration caseListFile="egl-main.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-width=256 --deqp-surface-height=256 --deqp-watchdog=disable" name="main" os="any" useForFirstEGLConfig="True"/>
 	</TestPackage>
 </Mustpass>

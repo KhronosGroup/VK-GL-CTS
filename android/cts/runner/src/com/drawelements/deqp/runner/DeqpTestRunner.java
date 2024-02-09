@@ -1753,9 +1753,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             featureName);
 
         // A Vulkan/OpenGL ES caselist filename has the form:
-        //     {gles2,gles3,gles31,vk,egl}-master-YYYY-MM-DD.txt
+        //     {gles2,gles3,gles31,vk,egl}-main-YYYY-MM-DD.txt
         final Pattern caseListFilenamePattern = Pattern
-            .compile("-master-(\\d\\d\\d\\d)-(\\d\\d)-(\\d\\d)\\.txt$");
+            .compile("-main-(\\d\\d\\d\\d)-(\\d\\d)-(\\d\\d)\\.txt$");
         final Matcher matcher = caseListFilenamePattern.matcher(mCaselistFile);
         if (!matcher.find()) {
             CLog.d("No dEQP level date found in caselist. Running unconditionally.");

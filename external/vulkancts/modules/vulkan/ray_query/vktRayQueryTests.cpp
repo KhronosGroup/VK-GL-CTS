@@ -35,6 +35,8 @@
 #include "vktRayQueryMultipleRayQueries.hpp"
 #include "vktRayQueryOpacityMicromapTests.hpp"
 #include "vktRayQueryPositionFetchTests.hpp"
+#include "vktRayQueryStressTests.hpp"
+
 
 
 
@@ -67,6 +69,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& n
 	group->addChild(createOpacityMicromapTests(testCtx));
 	group->addChild(createPositionFetchTests(testCtx));
 	group->addChild(createMultipleRayQueryTests(testCtx));
+	group->addChild(createRayQueryStressTests(testCtx));
 
 	return group.release();
 }

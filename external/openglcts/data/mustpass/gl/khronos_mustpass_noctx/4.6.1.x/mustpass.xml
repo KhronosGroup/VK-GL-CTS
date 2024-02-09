@@ -18,9 +18,9 @@
  * be lost! Modify the generating script instead.
  */-->
 	<TestPackage name="Khronos Mustpass GL NoContext">
-		<Configuration caseListFile="gl30-khr-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-master" os="any" useForFirstEGLConfig="True"/>
-		<Configuration caseListFile="gl40-khr-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-master" os="any" useForFirstEGLConfig="True"/>
-		<Configuration caseListFile="gl43-khr-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-master" os="any" useForFirstEGLConfig="True"/>
-		<Configuration caseListFile="gl45-khr-master.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-master" os="any" useForFirstEGLConfig="True"/>
+		<Configuration caseListFile="gl30-khr-main.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-main" os="any" useForFirstEGLConfig="True"/>
+		<Configuration caseListFile="gl40-khr-main.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-main" os="any" useForFirstEGLConfig="True"/>
+		<Configuration caseListFile="gl43-khr-main.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-main" os="any" useForFirstEGLConfig="True"/>
+		<Configuration caseListFile="gl45-khr-main.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-main" os="any" useForFirstEGLConfig="True"/>
 	</TestPackage>
 </Mustpass>

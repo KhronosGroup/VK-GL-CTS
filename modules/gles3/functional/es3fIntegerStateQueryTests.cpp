@@ -2593,7 +2593,15 @@ public:
 	void test (void)
 	{
 		const bool isGlCore45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
-		const GLenum colorAttachment = isGlCore45 ? GL_FRONT : GL_BACK;
+		GLenum colorAttachment = isGlCore45 ? GL_FRONT : GL_BACK;
+		if (isGlCore45) {
+			// Make sure GL_FRONT is available. If not, use GL_BACK instead.
+			GLint objectType = GL_NONE;
+			glGetFramebufferAttachmentParameteriv(GL_READ_FRAMEBUFFER, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &objectType);
+			if (objectType == GL_NONE) {
+				colorAttachment = GL_BACK;
+			}
+		}
 		const GLint validInitialValues[] = {(GLint)colorAttachment, GL_BACK, GL_NONE};
 		m_verifier->verifyIntegerAnyOf(m_testCtx, GL_READ_BUFFER, validInitialValues, DE_LENGTH_OF_ARRAY(validInitialValues));
 		expectError(GL_NO_ERROR);

@@ -1144,7 +1144,9 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx, const SharedGroupParam
 	{
 		ATTRIBUTE_DIVISOR_NONE,
 		ATTRIBUTE_DIVISOR_EXT,
+#ifndef CTS_USES_VULKANSC
 		ATTRIBUTE_DIVISOR_KHR,
+#endif
 	};
 
 	static const deBool multiviews[] = { DE_FALSE, DE_TRUE };

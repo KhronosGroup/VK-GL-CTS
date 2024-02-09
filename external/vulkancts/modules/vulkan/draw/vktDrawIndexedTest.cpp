@@ -38,6 +38,10 @@
 #include "vkDefs.hpp"
 #include "vkCmdUtil.hpp"
 
+#include "tcuTestCase.hpp"
+#include "tcuVectorUtil.hpp"
+#include "rrRenderer.hpp"
+
 namespace vkt
 {
 namespace Draw
@@ -64,12 +68,28 @@ enum class MemoryBindOffset
 	POSITIVE	= 16,	// Will be rounded up to the alignment requirement.
 };
 
+enum TestType
+{
+	TEST_TYPE_NON_MAINTENANCE_6 = 0,
+	TEST_TYPE_MAINTENANCE6_INDEXED,
+	TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT,
+//	TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT_COUNT_KHR,
+	TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT_COUNT,
+#ifndef CTS_USES_VULKANSC
+	TEST_TYPE_MAINTENANCE6_MULTI_INDEXED_EXT,
+#endif
+	TEST_TYPE_LAST
+};
+
 struct TestSpec2 : TestSpecBase
 {
 	const int32_t			vertexOffset;
 	const vk::VkDeviceSize	bindIndexBufferOffset;
 	const vk::VkDeviceSize	memoryBindOffset;
-	bool	useMaintenance5Ext;
+	const TestType			testType;
+	bool					useMaintenance5Ext;
+	const bool				nullDescriptor;
+	const bool				bindIndexBuffer2;
 
 	TestSpec2 (const ShaderMap& shaders_,
 			  vk::VkPrimitiveTopology topology_,
@@ -77,12 +97,18 @@ struct TestSpec2 : TestSpecBase
 			  int32_t vertexOffset_,
 			  vk::VkDeviceSize bindIndexBufferOffset_,
 			  vk::VkDeviceSize memoryBindOffset_,
-			  bool useMaintenance5Ext_)
+			  TestType testType_,
+			  bool useMaintenance5Ext_,
+			  bool nullDescriptor_,
+			  bool bindIndexBuffer2_)
 		: TestSpecBase			{shaders_, topology_, groupParams_}
 		, vertexOffset			(vertexOffset_)
 		, bindIndexBufferOffset	(bindIndexBufferOffset_)
 		, memoryBindOffset		(memoryBindOffset_)
-		, useMaintenance5Ext(useMaintenance5Ext_)
+		, testType				(testType_)
+		, useMaintenance5Ext	(useMaintenance5Ext_)
+		, nullDescriptor		(nullDescriptor_)
+		, bindIndexBuffer2		(bindIndexBuffer2_)
 	{
 	}
 };
@@ -117,17 +143,20 @@ DrawIndexed::DrawIndexed (Context &context, TestSpec testSpec)
 	: DrawTestsBaseClass(context, testSpec.shaders[glu::SHADERTYPE_VERTEX], testSpec.shaders[glu::SHADERTYPE_FRAGMENT], testSpec.groupParams, testSpec.topology)
 	, m_testSpec(testSpec)
 {
-	// When using a positive vertex offset, the strategy is:
-	// - Storing vertices with that offset in the vertex buffer.
-	// - Using indices normally as if they were stored at the start of the buffer.
-	//
-	// When using a negative vertex offset, the strategy is:
-	// - Store vertices at the start of the vertex buffer.
-	// - Increase indices by abs(offset) so when substracting it, it results in the regular positions.
-
-	const uint32_t indexOffset = (testSpec.vertexOffset < 0 ? static_cast<uint32_t>(-testSpec.vertexOffset) : 0u);
-	switch (m_topology)
+	if (testSpec.testType == TEST_TYPE_NON_MAINTENANCE_6)
 	{
+		// When using a positive vertex offset, the strategy is:
+		// - Storing vertices with that offset in the vertex buffer.
+		// - Using indices normally as if they were stored at the start of the buffer.
+		//
+		// When using a negative vertex offset, the strategy is:
+		// - Store vertices at the start of the vertex buffer.
+		// - Increase indices by abs(offset) so when substracting it, it results in the regular positions.
+
+		const uint32_t indexOffset = (m_testSpec.vertexOffset < 0 ? static_cast<uint32_t>(-m_testSpec.vertexOffset) : 0u);
+
+		switch (m_topology)
+		{
 		case vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
 			m_indexes.push_back(0 + indexOffset);
 			m_indexes.push_back(0 + indexOffset);
@@ -164,6 +193,7 @@ DrawIndexed::DrawIndexed (Context &context, TestSpec testSpec)
 		default:
 			DE_FATAL("Unknown topology");
 			break;
+		}
 	}
 
 	// This works for both positive and negative vertex offsets.
@@ -477,11 +507,291 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
+class DrawIndexedMaintenance6 : public DrawIndexed
+{
+public:
+	DrawIndexedMaintenance6(Context& context, TestSpec testSpec);
+	virtual		tcu::TestStatus	iterate(void);
+};
+
+DrawIndexedMaintenance6::DrawIndexedMaintenance6(Context& context, TestSpec testSpec)
+	: DrawIndexed(context, testSpec)
+{
+}
+
+
+// Reference renderer shaders
+class PassthruVertShader : public rr::VertexShader
+{
+public:
+	PassthruVertShader(void)
+		: rr::VertexShader(2, 1)
+	{
+		m_inputs[0].type = rr::GENERICVECTYPE_FLOAT;
+		m_inputs[1].type = rr::GENERICVECTYPE_FLOAT;
+		m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
+	}
+
+	void shadeVertices(const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const
+	{
+		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
+		{
+			packets[packetNdx]->position = rr::readVertexAttribFloat(inputs[0],
+				packets[packetNdx]->instanceNdx,
+				packets[packetNdx]->vertexNdx);
+
+			tcu::Vec4 color = rr::readVertexAttribFloat(inputs[1],
+				packets[packetNdx]->instanceNdx,
+				packets[packetNdx]->vertexNdx);
+
+			packets[packetNdx]->outputs[0] = color;
+		}
+	}
+};
+
+class PassthruFragShader : public rr::FragmentShader
+{
+public:
+	PassthruFragShader(void)
+		: rr::FragmentShader(1, 1)
+	{
+		m_inputs[0].type = rr::GENERICVECTYPE_FLOAT;
+		m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
+	}
+
+	void shadeFragments(rr::FragmentPacket* packets, const int numPackets, const rr::FragmentShadingContext& context) const
+	{
+		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
+		{
+			rr::FragmentPacket& packet = packets[packetNdx];
+			for (deUint32 fragNdx = 0; fragNdx < rr::NUM_FRAGMENTS_PER_PACKET; ++fragNdx)
+			{
+				tcu::Vec4 color = rr::readVarying<float>(packet, context, 0, fragNdx);
+				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, color);
+			}
+		}
+	}
+};
+
+tcu::TestStatus DrawIndexedMaintenance6::iterate(void)
+{
+	tcu::TestLog& log = m_context.getTestContext().getLog();
+	const auto& vki = m_context.getInstanceInterface();
+	const auto				physDev = m_context.getPhysicalDevice();
+	const vk::VkQueue		queue = m_context.getUniversalQueue();
+	const vk::VkDevice		device = m_context.getDevice();
+	const auto				memProps = vk::getPhysicalDeviceMemoryProperties(vki, physDev);
+	const auto				atomSize = m_context.getDeviceProperties().limits.nonCoherentAtomSize;
+	vk::SimpleAllocator		allocator(m_vk, device, memProps, vk::SimpleAllocator::OptionalOffsetParams({ atomSize, m_testSpec.memoryBindOffset }));
+
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
+	preRenderBarriers();
+
+#ifndef CTS_USES_VULKANSC
+	if (m_groupParams->useDynamicRendering)
+		beginDynamicRender(*m_cmdBuffer);
+	else
+		beginLegacyRender(*m_cmdBuffer);
+#else
+	beginLegacyRender(*m_cmdBuffer);
+#endif // CTS_USES_VULKANSC
+
+	const uint32_t indexCount = m_testSpec.nullDescriptor ? 3 : 0;
+
+	const vk::VkDrawIndexedIndirectCommand drawParams =	{indexCount, 1, 0, 0, 0};
+
+	const auto drawParamsBuffer = Buffer::createAndAlloc(m_vk, device,
+		BufferCreateInfo(sizeof(vk::VkDrawIndexedIndirectCommand),
+			vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
+		allocator,
+		vk::MemoryRequirement::HostVisible);
+
+	uint8_t* ptr = reinterpret_cast<uint8_t*>(drawParamsBuffer->getBoundMemory().getHostPtr());
+
+	deMemcpy(ptr, &drawParams, sizeof(vk::VkDrawIndexedIndirectCommand));
+	vk::flushAlloc(m_vk, device, drawParamsBuffer->getBoundMemory());
+
+	const auto countBuffer = Buffer::createAndAlloc(m_vk, device,
+		BufferCreateInfo(sizeof(uint32_t),
+			vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
+		allocator,
+		vk::MemoryRequirement::HostVisible);
+
+	ptr = reinterpret_cast<uint8_t*>(countBuffer->getBoundMemory().getHostPtr());
+
+	deMemset(ptr, 1, 1);
+	vk::flushAlloc(m_vk, device, countBuffer->getBoundMemory());
+
+
+	const vk::VkBuffer		vertexBuffer = m_vertexBuffer->object();
+	const vk::VkDeviceSize	vertexBufferOffset = 0;
+
+	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+
+#ifndef CTS_USES_VULKANSC
+	if (m_testSpec.bindIndexBuffer2)
+	{
+		m_vk.cmdBindIndexBuffer2KHR(*m_cmdBuffer, VK_NULL_HANDLE, 0, 0, vk::VK_INDEX_TYPE_UINT32);
+	}
+	else
+#endif
+	{
+		m_vk.cmdBindIndexBuffer(*m_cmdBuffer, VK_NULL_HANDLE, 0, vk::VK_INDEX_TYPE_UINT32);
+	}
+
+	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+	switch (m_testSpec.testType)
+	{
+		case TEST_TYPE_MAINTENANCE6_INDEXED:
+		{
+			m_vk.cmdDrawIndexed(*m_cmdBuffer, indexCount, 1, 0, 0, 0);
+
+			break;
+		}
+		case TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT:
+		{
+			m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, drawParamsBuffer->object(), 0, 1, sizeof(vk::VkDrawIndexedIndirectCommand));
+
+			break;
+		}
+		case TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT_COUNT:
+		{
+			m_vk.cmdDrawIndexedIndirectCount(*m_cmdBuffer, drawParamsBuffer->object(), 0, countBuffer->object(), 0, 1, sizeof(vk::VkDrawIndexedIndirectCommand));
+
+			break;
+		}
+#ifndef CTS_USES_VULKANSC
+		case TEST_TYPE_MAINTENANCE6_MULTI_INDEXED_EXT:
+		{
+			const vk::VkMultiDrawIndexedInfoEXT indexInfo = { 0, indexCount, 0 };
+			const int32_t vertexOffset = 0;
+
+			m_vk.cmdDrawMultiIndexedEXT(*m_cmdBuffer, 1, &indexInfo, 1, 0, sizeof(vk::VkMultiDrawIndexedInfoEXT), &vertexOffset);
+
+			break;
+		}
+#endif
+		default:
+		{
+			DE_FATAL("Unknown test type");
+			break;
+		}
+	}
+
+#ifndef CTS_USES_VULKANSC
+	if (m_groupParams->useDynamicRendering)
+		endDynamicRender(*m_cmdBuffer);
+	else
+		endLegacyRender(*m_cmdBuffer);
+#else
+	endLegacyRender(*m_cmdBuffer);
+#endif // CTS_USES_VULKANSC
+
+	endCommandBuffer(m_vk, *m_cmdBuffer);
+
+	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
+
+	// Validation
+	VK_CHECK(m_vk.queueWaitIdle(queue));
+
+	tcu::TextureLevel refImage(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
+	tcu::clear(refImage.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+	if (m_testSpec.nullDescriptor)
+	{
+		std::vector<tcu::Vec4>	vertices;
+		std::vector<tcu::Vec4>	colors;
+
+		// Draw just the first point
+		vertices.push_back(m_data[0].position);
+		colors.push_back(m_data[0].color);
+
+		{
+			const PassthruVertShader				vertShader;
+			const PassthruFragShader				fragShader;
+			const rr::Program						program(&vertShader, &fragShader);
+			const rr::MultisamplePixelBufferAccess	colorBuffer = rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(refImage.getAccess());
+			const rr::RenderTarget					renderTarget(colorBuffer);
+			const rr::RenderState					renderState((rr::ViewportState(colorBuffer)), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
+			const rr::Renderer						renderer;
+
+			const rr::VertexAttrib	vertexAttribs[] =
+			{
+				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0, &vertices[0]),
+				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0, &colors[0])
+			};
+			renderer.draw(rr::DrawCommand(renderState,
+				renderTarget,
+				program,
+				DE_LENGTH_OF_ARRAY(vertexAttribs),
+				&vertexAttribs[0],
+				rr::PrimitiveList(rr::PRIMITIVETYPE_POINTS, (deUint32)vertices.size(), 0)));
+		}
+	}
+
+	const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
+	const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
+		vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+
+	qpTestResult res = QP_TEST_RESULT_PASS;
+
+	if (!tcu::intThresholdPositionDeviationCompare(
+		log, "Result", "Image comparison result", refImage.getAccess(), renderedFrame,
+		tcu::UVec4(4u),					// color threshold
+		tcu::IVec3(1, 1, 0),			// position deviation tolerance
+		true,							// don't check the pixels at the boundary
+		tcu::COMPARE_LOG_RESULT))
+	{
+		res = QP_TEST_RESULT_FAIL;
+	}
+
+	return tcu::TestStatus(res, qpGetTestResultName(res));
+}
+
 void checkSupport(Context& context, DrawIndexed::TestSpec testSpec)
 {
 	if (testSpec.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
+	if (testSpec.testType != TEST_TYPE_NON_MAINTENANCE_6)
+	{
+		context.requireDeviceFunctionality("VK_KHR_maintenance6");
+
+		if (testSpec.nullDescriptor)
+		{
+			vk::VkPhysicalDeviceFeatures2				features2 = vk::initVulkanStructure();
+			vk::VkPhysicalDeviceRobustness2FeaturesEXT	robustness2Features = vk::initVulkanStructure();
+
+			features2.pNext = &robustness2Features;
+
+			context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+			if (robustness2Features.nullDescriptor == VK_FALSE)
+			{
+				TCU_THROW(NotSupportedError, "robustness2 nullDescriptor is not supported");
+			}
+
+			DE_ASSERT(features2.features.robustBufferAccess);
+		}
+
+		if (testSpec.bindIndexBuffer2)
+		{
+			context.requireDeviceFunctionality("VK_KHR_maintenance5");
+		}
+
+#ifndef CTS_USES_VULKANSC
+		if (testSpec.testType == TEST_TYPE_MAINTENANCE6_MULTI_INDEXED_EXT)
+		{
+			context.requireDeviceFunctionality("VK_EXT_multi_draw");
+		}
+#endif
+
+		if (testSpec.testType == TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT_COUNT)
+		{
+			context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+		}
+	}
 #ifndef CTS_USES_VULKANSC
 	if (testSpec.useMaintenance5Ext)
 		context.requireDeviceFunctionality(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
@@ -510,14 +820,7 @@ void DrawIndexedTests::init	(void)
 
 void DrawIndexedTests::init (bool useMaintenance5Ext)
 {
-	std::string	maintenance5ExtNameSuffix;
-	std::string	maintenance5ExtDescSuffix;
-
-	if (useMaintenance5Ext)
-	{
-		maintenance5ExtNameSuffix = "_maintenance_5";
-		maintenance5ExtDescSuffix = " using vkCmdBindIndexBuffer2KHR() introduced in VK_KHR_maintenance5";
-	}
+	std::string	maintenance5ExtNameSuffix = useMaintenance5Ext ? "_maintenance_5" : "";
 
 	const struct {
 		const vk::VkPrimitiveTopology		topology;
@@ -589,7 +892,10 @@ void DrawIndexedTests::init (bool useMaintenance5Ext)
 							offsetCase.offset,
 							indexBindOffset,
 							memoryBindOffset,
-							useMaintenance5Ext
+							TEST_TYPE_NON_MAINTENANCE_6,
+							useMaintenance5Ext,
+							false,
+							false
 						);
 
 						const auto testName = std::string("draw_indexed_") + topologyCase.nameSuffix + offsetCase.nameSuffix + indexBindOffsetCase.nameSuffix + memoryBindOffsetCase.nameSuffix + maintenance5ExtNameSuffix;
@@ -609,7 +915,10 @@ void DrawIndexedTests::init (bool useMaintenance5Ext)
 							offsetCase.offset,
 							indexBindOffset,
 							memoryBindOffset,
-							useMaintenance5Ext
+							TEST_TYPE_NON_MAINTENANCE_6,
+							useMaintenance5Ext,
+							false,
+							false
 						);
 
 						const auto testName = std::string("draw_instanced_indexed_") + topologyCase.nameSuffix + offsetCase.nameSuffix + indexBindOffsetCase.nameSuffix + memoryBindOffsetCase.nameSuffix + maintenance5ExtNameSuffix;
@@ -618,6 +927,54 @@ void DrawIndexedTests::init (bool useMaintenance5Ext)
 							(m_testCtx, testName, testSpec, FunctionSupport1<DrawInstancedIndexed::TestSpec>::Args(checkSupport, testSpec)));
 					}
 				}
+			}
+		}
+	}
+
+	const struct
+	{
+		TestType	testType;
+		std::string	nameSuffix;
+	} Maintenance6Cases[] =
+	{
+		{ TEST_TYPE_MAINTENANCE6_INDEXED,	"" },
+		{ TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT,	"_indirect" },
+		{ TEST_TYPE_MAINTENANCE6_INDEXED_INDIRECT_COUNT, "_indirect_count" },
+#ifndef CTS_USES_VULKANSC
+		{ TEST_TYPE_MAINTENANCE6_MULTI_INDEXED_EXT,	"_multi" },
+#endif
+	};
+
+	for (const auto& maintenance6Case : Maintenance6Cases)
+	{
+		for (int m5 = 0; m5 < 2; m5++)
+		{
+			for (int null = 0; null < 2; null++)
+			{
+				DrawIndexedMaintenance6::TestSpec testSpec
+				(
+					{
+						{ glu::SHADERTYPE_VERTEX, "vulkan/draw/VertexFetch.vert" },
+						{ glu::SHADERTYPE_FRAGMENT, "vulkan/draw/VertexFetch.frag" }
+					},
+					vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+					m_groupParams,
+					0,
+					0,
+					0,
+					maintenance6Case.testType,
+					useMaintenance5Ext,
+					null == 1,
+					m5 == 1
+				);
+
+				const char* m5Suffix = m5 == 0 ? "" : "_bindindexbuffer2";
+				const char* nullSuffix = null == 0 ? "" : "_nulldescriptor";
+
+				const auto testName = std::string("draw_indexed") + maintenance6Case.nameSuffix + m5Suffix + nullSuffix + maintenance5ExtNameSuffix + std::string("_maintenance6");
+
+				addChild(new InstanceFactory<DrawIndexedMaintenance6, FunctionSupport1<DrawIndexed::TestSpec> >
+					(m_testCtx, testName, testSpec, FunctionSupport1<DrawIndexedMaintenance6::TestSpec>::Args(checkSupport, testSpec)));
 			}
 		}
 	}

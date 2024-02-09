@@ -798,6 +798,134 @@ tcu::TestStatus staticStencilMaskZeroProgramsTest (Context& context, vk::Pipelin
 	return tcu::TestStatus::pass("Pass");
 }
 
+void initDoubleBindPrograms (vk::SourceCollections& dst)
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "const vec4 vertices[] = vec4[](\n"
+		<< "    vec4(-1.0, -1.0, 0.0, 1.0),\n"
+		<< "    vec4(-1.0,  3.0, 0.0, 1.0),\n"
+		<< "    vec4( 3.0, -1.0, 0.0, 1.0)\n"
+		<< ");\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = vertices[gl_VertexIndex % 3];\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = vec4(0.0f, 0.0f, 1.0f, 1.0f);\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+// The test does:
+// - bind pipeline with some static state.
+// - set state command for that static state (to a bad value).
+// - bind the same pipeline again.
+// - draw.
+// - verify the good value has been used.
+// In this case, the bad state and value will be the scissor, but the pipeline will also have a dynamic viewport.
+tcu::TestStatus doubleBindTest (Context& context)
+{
+	const auto&			ctx			= context.getContextCommonData();
+	const tcu::IVec3	fbExtent	(2, 2, 1);
+	const auto			vkExtent	= vk::makeExtent3D(fbExtent);
+	const auto			fbFormat	= vk::VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat	= mapVkFormat(fbFormat);
+	const auto			fbUsage		= (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const tcu::Vec4		clearColor	(0.0f, 0.0f, 0.0f, 1.0f);
+	const tcu::Vec4		geomColor	(0.0f, 0.0f, 1.0f, 1.0f); // Must match frag shader.
+	const tcu::Vec4		threshold	(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+	const auto			bindPoint	= vk::VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+	// Color buffer with verification buffer.
+	vk::ImageWithBuffer colorBuffer (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		vkExtent,
+		fbFormat,
+		fbUsage,
+		vk::VK_IMAGE_TYPE_2D);
+
+	const auto pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device);
+	const auto renderPass		= makeRenderPass(ctx.vkd, ctx.device, fbFormat);
+	const auto framebuffer		= makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
+
+	// Modules.
+	const auto&	binaries		= context.getBinaryCollection();
+	const auto	vertModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<vk::VkDynamicState> dynamicStates
+	{
+		vk::VK_DYNAMIC_STATE_VIEWPORT,
+	};
+
+	const vk::VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,													//	const void*							pNext;
+		0u,															//	VkPipelineDynamicStateCreateFlags	flags;
+		de::sizeU32(dynamicStates),									//	uint32_t							dynamicStateCount;
+		de::dataOrNull(dynamicStates),								//	const VkDynamicState*				pDynamicStates;
+	};
+
+	const auto goodViewport	= makeViewport(vkExtent);
+	const auto goodScissor	= vk::makeRect2D(vkExtent);
+	const auto badViewport	= vk::makeViewport(1u, 1u);	// Needs to be smaller than the framebuffer.
+	const auto badScissor	= vk::makeRect2D(1u, 1u);	// Needs to be smaller than the framebuffer.
+
+	const std::vector<vk::VkViewport>	staticViewports	(1u, badViewport);
+	const std::vector<vk::VkRect2D>		staticScissors	(1u, goodScissor);
+
+	const vk::VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = vk::initVulkanStructure();
+
+	const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout,
+		*vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule,
+		*renderPass, staticViewports, staticScissors,
+		vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputStateCreateInfo, nullptr, nullptr, nullptr, nullptr,
+		&dynamicStateCreateInfo);
+
+	vk::CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, goodScissor, clearColor);
+	ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+	ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &badScissor); // This should not be taken into account.
+	ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+	ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 1u, &goodViewport); // The static one was bad too.
+	ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+	endRenderPass(ctx.vkd, cmdBuffer);
+	copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(),
+		fbExtent.swizzle(0, 1), vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+		vk::VK_IMAGE_ASPECT_COLOR_BIT, vk::VK_IMAGE_ASPECT_COLOR_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color output.
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+	tcu::PixelBufferAccess resultAccess (tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+	tcu::TextureLevel	referenceLevel	(tcuFormat, fbExtent.x(), fbExtent.y());
+	auto				referenceAccess	= referenceLevel.getAccess();
+	tcu::clear(referenceAccess, geomColor);
+
+	auto& log = context.getTestContext().getLog();
+	if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } //anonymous
 
 // General tests for dynamic states
@@ -851,6 +979,11 @@ void DynamicStateGeneralTests::init (void)
 	}
 
 	addFunctionCaseWithPrograms(this, "static_stencil_mask_zero", checkStaticStencilMaskZeroSupport, initStaticStencilMaskZeroPrograms, staticStencilMaskZeroProgramsTest, m_pipelineConstructionType);
+
+	if (!vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
+	{
+		addFunctionCaseWithPrograms(this, "double_static_bind", initDoubleBindPrograms, doubleBindTest);
+	}
 }
 
 } // DynamicState

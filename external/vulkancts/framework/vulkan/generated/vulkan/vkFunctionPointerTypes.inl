@@ -73,9 +73,9 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelineCacheDataFunc)											
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* MergePipelineCachesFunc)												(VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const VkPipelineCache* pSrcCaches);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreatePipelineBinariesKHRFunc)											(VkDevice device, uint32_t createInfoCount, const VkPipelineBinaryCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryKHR* pPipelineBinaries);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyPipelineBinaryKHRFunc)											(VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GeneratePipelineBinaryKeysKHRFunc)										(VkDevice device, const void* pCreateInfo, uint32_t* pKeyCount, VkPipelineBinaryKeyKHR* pKeys);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelineBinaryDataKHRFunc)											(VkDevice device, VkPipelineBinaryKHR pipelineBinary, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ReleaseCapturedPipelineDataKHRFunc)									(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelineBinaryKeysKHRFunc)											(VkDevice device, const VkPipelineBinaryKeysCreateInfoKHR* pCreateInfo, uint32_t* pKeyCount, VkPipelineBinaryKeyKHR* pKeys);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelineBinaryDataKHRFunc)											(VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ReleaseCapturedPipelineDataKHRFunc)									(VkDevice device, const VkCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateGraphicsPipelinesFunc)											(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateComputePipelinesFunc)											(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceSubpassShadingMaxWorkgroupSizeHUAWEIFunc)						(VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize);
@@ -448,6 +448,7 @@ typedef VKAPI_ATTR uint64_t				(VKAPI_CALL* GetDeviceMemoryOpaqueCaptureAddressK
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelineExecutablePropertiesKHRFunc)								(VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelineExecutableStatisticsKHRFunc)								(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPipelineExecutableInternalRepresentationsKHRFunc)					(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLineStippleKHRFunc)												(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLineStippleEXTFunc)												(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceToolPropertiesFunc)									(VkPhysicalDevice physicalDevice, uint32_t* pToolCount, VkPhysicalDeviceToolProperties* pToolProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceToolPropertiesEXTFunc)								(VkPhysicalDevice physicalDevice, uint32_t* pToolCount, VkPhysicalDeviceToolProperties* pToolProperties);
@@ -683,3 +684,5 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* LatencySleepNVFunc)													(VkD
 typedef VKAPI_ATTR void					(VKAPI_CALL* SetLatencyMarkerNVFunc)												(VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetLatencyTimingsNVFunc)												(VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* QueueNotifyOutOfBandNVFunc)											(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRenderingAttachmentLocationsKHRFunc)								(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRenderingInputAttachmentIndicesKHRFunc)							(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo);

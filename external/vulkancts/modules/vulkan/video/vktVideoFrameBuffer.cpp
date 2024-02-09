@@ -452,7 +452,7 @@ public:
 	int32_t SetPicNumInDecodeOrder(int32_t picId, int32_t picNumInDecodeOrder) override {
 		std::lock_guard<std::mutex> lock(m_displayQueueMutex);
 		if ((deUint32)picId < m_perFrameDecodeImageSet.size()) {
-			int32_t oldPicNumInDecodeOrder = m_perFrameDecodeImageSet[picId].m_decodeOrder;
+			int32_t oldPicNumInDecodeOrder = (int32_t)m_perFrameDecodeImageSet[picId].m_decodeOrder;
 			m_perFrameDecodeImageSet[picId].m_decodeOrder = picNumInDecodeOrder;
 			return oldPicNumInDecodeOrder;
 		}
@@ -644,7 +644,7 @@ int32_t VkVideoFrameBuffer::DequeueDecodedPicture(DecodedFrame* pDecodedFrame)
 		pDecodedFrame->frameConsumerDoneSemaphore = m_perFrameDecodeImageSet[pictureIndex].m_frameConsumerDoneSemaphore;
 
 		pDecodedFrame->timestamp = m_perFrameDecodeImageSet[pictureIndex].m_timestamp;
-		pDecodedFrame->decodeOrder = m_perFrameDecodeImageSet[pictureIndex].m_decodeOrder;
+		pDecodedFrame->decodeOrder = (int32_t)m_perFrameDecodeImageSet[pictureIndex].m_decodeOrder;
 		pDecodedFrame->displayOrder = m_perFrameDecodeImageSet[pictureIndex].m_displayOrder;
 
 		pDecodedFrame->queryPool = m_queryPool;

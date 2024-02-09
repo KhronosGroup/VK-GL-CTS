@@ -5729,6 +5729,185 @@ tcu::TestStatus manyIndirectDispatchesTest (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+struct IndirectDispatchAlignmentParams
+{
+	uint32_t memOffset;
+	uint32_t dispatchOffset;
+};
+
+class IndirectDispatchAlignmentInstance : public vkt::TestInstance
+{
+public:
+						IndirectDispatchAlignmentInstance	(Context& context, const IndirectDispatchAlignmentParams& params)
+							: vkt::TestInstance	(context)
+							, m_params			(params)
+							{}
+	virtual				~IndirectDispatchAlignmentInstance	(void) {}
+
+	tcu::TestStatus		iterate								(void) override;
+protected:
+	const IndirectDispatchAlignmentParams m_params;
+};
+
+class IndirectDispatchAlignmentCase : public vkt::TestCase
+{
+public:
+					IndirectDispatchAlignmentCase	(tcu::TestContext& testCtx, const std::string& name, const IndirectDispatchAlignmentParams& params)
+						: vkt::TestCase	(testCtx, name)
+						, m_params		(params)
+						{}
+	virtual			~IndirectDispatchAlignmentCase	(void) {}
+
+	void			initPrograms					(vk::SourceCollections& programCollection) const override;
+	TestInstance*	createInstance					(Context& context) const override;
+	void			checkSupport					(Context& context) const override;
+protected:
+	const IndirectDispatchAlignmentParams m_params;
+};
+
+void IndirectDispatchAlignmentCase::checkSupport (Context& context) const
+{
+	// Will throw NotSupportedError if not found.
+	context.getComputeQueue();
+}
+
+void IndirectDispatchAlignmentCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::ostringstream comp;
+	comp
+		<< "#version 460\n"
+		<< "layout (local_size_x=64, local_size_y=1, local_size_z=1) in;\n"
+		<< "layout (set=0, binding=0, std430) buffer OutputBlock { uint data[64]; } outputValues;\n"
+		<< "void main (void) {\n"
+		<< "    outputValues.data[gl_LocalInvocationIndex] += gl_LocalInvocationIndex + " << kIndirectDispatchValueOffset << "u;\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+TestInstance* IndirectDispatchAlignmentCase::createInstance (Context& context) const
+{
+	return new IndirectDispatchAlignmentInstance(context, m_params);
+}
+
+tcu::TestStatus IndirectDispatchAlignmentInstance::iterate (void)
+{
+	const auto&		ctx				= m_context.getContextCommonData();
+	const auto		descType		= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	const auto		bindPoint		= VK_PIPELINE_BIND_POINT_COMPUTE;
+	const auto		dataStages		= VK_SHADER_STAGE_COMPUTE_BIT;
+	const auto		valueCount		= 64u; // Must match compute shader.
+	const auto		qfIndex			= m_context.getComputeQueueFamilyIndex();
+	const auto		queue			= m_context.getComputeQueue();
+	auto&			log				= m_context.getTestContext().getLog();
+
+	// Host-side buffer values.
+	std::vector<uint32_t> bufferValues (valueCount, 0u);
+
+	// Storage buffer.
+	const auto			sbSize			= static_cast<VkDeviceSize>(de::dataSize(bufferValues));
+	const auto			sbInfo			= makeBufferCreateInfo(sbSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	BufferWithMemory	storageBuffer	(ctx.vkd, ctx.device, ctx.allocator, sbInfo, MemoryRequirement::HostVisible);
+	const auto			sbAlloc			= storageBuffer.getAllocation();
+	void*				sbData			= sbAlloc.getHostPtr();
+	const auto			sbOffset		= static_cast<VkDeviceSize>(0);
+
+	deMemcpy(sbData, de::dataOrNull(bufferValues), de::dataSize(bufferValues));
+	flushAlloc(ctx.vkd, ctx.device, sbAlloc);
+
+	// Indirect dispatch buffer contents.
+	const VkDispatchIndirectCommand					defaultCommand		{ 1u, 1u, 1u };
+	const std::vector<VkDispatchIndirectCommand>	indirectCommands	(1u, defaultCommand);
+
+	// Note the calculated indirect buffer size takes into account the dispatche offset.
+	const auto	ibSize			= static_cast<VkDeviceSize>(m_params.dispatchOffset + de::dataSize(indirectCommands));
+	const auto	ibInfo			= makeBufferCreateInfo(ibSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+	const auto	indirectBuffer	= makeBuffer(ctx.vkd, ctx.device, ibInfo);
+
+	// Allocate more memory if needed and bind with an offset.
+	const auto memReqs		= getBufferMemoryRequirements(ctx.vkd, ctx.device, *indirectBuffer);
+	const auto memOffset	= de::roundUp(static_cast<VkDeviceSize>(m_params.memOffset), memReqs.alignment);
+
+	log << tcu::TestLog::Message << "Test parameters: memoryOffset=" << m_params.memOffset << " dispatchOffset=" << m_params.dispatchOffset << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Buffer memory requirements: size=" << memReqs.size << " alignment=" << memReqs.alignment << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Used memory offset: " << memOffset << tcu::TestLog::EndMessage;
+
+	const VkMemoryRequirements allocationRequirements =
+	{
+		memOffset + memReqs.size,	//	VkDeviceSize	size;
+		memReqs.alignment,			//	VkDeviceSize	alignment;
+		memReqs.memoryTypeBits,		//	uint32_t		memoryTypeBits;
+	};
+	const auto ibMemory = ctx.allocator.allocate(allocationRequirements, MemoryRequirement::HostVisible);
+	ctx.vkd.bindBufferMemory(ctx.device, *indirectBuffer, ibMemory->getMemory(), memOffset);
+
+	// Copy data to the buffer taking into account the dispatch offset.
+	char* ibData = reinterpret_cast<char*>(ibMemory->getHostPtr()) + static_cast<size_t>(memOffset);
+	deMemcpy(ibData + m_params.dispatchOffset, de::dataOrNull(indirectCommands), de::dataSize(indirectCommands));
+	flushAlloc(ctx.vkd, ctx.device, *ibMemory);
+
+	// Descriptor pool, set, layout, etc.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(descType);
+	const auto descriptorPool	= poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+	DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(descType, dataStages);
+	const auto setLayout		= layoutBuilder.build(ctx.vkd, ctx.device);
+	const auto descriptorSet	= makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+	DescriptorSetUpdateBuilder updateBuilder;
+	const auto dbDescInfo = makeDescriptorBufferInfo(storageBuffer.get(), sbOffset, sbSize);
+	updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType, &dbDescInfo);
+	updateBuilder.update(ctx.vkd, ctx.device);
+
+	// Layout and pipeline.
+	const auto	pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+	const auto&	binaries		= m_context.getBinaryCollection();
+	const auto	compModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
+	const auto	pipeline		= makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compModule);
+
+	// To make it more interesting, we'll also use secondary command buffers.
+	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+	const auto secCmdBufferPtr = allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+	const auto secCmdBuffer = *secCmdBufferPtr;
+
+	beginSecondaryCommandBuffer(ctx.vkd, secCmdBuffer);
+	ctx.vkd.cmdBindPipeline(secCmdBuffer, bindPoint, *pipeline);
+	ctx.vkd.cmdBindDescriptorSets(secCmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	const auto dispatchOffset = m_params.dispatchOffset;
+	ctx.vkd.cmdDispatchIndirect(secCmdBuffer, indirectBuffer.get(), dispatchOffset);
+	endCommandBuffer(ctx.vkd, secCmdBuffer);
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	ctx.vkd.cmdExecuteCommands(cmdBuffer, 1u, &secCmdBuffer);
+	{
+		const auto compute2Host = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+		cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &compute2Host);
+	}
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, queue, cmdBuffer);
+
+	// Verify values.
+	std::vector<uint32_t> outputValues (valueCount, 0u);
+	invalidateAlloc(ctx.vkd, ctx.device, sbAlloc);
+	deMemcpy(outputValues.data(), sbData, de::dataSize(outputValues));
+
+	for (uint32_t i = 0u; i < valueCount; ++i)
+	{
+		const auto refValue = bufferValues[i] + i + kIndirectDispatchValueOffset;
+		if (outputValues[i] != refValue)
+		{
+			std::ostringstream msg;
+			msg << "Unexpected value found at position " << i << ": expected " << refValue << " but found " << outputValues[i];
+			TCU_FAIL(msg.str());
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
@@ -5818,6 +5997,24 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 
 	addFunctionCase				(commandBuffersTests.get(), "nested_execute",					checkNestedCommandBufferSupport, executeNestedBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "nested_execute_multiple_levels",	checkNestedCommandBufferDepthSupport, executeMultipleLevelsNestedBufferTest);
+
+	// Test indirect dispatches with different offsets.
+	{
+		auto testGroup = commandBuffersTests.get();
+
+		const std::vector<uint32_t> offsetsToTest
+		{
+			0u, 4u, 8u, 12u, 16u, 20u, 24u, 28u
+		};
+
+		for (const auto memOffset : offsetsToTest)
+			for (const auto dispatchOffset : offsetsToTest)
+			{
+				IndirectDispatchAlignmentParams params { memOffset, dispatchOffset };
+				const std::string testName = "indirect_compute_dispatch_offsets_" + std::to_string(memOffset) + "_" + std::to_string(dispatchOffset);
+				testGroup->addChild(new IndirectDispatchAlignmentCase(testCtx, testName, params));
+			}
+	}
 
 	return commandBuffersTests.release();
 }

@@ -2532,6 +2532,7 @@ public:
 		const char* extensions[] =
 		{
 			"VK_EXT_robustness2",
+			"VK_EXT_image_view_min_lod",
 		};
 
 		VkPhysicalDeviceImageViewMinLodFeaturesEXT	minLodfeatures		= initVulkanStructure();
@@ -2555,7 +2556,7 @@ public:
 		};
 
 		m_device	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-		m_vkd		.reset(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion()));
+		m_vkd		.reset(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 		m_queue		= getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
 		m_allocator	.reset(new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}

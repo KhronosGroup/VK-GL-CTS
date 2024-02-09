@@ -1325,7 +1325,7 @@ TestInstance* RobustReadTest::createInstance (Context& context) const
 {
 #ifndef CTS_USES_VULKANSC
 	auto device = createRobustBufferAccessVariablePointersDevice(context);
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 	de::MovePtr<CustomInstance> customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
 	auto device = createRobustBufferAccessVariablePointersDevice(context, *customInstance);
@@ -1370,7 +1370,7 @@ TestInstance* RobustWriteTest::createInstance (Context& context) const
 {
 #ifndef CTS_USES_VULKANSC
 	auto device = createRobustBufferAccessVariablePointersDevice(context);
-	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
+	de::MovePtr<vk::DeviceDriver>	deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 	de::MovePtr<CustomInstance> customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
 	auto device = createRobustBufferAccessVariablePointersDevice(context, *customInstance);
@@ -1441,7 +1441,10 @@ AccessInstance::AccessInstance (Context&			context,
 
 	if (m_bufferFormat == VK_FORMAT_R64_UINT || m_bufferFormat == VK_FORMAT_R64_SINT)
 	{
-		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+		if (!context.getDeviceFeatures().shaderInt64)
+		{
+			TCU_THROW(NotSupportedError, "64-bit integers not supported");
+		}
 	}
 
 	// Check storage support

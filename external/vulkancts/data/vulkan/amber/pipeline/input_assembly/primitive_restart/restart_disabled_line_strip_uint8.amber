@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DEVICE_EXTENSION VK_EXT_index_type_uint8
+DEVICE_FEATURE IndexTypeUint8Features.indexTypeUint8
 
 SHADER compute compute_shader GLSL
 #version 430

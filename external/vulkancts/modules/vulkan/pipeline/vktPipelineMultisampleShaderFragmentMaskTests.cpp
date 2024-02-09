@@ -251,7 +251,7 @@ class SingletonDevice
 
 		VkDeviceCreateInfo createInfo		= initVulkanStructure(&features2);
 		createInfo.flags					= 0u;
-		createInfo.queueCreateInfoCount		= de::arrayLength(queues);
+		createInfo.queueCreateInfoCount		= (deUint32)de::arrayLength(queues);
 		createInfo.pQueueCreateInfos		= queues;
 		createInfo.enabledLayerCount		= 0u;
 		createInfo.ppEnabledLayerNames		= nullptr;
@@ -268,7 +268,7 @@ class SingletonDevice
 			&createInfo,
 			nullptr);
 
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, *m_logicalDevice, m_context.getUsedApiVersion()));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, *m_logicalDevice, m_context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 	}
 
 public:

@@ -1195,7 +1195,7 @@ tcu::TestStatus conversionTest (Context& context, TestConfig config)
 			vk::VK_IMAGE_TILING_OPTIMAL,								// tiling
 			vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
 			vk::VK_IMAGE_USAGE_SAMPLED_BIT,								// usage
-			ycbcrImageFlags												// flags
+			(vk::VkImageCreateFlags)ycbcrImageFlags						// flags
 		};
 
 		vk::VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
