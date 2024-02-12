@@ -5328,15 +5328,22 @@ float roundToViewport (float x, deUint32 offset, deUint32 size)
 
 void initializeSubpassRenderInfo (vector<SubpassRenderInfo>& renderInfos, de::Random& rng, const RenderPass& renderPass, const TestConfig& config)
 {
-	const TestConfig::CommandBufferTypes	commandBuffer			= config.commandBufferTypes;
-	const vector<Subpass>&					subpasses				= renderPass.getSubpasses();
-	bool									lastSubpassWasSecondary	= false;
+	const TestConfig::CommandBufferTypes	commandBuffer				= config.commandBufferTypes;
+	const vector<Subpass>&					subpasses					= renderPass.getSubpasses();
+	bool									lastSubpassWasSecondary		= false;
+
+	// mixing using secondary command buffers and recording draw calls inline
+	// is legal with renderpasses (as the render pass contents was set per subpass),
+	// but for dynamic rendering the contents flag is set on the whole dynamic render
+	const bool isMultiPassDynamicRendering	= (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) &&
+											  (subpasses.size() > 1u);
+	const bool alternateSecondaryCmdBuff	= (commandBuffer & TestConfig::COMMANDBUFFERTYPES_SECONDARY) && !isMultiPassDynamicRendering;
 
 	for (deUint32 subpassNdx = 0; subpassNdx < (deUint32)subpasses.size(); subpassNdx++)
 	{
 		const Subpass&				subpass				= subpasses[subpassNdx];
 		const bool					subpassIsSecondary	= commandBuffer == TestConfig::COMMANDBUFFERTYPES_SECONDARY
-														|| (commandBuffer & TestConfig::COMMANDBUFFERTYPES_SECONDARY && !lastSubpassWasSecondary) ? true : false;
+														|| (alternateSecondaryCmdBuff && !lastSubpassWasSecondary) ? true : false;
 		const bool					omitBlendState		= subpass.getOmitBlendState();
 		const UVec2					viewportSize		((config.renderSize * UVec2(2)) / UVec2(3));
 		const UVec2					viewportOffset		(config.renderPos.x() + (subpassNdx % 2) * (config.renderSize.x() / 3),
