@@ -352,7 +352,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 		VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,			// VkStructureType						sType;
 		DE_NULL,												// const void*							pNext;
 		DE_NULL,												// VkImageView							imageView;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
+		VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,				// VkImageLayout						imageLayout;
 		VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
 		DE_NULL,												// VkImageView							resolveImageView;
 		VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
@@ -396,7 +396,6 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 	depthImageDescriptor.imageView		= **imageViews[depthIndex];
 	stencilImageDescriptor.imageView	= **imageViews[depthIndex+1];
 	depthStencilAttachment.imageView	= **imageViews[depthIndex+2];
-	depthStencilAttachment.imageLayout	= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 	// define buffers for output
 	const VkDeviceSize			outputBufferSize	= static_cast<VkDeviceSize>(m_renderSize * m_renderSize * sizeof(deUint32));
