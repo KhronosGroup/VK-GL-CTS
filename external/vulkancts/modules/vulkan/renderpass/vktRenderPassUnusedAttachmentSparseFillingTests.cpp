@@ -641,7 +641,13 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
 		auto renderingInputAttachmentIndexInfo = getRenderingInputAttachmentIndexInfo(m_testParams.groupParams->renderingType,
 																			m_testParams.activeInputAttachmentCount, inputAttachments);
 
-		const std::vector<VkFormat> colorAttachmentFormats(colorAttachmentsCount, VK_FORMAT_R8G8B8A8_UNORM);
+		std::vector<VkFormat> colorAttachmentFormats(colorAttachmentsCount, VK_FORMAT_UNDEFINED);
+		for (deUint32 index = 0; index < colorAttachmentsCount; ++index)
+		{
+			if (inputAttachments[index] != VK_ATTACHMENT_UNUSED)
+				colorAttachmentFormats[index] = VK_FORMAT_R8G8B8A8_UNORM;
+		}
+
 		VkPipelineRenderingCreateInfo renderingCreateInfo
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
