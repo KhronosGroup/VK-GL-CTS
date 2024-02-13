@@ -35,6 +35,7 @@
 #include "gl4cPipelineStatisticsQueryTests.hpp"
 #include "glcPixelStorageModesTests.hpp"
 #include "glcFragDepthTests.hpp"
+#include "glcFramebufferBlitTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcPackedDepthStencilTests.hpp"
 #include "glcPackedPixelsTests.hpp"
@@ -173,6 +174,7 @@ void GL30TestPackage::init(void)
 		addChild(new glcts::TextureLodBasicTests(getContext()));
 		addChild(new GL30ShaderTests(getContext()));
 		addChild(new deqp::Functional::TextureShadowLodTest(getContext()));
+		addChild(new glcts::FramebufferBlitTests(getContext()));
 	}
 	catch (...)
 	{

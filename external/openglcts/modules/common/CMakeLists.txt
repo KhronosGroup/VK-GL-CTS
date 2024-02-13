@@ -31,6 +31,8 @@ set(GLCTS_COMMON_SRCS
 	glcExposedExtensionsTests.hpp
 	glcFragDepthTests.cpp
 	glcFragDepthTests.hpp
+	glcFramebufferBlitTests.cpp
+	glcFramebufferBlitTests.hpp
 	glcInfoTests.cpp
 	glcInfoTests.hpp
 	glcInternalformatTests.cpp
