@@ -1457,12 +1457,17 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 			fragShader = vk::createShader(vk, device, vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_FRAGMENT_BIT, binaries.get("frag"), tessellationSupported, geometrySupported, &*descriptorSetLayout));
 	}
 
-	const vk::VkDeviceSize				tfBufSize		= 4 * sizeof(tcu::Vec4);
-	const vk::VkBufferCreateInfo		tfBufCreateInfo = vk::makeBufferCreateInfo(tfBufSize, vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT | vk::VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
-	const vk::Move<vk::VkBuffer>		tfBuf			= createBuffer(vk, device, &tfBufCreateInfo);
-	const de::MovePtr<vk::Allocation>	tfBufAllocation	= alloc.allocate(getBufferMemoryRequirements(vk, device, *tfBuf), vk::MemoryRequirement::HostVisible);
-	const vk::VkMemoryBarrier			tfMemoryBarrier	= vk::makeMemoryBarrier(vk::VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT, vk::VK_ACCESS_HOST_READ_BIT);
-	vk.bindBufferMemory(device, *tfBuf, tfBufAllocation->getMemory(), tfBufAllocation->getOffset());
+	const vk::VkDeviceSize				tfBufSize = 4 * sizeof(tcu::Vec4);
+	vk::Move<vk::VkBuffer>				tfBuf;
+	de::MovePtr<vk::Allocation>			tfBufAllocation;
+	const vk::VkMemoryBarrier			tfMemoryBarrier = vk::makeMemoryBarrier(vk::VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT, vk::VK_ACCESS_HOST_READ_BIT);
+	if (m_params.geometryStreams)
+	{
+		const vk::VkBufferCreateInfo		tfBufCreateInfo = vk::makeBufferCreateInfo(tfBufSize, vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT | vk::VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
+		tfBuf = createBuffer(vk, device, &tfBufCreateInfo);
+		tfBufAllocation = alloc.allocate(getBufferMemoryRequirements(vk, device, *tfBuf), vk::MemoryRequirement::HostVisible);
+		vk.bindBufferMemory(device, *tfBuf, tfBufAllocation->getMemory(), tfBufAllocation->getOffset());
+	}
 
 	const vk::VkClearValue				clearValue		= vk::makeClearValueColor({ 0.0f, 0.0f, 0.0f, 0.0f });
 	const vk::VkClearValue				clearDepthValue = vk::makeClearValueDepthStencil(1.0f, 0u);
