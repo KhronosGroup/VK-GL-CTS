@@ -2481,7 +2481,7 @@ tcu::TestStatus NullRenderingCreateInfoInstance::iterate (void)
 
 	// We will use a null-filled pipeline rendering info structure for all substates except the fragment output state.
 	VkPipelineRenderingCreateInfo nullRenderingInfo = initVulkanStructure();
-	nullRenderingInfo.colorAttachmentCount = std::numeric_limits<uint32_t>::max();
+	nullRenderingInfo.colorAttachmentCount = 0;
 
 	VkPipelineRenderingCreateInfo finalRenderingInfo = initVulkanStructure();
 	finalRenderingInfo.colorAttachmentCount		= 1u;
