@@ -49,7 +49,7 @@ public:
 	{
 	}
 
-	void setVisible(bool visible)
+	void setVisible(bool)
 	{
 	}
 
@@ -100,24 +100,59 @@ private:
 	const vk::PlatformDriver		m_driver;
 };
 
+struct VulkanWindowHeadless : public vk::wsi::Window
+{
+public:
+
+	void setVisible(bool /* visible */)
+	{
+	}
+
+	void resize (const UVec2&)
+	{
+	}
+};
+
+class VulkanDisplayHeadless : public vk::wsi::Display
+{
+public:
+	VulkanDisplayHeadless ()
+	{
+	}
+
+	vk::wsi::Window* createWindow (const Maybe<UVec2>&) const
+	{
+		return new VulkanWindowHeadless();
+	}
+};
+
 VulkanPlatform::VulkanPlatform ()
 {
 }
 
 vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 {
-	if (wsiType != vk::wsi::TYPE_MACOS)
+	switch(wsiType)
+	{
+	case vk::wsi::TYPE_MACOS:
+			return new VulkanDisplay();
+	case vk::wsi::TYPE_HEADLESS:
+		return new VulkanDisplayHeadless();
+	default:
 		TCU_THROW(NotSupportedError, "WSI type not supported");
-
-	return new VulkanDisplay();
+	}
 }
 
 bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType)  const
 {
-	if (wsiType != vk::wsi::TYPE_MACOS)
+	switch(wsiType)
+	{
+	case vk::wsi::TYPE_MACOS:
+	case vk::wsi::TYPE_HEADLESS:
+		return true;
+	default:
 		return false;
-
-	return true;
+	}
 }
 vk::Library* VulkanPlatform::createLibrary (const char* libraryPath) const
 {

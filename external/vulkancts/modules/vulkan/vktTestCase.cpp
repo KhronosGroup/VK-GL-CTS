@@ -90,6 +90,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_ARM_rasterization_order_attachment_access",
 		"VK_GOOGLE_surfaceless_query",
 		"VK_FUCHSIA_",
+		"VK_MVK_macos_surface",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
