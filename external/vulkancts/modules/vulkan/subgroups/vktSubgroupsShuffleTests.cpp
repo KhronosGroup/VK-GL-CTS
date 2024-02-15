@@ -327,11 +327,19 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 			{
 				TCU_THROW(NotSupportedError, "Device does not support shaderSubgroupRotate");
 			}
+			if (!subgroups::isSubgroupRotateSpecVersionValid(context))
+			{
+				TCU_THROW(NotSupportedError, "VK_KHR_shader_subgroup_rotate is version 1. Need version 2 or higher");
+			}
 			break;
 		case OPTYPE_CLUSTERED_ROTATE:
 			if (!context.getShaderSubgroupRotateFeatures().shaderSubgroupRotateClustered)
 			{
 				TCU_THROW(NotSupportedError, "Device does not support shaderSubgroupRotateClustered");
+			}
+			if (!subgroups::isSubgroupRotateSpecVersionValid(context))
+			{
+				TCU_THROW(NotSupportedError, "VK_KHR_shader_subgroup_rotate is version 1. Need version 2 or higher");
 			}
 			break;
 #endif // CTS_USES_VULKANSC
