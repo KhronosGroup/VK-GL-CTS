@@ -2799,7 +2799,10 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 
 		if (hasStencilComponent(format.order) || hasDepthComponent(format.order))
 		{
-			const float						clearNan		= tcu::Float32::nan().asFloat();
+			const float						clearNan		= 0.f; // The use of NaN here would require VK_EXT_depth_range_unrestricted; however, just use 0
+																   // since This value is only used for channels that are not used (e.g., for the depth channel
+																   // if the format is stencil-only) and the value of unused channels are never read and
+																   // verified on the host.
 			const float						clearDepth		= hasDepthComponent(format.order) ? clearValues[attachmentNdx]->depthStencil.depth : clearNan;
 			const deUint32					clearStencil	= hasStencilComponent(format.order) ? clearValues[attachmentNdx]->depthStencil.stencil : 0xDEu;
 			const VkClearDepthStencilValue	depthStencil	=
