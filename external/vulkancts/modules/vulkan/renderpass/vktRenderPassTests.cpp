@@ -1979,6 +1979,8 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 	VkRenderingInputAttachmentIndexInfoKHR		renderingInputAttachmentIndexInfo	= initVulkanStructure(&renderingAttachmentLocationInfo);
 	std::vector<deUint32>						colorAttachmentIndices;
 	std::vector<VkFormat>						colorAttachmentFormats;
+	std::vector<deUint32>						colorAttachmentLocations;
+	std::vector<deUint32>						colorAttachmentInputIndices;
 
 	if (dynamicRenderPass && pSubpassInfo)
 	{
@@ -1988,8 +1990,12 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 		const auto&				allAttachments					= pRenderPassInfo->getAttachments();
 		const auto&				subpass							= pRenderPassInfo->getSubpasses()[subpassIndex];
 		deUint32				colorAttachmentCount			= (deUint32)colorAttachmentIndices.size();
-		std::vector<deUint32>	colorAttachmentLocations		(colorAttachmentCount, VK_ATTACHMENT_UNUSED);
-		std::vector<deUint32>	colorAttachmentInputIndices		(colorAttachmentCount, VK_ATTACHMENT_UNUSED);
+
+		for (deUint32 i = 0; i < colorAttachmentCount; ++i)
+		{
+			colorAttachmentLocations.push_back(VK_ATTACHMENT_UNUSED);
+			colorAttachmentInputIndices.push_back(VK_ATTACHMENT_UNUSED);
+		}
 
 		if (secondaryCmdBufferCompletelyContainsRenderpass)
 			inheritanceRenderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
