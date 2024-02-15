@@ -262,16 +262,12 @@ void XlibWindow::getDimensions (int* width, int* height) const
 
 void XlibWindow::setDimensions (int width, int height)
 {
-	const unsigned int	mask		= CWWidth | CWHeight;
-	XWindowChanges		changes;
 	::Display*			dpy			= m_display.getXDisplay();
 	XEvent				myevent;
-	changes.width	= width;
-	changes.height	= height;
-	XConfigureWindow(dpy, m_window, mask, &changes);
-	XFlush(dpy);
+	XResizeWindow(dpy, m_window, width, height);
+	XSync(dpy, false);
 
-	for(;;)
+	while(XPending(dpy))
 	{
 		XNextEvent(dpy, &myevent);
 		if (myevent.type == ConfigureNotify) {
