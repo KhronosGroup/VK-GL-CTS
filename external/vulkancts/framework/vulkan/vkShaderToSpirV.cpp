@@ -38,12 +38,15 @@
 #include "glslang/Public/ShaderLang.h"
 
  //slang input files
- //#include "D:/githubnv//VK-GL-CTS/external/slang/slang.h"
-#include <slang.h>
+ #include <slang.h>
 #include <slang-com-ptr.h>
 #include <iostream>
 #include <fstream>
-
+#include <list>
+#include <source/core/slang-list.h>
+#include <tools/slang-test/test-context.h>
+#include <source/compiler-core/slang-test-server-protocol.h>
+//D:\githubnv_slang\VK-GL-CTS\external\slang\src\source\core\slang-list.h
 namespace vk
 {
 
@@ -272,6 +275,11 @@ namespace vk
 	} // anonymous
 #ifdef _WIN32
 #include <windows.h>
+
+#ifndef SLANG_RETURN_FAIL_ON_FALSE
+#   define SLANG_RETURN_FAIL_ON_FALSE(x) if (!(x)) return SLANG_FAIL;
+#endif
+
 	using namespace Slang;
 	class SlangBlob : public ISlangBlob {
 	public:
@@ -304,11 +312,140 @@ namespace vk
 		}
 	} slangLibFuncs;
 
+	class WinHandle
+	{
+	public:
+		/// Detach the encapsulated handle. Returns the handle (which now must be externally handled) 
+		HANDLE detach() { HANDLE handle = m_handle; m_handle = nullptr; return handle; }
+
+		/// Return as a handle
+		operator HANDLE() const { return m_handle; }
+
+		/// Assign
+		void operator=(HANDLE handle) { setNull(); m_handle = handle; }
+		void operator=(WinHandle&& rhs) { HANDLE handle = m_handle; m_handle = rhs.m_handle; rhs.m_handle = handle; }
+
+		/// Get ready for writing 
+		SLANG_FORCE_INLINE HANDLE* writeRef() { setNull(); return &m_handle; }
+		/// Get for read access
+		SLANG_FORCE_INLINE const HANDLE* readRef() const { return &m_handle; }
+
+		void setNull()
+		{
+			if (m_handle)
+			{
+				CloseHandle(m_handle);
+				m_handle = nullptr;
+			}
+		}
+		bool isNull() const { return m_handle == nullptr; }
+
+		/// Ctor
+		WinHandle(HANDLE handle = nullptr) :m_handle(handle) {}
+		WinHandle(WinHandle&& rhs) :m_handle(rhs.m_handle) { rhs.m_handle = nullptr; }
+
+		/// Dtor
+		~WinHandle() { setNull(); }
+
+	private:
+
+		WinHandle(const WinHandle&) = delete;
+		void operator=(const WinHandle& rhs) = delete;
+
+		HANDLE m_handle;
+	};
+
+	class WinProcess 
+	{
+	public:
+
+		// Process
+		bool isTerminated()
+		{
+			return waitForTermination(0);
+		}
+		bool waitForTermination(int timeInMs)
+		{
+			if (m_processHandle.isNull())
+			{
+				return true;
+			}
+
+			const DWORD timeOutTime = (timeInMs < 0) ? INFINITE : DWORD(timeInMs);
+
+			// wait for the process to exit
+			// TODO: set a timeout as a safety measure...
+			auto res = WaitForSingleObject(m_processHandle.writeRef(), timeOutTime);
+
+			if (res == WAIT_TIMEOUT)
+			{
+				return false;
+			}
+
+			_hasTerminated();
+			return true;
+		}
+		void terminate(int32_t returnCode)
+		{
+			if (!isTerminated())
+			{
+				// If it's not terminated, try terminating.
+				// Might take time, so use isTerminated to check
+				TerminateProcess(m_processHandle.writeRef(), UINT32(returnCode));
+			}
+
+		}
+		void kill(int32_t returnCode)
+		{
+			if (!isTerminated())
+			{
+				// https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-terminateprocess
+				TerminateProcess(m_processHandle.writeRef(), UINT32(returnCode));
+
+				// Just assume it's done and set the return code
+				m_returnValue = returnCode;
+				m_processHandle.setNull();
+			}
+		}
+
+		WinProcess(HANDLE handle, HANDLE *streams) :
+			m_processHandle(handle)
+		{
+			for (Index i = 0; i < Index(StdStreamType::CountOf); ++i)
+			{
+				m_streams[i] = streams[i];
+			}
+		}
+
+	protected:
+
+		void _hasTerminated()
+		{
+			if (!m_processHandle.isNull())
+			{
+				// get exit code for process
+				// https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-getexitcodeprocess
+
+				DWORD childExitCode = 0;
+				if (GetExitCodeProcess(m_processHandle, &childExitCode))
+				{
+					m_returnValue = int32_t(childExitCode);
+				}
+				m_processHandle.setNull();
+			}
+
+		}
+		WinHandle m_processHandle;          ///< If not set the process has terminated
+		int32_t m_returnValue = 0;                              ///< Value returned if process terminated
+		HANDLE m_streams[Index(StdStreamType::CountOf)];   ///< Streams to communicate with the process
+
+	};
+
 	class SlangContext {
 	public:
 		Slang::ComPtr<slang::IGlobalSession> slangGlobalSession;
 		bool globalSessionInit = false;
-		std::string slangDllPath = "D:\\githubnv\\VK-GL-CTS\\external\\slang"; //This will be transformed to a environment variable SLANG_DLL_PATH
+		std::string slangDllPath = "D:\\githubnv_slang\\VK-GL-CTS\\external\\slang\\src\\bin\\windows-x64\\debug\\"; //This will be transformed to a environment variable SLANG_DLL_PATH
 		bool loadDLL = false;
 		HMODULE handle = nullptr;
 		slangLibFuncs m_sfn;
@@ -328,10 +465,17 @@ namespace vk
 		int SetupSlangDLL()
 		{
 			if (!handle) {
-				//if (!SetDllDirectoryA(slangDllPath.c_str())) {
-				//	std::cout << "failed to set slang dll PATH\n";
-				//	return SLANG_FAIL;
-				//}
+				char lpBuffer[128];
+				DWORD ret = GetEnvironmentVariable("SLANG_DLL_PATH_OVERRIDE", lpBuffer, 128);
+				if (ret > 0) {
+					slangDllPath = lpBuffer;
+				}
+				if (!slangDllPath.empty()) {
+					if (!SetDllDirectoryA(slangDllPath.c_str())) {
+						std::cout << "failed to set slang dll PATH\n";
+						return SLANG_FAIL;
+					}
+				}
 				handle = LoadLibraryA("slang.dll");
 				if (NULL == handle) {
 					std::cout << "failed to load slang.dll\n";
@@ -354,11 +498,204 @@ namespace vk
 		{
 			printf("%s", message);
 		}
+		char * findSlangShaderStage(glu::ShaderType shaderType) {
+			switch (shaderType) {
+			case glu::SHADERTYPE_VERTEX:
+				return "vertex";
+			case glu::SHADERTYPE_FRAGMENT:
+				return "fragment";
+			case glu::SHADERTYPE_GEOMETRY:
+				return "geometry";
+			case glu::SHADERTYPE_COMPUTE:
+				return "compute";
+			default:
+				std::cout << "unsupported shader stage";
+				return "unknown";
+			}
+			return "unknown";
+		};
+		char* findSlangShaderExt(glu::ShaderType shaderType) {
+			switch (shaderType) {
+			case glu::SHADERTYPE_VERTEX:
+				return ".vert";
+			case glu::SHADERTYPE_FRAGMENT:
+				return ".frag";
+			case glu::SHADERTYPE_GEOMETRY:
+				return ".geom";
+			case glu::SHADERTYPE_COMPUTE:
+				return ".comp";
+			default:
+				std::cout << "unsupported shader stage";
+				return "";
+			}
+			return "";
+		};
+#if 0
+		JSONRPCConnection* getOrCreateConnection()
+		{
+			SlangResult result = SLANG_OK;
+			//setup the server that runs slanc API's
+			//1. createJSONRPCConnection
+			RefPtr<Process> process;
+			{
+				CommandLine cmdLine;
+				cmdLine.setExecutableLocation(ExecutableLocation("test-server"));
+				result = Process::create(cmdLine, Process::Flag::AttachDebugger | Process::Flag::DisableStdErrRedirection, process);
+				if (result != SLANG_OK) {
+					std::cout << "Failed to launch test-server process";
+					return nullptr;
+				}
+			}
+			Stream* writeStream = process->getStream(StdStreamType::In);
+			RefPtr<BufferedReadStream> readStream(new BufferedReadStream(process->getStream(StdStreamType::Out)));
+			RefPtr<BufferedReadStream> readErrStream(new BufferedReadStream(process->getStream(StdStreamType::ErrorOut)));
+
+			RefPtr<HTTPPacketConnection> connection = new HTTPPacketConnection(readStream, writeStream);
+			RefPtr<JSONRPCConnection> rpcConnection = new JSONRPCConnection;
+			result = rpcConnection->init(connection, JSONRPCConnection::CallStyle::Default, process);
+			if (result != SLANG_OK) {
+				std::cout << "Failed to initialize connection";
+				return nullptr;
+			}
+			return rpcConnection;
+		}
+#endif
+		SlangResult CreateProcess(std::string &exename, std::string& cmdline, DWORD flags, WinProcess *&outProcess)
+		{
+			WinHandle childStdOutRead;
+			WinHandle childStdErrRead;
+			WinHandle childStdInWrite;
+
+			WinHandle processHandle;
+			{
+				WinHandle childStdOutWrite;
+				WinHandle childStdErrWrite;
+				WinHandle childStdInRead;
+
+				SECURITY_ATTRIBUTES securityAttributes;
+				securityAttributes.nLength = sizeof(securityAttributes);
+				securityAttributes.lpSecurityDescriptor = nullptr;
+				securityAttributes.bInheritHandle = true;
+
+				// 0 means use the 'system default'
+				//const DWORD bufferSize = 64 * 1024;
+				const DWORD bufferSize = 0;
+
+				{
+					WinHandle childStdOutReadTmp;
+					WinHandle childStdErrReadTmp;
+					WinHandle childStdInWriteTmp;
+					// create stdout pipe for child process
+					SLANG_RETURN_FAIL_ON_FALSE(CreatePipe(childStdOutReadTmp.writeRef(), childStdOutWrite.writeRef(), &securityAttributes, bufferSize));
+					if ((flags & Process::Flag::DisableStdErrRedirection) == 0)
+					{
+						// create stderr pipe for child process
+						SLANG_RETURN_FAIL_ON_FALSE(CreatePipe(childStdErrReadTmp.writeRef(), childStdErrWrite.writeRef(), &securityAttributes, bufferSize));
+					}
+					// create stdin pipe for child process        
+					SLANG_RETURN_FAIL_ON_FALSE(CreatePipe(childStdInRead.writeRef(), childStdInWriteTmp.writeRef(), &securityAttributes, bufferSize));
+
+					const HANDLE currentProcess = GetCurrentProcess();
+
+					// https://docs.microsoft.com/en-us/windows/win32/api/handleapi/nf-handleapi-duplicatehandle
+
+					// create a non-inheritable duplicate of the stdout reader        
+					SLANG_RETURN_FAIL_ON_FALSE(DuplicateHandle(currentProcess, childStdOutReadTmp, currentProcess, childStdOutRead.writeRef(), 0, FALSE, DUPLICATE_SAME_ACCESS));
+					// create a non-inheritable duplicate of the stderr reader
+					if (childStdErrReadTmp)
+						SLANG_RETURN_FAIL_ON_FALSE(DuplicateHandle(currentProcess, childStdErrReadTmp, currentProcess, childStdErrRead.writeRef(), 0, FALSE, DUPLICATE_SAME_ACCESS));
+					// create a non-inheritable duplicate of the stdin writer
+					SLANG_RETURN_FAIL_ON_FALSE(DuplicateHandle(currentProcess, childStdInWriteTmp, currentProcess, childStdInWrite.writeRef(), 0, FALSE, DUPLICATE_SAME_ACCESS));
+				}
+				// TODO: switch to proper wide-character versions of these...
+				STARTUPINFOW startupInfo;
+				ZeroMemory(&startupInfo, sizeof(startupInfo));
+				startupInfo.cb = sizeof(startupInfo);
+				startupInfo.hStdError = childStdErrWrite;
+				startupInfo.hStdOutput = childStdOutWrite;
+				startupInfo.hStdInput = childStdInRead;
+				startupInfo.dwFlags = STARTF_USESTDHANDLES;
+
+
+				std::wstring wpath = std::wstring(exename.begin(), exename.end());
+				LPCWSTR lppath = wpath.c_str();
+				std::wstring wcmdline = std::wstring(cmdline.begin(), cmdline.end());
+				LPCWSTR lpcmdline = wcmdline.c_str();
+
+				// Now we can actually get around to starting a process
+				PROCESS_INFORMATION processInfo;
+				ZeroMemory(&processInfo, sizeof(processInfo));
+
+				// https://docs.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+
+				DWORD createFlags = CREATE_NO_WINDOW | CREATE_SUSPENDED;//flags; //
+
+				BOOL success = CreateProcessW(
+					lppath,
+					(LPWSTR)lpcmdline,
+					nullptr,
+					nullptr,
+					true,
+					createFlags,
+					nullptr, // TODO: allow specifying environment variables?
+					nullptr,
+					&startupInfo,
+					&processInfo);
+
+				if (!success)
+				{
+					DWORD err = GetLastError();
+					SLANG_UNUSED(err);
+					return SLANG_FAIL;
+				}
+				ResumeThread(processInfo.hThread);
+
+			}
+			HANDLE streams[Index(StdStreamType::CountOf)];
+
+			if (childStdErrRead)
+				streams[Index(StdStreamType::ErrorOut)] = childStdErrRead.detach();
+			streams[Index(StdStreamType::Out)] = childStdOutRead.detach();//new WinPipeStream(childStdOutRead.detach(), FileAccess::Read);
+			streams[Index(StdStreamType::In)] = childStdInWrite.detach();//new WinPipeStream(childStdInWrite.detach(), FileAccess::Write);
+			outProcess = new WinProcess(processHandle.detach(), &streams[0]);
+
+			//return SLANG_OK;
+
+			return SLANG_OK;
+		}
+		// static const UnownedStringSlice TestServerProtocol::ExecuteCtsTestArgs::g_methodName = UnownedStringSlice::fromLiteral("unitTest");
+		///* static */const StructRttiInfo TestServerProtocol::ExecuteCtsTestArgs::g_rttiInfo = _makeExecuteCtsTestArgsRtti();
+		Result spawinAndWaitTestServer(const char *shaderStage, const char *filename)
+		{
+			SlangResult result = SLANG_OK;
+			WinProcess *process=nullptr;
+			std::string exename = slangDllPath + "test-server";
+			std::string cmdline = slangDllPath + "test-server";
+
+			CreateProcess(exename, cmdline, 0, process);
+			//JSONRPCConnection* rpcConnection = getOrCreateConnection();
+			//if (!rpcConnection)
+			//{
+			//	return SLANG_FAIL;
+			//}
+			//UnownedStringSlice method = UnownedStringSlice::fromLiteral("tool");
+			//TestServerProtocol::ExecuteCtsTestArgs testArgs;
+			//testArgs.g_methodName = UnownedStringSlice::fromLiteral("unitTest");
+			//testArgs.g_rttiInfo = _makeExecuteCtsTestArgsRtti();
+			//const RttiInfo* rtiinfo = GetRttiInfo<TestServerProtocol::ExecuteCtsTestArgs>::get();
+			//testArgs.moduleName = UnownedStringSlice::fromLiteral("deq-vk");
+			//testArgs.shadreStage = UnownedStringSlice(shaderStage);
+			//testArgs.filename = UnownedStringSlice(filename);
+			//rpcConnection->sendCall(method, &testArgs.g_rttiInfo, nullptr);
+			
+			return SLANG_OK;
+		}
+
 
 		int setupSlangLikeSlangc(const std::vector<std::string>* sources, const ShaderBuildOptions& buildOptions, const ShaderLanguage shaderLanguage, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo)
 		{
 			SlangResult result = SLANG_OK;
-
+			bool ServerMode = false;
 			do {
 				result = SetupSlangDLL();
 				if (result != SLANG_OK) {
@@ -381,38 +718,6 @@ namespace vk
 					std::cout << "Failed to create CompileRequest: " << std::hex << result << "\n";
 					break;
 				}
-				auto findSlangShaderStage = [](glu::ShaderType shaderType) {
-					switch (shaderType) {
-						case glu::SHADERTYPE_VERTEX:
-							return "vertex";
-						case glu::SHADERTYPE_FRAGMENT:
-							return "fragment";
-						case glu::SHADERTYPE_GEOMETRY:
-							return "geometry";
-						case glu::SHADERTYPE_COMPUTE:
-							return "compute";
-						default:
-							std::cout << "unsupported shader stage";
-							return "unknown";
-					}
-					return "unknown";
-				};
-				auto findSlangShaderExt = [](glu::ShaderType shaderType) {
-					switch (shaderType) {
-					case glu::SHADERTYPE_VERTEX:
-						return ".vert";
-					case glu::SHADERTYPE_FRAGMENT:
-						return ".frag";
-					case glu::SHADERTYPE_GEOMETRY:
-						return ".geom";
-					case glu::SHADERTYPE_COMPUTE:
-						return ".comp";
-					default:
-						std::cout << "unsupported shader stage";
-						return "";
-					}
-					return "";
-				};
 
 				for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; shaderType++) {
 					if (!sources[shaderType].empty()) {
@@ -420,33 +725,68 @@ namespace vk
 						glu::ShaderType shaderstage = glu::ShaderType(shaderType);
 						const char* slangShaderStage = findSlangShaderStage((glu::ShaderType)shaderType);
 						const char* fileExt = findSlangShaderExt((glu::ShaderType)shaderType);
+						if (!slangDllPath.empty())
+							SetCurrentDirectory(slangDllPath.c_str());
 
-						SetCurrentDirectory(slangDllPath.c_str());
 						std::ofstream myfile;
 						std::string temp_fname = "test.slang";
 						temp_fname.append(fileExt);
 						myfile.open(temp_fname);
 						myfile << srcText.c_str();
 						myfile.close();
+						if (ServerMode) {
+							//List<String> args = { "-target", "spirv", "-stage", slangShaderStage, "-entry", "main", "-allow-glsl", temp_fname.c_str(), "-o", "temp.spv" };
+							//String args = "-target spirv -stage slangShaderStage -entry main --allow-glsl ";
+							//args.append(+temp_fname.c_str());
+							//args.append(" -o temp.spv");
+							//String shaderStage = slangShaderStage;
 
-						compileRequest->addSearchPath(slangDllPath.c_str());
-						compileRequest->setDiagnosticCallback(&_diagnosticCallback, nullptr);
-						compileRequest->setCommandLineCompilerMode();
-						const char* args[] = { "-target", "spirv", "-stage", slangShaderStage, "-entry", "main", "-allow-glsl", temp_fname.c_str(), "-o", "temp.spv"};
-						int argCount = sizeof(args) / sizeof(char*);//8;
-						result = compileRequest->processCommandLineArguments(args, argCount);
-						if (result != SLANG_OK) {
-							std::cout << "Failed to proces command line arguments: " << std::hex << result << "\n";
-							break;
+							spawinAndWaitTestServer(slangShaderStage, temp_fname.c_str());
 						}
-						const deUint64  compileStartTime = deGetMicroseconds();
-						glu::ShaderInfo shaderBuildInfo;
+						else {
+							compileRequest->addSearchPath(slangDllPath.c_str());
+							compileRequest->setDiagnosticCallback(&_diagnosticCallback, nullptr);
+							compileRequest->setCommandLineCompilerMode();
+							const char* args[] = { "-target", "spirv", "-stage", slangShaderStage, "-entry", "main", "-allow-glsl", temp_fname.c_str(), "-o", "temp.spv" };
+							int argCount = sizeof(args) / sizeof(char*);//8;
+							result = compileRequest->processCommandLineArguments(args, argCount);
+							if (result != SLANG_OK) {
+								std::cout << "Failed to proces command line arguments: " << std::hex << result << "\n";
+								break;
+							}
+							const deUint64  compileStartTime = deGetMicroseconds();
+							glu::ShaderInfo shaderBuildInfo;
 
-						result = compileRequest->compile();
-						if (result != SLANG_OK) {
-							std::cout << "Failed to compile: " << std::hex << result << "\n";
-							break;
+							result = compileRequest->compile();
+							if (result != SLANG_OK) {
+								std::cout << "Failed to compile: " << std::hex << result << "\n";
+								break;
 
+							}
+							shaderBuildInfo.type = (glu::ShaderType)shaderType;
+							shaderBuildInfo.source = srcText;
+							shaderBuildInfo.infoLog = "";//shader.getInfoLog(); // \todo [2015-07-13 pyry] Include debug log?
+							shaderBuildInfo.compileTimeUs = deGetMicroseconds() - compileStartTime;
+							shaderBuildInfo.compileOk = (result == SLANG_OK);
+							buildInfo->shaders.push_back(shaderBuildInfo);
+
+							const deUint64  linkStartTime = deGetMicroseconds();
+
+							Slang::ComPtr<ISlangBlob> spirvCode;
+							compileRequest->getEntryPointCodeBlob(0, 0, spirvCode.writeRef());
+
+
+							//copy the SPIRV
+							uint32_t* buff32 = (uint32_t*)spirvCode->getBufferPointer();
+							size_t size = spirvCode->getBufferSize();
+							// print the buffer
+							for (int i = 0; i < size / 4; i++) {
+								//printf("%x ", buff32[i]);
+								dst->push_back(buff32[i]);
+							}
+							buildInfo->program.infoLog = "";//glslangProgram.getInfoLog(); // \todo [2015-11-05 scygan] Include debug log?
+							buildInfo->program.linkOk = true;
+							buildInfo->program.linkTimeUs = deGetMicroseconds() - linkStartTime;
 						}
 						shaderBuildInfo.type = (glu::ShaderType)shaderType;
 						shaderBuildInfo.source = srcText;
@@ -644,21 +984,14 @@ namespace vk
         				}
 
 						//copy the SPIRV
-						uint8_t *buff = (uint8_t *)spirvCode->getBufferPointer();
-                        for(deUint32 i=0; i < spirvCode->getBufferSize(); i=i+4) {
-							char c[4];
-							//int d = *(int *)(buff + i);
-							memcpy(c, (buff + i), sizeof(4));
-							int d = std::stoi(c, 0, 10);
-							//for (deUint32 j = 0; j < 4; j++) {
-							//	c[j] = std::stoi( buff[i * 4 + j];
-
-							//}
-							//deUint32 data = std::stoi(buff[i], 0, 10);
-							dst->push_back(d);
-
-                        }
-                    }
+						uint32_t* buff32 = (uint32_t*)spirvCode->getBufferPointer();
+						size_t size = spirvCode->getBufferSize();
+						// print the buffer
+						for (int i = 0; i < size / 4; i++) {
+							//printf("%x ", buff32[i]);
+							dst->push_back(buff32[i]);
+						}
+					}
                     return result;
                 }
 
@@ -666,6 +999,7 @@ namespace vk
 			TCU_THROW(InternalError, "Can't compile empty program");
             return SLANG_FAIL;
 		}
+
 	};
 	static SlangContext g_slangContext;
 #endif

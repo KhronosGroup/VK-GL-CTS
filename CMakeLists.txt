@@ -151,7 +151,7 @@ endif()
 include_directories(${PNG_INCLUDE_PATH})
 
 # slang
-# add_subdirectory(external/slang EXCLUDE_FROM_ALL)
+add_subdirectory(external/slang EXCLUDE_FROM_ALL)
 include_directories(external/slang/src)
 
 # DRM (Direct Rendering Manager) Headers
