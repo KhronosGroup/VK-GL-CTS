@@ -1823,6 +1823,8 @@ struct GraphicsPipelineWrapper::InternalData
 	VkPipelineTessellationStateCreateInfo				tessellationState;
 	VkPipelineFragmentShadingRateStateCreateInfoKHR*	pFragmentShadingRateState;
 	PipelineRenderingCreateInfoWrapper					pRenderingState;
+	RenderingAttachmentLocationInfoWrapper				pRenderingAttachmentLocation;
+	RenderingInputAttachmentIndexInfoWrapper			pRenderingInputAttachmentIndex;
 	const VkPipelineDynamicStateCreateInfo*				pDynamicState;
 	PipelineRepresentativeFragmentTestCreateInfoWrapper	pRepresentativeFragmentTestState;
 
@@ -2946,7 +2948,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const
 																		   const VkPipelineMultisampleStateCreateInfo*		multisampleState,
 																		   const VkSpecializationInfo*						specializationInfo,
 																		   const VkPipelineCache							partPipelineCache,
-																		   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback)
+																		   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback,
+																		   RenderingInputAttachmentIndexInfoWrapper			renderingInputAttachmentIndexInfo)
 {
 	return setupFragmentShaderState2(layout,
 									 renderPass,
@@ -2957,7 +2960,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const
 									 multisampleState,
 									 specializationInfo,
 									 partPipelineCache,
-									 partCreationFeedback);
+									 partCreationFeedback,
+									 renderingInputAttachmentIndexInfo);
 }
 
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(const PipelineLayoutWrapper&								layout,
@@ -2969,7 +2973,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 																			const VkPipelineMultisampleStateCreateInfo*					multisampleState,
 																			const VkSpecializationInfo*									specializationInfo,
 																			const VkPipelineCache										partPipelineCache,
-																			PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback)
+																			PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback,
+																			RenderingInputAttachmentIndexInfoWrapper					renderingInputAttachmentIndexInfo)
 {
 	// make sure pipeline was not already build
 	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
@@ -2986,6 +2991,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 	DE_UNREF(fragmentShaderModuleId);
 
 	m_internalData->setupState |= PSS_FRAGMENT_SHADER;
+	m_internalData->pRenderingInputAttachmentIndex.ptr = renderingInputAttachmentIndexInfo.ptr;
 
 	const auto pDepthStencilState	= depthStencilState ? depthStencilState
 														: (m_internalData->useDefaultDepthStencilState ? &defaultDepthStencilState : DE_NULL);
@@ -3043,6 +3049,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 		void*	firstStructInChain	= reinterpret_cast<void*>(&libraryCreateInfo);
 		addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
 		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
+		addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 		addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
 
@@ -3095,7 +3102,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 																		   const VkPipelineColorBlendStateCreateInfo*		colorBlendState,
 																		   const VkPipelineMultisampleStateCreateInfo*		multisampleState,
 																		   const VkPipelineCache							partPipelineCache,
-																		   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback)
+																		   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback,
+																		   RenderingAttachmentLocationInfoWrapper			renderingAttachmentLocationInfo)
 {
 	// make sure pipeline was not already build
 	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
@@ -3103,6 +3111,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 	// make sure states are set in order - no need to complicate logic to support out of order specification - this state needs to be set last
 	DE_ASSERT(m_internalData && (m_internalData->setupState == (PSS_VERTEX_INPUT_INTERFACE | PSS_PRE_RASTERIZATION_SHADERS | PSS_FRAGMENT_SHADER)));
 	m_internalData->setupState |= PSS_FRAGMENT_OUTPUT_INTERFACE;
+	m_internalData->pRenderingAttachmentLocation.ptr = renderingAttachmentLocationInfo.ptr;
 
 	// Unreference variables that are not used in Vulkan SC. No need to put this in ifdef.
 	DE_UNREF(renderPass);
@@ -3138,7 +3147,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 		auto libraryCreateInfo = makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
 		addToChain(&firstStructInChain, &libraryCreateInfo);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
-
+		addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
 
 		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
 		std::vector<VkDynamicState> states;
@@ -3150,7 +3159,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 			pickedDynamicStateInfo.pDynamicStates = states.data();
 			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
 		}
-
 
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
@@ -3882,6 +3890,8 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			void* firstStructInChain = static_cast<void*>(pointerToCreateInfo);
 			addToChain(&firstStructInChain, creationFeedback.ptr);
 			addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
+			addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
+			addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
 			addToChain(&firstStructInChain, pNext);
 		}
 

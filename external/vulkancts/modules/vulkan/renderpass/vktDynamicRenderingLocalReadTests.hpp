@@ -1,12 +1,10 @@
-#ifndef _VKTRENDERPASSDITHERINGTESTS_HPP
-#define _VKTRENDERPASSDITHERINGTESTS_HPP
+#ifndef _VKTDYNAMICRENDERINGLOCALREADTESTS_HPP
+#define _VKTDYNAMICRENDERINGLOCALREADTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2022 The Khronos Group Inc.
- * Copyright (c) 2022 Google Inc.
- * Copyright (c) 2022 LunarG, Inc.
+ * Copyright (c) 2023 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,20 +20,20 @@
  *
  *//*!
  * \file
- * \brief Tests dithering
+ * \brief Vulkan Dynamic Rendering Local Read Tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktTestCase.hpp"
-#include "vktRenderPassTestsUtil.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createRenderPassDitheringTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams);
+tcu::TestCaseGroup* createDynamicRenderingLocalReadTests (tcu::TestContext& testCtx);
 
 } // renderpass
 } // vkt
 
-#endif // _VKTRENDERPASSDITHERINGTESTS_HPP
+#endif // _VKTDYNAMICRENDERINGLOCALREADTESTS_HPP
