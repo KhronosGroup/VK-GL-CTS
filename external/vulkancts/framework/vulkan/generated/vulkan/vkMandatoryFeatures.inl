@@ -215,6 +215,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDescriptorIndexingFeatures.pNext;
 	}
 
+	vk::VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR physicalDeviceDynamicRenderingLocalReadFeaturesKHR;
+	deMemset(&physicalDeviceDynamicRenderingLocalReadFeaturesKHR, 0, sizeof(physicalDeviceDynamicRenderingLocalReadFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_dynamic_rendering_local_read") )
+	{
+		physicalDeviceDynamicRenderingLocalReadFeaturesKHR.sType = getStructureType<VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR>();
+		*nextPtr = &physicalDeviceDynamicRenderingLocalReadFeaturesKHR;
+		nextPtr  = &physicalDeviceDynamicRenderingLocalReadFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT;
 	deMemset(&physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT, 0, sizeof(physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT));
 
@@ -2136,6 +2146,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature bufferDeviceAddress not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_dynamic_rendering_local_read")) )
+	{
+		if ( physicalDeviceDynamicRenderingLocalReadFeaturesKHR.dynamicRenderingLocalRead == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature dynamicRenderingLocalRead not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
