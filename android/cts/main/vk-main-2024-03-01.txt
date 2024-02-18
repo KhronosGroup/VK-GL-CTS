@@ -12,6 +12,7 @@ vk-main-2024-03-01/fragment-operations.txt
 vk-main-2024-03-01/fragment-shading-barycentric.txt
 vk-main-2024-03-01/fragment-shading-rate.txt
 vk-main-2024-03-01/glsl.txt
+vk-main-2024-03-01/image/atomic-operations.txt
 vk-main-2024-03-01/image/extended-usage-bit-compatibility.txt
 vk-main-2024-03-01/image/format-reinterpret.txt
 vk-main-2024-03-01/image/host-image-copy.txt

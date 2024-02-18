@@ -898,6 +898,15 @@ const char* getFrontFaceName (VkFrontFace value)
 	}
 }
 
+tcu::Format::Bitfield<32> getMemoryMapFlagsStr (VkMemoryMapFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_MEMORY_MAP_PLACED_BIT_EXT,	"VK_MEMORY_MAP_PLACED_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getImageAspectFlagsStr (VkImageAspectFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -1400,7 +1409,7 @@ const char* getResultName (VkResult value)
 		case VK_OPERATION_DEFERRED_KHR:								return "VK_OPERATION_DEFERRED_KHR";
 		case VK_OPERATION_NOT_DEFERRED_KHR:							return "VK_OPERATION_NOT_DEFERRED_KHR";
 		case VK_PIPELINE_COMPILE_REQUIRED:							return "VK_PIPELINE_COMPILE_REQUIRED";
-		case VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT:				return "VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT";
+		case VK_INCOMPATIBLE_SHADER_BINARY_EXT:						return "VK_INCOMPATIBLE_SHADER_BINARY_EXT";
 		default:													return DE_NULL;
 	}
 }
@@ -1996,6 +2005,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY_EXT:						return "VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY_EXT";
 		case VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR:													return "VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR";
 		case VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR:												return "VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_PROPERTIES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT:											return "VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT:											return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT";
 		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT:							return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT";
@@ -2359,6 +2371,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT:								return "VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT:					return "VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV";
 		default:																					return DE_NULL;
 	}
 }
@@ -4569,6 +4582,15 @@ tcu::Format::Bitfield<64> getPhysicalDeviceSchedulingControlsFlagsARMStr (VkPhys
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getMemoryUnmapFlagsKHRStr (VkMemoryUnmapFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_MEMORY_UNMAP_RESERVE_BIT_EXT,	"VK_MEMORY_UNMAP_RESERVE_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 const char* getVendorIdName (VkVendorId value)
 {
 	switch (value)
@@ -5482,16 +5504,6 @@ tcu::Format::Bitfield<32> getSemaphoreCreateFlagsStr (VkSemaphoreCreateFlags val
 }
 
 tcu::Format::Bitfield<32> getShaderModuleCreateFlagsStr (VkShaderModuleCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getMemoryMapFlagsStr (VkMemoryMapFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getMemoryUnmapFlagsKHRStr (VkMemoryUnmapFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -18387,6 +18399,48 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderQuadContr
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderQuadControl = " << value.shaderQuadControl << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderFloat16VectorAtomics = " << value.shaderFloat16VectorAtomics << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceMapMemoryPlacedFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryMapPlaced = " << value.memoryMapPlaced << '\n';
+	s << "\tmemoryMapRangePlaced = " << value.memoryMapRangePlaced << '\n';
+	s << "\tmemoryUnmapReserve = " << value.memoryUnmapReserve << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceMapMemoryPlacedPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tminPlacedMemoryMapAlignment = " << value.minPlacedMemoryMapAlignment << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryMapPlacedInfoEXT& value)
+{
+	s << "VkMemoryMapPlacedInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpPlacedAddress = " << value.pPlacedAddress << '\n';
 	s << '}';
 	return s;
 }

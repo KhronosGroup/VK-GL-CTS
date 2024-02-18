@@ -1684,6 +1684,10 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDynamicRenderin
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingAttachmentLocationInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingInputAttachmentIndexInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderQuadControlFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryMapPlacedInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

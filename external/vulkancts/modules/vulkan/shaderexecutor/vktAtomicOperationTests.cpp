@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2015 The Khronos Group Inc.
+ * Copyright (c) 2015-2024 The Khronos Group Inc.
  * Copyright (c) 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -223,6 +223,8 @@ enum
 enum DataType
 {
 	DATA_TYPE_FLOAT16 = 0,
+	DATA_TYPE_FLOAT16X2,
+	DATA_TYPE_FLOAT16X4,
 	DATA_TYPE_INT32,
 	DATA_TYPE_UINT32,
 	DATA_TYPE_FLOAT32,
@@ -238,6 +240,8 @@ std::string dataType2Str(DataType type)
 	static const char* const s_names[] =
 	{
 		"float16_t",
+		"f16vec2",
+		"f16vec4",
 		"int",
 		"uint",
 		"float",
@@ -358,6 +362,18 @@ public:
 
 };
 
+template <typename T>
+bool sloppyFPCompare(T x, T y)
+{
+    return fabs(deToDouble(x) - deToDouble(y)) < 0.00001;
+}
+
+template <>
+bool sloppyFPCompare<deFloat16>(deFloat16 x, deFloat16 y)
+{
+    return fabs(deToDouble(x) - deToDouble(y)) < 0.01;
+}
+
 template<typename T>
 bool nanSafeSloppyEquals(T x, T y)
 {
@@ -367,10 +383,10 @@ bool nanSafeSloppyEquals(T x, T y)
 	if (deIsIEEENaN(x) || deIsIEEENaN(y))
 		return false;
 
-	return fabs(deToDouble(x) - deToDouble(y)) < 0.00001;
+	return sloppyFPCompare(x, y);
 }
 
-template<typename dataTypeT>
+template<typename dataTypeT, deUint32 VecSize = 1>
 class TestBufferFloatingPoint : public BufferInterface
 {
 public:
@@ -379,28 +395,28 @@ public:
 		: m_atomicOp(atomicOp)
 	{}
 
-	template<typename T>
+	template<typename T, deUint32 VecSize2>
 	struct BufferDataFloatingPoint
 	{
 		// Use half the number of elements for inout to cause overlap between atomic operations.
 		// Each inout element at index i will have two atomic operations using input from
 		// indices i and i + NUM_ELEMENTS / 2.
-		T			inout[NUM_ELEMENTS / 2];
-		T			input[NUM_ELEMENTS];
-		T			compare[NUM_ELEMENTS];
-		T			output[NUM_ELEMENTS];
+		T			inout[NUM_ELEMENTS / 2 * VecSize2];
+		T			input[NUM_ELEMENTS * VecSize2];
+		T			compare[NUM_ELEMENTS * VecSize2];
+		T			output[NUM_ELEMENTS * VecSize2];
 		deInt32		invocationHitCount[NUM_ELEMENTS];
 		deInt32		index;
 	};
 
 	virtual void setBuffer(void* ptr)
 	{
-		m_ptr = static_cast<BufferDataFloatingPoint<dataTypeT>*>(ptr);
+		m_ptr = static_cast<BufferDataFloatingPoint<dataTypeT, VecSize>*>(ptr);
 	}
 
 	virtual size_t bufferSize()
 	{
-		return sizeof(BufferDataFloatingPoint<dataTypeT>);
+		return sizeof(BufferDataFloatingPoint<dataTypeT, VecSize>);
 	}
 
 	virtual void fillWithTestData(de::Random& rnd)
@@ -408,11 +424,20 @@ public:
 		dataTypeT pattern;
 		deMemset(&pattern, 0xcd, sizeof(dataTypeT));
 
-		for (int i = 0; i < NUM_ELEMENTS / 2; i++)
+		for (deUint32 i = 0; i < (NUM_ELEMENTS / 2) * VecSize; i++)
 		{
 			m_ptr->inout[i] = deToFloatType<dataTypeT>(rnd.getFloat());
+		}
+		for (deUint32 i = 0; i < NUM_ELEMENTS * VecSize; i++)
+		{
+			m_ptr->input[i] = deToFloatType<dataTypeT>(rnd.getFloat());
+			m_ptr->output[i] = pattern;
 			// These aren't used by any of the float tests
 			m_ptr->compare[i] = deToFloatType<dataTypeT>(0.0);
+		}
+		for (int i = 0; i < NUM_ELEMENTS; i++)
+		{
+			m_ptr->invocationHitCount[i] = 0;
 		}
 		// Add special cases for NaN and +/-0
 		// 0: min(sNaN, x)
@@ -431,13 +456,6 @@ public:
 		m_ptr->inout[5] = deToFloatType<dataTypeT>(-0.0);
 		m_ptr->input[5 * 2 + 0] = deToFloatType<dataTypeT>(0.0);
 		m_ptr->input[5 * 2 + 1] = deToFloatType<dataTypeT>(0.0);
-
-		for (int i = 0; i < NUM_ELEMENTS; i++)
-		{
-			m_ptr->input[i] = deToFloatType<dataTypeT>(rnd.getFloat());
-			m_ptr->output[i] = pattern;
-			m_ptr->invocationHitCount[i] = 0;
-		}
 
 		m_ptr->index = 0;
 
@@ -471,14 +489,14 @@ public:
 		}
 	};
 
-	void checkOperationFloatingPoint(const BufferDataFloatingPoint<dataTypeT>& original,
-		const BufferDataFloatingPoint<dataTypeT>& result,
+	void checkOperationFloatingPoint(const BufferDataFloatingPoint<dataTypeT, VecSize>& original,
+		const BufferDataFloatingPoint<dataTypeT, VecSize>& result,
 		tcu::ResultCollector& resultCollector);
 
 	const AtomicOperation	m_atomicOp;
 
-	BufferDataFloatingPoint<dataTypeT>* m_ptr;
-	BufferDataFloatingPoint<dataTypeT>  m_original;
+	BufferDataFloatingPoint<dataTypeT, VecSize>* m_ptr;
+	BufferDataFloatingPoint<dataTypeT, VecSize>  m_original;
 
 };
 
@@ -488,6 +506,10 @@ static BufferInterface* createTestBuffer(DataType type, AtomicOperation atomicOp
 	{
 	case DATA_TYPE_FLOAT16:
 		return new TestBufferFloatingPoint<deFloat16>(atomicOp);
+	case DATA_TYPE_FLOAT16X2:
+		return new TestBufferFloatingPoint<deFloat16, 2>(atomicOp);
+	case DATA_TYPE_FLOAT16X4:
+		return new TestBufferFloatingPoint<deFloat16, 4>(atomicOp);
 	case DATA_TYPE_INT32:
 		return new TestBuffer<deInt32>(atomicOp);
 	case DATA_TYPE_UINT32:
@@ -711,9 +733,9 @@ vector<T> floatMaxValues(T x, T y)
 
 // Use template to handle both float and double cases. SPIR-V should
 // have separate operations for both.
-template<typename T>
-void TestBufferFloatingPoint<T>::checkOperationFloatingPoint(const BufferDataFloatingPoint<T>& original,
-	const BufferDataFloatingPoint<T>& result,
+template<typename T, deUint32 VecSize>
+void TestBufferFloatingPoint<T, VecSize>::checkOperationFloatingPoint(const BufferDataFloatingPoint<T, VecSize>& original,
+	const BufferDataFloatingPoint<T, VecSize>& result,
 	tcu::ResultCollector& resultCollector)
 {
 	// originalInout = original inout
@@ -732,126 +754,128 @@ void TestBufferFloatingPoint<T>::checkOperationFloatingPoint(const BufferDataFlo
 
 	for (int elementNdx = 0; elementNdx < NUM_ELEMENTS / 2; elementNdx++)
 	{
-		// Needed when reinterpeting the data as signed values.
-		const T originalInout = *reinterpret_cast<const T*>(&original.inout[elementNdx]);
-		const T input0 = *reinterpret_cast<const T*>(&original.input[elementNdx]);
-		const T input1 = *reinterpret_cast<const T*>(&original.input[elementNdx + NUM_ELEMENTS / 2]);
+		for (deUint32 vecIdx = 0; vecIdx < VecSize; ++vecIdx) {
+			// Needed when reinterpeting the data as signed values.
+			const T originalInout = *reinterpret_cast<const T*>(&original.inout[elementNdx * VecSize + vecIdx]);
+			const T input0 = *reinterpret_cast<const T*>(&original.input[elementNdx * VecSize + vecIdx]);
+			const T input1 = *reinterpret_cast<const T*>(&original.input[(elementNdx + NUM_ELEMENTS / 2) * VecSize + vecIdx]);
 
-		// Expected results are collected to this vector.
-		vector<Expected<T> > exp;
+			// Expected results are collected to this vector.
+			vector<Expected<T> > exp;
 
-		switch (m_atomicOp)
-		{
-		case ATOMIC_OP_ADD:
-		{
-			exp.push_back(Expected<T>(floatAdd(floatAdd(originalInout, input0), input1), originalInout, floatAdd(originalInout, input0)));
-			exp.push_back(Expected<T>(floatAdd(floatAdd(originalInout, input0), input1), floatAdd(originalInout, input1), originalInout));
-		}
-		break;
-
-		case ATOMIC_OP_MIN:
-		{
-			// The case where input0 is combined first
-			vector<T> minOriginalAndInput0 = floatMinValues(originalInout, input0);
-			for (T x : minOriginalAndInput0)
+			switch (m_atomicOp)
 			{
-				vector<T> minAll = floatMinValues(x, input1);
-				for (T y : minAll)
-				{
-					exp.push_back(Expected<T>(y, originalInout, x));
-				}
-			}
-
-			// The case where input1 is combined first
-			vector<T> minOriginalAndInput1 = floatMinValues(originalInout, input1);
-			for (T x : minOriginalAndInput1)
+			case ATOMIC_OP_ADD:
 			{
-				vector<T> minAll = floatMinValues(x, input0);
-				for (T y : minAll)
-				{
-					exp.push_back(Expected<T>(y, x, originalInout));
-				}
+				exp.push_back(Expected<T>(floatAdd(floatAdd(originalInout, input0), input1), originalInout, floatAdd(originalInout, input0)));
+				exp.push_back(Expected<T>(floatAdd(floatAdd(originalInout, input0), input1), floatAdd(originalInout, input1), originalInout));
 			}
-		}
-		break;
-
-		case ATOMIC_OP_MAX:
-		{
-			// The case where input0 is combined first
-			vector<T> minOriginalAndInput0 = floatMaxValues(originalInout, input0);
-			for (T x : minOriginalAndInput0)
-			{
-				vector<T> minAll = floatMaxValues(x, input1);
-				for (T y : minAll)
-				{
-					exp.push_back(Expected<T>(y, originalInout, x));
-				}
-			}
-
-			// The case where input1 is combined first
-			vector<T> minOriginalAndInput1 = floatMaxValues(originalInout, input1);
-			for (T x : minOriginalAndInput1)
-			{
-				vector<T> minAll = floatMaxValues(x, input0);
-				for (T y : minAll)
-				{
-					exp.push_back(Expected<T>(y, x, originalInout));
-				}
-			}
-		}
-		break;
-
-		case ATOMIC_OP_EXCHANGE:
-		{
-			exp.push_back(Expected<T>(input1, originalInout, input0));
-			exp.push_back(Expected<T>(input0, input1, originalInout));
-		}
-		break;
-
-		default:
-			DE_FATAL("Unexpected atomic operation.");
 			break;
-		}
 
-		const T resIo = result.inout[elementNdx];
-		const T resOutput0 = result.output[elementNdx];
-		const T resOutput1 = result.output[elementNdx + NUM_ELEMENTS / 2];
-
-
-		bool hasMatch = false;
-		for (Expected<T> e : exp)
-		{
-			if (e.compare(resIo, resOutput0, resOutput1))
+			case ATOMIC_OP_MIN:
 			{
-				hasMatch = true;
+				// The case where input0 is combined first
+				vector<T> minOriginalAndInput0 = floatMinValues(originalInout, input0);
+				for (T x : minOriginalAndInput0)
+				{
+					vector<T> minAll = floatMinValues(x, input1);
+					for (T y : minAll)
+					{
+						exp.push_back(Expected<T>(y, originalInout, x));
+					}
+				}
+
+				// The case where input1 is combined first
+				vector<T> minOriginalAndInput1 = floatMinValues(originalInout, input1);
+				for (T x : minOriginalAndInput1)
+				{
+					vector<T> minAll = floatMinValues(x, input0);
+					for (T y : minAll)
+					{
+						exp.push_back(Expected<T>(y, x, originalInout));
+					}
+				}
+			}
+			break;
+
+			case ATOMIC_OP_MAX:
+			{
+				// The case where input0 is combined first
+				vector<T> minOriginalAndInput0 = floatMaxValues(originalInout, input0);
+				for (T x : minOriginalAndInput0)
+				{
+					vector<T> minAll = floatMaxValues(x, input1);
+					for (T y : minAll)
+					{
+						exp.push_back(Expected<T>(y, originalInout, x));
+					}
+				}
+
+				// The case where input1 is combined first
+				vector<T> minOriginalAndInput1 = floatMaxValues(originalInout, input1);
+				for (T x : minOriginalAndInput1)
+				{
+					vector<T> minAll = floatMaxValues(x, input0);
+					for (T y : minAll)
+					{
+						exp.push_back(Expected<T>(y, x, originalInout));
+					}
+				}
+			}
+			break;
+
+			case ATOMIC_OP_EXCHANGE:
+			{
+				exp.push_back(Expected<T>(input1, originalInout, input0));
+				exp.push_back(Expected<T>(input0, input1, originalInout));
+			}
+			break;
+
+			default:
+				DE_FATAL("Unexpected atomic operation.");
 				break;
 			}
-		}
-		if (!hasMatch)
-		{
-			std::ostringstream errorMessage;
-			errorMessage << "ERROR: Result value check failed at index " << elementNdx
-				<< ". Expected one of the outcomes:";
 
-			bool first = true;
+			const T resIo = result.inout[elementNdx * VecSize + vecIdx];
+			const T resOutput0 = result.output[elementNdx * VecSize + vecIdx];
+			const T resOutput1 = result.output[(elementNdx + NUM_ELEMENTS / 2) * VecSize + vecIdx];
+
+
+			bool hasMatch = false;
 			for (Expected<T> e : exp)
 			{
-				if (!first)
-					errorMessage << ", or";
-				first = false;
-
-				errorMessage << " InOut = " << e.m_inout
-					<< ", Output0 = " << e.m_output[0]
-					<< ", Output1 = " << e.m_output[1];
+				if (e.compare(resIo, resOutput0, resOutput1))
+				{
+					hasMatch = true;
+					break;
+				}
 			}
+			if (!hasMatch)
+			{
+				std::ostringstream errorMessage;
+				errorMessage << "ERROR: Result value check failed at index (" << elementNdx << ", " << vecIdx << ")"
+					<< ". Expected one of the outcomes:";
 
-			errorMessage << ". Got: InOut = " << resIo
-				<< ", Output0 = " << resOutput0
-				<< ", Output1 = " << resOutput1
-				<< ". Using Input0 = " << original.input[elementNdx]
-				<< " and Input1 = " << original.input[elementNdx + NUM_ELEMENTS / 2] << ".";
+				bool first = true;
+				for (Expected<T> e : exp)
+				{
+					if (!first)
+						errorMessage << ", or";
+					first = false;
 
-			resultCollector.fail(errorMessage.str());
+					errorMessage << " InOut = " << e.m_inout
+						<< ", Output0 = " << e.m_output[0]
+						<< ", Output1 = " << e.m_output[1];
+				}
+
+				errorMessage << ". Got: InOut = " << resIo
+					<< ", Output0 = " << resOutput0
+					<< ", Output1 = " << resOutput1
+					<< ". Using Input0 = " << original.input[elementNdx * VecSize + vecIdx]
+					<< " and Input1 = " << original.input[(elementNdx + NUM_ELEMENTS / 2) * VecSize + vecIdx] << ".";
+
+				resultCollector.fail(errorMessage.str());
+			}
 		}
 	}
 }
@@ -1150,6 +1174,17 @@ void AtomicOperationCase::checkSupport (Context& ctx) const
 #endif // CTS_USES_VULKANSC
 	}
 
+#ifndef CTS_USES_VULKANSC
+	if (m_dataType == DATA_TYPE_FLOAT16X2 || m_dataType == DATA_TYPE_FLOAT16X4)
+	{
+		ctx.requireDeviceFunctionality("VK_NV_shader_atomic_float16_vector");
+		if (!ctx.getShaderAtomicFloat16VectorFeaturesNV().shaderFloat16VectorAtomics)
+		{
+			TCU_THROW(NotSupportedError, "16-bit floating point vector atomic operations not supported");
+		}
+	}
+#endif // CTS_USES_VULKANSC
+
 	if (m_dataType == DATA_TYPE_FLOAT32)
 	{
 		ctx.requireDeviceFunctionality("VK_EXT_shader_atomic_float");
@@ -1418,7 +1453,11 @@ void AtomicOperationCase::createShaderSpec (void)
 			<< "#extension GL_EXT_shader_atomic_int64 : enable\n"
 			;
 	}
-	else if ((m_dataType == DATA_TYPE_FLOAT16) || (m_dataType == DATA_TYPE_FLOAT32) || (m_dataType == DATA_TYPE_FLOAT64))
+	else if ((m_dataType == DATA_TYPE_FLOAT16) ||
+			 (m_dataType == DATA_TYPE_FLOAT16X2) ||
+			 (m_dataType == DATA_TYPE_FLOAT16X4) ||
+			 (m_dataType == DATA_TYPE_FLOAT32) ||
+			 (m_dataType == DATA_TYPE_FLOAT64))
 	{
 		extensions
 			<< "#extension GL_EXT_shader_explicit_arithmetic_types_float16 : enable\n"
@@ -1426,6 +1465,10 @@ void AtomicOperationCase::createShaderSpec (void)
 			<< "#extension GL_EXT_shader_atomic_float2 : enable\n"
 			<< "#extension GL_KHR_memory_scope_semantics : enable\n"
 			;
+		if (m_dataType == DATA_TYPE_FLOAT16X2 || m_dataType == DATA_TYPE_FLOAT16X4)
+		{
+			extensions << "#extension GL_NV_shader_atomic_fp16_vector : require\n";
+		}
 	}
 
 	if (memoryType == AtomicMemoryType::REFERENCE)
@@ -1500,6 +1543,10 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 #ifndef CTS_USES_VULKANSC
 		// Tests using 16-bit float data
 		{ DATA_TYPE_FLOAT16,"float16"},
+		// Tests using f16vec2 data
+		{ DATA_TYPE_FLOAT16X2,"f16vec2"},
+		// Tests using f16vec4 data
+		{ DATA_TYPE_FLOAT16X4,"f16vec4"},
 #endif // CTS_USES_VULKANSC
 		// Tests using signed data (int)
 		{ DATA_TYPE_INT32,	"signed"},
@@ -1538,12 +1585,16 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 			for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(shaderTypes); shaderTypeNdx++)
 			{
 				// Only ADD and EXCHANGE are supported on floating-point
-				if (dataSign[signNdx].dataType == DATA_TYPE_FLOAT16 || dataSign[signNdx].dataType == DATA_TYPE_FLOAT32 || dataSign[signNdx].dataType == DATA_TYPE_FLOAT64)
+				if (dataSign[signNdx].dataType == DATA_TYPE_FLOAT16 ||
+					dataSign[signNdx].dataType == DATA_TYPE_FLOAT16X2 ||
+					dataSign[signNdx].dataType == DATA_TYPE_FLOAT16X4 ||
+					dataSign[signNdx].dataType == DATA_TYPE_FLOAT32 ||
+					dataSign[signNdx].dataType == DATA_TYPE_FLOAT64)
 				{
 					if (atomicOp[opNdx].value != ATOMIC_OP_ADD &&
 #ifndef CTS_USES_VULKANSC
-					    atomicOp[opNdx].value != ATOMIC_OP_MIN &&
-					    atomicOp[opNdx].value != ATOMIC_OP_MAX &&
+						atomicOp[opNdx].value != ATOMIC_OP_MIN &&
+						atomicOp[opNdx].value != ATOMIC_OP_MAX &&
 #endif // CTS_USES_VULKANSC
 						atomicOp[opNdx].value != ATOMIC_OP_EXCHANGE)
 					{

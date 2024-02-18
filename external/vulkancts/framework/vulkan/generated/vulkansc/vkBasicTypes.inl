@@ -699,6 +699,11 @@ enum VkFrontFace
 	VK_FRONT_FACE_MAX_ENUM			= 0x7FFFFFFF
 };
 
+enum VkMemoryMapFlagBits
+{
+	VK_MEMORY_MAP_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF
+};
+
 enum VkImageAspectFlagBits
 {
 	VK_IMAGE_ASPECT_COLOR_BIT				= 0x00000001,
