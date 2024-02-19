@@ -116,6 +116,11 @@ if (NOT PNG_INCLUDE_PATH OR NOT PNG_LIBRARY)
 	# \note PNG_LIBRARY and PNG_INCLUDE_PATH are promoted from external/libpng/CMakeLists.txt
 endif ()
 
+# vulkan-validationlayers.  Supported only on 64-bit
+if ("${DE_CPU}" STREQUAL "DE_CPU_X86_64" OR "${DE_CPU}" STREQUAL "DE_CPU_ARM_64")
+	add_subdirectory(external/vulkan-validationlayers)
+endif ()
+
 # spirv-tools
 add_subdirectory(external/spirv-tools EXCLUDE_FROM_ALL)
 

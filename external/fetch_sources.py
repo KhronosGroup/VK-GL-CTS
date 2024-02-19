@@ -330,6 +330,11 @@ PACKAGES = [
 		"2e3aca8d6a3a6d52a9d904d0511a1c5e57a09e0f",
 		"vulkan-docs"),
 	GitRepo(
+		"https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
+		"git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
+		"f589bc456545fbab97caf49380b102b8aafe1f40",
+		"vulkan-validationlayers"),
+	GitRepo(
 		"https://github.com/google/amber.git",
 		"git@github.com:google/amber.git",
 		"8e90b2d2f532bcd4a80069e3f37a9698209a21bc",
