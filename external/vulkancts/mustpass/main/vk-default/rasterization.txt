@@ -8874,6 +8874,7 @@ dEQP-VK.rasterization.primitives.static_stipple.bresenham_line_strip_wide
 dEQP-VK.rasterization.primitives.static_stipple.bresenham_line_strip_with_adjacency
 dEQP-VK.rasterization.primitives.static_stipple.bresenham_line_strip_with_adjacency_wide
 dEQP-VK.rasterization.primitives.static_stipple.bresenham_lines
+dEQP-VK.rasterization.primitives.static_stipple.bresenham_lines_double_draw
 dEQP-VK.rasterization.primitives.static_stipple.bresenham_lines_wide
 dEQP-VK.rasterization.primitives.static_stipple.bresenham_lines_with_adjacency
 dEQP-VK.rasterization.primitives.static_stipple.bresenham_lines_with_adjacency_wide
@@ -8882,6 +8883,7 @@ dEQP-VK.rasterization.primitives.static_stipple.line_strip_wide
 dEQP-VK.rasterization.primitives.static_stipple.line_strip_with_adjacency
 dEQP-VK.rasterization.primitives.static_stipple.line_strip_with_adjacency_wide
 dEQP-VK.rasterization.primitives.static_stipple.lines
+dEQP-VK.rasterization.primitives.static_stipple.lines_double_draw
 dEQP-VK.rasterization.primitives.static_stipple.lines_wide
 dEQP-VK.rasterization.primitives.static_stipple.lines_with_adjacency
 dEQP-VK.rasterization.primitives.static_stipple.lines_with_adjacency_wide
@@ -8890,6 +8892,7 @@ dEQP-VK.rasterization.primitives.static_stipple.rectangular_line_strip_wide
 dEQP-VK.rasterization.primitives.static_stipple.rectangular_line_strip_with_adjacency
 dEQP-VK.rasterization.primitives.static_stipple.rectangular_line_strip_with_adjacency_wide
 dEQP-VK.rasterization.primitives.static_stipple.rectangular_lines
+dEQP-VK.rasterization.primitives.static_stipple.rectangular_lines_double_draw
 dEQP-VK.rasterization.primitives.static_stipple.rectangular_lines_wide
 dEQP-VK.rasterization.primitives.static_stipple.rectangular_lines_with_adjacency
 dEQP-VK.rasterization.primitives.static_stipple.rectangular_lines_with_adjacency_wide
@@ -8898,6 +8901,7 @@ dEQP-VK.rasterization.primitives.static_stipple.smooth_line_strip_wide
 dEQP-VK.rasterization.primitives.static_stipple.smooth_line_strip_with_adjacency
 dEQP-VK.rasterization.primitives.static_stipple.smooth_line_strip_with_adjacency_wide
 dEQP-VK.rasterization.primitives.static_stipple.smooth_lines
+dEQP-VK.rasterization.primitives.static_stipple.smooth_lines_double_draw
 dEQP-VK.rasterization.primitives.static_stipple.smooth_lines_wide
 dEQP-VK.rasterization.primitives.static_stipple.smooth_lines_with_adjacency
 dEQP-VK.rasterization.primitives.static_stipple.smooth_lines_with_adjacency_wide
