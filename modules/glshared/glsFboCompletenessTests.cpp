@@ -218,6 +218,7 @@ static const FormatKey s_qcomRenderSRGBR8RG8Formats[] =
 static const FormatKey s_extTextureFormatBGRA8888Formats[] =
 {
 	GL_BGRA,
+	GL_BGRA8_EXT,
 };
 
 static const FormatExtEntry s_esExtFormats[] =

@@ -77,7 +77,8 @@ void checkSupport (const glu::ContextInfo& info, deUint32 internalFormat)
 	if (internalFormat == GL_SRG8_EXT && !info.isExtensionSupported("GL_EXT_texture_sRGB_RG8"))
 		TCU_THROW(NotSupportedError, "GL_EXT_texture_sRGB_RG8 is not supported.");
 
-	if (internalFormat == GL_BGRA && !info.isExtensionSupported("GL_EXT_texture_format_BGRA8888"))
+	if ((internalFormat == GL_BGRA || internalFormat == GL_BGRA8_EXT) &&
+		!info.isExtensionSupported("GL_EXT_texture_format_BGRA8888"))
 		TCU_THROW(NotSupportedError, "GL_EXT_texture_format_BGRA8888 is not supported.");
 }
 
@@ -1308,6 +1309,7 @@ void TextureFilteringTests::init (void)
 		{ "srgb_rg8",		GL_SRG8_EXT			},
 		{ "rgb10_a2",		GL_RGB10_A2			},
 		{ "bgra",			GL_BGRA				},
+		{ "bgra8",			GL_BGRA8_EXT		}
 	};
 
 	// 2D texture filtering.
