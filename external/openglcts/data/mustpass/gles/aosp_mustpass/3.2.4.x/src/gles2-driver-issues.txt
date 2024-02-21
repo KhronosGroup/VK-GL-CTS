@@ -294,8 +294,5 @@ dEQP-GLES2.functional.texture.mipmap.cube.projected.nearest_linear
 dEQP-GLES2.functional.texture.mipmap.cube.bias.nearest_nearest
 dEQP-GLES2.functional.texture.mipmap.cube.bias.nearest_linear
 
-#VK-GL-CTS 372
-dEQP-GLES2.functional.attribute_location.bind_aliasing.max_cond*
-
 #VK-GL-CTS 375
 dEQP-GLES2.functional.flush_finish.flush
