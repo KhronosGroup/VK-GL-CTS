@@ -289,6 +289,7 @@ ReferenceContextLimits::ReferenceContextLimits (const glu::RenderContext& render
 	// \todo [2013-08-01 pyry] Do we want to make these conditional based on renderCtx?
 	addExtension("GL_EXT_color_buffer_half_float");
 	addExtension("GL_EXT_color_buffer_float");
+	addExtension("GL_EXT_texture_format_BGRA8888");
 
 	if (contextSupports(contextType, glu::ApiType::es(3,1)))
 		addExtension("GL_EXT_texture_cube_map_array");
@@ -2284,6 +2285,7 @@ deUint32 ReferenceContext::checkFramebufferStatus (deUint32 target)
 			case TextureFormat::RGBA:
 			case TextureFormat::sRGB:
 			case TextureFormat::sRGBA:
+			case TextureFormat::BGRA:
 				if (point != Framebuffer::ATTACHMENTPOINT_COLOR0)
 					attachmentComplete = false;
 				break;
