@@ -44,6 +44,7 @@
 #include "glcShaderNegativeTests.hpp"
 #include "glcShaderStructTests.hpp"
 #include "glcTextureFilterAnisotropicTests.hpp"
+#include "glcTextureLodBasicTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "glcNearestEdgeTests.hpp"
@@ -190,6 +191,7 @@ void ES30TestPackage::init(void)
 		addChild(new glcts::PackedPixelsTests(getContext()));
 		addChild(new glcts::PackedDepthStencilTests(getContext()));
 		addChild(new glcts::FramebufferCompletenessTests(getContext()));
+		addChild(new glcts::TextureLodBasicTests(getContext()));
 		addChild(new es3cts::CopyTexImageConversionsTests(getContext()));
 		addChild(new es3cts::NumberParsingTests(getContext()));
 	}

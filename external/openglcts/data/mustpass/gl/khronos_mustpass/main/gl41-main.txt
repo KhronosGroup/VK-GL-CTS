@@ -190,6 +190,7 @@ KHR-GL41.texture_repeat_mode.depth24_stencil8_11x131_1_mirrored_repeat
 KHR-GL41.texture_repeat_mode.depth24_stencil8_11x131_2_clamp_to_edge
 KHR-GL41.texture_repeat_mode.depth24_stencil8_11x131_2_repeat
 KHR-GL41.texture_repeat_mode.depth24_stencil8_11x131_2_mirrored_repeat
+KHR-GL41.texture_lod_basic.lod_selection
 KHR-GL41.shaders30.declarations.declarations.redeclare_gl_FragColor
 KHR-GL41.shaders30.declarations.declarations.redeclare_gl_FragData
 KHR-GL41.shaders30.glsl_constructors.vec2_from_mat2_vs
