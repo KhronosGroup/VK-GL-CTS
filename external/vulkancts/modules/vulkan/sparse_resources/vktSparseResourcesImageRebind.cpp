@@ -555,8 +555,9 @@ tcu::TestStatus ImageSparseRebindInstance::iterate (void)
 
 			// Wait for the sparse bind operation semaphore, submit and wait on host for the transfer stage.
 			// In case of device groups, submit on the physical device with the resource.
-			submitCommands(
+			submitCommandsAndWait(
 				deviceInterface,							// DeviceInterface&					vk,
+				getDevice(),								// VkDevice							device,
 				transferQueue.queueHandle,					// VkQueue							queue,
 				*commandBuffer,								// VkCommandBuffer					commandBuffer,
 				1u,											// deUint32							waitSemaphoreCount,
