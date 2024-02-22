@@ -1337,11 +1337,9 @@ struct CBufferMap : public DrawIndirectBase
 
 		if (buf)
 		{
-			result.sub_result(BufferCheck(dataRef, dataWidth, dataHeight, buf, dataWidth, dataHeight));
-
 			result.sub_result(StateValidate<api>(GL_TRUE, GL_WRITE_ONLY, GL_MAP_WRITE_BIT, 0,
-												 (GLsizeiptr)(dataRef.size() * sizeof(unsigned int))));
-
+			                                     (GLsizeiptr)(dataRef.size() * sizeof(unsigned int))));
+			memcpy(buf, &dataRef[0], dataRef.size() * sizeof(unsigned int));
 			if (glUnmapBuffer(GL_DRAW_INDIRECT_BUFFER) != GL_TRUE)
 			{
 				result.error() << "glUnmapBuffer(GL_DRAW_INDIRECT_BUFFER) returned GL_FALSE, expected GL_TRUE";
@@ -1545,17 +1543,17 @@ struct CBufferMapRange : public DrawIndirectBase
 		}
 
 		buf = glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, (GLsizeiptr)(dataRef.size() / 2 * sizeof(unsigned int)),
-							   GL_MAP_WRITE_BIT);
+							   GL_MAP_READ_BIT);
 		if (buf == 0)
 		{
-			result.error() << "glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, GL_MAP_WRITE_BIT) returned NULL";
+			result.error() << "glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, GL_MAP_READ_BIT) returned NULL";
 		}
 
 		if (buf)
 		{
 			result.sub_result(BufferCheck(dataRef, dataWidth, dataHeight / 2, buf, dataWidth, dataHeight / 2));
 
-			result.sub_result(StateValidate<api>(GL_TRUE, GL_WRITE_ONLY, GL_MAP_WRITE_BIT, 0,
+			result.sub_result(StateValidate<api>(GL_TRUE, GL_READ_ONLY, GL_MAP_READ_BIT, 0,
 												 (GLsizeiptr)(dataRef.size() / 2 * sizeof(unsigned int))));
 
 			if (glUnmapBuffer(GL_DRAW_INDIRECT_BUFFER) == GL_FALSE)
@@ -1568,10 +1566,10 @@ struct CBufferMapRange : public DrawIndirectBase
 		}
 
 		buf = glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, (GLintptr)(dataRef.size() / 4 * sizeof(unsigned int)),
-							   (GLsizeiptr)(dataRef.size() / 2 * sizeof(unsigned int)), GL_MAP_WRITE_BIT);
+							   (GLsizeiptr)(dataRef.size() / 2 * sizeof(unsigned int)), GL_MAP_READ_BIT);
 		if (buf == 0)
 		{
-			result.error() << "glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, GL_MAP_WRITE_BIT) returned NULL";
+			result.error() << "glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, GL_MAP_READ_BIT) returned NULL";
 		}
 
 		if (buf)
@@ -1579,7 +1577,7 @@ struct CBufferMapRange : public DrawIndirectBase
 			result.sub_result(
 				BufferCheck(dataRef, dataWidth, dataHeight / 2, buf, dataWidth, dataHeight / 2, dataHeight / 4));
 
-			result.sub_result(StateValidate<api>(GL_TRUE, GL_WRITE_ONLY, GL_MAP_WRITE_BIT,
+			result.sub_result(StateValidate<api>(GL_TRUE, GL_READ_ONLY, GL_MAP_READ_BIT,
 												 (GLintptr)(dataRef.size() / 4 * sizeof(unsigned int)),
 												 (GLsizeiptr)(dataRef.size() / 2 * sizeof(unsigned int))));
 
