@@ -215,6 +215,30 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDescriptorIndexingFeatures.pNext;
 	}
 
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV;
+	deMemset(&physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV, 0, sizeof(physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_device_generated_commands_compute") )
+	{
+		physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV.sType = getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV>();
+		*nextPtr = &physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV;
+		nextPtr  = &physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV physicalDeviceDeviceGeneratedCommandsFeaturesNV;
+	deMemset(&physicalDeviceDeviceGeneratedCommandsFeaturesNV, 0, sizeof(physicalDeviceDeviceGeneratedCommandsFeaturesNV));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_device_generated_commands") )
+	{
+		physicalDeviceDeviceGeneratedCommandsFeaturesNV.sType = getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV>();
+		*nextPtr = &physicalDeviceDeviceGeneratedCommandsFeaturesNV;
+		nextPtr  = &physicalDeviceDeviceGeneratedCommandsFeaturesNV.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
 	vk::VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR physicalDeviceDynamicRenderingLocalReadFeaturesKHR;
 	deMemset(&physicalDeviceDynamicRenderingLocalReadFeaturesKHR, 0, sizeof(physicalDeviceDynamicRenderingLocalReadFeaturesKHR));
 
@@ -2492,6 +2516,28 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_device_generated_commands")) )
+	{
+		if ( physicalDeviceDeviceGeneratedCommandsFeaturesNV.deviceGeneratedCommands == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature deviceGeneratedCommands not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_device_generated_commands_compute")) )
+	{
+		if ( physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV.deviceGeneratedCompute == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature deviceGeneratedCompute not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_VALVE_mutable_descriptor_type")) )
 	{

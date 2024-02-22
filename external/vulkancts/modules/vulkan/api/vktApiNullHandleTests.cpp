@@ -250,14 +250,12 @@ tcu::TestStatus test<VkCommandBuffer> (Context& context)
 #endif // CTS_USES_VULKANSC
 }
 
+#ifndef CTS_USES_VULKANSC
 void checkSupportShaderObject (Context& context)
 {
-#ifndef CTS_USES_VULKANSC
 	context.requireDeviceFunctionality("VK_EXT_shader_object");
-#else
-	DE_UNREF(context);
-#endif // CTS_USES_VULKANSC
 }
+#endif // CTS_USES_VULKANSC
 
 void checkSupportFreeDescriptorSets (Context& context)
 {

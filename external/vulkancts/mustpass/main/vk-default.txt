@@ -6,6 +6,7 @@ vk-default/conditional-rendering.txt
 vk-default/depth.txt
 vk-default/descriptor-indexing.txt
 vk-default/device-group.txt
+vk-default/dgc.txt
 vk-default/draw.txt
 vk-default/drm-format-modifiers.txt
 vk-default/dynamic-rendering.txt

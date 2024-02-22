@@ -101,6 +101,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_NV_coverage_reduction_mode",
 		"VK_NV_viewport_swizzle",
 		"VK_NV_representative_fragment_test",
+		"VK_NV_device_generated_commands", // This filter also applies to _compute.
 	};
 
 	const char* exclusions[] =
@@ -491,9 +492,9 @@ public:
 	VkQueue															getUniversalQueue						(void) const;
 	deUint32														getSparseQueueFamilyIndex				(void) const { return m_sparseQueueFamilyIndex;								}
 	VkQueue															getSparseQueue							(void) const;
-	int											getTransferQueueFamilyIndex				(void) const { return m_transferQueueFamilyIndex;	}
+	int																getTransferQueueFamilyIndex				(void) const { return m_transferQueueFamilyIndex;	}
 	VkQueue															getTransferQueue						(void) const;
-	int											getComputeQueueFamilyIndex				(void) const { return m_computeQueueFamilyIndex;		}
+	int																getComputeQueueFamilyIndex				(void) const { return m_computeQueueFamilyIndex;		}
 	VkQueue															getComputeQueue							(void) const;
 #ifndef CTS_USES_VULKANSC
 	bool															hasDebugReportRecorder					(void) const { return m_debugReportRecorder.get() != nullptr;				}
@@ -860,9 +861,9 @@ vk::VkDevice							Context::getDevice							(void) const { return m_device->getD
 const vk::DeviceInterface&				Context::getDeviceInterface					(void) const { return m_device->getDeviceInterface();			}
 deUint32								Context::getUniversalQueueFamilyIndex		(void) const { return m_device->getUniversalQueueFamilyIndex();	}
 vk::VkQueue								Context::getUniversalQueue					(void) const { return m_device->getUniversalQueue();			}
-int								Context::getComputeQueueFamilyIndex			(void) const { return m_device->getComputeQueueFamilyIndex();	}
+int										Context::getComputeQueueFamilyIndex			(void) const { return m_device->getComputeQueueFamilyIndex();	}
 vk::VkQueue								Context::getComputeQueue					(void) const { return m_device->getComputeQueue();				}
-int								Context::getTransferQueueFamilyIndex		(void) const { return m_device->getTransferQueueFamilyIndex();	}
+int										Context::getTransferQueueFamilyIndex		(void) const { return m_device->getTransferQueueFamilyIndex();	}
 vk::VkQueue								Context::getTransferQueue					(void) const { return m_device->getTransferQueue();				}
 deUint32								Context::getSparseQueueFamilyIndex			(void) const { return m_device->getSparseQueueFamilyIndex();	}
 vk::VkQueue								Context::getSparseQueue						(void) const { return m_device->getSparseQueue();				}
