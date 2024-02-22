@@ -494,9 +494,9 @@ public:
 	VkQueue															getUniversalQueue						(void) const;
 	deUint32														getSparseQueueFamilyIndex				(void) const { return m_sparseQueueFamilyIndex;								}
 	VkQueue															getSparseQueue							(void) const;
-	int																getTransferQueueFamilyIndex				(void) const { return m_transferQueueFamilyIndex;	}
+	int																getTransferQueueFamilyIndex				(void) const { return m_transferQueueFamilyIndex;							}
 	VkQueue															getTransferQueue						(void) const;
-	int																getComputeQueueFamilyIndex				(void) const { return m_computeQueueFamilyIndex;		}
+	int																getComputeQueueFamilyIndex				(void) const { return m_computeQueueFamilyIndex;							}
 	VkQueue															getComputeQueue							(void) const;
 #ifndef CTS_USES_VULKANSC
 	bool															hasDebugReportRecorder					(void) const { return m_debugReportRecorder.get() != nullptr;				}

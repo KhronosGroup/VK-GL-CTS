@@ -144,7 +144,7 @@ std::ostream&				operator<< (std::ostream& str, ConditionalData const& c);
 
 void						checkConditionalRenderingCapabilities	(vkt::Context& context, const ConditionalData& data);
 void						checkNestedRenderPassCapabilities		(vkt::Context& context);
-de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer		(vkt::Context& context, const ConditionalData& data);
+de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer		(vkt::Context& context, const ConditionalData& data, bool computeQueue = false);
 void						beginConditionalRendering				(const vk::DeviceInterface& vk,
 																	 vk::VkCommandBuffer cmdBuffer,
 																	 Draw::Buffer& buffer,
