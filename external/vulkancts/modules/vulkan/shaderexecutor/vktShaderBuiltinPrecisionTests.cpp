@@ -1470,7 +1470,11 @@ public:
 				VariableP	(void) {}
 				VariableP	(const Super& ptr) : Super(ptr) {}
 
-	operator	ExprP<T>	(void) const { return exprP(SharedPtr<const Expr<T> >(*this)); }
+	operator	ExprP<T>	(void) const
+	{
+		SharedPtr<const Expr<T> > ptr = *this;
+		return exprP(ptr);
+	}
 };
 
 /*--------------------------------------------------------------------*//*!
