@@ -42,8 +42,13 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	# \note Remove -Wno-sign-conversion for more warnings
 	set(WARNING_FLAGS			"-Wall -Wextra -Wno-long-long -Wshadow -Wundef -Wconversion -Wno-sign-conversion")
 
-	set(CMAKE_C_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_C_FLAGS} -std=c99 -pedantic ")
-	set(CMAKE_CXX_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS} -std=c++11 -Wno-delete-non-virtual-dtor")
+	# Need to specify c++ standard version through CMAKE_C_STANDARD and CMAKE_CXX_STANDARD
+	# Avoids incorrect addition of argument -std=gnu++XX that may result in build failure to usage of features in
+	# greater standard version than the one specified
+	set(CMAKE_C_STANDARD 99)
+	set(CMAKE_CXX_STANDARD 17)
+	set(CMAKE_C_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_C_FLAGS} -pedantic ")
+	set(CMAKE_CXX_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS} -Wno-delete-non-virtual-dtor")
 
 	# Set _FILE_OFFSET_BITS=64 on 32-bit build on Linux to enable output log files to exceed 2GB
 	if ((DE_CPU_X86) AND (DE_OS_UNIX))
@@ -77,7 +82,7 @@ elseif (DE_COMPILER_IS_MSC)
 	set(MSC_WARNING_FLAGS "/W3 /wd4820 /wd4255 /wd4668 /wd4738 /wd4711")
 
 	set(CMAKE_C_FLAGS			"${CMAKE_C_FLAGS} ${MSC_BASE_FLAGS} ${MSC_WARNING_FLAGS}")
-	set(CMAKE_CXX_FLAGS			"${CMAKE_CXX_FLAGS} ${MSC_BASE_FLAGS} /EHsc ${MSC_WARNING_FLAGS}")
+	set(CMAKE_CXX_FLAGS			"${CMAKE_CXX_FLAGS} ${MSC_BASE_FLAGS} /EHsc ${MSC_WARNING_FLAGS} /std:c++17")
 
 	# For 3rd party sw disable all warnings
 	set(DE_3RD_PARTY_C_FLAGS	"${CMAKE_C_FLAGS} ${MSC_BASE_FLAGS} /W0")

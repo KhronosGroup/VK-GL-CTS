@@ -3545,7 +3545,6 @@ void DescriptorBufferTestInstance::createBufferForBinding(
 		reset(bufferResource.buffer);
 		reset(bufferResource.alloc);
 
-		DE_ASSERT(!captureReplayData.empty());
 
 		VkOpaqueCaptureDescriptorDataCreateInfoEXT info = initVulkanStructure();
 		info.opaqueCaptureDescriptorData = captureReplayData.data();
@@ -3629,11 +3628,10 @@ void DescriptorBufferTestInstance::createImageForBinding(
 	}
 	else if (isReplayDescriptor(descriptorType))
 	{
-		// Free the previous image and its memory
+		// Free the previous image, its memory and the image view
 		reset(imageResource.image);
 		reset(imageResource.alloc);
-
-		DE_ASSERT(!captureReplayData.empty());
+		reset(imageResource.imageView);
 
 		VkOpaqueCaptureDescriptorDataCreateInfoEXT info = initVulkanStructure();
 		info.opaqueCaptureDescriptorData = captureReplayData.data();
@@ -3719,10 +3717,6 @@ void DescriptorBufferTestInstance::createImageForBinding(
 		}
 		else if (isReplayDescriptor(descriptorType))
 		{
-			reset(imageResource.imageView);
-
-			DE_ASSERT(!captureReplayDataView.empty());
-
 			VkOpaqueCaptureDescriptorDataCreateInfoEXT info = initVulkanStructure();
 			info.opaqueCaptureDescriptorData = captureReplayDataView.data();
 
@@ -4577,8 +4571,6 @@ tcu::TestStatus	DescriptorBufferTestInstance::iterate()
 					{
 						reset(resources.sampler);
 
-						DE_ASSERT(!captureReplayData.empty());
-
 						VkOpaqueCaptureDescriptorDataCreateInfoEXT info = initVulkanStructure();
 						info.opaqueCaptureDescriptorData = captureReplayData.data();
 
@@ -5144,14 +5136,14 @@ tcu::TestStatus testLimits(Context& context)
 
 		if (features.descriptorBufferCaptureReplay)
 		{
-			CHECK_MAX_LIMIT_NON_ZERO(props, bufferCaptureReplayDescriptorDataSize,		64);
-			CHECK_MAX_LIMIT_NON_ZERO(props, imageCaptureReplayDescriptorDataSize,		64);
-			CHECK_MAX_LIMIT_NON_ZERO(props, imageViewCaptureReplayDescriptorDataSize,	64);
-			CHECK_MAX_LIMIT_NON_ZERO(props, samplerCaptureReplayDescriptorDataSize,		64);
+			CHECK_MAX_LIMIT(props, bufferCaptureReplayDescriptorDataSize,		64);
+			CHECK_MAX_LIMIT(props, imageCaptureReplayDescriptorDataSize,		64);
+			CHECK_MAX_LIMIT(props, imageViewCaptureReplayDescriptorDataSize,	64);
+			CHECK_MAX_LIMIT(props, samplerCaptureReplayDescriptorDataSize,		64);
 
 			if (hasRT)
 			{
-				CHECK_MAX_LIMIT_NON_ZERO(props, accelerationStructureCaptureReplayDescriptorDataSize,	64);
+				CHECK_MAX_LIMIT(props, accelerationStructureCaptureReplayDescriptorDataSize,	64);
 			}
 		}
 
