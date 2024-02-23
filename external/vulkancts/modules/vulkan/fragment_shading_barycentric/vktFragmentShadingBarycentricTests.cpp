@@ -1471,7 +1471,7 @@ void FragmentShadingBarycentricTestCase::initDataPrograms (SourceCollections& pr
 			"layout(location = 0) pervertexEXT in InDataStruct inParam[];\n"
 			"void getData(uint i, out ${typePrefix} ds${typeSuffix})\n"
 			"{\n"
-			"    for(uint k = 0; k < ${componentCount}; k++)\n"
+			"    for(uint k = 0; k < 3; k++)\n"
 			"    {\n"
 			"        if (inParam[k].idx == i)\n"
 			"            ds = " + string(m_testParams.aggregate == 2 ? "${typePrefix}${typeSuffix}(inParam[k].data[0],inParam[k].data[1])" : "inParam[k].data") + ";\n"
