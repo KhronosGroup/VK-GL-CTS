@@ -472,6 +472,8 @@ namespace vk
 						buildInfo->program.infoLog = "";//glslangProgram.getInfoLog(); // \todo [2015-11-05 scygan] Include debug log?
 						buildInfo->program.linkOk = true;
 						buildInfo->program.linkTimeUs = deGetMicroseconds() - linkStartTime;
+						spirvCode->release();
+						compileRequest->release();
 
 					}
 				}
