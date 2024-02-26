@@ -7192,7 +7192,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 			// Bad static reduced viewport.
 			config.viewportConfig.staticValue	= ViewportVec(1u, vk::makeViewport(kHalfWidthU, kFramebufferHeight));
-			config.viewportConfig.staticValue	= ViewportVec(1u, vk::makeViewport(kFramebufferWidth, kFramebufferHeight));
+			config.viewportConfig.dynamicValue	= ViewportVec(1u, vk::makeViewport(kFramebufferWidth, kFramebufferHeight));
 			// Dynamically set viewport to cover full framebuffer
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "1_full_viewport", config));
 		}
