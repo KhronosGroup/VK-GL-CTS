@@ -469,7 +469,8 @@ public:
 	TestDefinition(EncodeTestParam params)
 		: m_params(params), m_info(clipInfo(params.clip))
 	{
-		m_profile = VkVideoCoreProfile(m_info->profile.codecOperation, m_info->profile.subsamplingFlags, m_info->profile.lumaBitDepth, m_info->profile.chromaBitDepth, m_info->profile.profileIDC);
+		VideoProfileInfo profile = m_info->sessionProfiles[0];
+		m_profile = VkVideoCoreProfile(profile.codecOperation, profile.subsamplingFlags, profile.lumaBitDepth, profile.chromaBitDepth, profile.profileIDC);
 	}
 
 	TestType getTestType() const
@@ -976,6 +977,30 @@ double calculatePSNR(const std::vector<deUint8> *img1, const std::vector<deUint8
 	return 10.0 * log10((255.0 * 255.0) / mse);
 }
 
+class DataProvider
+{
+public:
+	DataProvider(const BufferWithMemory& buffer, VkDeviceSize bufferSize)
+		: m_data(reinterpret_cast<unsigned char*>(buffer.getAllocation().getHostPtr())),
+		  m_size(bufferSize)
+	  {}
+
+	  uint32_t getData(unsigned char *buffer, uint32_t size, int32_t offset) const {
+		if (offset < 0 || static_cast<VkDeviceSize>(offset) >= m_size)
+			return 0;
+
+		uint32_t real_size = std::min(static_cast<uint32_t>(m_size - offset), size);
+
+		deMemcpy(buffer, m_data + offset, real_size);
+
+		return real_size;
+	  }
+
+private:
+	unsigned char*	m_data;
+	VkDeviceSize	m_size;
+};
+
 static int readBuffer(void *opaque, unsigned char *pBuf, int size, int32_t offset)
 {
 	return ((DataProvider *)opaque)->getData(pBuf, size, offset);
@@ -1100,8 +1125,6 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceCo
 		0u,							   //  deUint32							signalSemaphoreCount;
 		DE_NULL,					   //  const VkSemaphore*				pSignalSemaphores;
 	};
-
-	DEBUGLOG(std::cout << "getDecodedImage: " << image << " " << layout << std::endl);
 
 	beginCommandBuffer(videoDeviceDriver, *cmdDecodeBuffer, 0u);
 	cmdPipelineImageMemoryBarrier2(videoDeviceDriver, *cmdDecodeBuffer, &imageBarrierDecode);
@@ -2088,16 +2111,16 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
 	DataProvider provider(encodeBuffer, encodeBufferSize);
 
-	FrameProcessor processor(&deviceContext, &readBuffer, &provider, videoCodecDecodeOperation, &decodeStdExtension, basicDecoder.get(), m_context.getTestContext().getLog());
+	FrameProcessor processor(&readBuffer, &provider, "Alignment:NAL", videoCodecDecodeOperation, &decodeStdExtension, basicDecoder.get(), m_context.getTestContext().getLog(), false);
 	std::vector<int> incorrectFrames;
 	std::vector<int> correctFrames;
 
 	for (int NALIdx = 0; NALIdx < m_testDefinition->framesToCheck(); NALIdx++)
 	{
-		const DecodedFrame *decodedFrame = processor.decodeFrame();
-		TCU_CHECK_MSG(decodedFrame, "Decoder did not produce the expected amount of frames");
+		DecodedFrame  frame;
+		TCU_CHECK_AND_THROW(InternalError, processor.getNextFrame(&frame) > 0, "Expected more frames from the bitstream. Most likely an internal CTS bug, or maybe an invalid bitstream");
 
-		auto								resultImage	= getDecodedImageFromContext(deviceContext, basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR : VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR, decodedFrame);
+		auto								resultImage = getDecodedImageFromContext(deviceContext, basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR : VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR, &frame);
 		de::MovePtr<std::vector<deUint8>>	out			= saveNV12FrameAsYUV(resultImage.get());
 
 #if STREAM_DUMP_DEBUG
