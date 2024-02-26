@@ -3391,8 +3391,6 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		if (reprInfo.depthBiasRepresentation == vk::VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT && !dbcFeatures.floatRepresentation)
 			TCU_THROW(NotSupportedError, "floatRepresentation not supported");
 	}
-#else
-	TCU_THROW(NotSupportedError, "VulkanSC does not support VK_EXT_depth_bias_control");
 #endif // CTS_USES_VULKANSC
 
 	if (m_testConfig.getActiveLineWidth() != 1.0f)
