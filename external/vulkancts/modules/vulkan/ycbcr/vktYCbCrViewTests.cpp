@@ -430,12 +430,6 @@ struct PixelSetter
 	PixelSetter (const tcu::PixelBufferAccess& access) : m_access(access) {}
 	virtual void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const = 0;
 protected:
-	union RawReinterpreter
-	{
-		tcu::Vec4	fvec;
-		tcu::UVec4	uvec;
-		tcu::IVec4	ivec;
-	};
 	const tcu::PixelBufferAccess& m_access;
 };
 
@@ -448,13 +442,13 @@ struct FloatPixelSetter : public PixelSetter
 struct UintPixelSetter : public PixelSetter
 {
 	UintPixelSetter (const tcu::PixelBufferAccess& access) : PixelSetter(access) {}
-	void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const override { RawReinterpreter v { rawValues }; m_access.setPixel(v.uvec, x, y, z); }
+	void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const override { m_access.setPixel(rawValues.bitCast<deUint32>(), x, y, z); }
 };
 
 struct IntPixelSetter : public PixelSetter
 {
 	IntPixelSetter (const tcu::PixelBufferAccess& access) : PixelSetter(access) {}
-	void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const override { RawReinterpreter v { rawValues }; m_access.setPixel(v.ivec, x, y, z); }
+	void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const override { m_access.setPixel(rawValues.bitCast<int>(), x, y, z); }
 };
 
 std::unique_ptr<PixelSetter> getPixelSetter (const tcu::PixelBufferAccess& access, VkFormat format)
