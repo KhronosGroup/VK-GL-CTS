@@ -76,6 +76,41 @@ private:
 	bool					   m_started;
 };
 
+class GetTestParamThread : public tcu::Android::RenderThread
+{
+public:
+	GetTestParamThread(tcu::Android::NativeActivity& nativeActivity, const std::string& logPath, glu::ApiType runType);
+	~GetTestParamThread(void);
+
+	void run(void);
+
+protected:
+	virtual void onWindowCreated(ANativeWindow* window);
+	virtual void onWindowResized(ANativeWindow* window);
+	virtual void onWindowDestroyed(ANativeWindow* window);
+	virtual bool render(void);
+
+	tcu::Android::Platform		m_platform;
+	TestParamCollectorRunner	m_app;
+	bool						m_finished; //!< Is execution finished.
+};
+
+
+class GetTestParamActivity : public tcu::Android::RenderActivity
+{
+public:
+	GetTestParamActivity(ANativeActivity* nativeActivity, glu::ApiType runType);
+	~GetTestParamActivity(void);
+
+	virtual void onStart(void);
+	virtual void onDestroy(void);
+	virtual void onConfigurationChanged(void);
+
+private:
+	GetTestParamThread         m_testThread;
+	bool					   m_started;
+};
+
 } // Android
 } // glcts
 

@@ -34,6 +34,7 @@
 #include "tcuTestSessionExecutor.hpp"
 
 #include <iterator>
+#include <fstream>
 
 namespace glcts
 {
@@ -640,6 +641,51 @@ static const char* getRunTypeName(glu::ApiType type)
 		return DE_NULL;
 }
 
+static void generateTestSessionParams(tcu::Platform& platform, glu::ApiType type, std::vector<TestRunParams>& runSessionsParams)
+{
+	// Get list of configs to test.
+	ConfigList configList;
+	getDefaultConfigList(platform, type, configList);
+
+	tcu::print("  found %d compatible and %d excluded configs\n", (int)configList.configs.size(),
+			   (int)configList.excludedConfigs.size());
+
+	// Config list run.
+	{
+		const char*   configLogFilename = "configs.qpa";
+		TestRunParams configRun;
+
+		configRun.logFilename = configLogFilename;
+		configRun.args.push_back("--deqp-case=CTS-Configs.*");
+		runSessionsParams.push_back(configRun);
+
+	}
+
+	// Conformance test type specific runs
+	getTestRunParams(type, configList, runSessionsParams);
+}
+
+static void writeTestsParams(std::ostream& stream, std::vector<TestRunParams>& testRunParams)
+{
+	stream << "#beginTestRunParamsCollection" << "\n";
+
+	for (TestRunParams& testRunParam : testRunParams)
+	{
+		stream << "#beginTestRunParams" << " ";
+
+		for (string arg : testRunParam.args)
+		{
+			stream << arg << ",";
+		}
+		stream << "\n";
+
+		stream << "#endTestRunParams" << "\n";
+	}
+
+	stream << "\n#endTestRunParamsCollection" << "\n";
+}
+
+
 #define XML_CHECK(X) \
 	if (!(X))        \
 	throw tcu::Exception("Writing XML failed")
@@ -782,27 +828,7 @@ void TestRunner::init(void)
 
 	m_summary.runType = m_type;
 
-	// Get list of configs to test.
-	ConfigList configList;
-	getDefaultConfigList(m_platform, m_type, configList);
-
-	tcu::print("  found %d compatible and %d excluded configs\n", (int)configList.configs.size(),
-			   (int)configList.excludedConfigs.size());
-
-	// Config list run.
-	{
-		const char*   configLogFilename = "configs.qpa";
-		TestRunParams configRun;
-
-		configRun.logFilename = configLogFilename;
-		configRun.args.push_back("--deqp-case=CTS-Configs.*");
-		m_runSessions.push_back(configRun);
-
-		m_summary.configLogFilename = configLogFilename;
-	}
-
-	// Conformance test type specific runs
-	getTestRunParams(m_type, configList, m_runSessions);
+	generateTestSessionParams(m_platform, m_type, m_runSessions);
 
 	// Record run params for summary.
 	for (std::vector<TestRunParams>::const_iterator runIter = m_runSessions.begin() + 1; runIter != m_runSessions.end();
@@ -886,6 +912,30 @@ void TestRunner::deinitSession(void)
 inline bool TestRunner::iterateSession(void)
 {
 	return m_curSession->iterate();
+}
+
+TestParamCollectorRunner::TestParamCollectorRunner(tcu::Platform& platform, const char* testParamsFilePath, glu::ApiType type)
+: m_platform(platform)
+, m_testParamsFilePath(testParamsFilePath)
+, m_type(type){}
+
+TestParamCollectorRunner:: ~TestParamCollectorRunner() {}
+
+bool TestParamCollectorRunner::iterate(void)
+{
+	tcu::print("TestParamCollectorRunner iterate\n");
+	DE_ASSERT(m_runSessionsParams.empty());
+
+	tcu::print("Collecting %s conformance test params\n", glu::getApiTypeDescription(m_type));
+
+	generateTestSessionParams(m_platform, m_type, m_runSessionsParams);
+
+	// export test run params to a file on device
+	std::ofstream str(m_testParamsFilePath.c_str(), std::ofstream::binary|std::ofstream::trunc);
+	writeTestsParams(str, m_runSessionsParams);
+	str.close();
+	tcu::print("finish writing test run params at %s\n", m_testParamsFilePath.c_str());
+	return false;
 }
 
 } // glcts
