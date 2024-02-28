@@ -39,6 +39,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "tcuImageCompare.hpp"
 #include "tcuFormatUtil.hpp"
@@ -1317,16 +1318,11 @@ struct Programs
 	}
 };
 
-class PropertiesTestCase : public vkt::TestCase
+enum class MiscTestType
 {
-public:
-							PropertiesTestCase		(tcu::TestContext& testCtx, const std::string& name)
-								: vkt::TestCase(testCtx, name)
-								{}
-	virtual					~PropertiesTestCase		(void) {}
-
-	virtual TestInstance*	createInstance			(Context& context) const;
-	virtual void			checkSupport			(Context& context) const;
+	PROPERTIES									= 0,
+	RESOLVE_STENCIL_ASPECT_THAT_IS_NOT_PRESENT,
+	RESOLVE_DEPTH_ASPECT_THAT_IS_NOT_PRESENT,
 };
 
 class PropertiesTestInstance : public vkt::TestInstance
@@ -1340,16 +1336,6 @@ public:
 	virtual tcu::TestStatus		iterate					(void);
 
 };
-
-TestInstance* PropertiesTestCase::createInstance (Context& context) const
-{
-	return new PropertiesTestInstance(context);
-}
-
-void PropertiesTestCase::checkSupport (Context& context) const
-{
-	context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
-}
 
 tcu::TestStatus PropertiesTestInstance::iterate (void)
 {
@@ -1380,6 +1366,434 @@ tcu::TestStatus PropertiesTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+class ResolveNonPresentAspectTestInstance : public vkt::TestInstance
+{
+public:
+	ResolveNonPresentAspectTestInstance(Context& context, MiscTestType testType)
+		: vkt::TestInstance(context)
+		, m_testType(testType)
+	{}
+	virtual						~ResolveNonPresentAspectTestInstance(void) = default;
+
+	virtual tcu::TestStatus		iterate(void);
+
+protected:
+
+	Move<VkRenderPass>			createDepthPass(bool					enableDepthStencilWrite,
+												VkFormat				format,
+												VkImageAspectFlags		imageAspect,
+												VkResolveModeFlagBits	depthResolveMode,
+												VkResolveModeFlagBits	stencilResolveMode) const;
+
+private:
+	MiscTestType m_testType;
+};
+
+Move<VkRenderPass> ResolveNonPresentAspectTestInstance::createDepthPass(bool					enableDepthStencilWrite,
+																		VkFormat				format,
+																		VkImageAspectFlags		imageAspect,
+																		VkResolveModeFlagBits	depthResolveMode,
+																		VkResolveModeFlagBits	stencilResolveMode) const
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+
+	VkAttachmentReference2 multisampleAttachmentRef		= initVulkanStructure();
+	multisampleAttachmentRef.layout						= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	multisampleAttachmentRef.aspectMask					= imageAspect;
+	VkAttachmentReference2 singlesampleAttachmentRef	= multisampleAttachmentRef;
+	singlesampleAttachmentRef.attachment				= 1;
+
+	VkSubpassDescriptionDepthStencilResolve dsResolveDescription
+	{
+		VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE,
+		DE_NULL,
+		depthResolveMode,										// VkResolveModeFlagBits			depthResolveMode
+		stencilResolveMode,										// VkResolveModeFlagBits			stencilResolveMode
+		&singlesampleAttachmentRef								// VkAttachmentReference2			pDepthStencilResolveAttachment
+	};
+
+	VkSubpassDescription2 subpassDescription	= initVulkanStructure();
+	subpassDescription.pNext					= &dsResolveDescription;
+	subpassDescription.pipelineBindPoint		= VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpassDescription.pDepthStencilAttachment	= &multisampleAttachmentRef;
+
+	VkAttachmentDescription2 attachments[]
+	{
+		{
+			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
+			DE_NULL,
+			0u,													// VkAttachmentDescriptionFlags		flags
+			format,												// VkFormat							format
+			VK_SAMPLE_COUNT_4_BIT,								// VkSampleCountFlagBits			samples
+			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp
+			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp
+			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				stencilLoadOp
+			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				stencilStoreOp
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout
+		},
+		{
+			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
+			DE_NULL,
+			0u,													// VkAttachmentDescriptionFlags		flags
+			format,												// VkFormat							format
+			VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples
+			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp
+			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp
+			VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				stencilLoadOp
+			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				stencilStoreOp
+			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL				// VkImageLayout					finalLayout
+		}
+	};
+
+	VkRenderPassCreateInfo2 renderPassInfo	= initVulkanStructure();
+	renderPassInfo.attachmentCount			= 2u;
+	renderPassInfo.pAttachments				= attachments;
+	renderPassInfo.subpassCount				= 1u;
+	renderPassInfo.pSubpasses				= &subpassDescription;
+
+	if (!enableDepthStencilWrite)
+	{
+		// when we are not writing to DS we create renderpass that will just do resolve
+
+		attachments[0].loadOp			= VK_ATTACHMENT_LOAD_OP_LOAD;
+		attachments[0].stencilLoadOp	= VK_ATTACHMENT_LOAD_OP_LOAD;
+		attachments[0].initialLayout	= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		attachments[0].finalLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		attachments[1].loadOp			= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachments[1].stencilLoadOp	= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	}
+
+	return createRenderPass2(vk, device, &renderPassInfo);
+}
+
+tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
+{
+	// This code is used to generate two tests: for depth resolve mode and for stencil resolve mode
+	// When testing depth three depth-only images are created (no stencil aspect) - two single sampled, one 4xMSAA
+	// Triangle is rendered to the msaa image using renderpassA objects
+	// Msaa image is resolved to the single sampled image using VkSubpassDescriptionDepthStencilResolve
+	// - Set the stencil resolve mode to a supported resolve mode that isn't NONE
+	// - Set the depth resolve mode to NONE if possible
+	// RenderpassB is used to verify that the image rendered correctly in the the msaa image
+
+	const DeviceInterface&			vk						= m_context.getDeviceInterface();
+	const InstanceInterface&		vki						= m_context.getInstanceInterface();
+	const VkDevice					device					= m_context.getDevice();
+	const VkPhysicalDevice			physicalDevice			= m_context.getPhysicalDevice();
+	Allocator&						memAlloc				= m_context.getDefaultAllocator();
+	const deUint32					queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+
+	const bool						tryResolvingStencil		= (m_testType == MiscTestType::RESOLVE_STENCIL_ASPECT_THAT_IS_NOT_PRESENT);
+	const deUint32					renderSize				= 16;
+	const VkExtent3D				extent					= makeExtent3D(renderSize, renderSize, 1u);
+	const bool						independentResolveNone	= m_context.getDepthStencilResolveProperties().independentResolveNone;
+
+	// When testing resolving non-existing depth aspect we set the depth resolve mode to
+	// SAMPLE_ZERO and set the stencil resolve mode to NONE if independentResolveNone is true
+	VkFormat						testFormat				= VK_FORMAT_S8_UINT;
+	VkResolveModeFlagBits			depthResolveMode		= VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+	VkResolveModeFlagBits			stencilResolveMode		= independentResolveNone ? VK_RESOLVE_MODE_NONE : VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+
+	const VkImageAspectFlags		imageAspect				= tryResolvingStencil ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT;
+	const VkImageSubresourceRange	srr						= makeImageSubresourceRange(imageAspect, 0u, 1u, 0u, 1u);
+	const VkImageSubresourceLayers	srl						= makeImageSubresourceLayers(imageAspect, 0u, 0u, 1u);
+	const std::vector<VkViewport>	viewports				{ makeViewport(renderSize, renderSize) };
+	const std::vector<VkRect2D>		scissors				{ makeRect2D(renderSize, renderSize) };
+
+	if (tryResolvingStencil)
+	{
+		VkFormat					depthFormat		(VK_FORMAT_D16_UNORM);
+		const VkFormatFeatureFlags	requirements	(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
+		const auto					d16Properties	(getPhysicalDeviceFormatProperties(vki, physicalDevice, depthFormat));
+
+		if ((d16Properties.optimalTilingFeatures & requirements) != requirements)
+			depthFormat = VK_FORMAT_D32_SFLOAT;
+
+		testFormat = depthFormat;
+		std::swap(depthResolveMode, stencilResolveMode);
+	}
+
+	// Create three images - one 4xMSAA and two single sampled
+	VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	VkImageCreateInfo imageCreateInfo
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		//	VkStructureType			sType
+		DE_NULL,									//	const void*				pNext
+		0u,											//	VkImageCreateFlags		flags
+		VK_IMAGE_TYPE_2D,							//	VkImageType				imageType
+		testFormat,									//	VkFormat				format
+		extent,										//	VkExtent3D				extent
+		1u,											//	deUint32				mipLevels
+		1u,											//	deUint32				arrayLayers
+		VK_SAMPLE_COUNT_4_BIT,						//	VkSampleCountFlagBits	samples
+		VK_IMAGE_TILING_OPTIMAL,					//	VkImageTiling			tiling
+		imageUsage,									//	VkImageUsageFlags		usage
+		VK_SHARING_MODE_EXCLUSIVE,					//	VkSharingMode			sharingMode
+		0u,											//	deUint32				queueFamilyIndexCount
+		DE_NULL,									//	const deUint32*			pQueueFamilyIndices
+		VK_IMAGE_LAYOUT_UNDEFINED,					//	VkImageLayout			initialLayout
+	};
+	ImageWithMemory		multisampledImage		(vk, device, memAlloc, imageCreateInfo, MemoryRequirement::Any);
+	Move<VkImageView>	multisampledImageView	(makeImageView(vk, device, *multisampledImage, VK_IMAGE_VIEW_TYPE_2D, testFormat, srr));
+	ImageWithBuffer		singlesampledImageA		(vk, device, memAlloc, extent, testFormat, imageUsage, VK_IMAGE_TYPE_2D, srr);
+	ImageWithBuffer		singlesampledImageB		(vk, device, memAlloc, extent, testFormat, imageUsage, VK_IMAGE_TYPE_2D, srr);
+
+	const VkPipelineVertexInputStateCreateInfo	vertexInputState = initVulkanStructure();
+	VkPipelineMultisampleStateCreateInfo		multisampleState = initVulkanStructure();
+	multisampleState.rasterizationSamples	= VK_SAMPLE_COUNT_4_BIT;
+	multisampleState.minSampleShading		= 1.0f;
+
+	// define DepthStencilState so that we can write to depth and stencil attachments
+	const VkStencilOpState stencilOpState
+	{
+		VK_STENCIL_OP_KEEP,											// VkStencilOp								failOp
+		VK_STENCIL_OP_INCREMENT_AND_CLAMP,							// VkStencilOp								passOp
+		VK_STENCIL_OP_KEEP,											// VkStencilOp								depthFailOp
+		VK_COMPARE_OP_ALWAYS,										// VkCompareOp								compareOp
+		0xffu,														// deUint32									compareMask
+		0xffu,														// deUint32									writeMask
+		0															// deUint32									reference
+	};
+	VkPipelineDepthStencilStateCreateInfo depthStencilState
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType
+		DE_NULL,													// const void*								pNext
+		0u,															// VkPipelineDepthStencilStateCreateFlags	flags
+		tryResolvingStencil,										// VkBool32									depthTestEnable
+		tryResolvingStencil,										// VkBool32									depthWriteEnable
+		VK_COMPARE_OP_GREATER,										// VkCompareOp								depthCompareOp
+		VK_FALSE,													// VkBool32									depthBoundsTestEnable
+		!tryResolvingStencil,										// VkBool32									stencilTestEnable
+		stencilOpState,												// VkStencilOpState							front
+		stencilOpState,												// VkStencilOpState							back
+		0.0f,														// float									minDepthBounds
+		1.0f,														// float									maxDepthBounds
+	};
+
+	VkClearValue clearValues[2];
+	clearValues[0] = makeClearValueDepthStencil(0.0f, 1u);		// clear value for mssa image
+	clearValues[1] = makeClearValueDepthStencil(0.2f, 2u);		// after resolve in renderpassA clear value should remain
+
+	const VkBufferImageCopy copyRegion
+	{
+		0u,				// VkDeviceSize				bufferOffset
+		0u,				// deUint32					bufferRowLength
+		0u,				// deUint32					bufferImageHeight
+		srl,			// VkImageSubresourceLayers	imageSubresource
+		{ 0, 0, 0 },	// VkOffset3D				imageOffset
+		extent			// VkExtent3D				imageExtent
+	};
+
+	const auto	rect					= makeRect2D(renderSize, renderSize);
+	const auto	inbetweanMemoryBarrier	= makeMemoryBarrier(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT);
+	const auto	beforeCopyMemoryBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+
+	const auto	pipelineLayout	= makePipelineLayout(vk, device);
+	const auto	vertModule		= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
+	const auto	fragModule		= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"));
+
+	// create first renderpass, framebuffer and pipeline that will be used to resolve non-existing aspect
+	VkImageView imageViewsRaw[] = { *multisampledImageView, singlesampledImageA.getImageView()};
+	const auto	renderPassA		= createDepthPass(true, testFormat, imageAspect, depthResolveMode, stencilResolveMode);
+	const auto	framebufferA	= makeFramebuffer(vk, device, *renderPassA, 2, imageViewsRaw, renderSize, renderSize);
+	const auto	pipelineA		= makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, 0, 0, 0, *fragModule,
+													*renderPassA, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+													0, 0, &vertexInputState, 0, &multisampleState, &depthStencilState);
+
+	// create second renderpass, framebufer and pipeline that will resolve existing aspect (for verification)
+	depthStencilState.depthWriteEnable = false;
+	imageViewsRaw[1]			= singlesampledImageB.getImageView();
+	const auto	renderPassB		= createDepthPass(false, testFormat, imageAspect, stencilResolveMode, depthResolveMode);
+	const auto	framebufferB	= makeFramebuffer(vk, device, *renderPassB, 2, imageViewsRaw, renderSize, renderSize);
+	const auto	pipelineB		= makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, 0, 0, 0, *fragModule,
+													*renderPassB, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+													0, 0, &vertexInputState, 0, &multisampleState, &depthStencilState);
+
+	const auto	cmdPool			= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
+	const auto	cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vk, *cmdBuffer);
+
+	// render and try to resolve to aspect that is non present in the image - this should not crash
+	beginRenderPass(vk, *cmdBuffer, *renderPassA, *framebufferA, rect, 2, clearValues);
+	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineA);
+	vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
+	endRenderPass(vk, *cmdBuffer);
+
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0u, 1u, &inbetweanMemoryBarrier, 0, 0, 0, 0);
+
+	// resolve once again but this time we want existing aspect
+	// (renderPassB is actualy only needed for verification when independentResolveNone is true)
+	beginRenderPass(vk, *cmdBuffer, *renderPassB, *framebufferB, rect);
+	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineB);
+	vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
+	endRenderPass(vk, *cmdBuffer);
+
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 1u, &beforeCopyMemoryBarrier, 0, 0, 0, 0);
+
+	// read singlesampled images to buffers
+	vk.cmdCopyImageToBuffer(*cmdBuffer, singlesampledImageA.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, singlesampledImageA.getBuffer(), 1u, &copyRegion);
+	vk.cmdCopyImageToBuffer(*cmdBuffer, singlesampledImageB.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, singlesampledImageB.getBuffer(), 1u, &copyRegion);
+
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
+
+	auto&		log					= m_context.getTestContext().getLog();
+	const auto&	bufferAllocationA	= singlesampledImageA.getBufferAllocation();
+	const auto&	bufferAllocationB	= singlesampledImageB.getBufferAllocation();
+	invalidateAlloc(vk, device, bufferAllocationA);
+	invalidateAlloc(vk, device, bufferAllocationB);
+
+	tcu::ConstPixelBufferAccess outA(mapVkFormat(testFormat), renderSize, renderSize, 1, bufferAllocationA.getHostPtr());
+	tcu::ConstPixelBufferAccess outB(mapVkFormat(testFormat), renderSize, renderSize, 1, bufferAllocationB.getHostPtr());
+
+	if (m_testType == MiscTestType::RESOLVE_STENCIL_ASPECT_THAT_IS_NOT_PRESENT)
+	{
+		const float expectedA	= independentResolveNone ? clearValues[1].depthStencil.depth : 0.60f;
+		const float expectedB	= 0.60f;
+		const float epsilon		= 0.02f;
+
+		// just check values in four bottom fragments (we rendered triangle)
+		for (deUint32 x = 0; x < 2; ++x)
+		{
+			for (deUint32 y = renderSize-1; y > renderSize-3; --y)
+			{
+				// if independentResolveNone is available then check if image resolved in renderpassA contains clear values
+				// (we tried resolving non-existing aspect); if independentResolveNone is not available we resolved to sample 0
+				// and can expect value set in shader
+				float value = outA.getPixDepth(x, y);
+				if (deFloatAbs(value - expectedA) > epsilon)
+				{
+					log << tcu::TestLog::Message << "Wrong value after resolving non-existing stencil aspect in renderpassA"
+						" - expected depth to contain: " << expectedA << " got: " << value << " at (" << x << ", " << y << ")"
+						<< tcu::TestLog::EndMessage;
+					return tcu::TestStatus::fail("Fail");
+				}
+
+				// check if image resolved in renderpassB contains proper depth
+				value = outB.getPixDepth(x, y);
+				if (deFloatAbs(value - expectedB) > epsilon)
+				{
+					log << tcu::TestLog::Message << "Wrong value after resolving depth in renderpassB - expected " << expectedB
+						<< " got: " << value << " at (" << x << ", " << y << ")" << tcu::TestLog::EndMessage;
+					return tcu::TestStatus::fail("Fail");
+				}
+			}
+		}
+	}
+	else
+	{
+		const int expectedA = independentResolveNone ? clearValues[1].depthStencil.stencil : 2;
+		const int expectedB = 3;
+
+		// just check values in four bottom fragments (we rendered triangle)
+		for (deUint32 x = 0; x < 2; ++x)
+		{
+			for (deUint32 y = renderSize - 1; y > renderSize - 3; --y)
+			{
+				// if independentResolveNone is available then check if image resolved in renderpassA contains clear values
+				// (we tried resolving non-existing aspect); if independentResolveNone is not available we resolved to sample 0
+				// and can expect value set in shader
+				int value = outA.getPixStencil(x, y);
+				if (value != expectedA)
+				{
+					log << tcu::TestLog::Message << "Wrong value after resolving non-existing depth aspect in renderpassA"
+						" - expected stencil to contain: " << expectedA << " got: " << value << " at (" << x << ", " << y << ")"
+						<< tcu::TestLog::EndMessage;
+					return tcu::TestStatus::fail("Fail");
+				}
+
+				// check if image resolved in renderpassB contains proper stencil
+				value = outB.getPixStencil(x, y);
+				if (value != expectedB)
+				{
+					log << tcu::TestLog::Message << "Wrong value after resolving stencil in renderpassB - expected " << expectedB
+						<< " got: " << value << " at (" << x << ", " << y << ")" << tcu::TestLog::EndMessage;
+					return tcu::TestStatus::fail("Fail");
+				}
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+class MiscTestCase : public vkt::TestCase
+{
+public:
+	MiscTestCase(tcu::TestContext& testCtx, const std::string& name, MiscTestType testType)
+		: vkt::TestCase	(testCtx, name)
+		, m_testType	(testType)
+	{}
+	virtual					~MiscTestCase(void) = default;
+
+	virtual void			checkSupport	(Context&			context) const;
+	virtual void			initPrograms	(SourceCollections&	programCollection) const;
+	virtual TestInstance*	createInstance	(Context&			context) const;
+
+private:
+	MiscTestType	m_testType;
+};
+
+void MiscTestCase::checkSupport(Context& context) const
+{
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const VkFormatFeatureFlags	requirements	= VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
+
+	context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
+
+	if (m_testType == MiscTestType::RESOLVE_STENCIL_ASPECT_THAT_IS_NOT_PRESENT)
+	{
+		// When testing resolving stencil we deliberately use depth only format
+		const auto d16Properties = getPhysicalDeviceFormatProperties(vki, physicalDevice, VK_FORMAT_D16_UNORM);
+		const auto d32Properties = getPhysicalDeviceFormatProperties(vki, physicalDevice, VK_FORMAT_D32_SFLOAT);
+
+		if (((d16Properties.optimalTilingFeatures & requirements) != requirements) ||
+			((d32Properties.optimalTilingFeatures & requirements) != requirements))
+			TCU_THROW(NotSupportedError, "Required depth format properties not supported");
+	}
+	else if (m_testType == MiscTestType::RESOLVE_DEPTH_ASPECT_THAT_IS_NOT_PRESENT)
+	{
+		// When testing resolving depth we deliberately use stencil only format
+		const auto s8Properties = getPhysicalDeviceFormatProperties(vki, physicalDevice, VK_FORMAT_S8_UINT);
+		if ((s8Properties.optimalTilingFeatures & requirements) != requirements)
+			TCU_THROW(NotSupportedError, "Required stencil format properties not supported");
+	}
+}
+
+void MiscTestCase::initPrograms(SourceCollections& programCollection) const
+{
+	if (m_testType == MiscTestType::PROPERTIES)
+		return;
+
+	programCollection.glslSources.add("vert") << glu::VertexSource(
+		"#version 450\n"
+		"void main (void)\n"
+		"{\n"
+		"  const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+		"  const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
+		"  gl_Position = vec4(x, y, 0.6, 1.0);\n"
+		"}\n");
+
+	programCollection.glslSources.add("frag") << glu::FragmentSource(
+		"#version 450\n"
+		"void main (void)\n"
+		"{\n"
+		"}\n");
+}
+
+TestInstance* MiscTestCase::createInstance(Context& context) const
+{
+	if (m_testType == MiscTestType::RESOLVE_STENCIL_ASPECT_THAT_IS_NOT_PRESENT)
+		return new ResolveNonPresentAspectTestInstance(context, m_testType);
+	if (m_testType == MiscTestType::RESOLVE_DEPTH_ASPECT_THAT_IS_NOT_PRESENT)
+		return new ResolveNonPresentAspectTestInstance(context, m_testType);
+	return new PropertiesTestInstance(context);
+}
 
 void initTests (tcu::TestCaseGroup* group)
 {
@@ -1473,7 +1887,10 @@ void initTests (tcu::TestCaseGroup* group)
 		// Miscellaneous depth/stencil resolve tests
 		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 		// Check reported depth/stencil resolve properties
-		miscGroup->addChild(new PropertiesTestCase(testCtx, "properties"));
+		miscGroup->addChild(new MiscTestCase(testCtx, "properties", MiscTestType::PROPERTIES));
+		// Test resolving aspects that aren't present
+		miscGroup->addChild(new MiscTestCase(testCtx, "resolve_stencil_aspect_that_is_not_present", MiscTestType::RESOLVE_STENCIL_ASPECT_THAT_IS_NOT_PRESENT));
+		miscGroup->addChild(new MiscTestCase(testCtx, "resolve_depth_aspect_that_is_not_present", MiscTestType::RESOLVE_DEPTH_ASPECT_THAT_IS_NOT_PRESENT));
 		group->addChild(miscGroup.release());
 	}
 

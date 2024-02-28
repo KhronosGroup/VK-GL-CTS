@@ -21879,6 +21879,8 @@ dEQP-VKSC.renderpass2.depth_stencil_resolve.image_2d_8_32.samples_8.x8_d24_unorm
 dEQP-VKSC.renderpass2.depth_stencil_resolve.image_2d_8_32.samples_8.x8_d24_unorm_pack32.depth_zero_stencil_zero_testing_depth
 dEQP-VKSC.renderpass2.depth_stencil_resolve.image_2d_8_32.samples_8.x8_d24_unorm_pack32.depth_zero_stencil_zero_unused_resolve_testing_depth
 dEQP-VKSC.renderpass2.depth_stencil_resolve.misc.properties
+dEQP-VKSC.renderpass2.depth_stencil_resolve.misc.resolve_depth_aspect_that_is_not_present
+dEQP-VKSC.renderpass2.depth_stencil_resolve.misc.resolve_stencil_aspect_that_is_not_present
 dEQP-VKSC.renderpass2.no_draws.no_draw_clear_load_store
 dEQP-VKSC.renderpass2.suballocation.attachment.1.0
 dEQP-VKSC.renderpass2.suballocation.attachment.1.1
