@@ -1,53 +1,220 @@
 #version 450
-#extension GL_EXT_gpu_shader5 : require
-layout(set = 1, binding = 0, std430) buffer AtomicBuffer { highp uint counter[4]; };
-
+#extension GL_EXT_shader_16bit_storage : enable
+#extension GL_EXT_shader_8bit_storage : enable
+#extension GL_EXT_scalar_block_layout : enable
+#extension GL_EXT_buffer_reference : enable
+#extension GL_EXT_nonuniform_qualifier : enable
 layout(local_size_x = 1) in;
 
-struct Inputs
-{
-	highp int index0;
-	highp int index1;
-	highp int index2;
-	highp int index3;
-};
-struct Outputs
-{
-	highp uint result0;
-	highp uint result1;
-	highp uint result2;
-	highp uint result3;
-};
+layout(std140, binding = 0) buffer AcBlock { highp uint ac_numPassed; };
 
-layout(set = 0, binding = 0, std430) buffer InBuffer
+struct S
 {
-	Inputs inputs[];
+	highp ivec3 a;
+	mediump mat3 b[4];
+	highp vec4 c;
 };
-layout(set = 0, binding = 1, std430) buffer OutBuffer
+layout(scalar, binding = 1) buffer Block
 {
-	Outputs outputs[];
-};
+	lowp uint u;
+	S s[3];
+	mediump vec4 v;
+} block[3];
+
+bool compare_float    (highp float a, highp float b)  { return abs(a - b) < 0.05; }
+bool compare_vec3     (highp vec3 a, highp vec3 b)    { return compare_float(a.x, b.x)&&compare_float(a.y, b.y)&&compare_float(a.z, b.z); }
+bool compare_vec4     (highp vec4 a, highp vec4 b)    { return compare_float(a.x, b.x)&&compare_float(a.y, b.y)&&compare_float(a.z, b.z)&&compare_float(a.w, b.w); }
+bool compare_mat3     (highp mat3 a, highp mat3 b)    { return compare_vec3(a[0], b[0])&&compare_vec3(a[1], b[1])&&compare_vec3(a[2], b[2]); }
+bool compare_ivec3    (highp ivec3 a, highp ivec3 b)  { return a == b; }
+bool compare_uint     (highp uint a, highp uint b)    { return a == b; }
 
 void main (void)
 {
-	uint invocationNdx = gl_NumWorkGroups.x*gl_NumWorkGroups.y*gl_WorkGroupID.z
-	                   + gl_NumWorkGroups.x*gl_WorkGroupID.y + gl_WorkGroupID.x;
-	int index0 = int(inputs[invocationNdx].index0);
-	int index1 = int(inputs[invocationNdx].index1);
-	int index2 = int(inputs[invocationNdx].index2);
-	int index3 = int(inputs[invocationNdx].index3);
-	uint result0;
-	uint result1;
-	uint result2;
-	uint result3;
+	bool allOk = true;
+	allOk = compare_ivec3((block[0].s[0].a), ivec3(-7, 5, -3)) && allOk;
+	allOk = compare_mat3(block[0].s[0].b[0], mat3(-9.0, 7.0, -8.0, 3.0, -4.0, 4.0, -1.0, -8.0, 0.0)) && allOk;
+	allOk = compare_mat3(block[0].s[0].b[1], mat3(6.0, -4.0, -5.0, 0.0, -4.0, 6.0, 9.0, 1.0, 8.0)) && allOk;
+	allOk = compare_mat3(block[0].s[0].b[2], mat3(-2.0, -9.0, -5.0, 3.0, -9.0, 6.0, -3.0, 8.0, -3.0)) && allOk;
+	allOk = compare_mat3(block[0].s[0].b[3], mat3(1.0, -5.0, 2.0, 1.0, 8.0, 5.0, -1.0, -3.0, -8.0)) && allOk;
+	allOk = compare_vec4((block[0].s[0].c), vec4(-9.0, -6.0, 7.0, 1.0)) && allOk;
+	allOk = compare_ivec3((block[0].s[1].a), ivec3(-9, -7, -5)) && allOk;
+	allOk = compare_mat3(block[0].s[1].b[0], mat3(-4.0, -8.0, -9.0, -3.0, -1.0, -8.0, 0.0, -7.0, -5.0)) && allOk;
+	allOk = compare_mat3(block[0].s[1].b[1], mat3(3.0, 3.0, 7.0, 8.0, 0.0, 5.0, 0.0, -2.0, -2.0)) && allOk;
+	allOk = compare_mat3(block[0].s[1].b[2], mat3(-8.0, 1.0, 5.0, 1.0, 9.0, -9.0, 9.0, 2.0, -4.0)) && allOk;
+	allOk = compare_mat3(block[0].s[1].b[3], mat3(7.0, -9.0, 0.0, -9.0, 0.0, 5.0, -8.0, 2.0, 6.0)) && allOk;
+	allOk = compare_vec4((block[0].s[1].c), vec4(0.0, 6.0, -2.0, -2.0)) && allOk;
+	allOk = compare_ivec3((block[0].s[2].a), ivec3(1, -9, -1)) && allOk;
+	allOk = compare_mat3(block[0].s[2].b[0], mat3(1.0, 6.0, -9.0, 3.0, 7.0, -4.0, 1.0, 1.0, -4.0)) && allOk;
+	allOk = compare_mat3(block[0].s[2].b[1], mat3(0.0, -4.0, -7.0, -8.0, -8.0, 6.0, 7.0, 2.0, -8.0)) && allOk;
+	allOk = compare_mat3(block[0].s[2].b[2], mat3(-7.0, 8.0, -9.0, 3.0, 0.0, 3.0, -2.0, -8.0, -9.0)) && allOk;
+	allOk = compare_mat3(block[0].s[2].b[3], mat3(-2.0, -6.0, 0.0, -9.0, 5.0, -4.0, -9.0, 6.0, 3.0)) && allOk;
+	allOk = compare_vec4((block[0].s[2].c), vec4(-3.0, 4.0, 3.0, 6.0)) && allOk;
+	allOk = compare_ivec3((block[1].s[0].a), ivec3(1, -1, -5)) && allOk;
+	allOk = compare_mat3(block[1].s[0].b[0], mat3(-6.0, 0.0, 8.0, 7.0, -7.0, 7.0, -6.0, 8.0, 3.0)) && allOk;
+	allOk = compare_mat3(block[1].s[0].b[1], mat3(8.0, 6.0, -4.0, 3.0, 6.0, 5.0, -3.0, 1.0, -4.0)) && allOk;
+	allOk = compare_mat3(block[1].s[0].b[2], mat3(4.0, -1.0, 9.0, 4.0, -6.0, -2.0, 2.0, 6.0, 2.0)) && allOk;
+	allOk = compare_mat3(block[1].s[0].b[3], mat3(-3.0, 2.0, -4.0, -9.0, 5.0, -6.0, 4.0, 2.0, 7.0)) && allOk;
+	allOk = compare_vec4((block[1].s[0].c), vec4(-1.0, 2.0, 8.0, -6.0)) && allOk;
+	allOk = compare_ivec3((block[1].s[1].a), ivec3(-4, 0, 2)) && allOk;
+	allOk = compare_mat3(block[1].s[1].b[0], mat3(9.0, 3.0, 4.0, -3.0, -5.0, 8.0, 2.0, -1.0, 3.0)) && allOk;
+	allOk = compare_mat3(block[1].s[1].b[1], mat3(0.0, 4.0, 2.0, 8.0, 9.0, -7.0, 3.0, -6.0, 7.0)) && allOk;
+	allOk = compare_mat3(block[1].s[1].b[2], mat3(-4.0, 3.0, -4.0, -1.0, 3.0, -8.0, 0.0, 4.0, -9.0)) && allOk;
+	allOk = compare_mat3(block[1].s[1].b[3], mat3(-9.0, -8.0, -4.0, 0.0, -8.0, -5.0, -6.0, -6.0, -1.0)) && allOk;
+	allOk = compare_vec4((block[1].s[1].c), vec4(0.0, -3.0, 7.0, 9.0)) && allOk;
+	allOk = compare_ivec3((block[1].s[2].a), ivec3(1, 5, -6)) && allOk;
+	allOk = compare_mat3(block[1].s[2].b[0], mat3(6.0, 8.0, 2.0, -2.0, -9.0, -7.0, 8.0, 6.0, -3.0)) && allOk;
+	allOk = compare_mat3(block[1].s[2].b[1], mat3(-4.0, 9.0, -7.0, 4.0, 0.0, 9.0, 9.0, 5.0, 2.0)) && allOk;
+	allOk = compare_mat3(block[1].s[2].b[2], mat3(-4.0, 3.0, -4.0, -5.0, -1.0, 0.0, -9.0, -2.0, 5.0)) && allOk;
+	allOk = compare_mat3(block[1].s[2].b[3], mat3(-9.0, 0.0, -3.0, 2.0, -7.0, -9.0, 3.0, 0.0, 2.0)) && allOk;
+	allOk = compare_vec4((block[1].s[2].c), vec4(7.0, -7.0, -2.0, 2.0)) && allOk;
+	allOk = compare_ivec3((block[2].s[0].a), ivec3(4, -2, 8)) && allOk;
+	allOk = compare_mat3(block[2].s[0].b[0], mat3(-7.0, 0.0, -8.0, -1.0, 2.0, 6.0, 6.0, 6.0, 1.0)) && allOk;
+	allOk = compare_mat3(block[2].s[0].b[1], mat3(2.0, -8.0, 2.0, 4.0, -9.0, 2.0, -3.0, -4.0, -2.0)) && allOk;
+	allOk = compare_mat3(block[2].s[0].b[2], mat3(2.0, 6.0, 2.0, -5.0, 9.0, -9.0, 1.0, 2.0, 9.0)) && allOk;
+	allOk = compare_mat3(block[2].s[0].b[3], mat3(3.0, -2.0, 1.0, -6.0, -5.0, 7.0, -9.0, -4.0, -7.0)) && allOk;
+	allOk = compare_vec4((block[2].s[0].c), vec4(-8.0, -6.0, 6.0, 4.0)) && allOk;
+	allOk = compare_ivec3((block[2].s[1].a), ivec3(-7, 9, -8)) && allOk;
+	allOk = compare_mat3(block[2].s[1].b[0], mat3(-2.0, -8.0, 6.0, 0.0, 7.0, -4.0, 1.0, 7.0, 0.0)) && allOk;
+	allOk = compare_mat3(block[2].s[1].b[1], mat3(-5.0, -2.0, 6.0, -3.0, -7.0, 8.0, -8.0, 5.0, -8.0)) && allOk;
+	allOk = compare_mat3(block[2].s[1].b[2], mat3(8.0, -3.0, -1.0, 1.0, 0.0, 6.0, -7.0, 7.0, 5.0)) && allOk;
+	allOk = compare_mat3(block[2].s[1].b[3], mat3(-5.0, 6.0, 3.0, 1.0, 7.0, -4.0, -7.0, 0.0, 8.0)) && allOk;
+	allOk = compare_vec4((block[2].s[1].c), vec4(3.0, 2.0, -6.0, -9.0)) && allOk;
+	allOk = compare_ivec3((block[2].s[2].a), ivec3(-4, -6, -5)) && allOk;
+	allOk = compare_mat3(block[2].s[2].b[0], mat3(4.0, 0.0, 6.0, -2.0, -6.0, 4.0, 4.0, -9.0, 4.0)) && allOk;
+	allOk = compare_mat3(block[2].s[2].b[1], mat3(4.0, 8.0, -9.0, 6.0, -5.0, -6.0, 1.0, -4.0, 2.0)) && allOk;
+	allOk = compare_mat3(block[2].s[2].b[2], mat3(-8.0, -5.0, 5.0, -9.0, -6.0, 2.0, 9.0, 5.0, 2.0)) && allOk;
+	allOk = compare_mat3(block[2].s[2].b[3], mat3(6.0, 2.0, 2.0, 9.0, 0.0, 5.0, -5.0, 2.0, -3.0)) && allOk;
+	allOk = compare_vec4((block[2].s[2].c), vec4(5.0, 5.0, 4.0, 3.0)) && allOk;
+	if (allOk)
+		ac_numPassed++;
 
-	result0 = atomicAdd(counter[index0], uint(1));
-	result1 = atomicAdd(counter[index1], uint(1));
-	result2 = atomicAdd(counter[index2], uint(1));
-	result3 = atomicAdd(counter[index3], uint(1));
-
-	outputs[invocationNdx].result0 = result0;
-	outputs[invocationNdx].result1 = result1;
-	outputs[invocationNdx].result2 = result2;
-	outputs[invocationNdx].result3 = result3;
+	block[0].s[0].a = (ivec3(1, 0, -9));
+	block[0].s[0].b[0][0] = (vec3(-8.0, 9.0, 4.0));
+	block[0].s[0].b[0][1] = (vec3(-7.0, -4.0, -4.0));
+	block[0].s[0].b[0][2] = (vec3(-1.0, 1.0, 6.0));
+	block[0].s[0].b[1][0] = (vec3(1.0, -8.0, -5.0));
+	block[0].s[0].b[1][1] = (vec3(-4.0, -6.0, -5.0));
+	block[0].s[0].b[1][2] = (vec3(5.0, 6.0, 9.0));
+	block[0].s[0].b[2][0] = (vec3(-6.0, -4.0, 0.0));
+	block[0].s[0].b[2][1] = (vec3(-8.0, 5.0, 8.0));
+	block[0].s[0].b[2][2] = (vec3(9.0, -4.0, -7.0));
+	block[0].s[0].b[3][0] = (vec3(-8.0, -5.0, -4.0));
+	block[0].s[0].b[3][1] = (vec3(-9.0, 8.0, -1.0));
+	block[0].s[0].b[3][2] = (vec3(-6.0, 9.0, 2.0));
+	block[0].s[0].c = (vec4(-1.0, 2.0, -2.0, 7.0));
+	block[0].s[1].a = (ivec3(-4, -7, 3));
+	block[0].s[1].b[0][0] = (vec3(-1.0, -7.0, -5.0));
+	block[0].s[1].b[0][1] = (vec3(-4.0, -8.0, -3.0));
+	block[0].s[1].b[0][2] = (vec3(-6.0, -8.0, 5.0));
+	block[0].s[1].b[1][0] = (vec3(5.0, 5.0, 0.0));
+	block[0].s[1].b[1][1] = (vec3(9.0, -9.0, -5.0));
+	block[0].s[1].b[1][2] = (vec3(7.0, -7.0, 8.0));
+	block[0].s[1].b[2][0] = (vec3(0.0, -1.0, 3.0));
+	block[0].s[1].b[2][1] = (vec3(9.0, 1.0, 1.0));
+	block[0].s[1].b[2][2] = (vec3(-8.0, 7.0, 8.0));
+	block[0].s[1].b[3][0] = (vec3(3.0, 4.0, 7.0));
+	block[0].s[1].b[3][1] = (vec3(5.0, 6.0, 4.0));
+	block[0].s[1].b[3][2] = (vec3(0.0, -1.0, -2.0));
+	block[0].s[1].c = (vec4(-7.0, 7.0, 3.0, -8.0));
+	block[0].s[2].a = (ivec3(-8, 0, -3));
+	block[0].s[2].b[0][0] = (vec3(-7.0, -8.0, 7.0));
+	block[0].s[2].b[0][1] = (vec3(-9.0, 4.0, 6.0));
+	block[0].s[2].b[0][2] = (vec3(3.0, 7.0, -6.0));
+	block[0].s[2].b[1][0] = (vec3(1.0, -5.0, -4.0));
+	block[0].s[2].b[1][1] = (vec3(0.0, -6.0, 9.0));
+	block[0].s[2].b[1][2] = (vec3(1.0, 7.0, 6.0));
+	block[0].s[2].b[2][0] = (vec3(8.0, 1.0, -2.0));
+	block[0].s[2].b[2][1] = (vec3(-9.0, 5.0, -7.0));
+	block[0].s[2].b[2][2] = (vec3(8.0, 5.0, 0.0));
+	block[0].s[2].b[3][0] = (vec3(9.0, 6.0, 0.0));
+	block[0].s[2].b[3][1] = (vec3(6.0, -9.0, 0.0));
+	block[0].s[2].b[3][2] = (vec3(-4.0, 2.0, -7.0));
+	block[0].s[2].c = (vec4(-8.0, 2.0, 2.0, 0.0));
+	block[0].v = (vec4(-4.0, -7.0, 6.0, 5.0));
+	block[1].s[0].a = (ivec3(-9, 5, -5));
+	block[1].s[0].b[0][0] = (vec3(8.0, 9.0, 2.0));
+	block[1].s[0].b[0][1] = (vec3(-4.0, -8.0, 3.0));
+	block[1].s[0].b[0][2] = (vec3(-3.0, -6.0, -3.0));
+	block[1].s[0].b[1][0] = (vec3(-5.0, -9.0, 9.0));
+	block[1].s[0].b[1][1] = (vec3(-2.0, 1.0, -5.0));
+	block[1].s[0].b[1][2] = (vec3(0.0, 7.0, -2.0));
+	block[1].s[0].b[2][0] = (vec3(-7.0, -7.0, 5.0));
+	block[1].s[0].b[2][1] = (vec3(-3.0, -2.0, -6.0));
+	block[1].s[0].b[2][2] = (vec3(3.0, -8.0, 4.0));
+	block[1].s[0].b[3][0] = (vec3(2.0, -9.0, 3.0));
+	block[1].s[0].b[3][1] = (vec3(2.0, -2.0, 9.0));
+	block[1].s[0].b[3][2] = (vec3(-8.0, -5.0, -8.0));
+	block[1].s[0].c = (vec4(0.0, 7.0, 7.0, 7.0));
+	block[1].s[1].a = (ivec3(0, -3, 0));
+	block[1].s[1].b[0][0] = (vec3(-2.0, 8.0, 7.0));
+	block[1].s[1].b[0][1] = (vec3(6.0, -4.0, 3.0));
+	block[1].s[1].b[0][2] = (vec3(3.0, 3.0, -8.0));
+	block[1].s[1].b[1][0] = (vec3(3.0, -3.0, -1.0));
+	block[1].s[1].b[1][1] = (vec3(-4.0, 9.0, -7.0));
+	block[1].s[1].b[1][2] = (vec3(-1.0, -2.0, -5.0));
+	block[1].s[1].b[2][0] = (vec3(-7.0, -6.0, 3.0));
+	block[1].s[1].b[2][1] = (vec3(5.0, -5.0, 6.0));
+	block[1].s[1].b[2][2] = (vec3(-1.0, 5.0, -3.0));
+	block[1].s[1].b[3][0] = (vec3(-7.0, -8.0, 7.0));
+	block[1].s[1].b[3][1] = (vec3(1.0, 6.0, 9.0));
+	block[1].s[1].b[3][2] = (vec3(-9.0, 3.0, -9.0));
+	block[1].s[1].c = (vec4(-8.0, 2.0, -4.0, -3.0));
+	block[1].s[2].a = (ivec3(6, -3, 0));
+	block[1].s[2].b[0][0] = (vec3(-5.0, -7.0, -5.0));
+	block[1].s[2].b[0][1] = (vec3(0.0, -4.0, 6.0));
+	block[1].s[2].b[0][2] = (vec3(1.0, -9.0, 8.0));
+	block[1].s[2].b[1][0] = (vec3(-2.0, -4.0, 5.0));
+	block[1].s[2].b[1][1] = (vec3(0.0, -6.0, 1.0));
+	block[1].s[2].b[1][2] = (vec3(-2.0, 0.0, -6.0));
+	block[1].s[2].b[2][0] = (vec3(-8.0, 3.0, 8.0));
+	block[1].s[2].b[2][1] = (vec3(8.0, -8.0, -4.0));
+	block[1].s[2].b[2][2] = (vec3(-3.0, -6.0, 0.0));
+	block[1].s[2].b[3][0] = (vec3(-1.0, 0.0, -7.0));
+	block[1].s[2].b[3][1] = (vec3(-8.0, -9.0, 3.0));
+	block[1].s[2].b[3][2] = (vec3(4.0, -9.0, 2.0));
+	block[1].s[2].c = (vec4(0.0, 2.0, 4.0, 6.0));
+	block[1].v = (vec4(-3.0, 0.0, 2.0, 2.0));
+	block[2].s[0].a = (ivec3(-4, 2, 0));
+	block[2].s[0].b[0][0] = (vec3(-9.0, -4.0, 5.0));
+	block[2].s[0].b[0][1] = (vec3(2.0, 9.0, -6.0));
+	block[2].s[0].b[0][2] = (vec3(-8.0, -5.0, 9.0));
+	block[2].s[0].b[1][0] = (vec3(8.0, -8.0, 2.0));
+	block[2].s[0].b[1][1] = (vec3(0.0, 9.0, -4.0));
+	block[2].s[0].b[1][2] = (vec3(3.0, -3.0, -9.0));
+	block[2].s[0].b[2][0] = (vec3(-4.0, -1.0, -1.0));
+	block[2].s[0].b[2][1] = (vec3(6.0, 8.0, -2.0));
+	block[2].s[0].b[2][2] = (vec3(-4.0, -2.0, -5.0));
+	block[2].s[0].b[3][0] = (vec3(0.0, 9.0, -6.0));
+	block[2].s[0].b[3][1] = (vec3(5.0, -6.0, -1.0));
+	block[2].s[0].b[3][2] = (vec3(-5.0, 2.0, 7.0));
+	block[2].s[0].c = (vec4(-3.0, 3.0, 1.0, -9.0));
+	block[2].s[1].a = (ivec3(-3, 1, 9));
+	block[2].s[1].b[0][0] = (vec3(-9.0, 4.0, -1.0));
+	block[2].s[1].b[0][1] = (vec3(-5.0, -6.0, 6.0));
+	block[2].s[1].b[0][2] = (vec3(-4.0, -7.0, 4.0));
+	block[2].s[1].b[1][0] = (vec3(1.0, -7.0, 8.0));
+	block[2].s[1].b[1][1] = (vec3(6.0, -9.0, 5.0));
+	block[2].s[1].b[1][2] = (vec3(3.0, -1.0, 8.0));
+	block[2].s[1].b[2][0] = (vec3(9.0, -9.0, 9.0));
+	block[2].s[1].b[2][1] = (vec3(0.0, 7.0, -5.0));
+	block[2].s[1].b[2][2] = (vec3(-9.0, -5.0, 3.0));
+	block[2].s[1].b[3][0] = (vec3(3.0, 4.0, 0.0));
+	block[2].s[1].b[3][1] = (vec3(0.0, 1.0, -3.0));
+	block[2].s[1].b[3][2] = (vec3(9.0, -3.0, -5.0));
+	block[2].s[1].c = (vec4(9.0, -3.0, 2.0, -3.0));
+	block[2].s[2].a = (ivec3(-4, -9, -2));
+	block[2].s[2].b[0][0] = (vec3(9.0, 6.0, 9.0));
+	block[2].s[2].b[0][1] = (vec3(-8.0, -8.0, 8.0));
+	block[2].s[2].b[0][2] = (vec3(-2.0, -1.0, 6.0));
+	block[2].s[2].b[1][0] = (vec3(8.0, -7.0, -4.0));
+	block[2].s[2].b[1][1] = (vec3(1.0, -9.0, -8.0));
+	block[2].s[2].b[1][2] = (vec3(8.0, -5.0, -3.0));
+	block[2].s[2].b[2][0] = (vec3(2.0, 5.0, -2.0));
+	block[2].s[2].b[2][1] = (vec3(-6.0, -9.0, 8.0));
+	block[2].s[2].b[2][2] = (vec3(-4.0, -4.0, -9.0));
+	block[2].s[2].b[3][0] = (vec3(6.0, 4.0, 8.0));
+	block[2].s[2].b[3][1] = (vec3(8.0, 2.0, 1.0));
+	block[2].s[2].b[3][2] = (vec3(7.0, 2.0, 1.0));
+	block[2].s[2].c = (vec4(3.0, -7.0, -5.0, 2.0));
+	block[2].v = (vec4(-1.0, -7.0, -6.0, 9.0));
 }

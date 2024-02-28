@@ -37,16 +37,25 @@
 #include "glslang/MachineIndependent/localintermediate.h"
 #include "glslang/Public/ShaderLang.h"
 
+#define ENABLE_SLANG_COMPILATION 1
+#if defined(ENABLE_SLANG_COMPILATION) && defined(_WIN32)
+#define ENABLE_SLANG_LOGS 1
+
+#ifdef ENABLE_SLANG_LOGS
+#define SLANG_LOG(x) x
+#else
+#define SLANG_LOG(x) 
+#endif
  //slang input files
- #include <slang.h>
+#include <slang.h>
 #include <slang-com-ptr.h>
 #include <iostream>
 #include <fstream>
 #include <list>
 #include <source/core/slang-list.h>
 #include <tools/slang-test/test-context.h>
-#include <source/compiler-core/slang-test-server-protocol.h>
-//D:\githubnv_slang\VK-GL-CTS\external\slang\src\source\core\slang-list.h
+#include "vkSpirVAsm.hpp"
+#endif
 namespace vk
 {
 
@@ -273,7 +282,7 @@ namespace vk
 		}
 
 	} // anonymous
-#ifdef _WIN32
+#if defined(ENABLE_SLANG_COMPILATION) && defined(_WIN32)
 #include <windows.h>
 
 #ifndef SLANG_RETURN_FAIL_ON_FALSE
@@ -311,6 +320,7 @@ namespace vk
 			return (pfnspSetDiagnosticCallback && pfnspProcessCommandLineArguments && pfnspCompile && pfnslang_createGlobalSession);
 		}
 	} slangLibFuncs;
+
 
 	class WinHandle
 	{
@@ -355,6 +365,183 @@ namespace vk
 		HANDLE m_handle;
 	};
 
+    class WinPipeStream 
+    {
+    public:
+        typedef WinPipeStream ThisType;
+    
+        // Stream
+        SlangResult read(void* buffer, size_t length, size_t& outReadBytes)
+        {
+			outReadBytes = 0;
+            if (!_has(FileAccess::Read))
+            {
+                return SLANG_E_NOT_AVAILABLE;
+            }
+            
+            if (m_streamHandle.isNull())
+            {
+                return SLANG_OK;
+            }
+            
+            DWORD bytesRead = 0;
+            
+            // Check if there is any data, so won't block
+            if (m_isPipe)
+            {
+                DWORD pipeBytesRead = 0;
+                DWORD pipeTotalBytesAvailable = 0;
+                DWORD pipeRemainingBytes = 0;
+            
+                // Works on anonymous pipes too
+                // https://docs.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-peeknamedpipe
+            
+                SLANG_RETURN_ON_FAIL(_updateState(PeekNamedPipe(m_streamHandle, nullptr, DWORD(0), &pipeBytesRead, &pipeTotalBytesAvailable, &pipeRemainingBytes)));
+                // If there is nothing to read we are done
+                // If we don't do this ReadFile will *block* if there is nothing available
+                if (pipeTotalBytesAvailable == 0)
+                {
+                    return SLANG_OK;
+                }
+            
+                SLANG_RETURN_ON_FAIL(_updateState(ReadFile(m_streamHandle, buffer, DWORD(length), &bytesRead, nullptr)));
+            }
+            else
+            {
+                SLANG_RETURN_ON_FAIL(_updateState(ReadFile(m_streamHandle, buffer, DWORD(length), &bytesRead, nullptr)));
+            
+                // If it's not a pipe, and there is nothing left, then we are done.
+                if (length > 0 && bytesRead == 0)
+                {
+                    close();
+                }
+            }
+            
+            outReadBytes = size_t(bytesRead);
+            return SLANG_OK;
+        }
+
+		SlangResult write(const void* buffer, size_t length)
+		{
+
+			if (!_has(FileAccess::Write))
+            {
+                return SLANG_E_NOT_AVAILABLE;
+            }
+            
+            if (m_streamHandle.isNull())
+            {
+                // Writing to closed stream
+                return SLANG_FAIL;
+            }
+            
+            DWORD numWritten = 0;
+            BOOL writeResult = WriteFile(m_streamHandle, buffer, DWORD(length), &numWritten, nullptr);
+            
+            if (!writeResult)
+            {
+                auto err = GetLastError();
+            
+                if (err == ERROR_BROKEN_PIPE)
+                {
+                    close();
+                    return SLANG_FAIL;
+                }
+                    
+                SLANG_UNUSED(err);
+                return SLANG_FAIL;
+            }
+            
+            if (numWritten != length)
+            {
+                return SLANG_FAIL;
+            }
+            return SLANG_OK;
+        }
+
+        bool isEnd() { return m_streamHandle.isNull(); }
+        bool canRead() { return _has(FileAccess::Read) && !m_streamHandle.isNull(); }
+        bool canWrite() { return _has(FileAccess::Write) && !m_streamHandle.isNull(); }
+		void close()
+		{
+			if (!m_isOwned)
+			{
+				// If we don't own it just detach it 
+				m_streamHandle.detach();
+			}
+			m_streamHandle.setNull();
+		}
+		SlangResult flush()
+		{
+			if ((Index(m_access) & Index(FileAccess::Write)) == 0 || m_streamHandle.isNull())
+			{
+				return SLANG_E_NOT_AVAILABLE;
+			}
+
+			// https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers
+			if (!FlushFileBuffers(m_streamHandle))
+			{
+				auto err = GetLastError();
+				SLANG_UNUSED(err);
+			}
+			return SLANG_OK;
+		}
+        WinPipeStream(HANDLE handle, FileAccess access, bool isOwned = true)
+        {
+			m_streamHandle = handle;
+			m_access = access;
+			m_isOwned = isOwned;
+
+			// On Win32 a HANDLE has to be handled differently if it's a PIPE or FILE, so first determine
+            // if it really is a pipe.
+            // http://msdn.microsoft.com/en-us/library/aa364960(VS.85).aspx
+            m_isPipe = GetFileType(handle) == FILE_TYPE_PIPE;
+            
+            if (m_isPipe)
+            {
+                // It might be handy to get information about the handle
+                // https://docs.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-getnamedpipeinfo
+            
+                DWORD flags, outBufferSize, inBufferSize, maxInstances;
+                // It appears that by default windows pipe buffer size is 4k.
+                if (GetNamedPipeInfo(handle, &flags, &outBufferSize, &inBufferSize, &maxInstances))
+                {
+                }
+            }
+        }
+        ~WinPipeStream() { close(); }
+
+    protected:
+    
+        bool _has(FileAccess access) const { return (Index(access) & Index(m_access)) != 0; }
+    
+        SlangResult _updateState(BOOL res)
+        {
+            if (res)
+            {
+                return SLANG_OK;
+            }
+            else
+            {
+                const auto err = GetLastError();
+            
+                if (err == ERROR_BROKEN_PIPE)
+                {
+                    m_streamHandle.setNull();
+                    return SLANG_OK;
+                }
+            
+                SLANG_UNUSED(err);
+                return SLANG_FAIL;
+            }
+        }
+    
+        FileAccess m_access = FileAccess::None;
+        WinHandle m_streamHandle;
+        bool m_isOwned;
+        bool m_isPipe;
+    };
+
 	class WinProcess 
 	{
 	public:
@@ -372,16 +559,17 @@ namespace vk
 			}
 
 			const DWORD timeOutTime = (timeInMs < 0) ? INFINITE : DWORD(timeInMs);
-
+			SLANG_LOG(std::cout << "#1 waitForTermination: start terminating process" << m_processHandle << "\n";)
 			// wait for the process to exit
 			// TODO: set a timeout as a safety measure...
 			auto res = WaitForSingleObject(m_processHandle.writeRef(), timeOutTime);
 
 			if (res == WAIT_TIMEOUT)
 			{
+				SLANG_LOG(std::cout << "#2 waitForTermination: Process FAILED TO terminated" << m_processHandle << "\n";)
 				return false;
 			}
-
+			SLANG_LOG(std::cout << "#2 waitForTermination: Process terminated" << m_processHandle << "\n";)
 			_hasTerminated();
 			return true;
 		}
@@ -416,6 +604,8 @@ namespace vk
 				m_streams[i] = streams[i];
 			}
 		}
+		HANDLE getStream(StdStreamType type) const { return m_streams[Index(type)]; }
+		WinHandle m_processHandle;          ///< If not set the process has terminated
 
 	protected:
 
@@ -435,17 +625,37 @@ namespace vk
 			}
 
 		}
-		WinHandle m_processHandle;          ///< If not set the process has terminated
 		int32_t m_returnValue = 0;                              ///< Value returned if process terminated
 		HANDLE m_streams[Index(StdStreamType::CountOf)];   ///< Streams to communicate with the process
 
 	};
 
+	static WinProcess* m_process = nullptr;
+	static WinPipeStream* m_readStream = nullptr;
+	static WinPipeStream* m_writeStream = nullptr;
+	static WinPipeStream* m_readErrStream = nullptr;
+	HANDLE hProcessMgmtThread = NULL;
+	const DWORD threadDiedWaitMS = 6000; //ms
+	enum thread_state {
+		ethread_state_start = 0,
+		ethread_state_alive = 1,
+		ethread_state_exit = 2
+	};
+	thread_state tstate = ethread_state_exit;
+	HANDLE ghSemaphore = NULL;
+	static HANDLE ghMutex = NULL;
+	static bool g_hasProcess = false;
+	static DWORD   dwThreadId;
+	const DWORD sleepProcesMgmtThreads = 20;//20ms
+	bool getMutexInfinite(bool sleepThread, int timeout_thresh=0);
+	bool releaseMutex();
+
+	SlangResult spawnThreadForTestServer();
 	class SlangContext {
 	public:
 		Slang::ComPtr<slang::IGlobalSession> slangGlobalSession;
 		bool globalSessionInit = false;
-		std::string slangDllPath = "D:\\githubnv_slang\\VK-GL-CTS\\external\\slang\\src\\bin\\windows-x64\\debug\\"; //This will be transformed to a environment variable SLANG_DLL_PATH
+		std::string slangDllPath = ""; // By default this takes up the current directory. So keep the sldll and test
 		bool loadDLL = false;
 		HMODULE handle = nullptr;
 		slangLibFuncs m_sfn;
@@ -472,13 +682,13 @@ namespace vk
 				}
 				if (!slangDllPath.empty()) {
 					if (!SetDllDirectoryA(slangDllPath.c_str())) {
-						std::cout << "failed to set slang dll PATH\n";
+						SLANG_LOG(std::cout << "failed to set slang dll PATH\n";)
 						return SLANG_FAIL;
 					}
 				}
 				handle = LoadLibraryA("slang.dll");
 				if (NULL == handle) {
-					std::cout << "failed to load slang.dll\n";
+					SLANG_LOG(std::cout << "failed to load slang.dll\n";)
 					return SLANG_FAIL;
 				}
 			}
@@ -490,7 +700,6 @@ namespace vk
 			m_sfn.pfnspCompile = (PFNSPCOMPILE)GetProcAddress(handle, "spCompile");
 			m_sfn.pfnspSetDiagnosticCallback = (PFNSPSETDIAGONSTICCB)GetProcAddress(handle, "spSetDiagnosticCallback");
 			m_sfn.pfnspProcessCommandLineArguments = (PFNSPPROCESSCOMMANDLINEARG)GetProcAddress(handle, "spProcessCommandLineArguments");
-			//m_sfn.pfnspSetCommandLineCompilerMode = (PFNSPSETCOMMANDLINECOMPILERMODE)GetProcAddress(handle, "spSetCommandLineCompilerMode");
 		}
 		static void _diagnosticCallback(
 			char const* message,
@@ -509,10 +718,10 @@ namespace vk
 			case glu::SHADERTYPE_COMPUTE:
 				return "compute";
 			default:
-				std::cout << "unsupported shader stage";
-				return "unknown";
+				SLANG_LOG(std::cout << "unsupported shader stage:" << shaderType << "\n";)
+				return "";
 			}
-			return "unknown";
+			return "";
 		};
 		char* findSlangShaderExt(glu::ShaderType shaderType) {
 			switch (shaderType) {
@@ -530,36 +739,8 @@ namespace vk
 			}
 			return "";
 		};
-#if 0
-		JSONRPCConnection* getOrCreateConnection()
-		{
-			SlangResult result = SLANG_OK;
-			//setup the server that runs slanc API's
-			//1. createJSONRPCConnection
-			RefPtr<Process> process;
-			{
-				CommandLine cmdLine;
-				cmdLine.setExecutableLocation(ExecutableLocation("test-server"));
-				result = Process::create(cmdLine, Process::Flag::AttachDebugger | Process::Flag::DisableStdErrRedirection, process);
-				if (result != SLANG_OK) {
-					std::cout << "Failed to launch test-server process";
-					return nullptr;
-				}
-			}
-			Stream* writeStream = process->getStream(StdStreamType::In);
-			RefPtr<BufferedReadStream> readStream(new BufferedReadStream(process->getStream(StdStreamType::Out)));
-			RefPtr<BufferedReadStream> readErrStream(new BufferedReadStream(process->getStream(StdStreamType::ErrorOut)));
 
-			RefPtr<HTTPPacketConnection> connection = new HTTPPacketConnection(readStream, writeStream);
-			RefPtr<JSONRPCConnection> rpcConnection = new JSONRPCConnection;
-			result = rpcConnection->init(connection, JSONRPCConnection::CallStyle::Default, process);
-			if (result != SLANG_OK) {
-				std::cout << "Failed to initialize connection";
-				return nullptr;
-			}
-			return rpcConnection;
-		}
-#endif
+
 		SlangResult CreateProcess(std::string &exename, std::string& cmdline, DWORD flags, WinProcess *&outProcess)
 		{
 			WinHandle childStdOutRead;
@@ -628,8 +809,7 @@ namespace vk
 
 				// https://docs.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
 
-				DWORD createFlags = CREATE_NO_WINDOW | CREATE_SUSPENDED;//flags; //
-
+				DWORD createFlags = CREATE_NO_WINDOW | CREATE_SUSPENDED;
 				BOOL success = CreateProcessW(
 					lppath,
 					(LPWSTR)lpcmdline,
@@ -641,7 +821,6 @@ namespace vk
 					nullptr,
 					&startupInfo,
 					&processInfo);
-
 				if (!success)
 				{
 					DWORD err = GetLastError();
@@ -650,8 +829,13 @@ namespace vk
 				}
 				ResumeThread(processInfo.hThread);
 
+				// close handles we are now done with
+				CloseHandle(processInfo.hThread);
+
+				// Save the process handle
+				processHandle = processInfo.hProcess;
 			}
-			HANDLE streams[Index(StdStreamType::CountOf)];
+			HANDLE streams[Index(StdStreamType::CountOf)] = {NULL};
 
 			if (childStdErrRead)
 				streams[Index(StdStreamType::ErrorOut)] = childStdErrRead.detach();
@@ -659,71 +843,319 @@ namespace vk
 			streams[Index(StdStreamType::In)] = childStdInWrite.detach();//new WinPipeStream(childStdInWrite.detach(), FileAccess::Write);
 			outProcess = new WinProcess(processHandle.detach(), &streams[0]);
 
-			//return SLANG_OK;
-
 			return SLANG_OK;
 		}
 		// static const UnownedStringSlice TestServerProtocol::ExecuteCtsTestArgs::g_methodName = UnownedStringSlice::fromLiteral("unitTest");
 		///* static */const StructRttiInfo TestServerProtocol::ExecuteCtsTestArgs::g_rttiInfo = _makeExecuteCtsTestArgsRtti();
-		Result spawinAndWaitTestServer(const char *shaderStage, const char *filename)
+		void createJSONCompileCommand(std::ostringstream &jsonCmd, std::string &filename, std::string &stage)
 		{
-			SlangResult result = SLANG_OK;
-			WinProcess *process=nullptr;
-			std::string exename = slangDllPath + "test-server";
-			std::string cmdline = slangDllPath + "test-server";
+			jsonCmd << "{\n"
+					<< "    \"jsonrpc\" : \"2.0\", \n"
+					<< "    \"method\" : \"tool\", \n"
+					<< "    \"params\" : \n"
+					<< "    [\n"
+					<< "        \"slangc\", \n"
+					<< "        [\n"
+					<< "            \""+filename + "\", \n"
+					<< "            \"-target\", \n"
+					<< "            \"spirv\", \n"
+					<< "            \"-stage\", \n"
+					<< "            \""+stage + "\", \n"
+					<< "            \"-entry\", \n"
+					<< "            \"main\", \n"
+					<< "            \"-allow-glsl\"\n"
+					<< "        ]\n"
+					<< "    ]\n"
+					<< "}\n";
+            return;
+		}
+        
+		SlangResult sendCommand(std::string &filename, std::string &stage)
+		{
+			SlangResult res = SLANG_OK;
+			std::ostringstream jsonCmd;
+			createJSONCompileCommand(jsonCmd, filename, stage);
+			std::string commandSize;
+			commandSize = "Content-Length: " + std::to_string(jsonCmd.str().size())+"\r\n\r\n";
+			if (!getMutexInfinite(false)) {
+				SLANG_LOG(std::cout << "#5: Failed to acquire mutex\n";)
+				return SLANG_FAIL;
+			}
+			if (!m_writeStream) {
+				SLANG_LOG(std::cout << "read stream is NULL which means test-server has closed unexpectedly\n";)
+				releaseMutex();
+				return SLANG_FAIL;
+			}
+			res = m_writeStream->write(commandSize.c_str(), commandSize.size());
+			if (res != SLANG_OK) {
+				releaseMutex();
+				SLANG_LOG(std::cout << "Failed to write the command size information\n";)
+				return res;
+			}
+			res = m_writeStream->write(jsonCmd.str().c_str(), jsonCmd.str().size());
+			if (res != SLANG_OK) {
+				releaseMutex();
+				SLANG_LOG(std::cout << "Failed to write the JSON command \n";)
+				return res;
+			}
+			releaseMutex();
 
-			CreateProcess(exename, cmdline, 0, process);
-			//JSONRPCConnection* rpcConnection = getOrCreateConnection();
-			//if (!rpcConnection)
-			//{
-			//	return SLANG_FAIL;
-			//}
-			//UnownedStringSlice method = UnownedStringSlice::fromLiteral("tool");
-			//TestServerProtocol::ExecuteCtsTestArgs testArgs;
-			//testArgs.g_methodName = UnownedStringSlice::fromLiteral("unitTest");
-			//testArgs.g_rttiInfo = _makeExecuteCtsTestArgsRtti();
-			//const RttiInfo* rtiinfo = GetRttiInfo<TestServerProtocol::ExecuteCtsTestArgs>::get();
-			//testArgs.moduleName = UnownedStringSlice::fromLiteral("deq-vk");
-			//testArgs.shadreStage = UnownedStringSlice(shaderStage);
-			//testArgs.filename = UnownedStringSlice(filename);
-			//rpcConnection->sendCall(method, &testArgs.g_rttiInfo, nullptr);
-			
+			return res;
+		}
+
+		enum class ReadState
+		{
+			Header,                     ///< Reading reader
+			Content,                    ///< Reading content (ie header is read)
+			Done,                       ///< The content is read
+			Closed,                     ///< The read stream is closed - no further packets can be read
+			Error,                      ///< In an error state - no further packets can be read
+		};
+#define MAX_TIMEOUT_ITER_COUNT 256
+#define HEADER_BUFF_MAX_SIZE 1024
+		SlangResult readResult(std::string &output) {
+			DWORD sleepMS = 20;
+			char content[HEADER_BUFF_MAX_SIZE];
+			memset(content, 0, HEADER_BUFF_MAX_SIZE);
+			ReadState state = ReadState::Header;
+			int timeoutCount = 0;
+			int bufferSize = -1;
+			int currReadPointer = 0;
+			int alreadyReadBuffer = 0;
+			int bufferToBeRead = -1;
+			bool skipsleep = false;
+			while (state != ReadState::Done && timeoutCount <= MAX_TIMEOUT_ITER_COUNT)
+			{
+				skipsleep = false;
+				if (!getMutexInfinite(false)) {
+					SLANG_LOG(std::cout << "#6: Failed to acquire mutex\n";)
+					return SLANG_FAIL;
+				}
+				if (!m_readStream) {
+					SLANG_LOG(std::cout << "read stream is NULL which means test-server has closed unexpectedly\n";)
+					releaseMutex();
+					return SLANG_FAIL;
+				}
+
+				switch (state) {
+				case ReadState::Header:
+				{
+					size_t contentSize = 0;
+					//Read the header
+					SlangResult readres = m_readStream->read(content, HEADER_BUFF_MAX_SIZE, contentSize);
+					releaseMutex();
+					if (readres != SLANG_OK) {
+						state = ReadState::Error;
+						break;
+					}
+					if (contentSize > 0) {
+						std::string contentstr;
+						std::copy(content, content+ HEADER_BUFF_MAX_SIZE, std::back_inserter(contentstr));
+						std::string pattern = "Content-Length: ";
+						size_t pos_start = contentstr.find("Content-Length: ");
+						if (pos_start == std::string::npos) {
+							SLANG_LOG(std::cout << "failed to find the header pattern\n";)
+							state = ReadState::Error;
+							break;
+						}
+						pos_start = pattern.size();
+						size_t pos_end = contentstr.find("\r");
+						bufferSize = std::stoi(contentstr.substr(pos_start, pos_end- pos_start));
+						size_t pos_json_start = contentstr.find("{");
+						if (contentSize > pos_json_start) {
+							//alreadyReadBuffer = contentSize - pos_json_start;
+							output.append(contentstr.substr(pos_json_start, bufferSize));
+							alreadyReadBuffer = output.size();
+						}
+					}
+					if (bufferSize <= 0) {
+						//std::cout << "failed to read the header: retry\n";
+						//state = ReadState::Error;
+						break;
+					}
+					state = ReadState::Content;
+					skipsleep = true;
+
+					break;
+				}
+				case ReadState::Content:
+				{
+					if (bufferSize - alreadyReadBuffer > 0) {
+						int tobeRead = bufferSize - alreadyReadBuffer;
+						char* readBuff = new char[bufferSize];
+						size_t readStreamSize = 0;
+						SlangResult res = m_readStream->read(readBuff, tobeRead, readStreamSize);
+						releaseMutex();
+						if (res != SLANG_OK) {
+							state = ReadState::Error;
+							break;
+						}
+						output.append(readBuff);
+						alreadyReadBuffer += readStreamSize;
+						if (alreadyReadBuffer == bufferSize) {
+							state = ReadState::Done;
+							skipsleep = true;
+						}
+					}
+					else if (bufferSize == alreadyReadBuffer ) {
+						skipsleep = true;
+						state = ReadState::Done;
+						break;
+					}
+					break;
+				}
+				case ReadState::Error:
+					SLANG_LOG(std::cout << "Failed to read the results\n";)
+					return SLANG_E_INTERNAL_FAIL;
+				}
+				if (!skipsleep) {
+					Sleep(sleepMS);
+					timeoutCount++;
+				}
+			}
+			if (timeoutCount >= MAX_TIMEOUT_ITER_COUNT) {
+				SLANG_LOG(std::cout << "Timer timed out\n";)
+				// Kill the process and reset the thread state. 
+				m_process->terminate(0);
+				tstate = ethread_state_exit;
+				g_hasProcess = false;
+
+				SLANG_LOG(std::cout << "waiting for spwaned thread to be killed:" << hProcessMgmtThread << " threadID:" << dwThreadId<<"\n";)
+				DWORD wres = WaitForSingleObject(hProcessMgmtThread, threadDiedWaitMS); // wait for the thread
+				SLANG_LOG(std::cout << "Waited for thread id" << dwThreadId << "singleobject wait result =" << wres << "\n";)
+				hProcessMgmtThread = NULL;
+				return SLANG_E_TIME_OUT;
+			}
 			return SLANG_OK;
 		}
 
+		SlangResult KillProcessAndResetDS()
+		{
+			if (!m_process)
+				return SLANG_OK;
+
+			if (m_readErrStream) {
+				delete m_readErrStream;
+				m_readErrStream = nullptr;
+			}
+			if (m_readStream) {
+				delete m_readStream;
+				m_readStream = nullptr;
+			}
+			if (m_writeStream) {
+				delete m_writeStream;
+				m_writeStream = nullptr;
+			}
+
+			//m_process->terminate(0);
+			delete m_process;
+			m_process = NULL;
+			return SLANG_OK;
+		}
+		// Sample custom data structure for threads to use.
+		// This is passed by void pointer so it can be any data type
+		// that can be passed using a single void pointer (LPVOID).
+
+		SlangResult spawinAndWaitTestServer()
+		{
+			if (m_process)
+				return SLANG_OK;
+
+			SlangResult result = SLANG_OK;
+			//WinProcess *process=nullptr;
+			std::string exename = slangDllPath + "test-server.exe";
+			std::string cmdline = slangDllPath + "test-server.exe";
+			result = CreateProcess(exename, cmdline, Process::Flag::DisableStdErrRedirection, m_process);
+			if (result != SLANG_OK) {
+				SLANG_LOG(std::cout << "Failed to laucnh the test-server\n";)
+				return SLANG_FAIL;
+			}
+			m_readStream = new WinPipeStream(m_process->getStream(StdStreamType::Out), FileAccess::Read);
+			if (m_process->getStream(StdStreamType::ErrorOut))
+				m_readErrStream = new WinPipeStream(m_process->getStream(StdStreamType::ErrorOut), FileAccess::Read);
+			m_writeStream = new WinPipeStream(m_process->getStream(StdStreamType::In), FileAccess::Write);
+
+			return SLANG_OK;
+		}
+
+		SlangResult parseSpirvAsm(string& output, std::vector<deUint32>* dst)
+		{
+			// get the SPIRV-txt
+			//std::cout << output;
+			size_t spirv_start_pos = output.find("; SPIR-V");
+			if (spirv_start_pos == std::string::npos) {
+				// Compilation failed to extract
+				return SLANG_FAIL;
+			}
+			size_t spirv_end_pos = output.find("\", ", spirv_start_pos);
+			std::string spvasm = output.substr(spirv_start_pos, spirv_end_pos - spirv_start_pos);
+			size_t pos = spvasm.find("\\n");
+			while (pos != std::string::npos) {
+				spvasm.replace(pos, 2, "\n");
+				//spvasm.erase(pos);
+				pos = spvasm.find("\\n");
+			};
+			string pattern = "\\\"";
+			pos = spvasm.find(pattern);
+			while (pos != std::string::npos) {
+				spvasm.replace(pos, 2, "\"");
+				pos = spvasm.find(pattern);
+			};
+			//std::cout << "SPIRV ASM\n" << spvasm;
+
+			// Now transform it into bitcode
+			SpirVProgramInfo buildInfo;
+			SpirVAsmSource program(spvasm);
+			if (!assembleSpirV(&program, dst, &buildInfo, SPIRV_VERSION_1_0))
+				return SLANG_FAIL;
+			return SLANG_OK;
+		}
 
 		int setupSlangLikeSlangc(const std::vector<std::string>* sources, const ShaderBuildOptions& buildOptions, const ShaderLanguage shaderLanguage, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo)
 		{
 			SlangResult result = SLANG_OK;
-			bool ServerMode = false;
+			bool enableServerMode = true;
+			char lpBuffer[128];
+			memset(lpBuffer, 0, 128);
+			DWORD ret = GetEnvironmentVariable("DISABLE_CTS_SLANG_SERVER_MODE", lpBuffer, 128);
+			if (ret > 0 && strcmp(lpBuffer, "1") == 0) {
+				SLANG_LOG(std::cout << lpBuffer << "\n";)
+				enableServerMode = false;
+				SLANG_LOG(std::cout << "Disabled SLANG SERVER MODE\n";)
+			}
+
 			do {
 				result = SetupSlangDLL();
 				if (result != SLANG_OK) {
-					std::cout << "Failed to load SLANG DLL";
-					break;
-				}
-				getSlangFunctionHandles();
-				if (!m_sfn.isInitialized()) {
-					std::cout << "Failed to get function pointers";
-					break;
-				}
-				result = m_sfn.pfnslang_createGlobalSession(SLANG_API_VERSION, slangGlobalSession.writeRef());
-				if (result != SLANG_OK) {
-					std::cout << "Failed to create global session: " << std::hex << result << "\n";
+					SLANG_LOG(std::cout << "Failed to load SLANG DLL";)
 					break;
 				}
 				SlangCompileRequest* compileRequest = nullptr;
-				result = slangGlobalSession->createCompileRequest(&compileRequest);
-				if (result != SLANG_OK) {
-					std::cout << "Failed to create CompileRequest: " << std::hex << result << "\n";
-					break;
+				if (!enableServerMode) {
+					getSlangFunctionHandles();
+					if (!m_sfn.isInitialized()) {
+						SLANG_LOG(std::cout << "Failed to get function pointers";)
+						break;
+					}
+					result = m_sfn.pfnslang_createGlobalSession(SLANG_API_VERSION, slangGlobalSession.writeRef());
+					if (result != SLANG_OK) {
+						SLANG_LOG(std::cout << "Failed to create global session: " << std::hex << result << "\n";)
+						break;
+					}
+					result = slangGlobalSession->createCompileRequest(&compileRequest);
+					if (result != SLANG_OK) {
+						SLANG_LOG(std::cout << "Failed to create CompileRequest: " << std::hex << result << "\n";)
+						break;
+					}
 				}
-
 				for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; shaderType++) {
 					if (!sources[shaderType].empty()) {
 						const std::string& srcText = getShaderStageSource(sources, buildOptions, (glu::ShaderType)shaderType);
 						glu::ShaderType shaderstage = glu::ShaderType(shaderType);
-						const char* slangShaderStage = findSlangShaderStage((glu::ShaderType)shaderType);
+						std::string slangShaderStage = findSlangShaderStage((glu::ShaderType)shaderType);
+						if (slangShaderStage.empty()) {
+							break;
+						}
 						const char* fileExt = findSlangShaderExt((glu::ShaderType)shaderType);
 						if (!slangDllPath.empty())
 							SetCurrentDirectory(slangDllPath.c_str());
@@ -734,24 +1166,45 @@ namespace vk
 						myfile.open(temp_fname);
 						myfile << srcText.c_str();
 						myfile.close();
-						if (ServerMode) {
-							//List<String> args = { "-target", "spirv", "-stage", slangShaderStage, "-entry", "main", "-allow-glsl", temp_fname.c_str(), "-o", "temp.spv" };
-							//String args = "-target spirv -stage slangShaderStage -entry main --allow-glsl ";
-							//args.append(+temp_fname.c_str());
-							//args.append(" -o temp.spv");
-							//String shaderStage = slangShaderStage;
+						if (enableServerMode) {
+							std::string output;
+							//result = spawinAndWaitTestServer(); //this mechanism spawns the process in the same thread. This is not used in final implementation
+							result = spawnThreadForTestServer();
+							if (result != SLANG_OK) {
+								SLANG_LOG(std::cout << "Failed to spawn test sever: " << std::hex << result << "\n";)
+								break;
+							}
+							result = sendCommand(temp_fname, slangShaderStage);
+							if (result != SLANG_OK) {
+								SLANG_LOG(std::cout << "Failed to send command to test sever: " << std::hex << result << "\n";)
+								break;
+							}
 
-							spawinAndWaitTestServer(slangShaderStage, temp_fname.c_str());
+							result = readResult(output);
+							if (result != SLANG_OK) {
+								SLANG_LOG(std::cout << "Failed to read results from test sever: " << std::hex << result << "\n";)
+								break;
+							}
+
+							//spv_binary binary;
+							result = parseSpirvAsm(output, dst);
+							if (result != SLANG_OK) {
+								SLANG_LOG(std::cout << "Failed to generate SPIRV ouptput from test-server results: " << std::hex << result << "\n";)
+								break;
+							}
+							buildInfo->program.linkOk = true;
+							//buildInfo->program.linkTimeUs = deGetMicroseconds() - linkStartTime;
+
 						}
 						else {
 							compileRequest->addSearchPath(slangDllPath.c_str());
 							compileRequest->setDiagnosticCallback(&_diagnosticCallback, nullptr);
 							compileRequest->setCommandLineCompilerMode();
-							const char* args[] = { "-target", "spirv", "-stage", slangShaderStage, "-entry", "main", "-allow-glsl", temp_fname.c_str(), "-o", "temp.spv" };
+							const char* args[] = { "-target", "spirv", "-stage", slangShaderStage.c_str(), "-entry", "main", "-allow-glsl", temp_fname.c_str(), "-o", "temp.spv" };
 							int argCount = sizeof(args) / sizeof(char*);//8;
 							result = compileRequest->processCommandLineArguments(args, argCount);
 							if (result != SLANG_OK) {
-								std::cout << "Failed to proces command line arguments: " << std::hex << result << "\n";
+								SLANG_LOG(std::cout << "Failed to proces command line arguments: " << std::hex << result << "\n";)
 								break;
 							}
 							const deUint64  compileStartTime = deGetMicroseconds();
@@ -759,7 +1212,7 @@ namespace vk
 
 							result = compileRequest->compile();
 							if (result != SLANG_OK) {
-								std::cout << "Failed to compile: " << std::hex << result << "\n";
+								SLANG_LOG(std::cout << "Failed to compile: " << std::hex << result << "\n";)
 								break;
 
 							}
@@ -787,34 +1240,10 @@ namespace vk
 							buildInfo->program.infoLog = "";//glslangProgram.getInfoLog(); // \todo [2015-11-05 scygan] Include debug log?
 							buildInfo->program.linkOk = true;
 							buildInfo->program.linkTimeUs = deGetMicroseconds() - linkStartTime;
+							//spirvCode->release();
+							compileRequest->release();
+
 						}
-						shaderBuildInfo.type = (glu::ShaderType)shaderType;
-						shaderBuildInfo.source = srcText;
-						shaderBuildInfo.infoLog = "";//shader.getInfoLog(); // \todo [2015-07-13 pyry] Include debug log?
-						shaderBuildInfo.compileTimeUs = deGetMicroseconds() - compileStartTime;
-						shaderBuildInfo.compileOk = (result == SLANG_OK);
-						buildInfo->shaders.push_back(shaderBuildInfo);
-
-						const deUint64  linkStartTime = deGetMicroseconds();
-
-						Slang::ComPtr<ISlangBlob> spirvCode;
-						compileRequest->getEntryPointCodeBlob(0, 0, spirvCode.writeRef());
-
-
-						//copy the SPIRV
-						uint32_t* buff32 = (uint32_t*)spirvCode->getBufferPointer();
-						size_t size = spirvCode->getBufferSize();
-						// print the buffer
-						for (int i = 0; i < size / 4; i++) {
-							//printf("%x ", buff32[i]);
-							dst->push_back(buff32[i]);
-						}
-						buildInfo->program.infoLog = "";//glslangProgram.getInfoLog(); // \todo [2015-11-05 scygan] Include debug log?
-						buildInfo->program.linkOk = true;
-						buildInfo->program.linkTimeUs = deGetMicroseconds() - linkStartTime;
-						spirvCode->release();
-						compileRequest->release();
-
 					}
 				}
 			} while (false);
@@ -829,19 +1258,19 @@ namespace vk
 			if (!globalSessionInit) {
 				// load DLL
 				if (!SetDllDirectoryA(slangDllPath.c_str())) {
-					std::cout << "failed to set slang dll PATH\n";
+					SLANG_LOG(std::cout << "failed to set slang dll PATH\n";)
 					return SLANG_FAIL;
 				}
 				HMODULE handle = LoadLibraryA("slang.dll");
 				if (NULL == handle) {
-					std::cout << "failed to load slang.dll\n";
+					SLANG_LOG(std::cout << "failed to load slang.dll\n";)
 					return SLANG_FAIL;
 				}
 				typedef UINT(CALLBACK* LPFNDLLFUNC1)(SlangInt, slang::IGlobalSession**);
 				LPFNDLLFUNC1 pfnslang_createGlobalSessionWithoutStdLib = (LPFNDLLFUNC1)GetProcAddress(handle,"slang_createGlobalSessionWithoutStdLib");
 				if (!pfnslang_createGlobalSessionWithoutStdLib) {
 					// handle the error
-					std::cout << "failed to get create global session method\n";
+					SLANG_LOG(std::cout << "failed to get create global session method\n";)
 					FreeLibrary(handle);
 					return SLANG_FAIL;
 				}
@@ -849,7 +1278,7 @@ namespace vk
 				LPFNDLLFUNC1 pfnslang_createGlobalSession = (LPFNDLLFUNC1)GetProcAddress(handle, "slang_createGlobalSession");
 				if (!pfnslang_createGlobalSession) {
 					// handle the error
-					std::cout << "failed to get create global session method\n";
+					SLANG_LOG(std::cout << "failed to get create global session method\n";)
 					FreeLibrary(handle);
 					return SLANG_FAIL;
 				}
@@ -859,7 +1288,7 @@ namespace vk
 				//result = slang_createGlobalSessionWithoutStdLib(SLANG_API_VERSION, slangGlobalSession.writeRef());
 				result = pfnslang_createGlobalSession(SLANG_API_VERSION, slangGlobalSession.writeRef());
 				if (result != SLANG_OK) {
-					std::cout << "Failed to create global session: " << std::hex << result << "\n";
+					SLANG_LOG(std::cout << "Failed to create global session: " << std::hex << result << "\n";)
 					return result;
 				}
 				globalSessionInit = true;
@@ -883,7 +1312,7 @@ namespace vk
     				Slang::ComPtr<slang::ISession> session;
     				result = slangGlobalSession->createSession(sessionDesc, session.writeRef());
     				if (result != SLANG_OK) {
-    					std::cout << "Failed to create local session: " << std::hex << result << "\n";
+    					SLANG_LOG(std::cout << "Failed to create local session: " << std::hex << result << "\n";)
     					//return SLANG_FAIL;
     					break;
     				}
@@ -903,7 +1332,7 @@ namespace vk
     					//slangModule = session->loadModuleFromSource("cts-test", path, &blobSource, diagnosticBlob.writeRef());
 						slangModule = session->loadModule("test", diagnosticBlob.writeRef());
 						if (!slangModule) {
-							std::cout << "Failed to load the module\n";
+							SLANG_LOG(std::cout << "Failed to load the module\n";)
 							diagnoseIfNeeded(diagnosticBlob);
 							result = SLANG_FAIL;
 						}
@@ -923,7 +1352,7 @@ namespace vk
             		ComPtr<slang::IEntryPoint> entryPoint;
             		result = slangModule->findEntryPointByName("main", entryPoint.writeRef());
             		if (result != SLANG_OK) {
-            			std::cout << "Failed to find the entry point: " << std::hex << result << "\n";
+            			SLANG_LOG(std::cout << "Failed to find the entry point: " << std::hex << result << "\n";)
             			//return SLANG_FAIL;
             			//break;
             		}
@@ -937,7 +1366,7 @@ namespace vk
             				composedProgram.writeRef(),
             				diagnosticsBlob.writeRef());
             			if (result != SLANG_OK) {
-            				std::cout << "Failed to create composite component type: " << std::hex << result << "\n";
+            				SLANG_LOG(std::cout << "Failed to create composite component type: " << std::hex << result << "\n";)
             				diagnoseIfNeeded(diagnosticsBlob);
             				//return SLANG_FAIL;
             				//break;
@@ -958,7 +1387,7 @@ namespace vk
         					ComPtr<slang::IBlob> diagnosticsBlob;
         					result = composedProgram->link(linkedProgram.writeRef(), diagnosticsBlob.writeRef());
         					if (result != SLANG_OK) {
-        						std::cout << "Failed to link: " << std::hex << result << "\n";
+        						SLANG_LOG(std::cout << "Failed to link: " << std::hex << result << "\n";)
         						diagnoseIfNeeded(diagnosticsBlob);
         					}
         				}
@@ -977,7 +1406,7 @@ namespace vk
         					result = composedProgram->getEntryPointCode(
         						0, 0, spirvCode.writeRef(), diagnosticsBlob.writeRef());
         					if (result != SLANG_OK) {
-        						std::cout << "Failed to generate SPIRV Code: " << std::hex << result << "\n";
+        						SLANG_LOG(std::cout << "Failed to generate SPIRV Code: " << std::hex << result << "\n";)
         						diagnoseIfNeeded(diagnosticsBlob);
         						return SLANG_FAIL;
         					}
@@ -1002,6 +1431,230 @@ namespace vk
 
 	};
 	static SlangContext g_slangContext;
+
+	inline bool getMutexInfinite(bool sleepThread, int timeout_thresh) {
+		//std::cout << "Inside infinited mutex thread id:" << GetCurrentThreadId() << "for mutex" << ghMutex << "\n";
+		assert(ghMutex);
+		while (true) { //&& timeout >= 0
+
+			DWORD dwWaitResult;
+			if (timeout_thresh > 0)
+				dwWaitResult = WaitForSingleObject(ghMutex, timeout_thresh);
+			else
+				dwWaitResult = WaitForSingleObject(ghMutex, INFINITE);
+			if (dwWaitResult == WAIT_OBJECT_0) {
+				return true;
+			}
+			if (dwWaitResult == WAIT_ABANDONED || dwWaitResult == WAIT_FAILED) {
+				SLANG_LOG(std::cout << "getMutexInfinite: dWaitResult:" << dwWaitResult << std::endl;)
+				return false;
+			}
+			if (sleepThread)
+				Sleep(sleepProcesMgmtThreads); //sleep for 10ms for the other thread to make it work
+		}
+		return false;
+	}
+
+	inline DWORD getMutexState() {
+		//int timeout = 50;
+		SLANG_LOG(std::cout << "Inside infinited mutex thread id:" << GetCurrentThreadId() << "for mutex" << ghMutex << "\n";)
+		assert(ghMutex);
+		return WaitForSingleObject(ghMutex, 0);
+		return false;
+	}
+
+	inline bool releaseMutex() {
+		//std::cout << "Inside release mutex, thread id:" << GetCurrentThreadId() << "for mutex" << ghMutex << "\n";
+
+		return ReleaseMutex(ghMutex);
+	}
+
+	SlangResult waitforSpawnthreadSignal(bool sleepThread)
+	{
+		assert(ghSemaphore);
+		//int timeout = 50;
+		while (true) { //&& timeout >= 0
+			DWORD dwWaitResult = WaitForSingleObject(ghSemaphore, 0L);
+			if (dwWaitResult == WAIT_OBJECT_0) {
+				//semaphore got signaled we can continue
+				return true;
+			}
+			if (sleepThread)
+				Sleep(sleepProcesMgmtThreads); //sleep for 10ms for the other thread to make it work
+			//timeout--;
+		}
+		return false;
+
+	}
+
+	DWORD WINAPI spawinAndWaitTestServerThread(LPVOID lpParam)
+	{
+		//std::cout << "Inside thread\n";
+		do {
+			tstate = ethread_state_start;
+			ReleaseSemaphore(ghSemaphore, 1, NULL); // release the semahore
+			SLANG_LOG(std::cout << "spawinAndWaitTestServerThread: #1 thread is active\n";)
+;			if (!getMutexInfinite(false)) {
+				SLANG_LOG(std::cout << "#1 spawinAndWaitTestServerThread: Failed to acquire mutex\n";)
+				tstate = ethread_state_exit;
+				return -1;
+			}
+			SLANG_LOG(std::cout << "#2 spawinAndWaitTestServerThread: Thread launching test-server \n";)
+			if (g_slangContext.spawinAndWaitTestServer() == SLANG_OK) {
+				SLANG_LOG(std::cout << "#3 spawinAndWaitTestServerThread: thread succeded to launch server \n";)
+				tstate = ethread_state_alive;
+				g_hasProcess = true;
+				releaseMutex();
+				HANDLE prochandle = HANDLE(m_process->m_processHandle);
+				WaitForSingleObject(prochandle, INFINITE);
+			}
+			else {
+				SLANG_LOG(std::cout << "#4 spawinAndWaitTestServerThread: thread failed to launch test-server \n";)
+				tstate = ethread_state_exit;
+				releaseMutex();
+				return -1;
+			}
+			
+			SLANG_LOG(std::cout << "#5 spawinAndWaitTestServerThread: thread state before is getting killed:" << tstate << " thread id:" << GetCurrentThreadId() << " threadHandle:" << GetCurrentThread() <<"\n";)
+			if (getMutexState() == WAIT_TIMEOUT) {
+				SLANG_LOG(std::cout << "#6 spawinAndWaitTestServerThread: spwaned process killed because it was hung, thread id : " << GetCurrentThreadId()<< "\n";)
+
+				tstate = ethread_state_exit;
+				releaseMutex();
+				CloseHandle(ghMutex);
+				ghMutex = NULL;
+				g_hasProcess = false;
+				return 0;
+			}
+			SLANG_LOG(std::cout << "#7 spawinAndWaitTestServerThread: thread state before is getting killed:" << tstate << " thread id:" << GetCurrentThreadId() << " threadHandle:" << GetCurrentThread() << "\n";)
+			if (!getMutexInfinite(false)) {
+				tstate = ethread_state_exit;
+				SLANG_LOG(std::cout << "#8 spawinAndWaitTestServerThread: Failed to acquire mutex\n";)
+				return -1;
+			}
+			SLANG_LOG(std::cout << "#9 spawinAndWaitTestServerThread: thread after taking mutex" << GetCurrentThreadId() << "\n";)
+			CloseHandle(m_process->m_processHandle);
+			g_slangContext.KillProcessAndResetDS();
+			g_hasProcess = false;
+			tstate = ethread_state_exit;
+			releaseMutex();
+			CloseHandle(ghMutex);
+			ghMutex = NULL;
+			SLANG_LOG(std::cout << "#10 spawinAndWaitTestServerThread: thread after exiting mutex" << GetCurrentThreadId() << "\n";)
+		} while (false);
+		return 0;
+	}
+	void flushtestserverpipes()
+	{
+		if (m_readStream) {
+			char content[HEADER_BUFF_MAX_SIZE];
+			size_t contentSize = 0;
+			SlangResult res = m_readStream->read(content, HEADER_BUFF_MAX_SIZE, contentSize);
+			while (contentSize > 0 && res == SLANG_OK) {
+				res = m_readStream->read(content, HEADER_BUFF_MAX_SIZE, contentSize);
+			}
+		}
+	}
+	SlangResult spawnThreadForTestServer()
+	{
+		do {
+			if (!ghMutex) {
+				ghMutex = CreateMutex(
+					NULL,              // default security attributes
+					FALSE,             // initially not owned
+					NULL);             // unnamed mutex
+				if (ghMutex == NULL) {
+					std::cout << "failed to create mutex for test-server\n";
+					return -1;
+				}
+			}
+			//std::cout << "#1: spawnThreadForTestServer: tstate:" << tstate << std::endl;
+			if (tstate == ethread_state_exit) {
+				ghSemaphore = CreateSemaphore(
+					NULL,           // default security attributes
+					0,  // initial count, this means the semaphor is not in signal state
+					1,  // maximum count
+					NULL);          // unnamed semaphore
+
+				if (ghSemaphore == NULL)
+				{
+					printf("CreateSemaphore error: %d\n", GetLastError());
+					return -1;
+				}
+
+				// This means process has exited, created a new thread
+				hProcessMgmtThread = CreateThread(
+					NULL,                   // default security attributes
+					0,                      // use default stack size  
+					spawinAndWaitTestServerThread,       // thread function name
+					NULL,          // argument to thread function 
+					0, // use default creation flags 
+					&dwThreadId);   // returns the thread identifier
+				if (hProcessMgmtThread == NULL)
+				{
+					printf("CreateThread error: %d\n", GetLastError());
+					return -1;
+				}
+
+				if (!waitforSpawnthreadSignal(true)) {
+					printf("Semaphore was never signalled error: %d\n", GetLastError());
+					//TerminateThread(hProcessMgmtThread);
+					CloseHandle(ghSemaphore);
+					ghSemaphore = NULL;
+					return -1;
+				}
+				CloseHandle(ghSemaphore);
+				ghSemaphore = NULL;
+			}
+#if 0
+			if (tstate == ethread_state_alive) {
+				if (!getMutexInfinite(true)) {
+					releaseMutex();
+					std::cout << "#7: Failed to acquire mutex\n";
+					return -1;
+				}
+				flushtestserverpipes();
+				releaseMutex();
+			}
+#endif
+			if (tstate == ethread_state_exit) {
+				SLANG_LOG(std::cout << "#1 spawnThreadForTestServer: Failed to spawn server from the thread and the thread is dead\n";)
+				WaitForSingleObject(hProcessMgmtThread, threadDiedWaitMS);
+				return -1;
+			}
+			else {
+				while (tstate != ethread_state_alive) {
+					if (!getMutexInfinite(true)) {
+						SLANG_LOG(std::cout << "#2 spawnThreadForTestServer: : Failed to acquire mutex\n";)
+						return -1;
+					}
+					if (tstate == ethread_state_start) {
+						// sever thread is in process of starting test-server
+						// release the mutex and wait for updates
+						releaseMutex(); // and poll again
+					}
+					else if (tstate == ethread_state_exit) {
+						CloseHandle(ghMutex);
+						ghMutex = NULL;
+						hProcessMgmtThread = NULL;
+						releaseMutex(); // and poll again
+						std::cout << "#3 spawnThreadForTestServer: Worker thread failed to spawn the test-server and has exited\n";
+						return -1;
+					}
+					else {
+						// SUCCESS: test-sever is alive and ready to recieve commands
+						assert(tstate == ethread_state_alive);
+						// flush the files and clear them
+						flushtestserverpipes();
+						releaseMutex();
+						break;
+					}
+				}
+			}
+		} while (false);
+		return SLANG_OK;
+	}
+
 #endif
 	bool compileShaderToSpirV(const std::vector<std::string>* sources, const ShaderBuildOptions& buildOptions, const ShaderLanguage shaderLanguage, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo)
 	{
@@ -1016,7 +1669,7 @@ namespace vk
 
 		prepareGlslang();
 		getDefaultBuiltInResources(&builtinRes);
-#ifdef _WIN32
+#if defined(ENABLE_SLANG_COMPILATION) && defined(_WIN32)
 		bool enableSlang = true;
 		char lpBuffer[128];
 		DWORD ret = GetEnvironmentVariable("DISABLE_CTS_SLANG", lpBuffer, 128);
@@ -1024,6 +1677,7 @@ namespace vk
 			enableSlang = false;
 			//std::cout << "Disabled SLANG\n";
 		}
+
 		if (enableSlang) {
 			//int result = g_slangContext.setupSlang(sources, buildOptions, shaderLanguage, dst, buildInfo);
 			g_slangContext.setupSlangLikeSlangc(sources, buildOptions, shaderLanguage, dst, buildInfo);
