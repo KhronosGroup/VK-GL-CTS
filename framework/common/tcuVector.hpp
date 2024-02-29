@@ -166,6 +166,9 @@ public:
 	template<typename NewT>
 	Vector<NewT, Size>		cast		(void) const;
 
+	template<typename NewT>
+	Vector<NewT, Size>		bitCast		(void) const;
+
 	template <int NewSize>
 	Vector<T, NewSize>		toWidth		(void) const;
 } DE_WARN_UNUSED_TYPE;
@@ -251,6 +254,17 @@ inline Vector<NewT, Size> Vector<T, Size>::cast (void) const
 	Vector<NewT, Size> res;
 	for (int i = 0; i < Size; i++)
 		res.m_data[i] = NewT(m_data[i]);
+	return res;
+}
+
+// Bit-exact reinterpret cast.
+template <typename T, int Size>
+template <typename NewT>
+inline Vector<NewT, Size> Vector<T, Size>::bitCast (void) const
+{
+	Vector<NewT, Size> res;
+	DE_STATIC_ASSERT(sizeof(res.m_data) == sizeof(m_data));
+	memcpy(res.m_data, m_data, sizeof(m_data));
 	return res;
 }
 
