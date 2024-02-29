@@ -100,6 +100,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_NV_coverage_reduction_mode",
 		"VK_NV_viewport_swizzle",
 		"VK_NV_representative_fragment_test",
+		"VK_MVK_macos_surface",
 	};
 
 	const char* exclusions[] =

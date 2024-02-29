@@ -60,7 +60,7 @@ namespace osx
 
 	MetalView::~MetalView ()
 	{
-		[(NativeMetalView*)m_view dealloc];
+		[(NativeMetalView*)m_view release];
 	}
 } // osx
 } // tcu
