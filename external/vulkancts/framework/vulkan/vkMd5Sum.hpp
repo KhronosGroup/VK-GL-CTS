@@ -61,6 +61,10 @@ typedef char MD5Context[88];
 
 void MD5Sum(const void* data, std::size_t length, MD5Digest* digest);
 
+void MD5Init(MD5Context* context);
+void MD5Update(MD5Context* context, const deUint8* data, std::size_t len);
+void MD5Final(MD5Digest* digest, MD5Context* context);
+
 // Converts a digest into human-readable hexadecimal.
 std::string MD5DigestToBase16(const MD5Digest& digest);
 
