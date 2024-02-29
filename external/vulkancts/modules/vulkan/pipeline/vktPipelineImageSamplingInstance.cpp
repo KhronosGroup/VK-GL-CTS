@@ -216,11 +216,21 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 	if ((deUint32)params.imageCount > context.getDeviceProperties().limits.maxColorAttachments)
 		throw tcu::NotSupportedError(std::string("Unsupported render target count: ") + de::toString(params.imageCount));
 
-	if ((params.samplerParams.minFilter == VK_FILTER_LINEAR ||
-		 params.samplerParams.magFilter == VK_FILTER_LINEAR ||
-		 params.samplerParams.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR) &&
-		!isLinearFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
-		throw tcu::NotSupportedError(std::string("Unsupported format for linear filtering: ") + getFormatName(params.imageFormat));
+	if (params.samplerParams.minFilter == VK_FILTER_LINEAR ||
+		params.samplerParams.magFilter == VK_FILTER_LINEAR ||
+		params.samplerParams.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR)
+	{
+		if (reductionModeInfo == NULL || reductionModeInfo->reductionMode == VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE)
+		{
+			if (!isLinearFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
+				throw tcu::NotSupportedError(std::string("Unsupported format for linear filtering: ") + getFormatName(params.imageFormat));
+		}
+		else
+		{
+			if (!isMinMaxFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
+				throw tcu::NotSupportedError(std::string("Unsupported format for min/max filtering: ") + getFormatName(params.imageFormat));
+		}
+	}
 
 	if (params.separateStencilUsage)
 	{
@@ -273,12 +283,7 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 	}
 
 	if (reductionModeInfo != NULL)
-	{
 		context.requireDeviceFunctionality("VK_EXT_sampler_filter_minmax");
-
-		if (!isMinMaxFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
-			throw tcu::NotSupportedError(std::string("Unsupported format for min/max filtering: ") + getFormatName(params.imageFormat));
-	}
 
 	if (ycbcrInfo != NULL)
 		context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion");
