@@ -1049,7 +1049,7 @@ tcu::TestStatus IncrementalPresentTestInstance::iterate (void)
 	}
 	catch (const vk::Error& error)
 	{
-		if (error.getError() == vk::VK_ERROR_OUT_OF_DATE_KHR)
+		if (error.getError() == vk::VK_ERROR_OUT_OF_DATE_KHR || error.getError() == vk::VK_SUBOPTIMAL_KHR)
 		{
 			m_swapchainConfigs = generateSwapchainConfigs(*m_surface, &m_queueFamilyIndex, m_testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, m_testConfig.presentMode, m_testConfig.transform, m_testConfig.alpha);
 
@@ -1065,7 +1065,7 @@ tcu::TestStatus IncrementalPresentTestInstance::iterate (void)
 			else
 			{
 				m_context.getTestContext().getLog() << TestLog::Message << "Frame " << m_frameNdx << ": Swapchain out of date." << TestLog::EndMessage;
-				m_resultCollector.fail("Received too many VK_ERROR_OUT_OF_DATE_KHR errors. Received " + de::toString(m_outOfDateCount) + ", max " + de::toString(m_maxOutOfDateCount));
+				m_resultCollector.fail("Received too many VK_ERROR_OUT_OF_DATE_KHR or VK_SUBOPTIMAL_KHR errors. Received " + de::toString(m_outOfDateCount) + ", max " + de::toString(m_maxOutOfDateCount));
 			}
 		}
 		else
