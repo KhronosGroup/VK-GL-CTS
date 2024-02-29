@@ -142,10 +142,8 @@ include_directories(external/renderdoc/src)
 
 # Vulkan video support libraries
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
-	# Used for elementary stream demuxing
-	add_subdirectory(external/ESExtractor EXCLUDE_FROM_ALL)
-	# Used for the heavy lifting in video decoding, depends on ESExtrator at runtime.
-	add_subdirectory(external/nvidia-video-samples EXCLUDE_FROM_ALL)
+   # Some of the parsing / codec code is used from here.
+   add_subdirectory(external/nvidia-video-samples EXCLUDE_FROM_ALL)
 endif()
 
 include_directories(${PNG_INCLUDE_PATH})

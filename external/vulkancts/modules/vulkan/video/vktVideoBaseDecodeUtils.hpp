@@ -40,19 +40,20 @@
  * limitations under the License.
  */
 
-#include "vktVideoTestUtils.hpp"
-#include "vktVideoFrameBuffer.hpp"
-#include "extESExtractor.hpp"
-
-#include "deMemory.h"
-#include "vkBufferWithMemory.hpp"
-#include "vkImageWithMemory.hpp"
-
 #include <array>
 #include <bitset>
 #include <list>
 #include <queue>
 #include <vector>
+
+#include "deMemory.h"
+
+#include "vktVideoTestUtils.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
+
+#include "vktVideoFrameBuffer.hpp"
+#include "vktDemuxer.hpp"
 
 namespace vkt
 {
@@ -1006,22 +1007,32 @@ public:
 
 using VkVideoParser = VkSharedBaseObj<VulkanVideoDecodeParser>;
 
-void createParser(VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties, VideoBaseDecoder* decoder, VkSharedBaseObj<VulkanVideoDecodeParser>& parser, bool av1AnnexB);
+void createParser(VkVideoCodecOperationFlagBitsKHR	codecOperation,
+				  const VkExtensionProperties*		extensionProperties,
+				  std::shared_ptr<VideoBaseDecoder> decoder,
+				  VkVideoParser& parser,
+				  ElementaryStreamFraming framing);
+
 
 class FrameProcessor
 {
 public:
-	FrameProcessor(const char* filename, const char* demuxerOptions, VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties, VideoBaseDecoder* decoder, tcu::TestLog& log, bool av1AnnexB);
-	FrameProcessor(ese_read_buffer_func readBufferFunc, void* data, const char *demuxerOptions, VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties, VideoBaseDecoder* decoder, tcu::TestLog& log, bool av1AnnexB);
+	FrameProcessor(std::unique_ptr<Demuxer>&& demuxer, VkVideoParser parser, std::shared_ptr<VideoBaseDecoder> decoder);
+
 	void parseNextChunk();
 	int getNextFrame(DecodedFrame* pFrame);
 	void bufferFrames(int framesToDecode);
-	int getBufferedDisplayCount() const { return m_decoder->GetVideoFrameBuffer()->GetDisplayedFrameCount(); };
+	int getBufferedDisplayCount() const {
+		if (std::shared_ptr<VideoBaseDecoder> decoder = m_decoder.lock())
+			return decoder->GetVideoFrameBuffer()->GetDisplayedFrameCount();
+		return 0;
+	}
+
 private:
-	ESEDemuxer m_demuxer;
-	VkVideoParser m_parser;
-	VideoBaseDecoder* m_decoder;
-	bool m_videoStreamHasEnded{false};
+	VkVideoParser					m_parser;
+	std::weak_ptr<VideoBaseDecoder>	m_decoder;
+	std::unique_ptr<Demuxer>		m_demuxer;
+	bool							m_eos{false};
 };
 
 } // namespace video

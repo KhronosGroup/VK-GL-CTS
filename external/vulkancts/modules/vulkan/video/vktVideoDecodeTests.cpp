@@ -23,28 +23,30 @@
  */
 /*--------------------------------------------------------------------*/
 
+#include <utility>
+#include <memory>
+
+#include "deDefs.h"
+#include "deFilePath.hpp"
+
+#include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
+
+#include "vkDefs.hpp"
 #include "vktVideoDecodeTests.hpp"
 #include "vktVideoTestUtils.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkObjUtil.hpp"
-
-#include "tcuTestLog.hpp"
-
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
-#include "vkDefs.hpp"
-#include "tcuCommandLine.hpp"
 
 #include "vktVideoClipInfo.hpp"
-#include <deDefs.h>
 
 #ifdef DE_BUILD_VIDEO
-#include "extESExtractor.hpp"
 #include "vktVideoBaseDecodeUtils.hpp"
 #include <VulkanH264Decoder.h>
 #include <VulkanH265Decoder.h>
 #include <VulkanAV1Decoder.h>
-#include <utility>
 #endif
 
 namespace vkt
@@ -52,60 +54,50 @@ namespace vkt
 namespace video
 {
 #ifdef DE_BUILD_VIDEO
-FrameProcessor::FrameProcessor(const char* filename, const char *demuxerOptions,
-				VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties,
-				VideoBaseDecoder* decoder, tcu::TestLog& log, bool av1AnnexB)
-	: m_demuxer(filename, demuxerOptions, log)
+FrameProcessor::FrameProcessor(std::unique_ptr<Demuxer>&& demuxer,
+							   VkVideoParser parser,
+							   std::shared_ptr<VideoBaseDecoder> decoder)
+	: m_parser(parser)
 	, m_decoder(decoder)
+	, m_demuxer(std::move(demuxer))
 {
-	TCU_CHECK_AND_THROW(InternalError, m_demuxer.GetVideoCodec() != ESE_VIDEO_CODEC_UNKNOWN, "Demuxer failed to prepare");
-	createParser(codecOperation, extensionProperties, m_decoder, m_parser, av1AnnexB);
 }
-
-FrameProcessor::FrameProcessor(ese_read_buffer_func readBufferFunc, void* data, const char* demuxerOptions,
-				VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties,
-				VideoBaseDecoder* decoder, tcu::TestLog& log, bool av1AnnexB)
-	: m_demuxer(readBufferFunc, data, demuxerOptions, log)
-	, m_decoder(decoder)
-{
-	TCU_CHECK_AND_THROW(InternalError, m_demuxer.GetVideoCodec() != ESE_VIDEO_CODEC_UNKNOWN, "Demuxer failed to prepare");
-	createParser(codecOperation, extensionProperties, m_decoder, m_parser, av1AnnexB);
-}
-
 
 void FrameProcessor::parseNextChunk()
 {
-	deUint8*				pData		   = 0;
-	deInt64					size		   = 0;
-	bool					demuxerSuccess = m_demuxer.Demux(&pData, &size);
+	std::vector<uint8_t> demuxedPacket = m_demuxer->nextPacket();
 
 	VkParserBitstreamPacket pkt;
-	pkt.pByteStream			 = pData; // Ptr to byte stream data decode/display event
-	pkt.nDataLength			 = size; // Data length for this packet
-	pkt.llPTS				 = 0; // Presentation Time Stamp for this packet (clock rate specified at initialization)
-	pkt.bEOS				 = !demuxerSuccess; // true if this is an End-Of-Stream packet (flush everything)
-	pkt.bPTSValid			 = false; // true if llPTS is valid (also used to detect frame boundaries for VC1 SP/MP)
-	pkt.bDiscontinuity		 = false; // true if DecMFT is signalling a discontinuity
-	pkt.bPartialParsing		 = 0; // 0: parse entire packet, 1: parse until next
-	pkt.bEOP				 = false; // true if the packet in pByteStream is exactly one frame
-	pkt.pbSideData			 = nullptr; // Auxiliary encryption information
-	pkt.nSideDataLength		 = 0; // Auxiliary encrypton information length
+	pkt.pByteStream			 = demuxedPacket.data();
+	pkt.nDataLength			 = demuxedPacket.size();
+	pkt.llPTS				 = 0; // Irrelevant for CTS
+	pkt.bEOS				 = demuxedPacket.size() == 0; // true if this is an End-Of-Stream packet (flush everything)
+	pkt.bPTSValid			 = false; // Irrelevant for CTS
+	pkt.bDiscontinuity		 = false; // Irrelevant for CTS
+	pkt.bPartialParsing		 = false; // false: parse entire packet, true: parse until next
+	pkt.bEOP				 = false; // Irrelevant for CTS
+	pkt.pbSideData			 = nullptr; // Irrelevant for CTS
+	pkt.nSideDataLength		 = 0; // Irrelevant for CTS
 
 	size_t	   parsedBytes	 = 0;
 	const bool parserSuccess = m_parser->ParseByteStream(&pkt, &parsedBytes);
-	m_videoStreamHasEnded = !(demuxerSuccess && parserSuccess);
+	m_eos = demuxedPacket.size() == 0 || !parserSuccess;
 }
 
 int FrameProcessor::getNextFrame(DecodedFrame* pFrame)
 {
-	int32_t framesInQueue = m_decoder->GetVideoFrameBuffer()->DequeueDecodedPicture(pFrame);
-	while (!framesInQueue && !m_videoStreamHasEnded)
+	auto decoder = m_decoder.lock();
+	if (!decoder)
+		return -1;
+
+	int32_t framesInQueue = decoder->GetVideoFrameBuffer()->DequeueDecodedPicture(pFrame);
+	while (!framesInQueue && !m_eos)
 	{
 		parseNextChunk();
-		framesInQueue		= m_decoder->GetVideoFrameBuffer()->DequeueDecodedPicture(pFrame);
+		framesInQueue		= decoder->GetVideoFrameBuffer()->DequeueDecodedPicture(pFrame);
 	}
 
-	if (!framesInQueue && !m_videoStreamHasEnded)
+	if (!framesInQueue && !m_eos)
 	{
 		return -1;
 	}
@@ -115,22 +107,25 @@ int FrameProcessor::getNextFrame(DecodedFrame* pFrame)
 
 void FrameProcessor::bufferFrames(int framesToDecode)
 {
+	auto decoder = m_decoder.lock();
+	DE_ASSERT(decoder);
+
 	// This loop is for the out-of-order submissions cases. First the requisite frame information is gathered from the parser<->decoder loop.
 	// Then the command buffers are recorded in a random order w.r.t original coding order. Queue submissions are always in coding order.
 	// NOTE: For this sequence to work, the frame buffer must have enough decode surfaces for the GOP intended for decode, otherwise
 	// picture allocation will fail pretty quickly! See m_numDecodeSurfaces, m_maxDecodeFramesCount
 	// NOTE: When requesting two frames to be buffered, it's only guaranteed in the successful case you will get 2 *or more* frames for decode.
 	// This is due to the inter-frame references, where the second frame, for example, may need further coded frames as dependencies.
-	DE_ASSERT(m_decoder->m_outOfOrderDecoding);
+	DE_ASSERT(decoder->m_outOfOrderDecoding);
 	do
 	{
 		parseNextChunk();
-		size_t decodedFrames	= m_decoder->GetVideoFrameBuffer()->GetDisplayedFrameCount();
+		size_t decodedFrames	= decoder->GetVideoFrameBuffer()->GetDisplayedFrameCount();
 		if (decodedFrames >= framesToDecode)
 			break;
 	}
-	while (!m_videoStreamHasEnded);
-	auto& cachedParams = m_decoder->m_cachedDecodeParams;
+	while (!m_eos);
+	auto& cachedParams = decoder->m_cachedDecodeParams;
 	TCU_CHECK_MSG(cachedParams.size() >= framesToDecode, "Unknown decoder failure");
 }
 #endif
@@ -497,16 +492,6 @@ public:
 		return m_info;
 	};
 
-#ifdef DE_BUILD_VIDEO
-	const char* getESEOptions() const
-	{
-		if (m_params.stream.decoderOptions & DecoderOption::AnnexB)
-			return "format:annex-b";
-		else
-			return ""; // demuxer will probe the stream
-	}
-#endif
-
 	VkVideoCodecOperationFlagBitsKHR getCodecOperation(int session) const
 	{
 		return m_profiles[session].GetCodecType();
@@ -580,9 +565,12 @@ private:
 	const ClipInfo*	   m_info{};
 	deUint32		   m_hash{};
 	std::vector<VkVideoCoreProfile> m_profiles;
-	// The 1-based count of parameter set updates after which to force a parameter object release.
-	// This is required due to the design of the NVIDIA decode-client API. It sends parameter updates and expects constructed parameter
-	// objects back synchronously, before the next video session is created in a following BeginSequence call.
+	// The 1-based count of parameter set updates after which to force
+	// a parameter object release.  This is required due to the design
+	// of the NVIDIA decode-client API. It sends parameter updates and
+	// expects constructed parameter objects back synchronously,
+	// before the next video session is created in a following
+	// BeginSequence call.
 	int				   m_pictureParameterUpdateTriggerHack{0}; // Zero is "off"
 };
 
@@ -590,7 +578,7 @@ private:
 // all external libraries, helper functions and test instances has been excluded
 #ifdef DE_BUILD_VIDEO
 
-static MovePtr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext* devctx, const TestDefinition& test)
+static std::shared_ptr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext* devctx, const TestDefinition& test)
 {
 	VkSharedBaseObj<VulkanVideoFrameBuffer> vkVideoFrameBuffer;
 	VK_CHECK(VulkanVideoFrameBuffer::Create(devctx,
@@ -610,7 +598,7 @@ static MovePtr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext* devctx
 	params.alwaysRecreateDPB				 = test.hasOption(DecoderOption::RecreateDPBImages);
 	params.intraOnlyDecoding				 = test.hasOption(DecoderOption::IntraOnlyDecoding);
 
-	return MovePtr<VideoBaseDecoder>(new VideoBaseDecoder(std::move(params)));
+	return std::make_shared<VideoBaseDecoder>(std::move(params));
 }
 
 struct DownloadedFrame
@@ -1033,8 +1021,8 @@ public:
 	tcu::TestStatus iterate(void);
 
 protected:
-	const TestDefinition*	  m_testDefinition;
-	MovePtr<VideoBaseDecoder> m_decoder{};
+	const TestDefinition*				m_testDefinition;
+	std::shared_ptr<VideoBaseDecoder>	m_decoder;
 	static_assert(sizeof(DeviceContext) < 128, "DeviceContext has grown bigger than expected!");
 	DeviceContext m_deviceContext;
 };
@@ -1046,10 +1034,12 @@ public:
 	tcu::TestStatus iterate(void);
 
 protected:
-	const std::vector<MovePtr<TestDefinition>>& m_testDefinitions;
-	std::vector<MovePtr<VideoBaseDecoder>>		m_decoders{};
+	const std::vector<MovePtr<TestDefinition>>&			m_testDefinitions;
+	std::vector<std::shared_ptr<VideoBaseDecoder>>		m_decoders;
+	std::vector<std::ifstream>							m_istreams;
+
+	DeviceContext										m_deviceContext;
 	static_assert(sizeof(DeviceContext) < 128, "DeviceContext has grown bigger than expected!");
-	DeviceContext m_deviceContext;
 };
 
 InterleavingDecodeTestInstance::InterleavingDecodeTestInstance(Context& context, const std::vector<MovePtr<TestDefinition>>& testDefinitions)
@@ -1075,7 +1065,12 @@ InterleavingDecodeTestInstance::InterleavingDecodeTestInstance(Context& context,
 		getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexTransfer(), 0));
 
 	for (const auto& test : m_testDefinitions)
+	{
+		std::vector<std::string> filePathComponents = { "vulkan", "video", test->getClipFilename() };
+		de::FilePath bitstreamResourcePath = de::FilePath::join(filePathComponents);
+		m_istreams.push_back(std::ifstream(bitstreamResourcePath.getPath(), std::ios_base::binary));
 		m_decoders.push_back(decoderFromTestDefinition(&m_deviceContext, *test));
+	}
 }
 
 VideoDecodeTestInstance::VideoDecodeTestInstance(Context& context, const TestDefinition* testDefinition)
@@ -1102,8 +1097,24 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
 #if FRAME_DUMP_DEBUG
 	static char frameDumpName[128];
 #endif
+	std::vector<std::string> filePathComponents = { "vulkan", "video", m_testDefinition->getClipFilename() };
+	de::FilePath bitstreamResourcePath = de::FilePath::join(filePathComponents);
+	Demuxer::Params demuxParams = {};
+	std::ifstream ifs(bitstreamResourcePath.getPath(), std::ios_base::binary);
+	demuxParams.data = std::make_unique<BufferedReader>(ifs);
+	demuxParams.codecOperation = m_testDefinition->getCodecOperation(0);
+	demuxParams.framing = m_testDefinition->getClipInfo()->framing;
 
-	FrameProcessor	 processor(m_testDefinition->getClipFilename(), m_testDefinition->getESEOptions(), m_testDefinition->getCodecOperation(0), m_testDefinition->extensionProperties(0), m_decoder.get(), m_context.getTestContext().getLog(), m_testDefinition->hasOption(DecoderOption::AnnexB));
+	auto demuxer = Demuxer::create(std::move(demuxParams));
+	VkVideoParser parser;
+	createParser(demuxer->codecOperation(), m_testDefinition->extensionProperties(0), m_decoder, parser, demuxer->framing());
+
+	FrameProcessor processor(
+		std::move(demuxer),
+		parser,
+		m_decoder
+	);
+
 	std::vector<int> incorrectFrames;
 	std::vector<int> correctFrames;
 
@@ -1119,14 +1130,6 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
 	{
 		DecodedFrame  frame;
 		TCU_CHECK_AND_THROW(InternalError, processor.getNextFrame(&frame) > 0, "Expected more frames from the bitstream. Most likely an internal CTS bug, or maybe an invalid bitstream");
-
-		if (videoLoggingEnabled())
-		{
-			std::cout << "Frame decoded: picIdx" << static_cast<uint32_t>(frame.pictureIndex) << " "
-					  << frame.displayWidth << "x" << frame.displayHeight << " "
-					  << "decode/display " << frame.decodeOrder << "/" << frame.displayOrder << " "
-					  << "dstImageView " << frame.outputImageView->GetImageView() << std::endl;
-		}
 
 #if FRAME_DUMP_DEBUG
 #ifdef _WIN32
@@ -1186,10 +1189,22 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 	DE_ASSERT(m_testDefinitions.size() == m_decoders.size());
 	DE_ASSERT(m_decoders.size() > 1);
 
-	std::vector<MovePtr<FrameProcessor>> processors;
+	std::vector<std::unique_ptr<FrameProcessor>> processors;
 	for (int i = 0; i < m_testDefinitions.size(); i++)
 	{
-		processors.push_back(MovePtr<FrameProcessor>(new FrameProcessor(m_testDefinitions[i]->getClipFilename(), m_testDefinitions[i]->getESEOptions(), m_testDefinitions[i]->getCodecOperation(0), m_testDefinitions[i]->extensionProperties(0), m_decoders[i].get(), m_context.getTestContext().getLog(), m_testDefinitions[i]->hasOption(DecoderOption::AnnexB))));
+		auto& testDefn = m_testDefinitions[i];
+		Demuxer::Params demuxParams = {};
+		demuxParams.data = std::make_unique<BufferedReader>(m_istreams[i]);
+		demuxParams.codecOperation = testDefn->getCodecOperation(0);
+		demuxParams.framing = testDefn->getClipInfo()->framing;
+		auto demuxer = Demuxer::create(std::move(demuxParams));
+		VkVideoParser parser;
+		createParser(demuxer->codecOperation(), testDefn->extensionProperties(0), m_decoders[i], parser, demuxer->framing());
+		processors.push_back(std::make_unique<FrameProcessor>(
+			std::move(demuxer),
+			parser,
+			m_decoders[i])
+		);
 	}
 
 #if FRAME_DUMP_DEBUG
