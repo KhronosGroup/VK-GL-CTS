@@ -96,11 +96,13 @@ struct TestParams
 	deUint32				viewCount;
 	bool					multiViewport;
 	bool					makeCopy;
+	bool					depthEnabled;
 	float					renderMultiplier;
 	VkSampleCountFlagBits	colorSamples;
 	tcu::UVec2				fragmentArea;
 	tcu::UVec2				densityMapSize;
 	VkFormat				densityMapFormat;
+	VkFormat				depthFormat;
 	const SharedGroupParams	groupParams;
 };
 
@@ -911,6 +913,7 @@ Move<VkPipeline> buildGraphicsPipeline(const DeviceInterface&						vk,
 										const VkPipelineMultisampleStateCreateInfo*	multisampleStateCreateInfo,
 										const void*									pNext,
 										const bool									useDensityMapAttachment,
+										const bool									useDepthAttachment,
 										const bool									useMaintenance5 = false)
 {
 	std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageParams(2,
@@ -1017,8 +1020,8 @@ Move<VkPipeline> buildGraphicsPipeline(const DeviceInterface&						vk,
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,		// VkStructureType							sType
 		DE_NULL,														// const void*								pNext
 		0u,																// VkPipelineDepthStencilStateCreateFlags	flags
-		VK_FALSE,														// VkBool32									depthTestEnable
-		VK_FALSE,														// VkBool32									depthWriteEnable
+		useDepthAttachment ? VK_TRUE : VK_FALSE,						// VkBool32									depthTestEnable
+		useDepthAttachment ? VK_TRUE : VK_FALSE,						// VkBool32									depthWriteEnable
 		VK_COMPARE_OP_LESS_OR_EQUAL,									// VkCompareOp								depthCompareOp
 		VK_FALSE,														// VkBool32									depthBoundsTestEnable
 		VK_FALSE,														// VkBool32									stencilTestEnable
@@ -1169,6 +1172,10 @@ private:
 	Move<VkImage>					m_colorCopyImage;
 	de::MovePtr<Allocation>			m_colorCopyImageAlloc;
 	Move<VkImageView>				m_colorCopyImageView;
+
+	Move<VkImage>					m_depthImage;
+	de::MovePtr<Allocation>			m_depthImageAlloc;
+	Move<VkImageView>				m_depthImageView;
 
 	Move<VkImage>					m_colorResolvedImage;
 	de::MovePtr<Allocation>			m_colorResolvedImageAlloc;
@@ -1532,8 +1539,14 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 	vk::VkImageUsageFlags			colorImageUsage				= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	deUint32						colorImageCreateFlags		= m_testParams.nonSubsampledImages ? 0u : (deUint32)VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT;
 	const VkImageSubresourceRange	colorSubresourceRange		= { VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, colorImageLayers };
+
+	const VkFormat					depthImageFormat			= m_testParams.depthFormat;
+	VkExtent3D						depthImageSize				{ m_renderSize.x(), m_renderSize.y(), 1 };
+	const VkImageSubresourceRange	depthSubresourceRange		= { VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1 };
+
 	bool							isColorImageMultisampled	= m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT;
 	bool							isDynamicRendering			= m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING;
+	bool							isDepthEnabled				= m_testParams.depthEnabled;
 
 	VkExtent3D						outputImageSize				{ m_renderSize.x(), m_renderSize.y(), 1 };
 	const VkImageSubresourceRange	outputSubresourceRange		{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u };
@@ -1572,6 +1585,15 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 			colorImageSize, colorImageLayers, m_testParams.colorSamples,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, queueFamilyIndex, 0u, colorImageViewType,
 			componentMappingRGBA, colorSubresourceRange, m_colorCopyImage, m_colorCopyImageAlloc, m_colorCopyImageView);
+	}
+
+	// Create depth image
+	if (isDepthEnabled)
+	{
+		prepareImageAndImageView(vk, vkDevice, memAlloc, 0u, depthImageFormat,
+			depthImageSize, 1, VK_SAMPLE_COUNT_1_BIT,
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, queueFamilyIndex, 0u, VK_IMAGE_VIEW_TYPE_2D,
+			componentMappingRGBA, depthSubresourceRange, m_depthImage, m_depthImageAlloc, m_depthImageView);
 	}
 
 	// Create output image ( data from subsampled color image will be copied into it using sampler with VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT )
@@ -2011,6 +2033,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															DE_NULL,										// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															pNextForProduceDynamicDensityMap,				// const void*										pNext
 															isDynamicRendering,								// const bool										useDensityMapAttachment
+															DE_FALSE,										// const bool										useDepthAttachment
 															m_testParams.useMaintenance5);					// const bool										useMaintenance5
 
 		m_graphicsPipelineProduceSubsampledImage = buildGraphicsPipeline(vk,								// const DeviceInterface&							vk
@@ -2025,6 +2048,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															&multisampleStateCreateInfo,					// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															pNextForProduceSubsampledImage,					// const void*										pNext
 															isDynamicRendering,								// const bool										useDensityMapAttachment
+															isDepthEnabled,									// const bool										useDepthAttachment
 															m_testParams.useMaintenance5);					// const bool										useMaintenance5
 
 		if(m_testParams.makeCopy)
@@ -2039,7 +2063,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															1u,												// const deUint32									subpass
 															&multisampleStateCreateInfo,					// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															pNextForCopySubsampledImage,					// const void*										pNext
-															DE_FALSE);										// const bool										useDensityMapAttachment
+															DE_FALSE,										// const bool										useDensityMapAttachment
+															DE_FALSE);										// const bool										useDepthAttachment
 		if (m_testParams.subsampledLoads)
 			m_graphicsPipelineUpdateSubsampledImage = buildGraphicsPipeline(vk,								// const DeviceInterface&							vk
 															vkDevice,										// const VkDevice									device
@@ -2053,6 +2078,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															&multisampleStateCreateInfo,					// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															pNextForUpdateSubsampledImage,					// const void*										pNext
 															isDynamicRendering,								// const bool										useDensityMapAttachment
+															DE_FALSE,										// const bool										useDepthAttachment
 															m_testParams.useMaintenance5);					// const bool										useMaintenance5
 
 		m_graphicsPipelineOutputSubsampledImage = buildGraphicsPipeline(vk,									// const DeviceInterface&							vk
@@ -2066,7 +2092,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				conte
 															0u,												// const deUint32									subpass
 															DE_NULL,										// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
 															pNextForOutputSubsampledImage,					// const void*										pNext
-															DE_FALSE);										// const bool										useDensityMapAttachment
+															DE_FALSE,										// const bool										useDensityMapAttachment
+															DE_FALSE);										// const bool										useDepthAttachment
 	}
 
 	// Create vertex buffers
@@ -3032,11 +3059,13 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 							view.viewCount,					// deUint32					viewCount;
 							false,							// bool						multiViewport;
 							render.makeCopy,				// bool						makeCopy;
+							false,							// bool						depthEnabled;
 							size.renderSizeToDensitySize,	// float					renderMultiplier;
 							sample.samples,					// VkSampleCountFlagBits	colorSamples;
 							area,							// tcu::UVec2				fragmentArea;
 							{ 16, 16 },						// tcu::UVec2				densityMapSize;
 							VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
+							VK_FORMAT_D16_UNORM,			// VkFormat					depthFormat;
 							groupParams						// SharedGroupParams		groupParams;
 						};
 
@@ -3080,6 +3109,53 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 		fdmTests->addChild(viewGroup.release());
 	}
 
+	if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+	{
+		const struct
+		{
+			std::string		name;
+			VkFormat		format;
+		} depthFormats[] =
+		{
+			{ "d16_unorm",			VK_FORMAT_D16_UNORM },
+			{ "d32_sfloat",			VK_FORMAT_D32_SFLOAT },
+			{ "d24_unorm_s8_uint",	VK_FORMAT_D24_UNORM_S8_UINT }
+		};
+
+		de::MovePtr<tcu::TestCaseGroup> depthFormatGroup(new tcu::TestCaseGroup(testCtx, "depth_format"));
+		for (const auto& format : depthFormats)
+		{
+			TestParams params
+			{
+				false,							// bool						dynamicDensityMap;
+				true,							// bool						deferredDensityMap;
+				false,							// bool						nonSubsampledImages;
+				false,							// bool						subsampledLoads;
+				false,							// bool						coarseReconstruction;
+				false,							// bool						imagelessFramebuffer;
+				false,							// bool						useMemoryAccess;
+				false,							// bool						useMaintenance5;
+				1,								// deUint32					samplersCount;
+				1,								// deUint32					viewCount;
+				false,							// bool						multiViewport;
+				false,							// bool						makeCopy;
+				true,							// bool						depthEnabled;
+				4.0f,							// float					renderMultiplier;
+				VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits	colorSamples;
+				{  2,  2 },						// tcu::UVec2				fragmentArea;
+				{ 16, 16 },						// tcu::UVec2				densityMapSize;
+				VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
+				format.format,					// VkFormat					depthFormat;
+				groupParams						// SharedGroupParams		groupParams;
+			};
+			depthFormatGroup->addChild(new FragmentDensityMapTest(testCtx, format.name, params));
+
+			if (groupParams->useSecondaryCmdBuffer)
+				break;
+		}
+		fdmTests->addChild(depthFormatGroup.release());
+	}
+
 	const struct
 	{
 		std::string		name;
@@ -3109,11 +3185,13 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			1,								// deUint32					viewCount;
 			false,							// bool						multiViewport;
 			false,							// bool						makeCopy;
+			false,							// bool						depthEnabled;
 			4.0f,							// float					renderMultiplier;
 			VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits	colorSamples;
 			{  2,  2 },						// tcu::UVec2				fragmentArea;
 			{ 16, 16 },						// tcu::UVec2				densityMapSize;
 			VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
+			VK_FORMAT_D16_UNORM,			// VkFormat					depthFormat;
 			groupParams						// SharedGroupParams		groupParams;
 		};
 		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, sampler.name, params));
@@ -3139,14 +3217,17 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			1,								// deUint32					viewCount;
 			false,							// bool						multiViewport;
 			false,							// bool						makeCopy;
+			false,							// bool						depthEnabled;
 			4.0f,							// float					renderMultiplier;
 			VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits	colorSamples;
 			{  2,  2 },						// tcu::UVec2				fragmentArea;
 			{ 16, 16 },						// tcu::UVec2				densityMapSize;
 			VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
+			VK_FORMAT_D16_UNORM,			// VkFormat					depthFormat;
 			groupParams						// SharedGroupParams		groupParams;
 		};
 		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "maintenance5", params));
+
 	}
 
 	if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
@@ -3179,11 +3260,13 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 				1,										// deUint32					viewCount;
 				false,									// bool						multiViewport;
 				false,									// bool						makeCopy;
+				false,									// bool						depthEnabled;
 				4.0f,									// float					renderMultiplier;
 				VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	colorSamples;
 				{  2,  2 },								// tcu::UVec2				fragmentArea;
 				{ 16, 16 },								// tcu::UVec2				densityMapSize;
 				VK_FORMAT_R8G8_UNORM,					// VkFormat					densityMapFormat;
+				VK_FORMAT_D16_UNORM,					// VkFormat					depthFormat;
 				SharedGroupParams(new GroupParams		// SharedGroupParams		groupParams;
 				{
 					groupParams->renderingType,				// RenderingType	renderingType;
@@ -3221,11 +3304,13 @@ static void createChildren (tcu::TestCaseGroup* fdmTests, const SharedGroupParam
 			2,								// deUint32					viewCount;
 			false,							// bool						multiViewport;
 			false,							// bool						makeCopy;
+			false,							// bool						depthEnabled;
 			4.0f,							// float					renderMultiplier;
 			VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits	colorSamples;
 			{  1,  2 },						// tcu::UVec2				fragmentArea;
 			{ 16, 16 },						// tcu::UVec2				densityMapSize;
 			VK_FORMAT_R8G8_UNORM,			// VkFormat					densityMapFormat;
+			VK_FORMAT_D16_UNORM,			// VkFormat					depthFormat;
 			groupParams						// SharedGroupParams		groupParams;
 		};
 		propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "subsampled_loads", params));
