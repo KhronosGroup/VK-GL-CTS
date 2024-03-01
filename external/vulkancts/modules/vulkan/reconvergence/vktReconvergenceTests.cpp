@@ -7860,6 +7860,9 @@ void createAmberFragmentTestCases (add_ref<tcu::TestContext> testCtx, add_ptr<tc
 		if (!context.getShaderMaximalReconvergenceFeatures().shaderMaximalReconvergence)
 			TCU_THROW(NotSupportedError, "shaderMaximalReconvergence not supported");
 
+		if (!(context.getSubgroupProperties().supportedOperations & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT))
+			TCU_THROW(NotSupportedError, "VK_SUBGROUP_FEATURE_ARITHMETIC_BIT not supported");
+
 		if ( ! Case::matches(testName, { cases[TERMINATE_INVOCATION] }))
 		{
 	#ifndef CTS_USES_VULKANSC
