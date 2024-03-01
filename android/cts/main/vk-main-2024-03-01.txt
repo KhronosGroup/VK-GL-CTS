@@ -36,6 +36,7 @@ vk-main-2024-03-01/query-pool.txt
 vk-main-2024-03-01/rasterization.txt
 vk-main-2024-03-01/ray-query.txt
 vk-main-2024-03-01/ray-tracing-pipeline.txt
+vk-main-2024-03-01/reconvergence.txt
 vk-main-2024-03-01/renderpass.txt
 vk-main-2024-03-01/renderpass2.txt
 vk-main-2024-03-01/robustness.txt

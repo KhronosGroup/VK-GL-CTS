@@ -5,7 +5,7 @@
  * Copyright (c) 2019 The Khronos Group Inc.
  * Copyright (c) 2018-2020 NVIDIA Corporation
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "Licensehelper
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -17,7 +17,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
  * \file
  * \brief Vulkan Reconvergence tests
  *//*--------------------------------------------------------------------*/
@@ -34,6 +33,7 @@
 
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "deDefs.h"
 #include "deFloat16.h"
@@ -45,11 +45,24 @@
 #include "tcuTestCase.hpp"
 #include "tcuTestLog.hpp"
 
+#include <array>
 #include <bitset>
+#include <functional>
+#include <map>
+#include <numeric>
+#include <random>
 #include <string>
 #include <sstream>
 #include <set>
+#include <type_traits>
 #include <vector>
+#include <memory>
+#include <cmath>
+#include <initializer_list>
+
+#include <iostream>
+
+// #define INCLUDE_GRAPHICS_TESTS
 
 namespace vkt
 {
@@ -61,8 +74,11 @@ using namespace vk;
 using namespace std;
 
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(x[0]))
-
-const VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT;
+#define ROUNDUP(x__, multipler__) ((((x__)+((multipler__)-1))/(multipler__))*(multipler__))
+#define ROUNDDOWN(x__, multipler__) (((x__)/(multipler__))*(multipler__))
+constexpr deUint32 MAX_INVOCATIONS_ALL_TESTS = 64 * 64;
+typedef std::bitset<MAX_INVOCATIONS_ALL_TESTS> bitset_inv_t;
+//constexpr bitset_inv_t MAGIC_BALLOT = 0x12345678;
 
 typedef enum {
 	TT_SUCF_ELECT,	// subgroup_uniform_control_flow using elect (subgroup_basic)
@@ -72,16 +88,304 @@ typedef enum {
 	TT_MAXIMAL,		// maximal reconvergence
 } TestType;
 
+static_assert(VK_TRUE == 1, "VK_TRUE must equal 1");
+
 struct CaseDef
 {
-	TestType testType;
-	deUint32 maxNesting;
-	deUint32 seed;
+	VkShaderStageFlagBits	shaderStage;
+	TestType				testType;
+	deUint32				maxNesting;
+	deUint32				seed;
+	// In the case of compute shader below sizes would be local_size_x and local_size_y respectively.
+	// In the case of fragment shader these sizes would define framebuffer dimensions.
+	deUint32	sizeX;
+	deUint32	sizeY;
 
 	bool isWUCF() const { return testType == TT_WUCF_ELECT || testType == TT_WUCF_BALLOT; }
 	bool isSUCF() const { return testType == TT_SUCF_ELECT || testType == TT_SUCF_BALLOT; }
 	bool isUCF() const { return isWUCF() || isSUCF(); }
 	bool isElect() const { return testType == TT_WUCF_ELECT || testType == TT_SUCF_ELECT; }
+
+	bool verify() const { return (sizeX * sizeY) <= MAX_INVOCATIONS_ALL_TESTS; }
+};
+
+template<class T, class P = T(*)[1], class R = decltype(std::begin(*std::declval<P>()))>
+static auto makeStdBeginEnd(void* p, uint32_t n) -> std::pair<R, R>
+{
+	auto tmp = std::begin(*P(p));
+	auto begin = tmp;
+	std::advance(tmp, n);
+	return { begin, tmp };
+}
+
+template<class R> using add_ref = typename std::add_lvalue_reference<R>::type;
+template<class R> using add_cref = typename std::add_lvalue_reference<typename std::add_const<R>::type>::type;
+template<class X> using add_ptr = std::add_pointer_t<X>;
+template<class X> using add_cptr = std::add_pointer_t<std::add_const_t<X>>;
+
+template<class RndIter>
+RndIter max_element(RndIter first, RndIter last) {
+	RndIter max = last;
+	if (first != last) {
+		for (max = first, ++first; first != last; ++first) {
+			if (*first > *max)
+				max = first;
+		}
+	}
+	return max;
+}
+
+template<class RndIter, class Selector>
+RndIter max_element(RndIter first, RndIter last, Selector selector) {
+	RndIter max = last;
+	if (first != last) {
+		for (max = first, ++first; first != last; ++first) {
+			if (selector(*first) > selector(*max))
+				max = first;
+		}
+	}
+	return max;
+}
+
+struct Ballot : public std::bitset<128>
+{
+	typedef std::bitset<128> super;
+	Ballot () : super() {}
+	Ballot (add_cref<super> ballot, uint32_t printbits = 128u)
+		: super(ballot), m_bits(printbits) {}
+	Ballot (add_cref<tcu::UVec4> ballot, uint32_t printbits = 128u)
+		: super(), m_bits(printbits) { *this = ballot; }
+	Ballot (deUint64 val, uint32_t printbits = 128u)
+		: super(val), m_bits(printbits) {}
+	static Ballot withSetBit (deUint32 bit)
+	{
+		Ballot b;
+		b.set(bit);
+		return b;
+	}
+	constexpr deUint32 size () const
+	{
+		return static_cast<deUint32>(super::size());
+	}
+	operator tcu::UVec4 () const
+	{
+		tcu::UVec4 result;
+		super ballot(*this);
+		const super mask = 0xFFFFFFFF;
+		for (uint32_t k = 0; k < 4u; ++k)
+		{
+			result[k] = uint32_t((ballot & mask).to_ulong());
+			ballot >>= 32;
+		}
+		return result;
+	}
+	add_ref<Ballot> operator= (add_cref<tcu::UVec4> vec)
+	{
+		for (uint32_t k = 0; k < 4u; ++k)
+		{
+			(*this) <<= 32;
+			(*this) |= vec[3 - k];
+		}
+		return *this;
+	}
+	DE_UNUSED_FUNCTION uint32_t getw () const { return m_bits; }
+	DE_UNUSED_FUNCTION void setw (uint32_t bits) { m_bits = bits; }
+	DE_UNUSED_FUNCTION friend add_ref<std::ostream> operator<<(add_ref<std::ostream> str, add_cref<Ballot> ballot)
+	{
+		for (uint32_t i = 0u; i < ballot.m_bits && i < 128u; ++i)
+		{
+			str << (ballot[ballot.m_bits - i - 1u] ? '1' : '0');
+		}
+		return str;
+	}
+protected:
+	uint32_t m_bits;
+};
+
+struct Ballots : protected std::vector<std::bitset<128>>
+{
+	typedef std::vector<value_type> super;
+	static const constexpr deUint32 subgroupInvocationSize =
+		static_cast<deUint32>(value_type().size());
+	Ballots () : super() {}
+	explicit Ballots (deUint32 subgroupCount, add_cref<value_type> ballot = {})
+		: super(subgroupCount) { if (ballot.any()) *this = ballot; }
+	Ballots (add_cref<Ballots> other) : super(upcast(other)) {}
+	using super::operator [];
+	using super::at;
+	/**
+	 * @brief size method
+	 * @return Returns the number of bits that the Ballots holds.
+	 */
+	deUint32 size () const
+	{
+		return static_cast<deUint32>(super::size() * subgroupInvocationSize);
+	}
+	/**
+	 * @brief count method
+	 * @return Returns the number of bits that are set to true.
+	 */
+	deUint32 count () const
+	{
+		deUint32 n = 0u;
+		for (add_cref<value_type> b : *this)
+			n += static_cast<deUint32>(b.count());
+		return n;
+	}
+	/**
+	 * @brief count method
+	 * @return Returns the number of bits that are set to true in given subgroup.
+	 */
+	deUint32 count (deUint32 subgroup) const
+	{
+		DE_ASSERT(subgroup < subgroupCount());
+		return static_cast<deUint32>(at(subgroup).count());
+	}
+	deUint32 subgroupCount () const
+	{
+		return static_cast<deUint32>(super::size());
+	}
+	bool test (deUint32 bit) const
+	{
+		DE_ASSERT(bit < size());
+		return at(bit / subgroupInvocationSize).test(bit % subgroupInvocationSize);
+	}
+	bool set (deUint32 bit, bool value = true)
+	{
+		DE_ASSERT(bit <= size());
+		const bool before = test(bit);
+		at(bit / subgroupInvocationSize).set((bit % subgroupInvocationSize), value);
+		return before;
+	}
+	void full ()
+	{
+		const deUint32 bb = size();
+		for (deUint32 b = 0u; b < bb; ++b)
+			set(b);
+	}
+	add_ref<Ballots> setn (deUint32 bits)
+	{
+		for (deUint32 i = 0u; i < bits; ++i)
+			set(i);
+		return *this;
+	}
+	bool all () const
+	{
+		const deUint32 gg = subgroupCount();
+		for (deUint32 g = 0u; g < gg; ++g)
+		{
+			if (false == at(g).all())
+				return false;
+		}
+		return (gg != 0u);
+	}
+	bool none () const
+	{
+		const deUint32 gg = subgroupCount();
+		for (deUint32 g = 0u; g < gg; ++g)
+		{
+			if (false == at(g).none())
+				return false;
+		}
+		return (gg != 0u);
+	}
+	bool any () const
+	{
+		bool res = false;
+		const deUint32 gg = subgroupCount();
+		for (deUint32 g = 0u; g < gg; ++g)
+			res |= super::at(g).any();
+		return res;
+	}
+	static deUint32 findBit (deUint32 otherFullyQualifiedInvocationID, deUint32 otherSubgroupSize)
+	{
+		return (((otherFullyQualifiedInvocationID / otherSubgroupSize) * subgroupInvocationSize)
+				+ (otherFullyQualifiedInvocationID % otherSubgroupSize));
+	}
+	inline add_cref<super> upcast (add_cref<Ballots> other) const
+	{
+		return static_cast<add_cref<super>>(other);
+	}
+	add_ref<Ballots> operator&= (add_cref<Ballots> other)
+	{
+		DE_ASSERT(subgroupCount() == other.subgroupCount());
+		const deUint32 gg = subgroupCount();
+		for (deUint32 g = 0u; g < gg; ++g)
+			super::at(g) = super::at(g) & upcast(other).at(g);
+		return *this;
+	}
+	Ballots operator& (add_cref<Ballots> other) const
+	{
+		Ballots res(*this);
+		res &= other;
+		return res;
+	}
+	add_ref<Ballots> operator|= (add_cref<Ballots> other)
+	{
+		DE_ASSERT(subgroupCount() == other.subgroupCount());
+		const deUint32 gg = subgroupCount();
+		for (deUint32 g = 0u; g < gg; ++g)
+			super::at(g) = super::at(g) | upcast(other).at(g);
+		return *this;
+	}
+	Ballots operator| (add_cref<Ballots> other) const
+	{
+		Ballots res(*this);
+		res |= other;
+		return res;
+	}
+	add_ref<Ballots> operator<<= (deUint32 bits)
+	{
+		return ((*this) = ((*this) << bits));
+	}
+	Ballots operator<< (deUint32 bits) const
+	{
+		Ballots res(subgroupCount());
+		if (bits < size() && bits != 0u)
+		{
+			for (deUint32 b = 0; b < bits; ++b)
+				res.set((b + bits), test(b));
+		}
+		return res;
+	}
+	Ballots operator~ () const
+	{
+		Ballots res(*this);
+		const deUint32 gg = subgroupCount();
+		for (deUint32 g = 0u; g < gg; ++g)
+			res.at(g) = super::at(g).operator~();
+		return res;
+	}
+	bool operator== (add_cref<Ballots> other) const
+	{
+		if (super::size() == upcast(other).size())
+		{
+			const deUint32 gg = subgroupCount();
+			for (deUint32 g = 0u; g < gg; ++g)
+			{
+				if (at(g) != other[g])
+					return false;
+			}
+			return true;
+		}
+		return false;
+	}
+	add_ref<Ballots> operator= (add_cref<Ballots> other)
+	{
+		DE_ASSERT((subgroupCount() == other.subgroupCount()));
+		const deUint32 gg = subgroupCount();
+		for (deUint32 g = 0u; g < gg; ++g)
+			at(g) = other.at(g);
+		return *this;
+	}
+	add_ref<Ballots> operator= (add_cref<value_type> forAllGroups)
+	{
+		DE_ASSERT(super::size() >= 1u);
+		const deUint32 gg = subgroupCount();
+		for (deUint32 g = 0u; g < gg; ++g)
+			at(g) = forAllGroups;
+		return *this;
+	}
 };
 
 deUint64 subgroupSizeToMask(deUint32 subgroupSize)
@@ -92,80 +396,145 @@ deUint64 subgroupSizeToMask(deUint32 subgroupSize)
 		return (1ULL << subgroupSize) - 1;
 }
 
-typedef std::bitset<128> bitset128;
+Ballot subgroupSizeToMask (deUint32 subgroupSize, deUint32 subgroupCount)
+{
+	DE_UNREF(subgroupCount);
+	Ballot b;
+	DE_ASSERT(subgroupSize <= b.size());
+	for (deUint32 i = 0; i < subgroupSize; ++i)
+		b.set(i);
+	return b;
+}
 
 // Take a 64-bit integer, mask it to the subgroup size, and then
 // replicate it for each subgroup
-bitset128 bitsetFromU64(deUint64 mask, deUint32 subgroupSize)
+bitset_inv_t bitsetFromU64(deUint64 mask, deUint32 subgroupSize)
 {
 	mask &= subgroupSizeToMask(subgroupSize);
-	bitset128 result(mask);
-	for (deUint32 i = 0; i < 128 / subgroupSize - 1; ++i)
+	bitset_inv_t result(mask);
+	for (deUint32 i = 0; i < result.size() / subgroupSize - 1; ++i)
 	{
-		result = (result << subgroupSize) | bitset128(mask);
+		result = (result << subgroupSize) | bitset_inv_t(mask);
 	}
 	return result;
 }
 
-// Pick out the mask for the subgroup that invocationID is a member of
-deUint64 bitsetToU64(const bitset128 &bitset, deUint32 subgroupSize, deUint32 invocationID)
+Ballots ballotsFromU64 (deUint64 maskValue, deUint32 subgroupSize, deUint32 subgroupCount)
 {
-	bitset128 copy(bitset);
+	Ballot b(maskValue);
+	b &= subgroupSizeToMask(subgroupSize, subgroupCount);
+	Ballots result(subgroupCount);
+	for (deUint32 g = 0; g < subgroupCount; ++g)
+		result.at(g) = b;
+	return result;
+}
+
+Ballots ballotsFromBallot (Ballot b, deUint32 subgroupSize, deUint32 subgroupCount)
+{
+	b &= subgroupSizeToMask(subgroupSize, subgroupCount);
+	Ballots result(subgroupCount);
+	for (deUint32 g = 0; g < subgroupCount; ++g)
+		result.at(g) = b;
+	return result;
+}
+
+// Pick out the mask for the subgroup that invocationID is a member of
+deUint64 bitsetToU64(const bitset_inv_t &bitset, deUint32 subgroupSize, deUint32 invocationID)
+{
+	bitset_inv_t copy(bitset);
 	copy >>= (invocationID / subgroupSize) * subgroupSize;
-	copy &= bitset128(subgroupSizeToMask(subgroupSize));
+	copy &= bitset_inv_t(subgroupSizeToMask(subgroupSize));
 	deUint64 mask = copy.to_ullong();
 	mask &= subgroupSizeToMask(subgroupSize);
 	return mask;
 }
 
-class ReconvergenceTestInstance : public TestInstance
+// Pick out the mask for the subgroup that invocationID is a member of
+Ballot bitsetToBallot(const Ballots &bitset, deUint32 subgroupSize, deUint32 invocationID)
 {
-public:
-						ReconvergenceTestInstance	(Context& context, const CaseDef& data);
-						~ReconvergenceTestInstance	(void);
-	tcu::TestStatus		iterate				(void);
-private:
-	CaseDef			m_data;
+	return bitset.at(invocationID / subgroupSize) & subgroupSizeToMask(subgroupSize, bitset.subgroupCount());
+}
+
+Ballot bitsetToBallot(deUint64 value, deUint32 subgroupCount, deUint32 subgroupSize, deUint32 invocationID)
+{
+	Ballots bs = ballotsFromU64(value, subgroupSize, subgroupCount);
+	return bitsetToBallot(bs, subgroupSize, invocationID);
+}
+
+static int findLSB (deUint64 value)
+{
+	for (int i = 0; i < 64; i++)
+	{
+		if (value & (1ULL<<i))
+			return i;
+	}
+	return -1;
+}
+
+template<deUint32 N> static
+deUint32 findLSB (add_cref<std::bitset<N>> value)
+{
+	for (deUint32 i = 0u; i < N; ++i)
+	{
+		if (value.test(i))
+			return i;
+	}
+	return std::numeric_limits<deUint32>::max();
+}
+
+// For each subgroup, pick out the elected invocationID, and accumulate
+// a bitset of all of them
+static bitset_inv_t bitsetElect (const bitset_inv_t& value, deInt32 subgroupSize)
+{
+	bitset_inv_t ret; // zero initialized
+
+	for (deInt32 i = 0; i < (deInt32)value.size(); i += subgroupSize)
+	{
+		deUint64 mask = bitsetToU64(value, subgroupSize, i);
+		int lsb = findLSB(mask);
+		ret |= bitset_inv_t(lsb == -1 ? 0 : (1ULL << lsb)) << i;
+	}
+	return ret;
+}
+
+static Ballots bitsetElect (add_cref<Ballots> value)
+{
+	Ballots ret(value.subgroupCount());
+	for (deUint32 g = 0u; g < value.subgroupCount(); ++g)
+	{
+		const deUint32 lsb = findLSB<Ballots::subgroupInvocationSize>(value.at(g));
+		if (lsb != std::numeric_limits<deUint32>::max())
+		{
+			ret.at(g).set(lsb);
+		}
+	}
+	return ret;
+}
+
+struct PushConstant
+{
+	deInt32		invocationStride;
+	deUint32	width;
+	deUint32	height;
+	deUint32	primitiveStride;
+	deUint32	subgroupStride;
+	deUint32	enableInvocationIndex;
 };
 
-ReconvergenceTestInstance::ReconvergenceTestInstance (Context& context, const CaseDef& data)
-	: vkt::TestInstance		(context)
-	, m_data				(data)
+struct Vertex
 {
-}
-
-ReconvergenceTestInstance::~ReconvergenceTestInstance (void)
-{
-}
-
-class ReconvergenceTestCase : public TestCase
-{
-	public:
-								ReconvergenceTestCase		(tcu::TestContext& context, const char* name, const CaseDef data);
-								~ReconvergenceTestCase	(void);
-	virtual	void				initPrograms		(SourceCollections& programCollection) const;
-	virtual TestInstance*		createInstance		(Context& context) const;
-	virtual void				checkSupport		(Context& context) const;
-
-private:
-	CaseDef					m_data;
+	// Traditional POD structure that mimics a vertex.
+	// Be carefull before do any changes in this structure
+	// because it is strictly mapped to VK_FORMAT_R32G32B32A32_SFLOAT
+	// when graphics pipeline is constructed.
+	float x, y, z, w;
 };
 
-ReconvergenceTestCase::ReconvergenceTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
-	: vkt::TestCase	(context, name)
-	, m_data		(data)
-{
-}
+typedef Vertex Triangle[3];
 
-ReconvergenceTestCase::~ReconvergenceTestCase	(void)
+std::pair<vk::VkPhysicalDeviceSubgroupProperties, vk::VkPhysicalDeviceProperties2>
+getSubgroupProperties(vkt::Context& context)
 {
-}
-
-void ReconvergenceTestCase::checkSupport(Context& context) const
-{
-	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
-		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
-
 	vk::VkPhysicalDeviceSubgroupProperties subgroupProperties;
 	deMemset(&subgroupProperties, 0, sizeof(subgroupProperties));
 	subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
@@ -177,21 +546,278 @@ void ReconvergenceTestCase::checkSupport(Context& context) const
 
 	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties2);
 
-	if (m_data.isElect() && !(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BASIC_BIT))
-		TCU_THROW(NotSupportedError, "VK_SUBGROUP_FEATURE_BASIC_BIT not supported");
+	return { subgroupProperties, properties2 };
+}
 
-	if (!m_data.isElect() && !(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT))
-		TCU_THROW(NotSupportedError, "VK_SUBGROUP_FEATURE_BALLOT_BIT not supported");
+class ReconvergenceTestInstance : public TestInstance
+{
+public:
+	// { vert, frag, tesc, tese, geom }; if any
+	using Shaders = std::vector<Move<VkShaderModule>>;
 
-	if (!(context.getSubgroupProperties().supportedStages & VK_SHADER_STAGE_COMPUTE_BIT))
-		TCU_THROW(NotSupportedError, "compute stage does not support subgroup operations");
+							ReconvergenceTestInstance	(Context&					context,
+														const CaseDef&				data)
+								: TestInstance		(context)
+								, m_data			(data)
+								, m_subgroupSize	(getSubgroupProperties(context).first.subgroupSize) { }
+							~ReconvergenceTestInstance	(void) = default;
 
-	// Both subgroup- AND workgroup-uniform tests are enabled by shaderSubgroupUniformControlFlow.
-	if (m_data.isUCF() && !context.getShaderSubgroupUniformControlFlowFeatures().shaderSubgroupUniformControlFlow)
-		TCU_THROW(NotSupportedError, "shaderSubgroupUniformControlFlow not supported");
+	Move<VkPipeline>		createComputePipeline		(const VkPipelineLayout			pipelineLayout,
+														 const VkShaderModule			computeShader);
+	Move<VkPipeline>		createGraphicsPipeline		(const VkPipelineLayout			pipelineLayout,
+														 const VkRenderPass				renderPass,
+														 const deUint32					width,
+														 const deUint32					height,
+														 const Shaders&					shaders,
+														 const VkPrimitiveTopology		topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+														 const deUint32					patchControlPoints = 0u);
 
-	// XXX TODO: Check for maximal reconvergence support
-	// if (m_data.testType == TT_MAXIMAL ...)
+protected:
+	const CaseDef			m_data;
+	const deUint32			m_subgroupSize;
+};
+
+class ReconvergenceTestComputeInstance : public ReconvergenceTestInstance
+{
+public:
+							ReconvergenceTestComputeInstance	(Context&						context,
+																 const CaseDef&					data)
+								: ReconvergenceTestInstance	(context, data) { }
+							~ReconvergenceTestComputeInstance	(void) = default;
+
+	virtual tcu::TestStatus	iterate								(void) override;
+	qpTestResult_e			calculateAndLogResult				(const tcu::UVec4*				result,
+																 const std::vector<tcu::UVec4>&	ref,
+																 deUint32						invocationStride,
+																 deUint32						subgroupSize,
+																 deUint32						shaderMaxLoc);
+};
+
+class ReconvergenceTestGraphicsInstance : public ReconvergenceTestInstance
+{
+public:
+					ReconvergenceTestGraphicsInstance	(Context&						context,
+														 const CaseDef&					data)
+						: ReconvergenceTestInstance	(context, data) { }
+					~ReconvergenceTestGraphicsInstance	(void) = default;
+
+			auto	makeRenderPassBeginInfo				(const VkRenderPass				renderPass,
+														 const VkFramebuffer			framebuffer)		-> VkRenderPassBeginInfo;
+	virtual auto	recordDrawingAndSubmit				(const VkCommandBuffer			cmdBuffer,
+														 const VkPipelineLayout			pipelineLayout,
+														 const VkPipeline				pipeline,
+														 const VkDescriptorSet			descriptorSet,
+														 const PushConstant&			pushConstant,
+														 const VkRenderPassBeginInfo&	renderPassInfo,
+														 const VkBuffer					vertexBuffer,
+														 const deUint32					vertexCount,
+														 const VkImage					image)				-> void;
+	virtual	auto	generateVertices					(const deUint32					primitiveCount,
+														 const VkPrimitiveTopology		topology,
+														 const deUint32					patchSize = 1)		-> std::vector<tcu::Vec4>;
+	virtual auto	createVertexBufferAndFlush			(const std::vector<tcu::Vec4>&	vertices)			-> de::MovePtr<BufferWithMemory>;
+	virtual auto	createVertexBufferAndFlush			(deUint32						cellsHorz,
+														 deUint32						cellsVert,
+														 VkPrimitiveTopology			topology)			-> de::MovePtr<BufferWithMemory>;
+	virtual auto	createShaders						(void)												-> Shaders = 0;
+
+	enum PrintMode
+	{
+		None,
+		ThreadsInColumns,
+		OutLocsInColumns,
+		IntuitiveThreadsOutlocs,
+		Console
+	};
+
+	virtual auto	calculateAndLogResult				(const deUint64*				result,
+														 const std::vector<deUint64>&	ref,
+														 deUint32						invocationStride,
+														 deUint32						subgroupSize,
+														 deUint32						shaderMaxLocs,
+														 deUint32						primitiveCount,
+														 PrintMode						printMode)			-> qpTestResult_e;
+};
+
+class ReconvergenceTestFragmentInstance : public ReconvergenceTestGraphicsInstance
+{
+	struct Arrangement {};
+	friend class FragmentRandomProgram;
+public:
+					ReconvergenceTestFragmentInstance	(Context&						context,
+														 const CaseDef&					data)
+						: ReconvergenceTestGraphicsInstance	(context, data) { }
+					~ReconvergenceTestFragmentInstance	(void) = default;
+	virtual auto	createShaders						(void)									-> std::vector<Move<VkShaderModule>> override;
+			auto	callAuxiliaryShader					(tcu::TestStatus&				status,
+														 deUint32						triangleCount) -> std::vector<deUint32>;
+			auto	makeImageCreateInfo					(VkFormat						format) const -> VkImageCreateInfo;
+	virtual auto	createVertexBufferAndFlush			(deUint32						cellsHorz,
+														 deUint32						cellsVert,
+														 VkPrimitiveTopology			topology) -> de::MovePtr<BufferWithMemory> override;
+	virtual auto	iterate								(void)									-> tcu::TestStatus override;
+			auto	calculateAndLogResultEx				(tcu::TestLog&					log,
+														 const tcu::UVec4*				result,
+														 const std::vector<tcu::UVec4>&	ref,
+														 const deUint32					maxLoc,
+														 const Arrangement&				a,
+														 const PrintMode				printMode) -> qpTestResult_e;
+};
+
+class ReconvergenceTestVertexInstance : public ReconvergenceTestGraphicsInstance
+{
+public:
+					ReconvergenceTestVertexInstance		(Context&				context,
+														 const CaseDef&			data)
+						: ReconvergenceTestGraphicsInstance	(context, data) { }
+					~ReconvergenceTestVertexInstance	(void)		= default;
+	virtual auto	createShaders						(void)								-> std::vector<Move<VkShaderModule>> override;
+	virtual auto	createVertexBufferAndFlush			(deUint32				cellsHorz,
+														 deUint32				cellsVert,
+														 VkPrimitiveTopology	topology)	-> de::MovePtr<BufferWithMemory> override;
+
+	virtual auto	iterate								(void)								-> tcu::TestStatus override;
+			auto	calculateAndLogResultEx				(add_ref<tcu::TestLog>			log,
+														 const tcu::UVec4*				result,
+														 const std::vector<tcu::UVec4>&	ref,
+														 const deUint32					maxLoc,
+														 const PrintMode				printMode) -> qpTestResult_e;
+};
+
+class ReconvergenceTestTessCtrlInstance : public ReconvergenceTestGraphicsInstance
+{
+public:
+					ReconvergenceTestTessCtrlInstance	(Context&		context,
+														 const CaseDef&	data)
+						: ReconvergenceTestGraphicsInstance	(context, data) { }
+					~ReconvergenceTestTessCtrlInstance	(void)	= default;
+	virtual auto	createShaders						(void)	-> std::vector<Move<VkShaderModule>> override;
+	virtual auto	iterate								(void)	-> tcu::TestStatus override;
+};
+
+class ReconvergenceTestTessEvalInstance : public ReconvergenceTestGraphicsInstance
+{
+public:
+					ReconvergenceTestTessEvalInstance	(Context&			context,
+														 add_cref<CaseDef>	data)
+						: ReconvergenceTestGraphicsInstance	(context, data) { }
+					~ReconvergenceTestTessEvalInstance	(void)	= default;
+	virtual auto	createShaders						(void)	-> std::vector<Move<VkShaderModule>> override;
+	virtual auto	iterate								(void)	-> tcu::TestStatus override;
+};
+
+class ReconvergenceTestGeometryInstance : public ReconvergenceTestGraphicsInstance
+{
+public:
+					ReconvergenceTestGeometryInstance	(Context&			context,
+														 add_cref<CaseDef>	data)
+						: ReconvergenceTestGraphicsInstance	(context, data) { }
+					~ReconvergenceTestGeometryInstance	(void)	= default;
+	virtual auto	createShaders						(void)	-> std::vector<Move<VkShaderModule>> override;
+	virtual auto	createVertexBufferAndFlush			(deUint32				cellsHorz,
+														 deUint32				cellsVert,
+														 VkPrimitiveTopology	topology)	-> de::MovePtr<BufferWithMemory> override;
+
+	virtual auto	iterate								(void)	-> tcu::TestStatus override;
+			auto	calculateAndLogResultEx				(add_ref<tcu::TestLog>			log,
+														 const tcu::UVec4*				result,
+														 const std::vector<tcu::UVec4>&	ref,
+														 const deUint32					maxLoc,
+														 const PrintMode				printMode) -> qpTestResult_e;
+};
+
+Move<VkPipeline> ReconvergenceTestInstance::createGraphicsPipeline	(const VkPipelineLayout		pipelineLayout,
+																	 const VkRenderPass			renderPass,
+																	 const deUint32				width,
+																	 const deUint32				height,
+																	 const Shaders&				shaders,
+																	 const VkPrimitiveTopology	topology,
+																	 const deUint32				patchControlPoints)
+{
+	const DeviceInterface&			vkd			= m_context.getDeviceInterface();
+	const VkDevice					device		= m_context.getDevice();
+	const deUint32					subpass		= 0;
+
+	const std::vector<VkViewport>	viewports	{ makeViewport(width, height) };
+	const std::vector<VkRect2D>		scissors	{ makeRect2D(width, height) };
+
+	enum ShaderIndex
+	{
+		IVERT = 0, IFRAG, ITESC, ITESE, IGEOM
+	};
+	VkShaderModule					handles[5] = { DE_NULL }; // { vert, frag, tesc, tese, geom }
+
+	for (deUint32 i = 0; i < (deUint32)ARRAYSIZE(handles); ++i)
+	{
+		handles[i] = (i < (deUint32)shaders.size()) ? *shaders[i] : DE_NULL;
+	}
+
+	return makeGraphicsPipeline(vkd, device, pipelineLayout,
+								handles[IVERT], handles[ITESC], handles[ITESE], handles[IGEOM], handles[IFRAG],
+								renderPass, viewports, scissors, topology, subpass, patchControlPoints);
+}
+
+Move<VkPipeline> ReconvergenceTestInstance::createComputePipeline	(const VkPipelineLayout		pipelineLayout,
+																	 const VkShaderModule		computeShader)
+{
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	const VkDevice			device = m_context.getDevice();
+
+	const deUint32 specData[2] =
+	{
+		m_data.sizeX,
+		m_data.sizeY
+	};
+	const vk::VkSpecializationMapEntry entries[DE_LENGTH_OF_ARRAY(specData)] =
+	{
+		{0, (deUint32)(sizeof(deUint32) * 0), sizeof(deUint32)},
+		{1, (deUint32)(sizeof(deUint32) * 1), sizeof(deUint32)},
+	};
+	const vk::VkSpecializationInfo specInfo =
+	{
+		DE_LENGTH_OF_ARRAY(entries),	// mapEntryCount
+		entries,						// pMapEntries
+		sizeof(specData),				// dataSize
+		specData						// pData
+	};
+
+	const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,	// VkStructureType		sType;
+		DE_NULL,																		// void*				pNext;
+		m_subgroupSize																	// uint32_t				requiredSubgroupSize;
+	};
+
+	const VkBool32 computeFullSubgroups = m_subgroupSize <= 64 &&
+		m_context.getSubgroupSizeControlFeatures().computeFullSubgroups;
+
+	const void* shaderPNext = computeFullSubgroups ? &subgroupSizeCreateInfo : DE_NULL;
+	VkPipelineShaderStageCreateFlags pipelineShaderStageCreateFlags =
+		(VkPipelineShaderStageCreateFlags)(computeFullSubgroups ? VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT : 0);
+
+	const VkPipelineShaderStageCreateInfo	shaderCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		shaderPNext,
+		pipelineShaderStageCreateFlags,
+		VK_SHADER_STAGE_COMPUTE_BIT,								// stage
+		computeShader,												// shader
+		"main",
+		&specInfo,													// pSpecializationInfo
+	};
+
+	const VkComputePipelineCreateInfo		pipelineCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+		DE_NULL,
+		0u,															// flags
+		shaderCreateInfo,											// cs
+		pipelineLayout,												// layout
+		(vk::VkPipeline)0,											// basePipelineHandle
+		0u,															// basePipelineIndex
+	};
+
+	return vk::createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
 }
 
 typedef enum
@@ -277,7 +903,54 @@ typedef enum
 	// - value 0: while (!subgroupElect()) {}
 	// - value 1: if (condition_that_is_false) { infinite loop }
 	OP_NOISE,
+
+	// do nothing, only markup
+	OP_NOP
 } OPType;
+
+const char* OPtypeToStr(const OPType op)
+{
+#define MAKETEXT(s__) #s__
+#define CASETEXT(e__) case e__: return MAKETEXT(e__)
+	switch (op)
+	{
+		CASETEXT(OP_BALLOT);
+		CASETEXT(OP_STORE);
+		CASETEXT(OP_IF_MASK);
+		CASETEXT(OP_ELSE_MASK);
+		CASETEXT(OP_ENDIF);
+		CASETEXT(OP_IF_LOOPCOUNT);
+		CASETEXT(OP_ELSE_LOOPCOUNT);
+		CASETEXT(OP_IF_LOCAL_INVOCATION_INDEX);
+		CASETEXT(OP_ELSE_LOCAL_INVOCATION_INDEX);
+		CASETEXT(OP_BREAK);
+		CASETEXT(OP_CONTINUE);
+		CASETEXT(OP_ELECT);
+		CASETEXT(OP_BEGIN_FOR_UNIF);
+		CASETEXT(OP_END_FOR_UNIF);
+		CASETEXT(OP_BEGIN_FOR_VAR);
+		CASETEXT(OP_END_FOR_VAR);
+		CASETEXT(OP_BEGIN_FOR_INF);
+		CASETEXT(OP_END_FOR_INF);
+		CASETEXT(OP_BEGIN_DO_WHILE_UNIF);
+		CASETEXT(OP_END_DO_WHILE_UNIF);
+		CASETEXT(OP_BEGIN_DO_WHILE_INF);
+		CASETEXT(OP_END_DO_WHILE_INF);
+		CASETEXT(OP_RETURN);
+		CASETEXT(OP_CALL_BEGIN);
+		CASETEXT(OP_CALL_END);
+		CASETEXT(OP_SWITCH_UNIF_BEGIN);
+		CASETEXT(OP_SWITCH_VAR_BEGIN);
+		CASETEXT(OP_SWITCH_LOOP_COUNT_BEGIN);
+		CASETEXT(OP_CASE_MASK_BEGIN);
+		CASETEXT(OP_CASE_LOOP_COUNT_BEGIN);
+		CASETEXT(OP_SWITCH_END);
+		CASETEXT(OP_CASE_END);
+		CASETEXT(OP_NOISE);
+		CASETEXT(OP_NOP);
+	}
+	return "<Unknown>";
+}
 
 typedef enum
 {
@@ -292,57 +965,52 @@ class OP
 {
 public:
 	OP(OPType _type, deUint64 _value, deUint32 _caseValue = 0)
-		: type(_type), value(_value), caseValue(_caseValue)
+		: type		(_type)
+		, value		(_value)
+		// by default, initialized only lower part with a repetition of _value
+		, bvalue	(tcu::UVec4(deUint32(_value), deUint32(_value >> 32)
+							   ,deUint32(_value), deUint32(_value >> 32)))
+		, caseValue	(_caseValue)
 	{}
 
 	// The type of operation and an optional value.
 	// The value could be a mask for an if test, the index of the loop
 	// header for an end of loop, or the constant value for a store instruction
-	OPType type;
-	deUint64 value;
-	deUint32 caseValue;
+	OPType		type;
+	deUint64	value;
+	Ballot		bvalue;
+	deUint32	caseValue;
 };
-
-static int findLSB (deUint64 value)
-{
-	for (int i = 0; i < 64; i++)
-	{
-		if (value & (1ULL<<i))
-			return i;
-	}
-	return -1;
-}
-
-// For each subgroup, pick out the elected invocationID, and accumulate
-// a bitset of all of them
-static bitset128 bitsetElect (const bitset128& value, deInt32 subgroupSize)
-{
-	bitset128 ret; // zero initialized
-
-	for (deInt32 i = 0; i < 128; i += subgroupSize)
-	{
-		deUint64 mask = bitsetToU64(value, subgroupSize, i);
-		int lsb = findLSB(mask);
-		ret |= bitset128(lsb == -1 ? 0 : (1ULL << lsb)) << i;
-	}
-	return ret;
-}
 
 class RandomProgram
 {
+
 public:
-	RandomProgram(const CaseDef &c)
-		: caseDef(c), numMasks(5), nesting(0), maxNesting(c.maxNesting), loopNesting(0), loopNestingThisFunction(0), callNesting(0), minCount(30), indent(0), isLoopInf(100, false), doneInfLoopBreak(100, false), storeBase(0x10000)
+	RandomProgram(const CaseDef &c, deUint32 invocationCount = 0u)
+		: caseDef(c), invocationStride(invocationCount ? invocationCount : (c.sizeX* c.sizeY))
+		, rnd(), ops(), masks(), ballotMasks(), numMasks(5)
+		, nesting(0), maxNesting(c.maxNesting), loopNesting(0), loopNestingThisFunction(0), callNesting(0)
+		, minCount(30), indent(0), isLoopInf(100, false), doneInfLoopBreak(100, false), storeBase(0x10000)
 	{
 		deRandom_init(&rnd, caseDef.seed);
 		for (int i = 0; i < numMasks; ++i)
-			masks.push_back(deRandom_getUint64(&rnd));
+		{
+			const deUint64		lo	= deRandom_getUint64(&rnd);
+			const deUint64		hi	= deRandom_getUint64(&rnd);
+			const tcu::UVec4	v4	(deUint32(lo), deUint32(lo >> 32),
+									 deUint32(hi), deUint32(hi >> 32));
+			ballotMasks.emplace_back(v4);
+			masks.push_back(lo);
+		}
 	}
+	virtual ~RandomProgram() = default;
 
 	const CaseDef caseDef;
+	const deUint32 invocationStride;
 	deRandom rnd;
 	vector<OP> ops;
 	vector<deUint64> masks;
+	vector<Ballot> ballotMasks;
 	deInt32 numMasks;
 	deInt32 nesting;
 	deInt32 maxNesting;
@@ -358,20 +1026,27 @@ public:
 	// tests need to know that 0xF is really an active mask).
 	deInt32 storeBase;
 
-	void genIf(IFType ifType)
+	virtual void genIf(IFType ifType, deUint32 maxLocalIndexCmp = 0u)
 	{
-		deUint32 maskIdx = deRandom_getUint32(&rnd) % numMasks;
-		deUint64 mask = masks[maskIdx];
+		deUint32	maskIdx	= deRandom_getUint32(&rnd) % numMasks;
+		deUint64	mask	= masks[maskIdx];
+		Ballot		bmask	= ballotMasks[maskIdx];
 		if (ifType == IF_UNIFORM)
+		{
 			mask = ~0ULL;
+			bmask.set();
+		}
 
-		deUint32 localIndexCmp = deRandom_getUint32(&rnd) % 128;
+		deUint32 localIndexCmp = deRandom_getUint32(&rnd) % (maxLocalIndexCmp ? maxLocalIndexCmp : invocationStride);
 		if (ifType == IF_LOCAL_INVOCATION_INDEX)
 			ops.push_back({OP_IF_LOCAL_INVOCATION_INDEX, localIndexCmp});
 		else if (ifType == IF_LOOPCOUNT)
 			ops.push_back({OP_IF_LOOPCOUNT, 0});
 		else
+		{
 			ops.push_back({OP_IF_MASK, mask});
+			ops.back().bvalue = bmask;
+		}
 
 		nesting++;
 
@@ -508,6 +1183,7 @@ public:
 			if ((deRandom_getUint32(&rnd) % 100) < 10)
 			{
 				ops.push_back({OP_IF_MASK, masks[0]});
+				ops.back().bvalue = ballotMasks[0];
 				ops.push_back({OP_BREAK, 0});
 				ops.push_back({OP_ELSE_MASK, 0});
 				ops.push_back({OP_BREAK, 0});
@@ -530,6 +1206,7 @@ public:
 			if ((deRandom_getUint32(&rnd) % 100) < 10)
 			{
 				ops.push_back({OP_IF_MASK, masks[0]});
+				ops.back().bvalue = ballotMasks[0];
 				ops.push_back({OP_CONTINUE, 0});
 				ops.push_back({OP_ELSE_MASK, 0});
 				ops.push_back({OP_CONTINUE, 0});
@@ -548,8 +1225,8 @@ public:
 		if (doBreak)
 		{
 			// Put something interestign before the break
-			optBallot();
-			optBallot();
+			genBallot();
+			genBallot();
 			if ((deRandom_getUint32(&rnd) % 100) < 10)
 				pickOP(1);
 
@@ -577,10 +1254,11 @@ public:
 			 (callNesting > 0 && loopNestingThisFunction > 0 && r < 20) ||
 			 (callNesting > 0 && loopNestingThisFunction > 1 && r < 50)))
 		{
-			optBallot();
+			genBallot();
 			if ((deRandom_getUint32(&rnd) % 100) < 10)
 			{
 				ops.push_back({OP_IF_MASK, masks[0]});
+				ops.back().bvalue = ballotMasks[0];
 				ops.push_back({OP_RETURN, 0});
 				ops.push_back({OP_ELSE_MASK, 0});
 				ops.push_back({OP_RETURN, 0});
@@ -626,6 +1304,7 @@ public:
 		ops.push_back({OP_CASE_END, 0});
 
 		ops.push_back({OP_CASE_MASK_BEGIN, ~0ULL, 1u<<r});
+		ops.back().bvalue.set();
 		pickOP(2);
 		ops.push_back({OP_CASE_END, 0});
 
@@ -644,18 +1323,22 @@ public:
 		nesting++;
 
 		ops.push_back({OP_CASE_MASK_BEGIN, 0x1111111111111111ULL, 1<<0});
+		ops.back().bvalue = tcu::UVec4(0x11111111);
 		pickOP(1);
 		ops.push_back({OP_CASE_END, 0});
 
 		ops.push_back({OP_CASE_MASK_BEGIN, 0x2222222222222222ULL, 1<<1});
+		ops.back().bvalue = tcu::UVec4(0x22222222);
 		pickOP(1);
 		ops.push_back({OP_CASE_END, 0});
 
 		ops.push_back({OP_CASE_MASK_BEGIN, 0x4444444444444444ULL, 1<<2});
+		ops.back().bvalue = tcu::UVec4(0x44444444);
 		pickOP(1);
 		ops.push_back({OP_CASE_END, 0});
 
 		ops.push_back({OP_CASE_MASK_BEGIN, 0x8888888888888888ULL, 1<<3});
+		ops.back().bvalue = tcu::UVec4(0x88888888);
 		pickOP(1);
 		ops.push_back({OP_CASE_END, 0});
 
@@ -672,10 +1355,12 @@ public:
 		nesting++;
 
 		ops.push_back({OP_CASE_MASK_BEGIN, 0x3333333333333333ULL, (1<<0)|(1<<1)});
+		ops.back().bvalue = tcu::UVec4(0x33333333);
 		pickOP(2);
 		ops.push_back({OP_CASE_END, 0});
 
 		ops.push_back({OP_CASE_MASK_BEGIN, 0xCCCCCCCCCCCCCCCCULL, (1<<2)|(1<<3)});
+		ops.back().bvalue = tcu::UVec4(0xCCCCCCCC);
 		pickOP(2);
 		ops.push_back({OP_CASE_END, 0});
 
@@ -695,15 +1380,18 @@ public:
 		nesting++;
 
 		ops.push_back({OP_CASE_LOOP_COUNT_BEGIN, 1ULL<<1, 1});
+		ops.back().bvalue = tcu::UVec4(1 << 1, 0, 0, 0);
 		pickOP(1);
 		ops.push_back({OP_CASE_END, 0});
 
 		ops.push_back({OP_CASE_LOOP_COUNT_BEGIN, 1ULL<<2, 2});
+		ops.back().bvalue = tcu::UVec4(1 << 2, 0, 0, 0);
 		pickOP(1);
 		ops.push_back({OP_CASE_END, 0});
 
 		// default:
 		ops.push_back({OP_CASE_LOOP_COUNT_BEGIN, ~6ULL, 0xFFFFFFFF});
+		ops.back().bvalue = tcu::UVec4(~6u, ~0u, ~0u, ~0u);
 		pickOP(1);
 		ops.push_back({OP_CASE_END, 0});
 
@@ -717,7 +1405,7 @@ public:
 		// so "count" is just a seed
 		for (deUint32 i = 0; i < count; ++i)
 		{
-			optBallot();
+			genBallot();
 			if (nesting < maxNesting)
 			{
 				deUint32 r = deRandom_getUint32(&rnd) % 11;
@@ -825,11 +1513,11 @@ public:
 					break;
 				}
 			}
-			optBallot();
+			genBallot();
 		}
 	}
 
-	void optBallot()
+	void genBallot()
 	{
 		// optionally insert ballots, stores, and noise. Ballots and stores are used to determine
 		// correctness.
@@ -866,8 +1554,10 @@ public:
 			ops.push_back({OP_NOISE, 1});
 	}
 
-	void generateRandomProgram()
+	void generateRandomProgram(add_ref<tcu::TestLog> log)
 	{
+		std::vector<tcu::UVec4> ref;
+
 		do {
 			ops.clear();
 			while ((deInt32)ops.size() < minCount)
@@ -876,10 +1566,15 @@ public:
 			// Retry until the program has some UCF results in it
 			if (caseDef.isUCF())
 			{
-				const deUint32 invocationStride = 128;
 				// Simulate for all subgroup sizes, to determine whether OP_BALLOTs are nonuniform
-				for (deInt32 subgroupSize = 4; subgroupSize <= 64; subgroupSize *= 2) {
-					simulate(true, subgroupSize, invocationStride, DE_NULL);
+				for (deInt32 subgroupSize = 4; subgroupSize <= 128; subgroupSize *= 2) {
+					//simulate(true, subgroupSize, ref);
+					execute(true,
+							subgroupSize,
+							0u,
+							invocationStride,
+							ref,
+							log);
 				}
 			}
 		} while (caseDef.isUCF() && !hasUCF());
@@ -891,41 +1586,123 @@ public:
 			css << " ";
 	}
 
-	std::string genPartitionBallot()
+	struct FlowState
 	{
-		std::stringstream ss;
-		ss << "subgroupBallot(true).xy";
-		return ss.str();
+		add_cref<vector<OP>> ops;
+		const deInt32 opsIndex;
+		const deInt32 loopNesting;
+		const int funcNum;
+	};
+
+	// State of the subgroup at each level of nesting
+	struct SubgroupState
+	{
+		// Currently executing
+		bitset_inv_t activeMask;
+		// Have executed a continue instruction in this loop
+		bitset_inv_t continueMask;
+		// index of the current if test or loop header
+		deUint32 header;
+		// number of loop iterations performed
+		deUint32 tripCount;
+		// is this nesting a loop?
+		deUint32 isLoop;
+		// is this nesting a function call?
+		deUint32 isCall;
+		// is this nesting a switch?
+		deUint32 isSwitch;
+	};
+
+	struct SubgroupState2
+	{
+		// Currently executing
+		Ballots activeMask;
+		// Have executed a continue instruction in this loop
+		Ballots continueMask;
+		// index of the current if test or loop header
+		deUint32 header;
+		// number of loop iterations performed
+		deUint32 tripCount;
+		// is this nesting a loop?
+		deUint32 isLoop;
+		// is this nesting a function call?
+		deUint32 isCall;
+		// is this nesting a switch?
+		deUint32 isSwitch;
+		virtual ~SubgroupState2 () = default;
+		SubgroupState2 () : SubgroupState2 (0) {}
+		SubgroupState2 (deUint32 subgroupCount)
+			: activeMask	(subgroupCount)
+			, continueMask	(subgroupCount)
+			, header		()
+			, tripCount		()
+			, isLoop		()
+			, isCall		()
+			, isSwitch		() {}
+	};
+
+	struct Prerequisites
+	{
+	};
+
+	virtual std::string getPartitionBallotText()
+	{
+		return "subgroupBallot(true)";
 	}
 
-	void printBallot(std::stringstream *css)
+	virtual void printIfLocalInvocationIndex(std::stringstream &css, add_cref<FlowState> flow)
 	{
-		*css << "outputC.loc[gl_LocalInvocationIndex]++,";
+		printIndent(css); css << "if (gl_LocalInvocationIndex >= inputA.a[0x" << std::hex << flow.ops[flow.opsIndex].value << "]) {\n";
+	}
+
+	virtual void printStore(std::stringstream &css, add_cref<FlowState> flow)
+	{
+		printIndent(css); css << "outputC.loc[gl_LocalInvocationIndex]++;\n";
+		printIndent(css); css << "outputB.b[(outLoc++)*invocationStride + gl_LocalInvocationIndex].x = 0x"
+							  << std::hex << flow.ops[flow.opsIndex].value << ";\n";
+	}
+
+	virtual void printBallot(std::stringstream &css, add_cref<FlowState>, bool endWithSemicolon = false)
+	{
+		printIndent(css);
+
+		css << "outputC.loc[gl_LocalInvocationIndex]++,";
 		// When inside loop(s), use partitionBallot rather than subgroupBallot to compute
 		// a ballot, to make sure the ballot is "diverged enough". Don't do this for
 		// subgroup_uniform_control_flow, since we only validate results that must be fully
 		// reconverged.
 		if (loopNesting > 0 && caseDef.testType == TT_MAXIMAL)
 		{
-			*css << "outputB.b[(outLoc++)*invocationStride + gl_LocalInvocationIndex] = " << genPartitionBallot();
+			css << "outputB.b[(outLoc++)*invocationStride + gl_LocalInvocationIndex] = " << getPartitionBallotText() << ".xy";
 		}
 		else if (caseDef.isElect())
 		{
-			*css << "outputB.b[(outLoc++)*invocationStride + gl_LocalInvocationIndex].x = elect()";
+			css << "outputB.b[(outLoc++)*invocationStride + gl_LocalInvocationIndex].x = elect()";
 		}
 		else
 		{
-			*css << "outputB.b[(outLoc++)*invocationStride + gl_LocalInvocationIndex] = subgroupBallot(true).xy";
+			css << "outputB.b[(outLoc++)*invocationStride + gl_LocalInvocationIndex] = subgroupBallot(true).xy";
+		}
+		if (endWithSemicolon)
+		{
+			css << ";\n";
 		}
 	}
 
-	void genCode(std::stringstream &functions, std::stringstream &main)
+	void printCode(std::stringstream &functions, std::stringstream &main)
 	{
 		std::stringstream *css = &main;
 		indent = 4;
 		loopNesting = 0;
 		int funcNum = 0;
-		for (deInt32 i = 0; i < (deInt32)ops.size(); ++i)
+		deInt32 i = 0;
+
+		auto makeFlowState = [&]() -> FlowState
+		{
+			return FlowState { ops, i, loopNesting, funcNum };
+		};
+
+		for ( ; i < (deInt32)ops.size(); ++i)
 		{
 			switch (ops[i].type)
 			{
@@ -938,8 +1715,14 @@ public:
 					*css << "if (inputA.a[" << idx << "] == " << idx << ") {\n";
 				}
 				else
-					*css << "if (testBit(uvec2(0x" << std::hex << (ops[i].value & 0xFFFFFFFF) << ", 0x" << (ops[i].value >> 32) << "), gl_SubgroupInvocationID)) {\n";
-
+				{
+					const tcu::UVec4 v(ops[i].bvalue);
+					*css << std::hex << "if (testBit(uvec4("
+						 << "0x" << v.x() << ", "
+						 << "0x" << v.y() << ", "
+						 << "0x" << v.z() << ", "
+						 << "0x" << v.w() << std::dec << "), gl_SubgroupInvocationID)) {\n";
+				}
 				indent += 4;
 				break;
 			case OP_IF_LOOPCOUNT:
@@ -947,7 +1730,7 @@ public:
 				indent += 4;
 				break;
 			case OP_IF_LOCAL_INVOCATION_INDEX:
-				printIndent(*css); *css << "if (gl_LocalInvocationIndex >= inputA.a[0x" << std::hex << ops[i].value << "]) {\n";
+				printIfLocalInvocationIndex(*css, makeFlowState());
 				indent += 4;
 				break;
 			case OP_ELSE_MASK:
@@ -962,55 +1745,10 @@ public:
 				printIndent(*css); *css << "}\n";
 				break;
 			case OP_BALLOT:
-				printIndent(*css); printBallot(css); *css << ";\n";
+				printBallot(*css, makeFlowState(), true);
 				break;
 			case OP_STORE:
-				printIndent(*css); *css << "outputC.loc[gl_LocalInvocationIndex]++;\n";
-				printIndent(*css); *css << "outputB.b[(outLoc++)*invocationStride + gl_LocalInvocationIndex].x = 0x" << std::hex << ops[i].value << ";\n";
-				break;
-			case OP_BEGIN_FOR_UNIF:
-				printIndent(*css); *css << "for (int loopIdx" << loopNesting << " = 0;\n";
-				printIndent(*css); *css << "         loopIdx" << loopNesting << " < inputA.a[" << ops[i].value << "];\n";
-				printIndent(*css); *css << "         loopIdx" << loopNesting << "++) {\n";
-				indent += 4;
-				loopNesting++;
-				break;
-			case OP_END_FOR_UNIF:
-				loopNesting--;
-				indent -= 4;
-				printIndent(*css); *css << "}\n";
-				break;
-			case OP_BEGIN_DO_WHILE_UNIF:
-				printIndent(*css); *css << "{\n";
-				indent += 4;
-				printIndent(*css); *css << "int loopIdx" << loopNesting << " = 0;\n";
-				printIndent(*css); *css << "do {\n";
-				indent += 4;
-				printIndent(*css); *css << "loopIdx" << loopNesting << "++;\n";
-				loopNesting++;
-				break;
-			case OP_BEGIN_DO_WHILE_INF:
-				printIndent(*css); *css << "{\n";
-				indent += 4;
-				printIndent(*css); *css << "int loopIdx" << loopNesting << " = 0;\n";
-				printIndent(*css); *css << "do {\n";
-				indent += 4;
-				loopNesting++;
-				break;
-			case OP_END_DO_WHILE_UNIF:
-				loopNesting--;
-				indent -= 4;
-				printIndent(*css); *css << "} while (loopIdx" << loopNesting << " < inputA.a[" << ops[(deUint32)ops[i].value].value << "]);\n";
-				indent -= 4;
-				printIndent(*css); *css << "}\n";
-				break;
-			case OP_END_DO_WHILE_INF:
-				loopNesting--;
-				printIndent(*css); *css << "loopIdx" << loopNesting << "++;\n";
-				indent -= 4;
-				printIndent(*css); *css << "} while (true);\n";
-				indent -= 4;
-				printIndent(*css); *css << "}\n";
+				printStore(*css, makeFlowState());
 				break;
 			case OP_BEGIN_FOR_VAR:
 				printIndent(*css); *css << "for (int loopIdx" << loopNesting << " = 0;\n";
@@ -1024,15 +1762,59 @@ public:
 				indent -= 4;
 				printIndent(*css); *css << "}\n";
 				break;
+			case OP_BEGIN_FOR_UNIF:
+				printIndent(*css); *css << "for (int loopIdx" << loopNesting << " = 0;\n";
+				printIndent(*css); *css << "         loopIdx" << loopNesting << " < inputA.a[" << ops[i].value << "];\n";
+				printIndent(*css); *css << "         loopIdx" << loopNesting << "++) {\n";
+				indent += 4;
+				loopNesting++;
+				break;
+			case OP_END_FOR_UNIF:
+				loopNesting--;
+				indent -= 4;
+				printIndent(*css); *css << "}\n";
+				break;
 			case OP_BEGIN_FOR_INF:
 				printIndent(*css); *css << "for (int loopIdx" << loopNesting << " = 0;;loopIdx" << loopNesting << "++,";
 				loopNesting++;
-				printBallot(css);
+				printBallot(*css, makeFlowState());
 				*css << ") {\n";
 				indent += 4;
 				break;
 			case OP_END_FOR_INF:
 				loopNesting--;
+				indent -= 4;
+				printIndent(*css); *css << "}\n";
+				break;
+			case OP_BEGIN_DO_WHILE_UNIF:
+				printIndent(*css); *css << "{\n";
+				indent += 4;
+				printIndent(*css); *css << "int loopIdx" << loopNesting << " = 0;\n";
+				printIndent(*css); *css << "do {\n";
+				indent += 4;
+				printIndent(*css); *css << "loopIdx" << loopNesting << "++;\n";
+				loopNesting++;
+				break;
+			case OP_END_DO_WHILE_UNIF:
+				loopNesting--;
+				indent -= 4;
+				printIndent(*css); *css << "} while (loopIdx" << loopNesting << " < inputA.a[" << ops[(deUint32)ops[i].value].value << "]);\n";
+				indent -= 4;
+				printIndent(*css); *css << "}\n";
+				break;
+			case OP_BEGIN_DO_WHILE_INF:
+				printIndent(*css); *css << "{\n";
+				indent += 4;
+				printIndent(*css); *css << "int loopIdx" << loopNesting << " = 0;\n";
+				printIndent(*css); *css << "do {\n";
+				indent += 4;
+				loopNesting++;
+				break;
+			case OP_END_DO_WHILE_INF:
+				loopNesting--;
+				printIndent(*css); *css << "loopIdx" << loopNesting << "++;\n";
+				indent -= 4;
+				printIndent(*css); *css << "} while (true);\n";
 				indent -= 4;
 				printIndent(*css); *css << "}\n";
 				break;
@@ -1086,7 +1868,7 @@ public:
 					indent += 4;
 					printIndent(*css); *css << "while (true) {\n";
 					indent += 4;
-					printIndent(*css); printBallot(css); *css << ";\n";
+					printBallot(*css, makeFlowState(), true);
 					indent -= 4;
 					printIndent(*css); *css << "}\n";
 					indent -= 4;
@@ -1145,38 +1927,1303 @@ public:
 
 	// Simulate execution of the program. If countOnly is true, just return
 	// the max number of outputs written. If it's false, store out the result
-	// values to ref
-	deUint32 simulate(bool countOnly, deUint32 subgroupSize, deUint32 invocationStride, deUint64 *ref)
+	// values to ref.
+	virtual deUint32 simulate(bool countOnly, deUint32 subgroupSize, add_ref<std::vector<deUint64>> ref) = 0;
+
+	virtual deUint32 execute	(bool								countOnly,
+								 const deUint32						subgroupSize,
+								 const deUint32						fragmentStride,
+								 const deUint32						primitiveStride,
+								 add_ref<std::vector<tcu::UVec4>>	ref,
+								 add_ref<tcu::TestLog>				log,
+								 add_cref<std::vector<deUint32>>	outputP = {},
+								 const tcu::UVec4*					cmp = nullptr,
+								 const deUint32						primitiveID = (~0u))
 	{
-		// State of the subgroup at each level of nesting
-		struct SubgroupState
+		// Per-invocation output location counters
+		std::vector<deUint32>		outLoc;
+		std::vector<SubgroupState2> stateStack;
+		deUint32					subgroupCount;
+		deUint32					logFailureCount;
+		auto prerequisites	= makePrerequisites(outputP, subgroupSize, fragmentStride, primitiveStride, stateStack, outLoc, subgroupCount);
+		const Ballot fullSubgroupMask = subgroupSizeToMask(subgroupSize, subgroupCount);
+
+		logFailureCount	= 10u;
+		nesting			= 0;
+		loopNesting		= 0;
+
+		deInt32 i		= 0;
+
+		while (i < (deInt32)ops.size())
 		{
-			// Currently executing
-			bitset128 activeMask;
-			// Have executed a continue instruction in this loop
-			bitset128 continueMask;
-			// index of the current if test or loop header
-			deUint32 header;
-			// number of loop iterations performed
-			deUint32 tripCount;
-			// is this nesting a loop?
-			deUint32 isLoop;
-			// is this nesting a function call?
-			deUint32 isCall;
-			// is this nesting a switch?
-			deUint32 isSwitch;
-		};
+			add_cref<Ballots> activeMask = stateStack[nesting].activeMask;
+
+			switch (ops[i].type)
+			{
+			case OP_BALLOT:
+				// Flag that this ballot is workgroup-nonuniform
+				if (caseDef.isWUCF() && activeMask.any() && !activeMask.all())
+					ops[i].caseValue = 1;
+
+				if (caseDef.isSUCF())
+				{
+					for (deUint32 id = 0; id < invocationStride; id += subgroupSize)
+					{
+						const Ballot subgroupMask = bitsetToBallot(activeMask, subgroupSize, id);
+						// Flag that this ballot is subgroup-nonuniform
+						if (subgroupMask != 0 && subgroupMask != fullSubgroupMask)
+							ops[i].caseValue = 1;
+					}
+				}
+
+				simulateBallot(countOnly, activeMask, primitiveID, i, outLoc, ref, log,
+							   prerequisites, logFailureCount, (i > 0 ? ops[i-1].type : OP_BALLOT), cmp);
+				break;
+			case OP_STORE:
+				simulateStore(countOnly, stateStack[nesting].activeMask, primitiveID, ops[i].value, outLoc, ref, log,
+							  prerequisites, logFailureCount, (i > 0 ? ops[i-1].type : OP_STORE), cmp);
+				break;
+			case OP_IF_MASK:
+				nesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & ballotsFromBallot(ops[i].bvalue, subgroupSize, subgroupCount);
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+				break;
+			case OP_ELSE_MASK:
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & ~ballotsFromBallot(ops[stateStack[nesting].header].bvalue, subgroupSize, subgroupCount);
+				break;
+			case OP_IF_LOOPCOUNT:
+			{
+				deUint32 n = nesting;
+				while (!stateStack[n].isLoop)
+					n--;
+				const Ballot tripBallot = Ballot::withSetBit(stateStack[n].tripCount);
+
+				nesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & ballotsFromBallot(tripBallot, subgroupSize, subgroupCount);
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+				break;
+			}
+			case OP_ELSE_LOOPCOUNT:
+			{
+				deUint32 n = nesting;
+				while (!stateStack[n].isLoop)
+					n--;
+				const Ballot tripBallot = Ballot::withSetBit(stateStack[n].tripCount);
+
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & ~ballotsFromBallot(tripBallot, subgroupSize, subgroupCount);
+				break;
+			}
+			case OP_IF_LOCAL_INVOCATION_INDEX:
+			{
+				// all bits >= N
+				Ballots mask(subgroupCount);
+				const deUint32 maxID = subgroupCount * subgroupSize;
+				for (deUint32 id = static_cast<deUint32>(ops[i].value); id < maxID; ++id)
+				{
+					mask.set(Ballots::findBit(id, subgroupSize));
+				}
+
+				nesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & mask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+				break;
+			}
+			case OP_ELSE_LOCAL_INVOCATION_INDEX:
+			{
+				// all bits < N
+				Ballots mask(subgroupCount);
+				const deUint32 maxID = subgroupCount * subgroupSize;
+				for (deUint32 id = 0u; id < static_cast<deUint32>(ops[i].value) && id < maxID; ++id)
+				{
+					mask.set(Ballots::findBit(id, subgroupSize));
+				}
+
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & mask;
+				break;
+			}
+			case OP_ENDIF:
+				nesting--;
+				break;
+			case OP_BEGIN_FOR_UNIF:
+				// XXX TODO: We don't handle a for loop with zero iterations
+				nesting++;
+				loopNesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].tripCount = 0;
+				stateStack[nesting].isLoop = 1;
+				stateStack[nesting].isSwitch = 0;
+				stateStack[nesting].continueMask = 0;
+				break;
+			case OP_END_FOR_UNIF:
+				stateStack[nesting].tripCount++;
+				stateStack[nesting].activeMask |= stateStack[nesting].continueMask;
+				stateStack[nesting].continueMask = 0;
+				if (stateStack[nesting].tripCount < ops[stateStack[nesting].header].value &&
+					stateStack[nesting].activeMask.any())
+				{
+					i = stateStack[nesting].header+1;
+					continue;
+				}
+				else
+				{
+					loopNesting--;
+					nesting--;
+				}
+				break;
+			case OP_BEGIN_DO_WHILE_UNIF:
+				// XXX TODO: We don't handle a for loop with zero iterations
+				nesting++;
+				loopNesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].tripCount = 1;
+				stateStack[nesting].isLoop = 1;
+				stateStack[nesting].isSwitch = 0;
+				stateStack[nesting].continueMask = 0;
+				break;
+			case OP_END_DO_WHILE_UNIF:
+				stateStack[nesting].activeMask |= stateStack[nesting].continueMask;
+				stateStack[nesting].continueMask = 0;
+				if (stateStack[nesting].tripCount < ops[stateStack[nesting].header].value &&
+					stateStack[nesting].activeMask.any())
+				{
+					i = stateStack[nesting].header+1;
+					stateStack[nesting].tripCount++;
+					continue;
+				}
+				else
+				{
+					loopNesting--;
+					nesting--;
+				}
+				break;
+			case OP_BEGIN_FOR_VAR:
+				// XXX TODO: We don't handle a for loop with zero iterations
+				nesting++;
+				loopNesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].tripCount = 0;
+				stateStack[nesting].isLoop = 1;
+				stateStack[nesting].isSwitch = 0;
+				stateStack[nesting].continueMask = 0;
+				break;
+			case OP_END_FOR_VAR:
+			{
+				stateStack[nesting].tripCount++;
+				stateStack[nesting].activeMask |= stateStack[nesting].continueMask;
+				stateStack[nesting].continueMask = 0;
+				Ballot tripBallot;
+				if (subgroupSize != stateStack[nesting].tripCount)
+				{
+					for (deUint32 bit = stateStack[nesting].tripCount; bit < tripBallot.size(); ++bit)
+						tripBallot.set(bit);
+				}
+				stateStack[nesting].activeMask &= ballotsFromBallot(tripBallot, subgroupSize, subgroupCount);
+
+				if (stateStack[nesting].activeMask.any())
+				{
+					i = stateStack[nesting].header+1;
+					continue;
+				}
+				else
+				{
+					loopNesting--;
+					nesting--;
+				}
+				break;
+			}
+			case OP_BEGIN_FOR_INF:
+			case OP_BEGIN_DO_WHILE_INF:
+				nesting++;
+				loopNesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].tripCount = 0;
+				stateStack[nesting].isLoop = 1;
+				stateStack[nesting].isSwitch = 0;
+				stateStack[nesting].continueMask = 0;
+				break;
+			case OP_END_FOR_INF:
+				stateStack[nesting].tripCount++;
+				stateStack[nesting].activeMask |= stateStack[nesting].continueMask;
+				stateStack[nesting].continueMask = 0;
+				if (stateStack[nesting].activeMask.any())
+				{
+					// output expected OP_BALLOT values
+					simulateBallot(countOnly, stateStack[nesting].activeMask, primitiveID, i, outLoc, ref, log,
+								   prerequisites, logFailureCount, (i > 0 ? ops[i-1].type : OP_BALLOT), cmp);
+
+					i = stateStack[nesting].header+1;
+					continue;
+				}
+				else
+				{
+					loopNesting--;
+					nesting--;
+				}
+				break;
+			case OP_END_DO_WHILE_INF:
+				stateStack[nesting].tripCount++;
+				stateStack[nesting].activeMask |= stateStack[nesting].continueMask;
+				stateStack[nesting].continueMask = 0;
+				if (stateStack[nesting].activeMask.any())
+				{
+					i = stateStack[nesting].header+1;
+					continue;
+				}
+				else
+				{
+					loopNesting--;
+					nesting--;
+				}
+				break;
+			case OP_BREAK:
+			{
+				deUint32 n = nesting;
+				const Ballots mask = stateStack[nesting].activeMask;
+				while (true)
+				{
+					stateStack[n].activeMask &= ~mask;
+					if (stateStack[n].isLoop || stateStack[n].isSwitch)
+						break;
+
+					n--;
+				}
+			}
+			break;
+			case OP_CONTINUE:
+			{
+				deUint32 n = nesting;
+				const Ballots mask = stateStack[nesting].activeMask;
+				while (true)
+				{
+					stateStack[n].activeMask &= ~mask;
+					if (stateStack[n].isLoop)
+					{
+						stateStack[n].continueMask |= mask;
+						break;
+					}
+					n--;
+				}
+			}
+			break;
+			case OP_ELECT:
+			{
+				nesting++;
+				stateStack[nesting].activeMask = bitsetElect(stateStack[nesting-1].activeMask);
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+			}
+			break;
+			case OP_RETURN:
+			{
+				const Ballots mask = stateStack[nesting].activeMask;
+				for (deInt32 n = nesting; n >= 0; --n)
+				{
+					stateStack[n].activeMask &= ~mask;
+					if (stateStack[n].isCall)
+						break;
+				}
+			}
+			break;
+
+			case OP_CALL_BEGIN:
+				nesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+				stateStack[nesting].isCall = 1;
+				break;
+			case OP_CALL_END:
+				stateStack[nesting].isCall = 0;
+				nesting--;
+				break;
+			case OP_NOISE:
+				break;
+
+			case OP_SWITCH_UNIF_BEGIN:
+			case OP_SWITCH_VAR_BEGIN:
+			case OP_SWITCH_LOOP_COUNT_BEGIN:
+				nesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 1;
+				break;
+			case OP_SWITCH_END:
+				nesting--;
+				break;
+			case OP_CASE_MASK_BEGIN:
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & ballotsFromBallot(ops[i].bvalue, subgroupSize, subgroupCount);
+				break;
+			case OP_CASE_LOOP_COUNT_BEGIN:
+			{
+				deUint32 n = nesting;
+				deUint32 l = loopNesting;
+
+				while (true)
+				{
+					if (stateStack[n].isLoop)
+					{
+						l--;
+						if (l == ops[stateStack[nesting].header].value)
+							break;
+					}
+					n--;
+				}
+
+				if ((Ballot::withSetBit(stateStack[n].tripCount) & Ballot(ops[i].bvalue)).any())
+					stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				else
+					stateStack[nesting].activeMask = 0;
+				break;
+			}
+			case OP_CASE_END:
+				break;
+
+			default:
+				DE_ASSERT(0);
+				break;
+			}
+			i++;
+		}
+		deUint32 maxLoc = 0;
+		for (deUint32 id = 0; id < (deUint32)outLoc.size(); ++id)
+			maxLoc = de::max(maxLoc, outLoc[id]);
+
+		return maxLoc;
+	}
+
+	bool hasUCF() const
+	{
+		for (deInt32 i = 0; i < (deInt32)ops.size(); ++i)
+		{
+			if (ops[i].type == OP_BALLOT && ops[i].caseValue == 0)
+				return true;
+		}
+		return false;
+	}
+
+protected:
+	virtual std::shared_ptr<Prerequisites> makePrerequisites (add_cref<std::vector<deUint32>>		outputP,
+															  const deUint32						subgroupSize,
+															  const deUint32						fragmentStride,
+															  const deUint32						primitiveStride,
+															  add_ref<std::vector<SubgroupState2>>	stateStack,
+															  add_ref<std::vector<deUint32>>		outLoc,
+															  add_ref<deUint32>						subgroupCount)
+	{
+		DE_UNREF(outputP);
+		DE_UNREF(subgroupSize);
+		DE_UNREF(fragmentStride);
+		DE_UNREF(primitiveStride);
+		DE_UNREF(stateStack);
+		DE_UNREF(outLoc);
+		DE_UNREF(subgroupCount);
+		return std::make_shared<Prerequisites>();
+	}
+
+	virtual void simulateBallot	(const bool							countOnly,
+								 add_cref<Ballots>					activeMask,
+								 const deUint32						primitiveID,
+								 const deInt32						opsIndex,
+								 add_ref<std::vector<deUint32>>		outLoc,
+								 add_ref<std::vector<tcu::UVec4>>	ref,
+								 add_ref<tcu::TestLog>				log,
+								 std::shared_ptr<Prerequisites>		prerequisites,
+								 add_ref<uint32_t>					logFailureCount,
+								 const OPType						reason,
+								 const tcu::UVec4*					cmp)
+	{
+		DE_UNREF(countOnly);
+		DE_UNREF(activeMask);
+		DE_UNREF(primitiveID);
+		DE_UNREF(opsIndex);
+		DE_UNREF(outLoc);
+		DE_UNREF(ref);
+		DE_UNREF(log);
+		DE_UNREF(prerequisites);
+		DE_UNREF(logFailureCount);
+		DE_UNREF(reason);
+		DE_UNREF(cmp);
+	}
+
+	virtual void simulateStore	(const bool							countOnly,
+								 add_cref<Ballots>					activeMask,
+								 const deUint32						primitiveID,
+								 const deUint64						storeValue,
+								 add_ref<std::vector<deUint32>>		outLoc,
+								 add_ref<std::vector<tcu::UVec4>>	ref,
+								 add_ref<tcu::TestLog>				log,
+								 std::shared_ptr<Prerequisites>		prerequisites,
+								 add_ref<uint32_t>					logFailureCount,
+								 const OPType						reason,
+								 const tcu::UVec4*					cmp)
+	{
+		DE_UNREF(countOnly);
+		DE_UNREF(activeMask);
+		DE_UNREF(primitiveID);
+		DE_UNREF(storeValue);
+		DE_UNREF(outLoc);
+		DE_UNREF(ref);
+		DE_UNREF(log);
+		DE_UNREF(prerequisites);
+		DE_UNREF(logFailureCount);
+		DE_UNREF(reason);
+		DE_UNREF(cmp);
+	}
+};
+
+class ComputeRandomProgram : public RandomProgram
+{
+public:
+	ComputeRandomProgram(const CaseDef& c)
+		: RandomProgram(c, deUint32(c.sizeX * c.sizeY))
+	{
+		DE_ASSERT(c.shaderStage == VK_SHADER_STAGE_COMPUTE_BIT);
+	}
+	virtual ~ComputeRandomProgram() = default;
+
+	virtual deUint32 simulate(bool countOnly, deUint32 subgroupSize, add_ref<std::vector<deUint64>> ref) override
+	{
+		DE_ASSERT(false);
+		// Do not use this method, to simulate generated program use simulate2 instead
+		DE_UNREF(countOnly);
+		DE_UNREF(subgroupSize);
+		DE_UNREF(ref);
+		return 0;
+	}
+
+	struct ComputePrerequisites : Prerequisites
+	{
+		const deUint32 m_subgroupSize;
+		ComputePrerequisites (deUint32 subgroupSize) : m_subgroupSize(subgroupSize) {}
+	};
+
+	virtual void printBallot(add_ref<std::stringstream> css, add_cref<FlowState>, bool endWithSemicolon = false) override
+	{
+		printIndent(css);
+
+		css << "outputC.loc[gl_LocalInvocationIndex]++,";
+		// When inside loop(s), use partitionBallot rather than subgroupBallot to compute
+		// a ballot, to make sure the ballot is "diverged enough". Don't do this for
+		// subgroup_uniform_control_flow, since we only validate results that must be fully
+		// reconverged.
+		if (loopNesting > 0 && caseDef.testType == TT_MAXIMAL)
+		{
+			css << "outputB.b[(outLoc++)*invocationStride + gl_LocalInvocationIndex] = " << getPartitionBallotText();
+		}
+		else if (caseDef.isElect())
+		{
+			css << "outputB.b[(outLoc++)*invocationStride + gl_LocalInvocationIndex].x = elect()";
+		}
+		else
+		{
+			css << "outputB.b[(outLoc++)*invocationStride + gl_LocalInvocationIndex] = subgroupBallot(true)";
+		}
+		if (endWithSemicolon)
+		{
+			css << ";\n";
+		}
+	}
+
+protected:
+	virtual void simulateBallot	(const bool							countOnly,
+								 add_cref<Ballots>					activeMask,
+								 const deUint32						unusedPrimitiveID,
+								 const deInt32						opsIndex,
+								 add_ref<std::vector<deUint32>>		outLoc,
+								 add_ref<std::vector<tcu::UVec4>>	ref,
+								 add_ref<tcu::TestLog>				log,
+								 std::shared_ptr<Prerequisites>		prerequisites,
+								 add_ref<uint32_t>					logFailureCount,
+								 const OPType						reason,
+								 const tcu::UVec4*					cmp) override
+	{
+		DE_UNREF(unusedPrimitiveID);
+		DE_UNREF(log);
+		DE_UNREF(logFailureCount);
+		DE_UNREF(reason);
+		DE_UNREF(cmp);
+		const deUint32 subgroupCount = activeMask.subgroupCount();
+		const deUint32 subgroupSize = static_pointer_cast<ComputePrerequisites>(prerequisites)->m_subgroupSize;
+
+		for (deUint32 id = 0; id < invocationStride; ++id)
+		{
+			if (activeMask.test((Ballots::findBit(id, subgroupSize))))
+			{
+				if (countOnly)
+				{
+					outLoc[id]++;
+				}
+				else
+				{
+					if (ops[opsIndex].caseValue)
+					{
+						// Emit a magic value to indicate that we shouldn't validate this ballot
+						ref[(outLoc[id]++)*invocationStride + id] = bitsetToBallot(0x12345678, subgroupCount, subgroupSize, id);
+					}
+					else
+						ref[(outLoc[id]++)*invocationStride + id] = bitsetToBallot(activeMask, subgroupSize, id);
+				}
+			}
+		}
+	}
+
+	virtual void simulateStore	(const bool								countOnly,
+								 add_cref<Ballots>						activeMask,
+								 const deUint32							unusedPrimitiveID,
+								 const deUint64							storeValue,
+								 add_ref<std::vector<deUint32>>			outLoc,
+								 add_ref<std::vector<tcu::UVec4>>		ref,
+								 add_ref<tcu::TestLog>					log,
+								 std::shared_ptr<Prerequisites>			prerequisites,
+								 add_ref<uint32_t>						logFailureCount,
+								 const OPType							reason,
+								 const tcu::UVec4*						cmp) override
+	{
+		DE_UNREF(unusedPrimitiveID);
+		DE_UNREF(log);
+		DE_UNREF(logFailureCount);
+		DE_UNREF(reason);
+		DE_UNREF(cmp);
+		const deUint32 subgroupSize = static_pointer_cast<ComputePrerequisites>(prerequisites)->m_subgroupSize;
+		for (deUint32 id = 0; id < invocationStride; ++id)
+		{
+			if (activeMask.test(Ballots::findBit(id, subgroupSize)))
+			{
+				if (countOnly)
+					outLoc[id]++;
+				else
+					ref[(outLoc[id]++)*invocationStride + id] = Ballot(tcu::UVec4(deUint32(storeValue & 0xFFFFFFFF), 0u, 0u, 0u));
+			}
+		}
+	}
+
+	virtual std::shared_ptr<Prerequisites> makePrerequisites	(add_cref<std::vector<deUint32>>		outputP,
+																 const deUint32							subgroupSize,
+																 const deUint32							fragmentStride,
+																 const deUint32							primitiveStride,
+																 add_ref<std::vector<SubgroupState2>>	stateStack,
+																 add_ref<std::vector<deUint32>>			outLoc,
+																 add_ref<deUint32>						subgroupCount) override
+	{
+		DE_UNREF(outputP);
+		DE_UNREF(fragmentStride);
+		DE_ASSERT(invocationStride == primitiveStride);
+		auto prerequisites = std::make_shared<ComputePrerequisites>(subgroupSize);
+		subgroupCount = ROUNDUP(invocationStride, subgroupSize) / subgroupSize;
+		stateStack.resize(10u, SubgroupState2(subgroupCount));
+		outLoc.resize(primitiveStride, 0u);
+		add_ref<Ballots> activeMask(stateStack.at(0).activeMask);
+		for (deUint32 id = 0; id < invocationStride; ++id)
+		{
+			activeMask.set(Ballots::findBit(id, subgroupSize));
+		}
+		return prerequisites;
+	}
+};
+
+class FragmentRandomProgram : public RandomProgram
+{
+public:
+#define BALLOT_STACK_SIZE_DEFVAL_LINE (__LINE__ + 1)
+	static constexpr const deUint32 experimentalOutLocSize = 16384;
+	static constexpr const deUint32 conditionIfInvocationStride = 511u;
+	FragmentRandomProgram(const CaseDef &c)	: RandomProgram	(c, conditionIfInvocationStride)
+	{
+		DE_ASSERT(caseDef.testType == TT_MAXIMAL);
+		DE_ASSERT(c.shaderStage == VK_SHADER_STAGE_FRAGMENT_BIT);
+	}
+	virtual ~FragmentRandomProgram() = default;
+
+	static de::MovePtr<FragmentRandomProgram> create(const CaseDef &c)
+	{
+		return de::MovePtr<FragmentRandomProgram>(new FragmentRandomProgram(c));
+	}
+
+	virtual void printIfLocalInvocationIndex(add_ref<std::stringstream> css, add_cref<FlowState> flow) override
+	{
+		printIndent(css);
+		css << "if (invocationIndex() >= inputA.a[0x" << std::hex << flow.ops[flow.opsIndex].value << "]) {\n";
+	}
+
+	virtual void printStore(add_ref<std::stringstream> css, add_cref<FlowState> flow) override
+	{
+		printIndent(css);
+		css << "storeValue(outLoc++, 0x" << std::hex << flow.ops[flow.opsIndex].value << ");\n";
+	}
+
+	virtual void printBallot(add_ref<std::stringstream> css, add_cref<FlowState>, bool endWidthSemicolon = false) override
+	{
+		printIndent(css);
+		// When inside loop(s), use partitionBallot rather than subgroupBallot to compute
+		// a ballot, to make sure the ballot is "diverged enough". Don't do this for
+		// subgroup_uniform_control_flow, since we only validate results that must be fully
+		// reconverged.
+		if (loopNesting > 0)
+		{
+			css << "storeBallot(outLoc++)";
+		}
+		else
+		{
+			css << getPartitionBallotText();
+		}
+		if (endWidthSemicolon)
+		{
+			css << ";\n";
+		}
+	}
+
+	virtual std::string getPartitionBallotText() override
+	{
+		return "storeBallot(outLoc++)";
+	}
+
+	virtual void genIf(IFType ifType, deUint32 maxLocalIndexCmp = 0u) override
+	{
+		DE_UNREF(maxLocalIndexCmp);
+		RandomProgram::genIf(ifType, conditionIfInvocationStride);
+	}
+
+	struct Arrangement : Prerequisites, ReconvergenceTestFragmentInstance::Arrangement
+	{
+		const deUint32									m_width;
+		const deUint32									m_height;
+		const deUint32									m_subgroupSize;
+		const deUint32									m_fragmentStride;
+		const deUint32									m_primitiveStride;
+		const deUint32									m_subgroupCount;
+		const Ballots									m_initialBallots;
+		const Ballots									m_nonHelperInitialBallots;
+		const deUint32									m_invocationStride;
+		const std::vector<std::vector<uint32_t>>		m_fragmentSubgroups;
+		Arrangement (add_cref<std::vector<deUint32>>	info,
+					 deUint32							width,
+					 deUint32							height,
+					 deUint32							subgroupSize,
+					 deUint32							primitiveStride)
+			: m_width					(width)
+			, m_height					(height)
+			, m_subgroupSize			(subgroupSize)
+			, m_fragmentStride			(width * height)
+			, m_primitiveStride			(primitiveStride)
+			, m_subgroupCount			(calcSubgroupCount(info, primitiveStride, m_fragmentStride))
+			, m_initialBallots			(makeInitialBallots(info, primitiveStride, m_fragmentStride, false))
+			, m_nonHelperInitialBallots	(makeInitialBallots(info, primitiveStride, m_fragmentStride, true))
+			, m_invocationStride		(calcInvocationStride(info, subgroupSize, primitiveStride, m_fragmentStride))
+			, m_fragmentSubgroups		(makeFragmentSubgroups(info, subgroupSize, primitiveStride, m_fragmentStride))
+		{
+		}
+		static deUint32 calcSubgroupCount (add_cref<std::vector<deUint32>>	info,
+										   const deUint32					primitiveStride,
+										   const deUint32					fragmentStride)
+		{
+			const deUint32 cc = fragmentStride * primitiveStride;
+			std::set<deUint32> s;
+			deUint32	subgroupID;
+			deUint32	subgroupInvocationID;
+			deUint32	isHelperInvocation;
+			for (deUint32 c = 0u; c < cc; ++c)
+			{
+				if (validID(info.at(c), subgroupID, subgroupInvocationID, isHelperInvocation)) s.insert(subgroupID);
+			}
+			const deUint32 gMin = *s.begin(); DE_UNREF(gMin);
+			const deUint32 gMax = *std::next(s.begin(), (s.size() - 1u)); DE_UNREF(gMax);
+			DE_ASSERT(gMin == 0u); DE_ASSERT(gMax == (s.size() - 1u));
+			return static_cast<deUint32>(s.size());
+		}
+		static deUint32 calcInvocationStride (add_cref<std::vector<deUint32>>	info,
+											  const deUint32					subgroupSize,
+											  const deUint32					primitiveStride,
+											  const deUint32					fragmentStride)
+		{
+			return calcSubgroupCount(info, fragmentStride, primitiveStride) * subgroupSize;
+		}
+		static Ballots makeInitialBallots (add_cref<std::vector<deUint32>>	info,
+										   const deUint32					primitiveStride,
+										   const deUint32					fragmentStride,
+										   bool								excludeHelpers)
+		{
+			deUint32	subgroupID;
+			deUint32	subgroupInvocationID;
+			deUint32	isHelperInvocation;
+			Ballots		b(calcSubgroupCount(info, fragmentStride, primitiveStride));
+			const deUint32 cc = fragmentStride * primitiveStride;
+			for (deUint32 c = 0u; c < cc; ++c)
+			{
+				if (validID(info.at(c), subgroupID, subgroupInvocationID, isHelperInvocation))
+				{
+					if (!(excludeHelpers && (isHelperInvocation != 0)))
+						b.at(subgroupID).set(subgroupInvocationID);
+				}
+			}
+			return b;
+		}
+		// Fully Qualified Invocation Name
+		static deUint32 fqin (deUint32 maybeHelperFragmentFQIN, add_ref<deUint32> isHelperInvocation)
+		{
+			isHelperInvocation = maybeHelperFragmentFQIN >> 31;
+			return (maybeHelperFragmentFQIN & 0x7FFFFFFF);
+		}
+		static auto makeFragmentSubgroups (add_cref<std::vector<deUint32>>	info,
+										   const deUint32					subgroupSize,
+										   const deUint32					primitiveStride,
+										   const deUint32					fragmentStride)
+			-> std::vector<std::vector<uint32_t>>
+		{
+			const deUint32 subgroupCount = calcSubgroupCount(info, fragmentStride, primitiveStride);
+			std::vector<std::vector<deUint32>> map(primitiveStride);
+			for (deUint32 p = 0u; p < primitiveStride; ++p)
+				map[p].resize(fragmentStride, (subgroupCount * subgroupSize));
+
+			deUint32	subgroupID;
+			deUint32	subgroupInvocationID;
+			deUint32	isHelperInvocation;
+			for (deUint32 p = 0u; p < primitiveStride; ++p)
+			for (deUint32 f = 0u; f < fragmentStride; ++f)
+			{
+				const deUint32 sgid = info.at(f * primitiveStride + p);
+				if (validID(sgid, subgroupID, subgroupInvocationID, isHelperInvocation))
+					map.at(p).at(f) = (subgroupID * subgroupSize + subgroupInvocationID) | (isHelperInvocation << 31);
+			}
+			return map;
+		}
+		static deUint32 calcRealInvocationCount (add_cref<std::vector<deUint32>> info, deUint32 primitiveStride, deUint32 fragmentStride)
+		{
+			const deUint32 cc = fragmentStride * primitiveStride;
+			deUint32 n = 0u;
+			for (deUint32 c = 0u; c < cc; ++c)
+			{
+				if (info[c]) ++n;
+			}
+			return n;
+		}
+	private:
+		static bool validID (const deUint32 id)
+		{
+			deUint32	subgroupID;				DE_UNREF(subgroupID);
+			deUint32	subgroupInvocationID;	DE_UNREF(subgroupInvocationID);
+			deUint32	isHelperInvocation;		DE_UNREF(isHelperInvocation);
+			return validID(id, subgroupID, subgroupInvocationID, isHelperInvocation);
+		}
+		static bool validID (const deUint32 id, add_ref<deUint32> subgroupID, add_ref<deUint32> subgroupInvocationID, add_ref<deUint32> isHelperInvocation)
+		{
+			if (id != 0u)
+			{
+				subgroupInvocationID	= (id & 0xFFFF);
+				subgroupID				= ((id >> 16) & 0x7FFF) - 1u;
+				isHelperInvocation		= (id >> 31);
+				return true;
+			}
+			return false;
+		}
+	};
+
+	virtual deUint32 simulate (bool countOnly, deUint32 subgroupSize, add_ref<std::vector<deUint64>> ref) override
+	{
+		DE_ASSERT(false); // use overloaded version of simulate() instead
+		DE_UNREF(countOnly);
+		DE_UNREF(subgroupSize);
+		DE_UNREF(ref);
+		return 0;
+	}
+
+	// Simulate execution of the program. If countOnly is true, just return
+	// the max number of outputs written. If it's false, store out the result
+	// values to ref.
+	virtual deUint32 execute	(bool								countOnly,
+								 const deUint32						subgroupSize,
+								 const deUint32						fragmentStride,
+								 const deUint32						primitiveStride,
+								 add_ref<std::vector<tcu::UVec4>>	ref,
+								 add_ref<tcu::TestLog>				log,
+								 add_cref<std::vector<deUint32>>	outputP,
+								 const tcu::UVec4*					cmp = nullptr,
+								 const deUint32						reserved = (~0u)) override
+	{
+		DE_UNREF(reserved);
+		deUint32 outLocs = 0u;
+		deUint32 maxOutLocs = 0u;
+		for (deUint32 primitiveID = 0u; primitiveID < primitiveStride; ++primitiveID)
+		{
+			outLocs = RandomProgram::execute(countOnly, subgroupSize, fragmentStride, primitiveStride, ref, log, outputP, cmp, primitiveID);
+			maxOutLocs = std::max(outLocs, maxOutLocs);
+		}
+		return maxOutLocs;
+	}
+
+protected:
+	virtual void simulateStore	(const bool								countOnly,
+								 add_cref<Ballots>						activeMask,
+								 const deUint32							primitiveID,
+								 const deUint64							storeValue,
+								 add_ref<std::vector<deUint32>>			outLoc,
+								 add_ref<std::vector<tcu::UVec4>>		ref,
+								 add_ref<tcu::TestLog>					log,
+								 std::shared_ptr<Prerequisites>			prerequisites,
+								 add_ref<uint32_t>						logFailureCount,
+								 const OPType							reason,
+								 const tcu::UVec4*						cmp) override
+	{
+		uint32_t isHelperInvocation;
+		add_cref<Arrangement> a(*std::static_pointer_cast<Arrangement>(prerequisites));
+		for (const uint32_t id : a.m_fragmentSubgroups.at(primitiveID))
+		{
+			const uint32_t sgid = a.fqin(id, isHelperInvocation);
+			if (sgid >= (a.m_subgroupCount * a.m_subgroupSize)) continue;
+			if (false == activeMask.test(Ballots::findBit(sgid, a.m_subgroupSize))) continue;
+			const uint32_t loc = primitiveID * a.m_subgroupCount * 128 + sgid;
+			const uint32_t index = (
+				(outLoc.at(loc)++) * (a.m_primitiveStride * a.m_subgroupCount * 128)
+				+ (primitiveID * a.m_subgroupCount * 128) + sgid);
+			if (false == countOnly)
+			{
+				ref.at(index) = tcu::UVec4(deUint32(storeValue & 0xFFFFFFFF), 0u, 0u, 0u);
+				if (cmp && logFailureCount > 0u && cmp[index] != ref.at(index))
+				{
+					logFailureCount -= 1u;
+					log << tcu::TestLog::Message
+						<< logFailureCount << ": stored value mismatch from " << OPtypeToStr(reason)
+						<< tcu::TestLog::EndMessage;
+				}
+			}
+		}
+	}
+
+	virtual void simulateBallot	(const bool							countOnly,
+								 add_cref<Ballots>					activeMask,
+								 const deUint32						primitiveID,
+								 const deInt32						opsIndex,
+								 add_ref<std::vector<deUint32>>		outLoc,
+								 add_ref<std::vector<tcu::UVec4>>	ref,
+								 add_ref<tcu::TestLog>				log,
+								 std::shared_ptr<Prerequisites>		prerequisites,
+								 add_ref<uint32_t>					logFailureCount,
+								 const OPType						reason,
+								 const tcu::UVec4*					cmp) override
+	{
+		DE_UNREF(opsIndex);
+		deUint32 isHelperInvocation;
+		add_cref<Arrangement> a(*std::static_pointer_cast<Arrangement>(prerequisites));
+		for (const uint32_t id : a.m_fragmentSubgroups.at(primitiveID))
+		{
+			const uint32_t sgid = a.fqin(id, isHelperInvocation);
+			if (sgid >= (a.m_subgroupCount * a.m_subgroupSize)) continue;
+			if (false == activeMask.test(Ballots::findBit(sgid, a.m_subgroupSize))) continue;
+			const uint32_t loc = primitiveID * a.m_subgroupCount * 128 + sgid;
+			const uint32_t index = (
+				(outLoc.at(loc)++) * (a.m_primitiveStride * a.m_subgroupCount * 128)
+				+ (primitiveID * a.m_subgroupCount * 128) + sgid);
+			if (false == countOnly)
+			{
+				ref.at(index) = Ballot(activeMask.at(sgid / a.m_subgroupSize));
+				if (cmp && logFailureCount > 0u && cmp[index] != ref.at(index))
+				{
+					logFailureCount -= 1u;
+					log << tcu::TestLog::Message
+						<< logFailureCount << ": ballot mismatch from " << OPtypeToStr(reason)
+						<< tcu::TestLog::EndMessage;
+				}
+			}
+		}
+	}
+
+	virtual std::shared_ptr<Prerequisites> makePrerequisites	(add_cref<std::vector<deUint32>>		outputP,
+																 const deUint32							subgroupSize,
+																 const deUint32							fragmentStride,
+																 const deUint32							primitiveStride,
+																 add_ref<std::vector<SubgroupState2>>	stateStack,
+																 add_ref<std::vector<deUint32>>			outLoc,
+																 add_ref<deUint32>						subgroupCount) override
+	{
+		auto prerequisites = std::make_shared<Arrangement>(outputP, fragmentStride, 1u, subgroupSize, primitiveStride);
+		subgroupCount = prerequisites->m_subgroupCount;
+		stateStack.resize(10u, SubgroupState2(subgroupCount));
+		outLoc.resize((subgroupCount * 128u * fragmentStride), 0u);
+		stateStack.at(0).activeMask = prerequisites->m_initialBallots;
+		return prerequisites;
+	}
+};
+
+class VertexRandomProgram : public RandomProgram
+{
+public:
+	static const constexpr deUint32 fillPercentage = 73u;
+	VertexRandomProgram(add_cref<CaseDef> c)
+		: RandomProgram(c, static_cast<deUint32>(Arrangement::generatePrimitives(c.sizeX, c.sizeY, fillPercentage).size()))
+	{
+		DE_ASSERT(c.shaderStage == VK_SHADER_STAGE_VERTEX_BIT);
+	}
+	virtual ~VertexRandomProgram() = default;
+
+	struct Arrangement : Prerequisites
+	{
+		static constexpr uint32_t NUM_SUBGROUPS_OFFSET		= 0u;
+		static constexpr uint32_t SUBGROUP_SIZE_OFFSET		= 1u;
+		static constexpr uint32_t INVOCATION_COUNT_OFFSET	= 2u;
+		static constexpr uint32_t INVOCATION_ENTRIES_OFFSET	= 3u;
+
+		const deUint32					m_subgroupSize;
+		const deUint32					m_primitiveStride;
+		const deUint32					m_subgroupCount;
+		const Ballots					m_initialBallots;
+		const deUint32					m_invocationStride;
+		const std::vector<deUint32>		m_primitiveSubgroups;
+		Arrangement (add_cref<std::vector<deUint32>>	outputP,
+					 deUint32							subgroupSize,
+					 deUint32							primitiveStride)
+			: m_subgroupSize		(subgroupSize)
+			, m_primitiveStride		(primitiveStride)
+			, m_subgroupCount		(calcSubgroupCount(outputP))
+			, m_initialBallots		(makeInitialBallots(subgroupSize, primitiveStride, outputP))
+			, m_invocationStride	(primitiveStride)
+			, m_primitiveSubgroups	(makePrimitiveSubgroups(subgroupSize, primitiveStride, outputP))
+		{
+		}
+		static deUint32 calcSubgroupCount (add_cref<std::vector<deUint32>> outputP)
+		{
+			return outputP.at(NUM_SUBGROUPS_OFFSET);
+		}
+		static deUint32 calcSubgroupSize (add_cref<std::vector<deUint32>> outputP)
+		{
+			return outputP.at(SUBGROUP_SIZE_OFFSET);
+		}
+		static deUint32 calcSubgroupInvocationStride (add_cref<std::vector<deUint32>> outputP)
+		{
+			return outputP.at(INVOCATION_COUNT_OFFSET);
+		}
+		static Ballots makeInitialBallots (deUint32 subgroupSize, deUint32 primitiveStride, add_cref<std::vector<deUint32>> outputP)
+		{
+			DE_UNREF(subgroupSize);
+			const deUint32	subgroupCount	= calcSubgroupCount(outputP);
+			Ballots			initialBallots	(subgroupCount);
+			for (deUint32 primitiveID = 0u; primitiveID < primitiveStride; ++primitiveID)
+			{
+				const deUint32 id = outputP.at(primitiveID + INVOCATION_ENTRIES_OFFSET);
+				if (id)
+				{
+					const uint32_t subgroupID = (id >> 16) - 1u;
+					const uint32_t subgroupInvocationID = id & 0xFFFF;
+					DE_ASSERT(subgroupID < subgroupCount);
+					DE_ASSERT(subgroupInvocationID < subgroupSize);
+					initialBallots.at(subgroupID).set(subgroupInvocationID);
+				}
+			}
+			return initialBallots;
+		}
+		static std::vector<deUint32> makePrimitiveSubgroups (deUint32 subgroupSize, deUint32 primitiveStride, add_cref<std::vector<deUint32>> outputP)
+		{
+			std::vector<deUint32> map(primitiveStride);
+			for (uint32_t primitiveID = 0u; primitiveID < primitiveStride; ++primitiveID)
+			{
+				const deUint32 id = outputP.at(primitiveID + INVOCATION_ENTRIES_OFFSET);
+				if (id)
+				{
+					const uint32_t subgroupID = (id >> 16) - 1u;
+					const uint32_t subgroupInvocationID = id & 0xFFFF;
+					DE_ASSERT(subgroupInvocationID < subgroupSize);
+					map.at(primitiveID) = subgroupID * subgroupSize + subgroupInvocationID;
+				}
+			}
+			return map;
+		}
+		static std::vector<tcu::Vec4> generatePrimitives (deUint32 width, deUint32 height, deUint32 fillPercent)
+		{
+			deRandom				rnd;
+			std::map<deUint32,int>	map;
+			std::vector<tcu::Vec4>	points;
+			const deUint32			frags	= (width * height);
+			const uint32_t			total	= (frags * fillPercent) / 100u;
+
+			deRandom_init(&rnd, (width * height));
+
+			for (uint32_t i = 0u; i < total; ++i)
+			{
+				const deUint32 r = deRandom_getUint32(&rnd) % frags;
+				if (map[r] != 0)
+				{
+					i -= 1;
+					continue;
+				}
+				map[r] = 1;
+
+				deUint32 y = r / width;
+				deUint32 x = r % width;
+				float xx = (float(x) + float(x + 1)) / (2.0f * float(width));
+				float yy = (float(y) + float(y + 1)) / (2.0f * float(height));
+				float xxx = xx * 2.0f - 1.0f;
+				float yyy = yy * 2.0f - 1.0f;
+				points.emplace_back(tcu::Vec4(xxx, yyy, 0u, 0u));
+			}
+			return points;
+		}
+		static std::vector<deUint32> generateOutputPvector (deUint32 subgroupSize, deUint32 vertexCount)
+		{
+			const deUint32 subgroupCount = ROUNDUP(vertexCount, subgroupSize) / subgroupSize;
+			std::vector<deUint32> outputP(vertexCount + INVOCATION_ENTRIES_OFFSET);
+			outputP.at(NUM_SUBGROUPS_OFFSET) = subgroupCount;
+			outputP.at(SUBGROUP_SIZE_OFFSET) = subgroupSize;
+			outputP.at(INVOCATION_COUNT_OFFSET) = vertexCount;
+			for (uint32_t vertexID = 0u; vertexID < vertexCount; ++vertexID)
+			{
+				const deUint32 subgroupID = vertexID / subgroupSize;
+				const deUint32 subgroupInvocationID = vertexID % subgroupSize;
+				outputP.at(vertexID + INVOCATION_ENTRIES_OFFSET) = ((subgroupID + 1u) << 16) | subgroupInvocationID;
+			}
+			return outputP;
+		}
+	};
+
+	virtual deUint32 simulate (bool countOnly, deUint32 subgroupSize, add_ref<std::vector<deUint64>> ref) override
+	{
+		DE_ASSERT(false); // use overloaded version of simulate() instead
+		DE_UNREF(countOnly);
+		DE_UNREF(subgroupSize);
+		DE_UNREF(ref);
+		return 0;
+	}
+
+protected:
+	virtual void genIf(IFType ifType, deUint32 /*maxLocalIndexCmp*/) override
+	{
+		RandomProgram::genIf(ifType, RandomProgram::invocationStride);
+	}
+
+	virtual std::string getPartitionBallotText() override
+	{
+		return "storeValue(outLoc++, subgroupBallot(true))";
+	}
+
+	virtual void printIfLocalInvocationIndex(add_ref<std::stringstream> css, add_cref<FlowState> flow) override
+	{
+		printIndent(css); css << "if (invocationIndex() >= inputA.a[0x" << std::hex << flow.ops[flow.opsIndex].value << "]) {\n";
+	}
+
+	virtual void printStore(add_ref<std::stringstream> css, add_cref<FlowState> flow) override
+	{
+		printIndent(css); css << "storeValue(outLoc++, 0x" << std::hex << flow.ops[flow.opsIndex].value << std::dec << ");\n";
+	}
+
+	virtual void printBallot(add_ref<std::stringstream> css, add_cref<FlowState>, bool endWithSemicolon = false) override
+	{
+		printIndent(css);
+		// When inside loop(s), use partitionBallot rather than subgroupBallot to compute
+		// a ballot, to make sure the ballot is "diverged enough". Don't do this for
+		// subgroup_uniform_control_flow, since we only validate results that must be fully
+		// reconverged.
+		if (loopNesting > 0 && caseDef.testType == TT_MAXIMAL)
+		{
+			css << getPartitionBallotText();
+		}
+		else
+		{
+			css << "storeValue(outLoc++, subgroupBallot(true))";
+		}
+		if (endWithSemicolon)
+		{
+			css << ";\n";
+		}
+	}
+
+	virtual void simulateBallot	(const bool							countOnly,
+								 add_cref<Ballots>					activeMask,
+								 const deUint32						unusedPrimitiveID,
+								 const deInt32						opsIndex,
+								 add_ref<std::vector<deUint32>>		outLoc,
+								 add_ref<std::vector<tcu::UVec4>>	ref,
+								 add_ref<tcu::TestLog>				log,
+								 std::shared_ptr<Prerequisites>		prerequisites,
+								 add_ref<uint32_t>					logFailureCount,
+								 const OPType						reason,
+								 const tcu::UVec4*					cmp) override
+	{
+		DE_UNREF(unusedPrimitiveID);
+		DE_UNREF(opsIndex);
+		add_cref<Arrangement> a(*std::static_pointer_cast<Arrangement>(prerequisites));
+		for (uint32_t primitiveID = 0u; primitiveID < a.m_primitiveStride; ++primitiveID)
+		{
+			const uint32_t sgid = a.m_primitiveSubgroups.at(primitiveID);
+			DE_ASSERT(sgid < (a.m_subgroupCount * a.m_subgroupSize));
+			if (false == activeMask.test(Ballots::findBit(sgid, a.m_subgroupSize))) continue;
+			const uint32_t index = (outLoc.at(primitiveID)++) * a.m_invocationStride + primitiveID;
+			if (false == countOnly)
+			{
+				ref.at(index) = Ballot(activeMask.at(sgid / a.m_subgroupSize));
+				if (cmp && logFailureCount > 0u && cmp[index] != ref.at(index))
+				{
+					logFailureCount -= 1u;
+					log << tcu::TestLog::Message
+						<< logFailureCount << ": stored value mismatch from " << OPtypeToStr(reason)
+						<< tcu::TestLog::EndMessage;
+				}
+			}
+		}
+	}
+
+	virtual void simulateStore	(const bool								countOnly,
+								 add_cref<Ballots>						activeMask,
+								 const deUint32							unusedPrimitiveID,
+								 const deUint64							storeValue,
+								 add_ref<std::vector<deUint32>>			outLoc,
+								 add_ref<std::vector<tcu::UVec4>>		ref,
+								 add_ref<tcu::TestLog>					log,
+								 std::shared_ptr<Prerequisites>			prerequisites,
+								 add_ref<uint32_t>						logFailureCount,
+								 const OPType							reason,
+								 const tcu::UVec4*						cmp) override
+	{
+		DE_UNREF(unusedPrimitiveID);
+		add_cref<Arrangement> a(*std::static_pointer_cast<Arrangement>(prerequisites));
+		for (uint32_t primitiveID = 0u; primitiveID < a.m_primitiveStride; ++primitiveID)
+		{
+			const uint32_t sgid = a.m_primitiveSubgroups.at(primitiveID);
+			DE_ASSERT(sgid < (a.m_subgroupCount * a.m_subgroupSize));
+			if (false == activeMask.test(Ballots::findBit(sgid, a.m_subgroupSize))) continue;
+			const uint32_t index = (outLoc.at(primitiveID)++) * a.m_invocationStride + primitiveID;
+			if (false == countOnly)
+			{
+				ref.at(index) = Ballot(tcu::UVec4(deUint32(storeValue & 0xFFFFFFFF), 0u, 0u, 0u));
+				if (cmp && logFailureCount > 0u && cmp[index] != ref.at(index))
+				{
+					logFailureCount -= 1u;
+					log << tcu::TestLog::Message
+						<< logFailureCount << ": stored value mismatch from " << OPtypeToStr(reason)
+						<< tcu::TestLog::EndMessage;
+				}
+			}
+		}
+	}
+
+	virtual std::shared_ptr<Prerequisites> makePrerequisites	(add_cref<std::vector<deUint32>>		outputP,
+																 const deUint32							subgroupSize,
+																 const deUint32							fragmentStride,
+																 const deUint32							primitiveStride,
+																 add_ref<std::vector<SubgroupState2>>	stateStack,
+																 add_ref<std::vector<deUint32>>			outLoc,
+																 add_ref<deUint32>						subgroupCount) override
+	{
+		DE_UNREF(fragmentStride);
+		auto prerequisites = std::make_shared<Arrangement>(outputP, subgroupSize, primitiveStride);
+		subgroupCount = prerequisites->m_subgroupCount;
+		stateStack.resize(10u, SubgroupState2(subgroupCount));
+		outLoc.resize(primitiveStride, 0u);
+		stateStack.at(0).activeMask = prerequisites->m_initialBallots;
+		return prerequisites;
+	}
+};
+
+class TessCtrlRandomProgram : public RandomProgram
+{
+public:
+	TessCtrlRandomProgram(add_cref<CaseDef> c, deUint32 invocationCount)
+		: RandomProgram(c, invocationCount) {
+		DE_ASSERT(c.shaderStage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+	}
+	virtual ~TessCtrlRandomProgram() = default;
+
+	static  const deUint32  minSubgroupSize = 4;
+
+	virtual void genIf(IFType ifType, deUint32 /*maxLocalIndexCmp*/) override
+	{
+		RandomProgram::genIf(ifType, std::min((minSubgroupSize * caseDef.sizeX), 64u));
+	}
+
+	virtual void printIfLocalInvocationIndex(add_ref<std::stringstream> css, add_cref<FlowState> flow) override
+	{
+		printIndent(css);
+		css << "if (";
+		css << "((((gl_PrimitiveID * width) / gl_SubgroupSize) * gl_SubgroupSize) + gl_SubgroupInvocationID)";
+		css << " >= inputA.a[0x" << std::hex << flow.ops[flow.opsIndex].value << "]) {\n";
+	}
+
+	virtual void printStore(add_ref<std::stringstream> css, add_cref<FlowState> flow) override
+	{
+		printIndent(css); css << "outputC.loc[invocationIndex()]++;\n";
+		printIndent(css); css << "outputB.b[(outLoc++) * invocationStride + invocationIndex()].x = 0x"
+							  << std::hex << flow.ops[flow.opsIndex].value << ";\n";
+	}
+
+	virtual void printBallot(add_ref<std::stringstream> css, add_cref<FlowState>, bool endWithSemicolon = false) override
+	{
+		printIndent(css);
+
+		css << "outputC.loc[invocationIndex()]++,";
+		// When inside loop(s), use partitionBallot rather than subgroupBallot to compute
+		// a ballot, to make sure the ballot is "diverged enough". Don't do this for
+		// subgroup_uniform_control_flow, since we only validate results that must be fully
+		// reconverged.
+		if (loopNesting > 0 && caseDef.testType == TT_MAXIMAL)
+		{
+			css << "outputB.b[(outLoc++) * invocationStride + invocationIndex()] = " << getPartitionBallotText() << ".xy";
+		}
+		else
+		{
+			css << "outputB.b[(outLoc++) * invocationStride + invocationIndex()] = subgroupBallot(true).xy";
+		}
+		if (endWithSemicolon)
+		{
+			css << ";\n";
+		}
+	}
+
+	void simulateStoreToChange	(bool countOnly, deUint32 /*subgroupSize*/,
+		const SubgroupState(&stateStack)[10], deInt32 opsIndex,
+		add_ref<std::vector<deUint32>> outLoc, add_ref<std::vector<deUint64>> ref)
+	{
+		for (deUint32 id = 0; id < invocationStride; ++id)
+		{
+			if (stateStack[nesting].activeMask.test(id))
+			{
+				if (countOnly)
+					outLoc[id]++;
+				else
+					ref[(outLoc[id]++) * invocationStride + id] = ops[opsIndex].value;
+			}
+		}
+	}
+
+	void simulateBallotToChange	(bool countOnly, deUint32 subgroupSize,
+		const SubgroupState(&stateStack)[10], deUint32 /*opsIndex*/,
+		add_ref<std::vector<deUint32>> outLoc, add_ref<std::vector<deUint64>> ref)
+	{
+		for (deUint32 id = 0; id < invocationStride; ++id)
+		{
+			if (stateStack[nesting].activeMask.test(id))
+			{
+				if (countOnly)
+					outLoc[id]++;
+				else
+					ref[(outLoc[id]++) * invocationStride + id] = bitsetToU64(stateStack[nesting].activeMask, subgroupSize, id);
+			}
+		}
+	}
+
+	// Simulate execution of the program. If countOnly is true, just return
+	// the max number of outputs written. If it's false, store out the result
+	// values to ref.
+	virtual deUint32 simulate(bool countOnly, deUint32 subgroupSize, add_ref<std::vector<deUint64>> ref) override
+	{
 		SubgroupState stateStack[10];
 		deMemset(&stateStack, 0, sizeof(stateStack));
 
-		const deUint64 fullSubgroupMask = subgroupSizeToMask(subgroupSize);
-
 		// Per-invocation output location counters
-		deUint32 outLoc[128] = {0};
+		std::vector<deUint32> outLoc(invocationStride, 0u);
 
 		nesting = 0;
 		loopNesting = 0;
-		stateStack[nesting].activeMask = ~bitset128(); // initialized to ~0
+
+		for (deUint32 k = 0; k < invocationStride; ++k)
+			stateStack[nesting].activeMask.set(k);
 
 		deInt32 i = 0;
 		while (i < (deInt32)ops.size())
@@ -1184,54 +3231,10 @@ public:
 			switch (ops[i].type)
 			{
 			case OP_BALLOT:
-
-				// Flag that this ballot is workgroup-nonuniform
-				if (caseDef.isWUCF() && stateStack[nesting].activeMask.any() && !stateStack[nesting].activeMask.all())
-					ops[i].caseValue = 1;
-
-				if (caseDef.isSUCF())
-				{
-					for (deUint32 id = 0; id < 128; id += subgroupSize)
-					{
-						deUint64 subgroupMask = bitsetToU64(stateStack[nesting].activeMask, subgroupSize, id);
-						// Flag that this ballot is subgroup-nonuniform
-						if (subgroupMask != 0 && subgroupMask != fullSubgroupMask)
-							ops[i].caseValue = 1;
-					}
-				}
-
-				for (deUint32 id = 0; id < 128; ++id)
-				{
-					if (stateStack[nesting].activeMask.test(id))
-					{
-						if (countOnly)
-						{
-							outLoc[id]++;
-						}
-						else
-						{
-							if (ops[i].caseValue)
-							{
-								// Emit a magic value to indicate that we shouldn't validate this ballot
-								ref[(outLoc[id]++)*invocationStride + id] = bitsetToU64(0x12345678, subgroupSize, id);
-							}
-							else
-								ref[(outLoc[id]++)*invocationStride + id] = bitsetToU64(stateStack[nesting].activeMask, subgroupSize, id);
-						}
-					}
-				}
+				simulateBallotToChange(countOnly, subgroupSize, stateStack, i, outLoc, ref);
 				break;
 			case OP_STORE:
-				for (deUint32 id = 0; id < 128; ++id)
-				{
-					if (stateStack[nesting].activeMask.test(id))
-					{
-						if (countOnly)
-							outLoc[id]++;
-						else
-							ref[(outLoc[id]++)*invocationStride + id] = ops[i].value;
-					}
-				}
+				simulateStoreToChange(countOnly, subgroupSize, stateStack, i, outLoc, ref);
 				break;
 			case OP_IF_MASK:
 				nesting++;
@@ -1244,51 +3247,51 @@ public:
 				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & ~bitsetFromU64(ops[stateStack[nesting].header].value, subgroupSize);
 				break;
 			case OP_IF_LOOPCOUNT:
-				{
-					deUint32 n = nesting;
-					while (!stateStack[n].isLoop)
-						n--;
+			{
+				deUint32 n = nesting;
+				while (!stateStack[n].isLoop)
+					n--;
 
-					nesting++;
-					stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & bitsetFromU64((1ULL << stateStack[n].tripCount), subgroupSize);
-					stateStack[nesting].header = i;
-					stateStack[nesting].isLoop = 0;
-					stateStack[nesting].isSwitch = 0;
-					break;
-				}
+				nesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & bitsetFromU64((1ULL << stateStack[n].tripCount), subgroupSize);
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+				break;
+			}
 			case OP_ELSE_LOOPCOUNT:
-				{
-					deUint32 n = nesting;
-					while (!stateStack[n].isLoop)
-						n--;
+			{
+				deUint32 n = nesting;
+				while (!stateStack[n].isLoop)
+					n--;
 
-					stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & ~bitsetFromU64((1ULL << stateStack[n].tripCount), subgroupSize);
-					break;
-				}
-			case OP_IF_LOCAL_INVOCATION_INDEX:
-				{
-					// all bits >= N
-					bitset128 mask(0);
-					for (deInt32 j = (deInt32)ops[i].value; j < 128; ++j)
-						mask.set(j);
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & ~bitsetFromU64((1ULL << stateStack[n].tripCount), subgroupSize);
+				break;
+			}
+			case OP_IF_LOCAL_INVOCATION_INDEX: // TessCtrlRandomProgram
+			{
+				// all bits >= N
+				bitset_inv_t mask;
+				for (deUint32 j = static_cast<deUint32>(ops[i].value); j < invocationStride; ++j)
+					mask.set(j);
 
-					nesting++;
-					stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & mask;
-					stateStack[nesting].header = i;
-					stateStack[nesting].isLoop = 0;
-					stateStack[nesting].isSwitch = 0;
-					break;
-				}
-			case OP_ELSE_LOCAL_INVOCATION_INDEX:
-				{
-					// all bits < N
-					bitset128 mask(0);
-					for (deInt32 j = 0; j < (deInt32)ops[i].value; ++j)
-						mask.set(j);
+				nesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & mask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+				break;
+			}
+			case OP_ELSE_LOCAL_INVOCATION_INDEX: // TessCtrlRandomProgram
+			{
+				// all bits < N
+				bitset_inv_t mask;
+				for (deUint32 j = 0; j < static_cast<deUint32>(ops[i].value); ++j)
+					mask.set(j);
 
-					stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & mask;
-					break;
-				}
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & mask;
+				break;
+			}
 			case OP_ENDIF:
 				nesting--;
 				break;
@@ -1391,16 +3394,7 @@ public:
 				if (stateStack[nesting].activeMask.any())
 				{
 					// output expected OP_BALLOT values
-					for (deUint32 id = 0; id < 128; ++id)
-					{
-						if (stateStack[nesting].activeMask.test(id))
-						{
-							if (countOnly)
-								outLoc[id]++;
-							else
-								ref[(outLoc[id]++)*invocationStride + id] = bitsetToU64(stateStack[nesting].activeMask, subgroupSize, id);
-						}
-					}
+					simulateBallotToChange(countOnly, subgroupSize, stateStack, i, outLoc, ref);
 
 					i = stateStack[nesting].header+1;
 					continue;
@@ -1427,55 +3421,55 @@ public:
 				}
 				break;
 			case OP_BREAK:
+			{
+				deUint32 n = nesting;
+				bitset_inv_t mask = stateStack[nesting].activeMask;
+				while (true)
 				{
-					deUint32 n = nesting;
-					bitset128 mask = stateStack[nesting].activeMask;
-					while (true)
-					{
-						stateStack[n].activeMask &= ~mask;
-						if (stateStack[n].isLoop || stateStack[n].isSwitch)
-							break;
+					stateStack[n].activeMask &= ~mask;
+					if (stateStack[n].isLoop || stateStack[n].isSwitch)
+						break;
 
-						n--;
-					}
+					n--;
 				}
-				break;
+			}
+			break;
 			case OP_CONTINUE:
+			{
+				deUint32 n = nesting;
+				bitset_inv_t mask = stateStack[nesting].activeMask;
+				while (true)
 				{
-					deUint32 n = nesting;
-					bitset128 mask = stateStack[nesting].activeMask;
-					while (true)
+					stateStack[n].activeMask &= ~mask;
+					if (stateStack[n].isLoop)
 					{
-						stateStack[n].activeMask &= ~mask;
-						if (stateStack[n].isLoop)
-						{
-							stateStack[n].continueMask |= mask;
-							break;
-						}
-						n--;
+						stateStack[n].continueMask |= mask;
+						break;
 					}
+					n--;
 				}
-				break;
+			}
+			break;
 			case OP_ELECT:
-				{
-					nesting++;
-					stateStack[nesting].activeMask = bitsetElect(stateStack[nesting-1].activeMask, subgroupSize);
-					stateStack[nesting].header = i;
-					stateStack[nesting].isLoop = 0;
-					stateStack[nesting].isSwitch = 0;
-				}
-				break;
+			{
+				nesting++;
+				stateStack[nesting].activeMask = bitsetElect(stateStack[nesting-1].activeMask, subgroupSize);
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+			}
+			break;
 			case OP_RETURN:
+			{
+				bitset_inv_t mask = stateStack[nesting].activeMask;
+				for (deInt32 n = nesting; n >= 0; --n)
 				{
-					bitset128 mask = stateStack[nesting].activeMask;
-					for (deInt32 n = nesting; n >= 0; --n)
-					{
-						stateStack[n].activeMask &= ~mask;
-						if (stateStack[n].isCall)
-							break;
-					}
+					stateStack[n].activeMask &= ~mask;
+					if (stateStack[n].isCall)
+						break;
 				}
-				break;
+			}
+			break;
 
 			case OP_CALL_BEGIN:
 				nesting++;
@@ -1507,27 +3501,27 @@ public:
 				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & bitsetFromU64(ops[i].value, subgroupSize);
 				break;
 			case OP_CASE_LOOP_COUNT_BEGIN:
+			{
+				deUint32 n = nesting;
+				deUint32 l = loopNesting;
+
+				while (true)
 				{
-					deUint32 n = nesting;
-					deUint32 l = loopNesting;
-
-					while (true)
+					if (stateStack[n].isLoop)
 					{
-						if (stateStack[n].isLoop)
-						{
-							l--;
-							if (l == ops[stateStack[nesting].header].value)
-								break;
-						}
-						n--;
+						l--;
+						if (l == ops[stateStack[nesting].header].value)
+							break;
 					}
-
-					if ((1ULL << stateStack[n].tripCount) & ops[i].value)
-						stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
-					else
-						stateStack[nesting].activeMask = 0;
-					break;
+					n--;
 				}
+
+				if ((1ULL << stateStack[n].tripCount) & ops[i].value)
+					stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				else
+					stateStack[nesting].activeMask = 0;
+				break;
+			}
 			case OP_CASE_END:
 				break;
 
@@ -1538,103 +3532,1423 @@ public:
 			i++;
 		}
 		deUint32 maxLoc = 0;
-		for (deUint32 id = 0; id < ARRAYSIZE(outLoc); ++id)
+		for (deUint32 id = 0; id < (deUint32)outLoc.size(); ++id)
+			maxLoc = de::max(maxLoc, outLoc[id]);
+
+		return maxLoc;
+	}
+};
+
+class TessEvalRandomProgram : public RandomProgram
+{
+public:
+	TessEvalRandomProgram(add_cref<CaseDef> c, deUint32 invocationCount = 0)
+		: RandomProgram(c, (invocationCount ? invocationCount : 64))
+		, ifLocalInvocationIndexAsSubgroupInvocationID(false)
+	{
+		DE_ASSERT(c.shaderStage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+	}
+	virtual ~TessEvalRandomProgram() = default;
+
+			const bool		ifLocalInvocationIndexAsSubgroupInvocationID;
+	static	const deUint32	quadInvocationCount = 4;
+
+	// Simulate execution of the program. If countOnly is true, just return
+	// the max number of outputs written. If it's false, store out the result
+	// values to ref.
+	virtual deUint32 simulate(bool countOnly, deUint32 subgroupSize, add_ref<std::vector<deUint64>> ref) override
+	{
+		SubgroupState stateStack[10];
+		deMemset(&stateStack, 0, sizeof(stateStack));
+
+		// Per-invocation output location counters
+		std::vector<deUint32> outLoc(invocationStride, 0u);
+
+		nesting = 0;
+		loopNesting = 0;
+
+		for (deUint32 k = 0; k < invocationStride; ++k)
+			stateStack[nesting].activeMask.set(k);
+
+		deInt32 i = 0;
+		while (i < (deInt32)ops.size())
+		{
+			switch (ops[i].type)
+			{
+			case OP_BALLOT:
+				simulateBallotToChange(countOnly, subgroupSize, stateStack, i, outLoc, ref);
+				break;
+			case OP_STORE:
+				simulateStoreToChange(countOnly, subgroupSize, stateStack, i, outLoc, ref);
+				break;
+			case OP_IF_MASK:
+				nesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & bitsetFromU64(ops[i].value, subgroupSize);
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+				break;
+			case OP_ELSE_MASK:
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & ~bitsetFromU64(ops[stateStack[nesting].header].value, subgroupSize);
+				break;
+			case OP_IF_LOOPCOUNT:
+			{
+				deUint32 n = nesting;
+				while (!stateStack[n].isLoop)
+					n--;
+
+				nesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & bitsetFromU64((1ULL << stateStack[n].tripCount), subgroupSize);
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+				break;
+			}
+			case OP_ELSE_LOOPCOUNT:
+			{
+				deUint32 n = nesting;
+				while (!stateStack[n].isLoop)
+					n--;
+
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & ~bitsetFromU64((1ULL << stateStack[n].tripCount), subgroupSize);
+				break;
+			}
+			case OP_IF_LOCAL_INVOCATION_INDEX: // TessEvalRandomProgram
+			{
+				bitset_inv_t mask;
+				if (ifLocalInvocationIndexAsSubgroupInvocationID)
+				{
+					// if (gl_SubgroupInvocationID >= value), all bits >= N
+					for (deUint32 j = static_cast<deUint32>(ops[i].value); j < subgroupSize; ++j)
+						mask.set(j);
+					mask = bitsetFromU64(mask.to_ullong(), subgroupSize);
+				}
+				else
+				{
+					// all bits >= N
+					for (deUint32 j = (deUint32)ops[i].value; j < invocationStride; ++j)
+						mask.set(j);
+				}
+
+				nesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & mask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+				break;
+			}
+			case OP_ELSE_LOCAL_INVOCATION_INDEX: // TessEvalRandomProgram
+			{
+				// all bits < N
+				bitset_inv_t mask;
+				for (deUint32 j = 0; j < static_cast<deUint32>(ops[i].value); ++j)
+					mask.set(j);
+
+				if (ifLocalInvocationIndexAsSubgroupInvocationID)
+				{
+					// else (gl_SubgroupInvocationID >= value), all bits < N
+					mask = bitsetFromU64(mask.to_ullong(), subgroupSize);
+				}
+
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & mask;
+				break;
+			}
+			case OP_ENDIF:
+				nesting--;
+				break;
+			case OP_BEGIN_FOR_UNIF:
+				// XXX TODO: We don't handle a for loop with zero iterations
+				nesting++;
+				loopNesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].tripCount = 0;
+				stateStack[nesting].isLoop = 1;
+				stateStack[nesting].isSwitch = 0;
+				stateStack[nesting].continueMask = 0;
+				break;
+			case OP_END_FOR_UNIF:
+				stateStack[nesting].tripCount++;
+				stateStack[nesting].activeMask |= stateStack[nesting].continueMask;
+				stateStack[nesting].continueMask = 0;
+				if (stateStack[nesting].tripCount < ops[stateStack[nesting].header].value &&
+					stateStack[nesting].activeMask.any())
+				{
+					i = stateStack[nesting].header+1;
+					continue;
+				}
+				else
+				{
+					loopNesting--;
+					nesting--;
+				}
+				break;
+			case OP_BEGIN_DO_WHILE_UNIF:
+				// XXX TODO: We don't handle a for loop with zero iterations
+				nesting++;
+				loopNesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].tripCount = 1;
+				stateStack[nesting].isLoop = 1;
+				stateStack[nesting].isSwitch = 0;
+				stateStack[nesting].continueMask = 0;
+				break;
+			case OP_END_DO_WHILE_UNIF:
+				stateStack[nesting].activeMask |= stateStack[nesting].continueMask;
+				stateStack[nesting].continueMask = 0;
+				if (stateStack[nesting].tripCount < ops[stateStack[nesting].header].value &&
+					stateStack[nesting].activeMask.any())
+				{
+					i = stateStack[nesting].header+1;
+					stateStack[nesting].tripCount++;
+					continue;
+				}
+				else
+				{
+					loopNesting--;
+					nesting--;
+				}
+				break;
+			case OP_BEGIN_FOR_VAR:
+				// XXX TODO: We don't handle a for loop with zero iterations
+				nesting++;
+				loopNesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].tripCount = 0;
+				stateStack[nesting].isLoop = 1;
+				stateStack[nesting].isSwitch = 0;
+				stateStack[nesting].continueMask = 0;
+				break;
+			case OP_END_FOR_VAR:
+				stateStack[nesting].tripCount++;
+				stateStack[nesting].activeMask |= stateStack[nesting].continueMask;
+				stateStack[nesting].continueMask = 0;
+				stateStack[nesting].activeMask &= bitsetFromU64(stateStack[nesting].tripCount == subgroupSize ? 0 : ~((1ULL << (stateStack[nesting].tripCount)) - 1), subgroupSize);
+				if (stateStack[nesting].activeMask.any())
+				{
+					i = stateStack[nesting].header+1;
+					continue;
+				}
+				else
+				{
+					loopNesting--;
+					nesting--;
+				}
+				break;
+			case OP_BEGIN_FOR_INF:
+			case OP_BEGIN_DO_WHILE_INF:
+				nesting++;
+				loopNesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].tripCount = 0;
+				stateStack[nesting].isLoop = 1;
+				stateStack[nesting].isSwitch = 0;
+				stateStack[nesting].continueMask = 0;
+				break;
+			case OP_END_FOR_INF:
+				stateStack[nesting].tripCount++;
+				stateStack[nesting].activeMask |= stateStack[nesting].continueMask;
+				stateStack[nesting].continueMask = 0;
+				if (stateStack[nesting].activeMask.any())
+				{
+					// output expected OP_BALLOT values
+					simulateBallotToChange(countOnly, subgroupSize, stateStack, i, outLoc, ref);
+
+					i = stateStack[nesting].header+1;
+					continue;
+				}
+				else
+				{
+					loopNesting--;
+					nesting--;
+				}
+				break;
+			case OP_END_DO_WHILE_INF:
+				stateStack[nesting].tripCount++;
+				stateStack[nesting].activeMask |= stateStack[nesting].continueMask;
+				stateStack[nesting].continueMask = 0;
+				if (stateStack[nesting].activeMask.any())
+				{
+					i = stateStack[nesting].header+1;
+					continue;
+				}
+				else
+				{
+					loopNesting--;
+					nesting--;
+				}
+				break;
+			case OP_BREAK:
+			{
+				deUint32 n = nesting;
+				bitset_inv_t mask = stateStack[nesting].activeMask;
+				while (true)
+				{
+					stateStack[n].activeMask &= ~mask;
+					if (stateStack[n].isLoop || stateStack[n].isSwitch)
+						break;
+
+					n--;
+				}
+			}
+			break;
+			case OP_CONTINUE:
+			{
+				deUint32 n = nesting;
+				bitset_inv_t mask = stateStack[nesting].activeMask;
+				while (true)
+				{
+					stateStack[n].activeMask &= ~mask;
+					if (stateStack[n].isLoop)
+					{
+						stateStack[n].continueMask |= mask;
+						break;
+					}
+					n--;
+				}
+			}
+			break;
+			case OP_ELECT:
+			{
+				nesting++;
+				stateStack[nesting].activeMask = bitsetElect(stateStack[nesting-1].activeMask, subgroupSize);
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+			}
+			break;
+			case OP_RETURN:
+			{
+				bitset_inv_t mask = stateStack[nesting].activeMask;
+				for (deInt32 n = nesting; n >= 0; --n)
+				{
+					stateStack[n].activeMask &= ~mask;
+					if (stateStack[n].isCall)
+						break;
+				}
+			}
+			break;
+
+			case OP_CALL_BEGIN:
+				nesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 0;
+				stateStack[nesting].isCall = 1;
+				break;
+			case OP_CALL_END:
+				stateStack[nesting].isCall = 0;
+				nesting--;
+				break;
+			case OP_NOISE:
+				break;
+
+			case OP_SWITCH_UNIF_BEGIN:
+			case OP_SWITCH_VAR_BEGIN:
+			case OP_SWITCH_LOOP_COUNT_BEGIN:
+				nesting++;
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				stateStack[nesting].header = i;
+				stateStack[nesting].isLoop = 0;
+				stateStack[nesting].isSwitch = 1;
+				break;
+			case OP_SWITCH_END:
+				nesting--;
+				break;
+			case OP_CASE_MASK_BEGIN:
+				stateStack[nesting].activeMask = stateStack[nesting-1].activeMask & bitsetFromU64(ops[i].value, subgroupSize);
+				break;
+			case OP_CASE_LOOP_COUNT_BEGIN:
+			{
+				deUint32 n = nesting;
+				deUint32 l = loopNesting;
+
+				while (true)
+				{
+					if (stateStack[n].isLoop)
+					{
+						l--;
+						if (l == ops[stateStack[nesting].header].value)
+							break;
+					}
+					n--;
+				}
+
+				if ((1ULL << stateStack[n].tripCount) & ops[i].value)
+					stateStack[nesting].activeMask = stateStack[nesting-1].activeMask;
+				else
+					stateStack[nesting].activeMask = 0;
+				break;
+			}
+			case OP_CASE_END:
+				break;
+
+			default:
+				DE_ASSERT(0);
+				break;
+			}
+			i++;
+		}
+		deUint32 maxLoc = 0;
+		for (deUint32 id = 0; id < (deUint32)outLoc.size(); ++id)
 			maxLoc = de::max(maxLoc, outLoc[id]);
 
 		return maxLoc;
 	}
 
-	bool hasUCF() const
+protected:
+	virtual void genIf(IFType ifType, deUint32 /*maxLocalIndexCmp*/) override
 	{
-		for (deInt32 i = 0; i < (deInt32)ops.size(); ++i)
+		RandomProgram::genIf(ifType, std::min(64u, (caseDef.sizeX * quadInvocationCount - 1)));
+	}
+
+	virtual void printIfLocalInvocationIndex(add_ref<std::stringstream> css, add_cref<FlowState> flow) override
+	{
+		// uint invocationIndex() { return gl_PrimitiveID * width + gl_SubgroupInvocationID; }
+		printIndent(css);
+		css << "if (";
+		if (ifLocalInvocationIndexAsSubgroupInvocationID)
+			css << "gl_SubgroupInvocationID";
+		else
+			css << "((((gl_PrimitiveID * width) / gl_SubgroupSize) * gl_SubgroupSize) + gl_SubgroupInvocationID)";
+		css <<  " >= inputA.a[0x" << std::hex << flow.ops[flow.opsIndex].value << "]) {\n";
+	}
+
+	virtual void printStore(add_ref<std::stringstream> css, add_cref<FlowState> flow) override
+	{
+		printIndent(css); css << "outputC.loc[invocationIndex()]++;\n";
+		printIndent(css); css << "outputB.b[(outLoc++)*invocationStride + invocationIndex()].x = 0x"
+							  << std::hex << flow.ops[flow.opsIndex].value << ";\n";
+	}
+
+	virtual void printBallot(add_ref<std::stringstream> css, add_cref<FlowState>, bool endWithSemicolon = false) override
+	{
+		printIndent(css);
+
+		css << "outputC.loc[invocationIndex()]++,";
+		// When inside loop(s), use partitionBallot rather than subgroupBallot to compute
+		// a ballot, to make sure the ballot is "diverged enough". Don't do this for
+		// subgroup_uniform_control_flow, since we only validate results that must be fully
+		// reconverged.
+		if (loopNesting > 0 && caseDef.testType == TT_MAXIMAL)
 		{
-			if (ops[i].type == OP_BALLOT && ops[i].caseValue == 0)
-				return true;
+			css << "outputB.b[(outLoc++)*invocationStride + invocationIndex()] = " << getPartitionBallotText() << ".xy";
 		}
-		return false;
+		else
+		{
+			css << "outputB.b[(outLoc++)*invocationStride + invocationIndex()] = subgroupBallot(true).xy";
+		}
+		if (endWithSemicolon)
+		{
+			css << ";\n";
+		}
+	}
+
+	void simulateStoreToChange	(bool countOnly, deUint32 /*subgroupSize*/,
+		const SubgroupState(&stateStack)[10], deInt32 opsIndex,
+		add_ref<std::vector<deUint32>> outLoc, add_ref<std::vector<deUint64>> ref)
+	{
+		for (deUint32 id = 0; id < invocationStride; ++id)
+		{
+			if (stateStack[nesting].activeMask.test(id))
+			{
+				if (countOnly)
+					outLoc[id]++;
+				else
+					ref[(outLoc[id]++) * invocationStride + id] = ops[opsIndex].value;
+			}
+		}
+	}
+
+	void simulateBallotToChange	(bool countOnly, deUint32 subgroupSize,
+		const SubgroupState(&stateStack)[10], deUint32 /*opsIndex*/,
+		add_ref<std::vector<deUint32>> outLoc, add_ref<std::vector<deUint64>> ref)
+	{
+		for (deUint32 id = 0; id < invocationStride; ++id)
+		{
+			if (stateStack[nesting].activeMask.test(id))
+			{
+				if (countOnly)
+					outLoc[id]++;
+				else
+					ref[(outLoc[id]++) * invocationStride + id] = bitsetToU64(stateStack[nesting].activeMask, subgroupSize, id);
+			}
+		}
 	}
 };
 
+class GeometryRandomProgram : public RandomProgram
+{
+public:
+	static const constexpr deUint32 fillPercentage = 71u;
+	GeometryRandomProgram(add_cref<CaseDef> c)
+		: RandomProgram(c, Arrangement::calculatePrimitiveCount(c.sizeX, c.sizeY, fillPercentage))
+	{
+		DE_ASSERT(c.shaderStage == VK_SHADER_STAGE_GEOMETRY_BIT);
+	}
+	virtual ~GeometryRandomProgram() = default;
+
+	struct Arrangement : Prerequisites
+	{
+		static constexpr uint32_t NUM_SUBGROUPS_OFFSET		= 0u;
+		static constexpr uint32_t SUBGROUP_SIZE_OFFSET		= 1u;
+		static constexpr uint32_t INVOCATION_COUNT_OFFSET	= 2u;
+		static constexpr uint32_t MAX_LOC_OFFSET			= 3u;
+		static constexpr uint32_t MAX_IDENTITY_OFFSET		= 4u;
+		static constexpr uint32_t INVOCATION_ENTRY_OFFSET	= 5u;
+
+		const deUint32					m_shaderSubgroupSize;
+		const deUint32					m_shaderSubgroupCount;
+		const deUint32					m_shaderInvocationCount;
+		const deUint32					m_shaderMaxLoc;
+		const deUint32					m_shaderMaxIdentity;
+
+		const deUint32					m_subgroupSize;
+		const deUint32					m_primitiveStride;
+		const deUint32					m_invocationStride;
+		const deUint32					m_subgroupCount;
+		const Ballots					m_initialBallots;
+		const std::vector<deUint32>		m_primitiveSubgroups;
+
+		Arrangement (add_cref<std::vector<deUint32>>	outputP,
+					 deUint32							subgroupSize,
+					 deUint32							primitiveStride)
+			: m_shaderSubgroupSize		(outputP.at(SUBGROUP_SIZE_OFFSET))
+			, m_shaderSubgroupCount		(outputP.at(NUM_SUBGROUPS_OFFSET))
+			, m_shaderInvocationCount	(outputP.at(INVOCATION_COUNT_OFFSET))
+			, m_shaderMaxLoc			(outputP.at(MAX_LOC_OFFSET))
+			, m_shaderMaxIdentity		(outputP.at(MAX_IDENTITY_OFFSET))
+			, m_subgroupSize			(subgroupSize)
+			, m_primitiveStride			(primitiveStride)
+			, m_invocationStride		(primitiveStride)
+			, m_subgroupCount			(ROUNDUP(primitiveStride, subgroupSize) / subgroupSize)
+			, m_initialBallots			(makeInitialBallots(outputP))
+			, m_primitiveSubgroups		(makePrimitiveSubgroups(outputP))
+		{
+		}
+		static Ballots makeInitialBallots (add_cref<std::vector<deUint32>> outputP)
+		{
+			const deUint32 subgroupCount	= outputP.at(NUM_SUBGROUPS_OFFSET);
+			const deUint32 subgroupSize		= outputP.at(SUBGROUP_SIZE_OFFSET);	DE_UNREF(subgroupSize);
+			const deUint32 primitiveStride	= outputP.at(INVOCATION_COUNT_OFFSET);
+			Ballots b(subgroupCount);
+			for (deUint32 primitiveID = 0u; primitiveID < primitiveStride; ++primitiveID)
+			{
+				const deUint32 id = outputP.at(primitiveID + INVOCATION_ENTRY_OFFSET);
+				if (id)
+				{
+					const deUint32 subgroupID = (id >> 16) - 1u;
+					const deUint32 subgroupInvocationID = id & 0xFFFF;
+					DE_ASSERT(subgroupID < subgroupCount);
+					DE_ASSERT(subgroupInvocationID < subgroupSize);
+					b.at(subgroupID).set(subgroupInvocationID);
+				}
+			}
+			return b;
+		}
+		static std::vector<uint32_t> makePrimitiveSubgroups (add_cref<std::vector<deUint32>> outputP)
+		{
+			const deUint32 subgroupSize		= outputP.at(SUBGROUP_SIZE_OFFSET);
+			const deUint32 primitiveStride	= outputP.at(INVOCATION_COUNT_OFFSET);
+			std::vector<deUint32> map(primitiveStride);
+			for (deUint32 primitiveID = 0u; primitiveID < primitiveStride; ++primitiveID)
+			{
+				const deUint32 id = outputP.at(primitiveID + INVOCATION_ENTRY_OFFSET);
+				if (id)
+				{
+					const deUint32 subgroupID = (id >> 16) - 1u;
+					const deUint32 subgroupInvocationID = id & 0xFFFF;
+					DE_ASSERT(subgroupInvocationID < subgroupSize);
+					map.at(primitiveID) = subgroupID * subgroupSize + subgroupInvocationID;
+				}
+			}
+			return map;
+		}
+		static deUint32 calculatePrimitiveCount (deUint32 width, deUint32 height, deUint32 fillPercent)
+		{
+			deRandom				rnd;
+			std::map<deUint32,int>	map;
+			std::vector<tcu::Vec4>	points;
+			const deUint32			frags	= (width * height);
+			const uint32_t			total	= (frags * fillPercent) / 100u;
+
+			deRandom_init(&rnd, (width * height));
+
+			for (uint32_t i = 0u; i < total; ++i)
+			{
+				const deUint32 r = deRandom_getUint32(&rnd) % frags;
+				if (map[r] != 0)
+				{
+					i -= 1;
+					continue;
+				}
+				map[r] = 1;
+			}
+
+			return static_cast<deUint32>(map.size());
+		}
+		static std::vector<tcu::Vec4> generatePrimitives (deUint32 width, deUint32 height, deUint32 fillPercent)
+		{
+			deRandom				rnd;
+			std::map<deUint32,int>	map;
+			std::vector<tcu::Vec4>	points;
+			const deUint32			frags	= (width * height);
+			const uint32_t			total	= (frags * fillPercent) / 100u;
+
+			deRandom_init(&rnd, (width * height));
+
+			for (uint32_t i = 0u; i < total; ++i)
+			{
+				const deUint32 r = deRandom_getUint32(&rnd) % frags;
+				if (map[r] != 0)
+				{
+					i -= 1;
+					continue;
+				}
+				map[r] = 1;
+
+				deUint32 y = r / width;
+				deUint32 x = r % width;
+				float xx = (float(x) + float(x + 1)) / (2.0f * float(width));
+				float yy = (float(y) + float(y + 1)) / (2.0f * float(height));
+				float xxx = xx * 2.0f - 1.0f;
+				float yyy = yy * 2.0f - 1.0f;
+				points.emplace_back(tcu::Vec4(xxx, yyy, 0u, 0u));
+			}
+			return points;
+		}
+		static std::vector<deUint32> generateVectorOutputP (deUint32 subgroupSize, deUint32 primitiveStride)
+		{
+			const deUint32 subgroupCount = ROUNDUP(primitiveStride, subgroupSize) / subgroupSize;
+			std::vector<deUint32> outputP(primitiveStride + INVOCATION_ENTRY_OFFSET);
+			outputP.at(NUM_SUBGROUPS_OFFSET) = subgroupCount;
+			outputP.at(SUBGROUP_SIZE_OFFSET) = subgroupSize;
+			outputP.at(INVOCATION_COUNT_OFFSET) = primitiveStride;
+			outputP.at(MAX_LOC_OFFSET) = 0u;
+			outputP.at(MAX_IDENTITY_OFFSET) = 0u;
+			for (deUint32 vertexID = 0u; vertexID < primitiveStride; ++vertexID)
+			{
+				const deUint32 subgroupID = vertexID / subgroupSize;
+				const deUint32 subgroupInvocationID = vertexID % subgroupSize;
+				outputP.at(vertexID + INVOCATION_ENTRY_OFFSET) = ((subgroupID + 1u) << 16) | subgroupInvocationID;
+			}
+			return outputP;
+		}
+		static std::vector<deUint32> generateVectorOutputP (deUint32 subgroupSize, deUint32 width, deUint32 height, deUint32 percent)
+		{
+			const deUint32 primitiveStride = calculatePrimitiveCount(width, height, percent);
+			return generateVectorOutputP(subgroupSize, primitiveStride);
+		}
+	};
+
+	virtual deUint32 simulate (bool countOnly, deUint32 subgroupSize, add_ref<std::vector<deUint64>> ref) override
+	{
+		DE_ASSERT(false); // use overloaded version of simulate() instead
+		DE_UNREF(countOnly);
+		DE_UNREF(subgroupSize);
+		DE_UNREF(ref);
+		return 0;
+	}
+
+protected:
+	virtual void genIf(IFType ifType, deUint32 /*maxLocalIndexCmp*/) override
+	{
+		RandomProgram::genIf(ifType, RandomProgram::invocationStride);
+	}
+
+	virtual std::string getPartitionBallotText () override
+	{
+		return "storeValue(outLoc++, subgroupBallot(true))";
+	}
+
+	virtual void printIfLocalInvocationIndex (add_ref<std::stringstream> css, add_cref<FlowState> flow) override
+	{
+		printIndent(css); css << "if (invocationIndex() >= inputA.a[0x" << std::hex << flow.ops[flow.opsIndex].value << "]) {\n";
+	}
+
+	virtual void printStore (add_ref<std::stringstream> css, add_cref<FlowState> flow) override
+	{
+		printIndent(css); css << "storeValue(outLoc++, 0x" << std::hex << flow.ops[flow.opsIndex].value << std::dec << ");\n";
+	}
+
+	virtual void printBallot (add_ref<std::stringstream> css, add_cref<FlowState>, bool endWithSemicolon = false) override
+	{
+		printIndent(css);
+		// When inside loop(s), use partitionBallot rather than subgroupBallot to compute
+		// a ballot, to make sure the ballot is "diverged enough". Don't do this for
+		// subgroup_uniform_control_flow, since we only validate results that must be fully
+		// reconverged.
+		if (loopNesting > 0 && caseDef.testType == TT_MAXIMAL)
+		{
+			css << getPartitionBallotText();
+		}
+		else
+		{
+			css << "storeValue(outLoc++, subgroupBallot(true))";
+		}
+		if (endWithSemicolon)
+		{
+			css << ";\n";
+		}
+	}
+
+	virtual void simulateBallot	(const bool							countOnly,
+								 add_cref<Ballots>					activeMask,
+								 const deUint32						unusedPrimitiveID,
+								 const deInt32						opsIndex,
+								 add_ref<std::vector<deUint32>>		outLoc,
+								 add_ref<std::vector<tcu::UVec4>>	ref,
+								 add_ref<tcu::TestLog>				log,
+								 std::shared_ptr<Prerequisites>		prerequisites,
+								 add_ref<uint32_t>					logFailureCount,
+								 const OPType						reason,
+								 const tcu::UVec4*					cmp) override
+	{
+		DE_UNREF(unusedPrimitiveID);
+		DE_UNREF(opsIndex);
+		add_cref<Arrangement> a(*std::static_pointer_cast<Arrangement>(prerequisites));
+		for (uint32_t primitiveID = 0u; primitiveID < a.m_primitiveStride; ++primitiveID)
+		{
+			const uint32_t sgid = a.m_primitiveSubgroups.at(primitiveID);
+			DE_ASSERT(sgid < (a.m_subgroupCount * a.m_subgroupSize));
+			if (false == activeMask.test(Ballots::findBit(sgid, a.m_subgroupSize))) continue;
+			const uint32_t index = (outLoc.at(primitiveID)++) * a.m_invocationStride + primitiveID;
+			if (false == countOnly)
+			{
+				ref.at(index) = Ballot(activeMask.at(sgid / a.m_subgroupSize));
+				if (cmp && logFailureCount > 0u && cmp[index] != ref.at(index))
+				{
+					logFailureCount -= 1u;
+					log << tcu::TestLog::Message
+						<< logFailureCount << ": stored value mismatch from " << OPtypeToStr(reason)
+						<< tcu::TestLog::EndMessage;
+				}
+			}
+		}
+	}
+
+	virtual void simulateStore	(const bool								countOnly,
+								 add_cref<Ballots>						activeMask,
+								 const deUint32							unusedPrimitiveID,
+								 const deUint64							storeValue,
+								 add_ref<std::vector<deUint32>>			outLoc,
+								 add_ref<std::vector<tcu::UVec4>>		ref,
+								 add_ref<tcu::TestLog>					log,
+								 std::shared_ptr<Prerequisites>			prerequisites,
+								 add_ref<uint32_t>						logFailureCount,
+								 const OPType							reason,
+								 const tcu::UVec4*						cmp) override
+	{
+		DE_UNREF(unusedPrimitiveID);
+		add_cref<Arrangement> a(*std::static_pointer_cast<Arrangement>(prerequisites));
+		for (uint32_t primitiveID = 0u; primitiveID < a.m_primitiveStride; ++primitiveID)
+		{
+			const uint32_t sgid = a.m_primitiveSubgroups.at(primitiveID);
+			DE_ASSERT(sgid < (a.m_subgroupCount * a.m_subgroupSize));
+			if (false == activeMask.test(Ballots::findBit(sgid, a.m_subgroupSize))) continue;
+			const uint32_t index = (outLoc.at(primitiveID)++) * a.m_invocationStride + primitiveID;
+			if (false == countOnly)
+			{
+				ref.at(index) = Ballot(tcu::UVec4(deUint32(storeValue & 0xFFFFFFFF), 0u, 0u, 0u));
+				if (cmp && logFailureCount > 0u && cmp[index] != ref.at(index))
+				{
+					logFailureCount -= 1u;
+					log << tcu::TestLog::Message
+						<< logFailureCount << ": stored value mismatch from " << OPtypeToStr(reason)
+						<< tcu::TestLog::EndMessage;
+				}
+			}
+		}
+	}
+
+	virtual std::shared_ptr<Prerequisites> makePrerequisites	(add_cref<std::vector<deUint32>>		outputP,
+																 const deUint32							subgroupSize,
+																 const deUint32							fragmentStride,
+																 const deUint32							primitiveStride,
+																 add_ref<std::vector<SubgroupState2>>	stateStack,
+																 add_ref<std::vector<deUint32>>			outLoc,
+																 add_ref<deUint32>						subgroupCount) override
+	{
+		DE_UNREF(fragmentStride);
+		auto prerequisites = std::make_shared<Arrangement>(outputP, subgroupSize, primitiveStride);
+		subgroupCount = prerequisites->m_subgroupCount;
+		stateStack.resize(10u, SubgroupState2(subgroupCount));
+		outLoc.resize(primitiveStride, 0u);
+		stateStack.at(0).activeMask = prerequisites->m_initialBallots;
+		return prerequisites;
+	}
+};
+
+class ReconvergenceTestCase : public TestCase
+{
+public:
+								ReconvergenceTestCase	(tcu::TestContext& context,
+														 const std::string& name,
+														 const CaseDef		data)
+									: TestCase(context, name)
+									, m_data(data) { }
+								~ReconvergenceTestCase	(void) = default;
+	virtual void				checkSupport			(Context&			context) const override;
+	virtual	void				initPrograms			(SourceCollections& programCollection) const override;
+	virtual TestInstance*		createInstance			(Context&			context) const override;
+	de::MovePtr<RandomProgram>	selectProgram			() const;
+private:
+	CaseDef		m_data;
+};
+
+void ReconvergenceTestCase::checkSupport (Context& context) const
+{
+	if (!context.contextSupports(vk::ApiVersion(0u, 1u, 1u, 0u)))
+		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
+
+	const auto										properties			= getSubgroupProperties(context);
+	const vk::VkPhysicalDeviceSubgroupProperties&	subgroupProperties	= properties.first;
+	const VkPhysicalDeviceLimits&					limits				= properties.second.properties.limits;
+
+	if (m_data.isElect() && !(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BASIC_BIT))
+		TCU_THROW(NotSupportedError, "VK_SUBGROUP_FEATURE_BASIC_BIT not supported");
+
+	if (!m_data.isElect() && !(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT))
+		TCU_THROW(NotSupportedError, "VK_SUBGROUP_FEATURE_BALLOT_BIT not supported");
+
+	if (m_data.shaderStage == VK_SHADER_STAGE_COMPUTE_BIT)
+	{
+		if ((m_data.sizeX > limits.maxComputeWorkGroupSize[0]) ||
+			(m_data.sizeY > limits.maxComputeWorkGroupSize[1]) ||
+			((m_data.sizeX * m_data.sizeY) > limits.maxComputeWorkGroupInvocations))
+		{
+			TCU_THROW(NotSupportedError, "compute workgroup count exceeds device limit");
+		}
+	}
+
+	if (!(subgroupProperties.supportedStages & m_data.shaderStage))
+	{
+		std::stringstream ss;
+		ss << getShaderStageFlagsStr(m_data.shaderStage);
+		ss << " does not support subgroup operations";
+		ss.flush();
+		TCU_THROW(NotSupportedError, ss.str());
+	}
+
+	// Both subgroup- AND workgroup-uniform tests are enabled by shaderSubgroupUniformControlFlow.
+	if (m_data.isUCF() && !context.getShaderSubgroupUniformControlFlowFeatures().shaderSubgroupUniformControlFlow)
+		TCU_THROW(NotSupportedError, "shaderSubgroupUniformControlFlow not supported");
+
+	if (m_data.testType == TT_MAXIMAL && !context.getShaderMaximalReconvergenceFeatures().shaderMaximalReconvergence)
+		TCU_THROW(NotSupportedError, "shaderMaximalReconvergence not supported");
+}
+
+de::MovePtr<RandomProgram> ReconvergenceTestCase::selectProgram () const
+{
+	RandomProgram*	programPtr(nullptr);
+	switch (m_data.shaderStage)
+	{
+	case VK_SHADER_STAGE_COMPUTE_BIT:					programPtr = new ComputeRandomProgram(m_data);		break;
+	case VK_SHADER_STAGE_FRAGMENT_BIT:					programPtr = new FragmentRandomProgram(m_data);		break;
+	case VK_SHADER_STAGE_VERTEX_BIT:					programPtr = new VertexRandomProgram(m_data);		break;
+	case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:		programPtr = new TessCtrlRandomProgram(m_data, 0);		break;
+	case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:	programPtr = new TessEvalRandomProgram(m_data);		break;
+	case VK_SHADER_STAGE_GEOMETRY_BIT:					programPtr = new GeometryRandomProgram(m_data);		break;
+	default: DE_ASSERT(0);
+	}
+	DE_ASSERT(programPtr);
+	return de::MovePtr<RandomProgram>(programPtr);
+}
+
+std::string genPassThroughFragmentSource()
+{
+	std::stringstream str;
+	str << "#version 450 core\n";
+	str << "layout(location = 0) out vec4 color;\n";
+	str << "void main() {\n";
+	str << "  color = vec4(1.0);\n";
+	str << "}\n";
+	str.flush();
+	return str.str();
+}
+
+std::string genPassThroughVertexSource()
+{
+	std::stringstream str;
+	str << "#version 450 core\n";
+	str << "layout(location = 0) in vec4 pos;\n";
+	str << "void main() {\n";
+	str << "   gl_Position = vec4(pos.xy, 0.0, 1.0);\n";
+	str << "}\n";
+	str.flush();
+	return str.str();
+}
+
+std::string genPassThroughTessCtrlSource()
+{
+	std::stringstream str;
+	str << "#version 450 core\n";
+	str << "#extension GL_EXT_tessellation_shader : require\n";
+	str << "layout(vertices = 3) out;\n";
+	str << "void main() {\n";
+	str << "   gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n";
+	str << "   gl_TessLevelOuter[0] = 1.0;\n";
+	str << "   gl_TessLevelOuter[1] = 1.0;\n";
+	str << "   gl_TessLevelOuter[2] = 1.0;\n";
+	str << "   gl_TessLevelOuter[3] = 1.0;\n";
+	str << "   gl_TessLevelInner[0] = 1.0;\n";
+	str << "   gl_TessLevelInner[1] = 1.0;\n";
+	str << "}\n";
+	str.flush();
+	return str.str();
+}
+
+std::string genPassThroughTessEvalSource()
+{
+	std::stringstream str;
+	str << "#version 450 core\n";
+	str << "#extension GL_EXT_tessellation_shader : require\n";
+	str << "layout(equal_spacing, triangles) in;\n";
+	str << "void main() {\n";
+	str << "   float u = gl_TessCoord.x;\n";
+	str << "   float v = gl_TessCoord.y;\n";
+	str << "   float w = gl_TessCoord.z;\n";
+	str << "   vec4 p0 = vec4(gl_in[0].gl_Position.xy, 0.0, 1.0);\n";
+	str << "   vec4 p1 = vec4(gl_in[1].gl_Position.xy, 0.0, 1.0);\n";
+	str << "   vec4 p2 = vec4(gl_in[2].gl_Position.xy, 0.0, 1.0);\n";
+	str << "   gl_Position = u * p0 + v * p1 + w * p2;\n";
+	str << "}\n";
+	str.flush();
+	return str.str();
+}
+
 void ReconvergenceTestCase::initPrograms (SourceCollections& programCollection) const
 {
-	RandomProgram program(m_data);
-	program.generateRandomProgram();
+	de::MovePtr<RandomProgram>	program = selectProgram();
 
-	std::stringstream css;
-	css << "#version 450 core\n";
-	css << "#extension GL_KHR_shader_subgroup_ballot : enable\n";
-	css << "#extension GL_KHR_shader_subgroup_vote : enable\n";
-	css << "#extension GL_NV_shader_subgroup_partitioned : enable\n";
-	css << "#extension GL_EXT_subgroup_uniform_control_flow : enable\n";
-	css << "layout(local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;\n";
-	css << "layout(set=0, binding=0) coherent buffer InputA { uint a[]; } inputA;\n";
-	css << "layout(set=0, binding=1) coherent buffer OutputB { uvec2 b[]; } outputB;\n";
-	css << "layout(set=0, binding=2) coherent buffer OutputC { uint loc[]; } outputC;\n";
-	css << "layout(push_constant) uniform PC {\n"
-			"   // set to the real stride when writing out ballots, or zero when just counting\n"
-			"   int invocationStride;\n"
-			"};\n";
-	css << "int outLoc = 0;\n";
+	program->generateRandomProgram(m_testCtx.getLog());
 
-	css << "bool testBit(uvec2 mask, uint bit) { return (bit < 32) ? ((mask.x >> bit) & 1) != 0 : ((mask.y >> (bit-32)) & 1) != 0; }\n";
+	std::stringstream header, layout, globals, prologue, epilogue, aux;
 
-	css << "uint elect() { return int(subgroupElect()) + 1; }\n";
+	header << "#version 450 core\n";
+	header << "#extension GL_KHR_shader_subgroup_ballot : enable\n";
+	header << "#extension GL_KHR_shader_subgroup_vote : enable\n";
+	header << "#extension GL_NV_shader_subgroup_partitioned : enable\n";
+	header << "#extension GL_EXT_subgroup_uniform_control_flow : enable\n";
+	if (m_data.testType == TT_MAXIMAL)
+	{
+		header << "#extension GL_EXT_maximal_reconvergence : require\n";
+	}
+	switch (m_data.shaderStage)
+	{
+	case VK_SHADER_STAGE_COMPUTE_BIT:
+		layout << "layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z = 1) in;\n";
+		layout << "layout(set=0, binding=2) coherent buffer OutputC { uint loc[]; } outputC;\n";
+		layout << "layout(set=0, binding=1) coherent buffer OutputB { uvec4 b[]; } outputB;\n";
+		layout << "layout(set=0, binding=0) coherent buffer InputA  { uint  a[]; } inputA;\n";
+		break;
+	case VK_SHADER_STAGE_FRAGMENT_BIT:
+		layout << "// NOTE: A fragment can belong to more than one primitive, and the shader processes each\n";
+		layout << "//       fragment primitive by primitive, so the number of invocation does not have to be\n";
+		layout << "//       equal to the number of fragments of the rendering area. Another important thing\n";
+		layout << "//       is that the Implementation is free to change the order of draving primitives\n";
+		layout << "//       between subsequent application calls.\n";
 
-	std::stringstream functions, main;
-	program.genCode(functions, main);
+		layout << "// inputA.a[ invocationStride ] = { 0, 1, ..., (invocationStride - 1) }\n";
+		layout << "layout(set=0, binding=0) coherent buffer InputA  { uint  a[]; } inputA;\n";
+
+		layout << "// outputB.b[ max(loc[]) * invocationStride * primitiveStride ]\n";
+		layout << "layout(set=0, binding=1) coherent buffer OutputB { uvec4 b[]; } outputB;\n";
+
+		layout << "// outputC.c[invocationStride * primitiveStride ], incremented per primitive\n";
+		layout << "layout(set=0, binding=2) coherent buffer OutputC { uint  loc[]; } outputC;\n";
+
+		layout << "// outputP.p[ width * height * primitiveStride + 1 ], one more for calculating subgroupID\n";
+		layout << "layout(set=0, binding=3) coherent buffer OutputP { uint  p[]; } outputP;\n";
+
+		layout << "layout(location = 0) out vec4 dEQP_FragColor;\n";
+		break;
+	case VK_SHADER_STAGE_VERTEX_BIT:
+		layout << "layout(location = 0) in vec4 pos;\n";
+		layout << "layout(set=0, binding=3) coherent buffer OutputP { uint  p[]; } outputP;\n";
+		layout << "layout(set=0, binding=2) coherent buffer OutputC { uint loc[]; } outputC;\n";
+		layout << "layout(set=0, binding=1) coherent buffer OutputB { uvec4 b[]; } outputB;\n";
+		layout << "layout(set=0, binding=0) coherent buffer InputA  { uint  a[]; } inputA;\n";
+		break;
+	case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+		layout << "#extension GL_EXT_tessellation_shader : require\n";
+		layout << "layout(vertices = " << TessCtrlRandomProgram::minSubgroupSize << ") out;\n";
+		layout << "layout(set=0, binding=2) coherent buffer OutputC { uint loc[]; } outputC;\n";
+		layout << "layout(set=0, binding=1) coherent buffer OutputB { uvec2 b[]; } outputB;\n";
+		layout << "layout(set=0, binding=0) coherent buffer InputA  { uint  a[]; } inputA;\n";
+		break;
+	case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+		layout << "#extension GL_EXT_tessellation_shader : require\n";
+		layout << "layout(equal_spacing, quads) in;\n";
+		layout << "layout(set=0, binding=2) coherent buffer OutputC { uint loc[]; } outputC;\n";
+		layout << "layout(set=0, binding=1) coherent buffer OutputB { uvec2 b[]; } outputB;\n";
+		layout << "layout(set=0, binding=0) coherent buffer InputA  { uint  a[]; } inputA;\n";
+		break;
+	case VK_SHADER_STAGE_GEOMETRY_BIT:
+		layout << "#extension GL_EXT_geometry_shader : require\n";
+		layout << "layout(points) in;\n";
+		layout << "layout(points, max_vertices = 1) out;\n";
+		layout << "layout(set=0, binding=3) coherent buffer OutputP { uint  p[]; } outputP;\n";
+		layout << "layout(set=0, binding=2) coherent buffer OutputC { uint loc[]; } outputC;\n";
+		layout << "layout(set=0, binding=1) coherent buffer OutputB { uvec4 b[]; } outputB;\n";
+		layout << "layout(set=0, binding=0) coherent buffer InputA  { uint  a[]; } inputA;\n";
+		break;
+	default: DE_ASSERT(0);
+	}
+
+	std::stringstream pushConstantLayout;
+	pushConstantLayout	<<	"layout(push_constant) uniform PC {\n"
+							"   // set to the real stride when writing out ballots, or zero when just counting\n"
+							"   int  invocationStride;\n"
+							"   // wildcard fields, for an example the dimensions of rendered area in the case of graphics shaders\n"
+							"   int  width;\n"
+							"   int  height;\n"
+							"   uint primitiveStride;\n"
+							"   uint subgroupStride;\n"
+							"   uint enableInvocationIndex;\n"
+							"};\n";
+	pushConstantLayout.flush();
+	layout << pushConstantLayout.str();
+
+	globals << "int outLoc = 0;\n";
+	globals << "bool testBit(uvec4 mask, uint bit) { return ((mask[bit / 32] >> (bit % 32)) & 1) != 0; }\n";
+	globals << "uint elect() { return int(subgroupElect()) + 1; }\n";
+	if (m_data.shaderStage == VK_SHADER_STAGE_FRAGMENT_BIT)
+	{
+		static const std::string helperRoutinesCode(R"glsl(
+		void setBit(uint bit, in out uvec4 ballot) {
+			uint c = bit / 32;
+			switch (c) {
+				case 0: ballot.x |= (1u << (bit % 32)); break;
+				case 1: ballot.y |= (1u << (bit % 32)); break;
+				case 2: ballot.z |= (1u << (bit % 32)); break;
+				case 3: ballot.w |= (1u << (bit % 32)); break;
+			}
+		}
+		void resetBit(uint bit, in out uvec4 ballot) {
+			uint c = bit / 32;
+			uint mask = 0xFFFFFFFF ^ (1u << (bit % 32));
+			switch (c) {
+				case 0: ballot.x &= mask; break;
+				case 1: ballot.y &= mask; break;
+				case 2: ballot.z &= mask; break;
+				case 3: ballot.w &= mask; break;
+			}
+		}
+		uint fragmentIndex() { return (uint(gl_FragCoord.y) * width + uint(gl_FragCoord.x)); }
+		uint invocationIndex() { return subgroupID * gl_SubgroupSize + gl_SubgroupInvocationID; }
+		uvec4 invocationElectBallot() {
+			uvec4 ballot = uvec4(0);
+			ballot[gl_SubgroupInvocationID / 32] = (1 << (gl_SubgroupInvocationID % 32));
+			return ballot;
+		}
+		uint next(uint hint) {
+			return gl_HelperInvocation
+				? (hint * enableInvocationIndex)
+				: outputC.loc[(gl_PrimitiveID * (subgroupStride * 128) + invocationIndex()) * enableInvocationIndex]++;
+		}
+		uint index(uint hint) {
+			return ((
+				next(hint) * (subgroupStride * 128 * primitiveStride)
+				+ (gl_PrimitiveID * subgroupStride * 128) + invocationIndex()) * enableInvocationIndex);
+		}
+		void storeValue(uint hintIndex, uvec4 value)
+		{
+			if (gl_HelperInvocation) {
+				if (hintIndex < BALLOT_STACK_SIZE)
+					ballotStack[hintIndex] = value;
+			}
+			else {
+				outputB.b[index(hintIndex)] = value;
+			}
+		}
+		void storeValue(uint hintIndex, uint value) { storeValue(hintIndex, uvec4(value, 0, 0, 0)); }
+		void storeBallot(uint hintIndex) { storeValue(hintIndex, subgroupBallot(true)); }
+		)glsl");
+
+		static const std::string prologueCode(R"glsl(
+		uint helperInvocationCount = 0u;
+		uint nonHelperInvocationCount = 0u;
+		uvec4 helperInvocationsBits = uvec4(0, 0, 0, 0);
+		uvec4 nonHelperInvocationsBits = uvec4(0, 0, 0, 0);
+		if (gl_HelperInvocation)
+		{
+			helperInvocationsBits = subgroupBallot(true);
+			helperInvocationCount = 1u;
+		}
+		else
+		{
+			nonHelperInvocationsBits = subgroupBallot(true);
+			nonHelperInvocationCount = 1u;
+		}
+
+		helperInvocationsBits = subgroupOr(helperInvocationsBits);
+		nonHelperInvocationsBits = subgroupOr(nonHelperInvocationsBits);
+		uint helperBitCount = subgroupBallotBitCount(helperInvocationsBits);
+		uint nonHelperBitCount = subgroupBallotBitCount(nonHelperInvocationsBits);
+		helperInvocationCount = subgroupAdd(helperInvocationCount);
+		nonHelperInvocationCount = subgroupAdd(nonHelperInvocationCount);
+
+		const uint nonHelperElectBit = subgroupBallotFindLSB(nonHelperInvocationsBits);
+		if (gl_SubgroupInvocationID == nonHelperElectBit)
+		{
+			subgroupID = atomicAdd(outputP.p[width * height * primitiveStride + 0], 1);
+			outputP.p[width * height * primitiveStride + 1] = gl_SubgroupSize;
+			atomicAdd(outputP.p[width * height * primitiveStride + 2], nonHelperInvocationCount);
+			atomicAdd(outputP.p[width * height * primitiveStride + 3], helperInvocationCount);
+		}
+
+		subgroupID = subgroupShuffle(subgroupID, nonHelperElectBit);
+
+		const uint localPrimitiveID = gl_PrimitiveID;
+		const uint localFragmentID = fragmentIndex();
+
+		if (!gl_HelperInvocation)
+		{
+			outputP.p[localFragmentID * primitiveStride + localPrimitiveID] =
+				((subgroupID + 1) << 16) | gl_SubgroupInvocationID;
+		}
+
+		// Maping helper invocations block
+		{
+			uvec4 tmpHelperBits = helperInvocationsBits;
+			uint helperSubgroupInvocationID = subgroupBallotFindLSB(tmpHelperBits);
+			while (subgroupBallotBitExtract(tmpHelperBits, helperSubgroupInvocationID))
+			{
+				uint helperSubgroupID = subgroupShuffle(subgroupID, helperSubgroupInvocationID);
+				uint helperFragmentID = subgroupShuffle(localFragmentID, helperSubgroupInvocationID);
+				uint helperPrimitiveID = subgroupShuffle(localPrimitiveID, helperSubgroupInvocationID);
+				if (gl_SubgroupInvocationID == nonHelperElectBit)
+				{
+					outputP.p[helperFragmentID * primitiveStride + helperPrimitiveID] =
+						(((helperSubgroupID + 1) | 0x8000) << 16) | helperSubgroupInvocationID;
+				}
+				resetBit(helperSubgroupInvocationID, tmpHelperBits);
+				helperSubgroupInvocationID = subgroupBallotFindLSB(tmpHelperBits);
+			}
+		}
+		)glsl");
+
+		static const std::string epilogueCode(R"glsl(
+		// Save helper invocations entries block
+		{
+			uvec4 tmpHelperBits = subgroupOr(helperInvocationsBits);
+			uint helperSubgroupInvocationID = subgroupBallotFindLSB(tmpHelperBits);
+			while (helperSubgroupInvocationID < gl_SubgroupSize)
+			{
+				const uint maxOutLoc = subgroupShuffle(outLoc, helperSubgroupInvocationID);
+				if (maxOutLoc == 0)
+				{
+					resetBit(helperSubgroupInvocationID, tmpHelperBits);
+					helperSubgroupInvocationID = subgroupBallotFindLSB(tmpHelperBits);
+					continue;
+				}
+
+				uvec4 helperBallotStack[BALLOT_STACK_SIZE];
+				uint helperSubgroupID = subgroupShuffle(subgroupID, helperSubgroupInvocationID);
+				uint helperFragmentID = subgroupShuffle(localFragmentID, helperSubgroupInvocationID);
+				uint helperPrimitiveID = subgroupShuffle(localPrimitiveID, helperSubgroupInvocationID);
+				for (uint i = 0; i < maxOutLoc && i < BALLOT_STACK_SIZE; i++) {
+					helperBallotStack[i] = subgroupShuffle(ballotStack[i], helperSubgroupInvocationID);
+				}
+
+				if (gl_SubgroupInvocationID == nonHelperElectBit)
+				{
+					uint helperInvocationIndex = helperSubgroupID * gl_SubgroupSize + helperSubgroupInvocationID;
+					uint helperPrimitiveInvocationIndex = helperInvocationIndex * primitiveStride + helperPrimitiveID;
+
+					outputC.loc[(helperInvocationIndex * primitiveStride + helperPrimitiveID) * enableInvocationIndex] = maxOutLoc;
+
+					for (uint j = 0; j < maxOutLoc; j++)
+					{
+						uint outputIndex = ((j * (subgroupStride * 128u * primitiveStride)
+							+ (helperPrimitiveID * subgroupStride * 128u) + helperInvocationIndex) * enableInvocationIndex);
+						uvec4 outputValue = (j < BALLOT_STACK_SIZE) ? helperBallotStack[j] : uvec4(0,0,0,0);
+						outputB.b[outputIndex] = outputValue;
+					}
+				}
+				resetBit(helperSubgroupInvocationID, tmpHelperBits);
+				helperSubgroupInvocationID = subgroupBallotFindLSB(tmpHelperBits);
+			} // wend
+		}
+
+		dEQP_FragColor = vec4(1.0);
+		)glsl");
+
+		header << "#extension GL_KHR_shader_subgroup_shuffle : enable\n";
+		header << "#extension GL_KHR_shader_subgroup_arithmetic : enable\n";
+		header << "#define BALLOT_STACK_SIZE " << FragmentRandomProgram::experimentalOutLocSize << '\n';
+
+		{
+			aux << header.str();
+			aux << pushConstantLayout.str();
+			aux << "uint outLoc = 0;\n";
+			aux << "struct OutputC { uint loc[1]; };\n";
+			aux << "struct OutputB { uvec4 b[1]; };\n";
+			aux << "uint subgroupID = 11111;\n";
+			aux << "uvec4 ballotStack[BALLOT_STACK_SIZE];\n";
+			aux << "OutputC outputC;\n";
+			aux << "OutputB outputB;\n";
+			aux << "// OutputP.p[ width * height * primitiveStride + 4 ], few more for calculating subgroupID, subgroupSize, non-helper and helper invocations\n";
+			aux << "layout(set = 0, binding = 0) coherent buffer OutputP { uint p[]; } outputP;\n";
+			aux << "layout(location = 0) out vec4 dEQP_FragColor;\n";
+			aux << helperRoutinesCode;
+			aux << "void main() {\n"
+				<< prologueCode
+				<< epilogueCode
+				<< "   \n"
+				<< "}\n";
+		}
+
+		globals << "uint subgroupID = 22222;\n";
+		globals << "uvec4 ballotStack[BALLOT_STACK_SIZE];\n";
+		globals << helperRoutinesCode;
+
+		prologue << prologueCode;
+		epilogue << epilogueCode;
+	}
+	else if (m_data.shaderStage == VK_SHADER_STAGE_VERTEX_BIT)
+	{
+		static const std::string helperRoutinesCode(R"glsl(
+		uint invocationIndex() { return subgroupID * gl_SubgroupSize + gl_SubgroupInvocationID; }
+		uvec4 invocationElectBallot() {
+			uvec4 ballot = uvec4(0);
+			ballot[gl_SubgroupInvocationID / 32] = (1 << (gl_SubgroupInvocationID % 32));
+			return ballot;
+		}
+		void storeValue(uint loc, uvec4 value) {
+			outputC.loc[gl_VertexIndex] = loc + 1u;
+			outputB.b[(loc * invocationStride + gl_VertexIndex) * enableInvocationIndex] = value;
+		}
+		void storeValue(uint loc, uint value) { storeValue(loc, uvec4(value, 0, 0, 0)); }
+		)glsl");
+
+		static const std::string prologueCode(R"glsl(
+		uint invocationCount = 1u;
+		invocationCount = subgroupAdd(invocationCount);
+
+		if (subgroupElect())
+		{
+			subgroupID = atomicAdd(outputP.p[NUM_SUBGROUPS_OFFSET], 1u);	// [+0]	subgroupID
+			outputP.p[SUBGROUP_SIZE_OFFSET] = gl_SubgroupSize;				// [+1]	subgroupSize
+			atomicAdd(outputP.p[INVOCATION_COUNT_OFFSET], invocationCount);	// [+2]	invocationCount
+		}
+		subgroupID = subgroupBroadcastFirst(subgroupID);
+
+		outputP.p[gl_VertexIndex + INVOCATION_ENTRIES_OFFSET] = ((subgroupID + 1) << 16) | gl_SubgroupInvocationID;
+		)glsl");
+
+		static const std::string epilogueCode(R"glsl(
+		gl_Position = vec4(pos.xy, 0.0, 1.0);
+		gl_PointSize = 1.0;
+		)glsl");
+
+		header << "#extension GL_KHR_shader_subgroup_arithmetic : enable\n";
+		header << "#define NUM_SUBGROUPS_OFFSET			0\n";
+		header << "#define SUBGROUP_SIZE_OFFSET			1\n";
+		header << "#define INVOCATION_COUNT_OFFSET		2\n";
+		header << "#define INVOCATION_ENTRIES_OFFSET	3\n";
+
+		globals << "uint subgroupID = 33333;\n";
+		globals << helperRoutinesCode;
+
+		prologue << prologueCode;
+		epilogue << epilogueCode;
+	}
+	else if (m_data.shaderStage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+	{
+		// push_constant::width holds the smallest subgroup size defined in TessCtrlRandomProgram::minSubgroupSize
+		globals << "// push_constant::width is the smallest subgroup size which this shader is run on\n";
+		globals << "uint invocationIndex() { return ((((gl_PrimitiveID * width) / gl_SubgroupSize) * gl_SubgroupSize) + gl_SubgroupInvocationID); }\n";
+
+		epilogue << "   gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID % gl_PatchVerticesIn].gl_Position;\n";
+		epilogue << "   gl_TessLevelOuter[0] = 1.0;\n";
+		epilogue << "   gl_TessLevelOuter[1] = 1.0;\n";
+		epilogue << "   gl_TessLevelOuter[2] = 1.0;\n";
+		epilogue << "   gl_TessLevelOuter[3] = 1.0;\n";
+		epilogue << "   gl_TessLevelInner[0] = 1.0;\n";
+		epilogue << "   gl_TessLevelInner[1] = 1.0;\n";
+	}
+	else if (m_data.shaderStage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+	{
+		globals << "// push_constant::width is an invocation count when processing a quad for a single patch\n";
+		globals << "uint invocationIndex() { return ((((gl_PrimitiveID * width) / gl_SubgroupSize) * gl_SubgroupSize) + gl_SubgroupInvocationID); }\n";
+
+		epilogue << "   float u = gl_TessCoord.x;\n";
+		epilogue << "   float v = gl_TessCoord.y;\n";
+		epilogue << "   float w = gl_TessCoord.z;\n";
+		epilogue << "   vec4 p0 = vec4(gl_in[0].gl_Position.xy, 0.0, 1.0);\n";
+		epilogue << "   vec4 p1 = vec4(gl_in[1].gl_Position.xy, 0.0, 1.0);\n";
+		epilogue << "   vec4 p2 = vec4(gl_in[2].gl_Position.xy, 0.0, 1.0);\n";
+		epilogue << "   gl_Position = u * p0 + v * p1 + w * p2;\n";
+	}
+	else if (m_data.shaderStage == VK_SHADER_STAGE_GEOMETRY_BIT)
+	{
+		static const std::string helperRoutinesCode(R"glsl(
+		uint invocationIndex() { return subgroupID * gl_SubgroupSize + gl_SubgroupInvocationID; }
+		void storeValue(uint loc, uvec4 value) {
+			outputC.loc[gl_PrimitiveIDIn] = loc + 1u;
+			outputB.b[(loc * invocationStride + gl_PrimitiveIDIn) * enableInvocationIndex] = value;
+		}
+		void storeValue(uint loc, uint value) { storeValue(loc, uvec4(value, 0, 0, 0)); }
+		void storeBallot(uint loc) { storeValue(loc, subgroupBallot(true)); }
+		uvec4 invocationElectBallot() {
+			uvec4 ballot = uvec4(0);
+			ballot[gl_SubgroupInvocationID / 32] = (1 << (gl_SubgroupInvocationID % 32));
+			return ballot;
+		}
+		)glsl");
+
+		static const std::string prologueCode(R"glsl(
+		uint invocationCount = 1u;
+		invocationCount = subgroupAdd(invocationCount);
+		uint identity = gl_PrimitiveIDIn + 1u;
+		uint maxIdentity = subgroupMax(identity);
+
+		if (subgroupElect()) {
+			subgroupID = atomicAdd(outputP.p[SUBGROUP_ID_OFFSET], 1u);			// [+0]	subgroupID
+			outputP.p[SUBGROUP_SIZE_OFFSET] = gl_SubgroupSize;					// [+1]	subgroupSize
+			atomicAdd(outputP.p[INVOCATION_COUNT_OFFSET], invocationCount);		// [+2]	invocationCount
+			atomicMax(outputP.p[MAX_IDENTITY_OFFSET], maxIdentity);
+		}
+		subgroupID = subgroupBroadcastFirst(subgroupID);
+
+		outputP.p[gl_PrimitiveIDIn + INVOCATION_ENTRY_OFFSET] = ((subgroupID + 1) << 16) | gl_SubgroupInvocationID;
+
+		)glsl");
+
+		static const std::string epilogueCode(R"glsl(
+		uint maxLoc = subgroupMax(outLoc);
+		atomicMax(outputP.p[MAX_LOC_OFFSET], maxLoc);
+
+		gl_Position = gl_in[gl_PrimitiveIDIn].gl_Position;
+		gl_PrimitiveID = gl_PrimitiveIDIn;
+
+		EmitVertex();
+		EndPrimitive();
+		)glsl");
+
+		header << "#extension GL_KHR_shader_subgroup_arithmetic : enable\n";
+		header << "#define SUBGROUP_ID_OFFSET       0\n";
+		header << "#define SUBGROUP_SIZE_OFFSET     1\n";
+		header << "#define INVOCATION_COUNT_OFFSET  2\n";
+		header << "#define MAX_LOC_OFFSET           3\n";
+		header << "#define MAX_IDENTITY_OFFSET      4\n";
+		header << "#define INVOCATION_ENTRY_OFFSET  5\n";
+
+		globals << "uint subgroupID;\n";
+		globals << "uint numSubgroups;\n";
+		globals << helperRoutinesCode;
+
+		prologue << prologueCode;
+		epilogue << epilogueCode;
+	}
+
+	std::stringstream css, functions, main;
+	program->printCode(functions, main);
+
+	css << header.str();
+	css << layout.str();
+	css << globals.str();
 
 	css << functions.str() << "\n\n";
 
 	css <<
 		"void main()\n"
-		<< (m_data.isSUCF() ? "[[subgroup_uniform_control_flow]]\n" : "") <<
-		"{\n";
+		<< (m_data.isSUCF() ? "[[subgroup_uniform_control_flow]]\n" : "")
+		<< (m_data.testType == TT_MAXIMAL ? "[[maximal_reconvergence]]\n" : "")
+		<< "{\n";
 
+	css << prologue.str() << "\n";
 	css << main.str() << "\n\n";
+	css << epilogue.str() << "\n";
 
 	css << "}\n";
 
 	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 
-	programCollection.glslSources.add("test") << glu::ComputeSource(css.str()) << buildOptions;
+	auto& testingShader = programCollection.glslSources.add("test");
+	switch (m_data.shaderStage)
+	{
+	case VK_SHADER_STAGE_COMPUTE_BIT:
+		testingShader << glu::ComputeSource(css.str()) << buildOptions;
+		break;
+	case VK_SHADER_STAGE_FRAGMENT_BIT:
+		testingShader << glu::FragmentSource(css.str()) << buildOptions;
+		programCollection.glslSources.add("vert") << glu::VertexSource(genPassThroughVertexSource()) << buildOptions;
+		programCollection.glslSources.add("aux") << glu::FragmentSource(aux.str()) << buildOptions;
+		break;
+	case VK_SHADER_STAGE_VERTEX_BIT:
+		testingShader << glu::VertexSource(css.str()) << buildOptions;
+		programCollection.glslSources.add("frag") << glu::FragmentSource(genPassThroughFragmentSource());
+		break;
+	case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+		testingShader << glu::TessellationControlSource(css.str()) << buildOptions;
+		programCollection.glslSources.add("vert") << glu::VertexSource(genPassThroughVertexSource());
+		programCollection.glslSources.add("frag") << glu::FragmentSource(genPassThroughFragmentSource());
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(genPassThroughTessEvalSource());
+		break;
+	case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+		testingShader << glu::TessellationEvaluationSource(css.str()) << buildOptions;
+		programCollection.glslSources.add("vert") << glu::VertexSource(genPassThroughVertexSource());
+		programCollection.glslSources.add("frag") << glu::FragmentSource(genPassThroughFragmentSource());
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(genPassThroughTessCtrlSource());
+		break;
+	case VK_SHADER_STAGE_GEOMETRY_BIT:
+		testingShader << glu::GeometrySource(css.str()) << buildOptions;
+		programCollection.glslSources.add("vert") << glu::VertexSource(genPassThroughVertexSource());
+		programCollection.glslSources.add("frag") << glu::FragmentSource(genPassThroughFragmentSource());
+		break;
+	default: DE_ASSERT(0);
+	}
 }
 
 TestInstance* ReconvergenceTestCase::createInstance (Context& context) const
 {
-	return new ReconvergenceTestInstance(context, m_data);
+	switch (m_data.shaderStage)
+	{
+	case VK_SHADER_STAGE_COMPUTE_BIT:
+		return new ReconvergenceTestComputeInstance(context, m_data);
+	case VK_SHADER_STAGE_FRAGMENT_BIT:
+		return new ReconvergenceTestFragmentInstance(context, m_data);
+	case VK_SHADER_STAGE_VERTEX_BIT:
+		return new ReconvergenceTestVertexInstance(context, m_data);
+	case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+		return new ReconvergenceTestTessCtrlInstance(context, m_data);
+	case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+		return new ReconvergenceTestTessEvalInstance(context, m_data);
+	case VK_SHADER_STAGE_GEOMETRY_BIT:
+		return new ReconvergenceTestGeometryInstance(context, m_data);
+	default: DE_ASSERT(false);
+	}
+	return nullptr;
 }
 
-tcu::TestStatus ReconvergenceTestInstance::iterate (void)
+tcu::TestStatus ReconvergenceTestComputeInstance::iterate (void)
 {
-	const DeviceInterface&	vk						= m_context.getDeviceInterface();
-	const VkDevice			device					= m_context.getDevice();
-	Allocator&				allocator				= m_context.getDefaultAllocator();
-	tcu::TestLog&			log						= m_context.getTestContext().getLog();
+	const DeviceInterface&			vk			= m_context.getDeviceInterface();
+	const VkDevice					device		= m_context.getDevice();
+	Allocator&						allocator	= m_context.getDefaultAllocator();
+	tcu::TestLog&					log			= m_context.getTestContext().getLog();
+	const VkPhysicalDeviceLimits&	limits		= m_context.getDeviceProperties().limits;
 
-	deRandom rnd;
-	deRandom_init(&rnd, m_data.seed);
+	//const deUint32 invocationCount = (ROUNDUP(invocationCount, m_subgroupSize) / m_subgroupSize) * 128u;
+	const deUint32 invocationStride = m_data.sizeX * m_data.sizeY;
 
-	vk::VkPhysicalDeviceSubgroupProperties subgroupProperties;
-	deMemset(&subgroupProperties, 0, sizeof(subgroupProperties));
-	subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+	std::vector<tcu::UVec4> ref;
+	ComputeRandomProgram program(m_data);
+	program.generateRandomProgram(log);
 
-	vk::VkPhysicalDeviceProperties2 properties2;
-	deMemset(&properties2, 0, sizeof(properties2));
-	properties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	properties2.pNext = &subgroupProperties;
-
-	m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties2);
-
-	const deUint32 subgroupSize = subgroupProperties.subgroupSize;
-	const deUint32 invocationStride = 128;
-
-	if (subgroupSize > 64)
-		TCU_THROW(TestError, "Subgroup size greater than 64 not handled.");
-
-	RandomProgram program(m_data);
-	program.generateRandomProgram();
-
-	deUint32 maxLoc = program.simulate(true, subgroupSize, invocationStride, DE_NULL);
+	deUint32 maxLoc = program.execute(true,
+									  m_subgroupSize,
+									  0u,
+									  invocationStride,
+									  ref,
+									  log);
+	deUint32 shaderMaxLoc = maxLoc;
 
 	// maxLoc is per-invocation. Add one (to make sure no additional writes are done) and multiply by
 	// the number of invocations
@@ -1649,14 +4963,14 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 
 	VkDeviceSize sizes[3] =
 	{
-		128 * sizeof(deUint32),
-		maxLoc * sizeof(deUint64),
+		invocationStride * sizeof(deUint32),
+		maxLoc * sizeof(tcu::UVec4),
 		invocationStride * sizeof(deUint32),
 	};
 
 	for (deUint32 i = 0; i < 3; ++i)
 	{
-		if (sizes[i] > properties2.properties.limits.maxStorageBufferRange)
+		if (sizes[i] > limits.maxStorageBufferRange)
 			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
 
 		try
@@ -1665,7 +4979,7 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 				vk, device, allocator, makeBufferCreateInfo(sizes[i], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
 		}
-		catch(const tcu::TestError&)
+		catch(tcu::ResourceError&)
 		{
 			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
 			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[i]) + " bytes");
@@ -1673,23 +4987,23 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 		bufferDescriptors[i] = makeDescriptorBufferInfo(**buffers[i], 0, sizes[i]);
 	}
 
-	deUint32 *ptrs[3];
+	void *ptrs[3];
 	for (deUint32 i = 0; i < 3; ++i)
 	{
-		ptrs[i] = (deUint32 *)buffers[i]->getAllocation().getHostPtr();
+		ptrs[i] = buffers[i]->getAllocation().getHostPtr();
 	}
 	for (deUint32 i = 0; i < sizes[0] / sizeof(deUint32); ++i)
 	{
-		ptrs[0][i] = i;
+		((deUint32*)ptrs[0])[i] = i;
 	}
 	deMemset(ptrs[1], 0, (size_t)sizes[1]);
 	deMemset(ptrs[2], 0, (size_t)sizes[2]);
 
 	vk::DescriptorSetLayoutBuilder layoutBuilder;
 
-	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, allShaderStages);
-	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, allShaderStages);
-	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, allShaderStages);
+	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_data.shaderStage);
+	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_data.shaderStage);
+	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_data.shaderStage);
 
 	vk::Unique<vk::VkDescriptorSetLayout>	descriptorSetLayout(layoutBuilder.build(vk, device));
 
@@ -1698,27 +5012,11 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 	vk::Unique<vk::VkDescriptorSet>			descriptorSet		(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
-	const deUint32 specData[1] =
-	{
-		invocationStride,
-	};
-	const vk::VkSpecializationMapEntry entries[1] =
-	{
-		{0, (deUint32)(sizeof(deUint32) * 0), sizeof(deUint32)},
-	};
-	const vk::VkSpecializationInfo specInfo =
-	{
-		1,						// mapEntryCount
-		entries,				// pMapEntries
-		sizeof(specData),		// dataSize
-		specData				// pData
-	};
-
 	const VkPushConstantRange				pushConstantRange				=
 	{
-		allShaderStages,											// VkShaderStageFlags					stageFlags;
-		0u,															// deUint32								offset;
-		sizeof(deInt32)												// deUint32								size;
+		(VkShaderStageFlags)m_data.shaderStage,		// VkShaderStageFlags		stageFlags;
+		0u,											// deUint32					offset;
+		sizeof(PushConstant)						// deUint32					size;
 	};
 
 	const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
@@ -1732,56 +5030,17 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 		&pushConstantRange,											// pPushConstantRanges
 	};
 
-	Move<VkPipelineLayout> pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
-
-	VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
-
 	flushAlloc(vk, device, buffers[0]->getAllocation());
 	flushAlloc(vk, device, buffers[1]->getAllocation());
 	flushAlloc(vk, device, buffers[2]->getAllocation());
 
-	const VkBool32 computeFullSubgroups	=	(subgroupProperties.subgroupSize <= 64) &&
-											(m_context.getSubgroupSizeControlFeatures().computeFullSubgroups) &&
-											(m_context.getSubgroupSizeControlProperties().requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT);
-
-	const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,	// VkStructureType		sType;
-		DE_NULL,																		// void*				pNext;
-		subgroupProperties.subgroupSize													// uint32_t				requiredSubgroupSize;
-	};
-
-	const void *shaderPNext = computeFullSubgroups ? &subgroupSizeCreateInfo : DE_NULL;
-	VkPipelineShaderStageCreateFlags pipelineShaderStageCreateFlags =
-		(VkPipelineShaderStageCreateFlags)(computeFullSubgroups ? VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT : 0);
-
-	const Unique<VkShaderModule>			shader						(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
-	const VkPipelineShaderStageCreateInfo	shaderCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		shaderPNext,
-		pipelineShaderStageCreateFlags,
-		VK_SHADER_STAGE_COMPUTE_BIT,								// stage
-		*shader,													// shader
-		"main",
-		&specInfo,													// pSpecializationInfo
-	};
-
-	const VkComputePipelineCreateInfo		pipelineCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-		DE_NULL,
-		0u,															// flags
-		shaderCreateInfo,											// cs
-		*pipelineLayout,											// layout
-		(vk::VkPipeline)0,											// basePipelineHandle
-		0u,															// basePipelineIndex
-	};
-	Move<VkPipeline> pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
-
-	const VkQueue					queue					= m_context.getUniversalQueue();
-	Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex());
-	Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const VkPipelineBindPoint		bindPoint			= VK_PIPELINE_BIND_POINT_COMPUTE;
+	const Unique<VkShaderModule>	shader				(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
+	Move<VkPipelineLayout>			pipelineLayout		= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
+	Move<VkPipeline>				pipeline			= createComputePipeline(*pipelineLayout, *shader);
+	const VkQueue					queue				= m_context.getUniversalQueue();
+	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex());
+	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 
 	vk::DescriptorSetUpdateBuilder setUpdateBuilder;
@@ -1793,17 +5052,14 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptors[2]);
 	setUpdateBuilder.update(vk, device);
 
+	PushConstant	pc{/* pcinvocationStride is initialized with 0, the rest of fields as well */ };
+
 	// compute "maxLoc", the maximum number of locations written
 	beginCommandBuffer(vk, *cmdBuffer, 0u);
-
-	vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
-	vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
-
-	deInt32 pcinvocationStride = 0;
-	vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages, 0, sizeof(pcinvocationStride), &pcinvocationStride);
-
-	vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
-
+		vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
+		vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
+		vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, m_data.shaderStage, 0, sizeof(pc), &pc);
+		vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
@@ -1811,14 +5067,12 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 	invalidateAlloc(vk, device, buffers[1]->getAllocation());
 	invalidateAlloc(vk, device, buffers[2]->getAllocation());
 
-	// Clear any writes to buffer[1] during the counting pass
-	deMemset(ptrs[1], 0, invocationStride * sizeof(deUint64));
-
 	// Take the max over all invocations. Add one (to make sure no additional writes are done) and multiply by
 	// the number of invocations
 	deUint32 newMaxLoc = 0;
 	for (deUint32 id = 0; id < invocationStride; ++id)
-		newMaxLoc = de::max(newMaxLoc, ptrs[2][id]);
+		newMaxLoc = de::max(newMaxLoc, ((deUint32*)ptrs[2])[id]);
+	shaderMaxLoc = newMaxLoc;
 	newMaxLoc++;
 	newMaxLoc *= invocationStride;
 
@@ -1826,9 +5080,9 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 	if (newMaxLoc > maxLoc)
 	{
 		maxLoc = newMaxLoc;
-		sizes[1] = maxLoc * sizeof(deUint64);
+		sizes[1] = maxLoc * sizeof(tcu::UVec4);
 
-		if (sizes[1] > properties2.properties.limits.maxStorageBufferRange)
+		if (sizes[1] > limits.maxStorageBufferRange)
 			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
 
 		try
@@ -1837,14 +5091,13 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 				vk, device, allocator, makeBufferCreateInfo(sizes[1], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
 				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
 		}
-		catch(const tcu::TestError&)
+		catch(tcu::ResourceError&)
 		{
 			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
 			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[1]) + " bytes");
 		}
 		bufferDescriptors[1] = makeDescriptorBufferInfo(**buffers[1], 0, sizes[1]);
-		ptrs[1] = (deUint32 *)buffers[1]->getAllocation().getHostPtr();
-		deMemset(ptrs[1], 0, (size_t)sizes[1]);
+		ptrs[1] = buffers[1]->getAllocation().getHostPtr();
 
 		vk::DescriptorSetUpdateBuilder setUpdateBuilder2;
 		setUpdateBuilder2.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1),
@@ -1852,32 +5105,32 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 		setUpdateBuilder2.update(vk, device);
 	}
 
+	// Clear any writes to buffer[1] during the counting pass
+	deMemset(ptrs[1], 0, (size_t)sizes[1]);
 	flushAlloc(vk, device, buffers[1]->getAllocation());
+	// Clear any writes to buffer[2] during the counting pass
+	deMemset(ptrs[2], 0, (size_t)sizes[2]);
+	flushAlloc(vk, device, buffers[2]->getAllocation());
+
+	// change invocationStride value in shader
+	pc.invocationStride = invocationStride;
 
 	// run the actual shader
 	beginCommandBuffer(vk, *cmdBuffer, 0u);
-
-	vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
-	vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
-
-	pcinvocationStride = invocationStride;
-	vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages, 0, sizeof(pcinvocationStride), &pcinvocationStride);
-
-	vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
-
+		vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
+		vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
+		vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, m_data.shaderStage, 0, sizeof(pc), &pc);
+		vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
 	invalidateAlloc(vk, device, buffers[1]->getAllocation());
 
-	qpTestResult res = QP_TEST_RESULT_PASS;
-
 	// Simulate execution on the CPU, and compare against the GPU result
-	std::vector<deUint64> ref;
 	try
 	{
-		ref.resize(maxLoc, 0ull);
+		ref.resize(maxLoc, tcu::UVec4());
 	}
 	catch (const std::bad_alloc&)
 	{
@@ -1885,38 +5138,86 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 		return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Failed system memory allocation " + de::toString(maxLoc * sizeof(deUint64)) + " bytes");
 	}
 
-	program.simulate(false, subgroupSize, invocationStride, &ref[0]);
+	program.execute(false,
+					m_subgroupSize,
+					0u,
+					invocationStride,
+					ref,
+					log);
 
-	const deUint64 *result = (const deUint64 *)ptrs[1];
+	const tcu::UVec4 *result = (const tcu::UVec4 *)ptrs[1];
 
+	qpTestResult res = calculateAndLogResult(result, ref, invocationStride, m_subgroupSize, shaderMaxLoc);
+
+	return tcu::TestStatus(res, qpGetTestResultName(res));
+}
+
+qpTestResult_e ReconvergenceTestComputeInstance::calculateAndLogResult (const tcu::UVec4* result, const std::vector<tcu::UVec4>& ref, deUint32 invocationStride, deUint32 subgroupSize, deUint32 shaderMaxLoc)
+{
+	const deUint32	maxLoc	= static_cast<deUint32>(ref.size());
+	tcu::TestLog&	log		= m_context.getTestContext().getLog();
+	qpTestResult	res		= QP_TEST_RESULT_PASS;
+	DE_ASSERT(subgroupSize * shaderMaxLoc <= maxLoc);
+	DE_UNREF(shaderMaxLoc);
+
+	deUint32 mismatchCount = 0u;
+	const deUint32 printMismatchCount = 5u;
 	if (m_data.testType == TT_MAXIMAL)
 	{
 		// With maximal reconvergence, we should expect the output to exactly match
 		// the reference.
 		for (deUint32 i = 0; i < maxLoc; ++i)
 		{
-			if (result[i] != ref[i])
+			const Ballot resultVal(result[i], subgroupSize);
+			const Ballot refVal(ref[i], subgroupSize);
+			if (resultVal != refVal)
 			{
-				log << tcu::TestLog::Message << "first mismatch at " << i << tcu::TestLog::EndMessage;
 				res = QP_TEST_RESULT_FAIL;
-				break;
+				if (mismatchCount++ < printMismatchCount)
+				{
+					log << tcu::TestLog::Message << "Mismatch at " << i
+						<< "\nexpected: " << resultVal
+						<< "\n     got: " << refVal
+						<< tcu::TestLog::EndMessage;
+				}
+				else break;
 			}
 		}
+
+#if 0	// This log can be large and slow, ifdef it out by default
+		log << tcu::TestLog::Message << "subgroupSize:" << subgroupSize << ", invocationStride:" << invocationStride << ", maxLoc:" << shaderMaxLoc << tcu::TestLog::EndMessage;
+		deUint32 invMax = std::min(invocationStride, 50u);
+		for (deUint32 inv = 0; inv < invMax; ++inv)
+		{
+			auto ll = log << tcu::TestLog::Message;
+			ll << inv << ": ";
+			for (deUint32 loc = 0; loc < shaderMaxLoc; ++loc)
+			{
+				deUint64 entry = result[loc * invocationStride + inv];
+				ll << de::toString(loc) << ":" << tcu::toHex(entry) << ' ';
+			}
+			ll << tcu::TestLog::EndMessage;
+		}
+#endif
 
 		if (res != QP_TEST_RESULT_PASS)
 		{
 			for (deUint32 i = 0; i < maxLoc; ++i)
 			{
-				// This log can be large and slow, ifdef it out by default
 #if 0
-				log << tcu::TestLog::Message << "result " << i << "(" << (i/invocationStride) << ", " << (i%invocationStride) << "): " << tcu::toHex(result[i]) << " ref " << tcu::toHex(ref[i]) << (result[i] != ref[i] ? " different" : "") << tcu::TestLog::EndMessage;
+				// This log can be large and slow, ifdef it out by default
+				const Ballot resultVal(result[i], subgroupSize);
+				const Ballot refVal(ref[i], subgroupSize);
+				log << tcu::TestLog::Message << "result " << i << "(" << (i / invocationStride) << ", " << (i % invocationStride) << "): " << resultVal << " ref " << refVal << (resultVal != refVal ? " different" : "") << tcu::TestLog::EndMessage;
 #endif
 			}
 		}
 	}
 	else
 	{
-		deUint64 fullMask = subgroupSizeToMask(subgroupSize);
+		DE_ASSERT(subgroupSize != 0);
+
+		Ballot fullMask = subgroupSizeToMask(subgroupSize, 0 /* ignored */);
 		// For subgroup_uniform_control_flow, we expect any fully converged outputs in the reference
 		// to have a corresponding fully converged output in the result. So walk through each lane's
 		// results, and for each reference value of fullMask, find a corresponding result value of
@@ -1937,10 +5238,10 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 				// (a value of 2) and all other lanes to be not elected (a value of 1). For TT_SUCF_BALLOT, we
 				// expect a full mask. Search until we find the expected result with a matching store value in
 				// the previous result.
-				deUint64 expectedResult = m_data.isElect() ? ((lane % subgroupSize) == 0 ? 2 : 1)
-															 : fullMask;
+				Ballot expectedResult = m_data.isElect() ? Ballot((lane % m_subgroupSize) == 0 ? 2 : 1)
+					: fullMask;
 
-				while (resLoc < maxLoc && !(result[resLoc] == expectedResult && result[resLoc-invocationStride] == ref[refLoc-invocationStride]))
+				while (resLoc < maxLoc && !(result[resLoc] == expectedResult && result[resLoc - invocationStride] == ref[refLoc - invocationStride]))
 					resLoc += invocationStride;
 
 				// If we didn't find this output in the result, flag it as an error.
@@ -1962,102 +5263,2629 @@ tcu::TestStatus ReconvergenceTestInstance::iterate (void)
 			{
 				// This log can be large and slow, ifdef it out by default
 #if 0
-				log << tcu::TestLog::Message << "result " << i << "(" << (i/invocationStride) << ", " << (i%invocationStride) << "): " << tcu::toHex(result[i]) << " ref " << tcu::toHex(ref[i]) << (i == firstFail[i%invocationStride] ? " first fail" : "") << tcu::TestLog::EndMessage;
+				log << tcu::TestLog::Message << "result " << i << "(" << (i / invocationStride) << ", " << (i % invocationStride) << "): " << tcu::toHex(result[i]) << " ref " << tcu::toHex(ref[i]) << (i == firstFail[i % invocationStride] ? " first fail" : "") << tcu::TestLog::EndMessage;
 #endif
 			}
 		}
 	}
 
+	return res;
+}
+
+VkRenderPassBeginInfo ReconvergenceTestGraphicsInstance::makeRenderPassBeginInfo (const VkRenderPass renderPass, const VkFramebuffer framebuffer)
+{
+	static const VkClearValue clearValue { { { 0u, 0u, 0u, 0u } } };
+	return
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
+		nullptr,									// const void*			pNext;
+		renderPass,									// VkRenderPass			renderPass;
+		framebuffer,								// VkFramebuffer		framebuffer;
+		makeRect2D(m_data.sizeX, m_data.sizeY),		// VkRect2D				renderArea;
+		1u,											// uint32_t				clearValueCount;
+		&clearValue									// const VkClearValue*	pClearValues;
+	};
+}
+
+de::MovePtr<BufferWithMemory> ReconvergenceTestGraphicsInstance::createVertexBufferAndFlush (deUint32				cellsHorz,
+																							 deUint32				cellsVert,
+																							 VkPrimitiveTopology	topology)
+{
+	deUint32	vertexCount		= cellsHorz * cellsVert;
+	deUint32	triangleCount	= cellsHorz * cellsVert;
+	switch (topology)
+	{
+	case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:	vertexCount		= triangleCount * 3;		break;
+	case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:	vertexCount		= triangleCount - 1 + 3;	break;
+	case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+	case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:		triangleCount	= vertexCount - 3 + 1;		break;
+	default:	DE_ASSERT(0);
+	}
+
+	const DeviceInterface&			vk			= m_context.getDeviceInterface();
+	const VkDevice					device		= m_context.getDevice();
+	Allocator&						allocator	= m_context.getDefaultAllocator();
+	const VkDeviceSize				bufferSize	= VkDeviceSize(vertexCount) * sizeof(Vertex);
+	const VkBufferUsageFlags		bufferUsage	= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	const VkBufferCreateInfo		createInfo	= makeBufferCreateInfo(bufferSize, bufferUsage);
+	const MemoryRequirement			memoryReqs	= (MemoryRequirement::HostVisible | MemoryRequirement::Coherent);
+	de::MovePtr<BufferWithMemory>	buffer		(new BufferWithMemory(vk, device, allocator, createInfo, memoryReqs));
+	Allocation&						allocation	= buffer->getAllocation();
+	Vertex*							vertices	= static_cast<Vertex*>(allocation.getHostPtr());
+
+	if (VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST == topology)
+	{
+		const float stepX = 2.0f / float(cellsHorz);
+		const float stepY = 2.0f / float(cellsVert);
+
+		uint32_t t = 0;
+		float y = -1.0f;
+		for (uint32_t h = 0; h < cellsVert; ++h)
+		{
+			float x = -1.0f;
+			const float yy = y + stepY;
+			for (uint32_t w = 0; w < cellsHorz; ++w)
+			{
+				const float xx = x + stepX;
+
+				vertices[t++] = { x, yy, 0.f, 0.f };
+				vertices[t++] = { ((xx + x) / 2.f), y, 0.f, 0.f };
+				vertices[t++] = { xx, ((yy + y) / 2.f), 0.f, 0.f };
+
+				x = xx;
+			}
+			y = yy;
+		}
+		DE_ASSERT(vertexCount == t);
+	}
+	else
+	{
+		const uint32_t	div		= static_cast<uint32_t>(ROUNDUP(triangleCount, 2) / 2);
+		const float		step	= 2.0f / static_cast<float>(div);
+
+		uint32_t t = 0;
+		float x = -1.0f;
+		for (uint32_t i = 0; i < div; ++i)
+		{
+			const bool last = ((div - i) == 1u);
+			const float xNext = last ? +1.0f : (x + step);
+
+			const Vertex v0{ x,		+1.0f, 0.0f, 0.0f };
+			const Vertex v1{ xNext,	+1.0f, 0.0f, 0.0f };
+			const Vertex v2{ xNext,	-1.0f, 0.0f, 0.0f };
+			const Vertex v3{ x,		-1.0f, 0.0f, 0.0f };
+
+			if (t == 0)
+			{
+				vertices[0] = v0;
+				vertices[1] = v3;
+				vertices[2] = v1;
+
+				t = 3;
+			}
+			else
+			{
+				vertices[t++] = v1;
+			}
+
+			if (!last || !(triangleCount % 2))
+			{
+				vertices[t++] = v2;
+			}
+
+			x += step;
+		}
+		DE_ASSERT(vertexCount == t);
+	}
+
+	flushAlloc(vk, device, allocation);
+	return buffer;
+}
+std::vector<tcu::Vec4> ReconvergenceTestGraphicsInstance::generateVertices	(const deUint32				primitiveCount,
+																			 const VkPrimitiveTopology	topology,
+																			 const deUint32				patchSize)
+{
+	auto cast     = [](const float f) -> float { return ((f * 2.0f) - 1.0f); };
+	auto bestRect = [](const uint32_t c) -> std::pair<uint32_t, uint32_t>
+	{
+		uint32_t a = 1;
+		uint32_t b = 1;
+		do {
+			a = a + 1;
+			b = (c / a) + ((c % a) ? 1 : 0);
+		} while (a < b);
+		return { a, b };
+	};
+
+	uint32_t	triangleCount	= 0;
+    uint32_t    vertexCount     = 0;
+	switch (topology)
+	{
+	case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+		triangleCount	= primitiveCount;
+		vertexCount		= triangleCount + 3 - 1;
+		break;
+	case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+		triangleCount	= primitiveCount;
+		vertexCount		= triangleCount * 3;
+		break;
+	case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		vertexCount		= primitiveCount;
+		break;
+	case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+		vertexCount		= primitiveCount * patchSize;
+		triangleCount	= ROUNDUP(vertexCount, 3) / 3;
+		break;
+	default: DE_ASSERT(false);
+	}
+
+	if (3 == vertexCount)
+	{
+		return { { -1.0f, +1.0f, 0.0f, 1.0f }, { 0.0f, -1.0f, 0.0f, 1.0f }, { +1.0f, +1.0f, 0.0f, 1.0f } };
+	}
+
+	std::vector<tcu::Vec4> vertices(vertexCount);
+
+	if (VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP == topology)
+	{
+		uint32_t		v	= 0;
+		const uint32_t	div	= ROUNDUP(triangleCount, 2) / 2;
+
+		for (uint32_t i = 0; i < triangleCount && v < vertexCount; ++i)
+		{
+			const float xx	= cast(float((i/2) + 1) / float(div));
+			if (0 == i)
+			{
+				const float x	= cast(float(i/2) / float(div));
+				vertices[v++] = { x,  +1.0f, 0.0f, 1.0f };
+				vertices[v++] = { x,  -1.0f, 0.0f, 1.0f };
+				vertices[v++] = { xx, +1.0f, 0.0f, 1.0f };
+			}
+			else
+			{
+				if (i % 2)
+					vertices[v++] = { xx, -1.0f, 0.0f, 1.0f };
+				else
+					vertices[v++] = { xx, +1.0f, 0.0f, 1.0f };
+			}
+		}
+		DE_ASSERT(vertexCount == v);
+	}
+	else if (VK_PRIMITIVE_TOPOLOGY_POINT_LIST == topology)
+	{
+		uint32_t	v		= 0;
+		const auto	rect	= bestRect(vertexCount);
+
+		float y = -1.0f;
+		for (uint32_t h = 0; h < rect.second; ++h)
+		{
+			const float yy	= cast(float(h + 1) / float(rect.second));
+			float x = -1.0f;
+			for (uint32_t w = 0; w < rect.first && v < vertexCount; ++w)
+			{
+				const float xx = cast(float(w + 1) / float(rect.first));
+				vertices[v++] = { ((xx - x) / 2.0f), ((yy - y) / 2.0f), 0.0f, 1.0f };
+				x = xx;
+			}
+			y = yy;
+		}
+		DE_ASSERT(vertexCount == v);
+	}
+	else if (VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST == topology || VK_PRIMITIVE_TOPOLOGY_PATCH_LIST == topology)
+	{
+		uint32_t	v		= 0;
+		const auto	rect	= bestRect(triangleCount);
+
+		float y = -1.0f;
+		for (uint32_t h = 0; h < rect.second && v < vertexCount; ++h)
+		{
+			const float yy	= cast(float(h + 1) / float(rect.second));
+			float x = -1.0f;
+			for (uint32_t w = 0; w < rect.first && v < vertexCount; ++w)
+			{
+				const float xx = cast(float(w + 1) / float(rect.first));
+				if (v < vertexCount) vertices[v++] = { x,                yy,               0.f, 0.f };
+				if (v < vertexCount) vertices[v++] = { ((xx + x) / 2.f), y,                0.f, 0.f };
+				if (v < vertexCount) vertices[v++] = { xx,               ((yy + y) / 2.f), 0.f, 0.f };
+				x = xx;
+			}
+			y = yy;
+		}
+		DE_ASSERT(vertexCount == v);
+	}
+
+	return vertices;
+}
+
+de::MovePtr<BufferWithMemory> ReconvergenceTestGraphicsInstance::createVertexBufferAndFlush	(const std::vector<tcu::Vec4>& vertices)
+{
+	const DeviceInterface&			vk			= m_context.getDeviceInterface();
+	const VkDevice					device		= m_context.getDevice();
+	Allocator&						allocator	= m_context.getDefaultAllocator();
+	const VkDeviceSize				bufferSize	= VkDeviceSize(vertices.size()) * sizeof(tcu::Vec4);
+	const VkBufferUsageFlags		bufferUsage	= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	const VkBufferCreateInfo		createInfo	= makeBufferCreateInfo(bufferSize, bufferUsage);
+	const MemoryRequirement			memoryReqs	= (MemoryRequirement::HostVisible | MemoryRequirement::Coherent);
+	de::MovePtr<BufferWithMemory>	buffer		(new BufferWithMemory(vk, device, allocator, createInfo, memoryReqs));
+	Allocation&						allocation	= buffer->getAllocation();
+	auto							bufferRange	= makeStdBeginEnd<tcu::Vec4>(allocation.getHostPtr(), (uint32_t)vertices.size());
+	std::copy(vertices.begin(), vertices.end(), bufferRange.first);
+	flushAlloc(vk, device, allocation);
+	return buffer;
+}
+
+void ReconvergenceTestGraphicsInstance::recordDrawingAndSubmit	(const VkCommandBuffer			cmdBuffer,
+																 const VkPipelineLayout			pipelineLayout,
+																 const VkPipeline				pipeline,
+																 const VkDescriptorSet			descriptorSet,
+																 const PushConstant&			pushConstant,
+																 const VkRenderPassBeginInfo&	renderPassInfo,
+																 const VkBuffer					vertexBuffer,
+																 const deUint32					vertexCount,
+																 const VkImage					image)
+{
+	DE_UNREF(image);
+	const DeviceInterface&			vk			= m_context.getDeviceInterface();
+	const VkDevice					device		= m_context.getDevice();
+	const VkQueue					queue		= m_context.getUniversalQueue();
+	const VkPipelineBindPoint		bindPoint	= VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+	beginCommandBuffer(vk, cmdBuffer, 0u);
+		vk.cmdBindDescriptorSets(cmdBuffer, bindPoint, pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
+		vk.cmdBindPipeline(cmdBuffer, bindPoint, pipeline);
+		vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &static_cast<const VkBuffer&>(vertexBuffer), &static_cast<const VkDeviceSize&>(0u));
+		vk.cmdPushConstants(cmdBuffer, pipelineLayout, m_data.shaderStage, 0, sizeof(PushConstant), &pushConstant);
+		vk.cmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vk.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+		vk.cmdEndRenderPass(cmdBuffer);
+	endCommandBuffer(vk, cmdBuffer);
+
+	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+}
+
+std::vector<Move<VkShaderModule>> ReconvergenceTestFragmentInstance::createShaders (void)
+{
+	const DeviceInterface&				vk			= m_context.getDeviceInterface();
+	const VkDevice						device		= m_context.getDevice();
+
+	Move<VkShaderModule>				vertex		= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
+	Move<VkShaderModule>				fragment	= createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0);
+
+	// { #vert, #frag, tesc, tese, geom }; if any
+	std::vector<Move<VkShaderModule>>	shaders;
+	shaders.emplace_back(vertex);
+	shaders.emplace_back(fragment);
+
+	return shaders;
+}
+
+qpTestResult_e ReconvergenceTestGraphicsInstance::calculateAndLogResult	(const deUint64*				result,
+																		 const std::vector<deUint64>&	ref,
+																		 deUint32						invocationStride,
+																		 deUint32						subgroupSize,
+																		 deUint32						shaderMaxLocs,
+																		 deUint32						primitiveCount,
+																		 PrintMode						printMode)
+{
+	DE_ASSERT(m_data.testType == TT_MAXIMAL);
+
+	const deUint32	maxLoc			= static_cast<deUint32>(ref.size());
+	tcu::TestLog&	log				= m_context.getTestContext().getLog();
+	qpTestResult	res				= QP_TEST_RESULT_PASS;
+	deUint32		mismatchCount	= 0;
+
+	DE_ASSERT(shaderMaxLocs * invocationStride <= maxLoc);
+
+	// With maximal reconvergence, we should expect the output to exactly match
+	// the reference.
+	for (deUint32 i = 0; i < maxLoc; ++i)
+	{
+		const deUint64 resultVal = result[i];
+		const deUint64 refVal = ref[i];
+		if (resultVal != refVal)
+		{
+			if (1 > mismatchCount++)
+			{
+				log << tcu::TestLog::Message << mismatchCount << ": Mismatch at " << i
+					<< ", res: " << tcu::toHex(resultVal) << ", ref: " << tcu::toHex(refVal) << tcu::TestLog::EndMessage;
+			}
+		}
+	}
+
+	if (PrintMode::None != printMode)
+	{
+		log << tcu::TestLog::Message
+			<< "deviceSubgroupSize: " << m_subgroupSize
+			<< ", testSubgroupSize: " << subgroupSize
+			<< ", invocationStride: " << invocationStride
+			<< ", shaderMaxLocs: " << shaderMaxLocs
+			<< "\n\t, framebuffer: " << m_data.sizeX << 'x' << m_data.sizeY
+			<< ", primitiveCount: " << primitiveCount
+			<< ", PRINT_MODE: " << ((PrintMode::ThreadsInColumns == printMode)
+									? "\"ouLocs in rows & threads in columns\""
+									: ((PrintMode::OutLocsInColumns == printMode)
+									   ? "\"threads in rows & outLocs in columns\""
+									   : ""))
+								<< " { id:res,ref }\n"
+			<< tcu::TestLog::EndMessage;
+	}
+
+	deUint32 invMax = std::min(invocationStride, 80u);
+
+	if (PrintMode::ThreadsInColumns == printMode)
+	{
+		for (deUint32 loc = 0; loc < shaderMaxLocs; ++loc)
+		{
+			auto l1 = log << tcu::TestLog::Message;
+			l1 << "loc " << std::setw(3) << loc << ": ";
+			for (deUint32 inv = 0; inv < invMax; ++inv)
+			{
+				deUint32 idx = loc * invocationStride + inv;
+				DE_ASSERT(idx < maxLoc);
+				deUint64 resEntry = result[idx];
+				deUint64 refEntry = ref[idx];
+				//l1 << de::toString(inv) << ':' << tcu::toHex(resEntry) << ',' << tcu::toHex(refEntry) << ' ';
+				l1 << std::dec << inv << ':' << std::setw(subgroupSize/4) << std::hex << resEntry
+									  << ',' << std::setw(subgroupSize/4) << std::hex << refEntry
+					<< std::dec << ' ';
+			}
+			l1 << std::setw(0) << tcu::TestLog::EndMessage;
+		}
+	}
+	else if (PrintMode::OutLocsInColumns == printMode)
+	{
+		for (deUint32 inv = 0; inv < invMax; ++inv)
+		{
+			auto l1 = log << tcu::TestLog::Message;
+			l1 << "res " << std::setw(3) << inv << ": ";
+			for (deUint32 loc = 0; loc < shaderMaxLocs; ++loc)
+			{
+				deUint32 idx = loc * invocationStride + inv;
+				DE_ASSERT(idx < maxLoc);
+				deUint64 entry = result[idx];
+				l1 << de::toString(loc) << ':' << tcu::toHex(entry) << ' ';
+			}
+			l1 << std::setw(0) << tcu::TestLog::EndMessage;
+
+			auto l2 = log << tcu::TestLog::Message;
+			l2 << "ref " << std::setw(3) << inv << ": ";
+			for (deUint32 loc = 0; loc < shaderMaxLocs; ++loc)
+			{
+				deUint32 idx = loc * invocationStride + inv;
+				DE_ASSERT(idx < maxLoc);
+				deUint64 entry = ref[idx];
+				l2 << de::toString(loc) << ':' << tcu::toHex(entry) << ' ';
+			}
+			l2 << std::setw(0) << tcu::TestLog::EndMessage;
+		}
+	}
+
+	if (mismatchCount)
+	{
+		double mismatchPercentage = 0.0;
+		std::modf((double)(mismatchCount * 100) / (double)maxLoc, &mismatchPercentage);
+		log << tcu::TestLog::Message << "Mismatch count " << mismatchCount
+			<< " from " << maxLoc << " (" << mismatchPercentage << "%)" << tcu::TestLog::EndMessage;
+		res = QP_TEST_RESULT_FAIL;
+	}
+
+	if (res != QP_TEST_RESULT_PASS)
+	{
+		for (deUint32 i = 0; i < maxLoc; ++i)
+		{
+			// This log can be large and slow, ifdef it out by default
+#if 0
+			log << tcu::TestLog::Message << "result " << i << "(" << (i / invocationStride) << ", " << (i % invocationStride) << "): " << tcu::toHex(result[i]) << " ref " << tcu::toHex(ref[i]) << (result[i] != ref[i] ? " different" : "") << tcu::TestLog::EndMessage;
+#endif
+		}
+	}
+
+	return res;
+}
+
+
+qpTestResult_e ReconvergenceTestFragmentInstance::calculateAndLogResultEx	(tcu::TestLog&					log,
+																			 const tcu::UVec4*				result,
+																			 const std::vector<tcu::UVec4>&	ref,
+																			 const deUint32					maxLoc,
+																			 const Arrangement&				a,
+																			 const PrintMode				printMode)
+{
+	DE_UNREF(printMode);
+
+	qpTestResult res = QP_TEST_RESULT_PASS;
+	deUint32 mismatchCount = 0u;
+	const deUint32 printMismatchCount = 5u;
+	const FragmentRandomProgram::Arrangement& aa = static_cast<const FragmentRandomProgram::Arrangement&>(a);
+
+	// With maximal reconvergence, we should expect the output to exactly match
+	// the reference.
+	const deUint32 ballotStoreCount = maxLoc * aa.m_invocationStride * aa.m_primitiveStride;
+	for (deUint32 i = 0; i < ballotStoreCount; ++i)
+	{
+		const Ballot resultVal(result[i], aa.m_subgroupSize);;
+		const Ballot refVal(ref[i], aa.m_subgroupSize);
+		if (resultVal != refVal)
+		{
+			if (mismatchCount++ < printMismatchCount)
+			{
+				res = QP_TEST_RESULT_FAIL;
+				log << tcu::TestLog::Message << "Mismatch at " << i
+					<< "\nexpected: " << resultVal
+					<< "\n     got: " << refVal
+					<< tcu::TestLog::EndMessage;
+				if (printMode == PrintMode::Console)
+				{
+					std::cout << "Mismatch at " << i
+						<< "\nexpected: " << resultVal
+						<< "\n     got: " << refVal
+						<< std::endl;
+				}
+			}
+		}
+	}
+
+	log << tcu::TestLog::Message << "Mismatch count: " << mismatchCount << " from " << ballotStoreCount << tcu::TestLog::EndMessage;
+	if (printMode == PrintMode::Console)
+	{
+		std::cout << "Mismatch count: " << mismatchCount << " from " << ballotStoreCount << std::endl;
+	}
+
+	return res;
+}
+
+VkImageCreateInfo ReconvergenceTestFragmentInstance::makeImageCreateInfo (VkFormat format) const
+{
+	return
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
+		nullptr,								// const void*				pNext;
+		VkImageCreateFlags(0),					// VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
+		format,									// VkFormat					format;
+		{ m_data.sizeX, m_data.sizeY, 1u },		// VkExtent3D				extent;
+		1u,										// uint32_t					mipLevels;
+		1u,										// uint32_t					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,	// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
+		0u,										// uint32_t					queueFamilyIndexCount;
+		0u,										// const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED				// VkImageLayout			initialLayout;
+	};
+}
+
+de::MovePtr<BufferWithMemory> ReconvergenceTestFragmentInstance::createVertexBufferAndFlush	(deUint32				cellsHorz,
+																							 deUint32				cellsVert,
+																							 VkPrimitiveTopology	topology)
+{
+//	DE_ASSERT(cellsHorz == 2u);
+//	DE_ASSERT((cellsHorz * 3) == cellsVert);
+	DE_UNREF(cellsHorz);
+	DE_UNREF(cellsVert);
+	DE_UNREF(topology);
+	DE_ASSERT(topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	const std::vector<tcu::Vec4> vertices {
+		{ -1.0f,  0.0f, 0.0f, 0.0f }, { -0.5f, -1.0f, 0.0f, 0.0f }, { +1.0f, +1.0f, 0.0f, 0.0f },
+		{ +0.5f, -1.0f, 0.0f, 0.0f }, { +1.0f,  0.0f, 0.0f, 0.0f }, { -1.0f, +1.0f, 0.0f, 0.0f }
+	};
+	return ReconvergenceTestGraphicsInstance::createVertexBufferAndFlush(vertices);
+}
+
+std::vector<deUint32> ReconvergenceTestFragmentInstance::callAuxiliaryShader (tcu::TestStatus& status, deUint32 triangleCount)
+{
+	const DeviceInterface&			vk			= m_context.getDeviceInterface();
+	const VkDevice					device		= m_context.getDevice();
+	add_ref<Allocator>				allocator	= m_context.getDefaultAllocator();
+	const deUint32					queueIndex	= m_context.getUniversalQueueFamilyIndex();
+	//add_ref<tcu::TestLog>			log			= m_context.getTestContext().getLog();
+	const deUint32					bufferElems	= m_data.sizeX * m_data.sizeY * triangleCount + 3u;
+	const VkDeviceSize				bufferSize	= bufferElems * sizeof(deUint32);
+
+	if (bufferSize > m_context.getDeviceProperties().limits.maxStorageBufferRange)
+		TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
+
+	const VkBufferCreateInfo		createInfo	= vk::makeBufferCreateInfo(bufferSize, (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+																						| VK_BUFFER_USAGE_TRANSFER_DST_BIT
+																						| VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
+	de::MovePtr<BufferWithMemory>	buffer;
+	try
+	{
+		buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, createInfo,
+																	(MemoryRequirement::HostVisible | MemoryRequirement::Coherent)));
+	}
+	catch (tcu::ResourceError&)
+	{
+		// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+		status = tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(bufferSize) + " bytes");
+		return {};
+	}
+
+	const VkDescriptorBufferInfo	bufferInfo	= makeDescriptorBufferInfo(**buffer, 0, bufferSize);
+
+	vk::DescriptorSetLayoutBuilder			layoutBuilder;
+	layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+	vk::Unique<vk::VkDescriptorSetLayout>	descriptorSetLayout(layoutBuilder.build(vk, device));
+
+	vk::DescriptorPoolBuilder				poolBuilder;
+	poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u);
+	vk::Unique<vk::VkDescriptorPool>		descriptorPool(poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+	vk::Unique<vk::VkDescriptorSet>			descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+	vk::DescriptorSetUpdateBuilder			setUpdateBuilder;
+	setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
+	setUpdateBuilder.update(vk, device);
+
+	const VkPushConstantRange			pushConstantRange
+	{
+		VK_SHADER_STAGE_FRAGMENT_BIT,	// VkShaderStageFlags		stageFlags;
+		0u,								// deUint32					offset;
+		sizeof(PushConstant)			// deUint32					size;
+	};
+	const VkPipelineLayoutCreateInfo	pipelineLayoutCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// sType
+		DE_NULL,											// pNext
+		(VkPipelineLayoutCreateFlags)0,						// flags
+		1u,													// setLayoutCount
+		&descriptorSetLayout.get(),							// pSetLayouts
+		1u,													// pushConstantRangeCount
+		&pushConstantRange,									// pPushConstantRanges
+	};
+
+	const VkFormat					format				= VK_FORMAT_R8G8B8A8_UNORM;
+	const VkImageCreateInfo			imageCreateInfo		= makeImageCreateInfo(format);
+	const VkImageSubresourceRange	rscRange			= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	de::MovePtr<ImageWithMemory>	image				(new ImageWithMemory(vk, device, allocator, imageCreateInfo, vk::MemoryRequirement::Any));
+	Move<VkImageView>				view				= makeImageView(vk, device, **image, VK_IMAGE_VIEW_TYPE_2D, format, rscRange);
+	Move<VkRenderPass>				renderPass			= makeRenderPass(vk, device, format);
+	Move<VkFramebuffer>				framebuffer			= makeFramebuffer(vk, device, *renderPass, *view, m_data.sizeX, m_data.sizeY, rscRange.layerCount);
+	const VkRenderPassBeginInfo		renderBeginInfo		= makeRenderPassBeginInfo(*renderPass, *framebuffer);
+	auto							createAuxShaders	= [&]() {
+															Shaders	shaders;
+															auto vert = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0);
+															auto frag = createShaderModule(vk, device, m_context.getBinaryCollection().get("aux"), 0);
+															shaders.emplace_back(vert);
+															shaders.emplace_back(frag);
+															return shaders;
+														};
+	const Shaders					shaders				= createAuxShaders();
+	const deUint32					vertexCount			= triangleCount * 3u;
+	de::MovePtr<BufferWithMemory>	vertexBuffer		= createVertexBufferAndFlush(triangleCount, vertexCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	Move<VkPipelineLayout>			pipelineLayout		= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
+	Move<VkPipeline>				pipeline			= createGraphicsPipeline(*pipelineLayout, *renderPass, m_data.sizeX, m_data.sizeY, shaders, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0U);
+	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIndex);
+	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	PushConstant		pc{};
+	pc.invocationStride = 0u;
+	pc.width			= m_data.sizeX;
+	pc.height			= m_data.sizeY;
+	pc.primitiveStride	= triangleCount;
+
+	void* ptr = buffer->getAllocation().getHostPtr();
+	auto bufferRange = makeStdBeginEnd<deUint32>(ptr, bufferElems);
+	std::fill(bufferRange.first, bufferRange.second, 0u);
+
+	std::bind(&ReconvergenceTestGraphicsInstance::recordDrawingAndSubmit, this,
+		*cmdBuffer, *pipelineLayout, *pipeline, *descriptorSet, std::cref(pc), std::cref(renderBeginInfo),
+		**vertexBuffer, vertexCount, **image)();
+
+	status = tcu::TestStatus::pass(std::string());
+	return std::vector<deUint32>(bufferRange.first, bufferRange.second);
+}
+
+tcu::TestStatus ReconvergenceTestFragmentInstance::iterate (void)
+{
+	const DeviceInterface&			vk				= m_context.getDeviceInterface();
+	const VkDevice					device			= m_context.getDevice();
+	add_ref<Allocator>				allocator		= m_context.getDefaultAllocator();
+	const deUint32					queueIndex		= m_context.getUniversalQueueFamilyIndex();
+	add_ref<tcu::TestLog>			log				= m_context.getTestContext().getLog();
+	const VkPhysicalDeviceLimits&	limits			= m_context.getDeviceProperties().limits;
+	const deUint32					fragmentStride	= m_data.sizeX * m_data.sizeY;
+	const deUint32					primitiveStride	= 2;
+
+	if (sizeof(PushConstant) > limits.maxPushConstantsSize)
+	{
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
+							   "PushConstant size " + std::to_string(sizeof(PushConstant))
+							   + " exceeds device limit " + std::to_string(limits.maxPushConstantsSize));
+	}
+
+	tcu::TestStatus auxStatus(QP_TEST_RESULT_FAIL, std::string());
+	std::vector<deUint32> primitiveMap = callAuxiliaryShader(auxStatus, primitiveStride);
+	if (auxStatus.isFail()) return auxStatus;
+
+	const deUint32	shaderSubgroupSize	= primitiveMap.at(fragmentStride * primitiveStride + 1u);
+	if (shaderSubgroupSize != m_subgroupSize)
+	{
+		return tcu::TestStatus(QP_TEST_RESULT_FAIL,
+							   "The size of the subgroup from the shader (" + std::to_string(shaderSubgroupSize)
+							   + ") is different from the size of the subgroup from the device (" + std::to_string(m_subgroupSize) + ")");
+	}
+	const deUint32	shaderSubgroupStride	= primitiveMap.at(fragmentStride * primitiveStride + 0u);
+	const deUint32	hostSubgroupStride		= FragmentRandomProgram::Arrangement::calcSubgroupCount(primitiveMap, primitiveStride, fragmentStride);
+	if (shaderSubgroupStride != hostSubgroupStride)
+	{
+		return tcu::TestStatus(QP_TEST_RESULT_FAIL,
+							   "The number of subgroups from the shader (" + std::to_string(shaderSubgroupStride)
+							   + ") is different from the number of subgroups calculated manually (" + std::to_string(hostSubgroupStride) + ")");
+	}
+
+	log << tcu::TestLog::Message << "Subgroup count: " << hostSubgroupStride << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Subgroup size: " << m_subgroupSize << tcu::TestLog::EndMessage;
+
+	const VkPrimitiveTopology		topology			= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	de::MovePtr<BufferWithMemory>	vertexBuffer		= createVertexBufferAndFlush(
+															primitiveStride, (primitiveStride * 3u), topology);
+
+	std::vector<tcu::UVec4>				ref;
+	de::MovePtr<FragmentRandomProgram>	program = FragmentRandomProgram::create(m_data);
+	program->generateRandomProgram(log);
+
+	const deUint32					simulationMaxLoc	= program->execute(true,
+																		   m_subgroupSize,
+																		   fragmentStride,
+																		   primitiveStride,
+																		   ref,
+																		   log,
+																		   primitiveMap);
+	log << tcu::TestLog::Message << "simulated maxLoc: " << simulationMaxLoc << tcu::TestLog::EndMessage;
+	// maxLoc is per-invocation. Add one (to make sure no additional writes are done)
+	deUint32						maxLoc				= simulationMaxLoc;
+	maxLoc += 1;
+	maxLoc *= (hostSubgroupStride * 128u * primitiveStride);
+
+	constexpr deUint32				bufferCount			= 4;
+	enum Bindings
+	{
+		InputA,
+		OutputBallots,
+		OutputCounts,
+		OutputPriMap
+	};
+
+	de::MovePtr<BufferWithMemory>	buffers				[bufferCount];
+	vk::VkDescriptorBufferInfo		bufferDescriptors	[bufferCount];
+
+	VkDeviceSize					sizes				[bufferCount]
+	{
+		// InputA  { uint    a[]; } inputA;  filled with a[i] := i
+		(FragmentRandomProgram::conditionIfInvocationStride + 2) * sizeof(deUint32),
+
+		// OutputB { uvec4   b[]; } outputB;
+		maxLoc * sizeof(tcu::UVec4),
+
+		// OutputC { uint loc[]; } outputC;
+		(hostSubgroupStride * 128u * primitiveStride) * sizeof(deUint32),
+
+		// OutputP { uvec   p[]; } outputP; few more for calculating subgroupID, subgroupSize, non-helper and helperinvocations
+		(fragmentStride * primitiveStride + 16u) * sizeof(deUint32)
+	};
+
+	VkBufferUsageFlags				usages				[bufferCount]
+	{
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+	};
+
+	// allocate buffers
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		if (sizes[i] > limits.maxStorageBufferRange)
+			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
+
+		try
+		{
+			buffers[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+				vk, device, allocator,
+				makeBufferCreateInfo(sizes[i], usages[i] | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		}
+		catch (tcu::ResourceError&)
+		{
+			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[i]) + " bytes");
+		}
+		bufferDescriptors[i] = makeDescriptorBufferInfo(**buffers[i], 0, sizes[i]);
+	}
+
+	// get raw pointers to previously allocated buffers
+	void* ptrs[bufferCount];
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		ptrs[i] = buffers[i]->getAllocation().getHostPtr();
+	}
+
+	// populate buffers with their destination
+	{
+		auto rangeBufferA = makeStdBeginEnd<deUint32>(ptrs[InputA], static_cast<uint32_t>(sizes[InputA] / sizeof(deUint32)));
+		std::iota(rangeBufferA.first, rangeBufferA.second, 0u);
+	}
+	deMemset(ptrs[OutputBallots],	0, (size_t)sizes[OutputBallots]);
+	deMemset(ptrs[OutputCounts],	0, (size_t)sizes[OutputCounts]);
+	deMemset(ptrs[OutputPriMap],	0, (size_t)sizes[OutputPriMap]);
+
+	// (...) and flush them to the GPU
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		flushAlloc(vk, device, buffers[i]->getAllocation());
+	}
+
+	VkDescriptorType	descTypes[bufferCount]
+	{
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+	};
+
+	vk::DescriptorSetLayoutBuilder layoutBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		layoutBuilder.addSingleBinding(descTypes[i], m_data.shaderStage);
+	}
+	vk::Unique<vk::VkDescriptorSetLayout>	descriptorSetLayout(layoutBuilder.build(vk, device));
+
+	vk::DescriptorPoolBuilder	poolBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		poolBuilder.addType(descTypes[i], 1);
+	}
+	vk::Unique<vk::VkDescriptorPool>		descriptorPool(
+		poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+	vk::Unique<vk::VkDescriptorSet>			descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+	vk::DescriptorSetUpdateBuilder setUpdateBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(i),
+			descTypes[i], &bufferDescriptors[i]);
+	}
+	setUpdateBuilder.update(vk, device);
+
+	const VkPushConstantRange			pushConstantRange
+	{
+		(VkShaderStageFlags)m_data.shaderStage,				// VkShaderStageFlags		stageFlags;
+		0u,													// deUint32					offset;
+		sizeof(PushConstant)								// deUint32					size;
+	};
+
+	const VkPipelineLayoutCreateInfo	pipelineLayoutCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// sType
+		DE_NULL,											// pNext
+		(VkPipelineLayoutCreateFlags)0,						// flags
+		1u,													// setLayoutCount
+		&descriptorSetLayout.get(),							// pSetLayouts
+		1u,													// pushConstantRangeCount
+		&pushConstantRange,									// pPushConstantRanges
+	};
+
+	const VkFormat					format				= VK_FORMAT_R8G8B8A8_UNORM;
+	const VkImageCreateInfo			imageCreateInfo		= makeImageCreateInfo(format);
+	const VkImageSubresourceRange	rscRange			= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	de::MovePtr<ImageWithMemory>	image				(new ImageWithMemory(vk, device, allocator, imageCreateInfo, vk::MemoryRequirement::Any));
+	Move<VkImageView>				view				= makeImageView(vk, device, **image, VK_IMAGE_VIEW_TYPE_2D, format, rscRange);
+	Move<VkRenderPass>				renderPass			= makeRenderPass(vk, device, format);
+	Move<VkFramebuffer>				framebuffer			= makeFramebuffer(vk, device, *renderPass, *view, m_data.sizeX, m_data.sizeY, rscRange.layerCount);
+	const VkRenderPassBeginInfo		renderBeginInfo		= makeRenderPassBeginInfo(*renderPass, *framebuffer);
+	const Shaders					shaders				= createShaders();
+	Move<VkPipelineLayout>			pipelineLayout		= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
+	Move<VkPipeline>				pipeline			= createGraphicsPipeline(*pipelineLayout, *renderPass, m_data.sizeX, m_data.sizeY, shaders, topology, 0U);
+	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIndex);
+	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	PushConstant		pc{};
+	pc.width					= m_data.sizeX;
+	pc.height					= m_data.sizeY;
+	pc.primitiveStride			= primitiveStride;
+	pc.invocationStride			= 0u;
+	pc.subgroupStride			= hostSubgroupStride;
+	pc.enableInvocationIndex	= VK_FALSE;
+
+	auto callRecordDrawingAndSubmit = std::bind(&ReconvergenceTestGraphicsInstance::recordDrawingAndSubmit, this,
+		*cmdBuffer, *pipelineLayout, *pipeline, *descriptorSet, std::cref(pc), std::cref(renderBeginInfo),
+		**vertexBuffer, (primitiveStride * 3u), **image);
+
+	// compute "maxLoc", which is a potential maximum number of locations written
+	callRecordDrawingAndSubmit();
+
+	// Take the maximum of "maxLoc" over all invocations.
+	invalidateAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	auto rangeLoc = makeStdBeginEnd<const deUint32>(ptrs[OutputCounts], (hostSubgroupStride * 128u * primitiveStride));
+	const deUint32 computedShaderMaxLoc = *max_element(rangeLoc.first, rangeLoc.second);
+	log << tcu::TestLog::Message << "Computed maxLoc in the shader: " << computedShaderMaxLoc << tcu::TestLog::EndMessage;
+
+	if (computedShaderMaxLoc >= FragmentRandomProgram::experimentalOutLocSize)
+	{
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
+				"Calculated maxLoc from a shader (which is " + de::toString(computedShaderMaxLoc) + ") "
+				"exceeds BALLOT_STACK_SIZE (which is " + de::toString(FragmentRandomProgram::experimentalOutLocSize) + ").\n"
+				"To repair this just increment slightly a " MAKETEXT(FragmentRandomProgram::experimentalOutLocSize) " "
+				"in line " + de::toString(BALLOT_STACK_SIZE_DEFVAL_LINE));
+	}
+
+	// If we need more space, reallocate OutputB::b[]
+	if (computedShaderMaxLoc != simulationMaxLoc)
+	{
+		// Add one (to make sure no additional writes are done) and multiply by
+		// the number of invocations and current primitive count
+		maxLoc = (std::max(computedShaderMaxLoc, simulationMaxLoc) + 1) * (hostSubgroupStride * 128u * primitiveStride);
+		sizes[OutputBallots] = maxLoc * sizeof(tcu::UVec4);
+
+		if (sizes[OutputBallots] > limits.maxStorageBufferRange)
+			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
+
+		try
+		{
+			buffers[OutputBallots] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+				vk, device, allocator,
+				makeBufferCreateInfo(sizes[OutputBallots], usages[OutputBallots] | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		}
+		catch (tcu::ResourceError&)
+		{
+			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[OutputBallots]) + " bytes");
+		}
+		bufferDescriptors[OutputBallots] = makeDescriptorBufferInfo(**buffers[OutputBallots], 0, sizes[OutputBallots]);
+		ptrs[OutputBallots] = buffers[OutputBallots]->getAllocation().getHostPtr();
+
+		vk::DescriptorSetUpdateBuilder setUpdateBuilder2;
+		setUpdateBuilder2.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(OutputBallots),
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptors[OutputBallots]);
+		setUpdateBuilder2.update(vk, device);
+	}
+
+	// Clear any writes to ballots/stores OutputB::b[] aka buffer[OutputBallots] during the counting pass
+	// Note that its size would may change since the first memory allocation
+	deMemset(ptrs[OutputBallots], 0, (size_t)sizes[OutputBallots]);
+	// Clear any writes to counting OutputC::loc[] aka buffer[OutputCounts] during the counting pass
+	deMemset(ptrs[OutputCounts], 0, (size_t)sizes[OutputCounts]);
+	// Clear any writes to counting OutputP::p[] aka buffer[OutputPriMap] during the counting pass
+	deMemset(ptrs[OutputPriMap], 0, (size_t)sizes[OutputPriMap]);
+
+	// flush them all to the GPU
+	flushAlloc(vk, device, buffers[OutputBallots]->getAllocation());
+	flushAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	flushAlloc(vk, device, buffers[OutputPriMap]->getAllocation());
+
+	// run the actual shader with updated PushConstant
+	pc.enableInvocationIndex = VK_TRUE;
+	callRecordDrawingAndSubmit();
+
+	invalidateAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	invalidateAlloc(vk, device, buffers[OutputBallots]->getAllocation());
+	invalidateAlloc(vk, device, buffers[OutputPriMap]->getAllocation());
+
+	// Simulate execution on the CPU, and compare against the GPU result
+	try
+	{
+		ref.resize(maxLoc, tcu::UVec4());
+	}
+	catch (const std::bad_alloc&)
+	{
+		// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+		return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Failed system memory allocation " + de::toString(maxLoc * sizeof(deUint64)) + " bytes");
+	}
+
+	std::fill(primitiveMap.begin(), primitiveMap.end(), 0);
+	auto primitiveMapRange = makeStdBeginEnd<const deUint32>(ptrs[OutputPriMap], (fragmentStride * primitiveStride));
+	std::copy(primitiveMapRange.first, primitiveMapRange.second, primitiveMap.begin());
+
+	const FragmentRandomProgram::Arrangement a(primitiveMap, m_data.sizeX, m_data.sizeY, m_subgroupSize, primitiveStride);
+	const tcu::UVec4*	ballots		= static_cast<tcu::UVec4*>(ptrs[OutputBallots]);
+
+	program->execute	(false,
+						 m_subgroupSize,
+						 fragmentStride,
+						 primitiveStride,
+						 ref,
+						 log,
+						 primitiveMap,
+						 ballots);
+
+	const deUint32		finalMaxLoc	= std::max(computedShaderMaxLoc, simulationMaxLoc);
+	const qpTestResult	res			= calculateAndLogResultEx(log, ballots, ref, finalMaxLoc, a, PrintMode::None);
+
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
-tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& name, bool createExperimental)
+de::MovePtr<BufferWithMemory> ReconvergenceTestVertexInstance::createVertexBufferAndFlush (deUint32				cellsHorz,
+																						   deUint32				cellsVert,
+																						   VkPrimitiveTopology	topology)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str()));
+	DE_UNREF(topology);
+	DE_ASSERT(VK_PRIMITIVE_TOPOLOGY_POINT_LIST == topology);
+	const std::vector<tcu::Vec4> vertices = VertexRandomProgram::Arrangement::generatePrimitives(
+												cellsHorz, cellsVert, VertexRandomProgram::fillPercentage);
+	return ReconvergenceTestGraphicsInstance::createVertexBufferAndFlush(vertices);
+}
+
+std::vector<Move<VkShaderModule>> ReconvergenceTestVertexInstance::createShaders (void)
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			device		= m_context.getDevice();
+
+	Move<VkShaderModule>	vertex		= createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0);
+	Move<VkShaderModule>	fragment	= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0);
+
+	// { #vert, #frag, #tesc, tese, geom }; if any
+	std::vector<Move<VkShaderModule>>	shaders;
+	shaders.emplace_back(vertex);
+	shaders.emplace_back(fragment);
+
+	return shaders;
+}
+
+tcu::TestStatus ReconvergenceTestVertexInstance::iterate (void)
+{
+	const VkPhysicalDeviceLimits&	limits				= m_context.getDeviceProperties().limits;
+	if (sizeof(PushConstant) > limits.maxPushConstantsSize)
+	{
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
+							   "PushConstant size " + std::to_string(sizeof(PushConstant))
+							   + " exceeds device limit " + std::to_string(limits.maxPushConstantsSize));
+	}
+
+	const DeviceInterface&			vk					= m_context.getDeviceInterface();
+	const VkDevice					device				= m_context.getDevice();
+	Allocator&						allocator			= m_context.getDefaultAllocator();
+	const deUint32					queueIndex			= m_context.getUniversalQueueFamilyIndex();
+	add_ref<tcu::TestLog>			log					= m_context.getTestContext().getLog();
+	const VkPrimitiveTopology		topology			= VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+	const deUint32					fragmentStride		= deUint32(m_data.sizeX * m_data.sizeY);
+	const deUint32					invocationStride	= static_cast<deUint32>(VertexRandomProgram::Arrangement::generatePrimitives(
+															m_data.sizeX, m_data.sizeY, VertexRandomProgram::fillPercentage).size());
+
+	de::MovePtr<VertexRandomProgram>	program			(new VertexRandomProgram(m_data));
+	program->generateRandomProgram(log);
+
+	// simulate content of outputP buffer
+	std::vector<deUint32>			outputP				= VertexRandomProgram::Arrangement::generateOutputPvector(m_subgroupSize, invocationStride);
+
+	std::vector<tcu::UVec4>			ref;
+	const deUint32					hostMaxLoc				= program->execute(true,
+																			   m_subgroupSize,
+																			   fragmentStride,
+																			   invocationStride,
+																			   ref,
+																			   log,
+																			   outputP,
+																			   nullptr);
+	log << tcu::TestLog::Message << "Rendering area  : " << tcu::UVec2(m_data.sizeX, m_data.sizeY) << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "invocationStride: " << invocationStride << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Simulated maxLoc: " << hostMaxLoc << tcu::TestLog::EndMessage;
+	// maxLoc is per-invocation. Add one (to make sure no additional writes are done).
+	deUint32						maxLoc				= hostMaxLoc;
+	maxLoc += 1;
+	maxLoc *= invocationStride;
+
+	constexpr deUint32				bufferCount			= 4u;
+	enum Bindings
+	{
+		InputA,
+		OutputBallots,
+		OutputCounts,
+		OutputPrimitives
+	};
+
+	de::MovePtr<BufferWithMemory>	buffers				[bufferCount];
+	vk::VkDescriptorBufferInfo		bufferDescriptors	[bufferCount];
+
+	deUint32						counts				[bufferCount]
+	{
+		// InputA  { uint    a[]; } inputA;
+		deUint32(m_data.sizeX * m_data.sizeY),
+		// OutputB { uvec2   b[]; } outputB;
+		maxLoc,
+		// OutputC { uint loc[]; } outputC;
+		invocationStride,
+		// OutputP { uint p[]; } outputP;
+		deUint32(outputP.size())
+	};
+
+	VkDeviceSize					sizes				[bufferCount]
+	{
+		// InputA  { uint    a[]; } inputA;
+		counts[InputA] * sizeof(deUint32),
+		// OutputB { uvec2   b[]; } outputB;
+		counts[OutputBallots] * sizeof(tcu::UVec4),
+		// OutputC { uint loc[]; } outputC;
+		counts[OutputCounts] * sizeof(deUint32),
+		// OutputP { uint p[]; } outputP;
+		counts[OutputPrimitives] * sizeof(deUint32)
+	};
+
+	const VkBufferUsageFlags		cmnUsages			= VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	VkBufferUsageFlags				usages				[bufferCount]
+	{
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+	};
+
+	// allocate buffers
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		if (sizes[i] > limits.maxStorageBufferRange)
+			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
+
+		try
+		{
+			buffers[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+				vk, device, allocator, makeBufferCreateInfo(sizes[i], usages[i] | cmnUsages),
+				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		}
+		catch (tcu::ResourceError&)
+		{
+			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[i]) + " bytes");
+		}
+		bufferDescriptors[i] = makeDescriptorBufferInfo(**buffers[i], 0, sizes[i]);
+	}
+
+	// get raw pointers to previously allocated buffers
+	void*						ptrs				[bufferCount];
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		ptrs[i] = buffers[i]->getAllocation().getHostPtr();
+	}
+
+	// populate buffers with their destination
+	{
+		auto rangeBufferA = makeStdBeginEnd<deUint32>(ptrs[InputA], counts[InputA]);
+		std::iota(rangeBufferA.first, rangeBufferA.second, 0u);
+	}
+	deMemset(ptrs[OutputBallots],		0, (size_t)sizes[OutputBallots]);
+	deMemset(ptrs[OutputCounts],		0, (size_t)sizes[OutputCounts]);
+	deMemset(ptrs[OutputPrimitives],	0, (size_t)sizes[OutputPrimitives]);
+
+	// (...) and flush them to the GPU
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		flushAlloc(vk, device, buffers[i]->getAllocation());
+	}
+
+	VkDescriptorType	descTypes[bufferCount]
+	{
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER
+	};
+
+	vk::DescriptorSetLayoutBuilder layoutBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		layoutBuilder.addSingleBinding(descTypes[i], m_data.shaderStage);
+	}
+	vk::Unique<vk::VkDescriptorSetLayout>	descriptorSetLayout(layoutBuilder.build(vk, device));
+
+	vk::DescriptorPoolBuilder	poolBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		poolBuilder.addType(descTypes[i], 1);
+	}
+	vk::Unique<vk::VkDescriptorPool>		descriptorPool(
+		poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+	vk::Unique<vk::VkDescriptorSet>			descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+	vk::DescriptorSetUpdateBuilder setUpdateBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(i),
+			descTypes[i], &bufferDescriptors[i]);
+	}
+	setUpdateBuilder.update(vk, device);
+
+	const VkPushConstantRange			pushConstantRange
+	{
+		(VkShaderStageFlags)m_data.shaderStage,				// VkShaderStageFlags		stageFlags;
+		0u,													// deUint32					offset;
+		sizeof(PushConstant)								// deUint32					size;
+	};
+
+	const VkPipelineLayoutCreateInfo	pipelineLayoutCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// sType
+		DE_NULL,											// pNext
+		(VkPipelineLayoutCreateFlags)0,						// flags
+		1u,													// setLayoutCount
+		&descriptorSetLayout.get(),							// pSetLayouts
+		1u,													// pushConstantRangeCount
+		&pushConstantRange,									// pPushConstantRanges
+	};
+
+	const deUint32						imageWidth		= m_data.sizeX;
+	const deUint32						imageHeight		= m_data.sizeY;
+	const VkFormat						format			= VK_FORMAT_R8G8B8A8_UNORM;
+	const VkImageCreateInfo				imageCreateInfo
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
+		nullptr,								// const void*				pNext;
+		VkImageCreateFlags(0),					// VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
+		format,									// VkFormat					format;
+		{ imageWidth, imageHeight, 1u },		// VkExtent3D				extent;
+		1u,										// uint32_t					mipLevels;
+		1u,										// uint32_t					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,	// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
+		0u,										// uint32_t					queueFamilyIndexCount;
+		0u,										// const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED				// VkImageLayout			initialLayout;
+	};
+	const VkImageSubresourceRange	rscRange			= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	de::MovePtr<ImageWithMemory>	image				(new ImageWithMemory(vk, device, allocator, imageCreateInfo, vk::MemoryRequirement::Any));
+	Move<VkImageView>				view				= makeImageView(vk, device, **image, VK_IMAGE_VIEW_TYPE_2D, format, rscRange);
+	Move<VkRenderPass>				renderPass			= makeRenderPass(vk, device, format);
+	Move<VkFramebuffer>				framebuffer			= makeFramebuffer(vk, device, *renderPass, *view, m_data.sizeX, m_data.sizeY, rscRange.layerCount);
+	de::MovePtr<BufferWithMemory>	vertexBuffer		= createVertexBufferAndFlush(m_data.sizeX, m_data.sizeY, topology);
+	const VkRenderPassBeginInfo		renderBeginInfo		= makeRenderPassBeginInfo(*renderPass, *framebuffer);
+	const Shaders					shaders				= createShaders();
+	Move<VkPipelineLayout>			pipelineLayout		= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
+	Move<VkPipeline>				pipeline			= createGraphicsPipeline(*pipelineLayout, *renderPass, imageWidth, imageHeight, shaders, topology, 0u);
+	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIndex);
+	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	PushConstant		pc{};
+	pc.invocationStride			= invocationStride;
+	pc.width					= m_data.sizeX;
+	pc.height					= m_data.sizeY;
+	pc.enableInvocationIndex	= VK_FALSE;
+
+	auto callRecordDrawingAndSubmit = std::bind(&ReconvergenceTestGraphicsInstance::recordDrawingAndSubmit, this,
+		*cmdBuffer, *pipelineLayout, *pipeline, *descriptorSet, std::cref(pc), std::cref(renderBeginInfo),
+		**vertexBuffer, invocationStride, **image);
+
+	// compute "maxLoc", which is a potential maximum number of locations written
+	callRecordDrawingAndSubmit();
+
+	// Take the maximum of "maxLoc" over all invocations.
+	invalidateAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	auto rangeLoc = makeStdBeginEnd<const deUint32>(ptrs[OutputCounts], counts[OutputCounts]);
+	const deUint32 shaderMaxLoc = (*max_element(rangeLoc.first, rangeLoc.second));
+	log << tcu::TestLog::Message << "Computed maxLoc in shader: " << shaderMaxLoc << tcu::TestLog::EndMessage;
+
+	// If we need more space, reallocate OutputB::b[] aka buffers[1]
+	if (shaderMaxLoc != hostMaxLoc)
+	{
+		// Add one (to make sure no additional writes are done) and multiply by
+		// the number of invocations and current primitive count
+		maxLoc = (std::max(shaderMaxLoc, hostMaxLoc) + 1u) * invocationStride;
+		counts[OutputBallots] = maxLoc;
+		sizes[OutputBallots] = counts[OutputBallots] * sizeof(tcu::UVec4);
+
+		if (sizes[OutputBallots] > limits.maxStorageBufferRange)
+			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
+
+		try
+		{
+			buffers[OutputBallots] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+				vk, device, allocator, makeBufferCreateInfo(sizes[OutputBallots], usages[OutputBallots] | cmnUsages),
+				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		}
+		catch (tcu::ResourceError&)
+		{
+			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[OutputBallots]) + " bytes");
+		}
+		bufferDescriptors[OutputBallots] = makeDescriptorBufferInfo(**buffers[OutputBallots], 0, sizes[OutputBallots]);
+		ptrs[OutputBallots] = buffers[OutputBallots]->getAllocation().getHostPtr();
+
+		vk::DescriptorSetUpdateBuilder setUpdateBuilder2;
+		setUpdateBuilder2.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(OutputBallots),
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptors[OutputBallots]);
+		setUpdateBuilder2.update(vk, device);
+	}
+
+	// Clear any writes to ballots/stores OutputB::b[] aka buffer[1] during the counting pass
+	// Note that its size would may change since the first memory allocation
+	deMemset(ptrs[OutputBallots],		0, (size_t)sizes[OutputBallots]);
+	deMemset(ptrs[OutputCounts],		0, (size_t)sizes[OutputCounts]);
+	deMemset(ptrs[OutputPrimitives],	0, (size_t)sizes[OutputPrimitives]);
+
+	// flush them all to the GPU
+	flushAlloc(vk, device, buffers[OutputBallots]->getAllocation());
+	flushAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	flushAlloc(vk, device, buffers[OutputPrimitives]->getAllocation());
+
+	// run the actual shader with updated PushConstant
+	pc.enableInvocationIndex	= VK_TRUE;
+	callRecordDrawingAndSubmit();
+
+	invalidateAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	const deUint32 finalShaderMaxLoc = (*max_element(rangeLoc.first, rangeLoc.second));
+	log << tcu::TestLog::Message << "Final maxLoc from shader: " << finalShaderMaxLoc << tcu::TestLog::EndMessage;
+	if (finalShaderMaxLoc != shaderMaxLoc)
+	{
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
+							   "maxLoc differs across shader invocations, expected: " + de::toString(shaderMaxLoc)
+							   + " got: " + de::toString(finalShaderMaxLoc));
+	}
+
+	invalidateAlloc(vk, device, buffers[OutputBallots]->getAllocation());
+	const tcu::UVec4* ballots = static_cast<tcu::UVec4*>(ptrs[OutputBallots]);
+
+	invalidateAlloc(vk, device, buffers[OutputPrimitives]->getAllocation());
+	auto outputPrange = makeStdBeginEnd<deUint32>(ptrs[OutputPrimitives], counts[OutputPrimitives]);
+	std::copy(outputPrange.first, outputPrange.second, outputP.begin());
+
+	try
+	{
+		ref.resize(counts[OutputBallots], tcu::UVec4(0u, 0u, 0u, 0u));
+	}
+	catch (const std::bad_alloc&)
+	{
+		// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+		return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Failed system memory allocation " + de::toString(sizes[OutputBallots]) + " bytes");
+	}
+
+	// Simulate execution on the CPU, and compare against the GPU result
+	const deUint32 finalHostMaxLoc	= program->execute(false,
+													   m_subgroupSize,
+													   fragmentStride,
+													   invocationStride,
+													   ref,
+													   log,
+													   outputP,
+													   ballots);
+
+	const qpTestResult	res = calculateAndLogResultEx(log, ballots, ref, finalHostMaxLoc, PrintMode::None);
+
+	return tcu::TestStatus(res, qpGetTestResultName(res));
+}
+
+qpTestResult_e ReconvergenceTestVertexInstance::calculateAndLogResultEx	(add_ref<tcu::TestLog>			log,
+																		 const tcu::UVec4*				result,
+																		 const std::vector<tcu::UVec4>& ref,
+																		 const deUint32					maxLoc,
+																		 const PrintMode				printMode)
+{
+	DE_UNREF(maxLoc);
+	DE_UNREF(printMode);
+
+	qpTestResult res = QP_TEST_RESULT_PASS;
+	deUint32 mismatchCount = 0u;
+	const deUint32 printMismatchCount = 5u;
+
+	// With maximal reconvergence, we should expect the output to exactly match the reference.
+	const deUint32 ballotStoreCount = static_cast<deUint32>(ref.size());
+	for (deUint32 i = 0; i < ballotStoreCount; ++i)
+	{
+		const Ballot resultVal(result[i], m_subgroupSize);
+		const Ballot refVal(ref.at(i), m_subgroupSize);
+		if (resultVal != refVal)
+		{
+			if (mismatchCount++ < printMismatchCount)
+			{
+				res = QP_TEST_RESULT_FAIL;
+				log << tcu::TestLog::Message << "Mismatch at " << i
+					<< "\nexpected: " << resultVal
+					<< "\n     got: " << refVal
+					<< tcu::TestLog::EndMessage;
+				if (printMode == PrintMode::Console)
+				{
+					std::cout << "Mismatch at " << i
+						<< "\nexpected: " << resultVal
+						<< "\n     got: " << refVal
+						<< std::endl;
+				}
+			}
+		}
+	}
+
+	log << tcu::TestLog::Message << "Mismatch count: " << mismatchCount << " from " << ballotStoreCount << tcu::TestLog::EndMessage;
+	if (printMode == PrintMode::Console)
+	{
+		std::cout << "Mismatch count: " << mismatchCount << " from " << ballotStoreCount << std::endl;
+	}
+
+	return res;
+}
+
+std::vector<Move<VkShaderModule>> ReconvergenceTestTessCtrlInstance::createShaders (void)
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			device		= m_context.getDevice();
+
+	Move<VkShaderModule>	vertex		= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
+	Move<VkShaderModule>	fragment	= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"));
+	Move<VkShaderModule>	control		= createShaderModule(vk, device, m_context.getBinaryCollection().get("test"));
+	Move<VkShaderModule>	evaluation	= createShaderModule(vk, device, m_context.getBinaryCollection().get("tese"));
+
+	// { #vert, #frag, #tesc, #tese, geom }; if any
+	std::vector<Move<VkShaderModule>>	shaders;
+	shaders.emplace_back(vertex);
+	shaders.emplace_back(fragment);
+	shaders.emplace_back(control);
+	shaders.emplace_back(evaluation);
+
+	return shaders;
+}
+
+tcu::TestStatus ReconvergenceTestTessCtrlInstance::iterate	(void)
+{
+	const DeviceInterface&			vk				= m_context.getDeviceInterface();
+	const VkDevice					device			= m_context.getDevice();
+	Allocator&						allocator		= m_context.getDefaultAllocator();
+	const deUint32					queueIndex		= m_context.getUniversalQueueFamilyIndex();
+	add_ref<tcu::TestLog>			log				= m_context.getTestContext().getLog();
+
+	if (m_subgroupSize < TessCtrlRandomProgram::minSubgroupSize || m_subgroupSize > 64)
+	{
+		std::stringstream str;
+		str << "Subgroup size less than " << TessCtrlRandomProgram::minSubgroupSize << " or greater than 64 not handled.";
+		str.flush();
+		TCU_THROW(TestError, str.str());
+	}
+
+	deRandom rnd;
+	deRandom_init(&rnd, m_data.seed);
+
+	vk::VkPhysicalDeviceProperties2 properties2;
+	deMemset(&properties2, 0, sizeof(properties2));
+	properties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties2);
+	const VkPhysicalDeviceLimits& limits = properties2.properties.limits;
+
+	const deUint32					patchControlPoints	= 1;
+	const deUint32					vertexCount			= (m_subgroupSize / TessCtrlRandomProgram::minSubgroupSize) * patchControlPoints * m_data.sizeX;
+	const deUint32					primitiveStride		= vertexCount / patchControlPoints;
+	de::MovePtr<BufferWithMemory>	vertexBuffer		= createVertexBufferAndFlush(vertexCount, 1u, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
+	const deUint32					invocationStride	= vertexCount * TessCtrlRandomProgram::minSubgroupSize;
+	DE_ASSERT(invocationStride < MAX_INVOCATIONS_ALL_TESTS);
+
+	log << tcu::TestLog::Message << "LayoutVertexOut:    " << (deUint32)TessCtrlRandomProgram::minSubgroupSize << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "patchControlPoints: " << patchControlPoints << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "primitiveStride:    " << primitiveStride << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "invocationStride:   " << invocationStride << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "usedSubgroupCount:  " << m_data.sizeX << tcu::TestLog::EndMessage;
+
+	de::MovePtr<TessCtrlRandomProgram>	program			(new TessCtrlRandomProgram(m_data, invocationStride));
+	program->generateRandomProgram(log);
+
+	std::vector<deUint64>			ref;
+	const deUint32					simulationMaxLoc	= program->simulate(true, m_subgroupSize, ref);
+	log << tcu::TestLog::Message << "simulated maxLoc: " << simulationMaxLoc << tcu::TestLog::EndMessage;
+	// maxLoc is per-invocation. Add one (to make sure no additional writes are done)
+	deUint32						maxLoc				= simulationMaxLoc;
+	maxLoc += 1;
+	maxLoc *= invocationStride;
+
+	constexpr deUint32				bufferCount			= 3;
+	enum Bindings
+	{
+		InputA,
+		OutputBallots,
+		OutputCounts,
+	};
+
+	de::MovePtr<BufferWithMemory>	buffers[bufferCount];
+	vk::VkDescriptorBufferInfo		bufferDescriptors[bufferCount];
+
+	VkDeviceSize					sizes[bufferCount]
+	{
+		// InputA  { uint    a[]; } inputA;  filled with a[i] == i
+		invocationStride * sizeof(deUint32),
+		// OutputB { uvec2   b[]; } outputB;
+		maxLoc * sizeof(deUint64),
+		// OutputC { uint loc[]; } outputC;
+		invocationStride * sizeof(deUint32),
+	};
+
+	VkBufferUsageFlags				usages[bufferCount]
+	{
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+	};
+
+	// allocate buffers
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		if (sizes[i] > limits.maxStorageBufferRange)
+			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
+
+		try
+		{
+			buffers[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+				vk, device, allocator, makeBufferCreateInfo(sizes[i], usages[i] | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		}
+		catch (tcu::ResourceError&)
+		{
+			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[i]) + " bytes");
+		}
+		bufferDescriptors[i] = makeDescriptorBufferInfo(**buffers[i], 0, sizes[i]);
+	}
+
+	// get raw pointers to previously allocated buffers
+	void* ptrs[bufferCount];
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		ptrs[i] = (deUint32*)buffers[i]->getAllocation().getHostPtr();
+	}
+
+	// populate buffers with their destination
+	{
+		auto rangeBufferA = makeStdBeginEnd<deUint32>(ptrs[InputA], invocationStride);
+		std::iota(rangeBufferA.first, rangeBufferA.second, 0u);
+	}
+	deMemset(ptrs[OutputBallots], 0, (size_t)sizes[OutputBallots]);
+	deMemset(ptrs[OutputCounts], 0, (size_t)sizes[OutputCounts]);
+
+	// (...) and flush them to the GPU
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		flushAlloc(vk, device, buffers[i]->getAllocation());
+	}
+
+	VkDescriptorType	descTypes[bufferCount]
+	{
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+	};
+
+	vk::DescriptorSetLayoutBuilder layoutBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		layoutBuilder.addSingleBinding(descTypes[i], m_data.shaderStage);
+	}
+	vk::Unique<vk::VkDescriptorSetLayout>	descriptorSetLayout(layoutBuilder.build(vk, device));
+
+	vk::DescriptorPoolBuilder	poolBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		poolBuilder.addType(descTypes[i], 1);
+	}
+	vk::Unique<vk::VkDescriptorPool>		descriptorPool(
+		poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+	vk::Unique<vk::VkDescriptorSet>			descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+	vk::DescriptorSetUpdateBuilder setUpdateBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(i),
+			descTypes[i], &bufferDescriptors[i]);
+	}
+	setUpdateBuilder.update(vk, device);
+
+	const VkPushConstantRange			pushConstantRange
+	{
+		(VkShaderStageFlags)m_data.shaderStage,				// VkShaderStageFlags		stageFlags;
+		0u,													// deUint32					offset;
+		sizeof(PushConstant)								// deUint32					size;
+	};
+
+	// TODO: verify that PushConstant is available on running machine
+
+	const VkPipelineLayoutCreateInfo	pipelineLayoutCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// sType
+		DE_NULL,											// pNext
+		(VkPipelineLayoutCreateFlags)0,						// flags
+		1u,													// setLayoutCount
+		&descriptorSetLayout.get(),							// pSetLayouts
+		1u,													// pushConstantRangeCount
+		&pushConstantRange,									// pPushConstantRanges
+	};
+
+	const deUint32						imageWidth = 256;
+	const deUint32						imageHeight = 256;
+	const VkFormat						format = VK_FORMAT_R8G8B8A8_UNORM;
+	const VkImageCreateInfo				imageCreateInfo
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
+		nullptr,								// const void*				pNext;
+		VkImageCreateFlags(0),					// VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
+		format,									// VkFormat					format;
+		{ imageWidth, imageHeight, 1u },		// VkExtent3D				extent;
+		1u,										// uint32_t					mipLevels;
+		1u,										// uint32_t					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,	// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
+		0u,										// uint32_t					queueFamilyIndexCount;
+		0u,										// const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED				// VkImageLayout			initialLayout;
+	};
+	const VkImageSubresourceRange	rscRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	de::MovePtr<ImageWithMemory>	image			(new ImageWithMemory(vk, device, allocator, imageCreateInfo, vk::MemoryRequirement::Any));
+	Move<VkImageView>				view			= makeImageView(vk, device, **image, VK_IMAGE_VIEW_TYPE_2D, format, rscRange);
+	Move<VkRenderPass>				renderPass		= makeRenderPass(vk, device, format);
+	Move<VkFramebuffer>				framebuffer		= makeFramebuffer(vk, device, *renderPass, *view, m_data.sizeX, m_data.sizeY, rscRange.layerCount);
+	const VkRenderPassBeginInfo		renderBeginInfo	= makeRenderPassBeginInfo(*renderPass, *framebuffer);
+	const Shaders					shaders			= createShaders();
+	Move<VkPipelineLayout>			pipelineLayout	= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
+	Move<VkPipeline>				pipeline		= createGraphicsPipeline(*pipelineLayout, *renderPass, imageWidth, imageHeight, shaders, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, patchControlPoints);
+	Move<VkCommandPool>				cmdPool			= createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIndex);
+	Move<VkCommandBuffer>			cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	PushConstant		pc{};
+	pc.invocationStride	= 0u;
+	pc.width			= TessCtrlRandomProgram::minSubgroupSize;
+	pc.height			= patchControlPoints;
+	pc.primitiveStride	= primitiveStride;
+
+	auto callRecordDrawingAndSubmit = std::bind(&ReconvergenceTestGraphicsInstance::recordDrawingAndSubmit, this,
+		*cmdBuffer, *pipelineLayout, *pipeline, *descriptorSet, std::cref(pc), std::cref(renderBeginInfo),
+		**vertexBuffer, vertexCount, **image);
+
+	// compute "maxLoc", which is a potential maximum number of locations written
+	callRecordDrawingAndSubmit();
+
+	// Take the maximum of "maxLoc" over all invocations.
+	invalidateAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	auto rangeLoc = makeStdBeginEnd<const deUint32>(ptrs[OutputCounts], invocationStride);
+	const deUint32 computedShaderMaxLoc = (*max_element(rangeLoc.first, rangeLoc.second));
+	log << tcu::TestLog::Message << "computed shaderMaxLoc: " << computedShaderMaxLoc << tcu::TestLog::EndMessage;
+
+	// If we need more space, reallocate OutputB::b[] aka buffers[1]
+	if (computedShaderMaxLoc > simulationMaxLoc)
+	{
+		// Add one (to make sure no additional writes are done) and multiply by
+		// the number of invocations and current primitive count
+		maxLoc = (computedShaderMaxLoc + 1) * invocationStride;
+		sizes[OutputBallots] = maxLoc * sizeof(deUint64);
+
+		if (sizes[OutputBallots] > limits.maxStorageBufferRange)
+			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
+
+		try
+		{
+			buffers[OutputBallots] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+				vk, device, allocator, makeBufferCreateInfo(sizes[1], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		}
+		catch (tcu::ResourceError&)
+		{
+			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[OutputBallots]) + " bytes");
+		}
+		bufferDescriptors[OutputBallots] = makeDescriptorBufferInfo(**buffers[OutputBallots], 0, sizes[OutputBallots]);
+		ptrs[OutputBallots] = buffers[OutputBallots]->getAllocation().getHostPtr();
+
+		vk::DescriptorSetUpdateBuilder setUpdateBuilder2;
+		setUpdateBuilder2.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(OutputBallots),
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptors[OutputBallots]);
+		setUpdateBuilder2.update(vk, device);
+	}
+
+	// Clear any writes to ballots/stores OutputB::b[] aka buffer[1] during the counting pass
+	// Note that its size would may change since the first memory allocation
+	deMemset(ptrs[OutputBallots], 0, (size_t)sizes[OutputBallots]);
+	// Clear any writes to counting OutputC::loc[] aka buffer[2] during the counting pass
+	deMemset(ptrs[OutputCounts], 0, (size_t)sizes[OutputCounts]);
+
+	// flush them all to the GPU
+	flushAlloc(vk, device, buffers[OutputBallots]->getAllocation());
+	flushAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+
+	// run the actual shader with updated PushConstant
+	pc.invocationStride = invocationStride;
+	pc.width			= TessCtrlRandomProgram::minSubgroupSize;
+	pc.height			= patchControlPoints;
+	pc.primitiveStride	= primitiveStride;
+	callRecordDrawingAndSubmit();
+
+	invalidateAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	const deUint32 finalShaderMaxLoc = (*max_element(rangeLoc.first, rangeLoc.second));
+	log << tcu::TestLog::Message << "final shaderMaxLoc: " << finalShaderMaxLoc << tcu::TestLog::EndMessage;
+	if (finalShaderMaxLoc > computedShaderMaxLoc)
+	{
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "maxLoc differs across shader invocations");
+	}
+
+	invalidateAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	invalidateAlloc(vk, device, buffers[OutputBallots]->getAllocation());
+
+	// Simulate execution on the CPU, and compare against the GPU result
+	try
+	{
+		ref.resize(maxLoc, 0ull);
+	}
+	catch (const std::bad_alloc&)
+	{
+		// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+		return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Failed system memory allocation " + de::toString(maxLoc * sizeof(deUint64)) + " bytes");
+	}
+
+	program->simulate(false, m_subgroupSize, ref);
+
+	const deUint64* ballots = static_cast<deUint64*>(ptrs[OutputBallots]);
+	qpTestResult res = calculateAndLogResult(ballots, ref, invocationStride, m_subgroupSize, finalShaderMaxLoc, (invocationStride / 3), PrintMode::None);
+
+	return tcu::TestStatus(res, qpGetTestResultName(res));
+}
+
+std::vector<Move<VkShaderModule>> ReconvergenceTestTessEvalInstance::createShaders	(void)
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			device		= m_context.getDevice();
+
+	Move<VkShaderModule>	vertex		= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
+	Move<VkShaderModule>	fragment	= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"));
+	Move<VkShaderModule>	control		= createShaderModule(vk, device, m_context.getBinaryCollection().get("tesc"));
+	Move<VkShaderModule>	evaluation	= createShaderModule(vk, device, m_context.getBinaryCollection().get("test"));
+
+	// { #vert, #frag, #tesc, #tese, geom }; if any
+	std::vector<Move<VkShaderModule>>	shaders;
+	shaders.emplace_back(vertex);
+	shaders.emplace_back(fragment);
+	shaders.emplace_back(control);
+	shaders.emplace_back(evaluation);
+
+	return shaders;
+}
+
+tcu::TestStatus ReconvergenceTestTessEvalInstance::iterate	(void)
+{
+	const DeviceInterface&				vk				= m_context.getDeviceInterface();
+	const VkDevice						device			= m_context.getDevice();
+	Allocator&							allocator		= m_context.getDefaultAllocator();
+	const deUint32						queueIndex		= m_context.getUniversalQueueFamilyIndex();
+	add_ref<tcu::TestLog>				log				= m_context.getTestContext().getLog();
+
+	if (m_subgroupSize < TessEvalRandomProgram::quadInvocationCount || m_subgroupSize > 64)
+	{
+		std::stringstream str;
+		str << "Subgroup size less than " << TessEvalRandomProgram::quadInvocationCount << " or greater than 64 not handled.";
+		str.flush();
+		TCU_THROW(TestError, str.str());
+	}
+
+	deRandom rnd;
+	deRandom_init(&rnd, m_data.seed);
+
+	vk::VkPhysicalDeviceProperties2	properties2;
+	deMemset(&properties2, 0, sizeof(properties2));
+	properties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties2);
+	const VkPhysicalDeviceLimits& limits = properties2.properties.limits;
+
+	const deUint32						patchesPerGroup		= m_subgroupSize / TessEvalRandomProgram::quadInvocationCount;
+	const deUint32						primitiveStride		= patchesPerGroup * m_data.sizeX;
+	const deUint32						invocationStride	= primitiveStride * TessEvalRandomProgram::quadInvocationCount;
+	const std::vector<tcu::Vec4>		vertices			= generateVertices(invocationStride, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+	const deUint32						vertexCount			= deUint32(vertices.size());
+	de::MovePtr<BufferWithMemory>		vertexBuffer		= createVertexBufferAndFlush(vertices);
+
+	DE_ASSERT(invocationStride <= MAX_INVOCATIONS_ALL_TESTS);
+
+	de::MovePtr<TessEvalRandomProgram>	program				(new TessEvalRandomProgram(m_data, invocationStride));
+	program->generateRandomProgram(log);
+
+	std::vector<deUint64>				ref;
+	const deUint32						simulationMaxLoc	= program->simulate(true, m_subgroupSize, ref);
+	log << tcu::TestLog::Message << "simulated maxLoc:       " << simulationMaxLoc << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "effective patch size:   " << m_data.sizeY << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "effective patch count:  " << primitiveStride << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "total invocation count: " << invocationStride << tcu::TestLog::EndMessage;
+
+	// maxLoc is per-invocation. Add one (to make sure no additional writes are done).
+	deUint32							maxLoc				= simulationMaxLoc;
+	maxLoc += 1;
+	maxLoc *= invocationStride;
+
+	constexpr deUint32					bufferCount			= 3;
+	enum Bindings
+	{
+		InputA,
+		OutputBallots,
+		OutputCounts,
+	};
+
+	de::MovePtr<BufferWithMemory>		buffers[bufferCount];
+	vk::VkDescriptorBufferInfo			bufferDescriptors[bufferCount];
+
+	VkDeviceSize						sizes[bufferCount]
+	{
+		// InputA  { uint    a[]; } inputA;  filled with a[i] == i
+		invocationStride * sizeof(deUint32),
+		// OutputB { uvec2   b[]; } outputB;
+		maxLoc * sizeof(deUint64),
+		// OutputC { uint loc[]; } outputC;
+		invocationStride * sizeof(deUint32),
+	};
+
+	VkBufferUsageFlags					usages[bufferCount]
+	{
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+	};
+
+	// allocate buffers
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		if (sizes[i] > limits.maxStorageBufferRange)
+			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
+
+		try
+		{
+			buffers[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+				vk, device, allocator, makeBufferCreateInfo(sizes[i], usages[i] | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		}
+		catch (tcu::ResourceError&)
+		{
+			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[i]) + " bytes");
+		}
+		bufferDescriptors[i] = makeDescriptorBufferInfo(**buffers[i], 0, sizes[i]);
+	}
+
+	// get raw pointers to previously allocated buffers
+	void* ptrs[bufferCount];
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		ptrs[i] = (deUint32*)buffers[i]->getAllocation().getHostPtr();
+	}
+
+	// populate buffers with their destination
+	{
+		auto rangeBufferA = makeStdBeginEnd<deUint32>(ptrs[InputA], invocationStride);
+		std::iota(rangeBufferA.first, rangeBufferA.second, 0u);
+	}
+	deMemset(ptrs[OutputBallots], 0, (size_t)sizes[OutputBallots]);
+	deMemset(ptrs[OutputCounts], 0, (size_t)sizes[OutputCounts]);
+
+	// (...) and flush them to the GPU
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		flushAlloc(vk, device, buffers[i]->getAllocation());
+	}
+
+	VkDescriptorType	descTypes[bufferCount]
+	{
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+	};
+
+	vk::DescriptorSetLayoutBuilder layoutBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		layoutBuilder.addSingleBinding(descTypes[i], m_data.shaderStage);
+	}
+	vk::Unique<vk::VkDescriptorSetLayout>	descriptorSetLayout(layoutBuilder.build(vk, device));
+
+	vk::DescriptorPoolBuilder	poolBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		poolBuilder.addType(descTypes[i], 1);
+	}
+	vk::Unique<vk::VkDescriptorPool>		descriptorPool(
+		poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+	vk::Unique<vk::VkDescriptorSet>			descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+	vk::DescriptorSetUpdateBuilder setUpdateBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(i),
+			descTypes[i], &bufferDescriptors[i]);
+	}
+	setUpdateBuilder.update(vk, device);
+
+	const VkPushConstantRange			pushConstantRange
+	{
+		(VkShaderStageFlags)m_data.shaderStage,				// VkShaderStageFlags		stageFlags;
+		0u,													// deUint32					offset;
+		sizeof(PushConstant)								// deUint32					size;
+	};
+
+	// TODO: verify that PushConstant is available on running machine
+
+	const VkPipelineLayoutCreateInfo	pipelineLayoutCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// sType
+		DE_NULL,											// pNext
+		(VkPipelineLayoutCreateFlags)0,						// flags
+		1u,													// setLayoutCount
+		&descriptorSetLayout.get(),							// pSetLayouts
+		1u,													// pushConstantRangeCount
+		&pushConstantRange,									// pPushConstantRanges
+	};
+
+	const deUint32						imageWidth	= 256;
+	const deUint32						imageHeight	= 256;
+	const VkFormat						format		= VK_FORMAT_R8G8B8A8_UNORM;
+	const VkImageCreateInfo				imageCreateInfo
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
+		nullptr,								// const void*				pNext;
+		VkImageCreateFlags(0),					// VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
+		format,									// VkFormat					format;
+		{ imageWidth, imageHeight, 1u },		// VkExtent3D				extent;
+		1u,										// uint32_t					mipLevels;
+		1u,										// uint32_t					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,	// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
+		0u,										// uint32_t					queueFamilyIndexCount;
+		0u,										// const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED				// VkImageLayout			initialLayout;
+	};
+	const VkImageSubresourceRange	rscRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	de::MovePtr<ImageWithMemory>	image			(new ImageWithMemory(vk, device, allocator, imageCreateInfo, vk::MemoryRequirement::Any));
+	Move<VkImageView>				view			= makeImageView(vk, device, **image, VK_IMAGE_VIEW_TYPE_2D, format, rscRange);
+	Move<VkRenderPass>				renderPass		= makeRenderPass(vk, device, format);
+	Move<VkFramebuffer>				framebuffer		= makeFramebuffer(vk, device, *renderPass, *view, m_data.sizeX, m_data.sizeY, rscRange.layerCount);
+	const VkRenderPassBeginInfo		renderBeginInfo	= makeRenderPassBeginInfo(*renderPass, *framebuffer);
+	const Shaders					shaders			= createShaders();
+	Move<VkPipelineLayout>			pipelineLayout	= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
+	Move<VkPipeline>				pipeline		= createGraphicsPipeline(*pipelineLayout, *renderPass, imageWidth, imageHeight, shaders,
+																				VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, TessEvalRandomProgram::quadInvocationCount);
+	Move<VkCommandPool>				cmdPool			= createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIndex);
+	Move<VkCommandBuffer>			cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	PushConstant		pc{};
+	pc.invocationStride = 0u;
+	pc.width			= TessEvalRandomProgram::quadInvocationCount;
+
+	auto callRecordDrawingAndSubmit = std::bind(&ReconvergenceTestGraphicsInstance::recordDrawingAndSubmit, this,
+		*cmdBuffer, *pipelineLayout, *pipeline, *descriptorSet, std::cref(pc), std::cref(renderBeginInfo),
+		**vertexBuffer, vertexCount, **image);
+
+	// compute "maxLoc", which is a potential maximum number of locations written
+	callRecordDrawingAndSubmit();
+
+	// Take the maximum of "maxLoc" over all invocations.
+	invalidateAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	auto rangeLoc = makeStdBeginEnd<const deUint32>(ptrs[OutputCounts], invocationStride);
+	const deUint32 computedShaderMaxLoc = (*max_element(rangeLoc.first, rangeLoc.second));
+	log << tcu::TestLog::Message << "computed shaderMaxLoc: " << computedShaderMaxLoc << tcu::TestLog::EndMessage;
+
+	// If we need more space, reallocate OutputB::b[] aka buffers[1]
+	if (computedShaderMaxLoc > simulationMaxLoc)
+	{
+		// Add one (to make sure no additional writes are done) and multiply by
+		// the number of invocations and current primitive count
+		maxLoc = (computedShaderMaxLoc + 1) * invocationStride;
+		sizes[OutputBallots] = maxLoc * sizeof(deUint64);
+
+		if (sizes[OutputBallots] > limits.maxStorageBufferRange)
+			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
+
+		try
+		{
+			buffers[OutputBallots] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+				vk, device, allocator, makeBufferCreateInfo(sizes[1], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		}
+		catch (tcu::ResourceError&)
+		{
+			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[OutputBallots]) + " bytes");
+		}
+		bufferDescriptors[OutputBallots] = makeDescriptorBufferInfo(**buffers[OutputBallots], 0, sizes[OutputBallots]);
+		ptrs[OutputBallots] = buffers[OutputBallots]->getAllocation().getHostPtr();
+
+		vk::DescriptorSetUpdateBuilder setUpdateBuilder2;
+		setUpdateBuilder2.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(OutputBallots),
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptors[OutputBallots]);
+		setUpdateBuilder2.update(vk, device);
+	}
+
+	// Clear any writes to ballots/stores OutputB::b[] aka buffer[1] during the counting pass
+	// Note that its size would may change since the first memory allocation
+	deMemset(ptrs[OutputBallots], 0, (size_t)sizes[OutputBallots]);
+	// Clear any writes to counting OutputC::loc[] aka buffer[2] during the counting pass
+	deMemset(ptrs[OutputCounts], 0, (size_t)sizes[OutputCounts]);
+
+	// flush them all to the GPU
+	flushAlloc(vk, device, buffers[OutputBallots]->getAllocation());
+	flushAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+
+	// run the actual shader with updated PushConstant
+	pc.invocationStride	= invocationStride;
+	pc.width			= TessEvalRandomProgram::quadInvocationCount;
+	callRecordDrawingAndSubmit();
+
+	invalidateAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	const deUint32 finalShaderMaxLoc = (*max_element(rangeLoc.first, rangeLoc.second));
+	log << tcu::TestLog::Message << "final shaderMaxLoc: " << finalShaderMaxLoc << tcu::TestLog::EndMessage;
+	if (finalShaderMaxLoc > computedShaderMaxLoc)
+	{
+		std::stringstream s;
+		s << "maxLoc differs across shader invocations: " << finalShaderMaxLoc << " and " << computedShaderMaxLoc;
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, s.str());
+	}
+
+	invalidateAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	invalidateAlloc(vk, device, buffers[OutputBallots]->getAllocation());
+
+	// Simulate execution on the CPU, and compare against the GPU result
+	try
+	{
+		ref.resize(maxLoc, 0ull);
+	}
+	catch (const std::bad_alloc&)
+	{
+		// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+		return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Failed system memory allocation " + de::toString(maxLoc * sizeof(deUint64)) + " bytes");
+	}
+
+	program->simulate(false, m_subgroupSize, ref);
+
+	const deUint64* ballots = static_cast<deUint64*>(ptrs[OutputBallots]);
+	qpTestResult res = calculateAndLogResult(ballots, ref, invocationStride, m_subgroupSize, finalShaderMaxLoc, (invocationStride / 3), PrintMode::None);
+
+	return tcu::TestStatus(res, qpGetTestResultName(res));
+}
+
+de::MovePtr<BufferWithMemory> ReconvergenceTestGeometryInstance::createVertexBufferAndFlush (deUint32				cellsHorz,
+																							 deUint32				cellsVert,
+																							 VkPrimitiveTopology	topology)
+{
+	DE_UNREF(topology);
+	DE_ASSERT(VK_PRIMITIVE_TOPOLOGY_POINT_LIST == topology);
+	const std::vector<tcu::Vec4> vertices = GeometryRandomProgram::Arrangement::generatePrimitives(
+												cellsHorz, cellsVert, GeometryRandomProgram::fillPercentage);
+	return ReconvergenceTestGraphicsInstance::createVertexBufferAndFlush(vertices);
+}
+
+std::vector<Move<VkShaderModule>> ReconvergenceTestGeometryInstance::createShaders	(void)
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			device		= m_context.getDevice();
+
+	Move<VkShaderModule>	vertex		= createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
+	Move<VkShaderModule>	fragment	= createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"));
+	Move<VkShaderModule>	geometry	= createShaderModule(vk, device, m_context.getBinaryCollection().get("test"));
+
+	// { #vert, #frag, tesc, tese, #geom }; if any
+	std::vector<Move<VkShaderModule>>	shaders;
+	shaders.emplace_back(vertex);
+	shaders.emplace_back(fragment);
+	shaders.emplace_back();
+	shaders.emplace_back();
+	shaders.emplace_back(geometry);
+
+	return shaders;
+}
+
+tcu::TestStatus ReconvergenceTestGeometryInstance::iterate	(void)
+{
+	const VkPhysicalDeviceLimits&	limits				= m_context.getDeviceProperties().limits;
+	if (sizeof(PushConstant) > limits.maxPushConstantsSize)
+	{
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
+							   "PushConstant size " + std::to_string(sizeof(PushConstant))
+							   + " exceeds device limit " + std::to_string(limits.maxPushConstantsSize));
+	}
+
+	const DeviceInterface&			vk					= m_context.getDeviceInterface();
+	const VkDevice					device				= m_context.getDevice();
+	Allocator&						allocator			= m_context.getDefaultAllocator();
+	const deUint32					queueIndex			= m_context.getUniversalQueueFamilyIndex();
+	add_ref<tcu::TestLog>			log					= m_context.getTestContext().getLog();
+	const VkPrimitiveTopology		topology			= VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+	const deUint32					fragmentStride		= deUint32(m_data.sizeX * m_data.sizeY);
+	const deUint32					invocationStride	= GeometryRandomProgram::Arrangement::calculatePrimitiveCount(
+															m_data.sizeX, m_data.sizeY, GeometryRandomProgram::fillPercentage);
+
+	de::MovePtr<GeometryRandomProgram>	program			(new GeometryRandomProgram(m_data));
+	program->generateRandomProgram(log);
+
+	// simulate content of outputP buffer
+	std::vector<deUint32>			outputP				= GeometryRandomProgram::Arrangement::generateVectorOutputP(m_subgroupSize, invocationStride);
+
+	std::vector<tcu::UVec4>			ref;
+	const deUint32					hostMaxLoc				= program->execute(true,
+																			   m_subgroupSize,
+																			   fragmentStride,
+																			   invocationStride,
+																			   ref,
+																			   log,
+																			   outputP,
+																			   nullptr);
+	log << tcu::TestLog::Message << "Rendering area  : " << tcu::UVec2(m_data.sizeX, m_data.sizeY) << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "invocationStride: " << invocationStride << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Simulated maxLoc: " << hostMaxLoc << tcu::TestLog::EndMessage;
+	// maxLoc is per-invocation. Add one (to make sure no additional writes are done).
+	deUint32						maxLoc				= hostMaxLoc;
+	maxLoc += 1;
+	maxLoc *= invocationStride;
+
+	constexpr deUint32				bufferCount			= 4u;
+	enum Bindings
+	{
+		InputA,
+		OutputBallots,
+		OutputCounts,
+		OutputPrimitives
+	};
+
+	de::MovePtr<BufferWithMemory>		buffers				[bufferCount];
+	vk::VkDescriptorBufferInfo			bufferDescriptors	[bufferCount];
+
+	deUint32							counts				[bufferCount]
+	{
+		// InputA  { uint    a[]; } inputA;
+		deUint32(m_data.sizeX * m_data.sizeY),
+		// OutputB { uvec2   b[]; } outputB;
+		maxLoc,
+		// OutputC { uint loc[]; } outputC;
+		invocationStride,
+		// OutputP { uint p[]; } outputP;
+		deUint32(outputP.size())
+	};
+
+	VkDeviceSize						sizes				[bufferCount]
+	{
+		// InputA  { uint    a[]; } inputA;
+		counts[InputA] * sizeof(deUint32),
+		// OutputB { uvec2   b[]; } outputB;
+		counts[OutputBallots] * sizeof(tcu::UVec4),
+		// OutputC { uint loc[]; } outputC;
+		counts[OutputCounts] * sizeof(deUint32),
+		// OutputP { uint p[]; } outputP;
+		counts[OutputPrimitives] * sizeof(deUint32)
+	};
+
+	const VkBufferUsageFlags			cmnUsages			= VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	VkBufferUsageFlags					usages[bufferCount]
+	{
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+	};
+
+	// allocate buffers
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		if (sizes[i] > limits.maxStorageBufferRange)
+			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
+		try
+		{
+			buffers[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+				vk, device, allocator, makeBufferCreateInfo(sizes[i], usages[i] | cmnUsages),
+				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		}
+		catch (tcu::ResourceError&)
+		{
+			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[i]) + " bytes");
+		}
+		bufferDescriptors[i] = makeDescriptorBufferInfo(**buffers[i], 0, sizes[i]);
+	}
+
+	// get raw pointers to previously allocated buffers
+	void* ptrs[bufferCount];
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		ptrs[i] = (deUint32*)buffers[i]->getAllocation().getHostPtr();
+	}
+
+	// populate buffers with their destination
+	{
+		auto rangeBufferA = makeStdBeginEnd<deUint32>(ptrs[InputA], counts[InputA]);
+		std::iota(rangeBufferA.first, rangeBufferA.second, 0u);
+	}
+	deMemset(ptrs[OutputBallots],		0, (size_t)sizes[OutputBallots]);
+	deMemset(ptrs[OutputCounts],		0, (size_t)sizes[OutputCounts]);
+	deMemset(ptrs[OutputPrimitives],	0, (size_t)sizes[OutputPrimitives]);
+
+	// (...) and flush them to the GPU
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		flushAlloc(vk, device, buffers[i]->getAllocation());
+	}
+
+	VkDescriptorType	descTypes[bufferCount]
+	{
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+	};
+
+	vk::DescriptorSetLayoutBuilder layoutBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		layoutBuilder.addSingleBinding(descTypes[i], m_data.shaderStage);
+	}
+	vk::Unique<vk::VkDescriptorSetLayout>	descriptorSetLayout(layoutBuilder.build(vk, device));
+
+	vk::DescriptorPoolBuilder	poolBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		poolBuilder.addType(descTypes[i], 1);
+	}
+	vk::Unique<vk::VkDescriptorPool>		descriptorPool(
+		poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+	vk::Unique<vk::VkDescriptorSet>			descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+	vk::DescriptorSetUpdateBuilder setUpdateBuilder;
+	for (deUint32 i = 0; i < bufferCount; ++i)
+	{
+		setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(i),
+			descTypes[i], &bufferDescriptors[i]);
+	}
+	setUpdateBuilder.update(vk, device);
+
+	const VkPushConstantRange			pushConstantRange
+	{
+		(VkShaderStageFlags)m_data.shaderStage,				// VkShaderStageFlags		stageFlags;
+		0u,													// deUint32					offset;
+		sizeof(PushConstant)								// deUint32					size;
+	};
+
+	const VkPipelineLayoutCreateInfo	pipelineLayoutCreateInfo
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// sType
+		DE_NULL,											// pNext
+		(VkPipelineLayoutCreateFlags)0,						// flags
+		1u,													// setLayoutCount
+		&descriptorSetLayout.get(),							// pSetLayouts
+		1u,													// pushConstantRangeCount
+		&pushConstantRange,									// pPushConstantRanges
+	};
+
+	const deUint32						imageWidth	= m_data.sizeX;
+	const deUint32						imageHeight	= m_data.sizeY;
+	const VkFormat						format		= VK_FORMAT_R8G8B8A8_UNORM;
+	const VkImageCreateInfo				imageCreateInfo
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
+		nullptr,								// const void*				pNext;
+		VkImageCreateFlags(0),					// VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
+		format,									// VkFormat					format;
+		{ imageWidth, imageHeight, 1u },		// VkExtent3D				extent;
+		1u,										// uint32_t					mipLevels;
+		1u,										// uint32_t					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,	// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
+		0u,										// uint32_t					queueFamilyIndexCount;
+		0u,										// const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED				// VkImageLayout			initialLayout;
+	};
+	const VkImageSubresourceRange	rscRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	de::MovePtr<ImageWithMemory>	image			(new ImageWithMemory(vk, device, allocator, imageCreateInfo, vk::MemoryRequirement::Any));
+	Move<VkImageView>				view			= makeImageView(vk, device, **image, VK_IMAGE_VIEW_TYPE_2D, format, rscRange);
+	Move<VkRenderPass>				renderPass		= makeRenderPass(vk, device, format);
+	Move<VkFramebuffer>				framebuffer		= makeFramebuffer(vk, device, *renderPass, *view, m_data.sizeX, m_data.sizeY, rscRange.layerCount);
+	de::MovePtr<BufferWithMemory>	vertexBuffer		= createVertexBufferAndFlush(m_data.sizeX, m_data.sizeY, topology);
+	const VkRenderPassBeginInfo		renderBeginInfo	= makeRenderPassBeginInfo(*renderPass, *framebuffer);
+	const Shaders					shaders			= createShaders();
+	Move<VkPipelineLayout>			pipelineLayout	= createPipelineLayout(vk, device, &pipelineLayoutCreateInfo, NULL);
+	Move<VkPipeline>				pipeline		= createGraphicsPipeline(*pipelineLayout, *renderPass, imageWidth, imageHeight, shaders, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+	Move<VkCommandPool>				cmdPool			= createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIndex);
+	Move<VkCommandBuffer>			cmdBuffer		= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	PushConstant		pc{};
+	pc.invocationStride			= invocationStride;
+	pc.width					= m_data.sizeX;
+	pc.height					= m_data.sizeY;
+	pc.enableInvocationIndex	= VK_FALSE;
+
+
+	auto callRecordDrawingAndSubmit = std::bind(&ReconvergenceTestGraphicsInstance::recordDrawingAndSubmit, this,
+		*cmdBuffer, *pipelineLayout, *pipeline, *descriptorSet, std::cref(pc), std::cref(renderBeginInfo),
+		**vertexBuffer, invocationStride, **image);
+
+	// compute "maxLoc", which is a potential maximum number of locations written
+	callRecordDrawingAndSubmit();
+
+	// Take the maximum of "maxLoc" over all invocations.
+	invalidateAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	auto rangeLoc = makeStdBeginEnd<const deUint32>(ptrs[OutputCounts], invocationStride);
+	const deUint32 shaderMaxLoc = (*max_element(rangeLoc.first, rangeLoc.second));
+	log << tcu::TestLog::Message << "computed maxLoc in shader: " << shaderMaxLoc << tcu::TestLog::EndMessage;
+
+	// If we need more space, reallocate OutputB::b[] aka buffers[1]
+	if (shaderMaxLoc > hostMaxLoc)
+	{
+		// Add one (to make sure no additional writes are done) and multiply by
+		// the number of invocations and current primitive count
+		maxLoc = (std::max(shaderMaxLoc, hostMaxLoc) + 1u) * invocationStride;
+		counts[OutputBallots] = maxLoc;
+		sizes[OutputBallots] = counts[OutputBallots] * sizeof(tcu::UVec4);
+
+		if (sizes[OutputBallots] > limits.maxStorageBufferRange)
+			TCU_THROW(NotSupportedError, "Storage buffer size larger than device limits");
+
+		try
+		{
+			buffers[OutputBallots] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+				vk, device, allocator, makeBufferCreateInfo(sizes[1], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | cmnUsages),
+				MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		}
+		catch (tcu::ResourceError&)
+		{
+			// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Failed device memory allocation " + de::toString(sizes[OutputBallots]) + " bytes");
+		}
+		bufferDescriptors[OutputBallots] = makeDescriptorBufferInfo(**buffers[OutputBallots], 0, sizes[OutputBallots]);
+		ptrs[OutputBallots] = buffers[OutputBallots]->getAllocation().getHostPtr();
+
+		vk::DescriptorSetUpdateBuilder setUpdateBuilder2;
+		setUpdateBuilder2.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(OutputBallots),
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptors[OutputBallots]);
+		setUpdateBuilder2.update(vk, device);
+	}
+
+	// Clear any writes to ballots/stores OutputB::b[] aka buffer[1] during the counting pass
+	// Note that its size would may change since the first memory allocation
+	deMemset(ptrs[OutputBallots], 0, (size_t)sizes[OutputBallots]);
+	deMemset(ptrs[OutputCounts], 0, (size_t)sizes[OutputCounts]);
+	deMemset(ptrs[OutputPrimitives],	0, (size_t)sizes[OutputPrimitives]);
+
+	// flush them all to the GPU
+	flushAlloc(vk, device, buffers[OutputBallots]->getAllocation());
+	flushAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	flushAlloc(vk, device, buffers[OutputPrimitives]->getAllocation());
+
+	// run the actual shader with updated PushConstant
+	pc.enableInvocationIndex = VK_TRUE;
+	callRecordDrawingAndSubmit();
+
+	invalidateAlloc(vk, device, buffers[OutputCounts]->getAllocation());
+	const deUint32 finalShaderMaxLoc = (*max_element(rangeLoc.first, rangeLoc.second));
+	log << tcu::TestLog::Message << "final shaderMaxLoc: " << finalShaderMaxLoc << tcu::TestLog::EndMessage;
+	if (finalShaderMaxLoc != shaderMaxLoc)
+	{
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
+							   "maxLoc differs across shader invocations, expected: " + de::toString(shaderMaxLoc)
+							   + " got: " + de::toString(finalShaderMaxLoc));
+	}
+
+	invalidateAlloc(vk, device, buffers[OutputBallots]->getAllocation());
+	const tcu::UVec4* ballots = static_cast<tcu::UVec4*>(ptrs[OutputBallots]);
+
+	invalidateAlloc(vk, device, buffers[OutputPrimitives]->getAllocation());
+	auto outputPrange = makeStdBeginEnd<deUint32>(ptrs[OutputPrimitives], counts[OutputPrimitives]);
+	std::copy(outputPrange.first, outputPrange.second, outputP.begin());
+
+	try
+	{
+		ref.resize(counts[OutputBallots], tcu::UVec4(0u, 0u, 0u, 0u));
+	}
+	catch (const std::bad_alloc&)
+	{
+		// Allocation size is unpredictable and can be too large for some systems. Don't treat allocation failure as a test failure.
+		return tcu::TestStatus(QP_TEST_RESULT_NOT_SUPPORTED, "Failed system memory allocation " + de::toString(maxLoc * sizeof(deUint64)) + " bytes");
+	}
+
+	// Simulate execution on the CPU, and compare against the GPU result
+	const deUint32 finalHostMaxLoc	= program->execute(false,
+													   m_subgroupSize,
+													   fragmentStride,
+													   invocationStride,
+													   ref,
+													   log,
+													   outputP,
+													   ballots);
+
+	const qpTestResult	res = calculateAndLogResultEx(log, ballots, ref, finalHostMaxLoc, PrintMode::None);
+
+	return tcu::TestStatus(res, qpGetTestResultName(res));
+}
+
+qpTestResult_e ReconvergenceTestGeometryInstance::calculateAndLogResultEx	(add_ref<tcu::TestLog>			log,
+																			 const tcu::UVec4*				result,
+																			 const std::vector<tcu::UVec4>& ref,
+																			 const deUint32					maxLoc,
+																			 const PrintMode				printMode)
+{
+	DE_UNREF(maxLoc);
+	DE_UNREF(printMode);
+
+	qpTestResult res = QP_TEST_RESULT_PASS;
+	deUint32 mismatchCount = 0u;
+	const deUint32 printMismatchCount = 5u;
+
+	// With maximal reconvergence, we should expect the output to exactly match the reference.
+	const deUint32 ballotStoreCount = static_cast<deUint32>(ref.size());
+	for (deUint32 i = 0; i < ballotStoreCount; ++i)
+	{
+		const Ballot resultVal(result[i], m_subgroupSize);
+		const Ballot refVal(ref.at(i), m_subgroupSize);
+		if (resultVal != refVal)
+		{
+			if (mismatchCount++ < printMismatchCount)
+			{
+				res = QP_TEST_RESULT_FAIL;
+				log << tcu::TestLog::Message << "Mismatch at " << i
+					<< "\nexpected: " << resultVal
+					<< "\n     got: " << refVal
+					<< tcu::TestLog::EndMessage;
+				if (printMode == PrintMode::Console)
+				{
+					std::cout << "Mismatch at " << i
+						<< "\nexpected: " << resultVal
+						<< "\n     got: " << refVal
+						<< std::endl;
+				}
+			}
+		}
+	}
+
+	log << tcu::TestLog::Message << "Mismatch count: " << mismatchCount << " from " << ballotStoreCount << tcu::TestLog::EndMessage;
+	if (printMode == PrintMode::Console)
+	{
+		std::cout << "Mismatch count: " << mismatchCount << " from " << ballotStoreCount << std::endl;
+	}
+
+	return res;
+}
+
+void createAmberFragmentTestCases (add_ref<tcu::TestContext> testCtx, add_ptr<tcu::TestCaseGroup> group);
+
+tcu::TestCaseGroup* createTests(tcu::TestContext & testCtx, const std::string & name, bool createExperimental)
+{
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, name.c_str(), "reconvergence tests"));
 
 	typedef struct
 	{
 		deUint32				value;
 		const char*				name;
+		const char*				description;
 	} TestGroupCase;
 
 	TestGroupCase ttCases[] =
 	{
-		{ TT_SUCF_ELECT,				"subgroup_uniform_control_flow_elect"},
-		{ TT_SUCF_BALLOT,				"subgroup_uniform_control_flow_ballot"},
-		{ TT_WUCF_ELECT,				"workgroup_uniform_control_flow_elect"},
-		{ TT_WUCF_BALLOT,				"workgroup_uniform_control_flow_ballot"},
-		{ TT_MAXIMAL,					"maximal"},
+		{ TT_SUCF_ELECT,				"subgroup_uniform_control_flow_elect",	"subgroup_uniform_control_flow_elect"		},
+		{ TT_SUCF_BALLOT,				"subgroup_uniform_control_flow_ballot",	"subgroup_uniform_control_flow_ballot"		},
+		{ TT_WUCF_ELECT,				"workgroup_uniform_control_flow_elect",	"workgroup_uniform_control_flow_elect"		},
+		{ TT_WUCF_BALLOT,				"workgroup_uniform_control_flow_ballot","workgroup_uniform_control_flow_ballot"		},
+		{ TT_MAXIMAL,					"maximal",								"maximal"									},
 	};
+
+	std::pair<VkShaderStageFlagBits, const char*> const stTypes[]
+	{
+		{ VK_SHADER_STAGE_COMPUTE_BIT,					"compute"	},
+		{ VK_SHADER_STAGE_FRAGMENT_BIT,					"fragment"	},
+#ifdef INCLUDE_GRAPHICS_TESTS
+		{ VK_SHADER_STAGE_VERTEX_BIT,					"vertex"	},
+		{ VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		"tessctrl"	},
+		{ VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	"tesseval"	},
+		{ VK_SHADER_STAGE_GEOMETRY_BIT,					"geometry"	},
+#endif
+	};
+
 
 	for (int ttNdx = 0; ttNdx < DE_LENGTH_OF_ARRAY(ttCases); ttNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, ttCases[ttNdx].name));
-		de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(testCtx, "compute"));
+		de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, ttCases[ttNdx].name, ttCases[ttNdx].description));
 
-		for (deUint32 nNdx = 2; nNdx <= 6; nNdx++)
+		for (int stNdx = 0; stNdx < DE_LENGTH_OF_ARRAY(stTypes); ++stNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> nestGroup(new tcu::TestCaseGroup(testCtx, ("nesting" + de::toString(nNdx)).c_str()));
+			// Only 'maximal' tests can process this loop when we are dealing with various kind of shaders,
+			if (stTypes[stNdx].first != VK_SHADER_STAGE_COMPUTE_BIT && ttCases[ttNdx].value != TT_MAXIMAL) continue;
 
-			deUint32 seed = 0;
+			de::MovePtr<tcu::TestCaseGroup> shaderGroup(new tcu::TestCaseGroup(testCtx, stTypes[stNdx].second, ""));
 
-			for (int sNdx = 0; sNdx < 8; sNdx++)
+			deUint32 nNdx = 2;
+
+			if (stTypes[stNdx].first == VK_SHADER_STAGE_FRAGMENT_BIT)
 			{
-				de::MovePtr<tcu::TestCaseGroup> seedGroup(new tcu::TestCaseGroup(testCtx, de::toString(sNdx).c_str()));
-
-				deUint32 numTests = 0;
-				switch (nNdx)
-				{
-				default:
-					DE_ASSERT(0);
-					// fallthrough
-				case 2:
-				case 3:
-				case 4:
-					numTests = 250;
-					break;
-				case 5:
-					numTests = 100;
-					break;
-				case 6:
-					numTests = 50;
-					break;
-				}
-
-				if (ttCases[ttNdx].value != TT_MAXIMAL)
-				{
-					if (nNdx >= 5)
-						continue;
-				}
-
-				for (deUint32 ndx = 0; ndx < numTests; ndx++)
-				{
-					CaseDef c =
-					{
-						(TestType)ttCases[ttNdx].value,		// TestType testType;
-						nNdx,								// deUint32 maxNesting;
-						seed,								// deUint32 seed;
-					};
-					seed++;
-
-					bool isExperimentalTest = !c.isUCF() || (ndx >= numTests / 5);
-
-					if (createExperimental == isExperimentalTest)
-						seedGroup->addChild(new ReconvergenceTestCase(testCtx, de::toString(ndx).c_str(), c));
-				}
-				if (!seedGroup->empty())
-					nestGroup->addChild(seedGroup.release());
+				nNdx = 7;
+				createAmberFragmentTestCases(testCtx, shaderGroup.get());
 			}
-			if (!nestGroup->empty())
-				computeGroup->addChild(nestGroup.release());
+
+			for (/*deUint32 nNdx = 2*/; nNdx <= 6; nNdx++)
+			{
+				de::MovePtr<tcu::TestCaseGroup> nestGroup(new tcu::TestCaseGroup(testCtx, ("nesting" + de::toString(nNdx)).c_str(), ""));
+
+				deUint32 seed = 0;
+
+				for (int sNdx = 0; sNdx < 8; sNdx++)
+				{
+					de::MovePtr<tcu::TestCaseGroup> seedGroup(new tcu::TestCaseGroup(testCtx, de::toString(sNdx).c_str(), ""));
+
+					deUint32 numTests = 0;
+					switch (nNdx)
+					{
+					default:
+						DE_ASSERT(0);
+						// fallthrough
+					case 2:
+					case 3:
+					case 4:
+						numTests = 250;
+						break;
+					case 5:
+						numTests = 100;
+						break;
+					case 6:
+						numTests = 50;
+						break;
+					}
+
+					if (ttCases[ttNdx].value != TT_MAXIMAL)
+					{
+						if (nNdx >= 5)
+							continue;
+					}
+
+					for (deUint32 ndx = 0; ndx < numTests; ndx++)
+					{
+						deUint32 dim	= 0u;	DE_UNREF(dim);
+						deUint32 sizeX	= 0u;
+						deUint32 sizeY	= 0u;
+						switch (stTypes[stNdx].first)
+						{
+						case VK_SHADER_STAGE_COMPUTE_BIT:
+							// we want to test at least full subgroup
+							// both are primary numbers
+							sizeX = 13u;
+							sizeY = 19u;
+							break;
+						case VK_SHADER_STAGE_FRAGMENT_BIT:
+							sizeX = 32;
+							sizeY = 32;
+							break;
+						case VK_SHADER_STAGE_VERTEX_BIT:
+							// we want to test at least full subgroup
+							dim = deUint32(std::ceil(std::sqrt((double)(((128u + 31u) * 100u) / VertexRandomProgram::fillPercentage))));
+							sizeX = dim;
+							sizeY = dim;
+							break;
+						case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+							sizeX = 19;	// positive number of desired subgroups
+							sizeY = 1;	// used only for framebuffer extent in TCS test
+							break;
+						case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+							sizeX = 23;	// positive number of desired subgroups
+							sizeY = 1;	// used only for framebuffer extent in TES test
+							break;
+						case VK_SHADER_STAGE_GEOMETRY_BIT:
+							// we want to test at least full subgroup
+							dim = deUint32(std::ceil(std::sqrt((double)(((128u + 29u) * 100u) / GeometryRandomProgram::fillPercentage))));
+							sizeX = dim;
+							sizeY = dim;
+							break;
+						default: DE_ASSERT(0);
+						}
+						CaseDef c =
+						{
+							stTypes[stNdx].first,				// VkShaderStageFlagBits	shaderStage
+							(TestType)ttCases[ttNdx].value,		// TestType					testType;
+							nNdx,								// deUint32					maxNesting;
+							seed,								// deUint32					seed;
+							sizeX,								// deUint32					sizeX;
+							sizeY								// deUint32					sizeY;
+						};
+						// product of sizeX and sizeY must not exceed MAX_INVOCATIONS_ALL_TESTS
+						DE_ASSERT(c.verify());
+						seed++;
+
+						bool isExperimentalTest = (ndx >= numTests / 5);
+
+						if (createExperimental == isExperimentalTest)
+							seedGroup->addChild(new ReconvergenceTestCase(testCtx, de::toString(ndx).c_str(), c));
+					}
+					if (!seedGroup->empty())
+						nestGroup->addChild(seedGroup.release());
+				}
+				if (!nestGroup->empty())
+					shaderGroup->addChild(nestGroup.release());
+			}
+			if (!shaderGroup->empty())
+				ttGroup->addChild(shaderGroup.release());
 		}
-		if (!computeGroup->empty())
+		group->addChild(ttGroup.release());
+	}
+
+	return group.release();
+}
+
+void createAmberFragmentTestCases (add_ref<tcu::TestContext> testCtx, add_ptr<tcu::TestCaseGroup> group)
+{
+	using namespace cts_amber;
+
+	enum Tests
+	{
+		TERMINATE_INVOCATION,
+		DEMOTE_INVOCATION,
+		DEMOTE_ENTIRE_QUAD,
+		DEMOTE_HALF_QUAD_TOP,
+		DEMOTE_HALF_QUAD_RIGHT,
+		DEMOTE_HALF_QUAD_BOTTOM,
+		DEMOTE_HALF_QUAD_LEFT,
+		DEMOTE_HALF_QUAD_SLASH,
+		DEMOTE_HALF_QUAD_BACKSLASH
+	};
+
+	struct Case {
+		Tests			test;
+		add_cptr<char>	name;
+		add_cptr<char>	desc;
+		std::size_t		hname;
+		Case (Tests aTest, add_cptr<char> aName, add_cptr<char>	aDesc)
+			: test	(aTest)
+			, name	(aName)
+			, desc	(aDesc)
+			, hname	(std::hash<std::string>()(std::string(aName)))
 		{
-			ttGroup->addChild(computeGroup.release());
-			group->addChild(ttGroup.release());
+		}
+		bool matches (add_cref<std::string> aName) const
+		{
+			return hname == std::hash<std::string>()(aName);
+		}
+		static bool matches (add_cref<std::string> aName, std::initializer_list<Case> aList)
+		{
+			for (auto i = aList.begin(); i != aList.end(); ++i)
+			{
+				if (i->matches(aName)) return true;
+			}
+			return false;
+		}
+		std::string makeFileName () const
+		{
+			return (std::string(name) + ".amber");
 		}
 	}
-	return group.release();
+	static const cases[]
+	{
+		Case(TERMINATE_INVOCATION,       "terminate_invocation",       "Verifies that terminated invocation is no longer included in the ballot"),
+		Case(DEMOTE_INVOCATION,          "demote_invocation",          "Verifies that the demoted invocation is not present in the ballot"),
+		Case(DEMOTE_ENTIRE_QUAD,         "demote_entire_quad",         "Verifies that the demoted quad is not present in the ballot"),
+		Case(DEMOTE_HALF_QUAD_TOP,       "demote_half_quad_top",       "Verifies that the demoted part of the quad is not present in the ballot"),
+		Case(DEMOTE_HALF_QUAD_RIGHT,     "demote_half_quad_right",     "Verifies that the demoted part of the quad is not present in the ballot"),
+		Case(DEMOTE_HALF_QUAD_BOTTOM,    "demote_half_quad_bottom",    "Verifies that the demoted part of the quad is not present in the ballot"),
+		Case(DEMOTE_HALF_QUAD_LEFT,      "demote_half_quad_left",      "Verifies that the demoted part of the quad is not present in the ballot"),
+		Case(DEMOTE_HALF_QUAD_SLASH,     "demote_half_quad_slash",     "Verifies that the demoted part of the quad is not present in the ballot"),
+		Case(DEMOTE_HALF_QUAD_BACKSLASH, "demote_half_quad_backslash", "Verifies that the demoted part of the quad is not present in the ballot"),
+	};
+
+	auto testSupports = [](Context& context, std::string testName) -> void
+	{
+		if (!(context.getSubgroupProperties().supportedStages & VK_SHADER_STAGE_FRAGMENT_BIT))
+			TCU_THROW(NotSupportedError, "Subgroup operations not supported in fragment stage");
+
+		if (!context.getShaderMaximalReconvergenceFeatures().shaderMaximalReconvergence)
+			TCU_THROW(NotSupportedError, "shaderMaximalReconvergence not supported");
+
+		if ( ! Case::matches(testName, { cases[TERMINATE_INVOCATION] }))
+		{
+	#ifndef CTS_USES_VULKANSC
+			if (!context.getShaderDemoteToHelperInvocationFeatures().shaderDemoteToHelperInvocation)
+				TCU_THROW(NotSupportedError, "demoteToHelperInvocation not supported.");
+	#else
+			if (!context.getShaderDemoteToHelperInvocationFeaturesEXT().shaderDemoteToHelperInvocation)
+				TCU_THROW(NotSupportedError, "demoteToHelperInvocation not supported.");
+	#endif
+			if (!context.isDeviceFunctionalitySupported("VK_EXT_shader_demote_to_helper_invocation"))
+				TCU_THROW(NotSupportedError, "VK_EXT_shader_demote_to_helper_invocation not supported.");
+		}
+	};
+
+	auto updateTest = [&](add_ptr<AmberTestCase> theTest) -> add_ptr<AmberTestCase>
+	{
+		theTest->setCheckSupportCallback(testSupports);
+		return theTest;
+	};
+
+	const std::string testsFolder(std::string("reconvergence/maximal/") + group->getName());
+
+	for (add_cref<Case> aCase : cases)
+	{
+		group->addChild(updateTest(createAmberTestCase(testCtx, aCase.name, aCase.desc, testsFolder.c_str(), aCase.makeFileName())));
+	}
 }
 
 }	// anonymous
