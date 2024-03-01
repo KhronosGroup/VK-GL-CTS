@@ -44,6 +44,8 @@
 #include "deSTLUtil.hpp"
 #include "deStringUtil.hpp"
 
+#include <cstdint>
+#include <string>
 #include <vector>
 #include <algorithm>
 #include <iterator>
@@ -311,6 +313,7 @@ enum class PoolMutableStrategy
 	KEEP_TYPES = 0,
 	EXPAND_TYPES,
 	NO_TYPES,
+	KEEP_NO_MUTABLE_TYPES // mutable descriptor type out-of-range case: Do not keep type list of a mutable descriptor in the array of type lists for allocation in the descriptor pool
 };
 
 // Type of information that's present in VkWriteDescriptorSet.
@@ -1533,6 +1536,8 @@ public:
 		std::vector<VkDescriptorPoolSize>           poolSizes;
 		std::vector<std::vector<VkDescriptorType>>  mutableTypesVec;
 		std::vector<VkMutableDescriptorTypeListEXT> mutableTypeLists;
+		bool mutableDescriptorBefore = false;
+		uint32_t countNonMutDescAfterMutDesc  = 0;
 
 		// Make vector element addresses stable.
 		const auto bindingCount = numBindings();
@@ -1549,11 +1554,17 @@ public:
 			};
 			poolSizes.push_back(poolSize);
 
-			if (strategy == PoolMutableStrategy::KEEP_TYPES || strategy == PoolMutableStrategy::EXPAND_TYPES)
+			if (strategy == PoolMutableStrategy::KEEP_TYPES || strategy == PoolMutableStrategy::EXPAND_TYPES || strategy == PoolMutableStrategy::KEEP_NO_MUTABLE_TYPES)
 			{
 				if (mainType == VK_DESCRIPTOR_TYPE_MUTABLE_EXT)
 				{
-					if (strategy == PoolMutableStrategy::KEEP_TYPES)
+					if (strategy == PoolMutableStrategy::KEEP_NO_MUTABLE_TYPES)
+					{
+						mutableDescriptorBefore = true;
+						countNonMutDescAfterMutDesc = 0;
+						continue;
+					}
+					else if (strategy == PoolMutableStrategy::KEEP_TYPES)
 					{
 						mutableTypesVec.emplace_back(b->mutableTypes());
 					}
@@ -1569,17 +1580,29 @@ public:
 					const auto& lastVec = mutableTypesVec.back();
 					const VkMutableDescriptorTypeListEXT typeList = { static_cast<deUint32>(lastVec.size()), de::dataOrNull(lastVec) };
 					mutableTypeLists.push_back(typeList);
+					// mutable descriptor type out-of-range case: mutableTypeLists must not include type lists for mutable descriptors
+					DE_ASSERT(!mutableDescriptorBefore || strategy != PoolMutableStrategy::KEEP_NO_MUTABLE_TYPES);
 				}
 				else
 				{
 					const VkMutableDescriptorTypeListEXT typeList = { 0u, nullptr };
 					mutableTypeLists.push_back(typeList);
+					countNonMutDescAfterMutDesc++;
 				}
 			}
 			else if (strategy == PoolMutableStrategy::NO_TYPES)
 				; // Do nothing, we will not use any type list.
 			else
 				DE_ASSERT(false);
+		}
+
+		// mutable descriptor type out-of-range case:
+		// there should be no non-mutable descriptor after the last mutable descriptor
+		// and there should be at least 1 mutable descriptor in the binding list
+		if (strategy == PoolMutableStrategy::KEEP_NO_MUTABLE_TYPES)
+		{
+			DE_ASSERT((mutableDescriptorBefore == true) && (countNonMutDescAfterMutDesc == 0));
+
 		}
 
 		VkDescriptorPoolCreateInfo poolCreateInfo = initVulkanStructure();
@@ -1591,7 +1614,9 @@ public:
 
 		VkMutableDescriptorTypeCreateInfoEXT mutableInfo = initVulkanStructure();
 
-		if (strategy == PoolMutableStrategy::KEEP_TYPES || strategy == PoolMutableStrategy::EXPAND_TYPES)
+		if (strategy == PoolMutableStrategy::KEEP_TYPES || strategy == PoolMutableStrategy::EXPAND_TYPES
+		    || ((strategy == PoolMutableStrategy::KEEP_NO_MUTABLE_TYPES)
+                 && ((mutableDescriptorBefore == true) && (countNonMutDescAfterMutDesc == 0))))
 		{
 			mutableInfo.mutableDescriptorTypeListCount = static_cast<deUint32>(mutableTypeLists.size());
 			mutableInfo.pMutableDescriptorTypeLists    = de::dataOrNull(mutableTypeLists);
@@ -4144,6 +4169,56 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 		multipleGroup->addChild(mutableOnlyGroup.release());
 		multipleGroup->addChild(mixedGroup.release());
 		mainGroup->addChild(multipleGroup.release());
+	}
+
+	// Corner cases
+	{
+		GroupPtr miscGroup    (new tcu::TestCaseGroup(testCtx, "misc"));
+		{
+			TestParams params =
+			{
+				(DescriptorSetPtr) nullptr,
+				UpdateType::WRITE,
+				SourceSetStrategy::MUTABLE,
+				SourceSetType::NORMAL,
+				PoolMutableStrategy::KEEP_NO_MUTABLE_TYPES,
+				UpdateMoment::NORMAL,
+				ArrayAccessType::CONSTANT,
+				TestingStage::COMPUTE
+			};
+
+			const std::vector<VkDescriptorType> mutableTypes(1u, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+			const uint32_t maxNonMutableDescs = 2;
+			const uint32_t maxMutableDescs = 2;
+
+			for (uint32_t numNonMutDescs = 0; numNonMutDescs <= maxNonMutableDescs; numNonMutDescs++)
+			{
+				for (uint32_t numMutDescs = 1; numMutDescs <= maxMutableDescs; numMutDescs++)
+				{
+					DescriptorSetPtr setPtr;
+					{
+						DescriptorSet::BindingPtrVector setBindings;
+
+						for (uint32_t cntNonMutDescs = 0; cntNonMutDescs < numNonMutDescs ; cntNonMutDescs++)
+							setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, std::vector<VkDescriptorType>()));
+
+						// mutable descriptors are kept at end to make them out-of-range
+						for (uint32_t cntMutDescs = 0; cntMutDescs < numMutDescs ; cntMutDescs++)
+							setBindings.emplace_back(new SingleBinding(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, mutableTypes));
+
+						setPtr = DescriptorSetPtr(new DescriptorSet(setBindings));
+					}
+					params.descriptorSet = setPtr;
+
+					// test mutable descriptor type out-of-range
+					{
+						const std::string& testName = "mutable_type_out_of_range_" + de::toString(numNonMutDescs) + de::toString(numMutDescs);
+						miscGroup->addChild(new MutableTypesTest(testCtx, testName, params));
+					}
+				}
+			}
+		}
+		mainGroup->addChild(miscGroup.release());
 	}
 }
 
