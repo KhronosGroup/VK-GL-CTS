@@ -1363,15 +1363,15 @@ void checkSupportExtVertexAttributeDivisorKHR (Context& context)
 
 tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
 {
-	const VkBool32												checkAlways							= VK_TRUE;
+	const VkBool32													checkAlways							= VK_TRUE;
 #ifndef CTS_USES_VULKANSC
-	const InstanceInterface&									vki									= context.getInstanceInterface();
-	const VkPhysicalDevice										physicalDevice						= context.getPhysicalDevice();
-	vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT		vertexAttributeDivisorProperties	= vk::initVulkanStructure();
-	vk::VkPhysicalDeviceProperties2								properties2							= vk::initVulkanStructure(&vertexAttributeDivisorProperties);
+	const InstanceInterface&										vki									= context.getInstanceInterface();
+	const VkPhysicalDevice											physicalDevice						= context.getPhysicalDevice();
+	vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR	vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorProperties();
+	vk::VkPhysicalDeviceProperties2									properties2							= vk::initVulkanStructure(&vertexAttributeDivisorProperties);
 	vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 #else
-	const auto													vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorPropertiesEXT();
+	const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorPropertiesEXT();
 #endif
 	TestLog&													log									= context.getTestContext().getLog();
 	bool														limitsOk							= true;

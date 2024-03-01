@@ -345,12 +345,12 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/vk_video_samples.git",
 		"git@github.com:Igalia/vk_video_samples.git",
-		"b907158533534585d9182cb0becdaec055aa7e12",
+		"ce80453dadeea7b1a6409434f3358ef1e46e4ae7",
 		"nvidia-video-samples"),
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",
 		"git@github.com:Igalia/ESExtractor.git",
-		"v0.3.3",
+		"a1c3c0b239c9540cb410f014e0610016ef51b0d4",
 		"ESExtractor"),
 ]
 

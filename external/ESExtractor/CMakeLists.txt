@@ -30,6 +30,7 @@ if (EXISTS ${ESEXTRACTOR_ABS_PATH}/lib/esextractor.cpp)
 		${ESEXTRACTOR_ABS_PATH}/lib/esedatareader.cpp
 		${ESEXTRACTOR_ABS_PATH}/lib/esestream.cpp
 		${ESEXTRACTOR_ABS_PATH}/lib/eseivfstream.cpp
+		${ESEXTRACTOR_ABS_PATH}/lib/eseannexbstream.cpp
 		${ESEXTRACTOR_ABS_PATH}/lib/esenalstream.cpp
 		${ESEXTRACTOR_ABS_PATH}/lib/esenalu.cpp
 		)

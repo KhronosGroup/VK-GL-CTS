@@ -31,7 +31,7 @@
 #elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_SYMBIAN) || (DE_OS == DE_OS_QNX)
 #   include <time.h>
 #elif (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)
-#	include <sys/time.h>
+#	include <mach/mach_time.h>
 #endif
 
 deUint64 deGetMicroseconds (void)
@@ -68,9 +68,9 @@ deUint64 deGetMicroseconds (void)
 	return (deUint64)currTime.tv_sec*1000000 + ((deUint64)currTime.tv_nsec/1000);
 
 #elif (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)
-	struct timeval currTime;
-	gettimeofday(&currTime, DE_NULL);
-	return (deUint64)currTime.tv_sec*1000000 + (deUint64)currTime.tv_usec;
+	mach_timebase_info_data_t mach_timebase;
+	mach_timebase_info(&mach_timebase);
+	return mach_absolute_time() * mach_timebase.numer / mach_timebase.denom / 1000;
 
 #else
 #   error "Not implemented for target OS"

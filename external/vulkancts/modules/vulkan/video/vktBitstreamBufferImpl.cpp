@@ -198,9 +198,10 @@ int64_t BitstreamBufferImpl::CopyDataFromBuffer(const VkSharedBaseObj<VulkanBits
 		return 0;
 	}
 
-	const deUint8* readData = sourceBuffer->GetReadOnlyDataPtr(srcOffset, size);
+	VkDeviceSize maxSize;
+	const deUint8* readData = sourceBuffer->GetReadOnlyDataPtr(srcOffset, maxSize);
 	DE_ASSERT(readData);
-
+	size = std::min(size, maxSize);
 	auto* bitstreamBasePtr = static_cast<deUint8*>(m_bitstreamBuffer->getAllocation().getHostPtr());
 	deMemcpy(bitstreamBasePtr + dstOffset, readData + srcOffset, size);
 	return size;
