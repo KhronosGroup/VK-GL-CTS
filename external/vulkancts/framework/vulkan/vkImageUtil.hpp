@@ -214,6 +214,7 @@ bool isYCbCrFormat(VkFormat format);
 bool isYCbCrExtensionFormat(VkFormat format);
 bool isYCbCrConversionFormat(VkFormat format);
 bool isPvrtcFormat(VkFormat format);
+bool isPvrtc1Format(VkFormat format);
 PlanarFormatDescription getPlanarFormatDescription(VkFormat format);
 int getPlaneCount(VkFormat format);
 uint32_t getMipmapCount(VkFormat format, const vk::PlanarFormatDescription &formatDescription,

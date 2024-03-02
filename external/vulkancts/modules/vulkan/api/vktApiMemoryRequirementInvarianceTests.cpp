@@ -175,14 +175,25 @@ ImageAllocator::ImageAllocator(deRandom &random, bool dedicated, std::vector<int
     else
         m_colorFormat = (VkFormat)optimalformats[deRandom_getUint32(&random) % optimalformats.size()];
 
-    int widthAlignment  = (isYCbCr420Format(m_colorFormat) || isYCbCr422Format(m_colorFormat)) ? 2 : 1;
-    int heightAlignment = isYCbCr420Format(m_colorFormat) ? 2 : 1;
+	if (isPvrtc1Format(m_colorFormat))
+	{
+		// See VUID-VkImageCreateInfo-format-09583 and VUID-VkImageCreateInfo-format-09584
+		// PVRTC1 textures have to have both a width and height that is a power of 2.
+		m_size = tcu::IVec2(1 << (deRandom_getUint32(&random) % 4 + 1),
+							1 << (deRandom_getUint32(&random) % 4 + 1));
+	}
+	else
+	{
+		int	widthAlignment = (isYCbCr420Format(m_colorFormat) || isYCbCr422Format(m_colorFormat)) ? 2 : 1;
+		int	heightAlignment	= isYCbCr420Format(m_colorFormat) ? 2 : 1;
 
-    // Random small size for causing potential alignment issues
-    m_size = tcu::IVec2((deRandom_getUint32(&random) % 16 + 3) & ~(widthAlignment - 1),
-                        (deRandom_getUint32(&random) % 16 + 3) & ~(heightAlignment - 1));
-    // Pick random memory type from the supported set
-    m_memoryType = memoryTypes[deRandom_getUint32(&random) % memoryTypes.size()];
+		// Random small size for causing potential alignment issues
+		m_size = tcu::IVec2((deRandom_getUint32(&random) % 16 + 3) & ~(widthAlignment - 1),
+		                    (deRandom_getUint32(&random) % 16 + 3) & ~(heightAlignment - 1));
+	}
+
+	// Pick random memory type from the supported set
+	m_memoryType = memoryTypes[deRandom_getUint32(&random) % memoryTypes.size()];
 }
 
 ImageAllocator::~ImageAllocator()
