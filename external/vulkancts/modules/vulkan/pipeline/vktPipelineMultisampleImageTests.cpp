@@ -1738,20 +1738,20 @@ tcu::TestStatus test(Context &context, const CaseDef3d caseDef)
     const auto resolveRegionOffset    = makeOffset3D(0u, 0u, 0u);
 
     const VkImageResolve resolveRegion = {
-        colorSubresourceLayers, // VkImageSubresourceLayers	srcSubresource
-        resolveRegionOffset,    // VkOffset3D					srcOffset
-        colorSubresourceLayers, // VkImageSubresourceLayers	dstSubresource
-        resolveRegionOffset,    // VkOffset3D					dstOffset
-        msImageExtent           // VkExtent3D					extent
+        colorSubresourceLayers, // VkImageSubresourceLayers    srcSubresource
+        resolveRegionOffset,    // VkOffset3D                    srcOffset
+        colorSubresourceLayers, // VkImageSubresourceLayers    dstSubresource
+        resolveRegionOffset,    // VkOffset3D                    dstOffset
+        msImageExtent           // VkExtent3D                    extent
     };
 
     const VkBufferImageCopy copyRegion = {
-        0u,                                        // VkDeviceSize				bufferOffset
-        0u,                                        // uint32_t					bufferRowLength
-        0u,                                        // uint32_t					bufferImageHeight
-        colorSubresourceLayers,                    // VkImageSubresourceLayers	imageSubresource
-        resolveRegionOffset,                       // VkOffset3D					imageOffset
-        makeExtent3D(size.x(), size.y(), size.z()) // VkExtent3D					imageExtent
+        0u,                                        // VkDeviceSize                bufferOffset
+        0u,                                        // uint32_t                    bufferRowLength
+        0u,                                        // uint32_t                    bufferImageHeight
+        colorSubresourceLayers,                    // VkImageSubresourceLayers    imageSubresource
+        resolveRegionOffset,                       // VkOffset3D                    imageOffset
+        makeExtent3D(size.x(), size.y(), size.z()) // VkExtent3D                    imageExtent
     };
 
     // Output buffer
