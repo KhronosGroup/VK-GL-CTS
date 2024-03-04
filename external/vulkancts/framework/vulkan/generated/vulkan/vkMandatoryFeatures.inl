@@ -895,6 +895,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderSubgroupExtendedTypesFeatures.pNext;
 	}
 
+	vk::VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR physicalDeviceShaderSubgroupRotateFeaturesKHR;
+	deMemset(&physicalDeviceShaderSubgroupRotateFeaturesKHR, 0, sizeof(physicalDeviceShaderSubgroupRotateFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_subgroup_rotate") )
+	{
+		physicalDeviceShaderSubgroupRotateFeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderSubgroupRotateFeaturesKHR;
+		nextPtr  = &physicalDeviceShaderSubgroupRotateFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR;
 	deMemset(&physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR, 0, sizeof(physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR));
 
@@ -2397,6 +2407,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderSubgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupExtendedTypes not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_subgroup_rotate")) )
+	{
+		if ( physicalDeviceShaderSubgroupRotateFeaturesKHR.shaderSubgroupRotate == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupRotate not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
