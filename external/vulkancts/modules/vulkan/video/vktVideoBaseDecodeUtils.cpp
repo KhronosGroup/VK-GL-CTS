@@ -77,17 +77,16 @@ static constexpr deUint32 H26X_MAX_DPB_SLOTS = 16u;
 
 using VkVideoParser = VkSharedBaseObj<VulkanVideoDecodeParser>;
 
-void createParser(VkVideoCodecOperationFlagBitsKHR		codecOperation,
-				  const VkExtensionProperties*			extensionProperties,
-				  std::shared_ptr<VideoBaseDecoder>	decoder,
-				  VkVideoParser& parser,
-				  ElementaryStreamFraming framing)
+void createParser(VkVideoCodecOperationFlagBitsKHR codecOperation,
+				  std::shared_ptr<VideoBaseDecoder>		decoder,
+				  VkVideoParser&						parser,
+				  ElementaryStreamFraming				framing)
 {
 	const VkVideoCapabilitiesKHR*		videoCaps = decoder->getVideoCaps();
 	const VkParserInitDecodeParameters pdParams = {
 		NV_VULKAN_VIDEO_PARSER_API_VERSION,
 		dynamic_cast<VkParserVideoDecodeClient*>(decoder.get()),
-		static_cast<deUint32>(2 * 1024 * 1024), // 2MiB is an arbitrary choice.
+		static_cast<deUint32>(2 * 1024 * 1024), // 2MiB is an arbitrary choice (and pointless for the CTS)
 		static_cast<deUint32>(videoCaps->minBitstreamBufferOffsetAlignment),
 		static_cast<deUint32>(videoCaps->minBitstreamBufferSizeAlignment),
 		0,
@@ -96,53 +95,28 @@ void createParser(VkVideoCodecOperationFlagBitsKHR		codecOperation,
 		true,
 	};
 
-	// TODO: Should validate option codec features from the test definition
-	//  - filmgrain (need some capability to check that)
-	//  - intrabc
-	//  - others?
-
-	DE_ASSERT(extensionProperties);
-
 	switch (codecOperation)
 	{
 		case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
 		{
-			if (strcmp(extensionProperties->extensionName, VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME) || extensionProperties->specVersion != VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION)
-			{
-				tcu::die("The requested decoder h.264 Codec STD version is NOT supported. The supported decoder h.264 Codec STD version is version %d of %s\n",
-						 VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION,
-						 VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME);
-			}
 			VkSharedBaseObj<VulkanH264Decoder> nvVideoH264DecodeParser(new VulkanH264Decoder(codecOperation));
 			parser = nvVideoH264DecodeParser;
 			break;
 		}
 		case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
 		{
-			if (strcmp(extensionProperties->extensionName, VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME) || extensionProperties->specVersion != VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION)
-			{
-				tcu::die("The requested decoder h.265 Codec STD version is NOT supported. The supported decoder h.265 Codec STD version is version %d of %s\n",
-						 VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION,
-						 VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME);
-			}
 			VkSharedBaseObj<VulkanH265Decoder> nvVideoH265DecodeParser(new VulkanH265Decoder(codecOperation));
 			parser = nvVideoH265DecodeParser;
 			break;
 		}
 		case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
 		{
-			if (strcmp(extensionProperties->extensionName, VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME) || extensionProperties->specVersion != VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION)
-			{
-				tcu::die("The requested AV1 Codec STD version is NOT supported. The supported AV1 STD version is version %d of %s\n",
-						 VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION,
-						 VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME);
-			}
 			VkSharedBaseObj<VulkanAV1Decoder> nvVideoAV1DecodeParser(new VulkanAV1Decoder(codecOperation, framing == ElementaryStreamFraming::AV1_ANNEXB));
 			parser = nvVideoAV1DecodeParser;
 			break;
 		}
 		default:
-			TCU_FAIL("Unsupported codec type!");
+			TCU_FAIL("Unsupported codec type");
 	}
 
 	VK_CHECK(parser->Initialize(&pdParams));
@@ -415,6 +389,7 @@ VideoBaseDecoder::VideoBaseDecoder(Parameters&& params)
 	, m_videoFrameBuffer(params.framebuffer)
 	, m_decodeFramesData(params.context->getDeviceDriver(), params.context->device, params.context->decodeQueueFamilyIdx())
 	, m_resetPictureParametersFrameTriggerHack(params.pictureParameterUpdateTriggerHack)
+	, m_forceDisableFilmGrain(params.forceDisableFilmGrain)
 	, m_queryResultWithStatus(params.queryDecodeStatus)
 	, m_useInlineQueries(params.useInlineQueries)
 	, m_resourcesWithoutProfiles(params.resourcesWithoutProfiles)
@@ -567,7 +542,7 @@ void VideoBaseDecoder::StartVideoSequence (const VkParserDetectedVideoFormat* pV
 									   VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 	VkImageUsageFlags dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
 
-	if (dpbAndOutputCoincide() && !pVideoFormat->filmGrainEnabled) {
+	if (dpbAndOutputCoincide() && (!pVideoFormat->filmGrainEnabled || m_forceDisableFilmGrain)) {
 		dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR | VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	} else {
 		m_useSeparateOutputImages = true;
@@ -1354,6 +1329,11 @@ bool VideoBaseDecoder::DecodePicture (VkParserPictureData* pd,
 				}
 				printf("\n");
 			}
+		}
+
+		if (m_forceDisableFilmGrain)
+		{
+			pStd->flags.apply_grain = 0;
 		}
 
 		cachedParameters->pictureParams.filmGrainEnabled = pStd->flags.apply_grain;
