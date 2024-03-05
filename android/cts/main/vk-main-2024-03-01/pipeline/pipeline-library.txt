@@ -1955,6 +1955,7 @@ dEQP-VK.pipeline.pipeline_library.input_attribute_offset.vec4.offset_9.padded.no
 dEQP-VK.pipeline.pipeline_library.input_attribute_offset.vec4.offset_9.padded.no_memory_offset.static
 dEQP-VK.pipeline.pipeline_library.input_attribute_offset.vec4.offset_9.padded.with_memory_offset.dynamic
 dEQP-VK.pipeline.pipeline_library.input_attribute_offset.vec4.offset_9.padded.with_memory_offset.static
+dEQP-VK.pipeline.pipeline_library.misc.array_of_structs_interface
 dEQP-VK.pipeline.pipeline_library.misc.compatible_render_pass
 dEQP-VK.pipeline.pipeline_library.misc.descriptor_bind_test_backwards
 dEQP-VK.pipeline.pipeline_library.misc.descriptor_bind_test_backwards_holes

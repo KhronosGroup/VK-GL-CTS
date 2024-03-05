@@ -1806,6 +1806,121 @@ tcu::TestStatus compatibleRenderPassTest (Context& context, PipelineConstruction
 	return tcu::TestStatus::pass("Pass");
 }
 
+void initArrayOfStructsInterfacePrograms(SourceCollections& dst, PipelineConstructionType)
+{
+	// the purpose of tests is to check that sending struct between shaders stages does not crash the driver
+	dst.glslSources.add("vert") << glu::VertexSource(
+		"#version 450\n"
+		"struct R { vec4 rgba; };\n"
+		"layout(location = 0) out R outColor[3];\n"
+		"void main (void)\n"
+		"{\n"
+		"  outColor[0].rgba = vec4(0.0, 0.9, 0.0, 1.0);\n"
+		"  outColor[1].rgba = vec4(0.3, 0.0, 0.0, 1.0);\n"
+		"  outColor[2].rgba = vec4(0.0, 0.0, 0.6, 1.0);\n"
+		"  const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+		"  const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
+		"  gl_Position = vec4(x, y, 0.6, 1.0);\n"
+		"}\n");
+
+	dst.glslSources.add("frag") << glu::FragmentSource(
+		"#version 450\n"
+		"struct R { vec4 rgba; };\n"
+		"layout(location = 0) in R inColor[3];\n"
+		"layout(location = 0) out vec4 color;\n"
+		"void main() {\n"
+		"	color = inColor[2].rgba + inColor[1].rgba + inColor[0].rgba;\n"
+		"}\n");
+}
+
+void checkArrayOfStructsInterfaceSupport(Context& context, PipelineConstructionType pipelineConstructionType)
+{
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	checkPipelineConstructionRequirements(vki, physicalDevice, pipelineConstructionType);
+}
+
+tcu::TestStatus arrayOfStructsInterfaceTest(Context& context, PipelineConstructionType pipelineConstructionType)
+{
+	const DeviceInterface&		vk					= context.getDeviceInterface();
+	const InstanceInterface&	vki					= context.getInstanceInterface();
+	const VkDevice				device				= context.getDevice();
+	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
+	Allocator&					memAlloc			= context.getDefaultAllocator();
+	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const tcu::IVec3			fbExtent			(4, 4, 1);
+	const auto					vkExtent			= makeExtent3D(fbExtent);
+	const auto					fbFormat			= VK_FORMAT_R8G8B8A8_UNORM;
+	const auto					tcuFormat			= mapVkFormat(fbFormat);
+	const auto					fbUsage				= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const tcu::Vec4				clearColor			(0.00f, 0.00f, 0.00f, 1.0f);
+	const tcu::Vec4				expecColor			(0.30f, 0.90f, 0.60f, 1.0f);
+	const tcu::Vec4				threshold			(0.02f, 0.02f, 0.02f, 0.0f);
+
+	// Color buffer with verification buffer
+	ImageWithBuffer		colorBuffer	(vk, device, memAlloc, vkExtent, fbFormat, fbUsage, VK_IMAGE_TYPE_2D);
+	RenderPassWrapper	renderPass	(pipelineConstructionType, vk, device, fbFormat);
+	renderPass.createFramebuffer(vk, device, colorBuffer.getImage(), colorBuffer.getImageView(), fbExtent.x(), fbExtent.y());
+
+	const auto&					binaries		(context.getBinaryCollection());
+	const ShaderWrapper			vertModule		(vk, device, binaries.get("vert"));
+	const ShaderWrapper			fragModule		(vk, device, binaries.get("frag"));
+	const PipelineLayoutWrapper	pipelineLayout	(pipelineConstructionType, vk, device);
+
+	const std::vector<VkViewport>	viewports	{ makeViewport(vkExtent) };
+	const std::vector<VkRect2D>		scissors	{ makeRect2D(vkExtent) };
+
+	VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+	GraphicsPipelineWrapper pipelineWrapper(vki, vk, physicalDevice, device, context.getDeviceExtensions(), pipelineConstructionType);
+	pipelineWrapper
+		.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+		.setDefaultRasterizationState()
+		.setDefaultColorBlendState()
+		.setDefaultMultisampleState()
+		.setDefaultDepthStencilState()
+		.setupVertexInputState(&vertexInputState)
+		.setupPreRasterizationShaderState(viewports,
+			scissors,
+			pipelineLayout,
+			*renderPass,
+			0u,
+			vertModule)
+		.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
+		.setupFragmentOutputState(*renderPass)
+		.setMonolithicPipelineLayout(pipelineLayout)
+		.buildPipeline();
+
+	CommandPoolWithBuffer cmd(vk, device, queueFamilyIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	beginCommandBuffer(vk, cmdBuffer);
+
+	renderPass.begin(vk, cmdBuffer, scissors.at(0u), clearColor);
+	pipelineWrapper.bind(cmdBuffer);
+	vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+	renderPass.end(vk, cmdBuffer);
+
+	copyImageToBuffer(vk, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(),
+		fbExtent.swizzle(0, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+		VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+	endCommandBuffer(vk, cmdBuffer);
+	submitCommandsAndWait(vk, device, context.getUniversalQueue(), cmdBuffer);
+
+	invalidateAlloc(vk, device, colorBuffer.getBufferAllocation());
+	tcu::PixelBufferAccess	resultAccess	(tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+	tcu::TextureLevel		referenceLevel	(tcuFormat, fbExtent.x(), fbExtent.y());
+	auto					referenceAccess	= referenceLevel.getAccess();
+	tcu::clear(referenceAccess, expecColor);
+
+	auto& log = context.getTestContext().getLog();
+	if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 #ifndef CTS_USES_VULKANSC
 struct VaryingSamplesFragParams
 {
@@ -2349,6 +2464,7 @@ tcu::TestCaseGroup* createMiscTests (tcu::TestContext& testCtx, PipelineConstruc
 	{
 		addFunctionCaseWithPrograms(miscTests.get(), "compatible_render_pass", checkCompatibleRenderPassSupport, initCompatibleRenderPassPrograms, compatibleRenderPassTest, pipelineConstructionType);
 	}
+	addFunctionCaseWithPrograms(miscTests.get(), "array_of_structs_interface", checkArrayOfStructsInterfaceSupport, initArrayOfStructsInterfacePrograms, arrayOfStructsInterfaceTest, pipelineConstructionType);
 
 #ifndef CTS_USES_VULKANSC
 	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY) {
