@@ -797,8 +797,8 @@ struct bytestreamWriteWithStatus
 bool processQueryPoolResults(const DeviceInterface &vk,
 								const VkDevice device,
 								VkQueryPool encodeQueryPool,
-								size_t &bitstreamBufferOffset,
-								size_t &minBitstreamBufferOffsetAlignment,
+								VkDeviceSize &bitstreamBufferOffset,
+								VkDeviceSize &minBitstreamBufferOffsetAlignment,
 								const bool queryStatus)
 {
 	bytestreamWriteWithStatus queryResultWithStatus;
@@ -957,7 +957,7 @@ de::MovePtr<std::vector<deUint8>> saveNV12FrameAsYUV(MultiPlaneImageData *imageD
 	return outputDataPtr;
 }
 
-void fillBuffer(const DeviceInterface &vk, const VkDevice device, Allocation &bufferAlloc, const void *data, const size_t dataSize, size_t dataOffset = 0)
+void fillBuffer(const DeviceInterface &vk, const VkDevice device, Allocation &bufferAlloc, const void *data, const VkDeviceSize dataSize, VkDeviceSize dataOffset = 0)
 {
 	const VkMappedMemoryRange memRange =
 	{
@@ -1074,7 +1074,8 @@ static MovePtr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext
 	VkSharedBaseObj<VulkanVideoFrameBuffer> vkVideoFrameBuffer;
 
 	VK_CHECK(VulkanVideoFrameBuffer::Create(deviceContext,
-											false,
+											false, // UseResultStatusQueries
+											false, // ResourcesWithoutProfiles
 											vkVideoFrameBuffer));
 
 	VideoBaseDecoder::Parameters params;
@@ -1520,8 +1521,8 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 		DE_ASSERT(videoEncodeCapabilities->maxBitrate > 0);
 	}
 
-	size_t bitstreamBufferOffset = 0u;
-	size_t minBitstreamBufferOffsetAlignment = static_cast<size_t>(videoCapabilities->minBitstreamBufferOffsetAlignment);
+	VkDeviceSize bitstreamBufferOffset = 0u;
+	VkDeviceSize minBitstreamBufferOffsetAlignment = videoCapabilities->minBitstreamBufferOffsetAlignment;
 
 	Allocator &allocator = getAllocator();
 

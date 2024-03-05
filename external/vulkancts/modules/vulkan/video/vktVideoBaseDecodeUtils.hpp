@@ -310,6 +310,7 @@ public:
 						   VkFormat								referencePicturesFormat,
 						   deUint32								maxDpbSlots,
 						   deUint32								maxActiveReferencePictures,
+						   bool									useInlineVideoQueries,
 						   VkSharedBaseObj<VulkanVideoSession>& videoSession);
 
 	bool			IsCompatible(VkDevice			 device,
@@ -817,6 +818,8 @@ public:
 		const VkVideoCoreProfile*				profile{};
 		size_t									framesToCheck{};
 		bool									queryDecodeStatus{};
+		bool									useInlineQueries{};
+		bool									resourcesWithoutProfiles{};
 		bool									outOfOrderDecoding{};
 		bool									alwaysRecreateDPB{};
 		bool									intraOnlyDecoding{};
@@ -968,6 +971,8 @@ public:
 	}
 
 	bool														m_queryResultWithStatus{false};
+	bool														m_useInlineQueries{false};
+	bool														m_resourcesWithoutProfiles{false};
 	bool														m_outOfOrderDecoding{false};
 	bool														m_alwaysRecreateDPB{false};
 	bool														m_intraOnlyDecoding{false};

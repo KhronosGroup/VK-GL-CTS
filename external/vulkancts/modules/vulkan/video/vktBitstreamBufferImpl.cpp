@@ -46,13 +46,14 @@ namespace video
 {
 
 VkResult
-BitstreamBufferImpl::Create(DeviceContext* devctx, deUint32 queueFamilyIndex, VkDeviceSize bufferSize, VkDeviceSize bufferOffsetAlignment, VkDeviceSize bufferSizeAlignment, VkSharedBaseObj<BitstreamBufferImpl>& vulkanBitstreamBuffer, const VkVideoProfileListInfoKHR* profileList)
+BitstreamBufferImpl::Create(DeviceContext* devctx, deUint32 queueFamilyIndex, VkDeviceSize bufferSize, VkDeviceSize bufferOffsetAlignment, VkDeviceSize bufferSizeAlignment, VkSharedBaseObj<BitstreamBufferImpl>& vulkanBitstreamBuffer, const VkVideoProfileListInfoKHR* profileList, bool resourcesWithoutProfiles)
 {
 	VkSharedBaseObj<BitstreamBufferImpl> vkBitstreamBuffer(new BitstreamBufferImpl(devctx,
 																				   queueFamilyIndex,
 																				   bufferOffsetAlignment,
 																				   bufferSizeAlignment,
-																				   profileList));
+																				   profileList,
+																				   resourcesWithoutProfiles));
 	DE_ASSERT(vkBitstreamBuffer);
 
 	VK_CHECK(vkBitstreamBuffer->Initialize(bufferSize));
@@ -77,10 +78,10 @@ VkResult BitstreamBufferImpl::Initialize(VkDeviceSize bufferSize)
 
 	VkBufferCreateInfo createBufferInfo	   = {};
 	createBufferInfo.sType				   = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	createBufferInfo.pNext				   = m_profileList;
+	createBufferInfo.pNext				   = m_resourcesWithoutProfiles ? nullptr : m_profileList;
 	createBufferInfo.size				   = deAlignSize(bufferSize, m_bufferSizeAlignment);
 	createBufferInfo.usage				   = VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR;
-	createBufferInfo.flags				   = 0;
+	createBufferInfo.flags				   = m_resourcesWithoutProfiles ? VK_BUFFER_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR : 0;
 	createBufferInfo.sharingMode		   = VK_SHARING_MODE_EXCLUSIVE;
 	createBufferInfo.queueFamilyIndexCount = 1;
 	createBufferInfo.pQueueFamilyIndices   = &m_queueFamilyIndex;

@@ -77,6 +77,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_shader_integer_dot_product",
 	"VK_KHR_shader_non_semantic_info",
 	"VK_KHR_shader_subgroup_extended_types",
+	"VK_KHR_shader_subgroup_rotate",
 	"VK_KHR_shader_subgroup_uniform_control_flow",
 	"VK_KHR_shader_terminate_invocation",
 	"VK_KHR_shared_presentable_image",

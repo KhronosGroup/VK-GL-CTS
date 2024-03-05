@@ -152,6 +152,8 @@ enum TestType
 	TEST_TYPE_H264_DECODE_I_P_NOT_MATCHING_ORDER, // Case 8
 	TEST_TYPE_H264_DECODE_I_P_B_13_NOT_MATCHING_ORDER, // Case 8a
 	TEST_TYPE_H264_DECODE_QUERY_RESULT_WITH_STATUS, // Case 9
+	TEST_TYPE_H264_DECODE_INLINE_QUERY_RESULT_WITH_STATUS,
+	TEST_TYPE_H264_DECODE_RESOURCES_WITHOUT_PROFILES,
 	TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE, // Case 17
 	TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB, // Case 18
 	TEST_TYPE_H264_DECODE_INTERLEAVED, // Case 21
@@ -164,6 +166,9 @@ enum TestType
 	TEST_TYPE_H265_DECODE_I_P_NOT_MATCHING_ORDER, // Case 16-2
 	TEST_TYPE_H265_DECODE_I_P_B_13, // Case 16-3
 	TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER, // Case 16-4
+	TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS,
+	TEST_TYPE_H265_DECODE_INLINE_QUERY_RESULT_WITH_STATUS,
+	TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES,
 
 	TEST_TYPE_AV1_DECODE_I,
 	TEST_TYPE_AV1_DECODE_I_P,
@@ -220,6 +225,12 @@ const char* getTestName(TestType type)
 		case TEST_TYPE_H264_DECODE_QUERY_RESULT_WITH_STATUS:
 			testName = "h264_query_with_status";
 			break;
+		case TEST_TYPE_H264_DECODE_INLINE_QUERY_RESULT_WITH_STATUS:
+			testName = "h264_inline_query_with_status";
+			break;
+		case TEST_TYPE_H264_DECODE_RESOURCES_WITHOUT_PROFILES:
+			testName = "h264_resources_without_profiles";
+			break;
 		case TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE:
 			testName = "h264_resolution_change";
 			break;
@@ -249,6 +260,15 @@ const char* getTestName(TestType type)
 			break;
 		case TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER:
 			testName = "h265_i_p_b_13_not_matching_order";
+			break;
+		case TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS:
+			testName = "h265_query_with_status";
+			break;
+		case TEST_TYPE_H265_DECODE_INLINE_QUERY_RESULT_WITH_STATUS:
+			testName = "h265_inline_query_with_status";
+			break;
+		case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
+			testName = "h265_resources_without_profiles";
 			break;
 		case TEST_TYPE_AV1_DECODE_I:
 			testName = "av1_i";
@@ -332,17 +352,21 @@ enum DecoderOption : deUint32
 	Default = 0,
 	// All decode operations will have their status checked for success (Q2 2023: not all vendors support these)
 	UseStatusQueries = 1 << 0,
+	// Same as above, but tested with inline queries from the video_maintenance1 extension.
+	UseInlineStatusQueries  = 1 << 1,
 	// Do not playback the clip in the "normal fashion", instead cached decode parameters for later process
 	// this is primarily used to support out-of-order submission test cases.
 	// It is a limited mode of operation, only able to cache 32 frames. This is ample to test out-of-order recording.
-	CachedDecoding	  = 1 << 1,
+	CachedDecoding	  = 1 << 2,
 	// When a parameter object changes the resolution of the test content, and the new video session would otherwise
 	// still be compatible with the last session (for example, larger decode surfaces preceeding smaller decode surfaces,
 	// a frame downsize), force the session to be recreated anyway.
-	RecreateDPBImages = 1 << 2,
-	FilmGrainPresent = 1 << 3,
-	IntraOnlyDecoding = 1 << 4,
-	AnnexB = 1 << 5,
+	RecreateDPBImages = 1 << 3,
+	// Test profile-less resources from the video_mainteance1 extension.
+	ResourcesWithoutProfiles  = 1 << 4,
+	FilmGrainPresent = 1 << 5,
+	IntraOnlyDecoding = 1 << 6,
+	AnnexB = 1 << 7,
 };
 
 static const int ALL_FRAMES = 0;
@@ -367,6 +391,8 @@ struct DecodeTestParam
 	{TEST_TYPE_H264_DECODE_I_P_B_13, {CLIP_H264_4K_26_IBP_MAIN, ALL_FRAMES, DecoderOption::Default}},
 	{TEST_TYPE_H264_DECODE_I_P_B_13_NOT_MATCHING_ORDER, {CLIP_H264_4K_26_IBP_MAIN, ALL_FRAMES, DecoderOption::CachedDecoding}},
 	{TEST_TYPE_H264_DECODE_QUERY_RESULT_WITH_STATUS, {CLIP_A, ALL_FRAMES, DecoderOption::UseStatusQueries}},
+	{TEST_TYPE_H264_DECODE_INLINE_QUERY_RESULT_WITH_STATUS, {CLIP_A, ALL_FRAMES, (DecoderOption)(DecoderOption::UseStatusQueries|DecoderOption::UseInlineStatusQueries)}},
+	{TEST_TYPE_H264_DECODE_RESOURCES_WITHOUT_PROFILES, {CLIP_A, ALL_FRAMES, DecoderOption::ResourcesWithoutProfiles}},
 	{TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE, {CLIP_C, ALL_FRAMES, DecoderOption::Default}},
 	{TEST_TYPE_H264_DECODE_RESOLUTION_CHANGE_DPB, {CLIP_C, ALL_FRAMES, DecoderOption::RecreateDPBImages}},
 
@@ -376,6 +402,9 @@ struct DecodeTestParam
 	{TEST_TYPE_H265_DECODE_I_P_B_13, {CLIP_JELLY_HEVC, ALL_FRAMES, DecoderOption::Default}},
 	{TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER, {CLIP_JELLY_HEVC, ALL_FRAMES, DecoderOption::CachedDecoding}},
 	{TEST_TYPE_H265_DECODE_CLIP_D, {CLIP_D, ALL_FRAMES, DecoderOption::Default}},
+	{TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS, {CLIP_D, ALL_FRAMES, DecoderOption::UseStatusQueries}},
+	{TEST_TYPE_H265_DECODE_INLINE_QUERY_RESULT_WITH_STATUS, {CLIP_D, ALL_FRAMES, (DecoderOption)(DecoderOption::UseStatusQueries|DecoderOption::UseInlineStatusQueries)}},
+	{TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES, {CLIP_D, ALL_FRAMES, DecoderOption::ResourcesWithoutProfiles}},
 
 	{TEST_TYPE_AV1_DECODE_I, {CLIP_BASIC_8, 1, DecoderOption::Default}},
 	{TEST_TYPE_AV1_DECODE_I_P, {CLIP_BASIC_8, 2, DecoderOption::Default}},
@@ -505,8 +534,15 @@ public:
 
 	VideoDevice::VideoDeviceFlags requiredDeviceFlags() const
 	{
-		return VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED |
-			   (hasOption(DecoderOption::UseStatusQueries) ? VideoDevice::VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT : VideoDevice::VIDEO_DEVICE_FLAG_NONE);
+		VideoDevice::VideoDeviceFlags flags = VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED;
+
+		if (hasOption(DecoderOption::UseStatusQueries))
+			flags |= VideoDevice::VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT;
+
+		if (hasOption(DecoderOption::UseInlineStatusQueries) || hasOption(DecoderOption::ResourcesWithoutProfiles))
+			flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_1;
+
+		return flags;
 	}
 
 	const VkExtensionProperties* extensionProperties(int session) const
@@ -559,6 +595,7 @@ static MovePtr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext* devctx
 	VkSharedBaseObj<VulkanVideoFrameBuffer> vkVideoFrameBuffer;
 	VK_CHECK(VulkanVideoFrameBuffer::Create(devctx,
 											test.hasOption(DecoderOption::UseStatusQueries),
+											test.hasOption(DecoderOption::ResourcesWithoutProfiles),
 											vkVideoFrameBuffer));
 
 	VideoBaseDecoder::Parameters params;
@@ -567,10 +604,11 @@ static MovePtr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext* devctx
 	params.framebuffer						 = vkVideoFrameBuffer;
 	params.framesToCheck					 = test.framesToCheck();
 	params.queryDecodeStatus				 = test.hasOption(DecoderOption::UseStatusQueries);
+	params.useInlineQueries					 = test.hasOption(DecoderOption::UseInlineStatusQueries);
+	params.resourcesWithoutProfiles			 = test.hasOption(DecoderOption::ResourcesWithoutProfiles);
 	params.outOfOrderDecoding				 = test.hasOption(DecoderOption::CachedDecoding);
 	params.alwaysRecreateDPB				 = test.hasOption(DecoderOption::RecreateDPBImages);
 	params.intraOnlyDecoding				 = test.hasOption(DecoderOption::IntraOnlyDecoding);
-	params.pictureParameterUpdateTriggerHack = test.getParamaterUpdateHackRequirement();
 
 	return MovePtr<VideoBaseDecoder>(new VideoBaseDecoder(std::move(params)));
 }
@@ -1363,12 +1401,26 @@ void VideoDecodeTestCase::checkSupport(Context& context) const
 			context.requireDeviceFunctionality("VK_KHR_video_decode_h264");
 			break;
 		}
+		case TEST_TYPE_H264_DECODE_INLINE_QUERY_RESULT_WITH_STATUS:
+		case TEST_TYPE_H264_DECODE_RESOURCES_WITHOUT_PROFILES:
+		{
+			context.requireDeviceFunctionality("VK_KHR_video_decode_h264");
+			context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
+			break;
+		}
 		case TEST_TYPE_H265_DECODE_I:
 		case TEST_TYPE_H265_DECODE_I_P:
 		case TEST_TYPE_H265_DECODE_CLIP_D:
 		case TEST_TYPE_H265_DECODE_I_P_NOT_MATCHING_ORDER:
 		case TEST_TYPE_H265_DECODE_I_P_B_13:
 		case TEST_TYPE_H265_DECODE_I_P_B_13_NOT_MATCHING_ORDER:
+		case TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS:
+		{
+			context.requireDeviceFunctionality("VK_KHR_video_decode_h265");
+			break;
+		}
+		case TEST_TYPE_H265_DECODE_INLINE_QUERY_RESULT_WITH_STATUS:
+		case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
 		{
 			context.requireDeviceFunctionality("VK_KHR_video_decode_h265");
 			break;

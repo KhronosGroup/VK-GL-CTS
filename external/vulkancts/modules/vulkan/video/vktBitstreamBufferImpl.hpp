@@ -61,7 +61,8 @@ public:
     static VkResult Create(DeviceContext* devctx, deUint32 queueFamilyIndex,
              VkDeviceSize bufferSize, VkDeviceSize bufferOffsetAlignment, VkDeviceSize bufferSizeAlignment,
              VkSharedBaseObj<BitstreamBufferImpl>& vulkanBitstreamBuffer,
-						   const VkVideoProfileListInfoKHR* profileList);
+			 const VkVideoProfileListInfoKHR* profileList,
+			 bool resourcesWithoutProfiles = false);
 
     int32_t AddRef() override
     {
@@ -136,11 +137,13 @@ private:
                               deUint32 queueFamilyIndex,
                               VkDeviceSize bufferOffsetAlignment,
                               VkDeviceSize bufferSizeAlignment,
-							  const VkVideoProfileListInfoKHR* profileList)
+							  const VkVideoProfileListInfoKHR* profileList,
+							  bool resourcesWithoutProfiles)
         : VulkanBitstreamBuffer()
         , m_refCount(0)
 		, m_devctx(devctx)
 		, m_profileList(profileList)
+		, m_resourcesWithoutProfiles(resourcesWithoutProfiles)
         , m_queueFamilyIndex(queueFamilyIndex)
         , m_bufferOffsetAlignment(bufferOffsetAlignment)
         , m_bufferSizeAlignment(bufferSizeAlignment)
@@ -152,6 +155,7 @@ private:
 	std::atomic<int32_t>			 m_refCount;
 	DeviceContext*					 m_devctx;
 	const VkVideoProfileListInfoKHR* m_profileList;
+	bool							 m_resourcesWithoutProfiles;
 	deUint32						 m_queueFamilyIndex;
 	VkDeviceSize					 m_bufferOffsetAlignment;
 	VkDeviceSize					 m_bufferSizeAlignment;

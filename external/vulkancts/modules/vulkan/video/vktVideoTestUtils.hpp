@@ -47,7 +47,6 @@ using namespace std;
 
 typedef de::MovePtr<Allocation> AllocationPtr;
 
-
 struct DeviceContext
 {
 
