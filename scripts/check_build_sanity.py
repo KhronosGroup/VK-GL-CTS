@@ -162,6 +162,11 @@ POST_CHECKS			= [
 	CheckSrcChanges()
 ]
 
+# Optional step to clean up external resources after finishing receipe
+POST_CLEANUP = [
+    RunScript(os.path.join("external", "fetch_sources.py"), lambda env: ["--clean"])
+]
+
 BUILD_TARGETS		= [
 	Build("clang-64-debug",
 		  UnixConfig("null",
@@ -284,6 +289,10 @@ def parseArgs ():
 						dest="skipPostCheck",
 						action="store_true",
 						help="Skip post recipe checks")
+	parser.add_argument("--apply-post-external-cleanup",
+                        dest="applyPostExternalDependencyCleanup",
+                        action="store_true",
+                        help="skip external dependency clean up")
 	parser.add_argument("-v", "--verbose",
 						dest="verbose",
 						action="store_true",
@@ -308,7 +317,7 @@ if __name__ == "__main__":
 
 		print("Running %s" % ','.join(selectedRecipes.keys()))
 		selectedSteps = list(itertools.chain.from_iterable(selectedRecipes.values()))
-		allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + selectedSteps + (POST_CHECKS if (args.skipPostCheck == False) else [])
+		allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + selectedSteps + (POST_CHECKS if (args.skipPostCheck == False) else []) + (POST_CLEANUP if (args.applyPostExternalDependencyCleanup == True) else [])
 		runSteps(allSteps)
 
 		print("All steps completed successfully")
