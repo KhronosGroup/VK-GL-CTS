@@ -543,6 +543,9 @@ tcu::TextureFormat mapGLInternalFormat (deUint32 internalFormat)
 		case GL_R8_SNORM:			return TextureFormat(TextureFormat::R,		TextureFormat::SNORM_INT8);
 		case GL_SR8_EXT:			return TextureFormat(TextureFormat::sR,		TextureFormat::UNORM_INT8);
 
+		case GL_BGRA:				return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNORM_INT8);
+		case GL_BGRA8_EXT:			return TextureFormat(TextureFormat::BGRA,	TextureFormat::UNORM_INT8);
+
 		case GL_DEPTH_COMPONENT32F:	return TextureFormat(TextureFormat::D,		TextureFormat::FLOAT);
 		case GL_DEPTH_COMPONENT24:	return TextureFormat(TextureFormat::D,		TextureFormat::UNSIGNED_INT_24_8);
 		case GL_DEPTH_COMPONENT32:	return TextureFormat(TextureFormat::D,		TextureFormat::UNSIGNED_INT32);

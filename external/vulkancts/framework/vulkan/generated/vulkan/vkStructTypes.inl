@@ -9376,6 +9376,36 @@ struct VkPhysicalDeviceShaderQuadControlFeaturesKHR
 	VkBool32		shaderQuadControl;
 };
 
+struct VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderFloat16VectorAtomics;
+};
+
+struct VkPhysicalDeviceMapMemoryPlacedFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		memoryMapPlaced;
+	VkBool32		memoryMapRangePlaced;
+	VkBool32		memoryUnmapReserve;
+};
+
+struct VkPhysicalDeviceMapMemoryPlacedPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	minPlacedMemoryMapAlignment;
+};
+
+struct VkMemoryMapPlacedInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	void*			pPlacedAddress;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;

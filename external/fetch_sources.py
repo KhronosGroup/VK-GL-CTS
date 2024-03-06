@@ -311,23 +311,23 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		"git@github.com:KhronosGroup/SPIRV-Tools.git",
-		"f9184c6501f7e349e0664d281ac93b1db9c1e5ad",
+		"dc6676445be97ab19d8191fee019af62e2aaf774",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"9fd0fcd737f1369e89fb3aa8b2e62bad57ac46c6",
+		"d84255296c3d19642515237c8d016bb685bd0bed",
 		"glslang",
 		removeTags = ["main-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		"git@github.com:KhronosGroup/SPIRV-Headers.git",
-		"d3c2a6fa95ad463ca8044d7fc45557db381a6a64",
+		"05cc486580771e4fa7ddc89f5c9ee1e97382689a",
 		"spirv-headers"),
 	GitRepo(
 		"https://github.com/KhronosGroup/Vulkan-Docs.git",
 		"git@github.com:KhronosGroup/Vulkan-Docs.git",
-		"d99193d3fcc4b2a0dacc0a9d7e4951ea611a3e96",
+		"2e3aca8d6a3a6d52a9d904d0511a1c5e57a09e0f",
 		"vulkan-docs"),
 	GitRepo(
 		"https://github.com/google/amber.git",
@@ -345,12 +345,12 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/vk_video_samples.git",
 		"git@github.com:Igalia/vk_video_samples.git",
-		"b907158533534585d9182cb0becdaec055aa7e12",
+		"ce80453dadeea7b1a6409434f3358ef1e46e4ae7",
 		"nvidia-video-samples"),
 	GitRepo(
 		"https://github.com/Igalia/ESExtractor.git",
 		"git@github.com:Igalia/ESExtractor.git",
-		"v0.3.3",
+		"a1c3c0b239c9540cb410f014e0610016ef51b0d4",
 		"ESExtractor"),
 ]
 

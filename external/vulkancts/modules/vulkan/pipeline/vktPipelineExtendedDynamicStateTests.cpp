@@ -3414,8 +3414,6 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		if (reprInfo.depthBiasRepresentation == vk::VK_DEPTH_BIAS_REPRESENTATION_FLOAT_EXT && !dbcFeatures.floatRepresentation)
 			TCU_THROW(NotSupportedError, "floatRepresentation not supported");
 	}
-#else
-	TCU_THROW(NotSupportedError, "VulkanSC does not support VK_EXT_depth_bias_control");
 #endif // CTS_USES_VULKANSC
 
 	if (m_testConfig.getActiveLineWidth() != 1.0f)
@@ -7382,7 +7380,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 			TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
 			// Bad static reduced viewport.
 			config.viewportConfig.staticValue	= ViewportVec(1u, vk::makeViewport(kHalfWidthU, kFramebufferHeight));
-			config.viewportConfig.staticValue	= ViewportVec(1u, vk::makeViewport(kFramebufferWidth, kFramebufferHeight));
+			config.viewportConfig.dynamicValue	= ViewportVec(1u, vk::makeViewport(kFramebufferWidth, kFramebufferHeight));
 			// Dynamically set viewport to cover full framebuffer
 			orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "1_full_viewport", config));
 		}

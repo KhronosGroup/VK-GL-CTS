@@ -4428,3 +4428,23 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderQuadControlFea
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_QUAD_CONTROL_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMapMemoryPlacedFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMapMemoryPlacedPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMemoryMapPlacedInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT;
+}
+

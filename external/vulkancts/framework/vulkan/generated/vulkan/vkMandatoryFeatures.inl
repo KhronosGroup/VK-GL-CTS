@@ -773,6 +773,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceSeparateDepthStencilLayoutsFeatures.pNext;
 	}
 
+	vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV physicalDeviceShaderAtomicFloat16VectorFeaturesNV;
+	deMemset(&physicalDeviceShaderAtomicFloat16VectorFeaturesNV, 0, sizeof(physicalDeviceShaderAtomicFloat16VectorFeaturesNV));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_shader_atomic_float16_vector") )
+	{
+		physicalDeviceShaderAtomicFloat16VectorFeaturesNV.sType = getStructureType<VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV>();
+		*nextPtr = &physicalDeviceShaderAtomicFloat16VectorFeaturesNV;
+		nextPtr  = &physicalDeviceShaderAtomicFloat16VectorFeaturesNV.pNext;
+	}
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT physicalDeviceShaderAtomicFloat2FeaturesEXT;
 	deMemset(&physicalDeviceShaderAtomicFloat2FeaturesEXT, 0, sizeof(physicalDeviceShaderAtomicFloat2FeaturesEXT));
@@ -917,6 +927,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceShaderSubgroupExtendedTypesFeatures.sType = getStructureType<VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures>();
 		*nextPtr = &physicalDeviceShaderSubgroupExtendedTypesFeatures;
 		nextPtr  = &physicalDeviceShaderSubgroupExtendedTypesFeatures.pNext;
+	}
+
+	vk::VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR physicalDeviceShaderSubgroupRotateFeaturesKHR;
+	deMemset(&physicalDeviceShaderSubgroupRotateFeaturesKHR, 0, sizeof(physicalDeviceShaderSubgroupRotateFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_subgroup_rotate") )
+	{
+		physicalDeviceShaderSubgroupRotateFeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderSubgroupRotateFeaturesKHR;
+		nextPtr  = &physicalDeviceShaderSubgroupRotateFeaturesKHR.pNext;
 	}
 
 	vk::VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR;
@@ -2425,6 +2445,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_subgroup_rotate")) )
+	{
+		if ( physicalDeviceShaderSubgroupRotateFeaturesKHR.shaderSubgroupRotate == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupRotate not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_subgroup_uniform_control_flow")) )
 	{
 		if ( physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR.shaderSubgroupUniformControlFlow == VK_FALSE )
@@ -2538,6 +2567,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_shader_atomic_float16_vector")) && physicalDeviceShaderAtomicFloat16VectorFeaturesNV.shaderFloat16VectorAtomics )
+	{
+		if ( physicalDeviceShaderAtomicFloat16VectorFeaturesNV.shaderFloat16VectorAtomics == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderFloat16VectorAtomics not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_VALVE_mutable_descriptor_type")) )
 	{

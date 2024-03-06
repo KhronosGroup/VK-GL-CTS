@@ -27,15 +27,15 @@ class ESEDemuxer {
 	tcu::TestLog& log;
 
 public:
-	ESEDemuxer(const std::string& filePath, tcu::TestLog& log_)
-		: extractor(es_extractor_new(filePath.c_str(), "Alignment:NAL"))
+    ESEDemuxer(const std::string& filePath, const char* options, tcu::TestLog& log_)
+		: extractor(es_extractor_new(filePath.c_str(), options))
 		, log(log_)
 	{
 		eVideoCodec = es_extractor_video_codec(extractor);
 		log << tcu::TestLog::Message << "ESEDemuxer found video codec: " << eVideoCodec << tcu::TestLog::EndMessage;
 	}
-	ESEDemuxer(ese_read_buffer_func func, void *data, tcu::TestLog& log_)
-		: extractor(es_extractor_new_with_read_func(func, data, "Alignment:NAL"))
+	ESEDemuxer(ese_read_buffer_func func, void *data, const char* options, tcu::TestLog& log_)
+		: extractor(es_extractor_new_with_read_func(func, data, options))
 		, log(log_)
 	{
         eVideoCodec = es_extractor_video_codec(extractor);

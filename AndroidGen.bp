@@ -112,6 +112,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/api/vktApiVersionCheck.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingBufferDeviceAddressTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorBufferTests.cpp",
+        "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorCombinationTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorCopyTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorSetRandomTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorUpdateASTests.cpp",

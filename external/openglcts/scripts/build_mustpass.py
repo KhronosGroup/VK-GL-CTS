@@ -97,6 +97,7 @@ ES2KHR_MODULE					= getModuleByName("KHR-GLES2")
 ES3KHR_MODULE					= getModuleByName("KHR-GLES3")
 ES31KHR_MODULE					= getModuleByName("KHR-GLES31")
 ES32KHR_MODULE					= getModuleByName("KHR-GLES32")
+ESEXTKHR_MODULE					= getModuleByName("KHR-GLESEXT")
 NOCTX_ES2_KHR_MODULE			= getModuleByName("KHR-NOCTX-ES2")
 NOCTX_ES32_KHR_MODULE			= getModuleByName("KHR-NOCTX-ES32")
 SINGLE_ES32_KHR_MODULE			= getModuleByName("KHR-Single-GLES32")
@@ -903,6 +904,15 @@ GLCTS_SINGLE_ES32_KHR_PKG		= Package(module = SINGLE_ES32_KHR_MODULE, configurat
 					filters			= [include("gles32-khr-single.txt")]),
 	])
 
+GLCTS_ESEXT_KHR_PKG		= Package(module = ESEXTKHR_MODULE, configurations = [
+		# Master
+		Configuration(name			= "khr-glesext",
+					surfacewidth	= "64",
+					surfaceheight	= "64",
+					baseseed		= "1",
+					filters			= [include("glesext-khr-master.txt")]),
+	])
+
 
 ES_MUSTPASS_LISTS		= [
 	# 3.2.2.x
@@ -1011,6 +1021,7 @@ ES_MUSTPASS_LISTS		= [
 						GLCTS_GLES31_KHR_PKG_N1CFG,
 						GLCTS_GLES32_KHR_PKG_1CFG,
 						GLCTS_GLES32_KHR_PKG_N1CFG,
+						GLCTS_ESEXT_KHR_PKG,
 						]),
 
 	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "3.2.6.x", isCurrent=False,
@@ -1036,6 +1047,7 @@ ES_MUSTPASS_LISTS		= [
 						GLCTS_GLES31_KHR_PKG_N1CFG,
 						GLCTS_GLES32_KHR_PKG_1CFG,
 						GLCTS_GLES32_KHR_PKG_N1CFG,
+						GLCTS_ESEXT_KHR_PKG,
 						]),
 
 	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "main", isCurrent=True,

@@ -102,6 +102,8 @@ enum TestType
 	TEST_TYPE_H264_ENCODE_I_P_NOT_MATCHING_ORDER,		// Encode one I frame, one P frame, recording and submission order not matching encoding order
 	TEST_TYPE_H264_I_P_B_13,							// Encode two 13-frame GOPs, both I, P, and B frames recording and submission order match encode order
 	TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS,		// Encode one I frame, one P frame with status query reported successfully for both frames. Recording and submission order match encode order
+	TEST_TYPE_H264_ENCODE_INLINE_QUERY,					// VK_KHR_video_maintenance1 required test: Encode one I frame with inline without vkCmdBegin/EndQuery
+	TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES,	// VK_KHR_video_maintenance1 required test: Encode one I frame with DPB resources defined without passing an encode profile
 	TEST_TYPE_H264_ENCODE_RESOLUTION_CHANGE_DPB,		// Encode one I frame and one P frame with session created with a smaller resolution than extracted frame
 
 	TEST_TYPE_H265_ENCODE_I,
@@ -114,6 +116,8 @@ enum TestType
 	TEST_TYPE_H265_ENCODE_I_P_NOT_MATCHING_ORDER,
 	TEST_TYPE_H265_I_P_B_13,
 	TEST_TYPE_H265_ENCODE_QUERY_RESULT_WITH_STATUS,
+	TEST_TYPE_H265_ENCODE_INLINE_QUERY,
+	TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES,
 	TEST_TYPE_H265_ENCODE_RESOLUTION_CHANGE_DPB,
 
 	TEST_TYPE_LAST
@@ -145,6 +149,10 @@ const char *getTestName(const TestType testType)
 		return "h264_resolution_change_dpb";
 	case TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS:
 		return "h264_query_with_status";
+	case TEST_TYPE_H264_ENCODE_INLINE_QUERY:
+		return "h264_inline_query";
+	case TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES:
+		return "h264_resources_without_profiles";
 	case TEST_TYPE_H265_ENCODE_I:
 		return "h265_i";
 	case TEST_TYPE_H265_ENCODE_RC_VBR:
@@ -167,6 +175,10 @@ const char *getTestName(const TestType testType)
 		return "h265_resolution_change_dpb";
 	case TEST_TYPE_H265_ENCODE_QUERY_RESULT_WITH_STATUS:
 		return "h265_query_with_status";
+	case TEST_TYPE_H265_ENCODE_INLINE_QUERY:
+		return "h265_inline_query";
+	case TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES:
+		return "h265_resources_without_profiles";
 	default:
 		TCU_THROW(InternalError, "Unknown TestType");
 	}
@@ -192,6 +204,8 @@ enum Option : deUint32
 	ResolutionChange			= 1 << 5,
 	UseQualityLevel				= 1 << 6,
 	UseEncodeUsage				= 1 << 7,
+	UseInlineQueries			= 1 << 8,	// Inline queries from the video_mainteance1 extension.
+	ResourcesWithoutProfiles	= 1 << 9,	// Test profile-less resources from the video_mainteance1 extension.
 };
 
 struct EncodeTestParam
@@ -300,6 +314,26 @@ struct EncodeTestParam
 	/* curSlot */						{0, 1},
 	/* frameReferences */				{refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
 	/* encoderOptions */				Option::UseStatusQueries},
+	{TEST_TYPE_H264_ENCODE_INLINE_QUERY, CLIP_E, 1, {IDR_FRAME},
+	/* frameIdx */						{0},
+	/* FrameNum */						{0},
+	/* spsMaxRefFrames */				1,
+	/* ppsNumActiveRefs */				{0, 0},
+	/* shNumActiveRefs */				{refs(0, 0)},
+	/* refSlots */						{{}},
+	/* curSlot */						{0},
+	/* frameReferences */				{refs<std::vector<uint8_t>>({}, {})},
+	/* encoderOptions */				Option::UseInlineQueries},
+	{TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES, CLIP_E, 1, {IDR_FRAME, P_FRAME},
+	/* frameIdx */						{0, 1},
+	/* FrameNum */						{0, 1},
+	/* spsMaxRefFrames */				2,
+	/* ppsNumActiveRefs */				{0, 0},
+	/* shNumActiveRefs */				{refs(0, 0), refs(1, 0)},
+	/* refSlots */						{{}, {0}},
+	/* curSlot */						{0, 1},
+	/* frameReferences */				{refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+	/* encoderOptions */				Option::ResourcesWithoutProfiles},
 	{TEST_TYPE_H264_ENCODE_RESOLUTION_CHANGE_DPB, CLIP_G, 2, {IDR_FRAME, P_FRAME},
 	/* frameIdx */						{0, 1},
 	/* FrameNum */						{0, 1},
@@ -423,6 +457,26 @@ struct EncodeTestParam
 	/* curSlot */						{0, 1},
 	/* frameReferences */				{refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
 	/* encoderOptions */				Option::UseStatusQueries},
+	{TEST_TYPE_H265_ENCODE_INLINE_QUERY, CLIP_F, 1, {IDR_FRAME},
+	/* frameIdx */						{0},
+	/* FrameNum */						{0},
+	/* spsMaxRefFrames */				1,
+	/* ppsNumActiveRefs */				{0, 0},
+	/* shNumActiveRefs */				{refs(0, 0)},
+	/* refSlots */						{{}},
+	/* curSlot */						{0},
+	/* frameReferences */				{refs<std::vector<uint8_t>>({}, {})},
+	/* encoderOptions */				Option::UseInlineQueries},
+	{TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES, CLIP_F, 1, {IDR_FRAME, P_FRAME},
+	/* frameIdx */						{0, 1},
+	/* FrameNum */						{0, 1},
+	/* spsMaxRefFrames */				2,
+	/* ppsNumActiveRefs */				{0, 0},
+	/* shNumActiveRefs */				{refs(0, 0), refs(1, 0)},
+	/* refSlots */						{{}, {0}},
+	/* curSlot */						{0, 1},
+	/* frameReferences */				{refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+	/* encoderOptions */				Option::ResourcesWithoutProfiles},
 	{TEST_TYPE_H265_ENCODE_RESOLUTION_CHANGE_DPB, CLIP_H, 2, {IDR_FRAME, P_FRAME},
 	/* frameIdx */						{0, 1},
 	/* FrameNum */						{0, 1},
@@ -469,7 +523,8 @@ public:
 	TestDefinition(EncodeTestParam params)
 		: m_params(params), m_info(clipInfo(params.clip))
 	{
-		m_profile = VkVideoCoreProfile(m_info->profile.codecOperation, m_info->profile.subsamplingFlags, m_info->profile.lumaBitDepth, m_info->profile.chromaBitDepth, m_info->profile.profileIDC);
+		VideoProfileInfo profile = m_info->sessionProfiles[0];
+		m_profile = VkVideoCoreProfile(profile.codecOperation, profile.subsamplingFlags, profile.lumaBitDepth, profile.chromaBitDepth, profile.profileIDC);
 	}
 
 	TestType getTestType() const
@@ -686,8 +741,17 @@ public:
 		{
 		case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
 		case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
-			return VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED |
-					(hasOption(Option::UseStatusQueries) ? VideoDevice::VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_ENCODE_SUPPORT : VideoDevice::VIDEO_DEVICE_FLAG_NONE);
+		{
+			VideoDevice::VideoDeviceFlags flags = VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED;
+
+			if (hasOption(Option::UseStatusQueries))
+				flags |= VideoDevice::VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_ENCODE_SUPPORT;
+
+			if (hasOption(Option::UseInlineQueries) || hasOption(Option::ResourcesWithoutProfiles))
+				flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_1;
+
+			return flags;
+		}
 		default:
 			tcu::die("Unsupported video codec %s\n", util::codecToName(m_profile.GetCodecType()));
 			break;
@@ -733,8 +797,8 @@ struct bytestreamWriteWithStatus
 bool processQueryPoolResults(const DeviceInterface &vk,
 								const VkDevice device,
 								VkQueryPool encodeQueryPool,
-								size_t &bitstreamBufferOffset,
-								size_t &minBitstreamBufferOffsetAlignment,
+								VkDeviceSize &bitstreamBufferOffset,
+								VkDeviceSize &minBitstreamBufferOffsetAlignment,
 								const bool queryStatus)
 {
 	bytestreamWriteWithStatus queryResultWithStatus;
@@ -893,7 +957,7 @@ de::MovePtr<std::vector<deUint8>> saveNV12FrameAsYUV(MultiPlaneImageData *imageD
 	return outputDataPtr;
 }
 
-void fillBuffer(const DeviceInterface &vk, const VkDevice device, Allocation &bufferAlloc, const void *data, const size_t dataSize, size_t dataOffset = 0)
+void fillBuffer(const DeviceInterface &vk, const VkDevice device, Allocation &bufferAlloc, const void *data, const VkDeviceSize dataSize, VkDeviceSize dataOffset = 0)
 {
 	const VkMappedMemoryRange memRange =
 	{
@@ -976,6 +1040,30 @@ double calculatePSNR(const std::vector<deUint8> *img1, const std::vector<deUint8
 	return 10.0 * log10((255.0 * 255.0) / mse);
 }
 
+class DataProvider
+{
+public:
+	DataProvider(const BufferWithMemory& buffer, VkDeviceSize bufferSize)
+		: m_data(reinterpret_cast<unsigned char*>(buffer.getAllocation().getHostPtr())),
+		  m_size(bufferSize)
+	  {}
+
+	  uint32_t getData(unsigned char *buffer, uint32_t size, int32_t offset) const {
+		if (offset < 0 || static_cast<VkDeviceSize>(offset) >= m_size)
+			return 0;
+
+		uint32_t real_size = std::min(static_cast<uint32_t>(m_size - offset), size);
+
+		deMemcpy(buffer, m_data + offset, real_size);
+
+		return real_size;
+	  }
+
+private:
+	unsigned char*	m_data;
+	VkDeviceSize	m_size;
+};
+
 static int readBuffer(void *opaque, unsigned char *pBuf, int size, int32_t offset)
 {
 	return ((DataProvider *)opaque)->getData(pBuf, size, offset);
@@ -986,7 +1074,8 @@ static MovePtr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext
 	VkSharedBaseObj<VulkanVideoFrameBuffer> vkVideoFrameBuffer;
 
 	VK_CHECK(VulkanVideoFrameBuffer::Create(deviceContext,
-											false,
+											false, // UseResultStatusQueries
+											false, // ResourcesWithoutProfiles
 											vkVideoFrameBuffer));
 
 	VideoBaseDecoder::Parameters params;
@@ -1100,8 +1189,6 @@ de::MovePtr<vkt::ycbcr::MultiPlaneImageData> getDecodedImageFromContext(DeviceCo
 		0u,							   //  deUint32							signalSemaphoreCount;
 		DE_NULL,					   //  const VkSemaphore*				pSignalSemaphores;
 	};
-
-	DEBUGLOG(std::cout << "getDecodedImage: " << image << " " << layout << std::endl);
 
 	beginCommandBuffer(videoDeviceDriver, *cmdDecodeBuffer, 0u);
 	cmdPipelineImageMemoryBarrier2(videoDeviceDriver, *cmdDecodeBuffer, &imageBarrierDecode);
@@ -1322,6 +1409,8 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 	const uint32_t									dpbSlots					= m_testDefinition->gopReferenceFrameCount();
 
 	const bool										queryStatus					= m_testDefinition->hasOption(Option::UseStatusQueries);
+	const bool										useInlineQueries			= m_testDefinition->hasOption(Option::UseInlineQueries);
+	const bool										resourcesWithoutProfiles	= m_testDefinition->hasOption(Option::ResourcesWithoutProfiles);
 	const bool										resolutionChange			= m_testDefinition->hasOption(Option::ResolutionChange);
 	const bool										swapOrder					= m_testDefinition->hasOption(Option::SwapOrder);
 	const bool										useVariableBitrate			= m_testDefinition->hasOption(Option::UseVariableBitrateControl);
@@ -1432,15 +1521,15 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 		DE_ASSERT(videoEncodeCapabilities->maxBitrate > 0);
 	}
 
-	size_t bitstreamBufferOffset = 0u;
-	size_t minBitstreamBufferOffsetAlignment = static_cast<size_t>(videoCapabilities->minBitstreamBufferOffsetAlignment);
+	VkDeviceSize bitstreamBufferOffset = 0u;
+	VkDeviceSize minBitstreamBufferOffsetAlignment = videoCapabilities->minBitstreamBufferOffsetAlignment;
 
 	Allocator &allocator = getAllocator();
 
 	DE_ASSERT(videoCapabilities->maxDpbSlots >= dpbSlots);
 
 	const MovePtr<VkVideoSessionCreateInfoKHR> videoEncodeSessionCreateInfo = getVideoSessionCreateInfo(encodeQueueFamilyIndex,
-																										0,
+																										useInlineQueries ? VK_VIDEO_SESSION_CREATE_INLINE_QUERIES_BIT_KHR : 0,
 																										videoEncodeProfile.get(),
 																										codedExtent,
 																										imageFormat,
@@ -1586,7 +1675,8 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 		j++;
 	}
 
-	const VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR | VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR;
+	const VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
+
 	const VkImageSubresourceRange imageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
 	const VkImageViewType imageViewType = VK_IMAGE_VIEW_TYPE_2D;
 
@@ -1605,7 +1695,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 				currentCodedExtent.height /= 2;
 			}
 
-			const VkImageCreateInfo imageCreateInfo = makeImageCreateInfo(imageFormat, currentCodedExtent, 0, &transferQueueFamilyIndex, imageUsage, videoEncodeProfileList.get());
+			const VkImageCreateInfo imageCreateInfo = makeImageCreateInfo(imageFormat, currentCodedExtent, resourcesWithoutProfiles ? VK_IMAGE_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR : 0, &transferQueueFamilyIndex, imageUsage, resourcesWithoutProfiles ? DE_NULL : videoEncodeProfileList.get());
 
 			std::unique_ptr<const ImageWithMemory> image(new ImageWithMemory(videoDeviceDriver, videoDevice, getAllocator(), imageCreateInfo, MemoryRequirement::Any));
 			std::unique_ptr<const Move<VkImageView>> imageView(new Move<VkImageView>(makeImageView(videoDeviceDriver, videoDevice, image->get(), imageViewType, imageFormat, imageSubresourceRange)));
@@ -1992,8 +2082,20 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 				dstBufferOffset = bitstreamBufferOffset;
 			}
 
+			const void *pNext = DE_NULL;
+			de::MovePtr<VkVideoInlineQueryInfoKHR> inlineQueryInfo = getVideoInlineQueryInfo(encodeQueryPool.get(), 0, 1, videoEncodePictureInfoPtr);
+
+			if (useInlineQueries)
+			{
+				pNext = inlineQueryInfo.get();
+			}
+			else
+			{
+				pNext = videoEncodePictureInfoPtr;
+			}
+
 			videoEncodeFrameInfos.push_back(getVideoEncodeInfo(
-				videoEncodePictureInfoPtr,
+				pNext,
 				*encodeBuffer,
 				dstBufferOffset,
 				(*imagePictureResourceVector[srcPictureResourceIdx]),
@@ -2001,9 +2103,13 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 				refsCount,
 				(refsPool == 0) ? DE_NULL : referenceSlots));
 
-			videoDeviceDriver.cmdBeginQuery(encodeCmdBuffer, encodeQueryPool.get(), 1, 0);
+			if (!useInlineQueries)
+				videoDeviceDriver.cmdBeginQuery(encodeCmdBuffer, encodeQueryPool.get(), 1, 0);
+
 			videoDeviceDriver.cmdEncodeVideoKHR(encodeCmdBuffer, videoEncodeFrameInfos.back().get());
-			videoDeviceDriver.cmdEndQuery(encodeCmdBuffer, encodeQueryPool.get(), 1);
+
+			if (!useInlineQueries)
+				videoDeviceDriver.cmdEndQuery(encodeCmdBuffer, encodeQueryPool.get(), 1);
 			videoDeviceDriver.cmdEndVideoCodingKHR(encodeCmdBuffer, &videoEndCodingInfo);
 
 			endCommandBuffer(videoDeviceDriver, encodeCmdBuffer);
@@ -2012,8 +2118,9 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 			{
 				submitCommandsAndWait(videoDeviceDriver, videoDevice, encodeQueue, encodeCmdBuffer);
 
-				if (!processQueryPoolResults(videoDeviceDriver, videoDevice, encodeQueryPool.get(), bitstreamBufferOffset, minBitstreamBufferOffsetAlignment, queryStatus))
-					return tcu::TestStatus::fail("Unexpected query result status");
+				if (!useInlineQueries)
+					if (!processQueryPoolResults(videoDeviceDriver, videoDevice, encodeQueryPool.get(), bitstreamBufferOffset, minBitstreamBufferOffsetAlignment, queryStatus))
+						return tcu::TestStatus::fail("Unexpected query result status");
 			}
 
 			if (!bType)
@@ -2088,16 +2195,16 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 
 	DataProvider provider(encodeBuffer, encodeBufferSize);
 
-	FrameProcessor processor(&deviceContext, &readBuffer, &provider, videoCodecDecodeOperation, &decodeStdExtension, basicDecoder.get(), m_context.getTestContext().getLog());
+	FrameProcessor processor(&readBuffer, &provider, "Alignment:NAL", videoCodecDecodeOperation, &decodeStdExtension, basicDecoder.get(), m_context.getTestContext().getLog(), false);
 	std::vector<int> incorrectFrames;
 	std::vector<int> correctFrames;
 
 	for (int NALIdx = 0; NALIdx < m_testDefinition->framesToCheck(); NALIdx++)
 	{
-		const DecodedFrame *decodedFrame = processor.decodeFrame();
-		TCU_CHECK_MSG(decodedFrame, "Decoder did not produce the expected amount of frames");
+		DecodedFrame  frame;
+		TCU_CHECK_AND_THROW(InternalError, processor.getNextFrame(&frame) > 0, "Expected more frames from the bitstream. Most likely an internal CTS bug, or maybe an invalid bitstream");
 
-		auto								resultImage	= getDecodedImageFromContext(deviceContext, basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR : VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR, decodedFrame);
+		auto								resultImage = getDecodedImageFromContext(deviceContext, basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR : VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR, &frame);
 		de::MovePtr<std::vector<deUint8>>	out			= saveNV12FrameAsYUV(resultImage.get());
 
 #if STREAM_DUMP_DEBUG
@@ -2182,6 +2289,10 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
 	case TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS:
 		context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
 		break;
+	case TEST_TYPE_H264_ENCODE_INLINE_QUERY:
+	case TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES:
+		context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
+		break;
 	case TEST_TYPE_H265_ENCODE_I:
 	case TEST_TYPE_H265_ENCODE_RC_VBR:
 	case TEST_TYPE_H265_ENCODE_RC_CBR:
@@ -2194,6 +2305,10 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
 	case TEST_TYPE_H265_ENCODE_RESOLUTION_CHANGE_DPB:
 	case TEST_TYPE_H265_ENCODE_QUERY_RESULT_WITH_STATUS:
 		context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
+		break;
+	case TEST_TYPE_H265_ENCODE_INLINE_QUERY:
+	case TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES:
+		context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
 		break;
 	default:
 		TCU_THROW(InternalError, "Unknown TestType");

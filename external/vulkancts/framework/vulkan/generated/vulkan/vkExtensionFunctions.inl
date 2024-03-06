@@ -976,6 +976,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_map_memory_placed")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_atomic_float2")
 	{
 		return;
@@ -1571,6 +1575,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_NV_descriptor_pool_overallocation")
+	{
+		return;
+	}
+	if (extName == "VK_NV_shader_atomic_float16_vector")
 	{
 		return;
 	}
@@ -2741,6 +2749,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkUnmapMemory2KHR");
 		return;
 	}
+	if (extName == "VK_EXT_map_memory_placed")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_atomic_float2")
 	{
 		return;
@@ -3656,6 +3668,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_NV_shader_atomic_float16_vector")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -3926,6 +3942,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_pipeline_executable_properties",
 	"VK_EXT_host_image_copy",
 	"VK_KHR_map_memory2",
+	"VK_EXT_map_memory_placed",
 	"VK_EXT_shader_atomic_float2",
 	"VK_EXT_swapchain_maintenance1",
 	"VK_EXT_shader_demote_to_helper_invocation",
@@ -4066,4 +4083,5 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_shader_expect_assume",
 	"VK_KHR_maintenance6",
 	"VK_NV_descriptor_pool_overallocation",
+	"VK_NV_shader_atomic_float16_vector",
 };

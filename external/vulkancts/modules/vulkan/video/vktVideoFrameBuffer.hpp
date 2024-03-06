@@ -39,7 +39,10 @@
 */
 #include "deDefs.hpp"
 #include "vktVideoTestUtils.hpp"
-#include "extNvidiaVideoParserIf.hpp"
+#include "vktBitstreamBufferImpl.hpp"
+
+#include "vkvideo_parser/VulkanVideoParser.h" // IVulkanVideoFrameBufferParserCb
+#include "vkvideo_parser/VulkanVideoParserIf.h" // vkPicBuffBase VkParser*
 
 namespace vkt
 {
@@ -239,14 +242,19 @@ public:
 		// VPS
 		const VkVideoRefCountBase* pStdVps;
 
+		// AV1
+		const VkVideoRefCountBase* pStdAV1Sps;
+
 		ReferencedObjectsInfo(const VkVideoRefCountBase* pBitstreamDataRef,
 							  const VkVideoRefCountBase* pStdPpsRef,
 							  const VkVideoRefCountBase* pStdSpsRef,
-							  const VkVideoRefCountBase* pStdVpsRef = nullptr)
+							  const VkVideoRefCountBase* pStdVpsRef,
+							  const VkVideoRefCountBase* pStdAV1SpsRef)
 			: pBitstreamData(pBitstreamDataRef)
 			, pStdPps(pStdPpsRef)
 			, pStdSps(pStdSpsRef)
 			, pStdVps(pStdVpsRef)
+			, pStdAV1Sps(pStdAV1SpsRef)
 		{
 		}
 	};
@@ -262,7 +270,6 @@ public:
 								  deUint32					   numImages,
 								  VkFormat					   dpbImageFormat,
 								  VkFormat					   outImageFormat,
-								  const VkExtent2D&			   codedExtent,
 								  const VkExtent2D&			   maxImageExtent,
 								  VkImageUsageFlags			   dpbImageUsage,
 								  VkImageUsageFlags			   outImageUsage,
@@ -285,6 +292,7 @@ public:
 												   VkImageLayout				  newOutputImageLayerLayout = VK_IMAGE_LAYOUT_MAX_ENUM)																																								= 0;
 	virtual int32_t ReleaseImageResources(deUint32 numResources, const deUint32* indexes)																																															= 0;
 	virtual int32_t SetPicNumInDecodeOrder(int32_t picId, int32_t picNumInDecodeOrder)																																																= 0;
+
 	virtual int32_t SetPicNumInDisplayOrder(int32_t picId, int32_t picNumInDisplayOrder)																																															= 0;
 	virtual size_t	GetSize()																																																														= 0;
 	virtual size_t	GetDisplayedFrameCount() const																																																									= 0;
@@ -295,6 +303,7 @@ public:
 
 	static VkResult Create(DeviceContext*							devCtx,
 						   bool										supportsQueries,
+						   bool										resourcesWithoutProfiles,
 						   VkSharedBaseObj<VulkanVideoFrameBuffer>& vkVideoFrameBuffer);
 };
 

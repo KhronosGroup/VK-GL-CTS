@@ -2447,11 +2447,12 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 class ComputeTestInstance : public vkt::TestInstance
 {
 public:
-		ComputeTestInstance		(Context& context, vk::ComputePipelineConstructionType computePipelineConstructionType)
+		ComputeTestInstance		(Context& context, vk::ComputePipelineConstructionType computePipelineConstructionType, bool useMaintenance5)
 		: TestInstance						(context)
 		, m_numPhysDevices					(1)
 		, m_queueFamilyIndex				(0)
 		, m_computePipelineConstructionType	(computePipelineConstructionType)
+		, m_maintenance5					(useMaintenance5)
 	{
 		createDeviceGroup();
 	}
@@ -2470,6 +2471,7 @@ protected:
 	deUint32							m_numPhysDevices;
 	deUint32							m_queueFamilyIndex;
 	vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+	bool								m_maintenance5;
 
 private:
 	CustomInstance						m_deviceGroupInstance;
@@ -2496,6 +2498,11 @@ void ComputeTestInstance::createDeviceGroup (void)
 
 	if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
 		deviceExtensions.push_back("VK_KHR_device_group");
+
+	if (m_maintenance5)
+		deviceExtensions.push_back("VK_KHR_maintenance5");
+
+	//m_ma
 
 	VkDeviceGroupDeviceCreateInfo					deviceGroupInfo			=
 	{
@@ -2717,7 +2724,7 @@ DispatchBaseTestInstance::DispatchBaseTestInstance (Context& context,
 													const vk::ComputePipelineConstructionType computePipelineConstructionType,
 													const bool			useMaintenance5)
 
-	: ComputeTestInstance				(context, computePipelineConstructionType)
+	: ComputeTestInstance				(context, computePipelineConstructionType, useMaintenance5)
 	, m_numValues						(numValues)
 	, m_localSize						(localsize)
 	, m_workSize						(worksize)
@@ -3003,7 +3010,7 @@ DeviceIndexTestInstance::DeviceIndexTestInstance (Context& context,
 													const tcu::IVec3&	worksize,
 													const vk::ComputePipelineConstructionType computePipelineConstructionType)
 
-	: ComputeTestInstance				(context, computePipelineConstructionType)
+	: ComputeTestInstance				(context, computePipelineConstructionType, false)
 	, m_numValues						(numValues)
 	, m_localSize						(localsize)
 	, m_workSize						(worksize)

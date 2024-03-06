@@ -52,10 +52,13 @@ enum TestType
 	TEST_TYPE_H265_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY,	// Test case 4a iteration 2 ?
 	TEST_TYPE_H265_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY,	// Test case 4b iteration 1
 	TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY,	// Test case 4b iteration 2
+	TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY,
+	TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY,
 	TEST_TYPE_H264_DECODE_CAPABILITIES_QUERY,				// Test case 5a
 	TEST_TYPE_H264_ENCODE_CAPABILITIES_QUERY,				// Test case 5b
 	TEST_TYPE_H265_DECODE_CAPABILITIES_QUERY,				// Test case 5c
 	TEST_TYPE_H265_ENCODE_CAPABILITIES_QUERY,				// Test case 5d
+	TEST_TYPE_AV1_DECODE_CAPABILITIES_QUERY,
 	TEST_TYPE_LAST
 };
 
@@ -186,13 +189,26 @@ VideoFormatPropertiesQueryTestInstance<ProfileOperation>::VideoFormatPropertiesQ
 	switch (m_caseDef.testType)
 	{
 		case TEST_TYPE_H264_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
-		case TEST_TYPE_H264_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR; break;
+		case TEST_TYPE_H264_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+			m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
+			break;
 		case TEST_TYPE_H264_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
-		case TEST_TYPE_H264_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR; break;
+		case TEST_TYPE_H264_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+			m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR;
+			break;
 		case TEST_TYPE_H265_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
-		case TEST_TYPE_H265_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR; break;
+		case TEST_TYPE_H265_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+			m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
+			break;
 		case TEST_TYPE_H265_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
-		case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR; break;
+		case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+			m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR;
+			break;
+		case TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+		case TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
+			m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
+			break;
+
 		default: TCU_THROW(InternalError, "Unknown testType");
 	}
 
@@ -206,6 +222,9 @@ VideoFormatPropertiesQueryTestInstance<ProfileOperation>::VideoFormatPropertiesQ
 		case TEST_TYPE_H265_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_imageUsageFlags = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR; break;
 		case TEST_TYPE_H265_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:	m_imageUsageFlags = VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR; break;
 		case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_imageUsageFlags = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR; break;
+		case TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:	m_imageUsageFlags = VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR; break;
+		case TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	m_imageUsageFlags = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR; break;
+
 		default: TCU_THROW(InternalError, "Unknown testType");
 	}
 }
@@ -237,6 +256,12 @@ template<>
 VkVideoEncodeH265ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH265ProfileInfoKHR>::getProfileOperation ()
 {
 	return getProfileOperationH265Encode();
+}
+
+template<>
+VkVideoDecodeAV1ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<VkVideoDecodeAV1ProfileInfoKHR>::getProfileOperation ()
+{
+	return getProfileOperationAV1Decode();
 }
 
 template<typename ProfileOperation>
@@ -361,6 +386,7 @@ typedef VideoFormatPropertiesQueryTestInstance<VkVideoDecodeH264ProfileInfoKHR> 
 typedef VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH264ProfileInfoKHR> VideoFormatPropertiesQueryH264EncodeTestInstance;
 typedef VideoFormatPropertiesQueryTestInstance<VkVideoDecodeH265ProfileInfoKHR> VideoFormatPropertiesQueryH265DecodeTestInstance;
 typedef VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH265ProfileInfoKHR> VideoFormatPropertiesQueryH265EncodeTestInstance;
+typedef VideoFormatPropertiesQueryTestInstance<VkVideoDecodeAV1ProfileInfoKHR> VideoFormatPropertiesQueryAV1DecodeTestInstance;
 
 class VideoCapabilitiesQueryTestInstance : public VideoBaseTestInstance
 {
@@ -792,6 +818,94 @@ void VideoCapabilitiesQueryH265DecodeTestInstance::validateVideoCapabilitiesExt 
 	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxLevelIdc);
 }
 
+class VideoCapabilitiesQueryAV1DecodeTestInstance : public VideoCapabilitiesQueryTestInstance
+{
+public:
+					VideoCapabilitiesQueryAV1DecodeTestInstance		(Context& context, const CaseDef& data);
+	virtual			~VideoCapabilitiesQueryAV1DecodeTestInstance	(void);
+	tcu::TestStatus	iterate											(void);
+
+protected:
+	void			validateVideoCapabilitiesExt					(const VkVideoDecodeAV1CapabilitiesKHR&	videoCapabilitiesKHR,
+																	 const VkVideoDecodeAV1CapabilitiesKHR&	videoCapabilitiesKHRSecond);
+};
+
+VideoCapabilitiesQueryAV1DecodeTestInstance::VideoCapabilitiesQueryAV1DecodeTestInstance (Context& context, const CaseDef& data)
+	: VideoCapabilitiesQueryTestInstance(context, data)
+{
+}
+
+VideoCapabilitiesQueryAV1DecodeTestInstance::~VideoCapabilitiesQueryAV1DecodeTestInstance (void)
+{
+}
+
+tcu::TestStatus VideoCapabilitiesQueryAV1DecodeTestInstance::iterate (void)
+{
+	const InstanceInterface&				vk						= m_context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice			= m_context.getPhysicalDevice();
+	const VkVideoCodecOperationFlagBitsKHR	videoCodecOperation		= VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
+	VkVideoDecodeAV1ProfileInfoKHR	videoProfileOperation	=
+	{
+		VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR,	//  VkStructureType			sType;
+		DE_NULL,											//  const void*				pNext;
+		STD_VIDEO_AV1_PROFILE_MAIN,					//  StdVideoAV1ProfileIdc	stdProfileIdc;
+		false,										// VkBool filmGrainSupport
+	};
+	VkVideoProfileInfoKHR					videoProfile			=
+	{
+		VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR,			//  VkStructureType						sType;
+		(void*)&videoProfileOperation,					//  void*								pNext;
+		videoCodecOperation,							//  VkVideoCodecOperationFlagBitsKHR	videoCodecOperation;
+		VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,		//  VkVideoChromaSubsamplingFlagsKHR	chromaSubsampling;
+		VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,			//  VkVideoComponentBitDepthFlagsKHR	lumaBitDepth;
+		VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,			//  VkVideoComponentBitDepthFlagsKHR	chromaBitDepth;
+	};
+	VkVideoDecodeAV1CapabilitiesKHR	videoDecodeAV1Capabilities[2];
+	VkVideoDecodeCapabilitiesKHR	videoDecodeCapabilities[2];
+	VkVideoCapabilitiesKHR			videoCapabilites[2];
+
+	for (size_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(videoCapabilites); ++ndx)
+	{
+		const deUint8 filling = (ndx == 0) ? 0x00 : 0xFF;
+
+		deMemset(&videoCapabilites[ndx], filling, sizeof(videoCapabilites[ndx]));
+		deMemset(&videoDecodeCapabilities[ndx], filling, sizeof(videoDecodeCapabilities[ndx]));
+		deMemset(&videoDecodeAV1Capabilities[ndx], filling, sizeof(videoDecodeAV1Capabilities[ndx]));
+
+		videoCapabilites[ndx].sType				= VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
+		videoCapabilites[ndx].pNext				= &videoDecodeCapabilities[ndx];
+		videoDecodeCapabilities[ndx].sType		= VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
+		videoDecodeCapabilities[ndx].pNext		= &videoDecodeAV1Capabilities[ndx];
+		videoDecodeAV1Capabilities[ndx].sType	= VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_CAPABILITIES_KHR;
+		videoDecodeAV1Capabilities[ndx].pNext	= DE_NULL;
+
+		VkResult result = vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
+
+		if (result != VK_SUCCESS)
+		{
+			ostringstream failMsg;
+
+			failMsg << "Failed query call to vkGetPhysicalDeviceVideoCapabilitiesKHR with " << result << " at iteration " << ndx;
+
+			return tcu::TestStatus::fail(failMsg.str());
+		}
+	}
+
+	validateVideoCapabilities(videoCapabilites[0], videoCapabilites[1]);
+	validateExtensionProperties(videoCapabilites[0].stdHeaderVersion, *getVideoExtensionProperties(videoCodecOperation));
+	validateVideoDecodeCapabilities(videoDecodeCapabilities[0], videoDecodeCapabilities[1]);
+	validateVideoCapabilitiesExt(videoDecodeAV1Capabilities[0], videoDecodeAV1Capabilities[1]);
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+void VideoCapabilitiesQueryAV1DecodeTestInstance::validateVideoCapabilitiesExt (const VkVideoDecodeAV1CapabilitiesKHR&	videoCapabilitiesKHR,
+																				 const VkVideoDecodeAV1CapabilitiesKHR&	videoCapabilitiesKHRSecond)
+{
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, sType);
+	VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxLevel);
+}
+
 class VideoCapabilitiesQueryH265EncodeTestInstance : public VideoCapabilitiesQueryTestInstance
 {
 public:
@@ -949,11 +1063,14 @@ void VideoCapabilitiesQueryTestCase::checkSupport (Context& context) const
 		case TEST_TYPE_H265_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
 		case TEST_TYPE_H265_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	context.requireDeviceFunctionality("VK_KHR_video_decode_h265"); break;
 		case TEST_TYPE_H265_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
-		case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	context.requireDeviceFunctionality("VK_KHR_video_encode_h265"); break;
+		case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	context.requireDeviceFunctionality("VK_EXT_video_encode_h265"); break;
+		case TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
+		case TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	context.requireDeviceFunctionality("VK_KHR_video_decode_av1"); break;
 		case TEST_TYPE_H264_DECODE_CAPABILITIES_QUERY:				context.requireDeviceFunctionality("VK_KHR_video_decode_h264"); break;
 		case TEST_TYPE_H264_ENCODE_CAPABILITIES_QUERY:				context.requireDeviceFunctionality("VK_KHR_video_encode_h264"); break;
 		case TEST_TYPE_H265_DECODE_CAPABILITIES_QUERY:				context.requireDeviceFunctionality("VK_KHR_video_decode_h265"); break;
-		case TEST_TYPE_H265_ENCODE_CAPABILITIES_QUERY:				context.requireDeviceFunctionality("VK_KHR_video_encode_h265"); break;
+		case TEST_TYPE_H265_ENCODE_CAPABILITIES_QUERY:				context.requireDeviceFunctionality("VK_EXT_video_encode_h265"); break;
+		case TEST_TYPE_AV1_DECODE_CAPABILITIES_QUERY:				context.requireDeviceFunctionality("VK_KHR_video_decode_av1"); break;
 		default:													TCU_THROW(NotSupportedError, "Unknown TestType");
 	}
 }
@@ -971,10 +1088,13 @@ TestInstance* VideoCapabilitiesQueryTestCase::createInstance (Context& context) 
 		case TEST_TYPE_H265_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	return new VideoFormatPropertiesQueryH265DecodeTestInstance(context, m_caseDef);
 		case TEST_TYPE_H265_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:	return new VideoFormatPropertiesQueryH265EncodeTestInstance(context, m_caseDef);
 		case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	return new VideoFormatPropertiesQueryH265EncodeTestInstance(context, m_caseDef);
+		case TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:	return new VideoFormatPropertiesQueryAV1DecodeTestInstance(context, m_caseDef);
+		case TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	return new VideoFormatPropertiesQueryAV1DecodeTestInstance(context, m_caseDef);
 		case TEST_TYPE_H264_DECODE_CAPABILITIES_QUERY:				return new VideoCapabilitiesQueryH264DecodeTestInstance(context, m_caseDef);
 		case TEST_TYPE_H264_ENCODE_CAPABILITIES_QUERY:				return new VideoCapabilitiesQueryH264EncodeTestInstance(context, m_caseDef);
 		case TEST_TYPE_H265_DECODE_CAPABILITIES_QUERY:				return new VideoCapabilitiesQueryH265DecodeTestInstance(context, m_caseDef);
 		case TEST_TYPE_H265_ENCODE_CAPABILITIES_QUERY:				return new VideoCapabilitiesQueryH265EncodeTestInstance(context, m_caseDef);
+		case TEST_TYPE_AV1_DECODE_CAPABILITIES_QUERY:				return new VideoCapabilitiesQueryAV1DecodeTestInstance(context, m_caseDef);
 		default:													TCU_THROW(NotSupportedError, "Unknown TestType");
 	}
 }
@@ -992,10 +1112,13 @@ const char* getTestName (const TestType testType)
 		case TEST_TYPE_H265_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	return "h265_decode_dpb_video_format_support_query";
 		case TEST_TYPE_H265_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:	return "h265_encode_src_video_format_support_query";
 		case TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	return "h265_encode_dpb_video_format_support_query";
+		case TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:	return "av1_decode_dst_video_format_support_query";
+		case TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:	return "av1_decode_dpb_video_format_support_query";
 		case TEST_TYPE_H264_DECODE_CAPABILITIES_QUERY:				return "h264_decode_capabilities_query";
 		case TEST_TYPE_H264_ENCODE_CAPABILITIES_QUERY:				return "h264_encode_capabilities_query";
 		case TEST_TYPE_H265_DECODE_CAPABILITIES_QUERY:				return "h265_decode_capabilities_query";
 		case TEST_TYPE_H265_ENCODE_CAPABILITIES_QUERY:				return "h265_encode_capabilities_query";
+		case TEST_TYPE_AV1_DECODE_CAPABILITIES_QUERY:				return "av1_decode_capabilities_query";
 		default:													TCU_THROW(NotSupportedError, "Unknown TestType");
 	}
 }
