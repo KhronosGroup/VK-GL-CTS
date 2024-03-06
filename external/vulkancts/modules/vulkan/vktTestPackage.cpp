@@ -130,6 +130,7 @@
 #endif // CTS_USES_VULKANSC
 #include "vktVideoTests.hpp"
 #include "vktShaderObjectTests.hpp"
+#include "vktDGCTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -1206,6 +1207,7 @@ void TestPackage::init (void)
 	addRootChild("video", m_caseListFilter,							video::createTests);
 #endif
 	addRootChild("shader_object", m_caseListFilter,					ShaderObject::createTests);
+	addRootChild("dgc", m_caseListFilter,							DGC::createTests);
 }
 
 void ExperimentalTestPackage::init (void)

@@ -45,12 +45,13 @@ void beginSecondaryCommandBuffer	(const DeviceInterface&				vkd,
 									 const VkCommandBuffer				cmdBuffer,
 									 const VkRenderPass					renderPass,
 									 const VkFramebuffer				framebuffer,
-									 const VkCommandBufferUsageFlags	flags)
+									 const VkCommandBufferUsageFlags	flags,
+									 const void*						inhPNext)
 {
 	const VkCommandBufferInheritanceInfo inheritanceInfo =
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,	//	VkStructureType					sType;
-		nullptr,											//	const void*						pNext;
+		inhPNext,											//	const void*						pNext;
 		renderPass,											//	VkRenderPass					renderPass;
 		0u,													//	deUint32						subpass;
 		framebuffer,										//	VkFramebuffer					framebuffer;
