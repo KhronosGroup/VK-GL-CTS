@@ -4775,6 +4775,26 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
             testCtx, "webgl_spirv_loop",
             "Simple SPIR-V loop from a WebGL example that caused problems in some implementations", "compute",
             "webgl_spirv_loop.amber"));
+
+        {
+            cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(
+                testCtx, "pk_immediate", "Immediate/inline arguments to packed 16-bit operations", "compute",
+                "pk-immediate.amber");
+            testCase->addRequirement("Storage16BitFeatures.storageBuffer16BitAccess");
+            testCase->addRequirement("Float16Int8Features.shaderFloat16");
+            testCase->addRequirement("Features.shaderInt16");
+            testCase->addPropertyRequirement("FloatControlsProperties.shaderDenormPreserveFloat16");
+            basicComputeTests->addChild(testCase);
+        }
+
+        {
+            cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(
+                testCtx, "pkadd_immediate", "Immediate/inline arguments to packed 16-bit operations", "compute",
+                "pkadd-immediate.amber");
+            testCase->addRequirement("Features.shaderInt16");
+            testCase->addRequirement("Storage16BitFeatures.storageBuffer16BitAccess");
+            basicComputeTests->addChild(testCase);
+        }
     }
 #endif
 

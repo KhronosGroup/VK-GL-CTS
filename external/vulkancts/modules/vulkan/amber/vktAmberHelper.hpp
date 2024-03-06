@@ -30,7 +30,8 @@ namespace cts_amber
 {
 
 amber::EngineConfig *GetVulkanConfig(void *instance, void *physicalDevice, void *device, const void *features,
-                                     const void *features2, const std::vector<std::string> &instance_extensions,
+                                     const void *features2, const void *properties, const void *properties2,
+                                     const std::vector<std::string> &instance_extensions,
                                      const std::vector<std::string> &device_extensions, uint32_t queueIdx, void *queue,
                                      void *getInstanceAddrProc);
 

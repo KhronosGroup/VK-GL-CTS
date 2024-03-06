@@ -71,10 +71,10 @@ static amber::EngineConfig *createEngineConfig(Context &ctx, vk::VkDevice custom
                         ctx.getTestContext().getCommandLine());
     vk.getDeviceQueue(dev, ctx.getUniversalQueueFamilyIndex(), 0, &queue);
 
-    amber::EngineConfig *vkConfig =
-        GetVulkanConfig(ctx.getInstance(), ctx.getPhysicalDevice(), dev, &ctx.getDeviceFeatures(),
-                        &ctx.getDeviceFeatures2(), ctx.getInstanceExtensions(), ctx.getDeviceExtensions(),
-                        ctx.getUniversalQueueFamilyIndex(), queue, ctx.getInstanceProcAddr());
+    amber::EngineConfig *vkConfig = GetVulkanConfig(
+        ctx.getInstance(), ctx.getPhysicalDevice(), dev, &ctx.getDeviceFeatures(), &ctx.getDeviceFeatures2(),
+        &ctx.getDeviceProperties(), &ctx.getDeviceProperties2(), ctx.getInstanceExtensions(), ctx.getDeviceExtensions(),
+        ctx.getUniversalQueueFamilyIndex(), queue, ctx.getInstanceProcAddr());
 
     return vkConfig;
 }
@@ -136,6 +136,45 @@ static bool isFeatureSupported(const vkt::Context &ctx, const std::string &featu
     TCU_THROW(InternalError, message.c_str());
 }
 
+// Returns true if the given property is supported by the device.
+// Throws an internal error if the property is not recognized at all.
+static bool isPropertySupported(const vkt::Context &ctx, const std::string &prop)
+{
+    if (prop == "FloatControlsProperties.shaderSignedZeroInfNanPreserveFloat16")
+        return ctx.getFloatControlsProperties().shaderSignedZeroInfNanPreserveFloat16;
+    if (prop == "FloatControlsProperties.shaderSignedZeroInfNanPreserveFloat32")
+        return ctx.getFloatControlsProperties().shaderSignedZeroInfNanPreserveFloat32;
+    if (prop == "FloatControlsProperties.shaderSignedZeroInfNanPreserveFloat64")
+        return ctx.getFloatControlsProperties().shaderSignedZeroInfNanPreserveFloat64;
+    if (prop == "FloatControlsProperties.shaderDenormPreserveFloat16")
+        return ctx.getFloatControlsProperties().shaderDenormPreserveFloat16;
+    if (prop == "FloatControlsProperties.shaderDenormPreserveFloat32")
+        return ctx.getFloatControlsProperties().shaderDenormPreserveFloat32;
+    if (prop == "FloatControlsProperties.shaderDenormPreserveFloat64")
+        return ctx.getFloatControlsProperties().shaderDenormPreserveFloat64;
+    if (prop == "FloatControlsProperties.shaderDenormFlushToZeroFloat16")
+        return ctx.getFloatControlsProperties().shaderDenormFlushToZeroFloat16;
+    if (prop == "FloatControlsProperties.shaderDenormFlushToZeroFloat32")
+        return ctx.getFloatControlsProperties().shaderDenormFlushToZeroFloat32;
+    if (prop == "FloatControlsProperties.shaderDenormFlushToZeroFloat64")
+        return ctx.getFloatControlsProperties().shaderDenormFlushToZeroFloat64;
+    if (prop == "FloatControlsProperties.shaderRoundingModeRTEFloat16")
+        return ctx.getFloatControlsProperties().shaderRoundingModeRTEFloat16;
+    if (prop == "FloatControlsProperties.shaderRoundingModeRTEFloat32")
+        return ctx.getFloatControlsProperties().shaderRoundingModeRTEFloat32;
+    if (prop == "FloatControlsProperties.shaderRoundingModeRTEFloat64")
+        return ctx.getFloatControlsProperties().shaderRoundingModeRTEFloat64;
+    if (prop == "FloatControlsProperties.shaderRoundingModeRTZFloat16")
+        return ctx.getFloatControlsProperties().shaderRoundingModeRTZFloat16;
+    if (prop == "FloatControlsProperties.shaderRoundingModeRTZFloat32")
+        return ctx.getFloatControlsProperties().shaderRoundingModeRTZFloat32;
+    if (prop == "FloatControlsProperties.shaderRoundingModeRTZFloat64")
+        return ctx.getFloatControlsProperties().shaderRoundingModeRTZFloat64;
+
+    std::string message = std::string("Unexpected property name: ") + prop;
+    TCU_THROW(InternalError, message.c_str());
+}
+
 void AmberTestCase::delayedInit(void)
 {
     // Make sure the input can be parsed before we use it.
@@ -189,6 +228,25 @@ void AmberTestCase::checkSupport(Context &ctx) const
         if (missing.size() > 0)
         {
             std::string message("Test requires unsupported features:");
+            message += missing;
+            TCU_THROW(NotSupportedError, message.c_str());
+        }
+    }
+
+    // Check for required properties
+    if (!m_required_properties.empty())
+    {
+        std::string missing;
+        for (const auto &prop : m_required_properties)
+        {
+            if (!isPropertySupported(ctx, prop))
+            {
+                missing += " " + prop;
+            }
+        }
+        if (!missing.empty())
+        {
+            std::string message("Test requires unsupported properties:");
             message += missing;
             TCU_THROW(NotSupportedError, message.c_str());
         }
@@ -492,6 +550,11 @@ void AmberTestCase::addRequirement(const std::string &requirement)
         m_required_extensions.insert(requirement);
 }
 
+void AmberTestCase::addPropertyRequirement(const std::string &requirement)
+{
+    m_required_properties.insert(requirement);
+}
+
 void AmberTestCase::addImageRequirement(vk::VkImageCreateInfo info)
 {
     m_imageRequirements.push_back(info);
@@ -517,6 +580,7 @@ bool AmberTestCase::validateRequirements()
     const auto &deviceExtensions   = m_recipe->GetRequiredInstanceExtensions();
     const auto &instanceExtensions = m_recipe->GetRequiredDeviceExtensions();
     auto requiredFeatures          = m_recipe->GetRequiredFeatures();
+    auto requiredProperties        = m_recipe->GetRequiredProperties();
 
     for (auto &req : requiredFeatures)
     {
@@ -528,8 +592,10 @@ bool AmberTestCase::validateRequirements()
     allRequirements.insert(begin(deviceExtensions), end(deviceExtensions));
     allRequirements.insert(begin(instanceExtensions), end(instanceExtensions));
     allRequirements.insert(begin(requiredFeatures), end(requiredFeatures));
+    allRequirements.insert(begin(requiredProperties), end(requiredProperties));
 
     std::set<std::string> ctsRequirements = m_required_features;
+    ctsRequirements.insert(begin(m_required_properties), end(m_required_properties));
     ctsRequirements.insert(begin(m_required_extensions), end(m_required_extensions));
 
     if (allRequirements != ctsRequirements)

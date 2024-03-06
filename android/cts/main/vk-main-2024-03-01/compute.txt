@@ -3,6 +3,8 @@ dEQP-VK.compute.pipeline.basic.empty_workgroup_all
 dEQP-VK.compute.pipeline.basic.empty_workgroup_x
 dEQP-VK.compute.pipeline.basic.empty_workgroup_y
 dEQP-VK.compute.pipeline.basic.empty_workgroup_z
+dEQP-VK.compute.pipeline.basic.pk_immediate
+dEQP-VK.compute.pipeline.basic.pkadd_immediate
 dEQP-VK.compute.pipeline.basic.secondary_compute_only_queue
 dEQP-VK.compute.pipeline.basic.webgl_spirv_loop
 dEQP-VK.compute.pipeline.cooperative_matrix.khr_a.add.float16_float16.buffer.colmajor
