@@ -42,6 +42,7 @@ namespace vk
 		VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT *pageableDeviceLocalMemoryFeatures = nullptr;
 		VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT *mutableDescriptorTypeFeatures = nullptr;
 		VkPhysicalDeviceLegacyDitheringFeaturesEXT *legacyDitheringFeatures = nullptr;
+		VkPhysicalDeviceFaultFeaturesEXT *deviceFaultFeatures = nullptr;
 #endif // CTS_USES_VULKANSC
 
 		m_coreFeatures2 = initVulkanStructure();
@@ -150,6 +151,8 @@ namespace vk
 							mutableDescriptorTypeFeatures = reinterpret_cast<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT *>(rawStructPtr);
 						else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_DITHERING_FEATURES_EXT)
 							legacyDitheringFeatures = reinterpret_cast<VkPhysicalDeviceLegacyDitheringFeaturesEXT*>(rawStructPtr);
+						else if(structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT)
+							deviceFaultFeatures = reinterpret_cast<VkPhysicalDeviceFaultFeaturesEXT *>(rawStructPtr);
 #endif // CTS_USES_VULKANSC
 	   // add to chain
 						*nextPtr = rawStructPtr;
@@ -258,6 +261,13 @@ namespace vk
 			// when DR is used togehrt with legacy dithering.
 			if (legacyDitheringFeatures)
 				legacyDitheringFeatures->legacyDithering = false;
+
+			// Disable deviceFaultVendorBinary by default because it can impact
+			// performance.
+			if (deviceFaultFeatures)
+			{
+				deviceFaultFeatures->deviceFaultVendorBinary = false;
+			}
 #endif // CTS_USES_VULKANSC
 		}
 	}
