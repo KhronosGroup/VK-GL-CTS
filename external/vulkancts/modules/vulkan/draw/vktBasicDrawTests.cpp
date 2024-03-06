@@ -501,7 +501,11 @@ void DrawTestInstanceBase::initPipeline (const vk::VkDevice device)
 	};
 	if (m_data.useMaintenance5)
 	{
-		pipelineCreateInfo.flags = 0xBAD00000;
+		// Previously these flags were set to a bad value like 0xBAD00000, but
+		// using VK_PIPELINE_CREATE_LIBRARY_BIT_KHR is much more interesting due
+		// to the implications of using this flag by mistake. In particular,
+		// several Mesa drivers crashed at some point due to this.
+		pipelineCreateInfo.flags = vk::VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
 		pipelineCreateInfo.pNext = &pipelineFlags2CreateInfo;
 	}
 #endif // CTS_USES_VULKANSC
