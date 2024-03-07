@@ -1288,7 +1288,7 @@ public:
 			{ OID_NCLAMP, V_ONE, V_NAN, V_ONE, FP::NotNaN },
 
 			// a + b + (-a)
-			{ OID_ADD_SUB_REASSOCIABLE, V_MAX, V_HUGE, V_INF, FP::AllowReassoc },
+			{ OID_ADD_SUB_REASSOCIABLE, V_MAX, V_HUGE, V_INF, FP::AllowReassoc|FP::NotInf },
 			// a + a + (-a)
 			{ OID_ADD_SUB_REASSOCIABLE, V_MAX, V_MAX, V_INF, FP::AllowReassoc|FP::NotInf },
 		};
