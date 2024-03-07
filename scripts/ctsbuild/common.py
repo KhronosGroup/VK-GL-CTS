@@ -54,7 +54,8 @@ class HostInfo:
 			"i686":		32,
 			"x86":		32,
 			"x86_64":	64,
-			"AMD64":	64
+			"AMD64":	64,
+			"arm64":	64
 		}
 		machine = platform.machine()
 

@@ -805,7 +805,8 @@ struct DeviceGroup
 
 	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
 	{
-		return getSafeObjectCount<DeviceGroup>(context, params, MAX_CONCURRENT_DEVICES);
+		const vector<VkPhysicalDeviceGroupProperties> devGroupProperties = enumeratePhysicalDeviceGroups(context.getInstanceInterface(), context.getInstance());
+		return getSafeObjectCount<DeviceGroup>(context, params, MAX_CONCURRENT_DEVICES / devGroupProperties[params.deviceGroupIndex].physicalDeviceCount);
 	}
 
 	static Move<VkDevice> create (const Environment& env, const Resources& res, const Parameters& params)
