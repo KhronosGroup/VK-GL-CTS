@@ -5375,7 +5375,7 @@ bool FunctionalTest::PrepareInputBuffer()
 	{
 		/* Storage and last (6th) element preparation. */
 		m_pNamedBufferStorage(m_bo_in, sizeof(s_initial_data_a), s_initial_data_a,
-							  GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT | GL_MAP_PERSISTENT_BIT);
+							  GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT | GL_MAP_PERSISTENT_BIT);
 
 		if (GL_NO_ERROR == gl.getError())
 		{
@@ -5390,7 +5390,7 @@ bool FunctionalTest::PrepareInputBuffer()
 				if (GL_NO_ERROR == gl.getError())
 				{
 					/* Third element preparation. */
-					glw::GLint* p = (glw::GLint*)m_pMapNamedBuffer(m_bo_in, GL_WRITE_ONLY);
+					glw::GLint* p = (glw::GLint*)m_pMapNamedBuffer(m_bo_in, GL_READ_WRITE);
 
 					if ((GL_NO_ERROR == gl.getError()) || (DE_NULL == p))
 					{
@@ -5409,7 +5409,7 @@ bool FunctionalTest::PrepareInputBuffer()
 								/* Fourth element preparation. */
 								p = (glw::GLint*)m_pMapNamedBufferRange(
 									m_bo_in, sizeof(glw::GLint) * 3, sizeof(glw::GLint),
-									GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+									GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
 
 								if (GL_NO_ERROR == gl.getError())
 								{
