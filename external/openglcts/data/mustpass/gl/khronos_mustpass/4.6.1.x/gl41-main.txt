@@ -28,6 +28,9 @@ KHR-GL41.transform_feedback.draw_xfb_stream_test
 KHR-GL41.transform_feedback.capture_special_interleaved_test
 KHR-GL41.transform_feedback.draw_xfb_instanced_test
 KHR-GL41.transform_feedback.draw_xfb_stream_instanced_test
+KHR-GL41.transform_feedback3.multiple_streams
+KHR-GL41.transform_feedback3.skip_components
+KHR-GL41.transform_feedback3.skip_multiple_buffers
 KHR-GL41.texture_repeat_mode.r8_49x23_0_clamp_to_edge
 KHR-GL41.texture_repeat_mode.r8_49x23_0_repeat
 KHR-GL41.texture_repeat_mode.r8_49x23_0_mirrored_repeat
