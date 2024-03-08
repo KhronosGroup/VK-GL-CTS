@@ -4859,7 +4859,7 @@ void ReconvergenceTestCase::initPrograms (SourceCollections& programCollection) 
 	css <<
 		"void main()\n"
 		<< (m_data.isSUCF() ? "[[subgroup_uniform_control_flow]]\n" : "")
-		<< (m_data.testType == TT_MAXIMAL ? "[[maximal_reconvergence]]\n" : "")
+		<< (m_data.testType == TT_MAXIMAL ? "[[maximally_reconverges]]\n" : "")
 		<< "{\n";
 
 	css << prologue.str() << "\n";
@@ -7863,19 +7863,13 @@ void createAmberFragmentTestCases (add_ref<tcu::TestContext> testCtx, add_ptr<tc
 		if (!(context.getSubgroupProperties().subgroupSize >= 4))
 			TCU_THROW(NotSupportedError, "subgroupSize is less than 4");
 
-		if (!(context.getSubgroupProperties().supportedOperations & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT))
-			TCU_THROW(NotSupportedError, "VK_SUBGROUP_FEATURE_ARITHMETIC_BIT not supported");
-
 		if (!(context.getSubgroupProperties().supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT))
 			TCU_THROW(NotSupportedError, "VK_SUBGROUP_FEATURE_BALLOT_BIT not supported");
 
 		if (Case::matches(testName, { cases[TERMINATE_INVOCATION] }))
 		{
-			if (!(context.getSubgroupProperties().supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT))
-				TCU_THROW(NotSupportedError, "VK_SUBGROUP_FEATURE_QUAD_BIT not supported");
-
-			if (!(context.getSubgroupProperties().supportedOperations & VK_SUBGROUP_FEATURE_SHUFFLE_BIT))
-				TCU_THROW(NotSupportedError, "VK_SUBGROUP_FEATURE_SHUFFLE_BIT not supported");
+			if (!context.getShaderTerminateInvocationFeatures().shaderTerminateInvocation)
+				TCU_THROW(NotSupportedError, "shaderTerminateInvocation not supported.");
 		}
 		else
 		{
@@ -7886,8 +7880,6 @@ void createAmberFragmentTestCases (add_ref<tcu::TestContext> testCtx, add_ptr<tc
 			if (!context.getShaderDemoteToHelperInvocationFeaturesEXT().shaderDemoteToHelperInvocation)
 				TCU_THROW(NotSupportedError, "demoteToHelperInvocation not supported.");
 	#endif
-			if (!context.isDeviceFunctionalitySupported("VK_EXT_shader_demote_to_helper_invocation"))
-				TCU_THROW(NotSupportedError, "VK_EXT_shader_demote_to_helper_invocation not supported.");
 		}
 	};
 

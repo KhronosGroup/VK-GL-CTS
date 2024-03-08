@@ -316,7 +316,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"9fd0fcd737f1369e89fb3aa8b2e62bad57ac46c6",
+		"bada5c87ec6db4441db129d8506742c4a72bd610",
 		"glslang",
 		removeTags = ["main-tot"]),
 	GitRepo(
