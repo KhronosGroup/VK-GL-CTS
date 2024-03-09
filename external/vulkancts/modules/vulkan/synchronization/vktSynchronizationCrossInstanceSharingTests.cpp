@@ -1084,6 +1084,9 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 				1u
 			};
 
+			if ((resourceDesc.imageSamples != VK_SAMPLE_COUNT_1_BIT) && ((m_supportReadOp->getInResourceUsageFlags() | m_supportWriteOp->getOutResourceUsageFlags()) & VK_IMAGE_USAGE_STORAGE_BIT) && !m_context.getDeviceFeatures().shaderStorageImageMultisample)
+				TCU_THROW(NotSupportedError, "shaderStorageImageMultisample not supported");
+
 			vk::Move<vk::VkImage>			image					= createImage(m_vkdA, *m_deviceA, resourceDesc, extent, m_queueFamilyIndicesA,
 																				  *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType);
 			const vk::VkImageTiling			tiling					= vk::VK_IMAGE_TILING_OPTIMAL;
