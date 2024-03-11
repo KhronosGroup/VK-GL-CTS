@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+DEVICE_EXTENSION VK_KHR_shader_terminate_invocation
 
 # A test for a coverage-gap found by the GraphicsFuzz project.
 
@@ -134,6 +135,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; Bound: 857
 ; Schema: 0
                OpCapability Shader
+               OpExtension "SPV_KHR_terminate_invocation"
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %13 %26
@@ -478,42 +480,42 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpSelectionMerge %369 None
                OpBranchConditional %33 %368 %369
         %368 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %369 = OpLabel
                OpSelectionMerge %375 None
                OpBranchConditional %33 %374 %375
         %374 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %375 = OpLabel
                OpSelectionMerge %381 None
                OpBranchConditional %33 %380 %381
         %380 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %381 = OpLabel
                OpSelectionMerge %387 None
                OpBranchConditional %33 %386 %387
         %386 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %387 = OpLabel
                OpSelectionMerge %393 None
                OpBranchConditional %33 %392 %393
         %392 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %393 = OpLabel
                OpSelectionMerge %399 None
                OpBranchConditional %33 %398 %399
         %398 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %399 = OpLabel
                OpSelectionMerge %405 None
                OpBranchConditional %33 %404 %405
         %404 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %405 = OpLabel
                OpSelectionMerge %411 None
                OpBranchConditional %33 %410 %411
         %410 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %411 = OpLabel
                OpBranch %352
         %352 = OpLabel
@@ -527,319 +529,319 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpSelectionMerge %417 None
                OpBranchConditional %33 %416 %417
         %416 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %417 = OpLabel
                OpSelectionMerge %423 None
                OpBranchConditional %33 %422 %423
         %422 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %423 = OpLabel
                OpBranch %300
         %425 = OpLabel
                OpSelectionMerge %430 None
                OpBranchConditional %33 %429 %430
         %429 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %430 = OpLabel
                OpSelectionMerge %436 None
                OpBranchConditional %33 %435 %436
         %435 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %436 = OpLabel
                OpSelectionMerge %442 None
                OpBranchConditional %33 %441 %442
         %441 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %442 = OpLabel
                OpSelectionMerge %448 None
                OpBranchConditional %33 %447 %448
         %447 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %448 = OpLabel
                OpSelectionMerge %454 None
                OpBranchConditional %33 %453 %454
         %453 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %454 = OpLabel
                OpSelectionMerge %460 None
                OpBranchConditional %33 %459 %460
         %459 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %460 = OpLabel
                OpSelectionMerge %466 None
                OpBranchConditional %33 %465 %466
         %465 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %466 = OpLabel
                OpSelectionMerge %472 None
                OpBranchConditional %33 %471 %472
         %471 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %472 = OpLabel
                OpSelectionMerge %478 None
                OpBranchConditional %33 %477 %478
         %477 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %478 = OpLabel
                OpSelectionMerge %484 None
                OpBranchConditional %33 %483 %484
         %483 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %484 = OpLabel
                OpSelectionMerge %490 None
                OpBranchConditional %33 %489 %490
         %489 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %490 = OpLabel
                OpSelectionMerge %496 None
                OpBranchConditional %33 %495 %496
         %495 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %496 = OpLabel
                OpSelectionMerge %502 None
                OpBranchConditional %33 %501 %502
         %501 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %502 = OpLabel
                OpSelectionMerge %508 None
                OpBranchConditional %33 %507 %508
         %507 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %508 = OpLabel
                OpSelectionMerge %514 None
                OpBranchConditional %33 %513 %514
         %513 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %514 = OpLabel
                OpSelectionMerge %520 None
                OpBranchConditional %33 %519 %520
         %519 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %520 = OpLabel
                OpSelectionMerge %526 None
                OpBranchConditional %33 %525 %526
         %525 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %526 = OpLabel
                OpSelectionMerge %532 None
                OpBranchConditional %33 %531 %532
         %531 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %532 = OpLabel
                OpSelectionMerge %538 None
                OpBranchConditional %33 %537 %538
         %537 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %538 = OpLabel
                OpSelectionMerge %544 None
                OpBranchConditional %33 %543 %544
         %543 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %544 = OpLabel
                OpSelectionMerge %550 None
                OpBranchConditional %33 %549 %550
         %549 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %550 = OpLabel
                OpSelectionMerge %556 None
                OpBranchConditional %33 %555 %556
         %555 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %556 = OpLabel
                OpSelectionMerge %562 None
                OpBranchConditional %33 %561 %562
         %561 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %562 = OpLabel
                OpSelectionMerge %568 None
                OpBranchConditional %33 %567 %568
         %567 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %568 = OpLabel
                OpSelectionMerge %574 None
                OpBranchConditional %33 %573 %574
         %573 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %574 = OpLabel
                OpSelectionMerge %580 None
                OpBranchConditional %33 %579 %580
         %579 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %580 = OpLabel
                OpSelectionMerge %586 None
                OpBranchConditional %33 %585 %586
         %585 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %586 = OpLabel
                OpSelectionMerge %592 None
                OpBranchConditional %33 %591 %592
         %591 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %592 = OpLabel
                OpSelectionMerge %598 None
                OpBranchConditional %33 %597 %598
         %597 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %598 = OpLabel
                OpSelectionMerge %604 None
                OpBranchConditional %33 %603 %604
         %603 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %604 = OpLabel
                OpSelectionMerge %610 None
                OpBranchConditional %33 %609 %610
         %609 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %610 = OpLabel
                OpSelectionMerge %616 None
                OpBranchConditional %33 %615 %616
         %615 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %616 = OpLabel
                OpSelectionMerge %622 None
                OpBranchConditional %33 %621 %622
         %621 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %622 = OpLabel
                OpSelectionMerge %628 None
                OpBranchConditional %33 %627 %628
         %627 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %628 = OpLabel
                OpSelectionMerge %634 None
                OpBranchConditional %33 %633 %634
         %633 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %634 = OpLabel
                OpSelectionMerge %640 None
                OpBranchConditional %33 %639 %640
         %639 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %640 = OpLabel
                OpSelectionMerge %646 None
                OpBranchConditional %33 %645 %646
         %645 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %646 = OpLabel
                OpSelectionMerge %652 None
                OpBranchConditional %33 %651 %652
         %651 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %652 = OpLabel
                OpSelectionMerge %658 None
                OpBranchConditional %33 %657 %658
         %657 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %658 = OpLabel
                OpSelectionMerge %664 None
                OpBranchConditional %33 %663 %664
         %663 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %664 = OpLabel
                OpSelectionMerge %670 None
                OpBranchConditional %33 %669 %670
         %669 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %670 = OpLabel
                OpSelectionMerge %676 None
                OpBranchConditional %33 %675 %676
         %675 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %676 = OpLabel
                OpSelectionMerge %682 None
                OpBranchConditional %33 %681 %682
         %681 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %682 = OpLabel
                OpSelectionMerge %688 None
                OpBranchConditional %33 %687 %688
         %687 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %688 = OpLabel
                OpSelectionMerge %694 None
                OpBranchConditional %33 %693 %694
         %693 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %694 = OpLabel
                OpSelectionMerge %700 None
                OpBranchConditional %33 %699 %700
         %699 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %700 = OpLabel
                OpSelectionMerge %706 None
                OpBranchConditional %33 %705 %706
         %705 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %706 = OpLabel
                OpSelectionMerge %712 None
                OpBranchConditional %33 %711 %712
         %711 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %712 = OpLabel
                OpSelectionMerge %718 None
                OpBranchConditional %33 %717 %718
         %717 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %718 = OpLabel
                OpSelectionMerge %724 None
                OpBranchConditional %33 %723 %724
         %723 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %724 = OpLabel
                OpSelectionMerge %730 None
                OpBranchConditional %33 %729 %730
         %729 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %730 = OpLabel
                OpSelectionMerge %736 None
                OpBranchConditional %33 %735 %736
         %735 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %736 = OpLabel
                OpSelectionMerge %742 None
                OpBranchConditional %33 %741 %742
         %741 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %742 = OpLabel
                OpSelectionMerge %748 None
                OpBranchConditional %33 %747 %748
         %747 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %748 = OpLabel
                OpSelectionMerge %754 None
                OpBranchConditional %33 %753 %754
         %753 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %754 = OpLabel
                OpSelectionMerge %760 None
                OpBranchConditional %33 %759 %760
         %759 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %760 = OpLabel
                OpSelectionMerge %766 None
                OpBranchConditional %33 %765 %766
         %765 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %766 = OpLabel
                OpSelectionMerge %772 None
                OpBranchConditional %33 %771 %772
         %771 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %772 = OpLabel
                OpSelectionMerge %778 None
                OpBranchConditional %33 %777 %778
         %777 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %778 = OpLabel
                OpSelectionMerge %784 None
                OpBranchConditional %33 %783 %784
         %783 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %784 = OpLabel
                OpSelectionMerge %790 None
                OpBranchConditional %33 %789 %790
         %789 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %790 = OpLabel
         %797 = OpAccessChain %796 %795 %9 %28
         %798 = OpLoad %10 %797
@@ -859,7 +861,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
         %814 = OpLabel
                OpBranch %21
         %815 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %804 = OpLabel
                OpBranch %300
         %300 = OpLabel
@@ -868,7 +870,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpSelectionMerge %822 None
                OpBranchConditional %33 %821 %822
         %821 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %822 = OpLabel
                OpSelectionMerge %828 None
                OpBranchConditional %33 %827 %828
