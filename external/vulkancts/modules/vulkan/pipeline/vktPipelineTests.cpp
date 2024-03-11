@@ -75,6 +75,7 @@
 #include "vktPipelineBindVertexBuffers2Tests.hpp"
 #include "vktPipelineRobustnessCacheTests.hpp"
 #include "vktPipelineInputAttributeOffsetTests.hpp"
+#include "vktPipelineEmptyFSTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -197,6 +198,7 @@ void createChildren (tcu::TestCaseGroup* group, PipelineConstructionType pipelin
 	// Monolithic pipeline tests
 	}
 #endif // CTS_USES_VULKANSC
+	group->addChild(createEmptyFSTests(testCtx, pipelineConstructionType));
 }
 
 } // anonymous

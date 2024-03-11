@@ -302,6 +302,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineDynamicOffsetTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineDynamicVertexAttributeTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineEarlyDestroyTests.cpp",
+        "external/vulkancts/modules/vulkan/pipeline/vktPipelineEmptyFSTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineExecutablePropertiesTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineExtendedDynamicStateMiscTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineExtendedDynamicStateTests.cpp",

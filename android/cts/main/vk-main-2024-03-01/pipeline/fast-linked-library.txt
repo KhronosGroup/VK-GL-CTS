@@ -906,6 +906,12 @@ dEQP-VK.pipeline.fast_linked_library.depth.nocolor.format.d32_sfloat_s8_uint_sep
 dEQP-VK.pipeline.fast_linked_library.depth.nocolor.format.x8_d24_unorm_pack32.host_visible.local_memory_depth_buffer
 dEQP-VK.pipeline.fast_linked_library.dynamic_vertex_attribute.nonsequential
 dEQP-VK.pipeline.fast_linked_library.early_destroy.no_cache_destroy_layout_maintenance5
+dEQP-VK.pipeline.fast_linked_library.empty_fs.geom_empty_fs
+dEQP-VK.pipeline.fast_linked_library.empty_fs.geom_no_fs
+dEQP-VK.pipeline.fast_linked_library.empty_fs.tess_empty_fs
+dEQP-VK.pipeline.fast_linked_library.empty_fs.tess_no_fs
+dEQP-VK.pipeline.fast_linked_library.empty_fs.vert_empty_fs
+dEQP-VK.pipeline.fast_linked_library.empty_fs.vert_no_fs
 dEQP-VK.pipeline.fast_linked_library.extended_dynamic_state.after_pipelines.color_blend_all_disabled_new_color
 dEQP-VK.pipeline.fast_linked_library.extended_dynamic_state.after_pipelines.color_blend_all_disabled_old_color
 dEQP-VK.pipeline.fast_linked_library.extended_dynamic_state.after_pipelines.color_blend_all_enabled_new_color
