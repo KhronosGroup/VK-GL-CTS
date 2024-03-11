@@ -8152,9 +8152,9 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 			}
 			else
 			{
-				Resource input0	= createFilledResource(desc);
-				desc.value		= 0.0;
 				Resource input1	= createFilledResource(desc);
+				desc.value		= 0.0;
+				Resource input0	= createFilledResource(desc);
 				Resource output	= createFilledResource(desc);
 				spec.inputs.push_back(input0);
 				spec.inputs.push_back(input1);
