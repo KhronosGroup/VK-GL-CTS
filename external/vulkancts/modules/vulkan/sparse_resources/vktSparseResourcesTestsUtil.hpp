@@ -201,7 +201,9 @@ void							submitCommands						(const vk::DeviceInterface&			vk,
 																	 const vk::VkSemaphore*				pWaitSemaphores			= DE_NULL,
 																	 const vk::VkPipelineStageFlags*	pWaitDstStageMask		= DE_NULL,
 																	 const deUint32						signalSemaphoreCount	= 0,
-																	 const vk::VkSemaphore*				pSignalSemaphores		= DE_NULL);
+																	 const vk::VkSemaphore*				pSignalSemaphores		= DE_NULL,
+																	 const bool							useDeviceGroups			= false,
+																	 const deUint32						physicalDeviceID		= 0);
 
 void							submitCommandsAndWait				(const vk::DeviceInterface&			vk,
 																	 const vk::VkDevice					device,

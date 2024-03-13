@@ -63,12 +63,12 @@ void checkNestedRenderPassCapabilities (vkt::Context& context)
 		TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
 }
 
-de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer (vkt::Context& context, const ConditionalData& data)
+de::SharedPtr<Draw::Buffer>	createConditionalRenderingBuffer (vkt::Context& context, const ConditionalData& data, bool computeQueue)
 {
 	const auto&	vk			= context.getDeviceInterface();
 	const auto	device		= context.getDevice();
-	const auto	queueIndex	= context.getUniversalQueueFamilyIndex();
-	const auto	queue		= context.getUniversalQueue();
+	const auto	queueIndex	= (computeQueue ? context.getComputeQueueFamilyIndex() : context.getUniversalQueueFamilyIndex());
+	const auto	queue		= (computeQueue ? context.getComputeQueue() : context.getUniversalQueue());
 	auto&		alloc		= context.getDefaultAllocator();
 
 	// When padding the condition value, it will be surounded by two additional values with nonzero bytes in them.

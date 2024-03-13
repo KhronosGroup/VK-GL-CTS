@@ -430,12 +430,6 @@ struct PixelSetter
 	PixelSetter (const tcu::PixelBufferAccess& access) : m_access(access) {}
 	virtual void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const = 0;
 protected:
-	union RawReinterpreter
-	{
-		tcu::Vec4	fvec;
-		tcu::UVec4	uvec;
-		tcu::IVec4	ivec;
-	};
 	const tcu::PixelBufferAccess& m_access;
 };
 
@@ -448,13 +442,13 @@ struct FloatPixelSetter : public PixelSetter
 struct UintPixelSetter : public PixelSetter
 {
 	UintPixelSetter (const tcu::PixelBufferAccess& access) : PixelSetter(access) {}
-	void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const override { RawReinterpreter v { rawValues }; m_access.setPixel(v.uvec, x, y, z); }
+	void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const override { m_access.setPixel(rawValues.bitCast<deUint32>(), x, y, z); }
 };
 
 struct IntPixelSetter : public PixelSetter
 {
 	IntPixelSetter (const tcu::PixelBufferAccess& access) : PixelSetter(access) {}
-	void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const override { RawReinterpreter v { rawValues }; m_access.setPixel(v.ivec, x, y, z); }
+	void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const override { m_access.setPixel(rawValues.bitCast<int>(), x, y, z); }
 };
 
 std::unique_ptr<PixelSetter> getPixelSetter (const tcu::PixelBufferAccess& access, VkFormat format)
@@ -478,9 +472,24 @@ VkFormat chooseComparisonFormat (VkFormat planeOriginalFormat, VkFormat planeCom
 	const bool isOriginalPadded		= isPaddedFormat(planeOriginalFormat);
 	const bool isCompatiblePadded	= isPaddedFormat(planeCompatibleFormat);
 
-	// We can't have padded formats on both sides unless they're the exact same formats.
 	if (isOriginalPadded && isCompatiblePadded)
-		DE_ASSERT(planeOriginalFormat == planeCompatibleFormat);
+	{
+		if (planeOriginalFormat == planeCompatibleFormat)
+			return planeOriginalFormat;
+
+		// Try to see if they're a known format pair that can be compared.
+		const auto& fmt1 = (planeOriginalFormat < planeCompatibleFormat ? planeOriginalFormat : planeCompatibleFormat);
+		const auto& fmt2 = (planeOriginalFormat < planeCompatibleFormat ? planeCompatibleFormat : planeOriginalFormat);
+
+		if (fmt1 == VK_FORMAT_R10X6_UNORM_PACK16 && fmt2 == VK_FORMAT_R12X4_UNORM_PACK16)
+			return fmt1;
+
+		if (fmt1 == VK_FORMAT_R10X6G10X6_UNORM_2PACK16 && fmt2 == VK_FORMAT_R12X4G12X4_UNORM_2PACK16)
+			return fmt1;
+
+		// We can't have padded formats on both sides unless they're the exact same formats or we know how to compare them.
+		DE_ASSERT(false);
+	}
 
 	if (isCompatiblePadded)
 		return planeCompatibleFormat;

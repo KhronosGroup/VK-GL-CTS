@@ -899,6 +899,15 @@ const char* getFrontFaceName (VkFrontFace value)
 	}
 }
 
+tcu::Format::Bitfield<32> getMemoryMapFlagsStr (VkMemoryMapFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_MEMORY_MAP_PLACED_BIT_EXT,	"VK_MEMORY_MAP_PLACED_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getImageAspectFlagsStr (VkImageAspectFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -1998,6 +2007,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY_EXT:						return "VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY_EXT";
 		case VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR:													return "VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR";
 		case VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR:												return "VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_PROPERTIES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT:											return "VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT:											return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT";
 		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT:							return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT";
@@ -2301,9 +2313,10 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR:											return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR:												return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_PROPERTIES_KHR";
-		case VK_STRUCTURE_TYPE_CAPTURED_PIPELINE_DATA_INFO_KHR:										return "VK_STRUCTURE_TYPE_CAPTURED_PIPELINE_DATA_INFO_KHR";
+		case VK_STRUCTURE_TYPE_RELEASE_CAPTURED_PIPELINE_DATA_INFO_KHR:								return "VK_STRUCTURE_TYPE_RELEASE_CAPTURED_PIPELINE_DATA_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_DATA_INFO_KHR:										return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_DATA_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEYS_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEYS_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_DEVICE_PIPELINE_BINARY_INTERNAL_CACHE_CONTROL_KHR:					return "VK_STRUCTURE_TYPE_DEVICE_PIPELINE_BINARY_INTERNAL_CACHE_CONTROL_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM:												return "VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC";
@@ -2369,6 +2382,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT:								return "VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT:					return "VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV";
 		default:																					return DE_NULL;
 	}
 }
@@ -4581,6 +4597,15 @@ tcu::Format::Bitfield<64> getPhysicalDeviceSchedulingControlsFlagsARMStr (VkPhys
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getMemoryUnmapFlagsKHRStr (VkMemoryUnmapFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_MEMORY_UNMAP_RESERVE_BIT_EXT,	"VK_MEMORY_UNMAP_RESERVE_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 const char* getVendorIdName (VkVendorId value)
 {
 	switch (value)
@@ -5438,6 +5463,92 @@ const char* getdVideoAV1FrameRestorationTypeName (StdVideoAV1FrameRestorationTyp
 	}
 }
 
+const char* getdVideoAV1ColorPrimariesName (StdVideoAV1ColorPrimaries value)
+{
+	switch (value)
+	{
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_BT_709:			return "STD_VIDEO_AV1_COLOR_PRIMARIES_BT_709";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_BT_UNSPECIFIED:	return "STD_VIDEO_AV1_COLOR_PRIMARIES_BT_UNSPECIFIED";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_BT_470_M:		return "STD_VIDEO_AV1_COLOR_PRIMARIES_BT_470_M";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_BT_470_B_G:		return "STD_VIDEO_AV1_COLOR_PRIMARIES_BT_470_B_G";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_BT_601:			return "STD_VIDEO_AV1_COLOR_PRIMARIES_BT_601";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_SMPTE_240:		return "STD_VIDEO_AV1_COLOR_PRIMARIES_SMPTE_240";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_GENERIC_FILM:	return "STD_VIDEO_AV1_COLOR_PRIMARIES_GENERIC_FILM";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_BT_2020:			return "STD_VIDEO_AV1_COLOR_PRIMARIES_BT_2020";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_XYZ:				return "STD_VIDEO_AV1_COLOR_PRIMARIES_XYZ";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_SMPTE_431:		return "STD_VIDEO_AV1_COLOR_PRIMARIES_SMPTE_431";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_SMPTE_432:		return "STD_VIDEO_AV1_COLOR_PRIMARIES_SMPTE_432";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_EBU_3213:		return "STD_VIDEO_AV1_COLOR_PRIMARIES_EBU_3213";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_INVALID:			return "STD_VIDEO_AV1_COLOR_PRIMARIES_INVALID";
+		default:											return DE_NULL;
+	}
+}
+
+const char* getdVideoAV1TransferCharacteristicsName (StdVideoAV1TransferCharacteristics value)
+{
+	switch (value)
+	{
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_RESERVED_0:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_RESERVED_0";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_709:			return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_709";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_UNSPECIFIED:	return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_UNSPECIFIED";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_RESERVED_3:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_RESERVED_3";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_470_M:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_470_M";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_470_B_G:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_470_B_G";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_601:			return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_601";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_SMPTE_240:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_SMPTE_240";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_LINEAR:			return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_LINEAR";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_LOG_100:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_LOG_100";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_LOG_100_SQRT10:	return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_LOG_100_SQRT10";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_IEC_61966:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_IEC_61966";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_1361:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_1361";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_SRGB:			return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_SRGB";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_2020_10_BIT:	return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_2020_10_BIT";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_2020_12_BIT:	return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_BT_2020_12_BIT";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_SMPTE_2084:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_SMPTE_2084";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_SMPTE_428:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_SMPTE_428";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_HLG:			return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_HLG";
+		case STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_INVALID:		return "STD_VIDEO_AV1_TRANSFER_CHARACTERISTICS_INVALID";
+		default:													return DE_NULL;
+	}
+}
+
+const char* getdVideoAV1MatrixCoefficientsName (StdVideoAV1MatrixCoefficients value)
+{
+	switch (value)
+	{
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_IDENTITY:	return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_IDENTITY";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_BT_709:		return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_BT_709";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_UNSPECIFIED:	return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_UNSPECIFIED";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_RESERVED_3:	return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_RESERVED_3";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_FCC:			return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_FCC";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_BT_470_B_G:	return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_BT_470_B_G";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_BT_601:		return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_BT_601";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_SMPTE_240:	return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_SMPTE_240";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_SMPTE_YCGCO:	return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_SMPTE_YCGCO";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_BT_2020_NCL:	return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_BT_2020_NCL";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_BT_2020_CL:	return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_BT_2020_CL";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_SMPTE_2085:	return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_SMPTE_2085";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_CHROMAT_NCL:	return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_CHROMAT_NCL";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_CHROMAT_CL:	return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_CHROMAT_CL";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_ICTCP:		return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_ICTCP";
+		case STD_VIDEO_AV1_MATRIX_COEFFICIENTS_INVALID:		return "STD_VIDEO_AV1_MATRIX_COEFFICIENTS_INVALID";
+		default:											return DE_NULL;
+	}
+}
+
+const char* getdVideoAV1ChromaSamplePositionName (StdVideoAV1ChromaSamplePosition value)
+{
+	switch (value)
+	{
+		case STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_UNKNOWN:		return "STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_UNKNOWN";
+		case STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_VERTICAL:		return "STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_VERTICAL";
+		case STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_COLOCATED:	return "STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_COLOCATED";
+		case STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_RESERVED:		return "STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_RESERVED";
+		case STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_INVALID:		return "STD_VIDEO_AV1_CHROMA_SAMPLE_POSITION_INVALID";
+		default:												return DE_NULL;
+	}
+}
+
 tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
@@ -5494,16 +5605,6 @@ tcu::Format::Bitfield<32> getSemaphoreCreateFlagsStr (VkSemaphoreCreateFlags val
 }
 
 tcu::Format::Bitfield<32> getShaderModuleCreateFlagsStr (VkShaderModuleCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getMemoryMapFlagsStr (VkMemoryMapFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getMemoryUnmapFlagsKHRStr (VkMemoryUnmapFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -6839,7 +6940,7 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryCreateInfoKHR& 
 std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryDataKHR& value)
 {
 	s << "VkPipelineBinaryDataKHR = {\n";
-	s << "\tsize = " << value.size << '\n';
+	s << "\tdataSize = " << value.dataSize << '\n';
 	s << "\tpData = " << value.pData << '\n';
 	s << '}';
 	return s;
@@ -6868,9 +6969,9 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineBinaryInfoKHR& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkCapturedPipelineDataInfoKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkReleaseCapturedPipelineDataInfoKHR& value)
 {
-	s << "VkCapturedPipelineDataInfoKHR = {\n";
+	s << "VkReleaseCapturedPipelineDataInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpipeline = " << value.pipeline << '\n';
@@ -15845,6 +15946,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingMotio
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingValidationFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceRayTracingValidationFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trayTracingValidation = " << value.rayTracingValidation << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureGeometryMotionTrianglesDataNV& value)
 {
 	s << "VkAccelerationStructureGeometryMotionTrianglesDataNV = {\n";
@@ -16360,12 +16471,23 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelineBinaryF
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkDevicePipelineBinaryInternalCacheControlKHR& value)
+{
+	s << "VkDevicePipelineBinaryInternalCacheControlKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdisableInternalCache = " << value.disableInternalCache << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelineBinaryPropertiesKHR& value)
 {
 	s << "VkPhysicalDevicePipelineBinaryPropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpipelineBinaryInternalCache = " << value.pipelineBinaryInternalCache << '\n';
+	s << "\tpipelineBinaryInternalCacheControl = " << value.pipelineBinaryInternalCacheControl << '\n';
 	s << "\tpipelineBinaryPrefersInternalCache = " << value.pipelineBinaryPrefersInternalCache << '\n';
 	s << "\tpipelineBinaryPrecompiledInternalCache = " << value.pipelineBinaryPrecompiledInternalCache << '\n';
 	s << "\tpipelineBinaryCompressedData = " << value.pipelineBinaryCompressedData << '\n';
@@ -18496,6 +18618,58 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderQuadContr
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderQuadControl = " << value.shaderQuadControl << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderFloat16VectorAtomics = " << value.shaderFloat16VectorAtomics << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceMapMemoryPlacedFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryMapPlaced = " << value.memoryMapPlaced << '\n';
+	s << "\tmemoryMapRangePlaced = " << value.memoryMapRangePlaced << '\n';
+	s << "\tmemoryUnmapReserve = " << value.memoryUnmapReserve << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceMapMemoryPlacedPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tminPlacedMemoryMapAlignment = " << value.minPlacedMemoryMapAlignment << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryMapPlacedInfoEXT& value)
+{
+	s << "VkMemoryMapPlacedInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpPlacedAddress = " << value.pPlacedAddress << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRawAccessChainsFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceRawAccessChainsFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderRawAccessChains = " << value.shaderRawAccessChains << '\n';
 	s << '}';
 	return s;
 }

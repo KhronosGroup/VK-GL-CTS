@@ -192,6 +192,8 @@ bool is8BitUBOStorageSupported (Context& context);
 
 bool isSubgroupBroadcastDynamicIdSupported (Context& context);
 
+bool isSubgroupRotateSpecVersionValid(Context& context);
+
 std::string getFormatNameForGLSL (vk::VkFormat format);
 
 std::string getAdditionalExtensionForFormat (vk::VkFormat format);

@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2016-2024 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include "vktImageAtomicOperationTests.hpp"
 #include "vktImageAtomicSpirvShaders.hpp"
 
+#include "deFloat16.h"
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 #include "deSTLUtil.hpp"
@@ -46,6 +47,118 @@
 #include "tcuTexture.hpp"
 #include "tcuVectorType.hpp"
 #include "tcuStringTemplate.hpp"
+
+
+class Half
+{
+public:
+	static Half			create			(float value)				{ Half h; h.m_value = floatToHalf(value); return h; }
+	inline deFloat16	getValue		(void) const				{ return m_value; }
+
+	inline Half			operator+		(const Half& other) const	{ return create(halfToFloat(m_value) + halfToFloat(other.getValue())); }
+	inline Half			operator*		(const Half& other) const	{ return create(halfToFloat(m_value) * halfToFloat(other.getValue())); }
+	inline Half			operator/		(const Half& other) const	{ return create(halfToFloat(m_value) / halfToFloat(other.getValue())); }
+	inline Half			operator-		(const Half& other) const	{ return create(halfToFloat(m_value) - halfToFloat(other.getValue())); }
+
+	inline Half&		operator+=		(const Half& other)			{ m_value = floatToHalf(halfToFloat(other.getValue()) + halfToFloat(m_value)); return *this; }
+	inline Half&		operator*=		(const Half& other)			{ m_value = floatToHalf(halfToFloat(other.getValue()) * halfToFloat(m_value)); return *this; }
+	inline Half&		operator/=		(const Half& other)			{ m_value = floatToHalf(halfToFloat(other.getValue()) / halfToFloat(m_value)); return *this; }
+	inline Half&		operator-=		(const Half& other)			{ m_value = floatToHalf(halfToFloat(other.getValue()) - halfToFloat(m_value)); return *this; }
+
+	inline bool			operator==		(const Half& other) const	{ return m_value == other.m_value; }
+	inline bool			operator!=		(const Half& other) const	{ return m_value != other.m_value; }
+	inline bool			operator<		(const Half& other) const	{ return halfToFloat(m_value) < halfToFloat(other.m_value); }
+	inline bool			operator>		(const Half& other) const	{ return halfToFloat(m_value) > halfToFloat(other.m_value); }
+	inline bool			operator<=		(const Half& other) const	{ return halfToFloat(m_value) <= halfToFloat(other.m_value); }
+	inline bool			operator>=		(const Half& other) const	{ return halfToFloat(m_value) >= halfToFloat(other.m_value); }
+
+	inline Half&		operator=		(const float f)				{ m_value = floatToHalf(f); return *this; }
+	Half(float value)	{ m_value = floatToHalf(value); }
+	Half(int value)	 : Half((float)value) {}
+	Half(size_t value)	 : Half((float)value) {}
+	Half() : Half(0) {}
+
+	template<class T>
+	inline T			to				(void) const				{ return (T)halfToFloat(m_value); }
+
+	inline static deFloat16	floatToHalf		(float f);
+	inline static float		halfToFloat		(deFloat16 h);
+private:
+	deFloat16 m_value;
+};
+
+inline deFloat16 Half::floatToHalf (float f)
+{
+	tcu::Float<deUint16, 5, 10, 15, tcu::FLOAT_HAS_SIGN> v(f);
+	return v.bits();
+}
+
+inline float Half::halfToFloat (deFloat16 h)
+{
+	return tcu::Float16((deUint16)h).asFloat();
+}
+
+class F16Vec2 : public tcu::Vector<Half, 2>
+{
+	using BaseT = tcu::Vector<Half, 2>;
+public:
+	F16Vec2(const BaseT &v) : BaseT(v) {}
+	F16Vec2(int i) : F16Vec2((float)i) {}
+	F16Vec2(size_t i) : F16Vec2((float)i) {}
+	F16Vec2(float f) : F16Vec2(f, f) {}
+	F16Vec2(float f0, float f1) {
+		m_data[0] = f0;
+		m_data[1] = f1;
+	}
+	F16Vec2(Half h0, Half h1) {
+		m_data[0] = h0;
+		m_data[1] = h1;
+	}
+	F16Vec2() : F16Vec2(0) {}
+};
+
+class F16Vec4 : public tcu::Vector<Half, 4>
+{
+	using BaseT = tcu::Vector<Half, 4>;
+public:
+	F16Vec4(const BaseT &v) : BaseT(v) {}
+	F16Vec4(int i) : F16Vec4((float)i) {}
+	F16Vec4(size_t i) : F16Vec4((float)i) {}
+	F16Vec4(float f) : F16Vec4(f, f, f, f) {}
+	F16Vec4(float f0, float f1, float f2, float f3) {
+		m_data[0] = f0;
+		m_data[1] = f1;
+		m_data[2] = f2;
+		m_data[3] = f3;
+	}
+	F16Vec4(Half h0, Half h1, Half h2, Half h3) {
+		m_data[0] = h0;
+		m_data[1] = h1;
+		m_data[2] = h2;
+		m_data[3] = h3;
+	}
+	F16Vec4() : F16Vec4(0) {}
+};
+
+namespace de
+{
+template<> inline F16Vec2 min<F16Vec2>(F16Vec2 a, F16Vec2 b)
+{
+	return F16Vec2(de::min(a[0], b[0]), de::min(a[1], b[1]));
+}
+template<> inline F16Vec2 max<F16Vec2>(F16Vec2 a, F16Vec2 b)
+{
+	return F16Vec2(de::max(a[0], b[0]), de::max(a[1], b[1]));
+}
+template<> inline F16Vec4 min<F16Vec4>(F16Vec4 a, F16Vec4 b)
+{
+	return F16Vec4(de::min(a[0], b[0]), de::min(a[1], b[1]), de::min(a[2], b[2]), de::min(a[3], b[3]));
+}
+template<> inline F16Vec4 max<F16Vec4>(F16Vec4 a, F16Vec4 b)
+{
+	return F16Vec4(de::max(a[0], b[0]), de::max(a[1], b[1]), de::max(a[2], b[2]), de::max(a[3], b[3]));
+}
+}
 
 namespace vkt
 {
@@ -134,11 +247,15 @@ static string getCoordStr (const ImageType		imageType,
 	}
 }
 
-static string getComponentTypeStr (deUint32 componentWidth, bool intFormat, bool uintFormat, bool floatFormat)
+static string getComponentTypeStr (tcu::TextureFormat format, deUint32 componentWidth, bool intFormat, bool uintFormat, bool floatFormat)
 {
 	DE_ASSERT(intFormat || uintFormat || floatFormat);
 
 	const bool is64 = (componentWidth == 64);
+	if (format.type == tcu::TextureFormat::HALF_FLOAT) {
+		DE_ASSERT(floatFormat);
+		return string("f16vec") + to_string(tcu::getNumUsedChannels(format.order));
+	}
 
 	if (intFormat)
 		return (is64 ? "int64_t" : "int");
@@ -166,7 +283,8 @@ static string getVec4TypeStr (deUint32 componentWidth, bool intFormat, bool uint
 	return "";
 }
 
-static string getAtomicFuncArgumentShaderStr (const AtomicOperation	op,
+static string getAtomicFuncArgumentShaderStr (const tcu::TextureFormat	format,
+											  const AtomicOperation	op,
 											  const string&			x,
 											  const string&			y,
 											  const string&			z,
@@ -178,12 +296,20 @@ static string getAtomicFuncArgumentShaderStr (const AtomicOperation	op,
 		case ATOMIC_OPERATION_AND:
 		case ATOMIC_OPERATION_OR:
 		case ATOMIC_OPERATION_XOR:
-			return string("(" + x + "*" + x + " + " + y + "*" + y + " + " + z + "*" + z + ")");
+			if (format.type == tcu::TextureFormat::HALF_FLOAT) {
+				return string("(" + x + " + 2*" + y + " + 3*" + z + ")");
+			} else {
+				return string("(" + x + "*" + x + " + " + y + "*" + y + " + " + z + "*" + z + ")");
+			}
 		case ATOMIC_OPERATION_MIN:
 		case ATOMIC_OPERATION_MAX:
 			// multiply by (1-2*(value % 2) to make half of the data negative
 			// this will result in generating large numbers for uint formats
-			return string("((1 - 2*(" + x + " % 2)) * (" + x + "*" + x + " + " + y + "*" + y + " + " + z + "*" + z + "))");
+			if (format.type == tcu::TextureFormat::HALF_FLOAT) {
+				return string("((1 - 2*(" + x + " % 2)) * (" + x + " + 2*" + y + " + 3*" + z + "))");
+			} else {
+				return string("((1 - 2*(" + x + " % 2)) * (" + x + "*" + x + " + " + y + "*" + y + " + " + z + "*" + z + "))");
+			}
 		case ATOMIC_OPERATION_EXCHANGE:
 		case ATOMIC_OPERATION_COMPARE_EXCHANGE:
 			return string("((" + z + "*" + toString(gridSize.x()) + " + " + x + ")*" + toString(gridSize.y()) + " + " + y + ")");
@@ -235,24 +361,27 @@ static string getAtomicOperationShaderFuncName (const AtomicOperation op)
 template <typename T>
 T getOperationInitialValue (const AtomicOperation op)
 {
+	int ret = 0;
 	switch (op)
 	{
 		// \note 18 is just an arbitrary small nonzero value.
-		case ATOMIC_OPERATION_ADD:				return 18;
-		case ATOMIC_OPERATION_INC:				return 18;
-		case ATOMIC_OPERATION_SUB:				return (1 << 24) - 1;
-		case ATOMIC_OPERATION_DEC:				return (1 << 24) - 1;
-		case ATOMIC_OPERATION_MIN:				return (1 << 15) - 1;
-		case ATOMIC_OPERATION_MAX:				return 18;
-		case ATOMIC_OPERATION_AND:				return (1 << 15) - 1;
-		case ATOMIC_OPERATION_OR:				return 18;
-		case ATOMIC_OPERATION_XOR:				return 18;
-		case ATOMIC_OPERATION_EXCHANGE:			return 18;
-		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	return 18;
+		case ATOMIC_OPERATION_ADD:				ret = 18; break;
+		case ATOMIC_OPERATION_INC:				ret = 18; break;
+		case ATOMIC_OPERATION_SUB:				ret = (1 << 24) - 1; break;
+		case ATOMIC_OPERATION_DEC:				ret = (1 << 24) - 1; break;
+		case ATOMIC_OPERATION_MIN:				ret = (1 << 15) - 1; break;
+		case ATOMIC_OPERATION_MAX:				ret = 18; break;
+		case ATOMIC_OPERATION_AND:				ret = (1 << 15) - 1; break;
+		case ATOMIC_OPERATION_OR:				ret = 18; break;
+		case ATOMIC_OPERATION_XOR:				ret = 18; break;
+		case ATOMIC_OPERATION_EXCHANGE:			ret = 18; break;
+		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	ret = 18; break;
 		default:
 			DE_ASSERT(false);
-			return 0xFFFFFFFF;
+			ret = 0xFFFFFFFF;
+			break;
 	}
+	return T(ret);
 }
 
 template <>
@@ -286,13 +415,16 @@ deUint64 getOperationInitialValue<deUint64>(const AtomicOperation op)
 
 
 template <typename T>
-static T getAtomicFuncArgument (const AtomicOperation	op,
+static T getAtomicFuncArgument (const tcu::TextureFormat	format,
+								const AtomicOperation	op,
 								const IVec3&			invocationID,
 								const IVec3&			gridSize)
 {
-	const T x = static_cast<T>(invocationID.x());
-	const T y = static_cast<T>(invocationID.y());
-	const T z = static_cast<T>(invocationID.z());
+	const int x = static_cast<int>(invocationID.x());
+	const int y = static_cast<int>(invocationID.y());
+	const int z = static_cast<int>(invocationID.z());
+
+	int ret = 0;
 
 	switch (op)
 	{
@@ -302,21 +434,35 @@ static T getAtomicFuncArgument (const AtomicOperation	op,
 		case ATOMIC_OPERATION_AND:
 		case ATOMIC_OPERATION_OR:
 		case ATOMIC_OPERATION_XOR:
-			return x*x + y*y + z*z;
+			if (format.type == tcu::TextureFormat::HALF_FLOAT) {
+				ret = x + 2*y + 3*z;
+			} else {
+				ret = x*x + y*y + z*z;
+			}
+			break;
 		case ATOMIC_OPERATION_INC:
 		case ATOMIC_OPERATION_DEC:
-			return 1;
+			ret = 1;
+			break;
 		case ATOMIC_OPERATION_MIN:
 		case ATOMIC_OPERATION_MAX:
 			// multiply half of the data by -1
-			return (1-2*(x % 2))*(x*x + y*y + z*z);
+			if (format.type == tcu::TextureFormat::HALF_FLOAT) {
+				ret = (1-2*(x % 2))*(x + 2*y + 3*z);
+			} else {
+				ret = (1-2*(x % 2))*(x*x + y*y + z*z);
+			}
+			break;
 		case ATOMIC_OPERATION_EXCHANGE:
 		case ATOMIC_OPERATION_COMPARE_EXCHANGE:
-			return (z*static_cast<T>(gridSize.x()) + x)*static_cast<T>(gridSize.y()) + y;
+			ret = (z*gridSize.x() + x)*gridSize.y() + y;
+			break;
 		default:
 			DE_ASSERT(false);
-			return -1;
+			ret = -1;
+			break;
 	}
+	return T(ret);
 }
 
 //! An order-independent operation is one for which the end result doesn't depend on the order in which the operations are carried (i.e. is both commutative and associative).
@@ -371,6 +517,78 @@ static bool isSpirvAtomicNoLastArgOp (const AtomicOperation op)
 	return false;
 }
 
+Half operator&(const Half& a, const Half& b)
+{
+	DE_UNREF(a);
+	DE_UNREF(b);
+	DE_ASSERT(0);
+	return Half(0);
+}
+
+Half operator|(const Half& a, const Half& b)
+{
+	DE_UNREF(a);
+	DE_UNREF(b);
+	DE_ASSERT(0);
+	return Half(0);
+}
+
+Half operator^(const Half& a, const Half& b)
+{
+	DE_UNREF(a);
+	DE_UNREF(b);
+	DE_ASSERT(0);
+	return Half(0);
+}
+
+F16Vec2 operator&(const F16Vec2& a, const F16Vec2& b)
+{
+	DE_UNREF(a);
+	DE_UNREF(b);
+	DE_ASSERT(0);
+	return F16Vec2(0);
+}
+
+F16Vec2 operator|(const F16Vec2& a, const F16Vec2& b)
+{
+	DE_UNREF(a);
+	DE_UNREF(b);
+	DE_ASSERT(0);
+	return F16Vec2(0);
+}
+
+F16Vec2 operator^(const F16Vec2& a, const F16Vec2& b)
+{
+	DE_UNREF(a);
+	DE_UNREF(b);
+	DE_ASSERT(0);
+	return F16Vec2(0);
+}
+
+F16Vec4 operator&(const F16Vec4& a, const F16Vec4& b)
+{
+	DE_UNREF(a);
+	DE_UNREF(b);
+	DE_ASSERT(0);
+	return F16Vec4(0);
+}
+
+F16Vec4 operator|(const F16Vec4& a, const F16Vec4& b)
+{
+	DE_UNREF(a);
+	DE_UNREF(b);
+	DE_ASSERT(0);
+	return F16Vec4(0);
+}
+
+F16Vec4 operator^(const F16Vec4& a, const F16Vec4& b)
+{
+	DE_UNREF(a);
+	DE_UNREF(b);
+	DE_ASSERT(0);
+	return F16Vec4(0);
+}
+
 //! Computes the result of an atomic operation where "a" is the data operated on and "b" is the parameter to the atomic function.
 template <typename T>
 static T computeBinaryAtomicOperationResult (const AtomicOperation op, const T a, const T b)
@@ -387,10 +605,14 @@ static T computeBinaryAtomicOperationResult (const AtomicOperation op, const T a
 		case ATOMIC_OPERATION_OR:				return a | b;
 		case ATOMIC_OPERATION_XOR:				return a ^ b;
 		case ATOMIC_OPERATION_EXCHANGE:			return b;
-		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	return (a == (sizeof(T) == 8 ? 0xBEFFFFFF18 : 18)) ? b : a;
+		case ATOMIC_OPERATION_COMPARE_EXCHANGE:
+			{
+				constexpr size_t val = (size_t)(sizeof(T) == 8 ? 0xBEFFFFFF18 : 18);
+				return (a == T(val)) ? b : a;
+			}
 		default:
 			DE_ASSERT(false);
-			return -1;
+			return T(-1);
 	}
 }
 
@@ -417,8 +639,11 @@ void AddFillReadShader (SourceCollections&			sourceCollections,
 	const string	extensions				= ((componentWidth == 64u)
 											?	"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
 												"#extension GL_EXT_shader_image_int64 : require\n"
-											:	"");
+											:	"#extension GL_EXT_shader_explicit_arithmetic_types_float16 : enable\n");
 
+	const string constructVec4 = (format.type == tcu::TextureFormat::HALF_FLOAT && tcu::getNumUsedChannels(format.order) == 2) ?
+		"#define TOVEC4(x) " + vec4Type + "(x, 0, 0)\n" :
+		"#define TOVEC4(x) " + vec4Type + "(x)\n";
 
 	const string fillShader =	"#version 450\n"
 								+ extensions +
@@ -432,14 +657,18 @@ void AddFillReadShader (SourceCollections&			sourceCollections,
 								"	"+ componentType + " data[];\n"
 								"} inBuffer;\n"
 								"\n"
+								+ constructVec4 + "\n"
 								"void main(void)\n"
 								"{\n"
 								"	int gx = int(gl_GlobalInvocationID.x);\n"
 								"	int gy = int(gl_GlobalInvocationID.y);\n"
 								"	int gz = int(gl_GlobalInvocationID.z);\n"
 								"	uint index = gx + (gy * gl_NumWorkGroups.x) + (gz *gl_NumWorkGroups.x * gl_NumWorkGroups.y);\n"
-								"	imageStore(u_resultImage, " + imageInCoord + ", " + vec4Type + "(inBuffer.data[index]));\n"
+								"	imageStore(u_resultImage, " + imageInCoord + ", TOVEC4(inBuffer.data[index]));\n"
 								"}\n";
+
+	const string swizzle = (format.type == tcu::TextureFormat::HALF_FLOAT) ?
+		(tcu::getNumUsedChannels(format.order) == 4 ? "" : ".xy") : ".x";
 
 	const string readShader =	"#version 450\n"
 								+ extensions +
@@ -459,7 +688,7 @@ void AddFillReadShader (SourceCollections&			sourceCollections,
 								"	int gy = int(gl_GlobalInvocationID.y);\n"
 								"	int gz = int(gl_GlobalInvocationID.z);\n"
 								"	uint index = gx + (gy * gl_NumWorkGroups.x) + (gz *gl_NumWorkGroups.x * gl_NumWorkGroups.y);\n"
-								"	outBuffer.data[index] = imageLoad(u_resultImage, " + imageInCoord + ").x;\n"
+								"	outBuffer.data[index] = " + componentType + "(imageLoad(u_resultImage, " + imageInCoord + ")" + swizzle + ");\n"
 								"}\n";
 
 
@@ -486,11 +715,11 @@ void AddFillReadShader (SourceCollections&			sourceCollections,
 											"	int gy = int(gl_GlobalInvocationID.y);\n"
 											"	int gz = int(gl_GlobalInvocationID.z);\n"
 											"	uint index = gx + (gy * gl_NumWorkGroups.x) + (gz *gl_NumWorkGroups.x * gl_NumWorkGroups.y);\n"
-											"	outBuffer.data[index] = imageLoad(u_resultImage, " + imageInCoord + ").x;\n"
+											"	outBuffer.data[index] = " + componentType + "(imageLoad(u_resultImage, " + imageInCoord + ")" + swizzle + ");\n"
 											"	" + vec4Type + " sparseValue;\n"
 											"	sparseImageLoadARB(u_resultImage, " + imageInCoord + ", sparseValue);\n"
-											"	if (outBuffer.data[index] != sparseValue.x)\n"
-											"		outBuffer.data[index] = " + vec4Type + "(1234).x;\n"
+											"	if (outBuffer.data[index] != " + componentType + "(sparseValue))\n"
+											"		outBuffer.data[index] = " + componentType + "(1234);\n"
 											"}\n";
 
 		sourceCollections.glslSources.add("readShaderResidency") << glu::ComputeSource(readShaderResidency.c_str()) << vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
@@ -594,6 +823,21 @@ void commonCheckSupport (Context& context, const tcu::TextureFormat& tcuFormat, 
 	}
 #endif // CTS_USES_VULKANSC
 
+#ifndef CTS_USES_VULKANSC
+	if (format == VK_FORMAT_R16G16_SFLOAT || format == VK_FORMAT_R16G16B16A16_SFLOAT)
+	{
+		context.requireDeviceFunctionality("VK_NV_shader_atomic_float16_vector");
+
+		const VkFormatFeatureFlags	requiredFeatures	= (VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT | VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT);
+
+		if (!context.getShaderAtomicFloat16VectorFeaturesNV().shaderFloat16VectorAtomics)
+			TCU_THROW(NotSupportedError, "shaderFloat16VectorAtomics not supported");
+
+		if ((formatProperties.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
+			TCU_FAIL("Mandatory format features not supported");
+	}
+	else
+#endif // CTS_USES_VULKANSC
 	if (isFloatFormat(format))
 	{
 		context.requireDeviceFunctionality("VK_EXT_shader_atomic_float");
@@ -729,7 +973,7 @@ void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollectio
 	const bool		intFormat		= isIntFormat(imageFormat);
 	const bool		uintFormat		= isUintFormat(imageFormat);
 	const bool		floatFormat		= isFloatFormat(imageFormat);
-	const string	type			= getComponentTypeStr(componentWidth, intFormat, uintFormat, floatFormat);
+	const string	type			= getComponentTypeStr(m_format, componentWidth, intFormat, uintFormat, floatFormat);
 	const string	vec4Type		= getVec4TypeStr(componentWidth, intFormat, uintFormat, floatFormat);
 
 	AddFillReadShader(sourceCollections, m_imageType, m_format, type, vec4Type);
@@ -753,7 +997,7 @@ void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollectio
 		const UVec3		gridSize				= getShaderGridSize(m_imageType, m_imageSize);
 		const string	atomicCoord				= getCoordStr(m_imageType, "gx % " + toString(gridSize.x()), "gy", "gz");
 
-		const string	atomicArgExpr			= type + getAtomicFuncArgumentShaderStr(m_operation,
+		const string	atomicArgExpr			= type + getAtomicFuncArgumentShaderStr(m_format, m_operation,
 																						"gx", "gy", "gz",
 																						IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z()));
 
@@ -765,7 +1009,9 @@ void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollectio
 		const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
 		const string	extensions				= "#extension GL_EXT_shader_atomic_float : enable\n"
 												  "#extension GL_EXT_shader_atomic_float2 : enable\n"
-												  "#extension GL_KHR_memory_scope_semantics : enable";
+												  "#extension GL_KHR_memory_scope_semantics : enable\n"
+												  "#extension GL_EXT_shader_explicit_arithmetic_types_float16 : enable\n"
+												  "#extension GL_NV_shader_atomic_fp16_vector : enable\n";
 
 		string source = versionDecl + "\n" + extensions + "\n";
 
@@ -859,7 +1105,7 @@ void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollec
 	const bool		intFormat		= isIntFormat(imageFormat);
 	const bool		uintFormat		= isUintFormat(imageFormat);
 	const bool		floatFormat		= isFloatFormat(imageFormat);
-	const string	type			= getComponentTypeStr(componentWidth, intFormat, uintFormat, floatFormat);
+	const string	type			= getComponentTypeStr(m_format, componentWidth, intFormat, uintFormat, floatFormat);
 	const string	vec4Type		= getVec4TypeStr(componentWidth, intFormat, uintFormat, floatFormat);
 
 	AddFillReadShader(sourceCollections, m_imageType, m_format, type, vec4Type);
@@ -882,7 +1128,7 @@ void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollec
 		const UVec3		gridSize				= getShaderGridSize(m_imageType, m_imageSize);
 		const string	atomicCoord				= getCoordStr(m_imageType, "gx % " + toString(gridSize.x()), "gy", "gz");
 		const string	invocationCoord			= getCoordStr(m_imageType, "gx", "gy", "gz");
-		const string	atomicArgExpr			= type + getAtomicFuncArgumentShaderStr(m_operation,
+		const string	atomicArgExpr			= type + getAtomicFuncArgumentShaderStr(m_format, m_operation,
 																						"gx", "gy", "gz",
 																						IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z()));
 
@@ -895,7 +1141,9 @@ void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollec
 		const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
 		const string	extensions				= "#extension GL_EXT_shader_atomic_float : enable\n"
 												  "#extension GL_EXT_shader_atomic_float2 : enable\n"
-												  "#extension GL_KHR_memory_scope_semantics : enable";
+												  "#extension GL_KHR_memory_scope_semantics : enable\n"
+												  "#extension GL_EXT_shader_explicit_arithmetic_types_float16 : enable\n"
+												  "#extension GL_NV_shader_atomic_fp16_vector : enable\n";
 
 		string source = versionDecl + "\n" + extensions + "\n"
 						"\n";
@@ -906,17 +1154,22 @@ void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollec
 						"#extension GL_EXT_shader_image_int64 : require\n";
 		}
 
+		const string constructVec4 = (m_format.type == tcu::TextureFormat::HALF_FLOAT && tcu::getNumUsedChannels(m_format.order) == 2) ?
+			"#define TOVEC4(x) " + vec4Type + "(x, 0, 0)\n" :
+			"#define TOVEC4(x) " + vec4Type + "(x)\n";
+
 			source +=	"precision highp " + shaderImageTypeStr + "; \n"
 						"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 						"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
 						"layout (" + shaderImageFormatStr + ", binding=1) writeonly uniform " + shaderImageTypeStr + " u_intermValuesImage;\n"
 						"\n"
+						+ constructVec4 + "\n"
 						"void main (void)\n"
 						"{\n"
 						"	int gx = int(gl_GlobalInvocationID.x);\n"
 						"	int gy = int(gl_GlobalInvocationID.y);\n"
 						"	int gz = int(gl_GlobalInvocationID.z);\n"
-						"	imageStore(u_intermValuesImage, " + invocationCoord + ", " + vec4Type + "(" + atomicInvocation + "));\n"
+						"	imageStore(u_intermValuesImage, " + invocationCoord + ", TOVEC4(" + atomicInvocation + "));\n"
 						"}\n";
 
 		sourceCollections.glslSources.add(m_name) << glu::ComputeSource(source.c_str());
@@ -1544,29 +1797,60 @@ bool BinaryAtomicEndResultInstance::verifyResult (Allocation&	outputBufferAlloca
 			}
 			else
 			{
-				// 32-bit floating point
-				if (!isValueCorrect<deInt32>(floatToIntValue, x, y, z, gridSize, extendedGridSize))
-					return false;
+				if (m_format.type == tcu::TextureFormat::HALF_FLOAT) {
+					if (tcu::getNumUsedChannels(m_format.order) == 2) {
+						if (!isValueCorrect<F16Vec2>(*((F16Vec2*)resultValue), x, y, z, gridSize, extendedGridSize))
+							return false;
+					} else {
+						if (!isValueCorrect<F16Vec4>(*((F16Vec4*)resultValue), x, y, z, gridSize, extendedGridSize))
+							return false;
+					}
+				} else {
+					// 32-bit floating point
+					if (!isValueCorrect<deInt32>(floatToIntValue, x, y, z, gridSize, extendedGridSize))
+						return false;
+				}
 			}
 		}
 		else if (m_operation == ATOMIC_OPERATION_EXCHANGE)
 		{
-			// Check if the end result equals one of the atomic args.
-			bool matchFound = false;
+			if (m_format.type == tcu::TextureFormat::HALF_FLOAT) {
+				for (deInt32 c = 0; c < tcu::getNumUsedChannels(m_format.order); ++c) {
+					// Check if the end result equals one of the atomic args.
+					bool matchFound = false;
 
-			for (deInt32 i = 0; i < static_cast<deInt32>(NUM_INVOCATIONS_PER_PIXEL) && !matchFound; i++)
-			{
-				const IVec3 gid(x + i*gridSize.x(), y, z);
-				matchFound = is64Bit ?
-					(*((deInt64*)resultValue) == getAtomicFuncArgument<deInt64>(m_operation, gid, extendedGridSize)) :
-					isFloatValue ?
-					floatToIntValue == getAtomicFuncArgument<deInt32>(m_operation, gid, extendedGridSize) :
-					(*((deInt32*)resultValue) == getAtomicFuncArgument<deInt32>(m_operation, gid, extendedGridSize));
+					for (deInt32 i = 0; i < static_cast<deInt32>(NUM_INVOCATIONS_PER_PIXEL) && !matchFound; i++)
+					{
+						const IVec3 gid(x + i*gridSize.x(), y, z);
 
+						F16Vec4 ref = getAtomicFuncArgument<F16Vec4>(m_format, m_operation, gid, extendedGridSize);
+
+						matchFound =
+							tcu::getNumUsedChannels(m_format.order) == 2 ?
+								(*((F16Vec2*)resultValue))[c] == ref[c] :
+								(*((F16Vec4*)resultValue))[c] == ref[c];
+					}
+
+					if (!matchFound)
+						return false;
+				}
+			} else {
+				// Check if the end result equals one of the atomic args.
+				bool matchFound = false;
+
+				for (deInt32 i = 0; i < static_cast<deInt32>(NUM_INVOCATIONS_PER_PIXEL) && !matchFound; i++)
+				{
+					const IVec3 gid(x + i*gridSize.x(), y, z);
+					matchFound = is64Bit ?
+						(*((deInt64*)resultValue) == getAtomicFuncArgument<deInt64>(m_format, m_operation, gid, extendedGridSize)) :
+						isFloatValue ?
+							floatToIntValue == getAtomicFuncArgument<deInt32>(m_format, m_operation, gid, extendedGridSize) :
+							(*((deInt32*)resultValue) == getAtomicFuncArgument<deInt32>(m_format, m_operation, gid, extendedGridSize));
+				}
+
+				if (!matchFound)
+					return false;
 			}
-
-			if (!matchFound)
-				return false;
 		}
 		else if (m_operation == ATOMIC_OPERATION_COMPARE_EXCHANGE)
 		{
@@ -1577,10 +1861,10 @@ bool BinaryAtomicEndResultInstance::verifyResult (Allocation&	outputBufferAlloca
 			{
 				const IVec3 gid(x + i*gridSize.x(), y, z);
 				matchFound = is64Bit ?
-					(*((deInt64*)resultValue) == getAtomicFuncArgument<deInt64>(m_operation, gid, extendedGridSize)) :
+					(*((deInt64*)resultValue) == getAtomicFuncArgument<deInt64>(m_format, m_operation, gid, extendedGridSize)) :
 					isFloatValue ?
-					floatToIntValue == getAtomicFuncArgument<deInt32>(m_operation, gid, extendedGridSize) :
-					(*((deInt32*)resultValue) == getAtomicFuncArgument<deInt32>(m_operation, gid, extendedGridSize));
+					floatToIntValue == getAtomicFuncArgument<deInt32>(m_format, m_operation, gid, extendedGridSize) :
+					(*((deInt32*)resultValue) == getAtomicFuncArgument<deInt32>(m_format, m_operation, gid, extendedGridSize));
 			}
 
 			if (!matchFound)
@@ -1599,7 +1883,7 @@ bool BinaryAtomicEndResultInstance::isValueCorrect(const T resultValue, deInt32 
 	for (deInt32 i = 0; i < static_cast<deInt32>(NUM_INVOCATIONS_PER_PIXEL); i++)
 	{
 		const IVec3 gid(x + i*gridSize.x(), y, z);
-		T			arg = getAtomicFuncArgument<T>(m_operation, gid, extendedGridSize);
+		T			arg = getAtomicFuncArgument<T>(m_format, m_operation, gid, extendedGridSize);
 		reference = computeBinaryAtomicOperationResult(m_operation, reference, arg);
 	}
 	return (resultValue == reference);
@@ -1647,6 +1931,14 @@ protected:
 	template <typename T>
 	bool				areValuesCorrect				   (tcu::ConstPixelBufferAccess& resultBuffer,
 															const bool isFloatingPoint,
+															deInt32 x,
+															deInt32 y,
+															deInt32 z,
+															const UVec3& gridSize,
+															const IVec3 extendedGridSize) const;
+
+	template <typename T>
+	bool				areValuesCorrectVector			   (tcu::ConstPixelBufferAccess& resultBuffer,
 															deInt32 x,
 															deInt32 y,
 															deInt32 z,
@@ -1855,9 +2147,19 @@ bool BinaryAtomicIntermValuesInstance::verifyResult (Allocation&	outputBufferAll
 		}
 		else
 		{
-			// 32-bit floating point
-			if (!areValuesCorrect<deInt32>(resultBuffer, true, x, y, z, gridSize, extendedGridSize))
-				return false;
+			if (m_format.type == tcu::TextureFormat::HALF_FLOAT) {
+				if (tcu::getNumUsedChannels(m_format.order) == 2) {
+					if (!areValuesCorrectVector<F16Vec2>(resultBuffer, x, y, z, gridSize, extendedGridSize))
+						return false;
+				} else {
+					if (!areValuesCorrectVector<F16Vec4>(resultBuffer, x, y, z, gridSize, extendedGridSize))
+						return false;
+				}
+			} else {
+				// 32-bit floating point
+				if (!areValuesCorrect<deInt32>(resultBuffer, true, x, y, z, gridSize, extendedGridSize))
+					return false;
+			}
 		}
 	}
 
@@ -1882,12 +2184,51 @@ bool BinaryAtomicIntermValuesInstance::areValuesCorrect(tcu::ConstPixelBufferAcc
 			data = static_cast<T>(fData);
 		}
 		resultValues[i] = data;
-		atomicArgs[i]	= getAtomicFuncArgument<T>(m_operation, gid, extendedGridSize);
+		atomicArgs[i]	= getAtomicFuncArgument<T>(m_format, m_operation, gid, extendedGridSize);
 		argsUsed[i]		= false;
 	}
 
 	// Verify that the return values form a valid sequence.
 	return verifyRecursive(0, getOperationInitialValue<T>(m_operation), argsUsed, atomicArgs, resultValues);
+}
+
+template <typename T>
+bool BinaryAtomicIntermValuesInstance::areValuesCorrectVector	(tcu::ConstPixelBufferAccess& resultBuffer,
+														deInt32 x,
+														deInt32 y,
+														deInt32 z,
+														const UVec3& gridSize,
+														const IVec3 extendedGridSize) const
+{
+	T		resultValues[NUM_INVOCATIONS_PER_PIXEL];
+	T		atomicArgs[NUM_INVOCATIONS_PER_PIXEL];
+	bool	argsUsed[NUM_INVOCATIONS_PER_PIXEL];
+
+	for (deInt32 i = 0; i < static_cast<deInt32>(NUM_INVOCATIONS_PER_PIXEL); i++)
+	{
+		IVec3 gid(x + i*gridSize.x(), y, z);
+		T data = *((T*)resultBuffer.getPixelPtr(gid.x(), gid.y(), gid.z()));
+		resultValues[i] = data;
+		atomicArgs[i]	= getAtomicFuncArgument<T>(m_format, m_operation, gid, extendedGridSize);
+		argsUsed[i]		= false;
+	}
+
+	bool allMatch = true;
+	for (deInt32 c = 0; c < T::SIZE; ++c) {
+		// Verify that the return values form a valid sequence.
+		Half		resultValuesComp[NUM_INVOCATIONS_PER_PIXEL];
+		Half		atomicArgsComp[NUM_INVOCATIONS_PER_PIXEL];
+
+		for (deInt32 i = 0; i < static_cast<deInt32>(NUM_INVOCATIONS_PER_PIXEL); i++)
+		{
+			resultValuesComp[i] = resultValues[i][c];
+			atomicArgsComp[i] = atomicArgs[i][c];
+			argsUsed[i]		= false;
+		}
+
+		allMatch = allMatch && verifyRecursive(0, getOperationInitialValue<Half>(m_operation), argsUsed, atomicArgsComp, resultValuesComp);
+	}
+	return allMatch;
 }
 
 template <typename T>
@@ -1958,13 +2299,17 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32),
 		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::FLOAT),
 		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64),
-		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64)
+		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64),
+#ifndef CTS_USES_VULKANSC
+		tcu::TextureFormat(tcu::TextureFormat::RG, tcu::TextureFormat::HALF_FLOAT),
+		tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::HALF_FLOAT),
+#endif // CTS_USES_VULKANSC
 	};
 
-    static const VkImageTiling s_tilings[] = {
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_TILING_LINEAR,
-    };
+	static const VkImageTiling s_tilings[] = {
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_TILING_LINEAR,
+	};
 
 	const struct
 	{
@@ -2043,7 +2388,7 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 									continue;
 
 								// Only some operations are supported on floating-point
-								if (format.type == tcu::TextureFormat::FLOAT)
+								if (format.type == tcu::TextureFormat::FLOAT || format.type == tcu::TextureFormat::HALF_FLOAT)
 								{
 									if (operation != ATOMIC_OPERATION_ADD &&
 #ifndef CTS_USES_VULKANSC

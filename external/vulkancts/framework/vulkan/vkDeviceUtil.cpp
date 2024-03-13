@@ -113,7 +113,7 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 
 
 #ifndef CTS_USES_VULKANSC
-	const VkDebugReportCallbackCreateInfoEXT callbackInfo = (validationEnabled ? recorder->makeCreateInfo() : initVulkanStructure());
+	const VkDebugUtilsMessengerCreateInfoEXT callbackInfo = (validationEnabled ? recorder->makeCreateInfo() : initVulkanStructure());
 #endif // CTS_USES_VULKANSC
 
 	const struct VkInstanceCreateInfo	instanceInfo	=

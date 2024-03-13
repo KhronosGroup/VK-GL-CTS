@@ -265,6 +265,9 @@ dEQP-VK.shader_object.binding.swap_vert_unused_output_vert_binary_vert_after
 dEQP-VK.shader_object.binding.swap_vert_unused_output_vert_binary_vert_before
 dEQP-VK.shader_object.binding.unbind_geom_null_handle
 dEQP-VK.shader_object.binding.unbind_geom_null_pshaders
+dEQP-VK.shader_object.binding.unbind_mesh_draw_vertex
 dEQP-VK.shader_object.binding.unbind_passthrough_geom
+dEQP-VK.shader_object.binding.unbind_task_mesh
 dEQP-VK.shader_object.binding.unbind_tesc_null_handle
 dEQP-VK.shader_object.binding.unbind_tesc_null_pshaders
+dEQP-VK.shader_object.binding.unbind_vtg

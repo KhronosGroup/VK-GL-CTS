@@ -1883,6 +1883,24 @@ bool vkt::subgroups::isSubgroupBroadcastDynamicIdSupported (Context& context)
 		vk::getPhysicalDeviceVulkan12Features(context.getInstanceInterface(), context.getPhysicalDevice()).subgroupBroadcastDynamicId;
 }
 
+bool vkt::subgroups::isSubgroupRotateSpecVersionValid(Context& context)
+{
+	// Ensure "VK_KHR_shader_subgroup_rotate" extension's spec version is at least 2
+	{
+		const std::string							extensionName				= "VK_KHR_shader_subgroup_rotate";
+		const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
+
+		for (const auto& property : deviceExtensionProperties)
+		{
+			if (property.extensionName == extensionName && property.specVersion < 2)
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 std::string vkt::subgroups::getFormatNameForGLSL (VkFormat format)
 {
 	switch (format)

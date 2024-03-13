@@ -51,6 +51,7 @@ add_subdirectory(fragment_shading_barycentric)
 add_subdirectory(sc)
 add_subdirectory(video)
 add_subdirectory(shader_object)
+add_subdirectory(device_generated_commands)
 
 include_directories(
 	api
@@ -104,6 +105,7 @@ include_directories(
 	sc
 	video
 	shader_object
+	device_generated_commands
 	)
 
 set(DEQP_VK_SRCS
@@ -175,6 +177,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-fragment-shading-barycentric
 	deqp-vk-video
 	deqp-vk-shader-object
+	deqp-vk-dgc
 	)
 
 set(DEQP_VKSC_LIBS

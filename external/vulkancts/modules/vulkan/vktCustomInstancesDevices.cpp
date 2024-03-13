@@ -41,8 +41,8 @@ using vk::VkInstance;
 #ifndef CTS_USES_VULKANSC
 using vk::InstanceDriver;
 using vk::DebugReportRecorder;
-using vk::VkDebugReportCallbackCreateInfoEXT;
-using vk::VkDebugReportCallbackEXT;
+using vk::VkDebugUtilsMessengerCreateInfoEXT;
+using vk::VkDebugUtilsMessengerEXT;
 #else
 using vk::InstanceDriverSC;
 #endif // CTS_USES_VULKANSC
@@ -110,7 +110,7 @@ CustomInstance::CustomInstance(Context& context, Move<VkInstance> instance)
 	, m_instance	(instance)
 #ifndef CTS_USES_VULKANSC
 	, m_driver		(new InstanceDriver(context.getPlatformInterface(), *m_instance))
-	, m_callback	(m_recorder ? m_recorder->createCallback(*m_driver, *m_instance) : Move<VkDebugReportCallbackEXT>())
+	, m_callback	(m_recorder ? m_recorder->createCallback(*m_driver, *m_instance) : Move<VkDebugUtilsMessengerEXT>())
 #else
 	, m_driver		(new InstanceDriverSC(context.getPlatformInterface(), *m_instance, context.getTestContext().getCommandLine(), context.getResourceInterface()))
 #endif // CTS_USES_VULKANSC
@@ -158,7 +158,7 @@ void CustomInstance::swap (CustomInstance& other)
 	Move<VkInstance> aux = m_instance; m_instance = other.m_instance; other.m_instance = aux;
 	m_driver.swap(other.m_driver);
 #ifndef CTS_USES_VULKANSC
-	Move<VkDebugReportCallbackEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
+	Move<VkDebugUtilsMessengerEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
 #endif // CTS_USES_VULKANSC
 }
 
@@ -208,7 +208,7 @@ UncheckedInstance::UncheckedInstance(Context& context, vk::VkInstance instance, 
 	, m_instance	(instance)
 #ifndef CTS_USES_VULKANSC
 	, m_driver((m_instance != DE_NULL) ? new InstanceDriver(context.getPlatformInterface(), m_instance) : nullptr)
-	, m_callback	((m_driver && m_recorder) ? m_recorder->createCallback(*m_driver, m_instance) : Move<VkDebugReportCallbackEXT>())
+	, m_callback	((m_driver && m_recorder) ? m_recorder->createCallback(*m_driver, m_instance) : Move<VkDebugUtilsMessengerEXT>())
 #else
 	, m_driver((m_instance != DE_NULL) ? new InstanceDriverSC(context.getPlatformInterface(), m_instance, context.getTestContext().getCommandLine(), context.getResourceInterface()) : nullptr)
 #endif // CTS_USES_VULKANSC
@@ -225,7 +225,7 @@ UncheckedInstance::~UncheckedInstance ()
 	if (m_instance != DE_NULL)
 	{
 #ifndef CTS_USES_VULKANSC
-		m_callback = vk::Move<vk::VkDebugReportCallbackEXT>();
+		m_callback = vk::Move<vk::VkDebugUtilsMessengerEXT>();
 		m_recorder.reset(nullptr);
 #endif // CTS_USES_VULKANSC
 		m_driver->destroyInstance(m_instance, m_allocator);
@@ -242,7 +242,7 @@ void UncheckedInstance::swap (UncheckedInstance& other)
 	vk::VkInstance aux = m_instance; m_instance = other.m_instance; other.m_instance = aux;
 	m_driver.swap(other.m_driver);
 #ifndef CTS_USES_VULKANSC
-	Move<VkDebugReportCallbackEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
+	Move<VkDebugUtilsMessengerEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
 #endif // CTS_USES_VULKANSC
 }
 
@@ -387,7 +387,7 @@ CustomInstance createCustomInstanceFromInfo (Context& context, const vk::VkInsta
 	const vk::PlatformInterface&			vkp						= context.getPlatformInterface();
 #ifndef CTS_USES_VULKANSC
 	std::unique_ptr<DebugReportRecorder>	recorder;
-	VkDebugReportCallbackCreateInfoEXT		callbackInfo;
+	VkDebugUtilsMessengerCreateInfoEXT		callbackInfo;
 #endif // CTS_USES_VULKANSC
 
 	if (validationEnabled && allowLayers)
@@ -466,7 +466,7 @@ vk::VkResult createUncheckedInstance (Context& context, const vk::VkInstanceCrea
 
 #ifndef CTS_USES_VULKANSC
 		recorder.reset(new DebugReportRecorder(printValidationErrors));
-		// No need to add VkDebugReportCallbackCreateInfoEXT to VkInstanceCreateInfo since we
+		// No need to add VkDebugUtilsMessengerCreateInfoEXT to VkInstanceCreateInfo since we
 		// don't want to check for errors at instance creation. This is intended since we use
 		// UncheckedInstance to try to create invalid instances for driver stability
 #endif // CTS_USES_VULKANSC
@@ -785,6 +785,7 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	const bool													validationEnabled							= m_context.getTestContext().getCommandLine().isValidationEnabled();
 	const bool													queryWithStatusForDecodeSupport				= (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT) != 0;
 	const bool													queryWithStatusForEncodeSupport				= (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_ENCODE_SUPPORT) != 0;
+	const bool													requireMaintenance1							= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_1) != 0;
 	const bool													requireYCBCRorNotSupported					= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_YCBCR_OR_NOT_SUPPORTED) != 0;
 	const bool													requireSync2orNotSupported					= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED) != 0;
 	const bool													requireTimelineSemOrNotSupported			= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_TIMELINE_OR_NOT_SUPPORTED) != 0;
@@ -903,6 +904,10 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_synchronization2"))
 			deviceExtensions.push_back("VK_KHR_synchronization2");
 
+	if (requireMaintenance1)
+		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_video_maintenance1"))
+			deviceExtensions.push_back("VK_KHR_video_maintenance1");
+
 	if (requireTimelineSemOrNotSupported)
 		if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
 			deviceExtensions.push_back("VK_KHR_timeline_semaphore");
@@ -918,6 +923,13 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES,	//  VkStructureType	sType;
 		DE_NULL,																	//  void*			pNext;
 		DE_FALSE,																	//  VkBool32		samplerYcbcrConversion;
+	};
+
+	vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR	maintenance1Features			=
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR,	//  VkStructureType	sType;
+		DE_NULL,																//  void*			pNext;
+		DE_FALSE,																//  VkBool32		videoMaintenance1;
 	};
 
 	vk::VkPhysicalDeviceTimelineSemaphoreFeatures	timelineSemaphoreFeatures			=
@@ -940,6 +952,9 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	if (requireSync2orNotSupported)
 		appendStructurePtrToVulkanChain((const void**)&features2.pNext, &synchronization2Features);
 
+	if (requireMaintenance1)
+		appendStructurePtrToVulkanChain((const void**)&features2.pNext, &maintenance1Features);
+
 	if (requireTimelineSemOrNotSupported)
 		if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
 			appendStructurePtrToVulkanChain((const void**)&features2.pNext, &timelineSemaphoreFeatures);
@@ -954,6 +969,10 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 
 	if (requireTimelineSemOrNotSupported && timelineSemaphoreFeatures.timelineSemaphore == DE_FALSE)
 		TCU_THROW(NotSupportedError, "timelineSemaphore extension is required");
+
+	if (requireMaintenance1 && maintenance1Features.videoMaintenance1 == DE_FALSE)
+		TCU_THROW(NotSupportedError, "videoMaintenance1 feature is required");
+
 
 	features2.features.robustBufferAccess = DE_FALSE;
 

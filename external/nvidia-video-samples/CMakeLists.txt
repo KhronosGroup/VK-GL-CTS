@@ -24,6 +24,8 @@ if (EXISTS "${NV_VIDEO_SAMPLES_ABS_PATH}/vk_video_decoder/libs/NvVideoParser/CMa
 		${NV_VIDEO_PARSER_SOURCE}/src/VulkanH264Parser.cpp
 		${NV_VIDEO_PARSER_SOURCE}/src/VulkanH265Parser.cpp
 		${NV_VIDEO_PARSER_SOURCE}/src/VulkanVideoDecoder.cpp
+		${NV_VIDEO_PARSER_SOURCE}/src/VulkanAV1Decoder.cpp
+		${NV_VIDEO_PARSER_SOURCE}/src/VulkanAV1GlobalMotionDec.cpp
 	)
 
 	set(CMAKE_C_FLAGS ${DE_3RD_PARTY_C_FLAGS})

@@ -215,6 +215,40 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDescriptorIndexingFeatures.pNext;
 	}
 
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV;
+	deMemset(&physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV, 0, sizeof(physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_device_generated_commands_compute") )
+	{
+		physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV.sType = getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV>();
+		*nextPtr = &physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV;
+		nextPtr  = &physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV physicalDeviceDeviceGeneratedCommandsFeaturesNV;
+	deMemset(&physicalDeviceDeviceGeneratedCommandsFeaturesNV, 0, sizeof(physicalDeviceDeviceGeneratedCommandsFeaturesNV));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_device_generated_commands") )
+	{
+		physicalDeviceDeviceGeneratedCommandsFeaturesNV.sType = getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV>();
+		*nextPtr = &physicalDeviceDeviceGeneratedCommandsFeaturesNV;
+		nextPtr  = &physicalDeviceDeviceGeneratedCommandsFeaturesNV.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+	vk::VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR physicalDeviceDynamicRenderingLocalReadFeaturesKHR;
+	deMemset(&physicalDeviceDynamicRenderingLocalReadFeaturesKHR, 0, sizeof(physicalDeviceDynamicRenderingLocalReadFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_dynamic_rendering_local_read") )
+	{
+		physicalDeviceDynamicRenderingLocalReadFeaturesKHR.sType = getStructureType<VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR>();
+		*nextPtr = &physicalDeviceDynamicRenderingLocalReadFeaturesKHR;
+		nextPtr  = &physicalDeviceDynamicRenderingLocalReadFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT;
 	deMemset(&physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT, 0, sizeof(physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT));
 
@@ -739,6 +773,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceSeparateDepthStencilLayoutsFeatures.pNext;
 	}
 
+	vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV physicalDeviceShaderAtomicFloat16VectorFeaturesNV;
+	deMemset(&physicalDeviceShaderAtomicFloat16VectorFeaturesNV, 0, sizeof(physicalDeviceShaderAtomicFloat16VectorFeaturesNV));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_shader_atomic_float16_vector") )
+	{
+		physicalDeviceShaderAtomicFloat16VectorFeaturesNV.sType = getStructureType<VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV>();
+		*nextPtr = &physicalDeviceShaderAtomicFloat16VectorFeaturesNV;
+		nextPtr  = &physicalDeviceShaderAtomicFloat16VectorFeaturesNV.pNext;
+	}
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT physicalDeviceShaderAtomicFloat2FeaturesEXT;
 	deMemset(&physicalDeviceShaderAtomicFloat2FeaturesEXT, 0, sizeof(physicalDeviceShaderAtomicFloat2FeaturesEXT));
@@ -855,6 +899,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	vk::VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR physicalDeviceShaderMaximalReconvergenceFeaturesKHR;
+	deMemset(&physicalDeviceShaderMaximalReconvergenceFeaturesKHR, 0, sizeof(physicalDeviceShaderMaximalReconvergenceFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_maximal_reconvergence") )
+	{
+		physicalDeviceShaderMaximalReconvergenceFeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderMaximalReconvergenceFeaturesKHR;
+		nextPtr  = &physicalDeviceShaderMaximalReconvergenceFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT physicalDeviceShaderModuleIdentifierFeaturesEXT;
 	deMemset(&physicalDeviceShaderModuleIdentifierFeaturesEXT, 0, sizeof(physicalDeviceShaderModuleIdentifierFeaturesEXT));
 
@@ -875,6 +929,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderObjectFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceShaderQuadControlFeaturesKHR physicalDeviceShaderQuadControlFeaturesKHR;
+	deMemset(&physicalDeviceShaderQuadControlFeaturesKHR, 0, sizeof(physicalDeviceShaderQuadControlFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_quad_control") )
+	{
+		physicalDeviceShaderQuadControlFeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderQuadControlFeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderQuadControlFeaturesKHR;
+		nextPtr  = &physicalDeviceShaderQuadControlFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures physicalDeviceShaderSubgroupExtendedTypesFeatures;
 	deMemset(&physicalDeviceShaderSubgroupExtendedTypesFeatures, 0, sizeof(physicalDeviceShaderSubgroupExtendedTypesFeatures));
 
@@ -883,6 +947,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceShaderSubgroupExtendedTypesFeatures.sType = getStructureType<VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures>();
 		*nextPtr = &physicalDeviceShaderSubgroupExtendedTypesFeatures;
 		nextPtr  = &physicalDeviceShaderSubgroupExtendedTypesFeatures.pNext;
+	}
+
+	vk::VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR physicalDeviceShaderSubgroupRotateFeaturesKHR;
+	deMemset(&physicalDeviceShaderSubgroupRotateFeaturesKHR, 0, sizeof(physicalDeviceShaderSubgroupRotateFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_subgroup_rotate") )
+	{
+		physicalDeviceShaderSubgroupRotateFeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderSubgroupRotateFeaturesKHR;
+		nextPtr  = &physicalDeviceShaderSubgroupRotateFeaturesKHR.pNext;
 	}
 
 	vk::VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR;
@@ -2140,6 +2214,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_dynamic_rendering_local_read")) )
+	{
+		if ( physicalDeviceDynamicRenderingLocalReadFeaturesKHR.dynamicRenderingLocalRead == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature dynamicRenderingLocalRead not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) )
 	{
 		if ( physicalDeviceGlobalPriorityQueryFeaturesKHR.globalPriorityQuery == VK_FALSE )
@@ -2373,11 +2456,38 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_maximal_reconvergence")) )
+	{
+		if ( physicalDeviceShaderMaximalReconvergenceFeaturesKHR.shaderMaximalReconvergence == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderMaximalReconvergence not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_quad_control")) )
+	{
+		if ( physicalDeviceShaderQuadControlFeaturesKHR.shaderQuadControl == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderQuadControl not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_subgroup_extended_types")) )
 	{
 		if ( physicalDeviceShaderSubgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupExtendedTypes not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_subgroup_rotate")) )
+	{
+		if ( physicalDeviceShaderSubgroupRotateFeaturesKHR.shaderSubgroupRotate == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupRotate not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -2470,6 +2580,37 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR.shaderZeroInitializeWorkgroupMemory == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderZeroInitializeWorkgroupMemory not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_device_generated_commands")) )
+	{
+		if ( physicalDeviceDeviceGeneratedCommandsFeaturesNV.deviceGeneratedCommands == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature deviceGeneratedCommands not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_device_generated_commands_compute")) )
+	{
+		if ( physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV.deviceGeneratedCompute == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature deviceGeneratedCompute not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_shader_atomic_float16_vector")) && physicalDeviceShaderAtomicFloat16VectorFeaturesNV.shaderFloat16VectorAtomics )
+	{
+		if ( physicalDeviceShaderAtomicFloat16VectorFeaturesNV.shaderFloat16VectorAtomics == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderFloat16VectorAtomics not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

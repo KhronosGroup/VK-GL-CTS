@@ -87,6 +87,8 @@ public:
 #ifndef CTS_USES_VULKANSC
 typedef PointerWrapper<VkPipelineViewportDepthClipControlCreateInfoEXT> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineRenderingCreateInfoKHR> PipelineRenderingCreateInfoWrapper;
+typedef PointerWrapper<VkRenderingAttachmentLocationInfoKHR> RenderingAttachmentLocationInfoWrapper;
+typedef PointerWrapper<VkRenderingInputAttachmentIndexInfoKHR> RenderingInputAttachmentIndexInfoWrapper;
 typedef PointerWrapper<VkPipelineCreationFeedbackCreateInfoEXT> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV> PipelineRepresentativeFragmentTestCreateInfoWrapper;
@@ -95,6 +97,8 @@ typedef VkPipelineCreateFlags2KHR PipelineCreateFlags2;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
+typedef PointerWrapper<void> RenderingAttachmentLocationInfoWrapper;
+typedef PointerWrapper<void> RenderingInputAttachmentIndexInfoWrapper;
 typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
@@ -511,7 +515,8 @@ public:
 																	 const VkPipelineMultisampleStateCreateInfo*		multisampleState = DE_NULL,
 																	 const VkSpecializationInfo*						specializationInfo = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
-																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
+																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+																	 RenderingInputAttachmentIndexInfoWrapper			renderingInputAttachmentIndexInfo = RenderingInputAttachmentIndexInfoWrapper());
 
 	// Note: VkPipelineShaderStageModuleIdentifierCreateInfoEXT::pIdentifier will not be copied. They need to continue to exist outside this wrapper.
 	GraphicsPipelineWrapper&	setupFragmentShaderState2			(const PipelineLayoutWrapper&								layout,
@@ -524,6 +529,7 @@ public:
 																	 const VkSpecializationInfo*								specializationInfo = nullptr,
 																	 const VkPipelineCache										partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+																	 RenderingInputAttachmentIndexInfoWrapper					renderingInputAttachmentIndexInfo = RenderingInputAttachmentIndexInfoWrapper(),
 																	 PipelineBinaryInfoWrapper									partBinaries = PipelineBinaryInfoWrapper());
 
 	// Setup fragment output state.
@@ -533,6 +539,7 @@ public:
 																	 const VkPipelineMultisampleStateCreateInfo*		multisampleState = DE_NULL,
 																	 const VkPipelineCache								partPipelineCache = DE_NULL,
 																	 PipelineCreationFeedbackCreateInfoWrapper			partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
+																	 RenderingAttachmentLocationInfoWrapper				renderingAttachmentLocationInfo = RenderingAttachmentLocationInfoWrapper(),
 																	 PipelineBinaryInfoWrapper							partBinaries = PipelineBinaryInfoWrapper());
 
 	// Build pipeline object out of provided state.

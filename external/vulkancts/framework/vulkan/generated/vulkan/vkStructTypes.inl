@@ -798,7 +798,7 @@ struct VkPushConstantRange
 
 struct VkPipelineBinaryDataKHR
 {
-	size_t	size;
+	size_t	dataSize;
 	void*	pData;
 };
 
@@ -828,7 +828,7 @@ struct VkPipelineBinaryInfoKHR
 	const VkPipelineBinaryKHR*		pPipelineBinaries;
 };
 
-struct VkCapturedPipelineDataInfoKHR
+struct VkReleaseCapturedPipelineDataInfoKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -7475,6 +7475,13 @@ struct VkPhysicalDeviceRayTracingMotionBlurFeaturesNV
 	VkBool32		rayTracingMotionBlurPipelineTraceRaysIndirect;
 };
 
+struct VkPhysicalDeviceRayTracingValidationFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rayTracingValidation;
+};
+
 struct VkAccelerationStructureGeometryMotionTrianglesDataNV
 {
 	VkStructureType					sType;
@@ -7867,11 +7874,19 @@ struct VkPhysicalDevicePipelineBinaryFeaturesKHR
 	VkBool32		pipelineBinaries;
 };
 
+struct VkDevicePipelineBinaryInternalCacheControlKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		disableInternalCache;
+};
+
 struct VkPhysicalDevicePipelineBinaryPropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		pipelineBinaryInternalCache;
+	VkBool32		pipelineBinaryInternalCacheControl;
 	VkBool32		pipelineBinaryPrefersInternalCache;
 	VkBool32		pipelineBinaryPrecompiledInternalCache;
 	VkBool32		pipelineBinaryCompressedData;
@@ -9444,6 +9459,43 @@ struct VkPhysicalDeviceShaderQuadControlFeaturesKHR
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shaderQuadControl;
+};
+
+struct VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderFloat16VectorAtomics;
+};
+
+struct VkPhysicalDeviceMapMemoryPlacedFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		memoryMapPlaced;
+	VkBool32		memoryMapRangePlaced;
+	VkBool32		memoryUnmapReserve;
+};
+
+struct VkPhysicalDeviceMapMemoryPlacedPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	minPlacedMemoryMapAlignment;
+};
+
+struct VkMemoryMapPlacedInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	void*			pPlacedAddress;
+};
+
+struct VkPhysicalDeviceRawAccessChainsFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderRawAccessChains;
 };
 
 struct StdVideoH264SpsVuiFlags

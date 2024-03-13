@@ -28,7 +28,6 @@
 
 namespace vk
 {
-
 #include "vkTypeUtil.inl"
 
 inline VkBool32 makeVkBool (bool b)

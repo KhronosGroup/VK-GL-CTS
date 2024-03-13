@@ -823,8 +823,8 @@ void GraphicsTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&	gpw,
 										  geomShaderModule, 0,
 										  0, 0, 0, 0, 0, 0, 0, 0, preRasterizationPartBinaryInfo)
 		.setupFragmentShaderState2(m_pipelineLayout, *m_renderPassFramebuffer[0], 0u, fragShaderModule, 0, &defaultDepthStencilState,
-								   0, 0, 0, 0, fragmentShaderBinaryInfo)
-		.setupFragmentOutputState(*m_renderPassFramebuffer[0], 0, 0, 0, 0, 0, fragmentOutputBinaryInfo)
+								   0, 0, 0, 0, {}, fragmentShaderBinaryInfo)
+		.setupFragmentOutputState(*m_renderPassFramebuffer[0], 0, 0, 0, 0, 0, {}, fragmentOutputBinaryInfo)
 		.buildPipeline(cache);
 }
 
@@ -853,7 +853,7 @@ void GraphicsTestInstance::preparePipelinesForBinaries (bool createFromBlobs = f
 			if (incompleteBlobs)
 			{
 				for (auto& bd : pipelineDataInfo)
-					--bd.size;
+					--bd.dataSize;
 			}
 
 			// recreate binaries from data blobs
@@ -893,7 +893,7 @@ void GraphicsTestInstance::preparePipelinesForBinaries (bool createFromBlobs = f
 			if (incompleteBlobs)
 			{
 				for (auto& bd : pipelineDataInfo)
-					--bd.size;
+					--bd.dataSize;
 			}
 
 			// recreate binaries from data blobs

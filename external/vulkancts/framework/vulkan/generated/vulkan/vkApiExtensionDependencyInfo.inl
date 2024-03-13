@@ -1989,6 +1989,18 @@ bool check_VK_EXT_host_image_copy(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_copy_commands2")) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_format_feature_flags2"));
 }
 
+bool check_VK_EXT_map_memory_placed(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_map_memory_placed"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_map_memory2
+	return isSupported(vDEP, "VK_KHR_map_memory2");
+}
+
 bool check_VK_EXT_shader_atomic_float2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3659,6 +3671,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_extended_dynamic_state",							&check_VK_EXT_extended_dynamic_state),
 	std::make_pair("VK_KHR_pipeline_executable_properties",					&check_VK_KHR_pipeline_executable_properties),
 	std::make_pair("VK_EXT_host_image_copy",								&check_VK_EXT_host_image_copy),
+	std::make_pair("VK_EXT_map_memory_placed",								&check_VK_EXT_map_memory_placed),
 	std::make_pair("VK_EXT_shader_atomic_float2",							&check_VK_EXT_shader_atomic_float2),
 	std::make_pair("VK_EXT_swapchain_maintenance1",							&check_VK_EXT_swapchain_maintenance1),
 	std::make_pair("VK_EXT_shader_demote_to_helper_invocation",				&check_VK_EXT_shader_demote_to_helper_invocation),
@@ -4014,6 +4027,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_pipeline_executable_properties"),
 	std::make_tuple(1, 0, "VK_EXT_host_image_copy"),
 	std::make_tuple(1, 0, "VK_KHR_map_memory2"),
+	std::make_tuple(1, 0, "VK_EXT_map_memory_placed"),
 	std::make_tuple(1, 0, "VK_EXT_shader_atomic_float2"),
 	std::make_tuple(1, 0, "VK_EXT_surface_maintenance1"),
 	std::make_tuple(1, 0, "VK_EXT_swapchain_maintenance1"),
@@ -4162,4 +4176,7 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_shader_expect_assume"),
 	std::make_tuple(1, 1, "VK_KHR_maintenance6"),
 	std::make_tuple(1, 1, "VK_NV_descriptor_pool_overallocation"),
+	std::make_tuple(1, 0, "VK_NV_raw_access_chains"),
+	std::make_tuple(1, 0, "VK_NV_shader_atomic_float16_vector"),
+	std::make_tuple(1, 0, "VK_NV_ray_tracing_validation"),
 };

@@ -289,11 +289,11 @@ inline VkPushConstantRange makePushConstantRange (VkShaderStageFlags stageFlags,
 	return res;
 }
 
-inline VkPipelineBinaryDataKHR makePipelineBinaryDataKHR (size_t size, void* pData)
+inline VkPipelineBinaryDataKHR makePipelineBinaryDataKHR (size_t dataSize, void* pData)
 {
 	VkPipelineBinaryDataKHR res;
-	res.size	= size;
-	res.pData	= pData;
+	res.dataSize	= dataSize;
+	res.pData		= pData;
 	return res;
 }
 

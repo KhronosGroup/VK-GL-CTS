@@ -123,14 +123,14 @@ void PipelineBinaryWrapper::getPipelineBinaryData (std::vector<VkPipelineBinaryD
 		pipelineBinaryDataInfo.pipelineBinary = m_pipelineBinariesRaw[i];
 
 		// get binary data size
-		VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, &pipelineBinaryDataInfo, &pipelineDataInfo[i].size, DE_NULL));
+		VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, &pipelineBinaryDataInfo, &pipelineDataInfo[i].dataSize, DE_NULL));
 
 		// alocate space for data and store pointer for it
-		pipelineDataBlob[i].resize(pipelineDataInfo[i].size);
+		pipelineDataBlob[i].resize(pipelineDataInfo[i].dataSize);
 		pipelineDataInfo[i].pData = pipelineDataBlob[i].data();
 
 		// get binary data
-		VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, &pipelineBinaryDataInfo, &pipelineDataInfo[i].size, pipelineDataInfo[i].pData));
+		VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, &pipelineBinaryDataInfo, &pipelineDataInfo[i].dataSize, pipelineDataInfo[i].pData));
 	}
 }
 

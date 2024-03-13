@@ -1817,7 +1817,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 277
+#define VK_HEADER_VERSION 279
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -2517,6 +2517,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY_EXT = 1000270009,
     VK_STRUCTURE_TYPE_MEMORY_MAP_INFO_KHR = 1000271000,
     VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO_KHR = 1000271001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_FEATURES_EXT = 1000272000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_PROPERTIES_EXT = 1000272001,
+    VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT = 1000272002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT = 1000273000,
     VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT = 1000274000,
     VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT = 1000274001,
@@ -2786,9 +2789,10 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR = 1000483002,
     VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR = 1000483003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_PROPERTIES_KHR = 1000483004,
-    VK_STRUCTURE_TYPE_CAPTURED_PIPELINE_DATA_INFO_KHR = 1000483005,
+    VK_STRUCTURE_TYPE_RELEASE_CAPTURED_PIPELINE_DATA_INFO_KHR = 1000483005,
     VK_STRUCTURE_TYPE_PIPELINE_BINARY_DATA_INFO_KHR = 1000483006,
     VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEYS_CREATE_INFO_KHR = 1000483007,
+    VK_STRUCTURE_TYPE_DEVICE_PIPELINE_BINARY_INTERNAL_CACHE_CONTROL_KHR = 1000483008,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TILE_PROPERTIES_FEATURES_QCOM = 1000484000,
     VK_STRUCTURE_TYPE_TILE_PROPERTIES_QCOM = 1000484001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_AMIGO_PROFILING_FEATURES_SEC = 1000485000,
@@ -2863,6 +2867,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT = 1000545007,
     VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT = 1000545008,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV = 1000546000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV = 1000555000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV = 1000563000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV = 1000568000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -4183,6 +4190,11 @@ typedef enum VkPipelineStageFlagBits {
     VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkPipelineStageFlagBits;
 typedef VkFlags VkPipelineStageFlags;
+
+typedef enum VkMemoryMapFlagBits {
+    VK_MEMORY_MAP_PLACED_BIT_EXT = 0x00000001,
+    VK_MEMORY_MAP_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+} VkMemoryMapFlagBits;
 typedef VkFlags VkMemoryMapFlags;
 
 typedef enum VkSparseMemoryBindFlagBits {
@@ -12254,6 +12266,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineExecutableInternalRepresentationsKHR
 #define VK_KHR_map_memory2 1
 #define VK_KHR_MAP_MEMORY_2_SPEC_VERSION  1
 #define VK_KHR_MAP_MEMORY_2_EXTENSION_NAME "VK_KHR_map_memory2"
+
+typedef enum VkMemoryUnmapFlagBitsKHR {
+    VK_MEMORY_UNMAP_RESERVE_BIT_EXT = 0x00000001,
+    VK_MEMORY_UNMAP_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkMemoryUnmapFlagBitsKHR;
 typedef VkFlags VkMemoryUnmapFlagsKHR;
 typedef struct VkMemoryMapInfoKHR {
     VkStructureType     sType;
@@ -12902,12 +12919,8 @@ static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_TRANSFORM_FEEDBACK_BUFF
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT = 0x00001000ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_VIDEO_DECODE_SRC_BIT_KHR = 0x00002000ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_VIDEO_DECODE_DST_BIT_KHR = 0x00004000ULL;
-#ifdef VK_ENABLE_BETA_EXTENSIONS
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_VIDEO_ENCODE_DST_BIT_KHR = 0x00008000ULL;
-#endif
-#ifdef VK_ENABLE_BETA_EXTENSIONS
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_VIDEO_ENCODE_SRC_BIT_KHR = 0x00010000ULL;
-#endif
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR = 0x00020000ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR = 0x00080000ULL;
 static const VkBufferUsageFlagBits2KHR VK_BUFFER_USAGE_2_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR = 0x00100000ULL;
@@ -13034,11 +13047,18 @@ typedef struct VkPhysicalDevicePipelineBinaryPropertiesKHR {
     VkStructureType    sType;
     void*              pNext;
     VkBool32           pipelineBinaryInternalCache;
+    VkBool32           pipelineBinaryInternalCacheControl;
     VkBool32           pipelineBinaryPrefersInternalCache;
     VkBool32           pipelineBinaryPrecompiledInternalCache;
     VkBool32           pipelineBinaryCompressedData;
     VkBool32           pipelineBinaryUniqueBinaryKeyPairs;
 } VkPhysicalDevicePipelineBinaryPropertiesKHR;
+
+typedef struct VkDevicePipelineBinaryInternalCacheControlKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkBool32           disableInternalCache;
+} VkDevicePipelineBinaryInternalCacheControlKHR;
 
 typedef struct VkPipelineBinaryKeyKHR {
     VkStructureType    sType;
@@ -13048,7 +13068,7 @@ typedef struct VkPipelineBinaryKeyKHR {
 } VkPipelineBinaryKeyKHR;
 
 typedef struct VkPipelineBinaryDataKHR {
-    deUintptr    size;
+    deUintptr    dataSize;
     void*     pData;
 } VkPipelineBinaryDataKHR;
 
@@ -13068,11 +13088,11 @@ typedef struct VkPipelineBinaryInfoKHR {
     const VkPipelineBinaryKHR*       pPipelineBinaries;
 } VkPipelineBinaryInfoKHR;
 
-typedef struct VkCapturedPipelineDataInfoKHR {
+typedef struct VkReleaseCapturedPipelineDataInfoKHR {
     VkStructureType    sType;
     void*              pNext;
     VkPipeline         pipeline;
-} VkCapturedPipelineDataInfoKHR;
+} VkReleaseCapturedPipelineDataInfoKHR;
 
 typedef struct VkPipelineBinaryDataInfoKHR {
     VkStructureType        sType;
@@ -13089,7 +13109,7 @@ typedef VkResult (VKAPI_PTR *PFN_vkCreatePipelineBinariesKHR)(VkDevice device, d
 typedef void (VKAPI_PTR *PFN_vkDestroyPipelineBinaryKHR)(VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator);
 typedef VkResult (VKAPI_PTR *PFN_vkGetPipelineBinaryKeysKHR)(VkDevice device, const VkPipelineBinaryKeysCreateInfoKHR* pCreateInfo, deUint32* pKeyCount, VkPipelineBinaryKeyKHR* pKeys);
 typedef VkResult (VKAPI_PTR *PFN_vkGetPipelineBinaryDataKHR)(VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, deUintptr* pPipelineBinaryDataSize, void* pPipelineBinaryData);
-typedef VkResult (VKAPI_PTR *PFN_vkReleaseCapturedPipelineDataKHR)(VkDevice device, const VkCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator);
+typedef VkResult (VKAPI_PTR *PFN_vkReleaseCapturedPipelineDataKHR)(VkDevice device, const VkReleaseCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator);
 
 #ifndef VK_NO_PROTOTYPES
 VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineBinariesKHR(
@@ -13118,7 +13138,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineBinaryDataKHR(
 
 VKAPI_ATTR VkResult VKAPI_CALL vkReleaseCapturedPipelineDataKHR(
     VkDevice                                    device,
-    const VkCapturedPipelineDataInfoKHR*        pInfo,
+    const VkReleaseCapturedPipelineDataInfoKHR* pInfo,
     const VkAllocationCallbacks*                pAllocator);
 #endif
 
@@ -17051,6 +17071,32 @@ VKAPI_ATTR void VKAPI_CALL vkGetImageSubresourceLayout2EXT(
 #endif
 
 
+// VK_EXT_map_memory_placed is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_map_memory_placed 1
+#define VK_EXT_MAP_MEMORY_PLACED_SPEC_VERSION 1
+#define VK_EXT_MAP_MEMORY_PLACED_EXTENSION_NAME "VK_EXT_map_memory_placed"
+typedef struct VkPhysicalDeviceMapMemoryPlacedFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           memoryMapPlaced;
+    VkBool32           memoryMapRangePlaced;
+    VkBool32           memoryUnmapReserve;
+} VkPhysicalDeviceMapMemoryPlacedFeaturesEXT;
+
+typedef struct VkPhysicalDeviceMapMemoryPlacedPropertiesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkDeviceSize       minPlacedMemoryMapAlignment;
+} VkPhysicalDeviceMapMemoryPlacedPropertiesEXT;
+
+typedef struct VkMemoryMapPlacedInfoEXT {
+    VkStructureType    sType;
+    const void*        pNext;
+    void*              pPlacedAddress;
+} VkMemoryMapPlacedInfoEXT;
+
+
+
 // VK_EXT_shader_atomic_float2 is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_shader_atomic_float2 1
 #define VK_EXT_SHADER_ATOMIC_FLOAT_2_SPEC_VERSION 1
@@ -20934,6 +20980,42 @@ typedef struct VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV {
     void*              pNext;
     VkBool32           descriptorPoolOverallocation;
 } VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV;
+
+
+
+// VK_NV_raw_access_chains is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_raw_access_chains 1
+#define VK_NV_RAW_ACCESS_CHAINS_SPEC_VERSION 1
+#define VK_NV_RAW_ACCESS_CHAINS_EXTENSION_NAME "VK_NV_raw_access_chains"
+typedef struct VkPhysicalDeviceRawAccessChainsFeaturesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderRawAccessChains;
+} VkPhysicalDeviceRawAccessChainsFeaturesNV;
+
+
+
+// VK_NV_shader_atomic_float16_vector is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_shader_atomic_float16_vector 1
+#define VK_NV_SHADER_ATOMIC_FLOAT16_VECTOR_SPEC_VERSION 1
+#define VK_NV_SHADER_ATOMIC_FLOAT16_VECTOR_EXTENSION_NAME "VK_NV_shader_atomic_float16_vector"
+typedef struct VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderFloat16VectorAtomics;
+} VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV;
+
+
+
+// VK_NV_ray_tracing_validation is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_ray_tracing_validation 1
+#define VK_NV_RAY_TRACING_VALIDATION_SPEC_VERSION 1
+#define VK_NV_RAY_TRACING_VALIDATION_EXTENSION_NAME "VK_NV_ray_tracing_validation"
+typedef struct VkPhysicalDeviceRayTracingValidationFeaturesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           rayTracingValidation;
+} VkPhysicalDeviceRayTracingValidationFeaturesNV;
 
 
 

@@ -189,15 +189,15 @@ struct TypeTraits<TYPE_WIN32>
 typedef DisplayInterface<TYPE_WIN32>	Win32DisplayInterface;
 typedef WindowInterface<TYPE_WIN32>		Win32WindowInterface;
 
-// VK_MVK_macos_surface
+// VK_EXT_metal_surface
 
 template<>
-struct TypeTraits<TYPE_MACOS>
+struct TypeTraits<TYPE_METAL>
 {
-	typedef void*						NativeWindowType;
+	typedef pt::CAMetalLayer			NativeWindowType;
 };
 
-typedef WindowInterface<TYPE_MACOS>		MacOSWindowInterface;
+typedef WindowInterface<TYPE_METAL>		MetalWindowInterface;
 
 } // wsi
 } // vk

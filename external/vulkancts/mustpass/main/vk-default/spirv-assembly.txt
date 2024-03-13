@@ -26646,6 +26646,7 @@ dEQP-VK.spirv_assembly.instruction.graphics.loop.switch_continue_geom
 dEQP-VK.spirv_assembly.instruction.graphics.loop.switch_continue_tessc
 dEQP-VK.spirv_assembly.instruction.graphics.loop.switch_continue_tesse
 dEQP-VK.spirv_assembly.instruction.graphics.loop.switch_continue_vert
+dEQP-VK.spirv_assembly.instruction.graphics.mixed_relaxed_precision_operands.mixedrelaxedprecisionoperands
 dEQP-VK.spirv_assembly.instruction.graphics.module.same_module
 dEQP-VK.spirv_assembly.instruction.graphics.module.same_module_geom
 dEQP-VK.spirv_assembly.instruction.graphics.module.same_module_tessc_tesse

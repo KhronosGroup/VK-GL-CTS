@@ -2324,6 +2324,7 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, Pip
 		VK_FORMAT_R16G16_SINT,
 
 		// More 16/32-bit formats required for testing VK_EXT_sampler_filter_minmax
+		VK_FORMAT_R16_UNORM,
 		VK_FORMAT_R16_SNORM,
 		VK_FORMAT_R32_SFLOAT,
 

@@ -79,6 +79,7 @@ dEQP-VK.renderpass.dedicated_allocation.formats.a8_unorm_khr.input.load.store.se
 dEQP-VK.renderpass.dedicated_allocation.formats.a8_unorm_khr.load.clear
 dEQP-VK.renderpass.dedicated_allocation.formats.a8_unorm_khr.load.clear_draw
 dEQP-VK.renderpass.dedicated_allocation.formats.a8_unorm_khr.load.draw
+dEQP-VK.renderpass.no_draws.no_draw_clear_load_store
 dEQP-VK.renderpass.suballocation.formats.a8_unorm_khr.clear.clear
 dEQP-VK.renderpass.suballocation.formats.a8_unorm_khr.clear.clear_draw
 dEQP-VK.renderpass.suballocation.formats.a8_unorm_khr.clear.draw

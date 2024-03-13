@@ -198,9 +198,9 @@ template<> VkStructureType getStructureType<VkPipelineBinaryInfoKHR> (void)
 	return VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR;
 }
 
-template<> VkStructureType getStructureType<VkCapturedPipelineDataInfoKHR> (void)
+template<> VkStructureType getStructureType<VkReleaseCapturedPipelineDataInfoKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_CAPTURED_PIPELINE_DATA_INFO_KHR;
+	return VK_STRUCTURE_TYPE_RELEASE_CAPTURED_PIPELINE_DATA_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPipelineBinaryDataInfoKHR> (void)
@@ -3408,6 +3408,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingMotionBlur
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MOTION_BLUR_FEATURES_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingValidationFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV;
+}
+
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryMotionTrianglesDataNV> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_MOTION_TRIANGLES_DATA_NV;
@@ -3581,6 +3586,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceGraphicsPipelineLibr
 template<> VkStructureType getStructureType<VkPhysicalDevicePipelineBinaryFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDevicePipelineBinaryInternalCacheControlKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_PIPELINE_BINARY_INTERNAL_CACHE_CONTROL_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDevicePipelineBinaryPropertiesKHR> (void)
@@ -4466,5 +4476,30 @@ template<> VkStructureType getStructureType<VkRenderingInputAttachmentIndexInfoK
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderQuadControlFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_QUAD_CONTROL_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMapMemoryPlacedFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMapMemoryPlacedPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMemoryMapPlacedInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRawAccessChainsFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV;
 }
 

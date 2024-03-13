@@ -75,7 +75,7 @@ private:
 	vk::Move<vk::VkInstance>					m_instance;
 #ifndef CTS_USES_VULKANSC
 	std::unique_ptr<vk::InstanceDriver>			m_driver;
-	vk::Move<vk::VkDebugReportCallbackEXT>		m_callback;
+	vk::Move<vk::VkDebugUtilsMessengerEXT>		m_callback;
 #else
 	std::unique_ptr<vk::InstanceDriverSC>		m_driver;
 #endif // CTS_USES_VULKANSC
@@ -108,7 +108,7 @@ private:
 	vk::VkInstance								m_instance;
 #ifndef CTS_USES_VULKANSC
 	std::unique_ptr<vk::InstanceDriver>			m_driver;
-	vk::Move<vk::VkDebugReportCallbackEXT>		m_callback;
+	vk::Move<vk::VkDebugUtilsMessengerEXT>		m_callback;
 #else
 	std::unique_ptr<vk::InstanceDriverSC>		m_driver;
 #endif // CTS_USES_VULKANSC
@@ -161,6 +161,7 @@ public:
 		VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED		= 0x00000004,
 		VIDEO_DEVICE_FLAG_REQUIRE_TIMELINE_OR_NOT_SUPPORTED		= 0x00000008,
 		VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_ENCODE_SUPPORT	= 0x00000010,
+		VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_1					= 0x00000020,
 	};
 
 	typedef uint32_t VideoDeviceFlags;

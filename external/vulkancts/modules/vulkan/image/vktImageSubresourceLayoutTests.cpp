@@ -257,7 +257,7 @@ ImageSubresourceLayoutInstance::ImageSubresourceLayoutInstance (Context& context
 }
 
 // Fills length bytes starting at location with pseudorandom data.
-void fillWithRandomData (de::Random& rnd, void* location, VkDeviceSize length)
+void fillWithRandomBytes (de::Random& rnd, void* location, VkDeviceSize length)
 {
 	auto		bytePtr	= reinterpret_cast<unsigned char*>(location);
 	const auto	endPtr	= bytePtr + length;
@@ -417,7 +417,7 @@ tcu::TestStatus ImageSubresourceLayoutInstance::iterateAspect (VkImageAspectFlag
 	else if (use24LSB)
 		fillWithRandomData24In32(rnd, bufferPtr, bufferSize);
 	else
-		fillWithRandomData(rnd, bufferPtr, bufferSize);
+		fillWithRandomBytes(rnd, bufferPtr, bufferSize);
 
 	flushAlloc(vkd, device, bufferAlloc);
 

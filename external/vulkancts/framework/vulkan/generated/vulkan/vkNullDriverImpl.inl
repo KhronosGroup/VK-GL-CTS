@@ -828,7 +828,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPipelineBinaryDataKHR (VkDevice device, const 
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL releaseCapturedPipelineDataKHR (VkDevice device, const VkCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator)
+VKAPI_ATTR VkResult VKAPI_CALL releaseCapturedPipelineDataKHR (VkDevice device, const VkReleaseCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
 	DE_UNREF(pInfo);

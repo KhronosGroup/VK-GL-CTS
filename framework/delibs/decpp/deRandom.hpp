@@ -189,6 +189,14 @@ template<> inline		deUint16	randomScalar	(de::Random& rnd, deUint16 minValue, de
 template<> inline		deInt8		randomScalar	(de::Random& rnd, deInt8 minValue, deInt8 maxValue)		{ return (deInt8)rnd.getInt(minValue, maxValue); }
 template<> inline		deUint8		randomScalar	(de::Random& rnd, deUint8 minValue, deUint8 maxValue)	{ return (deUint8)(minValue + rnd.getUint8() % (maxValue - minValue + 1)); }
 
+void fillWithRandomData (de::Random& rnd, void* data, size_t size);
+
+template <typename T>
+void fillWithRandomData(de::Random &rnd, T* something)
+{
+	fillWithRandomData(rnd, something, sizeof(T));
+}
+
 } // de
 
 #endif // _DERANDOM_HPP

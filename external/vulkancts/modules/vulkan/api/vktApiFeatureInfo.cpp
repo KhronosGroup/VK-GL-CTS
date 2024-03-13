@@ -1363,15 +1363,15 @@ void checkSupportExtVertexAttributeDivisorKHR (Context& context)
 
 tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
 {
-	const VkBool32												checkAlways							= VK_TRUE;
+	const VkBool32													checkAlways							= VK_TRUE;
 #ifndef CTS_USES_VULKANSC
-	const InstanceInterface&									vki									= context.getInstanceInterface();
-	const VkPhysicalDevice										physicalDevice						= context.getPhysicalDevice();
-	vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT		vertexAttributeDivisorProperties	= vk::initVulkanStructure();
-	vk::VkPhysicalDeviceProperties2								properties2							= vk::initVulkanStructure(&vertexAttributeDivisorProperties);
+	const InstanceInterface&										vki									= context.getInstanceInterface();
+	const VkPhysicalDevice											physicalDevice						= context.getPhysicalDevice();
+	vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR	vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorProperties();
+	vk::VkPhysicalDeviceProperties2									properties2							= vk::initVulkanStructure(&vertexAttributeDivisorProperties);
 	vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 #else
-	const auto													vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorPropertiesEXT();
+	const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorPropertiesEXT();
 #endif
 	TestLog&													log									= context.getTestContext().getLog();
 	bool														limitsOk							= true;
@@ -6413,6 +6413,54 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan12(Context& context)
 }
 
 #ifndef CTS_USES_VULKANSC
+void checkSupportKhrShaderSubgroupRotate (Context& context)
+{
+	context.requireDeviceFunctionality("VK_KHR_shader_subgroup_rotate");
+}
+
+tcu::TestStatus subgroupRotatePropertyExtensionFeatureConsistency(Context& context)
+{
+	const CustomInstance							instance									(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&							vki											= instance.getDriver();
+	const VkPhysicalDevice							physicalDevice								(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
+
+	const VkPhysicalDeviceSubgroupProperties&		subgroupProperties		= context.getSubgroupProperties();
+	VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR	subgroupRotateFeatures	= initVulkanStructure();
+	VkPhysicalDeviceFeatures2						extFeatures				= initVulkanStructure(&subgroupRotateFeatures);
+
+	vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+
+	// Need access to VkSubgroupFeatureFlagBits which are provided by Vulkan 1.1
+	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
+		TCU_THROW(NotSupportedError, "At least Vulkan 1.1 required to run test");
+
+	// Ensure "VK_KHR_shader_subgroup_rotate" extension's spec version is at least 2
+	{
+		const std::string							extensionName				= "VK_KHR_shader_subgroup_rotate";
+		const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+		for (const auto& property : deviceExtensionProperties)
+		{
+			if (property.extensionName == extensionName && property.specVersion < 2)
+			{
+				TCU_FAIL(extensionName + " is version 1. Need version 2 or higher");
+			}
+		}
+	}
+
+	// Validate all fields initialized matching to extension structures
+	{
+		if (	subgroupRotateFeatures.shaderSubgroupRotate				!=	((subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_ROTATE_BIT_KHR) != 0) ||
+				subgroupRotateFeatures.shaderSubgroupRotateClustered	!=	((subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_ROTATE_CLUSTERED_BIT_KHR) != 0))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR and VkPhysicalDeviceVulkan11Properties");
+		}
+	}
+	return tcu::TestStatus::pass("Vulkan device properties are consistent with VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR");
+}
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
 tcu::TestStatus devicePropertyExtensionsConsistencyVulkan13(Context& context)
 {
 	TestLog&					log					= context.getTestContext().getLog();
@@ -6935,6 +6983,9 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 			// Extended Device Features
 			addFunctionCase(subgroup.get(), "core", deviceFeatures2);
 			addSeparateFeatureTests(subgroup.get());
+#ifndef CTS_USES_VULKANSC
+			addFunctionCase(subgroup.get(), "shader_subgroup_rotate_property_consistency_khr",	checkSupportKhrShaderSubgroupRotate,		subgroupRotatePropertyExtensionFeatureConsistency);
+#endif // CTS_USES_VULKANSC
 			extendedPropertiesTests->addChild(subgroup.release());
 		}
 		addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "properties",				deviceProperties2);

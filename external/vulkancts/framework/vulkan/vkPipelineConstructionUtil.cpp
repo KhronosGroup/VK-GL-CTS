@@ -1823,6 +1823,8 @@ struct GraphicsPipelineWrapper::InternalData
 	VkPipelineTessellationStateCreateInfo				tessellationState;
 	VkPipelineFragmentShadingRateStateCreateInfoKHR*	pFragmentShadingRateState;
 	PipelineRenderingCreateInfoWrapper					pRenderingState;
+	RenderingAttachmentLocationInfoWrapper				pRenderingAttachmentLocation;
+	RenderingInputAttachmentIndexInfoWrapper			pRenderingInputAttachmentIndex;
 	const VkPipelineDynamicStateCreateInfo*				pDynamicState;
 	PipelineRepresentativeFragmentTestCreateInfoWrapper	pRepresentativeFragmentTestState;
 
@@ -2436,7 +2438,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const Vk
 	// this section is cut out for Vulkan SC its cleaner with separate if
 	if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		auto&	libraryCreateInfo	= m_internalData->pipelinePartLibraryCreateInfo[0];
+		auto& libraryCreateInfo		= m_internalData->pipelinePartLibraryCreateInfo[0];
+		libraryCreateInfo			= makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT);
 		void*	firstStructInChain	= reinterpret_cast<void*>(&libraryCreateInfo);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 		addToChain(&firstStructInChain, partBinaries.ptr);
@@ -2452,8 +2455,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const Vk
 			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
 		}
 
-		auto& pipelinePartCreateInfo = m_internalData->pipelinePartCreateInfo[0];
-		pipelinePartCreateInfo.pNext						= firstStructInChain;
+		auto& pipelinePartCreateInfo						= m_internalData->pipelinePartCreateInfo[0];
+		pipelinePartCreateInfo								= initVulkanStructure(firstStructInChain);
 		pipelinePartCreateInfo.flags						= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 		pipelinePartCreateInfo.pVertexInputState			= pVertexInputState;
 		pipelinePartCreateInfo.pInputAssemblyState			= pInputAssemblyState;
@@ -2751,7 +2754,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 	// this section is cut out for Vulkan SC its cleaner with separate if
 	if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		auto&	libraryCreateInfo	= m_internalData->pipelinePartLibraryCreateInfo[1];
+		auto& libraryCreateInfo		= m_internalData->pipelinePartLibraryCreateInfo[1];
+		libraryCreateInfo			= makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
 		void*	firstStructInChain	= reinterpret_cast<void*>(&libraryCreateInfo);
 		addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
 		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
@@ -2769,8 +2773,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
 		}
 
-		auto& pipelinePartCreateInfo = m_internalData->pipelinePartCreateInfo[1];
-		pipelinePartCreateInfo.pNext				= firstStructInChain;
+		auto& pipelinePartCreateInfo				= m_internalData->pipelinePartCreateInfo[1];
+		pipelinePartCreateInfo						= initVulkanStructure(firstStructInChain);
 		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 		pipelinePartCreateInfo.layout				= *layout;
 		pipelinePartCreateInfo.renderPass			= renderPass;
@@ -2916,7 +2920,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShade
 	}
 	else
 	{
-		auto	libraryCreateInfo	= makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
+		auto& libraryCreateInfo		= m_internalData->pipelinePartLibraryCreateInfo[1];
+		libraryCreateInfo			= makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
 		void*	firstStructInChain	= reinterpret_cast<void*>(&libraryCreateInfo);
 		addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
 		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
@@ -2933,8 +2938,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShade
 			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
 		}
 
-		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
-		pipelinePartCreateInfo.pNext				= firstStructInChain;
+		auto& pipelinePartCreateInfo				= m_internalData->pipelinePartCreateInfo[1];
+		pipelinePartCreateInfo						= initVulkanStructure(firstStructInChain);
 		pipelinePartCreateInfo.flags				= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
 		pipelinePartCreateInfo.layout				= *layout;
 		pipelinePartCreateInfo.renderPass			= renderPass;
@@ -2972,7 +2977,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const
 																		   const VkPipelineMultisampleStateCreateInfo*		multisampleState,
 																		   const VkSpecializationInfo*						specializationInfo,
 																		   const VkPipelineCache							partPipelineCache,
-																		   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback)
+																		   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback,
+																		   RenderingInputAttachmentIndexInfoWrapper			renderingInputAttachmentIndexInfo)
 {
 	return setupFragmentShaderState2(layout,
 									 renderPass,
@@ -2983,7 +2989,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const
 									 multisampleState,
 									 specializationInfo,
 									 partPipelineCache,
-									 partCreationFeedback);
+									 partCreationFeedback,
+									 renderingInputAttachmentIndexInfo);
 }
 
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(const PipelineLayoutWrapper&								layout,
@@ -2996,6 +3003,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 																			const VkSpecializationInfo*									specializationInfo,
 																			const VkPipelineCache										partPipelineCache,
 																			PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback,
+																			RenderingInputAttachmentIndexInfoWrapper					renderingInputAttachmentIndexInfo,
 																			PipelineBinaryInfoWrapper									partBinaries)
 {
 	// make sure pipeline was not already build
@@ -3014,6 +3022,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 	DE_UNREF(partBinaries);
 
 	m_internalData->setupState |= PSS_FRAGMENT_SHADER;
+	m_internalData->pRenderingInputAttachmentIndex.ptr = renderingInputAttachmentIndexInfo.ptr;
 
 	const auto pDepthStencilState	= depthStencilState ? depthStencilState
 														: (m_internalData->useDefaultDepthStencilState ? &defaultDepthStencilState : DE_NULL);
@@ -3067,10 +3076,12 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 	// this section is cut out for Vulkan SC its cleaner with separate if
 	if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		auto&	libraryCreateInfo	= m_internalData->pipelinePartLibraryCreateInfo[2];
+		auto& libraryCreateInfo		= m_internalData->pipelinePartLibraryCreateInfo[2];
+		libraryCreateInfo			= makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT);
 		void*	firstStructInChain	= reinterpret_cast<void*>(&libraryCreateInfo);
 		addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
 		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
+		addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 		addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
 		addToChain(&firstStructInChain, partBinaries.ptr);
@@ -3086,8 +3097,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
 		}
 
-		auto& pipelinePartCreateInfo = m_internalData->pipelinePartCreateInfo[2];
-		pipelinePartCreateInfo.pNext				= firstStructInChain;
+		auto& pipelinePartCreateInfo				= m_internalData->pipelinePartCreateInfo[2];
+		pipelinePartCreateInfo						= initVulkanStructure(firstStructInChain);
 		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR | shaderModuleIdFlags) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 		pipelinePartCreateInfo.layout				= *layout;
 		pipelinePartCreateInfo.renderPass			= renderPass;
@@ -3125,6 +3136,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 																		   const VkPipelineMultisampleStateCreateInfo*		multisampleState,
 																		   const VkPipelineCache							partPipelineCache,
 																		   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback,
+																		   RenderingAttachmentLocationInfoWrapper			renderingAttachmentLocationInfo,
 																		   PipelineBinaryInfoWrapper						partBinaries)
 {
 	// make sure pipeline was not already build
@@ -3133,6 +3145,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 	// make sure states are set in order - no need to complicate logic to support out of order specification - this state needs to be set last
 	DE_ASSERT(m_internalData && (m_internalData->setupState == (PSS_VERTEX_INPUT_INTERFACE | PSS_PRE_RASTERIZATION_SHADERS | PSS_FRAGMENT_SHADER)));
 	m_internalData->setupState |= PSS_FRAGMENT_OUTPUT_INTERFACE;
+	m_internalData->pRenderingAttachmentLocation.ptr = renderingAttachmentLocationInfo.ptr;
 
 	// Unreference variables that are not used in Vulkan SC. No need to put this in ifdef.
 	DE_UNREF(renderPass);
@@ -3167,9 +3180,11 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 	if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
 		auto& libraryCreateInfo = m_internalData->pipelinePartLibraryCreateInfo[3];
+		libraryCreateInfo		= makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
 		addToChain(&firstStructInChain, &libraryCreateInfo);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 		addToChain(&firstStructInChain, partBinaries.ptr);
+		addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
 
 		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
 		std::vector<VkDynamicState> states;
@@ -3182,8 +3197,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
 		}
 
-		auto& pipelinePartCreateInfo = m_internalData->pipelinePartCreateInfo[3];
-		pipelinePartCreateInfo.pNext				= firstStructInChain;
+		auto& pipelinePartCreateInfo				= m_internalData->pipelinePartCreateInfo[3];
+		pipelinePartCreateInfo						= initVulkanStructure(firstStructInChain);
 		pipelinePartCreateInfo.flags				= (m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR) & ~VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 		pipelinePartCreateInfo.renderPass			= renderPass;
 		pipelinePartCreateInfo.subpass				= subpass;
@@ -3912,6 +3927,8 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			void* firstStructInChain = static_cast<void*>(pointerToCreateInfo);
 			addToChain(&firstStructInChain, creationFeedback.ptr);
 			addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
+			addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
+			addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
 			addToChain(&firstStructInChain, pNext);
 		}
 

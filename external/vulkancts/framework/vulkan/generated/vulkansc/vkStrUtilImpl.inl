@@ -794,6 +794,15 @@ const char* getFrontFaceName (VkFrontFace value)
 	}
 }
 
+tcu::Format::Bitfield<32> getMemoryMapFlagsStr (VkMemoryMapFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getImageAspectFlagsStr (VkImageAspectFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -2782,11 +2791,6 @@ tcu::Format::Bitfield<32> getSemaphoreCreateFlagsStr (VkSemaphoreCreateFlags val
 }
 
 tcu::Format::Bitfield<32> getShaderModuleCreateFlagsStr (VkShaderModuleCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getMemoryMapFlagsStr (VkMemoryMapFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }

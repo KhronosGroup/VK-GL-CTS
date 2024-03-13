@@ -798,13 +798,13 @@ void GraphicsTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&			gp
 			m_pipelineLayout,
 			*m_renderPass,
 			0u,
-			vertShaderModule, 0,
-			DE_NULL,
-			tescShaderModule, 0,
-			teseShaderModule, 0,
-			geomShaderModule, 0,
-			DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL,
-			PipelineRenderingCreateInfoWrapper(),
+			vertShaderModule,
+			{},
+			nullptr,
+			tescShaderModule, {},
+			teseShaderModule, {},
+			geomShaderModule, {},
+			nullptr, nullptr, nullptr, nullptr, nullptr, {},
 			*m_cache,
 			pipelineCreationFeedbackWrapper[1],
 			preRasterizationPartBinaryInfo)
@@ -815,12 +815,13 @@ void GraphicsTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&			gp
 			fragShaderModule,
 			0,
 			&depthStencilStateParams,
-			DE_NULL,
-			DE_NULL,
+			nullptr,
+			nullptr,
 			*m_cache,
 			pipelineCreationFeedbackWrapper[2],
+			{},
 			fragmentShaderBinaryInfo)
-	   .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, DE_NULL, *m_cache, pipelineCreationFeedbackWrapper[3], fragmentOutputBinaryInfo)
+	   .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams, DE_NULL, *m_cache, pipelineCreationFeedbackWrapper[3], nullptr, fragmentOutputBinaryInfo)
 	   .buildPipeline(*m_cache, basePipelineHandle, basePipelineHandle != DE_NULL ? -1 : 0, pipelineCreationFeedbackWrapper[4]);
 }
 

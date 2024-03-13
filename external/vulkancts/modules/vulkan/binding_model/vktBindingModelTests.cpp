@@ -33,6 +33,7 @@
 #include "vktBindingDynamicOffsetTests.hpp"
 #include "vktBindingMutableTests.hpp"
 #include "vktBindingDescriptorBufferTests.hpp"
+#include "vktBindingDescriptorCombinationTests.hpp"
 #include "vktBindingStagesTests.hpp"
 #endif // CTS_USES_VULKANSC
 
@@ -57,6 +58,7 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(createDynamicOffsetTests(testCtx));
 	group->addChild(createDescriptorMutableTests(testCtx));
 	group->addChild(createDescriptorBufferTests(testCtx));
+	group->addChild(createDescriptorCombinationTests(testCtx));
 	group->addChild(createStagesTests(testCtx));
 #endif
 

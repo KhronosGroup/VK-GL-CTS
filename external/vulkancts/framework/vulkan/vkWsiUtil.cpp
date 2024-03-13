@@ -71,7 +71,7 @@ const char* getName (Type wsiType)
 		"wayland",
 		"android",
 		"win32",
-		"macos",
+		"metal",
 		"headless",
 		"direct_drm",
 	};
@@ -87,7 +87,7 @@ const char* getExtensionName (Type wsiType)
 		"VK_KHR_wayland_surface",
 		"VK_KHR_android_surface",
 		"VK_KHR_win32_surface",
-		"VK_MVK_macos_surface",
+		"VK_EXT_metal_surface",
 		"VK_EXT_headless_surface",
 		"VK_EXT_acquire_drm_display",
 	};
@@ -141,10 +141,10 @@ const PlatformProperties& getPlatformProperties (Type wsiType)
 			noDisplayLimit,
 			noWindowLimit,
 		},
-		// VK_MVK_macos_surface
+		// VK_EXT_metal_surface
 		{
 			PlatformProperties::FEATURE_INITIAL_WINDOW_SIZE|PlatformProperties::FEATURE_RESIZE_WINDOW,
-			PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE,
+			PlatformProperties::SWAPCHAIN_EXTENT_SCALED_TO_WINDOW_SIZE,
 			noDisplayLimit,
 			noWindowLimit,
 		},
@@ -341,18 +341,20 @@ VkResult createSurface (const InstanceInterface&		vki,
 			return vki.createWin32SurfaceKHR(instance, &createInfo, pAllocator, pSurface);
 		}
 
-		case TYPE_MACOS:
+		case TYPE_METAL:
 		{
-			const MacOSWindowInterface&			macOSWindow		= dynamic_cast<const MacOSWindowInterface&>(nativeWindow);
-			const VkMacOSSurfaceCreateInfoMVK	createInfo		=
+			const MetalWindowInterface&			metalWindow		= dynamic_cast<const MetalWindowInterface&>(nativeWindow);
+			const VkMetalSurfaceCreateInfoEXT	createInfo		=
 			{
-				VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK,
+				VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT,
 				DE_NULL,
-				(VkMacOSSurfaceCreateFlagsMVK)0,
-				macOSWindow.getNative()
+				(VkMetalSurfaceCreateFlagsEXT)0,
+				// pt::CAMetalLayer is defined as a pointer, but the struct def uses a pointer to this pointer type.
+				// *sigh*...
+				reinterpret_cast<pt::CAMetalLayer*>(metalWindow.getNative().internal)
 			};
 
-			return vki.createMacOSSurfaceMVK(instance, &createInfo, pAllocator, pSurface);
+			return vki.createMetalSurfaceEXT(instance, &createInfo, pAllocator, pSurface);
 		}
 
 		case TYPE_HEADLESS:
@@ -455,7 +457,7 @@ VkBool32 getPhysicalDevicePresentationSupport (const InstanceInterface&	vki,
 		}
 		case TYPE_HEADLESS:
 		case TYPE_ANDROID:
-		case TYPE_MACOS:
+		case TYPE_METAL:
 		case TYPE_DIRECT_DRM:
 		{
 			return 1;
@@ -692,7 +694,7 @@ tcu::UVec2 getFullScreenSize (const vk::wsi::Type wsiType, const vk::wsi::Displa
 			break;
 		}
 
-		case TYPE_MACOS:
+		case TYPE_METAL:
 		{
 #if ( DE_OS == DE_OS_OSX )
 #endif
@@ -717,7 +719,7 @@ VkBool32 isDisplaySurface (Type wsiType)
 		case TYPE_WAYLAND:
 		case TYPE_ANDROID:
 		case TYPE_WIN32:
-		case TYPE_MACOS:
+		case TYPE_METAL:
 		case TYPE_HEADLESS:
 			return 0;
 		case TYPE_DIRECT_DRM:

@@ -29,6 +29,7 @@
 #include "vktVideoTestUtils.hpp"
 
 #include <array>
+#include <vector>
 #include <string>
 #include <sstream>
 
@@ -51,6 +52,26 @@ enum ClipName
 	CLIP_H264_4K_26_IBP_MAIN,
 	CLIP_JELLY_HEVC,
 	CLIP_NONE_HEVC,
+
+	CLIP_BASIC_8,
+	CLIP_ALLINTRA_8,
+	CLIP_ALLINTRA_INTRABC_8,
+	CLIP_CDFUPDATE_8,
+	CLIP_GLOBALMOTION_8,
+	CLIP_FILMGRAIN_8,
+	CLIP_SVCL1T2_8,
+	CLIP_SUPERRES_8,
+	CLIP_SIZEUP_8,
+	CLIP_ARGON_SEQCHANGE_AFFINE_8,
+
+	CLIP_BASIC_10,
+	CLIP_ORDERHINT_10,
+	CLIP_FORWARDKEYFRAME_10,
+	CLIP_LOSSLESS_10,
+	CLIP_LOOPFILTER_10,
+	CLIP_CDEF_10,
+	CLIP_ARGON_FILMGRAIN_10,
+	CLIP_ARGON_TEST_787,
 
 	CLIP_LAST,
 };
@@ -78,37 +99,38 @@ struct VideoProfileInfo
 
 struct ClipInfo
 {
-	ClipName				name;
-	const char*				filename;
-	VideoProfileInfo		profile;
-	uint32_t				frameWidth;
-	uint32_t				frameHeight;
-	uint32_t				frameRate;
-	int						totalFrames;
-	uint32_t				framesInGOP;
-	const char**			frameChecksums;
+	ClipName						name;
+	const char*						filename;
+	std::vector<VideoProfileInfo>	sessionProfiles;
+	uint32_t						frameWidth;
+	uint32_t						frameHeight;
+	uint32_t						frameRate;
+	int								totalFrames;
+	uint32_t						framesInGOP;
+	const char**					frameChecksums;
 
 
 	ClipInfo(
-		ClipName			cName,
-		const char*			fName,
-		VideoProfileInfo	vProfile,
-		uint32_t			fFrameWidth = 0,
-		uint32_t			fFameHeight = 0,
-		uint32_t			fFrameRate = 0,
-		int					tFrames = 0,
-		uint32_t			fInGOP = 0,
-		const char**		fChecksums = nullptr
+		ClipName						cName,
+		const char*						fName,
+		std::vector<VideoProfileInfo>&&	tSessionProfiles,
+		uint32_t						fFrameWidth = 0,
+		uint32_t						fFameHeight = 0,
+		uint32_t						fFrameRate = 0,
+		int								tFrames = 0,
+		uint32_t						fInGOP = 0,
+		const char**					fChecksums = nullptr
 	) :
 		name(cName),
 		filename(fName),
-		profile(vProfile),
+		sessionProfiles(std::move(tSessionProfiles)),
 		frameWidth(fFrameWidth),
 		frameHeight(fFameHeight),
 		frameRate(fFrameRate),
 		totalFrames(tFrames),
 		framesInGOP(fInGOP),
 		frameChecksums(fChecksums) {}
+
 };
 
 const ClipInfo* clipInfo(ClipName c);

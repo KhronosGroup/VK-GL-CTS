@@ -68,6 +68,7 @@ const vk::VkPhysicalDeviceHostQueryResetFeatures&							getHostQueryResetFeature
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&					getExtendedDynamicStateFeaturesEXT					(void) const;
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&			getPipelineExecutablePropertiesFeatures				(void) const;
 const vk::VkPhysicalDeviceHostImageCopyFeaturesEXT&							getHostImageCopyFeaturesEXT							(void) const;
+const vk::VkPhysicalDeviceMapMemoryPlacedFeaturesEXT&						getMapMemoryPlacedFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT&					getShaderAtomicFloat2FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT&					getSwapchainMaintenance1FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&			getShaderDemoteToHelperInvocationFeatures			(void) const;
@@ -182,5 +183,8 @@ const vk::VkPhysicalDeviceLineRasterizationFeaturesKHR&						getLineRasterizatio
 const vk::VkPhysicalDeviceShaderExpectAssumeFeaturesKHR&					getShaderExpectAssumeFeatures						(void) const;
 const vk::VkPhysicalDeviceMaintenance6FeaturesKHR&							getMaintenance6Features								(void) const;
 const vk::VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV&			getDescriptorPoolOverallocationFeaturesNV			(void) const;
+const vk::VkPhysicalDeviceRawAccessChainsFeaturesNV&						getRawAccessChainsFeaturesNV						(void) const;
+const vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&				getShaderAtomicFloat16VectorFeaturesNV				(void) const;
+const vk::VkPhysicalDeviceRayTracingValidationFeaturesNV&					getRayTracingValidationFeaturesNV					(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

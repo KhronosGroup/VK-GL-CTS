@@ -278,7 +278,7 @@ VkResult DeviceDriver::getPipelineBinaryDataKHR (VkDevice device, const VkPipeli
 	return m_vk.getPipelineBinaryDataKHR(device, pInfo, pPipelineBinaryDataSize, pPipelineBinaryData);
 }
 
-VkResult DeviceDriver::releaseCapturedPipelineDataKHR (VkDevice device, const VkCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator) const
+VkResult DeviceDriver::releaseCapturedPipelineDataKHR (VkDevice device, const VkReleaseCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator) const
 {
 	return m_vk.releaseCapturedPipelineDataKHR(device, pInfo, pAllocator);
 }

@@ -1680,7 +1680,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 
 				// Begin XFBQ 1
 				{
-					const deUint32		firstBinding = 0;
+					const deUint32		firstBinding = m_parameters.xfbStreamIndex();
 					const deUint32		bindingCount = 1;
 					const VkDeviceSize	offset = 0;
 
@@ -1701,7 +1701,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate (void)
 
 				// Begin XFBQ 1
 				{
-					const deUint32		firstBinding = 0;
+					const deUint32		firstBinding = m_parameters.xfbStreamIndex();
 					const deUint32		bindingCount = 1;
 					const VkDeviceSize	offset = 0;
 
@@ -2267,7 +2267,7 @@ void ConcurrentPrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollect
 		src << "layout(location=0) in vec2 inPosition;\n";
 
 		if (vertXfb)
-			src	<<	"layout(xfb_buffer = 0, xfb_offset = 0, xfb_stride = 16, location = 0) out vec4 out0;\n";
+			src	<<	"layout(xfb_buffer = " << m_parameters.xfbStreamIndex() << ", xfb_offset = 0, xfb_stride = 16, location = 0) out vec4 out0;\n";
 
 		src	<<	"void main (void)\n"
 				"{\n";
@@ -2329,7 +2329,7 @@ void ConcurrentPrimitivesGeneratedQueryTestCase::initPrograms (vk::SourceCollect
 				"layout(" << outputTopology << ", max_vertices = " << maxVertices << ") out;\n";
 
 		if (transformFeedback)
-			src	<<	"layout(xfb_buffer = 0, xfb_offset = 0, xfb_stride = 16, location = 0, stream = " << m_parameters.xfbStreamIndex() << ") out vec4 xfb;\n";
+			src	<<	"layout(xfb_buffer = " << m_parameters.xfbStreamIndex() << ", xfb_offset = 0, xfb_stride = 16, location = 0, stream = " << m_parameters.xfbStreamIndex() << ") out vec4 xfb;\n";
 
 		src	<<	"void main (void)\n"
 				"{\n";

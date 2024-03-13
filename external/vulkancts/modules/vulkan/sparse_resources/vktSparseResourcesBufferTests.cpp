@@ -29,6 +29,7 @@
 #include "vktSparseResourcesBufferSparseBinding.hpp"
 #include "vktSparseResourcesBufferSparseResidency.hpp"
 #include "vktSparseResourcesBufferMemoryAliasing.hpp"
+#include "vktSparseResourcesBufferRebind.hpp"
 
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
@@ -1502,6 +1503,11 @@ void populateTestGroup (tcu::TestCaseGroup* parentGroup)
 			MovePtr<tcu::TestCaseGroup> subGroupDeviceGroups(new tcu::TestCaseGroup(parentGroup->getTestContext(), "device_group_sparse_binding"));
 			addBufferSparseBindingTests(subGroupDeviceGroups.get(), true);
 			group->addChild(subGroupDeviceGroups.release());
+
+			MovePtr<tcu::TestCaseGroup> subGroupRebind(new tcu::TestCaseGroup(parentGroup->getTestContext(), "rebind"));
+			addBufferSparseRebindTests(subGroupRebind.get(), false);
+			group->addChild(subGroupRebind.release());
+
 		}
 		parentGroup->addChild(group.release());
 	}

@@ -18,7 +18,7 @@
  *
  *//*!
  * \file
- * \brief VK_EXT_debug_report utilities
+ * \brief VK_EXT_debug_utils utilities
  *//*--------------------------------------------------------------------*/
 
 #include "vkDebugReportUtil.hpp"
@@ -35,77 +35,54 @@ namespace vk
 namespace
 {
 
-tcu::Format::Bitfield<32> shortDebugFlagsStr (VkDebugReportFlagsEXT flags)
+const char* getSeverityStr	(VkDebugUtilsMessageSeverityFlagBitsEXT severity)
 {
-	static const tcu::Format::BitDesc	s_bits[] =
+	switch (severity)
 	{
-		tcu::Format::BitDesc(VK_DEBUG_REPORT_INFORMATION_BIT_EXT,			"INFO"),
-		tcu::Format::BitDesc(VK_DEBUG_REPORT_WARNING_BIT_EXT,				"WARNING"),
-		tcu::Format::BitDesc(VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT,	"PERFORMANCE"),
-		tcu::Format::BitDesc(VK_DEBUG_REPORT_ERROR_BIT_EXT,					"ERROR"),
-		tcu::Format::BitDesc(VK_DEBUG_REPORT_DEBUG_BIT_EXT,					"DEBUG"),
-	};
-
-	return tcu::Format::Bitfield<32>(flags, DE_ARRAY_BEGIN(s_bits), DE_ARRAY_END(s_bits));
-}
-
-const char* getShortObjectTypeName (VkDebugReportObjectTypeEXT objectType)
-{
-	switch (objectType)
-	{
-		case VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT:							return "Unknown";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_INSTANCE_EXT:							return "Instance";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_PHYSICAL_DEVICE_EXT:					return "PhysicalDevice";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT:							return "Device";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_QUEUE_EXT:								return "Queue";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT:							return "Semaphore";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT:					return "CommandBuffer";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT:								return "Fence";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT:						return "DeviceMemory";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT:							return "Buffer";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT:								return "Image";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_EVENT_EXT:								return "Event";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_QUERY_POOL_EXT:						return "QueryPool";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_VIEW_EXT:						return "BufferView";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT:						return "ImageView";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT:						return "ShaderModule";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_CACHE_EXT:					return "PipelineCache";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_LAYOUT_EXT:					return "PipelineLayout";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT:						return "RenderPass";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT:							return "Pipeline";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT_EXT:				return "DescriptorSetLayout";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_EXT:							return "Sampler";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_POOL_EXT:					return "DescriptorPool";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT:					return "DescriptorSet";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT:						return "Framebuffer";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_POOL_EXT:						return "CommandPool";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_SURFACE_KHR_EXT:						return "SurfaceKHR";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_SWAPCHAIN_KHR_EXT:						return "SwapchainKHR";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_DEBUG_REPORT_EXT:						return "DebugReportEXT";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_DISPLAY_KHR_EXT:						return "DisplayKHR";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_DISPLAY_MODE_KHR_EXT:					return "DisplayModeKHR";
-		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_KHR_EXT:	return "DescriptorUpdateTemplateKHR";
-		default:																return DE_NULL;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:	return "VERBOSE";
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:		return "INFO";
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:	return "WARNING";
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:		return "ERROR";
+		default:												return "UNKNOWN";
 	}
 }
 
-tcu::Format::Enum<VkDebugReportObjectTypeEXT> shortObjectTypeStr (VkDebugReportObjectTypeEXT objectType)
+const char* getMessageTypeStr	(VkDebugUtilsMessageTypeFlagsEXT type)
 {
-	return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getShortObjectTypeName, objectType);
+	switch (type)
+	{
+		case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:					return "GENERAL";
+		case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:				return "VALIDATION";
+		case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:				return "PERFORMANCE";
+		case VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT:	return "DEVICE_ADDRESS_BINDING";
+		default:															return "UNKNOWN";
+	}
 }
 
+constexpr const char* kIgnoredMessages[] =
+{
+	// TODO: fill with currently known errors.
+	"VUID-example-12345",
+};
+
+// Skip logging messages for known issues.
+bool ignoreDebugMessage(const DebugUtilsMessage& message)
+{
+	for (size_t i = 0; i < std::size(kIgnoredMessages); ++i)
+	{
+		if (message.vuid == kIgnoredMessages[i])
+		{
+			return true;
+		}
+	}
+	return false;
+}
 } // anonymous
 
-std::ostream& operator<< (std::ostream& str, const DebugReportMessage& message)
+std::ostream& operator<< (std::ostream& str, const DebugUtilsMessage& message)
 {
-	str << shortDebugFlagsStr(message.flags) << ": "
-		<< message.message
-		<< " (code " << tcu::toHex(message.messageCode);
-
-	if (!message.layerPrefix.empty())
-		str << " from " << message.layerPrefix;
-
-	str << " at " << shortObjectTypeStr(message.objectType) << ":" << message.location << ")";
+	str << getSeverityStr(message.severity) << "|" << getMessageTypeStr(message.type) << ": ["
+		<< message.vuid << "] " << message.message;
 
 	return str;
 }
@@ -113,23 +90,25 @@ std::ostream& operator<< (std::ostream& str, const DebugReportMessage& message)
 namespace
 {
 
-VKAPI_ATTR VkBool32	VKAPI_CALL debugReportCallback (VkDebugReportFlagsEXT		flags,
-													VkDebugReportObjectTypeEXT	objectType,
-													deUint64					object,
-													size_t						location,
-													deInt32						messageCode,
-													const char*					pLayerPrefix,
-													const char*					pMessage,
-													void*						pUserData)
+VKAPI_ATTR VkBool32	VKAPI_CALL debugUtilsCallback (VkDebugUtilsMessageSeverityFlagBitsEXT		severity,
+													VkDebugUtilsMessageTypeFlagsEXT				type,
+													const VkDebugUtilsMessengerCallbackDataEXT*	callbackData,
+													void*										userData)
 {
-	auto						recorder	= reinterpret_cast<DebugReportRecorder*>(pUserData);
+	auto						recorder	= reinterpret_cast<DebugReportRecorder*>(userData);
 	auto&						messageList	= recorder->getMessages();
-	const DebugReportMessage	message		(flags, objectType, object, location, messageCode, pLayerPrefix, pMessage);
+	const DebugUtilsMessage	message		(severity, type, callbackData->pMessageIdName, callbackData->pMessage);
+
+	// Skip logging messages for known issues.
+	if (ignoreDebugMessage(message))
+	{
+		return VK_FALSE;
+	}
 
 	messageList.append(message);
 
 	if (recorder->errorPrinting() && message.isError())
-		tcu::printError("%s\n", pMessage);
+		tcu::printError("%s\n", callbackData->pMessage);
 
 	// Return false to indicate that the call should not return error and should
 	// continue execution normally.
@@ -148,30 +127,32 @@ DebugReportRecorder::~DebugReportRecorder (void)
 {
 }
 
-VkDebugReportCallbackCreateInfoEXT DebugReportRecorder::makeCreateInfo (void)
+VkDebugUtilsMessengerCreateInfoEXT DebugReportRecorder::makeCreateInfo (void)
 {
-	const VkDebugReportFlagsEXT					allFlags	= VK_DEBUG_REPORT_INFORMATION_BIT_EXT
-															| VK_DEBUG_REPORT_WARNING_BIT_EXT
-															| VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT
-															| VK_DEBUG_REPORT_ERROR_BIT_EXT
-															| VK_DEBUG_REPORT_DEBUG_BIT_EXT;
+	const VkDebugUtilsMessageSeverityFlagsEXT	severity	= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
+															| VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+	const VkDebugUtilsMessageTypeFlagsEXT		types		= VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+															| VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+															| VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
-	const VkDebugReportCallbackCreateInfoEXT	createInfo	=
+	const VkDebugUtilsMessengerCreateInfoEXT	createInfo	=
 	{
-		VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
 		nullptr,
-		allFlags,
-		debugReportCallback,
+		0,
+		severity,
+		types,
+		debugUtilsCallback,
 		this,
 	};
 
 	return createInfo;
 }
 
-Move<VkDebugReportCallbackEXT> DebugReportRecorder::createCallback (const InstanceInterface& vki, VkInstance instance)
+Move<VkDebugUtilsMessengerEXT> DebugReportRecorder::createCallback (const InstanceInterface& vki, VkInstance instance)
 {
 	const auto createInfo = makeCreateInfo();
-	return createDebugReportCallbackEXT(vki, instance, &createInfo);
+	return createDebugUtilsMessengerEXT(vki, instance, &createInfo);
 }
 
 #endif // CTS_USES_VULKANSC
@@ -180,7 +161,7 @@ bool isDebugReportSupported (const PlatformInterface& vkp)
 {
 #ifndef CTS_USES_VULKANSC
 	return isExtensionStructSupported(enumerateInstanceExtensionProperties(vkp, DE_NULL),
-								RequiredExtension("VK_EXT_debug_report"));
+								RequiredExtension("VK_EXT_debug_utils"));
 #else // CTS_USES_VULKANSC
 	DE_UNREF(vkp);
 	return false;

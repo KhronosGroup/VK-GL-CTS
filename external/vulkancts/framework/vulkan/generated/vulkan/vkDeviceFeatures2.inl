@@ -5160,6 +5160,45 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderQuadControlFeaturesKHR (Context& 
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureMapMemoryPlacedFeaturesEXT (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceMapMemoryPlacedFeaturesEXT	deviceMapMemoryPlacedFeaturesEXT[count];
+	const bool									isMapMemoryPlacedFeaturesEXT = checkExtension(properties, "VK_EXT_map_memory_placed");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceMapMemoryPlacedFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceMapMemoryPlacedFeaturesEXT));
+		deviceMapMemoryPlacedFeaturesEXT[ndx].sType = isMapMemoryPlacedFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceMapMemoryPlacedFeaturesEXT[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceMapMemoryPlacedFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isMapMemoryPlacedFeaturesEXT)
+		log << TestLog::Message << deviceMapMemoryPlacedFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isMapMemoryPlacedFeaturesEXT &&
+		(deviceMapMemoryPlacedFeaturesEXT[0].memoryMapPlaced != deviceMapMemoryPlacedFeaturesEXT[1].memoryMapPlaced ||
+		 deviceMapMemoryPlacedFeaturesEXT[0].memoryMapRangePlaced != deviceMapMemoryPlacedFeaturesEXT[1].memoryMapRangePlaced ||
+		 deviceMapMemoryPlacedFeaturesEXT[0].memoryUnmapReserve != deviceMapMemoryPlacedFeaturesEXT[1].memoryUnmapReserve))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceMapMemoryPlacedFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
 {
 	if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -5486,6 +5525,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_float_controls2_features_khr", testPhysicalDeviceFeatureShaderFloatControls2FeaturesKHR);
 	addFunctionCase(testGroup, "dynamic_rendering_local_read_features_khr", testPhysicalDeviceFeatureDynamicRenderingLocalReadFeaturesKHR);
 	addFunctionCase(testGroup, "shader_quad_control_features_khr", testPhysicalDeviceFeatureShaderQuadControlFeaturesKHR);
+	addFunctionCase(testGroup, "map_memory_placed_features_ext", testPhysicalDeviceFeatureMapMemoryPlacedFeaturesEXT);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", createDeviceWithPromoted12Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted13_structures", createDeviceWithPromoted13Structures);
