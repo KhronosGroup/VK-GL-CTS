@@ -259,6 +259,7 @@ protected:
 	virtual bool writeDataToTexture(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level);
 
 	virtual void setupDepthMode(const Functions& gl, GLint target, GLuint& texture);
+	virtual void setupNearestFilter(const Functions& gl, GLint target, GLuint& texture);
 	virtual bool verifyLookupTextureData(const Functions& gl, GLint target, GLint format, GLuint& texture, GLint level,
 										 FunctionToken& funcToken);
 };

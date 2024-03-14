@@ -2446,6 +2446,11 @@ tcu::TestNode::IterateResult SparseTexture2LookupTestCase::iterate()
 				if (format == GL_DEPTH_COMPONENT16)
 					setupDepthMode(gl, target, texture);
 
+				if ((getTextureChannelClass(mState.format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
+						getTextureChannelClass(mState.format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER) &&
+					target != GL_TEXTURE_2D_MULTISAMPLE && target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+					setupNearestFilter(gl, target, texture);
+
 				for (int l = 0; l < mState.levels; ++l)
 				{
 					if (commitTexturePage(gl, target, format, texture, l))
@@ -2840,6 +2845,21 @@ void SparseTexture2LookupTestCase::setupDepthMode(const Functions& gl, GLint tar
 	gl.texParameteri(target, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri");
 	gl.texParameteri(target, GL_TEXTURE_COMPARE_FUNC, GL_ALWAYS);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri");
+}
+
+/** Setup nearest filtering for a texture
+ *
+ * @param gl           GL API functions
+ * @param target       Target for which texture is binded
+ * @param texture      Texture object
+ */
+void SparseTexture2LookupTestCase::setupNearestFilter(const Functions& gl, GLint target, GLuint& texture)
+{
+	Texture::Bind(gl, texture, target);
+    gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri");
+    gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri");
 }
 
