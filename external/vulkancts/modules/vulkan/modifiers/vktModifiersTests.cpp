@@ -155,7 +155,10 @@ bool verifyHandleTypeForFormatModifier (const InstanceInterface&				vki,
 	if (vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
 		return false;
 
-	if ((externalImageProperties.externalMemoryProperties.compatibleHandleTypes & handleType) != handleType)
+
+	vk::VkExternalMemoryFeatureFlags required_bits = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT;
+	if ((externalImageProperties.externalMemoryProperties.compatibleHandleTypes & handleType) != handleType ||
+        !((externalImageProperties.externalMemoryProperties.externalMemoryFeatures & required_bits) == required_bits))
 		return false;
 
 	return true;
