@@ -216,7 +216,7 @@ enum TestType
 	TEST_TYPE_LAST
 };
 
-const char* getTestName(TestType type)
+static const char* testTypeToStr(TestType type)
 {
 	const char* testName;
 	switch (type)
@@ -468,15 +468,16 @@ struct InterleavingDecodeTestParams
 class TestDefinition
 {
 public:
-	static MovePtr<TestDefinition> create(DecodeTestParam params, deUint32 baseSeed)
+	static MovePtr<TestDefinition> create(DecodeTestParam params, deUint32 baseSeed, bool layeredDpb)
 	{
-		return MovePtr<TestDefinition>(new TestDefinition(params, baseSeed));
+		return MovePtr<TestDefinition>(new TestDefinition(params, baseSeed, layeredDpb));
 	}
 
-	TestDefinition(DecodeTestParam params, deUint32 baseSeed)
+	TestDefinition(DecodeTestParam params, deUint32 baseSeed, bool layeredDpb)
 		: m_params(params)
 		, m_info(clipInfo(params.stream.clip))
 		, m_hash(baseSeed)
+		, m_isLayeredDpb(layeredDpb)
 	{
 		for (const auto& profile : m_info->sessionProfiles) {
 			m_profiles.push_back(
@@ -525,6 +526,18 @@ public:
 		return &m_profiles[session];
 	}
 
+	const std::string getTestName() const
+	{
+		std::stringstream oss;
+		oss << testTypeToStr(getTestType());
+		if (isLayered())
+			oss << "_layered_dpb";
+		else
+			oss << "_separated_dpb";
+
+		return oss.str();
+	}
+
 	int framesToCheck() const
 	{
 		return m_params.stream.framesToCheck;
@@ -533,6 +546,11 @@ public:
 	bool hasOption(DecoderOption o) const
 	{
 		return (m_params.stream.decoderOptions & o) != 0;
+	}
+
+	bool isLayered() const
+	{
+		return m_isLayeredDpb;
 	}
 
 	int getParamaterUpdateHackRequirement() const
@@ -584,17 +602,18 @@ public:
 	}
 
 private:
-	DecodeTestParam	   m_params;
-	const ClipInfo*	   m_info{};
-	deUint32		   m_hash{};
-	std::vector<VkVideoCoreProfile> m_profiles;
+	DecodeTestParam						m_params;
+	const ClipInfo*						m_info{};
+	deUint32							m_hash{};
+	bool								m_isLayeredDpb{};
+	std::vector<VkVideoCoreProfile>		m_profiles;
 	// The 1-based count of parameter set updates after which to force
 	// a parameter object release.  This is required due to the design
 	// of the NVIDIA decode-client API. It sends parameter updates and
 	// expects constructed parameter objects back synchronously,
 	// before the next video session is created in a following
 	// BeginSequence call.
-	int				   m_pictureParameterUpdateTriggerHack{0}; // Zero is "off"
+	int									m_pictureParameterUpdateTriggerHack{0}; // Zero is "off"
 };
 
 // Vulkan video is not supported on android platform
@@ -614,6 +633,7 @@ static std::shared_ptr<VideoBaseDecoder> decoderFromTestDefinition(DeviceContext
 	params.context							 = devctx;
 	params.framebuffer						 = vkVideoFrameBuffer;
 	params.framesToCheck					 = test.framesToCheck();
+	params.layeredDpb						 = test.isLayered();
 	params.queryDecodeStatus				 = test.hasOption(DecoderOption::UseStatusQueries);
 	params.useInlineQueries					 = test.hasOption(DecoderOption::UseInlineStatusQueries);
 	params.resourcesWithoutProfiles			 = test.hasOption(DecoderOption::ResourcesWithoutProfiles);
@@ -751,6 +771,11 @@ DownloadedFrame getDecodedImage(DeviceContext& devctx, VkImageLayout originalLay
 	PlanarFormatDescription planarDescription = getPlanarFormatDescription(format);
 	DE_ASSERT(planarDescription.numPlanes == 2 || planarDescription.numPlanes == 3);
 	const VkImageSubresourceRange imageSubresourceRange		   = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, frame.imageLayerIndex, 1);
+
+	if (videoLoggingEnabled())
+	{
+		tcu::print(";;; getDecodedImage layer=%d arrayLayers=%d\n", frame.imageLayerIndex, frame.outputImageView->GetImageResource()->GetImageCreateInfo().arrayLayers);
+	}
 
 	const Move<VkCommandPool>		cmdDecodePool(makeCommandPool(vkd, device, queueFamilyIndexDecode));
 	const Move<VkCommandBuffer>		cmdDecodeBuffer(allocateCommandBuffer(vkd, device, *cmdDecodePool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -1607,27 +1632,29 @@ tcu::TestCaseGroup* createVideoDecodeTests(tcu::TestContext& testCtx)
 	const deUint32				baseSeed = static_cast<deUint32>(testCtx.getCommandLine().getBaseSeed());
 	MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "decode"));
 
+	for (bool layeredDpb : { true, false })
+	{
 	for (const auto& decodeTest : g_DecodeTests)
 	{
-		auto		defn	 = TestDefinition::create(decodeTest, baseSeed);
-
-		const char* testName = getTestName(defn->getTestType());
-		deUint32	rngSeed	 = baseSeed ^ deStringHash(testName);
+		auto		defn		= TestDefinition::create(decodeTest, baseSeed, layeredDpb);
+		const std::string testName	= defn->getTestName();
+		deUint32	rngSeed		= baseSeed ^ deStringHash(testName.c_str());
 		defn->updateHash(rngSeed);
-		group->addChild(new VideoDecodeTestCase(testCtx, testName, defn));
+		group->addChild(new VideoDecodeTestCase(testCtx, testName.c_str(), defn));
 	}
-
 	for (const auto& interleavingTest : g_InterleavingTests)
 	{
-		const char*							 testName = getTestName(interleavingTest.type);
 		std::vector<MovePtr<TestDefinition>> defns;
 		DecodeTestParam						 streamA{interleavingTest.type, interleavingTest.streamA};
-		defns.push_back(TestDefinition::create(streamA, baseSeed));
-		DecodeTestParam streamB{interleavingTest.type, interleavingTest.streamB};
-		defns.push_back(TestDefinition::create(streamB, baseSeed));
-		group->addChild(new InterleavingDecodeTestCase(testCtx, testName, std::move(defns)));
+		DecodeTestParam						 streamB{interleavingTest.type, interleavingTest.streamB};
+		auto								 defnA = TestDefinition::create(streamA, baseSeed, layeredDpb);
+		auto								 defnB = TestDefinition::create(streamB, baseSeed, layeredDpb);
+		const std::string					 testName = defnA->getTestName();
+		defns.push_back(std::move(defnA));
+		defns.push_back(std::move(defnB));
+		group->addChild(new InterleavingDecodeTestCase(testCtx, testName.c_str(), std::move(defns)));
 	}
-
+	} // layered true / false
 	return group.release();
 }
 

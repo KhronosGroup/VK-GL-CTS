@@ -813,6 +813,7 @@ public:
 		DeviceContext*							context{};
 		const VkVideoCoreProfile*				profile{};
 		size_t									framesToCheck{};
+		bool									layeredDpb{};
 		bool									queryDecodeStatus{};
 		bool									useInlineQueries{};
 		bool									resourcesWithoutProfiles{};
@@ -925,6 +926,7 @@ public:
 	deUint32						m_dpbSlotsMask{};
 	deUint32						m_fieldPicFlagMask{};
 	DpbSlots						m_dpb;
+	bool							m_layeredDpb;
 	std::array<int8_t, MAX_FRM_CNT> m_pictureToDpbSlotMap;
 	VkFormat						m_dpbImageFormat{VK_FORMAT_UNDEFINED};
 	VkFormat						m_outImageFormat{VK_FORMAT_UNDEFINED};

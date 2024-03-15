@@ -767,7 +767,7 @@ VkResult NvPerFrameDecodeResources::CreateImage( DeviceContext& vkDevCtx,
 
 			deUint32 baseArrayLayer = imageArrayParent ? imageIndex : 0;
 			VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, baseArrayLayer, 1 };
-			result = VkImageResourceView::Create(vkDevCtx, imageResource,
+			result = VkImageResourceView::Create(vkDevCtx, imageResource, pDpbImageCreateInfo,
 												   subresourceRange,
 												   m_frameDpbImageView);
 
@@ -785,7 +785,7 @@ VkResult NvPerFrameDecodeResources::CreateImage( DeviceContext& vkDevCtx,
 
 			if (!(useSeparateOutputImage || useLinearOutput)) {
 				VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, imageIndex, 1 };
-				result = VkImageResourceView::Create(vkDevCtx, imageResource,
+				result = VkImageResourceView::Create(vkDevCtx, imageResource, pDpbImageCreateInfo,
 													   subresourceRange,
 													   m_outImageView);
 				if (result != VK_SUCCESS) {
@@ -805,7 +805,7 @@ VkResult NvPerFrameDecodeResources::CreateImage( DeviceContext& vkDevCtx,
 			}
 
 			VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-			result = VkImageResourceView::Create(vkDevCtx, displayImageResource,
+			result = VkImageResourceView::Create(vkDevCtx, displayImageResource, pOutImageCreateInfo,
 												   subresourceRange,
 												   m_outImageView);
 			if (result != VK_SUCCESS) {
@@ -989,7 +989,7 @@ int32_t NvPerFrameDecodeImageSet::init(DeviceContext& vkDevCtx,
 		// Create an image view that has the same number of layers as the image.
 		// In that scenario, while specifying the resource, the API must specifically choose the image layer.
 		VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, numImages };
-		VkResult result = VkImageResourceView::Create(vkDevCtx, m_imageArray,
+		VkResult result = VkImageResourceView::Create(vkDevCtx, m_imageArray, &m_dpbImageCreateInfo,
 													   subresourceRange,
 													   m_imageViewArray);
 
