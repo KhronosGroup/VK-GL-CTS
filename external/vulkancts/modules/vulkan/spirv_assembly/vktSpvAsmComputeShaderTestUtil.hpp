@@ -334,12 +334,6 @@ inline T And(T a, T b)
 }
 
 template<>
-inline deFloat16 And<deFloat16>(deFloat16, deFloat16)
-{
-	return 0;
-}
-
-template<>
 inline float And<float>(float, float)
 {
 	return 0;
@@ -358,12 +352,6 @@ inline T Or(T a, T b)
 }
 
 template<>
-inline deFloat16 Or<deFloat16>(deFloat16, deFloat16)
-{
-	return 0;
-}
-
-template<>
 inline float Or<float>(float, float)
 {
 	return 0;
@@ -379,12 +367,6 @@ template<class T>
 inline T Xor(T a, T b)
 {
 	return a ^ b;
-}
-
-template<>
-inline deFloat16 Xor<deFloat16>(deFloat16, deFloat16)
-{
-	return 0;
 }
 
 template<>
@@ -410,7 +392,6 @@ inline T CompareExchange(T a, T b, T comp)
 {
 	return a == comp ? b : a;
 }
-
 
 /*----------------------------------------------------------------------------------------*//*!
  * \brief Concrete class for an input/output storage buffer object for atomic operations

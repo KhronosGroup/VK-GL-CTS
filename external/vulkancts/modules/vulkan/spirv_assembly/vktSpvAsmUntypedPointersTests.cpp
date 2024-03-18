@@ -277,11 +277,18 @@ static const DATA_TYPE BASE_DATA_TYPE_CASES[] = {
 	DataTypes::FLOAT64,
 };
 
-static const DATA_TYPE INT_BASE_DATA_TYPE_CASES[] = {
-	DataTypes::UINT8,
-	DataTypes::INT8	,
-	DataTypes::UINT16,
-	DataTypes::INT16,
+// 8 and 16 bit atomic int operations are not available on known devices
+static const DATA_TYPE ATOMIC_DATA_TYPE_CASES[] = {
+	DataTypes::FLOAT16,
+	DataTypes::UINT32,
+	DataTypes::INT32,
+	DataTypes::FLOAT32,
+	DataTypes::UINT64,
+	DataTypes::INT64,
+	DataTypes::FLOAT64,
+};
+
+static const DATA_TYPE ATOMIC_INT_DATA_TYPE_CASES[] = {
 	DataTypes::UINT32,
 	DataTypes::INT32,
 	DataTypes::UINT64,
@@ -978,17 +985,17 @@ const char* getAtomicDecrementOperator(DATA_TYPE type)
 const char* getAtomicMinOperator(DATA_TYPE type)
 {
 	static const char* const translateTable[DE_ENUM_COUNT(DataTypes)] = {
-		"OpAtomicUMin",	// UINT8
-		"OpAtomicSMin",	// INT8
-		"OpAtomicUMin",	// UINT16
-		"OpAtomicSMin",	// INT16
-		"",				// FLOAT16
-		"OpAtomicUMin",	// UINT32
-		"OpAtomicSMin",	// INT32
-		"",				// FLOAT32
-		"OpAtomicUMin",	// UINT64
-		"OpAtomicSMin",	// INT64
-		"",				// FLOAT64
+		"OpAtomicUMin",		// UINT8
+		"OpAtomicSMin",		// INT8
+		"OpAtomicUMin",		// UINT16
+		"OpAtomicSMin",		// INT16
+		"OpAtomicFMinEXT",	// FLOAT16
+		"OpAtomicUMin",		// UINT32
+		"OpAtomicSMin",		// INT32
+		"OpAtomicFMinEXT",	// FLOAT32
+		"OpAtomicUMin",		// UINT64
+		"OpAtomicSMin",		// INT64
+		"OpAtomicFMinEXT",	// FLOAT64
 	};
 
 	return translateTable[DE_ENUM_INDEX(type)];
@@ -997,17 +1004,17 @@ const char* getAtomicMinOperator(DATA_TYPE type)
 const char* getAtomicMaxOperator(DATA_TYPE type)
 {
 	static const char* const translateTable[DE_ENUM_COUNT(DataTypes)] = {
-		"OpAtomicUMax",	// UINT8
-		"OpAtomicSMax",	// INT8
-		"OpAtomicUMax",	// UINT16
-		"OpAtomicSMax",	// INT16
-		"",				// FLOAT16
-		"OpAtomicUMax",	// UINT32
-		"OpAtomicSMax",	// INT32
-		"",				// FLOAT32
-		"OpAtomicUMax",	// UINT64
-		"OpAtomicSMax",	// INT64
-		"",				// FLOAT64
+		"OpAtomicUMax",		// UINT8
+		"OpAtomicSMax",		// INT8
+		"OpAtomicUMax",		// UINT16
+		"OpAtomicSMax",		// INT16
+		"OpAtomicFMaxEXT",	// FLOAT16
+		"OpAtomicUMax",		// UINT32
+		"OpAtomicSMax",		// INT32
+		"OpAtomicFMaxEXT",	// FLOAT32
+		"OpAtomicUMax",		// UINT64
+		"OpAtomicSMax",		// INT64
+		"OpAtomicFMaxEXT",	// FLOAT64
 	};
 
 	return translateTable[DE_ENUM_INDEX(type)];
@@ -1031,6 +1038,45 @@ const char* getAtomicAndOperator(DATA_TYPE type)
 
 	return translateTable[DE_ENUM_INDEX(type)];
 }
+
+const char* getAtomicOrOperator(DATA_TYPE type)
+{
+	static const char* const translateTable[DE_ENUM_COUNT(DataTypes)] = {
+		"OpAtomicOr",	// UINT8
+		"OpAtomicOr",	// INT8
+		"OpAtomicOr",	// UINT16
+		"OpAtomicOr",	// INT16
+		"",				// FLOAT16
+		"OpAtomicOr",	// UINT32
+		"OpAtomicOr",	// INT32
+		"",				// FLOAT32
+		"OpAtomicOr",	// UINT64
+		"OpAtomicOr",	// INT64
+		"",				// FLOAT64
+	};
+
+	return translateTable[DE_ENUM_INDEX(type)];
+}
+
+const char* getAtomicXorOperator(DATA_TYPE type)
+{
+	static const char* const translateTable[DE_ENUM_COUNT(DataTypes)] = {
+		"OpAtomicXor",	// UINT8
+		"OpAtomicXor",	// INT8
+		"OpAtomicXor",	// UINT16
+		"OpAtomicXor",	// INT16
+		"",				// FLOAT16
+		"OpAtomicXor",	// UINT32
+		"OpAtomicXor",	// INT32
+		"",				// FLOAT32
+		"OpAtomicXor",	// UINT64
+		"OpAtomicXor",	// INT64
+		"",				// FLOAT64
+	};
+
+	return translateTable[DE_ENUM_INDEX(type)];
+}
+
 const char* getAtomicExchangeOperator(DATA_TYPE type)
 {
 	static const char* const translateTable[DE_ENUM_COUNT(DataTypes)] = {
@@ -1072,17 +1118,17 @@ const char* getAtomicCompareExchangeOperator(DATA_TYPE type)
 static deInt32 getSignedUnsignedMinMaxTestValue(DATA_TYPE type)
 {
 	static const deInt32 translateTable[DE_ENUM_COUNT(DataTypes)] = {
-		 1,			// UINT8
-		-1,			// INT8
-		 1,			// UINT16
-		-1,			// INT16
-		INT32_MAX,	// FLOAT16
-		 1,			// UINT32
-		-1,			// INT32
-		INT32_MAX,	// FLOAT32
-		 1,			// UINT64
-		-1,			// INT64
-		INT32_MAX,	// FLOAT64
+		 1,	// UINT8
+		-1,	// INT8
+		 1,	// UINT16
+		-1,	// INT16
+		 1,	// FLOAT16
+		 1,	// UINT32
+		-1,	// INT32
+		-1,	// FLOAT32
+		 1,	// UINT64
+		-1,	// INT64
+		 1,	// FLOAT64
 	};
 
 	return translateTable[DE_ENUM_INDEX(type)];
@@ -1334,23 +1380,68 @@ static void adjustSpecForAtomicAddOperations(ComputeShaderSpec& spec, std::map<s
 		break;
 	case DataTypes::FLOAT16:
 	{
-		specMap["atomicAddExt"] = "OpExtension \"SPV_EXT_shader_atomic_float16_add\"";
-		specMap["atomicAddCap"] = "OpCapability AtomicFloat16AddEXT";
+		specMap["atomicOtherExt"]	= "OpExtension \"SPV_EXT_shader_atomic_float16_add\"";
+		specMap["atomicOtherCap"]	= "OpCapability AtomicFloat16AddEXT";
 		spec.requestedVulkanFeatures.extShaderAtomicFloat2.shaderBufferFloat16AtomicAdd	= VK_TRUE;
 		break;
 	}
 	case DataTypes::FLOAT32:
 	{
-		specMap["atomicAddExt"] = "OpExtension \"SPV_EXT_shader_atomic_float_add\"";
-		specMap["atomicAddCap"] = "OpCapability AtomicFloat32AddEXT";
+		specMap["atomicOtherExt"]	= "OpExtension \"SPV_EXT_shader_atomic_float_add\"";
+		specMap["atomicOtherCap"]	= "OpCapability AtomicFloat32AddEXT";
 		spec.requestedVulkanFeatures.extShaderAtomicFloat.shaderBufferFloat32AtomicAdd	= VK_TRUE;
 		break;
 	}
 	case DataTypes::FLOAT64:
 	{
-		specMap["atomicAddExt"] = "OpExtension \"SPV_EXT_shader_atomic_float_add\"";
-		specMap["atomicAddCap"] = "OpCapability AtomicFloat64AddEXT";
+		specMap["atomicOtherExt"]	= "OpExtension \"SPV_EXT_shader_atomic_float_add\"";
+		specMap["atomicOtherCap"]	= "OpCapability AtomicFloat64AddEXT";
 		spec.requestedVulkanFeatures.extShaderAtomicFloat.shaderBufferFloat64AtomicAdd	= VK_TRUE;
+		break;
+	}
+	default:
+	{
+		DE_ASSERT(0);
+		DE_FATAL("Unknown data type");
+		break;
+	}
+	}
+}
+
+static void adjustSpecForAtomicMinMaxOperations(ComputeShaderSpec& spec, std::map<std::string, std::string>& specMap, DATA_TYPE dataType)
+{
+	switch (dataType)
+	{
+	case DataTypes::UINT8:
+	case DataTypes::INT8:
+	case DataTypes::UINT16:
+	case DataTypes::INT16:
+	case DataTypes::UINT32:
+	case DataTypes::INT32:
+	case DataTypes::UINT64:
+	case DataTypes::INT64:
+		break;
+	case DataTypes::FLOAT16:
+	{
+		specMap["atomicOtherExt"]	= "OpExtension \"SPV_EXT_shader_atomic_float_min_max\"";
+		specMap["atomicOtherCap"]	= "OpCapability AtomicFloat16MinMaxEXT";
+		spec.requestedVulkanFeatures.extShaderAtomicFloat2.shaderBufferFloat16AtomicMinMax	= VK_TRUE;
+		break;
+	}
+	case DataTypes::FLOAT32:
+	{
+		specMap["atomicOtherExt"]	= "OpExtension \"SPV_EXT_shader_atomic_float_min_max\"";
+		specMap["atomicOtherCap"]	= "OpCapability AtomicFloat32MinMaxEXT";
+		spec.requestedVulkanFeatures.extShaderAtomicFloat2.shaderBufferFloat32AtomicMinMax	= VK_TRUE;
+		spec.extensions.push_back("VK_EXT_shader_atomic_float2");
+		break;
+	}
+	case DataTypes::FLOAT64:
+	{
+		specMap["atomicOtherExt"]	= "OpExtension \"SPV_EXT_shader_atomic_float_min_max\"";
+		specMap["atomicOtherCap"]	= "OpCapability AtomicFloat64MinMaxEXT";
+		spec.requestedVulkanFeatures.extShaderAtomicFloat2.shaderBufferFloat64AtomicMinMax	= VK_TRUE;
+		spec.extensions.push_back("VK_EXT_shader_atomic_float2");
 		break;
 	}
 	default:
@@ -1943,7 +2034,7 @@ std::string createShaderHeader(const char* pInterfaces = "")
 		"${additionalStorageCap:opt}\n"
 		"${baseTypeCap:opt}\n"
 		"${atomicCap:opt}\n"
-		"${atomicAddCap:opt}\n"
+		"${atomicOtherCap:opt}\n"
 		"${otherCap:opt}\n"
 		"${memModelCap:opt}\n"
 		"${memModelExt:opt}\n"
@@ -1951,7 +2042,7 @@ std::string createShaderHeader(const char* pInterfaces = "")
 		"OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
 		"OpExtension \"SPV_KHR_untyped_pointers\"\n"
 		"${otherExt:opt}\n"
-		"${atomicAddExt:opt}\n"
+		"${atomicOtherExt:opt}\n"
 		"${memModelOp}\n"
 		"OpEntryPoint GLCompute %main \"main\" %id "
 	);
@@ -4409,7 +4500,6 @@ std::string createShaderMain(ATOMIC_TEST_CASE testCase)
 	{
 		main += std::string(
 			"%output_data_var_loc = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr %output_buffer %output_data_untyped_var %c_uint32_0\n"
-			"%unused_id           = ${opMin}                %${baseType}                               %output_data_var_loc     %c_uint32_1 %c_uint32_0 %c_${baseType}_1\n"
 			"%return_val          = ${opType}               %${baseType}                               %output_data_var_loc     %c_uint32_1 %c_uint32_0 %op_value\n"
 		);
 		break;
@@ -5322,23 +5412,23 @@ void addLoadAtomicTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMode
 		createShaderMain(AtomicTestCases::OP_ATOMIC_LOAD)
 	);
 
-	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(ATOMIC_DATA_TYPE_CASES); ++i)
 	{
-		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
+		std::string testName	= toString(ATOMIC_DATA_TYPE_CASES[i]);
 
 		const deUint32 numWorkgroup	= Constants::numThreads;
 
 		std::map<std::string, std::string>	specMap;
 
-		specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+		specMap["alignment"]	= std::to_string(getSizeInBytes(ATOMIC_DATA_TYPE_CASES[i]));
 		specMap["threadCount"]	= std::to_string(numWorkgroup);
 		specMap["args"]			= LOAD_OPERATION_CASES[1].pArgs;
-		specMap["baseType"]		= toString(BASE_DATA_TYPE_CASES[i]);
+		specMap["baseType"]		= toString(ATOMIC_DATA_TYPE_CASES[i]);
 		specMap["loadOp"]		= LOAD_OPERATION_CASES[1].pOperation;
-		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
+		specMap["baseDecl"]		= getDeclaration(ATOMIC_DATA_TYPE_CASES[i]);
 
 		std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-		if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+		if (ATOMIC_DATA_TYPE_CASES[i] != DataTypes::UINT32)
 		{
 			shaderVariablesStr	= "%uint32     = OpTypeInt  32      0\n"
 								+ shaderVariablesStr;
@@ -5347,8 +5437,8 @@ void addLoadAtomicTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMode
 		ComputeShaderSpec spec;
 		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-		adjustSpecForAtomicOperations(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+		adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
+		adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
 
 		const std::string shaderAsm =
 			shaderHeader.specialize(specMap) +
@@ -5357,7 +5447,7 @@ void addLoadAtomicTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMode
 			shaderFunctions.specialize(specMap);
 
 		FilledResourceDesc desc;
-		desc.dataType		= BASE_DATA_TYPE_CASES[i];
+		desc.dataType		= ATOMIC_DATA_TYPE_CASES[i];
 		desc.elemCount		= numWorkgroup;
 		desc.fillType		= FillingTypes::RANDOM;
 		desc.seed			= deStringHash(testGroup->getName());
@@ -5915,21 +6005,21 @@ void addStoreAtomicTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMod
 		createShaderMain(AtomicTestCases::OP_ATOMIC_STORE)
 	);
 
-	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(ATOMIC_DATA_TYPE_CASES); ++i)
 	{
-		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
+		std::string testName	= toString(ATOMIC_DATA_TYPE_CASES[i]);
 
 		std::map<std::string, std::string>	specMap;
-		specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
+		specMap["alignment"]	= std::to_string(getSizeInBytes(ATOMIC_DATA_TYPE_CASES[i]));
 		specMap["args"]			= STORE_OPERATION_CASES[1].pArgs;
-		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
-		specMap["baseType"]		= toString(BASE_DATA_TYPE_CASES[i]);
+		specMap["baseDecl"]		= getDeclaration(ATOMIC_DATA_TYPE_CASES[i]);
+		specMap["baseType"]		= toString(ATOMIC_DATA_TYPE_CASES[i]);
 		specMap["storeOp"]		= STORE_OPERATION_CASES[1].pOperation;
 		specMap["threadCount"]	= std::to_string(Constants::numThreads);
 		specMap["storageCap"]	= "OpCapability UntypedPointersStorageBufferKHR\n";
 
 		std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-		if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+		if (ATOMIC_DATA_TYPE_CASES[i] != DataTypes::UINT32)
 		{
 			shaderVariablesStr	= "%uint32     = OpTypeInt  32      0\n"
 								+ shaderVariablesStr;
@@ -5938,8 +6028,8 @@ void addStoreAtomicTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMod
 		ComputeShaderSpec spec;
 		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-		adjustSpecForAtomicOperations(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+		adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
+		adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
 
 		const std::string shaderAsm =
 			shaderHeader.specialize(specMap) +
@@ -5948,7 +6038,7 @@ void addStoreAtomicTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMod
 			shaderFunctions.specialize(specMap);
 
 		FilledResourceDesc desc;
-		desc.dataType		= BASE_DATA_TYPE_CASES[i];
+		desc.dataType		= ATOMIC_DATA_TYPE_CASES[i];
 		desc.elemCount		= Constants::numThreads;
 		desc.descriptorType	= vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		desc.padding		= 0;
@@ -6947,27 +7037,27 @@ void addAtomicAddTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel
 		createShaderMain(AtomicTestCases::OP_ATOMIC_ADD)
 	);
 
-	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(ATOMIC_DATA_TYPE_CASES); ++i)
 	{
-		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
+		std::string testName	= toString(ATOMIC_DATA_TYPE_CASES[i]);
 
 		std::map<std::string, std::string>	specMap;
-		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
-		specMap["baseType"]		= toString(BASE_DATA_TYPE_CASES[i]);
-		specMap["opType"]		= getAtomicAddOperator(BASE_DATA_TYPE_CASES[i]);
+		specMap["baseDecl"]		= getDeclaration(ATOMIC_DATA_TYPE_CASES[i]);
+		specMap["baseType"]		= toString(ATOMIC_DATA_TYPE_CASES[i]);
+		specMap["opType"]		= getAtomicAddOperator(ATOMIC_DATA_TYPE_CASES[i]);
 		specMap["opValue"]		= std::to_string(16);
 
 		ComputeShaderSpec spec;
 		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-		adjustSpecForAtomicOperations(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-		adjustSpecForAtomicAddOperations(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+		adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
+		adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
+		adjustSpecForAtomicAddOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
 
 		const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
 		std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-		if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+		if (ATOMIC_DATA_TYPE_CASES[i] != DataTypes::UINT32)
 		{
 			shaderVariablesStr	= "%uint32     = OpTypeInt  32      0\n"
 								  "%c_uint32_1 = OpConstant %uint32 1\n"
@@ -6981,7 +7071,7 @@ void addAtomicAddTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel
 			tempShaderFunctions.specialize(specMap);
 
 		AtomicResourceDesc desc;
-		desc.dataType	= BASE_DATA_TYPE_CASES[i];
+		desc.dataType	= ATOMIC_DATA_TYPE_CASES[i];
 		desc.elemCount	= 1;
 
 		AtomicOpDesc atomicDesc;
@@ -7022,26 +7112,26 @@ void addAtomicSubtractTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 		createShaderMain(AtomicTestCases::OP_ATOMIC_SUB)
 	);
 
-	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(INT_BASE_DATA_TYPE_CASES); ++i)
+	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(ATOMIC_INT_DATA_TYPE_CASES); ++i)
 	{
-		std::string testName	= toString(INT_BASE_DATA_TYPE_CASES[i]);
+		std::string testName	= toString(ATOMIC_INT_DATA_TYPE_CASES[i]);
 
 		std::map<std::string, std::string>	specMap;
-		specMap["baseDecl"]		= getDeclaration(INT_BASE_DATA_TYPE_CASES[i]);
-		specMap["baseType"]		= toString(INT_BASE_DATA_TYPE_CASES[i]);
-		specMap["opType"]		= getAtomicSubtractOperator(INT_BASE_DATA_TYPE_CASES[i]);
+		specMap["baseDecl"]		= getDeclaration(ATOMIC_INT_DATA_TYPE_CASES[i]);
+		specMap["baseType"]		= toString(ATOMIC_INT_DATA_TYPE_CASES[i]);
+		specMap["opType"]		= getAtomicSubtractOperator(ATOMIC_INT_DATA_TYPE_CASES[i]);
 		specMap["opValue"]		= std::to_string(16);
 
 		ComputeShaderSpec spec;
 		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForDataTypes(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
-		adjustSpecForAtomicOperations(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
+		adjustSpecForDataTypes(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
+		adjustSpecForAtomicOperations(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
 
 		const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
 		std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-		if (INT_BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+		if (ATOMIC_INT_DATA_TYPE_CASES[i] != DataTypes::UINT32)
 		{
 			shaderVariablesStr	= "%uint32     = OpTypeInt  32      0\n"
 								  "%c_uint32_1 = OpConstant %uint32 1\n"
@@ -7055,7 +7145,7 @@ void addAtomicSubtractTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 			tempShaderFunctions.specialize(specMap);
 
 		AtomicResourceDesc desc;
-		desc.dataType	= INT_BASE_DATA_TYPE_CASES[i];
+		desc.dataType	= ATOMIC_INT_DATA_TYPE_CASES[i];
 		desc.elemCount	= 1;
 
 		AtomicOpDesc atomicDesc;
@@ -7100,27 +7190,27 @@ void addAtomicIncrementDecrementTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 		createShaderMain(testCase)
 	);
 
-	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(INT_BASE_DATA_TYPE_CASES); ++i)
+	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(ATOMIC_INT_DATA_TYPE_CASES); ++i)
 	{
-		const std::string	testName	= toString(INT_BASE_DATA_TYPE_CASES[i]);
+		const std::string	testName	= toString(ATOMIC_INT_DATA_TYPE_CASES[i]);
 		const std::string	opStr		= testCase == AtomicTestCases::OP_ATOMIC_INCREMENT ?
-										  getAtomicIncrementOperator(INT_BASE_DATA_TYPE_CASES[i]) : getAtomicDecrementOperator(INT_BASE_DATA_TYPE_CASES[i]);
+										  getAtomicIncrementOperator(ATOMIC_INT_DATA_TYPE_CASES[i]) : getAtomicDecrementOperator(ATOMIC_INT_DATA_TYPE_CASES[i]);
 
 		std::map<std::string, std::string>	specMap;
-		specMap["baseDecl"]		= getDeclaration(INT_BASE_DATA_TYPE_CASES[i]);
-		specMap["baseType"]		= toString(INT_BASE_DATA_TYPE_CASES[i]);
+		specMap["baseDecl"]		= getDeclaration(ATOMIC_INT_DATA_TYPE_CASES[i]);
+		specMap["baseType"]		= toString(ATOMIC_INT_DATA_TYPE_CASES[i]);
 		specMap["opType"]		= opStr;
 
 		ComputeShaderSpec spec;
 		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForDataTypes(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
-		adjustSpecForAtomicOperations(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
+		adjustSpecForDataTypes(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
+		adjustSpecForAtomicOperations(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
 
 		const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
 		std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-		if (INT_BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+		if (ATOMIC_INT_DATA_TYPE_CASES[i] != DataTypes::UINT32)
 		{
 			shaderVariablesStr	= "%uint32 = OpTypeInt 32 0\n"
 								+ shaderVariablesStr;
@@ -7133,7 +7223,7 @@ void addAtomicIncrementDecrementTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 			tempShaderFunctions.specialize(specMap);
 
 		AtomicResourceDesc desc;
-		desc.dataType	= INT_BASE_DATA_TYPE_CASES[i];
+		desc.dataType	= ATOMIC_INT_DATA_TYPE_CASES[i];
 		desc.elemCount	= 1;
 
 		AtomicOpDesc atomicDesc;
@@ -7177,28 +7267,29 @@ void addAtomicMinMaxTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 		createShaderMain(testCase)
 	);
 
-	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(INT_BASE_DATA_TYPE_CASES); ++i)
+	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(ATOMIC_DATA_TYPE_CASES); ++i)
 	{
-		const std::string	testName	= toString(INT_BASE_DATA_TYPE_CASES[i]);
+		const std::string	testName	= toString(ATOMIC_DATA_TYPE_CASES[i]);
 		const std::string	opStr		= testCase == AtomicTestCases::OP_ATOMIC_MIN ?
-										  getAtomicMinOperator(INT_BASE_DATA_TYPE_CASES[i]) : getAtomicMaxOperator(INT_BASE_DATA_TYPE_CASES[i]);
+										  getAtomicMinOperator(ATOMIC_DATA_TYPE_CASES[i]) : getAtomicMaxOperator(ATOMIC_DATA_TYPE_CASES[i]);
 
 		std::map<std::string, std::string>	specMap;
-		specMap["baseDecl"]		= getDeclaration(INT_BASE_DATA_TYPE_CASES[i]);
-		specMap["baseType"]		= toString(INT_BASE_DATA_TYPE_CASES[i]);
+		specMap["baseDecl"]		= getDeclaration(ATOMIC_DATA_TYPE_CASES[i]);
+		specMap["baseType"]		= toString(ATOMIC_DATA_TYPE_CASES[i]);
 		specMap["opType"]		= opStr;
-		specMap["opValue"]		= std::to_string(getSignedUnsignedMinMaxTestValue(INT_BASE_DATA_TYPE_CASES[i]));
+		specMap["opValue"]		= std::to_string(getSignedUnsignedMinMaxTestValue(ATOMIC_DATA_TYPE_CASES[i]));
 
 		ComputeShaderSpec spec;
 		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForDataTypes(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
-		adjustSpecForAtomicOperations(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
+		adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
+		adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
+		adjustSpecForAtomicMinMaxOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
 
 		const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
 		std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-		if (INT_BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+		if (ATOMIC_DATA_TYPE_CASES[i] != DataTypes::UINT32)
 		{
 			shaderVariablesStr	= "%uint32     = OpTypeInt  32      0\n"
 								  "%c_uint32_1 = OpConstant %uint32 1\n"
@@ -7212,13 +7303,13 @@ void addAtomicMinMaxTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 			tempShaderFunctions.specialize(specMap);
 
 		AtomicResourceDesc desc;
-		desc.dataType	= INT_BASE_DATA_TYPE_CASES[i];
+		desc.dataType	= ATOMIC_DATA_TYPE_CASES[i];
 		desc.elemCount	= 1;
 
 		AtomicOpDesc atomicDesc;
 		atomicDesc.type			= opType;
 		atomicDesc.elemIndex	= 0;
-		atomicDesc.userData0	= getSignedUnsignedMinMaxTestValue(INT_BASE_DATA_TYPE_CASES[i]);
+		atomicDesc.userData0	= getSignedUnsignedMinMaxTestValue(ATOMIC_DATA_TYPE_CASES[i]);
 
 		Resource output		= createAtomicResource(desc, std::vector<AtomicOpDesc>({ atomicDesc }));
 
@@ -7239,21 +7330,29 @@ void addAtomicBooleanTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 
 	AtomicOpType	opType{};
 
+	const char* (*pAtomicOpFn)(DATA_TYPE) = nullptr;
+
 	switch (testCase)
 	{
 	case vkt::SpirVAssembly::AtomicTestCases::OP_ATOMIC_AND:
 	{
-		opType	= OP_ATOMIC_AND;
+		opType		= OP_ATOMIC_AND;
+		pAtomicOpFn	= getAtomicAndOperator;
+
 		break;
 	}
 	case vkt::SpirVAssembly::AtomicTestCases::OP_ATOMIC_OR:
 	{
-		opType	= OP_ATOMIC_OR;
+		opType		= OP_ATOMIC_OR;
+		pAtomicOpFn	= getAtomicOrOperator;
+
 		break;
 	}
 	case vkt::SpirVAssembly::AtomicTestCases::OP_ATOMIC_XOR:
 	{
-		opType	= OP_ATOMIC_XOR;
+		opType		= OP_ATOMIC_XOR;
+		pAtomicOpFn	= getAtomicXorOperator;
+
 		break;
 	}
 	default:
@@ -7281,27 +7380,28 @@ void addAtomicBooleanTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 		createShaderMain(testCase)
 	);
 
-	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(INT_BASE_DATA_TYPE_CASES); ++i)
+	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(ATOMIC_INT_DATA_TYPE_CASES); ++i)
 	{
-		const std::string	testName	= toString(INT_BASE_DATA_TYPE_CASES[i]);
+		const std::string	testName	= toString(ATOMIC_INT_DATA_TYPE_CASES[i]);
+
+		DE_ASSERT(pAtomicOpFn != nullptr);
 
 		std::map<std::string, std::string>	specMap;
-		specMap["baseDecl"]		= getDeclaration(INT_BASE_DATA_TYPE_CASES[i]);
-		specMap["baseType"]		= toString(INT_BASE_DATA_TYPE_CASES[i]);
-		specMap["opMin"]		= getAtomicMinOperator(INT_BASE_DATA_TYPE_CASES[i]);
-		specMap["opType"]		= getAtomicAndOperator(INT_BASE_DATA_TYPE_CASES[i]);
+		specMap["baseDecl"]		= getDeclaration(ATOMIC_INT_DATA_TYPE_CASES[i]);
+		specMap["baseType"]		= toString(ATOMIC_INT_DATA_TYPE_CASES[i]);
+		specMap["opType"]		= (*pAtomicOpFn)(ATOMIC_INT_DATA_TYPE_CASES[i]);
 		specMap["opValue"]		= std::to_string(1);
 
 		ComputeShaderSpec spec;
 		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForDataTypes(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
-		adjustSpecForAtomicOperations(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
+		adjustSpecForDataTypes(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
+		adjustSpecForAtomicOperations(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
 
 		const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
 		std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-		if (INT_BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+		if (ATOMIC_INT_DATA_TYPE_CASES[i] != DataTypes::UINT32)
 		{
 			shaderVariablesStr	= "%uint32     = OpTypeInt  32      0\n"
 								  "%c_uint32_1 = OpConstant %uint32 1\n"
@@ -7315,7 +7415,7 @@ void addAtomicBooleanTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 			tempShaderFunctions.specialize(specMap);
 
 		AtomicResourceDesc desc;
-		desc.dataType	= INT_BASE_DATA_TYPE_CASES[i];
+		desc.dataType	= ATOMIC_INT_DATA_TYPE_CASES[i];
 		desc.elemCount	= 1;
 
 		AtomicOpDesc atomicDesc;
@@ -7356,26 +7456,26 @@ void addAtomicExchangeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 		createShaderMain(AtomicTestCases::OP_ATOMIC_EXCHANGE)
 	);
 
-	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
+	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(ATOMIC_DATA_TYPE_CASES); ++i)
 	{
-		const std::string	testName	= toString(BASE_DATA_TYPE_CASES[i]);
+		const std::string	testName	= toString(ATOMIC_DATA_TYPE_CASES[i]);
 
 		std::map<std::string, std::string>	specMap;
-		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
-		specMap["baseType"]		= toString(BASE_DATA_TYPE_CASES[i]);
-		specMap["opType"]		= getAtomicExchangeOperator(BASE_DATA_TYPE_CASES[i]);
+		specMap["baseDecl"]		= getDeclaration(ATOMIC_DATA_TYPE_CASES[i]);
+		specMap["baseType"]		= toString(ATOMIC_DATA_TYPE_CASES[i]);
+		specMap["opType"]		= getAtomicExchangeOperator(ATOMIC_DATA_TYPE_CASES[i]);
 		specMap["opValue"]		= std::to_string(1);
 
 		ComputeShaderSpec spec;
 		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-		adjustSpecForAtomicOperations(spec, specMap, BASE_DATA_TYPE_CASES[i]);
+		adjustSpecForDataTypes(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
+		adjustSpecForAtomicOperations(spec, specMap, ATOMIC_DATA_TYPE_CASES[i]);
 
 		const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
 		std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-		if (BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+		if (ATOMIC_DATA_TYPE_CASES[i] != DataTypes::UINT32)
 		{
 			shaderVariablesStr	= "%uint32     = OpTypeInt  32      0\n"
 								  "%c_uint32_1 = OpConstant %uint32 1\n"
@@ -7389,7 +7489,7 @@ void addAtomicExchangeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 			tempShaderFunctions.specialize(specMap);
 
 		AtomicResourceDesc desc;
-		desc.dataType	= BASE_DATA_TYPE_CASES[i];
+		desc.dataType	= ATOMIC_DATA_TYPE_CASES[i];
 		desc.elemCount	= 1;
 
 		AtomicOpDesc atomicDesc;
@@ -7433,30 +7533,30 @@ void addAtomicCompareExchangeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_T
 		createShaderMain(AtomicTestCases::OP_ATOMIC_COMPARE_EXCHANGE)
 	);
 
-	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(INT_BASE_DATA_TYPE_CASES); ++i)
+	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(ATOMIC_INT_DATA_TYPE_CASES); ++i)
 	{
 		for(deUint32 j = 0; j < 2; ++j)
 		{
-			const std::string	testName	= toString(INT_BASE_DATA_TYPE_CASES[i]);
+			const std::string	testName	= toString(ATOMIC_INT_DATA_TYPE_CASES[i]);
 
 			std::map<std::string, std::string>	specMap;
-			specMap["baseDecl"]		= getDeclaration(INT_BASE_DATA_TYPE_CASES[i]);
-			specMap["baseType"]		= toString(INT_BASE_DATA_TYPE_CASES[i]);
-			specMap["opMin"]		= getAtomicMinOperator(INT_BASE_DATA_TYPE_CASES[i]);
-			specMap["opType"]		= getAtomicCompareExchangeOperator(INT_BASE_DATA_TYPE_CASES[i]);
+			specMap["baseDecl"]		= getDeclaration(ATOMIC_INT_DATA_TYPE_CASES[i]);
+			specMap["baseType"]		= toString(ATOMIC_INT_DATA_TYPE_CASES[i]);
+			specMap["opType"]		= getAtomicCompareExchangeOperator(ATOMIC_INT_DATA_TYPE_CASES[i]);
+			specMap["opMin"]		= getAtomicMinOperator(ATOMIC_INT_DATA_TYPE_CASES[i]);
 			specMap["compValue"]	= std::to_string(j);
 			specMap["opValue"]		= std::to_string(16);
 
 			ComputeShaderSpec spec;
 			adjustSpecForUntypedPointers(spec, specMap);
 			adjustSpecForMemoryModel(spec, specMap, memModel);
-			adjustSpecForDataTypes(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
-			adjustSpecForAtomicOperations(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
+			adjustSpecForDataTypes(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
+			adjustSpecForAtomicOperations(spec, specMap, ATOMIC_INT_DATA_TYPE_CASES[i]);
 
 			const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
 			std::string shaderVariablesStr = shaderVariables.specialize(specMap);
-			if (INT_BASE_DATA_TYPE_CASES[i] != DataTypes::UINT32)
+			if (ATOMIC_INT_DATA_TYPE_CASES[i] != DataTypes::UINT32)
 			{
 				tcu::StringTemplate	compTmp("%c_${baseType}_1 = OpConstant %${baseType} 1\n");
 				std::string			compStr = compTmp.specialize(specMap);
@@ -7473,7 +7573,7 @@ void addAtomicCompareExchangeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_T
 				tempShaderFunctions.specialize(specMap);
 
 			AtomicResourceDesc desc;
-			desc.dataType	= INT_BASE_DATA_TYPE_CASES[i];
+			desc.dataType	= ATOMIC_INT_DATA_TYPE_CASES[i];
 			desc.elemCount	= 1;
 
 			AtomicOpDesc minDesc;

@@ -187,12 +187,15 @@ bool isShaderAtomicFloatFeaturesSupported(const Context& context, const vk::VkPh
 	const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT& extensionFeatures = context.getShaderAtomicFloatFeaturesEXT();
 
 	IS_AVAIL("ShaderAtomicFloat.", shaderBufferFloat32Atomics);
+	IS_AVAIL("ShaderAtomicFloat.", shaderBufferFloat32AtomicAdd);
 	IS_AVAIL("ShaderAtomicFloat.", shaderBufferFloat64Atomics);
+	IS_AVAIL("ShaderAtomicFloat.", shaderBufferFloat64AtomicAdd);
 
 	return true;
 }
 
 #ifndef CTS_USES_VULKANSC
+
 bool isIntegerDotProductFeaturesSupported(const Context& context, const vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR& toCheck, const char **missingFeature)
 {
 	const VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR& extensionFeatures = context.getShaderIntegerDotProductFeatures();
@@ -217,6 +220,10 @@ bool isShaderAtomicFloat2FeaturesSupported(const Context& context, const vk::VkP
 	const VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT& extensionFeatures = context.getShaderAtomicFloat2FeaturesEXT();
 
 	IS_AVAIL("ShaderAtomicFloat2.", shaderBufferFloat16Atomics);
+	IS_AVAIL("ShaderAtomicFloat2.", shaderBufferFloat16AtomicAdd);
+	IS_AVAIL("ShaderAtomicFloat2.", shaderBufferFloat16AtomicMinMax);
+	IS_AVAIL("ShaderAtomicFloat2.", shaderBufferFloat32AtomicMinMax);
+	IS_AVAIL("ShaderAtomicFloat2.", shaderBufferFloat64AtomicMinMax);
 
 	return true;
 }
