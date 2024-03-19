@@ -1397,6 +1397,7 @@ enum class SequenceOrdering
 	BEFORE_GOOD_STATIC	= 4,	// Before a static state pipeline with the correct values has been bound.
 	TWO_DRAWS_DYNAMIC	= 5,	// Bind bad static pipeline and draw, followed by binding correct dynamic pipeline and drawing again.
 	TWO_DRAWS_STATIC	= 6,	// Bind bad dynamic pipeline and draw, followed by binding correct static pipeline and drawing again.
+	THREE_DRAWS_DYNAMIC	= 7,	// Initial draw with good dynamic pipeline, offscreen, followed by TWO_DRAWS_DYNAMIC.
 };
 
 // This is used when generating some test cases.
@@ -2454,7 +2455,7 @@ struct TestConfig
 	// Returns true if the test uses a static pipeline.
 	bool useStaticPipeline () const
 	{
-		return (bindStaticFirst() || isReversed());
+		return (bindStaticFirst() || isReversed() || sequenceOrdering == SequenceOrdering::THREE_DRAWS_DYNAMIC);
 	}
 
 	// Swaps static and dynamic configuration values.
@@ -2527,6 +2528,9 @@ struct TestConfig
 
 		switch (sequenceOrdering)
 		{
+		case SequenceOrdering::THREE_DRAWS_DYNAMIC:
+			iterations = 3u;
+			break;
 		case SequenceOrdering::TWO_DRAWS_DYNAMIC:
 		case SequenceOrdering::TWO_DRAWS_STATIC:
 			iterations = 2u;
@@ -3083,7 +3087,8 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 	// where colorCount != rasterizationSamples.
 	if (m_testConfig.rasterizationSamplesConfig.dynamicValue &&
 		(m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
-		 m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC) &&
+		 m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC ||
+		 m_testConfig.sequenceOrdering == SequenceOrdering::THREE_DRAWS_DYNAMIC) &&
 		!context.isDeviceFunctionalitySupported("VK_AMD_mixed_attachment_samples") &&
 		!context.isDeviceFunctionalitySupported("VK_NV_framebuffer_mixed_samples"))
 
@@ -3093,6 +3098,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 		(m_testConfig.sequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES ||
 		 m_testConfig.sequenceOrdering == SequenceOrdering::AFTER_PIPELINES ||
 		 m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
+		 m_testConfig.sequenceOrdering == SequenceOrdering::THREE_DRAWS_DYNAMIC ||
 		 m_testConfig.isReversed()) &&
 		(context.isDeviceFunctionalitySupported("VK_AMD_mixed_attachment_samples") ||
 		context.isDeviceFunctionalitySupported("VK_NV_framebuffer_mixed_samples")))
@@ -6061,7 +6067,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		renderPassFramebuffers[iteration].begin(vkd, cmdBuffer, vk::makeRect2D(kFramebufferWidth, kFramebufferHeight), static_cast<deUint32>(clearValues.size()), clearValues.data());
 
 			// Bind a static pipeline first if needed.
-			if (kBindStaticFirst && iteration == 0u)
+			if ((kBindStaticFirst && iteration == 0u) || (iteration == 1u && kSequenceOrdering == SequenceOrdering::THREE_DRAWS_DYNAMIC))
 				staticPipeline.bind(cmdBuffer);
 
 			// Maybe set extended dynamic state here.
@@ -6073,9 +6079,11 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 			// Bind dynamic pipeline.
 			if ((kSequenceOrdering != SequenceOrdering::TWO_DRAWS_DYNAMIC &&
-				 kSequenceOrdering != SequenceOrdering::TWO_DRAWS_STATIC) ||
+				 kSequenceOrdering != SequenceOrdering::TWO_DRAWS_STATIC &&
+				 kSequenceOrdering != SequenceOrdering::THREE_DRAWS_DYNAMIC) ||
 				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC && iteration > 0u) ||
-				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration == 0u))
+				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration == 0u) ||
+				(kSequenceOrdering == SequenceOrdering::THREE_DRAWS_DYNAMIC && (iteration == 0u || iteration > 1u)))
 			{
 				if (m_testConfig.bindUnusedMeshShadingPipeline)
 				{
@@ -6114,7 +6122,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 			if (kSequenceOrdering == SequenceOrdering::BEFORE_GOOD_STATIC ||
 				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC && iteration > 0u) ||
-				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration == 0u))
+				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration == 0u) ||
+				(kSequenceOrdering == SequenceOrdering::THREE_DRAWS_DYNAMIC && (iteration == 0u || iteration > 1u)))
 			{
 				setDynamicStates(m_testConfig, vkd, cmdBuffer);
 				boundInAdvance = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffers, rvertBuffers);
@@ -6133,16 +6142,22 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 				for (size_t meshIdx = 0u; meshIdx < m_testConfig.meshParams.size(); ++meshIdx)
 				{
 					// Push constants.
+
+					// Note for THREE_DRAWS_DYNAMIC we will force an off-screen draw in the first dynamic draw to avoid altering the framebuffer.
+					const float forcedOffset	= (kSequenceOrdering == SequenceOrdering::THREE_DRAWS_DYNAMIC && iteration == 0u)
+												? 1048576.0f
+												: 0.0f;
+
 					PushConstants pushConstants =
 					{
-						m_testConfig.meshParams[meshIdx].color,			//	tcu::Vec4	triangleColor;
-						m_testConfig.meshParams[meshIdx].depth,			//	float		meshDepth;
-						static_cast<deInt32>(viewportIdx),				//	deInt32		viewPortIndex;
-						m_testConfig.meshParams[meshIdx].scaleX,		//	float		scaleX;
-						m_testConfig.meshParams[meshIdx].scaleY,		//	float		scaleY;
-						m_testConfig.meshParams[meshIdx].offsetX,		//	float		offsetX;
-						m_testConfig.meshParams[meshIdx].offsetY,		//	float		offsetY;
-						m_testConfig.meshParams[meshIdx].stripScale,	//	float		stripScale;
+						m_testConfig.meshParams[meshIdx].color,						//	tcu::Vec4	triangleColor;
+						m_testConfig.meshParams[meshIdx].depth,						//	float		meshDepth;
+						static_cast<deInt32>(viewportIdx),							//	deInt32		viewPortIndex;
+						m_testConfig.meshParams[meshIdx].scaleX,					//	float		scaleX;
+						m_testConfig.meshParams[meshIdx].scaleY,					//	float		scaleY;
+						m_testConfig.meshParams[meshIdx].offsetX + forcedOffset,	//	float		offsetX;
+						m_testConfig.meshParams[meshIdx].offsetY + forcedOffset,	//	float		offsetY;
+						m_testConfig.meshParams[meshIdx].stripScale,				//	float		stripScale;
 					};
 					vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pushConstantStageFlags, 0u, static_cast<deUint32>(sizeof(pushConstants)), &pushConstants);
 
@@ -6192,9 +6207,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 						// For SequenceOrdering::TWO_DRAWS_DYNAMIC and TWO_DRAWS_STATIC cases, the first draw does not have primitive restart enabled
 						// So, draw without using the invalid index, the second draw with primitive restart enabled will replace the results
 						// using all indices.
-						if (iteration == 0u && m_testConfig.testPrimRestartEnable() &&
-							(m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
-							m_testConfig.sequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC))
+						if (m_testConfig.testPrimRestartEnable() && ((iteration == 0u &&
+							(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
+							 kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC)) ||
+							 (iteration == 1u && kSequenceOrdering == SequenceOrdering::THREE_DRAWS_DYNAMIC)))
 						{
 							numIndices = 2u;
 						}
@@ -6406,15 +6422,17 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			const auto testEnabled	= m_testConfig.getActiveReprFragTestEnable();
 			minValue += minInvocations[testEnabled];
 		}
-		else if (kNumIterations == 2u)
+		else if (kNumIterations == 2u || kNumIterations == 3u)
 		{
-			for (uint32_t i = 0u; i < kNumIterations; ++i)
+			// If kNumIterations is 3, the first draw happen offscreen and does not contribute to the result, so we're only going to
+			// take into account the last two draws, same as two_draws_static/dynamic.
+			for (uint32_t i = kNumIterations - 2u; i < kNumIterations; ++i)
 			{
 				bool testEnabled = false;
 
 #ifndef CTS_USES_VULKANSC
 				// Actually varies depending on TWO_DRAWS_STATIC/_DYNAMIC, but does not affect results.
-				const bool staticDraw = (i == 0u);
+				const bool staticDraw = (i == kNumIterations - 2u);
 
 				if (staticDraw)
 					testEnabled = m_testConfig.reprFragTestEnableConfig.staticValue;
@@ -6455,12 +6473,14 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		{
 			sampleCount += static_cast<uint32_t>(m_testConfig.getActiveSampleCount());
 		}
-		else if (kNumIterations == 2u)
+		else if (kNumIterations == 2u || kNumIterations == 3u)
 		{
-			for (uint32_t i = 0u; i < kNumIterations; ++i)
+			// If kNumIterations is 3, the first draw happen offscreen and does not contribute to the result, so we're only going to
+			// take into account the last two draws, same as two_draws_static/dynamic.
+			for (uint32_t i = kNumIterations - 2u; i < kNumIterations; ++i)
 			{
 				// Actually varies depending on TWO_DRAWS_STATIC/_DYNAMIC, but does not affect results.
-				const bool staticDraw = (i == 0u);
+				const bool staticDraw = (i == kNumIterations - 2u);
 
 				if (staticDraw)
 					sampleCount += static_cast<uint32_t>(m_testConfig.rasterizationSamplesConfig.staticValue);
@@ -6559,20 +6579,14 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 		std::string			name;
 	} kOrderingCases[] =
 	{
-		// Dynamic state set after command buffer start
-		{ SequenceOrdering::CMD_BUFFER_START,	"cmd_buffer_start"},
-		// Dynamic state set just before drawing
-		{ SequenceOrdering::BEFORE_DRAW,		"before_draw"},
-		// Dynamic after a pipeline with static states has been bound and before a pipeline with dynamic states has been bound
-		{ SequenceOrdering::BETWEEN_PIPELINES,	"between_pipelines"},
-		// Dynamic state set after both a static-state pipeline and a second dynamic-state pipeline have been bound
-		{ SequenceOrdering::AFTER_PIPELINES,	"after_pipelines"},
-		// Dynamic state set after a dynamic pipeline has been bound and before a second static-state pipeline with the right values has been bound
-		{ SequenceOrdering::BEFORE_GOOD_STATIC,	"before_good_static"},
-		// Bind bad static pipeline and draw, followed by binding correct dynamic pipeline and drawing again
-		{ SequenceOrdering::TWO_DRAWS_DYNAMIC,	"two_draws_dynamic"},
-		// Bind bad dynamic pipeline and draw, followed by binding correct static pipeline and drawing again
-		{ SequenceOrdering::TWO_DRAWS_STATIC,	"two_draws_static"},
+		{ SequenceOrdering::CMD_BUFFER_START,    "cmd_buffer_start"    },
+		{ SequenceOrdering::BEFORE_DRAW,         "before_draw"         },
+		{ SequenceOrdering::BETWEEN_PIPELINES,   "between_pipelines"   },
+		{ SequenceOrdering::AFTER_PIPELINES,     "after_pipelines"     },
+		{ SequenceOrdering::BEFORE_GOOD_STATIC,  "before_good_static"  },
+		{ SequenceOrdering::TWO_DRAWS_DYNAMIC,   "two_draws_dynamic"   },
+		{ SequenceOrdering::TWO_DRAWS_STATIC,    "two_draws_static"    },
+		{ SequenceOrdering::THREE_DRAWS_DYNAMIC, "three_draws_dynamic" },
 	};
 
 	static const struct
@@ -6800,8 +6814,11 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				const bool onlyEq		= (cbSubCase == ColorBlendSubCase::EQ_ONLY);
 				const bool allCBDynamic	= (cbSubCase == ColorBlendSubCase::ALL_CB);
 
-				// Skip two-draws variants as this will use dynamic logic op and force UNORM color attachments, which would result in illegal operations.
-				if (allCBDynamic && (kOrdering == SequenceOrdering::TWO_DRAWS_STATIC || kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC))
+				// Skip variants with more than 1 draw as this will use dynamic logic op and force UNORM color attachments, which
+				// would result in illegal operations.
+				if (allCBDynamic && (kOrdering == SequenceOrdering::TWO_DRAWS_STATIC ||
+									 kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
+									 kOrdering == SequenceOrdering::THREE_DRAWS_DYNAMIC))
 					continue;
 
 				for (int j = 0; j < 2; ++j)
@@ -6881,7 +6898,9 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 				const bool allCBDynamic	= (cbSubCase == ColorBlendSubCase::ALL_CB);
 
 				// Skip two-draws variants as this will use dynamic logic op and force UNORM color attachments, which would result in illegal operations.
-				if (allCBDynamic && (kOrdering == SequenceOrdering::TWO_DRAWS_STATIC || kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC))
+				if (allCBDynamic && (kOrdering == SequenceOrdering::TWO_DRAWS_STATIC ||
+									 kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC ||
+									 kOrdering == SequenceOrdering::THREE_DRAWS_DYNAMIC))
 					continue;
 
 				for (int j = 0; j < 2; ++j)
@@ -7540,9 +7559,9 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 
 			// Dynamic stride of 0
 			//
-			// The "two_draws" variants are invalid because the non-zero vertex stride will cause out-of-bounds access
+			// The variants with more than 1 draw are invalid because the non-zero vertex stride will cause out-of-bounds access
 			// when drawing more than one vertex.
-			if (kOrdering != SequenceOrdering::TWO_DRAWS_STATIC && kOrdering != SequenceOrdering::TWO_DRAWS_DYNAMIC)
+			if (kOrdering != SequenceOrdering::TWO_DRAWS_STATIC && kOrdering != SequenceOrdering::TWO_DRAWS_DYNAMIC && kOrdering != SequenceOrdering::THREE_DRAWS_DYNAMIC)
 			{
 				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders, getVertexWithExtraAttributesGenerator());
 				config.strideConfig.staticValue		= config.getActiveVertexGenerator()->getVertexDataStrides();
@@ -7666,8 +7685,8 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 		//
 		// Try to verify the implementation ignores the static depth clipping state. We cannot test the following sequence orderings for this:
 		// - BEFORE_GOOD_STATIC and TWO_DRAWS_STATIC because they use static-state pipelines, but for this specific case we need dynamic state as per the spec.
-		// - TWO_DRAWS_DYNAMIC because the first draw may modify the framebuffer with undesired side-effects.
-		if (kOrdering != SequenceOrdering::BEFORE_GOOD_STATIC && kOrdering != SequenceOrdering::TWO_DRAWS_DYNAMIC && kOrdering != SequenceOrdering::TWO_DRAWS_STATIC)
+		// - TWO_DRAWS_DYNAMIC and THREE_DRAWS_DYNAMIC because the draw with static state may modify the framebuffer with undesired side-effects.
+		if (kOrdering != SequenceOrdering::BEFORE_GOOD_STATIC && kOrdering != SequenceOrdering::TWO_DRAWS_DYNAMIC && kOrdering != SequenceOrdering::TWO_DRAWS_STATIC && kOrdering != SequenceOrdering::THREE_DRAWS_DYNAMIC)
 		{
 			{
 				TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
@@ -8904,7 +8923,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx, 
 							{
 								const bool useExtraPipeline = (extraPipelineIter > 0);		// Bind and draw with another pipeline using the same dynamic states.
 
-								if (useExtraPipeline && (kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC || kOrdering == SequenceOrdering::TWO_DRAWS_STATIC))
+								if (useExtraPipeline && (kOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC || kOrdering == SequenceOrdering::TWO_DRAWS_STATIC || kOrdering == SequenceOrdering::THREE_DRAWS_DYNAMIC))
 									continue;
 
 								if (useExtraPipeline && kUseMeshShaders)
