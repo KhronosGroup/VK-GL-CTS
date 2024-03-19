@@ -961,7 +961,7 @@ void ShaderObjectStateInstance::setDynamicStates (const vk::DeviceInterface& vk,
 	if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_COMPARE_OP))
 		vk.cmdSetDepthCompareOp(cmdBuffer, vk::VK_COMPARE_OP_LESS);
 	if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE))
-		vk.cmdSetDepthTestEnable(cmdBuffer, VK_TRUE);
+		vk.cmdSetDepthTestEnable(cmdBuffer, m_params.depthTestEnable ? VK_TRUE : VK_FALSE);
 	if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE))
 		vk.cmdSetDepthWriteEnable(cmdBuffer, VK_TRUE);
 	if ((!m_params.pipeline && !m_params.rasterizerDiscardEnable && (m_params.cull || m_params.stencilTestEnable)) || hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_FRONT_FACE))
@@ -1321,14 +1321,17 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 		};
 
 
+		const auto stencilOp		= (m_params.stencilTestEnable ? vk::VK_STENCIL_OP_REPLACE : vk::VK_STENCIL_OP_KEEP);
+		const auto stencilCompareOp	= (m_params.stencilTestEnable ? vk::VK_COMPARE_OP_GREATER : vk::VK_COMPARE_OP_ALWAYS);
+
 		const vk::VkStencilOpState stencilOpState = vk::makeStencilOpState(
-			vk::VK_STENCIL_OP_KEEP,				// stencil fail
-			vk::VK_STENCIL_OP_KEEP,				// depth & stencil pass
-			vk::VK_STENCIL_OP_KEEP,				// depth only fail
-			vk::VK_COMPARE_OP_ALWAYS,			// compare op
-			0u,									// compare mask
-			0u,									// write mask
-			0u);								// reference
+			stencilOp,			// stencil fail
+			stencilOp,			// depth & stencil pass
+			stencilOp,			// depth only fail
+			stencilCompareOp,	// compare op
+			0u,					// compare mask
+			0u,					// write mask
+			0u);				// reference
 
 		const vk::VkPipelineDepthStencilStateCreateInfo			depthStencilState
 		{
@@ -1712,6 +1715,11 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 							depthMax += 0.03f;
 						}
 					}
+					if (!m_params.depthTestEnable)
+					{
+						depthMin = 1.0f - depthEpsilon;
+						depthMax = 1.0f + depthEpsilon;
+					}
 
 					if (depth < depthMin || depth > depthMax)
 					{
@@ -1722,7 +1730,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 					{
 						if (stencil != 255)
 						{
-							log << tcu::TestLog::Message << "Stencil at (" << i << ", " << j << ") is expected to be 0, but was (" << stencil << ")" << tcu::TestLog::EndMessage;
+							log << tcu::TestLog::Message << "Stencil at (" << i << ", " << j << ") is expected to be 255, but was (" << stencil << ")" << tcu::TestLog::EndMessage;
 							return tcu::TestStatus::fail("Fail");
 						}
 					}
@@ -1738,7 +1746,7 @@ tcu::TestStatus ShaderObjectStateInstance::iterate (void)
 					{
 						if (stencil != 0)
 						{
-							log << tcu::TestLog::Message << "Stencil at (" << i << ", " << j << ") is expected to be 1, but was (" << stencil << ")" << tcu::TestLog::EndMessage;
+							log << tcu::TestLog::Message << "Stencil at (" << i << ", " << j << ") is expected to be 0, but was (" << stencil << ")" << tcu::TestLog::EndMessage;
 							return tcu::TestStatus::fail("Fail");
 						}
 					}
