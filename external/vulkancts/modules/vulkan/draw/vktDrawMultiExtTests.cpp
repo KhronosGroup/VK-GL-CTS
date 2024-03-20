@@ -146,6 +146,8 @@ deUint32 getTriangleCount ()
 class TriangleGenerator
 {
 public:
+	virtual ~TriangleGenerator() {}
+
 	// Append a new triangle for ID (x, y).
 	virtual void appendTriangle(deUint32 x, deUint32 y, std::vector<tcu::Vec4>& vertices) = 0;
 };
