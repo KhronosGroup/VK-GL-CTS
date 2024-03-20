@@ -3829,6 +3829,11 @@ VkFormatFeatureFlags getAllowedOptimalTilingFeatures (Context &context, VkFormat
 	// Formats for which SamplerYCbCrConversion is required may not support certain features.
 	if (requiresYCbCrConversion(context, format))
 		allow &= ycbcrAllows;
+
+#ifndef CTS_USES_VULKANSC
+    allow |= VK_FORMAT_FEATURE_VIDEO_DECODE_OUTPUT_BIT_KHR | VK_FORMAT_FEATURE_VIDEO_DECODE_DPB_BIT_KHR;
+#endif
+
 	// single-plane formats *may not* support DISJOINT_BIT
 	if (!isYCbCrFormat(format) || getPlaneCount(format) == 1)
 		allow &= ~VK_FORMAT_FEATURE_DISJOINT_BIT;
