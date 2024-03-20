@@ -28,6 +28,7 @@
 #include "glwInitES20Direct.hpp"
 #include "glwInitES30Direct.hpp"
 
+#include <OpenGLES/ES3/gl.h>
 
 namespace tcu
 {
@@ -71,8 +72,12 @@ ContextFactory::~ContextFactory (void)
 {
 }
 
-glu::RenderContext* ContextFactory::createContext (const glu::RenderConfig& config, const tcu::CommandLine&) const
+glu::RenderContext* ContextFactory::createContext (const glu::RenderConfig& config, const tcu::CommandLine&, const glu::RenderContext* sharedContext) const
 {
+	if (sharedContext) {
+		throw NotSupportedError("sharedContext not supported on iOS");
+	}
+
 	RawContext* rawContext = new RawContext(config.type);
 
 	try

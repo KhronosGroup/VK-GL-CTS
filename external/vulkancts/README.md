@@ -105,6 +105,12 @@ If building for 32-bit x86 with GCC, you probably also want to add `-msse2
 	cmake <path to vulkancts> -DCMAKE_BUILD_TYPE=Debug -DDEQP_TARGET=osx -DCMAKE_C_FLAGS=-m64 -DCMAKE_CXX_FLAGS=-m64
 	make -j
 
+### iOS
+
+	cmake <path to vulkancts> -GXcode -DDEQP_TARGET=ios -DDE_OS=DE_OS_IOS -DDE_CPU=DE_CPU_ARM_64 -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 -DCMAKE_OSX_ARCHITECTURES=arm64
+
+Open `dEQP-Core-ios.xcodeproj` in Xcode, select the "deqp" scheme, and build.
+
 ### Android
 
 Following command will build dEQP.apk:
