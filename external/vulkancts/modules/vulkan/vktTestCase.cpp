@@ -104,6 +104,7 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_NV_shader_atomic_float16_vector",
         "VK_MVK_macos_surface",
         "VK_NV_raw_access_chains",
+        "VK_NV_linear_color_attachment",
     };
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
