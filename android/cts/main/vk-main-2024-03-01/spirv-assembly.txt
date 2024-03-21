@@ -2166,6 +2166,7 @@ dEQP-VK.spirv_assembly.instruction.compute.localsize_id.specid_wgsize_specid_y
 dEQP-VK.spirv_assembly.instruction.compute.localsize_id.specid_wgsize_specid_z
 dEQP-VK.spirv_assembly.instruction.compute.multiple_shaders_extended.two_entry_points_different_interfaces
 dEQP-VK.spirv_assembly.instruction.compute.multiple_shaders_extended.two_entry_points_execution_mode_id
+dEQP-VK.spirv_assembly.instruction.compute.relaxed_with_forward_reference.static_method_shader
 dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float16_to_int16_m4rtz_frag
 dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float16_to_int16_m4rtz_geom
 dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float16_to_int16_m4rtz_tessc

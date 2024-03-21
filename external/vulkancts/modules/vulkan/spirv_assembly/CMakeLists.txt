@@ -72,6 +72,8 @@ set(DEQP_VK_VKSC_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmWorkgroupMemoryTests.hpp
 	vktSpvAsmNonSemanticInfoTests.cpp
 	vktSpvAsmNonSemanticInfoTests.hpp
+	vktSpvAsmRelaxedWithForwardReferenceTests.cpp
+	vktSpvAsmRelaxedWithForwardReferenceTests.hpp
 	vktSpvAsmPtrAccessChainTests.cpp
 	vktSpvAsmPtrAccessChainTests.hpp
 	vktSpvAsmVectorShuffleTests.cpp

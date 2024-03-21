@@ -3327,6 +3327,43 @@ tcu::TestStatus testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT (Con
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderRelaxedExtendedInstructionFeaturesKHR (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR	deviceShaderRelaxedExtendedInstructionFeaturesKHR[count];
+	const bool													isShaderRelaxedExtendedInstructionFeaturesKHR = checkExtension(properties, "VK_KHR_shader_relaxed_extended_instruction");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceShaderRelaxedExtendedInstructionFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR));
+		deviceShaderRelaxedExtendedInstructionFeaturesKHR[ndx].sType = isShaderRelaxedExtendedInstructionFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceShaderRelaxedExtendedInstructionFeaturesKHR[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceShaderRelaxedExtendedInstructionFeaturesKHR[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isShaderRelaxedExtendedInstructionFeaturesKHR)
+		log << TestLog::Message << deviceShaderRelaxedExtendedInstructionFeaturesKHR[0] << TestLog::EndMessage;
+
+	if (isShaderRelaxedExtendedInstructionFeaturesKHR &&
+		(deviceShaderRelaxedExtendedInstructionFeaturesKHR[0].shaderRelaxedExtendedInstruction != deviceShaderRelaxedExtendedInstructionFeaturesKHR[1].shaderRelaxedExtendedInstruction))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureColorWriteEnableFeaturesEXT (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -5439,6 +5476,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "mutable_descriptor_type_features_ext", testPhysicalDeviceFeatureMutableDescriptorTypeFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clip_control_features_ext", testPhysicalDeviceFeatureDepthClipControlFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT);
+	addFunctionCase(testGroup, "shader_relaxed_extended_instruction_features_khr", testPhysicalDeviceFeatureShaderRelaxedExtendedInstructionFeaturesKHR);
 	addFunctionCase(testGroup, "color_write_enable_features_ext", testPhysicalDeviceFeatureColorWriteEnableFeaturesEXT);
 	addFunctionCase(testGroup, "synchronization2_features", testPhysicalDeviceFeatureSynchronization2Features);
 	addFunctionCase(testGroup, "host_image_copy_features_ext", testPhysicalDeviceFeatureHostImageCopyFeaturesEXT);

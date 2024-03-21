@@ -2698,6 +2698,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceExternalMemoryRDMAFe
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkVertexInputBindingDescription2EXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT;

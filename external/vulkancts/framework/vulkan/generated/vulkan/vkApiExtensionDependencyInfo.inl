@@ -4162,5 +4162,6 @@ static const std::tuple<deUint32, deUint32, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_shader_expect_assume"),
 	std::make_tuple(1, 1, "VK_KHR_maintenance6"),
 	std::make_tuple(1, 1, "VK_NV_descriptor_pool_overallocation"),
+	std::make_tuple(1, 0, "VK_KHR_shader_relaxed_extended_instruction"),
 	std::make_tuple(1, 0, "VK_NV_shader_atomic_float16_vector"),
 };

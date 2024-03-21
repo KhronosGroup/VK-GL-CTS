@@ -6248,6 +6248,13 @@ struct VkPhysicalDeviceExternalMemoryRDMAFeaturesNV
 	VkBool32		externalMemoryRDMA;
 };
 
+struct VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderRelaxedExtendedInstruction;
+};
+
 struct VkVertexInputBindingDescription2EXT
 {
 	VkStructureType		sType;
