@@ -276,6 +276,18 @@ tcu::TestStatus SampleShadingSampleAttributeTestInstance::iterate(void)
 		VK_NULL_HANDLE							// const VkRenderingAttachmentInfo*    pStencilAttachment;
 	};
 
+	const VkPipelineRenderingCreateInfoKHR pipelineRenderInfo	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,	// VkStructureType    sType;
+		DE_NULL,												// const void*        pNext;
+		0,														// uint32_t           viewMask;
+		1,														// uint32_t           colorAttachmentCount;
+		&imageFormat,											// const VkFormat*    pColorAttachmentFormats;
+		VK_FORMAT_UNDEFINED,									// VkFormat           depthAttachmentFormat;
+		VK_FORMAT_UNDEFINED,									// VkFormat           stencilAttachmentFormat;
+	};
+	const auto* gpPNext = &pipelineRenderInfo;
+
 	const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,	// VkStructureType					sType;
@@ -300,6 +312,8 @@ tcu::TestStatus SampleShadingSampleAttributeTestInstance::iterate(void)
 		(VkQueryControlFlags)0u,											// VkQueryControlFlags				queryFlags;
 		(VkQueryPipelineStatisticFlags)0u									// VkQueryPipelineStatisticFlags	pipelineStatistics;
 	};
+#else
+	const void* gpPNext = nullptr;
 #endif
 
 	DescriptorSetLayoutBuilder layoutBuilder;
@@ -349,7 +363,11 @@ tcu::TestStatus SampleShadingSampleAttributeTestInstance::iterate(void)
 		0u,										// const deUint32                         patchControlPoints
 		&vertexInputState,						// VkPipelineVertexInputStateCreateInfo   *vertexInputStateCreateInfo
 		VK_NULL_HANDLE,							// VkPipelineRasterizationStateCreateInfo *rasterizationStateCreateInfo
-		&multisampling							// VkPipelineMultisampleStateCreateInfo   *multisampleStateCreateInfo
+		&multisampling,							// VkPipelineMultisampleStateCreateInfo   *multisampleStateCreateInfo
+		DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*			depthStencilStateCreateInfo
+		DE_NULL,								// const VkPipelineColorBlendStateCreateInfo*			colorBlendStateCreateInfo
+		DE_NULL,								// const VkPipelineDynamicStateCreateInfo*				dynamicStateCreateInfo
+		gpPNext									// const void*											pNext
 	);
 
 	const auto commandPool				= createCommandPool(ctx.vkd, ctx.device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, ctx.qfIndex);
