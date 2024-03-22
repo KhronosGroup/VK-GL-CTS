@@ -77,12 +77,16 @@ static constexpr deUint32 H26X_MAX_DPB_SLOTS = 16u;
 
 using VkVideoParser = VkSharedBaseObj<VulkanVideoDecodeParser>;
 
-void createParser(VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties, VideoBaseDecoder* decoder, VkSharedBaseObj<VulkanVideoDecodeParser>& parser, bool av1AnnexB)
+void createParser(VkVideoCodecOperationFlagBitsKHR		codecOperation,
+				  const VkExtensionProperties*			extensionProperties,
+				  std::shared_ptr<VideoBaseDecoder>	decoder,
+				  VkVideoParser& parser,
+				  ElementaryStreamFraming framing)
 {
 	const VkVideoCapabilitiesKHR*		videoCaps = decoder->getVideoCaps();
 	const VkParserInitDecodeParameters pdParams = {
 		NV_VULKAN_VIDEO_PARSER_API_VERSION,
-		dynamic_cast<VkParserVideoDecodeClient*>(decoder),
+		dynamic_cast<VkParserVideoDecodeClient*>(decoder.get()),
 		static_cast<deUint32>(2 * 1024 * 1024), // 2MiB is an arbitrary choice.
 		static_cast<deUint32>(videoCaps->minBitstreamBufferOffsetAlignment),
 		static_cast<deUint32>(videoCaps->minBitstreamBufferSizeAlignment),
@@ -133,7 +137,7 @@ void createParser(VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExten
 						 VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION,
 						 VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME);
 			}
-			VkSharedBaseObj<VulkanAV1Decoder> nvVideoAV1DecodeParser(new VulkanAV1Decoder(codecOperation, av1AnnexB));
+			VkSharedBaseObj<VulkanAV1Decoder> nvVideoAV1DecodeParser(new VulkanAV1Decoder(codecOperation, framing == ElementaryStreamFraming::AV1_ANNEXB));
 			parser = nvVideoAV1DecodeParser;
 			break;
 		}

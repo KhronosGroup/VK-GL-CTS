@@ -974,7 +974,11 @@ void LocalReadTestCase::checkSupport (Context& context) const
 	if (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE)
 		context.requireDeviceFunctionality("VK_EXT_color_write_enable");
 	else if (m_testType == TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3)
+	{
 		context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state3");
+		if (!context.getExtendedDynamicState3FeaturesEXT().extendedDynamicState3RasterizationSamples)
+			TCU_THROW(NotSupportedError, "extendedDynamicState3RasterizationSamples not supported");
+	}
 }
 
 void LocalReadTestCase::initPrograms (SourceCollections& programCollection) const
