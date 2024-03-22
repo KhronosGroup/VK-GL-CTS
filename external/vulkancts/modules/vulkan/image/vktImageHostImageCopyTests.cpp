@@ -980,7 +980,20 @@ tcu::TestStatus HostImageCopyTestInstance::iterate (void)
 			}
 		}
 
-		bool match = memcmp(data.data(), resultBuffer.getDataPtr(), outputBufferSize) == 0;
+		bool match = true;
+		if (m_parameters.imageOutputFormat == VK_FORMAT_R10X6_UNORM_PACK16)
+		{
+			for (deUint32 i = 0; i < outputBufferSize / 2; ++i) {
+				deUint16 ref = ((deUint16*)data.data())[i];
+				deUint16 result = ((deUint16*)resultBuffer.getDataPtr())[i];
+				if ((ref & 0xffc0) != (result & 0xffc0))
+					match = false;
+			}
+		}
+		else
+		{
+			match = memcmp(data.data(), resultBuffer.getDataPtr(), outputBufferSize) == 0;
+		}
 		if (!match)
 		{
 			log << tcu::TestLog::Message << commandsLog.str() << tcu::TestLog::EndMessage;
