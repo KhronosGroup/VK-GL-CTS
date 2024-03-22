@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+DEVICE_EXTENSION VK_KHR_shader_terminate_invocation
 
 # A test for a bug found by the GraphicsFuzz project.
 
@@ -407,6 +408,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; Bound: 325
 ; Schema: 0
                OpCapability Shader
+               OpExtension "SPV_KHR_terminate_invocation"
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %97 %156
@@ -524,7 +526,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpSelectionMerge %209 None
                OpBranchConditional %207 %208 %209
         %208 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %209 = OpLabel
                OpBranch %210
         %210 = OpLabel
@@ -592,7 +594,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpSelectionMerge %263 None
                OpBranchConditional %261 %262 %263
         %262 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %263 = OpLabel
                OpBranch %264
         %264 = OpLabel
@@ -650,7 +652,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpSelectionMerge %151 None
                OpBranchConditional %149 %150 %151
         %150 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %151 = OpLabel
                OpBranch %135
         %135 = OpLabel
