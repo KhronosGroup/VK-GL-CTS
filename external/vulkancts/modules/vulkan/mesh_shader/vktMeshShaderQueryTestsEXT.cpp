@@ -803,7 +803,8 @@ Move<VkRenderPass> MeshQueryInstance::makeCustomRenderPass (const DeviceInterfac
 		nullptr								// const deUint32*                 pPreserveAttachments
 	};
 
-	const uint32_t viewMask = ((1u << layerCount) - 1u);
+	const uint32_t viewMask = m_params->multiView ? ((1u << layerCount) - 1u) : 0u;
+	const uint32_t correlationMaskCount = m_params->multiView ? 1u : 0u;
 	const VkRenderPassMultiviewCreateInfo multiviewCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO,	//	VkStructureType	sType;
@@ -812,7 +813,7 @@ Move<VkRenderPass> MeshQueryInstance::makeCustomRenderPass (const DeviceInterfac
 		&viewMask,												//	const uint32_t*	pViewMasks;
 		0u,														//	uint32_t		dependencyCount;
 		nullptr,												//	const int32_t*	pViewOffsets;
-		1u,														//	uint32_t		correlationMaskCount;
+		correlationMaskCount,									//	uint32_t		correlationMaskCount;
 		&viewMask,												//	const uint32_t*	pCorrelationMasks;
 	};
 
