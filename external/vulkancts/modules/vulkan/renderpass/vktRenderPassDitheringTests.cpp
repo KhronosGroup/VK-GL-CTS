@@ -64,6 +64,7 @@ struct TestParams
     VkCompareOp depthCompareOp;
     float depthClearValue;
     bool blending;
+    bool revision2;
 };
 
 struct Vertex4RGBA
@@ -284,6 +285,31 @@ void DitheringTest::checkSupport(Context &ctx) const
         ctx.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
     ctx.requireDeviceFunctionality("VK_EXT_legacy_dithering");
+
+    uint32_t specVersion = 0;
+    const auto extensionProperties =
+        vk::enumerateDeviceExtensionProperties(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), DE_NULL);
+    for (const auto &extProp : extensionProperties)
+    {
+        if (strcmp(extProp.extensionName, "VK_EXT_legacy_dithering") == 0)
+        {
+            specVersion = extProp.specVersion;
+            break;
+        }
+    }
+
+    if (m_testParams.revision2)
+    {
+        ctx.requireDeviceFunctionality("VK_KHR_maintenance5");
+
+        if (specVersion < 2)
+            TCU_THROW(NotSupportedError, "VK_EXT_legacy_dithering specVersion at least 2 is required");
+    }
+    else
+    {
+        if (specVersion > 1)
+            TCU_THROW(NotSupportedError, "VK_EXT_legacy_dithering specVersion at 1 is required");
+    }
 
     // Check color format support.
     for (const VkFormat format : m_testParams.colorFormats)
@@ -915,7 +941,11 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
                                                                 VK_FORMAT_UNDEFINED,
                                                                 VK_FORMAT_UNDEFINED};
 
-        VkPipelineRenderingCreateInfoKHR *nextPtr = DE_NULL;
+        VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2Info = {
+            VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR, DE_NULL,
+            VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT};
+
+        void *nextPtr = DE_NULL;
         if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
         {
             renderingCreateInfo.colorAttachmentCount    = (uint32_t)(colorFormats.size());
@@ -928,6 +958,12 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
             }
 
             nextPtr = &renderingCreateInfo;
+
+            if (m_testParams.revision2)
+            {
+                pipelineCreateFlags2Info.pNext = nextPtr;
+                nextPtr                        = &pipelineCreateFlags2Info;
+            }
         }
 
         const std::vector<VkViewport> viewports(1u, makeViewport(imageSize));
@@ -1080,7 +1116,7 @@ void DitheringTestInstance::createRenderPassFramebuffer(bool useDithering)
 
 } // namespace
 
-static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroupParams groupParams)
+static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroupParams groupParams, bool revision2)
 {
     tcu::TestContext &testCtx           = ditheringTests->getTestContext();
     uint32_t imageDimensions            = 256u;
@@ -1102,6 +1138,7 @@ static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroup
     testParams.stencilClearValue  = 0x81;
     testParams.depthCompareOp     = VK_COMPARE_OP_LESS;
     testParams.blending           = false;
+    testParams.revision2          = revision2;
 
     // Complete render pass.
     testParams.renderAreas.emplace_back(makeViewport(testParams.imageSize));
@@ -1263,17 +1300,35 @@ static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroup
     }
 }
 
-static void cleanupGroup(tcu::TestCaseGroup *group, const SharedGroupParams)
+static void cleanupGroup(tcu::TestCaseGroup *group, const SharedGroupParams, bool revision2)
 {
     DE_UNREF(group);
+    DE_UNREF(revision2);
     // Destroy singleton objects.
     g_singletonDevice.clear();
+}
+
+static tcu::TestCaseGroup *createDitheringRevision1GroupTests(tcu::TestContext &testCtx,
+                                                              const SharedGroupParams groupParams)
+{
+    return createTestGroup(testCtx, "v1", createChildren, groupParams, false, cleanupGroup);
+}
+
+static tcu::TestCaseGroup *createDitheringRevision2GroupTests(tcu::TestContext &testCtx,
+                                                              const SharedGroupParams groupParams)
+{
+    return createTestGroup(testCtx, "v2", createChildren, groupParams, true, cleanupGroup);
 }
 
 tcu::TestCaseGroup *createRenderPassDitheringTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams)
 {
     // Tests for VK_EXT_legacy_dithering
-    return createTestGroup(testCtx, "dithering", createChildren, groupParams, cleanupGroup);
+    de::MovePtr<tcu::TestCaseGroup> ditheringTests(new tcu::TestCaseGroup(testCtx, "dithering"));
+    ditheringTests->addChild(createDitheringRevision1GroupTests(testCtx, groupParams));
+    if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+        ditheringTests->addChild(createDitheringRevision2GroupTests(testCtx, groupParams));
+
+    return ditheringTests.release();
 }
 
 } // namespace renderpass
