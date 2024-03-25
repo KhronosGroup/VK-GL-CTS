@@ -1773,7 +1773,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 	fillBuffer(videoDeviceDriver, videoDevice, encodeBufferAlloc, headersData[0].data(), headersData[0].size(), bitstreamBufferOffset);
 
 	// Move offset to accommodate header data
-	bitstreamBufferOffset = deAlign64(bitstreamBufferOffset + headersData[0].size(), videoCapabilities->minBitstreamBufferSizeAlignment);
+	bitstreamBufferOffset = deAlign64(bitstreamBufferOffset + headersData[0].size(), videoCapabilities->minBitstreamBufferOffsetAlignment);
 
 	const Unique<VkCommandPool> encodeCmdPool(makeCommandPool(videoDeviceDriver, videoDevice, encodeQueueFamilyIndex));
 	const Unique<VkCommandBuffer> firstEncodeCmdBuffer(allocateCommandBuffer(videoDeviceDriver, videoDevice, *encodeCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
