@@ -41,6 +41,7 @@
 #include "tcuImageCompare.hpp"
 #include "deMemory.h"
 
+#include <cstdint>
 #include <sstream>
 #include <vector>
 
@@ -54,10 +55,18 @@ using de::MovePtr;
 
 namespace
 {
+
+using DeviceMemorySp = de::SharedPtr<vk::Unique<vk::VkDeviceMemory>>;
+
 enum ImageAccessType {
 	StorageImage = 0,
 	Sampler,
 	CombinedImageSampler
+};
+
+enum ImageBindingType {
+	Normal = 0,
+	Sparse,
 };
 
 enum TestType {
@@ -73,6 +82,7 @@ struct TestParameters {
 	TestType					testType;
 	VkFormat					imageFormat;
 	PipelineConstructionType	pipelineConstructionType;
+	ImageBindingType            imageBindingType;
 };
 
 inline int32_t computeMipLevelDimension (int32_t baseLevelDimension, uint32_t mipLevel)
@@ -174,6 +184,61 @@ void fillImage (const tcu::PixelBufferAccess& image, const int layer)
 	}
 }
 
+template<typename T>
+inline de::SharedPtr<vk::Unique<T> > makeVkSharedPtr (vk::Move<T> vkMove)
+{
+	return de::SharedPtr<vk::Unique<T> >(new vk::Unique<T>(vkMove));
+}
+
+bool getMemoryType(const InstanceInterface& instance,
+					const VkPhysicalDevice physicalDevice,
+					const VkMemoryRequirements& objectMemoryRequirements,
+					const MemoryRequirement& memoryRequirement,
+					uint32_t& memTypeIdx)
+{
+	bool memTypeFound = false;
+	const VkPhysicalDeviceMemoryProperties deviceMemoryProperties = getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+
+	for (deUint32 memoryTypeIdx = 0; !memTypeFound && memoryTypeIdx < deviceMemoryProperties.memoryTypeCount; ++memoryTypeIdx)
+	{
+		if ((objectMemoryRequirements.memoryTypeBits & (1u << memoryTypeIdx)) != 0 &&
+			memoryRequirement.matchesHeap(deviceMemoryProperties.memoryTypes[memoryTypeIdx].propertyFlags))
+		{
+			memTypeIdx = memoryTypeIdx;
+			memTypeFound = true;
+		}
+	}
+	return memTypeFound;
+}
+
+VkSparseMemoryBind makeSparseMemoryBinding(const DeviceInterface& vk,
+											const VkDevice device,
+											const VkDeviceSize allocationSize,
+											const uint32_t memoryType,
+											const VkDeviceSize resourceOffset,
+											const VkSparseMemoryBindFlags flags)
+{
+	const VkMemoryAllocateInfo allocInfo =
+	{
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType	sType;
+		nullptr,								//	const void*		pNext;
+		allocationSize,							//	VkDeviceSize	allocationSize;
+		memoryType,								//	deUint32		memoryTypeIndex;
+	};
+
+	VkDeviceMemory deviceMemory = 0;
+	VK_CHECK(vk.allocateMemory(device, &allocInfo, VK_NULL_HANDLE, &deviceMemory));
+
+	VkSparseMemoryBind memoryBind;
+
+	memoryBind.resourceOffset	= resourceOffset;
+	memoryBind.size				= allocationSize;
+	memoryBind.memory			= deviceMemory;
+	memoryBind.memoryOffset		= 0u;
+	memoryBind.flags			= flags;
+
+	return memoryBind;
+}
 
 class Image2DView3DImageInstance : public vkt::TestInstance
 {
@@ -191,23 +256,38 @@ private:
 																 tcu::IVec3&					testMipLevelSize,
 																 VkCommandBuffer				cmdBuffer,
 																 VkImage						image,
-																 VkBuffer						outputBuffer);
+																 VkBuffer						outputBuffer,
+																 const VkSemaphore*             sparseImageSemaphore);
 
 	void						runGraphicsPipeline				(const VkDescriptorSet&			descriptorSet,
 																 const VkDescriptorSetLayout	descriptorSetLayout,
 																 tcu::IVec3&					testMipLevelSize,
 																 VkCommandBuffer				cmdBuffer,
 																 VkImage						image,
-																 VkBuffer						outputBuffer);
+																 VkBuffer						outputBuffer,
+																 const VkSemaphore*             sparseImageSemaphore);
 	const TestParameters		m_testParameters;
 };
+
+void commonSubmission(const DeviceInterface& vk,
+						const VkDevice& device,
+						const VkQueue& queue,
+						VkCommandBuffer& cmdBuffer,
+						const VkSemaphore* sparseImageSemaphore)
+{
+	const VkPipelineStageFlags stageFlags[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+	const uint32_t waitSemaphoreCount = (sparseImageSemaphore != nullptr) ? 1u : 0u;
+	const VkPipelineStageFlags*	waitStages = (sparseImageSemaphore != nullptr) ? stageFlags : nullptr;
+	submitCommandsAndWait(vk, device, queue, cmdBuffer, /*useDeviceGroups*/ false, /*deviceMask*/ 1u, waitSemaphoreCount, sparseImageSemaphore, waitStages);
+}
 
 void Image2DView3DImageInstance::runComputePipeline (const VkDescriptorSet&			descriptorSet,
 													 const VkDescriptorSetLayout	descriptorSetLayout,
 													 tcu::IVec3&					testMipLevelSize,
 													 VkCommandBuffer				cmdBuffer,
 													 VkImage						image,
-													 VkBuffer						outputBuffer)
+													 VkBuffer						outputBuffer,
+													 const VkSemaphore*             sparseImageSemaphore)
 {
 	const DeviceInterface&			vk					= m_context.getDeviceInterface();
 	const VkDevice					device				= m_context.getDevice();
@@ -228,7 +308,7 @@ void Image2DView3DImageInstance::runComputePipeline (const VkDescriptorSet&			de
 	endCommandBuffer(vk, cmdBuffer);
 
 	// Wait for completion.
-	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+	commonSubmission(vk, device, queue, cmdBuffer, sparseImageSemaphore);
 }
 
 void Image2DView3DImageInstance::runGraphicsPipeline (const VkDescriptorSet&		descriptorSet,
@@ -236,7 +316,8 @@ void Image2DView3DImageInstance::runGraphicsPipeline (const VkDescriptorSet&		de
 													  tcu::IVec3&					testMipLevelSize,
 													  VkCommandBuffer				cmdBuffer,
 													  VkImage						image,
-													  VkBuffer						outputBuffer)
+													  VkBuffer						outputBuffer,
+													  const VkSemaphore*            sparseImageSemaphore)
 {
 	const InstanceInterface&						vki								= m_context.getInstanceInterface();
 	const DeviceInterface&							vk								= m_context.getDeviceInterface();
@@ -338,7 +419,7 @@ void Image2DView3DImageInstance::runGraphicsPipeline (const VkDescriptorSet&		de
 	endCommandBuffer(vk, cmdBuffer);
 
 	// Wait for completion.
-	submitCommandsAndWait(vk, device, queue, cmdBuffer);
+	commonSubmission(vk, device, queue, cmdBuffer, sparseImageSemaphore);
 }
 
 tcu::TestStatus Image2DView3DImageInstance::iterate (void)
@@ -350,6 +431,7 @@ tcu::TestStatus Image2DView3DImageInstance::iterate (void)
 	Allocator&							allocator			= m_context.getDefaultAllocator();
 	tcu::IVec3							imageSize			= m_testParameters.imageSize;
 	const bool							useSampler			= m_testParameters.imageType != StorageImage;
+	const bool                          useSparseBinding    = m_testParameters.imageBindingType == Sparse;
 	const tcu::TextureFormat			textureFormat		= mapVkFormat(m_testParameters.imageFormat);
 	const uint32_t						mipLevelCount		= 3;
 
@@ -376,6 +458,11 @@ tcu::TestStatus Image2DView3DImageInstance::iterate (void)
 		flushAlloc(vk, device, inputImageBuffer->getAllocation());
 	}
 
+	VkImageCreateFlags flags = VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT;
+
+	if (useSparseBinding)
+		flags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
+
 	// Create the test image: sampled image or storage image, depending on the test type.
 	const VkImageUsageFlags				usage				= VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 																VK_IMAGE_USAGE_TRANSFER_DST_BIT |
@@ -383,8 +470,8 @@ tcu::TestStatus Image2DView3DImageInstance::iterate (void)
 	const VkImageCreateInfo				imageCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,						// VkStructureType			sType
-		DE_NULL,													// const void*				pNext
-		VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT,					// VkImageCreateFlags		flags
+		nullptr,													// const void*				pNext
+		flags,                                                      // VkImageCreateFlags		flags
 		VK_IMAGE_TYPE_3D,											// VkImageType				imageType
 		m_testParameters.imageFormat,								// VkFormat					format
 		makeExtent3D(imageSize.x(), imageSize.y(), imageSize.z()),	// VkExtent3D				extent
@@ -395,14 +482,79 @@ tcu::TestStatus Image2DView3DImageInstance::iterate (void)
 		usage,														// VkImageUsageFlags		usage
 		VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode			sharingMode
 		0u,															// uint32_t					queueFamilyIndexCount
-		DE_NULL,													// const uint32_t*			pQueueFamilyIndices
+		nullptr,													// const uint32_t*			pQueueFamilyIndices
 		VK_IMAGE_LAYOUT_UNDEFINED,									// VkImageLayout			initialLayout
 	};
-	ImageWithMemory						testImage			(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any);
+
+	de::MovePtr<ImageWithMemory> normalImage;
+	Move<VkImage> sparseImage;
+	Move<VkSemaphore> sparseImageSemaphore;
+	std::vector<DeviceMemorySp>	deviceMemUniquePtrVec;
+
+	if (!useSparseBinding)
+		// Create a normal image and bind device memory too
+		normalImage = de::MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, allocator, imageCreateInfo, MemoryRequirement::Any));
+	else
+		// Create an image now and bind device memory later
+		sparseImage = createImage(vk, device, &imageCreateInfo);
+
+	const VkImage& testImage = useSparseBinding ? sparseImage.get() : (*normalImage).get();
+
+	if (useSparseBinding)
+	{
+		const InstanceInterface& instance = m_context.getInstanceInterface();
+		const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+		const VkQueue sparseQueue = m_context.getSparseQueue();
+		std::vector<VkSparseMemoryBind>	sparseMemoryBindings;
+
+		const VkMemoryRequirements imageMemoryReqs = getImageMemoryRequirements(vk, device, testImage);
+
+		if (imageMemoryReqs.size > getPhysicalDeviceProperties(instance, physicalDevice).limits.sparseAddressSpaceSize)
+			TCU_THROW(NotSupportedError, "Required memory size for sparse resource exceeds device limits");
+
+		DE_ASSERT((imageMemoryReqs.size % imageMemoryReqs.alignment) == 0);
+
+		uint32_t memoryType;
+		bool memoryTypeFound = getMemoryType(instance, physicalDevice, imageMemoryReqs, MemoryRequirement::Any, memoryType);
+		if (!memoryTypeFound)
+			return tcu::TestStatus::fail("Required memory type for sparse resouce not found");
+
+		const uint32_t numSparseBindings = static_cast<uint32_t>(imageMemoryReqs.size / imageMemoryReqs.alignment);
+		for (uint32_t bindingIdx = 0; bindingIdx < numSparseBindings; ++bindingIdx)
+		{
+			const VkSparseMemoryBind sparseMemoryBinding = makeSparseMemoryBinding(vk, device, imageMemoryReqs.alignment, memoryType, imageMemoryReqs.alignment * bindingIdx, (VkSparseMemoryBindFlags)0u);
+
+			deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(sparseMemoryBinding.memory), Deleter<VkDeviceMemory>(vk, device, nullptr))));
+
+			sparseMemoryBindings.push_back(sparseMemoryBinding);
+		}
+
+		const VkSparseImageOpaqueMemoryBindInfo opaqueBindingInfo = makeSparseImageOpaqueMemoryBindInfo(testImage, de::sizeU32(sparseMemoryBindings), de::dataOrNull(sparseMemoryBindings));
+
+		sparseImageSemaphore = createSemaphore(vk, device);
+
+		const VkBindSparseInfo bindSparseInfo =
+		{
+			VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,						//VkStructureType							sType;
+			nullptr,                                                //const void*								pNext;
+			0u,														//deUint32									waitSemaphoreCount;
+			nullptr,                                                //const VkSemaphore*						pWaitSemaphores;
+			0u,														//deUint32									bufferBindCount;
+			nullptr,                                                //const VkSparseBufferMemoryBindInfo*		pBufferBinds;
+			1u,														//deUint32									imageOpaqueBindCount;
+			&opaqueBindingInfo,										//const VkSparseImageOpaqueMemoryBindInfo*	pImageOpaqueBinds;
+			0u,														//deUint32									imageBindCount;
+			nullptr,                                                //const VkSparseImageMemoryBindInfo*		pImageBinds;
+			1u,														//deUint32									signalSemaphoreCount;
+			&sparseImageSemaphore.get()                             //const VkSemaphore*						pSignalSemaphores;
+		};
+
+		VK_CHECK(vk.queueBindSparse(sparseQueue, 1u, &bindSparseInfo, VK_NULL_HANDLE));
+	}
 
 	// Make an image view covering one of the mip levels.
 	const VkImageSubresourceRange		subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, m_testParameters.mipLevel, 1u, m_testParameters.layerNdx, 1u);
-	const Unique<VkImageView>			imageView			(makeImageView(vk, device, *testImage, VK_IMAGE_VIEW_TYPE_2D, m_testParameters.imageFormat, subresourceRange));
+	const Unique<VkImageView>			imageView			(makeImageView(vk, device, testImage, VK_IMAGE_VIEW_TYPE_2D, m_testParameters.imageFormat, subresourceRange));
 
 	// resultImage is used in sampler / combined image sampler tests to verify the sampled image.
 	MovePtr<ImageWithMemory>			resultImage;
@@ -498,7 +650,7 @@ tcu::TestStatus Image2DView3DImageInstance::iterate (void)
 	else
 	{
 		// Clear the test image.
-		clearColorImage(vk, device, queue, m_context.getUniversalQueueFamilyIndex(), testImage.get(), tcu::Vec4(0,0,0,1), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, pipelineStage, 0u, 1u, 0u, mipLevelCount);
+		clearColorImage(vk, device, queue, m_context.getUniversalQueueFamilyIndex(), testImage, tcu::Vec4(0,0,0,1), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, pipelineStage, 0u, 1u, 0u, mipLevelCount);
 	}
 
 	// Prepare the command buffer.
@@ -513,7 +665,7 @@ tcu::TestStatus Image2DView3DImageInstance::iterate (void)
 		// Copy the input image to the target mip level.
 		std::vector<VkBufferImageCopy> copies;
 		copies.push_back(makeBufferImageCopy(makeExtent3D(testMipLevelSize), makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, m_testParameters.mipLevel, 0, 1)));
-		copyBufferToImage(vk, *cmdBuffer, **inputImageBuffer, bufferSize, copies, VK_IMAGE_ASPECT_COLOR_BIT, mipLevelCount, 1u, *testImage, VK_IMAGE_LAYOUT_GENERAL, pipelineStage);
+		copyBufferToImage(vk, *cmdBuffer, **inputImageBuffer, bufferSize, copies, VK_IMAGE_ASPECT_COLOR_BIT, mipLevelCount, 1u, testImage, VK_IMAGE_LAYOUT_GENERAL, pipelineStage);
 	}
 
 	const Move<VkDescriptorSetLayout>	descriptorSetLayout			(descriptorSetLayoutBuilder.build(vk, device));
@@ -549,10 +701,12 @@ tcu::TestStatus Image2DView3DImageInstance::iterate (void)
 		descriptorSetUpdateBuilder.update(vk, device);
 	}
 
+	const VkSemaphore* sparseImageSemaphorePtr = (useSparseBinding ? &sparseImageSemaphore.get() : nullptr);
+
 	if (m_testParameters.testType == Compute)
-		runComputePipeline(*descriptorSet, *descriptorSetLayout, testMipLevelSize, *cmdBuffer, useSampler ? **resultImage : *testImage, *outputBuffer);
+		runComputePipeline(*descriptorSet, *descriptorSetLayout, testMipLevelSize, *cmdBuffer, useSampler ? **resultImage : testImage, *outputBuffer, sparseImageSemaphorePtr);
 	else
-		runGraphicsPipeline(*descriptorSet, *descriptorSetLayout, testMipLevelSize, *cmdBuffer, useSampler ? **resultImage : *testImage, *outputBuffer);
+		runGraphicsPipeline(*descriptorSet, *descriptorSetLayout, testMipLevelSize, *cmdBuffer, useSampler ? **resultImage : testImage, *outputBuffer, sparseImageSemaphorePtr);
 
 	// Validate the results.
 	{
@@ -605,6 +759,9 @@ void ComputeImage2DView3DImageTest::checkSupport (Context& context) const
 
 	if (m_testParameters.imageType != StorageImage && !context.getImage2DViewOf3DFeaturesEXT().sampler2DViewOf3D)
 		TCU_THROW(NotSupportedError, "sampler2DViewOf3D not supported.");
+
+	if (m_testParameters.imageBindingType == Sparse)
+	    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
 }
 
 void ComputeImage2DView3DImageTest::initPrograms (SourceCollections& sourceCollections) const
@@ -749,6 +906,9 @@ void FragmentImage2DView3DImageTest::checkSupport (Context& context) const
 
 	if (!context.getDeviceFeatures().fragmentStoresAndAtomics)
 		TCU_THROW(NotSupportedError, "fragmentStoresAndAtomics not supported");
+
+	if (m_testParameters.imageBindingType == Sparse)
+	    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
 }
 
 TestInstance* FragmentImage2DView3DImageTest::createInstance (Context& context) const
@@ -784,22 +944,26 @@ tcu::TestCaseGroup* createImage2DViewOf3DTests (tcu::TestContext& testCtx, Pipel
 			std::vector<int32_t> layers = { 0, computeMipLevelDimension(imageDimension, mipLevel) -1 };
 			for (const auto& layer : layers)
 			{
-				TestParameters testParameters {
-						tcu::IVec3(imageDimension),	// IVec3						imageSize
-						mipLevel,					// uint32_t						mipLevel
-						layer,						// int32_t						layerNdx
-						imageAccessType.imageType,	// ImageAccessType				imageType
-						Fragment,					// TestType						testType
-						VK_FORMAT_R8G8B8A8_UNORM,	// VkFormat						imageFormat
-						pipelineConstructionType	// PipelineConstructionType		pipelineConstructionType
-					};
-				std::string testName = "mip" + std::to_string(mipLevel) +  "_layer" + std::to_string(layer);
-				fragmentSubGroup->addChild(new FragmentImage2DView3DImageTest(testCtx, testName.c_str(), testParameters));
-
-				if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+				for (const auto& imageBindingType : { ImageBindingType::Normal, ImageBindingType::Sparse })
 				{
-					testParameters.testType = Compute;
-					computeSubGroup->addChild(new ComputeImage2DView3DImageTest(testCtx, testName.c_str(), testParameters));
+					TestParameters testParameters {
+							tcu::IVec3(imageDimension),	// IVec3						imageSize
+							mipLevel,					// uint32_t						mipLevel
+							layer,						// int32_t						layerNdx
+							imageAccessType.imageType,	// ImageAccessType				imageType
+							Fragment,					// TestType						testType
+							VK_FORMAT_R8G8B8A8_UNORM,	// VkFormat						imageFormat
+							pipelineConstructionType,	// PipelineConstructionType		pipelineConstructionType
+							imageBindingType            // ImageBindingType             imageBindingType
+						};
+					std::string testName = "mip" + std::to_string(mipLevel) +  "_layer" + std::to_string(layer) + (imageBindingType == Sparse ? "_sparse" : "");
+					fragmentSubGroup->addChild(new FragmentImage2DView3DImageTest(testCtx, testName.c_str(), testParameters));
+
+					if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+					{
+						testParameters.testType = Compute;
+						computeSubGroup->addChild(new ComputeImage2DView3DImageTest(testCtx, testName.c_str(), testParameters));
+					}
 				}
 			}
 		}
