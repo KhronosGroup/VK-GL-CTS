@@ -1111,6 +1111,9 @@ public:
 
 			if (!featuresStorage8.storageBuffer8BitAccess)
 				TCU_THROW(NotSupportedError, "8-bit storage buffer access not supported");
+
+			if (!featuresStorage8.uniformAndStorageBuffer8BitAccess)
+				TCU_THROW(NotSupportedError, "8-bit Uniform storage buffer access not supported");
 		}
 	}
 
