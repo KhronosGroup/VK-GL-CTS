@@ -248,7 +248,7 @@ DE_INLINE deBool deIsPowerOfTwoSize (size_t a)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Roud a value up to a power-of-two.
+ * \brief Round a value up to a power-of-two.
  * \param a Input value.
  * \return Smallest power-of-two value that is greater or equal to an input value.
  *//*--------------------------------------------------------------------*/
@@ -264,7 +264,7 @@ DE_INLINE deUint32 deSmallestGreaterOrEquallPowerOfTwoU32 (deUint32 a)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Roud a value up to a power-of-two.
+ * \brief Round a value up to a power-of-two.
  * \param a Input value.
  * \return Smallest power-of-two value that is greater or equal to an input value.
  *//*--------------------------------------------------------------------*/
@@ -281,7 +281,7 @@ DE_INLINE deUint64 deSmallestGreaterOrEquallPowerOfTwoU64 (deUint64 a)
 }
 
 /*--------------------------------------------------------------------*//*!
- * \brief Roud a value up to a power-of-two.
+ * \brief Round a value up to a power-of-two.
  * \param a Input value.
  * \return Smallest power-of-two value that is greater or equal to an input value.
  *//*--------------------------------------------------------------------*/
