@@ -2979,6 +2979,8 @@ vk::VkImageCreateInfo makeImageCreateInfo (vk::VkFormat format, vk::VkExtent3D e
 	return imageCreateInfo;
 }
 
+using TestConfigSharedPtr = de::SharedPtr<TestConfig>;
+
 class ExtendedDynamicStateTest : public vkt::TestCase
 {
 public:
@@ -2990,24 +2992,27 @@ public:
 	virtual TestInstance*	createInstance					(Context& context) const;
 
 private:
-	TestConfig				m_testConfig;
+	const TestConfigSharedPtr m_testConfigPtr;
+	TestConfig&               m_testConfig;
 };
 
 class ExtendedDynamicStateInstance : public vkt::TestInstance
 {
 public:
-								ExtendedDynamicStateInstance	(Context& context, const TestConfig& testConfig);
+								ExtendedDynamicStateInstance	(Context& context, const TestConfigSharedPtr& testConfig);
 	virtual						~ExtendedDynamicStateInstance	(void) {}
 
 	virtual tcu::TestStatus		iterate							(void);
 
 private:
-	TestConfig					m_testConfig;
+	const TestConfigSharedPtr m_testConfigPtr;
+	TestConfig&               m_testConfig;
 };
 
 ExtendedDynamicStateTest::ExtendedDynamicStateTest (tcu::TestContext& testCtx, const std::string& name, const TestConfig& testConfig)
-	: vkt::TestCase	(testCtx, name)
-	, m_testConfig	(testConfig)
+	: vkt::TestCase	  (testCtx, name)
+	, m_testConfigPtr (new TestConfig(testConfig))
+	, m_testConfig    (*m_testConfigPtr.get())
 {
 	const auto staticTopologyClass = getTopologyClass(testConfig.topologyConfig.staticValue);
 	DE_UNREF(staticTopologyClass); // For release builds.
@@ -3863,12 +3868,13 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 
 TestInstance* ExtendedDynamicStateTest::createInstance (Context& context) const
 {
-	return new ExtendedDynamicStateInstance(context, m_testConfig);
+	return new ExtendedDynamicStateInstance(context, m_testConfigPtr);
 }
 
-ExtendedDynamicStateInstance::ExtendedDynamicStateInstance(Context& context, const TestConfig& testConfig)
-	: vkt::TestInstance	(context)
-	, m_testConfig		(testConfig)
+ExtendedDynamicStateInstance::ExtendedDynamicStateInstance (Context& context, const TestConfigSharedPtr& testConfig)
+	: vkt::TestInstance (context)
+	, m_testConfigPtr   (testConfig)
+	, m_testConfig      (*m_testConfigPtr.get())
 {
 }
 
@@ -6550,9 +6556,9 @@ deUint8 stencilResult(vk::VkStencilOp op, deUint8 storedValue, deUint8 reference
 class TestGroupWithClean : public tcu::TestCaseGroup
 {
 public:
-			TestGroupWithClean	(tcu::TestContext& testCtx, const char* name)
-				: tcu::TestCaseGroup(testCtx, name)
-		{}
+	TestGroupWithClean	(tcu::TestContext& testCtx, const char* name)
+		: tcu::TestCaseGroup(testCtx, name)
+	{}
 
 	void deinit (void) override { cleanupDevices(); }
 };
