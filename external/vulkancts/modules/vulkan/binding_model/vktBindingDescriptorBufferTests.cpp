@@ -2584,6 +2584,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 	VkPhysicalDeviceRayTracingPipelineFeaturesKHR		rayTracingPipelineFeatures		= initVulkanStructure();
 	VkPhysicalDeviceBufferDeviceAddressFeatures			bufferDeviceAddressFeatures		= initVulkanStructure();
 	VkPhysicalDeviceMaintenance4Features				maintenance4Features			= initVulkanStructure();
+	VkPhysicalDeviceMaintenance5FeaturesKHR				maintenance5Features			= initVulkanStructure();
 
 	void** nextPtr = &features2.pNext;
 	addToChainVulkanStructure(&nextPtr, synchronization2Features);
@@ -2598,6 +2599,12 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(
 	extensions.push_back("VK_KHR_synchronization2");
 	extensions.push_back("VK_EXT_descriptor_indexing");
 	extensions.push_back("VK_KHR_maintenance4");
+
+	if (m_params.useMaintenance5)
+	{
+		addToChainVulkanStructure(&nextPtr, maintenance5Features);
+		extensions.push_back("VK_KHR_maintenance5");
+	}
 
 	if ((m_params.descriptor == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK) ||
 		(m_params.variant == TestVariant::MULTIPLE) ||
