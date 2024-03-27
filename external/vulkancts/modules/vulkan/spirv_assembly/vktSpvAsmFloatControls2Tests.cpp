@@ -162,7 +162,7 @@ enum ValueId
 	V_TWO,
 	V_INF,
 	V_ZERO_POINT_ONE,
-	V_TEN,
+	V_TWENTY_FIVE_POINT_EIGHT,
 	V_HUGE, // a large number that if doubled will result in infinity but that is not equal to the maximum
 	V_TINY, // a number that if squared will underflow to 0.
 	V_MINUS_TINY,
@@ -189,35 +189,35 @@ string getValueName(ValueId value)
 {
 	switch(value)
 	{
-	case V_UNUSED:				return "unused";
-	case V_MINUS_INF:			return "minusInf";
-	case V_MINUS_ONE:			return "minusOne";
-	case V_MINUS_ZERO:			return "minusZero";
-	case V_ZERO:				return "zero";
-	case V_HALF:				return "half";
-	case V_ONE:					return "one";
-	case V_TWO:					return "two";
-	case V_INF:					return "inf";
-	case V_ZERO_POINT_ONE:		return "zeroPtOne";
-	case V_TEN:					return "ten";
-	case V_HUGE:				return "huge";
-	case V_TINY:				return "tiny";
-	case V_MINUS_TINY:			return "minusTiny";
-	case V_MAX:					return "max";
-	case V_NAN:					return "nan";
-	case V_PI:					return "pi";
-	case V_MINUS_PI:			return "minusPi";
-	case V_PI_DIV_2:			return "piDiv2";
-	case V_MINUS_PI_DIV_2:		return "minusPiDiv2";
-	case V_PI_DIV_4:			return "piDiv4";
-	case V_MINUS_PI_DIV_4:		return "minusPiDiv4";
-	case V_3_PI_DIV_4:			return "3PiDiv4";
-	case V_MINUS_3_PI_DIV_4:	return "minus3PiDiv4";
-	case V_ONE_OR_NAN:			return "oneORnan";
-	case V_SIGN_NAN:			return "signNan";
-	case V_ZERO_OR_MINUS_ZERO:	return "zeroOrMinusZero";
-	case V_ZERO_OR_ONE:			return "zeroOrOne";
-	case V_TRIG_ONE:			return "trigOne";
+	case V_UNUSED:					return "unused";
+	case V_MINUS_INF:				return "minusInf";
+	case V_MINUS_ONE:				return "minusOne";
+	case V_MINUS_ZERO:				return "minusZero";
+	case V_ZERO:					return "zero";
+	case V_HALF:					return "half";
+	case V_ONE:						return "one";
+	case V_TWO:						return "two";
+	case V_INF:						return "inf";
+	case V_ZERO_POINT_ONE:			return "zeroPtOne";
+	case V_TWENTY_FIVE_POINT_EIGHT:	return "twentyFivePtEight";
+	case V_HUGE:					return "huge";
+	case V_TINY:					return "tiny";
+	case V_MINUS_TINY:				return "minusTiny";
+	case V_MAX:						return "max";
+	case V_NAN:						return "nan";
+	case V_PI:						return "pi";
+	case V_MINUS_PI:				return "minusPi";
+	case V_PI_DIV_2:				return "piDiv2";
+	case V_MINUS_PI_DIV_2:			return "minusPiDiv2";
+	case V_PI_DIV_4:				return "piDiv4";
+	case V_MINUS_PI_DIV_4:			return "minusPiDiv4";
+	case V_3_PI_DIV_4:				return "3PiDiv4";
+	case V_MINUS_3_PI_DIV_4:		return "minus3PiDiv4";
+	case V_ONE_OR_NAN:				return "oneORnan";
+	case V_SIGN_NAN:				return "signNan";
+	case V_ZERO_OR_MINUS_ZERO:		return "zeroOrMinusZero";
+	case V_ZERO_OR_ONE:				return "zeroOrOne";
+	case V_TRIG_ONE:				return "trigOne";
 	}
 	assert(false);
 	return "";
@@ -318,6 +318,7 @@ enum OperationId
 	OID_POW,
 	OID_MIX,
 	OID_FMA,
+	OID_FMA2PT58,
 	OID_SZ_FMA,
 	OID_MIN,
 	OID_MAX,
@@ -477,31 +478,31 @@ TypeValues<deFloat16>::TypeValues()
 	// NOTE: when updating entries in m_valueIdToFloatType make sure to
 	// update also valueIdToSnippetArgMap defined in updateSpirvSnippets()
 	ValueMap& vm = m_valueIdToFloatType;
-	vm[V_UNUSED]			= deFloat32To16(0.0f);
-	vm[V_MINUS_INF]			= 0xfc00;
-	vm[V_MINUS_ONE]			= deFloat32To16(-1.0f);
-	vm[V_MINUS_ZERO]		= 0x8000;
-	vm[V_ZERO]				= 0x0000;
-	vm[V_HALF]				= deFloat32To16(0.5f);
-	vm[V_ONE]				= deFloat32To16(1.0f);
-	vm[V_TWO]				= deFloat32To16(2.0f);
-	vm[V_ZERO_POINT_ONE]	= deFloat32To16(0.1f);
-	vm[V_TEN]				= deFloat32To16(10.0f);
-	vm[V_HUGE]				= 0x7bfd;
-	vm[V_TINY]				= 0x0400;
-	vm[V_MINUS_TINY]		= 0x8400;
-	vm[V_MAX]				= 0x7bff;
-	vm[V_INF]				= 0x7c00;
-	vm[V_NAN]				= 0x7cf0;
+	vm[V_UNUSED]					= deFloat32To16(0.0f);
+	vm[V_MINUS_INF]					= 0xfc00;
+	vm[V_MINUS_ONE]					= deFloat32To16(-1.0f);
+	vm[V_MINUS_ZERO]				= 0x8000;
+	vm[V_ZERO]						= 0x0000;
+	vm[V_HALF]						= deFloat32To16(0.5f);
+	vm[V_ONE]						= deFloat32To16(1.0f);
+	vm[V_TWO]						= deFloat32To16(2.0f);
+	vm[V_ZERO_POINT_ONE]			= deFloat32To16(0.1f);
+	vm[V_TWENTY_FIVE_POINT_EIGHT]	= deFloat32To16(25.8f);
+	vm[V_HUGE]						= 0x7bfd;
+	vm[V_TINY]						= 0x0400;
+	vm[V_MINUS_TINY]				= 0x8400;
+	vm[V_MAX]						= 0x7bff;
+	vm[V_INF]						= 0x7c00;
+	vm[V_NAN]						= 0x7cf0;
 
-	vm[V_PI]				= deFloat32To16( (float)M_PI);
-	vm[V_MINUS_PI]			= deFloat32To16(-(float)M_PI);
-	vm[V_PI_DIV_2]			= deFloat32To16( (float)M_PI_2);
-	vm[V_MINUS_PI_DIV_2]	= deFloat32To16(-(float)M_PI_2);
-	vm[V_PI_DIV_4]			= deFloat32To16( (float)M_PI_4);
-	vm[V_MINUS_PI_DIV_4]	= deFloat32To16(-(float)M_PI_4);
-	vm[V_3_PI_DIV_4]		= deFloat32To16( (float)(3*M_PI_4));
-	vm[V_MINUS_3_PI_DIV_4]	= deFloat32To16(-(float)(3*M_PI_4));
+	vm[V_PI]						= deFloat32To16( (float)M_PI);
+	vm[V_MINUS_PI]					= deFloat32To16(-(float)M_PI);
+	vm[V_PI_DIV_2]					= deFloat32To16( (float)M_PI_2);
+	vm[V_MINUS_PI_DIV_2]			= deFloat32To16(-(float)M_PI_2);
+	vm[V_PI_DIV_4]					= deFloat32To16( (float)M_PI_4);
+	vm[V_MINUS_PI_DIV_4]			= deFloat32To16(-(float)M_PI_4);
+	vm[V_3_PI_DIV_4]				= deFloat32To16( (float)(3*M_PI_4));
+	vm[V_MINUS_3_PI_DIV_4]			= deFloat32To16(-(float)(3*M_PI_4));
 }
 
 template <>
@@ -511,31 +512,31 @@ TypeValues<float>::TypeValues()
 	// NOTE: when updating entries in m_valueIdToFloatType make sure to
 	// update also valueIdToSnippetArgMap defined in updateSpirvSnippets()
 	ValueMap& vm = m_valueIdToFloatType;
-	vm[V_UNUSED]			=  0.0f;
-	vm[V_MINUS_INF]			= -std::numeric_limits<float>::infinity();
-	vm[V_MINUS_ONE]			= -1.0f;
-	vm[V_MINUS_ZERO]		= -0.0f;
-	vm[V_ZERO]				=  0.0f;
-	vm[V_HALF]				=  0.5f;
-	vm[V_ONE]				=  1.0f;
-	vm[V_TWO]				=  2.0f;
-	vm[V_ZERO_POINT_ONE]	=  0.1f;
-	vm[V_TEN]				=  10.0f;
-	vm[V_HUGE]				=  3.40282306073709652508e+38;
-	vm[V_TINY]				=  1.17549435082228750797e-38;
-	vm[V_MINUS_TINY]		= -1.17549435082228750797e-38;
-	vm[V_MAX]				=  std::numeric_limits<float>::max();
-	vm[V_INF]				=  std::numeric_limits<float>::infinity();
-	vm[V_NAN]				=  std::numeric_limits<float>::quiet_NaN();
+	vm[V_UNUSED]					=  0.0f;
+	vm[V_MINUS_INF]					= -std::numeric_limits<float>::infinity();
+	vm[V_MINUS_ONE]					= -1.0f;
+	vm[V_MINUS_ZERO]				= -0.0f;
+	vm[V_ZERO]						=  0.0f;
+	vm[V_HALF]						=  0.5f;
+	vm[V_ONE]						=  1.0f;
+	vm[V_TWO]						=  2.0f;
+	vm[V_ZERO_POINT_ONE]			=  0.1f;
+	vm[V_TWENTY_FIVE_POINT_EIGHT]	=  25.8f;
+	vm[V_HUGE]						=  3.40282306073709652508e+38;
+	vm[V_TINY]						=  1.17549435082228750797e-38;
+	vm[V_MINUS_TINY]				= -1.17549435082228750797e-38;
+	vm[V_MAX]						=  std::numeric_limits<float>::max();
+	vm[V_INF]						=  std::numeric_limits<float>::infinity();
+	vm[V_NAN]						=  std::numeric_limits<float>::quiet_NaN();
 
-	vm[V_PI]				=  static_cast<float>(M_PI);
-	vm[V_MINUS_PI]			= -static_cast<float>(M_PI);
-	vm[V_PI_DIV_2]			=  static_cast<float>(M_PI_2);
-	vm[V_MINUS_PI_DIV_2]	= -static_cast<float>(M_PI_2);
-	vm[V_PI_DIV_4]			=  static_cast<float>(M_PI_4);
-	vm[V_MINUS_PI_DIV_4]	= -static_cast<float>(M_PI_4);
-	vm[V_3_PI_DIV_4]		=  static_cast<float>(3*M_PI_4);
-	vm[V_MINUS_3_PI_DIV_4]	= -static_cast<float>(3*M_PI_4);
+	vm[V_PI]						=  static_cast<float>(M_PI);
+	vm[V_MINUS_PI]					= -static_cast<float>(M_PI);
+	vm[V_PI_DIV_2]					=  static_cast<float>(M_PI_2);
+	vm[V_MINUS_PI_DIV_2]			= -static_cast<float>(M_PI_2);
+	vm[V_PI_DIV_4]					=  static_cast<float>(M_PI_4);
+	vm[V_MINUS_PI_DIV_4]			= -static_cast<float>(M_PI_4);
+	vm[V_3_PI_DIV_4]				=  static_cast<float>(3*M_PI_4);
+	vm[V_MINUS_3_PI_DIV_4]			= -static_cast<float>(3*M_PI_4);
 }
 
 template <>
@@ -545,31 +546,31 @@ TypeValues<double>::TypeValues()
 	// NOTE: when updating entries in m_valueIdToFloatType make sure to
 	// update also valueIdToSnippetArgMap defined in updateSpirvSnippets()
 	ValueMap& vm = m_valueIdToFloatType;
-	vm[V_UNUSED]			=  0.0;
-	vm[V_MINUS_INF]			= -std::numeric_limits<double>::infinity();
-	vm[V_MINUS_ONE]			= -1.0;
-	vm[V_MINUS_ZERO]		= -0.0;
-	vm[V_ZERO]				=  0.0;
-	vm[V_HALF]				=  0.5;
-	vm[V_ONE]				=  1.0;
-	vm[V_TWO]				=  2.0;
-	vm[V_ZERO_POINT_ONE]	=  0.1;
-	vm[V_TEN]				=  10.0;
-	vm[V_HUGE]				=  1.79769313486231530898e+308;
-	vm[V_TINY]				=  2.22507385850720138309e-308;
-	vm[V_MINUS_TINY]		= -2.22507385850720138309e-308;
-	vm[V_MAX]				=  std::numeric_limits<double>::max();
-	vm[V_INF]				=  std::numeric_limits<double>::infinity();
-	vm[V_NAN]				=  std::numeric_limits<double>::quiet_NaN();
+	vm[V_UNUSED]					=  0.0;
+	vm[V_MINUS_INF]					= -std::numeric_limits<double>::infinity();
+	vm[V_MINUS_ONE]					= -1.0;
+	vm[V_MINUS_ZERO]				= -0.0;
+	vm[V_ZERO]						=  0.0;
+	vm[V_HALF]						=  0.5;
+	vm[V_ONE]						=  1.0;
+	vm[V_TWO]						=  2.0;
+	vm[V_ZERO_POINT_ONE]			=  0.1;
+	vm[V_TWENTY_FIVE_POINT_EIGHT]	=  25.8;
+	vm[V_HUGE]						=  1.79769313486231530898e+308;
+	vm[V_TINY]						=  2.22507385850720138309e-308;
+	vm[V_MINUS_TINY]				= -2.22507385850720138309e-308;
+	vm[V_MAX]						=  std::numeric_limits<double>::max();
+	vm[V_INF]						=  std::numeric_limits<double>::infinity();
+	vm[V_NAN]						=  std::numeric_limits<double>::quiet_NaN();
 
-	vm[V_PI]				=  M_PI;
-	vm[V_MINUS_PI]			= -M_PI;
-	vm[V_PI_DIV_2]			=  M_PI_2;
-	vm[V_MINUS_PI_DIV_2]	= -M_PI_2;
-	vm[V_PI_DIV_4]			=  M_PI_4;
-	vm[V_MINUS_PI_DIV_4]	= -M_PI_4;
-	vm[V_3_PI_DIV_4]		=  3*M_PI_4;
-	vm[V_MINUS_3_PI_DIV_4]	= -3*M_PI_4;
+	vm[V_PI]						=  M_PI;
+	vm[V_MINUS_PI]					= -M_PI;
+	vm[V_PI_DIV_2]					=  M_PI_2;
+	vm[V_MINUS_PI_DIV_2]			= -M_PI_2;
+	vm[V_PI_DIV_4]					=  M_PI_4;
+	vm[V_MINUS_PI_DIV_4]			= -M_PI_4;
+	vm[V_3_PI_DIV_4]				=  3*M_PI_4;
+	vm[V_MINUS_3_PI_DIV_4]			= -3*M_PI_4;
 }
 
 // Each float type (fp16, fp32, fp64) has specific set of SPIR-V snippets
@@ -684,6 +685,7 @@ void TypeSnippetsBase::updateSpirvSnippets()
 	// definition off all constants that are used by tests
 	const string constantsDefinitionsTemplate =
 		"%c_float_n1             = OpConstant %type_float -1\n"
+		"%c_float_n2pt58         = OpConstant %type_float -2.58\n"
 		"%c_float_0              = OpConstant %type_float 0.0\n"
 		"%c_float_0_5            = OpConstant %type_float 0.5\n"
 		"%c_float_1              = OpConstant %type_float 1\n"
@@ -1106,12 +1108,14 @@ public:
 					  ValueId		_input1,
 					  ValueId		_input2,
 					  ValueId		_expectedOutput,
-					  bool			_fp16Without16BitStorage = false)
+					  bool			_fp16Without16BitStorage = false,
+					  bool			_requireRte = false)
 		: baseName(_baseName)
 		, useDecorationFlags(_useDecorationFlags)
 		, operationId(_operatinId)
 		, expectedOutput(_expectedOutput)
 		, fp16Without16BitStorage(_fp16Without16BitStorage)
+		, requireRte(_requireRte)
 	{
 		if (useDecorationFlags)
 		{
@@ -1137,6 +1141,7 @@ public:
 	ValueId			input[2];
 	ValueId			expectedOutput;
 	bool			fp16Without16BitStorage;
+	bool			requireRte;
 };
 
 struct OperationTestCaseInputs
@@ -1146,6 +1151,7 @@ struct OperationTestCaseInputs
 	ValueId		operandSecond;
 	ValueId		result;
 	FP			testedFlagBits;
+	bool		requireRte = false;
 };
 
 // op1 is SPECIAL VALUE (SZ/INF/NAN)
@@ -1192,7 +1198,7 @@ public:
 			{ OID_ADD, V_MINUS_ZERO, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ },
 			{ OID_ADD, V_ZERO, V_MINUS_ZERO, V_ZERO, FP::NSZ },
 			{ OID_ADD, V_MINUS_ONE, V_ONE, V_ZERO, FP::NSZ },
-			{ OID_ADD, V_HUGE, V_HUGE, V_INF, FP::NotInf },
+			{ OID_ADD, V_HUGE, V_HUGE, V_INF, FP::NotInf, true },
 			{ OID_ADD, V_ZERO, V_MINUS_INF, V_MINUS_INF, FP::NotInf },
 			{ OID_ADD, V_ZERO, V_NAN, V_NAN, FP::NotNaN },
 			{ OID_ADD, V_INF, V_MINUS_INF, V_NAN, FP::NotNaN|FP::NotInf },
@@ -1206,7 +1212,7 @@ public:
 			{ OID_MUL, V_MINUS_ONE, V_ZERO, V_MINUS_ZERO, FP::NSZ },
 			{ OID_MUL, V_ZERO, V_MINUS_ZERO, V_MINUS_ZERO, FP::NSZ },
 			{ OID_MUL, V_TINY, V_MINUS_TINY, V_MINUS_ZERO, FP::NSZ },
-			{ OID_MUL, V_HUGE, V_HUGE, V_INF, FP::NotInf },
+			{ OID_MUL, V_HUGE, V_HUGE, V_INF, FP::NotInf, true },
 			{ OID_MUL, V_ZERO, V_INF, V_NAN, FP::NotInf|FP::NotNaN },
 			{ OID_MUL, V_ZERO, V_NAN, V_NAN, FP::NotNaN },
 
@@ -1249,9 +1255,9 @@ public:
 			{ OID_MIX, V_NAN, V_ONE, V_NAN, FP::NotNaN },
 			{ OID_MIX, V_ONE, V_NAN, V_NAN, FP::NotNaN },
 
-			{ OID_FMA, V_ZERO_POINT_ONE, V_TEN, V_ZERO, FP::AllowContract },     // 0.1 * 10 - 1 == 0.0
-			{ OID_SZ_FMA,	V_MINUS_ZERO,	V_ZERO,			V_ZERO,			FP::AllowContract|FP::NSZ}, // -0.0 * 1 +  0.0 ==  0.0
-			{ OID_SZ_FMA,	V_MINUS_ZERO,	V_MINUS_ZERO,	V_MINUS_ZERO,	FP::AllowContract|FP::NSZ}, // -0.0 * 1 + -0.0 == -0.0
+			{ OID_FMA2PT58, V_ZERO_POINT_ONE, V_TWENTY_FIVE_POINT_EIGHT, V_ZERO, FP::AllowContract },	// 0.1 * 25.8 - 2.58 == 0.0
+			{ OID_SZ_FMA,	V_MINUS_ZERO,	V_ZERO,			V_ZERO,			FP::AllowContract|FP::NSZ},	// -0.0 * 1 +  0.0 ==  0.0
+			{ OID_SZ_FMA,	V_MINUS_ZERO,	V_MINUS_ZERO,	V_MINUS_ZERO,	FP::AllowContract|FP::NSZ},	// -0.0 * 1 + -0.0 == -0.0
 
 			{ OID_MIN, V_MINUS_ZERO, V_ZERO, V_MINUS_ZERO, FP::NSZ },
 			{ OID_MIN, V_MINUS_INF, V_ONE, V_MINUS_INF, FP::NotInf },
@@ -1288,9 +1294,9 @@ public:
 			{ OID_NCLAMP, V_ONE, V_NAN, V_ONE, FP::NotNaN },
 
 			// a + b + (-a)
-			{ OID_ADD_SUB_REASSOCIABLE, V_MAX, V_HUGE, V_INF, FP::AllowReassoc },
+			{ OID_ADD_SUB_REASSOCIABLE, V_MAX, V_HUGE, V_INF, FP::AllowReassoc, true },
 			// a + a + (-a)
-			{ OID_ADD_SUB_REASSOCIABLE, V_MAX, V_MAX, V_INF, FP::AllowReassoc|FP::NotInf },
+			{ OID_ADD_SUB_REASSOCIABLE, V_MAX, V_MAX, V_INF, FP::AllowReassoc|FP::NotInf, true },
 		};
 
 		testCaseInputs.insert(testCaseInputs.begin(), testCaseInputsArr, testCaseInputsArr + DE_LENGTH_OF_ARRAY(testCaseInputsArr));
@@ -1811,6 +1817,12 @@ void TestCasesBuilder::init()
 											"%temp               = OpFMul %type_float %arg1 %arg2\n"
 											"%result             = OpFAdd %type_float %temp %c_float_n1\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	// OID_FMA2PT58 is testing that operations don't get merged into fma, so they deliberately don't use fma here.
+	// The fast-math mode for the Add determines whether these operations can be contracted, so the OpFMul is not decorated.
+	mo[OID_FMA2PT58]	= Op("fma",			FLOAT_ARITHMETIC,
+											"%temp               = OpFMul %type_float %arg1 %arg2\n"
+											"%result             = OpFAdd %type_float %temp %c_float_n2pt58\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[OID_SZ_FMA]		= Op("sz_fma",		FLOAT_ARITHMETIC,
 											"%result             = OpExtInst %type_float %std450 Fma %arg1 %c_float_1 %arg2\n",
 											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
@@ -2052,7 +2064,8 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 								it->operandFirst,
 								it->operandSecond,
 								it->result,
-								isFP16));
+								isFP16,
+								it->requireRte));
 		testCases.push_back(OTC((OTCname+"_deco").c_str(),
 								invert(it->testedFlagBits),
 								true,
@@ -2060,12 +2073,13 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 								it->operandFirst,
 								it->operandSecond,
 								it->result,
-								isFP16));
+								isFP16,
+								it->requireRte));
 	}
 
 	// test None, AllowTransform and AllowRecip gramatically
-	testCases.push_back(OTC("op_None_exec_grammar_test", FP::MaskNone, false, OID_ADD, V_MAX, V_HUGE, V_INF, isFP16));
-	testCases.push_back(OTC("op_AllowTransform_OR_AllowReassoc_OR_AllowContract_exec_grammar_test", FP::AllowTransform|FP::AllowReassoc|FP::AllowContract, false, OID_ADD, V_MAX, V_HUGE, V_INF,  isFP16));
+	testCases.push_back(OTC("op_None_exec_grammar_test", FP::MaskNone, false, OID_ADD, V_MAX, V_HUGE, V_INF, isFP16, true));
+	testCases.push_back(OTC("op_AllowTransform_OR_AllowReassoc_OR_AllowContract_exec_grammar_test", FP::AllowTransform|FP::AllowReassoc|FP::AllowContract, false, OID_ADD, V_MAX, V_HUGE, V_INF,  isFP16, true));
 	// the test for AllowRecip gives the same result with or without the flag
 	testCases.push_back(OTC("op_AllowRecip_exec_grammar_test", FP::AllowRecip, false, OID_DIV, V_ONE, V_TWO, V_HALF, isFP16));
 }
@@ -2435,6 +2449,13 @@ void TestGroupBuilderBase::FillFloatControlsProperties(vk::VkPhysicalDeviceFloat
 	case FP32: fc.shaderSignedZeroInfNanPreserveFloat32 = requiresSZInfNaNPreserve; break;
 	case FP64: fc.shaderSignedZeroInfNanPreserveFloat64 = requiresSZInfNaNPreserve; break;
 	}
+
+	switch(floatType)
+	{
+	case FP16: fc.shaderRoundingModeRTEFloat16 = testCase.requireRte; break;
+	case FP32: fc.shaderRoundingModeRTEFloat32 = testCase.requireRte; break;
+	case FP64: fc.shaderRoundingModeRTEFloat64 = testCase.requireRte; break;
+	}
 }
 
 // ComputeTestGroupBuilder contains logic that creates compute shaders
@@ -2671,8 +2692,6 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	map<string, string> specializations;
 	specializations["behaviorConstants"]	= behaviorConstants;
 	specializations["decorations"]			= behaviorDecorations;
-	specializations["extensions"]			= extensions;
-	specializations["execution_mode"]		= behaviorExecutionMode;
 	specializations["annotations"]			= annotations + specOpData.annotations;
 	specializations["types"]				= types + specOpData.types;
 	specializations["io_definitions"]		= ioDefinitions;
@@ -2710,6 +2729,16 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	{
 		capabilities += "OpCapability Float16\n";
 	}
+
+	if (testCase.requireRte)
+	{
+		extensions += "OpExtension \"SPV_KHR_float_controls\"\n";
+		capabilities += "OpCapability RoundingModeRTE\n";
+		behaviorExecutionMode += "OpExecutionMode %main RoundingModeRTE " + inTypeSnippets->bitWidth + "\n";
+	}
+
+	specializations["execution_mode"]	= behaviorExecutionMode;
+	specializations["extensions"]		= extensions;
 	specializations["capabilities"]		= capabilities;
 
 	// specialize shader
@@ -3307,6 +3336,17 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	{
 		vertCapabilities += "OpCapability Float16\n";
 		fragCapabilities += "OpCapability Float16\n";
+	}
+
+	if (testCase.requireRte)
+	{
+		vertExtensions += "OpExtension \"SPV_KHR_float_controls\"\n";
+		vertCapabilities += "OpCapability RoundingModeRTE\n";
+		vertExecutionMode += "OpExecutionMode %main RoundingModeRTE " + inTypeSnippets->bitWidth + "\n";
+
+		fragExtensions += "OpExtension \"SPV_KHR_float_controls\"\n";
+		fragCapabilities += "OpCapability RoundingModeRTE\n";
+		fragExecutionMode += "OpExecutionMode %main RoundingModeRTE " + inTypeSnippets->bitWidth + "\n";
 	}
 
 	map<string, string> specializations;
