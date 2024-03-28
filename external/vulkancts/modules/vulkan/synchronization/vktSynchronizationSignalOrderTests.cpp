@@ -141,6 +141,9 @@ Move<VkDevice> createTestDevice (const Context& context)
 	if (context.isDeviceFunctionalitySupported("VK_KHR_external_semaphore_win32"))
 		extensions.push_back("VK_KHR_external_semaphore_win32");
 
+	if (context.isDeviceFunctionalitySupported("VK_KHR_external_memory_win32"))
+		extensions.push_back("VK_KHR_external_memory_win32");
+
 	if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
 	{
 		extensions.push_back("VK_KHR_synchronization2");
