@@ -219,6 +219,9 @@ static bool isRequiredFormat(uint32_t format, glu::RenderContext &renderContext)
     case GL_RG16F:
     case GL_R16F:
         return supportsES32 || supportsGL45;
+    case GL_R16:
+    case GL_RG16:
+    case GL_RGBA16:
     case GL_RGB16F:
         return supportsGL45;
 
@@ -230,9 +233,12 @@ static bool isRequiredFormat(uint32_t format, glu::RenderContext &renderContext)
 static std::vector<std::string> getEnablingExtensions(uint32_t format, glu::RenderContext &renderContext)
 {
     const bool supportsES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+    const bool supportsGL45 = glu::contextSupports(renderContext.getType(), glu::ApiType::core(4, 5));
     std::vector<std::string> out;
 
     DE_ASSERT(!isRequiredFormat(format, renderContext));
+    if (supportsGL45)
+        return out;
 
     switch (format)
     {
