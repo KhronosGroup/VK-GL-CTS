@@ -988,7 +988,8 @@ void SRGBTestCase::deinit (void)
 	}
 	m_renderBufferList.clear();
 
-	if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()))
+	if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()) &&
+		gl.disable)
 	{
 		gl.disable(GL_FRAMEBUFFER_SRGB);
 	}
