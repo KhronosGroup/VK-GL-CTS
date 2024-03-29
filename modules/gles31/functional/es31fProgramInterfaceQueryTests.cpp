@@ -1065,7 +1065,8 @@ bool ResourceListTestCase::verifyResourceList (const std::vector<std::string>& r
 			// mismatch causes errors otherwise.  unusedZero is a uniform that
 			// may be added by generateProgramInterfaceProgramSources.
 			if (deStringBeginsWith(resourceList[ndx].c_str(), "gl_") == DE_FALSE &&
-				resourceList[ndx] != getUnusedZeroUniformName())
+				resourceList[ndx] != getUnusedZeroUniformName() &&
+				resourceList[ndx] != getNoOptVertexAttribName())
 			{
 				m_testCtx.getLog() << tcu::TestLog::Message << "Error, resource list contains unexpected resource name " << resourceList[ndx] << tcu::TestLog::EndMessage;
 				error = true;
