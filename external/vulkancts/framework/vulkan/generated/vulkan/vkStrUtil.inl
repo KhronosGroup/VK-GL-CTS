@@ -1330,6 +1330,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildSiz
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImage2DViewOf3DFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoEXT& value);
@@ -1478,6 +1480,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDrmPropertiesEX
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingMotionBlurFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingValidationFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryMotionTrianglesDataNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureMotionInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSRTDataNV& value);

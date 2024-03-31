@@ -62,6 +62,8 @@ set(DEQP_VK_VKSC_API_SRCS
 	vktApiMaintenance6Check.cpp
 	vktApiExtensionDuplicatesTests.cpp
 	vktApiExtensionDuplicatesTests.hpp
+	vktApiMaintenance7Tests.cpp
+	vktApiMaintenance7Tests.hpp
 	)
 
 set(DEQP_VK_API_SRCS

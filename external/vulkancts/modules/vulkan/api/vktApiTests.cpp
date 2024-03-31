@@ -48,6 +48,7 @@
 #include "vktApiGetDeviceProcAddrTests.hpp"
 #include "vktApiMaintenance6Check.hpp"
 #include "vktApiExtensionDuplicatesTests.hpp"
+#include "vktApiMaintenance7Tests.hpp"
 
 #ifndef CTS_USES_VULKANSC
 #include "vktApiSmokeTests.hpp"
@@ -123,6 +124,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createMaintenance6Tests					(testCtx));
 	apiTests->addChild(createFrameBoundaryTests					(testCtx));
 	apiTests->addChild(createMaintenance5Tests					(testCtx));
+	apiTests->addChild(createMaintenance7Tests					(testCtx));
 #endif
 	apiTests->addChild(createExtensionDuplicatesTests			(testCtx));
 }

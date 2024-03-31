@@ -225,6 +225,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceRobustness2PropertiesEXT>(V
 template<> void initPropertyFromBlob<VkPhysicalDevicePortabilitySubsetPropertiesKHR>(VkPhysicalDevicePortabilitySubsetPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentShadingRatePropertiesKHR>(VkPhysicalDeviceFragmentShadingRatePropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV>(VkPhysicalDeviceFragmentShadingRateEnumsPropertiesNV&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT>(VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceHostImageCopyPropertiesEXT>(VkPhysicalDeviceHostImageCopyPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceProvokingVertexPropertiesEXT>(VkPhysicalDeviceProvokingVertexPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(VkPhysicalDeviceDescriptorBufferPropertiesEXT&, const AllPropertiesBlobs&) {}

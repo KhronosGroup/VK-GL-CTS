@@ -842,7 +842,7 @@ const char* getFormatName (VkFormat value)
 		case VK_FORMAT_G16_B16R16_2PLANE_444_UNORM:					return "VK_FORMAT_G16_B16R16_2PLANE_444_UNORM";
 		case VK_FORMAT_A4R4G4B4_UNORM_PACK16:						return "VK_FORMAT_A4R4G4B4_UNORM_PACK16";
 		case VK_FORMAT_A4B4G4R4_UNORM_PACK16:						return "VK_FORMAT_A4B4G4R4_UNORM_PACK16";
-		case VK_FORMAT_R16G16_S10_5_NV:								return "VK_FORMAT_R16G16_S10_5_NV";
+		case VK_FORMAT_R16G16_SFIXED5_NV:							return "VK_FORMAT_R16G16_SFIXED5_NV";
 		case VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR:					return "VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR";
 		case VK_FORMAT_A8_UNORM_KHR:								return "VK_FORMAT_A8_UNORM_KHR";
 		default:													return DE_NULL;
@@ -2315,6 +2315,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT:										return "VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM";
@@ -2378,6 +2380,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV";
 		default:																					return DE_NULL;
 	}
 }
@@ -3707,6 +3710,7 @@ tcu::Format::Bitfield<64> getPipelineCreateFlags2KHRStr (VkPipelineCreateFlags2K
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_RAY_TRACING_DISPLACEMENT_MICROMAP_BIT_NV,					"VK_PIPELINE_CREATE_2_RAY_TRACING_DISPLACEMENT_MICROMAP_BIT_NV"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT,								"VK_PIPELINE_CREATE_2_DESCRIPTOR_BUFFER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT,							"VK_PIPELINE_CREATE_2_PROTECTED_ACCESS_ONLY_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT,							"VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -10109,8 +10113,12 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance7Pro
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tfragmentShadingRateAttachmentMismatchedSize = " << value.fragmentShadingRateAttachmentMismatchedSize << '\n';
 	s << "\tseparateDepthStencilAttachmentAccess = " << value.separateDepthStencilAttachmentAccess << '\n';
-	s << "\tmaxDescriptorSetBuffersDynamic = " << value.maxDescriptorSetBuffersDynamic << '\n';
-	s << "\tmaxDescriptorSetUpdateAfterBindBuffersDynamic = " << value.maxDescriptorSetUpdateAfterBindBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetTotalUniformBuffersDynamic = " << value.maxDescriptorSetTotalUniformBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetTotalStorageBuffersDynamic = " << value.maxDescriptorSetTotalStorageBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetTotalBuffersDynamic = " << value.maxDescriptorSetTotalBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindTotalUniformBuffersDynamic = " << value.maxDescriptorSetUpdateAfterBindTotalUniformBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindTotalStorageBuffersDynamic = " << value.maxDescriptorSetUpdateAfterBindTotalStorageBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindTotalBuffersDynamic = " << value.maxDescriptorSetUpdateAfterBindTotalBuffersDynamic << '\n';
 	s << '}';
 	return s;
 }
@@ -14077,6 +14085,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAttachmentFeedb
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlegacyVertexAttributes = " << value.legacyVertexAttributes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tnativeUnalignedPerformance = " << value.nativeUnalignedPerformance << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT = {\n";
@@ -15930,6 +15958,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingMotio
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trayTracingMotionBlur = " << value.rayTracingMotionBlur << '\n';
 	s << "\trayTracingMotionBlurPipelineTraceRaysIndirect = " << value.rayTracingMotionBlurPipelineTraceRaysIndirect << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingValidationFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceRayTracingValidationFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trayTracingValidation = " << value.rayTracingValidation << '\n';
 	s << '}';
 	return s;
 }
