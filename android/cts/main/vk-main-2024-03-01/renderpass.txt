@@ -79,7 +79,9 @@ dEQP-VK.renderpass.dedicated_allocation.formats.a8_unorm_khr.input.load.store.se
 dEQP-VK.renderpass.dedicated_allocation.formats.a8_unorm_khr.load.clear
 dEQP-VK.renderpass.dedicated_allocation.formats.a8_unorm_khr.load.clear_draw
 dEQP-VK.renderpass.dedicated_allocation.formats.a8_unorm_khr.load.draw
-<<<<<<< HEAD
+dEQP-VK.renderpass.fragment_density_map.depth_format.d16_unorm
+dEQP-VK.renderpass.fragment_density_map.depth_format.d24_unorm_s8_uint
+dEQP-VK.renderpass.fragment_density_map.depth_format.d32_sfloat
 dEQP-VK.renderpass.nested_command_buffers.ext.inline_secondary.inline_secondary
 dEQP-VK.renderpass.nested_command_buffers.ext.inline_secondary.secondary_inline
 dEQP-VK.renderpass.nested_command_buffers.ext.secondary_inline.inline_secondary
@@ -88,11 +90,6 @@ dEQP-VK.renderpass.nested_command_buffers.khr.inline_secondary.inline_secondary
 dEQP-VK.renderpass.nested_command_buffers.khr.inline_secondary.secondary_inline
 dEQP-VK.renderpass.nested_command_buffers.khr.secondary_inline.inline_secondary
 dEQP-VK.renderpass.nested_command_buffers.khr.secondary_inline.secondary_inline
-=======
-dEQP-VK.renderpass.fragment_density_map.depth_format.d16_unorm
-dEQP-VK.renderpass.fragment_density_map.depth_format.d24_unorm_s8_uint
-dEQP-VK.renderpass.fragment_density_map.depth_format.d32_sfloat
->>>>>>> before-reformat-main
 dEQP-VK.renderpass.no_draws.no_draw_clear_load_store
 dEQP-VK.renderpass.suballocation.formats.a8_unorm_khr.clear.clear
 dEQP-VK.renderpass.suballocation.formats.a8_unorm_khr.clear.clear_draw
