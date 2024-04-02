@@ -1103,7 +1103,7 @@ bool dsThresholdCompare(TestLog& log, const char* imageSetName, const char* imag
 		}
 	}
 
-	const bool allDepthOk = (maxDiff <= threshold);
+	const bool allDepthOk = (!hasDepth || (maxDiff <= threshold));
 	bool compareOk = allDepthOk && allStencilOk;
 
 	if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
@@ -1159,7 +1159,7 @@ bool dsThresholdCompare(TestLog& log, const char* imageSetName, const char* imag
 
 			log << TestLog::Image("ResultStencil", "", resStencilAccess)
 				<< TestLog::Image("ReferenceStencil", "", refStencilAccess)
-				<< TestLog::Image("ErrorMaskStencil", "", errorMaskDepth);
+				<< TestLog::Image("ErrorMaskStencil", "", errorMaskStencil);
 		}
 
 		log << TestLog::EndImageSet;

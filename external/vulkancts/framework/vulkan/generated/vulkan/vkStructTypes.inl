@@ -3203,6 +3203,48 @@ struct VkPhysicalDeviceMaintenance6PropertiesKHR
 	VkBool32		fragmentShadingRateClampCombinerInputs;
 };
 
+struct VkPhysicalDeviceMaintenance7FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance7;
+};
+
+struct VkPhysicalDeviceMaintenance7PropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		fragmentShadingRateAttachmentMismatchedSize;
+	VkBool32		separateDepthStencilAttachmentAccess;
+	uint32_t		maxDescriptorSetBuffersDynamic;
+	uint32_t		maxDescriptorSetUpdateAfterBindBuffersDynamic;
+};
+
+struct VkPhysicalDeviceLayeredApiPropertiesKHR
+{
+	VkStructureType					sType;
+	void*							pNext;
+	uint32_t						vendorID;
+	uint32_t						deviceID;
+	VkPhysicalDeviceLayeredApiKHR	layeredAPI;
+	char							deviceName[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE];
+};
+
+struct VkPhysicalDeviceLayeredApiPropertiesListKHR
+{
+	VkStructureType								sType;
+	void*										pNext;
+	uint32_t									layeredApiCount;
+	VkPhysicalDeviceLayeredApiPropertiesKHR*	pLayeredApis;
+};
+
+struct VkPhysicalDeviceLayeredApiVulkanPropertiesKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkPhysicalDeviceProperties2	properties;
+};
+
 struct VkRenderingAreaInfoKHR
 {
 	VkStructureType	sType;
@@ -9404,6 +9446,13 @@ struct VkMemoryMapPlacedInfoEXT
 	VkStructureType	sType;
 	const void*		pNext;
 	void*			pPlacedAddress;
+};
+
+struct VkPhysicalDeviceRawAccessChainsFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderRawAccessChains;
 };
 
 struct StdVideoH264SpsVuiFlags

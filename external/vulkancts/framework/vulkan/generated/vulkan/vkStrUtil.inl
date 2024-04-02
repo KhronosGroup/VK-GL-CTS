@@ -94,6 +94,7 @@ const char*	getComponentTypeKHRName									(VkComponentTypeKHR value);
 const char*	getCubicFilterWeightsQCOMName							(VkCubicFilterWeightsQCOM value);
 const char*	getBlockMatchWindowCompareModeQCOMName					(VkBlockMatchWindowCompareModeQCOM value);
 const char*	getLayeredDriverUnderlyingApiMSFTName					(VkLayeredDriverUnderlyingApiMSFT value);
+const char*	getPhysicalDeviceLayeredApiKHRName						(VkPhysicalDeviceLayeredApiKHR value);
 const char*	getColorSpaceKHRName									(VkColorSpaceKHR value);
 const char*	getPresentModeKHRName									(VkPresentModeKHR value);
 const char*	getDebugReportObjectTypeEXTName							(VkDebugReportObjectTypeEXT value);
@@ -155,6 +156,10 @@ const char*	getdVideoAV1ReferenceNameName							(StdVideoAV1ReferenceName value)
 const char*	getdVideoAV1InterpolationFilterName						(StdVideoAV1InterpolationFilter value);
 const char*	getdVideoAV1TxModeName									(StdVideoAV1TxMode value);
 const char*	getdVideoAV1FrameRestorationTypeName					(StdVideoAV1FrameRestorationType value);
+const char*	getdVideoAV1ColorPrimariesName							(StdVideoAV1ColorPrimaries value);
+const char*	getdVideoAV1TransferCharacteristicsName					(StdVideoAV1TransferCharacteristics value);
+const char*	getdVideoAV1MatrixCoefficientsName						(StdVideoAV1MatrixCoefficients value);
+const char*	getdVideoAV1ChromaSamplePositionName					(StdVideoAV1ChromaSamplePosition value);
 
 inline tcu::Format::Enum<VkAttachmentLoadOp>								getAttachmentLoadOpStr								(VkAttachmentLoadOp value)								{ return tcu::Format::Enum<VkAttachmentLoadOp>(getAttachmentLoadOpName, value);																}
 inline tcu::Format::Enum<VkAttachmentStoreOp>								getAttachmentStoreOpStr								(VkAttachmentStoreOp value)								{ return tcu::Format::Enum<VkAttachmentStoreOp>(getAttachmentStoreOpName, value);															}
@@ -247,6 +252,7 @@ inline tcu::Format::Enum<VkComponentTypeKHR>								getComponentTypeKHRStr						
 inline tcu::Format::Enum<VkCubicFilterWeightsQCOM>							getCubicFilterWeightsQCOMStr						(VkCubicFilterWeightsQCOM value)						{ return tcu::Format::Enum<VkCubicFilterWeightsQCOM>(getCubicFilterWeightsQCOMName, value);													}
 inline tcu::Format::Enum<VkBlockMatchWindowCompareModeQCOM>					getBlockMatchWindowCompareModeQCOMStr				(VkBlockMatchWindowCompareModeQCOM value)				{ return tcu::Format::Enum<VkBlockMatchWindowCompareModeQCOM>(getBlockMatchWindowCompareModeQCOMName, value);								}
 inline tcu::Format::Enum<VkLayeredDriverUnderlyingApiMSFT>					getLayeredDriverUnderlyingApiMSFTStr				(VkLayeredDriverUnderlyingApiMSFT value)				{ return tcu::Format::Enum<VkLayeredDriverUnderlyingApiMSFT>(getLayeredDriverUnderlyingApiMSFTName, value);									}
+inline tcu::Format::Enum<VkPhysicalDeviceLayeredApiKHR>						getPhysicalDeviceLayeredApiKHRStr					(VkPhysicalDeviceLayeredApiKHR value)					{ return tcu::Format::Enum<VkPhysicalDeviceLayeredApiKHR>(getPhysicalDeviceLayeredApiKHRName, value);										}
 inline tcu::Format::Enum<VkColorSpaceKHR>									getColorSpaceKHRStr									(VkColorSpaceKHR value)									{ return tcu::Format::Enum<VkColorSpaceKHR>(getColorSpaceKHRName, value);																	}
 inline tcu::Format::Enum<VkPresentModeKHR>									getPresentModeKHRStr								(VkPresentModeKHR value)								{ return tcu::Format::Enum<VkPresentModeKHR>(getPresentModeKHRName, value);																	}
 inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>						getDebugReportObjectTypeEXTStr						(VkDebugReportObjectTypeEXT value)						{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);												}
@@ -308,6 +314,10 @@ inline tcu::Format::Enum<StdVideoAV1ReferenceName>							getdVideoAV1ReferenceNa
 inline tcu::Format::Enum<StdVideoAV1InterpolationFilter>					getdVideoAV1InterpolationFilterStr					(StdVideoAV1InterpolationFilter value)					{ return tcu::Format::Enum<StdVideoAV1InterpolationFilter>(getdVideoAV1InterpolationFilterName, value);										}
 inline tcu::Format::Enum<StdVideoAV1TxMode>									getdVideoAV1TxModeStr								(StdVideoAV1TxMode value)								{ return tcu::Format::Enum<StdVideoAV1TxMode>(getdVideoAV1TxModeName, value);																}
 inline tcu::Format::Enum<StdVideoAV1FrameRestorationType>					getdVideoAV1FrameRestorationTypeStr					(StdVideoAV1FrameRestorationType value)					{ return tcu::Format::Enum<StdVideoAV1FrameRestorationType>(getdVideoAV1FrameRestorationTypeName, value);									}
+inline tcu::Format::Enum<StdVideoAV1ColorPrimaries>							getdVideoAV1ColorPrimariesStr						(StdVideoAV1ColorPrimaries value)						{ return tcu::Format::Enum<StdVideoAV1ColorPrimaries>(getdVideoAV1ColorPrimariesName, value);												}
+inline tcu::Format::Enum<StdVideoAV1TransferCharacteristics>				getdVideoAV1TransferCharacteristicsStr				(StdVideoAV1TransferCharacteristics value)				{ return tcu::Format::Enum<StdVideoAV1TransferCharacteristics>(getdVideoAV1TransferCharacteristicsName, value);								}
+inline tcu::Format::Enum<StdVideoAV1MatrixCoefficients>						getdVideoAV1MatrixCoefficientsStr					(StdVideoAV1MatrixCoefficients value)					{ return tcu::Format::Enum<StdVideoAV1MatrixCoefficients>(getdVideoAV1MatrixCoefficientsName, value);										}
+inline tcu::Format::Enum<StdVideoAV1ChromaSamplePosition>					getdVideoAV1ChromaSamplePositionStr					(StdVideoAV1ChromaSamplePosition value)					{ return tcu::Format::Enum<StdVideoAV1ChromaSamplePosition>(getdVideoAV1ChromaSamplePositionName, value);									}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkAttachmentLoadOp value)									{ return s << getAttachmentLoadOpStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkAttachmentStoreOp value)								{ return s << getAttachmentStoreOpStr(value);								}
@@ -400,6 +410,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkComponentTypeKHR value)					
 inline std::ostream&	operator<<	(std::ostream& s, VkCubicFilterWeightsQCOM value)							{ return s << getCubicFilterWeightsQCOMStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkBlockMatchWindowCompareModeQCOM value)					{ return s << getBlockMatchWindowCompareModeQCOMStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkLayeredDriverUnderlyingApiMSFT value)					{ return s << getLayeredDriverUnderlyingApiMSFTStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkPhysicalDeviceLayeredApiKHR value)						{ return s << getPhysicalDeviceLayeredApiKHRStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkColorSpaceKHR value)									{ return s << getColorSpaceKHRStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkPresentModeKHR value)									{ return s << getPresentModeKHRStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)							{ return s << getDebugReportObjectTypeEXTStr(value);						}
@@ -461,6 +472,10 @@ inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1ReferenceName value
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1InterpolationFilter value)						{ return s << getdVideoAV1InterpolationFilterStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1TxMode value)									{ return s << getdVideoAV1TxModeStr(value);									}
 inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1FrameRestorationType value)					{ return s << getdVideoAV1FrameRestorationTypeStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1ColorPrimaries value)							{ return s << getdVideoAV1ColorPrimariesStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1TransferCharacteristics value)					{ return s << getdVideoAV1TransferCharacteristicsStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1MatrixCoefficients value)						{ return s << getdVideoAV1MatrixCoefficientsStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, StdVideoAV1ChromaSamplePosition value)					{ return s << getdVideoAV1ChromaSamplePositionStr(value);					}
 
 tcu::Format::Bitfield<32>	getFramebufferCreateFlagsStr								(VkFramebufferCreateFlags value);
 tcu::Format::Bitfield<32>	getQueryPoolCreateFlagsStr									(VkQueryPoolCreateFlags value);
@@ -1000,6 +1015,11 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance5Fea
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance5PropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance6FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance6PropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance7FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance7PropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesListKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLayeredApiVulkanPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderingAreaInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetLayoutSupport& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDrawParametersFeatures& value);
@@ -1688,6 +1708,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFlo
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMapMemoryPlacedPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryMapPlacedInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRawAccessChainsFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);
