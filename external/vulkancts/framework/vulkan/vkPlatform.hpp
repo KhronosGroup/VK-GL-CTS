@@ -33,8 +33,8 @@
 	#include <vector>
 	#include <map>
 	#include "vkResourceInterface.hpp"
-#include "tcuCommandLine.hpp"
 #endif // CTS_USES_VULKANSC
+#include "tcuCommandLine.hpp"
 
 namespace tcu
 {
@@ -124,7 +124,8 @@ public:
 						DeviceDriver		(const PlatformInterface&			platformInterface,
 											 VkInstance							instance,
 											 VkDevice							device,
-											 uint32_t							usedApiVersion);
+											 uint32_t							usedApiVersion,
+											 const tcu::CommandLine&			cmdLine);
 	virtual				~DeviceDriver		(void);
 
 #include "vkConcreteDeviceInterface.inl"
@@ -142,6 +143,7 @@ protected:
 #include "vkDeviceFunctionPointers.inl"
 	};
 
+	bool		m_computeOnlyMode;
 	Functions	m_vk;
 };
 
@@ -371,6 +373,7 @@ private:
 };
 
 #endif // CTS_USES_VULKANSC
+#define THROW_NOT_SUPPORTED_COMPUTE_ONLY() TCU_THROW(NotSupportedError, "Not compute-only")
 
 // Single device driver pointer type which will differ in SC and non-SC mode helping clearing the code
 #ifndef CTS_USES_VULKANSC

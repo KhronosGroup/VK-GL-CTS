@@ -96,6 +96,19 @@ enum CommandType
 	CMD_UNSUPPORTED
 };
 
+enum PushConstantUseStageType
+{
+	PC_USE_STAGE_NONE       = 0x00000000,
+	PC_USE_STAGE_VERTEX     = VK_SHADER_STAGE_VERTEX_BIT,
+	PC_USE_STAGE_TESC       = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+	PC_USE_STAGE_TESE       = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+	PC_USE_STAGE_GEOM       = VK_SHADER_STAGE_GEOMETRY_BIT,
+	PC_USE_STAGE_FRAG       = VK_SHADER_STAGE_FRAGMENT_BIT,
+	PC_USE_STAGE_ALL        = VK_SHADER_STAGE_ALL
+};
+
+typedef uint32_t PushConstantUseStage;
+
 struct CommandData
 {
 	CommandType cType;
@@ -198,6 +211,28 @@ std::vector<Vertex4RGBA> createQuad(const float size, const tcu::Vec4 &color)
 	return vertices;
 }
 
+void pushConstants (const DeviceInterface& vk, VkCommandBuffer cmdBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void* pValues, bool pushConstant2) {
+	if (pushConstant2)
+	{
+#ifndef CTS_USES_VULKANSC
+		vk::VkPushConstantsInfoKHR pushConstantInfo =
+		{
+			VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO_KHR,	// VkStructureType		sType;
+			DE_NULL,									// const void*			pNext;
+			layout,										// VkPipelineLayout		layout;
+			stageFlags,									// VkShaderStageFlags	stageFlags;
+			offset,										// uint32_t				offset;
+			size,										// uint32_t				size;
+			pValues,									// const void*			pValues;
+		};
+		vk.cmdPushConstants2KHR(cmdBuffer, &pushConstantInfo);
+#endif
+	}
+	else {
+		vk.cmdPushConstants(cmdBuffer, layout, stageFlags, offset, size, pValues);
+	}
+}
+
 class PushConstantGraphicsTestInstance : public vkt::TestInstance {
 public:
 												PushConstantGraphicsTestInstance	(Context&							context,
@@ -205,7 +240,9 @@ public:
 																					 const deUint32						rangeCount,
 																					 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 																					 const deBool						multipleUpdate,
-																					 const IndexType					indexType);
+																					 const IndexType					indexType,
+																					 const deBool						pushConstant2,
+																					 const PushConstantUseStage         pcUsedStage = PC_USE_STAGE_ALL);
 	virtual										~PushConstantGraphicsTestInstance	(void);
 	void										init								(void);
 	virtual tcu::TestStatus						iterate								(void);
@@ -225,6 +262,8 @@ protected:
 	const deUint32									m_rangeCount;
 	PushConstantData								m_pushConstantRange[MAX_RANGE_COUNT];
 	const IndexType									m_indexType;
+	const PushConstantUseStage                      m_pcUsedStage;
+	deBool											m_pushConstant2;
 
 private:
 	const tcu::UVec2								m_renderSize;
@@ -278,11 +317,15 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 																	const deUint32					rangeCount,
 																	const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
 																	deBool							multipleUpdate,
-																	IndexType						indexType)
+																	IndexType						indexType,
+																	const deBool					pushConstant2,
+																	const PushConstantUseStage      pcUsedStage)
 	: vkt::TestInstance				(context)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_rangeCount					(rangeCount)
 	, m_indexType					(indexType)
+	, m_pcUsedStage                 (pcUsedStage)
+	, m_pushConstant2				(pushConstant2)
 	, m_renderSize					(32, 32)
 	, m_colorFormat					(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_multipleUpdate				(multipleUpdate)
@@ -600,7 +643,9 @@ void PushConstantGraphicsTestInstance::init (void)
 			VkDeviceSize vertexBufferOffset = triangleOffset * triangleNdx;
 
 			if (m_multipleUpdate)
-				vk.cmdPushConstants(*m_cmdBuffer, *m_preRasterizationStatePipelineLayout, m_pushConstantRange[0].range.shaderStage, m_pushConstantRange[0].range.offset, m_pushConstantRange[0].range.size, &triangleNdx);
+			{
+				pushConstants(vk, *m_cmdBuffer, *m_preRasterizationStatePipelineLayout, m_pushConstantRange[0].range.shaderStage, m_pushConstantRange[0].range.offset, m_pushConstantRange[0].range.size, &triangleNdx, m_pushConstant2);
+			}
 
 			m_graphicsPipeline.bind(*m_cmdBuffer);
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
@@ -645,7 +690,7 @@ tcu::TestStatus PushConstantGraphicsTestInstance::verifyImage (void)
 	{
 		if (m_shaderFlags & VK_SHADER_STAGE_GEOMETRY_BIT)
 		{
-			m_vertices = createQuad(0.5f, tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+			m_vertices = createQuad(((m_pcUsedStage & PC_USE_STAGE_GEOM) ? 0.5f : 1.0f), tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
 		}
 
 		setReferenceColor(m_vertices[0].color);
@@ -707,7 +752,9 @@ public:
 																				 const deUint32						rangeCount,
 																				 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 																				 const deBool						multipleUpdate,
-																				 const IndexType					indexType);
+																				 const IndexType					indexType,
+																				 const deBool						pushConstant2,
+																				 const PushConstantUseStage         pcUsedStage = PC_USE_STAGE_ALL);
 	virtual								~PushConstantGraphicsDisjointInstance	(void);
 	std::vector<VkPushConstantRange>	getPushConstantRanges					(void);
 	void								updatePushConstants						(VkCommandBuffer cmdBuffer, VkPipelineLayout pipelineLayout);
@@ -718,9 +765,11 @@ PushConstantGraphicsDisjointInstance::PushConstantGraphicsDisjointInstance (Cont
 																			const PipelineConstructionType	pipelineConstructionType,
 																			const deUint32					rangeCount,
 																			const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
-																			deBool							multipleUpdate,
-																			IndexType						indexType)
-	: PushConstantGraphicsTestInstance (context, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType)
+																			const deBool					multipleUpdate,
+																			const IndexType					indexType,
+																			const deBool					pushConstant2,
+																			const PushConstantUseStage      pcUsedStage)
+	: PushConstantGraphicsTestInstance (context, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType, pushConstant2, pcUsedStage)
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
@@ -795,12 +844,12 @@ void PushConstantGraphicsDisjointInstance::updatePushConstants (VkCommandBuffer 
 	{
 		value = (m_pushConstantRange[rangeNdx].range.size == 4u) ? (void*)(&kind) : (void*)(&color[0]);
 
-		vk.cmdPushConstants(cmdBuffer, pipelineLayout, m_pushConstantRange[rangeNdx].range.shaderStage, m_pushConstantRange[rangeNdx].range.offset, m_pushConstantRange[rangeNdx].range.size, value);
+		pushConstants(vk, cmdBuffer, pipelineLayout, m_pushConstantRange[rangeNdx].range.shaderStage, m_pushConstantRange[rangeNdx].range.offset, m_pushConstantRange[rangeNdx].range.size, value, m_pushConstant2);
 
 		if (m_pushConstantRange[rangeNdx].update.size < m_pushConstantRange[rangeNdx].range.size)
 		{
 			value = (void*)(&allOnes[0]);
-			vk.cmdPushConstants(cmdBuffer, pipelineLayout, m_pushConstantRange[rangeNdx].range.shaderStage, m_pushConstantRange[rangeNdx].update.offset, m_pushConstantRange[rangeNdx].update.size, value);
+			pushConstants(vk, cmdBuffer, pipelineLayout, m_pushConstantRange[rangeNdx].range.shaderStage, m_pushConstantRange[rangeNdx].update.offset, m_pushConstantRange[rangeNdx].update.size, value, m_pushConstant2);
 		}
 	}
 }
@@ -831,7 +880,9 @@ public:
 																					 const deUint32						rangeCount,
 																					 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 																					 const deBool						multipleUpdate,
-																					 const IndexType					indexType);
+																					 const IndexType					indexType,
+																					 const deBool						pushConstant2,
+																					 const PushConstantUseStage         pcUsedStage = PC_USE_STAGE_ALL);
 	virtual								~PushConstantGraphicsOverlapTestInstance	(void);
 	std::vector<VkPushConstantRange>	getPushConstantRanges					(void);
 	std::vector<VkPushConstantRange>	getPushConstantUpdates					(void);
@@ -862,9 +913,11 @@ PushConstantGraphicsOverlapTestInstance::PushConstantGraphicsOverlapTestInstance
 																				  const PipelineConstructionType	pipelineConstructionType,
 																				  const deUint32					rangeCount,
 																				  const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
-																				  deBool							multipleUpdate,
-																				  IndexType							indexType)
-	: PushConstantGraphicsTestInstance	(context, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType)
+																				  const deBool						multipleUpdate,
+																				  const IndexType					indexType,
+																				  const deBool						pushConstant2,
+																				  const PushConstantUseStage        pcUsedStage)
+	: PushConstantGraphicsTestInstance	(context, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType, pushConstant2, pcUsedStage)
 	, m_colorData						(generateColorData(256u))
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
@@ -1005,11 +1058,13 @@ void PushConstantGraphicsOverlapTestInstance::updatePushConstants (VkCommandBuff
 			<< "const void*           pValues       " << &m_colorData[pushConstantUpdates[pushNdx].offset / 2u] << "\n"
 			<< tcu::TestLog::EndMessage;
 
-		vk.cmdPushConstants(cmdBuffer, pipelineLayout, pushConstantUpdates[pushNdx].stageFlags, pushConstantUpdates[pushNdx].offset, pushConstantUpdates[pushNdx].size, &m_colorData[pushConstantUpdates[pushNdx].offset / 2u]);
+		pushConstants(vk, cmdBuffer, pipelineLayout, pushConstantUpdates[pushNdx].stageFlags, pushConstantUpdates[pushNdx].offset, pushConstantUpdates[pushNdx].size, &m_colorData[pushConstantUpdates[pushNdx].offset / 2u], m_pushConstant2);
 
 		// Copy push constant values to reference buffer
 		DE_ASSERT((pushConstantUpdates[pushNdx].offset / 2u + pushConstantUpdates[pushNdx].size) < 4u * m_colorData.size());
-		deMemcpy(&m_referenceData.at(pushConstantUpdates[pushNdx].offset / 4u), &m_colorData.at(pushConstantUpdates[pushNdx].offset / 2u), pushConstantUpdates[pushNdx].size);
+
+		if (m_pcUsedStage & pushConstantUpdates[pushNdx].stageFlags)
+			deMemcpy(&m_referenceData.at(pushConstantUpdates[pushNdx].offset / 4u), &m_colorData.at(pushConstantUpdates[pushNdx].offset / 2u), pushConstantUpdates[pushNdx].size);
 	}
 
 	m_context.getTestContext().getLog() << tcu::TestLog::EndSection;
@@ -1024,11 +1079,15 @@ void PushConstantGraphicsOverlapTestInstance::setReferenceColor (tcu::Vec4 initC
 	{
 		const deUint32	offset = m_pushConstantRange[rangeNdx].range.offset / 4u;
 		const deUint32	size = m_pushConstantRange[rangeNdx].range.size / 4u;
-		const deUint32	numComponents = (size < 4u) ? size : 4u;
-		const deUint32	colorNdx = (offset + size - numComponents);
 
-		for (deUint32 componentNdx = 0u; componentNdx < numComponents; componentNdx++)
-			expectedColor[componentNdx] += m_referenceData[colorNdx + componentNdx];
+		if (m_pcUsedStage & m_pushConstantRange[rangeNdx].range.shaderStage)
+		{
+			const deUint32	numComponents = (size < 4u) ? size : 4u;
+			const deUint32	colorNdx = (offset + size - numComponents);
+
+			for (deUint32 componentNdx = 0u; componentNdx < numComponents; componentNdx++)
+				expectedColor[componentNdx] += m_referenceData[colorNdx + componentNdx];
+		}
 	}
 
 	expectedColor = tcu::min(tcu::mod(expectedColor, tcu::Vec4(2.0f)), 2.0f - tcu::mod(expectedColor, tcu::Vec4(2.0f)));
@@ -1044,12 +1103,13 @@ class PushConstantGraphicsTest : public vkt::TestCase
 public:
 							PushConstantGraphicsTest	(tcu::TestContext&					testContext,
 														 const std::string&					name,
-														 const std::string&					description,
 														 const PipelineConstructionType		pipelineConstructionType,
 														 const deUint32						rangeCount,
 														 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 														 const deBool						multipleUpdate,
-														 const IndexType					indexType);
+														 const IndexType					indexType,
+														 const deBool						pushConstant2,
+														 const PushConstantUseStage         pcUsedStage = PC_USE_STAGE_ALL);
 	virtual					~PushConstantGraphicsTest	(void);
 
 
@@ -1064,21 +1124,26 @@ protected:
 	PushConstantData				m_pushConstantRange[MAX_RANGE_COUNT];
 	const deBool					m_multipleUpdate;
 	const IndexType					m_indexType;
+	const deBool					m_pushConstant2;
+	const PushConstantUseStage      m_pcUsedStage;
 };
 
 PushConstantGraphicsTest::PushConstantGraphicsTest (tcu::TestContext&					testContext,
 													const std::string&					name,
-													const std::string&					description,
 													const PipelineConstructionType		pipelineConstructionType,
 													const deUint32						rangeCount,
 													const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 													const deBool						multipleUpdate,
-													const IndexType						indexType)
-	: vkt::TestCase					(testContext, name, description)
+													const IndexType						indexType,
+													const deBool						pushConstant2,
+													const PushConstantUseStage          pcUsedStage)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_rangeCount					(rangeCount)
 	, m_multipleUpdate				(multipleUpdate)
 	, m_indexType					(indexType)
+	, m_pushConstant2				(pushConstant2)
+	, m_pcUsedStage					(pcUsedStage)
 {
 	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
 }
@@ -1090,6 +1155,9 @@ PushConstantGraphicsTest::~PushConstantGraphicsTest (void)
 void PushConstantGraphicsTest::checkSupport(Context &context) const
 {
 	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+
+	if (m_pushConstant2)
+		context.requireDeviceFunctionality("VK_KHR_maintenance6");
 }
 
 RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase (deUint32 rangeSize) const
@@ -1123,12 +1191,13 @@ class PushConstantGraphicsDisjointTest : public PushConstantGraphicsTest
 public:
 							PushConstantGraphicsDisjointTest	(tcu::TestContext&					testContext,
 																 const std::string&					name,
-																 const std::string&					description,
 																 const PipelineConstructionType		pipelineConstructionType,
 																 const deUint32						rangeCount,
 																 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 																 const deBool						multipleUpdate,
-																 const IndexType					indexType);
+																 const IndexType					indexType,
+																 const deBool						pushConstant2,
+																 const PushConstantUseStage         pcUseStage = PC_USE_STAGE_ALL);
 	virtual					~PushConstantGraphicsDisjointTest	(void);
 
 	virtual void			initPrograms						(SourceCollections& sourceCollections) const;
@@ -1137,13 +1206,14 @@ public:
 
 PushConstantGraphicsDisjointTest::PushConstantGraphicsDisjointTest (tcu::TestContext&				testContext,
 																	const std::string&				name,
-																	const std::string&				description,
 																	const PipelineConstructionType	pipelineConstructionType,
 																	const deUint32					rangeCount,
 																	const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
 																	const deBool					multipleUpdate,
-																	const IndexType					indexType)
-	: PushConstantGraphicsTest (testContext, name, description, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType)
+																	const IndexType					indexType,
+																	const deBool					pushConstant2,
+																	const PushConstantUseStage		pcUseStage)
+	: PushConstantGraphicsTest (testContext, name, pipelineConstructionType, rangeCount, pushConstantRange, multipleUpdate, indexType, pushConstant2, pcUseStage)
 {
 }
 
@@ -1167,153 +1237,169 @@ void PushConstantGraphicsDisjointTest::initPrograms (SourceCollections& sourceCo
 					  << "layout(location = 0) in highp vec4 position;\n"
 					  << "layout(location = 1) in highp vec4 color;\n"
 					  << "layout(location = 0) out highp vec4 vtxColor;\n"
-					  << "out gl_PerVertex { vec4 gl_Position; };\n"
-					  << "layout(push_constant) uniform Material {\n";
+					  << "out gl_PerVertex { vec4 gl_Position; };\n";
 
-			switch (m_indexType)
+			if (m_pcUsedStage & PC_USE_STAGE_VERTEX)
 			{
-				case INDEX_TYPE_CONST_LITERAL:
-					switch (getRangeSizeCase(m_pushConstantRange[rangeNdx].range.size))
-					{
-						case SIZE_CASE_4:
-							vertexSrc << "int kind;\n"
-									  << "} matInst;\n";
-							break;
-						case SIZE_CASE_16:
-							vertexSrc << "vec4 color;\n"
-									  << "} matInst;\n"
-									  << "layout(std140, binding = 0) uniform UniformBuf {\n"
-									  << "vec4 element;\n"
-									  << "} uniformBuf;\n";
-							break;
-						case SIZE_CASE_32:
-							vertexSrc << "vec4 color[2];\n"
-									  << "} matInst;\n";
-							break;
-						case SIZE_CASE_48:
-							vertexSrc << "int unused1;\n"
-									  << "vec4 unused2;\n"
-									  << "vec4 color;\n"
-									  << "} matInst;\n";
-							break;
-						case SIZE_CASE_128:
-							vertexSrc << "vec4 color[8];\n"
-									  << "} matInst;\n";
-							break;
-						default:
-							DE_FATAL("Not implemented yet");
-							break;
-					}
-					break;
-				case INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR:
-					vertexSrc << "    layout(offset = 0)  vec4 index; \n"
-							  << "    layout(offset = 16) vec4 vecType; \n"
-							  << "    layout(offset = 32) mat2 matType; \n"
-							  << "    layout(offset = 48) float[4] arrType; \n"
-							  << "} matInst;\n";
-					break;
-				default:
-					DE_FATAL("Unhandled IndexType");
-					break;
+				vertexSrc << "layout(push_constant) uniform Material {\n";
+
+				switch (m_indexType)
+				{
+					case INDEX_TYPE_CONST_LITERAL:
+						switch (getRangeSizeCase(m_pushConstantRange[rangeNdx].range.size))
+						{
+							case SIZE_CASE_4:
+								vertexSrc << "int kind;\n"
+										<< "} matInst;\n";
+								break;
+							case SIZE_CASE_16:
+								vertexSrc << "vec4 color;\n"
+										<< "} matInst;\n"
+										<< "layout(std140, binding = 0) uniform UniformBuf {\n"
+										<< "vec4 element;\n"
+										<< "} uniformBuf;\n";
+								break;
+							case SIZE_CASE_32:
+								vertexSrc << "vec4 color[2];\n"
+										<< "} matInst;\n";
+								break;
+							case SIZE_CASE_48:
+								vertexSrc << "int unused1;\n"
+										<< "vec4 unused2;\n"
+										<< "vec4 color;\n"
+										<< "} matInst;\n";
+								break;
+							case SIZE_CASE_128:
+								vertexSrc << "vec4 color[8];\n"
+										<< "} matInst;\n";
+								break;
+							default:
+								DE_FATAL("Not implemented yet");
+								break;
+						}
+						break;
+					case INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR:
+						vertexSrc << "    layout(offset = 0)  vec4 index; \n"
+								<< "    layout(offset = 16) vec4 vecType; \n"
+								<< "    layout(offset = 32) mat2 matType; \n"
+								<< "    layout(offset = 48) float[4] arrType; \n"
+								<< "} matInst;\n";
+						break;
+					default:
+						DE_FATAL("Unhandled IndexType");
+						break;
+				}
 			}
 
 			vertexSrc << "void main()\n"
 					  << "{\n"
 					  << "	gl_Position = position;\n";
 
-			switch (m_indexType)
+			if (m_pcUsedStage & PC_USE_STAGE_VERTEX)
 			{
-				case INDEX_TYPE_CONST_LITERAL:
-					switch (getRangeSizeCase(m_pushConstantRange[rangeNdx].range.size))
-					{
-						case SIZE_CASE_4:
-							vertexSrc << "switch (matInst.kind) {\n"
-									  << "case 0: vtxColor = vec4(0.0, 1.0, 0, 1.0); break;\n"
-									  << "case 1: vtxColor = vec4(0.0, 0.0, 1.0, 1.0); break;\n"
-									  << "case 2: vtxColor = vec4(1.0, 0.0, 0, 1.0); break;\n"
-									  << "default: vtxColor = color; break;}\n"
-									  << "}\n";
-							break;
-						case SIZE_CASE_16:
-							vertexSrc << "vtxColor = (matInst.color + uniformBuf.element) * 0.5;\n"
-									  << "}\n";
-							break;
-						case SIZE_CASE_32:
-							vertexSrc << "vtxColor = (matInst.color[0] + matInst.color[1]) * 0.5;\n"
-									  << "}\n";
-							break;
-						case SIZE_CASE_48:
-							vertexSrc << "vtxColor = matInst.color;\n"
-									  << "}\n";
-							break;
-						case SIZE_CASE_128:
-							vertexSrc << "vec4 color = vec4(0.0, 0, 0, 0.0);\n"
-									  << "for (int i = 0; i < 8; i++)\n"
-									  << "{\n"
-									  << "  color = color + matInst.color[i];\n"
-									  << "}\n"
-									  << "vtxColor = color * 0.125;\n"
-									  << "}\n";
-							break;
-						default:
-							DE_FATAL("Not implemented yet");
-							break;
-					}
-					break;
-				case INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR:
-					{
-						vertexSrc << "    vtxColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
-								  // Mix in gl_Position to (hopefully) prevent optimizing our index away
-								  << "    int vec_selector = int(abs(gl_Position.x) * 0.0000001 + 0);\n"
-								  << "    int mat_selector = int(abs(gl_Position.x) * 0.0000001 + 1);\n"
-								  << "    int arr_selector = int(abs(gl_Position.x) * 0.0000001 + 2);\n";
+				switch (m_indexType)
+				{
+					case INDEX_TYPE_CONST_LITERAL:
+						switch (getRangeSizeCase(m_pushConstantRange[rangeNdx].range.size))
+						{
+							case SIZE_CASE_4:
+								vertexSrc << "switch (matInst.kind) {\n"
+										<< "case 0: vtxColor = vec4(0.0, 1.0, 0, 1.0); break;\n"
+										<< "case 1: vtxColor = vec4(0.0, 0.0, 1.0, 1.0); break;\n"
+										<< "case 2: vtxColor = vec4(1.0, 0.0, 0, 1.0); break;\n"
+										<< "default: vtxColor = color; break;}\n"
+										<< "}\n";
+								break;
+							case SIZE_CASE_16:
+								vertexSrc << "vtxColor = (matInst.color + uniformBuf.element) * 0.5;\n"
+										<< "}\n";
+								break;
+							case SIZE_CASE_32:
+								vertexSrc << "vtxColor = (matInst.color[0] + matInst.color[1]) * 0.5;\n"
+										<< "}\n";
+								break;
+							case SIZE_CASE_48:
+								vertexSrc << "vtxColor = matInst.color;\n"
+										<< "}\n";
+								break;
+							case SIZE_CASE_128:
+								vertexSrc << "vec4 color = vec4(0.0, 0, 0, 0.0);\n"
+										<< "for (int i = 0; i < 8; i++)\n"
+										<< "{\n"
+										<< "  color = color + matInst.color[i];\n"
+										<< "}\n"
+										<< "vtxColor = color * 0.125;\n"
+										<< "}\n";
+								break;
+							default:
+								DE_FATAL("Not implemented yet");
+								break;
+						}
+						break;
+					case INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR:
+						{
+							vertexSrc << "    vtxColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+									// Mix in gl_Position to (hopefully) prevent optimizing our index away
+									<< "    int vec_selector = int(abs(gl_Position.x) * 0.0000001 + 0);\n"
+									<< "    int mat_selector = int(abs(gl_Position.x) * 0.0000001 + 1);\n"
+									<< "    int arr_selector = int(abs(gl_Position.x) * 0.0000001 + 2);\n";
 
-						// Use the dynamic index to pull our real index value from push constants
-						// Then use that value to index into three variable types
-						std::string vecValue = "matInst.vecType[int(matInst.index[vec_selector])]";
-						std::string matValue = "matInst.matType[int(matInst.index[mat_selector])][0]";
-						std::string arrValue = "matInst.arrType[int(matInst.index[arr_selector])]";
+							// Use the dynamic index to pull our real index value from push constants
+							// Then use that value to index into three variable types
+							std::string vecValue = "matInst.vecType[int(matInst.index[vec_selector])]";
+							std::string matValue = "matInst.matType[int(matInst.index[mat_selector])][0]";
+							std::string arrValue = "matInst.arrType[int(matInst.index[arr_selector])]";
 
-						// Test vector indexing
-						vertexSrc << "    if (" << vecValue << " != " << DYNAMIC_VEC_CONSTANT << ")\n"
-								  << "        vtxColor += vec4(0.0, 0.5, 0.0, 1.0);\n";
+							// Test vector indexing
+							vertexSrc << "    if (" << vecValue << " != " << DYNAMIC_VEC_CONSTANT << ")\n"
+									<< "        vtxColor += vec4(0.0, 0.5, 0.0, 1.0);\n";
 
-						// Test matrix indexing
-						vertexSrc << "    if (" << matValue << " != " << DYNAMIC_MAT_CONSTANT << ")\n"
-								  << "        vtxColor += vec4(0.0, 0.0, 0.5, 1.0);\n";
+							// Test matrix indexing
+							vertexSrc << "    if (" << matValue << " != " << DYNAMIC_MAT_CONSTANT << ")\n"
+									<< "        vtxColor += vec4(0.0, 0.0, 0.5, 1.0);\n";
 
-						// Test array indexing
-						vertexSrc << "    if (" << arrValue << " != " << DYNAMIC_ARR_CONSTANT << ")\n"
-								  << "        vtxColor = vec4(0.0, 0.5, 0.5, 1.0);\n";
+							// Test array indexing
+							vertexSrc << "    if (" << arrValue << " != " << DYNAMIC_ARR_CONSTANT << ")\n"
+									<< "        vtxColor = vec4(0.0, 0.5, 0.5, 1.0);\n";
 
-						vertexSrc << "}\n";
-					}
-					break;
-				default:
-					DE_FATAL("Unhandled IndexType");
-					break;
+							vertexSrc << "}\n";
+						}
+						break;
+					default:
+						DE_FATAL("Unhandled IndexType");
+						break;
+				}
 			}
-
+			else
+			{
+				vertexSrc << "	vtxColor = color;\n";
+				vertexSrc << "}\n";
+			}
 			sourceCollections.glslSources.add("color_vert") << glu::VertexSource(vertexSrc.str());
 		}
 
 		if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
 		{
 			tessControlSrc << "#version 450\n"
-						   << "layout (vertices = 3) out;\n"
-						   << "layout(push_constant) uniform TessLevel {\n"
-						   << "    layout(offset = 24) int level;\n"
-						   << "} tessLevel;\n"
-						   << "layout(location = 0) in highp vec4 color[];\n"
+						   << "layout (vertices = 3) out;\n";
+
+			if (m_pcUsedStage & PC_USE_STAGE_TESC)
+			{
+				tessControlSrc << "layout(push_constant) uniform TessLevel {\n"
+							<< "    layout(offset = 24) int level;\n"
+							<< "} tessLevel;\n";
+			}
+
+			tessControlSrc << "layout(location = 0) in highp vec4 color[];\n"
 						   << "layout(location = 0) out highp vec4 vtxColor[];\n"
 						   << "in gl_PerVertex { vec4 gl_Position; } gl_in[gl_MaxPatchVertices];\n"
 						   << "out gl_PerVertex { vec4 gl_Position; } gl_out[];\n"
 						   << "void main()\n"
 						   << "{\n"
-						   << "  gl_TessLevelInner[0] = tessLevel.level;\n"
-						   << "  gl_TessLevelOuter[0] = tessLevel.level;\n"
-						   << "  gl_TessLevelOuter[1] = tessLevel.level;\n"
-						   << "  gl_TessLevelOuter[2] = tessLevel.level;\n"
+						   << "  gl_TessLevelInner[0] " << ((m_pcUsedStage & PC_USE_STAGE_TESC) ? "= tessLevel.level;\n" : "= 2.0;\n")
+						   << "  gl_TessLevelOuter[0] " << ((m_pcUsedStage & PC_USE_STAGE_TESC) ? "= tessLevel.level;\n" : "= 2.0;\n")
+						   << "  gl_TessLevelOuter[1] " << ((m_pcUsedStage & PC_USE_STAGE_TESC) ? "= tessLevel.level;\n" : "= 2.0;\n")
+						   << "  gl_TessLevelOuter[2] " << ((m_pcUsedStage & PC_USE_STAGE_TESC) ? "= tessLevel.level;\n" : "= 2.0;\n")
 						   << "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 						   << "  vtxColor[gl_InvocationID] = color[gl_InvocationID];\n"
 						   << "}\n";
@@ -1324,19 +1410,28 @@ void PushConstantGraphicsDisjointTest::initPrograms (SourceCollections& sourceCo
 		if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 		{
 			tessEvaluationSrc << "#version 450\n"
-							  << "layout (triangles) in;\n"
-							  << "layout(push_constant) uniform Material {\n"
-							  << "    layout(offset = 32) vec4 color;\n"
-							  << "} matInst;\n"
-							  << "layout(location = 0) in highp vec4 color[];\n"
+							  << "layout (triangles) in;\n";
+
+			if (m_pcUsedStage & PC_USE_STAGE_TESE)
+			{
+				tessEvaluationSrc << "layout(push_constant) uniform Material {\n"
+								<< "    layout(offset = 32) vec4 color;\n"
+								<< "} matInst;\n";
+			}
+			tessEvaluationSrc << "layout(location = 0) in highp vec4 color[];\n"
 							  << "layout(location = 0) out highp vec4 vtxColor;\n"
 							  << "in gl_PerVertex { vec4 gl_Position; } gl_in[gl_MaxPatchVertices];\n"
 							  << "out gl_PerVertex { vec4 gl_Position; };\n"
 							  << "void main()\n"
 							  << "{\n"
-							  << "  gl_Position = gl_TessCoord.x * gl_in[0].gl_Position + gl_TessCoord.y * gl_in[1].gl_Position + gl_TessCoord.z * gl_in[2].gl_Position;\n"
-							  << "  vtxColor = matInst.color;\n"
-							  << "}\n";
+							  << "  gl_Position = gl_TessCoord.x * gl_in[0].gl_Position + gl_TessCoord.y * gl_in[1].gl_Position + gl_TessCoord.z * gl_in[2].gl_Position;\n";
+
+			if (m_pcUsedStage & PC_USE_STAGE_TESE)
+				tessEvaluationSrc << "  vtxColor = matInst.color;\n";
+			else
+				tessEvaluationSrc << "  vtxColor = gl_TessCoord.x * color[0] + gl_TessCoord.y * color[1] + gl_TessCoord.z * color[2];\n";
+
+			tessEvaluationSrc << "}\n";
 
 			sourceCollections.glslSources.add("color_tese") << glu::TessellationEvaluationSource(tessEvaluationSrc.str());
 		}
@@ -1345,20 +1440,30 @@ void PushConstantGraphicsDisjointTest::initPrograms (SourceCollections& sourceCo
 		{
 			geometrySrc << "#version 450\n"
 						<< "layout(triangles) in;\n"
-						<< "layout(triangle_strip, max_vertices=3) out;\n"
-						<< "layout(push_constant) uniform Material {\n"
-						<< "    layout(offset = 20) int kind;\n"
-						<< "} matInst;\n"
-						<< "layout(location = 0) in highp vec4 color[];\n"
+						<< "layout(triangle_strip, max_vertices=3) out;\n";
+
+			if (m_pcUsedStage & PC_USE_STAGE_GEOM)
+			{
+				geometrySrc << "layout(push_constant) uniform Material {\n"
+							<< "    layout(offset = 20) int kind;\n"
+							<< "} matInst;\n";
+			}
+
+			geometrySrc << "layout(location = 0) in highp vec4 color[];\n"
 						<< "layout(location = 0) out highp vec4 vtxColor;\n"
 						<< "in gl_PerVertex { vec4 gl_Position; } gl_in[];\n"
 						<< "out gl_PerVertex { vec4 gl_Position; };\n"
 						<< "void main()\n"
 						<< "{\n"
 						<< "  for(int i=0; i<3; i++)\n"
-						<< "  {\n"
-						<< "    gl_Position.xyz = gl_in[i].gl_Position.xyz / matInst.kind;\n"
-						<< "    gl_Position.w = gl_in[i].gl_Position.w;\n"
+						<< "  {\n";
+
+			if (m_pcUsedStage & PC_USE_STAGE_GEOM)
+				geometrySrc << "    gl_Position.xyz = gl_in[i].gl_Position.xyz / matInst.kind;\n";
+			else
+				geometrySrc << "    gl_Position.xyz = gl_in[i].gl_Position.xyz;\n";
+
+			geometrySrc << "    gl_Position.w = gl_in[i].gl_Position.w;\n"
 						<< "    vtxColor = color[i];\n"
 						<< "    EmitVertex();\n"
 						<< "  }\n"
@@ -1372,73 +1477,84 @@ void PushConstantGraphicsDisjointTest::initPrograms (SourceCollections& sourceCo
 		{
 			fragmentSrc << "#version 450\n"
 						<< "layout(location = 0) in highp vec4 vtxColor;\n"
-						<< "layout(location = 0) out highp vec4 fragColor;\n"
-						<< "layout(push_constant) uniform Material {\n";
+						<< "layout(location = 0) out highp vec4 fragColor;\n";
 
-			switch (m_indexType)
+			if (m_pcUsedStage & PC_USE_STAGE_FRAG)
 			{
-				case INDEX_TYPE_CONST_LITERAL:
-					if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_VERTEX_BIT)
-					{
-						fragmentSrc << "    layout(offset = 0) int kind; \n"
-									<< "} matInst;\n";
-					}
-					else
-					{
-						fragmentSrc << "    layout(offset = 16) int kind;\n"
-									<< "} matInst;\n";
-					}
+				fragmentSrc << "layout(push_constant) uniform Material {\n";
 
-					fragmentSrc << "void main (void)\n"
-						<< "{\n"
-						<< "    switch (matInst.kind) {\n"
-						<< "    case 0: fragColor = vec4(0, 1.0, 0, 1.0); break;\n"
-						<< "    case 1: fragColor = vec4(0, 0.0, 1.0, 1.0); break;\n"
-						<< "    case 2: fragColor = vtxColor; break;\n"
-						<< "    default: fragColor = vec4(1.0, 1.0, 1.0, 1.0); break;}\n"
-						<< "}\n";
-					break;
-				case INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR:
-					{
-						fragmentSrc << "    layout(offset = 0)  vec4 index; \n"
-									<< "    layout(offset = 16) vec4 vecType; \n"
-									<< "    layout(offset = 32) mat2 matType; \n"
-									<< "    layout(offset = 48) float[4] arrType; \n"
-									<< "} matInst;\n";
+				switch (m_indexType)
+				{
+					case INDEX_TYPE_CONST_LITERAL:
+						if (m_pushConstantRange[rangeNdx].range.shaderStage & VK_SHADER_STAGE_VERTEX_BIT)
+						{
+							fragmentSrc << "    layout(offset = 0) int kind; \n"
+										<< "} matInst;\n";
+						}
+						else
+						{
+							fragmentSrc << "    layout(offset = 16) int kind;\n"
+										<< "} matInst;\n";
+						}
 
 						fragmentSrc << "void main (void)\n"
-									<< "{\n"
-									<< "    fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+							<< "{\n"
+							<< "    switch (matInst.kind) {\n"
+							<< "    case 0: fragColor = vec4(0, 1.0, 0, 1.0); break;\n"
+							<< "    case 1: fragColor = vec4(0, 0.0, 1.0, 1.0); break;\n"
+							<< "    case 2: fragColor = vtxColor; break;\n"
+							<< "    default: fragColor = vec4(1.0, 1.0, 1.0, 1.0); break;}\n"
+							<< "}\n";
+						break;
+					case INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR:
+						{
+							fragmentSrc << "    layout(offset = 0)  vec4 index; \n"
+										<< "    layout(offset = 16) vec4 vecType; \n"
+										<< "    layout(offset = 32) mat2 matType; \n"
+										<< "    layout(offset = 48) float[4] arrType; \n"
+										<< "} matInst;\n";
 
-									// Mix in gl_FragCoord to (hopefully) prevent optimizing our index away
-									<< "    int vec_selector = int(gl_FragCoord.x * 0.0000001 + 0);\n"
-									<< "    int mat_selector = int(gl_FragCoord.x * 0.0000001 + 1);\n"
-									<< "    int arr_selector = int(gl_FragCoord.x * 0.0000001 + 2);\n";
+							fragmentSrc << "void main (void)\n"
+										<< "{\n"
+										<< "    fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
 
-						// Use the dynamic index to pull our real index value from push constants
-						// Then use that value to index into three variable types
-						std::string vecValue = "matInst.vecType[int(matInst.index[vec_selector])]";
-						std::string matValue = "matInst.matType[int(matInst.index[mat_selector])][0]";
-						std::string arrValue = "matInst.arrType[int(matInst.index[arr_selector])]";
+										// Mix in gl_FragCoord to (hopefully) prevent optimizing our index away
+										<< "    int vec_selector = int(gl_FragCoord.x * 0.0000001 + 0);\n"
+										<< "    int mat_selector = int(gl_FragCoord.x * 0.0000001 + 1);\n"
+										<< "    int arr_selector = int(gl_FragCoord.x * 0.0000001 + 2);\n";
 
-						// Test vector indexing
-						fragmentSrc << "    if (" << vecValue << " != " << DYNAMIC_VEC_CONSTANT << ")\n"
-									<< "        fragColor += vec4(0.0, 0.5, 0.0, 1.0);\n";
+							// Use the dynamic index to pull our real index value from push constants
+							// Then use that value to index into three variable types
+							std::string vecValue = "matInst.vecType[int(matInst.index[vec_selector])]";
+							std::string matValue = "matInst.matType[int(matInst.index[mat_selector])][0]";
+							std::string arrValue = "matInst.arrType[int(matInst.index[arr_selector])]";
 
-						// Test matrix indexing
-						fragmentSrc << "    if (" << matValue << " != " << DYNAMIC_MAT_CONSTANT << ")\n"
-									<< "        fragColor += vec4(0.0, 0.0, 0.5, 1.0);\n";
+							// Test vector indexing
+							fragmentSrc << "    if (" << vecValue << " != " << DYNAMIC_VEC_CONSTANT << ")\n"
+										<< "        fragColor += vec4(0.0, 0.5, 0.0, 1.0);\n";
 
-						// Test array indexing
-						fragmentSrc << "    if (" << arrValue << " != " << DYNAMIC_ARR_CONSTANT << ")\n"
-									<< "        fragColor = vec4(0.0, 0.5, 0.5, 1.0);\n";
+							// Test matrix indexing
+							fragmentSrc << "    if (" << matValue << " != " << DYNAMIC_MAT_CONSTANT << ")\n"
+										<< "        fragColor += vec4(0.0, 0.0, 0.5, 1.0);\n";
 
-						fragmentSrc << "}\n";
-					}
-					break;
-				default:
-					DE_FATAL("Unhandled IndexType");
-					break;
+							// Test array indexing
+							fragmentSrc << "    if (" << arrValue << " != " << DYNAMIC_ARR_CONSTANT << ")\n"
+										<< "        fragColor = vec4(0.0, 0.5, 0.5, 1.0);\n";
+
+							fragmentSrc << "}\n";
+						}
+						break;
+					default:
+						DE_FATAL("Unhandled IndexType");
+						break;
+				}
+			}
+			else
+			{
+				fragmentSrc << "void main (void)\n"
+							<< "{\n"
+							<< "	fragColor = vtxColor;\n"
+							<< "}\n";
 			}
 
 			sourceCollections.glslSources.add("color_frag") << glu::FragmentSource(fragmentSrc.str());
@@ -1462,7 +1578,7 @@ void PushConstantGraphicsDisjointTest::initPrograms (SourceCollections& sourceCo
 
 TestInstance* PushConstantGraphicsDisjointTest::createInstance (Context& context) const
 {
-	return new PushConstantGraphicsDisjointInstance(context, m_pipelineConstructionType, m_rangeCount, m_pushConstantRange, m_multipleUpdate, m_indexType);
+	return new PushConstantGraphicsDisjointInstance(context, m_pipelineConstructionType, m_rangeCount, m_pushConstantRange, m_multipleUpdate, m_indexType, m_pushConstant2, m_pcUsedStage);
 }
 
 class PushConstantGraphicsOverlapTest : public PushConstantGraphicsTest
@@ -1470,10 +1586,11 @@ class PushConstantGraphicsOverlapTest : public PushConstantGraphicsTest
 public:
 							PushConstantGraphicsOverlapTest		(tcu::TestContext&					testContext,
 																 const std::string&					name,
-																 const std::string&					description,
 																 const PipelineConstructionType		pipelineConstructionType,
 																 const deUint32						rangeCount,
-																 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT]);
+																 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
+																 const deBool						pushConstant2,
+																 const PushConstantUseStage         pcUsedStage = PC_USE_STAGE_ALL);
 	virtual					~PushConstantGraphicsOverlapTest	(void);
 	std::string				getPushConstantDeclarationStr		(VkShaderStageFlags shaderStage) const;
 	virtual void			initPrograms						(SourceCollections& sourceCollections) const;
@@ -1482,11 +1599,12 @@ public:
 
 PushConstantGraphicsOverlapTest::PushConstantGraphicsOverlapTest (tcu::TestContext&					testContext,
 																  const std::string&				name,
-																  const std::string&				description,
 																  const PipelineConstructionType	pipelineConstructionType,
 																  const deUint32					rangeCount,
-																  const PushConstantData			pushConstantRange[MAX_RANGE_COUNT])
-	: PushConstantGraphicsTest (testContext, name, description, pipelineConstructionType, rangeCount, pushConstantRange, false, INDEX_TYPE_CONST_LITERAL)
+																  const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
+																  const deBool						pushConstant2,
+																  const PushConstantUseStage        pcUsedStage)
+	: PushConstantGraphicsTest (testContext, name, pipelineConstructionType, rangeCount, pushConstantRange, false, INDEX_TYPE_CONST_LITERAL, pushConstant2, pcUsedStage)
 {
 }
 
@@ -1584,12 +1702,16 @@ void PushConstantGraphicsOverlapTest::initPrograms (SourceCollections& sourceCol
 				"{\n"
 				"    vec4 gl_Position;\n"
 				"};\n"
-				+ getPushConstantDeclarationStr(VK_SHADER_STAGE_VERTEX_BIT) +
+				+
+				((m_pcUsedStage & PC_USE_STAGE_VERTEX) ? getPushConstantDeclarationStr(VK_SHADER_STAGE_VERTEX_BIT) : "\n")
+				+
 				"void main()\n"
 				"{\n"
 				"    gl_Position = position;\n"
 				"    vec4 color = inColor;\n"
-				"    color" + getColorReadStr(m_pushConstantRange[rangeNdx].range.size) +
+				+
+				((m_pcUsedStage & PC_USE_STAGE_VERTEX) ? "    color" + getColorReadStr(m_pushConstantRange[rangeNdx].range.size) : "\n")
+				+
 				"    vtxColor = color;\n"
 				"}\n";
 
@@ -1601,7 +1723,9 @@ void PushConstantGraphicsOverlapTest::initPrograms (SourceCollections& sourceCol
 			const std::string source =
 				"#version 450\n"
 				"layout (vertices = 3) out;\n"
-				+ getPushConstantDeclarationStr(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) +
+				+
+				((m_pcUsedStage & PC_USE_STAGE_TESC) ? getPushConstantDeclarationStr(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) : "\n")
+				+
 				"layout(location = 0) in highp vec4 color[];\n"
 				"layout(location = 0) out highp vec4 vtxColor[];\n"
 				"in gl_PerVertex\n"
@@ -1620,7 +1744,9 @@ void PushConstantGraphicsOverlapTest::initPrograms (SourceCollections& sourceCol
 				"    gl_TessLevelOuter[2] = 2.0;\n"
 				"    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 				"    vec4 outColor = color[gl_InvocationID];\n"
-				"    outColor" + getColorReadStr(m_pushConstantRange[rangeNdx].range.size) +
+				+
+				((m_pcUsedStage & PC_USE_STAGE_TESC) ? "    outColor" + getColorReadStr(m_pushConstantRange[rangeNdx].range.size) : "\n")
+				+
 				"    vtxColor[gl_InvocationID] = outColor;\n"
 				"}\n";
 
@@ -1632,7 +1758,9 @@ void PushConstantGraphicsOverlapTest::initPrograms (SourceCollections& sourceCol
 			const std::string source =
 				"#version 450\n"
 				"layout (triangles) in;\n"
-				+ getPushConstantDeclarationStr(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) +
+				+
+				((m_pcUsedStage & PC_USE_STAGE_TESE) ? getPushConstantDeclarationStr(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) : "\n")
+				+
 				"layout(location = 0) in highp vec4 color[];\n"
 				"layout(location = 0) out highp vec4 vtxColor;\n"
 				"in gl_PerVertex\n"
@@ -1647,7 +1775,9 @@ void PushConstantGraphicsOverlapTest::initPrograms (SourceCollections& sourceCol
 				"{\n"
 				"    gl_Position = gl_TessCoord.x * gl_in[0].gl_Position + gl_TessCoord.y * gl_in[1].gl_Position + gl_TessCoord.z * gl_in[2].gl_Position;\n"
 				"    vtxColor = gl_TessCoord.x * color[0] + gl_TessCoord.y * color[1] + gl_TessCoord.z * color[2];\n"
-				"    vtxColor" + getColorReadStr(m_pushConstantRange[rangeNdx].range.size) +
+				+
+				((m_pcUsedStage & PC_USE_STAGE_TESE) ? "    vtxColor" + getColorReadStr(m_pushConstantRange[rangeNdx].range.size) : "\n")
+				+
 				"}\n";
 
 			sourceCollections.glslSources.add("color_tese") << glu::TessellationEvaluationSource(source);
@@ -1659,7 +1789,9 @@ void PushConstantGraphicsOverlapTest::initPrograms (SourceCollections& sourceCol
 				"#version 450\n"
 				"layout(triangles) in;\n"
 				"layout(triangle_strip, max_vertices=3) out;\n"
-				+ getPushConstantDeclarationStr(VK_SHADER_STAGE_GEOMETRY_BIT) +
+				+
+				((m_pcUsedStage & PC_USE_STAGE_GEOM) ? getPushConstantDeclarationStr(VK_SHADER_STAGE_GEOMETRY_BIT) : "\n")
+				+
 				"layout(location = 0) in highp vec4 color[];\n"
 				"layout(location = 0) out highp vec4 vtxColor;\n"
 				"in gl_PerVertex\n"
@@ -1674,10 +1806,15 @@ void PushConstantGraphicsOverlapTest::initPrograms (SourceCollections& sourceCol
 				"{\n"
 				"    for(int i = 0; i < 3; i++)\n"
 				"    {\n"
-				"        gl_Position.xyz = gl_in[i].gl_Position.xyz / 2.0;\n"
+				"        gl_Position.xyz = gl_in[i].gl_Position.xyz"
+				+
+				((m_pcUsedStage & PC_USE_STAGE_GEOM) ? "/2.0;\n" : ";\n")
+				+
 				"        gl_Position.w = gl_in[i].gl_Position.w;\n"
 				"        vtxColor = color[i];\n"
-				"        vtxColor" + getColorReadStr(m_pushConstantRange[rangeNdx].range.size) +
+				+
+				((m_pcUsedStage & PC_USE_STAGE_GEOM) ? "        vtxColor" + getColorReadStr(m_pushConstantRange[rangeNdx].range.size) : "\n")
+				+
 				"        EmitVertex();\n"
 				"    }\n"
 				"    EndPrimitive();\n"
@@ -1692,11 +1829,15 @@ void PushConstantGraphicsOverlapTest::initPrograms (SourceCollections& sourceCol
 				"#version 450\n"
 				"layout(location = 0) in highp vec4 vtxColor;\n"
 				"layout(location = 0) out highp vec4 fragColor;\n"
-				+ getPushConstantDeclarationStr(VK_SHADER_STAGE_FRAGMENT_BIT) +
+				+
+				((m_pcUsedStage & PC_USE_STAGE_FRAG) ? getPushConstantDeclarationStr(VK_SHADER_STAGE_FRAGMENT_BIT) : "\n")
+				+
 				"void main (void)\n"
 				"{\n"
 				"    fragColor = vtxColor;\n"
-				"    fragColor" + getColorReadStr(m_pushConstantRange[rangeNdx].range.size) +
+				+
+				((m_pcUsedStage & PC_USE_STAGE_FRAG) ? "    fragColor" + getColorReadStr(m_pushConstantRange[rangeNdx].range.size) : "\n")
+				+
 				"    fragColor = min(mod(fragColor, 2.0), 2.0 - mod(fragColor, 2.0));\n"
 				"}\n";
 
@@ -1707,7 +1848,7 @@ void PushConstantGraphicsOverlapTest::initPrograms (SourceCollections& sourceCol
 
 TestInstance* PushConstantGraphicsOverlapTest::createInstance (Context& context) const
 {
-	return new PushConstantGraphicsOverlapTestInstance(context, m_pipelineConstructionType, m_rangeCount, m_pushConstantRange, false, INDEX_TYPE_CONST_LITERAL);
+	return new PushConstantGraphicsOverlapTestInstance(context, m_pipelineConstructionType, m_rangeCount, m_pushConstantRange, false, INDEX_TYPE_CONST_LITERAL, m_pushConstant2, m_pcUsedStage);
 }
 
 class PushConstantComputeTest : public vkt::TestCase
@@ -1715,7 +1856,6 @@ class PushConstantComputeTest : public vkt::TestCase
 public:
 							PushConstantComputeTest		(tcu::TestContext&		testContext,
 														 const std::string&		name,
-														 const std::string&		description,
 														 const ComputeTestType	testType,
 														 const PushConstantData	pushConstantRange);
 	virtual					~PushConstantComputeTest	(void);
@@ -1758,10 +1898,9 @@ private:
 
 PushConstantComputeTest::PushConstantComputeTest (tcu::TestContext&			testContext,
 												  const std::string&		name,
-												  const std::string&		description,
 												  const ComputeTestType		testType,
 												  const PushConstantData	pushConstantRange)
-	: vkt::TestCase			(testContext, name, description)
+	: vkt::TestCase			(testContext, name)
 	, m_testType			(testType)
 	, m_pushConstantRange	(pushConstantRange)
 {
@@ -1980,7 +2119,6 @@ class PushConstantLifetimeTest : public vkt::TestCase
 public:
 	PushConstantLifetimeTest(tcu::TestContext&					testContext,
 							 const std::string&					name,
-							 const std::string&					description,
 							 const PipelineConstructionType		pipelineConstructionType,
 							 const PushConstantData				pushConstantRange[MAX_RANGE_COUNT],
 							 const std::vector<CommandData>&	cmdList);
@@ -2056,11 +2194,10 @@ private:
 
 PushConstantLifetimeTest::PushConstantLifetimeTest(tcu::TestContext&				testContext,
 												   const std::string&				name,
-												   const std::string&				description,
 												   const PipelineConstructionType	pipelineConstructionType,
 												   const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
 												   const std::vector<CommandData>&	cmdList)
-	: vkt::TestCase					(testContext, name, description)
+	: vkt::TestCase					(testContext, name)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 	, m_cmdList						(cmdList)
 {
@@ -2720,7 +2857,7 @@ struct OverwriteTestParams
 class OverwriteTestCase : public vkt::TestCase
 {
 public:
-							OverwriteTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const OverwriteTestParams& params);
+							OverwriteTestCase		(tcu::TestContext& testCtx, const std::string& name, const OverwriteTestParams& params);
 	virtual					~OverwriteTestCase		(void) {}
 
 	virtual void			checkSupport			(Context &context) const;
@@ -2743,8 +2880,8 @@ protected:
 	OverwriteTestParams			m_params;
 };
 
-OverwriteTestCase::OverwriteTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const OverwriteTestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+OverwriteTestCase::OverwriteTestCase (tcu::TestContext& testCtx, const std::string& name, const OverwriteTestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -2902,7 +3039,7 @@ tcu::TestStatus OverwriteTestInstance::iterate (void)
 	if (isComp)
 	{
 		compModule	= ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
-		pipeline	= makeComputePipeline(vkd, device, pipelineLayout.get(), 0u, compModule.getModule(), 0u, nullptr);
+		pipeline	= makeComputePipeline(vkd, device, pipelineLayout.get(), compModule.getModule());
 	}
 	else
 	{
@@ -3065,7 +3202,8 @@ void addOverwriteCase (tcu::TestCaseGroup* group, tcu::TestContext& testCtx, Pip
 	testParams.pipelineConstructionType = pipelineConstructionType;
 	testParams.bindPoint				= bindPoint;
 
-	group->addChild(new OverwriteTestCase(testCtx, "overwrite", "Test push constant range overwrites", testParams));
+	// Test push constant range overwrites
+	group->addChild(new OverwriteTestCase(testCtx, "overwrite", testParams));
 }
 
 } // anonymous
@@ -3075,33 +3213,31 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 	static const struct
 	{
 		const char*			name;
-		const char*			description;
 		deUint32			count;
 		PushConstantData	range[MAX_RANGE_COUNT];
 		deBool				hasMultipleUpdates;
 		IndexType			indexType;
 	} graphicsParams[] =
 	{
-		// test range size from minimum valid size to maximum
+		// test range size is 4 bytes(minimum valid size)
 		{
 			"range_size_4",
-			"test range size is 4 bytes(minimum valid size)",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 4 } , { 0, 4 } } },
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test range size is 16 bytes, and together with a normal uniform
 		{
 			"range_size_16",
-			"test range size is 16 bytes, and together with a normal uniform",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } } },
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test range size is 128 bytes(maximum valid size)
 		{
 			"range_size_128",
-			"test range size is 128 bytes(maximum valid size)",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 128 }, { 0, 128 } } },
 			false,
@@ -3110,7 +3246,6 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 		// test range count, including all valid shader stage in graphics pipeline, and also multiple shader stages share one single range
 		{
 			"count_2_shaders_vert_frag",
-			"test range count is 2, use vertex and fragment shaders",
 			2u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
@@ -3119,9 +3254,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test range count is 3, use vertex, geometry and fragment shaders
 		{
 			"count_3_shaders_vert_geom_frag",
-			"test range count is 3, use vertex, geometry and fragment shaders",
 			3u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
@@ -3131,9 +3266,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test range count is 5, use vertex, tessellation, geometry and fragment shaders
 		{
 			"count_5_shaders_vert_tess_geom_frag",
-			"test range count is 5, use vertex, tessellation, geometry and fragment shaders",
 			5u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
@@ -3145,9 +3280,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test range count is 1, vertex and fragment shaders share one range
 		{
 			"count_1_shader_vert_frag",
-			"test range count is 1, vertex and fragment shaders share one range",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4 }, { 0, 4 } } },
 			false,
@@ -3156,39 +3291,38 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 		// test data partial update and multiple times update
 		{
 			"data_update_partial_1",
-			"test partial update of the values",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 32 }, { 4, 24 } } },
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test partial update of the values
 		{
 			"data_update_partial_2",
-			"test partial update of the values",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 48 }, { 32, 16 } } },
 			false,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// test multiple times update of the values
 		{
 			"data_update_multiple",
-			"test multiple times update of the values",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 4 }, { 0, 4 } } },
 			true,
 			INDEX_TYPE_CONST_LITERAL
 		},
+		// dynamically uniform indexing of vertex, matrix, and array in vertex shader
 		{
 			"dynamic_index_vert",
-			"dynamically uniform indexing of vertex, matrix, and array in vertex shader",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 64 }, { 0, 64 } } },
 			false,
 			INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR
 		},
+		// dynamically uniform indexing of vertex, matrix, and array in fragment shader
 		{
 			"dynamic_index_frag",
-			"dynamically uniform indexing of vertex, matrix, and array in fragment shader",
 			1u,
 			{ { { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 64 }, { 0, 64 } } },
 			false,
@@ -3199,24 +3333,22 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 	static const struct
 	{
 		const char*			name;
-		const char*			description;
 		deUint32			count;
 		PushConstantData	range[MAX_RANGE_COUNT];
 	} overlapGraphicsParams[] =
 	{
-		// test ranges with multiple overlapping stages
+		// overlapping range count is 2, use vertex and fragment shaders
 		{
 			"overlap_2_shaders_vert_frag",
-			"overlapping range count is 2, use vertex and fragment shaders",
 			2u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
 				{ { VK_SHADER_STAGE_FRAGMENT_BIT, 12, 36 }, { 12, 36 } },
 			}
 		},
+		// overlapping range count is 3, use vertex, geometry and fragment shaders
 		{
 			"overlap_3_shaders_vert_geom_frag",
-			"overlapping range count is 3, use vertex, geometry and fragment shaders",
 			3u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 12, 36 }, { 12, 36 } },
@@ -3224,9 +3356,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ { VK_SHADER_STAGE_FRAGMENT_BIT, 20, 4 }, { 20, 4 } }
 			}
 		},
+		// overlapping range count is 4, use vertex, tessellation and fragment shaders
 		{
 			"overlap_4_shaders_vert_tess_frag",
-			"overlapping range count is 4, use vertex, tessellation and fragment shaders",
 			4u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 8, 4 }, { 8, 4 } },
@@ -3235,9 +3367,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ { VK_SHADER_STAGE_FRAGMENT_BIT, 60, 36 }, { 60, 36 } }
 			}
 		},
+		// overlapping range count is 5, use vertex, tessellation, geometry and fragment shaders
 		{
 			"overlap_5_shaders_vert_tess_geom_frag",
-			"overlapping range count is 5, use vertex, tessellation, geometry and fragment shaders",
 			5u,
 			{
 				{ { VK_SHADER_STAGE_VERTEX_BIT, 40, 8 }, { 40, 8 } },
@@ -3252,20 +3384,19 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 	static const struct
 	{
 		const char*			name;
-		const char*			description;
 		ComputeTestType		type;
 		PushConstantData	range;
 	} computeParams[] =
 	{
+		// test compute pipeline
 		{
 			"simple_test",
-			"test compute pipeline",
 			CTT_SIMPLE,
 			{ { VK_SHADER_STAGE_COMPUTE_BIT, 0, 16 }, { 0, 16 } },
 		},
+		// test push constant that is dynamically unused
 		{
 			"uninitialized",
-			"test push constant that is dynamically unused",
 			CTT_UNINITIALIZED,
 			{ { VK_SHADER_STAGE_COMPUTE_BIT, 0, 16 }, { 0, 16 } },
 		},
@@ -3274,14 +3405,13 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 	static const struct
 	{
 		const char*						name;
-		const char*						description;
 		PushConstantData				range[MAX_RANGE_COUNT];
 		std::vector<CommandData>		cmdList;
 	} lifetimeParams[] =
 	{
+		// bind different layout with the same range
 		{
 			"push_range0_bind_layout1",
-			"bind different layout with the same range",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}}
@@ -3292,9 +3422,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// bind layout with same range then push different range
 		{
 			"push_range1_bind_layout1_push_range0",
-			"bind layout with same range then push different range",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}}
@@ -3307,9 +3437,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// same range same layout then same range from a different layout and same range from the same layout
 		{
 			"push_range0_bind_layout0_push_range1_push_range0",
-			"same range same layout then same range from a different layout and same range from the same layout",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}}
@@ -3322,9 +3452,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// same range same layout then diff range and same range update
 		{
 			"push_range0_bind_layout0_push_diff_overlapping_range1_push_range0",
-			"same range same layout then diff range and same range update",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 16, 32}, {16, 32}}
@@ -3337,9 +3467,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// update push constant bind different layout with the same range then bind correct layout
 		{
 			"push_range0_bind_layout1_bind_layout0",
-			"update push constant bind different layout with the same range then bind correct layout",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}}
@@ -3351,9 +3481,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// update push constant then bind different layout with overlapping range then bind correct layout
 		{
 			"push_range0_bind_layout1_overlapping_range_bind_layout0",
-			"update push constant then bind different layout with overlapping range then bind correct layout",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 16, 32}, {16, 32}}
@@ -3365,9 +3495,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// bind different layout with different range then update push constant and bind correct layout
 		{
 			"bind_layout1_push_range0_bind_layout0",
-			"bind different layout with different range then update push constant and bind correct layout",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT, 16, 32}, {16, 32}}
@@ -3379,9 +3509,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DRAW, -1 },
 			}
 		},
+		// change pipeline same range, bind then push, stages vertex and compute
 		{
 			"pipeline_change_same_range_bind_push_vert_and_comp",
-			"change pipeline same range, bind then push, stages vertex and compute",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, 0, 32}, {0, 32}}
@@ -3395,9 +3525,9 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 				{ CMD_DISPATCH, -1 },
 			}
 		},
+		// change pipeline different range overlapping, bind then push, stages vertex and compute
 		{
 			"pipeline_change_diff_range_bind_push_vert_and_comp",
-			"change pipeline different range overlapping, bind then push, stages vertex and compute",
 			{
 				{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, 0, 32}, {0, 32}},
 				{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, 16, 32}, {16, 32}}
@@ -3413,36 +3543,247 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx, Pipeline
 		}
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	pushConstantTests	(new tcu::TestCaseGroup(testCtx, "push_constant", "PushConstant tests"));
+	de::MovePtr<tcu::TestCaseGroup>	pushConstantTests	(new tcu::TestCaseGroup(testCtx, "push_constant"));
 
-	de::MovePtr<tcu::TestCaseGroup>	graphicsTests	(new tcu::TestCaseGroup(testCtx, "graphics_pipeline", "graphics pipeline"));
-	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(graphicsParams); ndx++)
+	de::MovePtr<tcu::TestCaseGroup>	graphicsTests(new tcu::TestCaseGroup(testCtx, "graphics_pipeline"));
+	for (int cmd = 0; cmd < 2; ++cmd)
 	{
-		graphicsTests->addChild(new PushConstantGraphicsDisjointTest(testCtx, graphicsParams[ndx].name, graphicsParams[ndx].description, pipelineConstructionType, graphicsParams[ndx].count, graphicsParams[ndx].range, graphicsParams[ndx].hasMultipleUpdates, graphicsParams[ndx].indexType));
-	}
+		bool pushConstant2 = cmd != 0;
+#ifdef CTS_USES_VULKANSC
+		if (pushConstant2)
+			continue;
+#endif
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(graphicsParams); ndx++)
+		{
+			std::string name = graphicsParams[ndx].name;
+			if (pushConstant2) name += "_command2";
+			graphicsTests->addChild(new PushConstantGraphicsDisjointTest(testCtx, name.c_str(), pipelineConstructionType, graphicsParams[ndx].count, graphicsParams[ndx].range, graphicsParams[ndx].hasMultipleUpdates, graphicsParams[ndx].indexType, pushConstant2));
+		}
 
-	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(overlapGraphicsParams); ndx++)
-	{
-		graphicsTests->addChild(new PushConstantGraphicsOverlapTest(testCtx, overlapGraphicsParams[ndx].name, overlapGraphicsParams[ndx].description, pipelineConstructionType, overlapGraphicsParams[ndx].count, overlapGraphicsParams[ndx].range));
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(overlapGraphicsParams); ndx++)
+		{
+			std::string name = overlapGraphicsParams[ndx].name;
+			if (pushConstant2) name += "_command2";
+			graphicsTests->addChild(new PushConstantGraphicsOverlapTest(testCtx, name.c_str(), pipelineConstructionType, overlapGraphicsParams[ndx].count, overlapGraphicsParams[ndx].range, pushConstant2));
+		}
 	}
 	addOverwriteCase(graphicsTests.get(), testCtx, pipelineConstructionType, VK_PIPELINE_BIND_POINT_GRAPHICS);
+
+	// tests for unused push constants:
+	// push constants that are specified in pipeline layout but not used in shaders
+	{
+		{
+			static const struct
+			{
+				const char*			  name;
+				deUint32			  count;
+				PushConstantData	  range[MAX_RANGE_COUNT];
+				deBool				  hasMultipleUpdates;
+				IndexType			  indexType;
+				PushConstantUseStage  pcUsedStages;
+			} unusedDisjointPCTestParams[] =
+			{
+				// test range size is 4 bytes(minimum valid size)
+				// no shader stage using push constants
+				{
+					"unused_disjoint_1",
+					1u,
+					{ { { VK_SHADER_STAGE_VERTEX_BIT, 0, 4 } , { 0, 4 } } },
+					false,
+					INDEX_TYPE_CONST_LITERAL,
+					PC_USE_STAGE_NONE
+
+				},
+				// test range count, including all valid shader stage in graphics pipeline
+				// vertex shader using push constants, fragment shader not using push constants
+				{
+					"unused_disjoint_2",
+					2u,
+					{
+						{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
+						{ { VK_SHADER_STAGE_FRAGMENT_BIT, 16, 4 }, { 16, 4 } },
+					},
+					false,
+					INDEX_TYPE_CONST_LITERAL,
+					PC_USE_STAGE_VERTEX
+				},
+				// test range count is 3, use vertex, geometry and fragment shaders
+				// no shader stage using push constants
+				{
+					"unused_disjoint_3",
+					3u,
+					{
+						{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
+						{ { VK_SHADER_STAGE_FRAGMENT_BIT, 16, 4 }, { 16, 4 } },
+						{ { VK_SHADER_STAGE_GEOMETRY_BIT, 20, 4 }, { 20, 4 } },
+					},
+					false,
+					INDEX_TYPE_CONST_LITERAL,
+					PC_USE_STAGE_NONE
+				},
+				// test range count is 3, use vertex, geometry and fragment shaders
+				// geometry shader using push constants, vertex and fragment shader not using push constants
+				{
+					"unused_disjoint_4",
+					3u,
+					{
+						{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
+						{ { VK_SHADER_STAGE_FRAGMENT_BIT, 16, 4 }, { 16, 4 } },
+						{ { VK_SHADER_STAGE_GEOMETRY_BIT, 20, 4 }, { 20, 4 } },
+					},
+					false,
+					INDEX_TYPE_CONST_LITERAL,
+					PC_USE_STAGE_GEOM
+				},
+				// test range count is 5, use vertex, tessellation, geometry and fragment shaders
+				// no shader stage using push constants
+				{
+					"unused_disjoint_5",
+					5u,
+					{
+						{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
+						{ { VK_SHADER_STAGE_FRAGMENT_BIT, 16, 4 }, { 16, 4 } },
+						{ { VK_SHADER_STAGE_GEOMETRY_BIT, 20, 4 }, { 20, 4 } },
+						{ { VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 24, 4 }, { 24, 4 } },
+						{ { VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 32, 16 }, { 32, 16 } },
+					},
+					false,
+					INDEX_TYPE_CONST_LITERAL,
+					PC_USE_STAGE_NONE
+				},
+				// test range count is 5, use vertex, tessellation, geometry and fragment shaders
+				// tess shader stages using push constants, vertex, geometry and fragment shader not using push constants
+				{
+					"unused_disjoint_6",
+					5u,
+					{
+						{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
+						{ { VK_SHADER_STAGE_FRAGMENT_BIT, 16, 4 }, { 16, 4 } },
+						{ { VK_SHADER_STAGE_GEOMETRY_BIT, 20, 4 }, { 20, 4 } },
+						{ { VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 24, 4 }, { 24, 4 } },
+						{ { VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 32, 16 }, { 32, 16 } },
+					},
+					false,
+					INDEX_TYPE_CONST_LITERAL,
+					PC_USE_STAGE_TESC | PC_USE_STAGE_TESE
+				}
+			};
+
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(unusedDisjointPCTestParams); ndx++)
+			{
+				graphicsTests->addChild(new PushConstantGraphicsDisjointTest(testCtx, unusedDisjointPCTestParams[ndx].name, pipelineConstructionType, unusedDisjointPCTestParams[ndx].count, unusedDisjointPCTestParams[ndx].range, unusedDisjointPCTestParams[ndx].hasMultipleUpdates, unusedDisjointPCTestParams[ndx].indexType, unusedDisjointPCTestParams[ndx].pcUsedStages));
+			}
+		}
+		{
+			static const struct
+			{
+				const char*          name;
+				deUint32             count;
+				PushConstantData     range[MAX_RANGE_COUNT];
+				PushConstantUseStage pcUsedStages;
+
+			} unusedOverlapPCTestParams[] =
+			{
+				// overlapping range count is 2, use vertex and fragment shaders
+				// no shader stage using push constants
+				{
+					"unused_overlap_1",
+					2u,
+					{
+						{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
+						{ { VK_SHADER_STAGE_FRAGMENT_BIT, 12, 36 }, { 12, 36 } },
+					},
+					PC_USE_STAGE_NONE
+				},
+				// overlapping range count is 2, use vertex and fragment shaders
+				// vertex shader using push constants, fragment shader not using push constants
+				{
+					"unused_overlap_2",
+					2u,
+					{
+						{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 16 }, { 0, 16 } },
+						{ { VK_SHADER_STAGE_FRAGMENT_BIT, 12, 36 }, { 12, 36 } },
+					},
+					PC_USE_STAGE_VERTEX
+				},
+				// overlapping range count is 3, use vertex, geometry and fragment shaders
+				// no shader stage using push constants
+				{
+					"unused_overlap_3",
+					3u,
+					{
+						{ { VK_SHADER_STAGE_VERTEX_BIT, 12, 36 }, { 12, 36 } },
+						{ { VK_SHADER_STAGE_GEOMETRY_BIT, 0, 32 }, { 16, 16 } },
+						{ { VK_SHADER_STAGE_FRAGMENT_BIT, 20, 4 }, { 20, 4 } }
+					},
+					PC_USE_STAGE_NONE
+				},
+				// overlapping range count is 3, use vertex, geometry and fragment shaders
+				// geometry shader using push constants, vertex and fragment shader not using push constants
+				{
+					"unused_overlap_4",
+					3u,
+					{
+						{ { VK_SHADER_STAGE_VERTEX_BIT, 12, 36 }, { 12, 36 } },
+						{ { VK_SHADER_STAGE_GEOMETRY_BIT, 0, 32 }, { 16, 16 } },
+						{ { VK_SHADER_STAGE_FRAGMENT_BIT, 20, 4 }, { 20, 4 } }
+					},
+					PC_USE_STAGE_GEOM
+				},
+				// overlapping range count is 5, use vertex, tessellation, geometry and fragment shaders
+				// no shader stage using push constants
+				{
+					"unused_overlap_5",
+					5u,
+					{
+						{ { VK_SHADER_STAGE_VERTEX_BIT, 40, 8 }, { 40, 8 } },
+						{ { VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 32, 12 }, { 32, 12 } },
+						{ { VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 48, 16 }, { 48, 16 } },
+						{ { VK_SHADER_STAGE_GEOMETRY_BIT, 28, 36 }, { 28, 36 } },
+						{ { VK_SHADER_STAGE_FRAGMENT_BIT, 56, 8 }, { 60, 4 } }
+					},
+					PC_USE_STAGE_NONE
+				},
+				// overlapping range count is 5, use vertex, tessellation, geometry and fragment shaders
+				// tess shader stages using push constants, vertex, geometry and fragment shader not using push constants
+				{
+					"unused_overlap_6",
+					5u,
+					{
+						{ { VK_SHADER_STAGE_VERTEX_BIT, 40, 8 }, { 40, 8 } },
+						{ { VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 32, 12 }, { 32, 12 } },
+						{ { VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 48, 16 }, { 48, 16 } },
+						{ { VK_SHADER_STAGE_GEOMETRY_BIT, 28, 36 }, { 28, 36 } },
+						{ { VK_SHADER_STAGE_FRAGMENT_BIT, 56, 8 }, { 60, 4 } }
+					},
+					PC_USE_STAGE_TESC | PC_USE_STAGE_TESE
+				}
+			};
+
+			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(unusedOverlapPCTestParams); ndx++)
+			{
+				graphicsTests->addChild(new PushConstantGraphicsOverlapTest(testCtx, unusedOverlapPCTestParams[ndx].name, pipelineConstructionType, unusedOverlapPCTestParams[ndx].count, unusedOverlapPCTestParams[ndx].range, unusedOverlapPCTestParams[ndx].pcUsedStages));
+			}
+		}
+	}
+
 	pushConstantTests->addChild(graphicsTests.release());
 
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	computeTests	(new tcu::TestCaseGroup(testCtx, "compute_pipeline", "compute pipeline"));
+		de::MovePtr<tcu::TestCaseGroup>	computeTests	(new tcu::TestCaseGroup(testCtx, "compute_pipeline"));
 		for (const auto& params : computeParams)
 		{
-			computeTests->addChild(new PushConstantComputeTest(testCtx, params.name, params.description, params.type, params.range));
+			computeTests->addChild(new PushConstantComputeTest(testCtx, params.name, params.type, params.range));
 		}
 		addOverwriteCase(computeTests.get(), testCtx, pipelineConstructionType, VK_PIPELINE_BIND_POINT_COMPUTE);
 		pushConstantTests->addChild(computeTests.release());
 	}
 
-	de::MovePtr<tcu::TestCaseGroup>	lifetimeTests	(new tcu::TestCaseGroup(testCtx, "lifetime", "lifetime tests"));
+	de::MovePtr<tcu::TestCaseGroup>	lifetimeTests	(new tcu::TestCaseGroup(testCtx, "lifetime"));
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(lifetimeParams); ndx++)
 	{
-		lifetimeTests->addChild(new PushConstantLifetimeTest(testCtx, lifetimeParams[ndx].name, lifetimeParams[ndx].description, pipelineConstructionType, lifetimeParams[ndx].range, lifetimeParams[ndx].cmdList));
+		lifetimeTests->addChild(new PushConstantLifetimeTest(testCtx, lifetimeParams[ndx].name, pipelineConstructionType, lifetimeParams[ndx].range, lifetimeParams[ndx].cmdList));
 	}
 	pushConstantTests->addChild(lifetimeTests.release());
 

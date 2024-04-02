@@ -2055,6 +2055,7 @@ void begin_transform_feedback (NegativeTestContext& ctx)
 	ctx.expectError					(GL_NO_ERROR);
 	ctx.glBeginTransformFeedback	(GL_POINTS);
 	ctx.expectError					(GL_INVALID_OPERATION);
+	ctx.glEndTransformFeedback		();
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if any binding point used in transform feedback mode does not have a buffer object bound.");
@@ -2073,11 +2074,12 @@ void begin_transform_feedback (NegativeTestContext& ctx)
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if no binding points would be used because the active program object has specified no varying variables to record.");
 	ctx.glTransformFeedbackVaryings	(program.getProgram(), 0, 0, GL_INTERLEAVED_ATTRIBS);
+	ctx.glLinkProgram				(program.getProgram());
+	ctx.expectError					(GL_NO_ERROR);
 	ctx.glBeginTransformFeedback	(GL_TRIANGLES);
 	ctx.expectError					(GL_INVALID_OPERATION);
 	ctx.endSection();
 
-	ctx.glEndTransformFeedback		();
 	ctx.glDeleteBuffers				(1, &buf);
 	ctx.glDeleteTransformFeedbacks	(2, tfID);
 	ctx.expectError					(GL_NO_ERROR);

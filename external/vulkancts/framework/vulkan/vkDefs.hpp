@@ -150,7 +150,7 @@ enum Type
 	TYPE_WAYLAND,
 	TYPE_ANDROID,
 	TYPE_WIN32,
-	TYPE_MACOS,
+	TYPE_METAL,
 	TYPE_HEADLESS,
 	TYPE_DIRECT_DRM,
 
@@ -269,6 +269,7 @@ private:
 class Error : public tcu::TestError
 {
 public:
+                    Error				(VkResult error, const char* message, const char* expr, const char* file, int line, qpTestResult result);
 					Error				(VkResult error, const char* message, const char* expr, const char* file, int line);
 					Error				(VkResult error, const std::string& message);
 	virtual			~Error				(void) throw();

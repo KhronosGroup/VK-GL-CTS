@@ -73,7 +73,8 @@ struct BufferViewCaseParams
 	AllocationKind						imageAllocationKind;
 
 	VkFormat							format;
-	VkBufferUsageFlags					usage;
+	VkBufferUsageFlags					createUsage;
+	VkBufferUsageFlags					bindUsage;
 	VkFormatFeatureFlags				feature;
 	VkDescriptorType					descType;
 
@@ -83,8 +84,9 @@ struct BufferViewCaseParams
 						  AllocationKind bufferAllocKind_,
 						  AllocationKind imageAllocKind_,
 						  VkFormat format_ = VK_FORMAT_R32_UINT,
-						  VkBufferUsageFlags usage_ = VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
-						  VkFormatFeatureFlags feature_ = VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT,
+						  VkBufferUsageFlags createUsage_ = VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
+						  VkBufferUsageFlags bindUsage_ = VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM,
+						  VkFormatFeatureFlags featureFlags_ = VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT,
 						  VkDescriptorType descType_ = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
 		: bufferSize(bufferSize_)
 		, bufferViewSize(bufferViewSize_)
@@ -92,8 +94,9 @@ struct BufferViewCaseParams
 		, bufferAllocationKind(bufferAllocKind_)
 		, imageAllocationKind(imageAllocKind_)
 		, format(format_)
-		, usage(usage_)
-		, feature(feature_)
+		, createUsage(createUsage_)
+		, bindUsage(bindUsage_)
+		, feature(featureFlags_)
 		, descType(descType_)
 	{
 	}
@@ -289,7 +292,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 
 		const VkDeviceSize				uniformSize						= testCase.bufferSize * sizeof(deUint32);
 
-		BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, uniformSize, testCase.usage, m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible, m_uniformBufferAlloc);
+		BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, uniformSize, testCase.createUsage, m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible, m_uniformBufferAlloc);
 		deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
 		flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
 
@@ -513,9 +516,8 @@ class BufferViewTestCase : public vkt::TestCase
 public:
 									BufferViewTestCase					(tcu::TestContext&			testCtx,
 																		 const std::string&			name,
-																		 const std::string&			description,
 																		 BufferViewCaseParams		bufferViewTestInfo)
-									: vkt::TestCase						(testCtx, name, description)
+									: vkt::TestCase						(testCtx, name)
 									, m_bufferViewTestInfo				(bufferViewTestInfo)
 	{}
 
@@ -564,11 +566,11 @@ public:
 private:
 	void								checkTexelBufferSupport					(Context&					context,
 																				 VkFormat					format,
-																				 VkFormatFeatureFlags		feature);
+																				 BufferViewCaseParams		testCase);
 	int									getFetchPos								(int fetchPosNdx);
 	tcu::TestStatus						checkResult								();
 	tcu::TestStatus						checkResultFloat						();
-	void								populateSourceBuffer					(const tcu::PixelBufferAccess& access, deUint32 bufferNdx);
+	void								populateSourceBuffer					(const tcu::PixelBufferAccess& access);
 
 private:
 	enum
@@ -604,7 +606,7 @@ private:
 	tcu::ConstPixelBufferAccess			m_sourceView;
 };
 
-void BufferViewAllFormatsTestInstance::checkTexelBufferSupport			(Context& context, VkFormat format, VkFormatFeatureFlags feature)
+void BufferViewAllFormatsTestInstance::checkTexelBufferSupport			(Context& context, VkFormat format, BufferViewCaseParams testCase)
 {
 	const InstanceInterface&	vki				= context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -612,8 +614,16 @@ void BufferViewAllFormatsTestInstance::checkTexelBufferSupport			(Context& conte
 	VkFormatProperties					properties;
 	properties = getPhysicalDeviceFormatProperties(vki, physicalDevice, format);
 
-	if (!(properties.bufferFeatures & feature))
+	if (!(properties.bufferFeatures & testCase.feature))
 		TCU_THROW(NotSupportedError, "Format not supported");
+
+#ifndef CTS_USES_VULKANSC
+	if(testCase.bindUsage != VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM)
+	{
+		if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5"))
+			TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance5 not supported");
+	}
+#endif
 }
 
 BufferViewAllFormatsTestInstance::~BufferViewAllFormatsTestInstance		(void)
@@ -621,7 +631,7 @@ BufferViewAllFormatsTestInstance::~BufferViewAllFormatsTestInstance		(void)
 }
 
 /* Taken from BindingShaderAccessTests.cpp */
-void BufferViewAllFormatsTestInstance::populateSourceBuffer				(const tcu::PixelBufferAccess& access, deUint32 bufferNdx)
+void BufferViewAllFormatsTestInstance::populateSourceBuffer				(const tcu::PixelBufferAccess& access)
 {
 	DE_ASSERT(access.getHeight() == 1);
 	DE_ASSERT(access.getDepth() == 1);
@@ -638,11 +648,9 @@ void BufferViewAllFormatsTestInstance::populateSourceBuffer				(const tcu::Pixel
 		DE_ASSERT(de::inRange(green, 0, 255));
 		DE_ASSERT(de::inRange(blue, 0, 255));
 
-		if (bufferNdx % 2 == 0) red		= 255 - red;
-		if (bufferNdx % 3 == 0) green	= 255 - green;
-		if (bufferNdx % 4 == 0) blue	= 255 - blue;
-
-		access.setPixel(tcu::IVec4(red, green, blue, 255), x, 0, 0);
+		// Most formats will get tested adequately using the r, g and b values, but A8_UNORM only takes data from the
+		// alpha channel, so try to put something with maximum variation in there, rather than just 1.0f.
+		access.setPixel(tcu::IVec4(red, green, blue, red ^ green), x, 0, 0);
 	}
 }
 
@@ -656,7 +664,8 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance		(Context&			
 	const VkDevice						vkDevice						= context.getDevice();
 	const deUint32						queueFamilyIndex				= context.getUniversalQueueFamilyIndex();
 	SimpleAllocator						memAlloc						(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
-	checkTexelBufferSupport(context, m_bufferFormat, testCase.feature);
+
+	checkTexelBufferSupport(context, m_bufferFormat, testCase);
 
 	// Create a result buffer
 	BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, sizeof(tcu::Vec4[4]), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_context, memAlloc, m_resultBuffer, MemoryRequirement::HostVisible, m_resultBufferAlloc);
@@ -697,16 +706,16 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance		(Context&			
 		const tcu::TextureFormat tcuFormat	= mapVkFormat(m_bufferFormat);
 
 		de::ArrayBuffer<deUint8> sourceBuffer(testCase.bufferSize);
-		populateSourceBuffer(tcu::PixelBufferAccess(tcuFormat, tcu::IVec3(testCase.bufferSize / tcuFormat.getPixelSize(), 1, 1), sourceBuffer.getPtr()), 0);
+		populateSourceBuffer(tcu::PixelBufferAccess(tcuFormat, tcu::IVec3(testCase.bufferSize / tcuFormat.getPixelSize(), 1, 1), sourceBuffer.getPtr()));
 
 		m_sourceBuffer = sourceBuffer;
 		m_sourceView = tcu::ConstPixelBufferAccess(tcuFormat, tcu::IVec3(64, 1, 1), m_sourceBuffer.getPtr());
 
-		BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, sourceBuffer.size(), testCase.usage, m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible, m_uniformBufferAlloc);
+		BufferSuballocation().createTestBuffer(vk, vkDevice, queueFamilyIndex, sourceBuffer.size(), testCase.createUsage, m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible, m_uniformBufferAlloc);
 		deMemcpy(m_uniformBufferAlloc->getHostPtr(), sourceBuffer.getPtr(), sourceBuffer.size());
 		flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
 
-		const VkBufferViewCreateInfo	viewInfo						=
+		VkBufferViewCreateInfo	viewInfo								=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,					// VkStructureType			sType;
 			DE_NULL,													// void*					pNext;
@@ -716,6 +725,18 @@ BufferViewAllFormatsTestInstance::BufferViewAllFormatsTestInstance		(Context&			
 			m_testCase.elementOffset,									// VkDeviceSize				offset;
 			VK_WHOLE_SIZE												// VkDeviceSize				range;
 		};
+
+#ifndef CTS_USES_VULKANSC
+		VkBufferUsageFlags2CreateInfoKHR bindUsageInfo;
+		if (testCase.bindUsage != VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM)
+		{
+			bindUsageInfo.sType	= VK_STRUCTURE_TYPE_BUFFER_USAGE_FLAGS_2_CREATE_INFO_KHR;	// VkStructureType			sType;
+			bindUsageInfo.pNext	= DE_NULL;													// const void*				pNext;
+			bindUsageInfo.usage	= testCase.bindUsage;										// VkBufferUsageFlags2KHR	usage;
+
+			viewInfo.pNext		= &bindUsageInfo;
+		}
+#endif
 
 		m_uniformBufferView = createBufferView(vk, vkDevice, &viewInfo);
 
@@ -969,15 +990,35 @@ class BufferViewAllFormatsTestCase : public vkt::TestCase
 public:
 									BufferViewAllFormatsTestCase		(tcu::TestContext&			testCtx,
 																		 const std::string&			name,
-																		 const std::string&			description,
 																		 BufferViewCaseParams		bufferViewTestInfo)
-									: vkt::TestCase						(testCtx, name, description)
+									: vkt::TestCase						(testCtx, name)
 									, m_bufferViewTestInfo				(bufferViewTestInfo)
 	{}
 
 	virtual							~BufferViewAllFormatsTestCase		(void)
 	{}
 	virtual	void					initPrograms						(SourceCollections&			programCollection) const;
+	virtual void					checkSupport						(Context&					context) const
+	{
+		const InstanceInterface&	vki				= context.getInstanceInterface();
+		const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+
+#ifndef CTS_USES_VULKANSC
+		if ((m_bufferViewTestInfo.format == VK_FORMAT_A8_UNORM_KHR) ||
+			(m_bufferViewTestInfo.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR))
+			context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
+
+		if ((m_bufferViewTestInfo.createUsage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) != 0)
+		{
+			VkFormatProperties					properties;
+			properties = getPhysicalDeviceFormatProperties(vki, physicalDevice, m_bufferViewTestInfo.format);
+			if ((properties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT) == 0)
+			{
+				TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT not supported for format");
+			}
+		}
+	}
 
 	virtual TestInstance*			createInstance						(Context&					context) const
 	{
@@ -1004,7 +1045,15 @@ void BufferViewAllFormatsTestCase::initPrograms							(SourceCollections&			prog
 	const bool			isIntFmt		= isIntFormat(m_bufferViewTestInfo.format);
 	const bool			isUintFmt		= isUintFormat(m_bufferViewTestInfo.format);
 
-	const bool			isUniform		= m_bufferViewTestInfo.usage == VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT ? true : false;
+	bool				isUniform;
+	if (m_bufferViewTestInfo.bindUsage != VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM)
+	{
+		isUniform = m_bufferViewTestInfo.bindUsage == VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT ? true : false;
+	}
+	else
+	{
+		isUniform = m_bufferViewTestInfo.createUsage == VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT ? true : false;
+	}
 	const char* const	storageType		= isUniform ? "textureBuffer " : "imageBuffer ";
 	const char* const	extraOption		= isUniform ? "" : "readonly ";
 	const std::string	stringFmtLayout = isUniform ? "" : strLayoutFormat(m_bufferViewTestInfo.format);
@@ -1108,11 +1157,13 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 		"image_dedicated_alloc"
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests						(new tcu::TestCaseGroup(testCtx, "access", "BufferView Access Tests"));
+	de::MovePtr<tcu::TestCaseGroup>	bufferViewTests						(new tcu::TestCaseGroup(testCtx, "access"));
 	de::MovePtr<tcu::TestCaseGroup>	bufferViewAllocationGroupTests[]	=
 	{
-		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "suballocation", "BufferView Access Tests for Suballocated Objects")),
-		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "dedicated_alloc", "BufferView Access Tests for Dedicatedly Allocated Objects"))
+		// BufferView Access Tests for Suballocated Objects
+		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "suballocation")),
+		// BufferView Access Tests for Dedicatedly Allocated Objects
+		de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "dedicated_alloc"))
 	};
 
 	for (deUint32 buffersAllocationNdx = 0u; buffersAllocationNdx < ALLOCATION_KIND_LAST; ++buffersAllocationNdx)
@@ -1134,9 +1185,7 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 			name << "buffer_view_memory_test_complete";
 			if (testCaseGroupNdx != 0)
 				name << "_with_" << bufferTexts[buffersAllocationNdx] << "_" << imageTexts[imageAllocationNdx];
-			std::ostringstream		description;
-			description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
-			currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), description.str(), info));
+			currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), info));
 		}
 
 		{
@@ -1152,9 +1201,7 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 			name << "buffer_view_memory_test_partial_offset0";
 			if (testCaseGroupNdx != 0)
 				name << "_with_" << bufferTexts[buffersAllocationNdx] << "_" << imageTexts[imageAllocationNdx];
-			std::ostringstream		description;
-			description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
-			currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), description.str(), info));
+			currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), info));
 		}
 
 		{
@@ -1170,9 +1217,7 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 			name << "buffer_view_memory_test_partial_offset1";
 			if (testCaseGroupNdx != 0)
 				name << "_with_" << bufferTexts[buffersAllocationNdx] << "_" << imageTexts[imageAllocationNdx];
-			std::ostringstream		description;
-			description << "bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
-			currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), description.str(), info));
+			currentTestsGroup->addChild(new BufferViewTestCase(testCtx, name.str(), info));
 		}
 	}
 
@@ -1191,12 +1236,18 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
 		VK_FORMAT_R8_SSCALED,
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,
@@ -1281,46 +1332,97 @@ tcu::TestCaseGroup* createBufferViewAccessTests							(tcu::TestContext&			testC
 		VK_FORMAT_R32G32_SFLOAT,
 	};
 
-	const char* const					usageName[]						= { "uniform_texel_buffer", "storage_texel_buffer"};
-	const vk::VkBufferUsageFlags		usage[]							= { vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT };
-	const vk::VkFormatFeatureFlags		feature[]						= { vk::VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT };
-	const vk::VkDescriptorType			descType[]					= { vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER };
-
-	for (deUint32 usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(usage); ++usageNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx], ""));
+		const char* const					usageName[]						= { "uniform_texel_buffer", "storage_texel_buffer"};
+		const vk::VkBufferUsageFlags		createUsage[]					= { vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT };
+		const vk::VkBufferUsageFlags		bindUsage[]						= { vk::VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM, vk::VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM };
+		const vk::VkFormatFeatureFlags		feature[]						= { vk::VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT };
+		const vk::VkDescriptorType			descType[]						= { vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER };
 
-		for (deUint32 formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); formatIdx++)
+		for (deUint32 usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(createUsage); ++usageNdx)
 		{
-			const auto			skip		= strlen("VK_FORMAT_");
-			const std::string	fmtName	= de::toLower(std::string(getFormatName(testFormats[formatIdx])).substr(skip));
-			de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, fmtName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx]));
 
-			if (usage[usageNdx] == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT && !isSupportedImageLoadStore(mapVkFormat(testFormats[formatIdx])))
-				continue;
-
-			const BufferViewCaseParams	info							=
+			for (deUint32 formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); formatIdx++)
 			{
-				512,													// deUint32					bufferSize
-				128,													// deUint32					bufferViewSize
-				0,														// deUint32					elementOffset
-				ALLOCATION_KIND_SUBALLOCATION,							// AllocationKind			bufferAllocationKind
-				ALLOCATION_KIND_SUBALLOCATION,							// AllocationKind			imageAllocationKind
+				const auto			skip	= strlen("VK_FORMAT_");
+				const std::string	fmtName	= de::toLower(std::string(getFormatName(testFormats[formatIdx])).substr(skip));
 
-				testFormats[formatIdx],									// VkFormat					format
-				usage[usageNdx],										// VkBufferUsageFlags		usage
-				feature[usageNdx],										// VkFormatFeatureFlags		feature
-				descType[usageNdx],										// VkDescriptorType			descType
-			};
+				de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, fmtName.c_str()));
 
-			std::ostringstream		description;
-			description << "bufferFormat: " << getFormatName(testFormats[formatIdx]) << " bufferSize: " << info.bufferSize << " bufferViewSize: " << info.bufferViewSize << " bufferView element offset: " << info.elementOffset;
+				if (createUsage[usageNdx] == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT && !isSupportedImageLoadStore(mapVkFormat(testFormats[formatIdx])))
+					continue;
 
-			usageGroup->addChild(new BufferViewAllFormatsTestCase(testCtx, fmtName.c_str(), description.str(), info));
+				const BufferViewCaseParams	info							=
+				{
+					512,													// deUint32					bufferSize
+					128,													// deUint32					bufferViewSize
+					0,														// deUint32					elementOffset
+					ALLOCATION_KIND_SUBALLOCATION,							// AllocationKind			bufferAllocationKind
+					ALLOCATION_KIND_SUBALLOCATION,							// AllocationKind			imageAllocationKind
+
+					testFormats[formatIdx],									// VkFormat					format
+					createUsage[usageNdx],									// VkBufferUsageFlags		createUsage
+					bindUsage[usageNdx],									// VkBufferUsageFlags		bindUsage
+					feature[usageNdx],										// VkFormatFeatureFlags2KHR	feature
+					descType[usageNdx],										// VkDescriptorType			descType
+				};
+
+				usageGroup->addChild(new BufferViewAllFormatsTestCase(testCtx, fmtName.c_str(), info));
+			}
+
+			bufferViewTests->addChild(usageGroup.release());
 		}
-
-		bufferViewTests->addChild(usageGroup.release());
 	}
+
+#ifndef CTS_USES_VULKANSC
+	de::MovePtr<tcu::TestCaseGroup> uniformStorageGroup		(new tcu::TestCaseGroup(testCtx, "uniform_storage_texel_buffer"));
+	{
+
+		const char* const					usageName[]	= { "bind_as_uniform", "bind_as_storage" };
+		const vk::VkBufferUsageFlags		createUsage	= vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | vk::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+		const vk::VkBufferUsageFlags		bindUsage[]	= { vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT };
+		const vk::VkFormatFeatureFlags		feature[]	= { vk::VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT };
+		const vk::VkDescriptorType			descType[]	= { vk::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER };
+
+		for (deUint32 usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(usageName); ++usageNdx)
+		{
+			de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx]));
+
+			for (deUint32 formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); formatIdx++)
+			{
+				const auto			skip	= strlen("VK_FORMAT_");
+				const std::string	fmtName	= de::toLower(std::string(getFormatName(testFormats[formatIdx])).substr(skip));
+
+				de::MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(testCtx, fmtName.c_str()));
+
+				if (bindUsage[usageNdx] == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT && !isSupportedImageLoadStore(mapVkFormat(testFormats[formatIdx])))
+					continue;
+
+				const BufferViewCaseParams	info =
+				{
+					512,													// deUint32					bufferSize
+					128,													// deUint32					bufferViewSize
+					0,														// deUint32					elementOffset
+					ALLOCATION_KIND_SUBALLOCATION,							// AllocationKind			bufferAllocationKind
+					ALLOCATION_KIND_SUBALLOCATION,							// AllocationKind			imageAllocationKind
+
+					testFormats[formatIdx],									// VkFormat					format
+					createUsage,											// VkBufferUsageFlags		createUsage
+					bindUsage[usageNdx],									// VkBufferUsageFlags		bindUsage
+					feature[usageNdx],										// VkFormatFeatureFlags2KHR	feature
+					descType[usageNdx],										// VkDescriptorType			descType
+				};
+
+				usageGroup->addChild(new BufferViewAllFormatsTestCase(testCtx, fmtName.c_str(), info));
+			}
+
+			uniformStorageGroup->addChild(usageGroup.release());
+		}
+	}
+
+	bufferViewTests->addChild(uniformStorageGroup.release());
+#endif
 
 	return bufferViewTests.release();
 }

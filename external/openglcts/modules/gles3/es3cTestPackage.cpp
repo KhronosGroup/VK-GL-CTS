@@ -28,9 +28,12 @@
 #include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcFragDepthTests.hpp"
+#include "glcFramebufferBlitTests.hpp"
+#include "glcFramebufferCompleteness.hpp"
 #include "glcGLSLVectorConstructorTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcInternalformatTests.hpp"
+#include "glcNearestEdgeTests.hpp"
 #include "glcPackedDepthStencilTests.hpp"
 #include "glcPackedPixelsTests.hpp"
 #include "glcParallelShaderCompileTests.hpp"
@@ -44,10 +47,10 @@
 #include "glcShaderNegativeTests.hpp"
 #include "glcShaderStructTests.hpp"
 #include "glcTextureFilterAnisotropicTests.hpp"
+#include "glcTextureLodBasicTests.hpp"
+#include "glcTextureLodBiasTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
-#include "glcNearestEdgeTests.hpp"
-#include "glcFramebufferCompleteness.hpp"
 #include "gluStateReset.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -190,8 +193,11 @@ void ES30TestPackage::init(void)
 		addChild(new glcts::PackedPixelsTests(getContext()));
 		addChild(new glcts::PackedDepthStencilTests(getContext()));
 		addChild(new glcts::FramebufferCompletenessTests(getContext()));
+		addChild(new glcts::TextureLodBasicTests(getContext()));
 		addChild(new es3cts::CopyTexImageConversionsTests(getContext()));
 		addChild(new es3cts::NumberParsingTests(getContext()));
+		addChild(new glcts::FramebufferBlitTests(getContext()));
+		addChild(new glcts::TextureLodBiasTests(getContext()));
 	}
 	catch (...)
 	{

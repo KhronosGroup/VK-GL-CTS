@@ -707,9 +707,8 @@ class DescriptorLimitTest : public vkt::TestCase
 public:
 							DescriptorLimitTest		(tcu::TestContext&				testContext,
 													 const std::string&				name,
-													 const std::string&				description,
 													 const TestParams&				params)
-							: TestCase(testContext, name, description)
+							: TestCase(testContext, name)
 							, m_params						(params)
 							{}
 
@@ -844,9 +843,15 @@ void DescriptorLimitTest::initPrograms (SourceCollections& sourceCollections) co
 
 void DescriptorLimitTest::checkSupport (Context& context) const
 {
-	const InstanceInterface&		vki				= context.getInstanceInterface();
-	const VkPhysicalDevice			physDevice		= context.getPhysicalDevice();
-	const VkPhysicalDeviceLimits	limits			= getPhysicalDeviceProperties(vki, physDevice).limits;
+	const InstanceInterface&		vki					= context.getInstanceInterface();
+	const VkPhysicalDevice			physDevice			= context.getPhysicalDevice();
+	const VkPhysicalDeviceLimits	limits				= getPhysicalDeviceProperties(vki, physDevice).limits;
+#ifdef CTS_USES_VULKANSC
+	const VkPhysicalDeviceVulkanSC10Properties	scProps	= getPhysicalDeviceVulkanSC10Properties(vki, physDevice);
+
+	if (m_params.m_descCount > scProps.maxDescriptorSetLayoutBindings)
+		TCU_THROW(NotSupportedError, "maxDescriptorSetLayoutBindings (" + std::to_string(scProps.maxDescriptorSetLayoutBindings) + ")");
+#endif // CTS_USES_VULKANSC
 
 	// We have to make sure, that we don't bind anything outside of valid descriptor binding locations determined by maxPerStageResources.
 	if (m_params.m_descCount > limits.maxPerStageResources - 1u)
@@ -900,7 +905,7 @@ TestInstance* DescriptorLimitTest::createInstance (Context& context) const
 
 tcu::TestCaseGroup* createDescriptorLimitsTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup>	descriptorLimitTestGroup	(new tcu::TestCaseGroup(testCtx, "descriptor_limits", "Descriptor limits tests"));
+	de::MovePtr<tcu::TestCaseGroup>	descriptorLimitTestGroup	(new tcu::TestCaseGroup(testCtx, "descriptor_limits"));
 	const tcu::IVec2				frameBufferSize				= tcu::IVec2(32, 32);
 
 	const std::vector<deUint32>		numDescriptors				=
@@ -913,7 +918,7 @@ tcu::TestCaseGroup* createDescriptorLimitsTests (tcu::TestContext& testCtx, Pipe
 
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	computeShaderGroup(new tcu::TestCaseGroup(testCtx, "compute_shader", "Compute shader test group"));
+		de::MovePtr<tcu::TestCaseGroup>	computeShaderGroup(new tcu::TestCaseGroup(testCtx, "compute_shader"));
 
 		for (const auto& descId : numDescriptors)
 		{
@@ -921,34 +926,34 @@ tcu::TestCaseGroup* createDescriptorLimitsTests (tcu::TestContext& testCtx, Pipe
 
 			{
 				TestParams params(pipelineConstructionType, TestType::Samplers, true, frameBufferSize, testValue);
-				computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "samplers_" + std::to_string(testValue), "", params));
+				computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "samplers_" + std::to_string(testValue), params));
 			}
 
 			{
 				TestParams params(pipelineConstructionType, TestType::UniformBuffers, true, frameBufferSize, testValue);
-				computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "uniform_buffers_" + std::to_string(testValue), "", params));
+				computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "uniform_buffers_" + std::to_string(testValue), params));
 			}
 
 			{
 				TestParams params(pipelineConstructionType, TestType::StorageBuffers, true, frameBufferSize, testValue);
-				computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_buffers_" + std::to_string(testValue), "", params));
+				computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_buffers_" + std::to_string(testValue), params));
 			}
 
 			{
 				TestParams params(pipelineConstructionType, TestType::SampledImages, true, frameBufferSize, testValue);
-				computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "sampled_images_" + std::to_string(testValue), "", params));
+				computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "sampled_images_" + std::to_string(testValue), params));
 			}
 
 			{
 				TestParams params(pipelineConstructionType, TestType::StorageImages, true, frameBufferSize, testValue);
-				computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_images_" + std::to_string(testValue), "", params));
+				computeShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_images_" + std::to_string(testValue), params));
 			}
 		}
 
 		descriptorLimitTestGroup->addChild(computeShaderGroup.release());
 	}
 
-	de::MovePtr<tcu::TestCaseGroup>	fragmentShaderGroup(new tcu::TestCaseGroup(testCtx, "fragment_shader", "Fragment shader test group"));
+	de::MovePtr<tcu::TestCaseGroup>	fragmentShaderGroup(new tcu::TestCaseGroup(testCtx, "fragment_shader"));
 
 	for (const auto& descId : numDescriptors)
 	{
@@ -956,33 +961,33 @@ tcu::TestCaseGroup* createDescriptorLimitsTests (tcu::TestContext& testCtx, Pipe
 
 		{
 			TestParams params(pipelineConstructionType, TestType::Samplers, false, frameBufferSize, testValue);
-			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "samplers_" + std::to_string(testValue), "", params));
+			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "samplers_" + std::to_string(testValue), params));
 		}
 
 		{
 			TestParams params(pipelineConstructionType, TestType::UniformBuffers, false, frameBufferSize, testValue);
-			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "uniform_buffers_" + std::to_string(testValue), "", params));
+			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "uniform_buffers_" + std::to_string(testValue), params));
 		}
 
 		{
 			TestParams params(pipelineConstructionType, TestType::StorageBuffers, false, frameBufferSize, testValue);
-			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_buffers_" + std::to_string(testValue), "", params));
+			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_buffers_" + std::to_string(testValue), params));
 		}
 
 		{
 			TestParams params(pipelineConstructionType, TestType::SampledImages, false, frameBufferSize, testValue);
-			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "sampled_images_" + std::to_string(testValue), "", params));
+			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "sampled_images_" + std::to_string(testValue), params));
 		}
 
 		{
 			TestParams params(pipelineConstructionType, TestType::StorageImages, false, frameBufferSize, testValue);
-			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_images_" + std::to_string(testValue), "", params));
+			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "storage_images_" + std::to_string(testValue), params));
 		}
 
 		if (!vk::isConstructionTypeShaderObject(pipelineConstructionType))
 		{
 			TestParams params(pipelineConstructionType, TestType::InputAttachments, false, frameBufferSize, testValue);
-			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "input_attachments_" + std::to_string(testValue), "", params));
+			fragmentShaderGroup->addChild(new DescriptorLimitTest(testCtx, "input_attachments_" + std::to_string(testValue), params));
 		}
 	}
 

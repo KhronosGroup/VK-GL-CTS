@@ -215,7 +215,7 @@ bool DeviceGroupTestInstance::isPeerFetchAllowed (deUint32 memoryTypeIndex, deUi
 {
 	VkPeerMemoryFeatureFlags				peerMemFeatures1;
 	VkPeerMemoryFeatureFlags				peerMemFeatures2;
-	const DeviceDriver						vk						(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getUsedApiVersion());
+	const DeviceDriver						vk						(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine());
 	const VkPhysicalDeviceMemoryProperties	deviceMemProps1			= getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), m_physicalDevices[firstdeviceID]);
 	const VkPhysicalDeviceMemoryProperties	deviceMemProps2			= getPhysicalDeviceMemoryProperties(m_instanceWrapper->instance.getDriver(), m_physicalDevices[seconddeviceID]);
 	vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps2.memoryTypes[memoryTypeIndex].heapIndex, firstdeviceID, seconddeviceID, &peerMemFeatures1);
@@ -375,7 +375,7 @@ void DeviceGroupTestInstance::init (void)
 		};
 		m_deviceGroup = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_instanceWrapper->instance, instanceDriver, physicalDevice, &deviceCreateInfo);
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getUsedApiVersion()));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
 #else
 		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), m_instanceWrapper->instance, *m_deviceGroup, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_deviceGroup));
 #endif // CTS_USES_VULKANSC
@@ -1776,9 +1776,8 @@ class DeviceGroupTestCase : public TestCase
 public:
 	DeviceGroupTestCase (tcu::TestContext& context,
 						const char*	name,
-						const char*	description,
 						deUint32 mode)
-	: TestCase(context, name, description)
+	: TestCase(context, name)
 	, m_testMode		(mode)
 	{}
 
@@ -1867,7 +1866,7 @@ private:
 };
 
 DeviceGroupTestRendering::DeviceGroupTestRendering (tcu::TestContext& testCtx, const std::string& name)
-	: TestCaseGroup (testCtx, name.c_str(), "Testing device group test cases")
+	: TestCaseGroup (testCtx, name.c_str())
 {
 	// Left blank on purpose
 }
@@ -1875,23 +1874,35 @@ DeviceGroupTestRendering::DeviceGroupTestRendering (tcu::TestContext& testCtx, c
 void DeviceGroupTestRendering::init (void)
 {
 #ifndef CTS_USES_VULKANSC
-	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "sfr",							"Test split frame rendering",														TEST_MODE_SFR));
-	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "sfr_sys",						"Test split frame rendering with render target in host memory",						TEST_MODE_SFR | TEST_MODE_HOSTMEMORY));
-	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "sfr_dedicated",				"Test split frame rendering with dedicated memory allocations",						TEST_MODE_SFR | TEST_MODE_DEDICATED));
-	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "sfr_dedicated_peer",			"Test split frame rendering with dedicated memory allocations and peer fetching",	TEST_MODE_SFR | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
+	// Test split frame rendering
+	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "sfr", TEST_MODE_SFR));
+	// Test split frame rendering with render target in host memory
+	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "sfr_sys", TEST_MODE_SFR | TEST_MODE_HOSTMEMORY));
+	// Test split frame rendering with dedicated memory allocations
+	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "sfr_dedicated", TEST_MODE_SFR | TEST_MODE_DEDICATED));
+	// Test split frame rendering with dedicated memory allocations and peer fetching
+	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "sfr_dedicated_peer", TEST_MODE_SFR | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
 #endif // CTS_USES_VULKANSC
 
-	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr",							"Test alternate frame rendering",													TEST_MODE_AFR));
-	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr_sys",						"Test split frame rendering with render target in host memory",						TEST_MODE_AFR | TEST_MODE_HOSTMEMORY));
-	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr_dedicated",				"Test split frame rendering with dedicated memory allocations",						TEST_MODE_AFR | TEST_MODE_DEDICATED));
-	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr_dedicated_peer",			"Test split frame rendering with dedicated memory allocations and peer fetching",	TEST_MODE_AFR | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
+	// Test alternate frame rendering
+	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr", TEST_MODE_AFR));
+	// Test split frame rendering with render target in host memory
+	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr_sys", TEST_MODE_AFR | TEST_MODE_HOSTMEMORY));
+	// Test split frame rendering with dedicated memory allocations
+	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr_dedicated", TEST_MODE_AFR | TEST_MODE_DEDICATED));
+	// Test split frame rendering with dedicated memory allocations and peer fetching
+	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr_dedicated_peer", TEST_MODE_AFR | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
 
 #ifndef CTS_USES_VULKANSC
-	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "sfr_tessellated",				"Test split frame rendering with tessellated sphere",								TEST_MODE_SFR | TEST_MODE_TESSELLATION | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
-	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "sfr_tessellated_linefill",	"Test split frame rendering with tessellated sphere with line segments",			TEST_MODE_SFR | TEST_MODE_TESSELLATION | TEST_MODE_LINEFILL  | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
+	// Test split frame rendering with tessellated sphere
+	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "sfr_tessellated", TEST_MODE_SFR | TEST_MODE_TESSELLATION | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
+	// Test split frame rendering with tessellated sphere with line segments
+	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "sfr_tessellated_linefill", TEST_MODE_SFR | TEST_MODE_TESSELLATION | TEST_MODE_LINEFILL  | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
 #endif // CTS_USES_VULKANSC
-	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr_tessellated",				"Test alternate frame rendering with tesselated sphere",							TEST_MODE_AFR | TEST_MODE_TESSELLATION | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
-	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr_tessellated_linefill",	"Test alternate frame rendering with tesselated sphere with line segments",			TEST_MODE_AFR | TEST_MODE_TESSELLATION | TEST_MODE_LINEFILL  | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
+	// Test alternate frame rendering with tesselated sphere
+	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr_tessellated", TEST_MODE_AFR | TEST_MODE_TESSELLATION | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
+	// Test alternate frame rendering with tesselated sphere with line segments
+	addChild(new DeviceGroupTestCase<DeviceGroupTestInstance>(m_testCtx, "afr_tessellated_linefill", TEST_MODE_AFR | TEST_MODE_TESSELLATION | TEST_MODE_LINEFILL  | TEST_MODE_DEDICATED | TEST_MODE_PEER_FETCH));
 }
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)

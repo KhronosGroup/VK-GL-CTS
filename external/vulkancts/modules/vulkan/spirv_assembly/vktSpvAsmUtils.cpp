@@ -202,6 +202,7 @@ bool isIntegerDotProductFeaturesSupported(const Context& context, const vk::VkPh
 	return true;
 }
 
+
 bool isWorkgroupMemoryExplicitLayoutSupported(const Context& context, const vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR& toCheck, const char** missingFeature)
 {
 	const VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR& extensionFeatures = context.getWorkgroupMemoryExplicitLayoutFeatures();
@@ -224,10 +225,16 @@ bool isShaderUntypedPointersFeaturesSupported(const Context& context, const vk::
 {
 	const VkPhysicalDeviceShaderUntypedPointersFeaturesKHR& extensionFeatures = context.getShaderUntypedPointersFeatures();
 
-	IS_AVAIL("ShaderUntypedPointers.", shaderUntypedPointersStorageBuffer);
-	IS_AVAIL("ShaderUntypedPointers.", shaderUntypedPointersUniform);
-	IS_AVAIL("ShaderUntypedPointers.", shaderUntypedPointersWorkgroup);
-	IS_AVAIL("ShaderUntypedPointers.", shaderUntypedPointersPushConstant);
+	IS_AVAIL("ShaderUntypedPointers.", shaderUntypedPointers);
+
+	return true;
+}
+
+bool isFloatControls2FeaturesSupported(const Context& context, const vk::VkPhysicalDeviceShaderFloatControls2FeaturesKHR& toCheck, const char **missingFeature)
+{
+	const VkPhysicalDeviceShaderFloatControls2FeaturesKHR& extensionFeatures = context.getShaderFloatControls2Features();
+
+	IS_AVAIL("ShaderFloatControls2.", shaderFloatControls2);
 
 	return true;
 }
@@ -355,6 +362,9 @@ bool isVulkanFeaturesSupported(const Context& context, const VulkanFeatures& req
 		return false;
 
 	if (!isShaderUntypedPointersFeaturesSupported(context, requested.extShaderUntypedPointers, missingFeature))
+		return false;
+
+	if (!isFloatControls2FeaturesSupported(context, requested.extFloatControls2, missingFeature))
 		return false;
 #endif // CTS_USES_VULKANSC
 

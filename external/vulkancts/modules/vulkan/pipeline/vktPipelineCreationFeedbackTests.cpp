@@ -119,7 +119,6 @@ public:
 															 deBool							zeroOutFeedbackCount = VK_FALSE);
 	virtual						~CacheTestParam				(void) = default;
 	virtual const std::string	generateTestName			(void)	const;
-	virtual const std::string	generateTestDescription		(void)	const;
 	PipelineConstructionType	getPipelineConstructionType	(void)	const	{ return m_pipelineConstructionType; }
 	VkShaderStageFlags			getShaderFlags				(void)	const	{ return m_shaders; }
 	deBool						isCacheDisabled				(void)	const	{ return m_noCache; }
@@ -152,24 +151,12 @@ const std::string CacheTestParam::generateTestName (void) const
 	return getShaderFlagStr(m_shaders, false) + cacheString[m_noCache ? 1 : 0] + delayedDestroyString[m_delayedDestroy ? 1 : 0] + zeroOutFeedbackCoutString[m_zeroOutFeedbackCount ? 1 : 0];
 }
 
-const std::string CacheTestParam::generateTestDescription (void) const
-{
-	std::string result("Get pipeline creation feedback with " + getShaderFlagStr(m_shaders, true));
-	if (m_noCache)
-		result += " with no cache";
-	if (m_delayedDestroy)
-		result += " with delayed destroy";
-
-	return result;
-}
-
 template <class Test>
 vkt::TestCase* newTestCase (tcu::TestContext&		testContext,
 							const CacheTestParam*	testParam)
 {
 	return new Test(testContext,
 					testParam->generateTestName().c_str(),
-					testParam->generateTestDescription().c_str(),
 					testParam);
 }
 
@@ -179,9 +166,8 @@ class CacheTest : public vkt::TestCase
 public:
 							CacheTest(tcu::TestContext&		testContext,
 									  const std::string&		name,
-									  const std::string&		description,
 									  const CacheTestParam*	param)
-								: vkt::TestCase (testContext, name, description)
+								: vkt::TestCase (testContext, name)
 								, m_param (*param)
 								{ }
 	virtual				~CacheTest (void) { }
@@ -243,9 +229,8 @@ class GraphicsCacheTest : public CacheTest
 public:
 							GraphicsCacheTest	(tcu::TestContext&		testContext,
 												 const std::string&		name,
-												 const std::string&		description,
 												 const CacheTestParam*	param)
-								: CacheTest (testContext, name, description, param)
+								: CacheTest (testContext, name, param)
 								{ }
 	virtual					~GraphicsCacheTest	(void) { }
 	virtual void			initPrograms		(SourceCollections&	programCollection) const;
@@ -336,7 +321,6 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 				"  for(int ndx=0; ndx<3; ndx++)\n"
 				"  {\n"
 				"    gl_Position = gl_in[ndx].gl_Position;\n"
-				"    gl_PointSize = gl_in[ndx].gl_PointSize;\n"
 				"    vtxColor    = in_vtxColor[ndx];\n"
 				"    EmitVertex();\n"
 				"  }\n"
@@ -360,7 +344,6 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 				"  gl_TessLevelOuter[2] = 4.0;\n"
 				"  gl_TessLevelInner[0] = 4.0;\n"
 				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-				"  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n"
 				"  vtxColor[gl_InvocationID] = color[gl_InvocationID];\n"
 				"}\n");
 	}
@@ -390,7 +373,6 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 				"  pos.w = 1.0;\n"
 				"  color.w = 1.0;\n"
 				"  gl_Position = pos;\n"
-				"  gl_PointSize = gl_in[0].gl_PointSize;"
 				"  vtxColor = color;\n"
 				"}\n");
 	}
@@ -675,7 +657,7 @@ void GraphicsCacheTestInstance::preparePipelineWrapper (GraphicsPipelineWrapper&
 			geomShaderModule,
 			DE_NULL,
 			nullptr,
-			PipelineRenderingCreateInfoWrapper(),
+			nullptr,
 			*m_cache,
 			pipelineCreationFeedbackWrapper[1])
 	   .setupFragmentShaderState(
@@ -866,9 +848,8 @@ class ComputeCacheTest : public CacheTest
 public:
 							ComputeCacheTest		(tcu::TestContext&		testContext,
 													 const std::string&		name,
-													 const std::string&		description,
 													 const CacheTestParam*	param)
-								: CacheTest		(testContext, name, description, param)
+								: CacheTest		(testContext, name, param)
 								{ }
 	virtual					~ComputeCacheTest	(void) { }
 	virtual void			initPrograms			(SourceCollections&	programCollection) const;
@@ -1217,11 +1198,11 @@ tcu::TestStatus ComputeCacheTestInstance::verifyTestResult (void)
 
 tcu::TestCaseGroup* createCreationFeedbackTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> cacheTests (new tcu::TestCaseGroup(testCtx, "creation_feedback", "pipeline creation feedback tests"));
+	de::MovePtr<tcu::TestCaseGroup> cacheTests (new tcu::TestCaseGroup(testCtx, "creation_feedback"));
 
-	// Graphics Pipeline Tests
+	// Test pipeline creation feedback with graphics pipeline.
 	{
-		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics_tests", "Test pipeline creation feedback with graphics pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> graphicsTests (new tcu::TestCaseGroup(testCtx, "graphics_tests"));
 
 		const VkShaderStageFlags vertFragStages		= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		const VkShaderStageFlags vertGeomFragStages	= vertFragStages | VK_SHADER_STAGE_GEOMETRY_BIT;
@@ -1250,7 +1231,7 @@ tcu::TestCaseGroup* createCreationFeedbackTests (tcu::TestContext& testCtx, Pipe
 	// Compute Pipeline Tests - don't repeat those tests for graphics pipeline library
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute_tests", "Test pipeline creation feedback with compute pipeline."));
+		de::MovePtr<tcu::TestCaseGroup> computeTests (new tcu::TestCaseGroup(testCtx, "compute_tests"));
 
 		const std::vector<CacheTestParam> testParams
 		{

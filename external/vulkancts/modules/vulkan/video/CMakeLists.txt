@@ -1,17 +1,17 @@
 include_directories(..)
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
-	include_directories(${ESEXTRACTOR_INCLUDE_PATH})
 	include_directories(${NV_VIDEO_PARSER_INCLUDE_DIRS})
 	include_directories(.)
 
 	add_definitions(-DES_STATIC_COMPILATION)
+	add_compile_definitions(ENABLE_AV1_DECODER)
 	add_compile_definitions(DE_BUILD_VIDEO)
 endif()
 
-
 set(DEQP_VK_VIDEO_SRC_TARGET_DEPENDENT
-	extESExtractor.hpp
-	extNvidiaVideoParserIf.hpp
+	vktDemuxer.hpp
+	vktDemuxer.cpp
+	vktBufferedReader.hpp
 	vktVideoBaseDecodeUtils.hpp
 	vktVideoBaseDecodeUtils.cpp
 	vktVideoFrameBuffer.hpp
@@ -25,6 +25,8 @@ set(DEQP_VK_VIDEO_SRCS_TARGET_INDEPENDENT
 	vktVideoCapabilitiesTests.hpp
 	vktVideoDecodeTests.cpp
 	vktVideoDecodeTests.hpp
+	vktVideoEncodeTests.cpp
+	vktVideoEncodeTests.hpp
 	vktVideoTestUtils.cpp
 	vktVideoTestUtils.hpp
 	vktVideoTests.cpp
@@ -47,10 +49,6 @@ set(DEQP_VK_VIDEO_LIBS
 	tcutil
 	vkutil
 	)
-
-if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
-	list(APPEND DEQP_VK_VIDEO_LIBS ${ESEXTRACTOR_LIBRARY})
-endif ()
 
 PCH(DEQP_VK_VIDEO_SRCS ../pch.cpp)
 

@@ -150,6 +150,9 @@ public:
 	const std::string&				getApplicationName				(void) const;
 	const std::string&				getInitialCmdLine				(void) const;
 
+	//! Is quiet mode active?
+	bool							quietMode						(void) const;
+
 	//! Get log file name (--deqp-log-filename)
 	const char*						getLogFileName					(void) const;
 
@@ -277,6 +280,9 @@ public:
 	//! Should the run be terminated on first failure (--deqp-terminate-on-fail)
 	bool							isTerminateOnFailEnabled	(void) const;
 
+	//! Should the run be terminated on first device lost (--deqp-terminate-on-device-lost)
+	bool							isTerminateOnDeviceLostEnabled	(void) const;
+
 	//! Start as subprocess ( Vulkan SC )
 	bool							isSubProcess				(void) const;
 
@@ -324,6 +330,9 @@ public:
 
 	//! File that provides a default set of application parameters
 	const char*						getAppParamsInputFilePath(void) const;
+
+	//! Perform tests for devices implementing compute-only functionality
+	bool							isComputeOnly				(void) const;
 
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter

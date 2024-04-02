@@ -36,7 +36,7 @@
 
 #include "tcuTextureUtil.hpp"
 #include "deSharedPtr.hpp"
-#include "deFloat16.h"
+#include "tcuFloat.hpp"
 
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -745,6 +745,8 @@ void generateValue (const UniformLayoutEntry& entry, void* basePtr, de::Random& 
 	bool			isArray			= entry.size > 1;
 	const size_t	compSize		= getDataTypeByteSize(scalarType);
 
+	using			float16_ptr_t	= std::add_pointer_t<tcu::float16_t>;
+
 	DE_ASSERT(scalarSize%numVecs == 0);
 
 	for (int elemNdx = 0; elemNdx < entry.size; elemNdx++)
@@ -768,7 +770,8 @@ void generateValue (const UniformLayoutEntry& entry, void* basePtr, de::Random& 
 					case glu::TYPE_UINT8:	*((deUint8*)compPtr)	= (deUint8)rnd.getInt(0, 9);					break;
 					case glu::TYPE_INT16:	*((deInt16*)compPtr)	= (deInt16)rnd.getInt(-9, 9);					break;
 					case glu::TYPE_UINT16:	*((deUint16*)compPtr)	= (deUint16)rnd.getInt(0, 9);					break;
-					case glu::TYPE_FLOAT16:	*((deFloat16*)compPtr)	= deFloat32To16((float)rnd.getInt(-9, 9));		break;
+					case glu::TYPE_FLOAT16:	*reinterpret_cast<float16_ptr_t>(compPtr)
+																= tcu::Float16((float)rnd.getInt(-9,9)).bits();		break;
 					// \note Random bit pattern is used for true values. Spec states that all non-zero values are
 					//       interpreted as true but some implementations fail this.
 					case glu::TYPE_BOOL:	*((deUint32*)compPtr)	= rnd.getBool() ? rnd.getUint32()|1u : 0u;		break;
@@ -1203,6 +1206,8 @@ void generateValueSrc (std::ostringstream& src, const UniformLayoutEntry& entry,
 	const deUint8*	elemPtr			= (const deUint8*)basePtr + entry.offset + (isArray ? elementNdx * entry.arrayStride : 0);
 	const size_t	compSize		= getDataTypeByteSize(scalarType);
 
+	using			float16_cptr_t	= std::add_pointer_t<std::add_const_t<typename tcu::Float16::StorageType>>;
+
 	if (scalarSize > 1)
 		src << glu::getDataTypeName(getPromoteType(entry.type)) << "(";
 
@@ -1239,8 +1244,6 @@ void generateValueSrc (std::ostringstream& src, const UniformLayoutEntry& entry,
 
 			switch (scalarType)
 			{
-				case glu::TYPE_FLOAT16:	src << de::floatToString(deFloat16To32(*((const deFloat16*)compPtr)), 1);	break;
-				case glu::TYPE_FLOAT:	src << de::floatToString(*((const float*)compPtr), 1);			break;
 				case glu::TYPE_INT8:	src << (deUint32)*((const deInt8*)compPtr);						break;
 				case glu::TYPE_INT16:	src << *((const deInt16*)compPtr);								break;
 				case glu::TYPE_INT:		src << *((const int*)compPtr);									break;
@@ -1248,6 +1251,9 @@ void generateValueSrc (std::ostringstream& src, const UniformLayoutEntry& entry,
 				case glu::TYPE_UINT16:	src << *((const deUint16*)compPtr) << "u";						break;
 				case glu::TYPE_UINT:	src << *((const deUint32*)compPtr) << "u";						break;
 				case glu::TYPE_BOOL:	src << (*((const deUint32*)compPtr) != 0u ? "true" : "false");	break;
+				case glu::TYPE_FLOAT:	src << de::floatToString(*((const float*)compPtr), 1);			break;
+				case glu::TYPE_FLOAT16: src << de::floatToString(tcu::Float16(
+											*reinterpret_cast<float16_cptr_t>(compPtr)).asFloat(), 1);	break;
 				default:
 					DE_ASSERT(false);
 			}
@@ -2190,8 +2196,8 @@ vk::Move<VkPipeline> UniformBlockCaseInstance::createPipeline (vk::VkShaderModul
 
 // UniformBlockCase.
 
-UniformBlockCase::UniformBlockCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, bool shuffleUniformMembers)
-	: TestCase					(testCtx, name, description)
+UniformBlockCase::UniformBlockCase (tcu::TestContext& testCtx, const std::string& name, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, bool shuffleUniformMembers)
+	: TestCase					(testCtx, name)
 	, m_bufferMode				(bufferMode)
 	, m_matrixLoadFlag			(matrixLoadFlag)
 	, m_shuffleUniformMembers	(shuffleUniformMembers)

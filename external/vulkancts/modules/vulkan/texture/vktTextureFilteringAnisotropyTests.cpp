@@ -168,9 +168,8 @@ class FilteringAnisotropyTests : public vkt::TestCase
 public:
 					FilteringAnisotropyTests	(tcu::TestContext&			testCtx,
 												 const string&				name,
-												 const string&				description,
 												 const AnisotropyParams&	refParams)
-		: vkt::TestCase		(testCtx, name, description)
+		: vkt::TestCase		(testCtx, name)
 		, m_refParams		(refParams)
 	{
 	}
@@ -202,10 +201,10 @@ private :
 
 tcu::TestCaseGroup* createFilteringAnisotropyTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	filteringAnisotropyTests	(new tcu::TestCaseGroup(testCtx,	"filtering_anisotropy",	"Filtering anisotropy tests"));
-	de::MovePtr<tcu::TestCaseGroup>	basicTests					(new tcu::TestCaseGroup(testCtx,	"basic", "Filtering anisotropy tests"));
-	de::MovePtr<tcu::TestCaseGroup>	mipmapTests					(new tcu::TestCaseGroup(testCtx,	"mipmap", "Filtering anisotropy tests"));
-	de::MovePtr<tcu::TestCaseGroup>	singleLevelImageTests		(new tcu::TestCaseGroup(testCtx,	"single_level", "Filtering anisotropy tests"));
+	de::MovePtr<tcu::TestCaseGroup>	filteringAnisotropyTests	(new tcu::TestCaseGroup(testCtx,	"filtering_anisotropy"));
+	de::MovePtr<tcu::TestCaseGroup>	basicTests					(new tcu::TestCaseGroup(testCtx,	"basic"));
+	de::MovePtr<tcu::TestCaseGroup>	mipmapTests					(new tcu::TestCaseGroup(testCtx,	"mipmap"));
+	de::MovePtr<tcu::TestCaseGroup>	singleLevelImageTests		(new tcu::TestCaseGroup(testCtx,	"single_level"));
 	const char*						valueName[]					=
 	{
 		"anisotropy_2",
@@ -238,7 +237,8 @@ tcu::TestCaseGroup* createFilteringAnisotropyTests (tcu::TestContext& testCtx)
 
 		for (int anisotropyNdx = 0; anisotropyNdx < DE_LENGTH_OF_ARRAY(maxAnisotropy); anisotropyNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> levelAnisotropyGroups (new tcu::TestCaseGroup(testCtx, valueName[anisotropyNdx], "Filtering anisotropy tests"));
+			// Filtering anisotropy tests
+			de::MovePtr<tcu::TestCaseGroup> levelAnisotropyGroups (new tcu::TestCaseGroup(testCtx, valueName[anisotropyNdx]));
 
 			for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(magFilters); minFilterNdx++)
 			for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilters); magFilterNdx++)
@@ -246,7 +246,7 @@ tcu::TestCaseGroup* createFilteringAnisotropyTests (tcu::TestContext& testCtx)
 				AnisotropyParams	refParams	(TEXTURETYPE_2D, maxAnisotropy[anisotropyNdx] ,minFilters[minFilterNdx], magFilters[magFilterNdx]);
 				levelAnisotropyGroups->addChild(new FilteringAnisotropyTests(testCtx,
 																			 "mag_" + string(magFilterName[magFilterNdx]) + "_min_" + string(minFilterName[minFilterNdx]),
-																			 "Texture filtering anisotropy basic tests", refParams));
+																			 refParams));
 			}
 			basicTests->addChild(levelAnisotropyGroups.release());
 		}
@@ -261,7 +261,7 @@ tcu::TestCaseGroup* createFilteringAnisotropyTests (tcu::TestContext& testCtx)
 
 		for (int anisotropyNdx = 0; anisotropyNdx < DE_LENGTH_OF_ARRAY(maxAnisotropy); anisotropyNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> levelAnisotropyGroups (new tcu::TestCaseGroup(testCtx, valueName[anisotropyNdx], "Filtering anisotropy tests"));
+			de::MovePtr<tcu::TestCaseGroup> levelAnisotropyGroups (new tcu::TestCaseGroup(testCtx, valueName[anisotropyNdx]));
 
 			for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(magFilters); minFilterNdx++)
 			for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilters); magFilterNdx++)
@@ -269,7 +269,7 @@ tcu::TestCaseGroup* createFilteringAnisotropyTests (tcu::TestContext& testCtx)
 				AnisotropyParams	refParams	(TEXTURETYPE_2D, maxAnisotropy[anisotropyNdx] ,minFilters[minFilterNdx], magFilters[magFilterNdx], true);
 				levelAnisotropyGroups->addChild(new FilteringAnisotropyTests(testCtx,
 																			 "mag_" + string(magFilterName[magFilterNdx]) + "_min_" + string(minFilterName[minFilterNdx]),
-																			 "Texture filtering anisotropy basic tests", refParams));
+																			 refParams));
 			}
 			singleLevelImageTests->addChild(levelAnisotropyGroups.release());
 		}
@@ -294,7 +294,7 @@ tcu::TestCaseGroup* createFilteringAnisotropyTests (tcu::TestContext& testCtx)
 
 		for (int anisotropyNdx = 0; anisotropyNdx < DE_LENGTH_OF_ARRAY(maxAnisotropy); anisotropyNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> levelAnisotropyGroups (new tcu::TestCaseGroup(testCtx, valueName[anisotropyNdx], "Filtering anisotropy tests"));
+			de::MovePtr<tcu::TestCaseGroup> levelAnisotropyGroups (new tcu::TestCaseGroup(testCtx, valueName[anisotropyNdx]));
 
 			for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(minFilters); minFilterNdx++)
 			for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilters); magFilterNdx++)
@@ -302,7 +302,7 @@ tcu::TestCaseGroup* createFilteringAnisotropyTests (tcu::TestContext& testCtx)
 				AnisotropyParams	refParams	(TEXTURETYPE_2D, maxAnisotropy[anisotropyNdx] ,minFilters[minFilterNdx], magFilters[magFilterNdx], false, true);
 				levelAnisotropyGroups->addChild(new FilteringAnisotropyTests(testCtx,
 														"mag_" + string(magFilterName[magFilterNdx]) + "_min_" + string(minFilterName[minFilterNdx]),
-														"Texture filtering anisotropy basic tests", refParams));
+														refParams));
 			}
 			mipmapTests->addChild(levelAnisotropyGroups.release());
 		}

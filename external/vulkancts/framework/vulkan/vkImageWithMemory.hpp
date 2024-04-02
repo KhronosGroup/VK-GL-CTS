@@ -30,6 +30,8 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 
+#include "vkImageWithMemory.hpp"
+
 namespace vk
 {
 class ImageWithMemory

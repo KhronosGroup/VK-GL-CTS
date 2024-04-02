@@ -1672,7 +1672,7 @@ TestStatus ShaderCaseInstance::iterate (void)
 class ShaderCase : public TestCase
 {
 public:
-									ShaderCase		(tcu::TestContext& testCtx, const string& name, const string& description, const ShaderCaseSpecification& spec);
+									ShaderCase		(tcu::TestContext& testCtx, const string& name, const ShaderCaseSpecification& spec);
 
 
 	void							initPrograms	(SourceCollections& programCollection) const;
@@ -1682,8 +1682,8 @@ private:
 	const ShaderCaseSpecification	m_spec;
 };
 
-ShaderCase::ShaderCase (tcu::TestContext& testCtx, const string& name, const string& description, const ShaderCaseSpecification& spec)
-	: TestCase	(testCtx, name, description)
+ShaderCase::ShaderCase (tcu::TestContext& testCtx, const string& name, const ShaderCaseSpecification& spec)
+	: TestCase	(testCtx, name)
 	, m_spec	(spec)
 {
 }
@@ -1749,14 +1749,16 @@ public:
 	{
 	}
 
-	tcu::TestCaseGroup* createGroup (const string& name, const string& description, const vector<tcu::TestNode*>& children)
+	tcu::TestCaseGroup* createGroup (const string& name, const std::string& description, const vector<tcu::TestNode*>& children)
 	{
-		return new tcu::TestCaseGroup(m_testCtx, name.c_str(), description.c_str(), children);
+		(void)description;
+		return new tcu::TestCaseGroup(m_testCtx, name.c_str(), children);
 	}
 
-	tcu::TestCase* createCase (const string& name, const string& description, const ShaderCaseSpecification& spec)
+	tcu::TestCase* createCase (const string& name, const std::string& description, const ShaderCaseSpecification& spec)
 	{
-		return new ShaderCase(m_testCtx, name, description, spec);
+		(void)description;
+		return new ShaderCase(m_testCtx, name, spec);
 	}
 
 private:
@@ -1766,8 +1768,8 @@ private:
 class ShaderLibraryGroup : public tcu::TestCaseGroup
 {
 public:
-	ShaderLibraryGroup (tcu::TestContext& testCtx, const string& name, const string& description, const string& filename)
-		 : tcu::TestCaseGroup	(testCtx, name.c_str(), description.c_str())
+	ShaderLibraryGroup (tcu::TestContext& testCtx, const string& name, const string& filename)
+		 : tcu::TestCaseGroup	(testCtx, name.c_str())
 		 , m_filename			(filename)
 	{
 	}
@@ -1798,9 +1800,9 @@ private:
 
 } // anonymous
 
-MovePtr<tcu::TestCaseGroup> createShaderLibraryGroup (tcu::TestContext& testCtx, const string& name, const string& description, const string& filename)
+MovePtr<tcu::TestCaseGroup> createShaderLibraryGroup (tcu::TestContext& testCtx, const string& name, const string& filename)
 {
-	return MovePtr<tcu::TestCaseGroup>(new ShaderLibraryGroup(testCtx, name, description, filename));
+	return MovePtr<tcu::TestCaseGroup>(new ShaderLibraryGroup(testCtx, name, filename));
 }
 
 } // vkt

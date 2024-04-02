@@ -25,6 +25,7 @@ import sys
 import shlex
 import platform
 import subprocess
+import logging
 
 DEQP_DIR = os.path.realpath(os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
@@ -53,7 +54,8 @@ class HostInfo:
 			"i686":		32,
 			"x86":		32,
 			"x86_64":	64,
-			"AMD64":	64
+			"AMD64":	64,
+			"arm64":	64
 		}
 		machine = platform.machine()
 
@@ -74,6 +76,7 @@ g_workDirStack = []
 def pushWorkingDir (path):
 	oldDir = os.getcwd()
 	os.chdir(path)
+	logging.debug("Current working directory: " + path)
 	g_workDirStack.append(oldDir)
 
 def popWorkingDir ():
@@ -81,8 +84,10 @@ def popWorkingDir ():
 	newDir = g_workDirStack[-1]
 	g_workDirStack.pop()
 	os.chdir(newDir)
+	logging.debug("Current working directory: " + newDir)
 
 def execute (args):
+	logging.debug("Running: " + " ".join(args))
 	retcode	= subprocess.call(args)
 	if retcode != 0:
 		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
@@ -100,11 +105,13 @@ def readFile (filename):
 	return data
 
 def writeBinaryFile (filename, data):
+	logging.debug("Writing to binary file: " + filename)
 	f = open(filename, 'wb')
 	f.write(data)
 	f.close()
 
 def writeFile (filename, data):
+	logging.debug("Writing to file: " + filename)
 	if (sys.version_info < (3, 0)):
 		f = open(filename, 'wt')
 	else:
@@ -132,6 +139,14 @@ def which (binName, paths = None):
 	for extension in extensions:
 		extResult = whichImpl(binName + extension)
 		if extResult != None:
+			logging.debug("which: found " + binName + " as " + extResult)
 			return extResult
 
 	return None
+
+def initializeLogger(verbose):
+	log_level = logging.INFO
+	if verbose:
+		log_level = logging.DEBUG
+	logging.root.setLevel(level=log_level)
+	logging.debug("Logging is set to " + str(log_level))

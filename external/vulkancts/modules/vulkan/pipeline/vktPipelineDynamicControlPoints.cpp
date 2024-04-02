@@ -86,7 +86,7 @@ struct TestConfig {
 class DynamicControlPointsTestCase : public vkt::TestCase
 {
 public:
-	DynamicControlPointsTestCase(tcu::TestContext& context, const std::string& name, const std::string& description, TestConfig config);
+	DynamicControlPointsTestCase(tcu::TestContext& context, const std::string& name, TestConfig config);
 	void            initPrograms            (vk::SourceCollections& programCollection) const override;
 	TestInstance*   createInstance          (Context& context) const override;
 	void            checkSupport            (Context& context) const override;
@@ -106,8 +106,8 @@ private:
 };
 
 
-DynamicControlPointsTestCase::DynamicControlPointsTestCase(tcu::TestContext& context, const std::string& name, const std::string& description,
-	TestConfig config) : vkt::TestCase (context, name, description), m_config(config)
+DynamicControlPointsTestCase::DynamicControlPointsTestCase(tcu::TestContext& context, const std::string& name,
+	TestConfig config) : vkt::TestCase (context, name), m_config(config)
 {
 }
 
@@ -302,8 +302,8 @@ tcu::TestStatus DynamicControlPointsTestInstance::iterate(void)
 
 	const std::vector<vk::VkViewport>	viewport_left	{ vk::makeViewport(0.0f, 0.0f, (float)imageExtent.width / 2, (float)imageExtent.height, 0.0f, 1.0f) };
 	const std::vector<vk::VkViewport>	viewport_right  { vk::makeViewport((float)imageExtent.width / 2, 0.0f, (float)imageExtent.width / 2, (float)imageExtent.height, 0.0f, 1.0f) };
-	const std::vector<vk::VkRect2D>		scissors_left	{ vk::makeRect2D(0.0f, 0.0f, imageExtent.width / 2, imageExtent.height) };
-	const std::vector<vk::VkRect2D>		scissors_right	{ vk::makeRect2D(imageExtent.width / 2, 0.0, imageExtent.width / 2, imageExtent.height) };
+	const std::vector<vk::VkRect2D>		scissors_left	{ vk::makeRect2D(0, 0, imageExtent.width / 2, imageExtent.height) };
+	const std::vector<vk::VkRect2D>		scissors_right	{ vk::makeRect2D(imageExtent.width / 2, 0, imageExtent.width / 2, imageExtent.height) };
 	const vk::PipelineLayoutWrapper		graphicsPipelineLayout (m_config.constructionType, vkd, device);
 
 	auto vtxshader  = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"));
@@ -423,10 +423,11 @@ tcu::TestStatus DynamicControlPointsTestInstance::iterate(void)
 
 tcu::TestCaseGroup* createDynamicControlPointTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "dynamic_control_points", "Tests checking dynamic bind points and switching pipelines"));
+	// Tests checking dynamic bind points and switching pipelines
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "dynamic_control_points"));
 
-	group->addChild(new DynamicControlPointsTestCase(testCtx, "change_output", "test switching pipelines with dynamic control points while changing the number of tcs invocations",
-		TestConfig {
+	// test switching pipelines with dynamic control points while changing the number of tcs invocations
+	group->addChild(new DynamicControlPointsTestCase(testCtx, "change_output", TestConfig {
 			pipelineConstructionType,
 			true,
 			false,
@@ -436,8 +437,8 @@ tcu::TestCaseGroup* createDynamicControlPointTests (tcu::TestContext& testCtx, v
 			tcu::Vec4(1.0, 0.0, 1.0, 1.0),
 	}));
 
-	group->addChild(new DynamicControlPointsTestCase(testCtx, "change_winding", "test switching pipelines with dynamic control points while switching winding",
-		TestConfig {
+	// test switching pipelines with dynamic control points while switching winding
+	group->addChild(new DynamicControlPointsTestCase(testCtx, "change_winding", TestConfig {
 			pipelineConstructionType,
 			false,
 			true,
@@ -447,8 +448,8 @@ tcu::TestCaseGroup* createDynamicControlPointTests (tcu::TestContext& testCtx, v
 			tcu::Vec4(1.0, 0.0, 1.0, 1.0)
 	}));
 
-	group->addChild(new DynamicControlPointsTestCase(testCtx, "change_output_winding", "test switching pipelines with dynamic control points while switching winding and number of tcs invocations",
-		TestConfig {
+	// test switching pipelines with dynamic control points while switching winding and number of tcs invocations
+	group->addChild(new DynamicControlPointsTestCase(testCtx, "change_output_winding", TestConfig {
 			pipelineConstructionType,
 			true,
 			true,

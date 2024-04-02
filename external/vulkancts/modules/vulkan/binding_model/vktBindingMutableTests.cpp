@@ -2140,8 +2140,8 @@ public:
 class MutableTypesTest : public TestCase
 {
 public:
-	MutableTypesTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-		: TestCase(testCtx, name, description)
+	MutableTypesTest (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+		: TestCase(testCtx, name)
 		, m_params(params)
 	{}
 
@@ -3340,7 +3340,7 @@ tcu::TestStatus MutableTypesInstance::iterate ()
 		VkStridedDeviceAddressRegionKHR	callableSBTRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 		if (bindPoint == VK_PIPELINE_BIND_POINT_COMPUTE)
-			pipeline = makeComputePipeline(vkd, device, pipelineLayout.get(), 0u, shaderModule.get(), 0u, nullptr);
+			pipeline = makeComputePipeline(vkd, device, pipelineLayout.get(), shaderModule.get());
 		else if (bindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS)
 		{
 			VkShaderModule vertModule = DE_NULL;
@@ -3679,7 +3679,7 @@ void createMutableTestVariants (tcu::TestContext& testCtx, tcu::TestCaseGroup* p
 
 	for (const auto& ut : updateTypes)
 	{
-		GroupPtr updateGroup(new tcu::TestCaseGroup(testCtx, ut.name, ""));
+		GroupPtr updateGroup(new tcu::TestCaseGroup(testCtx, ut.name));
 
 		for (const auto& srcStrategy : sourceStrategies)
 		{
@@ -3693,7 +3693,7 @@ void createMutableTestVariants (tcu::TestContext& testCtx, tcu::TestCaseGroup* p
 			if (srcStrategy.sourceSetStrategy == SourceSetStrategy::NONMUTABLE && descriptorSet->needsAnyAliasing())
 				continue;
 
-			GroupPtr srcStrategyGroup(new tcu::TestCaseGroup(testCtx, srcStrategy.name, ""));
+			GroupPtr srcStrategyGroup(new tcu::TestCaseGroup(testCtx, srcStrategy.name));
 
 			for (const auto& srcType : sourceTypes)
 			{
@@ -3704,11 +3704,11 @@ void createMutableTestVariants (tcu::TestContext& testCtx, tcu::TestCaseGroup* p
 				if (ut.updateType == UpdateType::COPY && srcType.sourceSetType == SourceSetType::NO_SOURCE)
 					continue;
 
-				GroupPtr srcTypeGroup(new tcu::TestCaseGroup(testCtx, srcType.name, ""));
+				GroupPtr srcTypeGroup(new tcu::TestCaseGroup(testCtx, srcType.name));
 
 				for (const auto& poolStrategy: poolStrategies)
 				{
-					GroupPtr poolStrategyGroup(new tcu::TestCaseGroup(testCtx, poolStrategy.name, ""));
+					GroupPtr poolStrategyGroup(new tcu::TestCaseGroup(testCtx, poolStrategy.name));
 
 					for (const auto& moment : updateMoments)
 					{
@@ -3718,7 +3718,7 @@ void createMutableTestVariants (tcu::TestContext& testCtx, tcu::TestCaseGroup* p
 						if (moment.updateMoment == UpdateMoment::UPDATE_AFTER_BIND && hasInputAttachments)
 							continue;
 
-						GroupPtr momentGroup(new tcu::TestCaseGroup(testCtx, moment.name, ""));
+						GroupPtr momentGroup(new tcu::TestCaseGroup(testCtx, moment.name));
 
 						for (const auto& accessType : arrayAccessTypes)
 						{
@@ -3729,7 +3729,7 @@ void createMutableTestVariants (tcu::TestContext& testCtx, tcu::TestCaseGroup* p
 							if (!hasArrays && accessType.arrayAccessType != ArrayAccessType::NO_ARRAY)
 								continue;
 
-							GroupPtr accessTypeGroup(new tcu::TestCaseGroup(testCtx, accessType.name, ""));
+							GroupPtr accessTypeGroup(new tcu::TestCaseGroup(testCtx, accessType.name));
 
 							for (const auto& testStage : stagesToTest)
 							{
@@ -3754,7 +3754,7 @@ void createMutableTestVariants (tcu::TestContext& testCtx, tcu::TestCaseGroup* p
 									stage.testingStage,
 								};
 
-								accessTypeGroup->addChild(new MutableTypesTest(testCtx, stage.name, "", params));
+								accessTypeGroup->addChild(new MutableTypesTest(testCtx, stage.name, params));
 							}
 
 							momentGroup->addChild(accessTypeGroup.release());
@@ -3795,7 +3795,7 @@ static void cleanupGroup (tcu::TestCaseGroup* testGroup)
 
 tcu::TestCaseGroup* createDescriptorMutableTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "mutable_descriptor", "Tests for VK_VALVE_mutable_descriptor_type and VK_EXT_mutable_descriptor_type", createChildren, cleanupGroup);
+	return createTestGroup(testCtx, "mutable_descriptor", createChildren, cleanupGroup);
 }
 
 void createChildren (tcu::TestCaseGroup* mainGroup)
@@ -3850,7 +3850,7 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 
 	// Basic tests with a single mutable descriptor.
 	{
-		GroupPtr singleCases(new tcu::TestCaseGroup(testCtx, "single", "Basic mutable descriptor tests with a single mutable descriptor"));
+		GroupPtr singleCases(new tcu::TestCaseGroup(testCtx, "single"));
 
 		for (const auto& descriptorType : basicDescriptorTypes)
 		{
@@ -3864,7 +3864,7 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 				setPtr = DescriptorSetPtr(new DescriptorSet(setBindings));
 			}
 
-			GroupPtr subGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
+			GroupPtr subGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 			createMutableTestVariants(testCtx, subGroup.get(), setPtr, allStages);
 
 			singleCases->addChild(subGroup.release());
@@ -3879,7 +3879,7 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 				setPtr = DescriptorSetPtr(new DescriptorSet(setBindings));
 			}
 
-			GroupPtr subGroup(new tcu::TestCaseGroup(testCtx, "all_mandatory", ""));
+			GroupPtr subGroup(new tcu::TestCaseGroup(testCtx, "all_mandatory"));
 			createMutableTestVariants(testCtx, subGroup.get(), setPtr, reducedStages);
 
 			singleCases->addChild(subGroup.release());
@@ -3887,7 +3887,7 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 
 		// Cases that try to verify switching from any descriptor type to any other is possible.
 		{
-			GroupPtr subGroup(new tcu::TestCaseGroup(testCtx, "switches", "Test switching from one to another descriptor type works as expected"));
+			GroupPtr subGroup(new tcu::TestCaseGroup(testCtx, "switches"));
 
 			for (const auto& initialDescriptorType : basicDescriptorTypes)
 			{
@@ -3903,7 +3903,7 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 					DescriptorSetPtr setPtr = DescriptorSetPtr(new DescriptorSet(setBindings));
 
 					const auto groupName = descriptorTypeStr(initialDescriptorType) + "_" + descriptorTypeStr(finalDescriptorType);
-					GroupPtr combinationGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
+					GroupPtr combinationGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 					createMutableTestVariants(testCtx, combinationGroup.get(), setPtr, reducedStages);
 					subGroup->addChild(combinationGroup.release());
 				}
@@ -3917,7 +3917,7 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 
 	// Cases with a single non-mutable descriptor. This provides some basic checks to verify copying to non-mutable bindings works.
 	{
-		GroupPtr singleNonMutableGroup (new tcu::TestCaseGroup(testCtx, "single_nonmutable", "Tests using a single non-mutable descriptor"));
+		GroupPtr singleNonMutableGroup (new tcu::TestCaseGroup(testCtx, "single_nonmutable"));
 
 		for (const auto& descriptorType : basicDescriptorTypes)
 		{
@@ -3926,7 +3926,7 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 			DescriptorSetPtr descriptorSet (new DescriptorSet(bindings));
 
 			const auto groupName = descriptorTypeStr(descriptorType);
-			GroupPtr descGroup (new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
+			GroupPtr descGroup (new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 			createMutableTestVariants(testCtx, descGroup.get(), descriptorSet, reducedStages);
 			singleNonMutableGroup->addChild(descGroup.release());
@@ -3955,24 +3955,26 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 		bool oneArrayOnly;
 		bool mixNonMutable;
 		const char* groupName;
-		const char* groupDesc;
 	} arrayCountGroups[] = {
-		{true,  false, "one_array",             "Tests using an array of mutable descriptors"},
-		{false, false, "multiple_arrays",       "Tests using multiple arrays of mutable descriptors"},
-		{false, true,  "multiple_arrays_mixed", "Tests using multiple arrays of mutable descriptors mixed with arrays of nonmutable ones"},
+		// Tests using an array of mutable descriptors
+		{true,  false, "one_array"},
+		// Tests using multiple arrays of mutable descriptors
+		{false, false, "multiple_arrays"},
+		// Tests using multiple arrays of mutable descriptors mixed with arrays of nonmutable ones
+		{false, true,  "multiple_arrays_mixed"},
 	};
 
 	for (const auto& variant : arrayCountGroups)
 	{
-		GroupPtr arrayGroup(new tcu::TestCaseGroup(testCtx, variant.groupName, variant.groupDesc));
+		GroupPtr arrayGroup(new tcu::TestCaseGroup(testCtx, variant.groupName));
 
 		for (const auto& unboundedCase : unboundedCases)
 		{
-			GroupPtr unboundedGroup(new tcu::TestCaseGroup(testCtx, unboundedCase.name, ""));
+			GroupPtr unboundedGroup(new tcu::TestCaseGroup(testCtx, unboundedCase.name));
 
 			for (const auto& aliasingCase : aliasingCases)
 			{
-				GroupPtr aliasingGroup(new tcu::TestCaseGroup(testCtx, aliasingCase.name, ""));
+				GroupPtr aliasingGroup(new tcu::TestCaseGroup(testCtx, aliasingCase.name));
 
 				DescriptorSet::BindingPtrVector setBindings;
 
@@ -4042,7 +4044,7 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 	// Cases with a single mutable binding followed by an array of mutable bindings.
 	// The array will use a single type beyond the mandatory ones.
 	{
-		GroupPtr singleAndArrayGroup(new tcu::TestCaseGroup(testCtx, "single_and_array", "Tests using a single mutable binding followed by a mutable array binding"));
+		GroupPtr singleAndArrayGroup(new tcu::TestCaseGroup(testCtx, "single_and_array"));
 
 		for (const auto& descriptorType : basicDescriptorTypes)
 		{
@@ -4054,11 +4056,11 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 				continue;
 
 			const auto groupName = descriptorTypeStr(descriptorType);
-			GroupPtr descTypeGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
+			GroupPtr descTypeGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str()));
 
 			for (const auto& aliasingCase : aliasingCases)
 			{
-				GroupPtr aliasingGroup(new tcu::TestCaseGroup(testCtx, aliasingCase.name, ""));
+				GroupPtr aliasingGroup(new tcu::TestCaseGroup(testCtx, aliasingCase.name));
 
 				DescriptorSet::BindingPtrVector setBindings;
 				std::vector<SingleBinding> arrayBindings;
@@ -4110,9 +4112,9 @@ void createChildren (tcu::TestCaseGroup* mainGroup)
 
 	// Cases with several mutable non-array bindings.
 	{
-		GroupPtr multipleGroup    (new tcu::TestCaseGroup(testCtx, "multiple", "Tests using multiple mutable bindings"));
-		GroupPtr mutableOnlyGroup (new tcu::TestCaseGroup(testCtx, "mutable_only", "Tests using only mutable descriptors"));
-		GroupPtr mixedGroup       (new tcu::TestCaseGroup(testCtx, "mixed", "Tests mixing mutable descriptors an non-mutable descriptors"));
+		GroupPtr multipleGroup    (new tcu::TestCaseGroup(testCtx, "multiple"));
+		GroupPtr mutableOnlyGroup (new tcu::TestCaseGroup(testCtx, "mutable_only"));
+		GroupPtr mixedGroup       (new tcu::TestCaseGroup(testCtx, "mixed"));
 
 		// Each descriptor will have a different type in every iteration, like in the one_array aliasing case.
 		for (int groupIdx = 0; groupIdx < 2; ++groupIdx)

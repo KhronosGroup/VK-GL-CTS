@@ -138,7 +138,6 @@ class DrawTestCase : public TestCase
 public:
 							DrawTestCase	(tcu::TestContext&	testCtx,
 											 const std::string&	name,
-											 const std::string&	description,
 											 const DrawParams	params);
 							~DrawTestCase	(void);
 	virtual void			initPrograms	(vk::SourceCollections& programCollection) const;
@@ -150,9 +149,8 @@ private:
 
 DrawTestCase::DrawTestCase (tcu::TestContext& testCtx,
 							const std::string& name,
-							const std::string& description,
 							const DrawParams params)
-	: TestCase	(testCtx, name, description)
+	: TestCase	(testCtx, name)
 	, m_params	(params)
 {
 }
@@ -903,19 +901,18 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 	struct TestVariant
 	{
 		const std::string				name;
-		const std::string				desc;
 		const vk::VkSampleCountFlagBits	samples;
 	};
 
 	static const std::vector<TestVariant> testVariants
 	{
-		{ "1_sample",	"Without multisampling",	vk::VK_SAMPLE_COUNT_1_BIT	},
-		{ "2_samples",	"2 samples",				vk::VK_SAMPLE_COUNT_2_BIT	},
-		{ "4_samples",	"4 samples",				vk::VK_SAMPLE_COUNT_4_BIT	},
-		{ "8_samples",	"8 samples",				vk::VK_SAMPLE_COUNT_8_BIT	},
-		{ "16_samples",	"16 samples",				vk::VK_SAMPLE_COUNT_16_BIT	},
-		{ "32_samples",	"32 samples",				vk::VK_SAMPLE_COUNT_32_BIT	},
-		{ "64_samples",	"64 samples",				vk::VK_SAMPLE_COUNT_64_BIT	},
+		{ "1_sample", vk::VK_SAMPLE_COUNT_1_BIT	},
+		{ "2_samples", vk::VK_SAMPLE_COUNT_2_BIT	},
+		{ "4_samples", vk::VK_SAMPLE_COUNT_4_BIT	},
+		{ "8_samples", vk::VK_SAMPLE_COUNT_8_BIT	},
+		{ "16_samples", vk::VK_SAMPLE_COUNT_16_BIT	},
+		{ "32_samples", vk::VK_SAMPLE_COUNT_32_BIT	},
+		{ "64_samples", vk::VK_SAMPLE_COUNT_64_BIT	},
 	};
 
 	struct GroupVariant
@@ -942,16 +939,16 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 
 	for (const auto& grpVariant : groupVariants)
 	{
-		de::MovePtr<tcu::TestCaseGroup> group {new tcu::TestCaseGroup{testCtx, grpVariant.groupName.c_str(), ""}};
+		de::MovePtr<tcu::TestCaseGroup> group {new tcu::TestCaseGroup{testCtx, grpVariant.groupName.c_str()}};
 
 		for (const auto& sampleVariant : sampleVariants)
 		{
-			de::MovePtr<tcu::TestCaseGroup> sampleGroup {new tcu::TestCaseGroup{testCtx, sampleVariant.groupName.c_str(), ""}};
+			de::MovePtr<tcu::TestCaseGroup> sampleGroup {new tcu::TestCaseGroup{testCtx, sampleVariant.groupName.c_str()}};
 
 			for (const auto& testVariant : testVariants)
 			{
 				const DrawParams params {format, size, testVariant.samples, grpVariant.useStructure, sampleVariant.includeSampleDecoration, groupParams };
-				sampleGroup->addChild(new DrawTestCase(testCtx, testVariant.name, testVariant.desc, params));
+				sampleGroup->addChild(new DrawTestCase(testCtx, testVariant.name, params));
 			}
 
 			group->addChild(sampleGroup.release());
@@ -965,9 +962,9 @@ void createTests (tcu::TestCaseGroup* testGroup, const SharedGroupParams groupPa
 
 tcu::TestCaseGroup* createMultipleInterpolationTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
+	// Tests for multiple interpolation decorations in a shader stage.
 	return createTestGroup(testCtx,
 						   "multiple_interpolation",
-						   "Tests for multiple interpolation decorations in a shader stage.",
 						   createTests,
 						   groupParams);
 }

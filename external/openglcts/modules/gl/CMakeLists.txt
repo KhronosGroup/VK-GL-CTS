@@ -21,6 +21,8 @@ set(GLCTS_GL_SRCS
 	gl3cTransformFeedbackTests.hpp
 	gl3cTransformFeedbackOverflowQueryTests.cpp
 	gl3cTransformFeedbackOverflowQueryTests.hpp
+	gl3cTransformFeedback3Tests.cpp
+	gl3cTransformFeedback3Tests.hpp
 	gl4cTestPackages.cpp
 	gl4cTestPackages.hpp
 	gl4cBufferStorageTests.cpp

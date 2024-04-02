@@ -206,7 +206,7 @@ tcu::TestStatus testEnableDisable (Context& context)
 	const auto			bindPoint		= VK_PIPELINE_BIND_POINT_GRAPHICS;
 	const auto			fsrFormat		= VK_FORMAT_R8_UINT;
 	const auto			fsrExtent		= makeExtent3D(1u, 1u, 1u); // 1 pixel for the whole image.
-	const auto			fsrUsage		= (VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR);
+	const auto			fsrUsage		= (VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 	const auto			sampleCount		= VK_SAMPLE_COUNT_1_BIT;
 
 	// Adjust image extent to an acceptable range so it's covered by a single FSR attachment pixel.
@@ -268,11 +268,11 @@ tcu::TestStatus testEnableDisable (Context& context)
 			0u,																//	VkAttachmentDescriptionFlags	flags;
 			fsrFormat,														//	VkFormat						format;
 			sampleCount,													//	VkSampleCountFlagBits			samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,									//	VkAttachmentLoadOp				loadOp;
+			VK_ATTACHMENT_LOAD_OP_LOAD,										//	VkAttachmentLoadOp				loadOp;
 			VK_ATTACHMENT_STORE_OP_STORE,									//	VkAttachmentStoreOp				storeOp;
 			VK_ATTACHMENT_LOAD_OP_DONT_CARE,								//	VkAttachmentLoadOp				stencilLoadOp;
 			VK_ATTACHMENT_STORE_OP_DONT_CARE,								//	VkAttachmentStoreOp				stencilStoreOp;
-			VK_IMAGE_LAYOUT_UNDEFINED,										//	VkImageLayout					initialLayout;
+			VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR,	//	VkImageLayout					initialLayout;
 			VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR,	//	VkImageLayout					finalLayout;
 		},
 	};
@@ -426,11 +426,17 @@ tcu::TestStatus testEnableDisable (Context& context)
 	const ClearValueVec	clearValues
 	{
 		makeClearValueColor(clearColor),
-		makeClearValueColorU32(clearAttRate, 0u, 0u, 0u),
 	};
 	const auto			colorCompThreshold	= 0.005f; // between 1/255 and 2/255.
 	const tcu::Vec4		colorThreshold		(colorCompThreshold, colorCompThreshold, colorCompThreshold, colorCompThreshold);
 	const auto			vertexCount			= de::sizeU32(vertices);
+
+	tcu::TextureFormat fsrTextureFormat = mapVkFormat(fsrFormat);
+	size_t fsrFillBufferSize = fsrExtent.width * fsrExtent.height * getNumUsedChannels(fsrTextureFormat.order) * getChannelSize(fsrTextureFormat.type);
+	BufferWithMemory fsrFillBuffer (ctx.vkd, ctx.device, ctx.allocator, makeBufferCreateInfo(fsrFillBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT), MemoryRequirement::HostVisible);
+	auto fillPtr = (deUint8 *)fsrFillBuffer.getAllocation().getHostPtr();
+	memset(fillPtr, clearAttRate, (size_t)fsrFillBufferSize);
+	flushAlloc(ctx.vkd, ctx.device, fsrFillBuffer.getAllocation());
 
 	const struct
 	{
@@ -443,6 +449,25 @@ tcu::TestStatus testEnableDisable (Context& context)
 	};
 
 	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	{
+		// Initialize the FSR attachment.
+		const auto preTransferBarrier = makeImageMemoryBarrier(
+			0u,
+			VK_ACCESS_TRANSFER_READ_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_GENERAL,
+			fsrAttachment.get(), colorSRR);
+		cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preTransferBarrier);
+		const auto copyRegion = makeBufferImageCopy(fsrExtent, colorSRL);
+		ctx.vkd.cmdCopyBufferToImage(cmdBuffer, fsrFillBuffer.get(), fsrAttachment.get(), VK_IMAGE_LAYOUT_GENERAL, 1u, &copyRegion);
+		const auto postTransferBarrier = makeImageMemoryBarrier(
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,
+			VK_IMAGE_LAYOUT_GENERAL,
+			VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR,
+			fsrAttachment.get(), colorSRR);
+		cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR, &postTransferBarrier);
+	}
 	{
 		// Render pass.
 		beginRenderPass(ctx.vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), de::sizeU32(clearValues), de::dataOrNull(clearValues));
@@ -699,13 +724,13 @@ void createFragmentShadingRateMiscTests (tcu::TestCaseGroup* group)
 {
 	{
 		const char* testName = "enable_disable_attachment";
-		const char* testDesc = "Test drawing with VRS enabled by an attachment and then disabled";
-		addFunctionCaseWithPrograms(group, testName, testDesc, checkEnableDisableSupport, initEnableDisableShaders, testEnableDisable);
+		// Test drawing with VRS enabled by an attachment and then disabled
+		addFunctionCaseWithPrograms(group, testName, checkEnableDisableSupport, initEnableDisableShaders, testEnableDisable);
 	}
 	{
 		const char* testName = "no_frag_shader";
-		const char* testDesc = "Test drawing with VRS enabled and no frag shader";
-		addFunctionCaseWithPrograms(group, testName, testDesc, checkNoFragSupport, initNoFragShaders, testNoFrag);
+		// Test drawing with VRS enabled and no frag shader
+		addFunctionCaseWithPrograms(group, testName, checkNoFragSupport, initNoFragShaders, testNoFrag);
 	}
 }
 

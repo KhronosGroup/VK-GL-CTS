@@ -625,7 +625,7 @@ tcu::TestStatus test (Context& context, TestParams testParams)
 		beginCommandBuffer(vk, *cmdBuffer);
 
 		// Begin render pass
-		beginRenderPassWithRasterizationDisabled(vk, *cmdBuffer, *renderPass, *framebuffer);
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(1, 1));
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
@@ -696,12 +696,12 @@ void checkSupportTess(Context& context, const TestParams)
 //! Check validity of fractional spacing modes. Draws a single isoline, reads tess coords with SSBO.
 tcu::TestCaseGroup* createFractionalSpacingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "fractional_spacing", "Test fractional spacing modes"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "fractional_spacing"));
 
-	addFunctionCaseWithPrograms(group.get(), "glsl_odd",  "", checkSupportTess, initPrograms, test, TestParams(SHADER_LANGUAGE_GLSL, SPACINGMODE_FRACTIONAL_ODD));
-	addFunctionCaseWithPrograms(group.get(), "glsl_even", "", checkSupportTess, initPrograms, test, TestParams(SHADER_LANGUAGE_GLSL, SPACINGMODE_FRACTIONAL_EVEN));
-	addFunctionCaseWithPrograms(group.get(), "hlsl_odd",  "", checkSupportTess, initPrograms, test, TestParams(SHADER_LANGUAGE_HLSL, SPACINGMODE_FRACTIONAL_ODD));
-	addFunctionCaseWithPrograms(group.get(), "hlsl_even", "", checkSupportTess, initPrograms, test, TestParams(SHADER_LANGUAGE_HLSL, SPACINGMODE_FRACTIONAL_EVEN));
+	addFunctionCaseWithPrograms(group.get(), "glsl_odd", checkSupportTess, initPrograms, test, TestParams(SHADER_LANGUAGE_GLSL, SPACINGMODE_FRACTIONAL_ODD));
+	addFunctionCaseWithPrograms(group.get(), "glsl_even", checkSupportTess, initPrograms, test, TestParams(SHADER_LANGUAGE_GLSL, SPACINGMODE_FRACTIONAL_EVEN));
+	addFunctionCaseWithPrograms(group.get(), "hlsl_odd", checkSupportTess, initPrograms, test, TestParams(SHADER_LANGUAGE_HLSL, SPACINGMODE_FRACTIONAL_ODD));
+	addFunctionCaseWithPrograms(group.get(), "hlsl_even", checkSupportTess, initPrograms, test, TestParams(SHADER_LANGUAGE_HLSL, SPACINGMODE_FRACTIONAL_EVEN));
 
 	return group.release();
 }

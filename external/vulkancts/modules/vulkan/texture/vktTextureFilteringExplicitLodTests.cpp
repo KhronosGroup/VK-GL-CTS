@@ -953,9 +953,8 @@ class TextureFilteringTestCase : public TestCase
 {
 public:
 	TextureFilteringTestCase (tcu::TestContext&	testCtx,
-							  const char*		name,
-							  const char*		description)
-		: TestCase(testCtx, name, description)
+							  const char*		name)
+		: TestCase(testCtx, name)
 	{
 	}
 
@@ -1011,7 +1010,6 @@ class Texture2DGradientTestCase : public TextureFilteringTestCase
 public:
 	Texture2DGradientTestCase (TestContext&			testCtx,
 							   const char*			name,
-							   const char*			desc,
 							   TextureFormat		format,
 							   IVec3				dimensions,
 							   VkFilter				magFilter,
@@ -1020,7 +1018,7 @@ public:
 							   VkSamplerAddressMode	wrappingMode,
 							   bool					useDerivatives)
 
-		: TextureFilteringTestCase	(testCtx, name, desc)
+		: TextureFilteringTestCase	(testCtx, name)
 		, m_format					(format)
 		, m_dimensions				(dimensions)
 		, m_magFilter				(magFilter)
@@ -1226,7 +1224,7 @@ de::MovePtr<DataGenerator> Texture2DGradientTestCase::createGenerator (void) con
 TestCaseGroup* create2DFormatTests (TestContext& testCtx)
 {
 	de::MovePtr<TestCaseGroup> tests(
-		new TestCaseGroup(testCtx, "formats", "Various image formats"));
+		new TestCaseGroup(testCtx, "formats"));
 
     const VkFormat formats[] =
 	{
@@ -1266,7 +1264,6 @@ TestCaseGroup* create2DFormatTests (TestContext& testCtx)
 			new Texture2DGradientTestCase(
 				testCtx,
 			    (prefix + "_nearest").c_str(),
-				"...",
 				mapVkFormat(formats[formatNdx]),
 				size,
 				VK_FILTER_NEAREST,
@@ -1281,7 +1278,6 @@ TestCaseGroup* create2DFormatTests (TestContext& testCtx)
 			new Texture2DGradientTestCase(
 				testCtx,
 			    (prefix + "_linear").c_str(),
-				"...",
 				mapVkFormat(formats[formatNdx]),
 				size,
 				VK_FILTER_LINEAR,
@@ -1299,7 +1295,7 @@ TestCaseGroup* create2DFormatTests (TestContext& testCtx)
 TestCaseGroup* create2DDerivTests (TestContext& testCtx)
 {
 	de::MovePtr<TestCaseGroup> tests(
-		new TestCaseGroup(testCtx, "derivatives", "Explicit derivative tests"));
+		new TestCaseGroup(testCtx, "derivatives"));
 
 	const VkFormat				format		 = VK_FORMAT_R8G8B8A8_UNORM;
 	const VkSamplerAddressMode	wrappingMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -1373,7 +1369,6 @@ TestCaseGroup* create2DDerivTests (TestContext& testCtx)
 					new Texture2DGradientTestCase(
 						testCtx,
 						caseName.str().c_str(),
-						"...",
 						mapVkFormat(format),
 						size,
 						filters[magFilterNdx],
@@ -1392,8 +1387,8 @@ TestCaseGroup* create2DDerivTests (TestContext& testCtx)
 
 TestCaseGroup* create2DSizeTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup> tests(
-		new TestCaseGroup(testCtx, "sizes", "Various size and filtering combinations"));
+	// Various size and filtering combinations
+	de::MovePtr<TestCaseGroup> tests(new TestCaseGroup(testCtx, "sizes"));
 
 	const VkFilter filters[2] =
 	{
@@ -1501,7 +1496,6 @@ TestCaseGroup* create2DSizeTests (TestContext& testCtx)
 							new Texture2DGradientTestCase(
 								testCtx,
 								caseName.str().c_str(),
-								"...",
 								mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM),
 								sizes[sizeNdx],
 								filters[magFilterNdx],
@@ -1522,8 +1516,7 @@ TestCaseGroup* create2DSizeTests (TestContext& testCtx)
 
 TestCaseGroup* create2DTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup> tests(
-		new TestCaseGroup(testCtx, "2d", "2D Image filtering tests"));
+	de::MovePtr<TestCaseGroup> tests(new TestCaseGroup(testCtx, "2d"));
 
 	tests->addChild(create2DSizeTests(testCtx));
 	tests->addChild(create2DFormatTests(testCtx));
@@ -1536,8 +1529,8 @@ TestCaseGroup* create2DTests (TestContext& testCtx)
 
 TestCaseGroup* createExplicitLodTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup> tests(
-		new TestCaseGroup(testCtx, "explicit_lod", "Texture filtering with explicit LOD"));
+	// Texture filtering with explicit LOD
+	de::MovePtr<TestCaseGroup> tests(new TestCaseGroup(testCtx, "explicit_lod"));
 
 	tests->addChild(create2DTests(testCtx));
 

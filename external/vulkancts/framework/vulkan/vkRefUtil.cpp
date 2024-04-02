@@ -113,7 +113,6 @@ Move<VkSemaphore> createSemaphore (const DeviceInterface&		vk,
 	{
 		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
 		DE_NULL,
-
 		flags
 	};
 

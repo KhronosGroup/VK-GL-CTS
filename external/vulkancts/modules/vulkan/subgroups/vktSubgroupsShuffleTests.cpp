@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2019, 2021-2023 The Khronos Group Inc.
  * Copyright (c) 2019 Google Inc.
  * Copyright (c) 2017 Codeplay Software Ltd.
  *
@@ -42,6 +42,8 @@ enum OpType
 	OPTYPE_SHUFFLE_XOR,
 	OPTYPE_SHUFFLE_UP,
 	OPTYPE_SHUFFLE_DOWN,
+	OPTYPE_ROTATE,
+	OPTYPE_CLUSTERED_ROTATE,
 	OPTYPE_LAST
 };
 
@@ -61,6 +63,8 @@ struct CaseDefinition
 	de::SharedPtr<bool>	geometryPointSizeSupported;
 	deBool				requiredSubgroupSize;
 	ArgType				argType;
+	deBool				requires8BitUniformBuffer;
+	deBool				requires16BitUniformBuffer;
 };
 
 static bool checkVertexPipelineStages (const void*			internalData,
@@ -88,22 +92,34 @@ string getOpTypeName (OpType opType)
 {
 	switch (opType)
 	{
-		case OPTYPE_SHUFFLE:		return "subgroupShuffle";
-		case OPTYPE_SHUFFLE_XOR:	return "subgroupShuffleXor";
-		case OPTYPE_SHUFFLE_UP:		return "subgroupShuffleUp";
-		case OPTYPE_SHUFFLE_DOWN:	return "subgroupShuffleDown";
+		case OPTYPE_SHUFFLE:			return "subgroupShuffle";
+		case OPTYPE_SHUFFLE_XOR:		return "subgroupShuffleXor";
+		case OPTYPE_SHUFFLE_UP:			return "subgroupShuffleUp";
+		case OPTYPE_SHUFFLE_DOWN:		return "subgroupShuffleDown";
+		case OPTYPE_ROTATE:				return "subgroupRotate";
+		case OPTYPE_CLUSTERED_ROTATE:	return "subgroupClusteredRotate";
 		default:					TCU_THROW(InternalError, "Unsupported op type");
+	}
+}
+
+string getExtensionForOpType (OpType opType)
+{
+	switch (opType)
+	{
+		case OPTYPE_SHUFFLE:			return "GL_KHR_shader_subgroup_shuffle";
+		case OPTYPE_SHUFFLE_XOR:		return "GL_KHR_shader_subgroup_shuffle";
+		case OPTYPE_SHUFFLE_UP:			return "GL_KHR_shader_subgroup_shuffle_relative";
+		case OPTYPE_SHUFFLE_DOWN:		return "GL_KHR_shader_subgroup_shuffle_relative";
+		case OPTYPE_ROTATE:				return "GL_KHR_shader_subgroup_rotate";
+		case OPTYPE_CLUSTERED_ROTATE:	return "GL_KHR_shader_subgroup_rotate";
+		default:						TCU_THROW(InternalError, "Unsupported op type");
 	}
 }
 
 string getExtHeader (const CaseDefinition& caseDef)
 {
-	const string	eSource		= (OPTYPE_SHUFFLE == caseDef.opType || OPTYPE_SHUFFLE_XOR == caseDef.opType)
-								? "#extension GL_KHR_shader_subgroup_shuffle: enable\n"
-								: "#extension GL_KHR_shader_subgroup_shuffle_relative: enable\n";
-
-	return	eSource
-			+ "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+	return	string("#extension ") + getExtensionForOpType(caseDef.opType) + ": enable\n"
+			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			+ subgroups::getAdditionalExtensionForFormat(caseDef.format);
 }
 
@@ -178,15 +194,18 @@ vector<string> getFramebufferPerStageHeadDeclarations (const CaseDefinition& cas
 	return result;
 }
 
-const string getTestSource (const CaseDefinition& caseDef)
+const string getNonClusteredTestSource (const CaseDefinition& caseDef)
 {
 	const string	id			= caseDef.opType == OPTYPE_SHUFFLE		? "id_in"
 								: caseDef.opType == OPTYPE_SHUFFLE_XOR	? "gl_SubgroupInvocationID ^ id_in"
 								: caseDef.opType == OPTYPE_SHUFFLE_UP	? "gl_SubgroupInvocationID - id_in"
 								: caseDef.opType == OPTYPE_SHUFFLE_DOWN	? "gl_SubgroupInvocationID + id_in"
+								: caseDef.opType == OPTYPE_ROTATE		? "(gl_SubgroupInvocationID + id_in) & (gl_SubgroupSize - 1)"
 								: "";
 	const string	idInSource	= caseDef.argType == ArgType::DYNAMIC				? "data2[gl_SubgroupInvocationID] & (gl_SubgroupSize - 1)"
-								: caseDef.argType == ArgType::DYNAMICALLY_UNIFORM	? "data2[0] % 32"
+								: caseDef.argType == ArgType::DYNAMICALLY_UNIFORM	? (
+									  caseDef.opType == OPTYPE_ROTATE	? "data2[0] & (gl_SubgroupSize * 2 - 1)"
+									: "data2[0] % 32")
 								: caseDef.argType == ArgType::CONSTANT				? "5"
 								: "";
 	const string	testSource	=
@@ -207,6 +226,57 @@ const string getTestSource (const CaseDefinition& caseDef)
 		"  tempRes = temp_res;\n";
 
 	return testSource;
+}
+
+const string getClusteredTestSource (const CaseDefinition& caseDef)
+{
+	const string	idInSource	= caseDef.argType == ArgType::DYNAMICALLY_UNIFORM	? "data2[0] & (gl_SubgroupSize * 2 - 1)"
+								: caseDef.argType == ArgType::CONSTANT				? "5"
+								: "";
+	const string	testSource	=
+		"  uint temp_res = 1;\n"
+		"  uvec4 mask = subgroupBallot(true);\n"
+		"  uint cluster_size;\n"
+		"  for (cluster_size = 1; cluster_size <= gl_SubgroupSize; cluster_size *= 2)\n"
+		"  {\n"
+		"    uint id_in = " + idInSource + ";\n"
+		"    uint cluster_res;\n"
+		"    " + subgroups::getFormatNameForGLSL(caseDef.format) + " data1_val = data1[gl_SubgroupInvocationID];\n"
+		"    " + subgroups::getFormatNameForGLSL(caseDef.format) + " op;\n"
+		"    switch (cluster_size)\n"
+		"    {\n"
+		"      case 1: op = " + getOpTypeName(caseDef.opType) + "(data1_val, id_in, 1u); break;\n"
+		"      case 2: op = " + getOpTypeName(caseDef.opType) + "(data1_val, id_in, 2u); break;\n"
+		"      case 4: op = " + getOpTypeName(caseDef.opType) + "(data1_val, id_in, 4u); break;\n"
+		"      case 8: op = " + getOpTypeName(caseDef.opType) + "(data1_val, id_in, 8u); break;\n"
+		"      case 16: op = " + getOpTypeName(caseDef.opType) + "(data1_val, id_in, 16u); break;\n"
+		"      case 32: op = " + getOpTypeName(caseDef.opType) + "(data1_val, id_in, 32u); break;\n"
+		"      case 64: op = " + getOpTypeName(caseDef.opType) + "(data1_val, id_in, 64u); break;\n"
+		"      case 128: op = " + getOpTypeName(caseDef.opType) + "(data1_val, id_in, 128u); break;\n"
+		"    }\n"
+		"    uint id = ((gl_SubgroupInvocationID + id_in) & (cluster_size - 1)) | (gl_SubgroupInvocationID & ~(cluster_size - 1));\n"
+		"    if ((id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
+		"    {\n"
+		"      cluster_res = (op == data1[id]) ? 1 : 0;\n"
+		"    }\n"
+		"    else\n"
+		"    {\n"
+		"      cluster_res = 1; // Invocation we read from was inactive, so we can't verify results!\n"
+		"    }\n"
+		"    temp_res = (temp_res & cluster_res);\n"
+		"  }\n"
+		"  tempRes = temp_res;\n";
+
+	return testSource;
+}
+
+const string getTestSource (const CaseDefinition& caseDef)
+{
+	if (caseDef.opType == OPTYPE_CLUSTERED_ROTATE)
+	{
+		return getClusteredTestSource(caseDef);
+	}
+	return getNonClusteredTestSource(caseDef);
 }
 
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
@@ -251,6 +321,28 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 				TCU_THROW(NotSupportedError, "Device does not support subgroup shuffle operations");
 			}
 			break;
+#ifndef CTS_USES_VULKANSC
+		case OPTYPE_ROTATE:
+			if (!context.getShaderSubgroupRotateFeatures().shaderSubgroupRotate)
+			{
+				TCU_THROW(NotSupportedError, "Device does not support shaderSubgroupRotate");
+			}
+			if (!subgroups::isSubgroupRotateSpecVersionValid(context))
+			{
+				TCU_THROW(NotSupportedError, "VK_KHR_shader_subgroup_rotate is version 1. Need version 2 or higher");
+			}
+			break;
+		case OPTYPE_CLUSTERED_ROTATE:
+			if (!context.getShaderSubgroupRotateFeatures().shaderSubgroupRotateClustered)
+			{
+				TCU_THROW(NotSupportedError, "Device does not support shaderSubgroupRotateClustered");
+			}
+			if (!subgroups::isSubgroupRotateSpecVersionValid(context))
+			{
+				TCU_THROW(NotSupportedError, "VK_KHR_shader_subgroup_rotate is version 1. Need version 2 or higher");
+			}
+			break;
+#endif // CTS_USES_VULKANSC
 		default:
 			if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT))
 			{
@@ -261,6 +353,22 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 
 	if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
 		TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+
+	if (caseDef.requires16BitUniformBuffer)
+	{
+		if (!subgroups::is16BitUBOStorageSupported(context))
+		{
+			TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+		}
+	}
+
+	if (caseDef.requires8BitUniformBuffer)
+	{
+		if (!subgroups::is8BitUBOStorageSupported(context))
+		{
+			TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+		}
+	}
 
 	if (caseDef.requiredSubgroupSize)
 	{
@@ -481,14 +589,14 @@ namespace subgroups
 {
 TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "shuffle", "Subgroup shuffle category tests"));
+	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "shuffle"));
 
-	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics", "Subgroup shuffle category tests: graphics"));
-	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup shuffle category tests: compute"));
-	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup shuffle category tests: framebuffer"));
+	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer"));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup shuffle category tests: ray tracing"));
-	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh", "Subgroup shuffle category tests: mesh shading"));
+	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing"));
+	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh"));
 #endif // CTS_USES_VULKANSC
 
 	const VkShaderStageFlags	fbStages[]			=
@@ -529,8 +637,10 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 
 		for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
 		{
-			const VkFormat	format		= formats[formatIndex];
-			const string	formatName	= subgroups::getFormatNameForGLSL(format);
+			const VkFormat	format					= formats[formatIndex];
+			const string	formatName				= subgroups::getFormatNameForGLSL(format);
+			const bool		needs8BitUBOStorage		= isFormat8bitTy(format);
+			const bool		needs16BitUBOStorage	= isFormat16BitTy(format);
 
 			for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 			{
@@ -539,6 +649,10 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 					const OpType opType = static_cast<OpType>(opTypeIndex);
 
 					if (opType == OPTYPE_SHUFFLE && argCase.argType != ArgType::DYNAMIC)
+						continue;
+
+					if ((opType == OPTYPE_ROTATE || opType == OPTYPE_CLUSTERED_ROTATE) &&
+							argCase.argType == ArgType::DYNAMIC)
 						continue;
 
 					const string name = de::toLower(getOpTypeName(opType)) + "_" + formatName + argCase.suffix;
@@ -552,9 +666,11 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 							DE_FALSE,						//  deBool				requiredSubgroupSize;
 							argCase.argType,				//  ArgType				argType;
+							DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+							DE_FALSE						//  deBool				requires16BitUniformBuffer;
 						};
 
-						addFunctionCaseWithPrograms(graphicGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+						addFunctionCaseWithPrograms(graphicGroup.get(), name, supportedCheck, initPrograms, test, caseDef);
 					}
 
 					for (size_t groupSizeNdx = 0; groupSizeNdx < DE_LENGTH_OF_ARRAY(boolValues); ++groupSizeNdx)
@@ -569,9 +685,11 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 							requiredSubgroupSize,			//  deBool				requiredSubgroupSize;
 							argCase.argType,				//  ArgType				argType;
+							DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+							DE_FALSE						//  deBool				requires16BitUniformBuffer;
 						};
 
-						addFunctionCaseWithPrograms(computeGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+						addFunctionCaseWithPrograms(computeGroup.get(), testName,supportedCheck, initPrograms, test, caseDef);
 					}
 
 #ifndef CTS_USES_VULKANSC
@@ -589,9 +707,11 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 								de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 								requiredSubgroupSize,			//  deBool				requiredSubgroupSize;
 								argCase.argType,				//  ArgType				argType;
+								DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+								DE_FALSE,						//  deBool				requires16BitUniformBuffer;
 							};
 
-							addFunctionCaseWithPrograms(meshGroup.get(), testName, "", supportedCheck, initPrograms, test, caseDef);
+							addFunctionCaseWithPrograms(meshGroup.get(), testName,supportedCheck, initPrograms, test, caseDef);
 						}
 					}
 #endif // CTS_USES_VULKANSC
@@ -606,10 +726,12 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 							DE_FALSE,						//  deBool				requiredSubgroupSize;
 							argCase.argType,				//  ArgType				argType;
+							deBool(needs8BitUBOStorage),	//  deBool				requires8BitUniformBuffer;
+							deBool(needs16BitUBOStorage)	//  deBool				requires16BitUniformBuffer;
 						};
 						const string			testName	= name + "_" + getShaderStageName(caseDef.shaderStage);
 
-						addFunctionCaseWithPrograms(framebufferGroup.get(), testName, "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+						addFunctionCaseWithPrograms(framebufferGroup.get(), testName,supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 					}
 				}
 			}
@@ -634,6 +756,10 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 					if (opType == OPTYPE_SHUFFLE && argCase.argType != ArgType::DYNAMIC)
 						continue;
 
+					if ((opType == OPTYPE_ROTATE || opType == OPTYPE_CLUSTERED_ROTATE) &&
+							argCase.argType == ArgType::DYNAMIC)
+						continue;
+
 					const string			name	= de::toLower(getOpTypeName(opType)) + "_" + formatName + argCase.suffix;
 					const CaseDefinition	caseDef	=
 					{
@@ -643,9 +769,11 @@ TestCaseGroup* createSubgroupsShuffleTests (TestContext& testCtx)
 						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 						DE_FALSE,						//  deBool				requiredSubgroupSize;
 						argCase.argType,				//  ArgType				argType;
+						DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+						DE_FALSE						//  deBool				requires16BitUniformBuffer;
 					};
 
-					addFunctionCaseWithPrograms(raytracingGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(raytracingGroup.get(), name, supportedCheck, initPrograms, test, caseDef);
 				}
 			}
 		}

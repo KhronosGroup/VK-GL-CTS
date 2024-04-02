@@ -380,7 +380,6 @@ class AstcDecodeModeCase : public TestCase
 public:
 					AstcDecodeModeCase	(TestContext&			testCtx,
 										 const std::string&		name,
-										 const std::string&		desc,
 										 const TestParameters&	parameters);
 	virtual void	checkSupport		(Context&				context) const;
 	void			initPrograms		(SourceCollections&		programCollection) const;
@@ -393,9 +392,8 @@ protected:
 
 AstcDecodeModeCase::AstcDecodeModeCase (TestContext&			testCtx,
 										const std::string&		name,
-										const std::string&		desc,
 										const TestParameters&	parameters)
-	: TestCase		(testCtx, name, desc)
+	: TestCase		(testCtx, name)
 	, m_parameters	(parameters)
 {
 }
@@ -525,7 +523,8 @@ tcu::TestCaseGroup* createImageAstcDecodeModeTests (tcu::TestContext& testCtx)
 		{ VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,	"e5b9g9r9_ufloat_pack32" }
 	};
 
-	MovePtr<tcu::TestCaseGroup> astcDecodeModeTests(new tcu::TestCaseGroup(testCtx, "astc_decode_mode", "Intermediate decoding precision cases"));
+	// Intermediate decoding precision cases
+	MovePtr<tcu::TestCaseGroup> astcDecodeModeTests(new tcu::TestCaseGroup(testCtx, "astc_decode_mode"));
 	for (const FormatData& format : astcFormats)
 	{
 		for (const DecodeModeData& mode : decodeModes)
@@ -543,7 +542,7 @@ tcu::TestCaseGroup* createImageAstcDecodeModeTests (tcu::TestContext& testCtx)
 			};
 
 			std::string name = format.name + "_to_" + mode.name;
-			astcDecodeModeTests->addChild(new AstcDecodeModeCase(testCtx, name, "", parameters));
+			astcDecodeModeTests->addChild(new AstcDecodeModeCase(testCtx, name, parameters));
 		}
 	}
 

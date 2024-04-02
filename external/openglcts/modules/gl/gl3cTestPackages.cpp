@@ -32,9 +32,11 @@
 #include "gl3cTextureSwizzleTests.hpp"
 #include "gl3cTransformFeedbackOverflowQueryTests.hpp"
 #include "gl3cTransformFeedbackTests.hpp"
+#include "gl3cTransformFeedback3Tests.hpp"
 #include "gl4cPipelineStatisticsQueryTests.hpp"
 #include "glcPixelStorageModesTests.hpp"
 #include "glcFragDepthTests.hpp"
+#include "glcFramebufferBlitTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcPackedDepthStencilTests.hpp"
 #include "glcPackedPixelsTests.hpp"
@@ -45,12 +47,16 @@
 #include "glcShaderLoopTests.hpp"
 #include "glcShaderNegativeTests.hpp"
 #include "glcShaderStructTests.hpp"
+#include "glcTextureLodBasicTests.hpp"
+#include "glcTextureLodBiasTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "glcNearestEdgeTests.hpp"
 #include "glcGLSLVectorConstructorTests.hpp"
 #include "gluStateReset.hpp"
+#include "qpTestLog.h"
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 #include "tcuWaiverUtil.hpp"
 
 #include "../glesext/texture_shadow_lod/esextcTextureShadowLodFunctionsTest.hpp"
@@ -97,6 +103,16 @@ tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
 	}
 
 	const tcu::TestCase::IterateResult result = testCase->iterate();
+
+	{
+		if (testCtx.getCommandLine().isTerminateOnDeviceLostEnabled()) {
+			const glw::Functions& gl = renderCtx.getFunctions();
+			auto res = gl.getGraphicsResetStatus();
+			if (res != GL_NO_ERROR) {
+				testCtx.setTestResult(QP_TEST_RESULT_DEVICE_LOST, "Device Lost");
+			}
+		}
+	}
 
 	// Call implementation specific post-iterate routine (usually handles native events and swaps buffers)
 	try
@@ -156,9 +172,13 @@ void GL30TestPackage::init(void)
 		addChild(new gl3cts::ClipDistance::Tests(getContext()));
 		addChild(new gl3cts::GLSLnoperspectiveTests(getContext()));
 		addChild(new gl3cts::TransformFeedback::Tests(getContext()));
+		addChild(new gl3cts::TransformFeedback3Tests(getContext()));
 		addChild(new glcts::TextureRepeatModeTests(getContext()));
+		addChild(new glcts::TextureLodBasicTests(getContext()));
 		addChild(new GL30ShaderTests(getContext()));
 		addChild(new deqp::Functional::TextureShadowLodTest(getContext()));
+		addChild(new glcts::FramebufferBlitTests(getContext()));
+		addChild(new glcts::TextureLodBiasTests(getContext()));
 	}
 	catch (...)
 	{

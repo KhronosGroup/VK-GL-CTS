@@ -287,7 +287,7 @@ public:
 							MemoryRequirementsTest	(TestContext&			testCtx,
 													 const std::string&		name,
 													 const TestConfig		testConfig)
-								: TestCase		(testCtx, name, std::string())
+								: TestCase		(testCtx, name)
 								, m_testConfig	(testConfig)
 								, m_instConfig	(testConfig) {}
 
@@ -502,7 +502,7 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 
 					if (i->any({VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR, VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR}))
 					{
-						if (!context.isDeviceFunctionalitySupported(VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME))
+						if (!context.isDeviceFunctionalitySupported(VK_KHR_VIDEO_ENCODE_H264_EXTENSION_NAME))
 						{
 							if (!msgs[3])
 							{
@@ -512,7 +512,7 @@ void MemoryRequirementsTest::checkSupport (Context& context) const
 							}
 							notSupported = true;
 						}
-						if (!(videoFlags & VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT))
+						if (!(videoFlags & VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR))
 						{
 							if (!msgs[4])
 							{
@@ -718,9 +718,9 @@ template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfi
 	const bool encode = (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) || (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR);
 	const bool decode = (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR) || (videoCodecUsage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR);
 
-	static VkVideoEncodeH264ProfileInfoEXT	encodeProfile
+	static VkVideoEncodeH264ProfileInfoKHR	encodeProfile
 	{
-		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT,	// VkStructureType						sType;
+		VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_KHR,	// VkStructureType						sType;
 		nullptr,												// const void*							pNext;
 		STD_VIDEO_H264_PROFILE_IDC_BASELINE						// StdVideoH264ProfileIdc				stdProfileIdc;
 	};
@@ -739,7 +739,7 @@ template<> void* BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfi
 		{
 			VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR,			// VkStructureType						sType;
 			&encodeProfile,										// void*								pNext;
-			VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT,		// VkVideoCodecOperationFlagBitsKHR		videoCodecOperation;
+			VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR,		// VkVideoCodecOperationFlagBitsKHR		videoCodecOperation;
 			VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,		// VkVideoChromaSubsamplingFlagsKHR		chromaSubsampling;
 			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,				// VkVideoComponentBitDepthFlagsKHR		lumaBitDepth;
 			VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR				// VkVideoComponentBitDepthFlagsKHR		chromaBitDepth;
@@ -964,8 +964,6 @@ TestStatus	BufferMemoryRequirementsInstance::iterate (void)
 
 tcu::TestCaseGroup* createBufferMemoryRequirementsTests (tcu::TestContext& testCtx)
 {
-	cstr nilstr = "";
-
 	struct
 	{
 		bool		include;
@@ -1011,16 +1009,16 @@ tcu::TestCaseGroup* createBufferMemoryRequirementsTests (tcu::TestContext& testC
 #endif
 	}
 
-	auto groupRoot = new TestCaseGroup(testCtx, "buffer_memory_requirements", "vkGetBufferMemoryRequirements*(...) routines tests.");
+	auto groupRoot = new TestCaseGroup(testCtx, "buffer_memory_requirements");
 	for (const auto& createBits : createBitPtrs)
 	{
-		auto groupCreate = new TestCaseGroup(testCtx, bitsToString(*createBits, "create_").c_str(), nilstr);
+		auto groupCreate = new TestCaseGroup(testCtx, bitsToString(*createBits, "create_").c_str());
 		for (const auto& extMemTypeFlag : extMemTypeFlags)
 		{
-			auto groupExtMemTypeFlags = new TestCaseGroup(testCtx, extMemTypeFlag.name, nilstr);
+			auto groupExtMemTypeFlags = new TestCaseGroup(testCtx, extMemTypeFlag.name);
 			for (const auto& method : methods)
 			{
-				auto groupMethod = new TestCaseGroup(testCtx, method.name, nilstr);
+				auto groupMethod = new TestCaseGroup(testCtx, method.name);
 				for (const auto& fateBits : fateBitPtrs)
 				{
 #ifndef CTS_USES_VULKANSC

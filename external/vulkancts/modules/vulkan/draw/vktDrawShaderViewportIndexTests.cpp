@@ -1070,7 +1070,7 @@ void checkSupport (Context& context, TestParams params)
 
 tcu::TestCaseGroup* createShaderViewportIndexTests	(tcu::TestContext& testCtx, const SharedGroupParams groupParams)
 {
-	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_viewport_index", ""));
+	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_viewport_index"));
 
 	TestParams testParams
 	{
@@ -1081,18 +1081,18 @@ tcu::TestCaseGroup* createShaderViewportIndexTests	(tcu::TestContext& testCtx, c
 	};
 
 	for (testParams.numViewports = 1; testParams.numViewports <= MIN_MAX_VIEWPORTS; ++testParams.numViewports)
-		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(testParams.numViewports), "", checkSupport, initVertexTestPrograms, testVertexShader, testParams);
+		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(testParams.numViewports), checkSupport, initVertexTestPrograms, testVertexShader, testParams);
 
 	testParams.numViewports = 1;
-	addFunctionCaseWithPrograms(group.get(), "fragment_shader_implicit", "", checkSupport, initFragmentTestPrograms, testFragmentShader, testParams);
+	addFunctionCaseWithPrograms(group.get(), "fragment_shader_implicit", checkSupport, initFragmentTestPrograms, testFragmentShader, testParams);
 	testParams.writeFromVertex = true;
 	for (testParams.numViewports = 1; testParams.numViewports <= MIN_MAX_VIEWPORTS; ++testParams.numViewports)
-		addFunctionCaseWithPrograms(group.get(), "fragment_shader_" + de::toString(testParams.numViewports), "", checkSupport, initFragmentTestPrograms, testFragmentShader, testParams);
+		addFunctionCaseWithPrograms(group.get(), "fragment_shader_" + de::toString(testParams.numViewports), checkSupport, initFragmentTestPrograms, testFragmentShader, testParams);
 	testParams.writeFromVertex = false;
 
 	testParams.useTessellationShader = true;
 	for (testParams.numViewports = 1; testParams.numViewports <= MIN_MAX_VIEWPORTS; ++testParams.numViewports)
-		addFunctionCaseWithPrograms(group.get(), "tessellation_shader_" + de::toString(testParams.numViewports), "", checkSupport, initTessellationTestPrograms, testTessellationShader, testParams);
+		addFunctionCaseWithPrograms(group.get(), "tessellation_shader_" + de::toString(testParams.numViewports), checkSupport, initTessellationTestPrograms, testTessellationShader, testParams);
 
 	return group.release();
 }

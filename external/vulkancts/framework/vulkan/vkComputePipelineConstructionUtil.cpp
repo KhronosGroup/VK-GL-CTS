@@ -37,7 +37,7 @@ void checkShaderObjectRequirements (const InstanceInterface&		vki,
 	if (computePipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE)
 		return;
 
-	const auto supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const auto& supportedExtensions = enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_shader_object")))
 		TCU_THROW(NotSupportedError, "VK_EXT_shader_object not supported");
 }
@@ -64,6 +64,8 @@ ComputePipelineWrapper::ComputePipelineWrapper (const	DeviceInterface&				vk,
 	, m_programBinary		(DE_NULL)
 	, m_specializationInfo	{}
 	, m_pipelineCreateFlags	((VkPipelineCreateFlags)0u)
+	, m_pipelineCreatePNext	(DE_NULL)
+	, m_subgroupSize		(0)
 {
 
 }
@@ -76,6 +78,8 @@ ComputePipelineWrapper::ComputePipelineWrapper (const DeviceInterface&					vk,
 	, m_programBinary		(&programBinary)
 	, m_specializationInfo	{}
 	, m_pipelineCreateFlags	((VkPipelineCreateFlags)0u)
+	, m_pipelineCreatePNext	(DE_NULL)
+	, m_subgroupSize		(0)
 {
 }
 
@@ -85,6 +89,8 @@ ComputePipelineWrapper::ComputePipelineWrapper (const ComputePipelineWrapper& rh
 	, m_descriptorSetLayouts	(rhs.m_descriptorSetLayouts)
 	, m_specializationInfo		(rhs.m_specializationInfo)
 	, m_pipelineCreateFlags		(rhs.m_pipelineCreateFlags)
+	, m_pipelineCreatePNext		(rhs.m_pipelineCreatePNext)
+	, m_subgroupSize			(rhs.m_subgroupSize)
 {
 	DE_ASSERT(rhs.m_pipeline.get() == DE_NULL);
 #ifndef CTS_USES_VULKANSC
@@ -98,6 +104,8 @@ ComputePipelineWrapper::ComputePipelineWrapper (ComputePipelineWrapper&& rhs) no
 	, m_descriptorSetLayouts	(rhs.m_descriptorSetLayouts)
 	, m_specializationInfo		(rhs.m_specializationInfo)
 	, m_pipelineCreateFlags		(rhs.m_pipelineCreateFlags)
+	, m_pipelineCreatePNext		(rhs.m_pipelineCreatePNext)
+	, m_subgroupSize			(rhs.m_subgroupSize)
 {
 	DE_ASSERT(rhs.m_pipeline.get() == DE_NULL);
 #ifndef CTS_USES_VULKANSC
@@ -112,10 +120,12 @@ ComputePipelineWrapper& ComputePipelineWrapper::operator= (const ComputePipeline
 	m_descriptorSetLayouts = rhs.m_descriptorSetLayouts;
 	m_specializationInfo = rhs.m_specializationInfo;
 	m_pipelineCreateFlags = rhs.m_pipelineCreateFlags;
+	m_pipelineCreatePNext =	rhs.m_pipelineCreatePNext;
 	DE_ASSERT(rhs.m_pipeline.get() == DE_NULL);
 #ifndef CTS_USES_VULKANSC
 	DE_ASSERT(rhs.m_shader.get() == DE_NULL);
 #endif
+	m_subgroupSize = rhs.m_subgroupSize;
 	return *this;
 }
 
@@ -126,10 +136,12 @@ ComputePipelineWrapper& ComputePipelineWrapper::operator= (ComputePipelineWrappe
 	m_descriptorSetLayouts = std::move(rhs.m_descriptorSetLayouts);
 	m_specializationInfo = rhs.m_specializationInfo;
 	m_pipelineCreateFlags = rhs.m_pipelineCreateFlags;
+	m_pipelineCreatePNext =	rhs.m_pipelineCreatePNext;
 	DE_ASSERT(rhs.m_pipeline.get() == DE_NULL);
 #ifndef CTS_USES_VULKANSC
 	DE_ASSERT(rhs.m_shader.get() == DE_NULL);
 #endif
+	m_subgroupSize = rhs.m_subgroupSize;
 	return *this;
 }
 
@@ -153,6 +165,15 @@ void ComputePipelineWrapper::setPipelineCreateFlags (VkPipelineCreateFlags pipel
 	m_pipelineCreateFlags = pipelineCreateFlags;
 }
 
+void ComputePipelineWrapper::setPipelineCreatePNext (void* pipelineCreatePNext)
+{
+	m_pipelineCreatePNext = pipelineCreatePNext;
+}
+
+void ComputePipelineWrapper::setSubgroupSize (uint32_t subgroupSize)
+{
+	m_subgroupSize = subgroupSize;
+}
 void ComputePipelineWrapper::buildPipeline (void)
 {
 	const auto& vk		= m_internalData->vk;
@@ -164,29 +185,36 @@ void ComputePipelineWrapper::buildPipeline (void)
 		DE_ASSERT(m_pipeline.get() == DE_NULL);
 		const Unique<VkShaderModule>	shaderModule	(createShaderModule(vk, device, *m_programBinary));
 		buildPipelineLayout();
-		m_pipeline = vk::makeComputePipeline(vk, device, *m_pipelineLayout, m_pipelineCreateFlags, *shaderModule, 0u, specializationInfo);
+		m_pipeline = vk::makeComputePipeline(vk, device, *m_pipelineLayout, m_pipelineCreateFlags, m_pipelineCreatePNext, *shaderModule, 0u, specializationInfo, 0, m_subgroupSize);
 	}
 	else
 	{
 #ifndef CTS_USES_VULKANSC
 		DE_ASSERT(m_shader.get() == DE_NULL);
 		buildPipelineLayout();
+
+		VkShaderRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo = {
+			VK_STRUCTURE_TYPE_SHADER_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,	// VkStructureType	sType;
+			DE_NULL,															// void*			pNext;
+			m_subgroupSize,														// uint32_t			requiredSubgroupSize;
+		};
+
 		vk::VkShaderCreateInfoEXT		createInfo =
 		{
-			vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,	// VkStructureType				sType;
-			DE_NULL,										// const void*					pNext;
-			0u,												// VkShaderCreateFlagsEXT		flags;
-			vk::VK_SHADER_STAGE_COMPUTE_BIT,				// VkShaderStageFlagBits		stage;
-			0u,												// VkShaderStageFlags			nextStage;
-			vk::VK_SHADER_CODE_TYPE_SPIRV_EXT,				// VkShaderCodeTypeEXT			codeType;
-			m_programBinary->getSize(),						// size_t						codeSize;
-			m_programBinary->getBinary(),					// const void*					pCode;
-			"main",											// const char*					pName;
-			(deUint32)m_descriptorSetLayouts.size(),		// uint32_t						setLayoutCount;
-			m_descriptorSetLayouts.data(),					// VkDescriptorSetLayout*		pSetLayouts;
-			0u,												// uint32_t						pushConstantRangeCount;
-			DE_NULL,										// const VkPushConstantRange*	pPushConstantRanges;
-			specializationInfo,								// const VkSpecializationInfo*	pSpecializationInfo;
+			vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,				// VkStructureType				sType;
+			m_subgroupSize != 0 ? &subgroupSizeCreateInfo : DE_NULL,	// const void*					pNext;
+			0u,															// VkShaderCreateFlagsEXT		flags;
+			vk::VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits		stage;
+			0u,															// VkShaderStageFlags			nextStage;
+			vk::VK_SHADER_CODE_TYPE_SPIRV_EXT,							// VkShaderCodeTypeEXT			codeType;
+			m_programBinary->getSize(),									// size_t						codeSize;
+			m_programBinary->getBinary(),								// const void*					pCode;
+			"main",														// const char*					pName;
+			(deUint32)m_descriptorSetLayouts.size(),					// uint32_t						setLayoutCount;
+			m_descriptorSetLayouts.data(),								// VkDescriptorSetLayout*		pSetLayouts;
+			0u,															// uint32_t						pushConstantRangeCount;
+			DE_NULL,													// const VkPushConstantRange*	pPushConstantRanges;
+			specializationInfo,											// const VkSpecializationInfo*	pSpecializationInfo;
 		};
 
 		m_shader = createShader(vk, device, createInfo);

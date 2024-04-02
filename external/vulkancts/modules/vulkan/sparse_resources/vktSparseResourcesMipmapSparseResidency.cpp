@@ -60,7 +60,6 @@ class MipmapSparseResidencyCase : public TestCase
 public:
 	MipmapSparseResidencyCase		(tcu::TestContext&	testCtx,
 									 const std::string&	name,
-									 const std::string&	description,
 									 const ImageType	imageType,
 									 const tcu::UVec3&	imageSize,
 									 const VkFormat		format,
@@ -78,12 +77,11 @@ private:
 
 MipmapSparseResidencyCase::MipmapSparseResidencyCase	(tcu::TestContext&	testCtx,
 														 const std::string&	name,
-														 const std::string&	description,
 														 const ImageType	imageType,
 														 const tcu::UVec3&	imageSize,
 														 const VkFormat		format,
 														 const bool			useDeviceGroups)
-	: TestCase			(testCtx, name, description)
+	: TestCase			(testCtx, name)
 	, m_useDeviceGroups	(useDeviceGroups)
 	, m_imageType		(imageType)
 	, m_imageSize		(imageSize)
@@ -583,13 +581,13 @@ tcu::TestCaseGroup* createMipmapSparseResidencyTestsCommon (tcu::TestContext& te
 	for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
 	{
 		const ImageType					imageType = imageParameters[imageTypeNdx].imageType;
-		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str()));
 
 		for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
 		{
 			VkFormat						format				= imageParameters[imageTypeNdx].formats[formatNdx].format;
 			tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(format);
-			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str()));
 
 			for (size_t imageSizeNdx = 0; imageSizeNdx < imageParameters[imageTypeNdx].imageSizes.size(); ++imageSizeNdx)
 			{
@@ -604,7 +602,7 @@ tcu::TestCaseGroup* createMipmapSparseResidencyTestsCommon (tcu::TestContext& te
 				std::ostringstream stream;
 				stream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
 
-				formatGroup->addChild(new MipmapSparseResidencyCase(testCtx, stream.str(), "", imageType, imageSize, format, useDeviceGroup));
+				formatGroup->addChild(new MipmapSparseResidencyCase(testCtx, stream.str(), imageType, imageSize, format, useDeviceGroup));
 			}
 			imageTypeGroup->addChild(formatGroup.release());
 		}
@@ -616,13 +614,13 @@ tcu::TestCaseGroup* createMipmapSparseResidencyTestsCommon (tcu::TestContext& te
 
 tcu::TestCaseGroup* createMipmapSparseResidencyTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "mipmap_sparse_residency", "Mipmap Sparse Residency"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "mipmap_sparse_residency"));
 	return createMipmapSparseResidencyTestsCommon(testCtx, testGroup);
 }
 
 tcu::TestCaseGroup* createDeviceGroupMipmapSparseResidencyTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "device_group_mipmap_sparse_residency", "Mipmap Sparse Residency"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "device_group_mipmap_sparse_residency"));
 	return createMipmapSparseResidencyTestsCommon(testCtx, testGroup, true);
 }
 

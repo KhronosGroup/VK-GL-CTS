@@ -756,7 +756,6 @@ class DynamicOffsetGraphicsTest : public vkt::TestCase
 public:
 						DynamicOffsetGraphicsTest	(tcu::TestContext&	testContext,
 													 const string&		name,
-													 const string&		description,
 													 const TestParams&	params);
 						~DynamicOffsetGraphicsTest	(void);
 	void				initPrograms				(SourceCollections& sourceCollections) const;
@@ -769,9 +768,8 @@ protected:
 
 DynamicOffsetGraphicsTest::DynamicOffsetGraphicsTest (tcu::TestContext&	testContext,
 													  const string&		name,
-													  const string&		description,
 													  const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -1307,11 +1305,11 @@ class DynamicOffsetComputeTest : public vkt::TestCase
 public:
 						DynamicOffsetComputeTest	(tcu::TestContext&	testContext,
 													 const string&		name,
-													 const string&		description,
 													 const TestParams&	params);
 						~DynamicOffsetComputeTest	(void);
 	void				initPrograms				(SourceCollections& sourceCollections) const;
 	TestInstance*		createInstance				(Context& context) const;
+	void				checkSupport				(Context& context) const;
 
 protected:
 	const TestParams	m_params;
@@ -1319,9 +1317,8 @@ protected:
 
 DynamicOffsetComputeTest::DynamicOffsetComputeTest (tcu::TestContext&	testContext,
 													const string&		name,
-													const string&		description,
 													const TestParams&	params)
-	: vkt::TestCase	(testContext, name, description)
+	: vkt::TestCase	(testContext, name)
 	, m_params		(params)
 {
 }
@@ -1333,6 +1330,11 @@ DynamicOffsetComputeTest::~DynamicOffsetComputeTest (void)
 TestInstance* DynamicOffsetComputeTest::createInstance (Context& context) const
 {
 	return new DynamicOffsetComputeTestInstance(context, m_params);
+}
+
+void DynamicOffsetComputeTest::checkSupport(Context& context) const
+{
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.pipelineConstructionType);
 }
 
 void DynamicOffsetComputeTest::initPrograms (SourceCollections& sourceCollections) const
@@ -1741,25 +1743,35 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 
 	// Prepare buffers
 	const vk::VkDeviceSize									minUboAlignment			= deviceLimits.minUniformBufferOffsetAlignment;
+	const vk::VkDeviceSize									minSsboAlignment			= deviceLimits.minStorageBufferOffsetAlignment;
 	const deUint32											bufferElementSizeVec4	= (deUint32)sizeof(tcu::Vec4);
 	const deUint32											bufferElementSizeMat4	= (deUint32)sizeof(tcu::Mat4);
-	deUint32												dynamicAlignmentVec4	= bufferElementSizeVec4;
-	deUint32												dynamicAlignmentMat4	= bufferElementSizeMat4;
+	deUint32												uboDynamicAlignmentVec4	= bufferElementSizeVec4;
+	deUint32												uboDynamicAlignmentMat4	= bufferElementSizeMat4;
+	deUint32												ssboDynamicAlignmentVec4	= bufferElementSizeVec4;
+	deUint32												ssboDynamicAlignmentMat4	= bufferElementSizeMat4;
 
 	if (minUboAlignment > 0)
 	{
-		dynamicAlignmentVec4	= (dynamicAlignmentVec4 + (deUint32)minUboAlignment - 1) & ~((deUint32)minUboAlignment - 1);
-		dynamicAlignmentMat4	= (dynamicAlignmentMat4 + (deUint32)minUboAlignment - 1) & ~((deUint32)minUboAlignment - 1);
+		uboDynamicAlignmentVec4	= (uboDynamicAlignmentVec4 + (deUint32)minUboAlignment - 1) & ~((deUint32)minUboAlignment - 1);
+		uboDynamicAlignmentMat4	= (uboDynamicAlignmentMat4 + (deUint32)minUboAlignment - 1) & ~((deUint32)minUboAlignment - 1);
+	}
+	if (minSsboAlignment > 0)
+	{
+		ssboDynamicAlignmentVec4	= (ssboDynamicAlignmentVec4 + (deUint32)minSsboAlignment - 1) & ~((deUint32)minSsboAlignment - 1);
+		ssboDynamicAlignmentMat4	= (ssboDynamicAlignmentMat4 + (deUint32)minSsboAlignment - 1) & ~((deUint32)minSsboAlignment - 1);
 	}
 
-	const deUint32											bufferSizeVec4			= m_numInstances * dynamicAlignmentVec4;
-	const deUint32											bufferSizeMat4			= m_numInstances * dynamicAlignmentMat4;
+	const deUint32											uboBufferSizeVec4			= m_numInstances * uboDynamicAlignmentVec4;
+	const deUint32											uboBufferSizeMat4			= m_numInstances * uboDynamicAlignmentMat4;
+	const deUint32											ssboBufferSizeVec4			= m_numInstances * ssboDynamicAlignmentVec4;
+	const deUint32											ssboBufferSizeMat4			= m_numInstances * ssboDynamicAlignmentMat4;
 
-	const Unique<VkBuffer>									uboBufferVertex			(makeBuffer(vk, device, bufferSizeVec4, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
-	const Unique<VkBuffer>									uboBufferShared			(makeBuffer(vk, device, bufferSizeVec4, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
-	const Unique<VkBuffer>									ssboBufferWrite			(makeBuffer(vk, device, bufferSizeVec4, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
-	const Unique<VkBuffer>									uboBufferFrag			(makeBuffer(vk, device, bufferSizeMat4, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
-	const Unique<VkBuffer>									ssboBufferRead			(makeBuffer(vk, device, bufferSizeMat4, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
+	const Unique<VkBuffer>									uboBufferVertex			(makeBuffer(vk, device, uboBufferSizeVec4, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+	const Unique<VkBuffer>									uboBufferShared			(makeBuffer(vk, device, uboBufferSizeVec4, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+	const Unique<VkBuffer>									ssboBufferWrite			(makeBuffer(vk, device, ssboBufferSizeVec4, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
+	const Unique<VkBuffer>									uboBufferFrag			(makeBuffer(vk, device, uboBufferSizeMat4, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+	const Unique<VkBuffer>									ssboBufferRead			(makeBuffer(vk, device, ssboBufferSizeMat4, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
 
 	const UniquePtr<Allocation>								uboBufferAllocVertex	(bindBuffer(vk, device, allocator, *uboBufferVertex, MemoryRequirement::HostVisible));
 	const UniquePtr<Allocation>								uboBufferAllocShared	(bindBuffer(vk, device, allocator, *uboBufferShared, MemoryRequirement::HostVisible));
@@ -1823,11 +1835,11 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 				*((tcu::Vec4*)pPosSsboWrite)	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 				*((tcu::Mat4*)pPosUboFrag)		= tcu::Mat4(constFragMat);
 				*((tcu::Mat4*)pPosSsboRead)		= tcu::Mat4(constReadMat);
-				pPosUboVertex					+= dynamicAlignmentVec4;
-				pPosUboShared					+= dynamicAlignmentVec4;
-				pPosSsboWrite					+= dynamicAlignmentVec4;
-				pPosUboFrag						+= dynamicAlignmentMat4;
-				pPosSsboRead					+= dynamicAlignmentMat4;
+				pPosUboVertex					+= uboDynamicAlignmentVec4;
+				pPosUboShared					+= uboDynamicAlignmentVec4;
+				pPosSsboWrite					+= ssboDynamicAlignmentVec4;
+				pPosUboFrag						+= uboDynamicAlignmentMat4;
+				pPosSsboRead					+= ssboDynamicAlignmentMat4;
 			}
 		}
 		else
@@ -1855,11 +1867,11 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 				*((tcu::Vec4*)pPosSsboWrite)	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 				*((tcu::Mat4*)pPosUboFrag)		= tcu::Mat4(constFragMat);
 				*((tcu::Mat4*)pPosSsboRead)		= tcu::Mat4(constReadMat);
-				pPosUboVertex					+= dynamicAlignmentVec4;
-				pPosUboShared					+= dynamicAlignmentVec4;
-				pPosSsboWrite					+= dynamicAlignmentVec4;
-				pPosUboFrag						+= dynamicAlignmentMat4;
-				pPosSsboRead					+= dynamicAlignmentMat4;
+				pPosUboVertex					+= uboDynamicAlignmentVec4;
+				pPosUboShared					+= uboDynamicAlignmentVec4;
+				pPosSsboWrite					+= ssboDynamicAlignmentVec4;
+				pPosUboFrag						+= uboDynamicAlignmentMat4;
+				pPosSsboRead					+= ssboDynamicAlignmentMat4;
 			}
 		}
 
@@ -1920,15 +1932,17 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 		{
 			for (deUint32 instance = 0; instance < m_numInstances; instance++)
 			{
-				deUint32				offsetVec4 = dynamicAlignmentVec4 * instance;
-				deUint32				offsetMat4 = dynamicAlignmentMat4 * instance;
+				deUint32				uboOffsetVec4 = uboDynamicAlignmentVec4 * instance;
+				deUint32				uboOffsetMat4 = uboDynamicAlignmentMat4 * instance;
+				deUint32				ssboOffsetVec4 = ssboDynamicAlignmentVec4 * instance;
+				deUint32				ssboOffsetMat4 = ssboDynamicAlignmentMat4 * instance;
 				std::vector<deUint32>	offsets;
 
-				offsets.push_back(m_reverseOrder ? offsetMat4 : offsetVec4);
-				offsets.push_back(m_reverseOrder ? offsetMat4 : offsetVec4);
-				offsets.push_back(offsetVec4);
-				offsets.push_back(m_reverseOrder ? offsetVec4 : offsetMat4);
-				offsets.push_back(m_reverseOrder ? offsetVec4 : offsetMat4);
+				offsets.push_back(m_reverseOrder ? ssboOffsetMat4 : uboOffsetVec4);
+				offsets.push_back(m_reverseOrder ? uboOffsetMat4 : uboOffsetVec4);
+				offsets.push_back(ssboOffsetVec4);
+				offsets.push_back(m_reverseOrder ? uboOffsetVec4 : uboOffsetMat4);
+				offsets.push_back(m_reverseOrder ? uboOffsetVec4 : ssboOffsetMat4);
 
 				if (runGraphics)
 				{
@@ -1946,11 +1960,11 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 		{
 			std::vector<deUint32>	offsets;
 
-			offsets.push_back(m_reverseOrder ? dynamicAlignmentMat4 * m_ssboReadOffset : dynamicAlignmentVec4 * m_vertexOffset);
-			offsets.push_back(m_reverseOrder ? dynamicAlignmentMat4 * m_fragUboOffset : dynamicAlignmentVec4 * m_sharedUboOffset);
-			offsets.push_back(dynamicAlignmentVec4 * m_ssboWriteOffset);
-			offsets.push_back(m_reverseOrder ? dynamicAlignmentVec4 * m_sharedUboOffset : dynamicAlignmentMat4 * m_fragUboOffset);
-			offsets.push_back(m_reverseOrder ? dynamicAlignmentVec4 * m_vertexOffset : dynamicAlignmentMat4 * m_ssboReadOffset);
+			offsets.push_back(m_reverseOrder ? ssboDynamicAlignmentMat4 * m_ssboReadOffset : uboDynamicAlignmentVec4 * m_vertexOffset);
+			offsets.push_back(m_reverseOrder ? uboDynamicAlignmentMat4 * m_fragUboOffset : uboDynamicAlignmentVec4 * m_sharedUboOffset);
+			offsets.push_back(ssboDynamicAlignmentVec4 * m_ssboWriteOffset);
+			offsets.push_back(m_reverseOrder ? uboDynamicAlignmentVec4 * m_sharedUboOffset : uboDynamicAlignmentMat4 * m_fragUboOffset);
+			offsets.push_back(m_reverseOrder ? uboDynamicAlignmentVec4 * m_vertexOffset : ssboDynamicAlignmentMat4 * m_ssboReadOffset);
 
 			if (runGraphics)
 			{
@@ -2055,7 +2069,7 @@ tcu::TestStatus DynamicOffsetMixedTestInstance::iterate (void)
 					refColors.push_back(m_ssboWriteOffset == i ? tcu::Vec4(1.0f, 0.25f, 0.17f, 1.0f) : tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 				}
 
-				outColors.push_back(*(tcu::Vec4*)((deUint8*)ssboBufferAllocWrite->getHostPtr() + dynamicAlignmentVec4 * i));
+				outColors.push_back(*(tcu::Vec4*)((deUint8*)ssboBufferAllocWrite->getHostPtr() + ssboDynamicAlignmentVec4 * i));
 
 				if (!compareVectors(outColors[i], refColors[i], 0.01f))
 				{
@@ -2076,7 +2090,6 @@ public:
 							DynamicOffsetMixedTest	(tcu::TestContext&	testContext,
 													 const PipelineConstructionType	pipelineConstructionType,
 													 const std::string&				name,
-													 const std::string&				description,
 													 const tcu::IVec2				renderSize,
 													 const deUint32					numInstances,
 													 const bool						testAllOffsets,
@@ -2087,7 +2100,7 @@ public:
 													 const deUint32					fragUboOffset	= 0u,
 													 const deUint32					ssboReadOffset	= 0u,
 													 const deUint32					ssboWriteOffset	= 0u)
-													: vkt::TestCase					(testContext, name, description)
+													: vkt::TestCase					(testContext, name)
 													, m_pipelineConstructionType	(pipelineConstructionType)
 													, m_renderSize					(renderSize)
 													, m_numInstances				(numInstances)
@@ -2320,7 +2333,7 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 		{	"numnondynamicbindings_1",	1u	}
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	dynamicOffsetTests	(new tcu::TestCaseGroup(testCtx, "dynamic_offset", "Dynamic offset tests"));
+	de::MovePtr<tcu::TestCaseGroup>	dynamicOffsetTests	(new tcu::TestCaseGroup(testCtx, "dynamic_offset"));
 
 	for (deUint32 pipelineTypeIdx = 0; pipelineTypeIdx < DE_LENGTH_OF_ARRAY(pipelineTypes); pipelineTypeIdx++)
 	{
@@ -2328,36 +2341,36 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 		if ((pipelineTypeIdx == 1) && (pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC))
 			continue;
 
-		de::MovePtr<tcu::TestCaseGroup>	pipelineTypeGroup	(new tcu::TestCaseGroup(testCtx, pipelineTypes[pipelineTypeIdx], ""));
+		de::MovePtr<tcu::TestCaseGroup>	pipelineTypeGroup	(new tcu::TestCaseGroup(testCtx, pipelineTypes[pipelineTypeIdx]));
 
 		for (deUint32 groupingTypeIdx = 0; groupingTypeIdx < DE_LENGTH_OF_ARRAY(groupingTypes); ++groupingTypeIdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> groupingTypeGroup (new tcu::TestCaseGroup(testCtx, groupingTypes[groupingTypeIdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> groupingTypeGroup (new tcu::TestCaseGroup(testCtx, groupingTypes[groupingTypeIdx].name));
 
 			for (deUint32 descriptorTypeIdx = 0; descriptorTypeIdx < DE_LENGTH_OF_ARRAY(descriptorTypes); descriptorTypeIdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	descriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, descriptorTypes[descriptorTypeIdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	descriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, descriptorTypes[descriptorTypeIdx].name));
 
 				for (deUint32 numCmdBuffersIdx = 0; numCmdBuffersIdx < DE_LENGTH_OF_ARRAY(numCmdBuffers); numCmdBuffersIdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup>	numCmdBuffersGroup	(new tcu::TestCaseGroup(testCtx, numCmdBuffers[numCmdBuffersIdx].name, ""));
+					de::MovePtr<tcu::TestCaseGroup>	numCmdBuffersGroup	(new tcu::TestCaseGroup(testCtx, numCmdBuffers[numCmdBuffersIdx].name));
 
 					for (deUint32 reverseOrderIdx = 0; reverseOrderIdx < DE_LENGTH_OF_ARRAY(reverseOrders); reverseOrderIdx++)
 					{
 						if (numCmdBuffers[numCmdBuffersIdx].num < 2 && reverseOrders[reverseOrderIdx].reverse)
 							continue;
 
-						de::MovePtr<tcu::TestCaseGroup>	reverseOrderGroup	(new tcu::TestCaseGroup(testCtx, reverseOrders[reverseOrderIdx].name, ""));
+						de::MovePtr<tcu::TestCaseGroup>	reverseOrderGroup	(new tcu::TestCaseGroup(testCtx, reverseOrders[reverseOrderIdx].name));
 
 						for (deUint32 numDescriptorSetBindingsIdx = 0; numDescriptorSetBindingsIdx < DE_LENGTH_OF_ARRAY(numDescriptorSetBindings); numDescriptorSetBindingsIdx++)
 						{
 							if (numCmdBuffers[numCmdBuffersIdx].num > 1 && numDescriptorSetBindings[numDescriptorSetBindingsIdx].num > 1)
 								continue;
 
-							de::MovePtr<tcu::TestCaseGroup>	numDescriptorSetBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDescriptorSetBindings[numDescriptorSetBindingsIdx].name, ""));
+							de::MovePtr<tcu::TestCaseGroup>	numDescriptorSetBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDescriptorSetBindings[numDescriptorSetBindingsIdx].name));
 							for (deUint32 numDynamicBindingsIdx = 0; numDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numDynamicBindings); numDynamicBindingsIdx++)
 							{
-								de::MovePtr<tcu::TestCaseGroup>	numDynamicBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDynamicBindings[numDynamicBindingsIdx].name, ""));
+								de::MovePtr<tcu::TestCaseGroup>	numDynamicBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDynamicBindings[numDynamicBindingsIdx].name));
 
 								for (deUint32 numNonDynamicBindingsIdx = 0; numNonDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numNonDynamicBindings); numNonDynamicBindingsIdx++)
 								{
@@ -2374,10 +2387,10 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 									};
 #ifndef CTS_USES_VULKANSC
 									if (strcmp(pipelineTypes[pipelineTypeIdx], "graphics") == 0)
-										numDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
+										numDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, params));
 									else
 #endif // CTS_USES_VULKANSC
-										numDynamicBindingsGroup->addChild(new DynamicOffsetComputeTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
+										numDynamicBindingsGroup->addChild(new DynamicOffsetComputeTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, params));
 								}
 
 								numDescriptorSetBindingsGroup->addChild(numDynamicBindingsGroup.release());
@@ -2403,7 +2416,7 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 
 	// Dynamic descriptor offset test for combined descriptor sets.
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC) {
-		de::MovePtr<tcu::TestCaseGroup>	combinedDescriptorsTests(new tcu::TestCaseGroup(testCtx, "combined_descriptors", ""));
+		de::MovePtr<tcu::TestCaseGroup>	combinedDescriptorsTests(new tcu::TestCaseGroup(testCtx, "combined_descriptors"));
 
 		struct
 		{
@@ -2442,8 +2455,8 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 
 		// Run tests for all offsets
 		{
-			de::MovePtr<tcu::TestCaseGroup>	allOffsetsGroup(new tcu::TestCaseGroup(testCtx, "all_offsets", ""));
-			de::MovePtr<tcu::TestCaseGroup>	singleOffsetGroup(new tcu::TestCaseGroup(testCtx, "single_offset", ""));
+			de::MovePtr<tcu::TestCaseGroup>	allOffsetsGroup(new tcu::TestCaseGroup(testCtx, "all_offsets"));
+			de::MovePtr<tcu::TestCaseGroup>	singleOffsetGroup(new tcu::TestCaseGroup(testCtx, "single_offset"));
 
 			for (const auto& order : orders)
 			{
@@ -2455,7 +2468,6 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 							testCtx,
 							pipelineConstructionType,
 							std::string(order.name) + "_" + std::string(offsets.name) + "_" + pipeline.name,
-							"",
 							tcu::IVec2(32, 32),		// Render size
 							offsets.offsetCount,
 							true,					// All offsets
@@ -2465,7 +2477,6 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx, Pipelin
 							testCtx,
 							pipelineConstructionType,
 							std::string(order.name) + "_" + std::string(offsets.name) + "_" + pipeline.name,
-							"",
 							tcu::IVec2(32, 32),		// Render size
 							offsets.offsetCount,
 							false,					// Single offset only

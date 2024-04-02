@@ -179,7 +179,6 @@ typedef function<TestStatus (TestContext&,Context&, const VkDevice device, Devic
 struct Robustness1TestInfo
 {
 	string	name;
-	string	description;
 	TestFn	testFn;
 };
 static const auto		renderTargetSize	= IVec2(12, 12);
@@ -194,7 +193,6 @@ static const auto		robustness1Tests	= vector<Robustness1TestInfo>
 	*/
 	{
 		"out_of_bounds_stride_0",														// string			name
-		"Last elements 4 out of bounds, color with stride 0",							// string			description
 		[](TestContext& testContext, Context& context, const VkDevice device, DeviceDriverPtr deviceDriver)
 		{
 			struct Color
@@ -253,7 +251,6 @@ static const auto		robustness1Tests	= vector<Robustness1TestInfo>
 	},
 	{
 		"out_of_bounds_stride_16_single_buffer",										// string			name
-		"Last 4 elements out of bounds, color with stride 16",							// string			description
 		[](TestContext& testContext, Context& context, const VkDevice device, DeviceDriverPtr deviceDriver)
 		{
 			struct Vertex
@@ -308,7 +305,6 @@ static const auto		robustness1Tests	= vector<Robustness1TestInfo>
 	},
 	{
 		"out_of_bounds_stride_30_middle_of_buffer",										// string			name
-		"Last elements 4 out of bounds, color with stride 30, data middle of buffer",	// string			description
 		[](TestContext& testContext, Context& context, const VkDevice device, DeviceDriverPtr deviceDriver)
 		{
 			const vector<deUint32>	invalidIndices	= { 5, 6, 9, 10 };
@@ -367,7 +363,6 @@ static const auto		robustness1Tests	= vector<Robustness1TestInfo>
 	},
 	{
 		"out_of_bounds_stride_8_middle_of_buffer_separate",								// string			name
-		"Last elements 4 out of bounds, color with stride 8, data middle of buffer",	// string			description
 		[](TestContext& testContext, Context& context, const VkDevice device, DeviceDriverPtr deviceDriver)
 		{
 			/* NOTE: Out of range entries ('padding') need to be initialized with unusedColor as the spec
@@ -827,6 +822,9 @@ class Robustness1AccessInstance : public vkt::TestInstance
 public:
 								Robustness1AccessInstance	(TestContext&							testCtx,
 															 Context&								context,
+#ifdef CTS_USES_VULKANSC
+															 de::MovePtr<CustomInstance>			customInstance,
+#endif // CTS_USES_VULKANSC
 															 T										device,
 															 DeviceDriverPtr						deviceDriver,
 															 const Robustness1TestInfo&				testInfo);
@@ -835,10 +833,12 @@ public:
 
 private:
 	TestContext&												m_testCtx;
-	T															m_device;
 #ifndef CTS_USES_VULKANSC
+	T															m_device;
 	de::MovePtr<vk::DeviceDriver>								m_deviceDriver;
 #else
+	de::MovePtr<CustomInstance>									m_customInstance;
+	T															m_device;
 	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
 #endif // CTS_USES_VULKANSC
 	const Robustness1TestInfo&									m_testInfo;
@@ -847,11 +847,17 @@ private:
 template<typename T>
 Robustness1AccessInstance<T>::Robustness1AccessInstance (TestContext&							testCtx,
 														 Context&								context,
+#ifdef CTS_USES_VULKANSC
+														 de::MovePtr<CustomInstance>			customInstance,
+#endif // CTS_USES_VULKANSC
 														 T										device,
 														 DeviceDriverPtr						deviceDriver,
 														 const Robustness1TestInfo&				testInfo)
 	: vkt::TestInstance				(context)
 	, m_testCtx						(testCtx)
+#ifdef CTS_USES_VULKANSC
+	, m_customInstance(customInstance)
+#endif // CTS_USES_VULKANSC
 	, m_device						(device)
 	, m_deviceDriver				(deviceDriver)
 	, m_testInfo					(testInfo)
@@ -882,21 +888,30 @@ private:
 };
 
 Robustness1AccessTest::Robustness1AccessTest (TestContext &testContext, const Robustness1TestInfo& testInfo)
-	: vkt::TestCase(testContext, testInfo.name, testInfo.description),
+	: vkt::TestCase(testContext, testInfo.name),
 	  m_testInfo(testInfo)
 {
 }
 
 TestInstance *Robustness1AccessTest::createInstance (Context &context) const
 {
-	Move<VkDevice>	device = createRobustBufferAccessDevice(context);
 #ifndef CTS_USES_VULKANSC
-	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion()));
+	Move<VkDevice>	device = createRobustBufferAccessDevice(context);
+	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
-	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
+	de::MovePtr<CustomInstance> customInstance = de::MovePtr<CustomInstance>(new CustomInstance(createCustomInstanceFromContext(context)));
+	Move<VkDevice>	device = createRobustBufferAccessDevice(context, *customInstance);
+	DeviceDriverPtr	deviceDriver = DeviceDriverPtr (new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter( context.getResourceInterface().get(), *device ));
 #endif // CTS_USES_VULKANSC
 
-	return new Robustness1AccessInstance<Move<VkDevice>>(m_testCtx, context, device, deviceDriver, m_testInfo);
+	return new Robustness1AccessInstance<Move<VkDevice>>(m_testCtx,
+														 context,
+#ifdef CTS_USES_VULKANSC
+														 customInstance,
+#endif // CTS_USES_VULKANSC
+														 device,
+														 deviceDriver,
+														 m_testInfo);
 }
 
 void Robustness1AccessTest::initPrograms (SourceCollections& programCollection) const
@@ -961,7 +976,7 @@ void Robustness1AccessTest::initPrograms (SourceCollections& programCollection) 
 
 TestCaseGroup* createRobustness1VertexAccessTests (TestContext& testCtx)
 {
-	MovePtr<TestCaseGroup> robustness1AccessTests	(new TestCaseGroup(testCtx, "robustness1_vertex_access", ""));
+	MovePtr<TestCaseGroup> robustness1AccessTests	(new TestCaseGroup(testCtx, "robustness1_vertex_access"));
 	for(const auto& info : robustness1Tests)
 	{
 		robustness1AccessTests->addChild(new Robustness1AccessTest(testCtx, info));

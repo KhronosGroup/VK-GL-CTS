@@ -51,7 +51,7 @@ namespace
 
 tcu::TestCaseGroup* createBasicTests (tcu::TestContext& testCtx, SynchronizationType type, VideoCodecOperationFlags videoCodecOperation)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "basic", ""));
+	de::MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "basic"));
 
 	if (type == SynchronizationType::LEGACY)
 	{
@@ -73,7 +73,7 @@ class OperationTests : public tcu::TestCaseGroup
 {
 public:
 	OperationTests (tcu::TestContext& testCtx, SynchronizationType type)
-		: tcu::TestCaseGroup(testCtx, "op", "Synchronization of a memory-modifying operation")
+		: tcu::TestCaseGroup(testCtx, "op")
 		, m_type(type)
 	{
 	}
@@ -113,7 +113,7 @@ tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, Synchronizat
 	const bool									isSynchronization2	(type == SynchronizationType::SYNCHRONIZATION2);
 	const std::pair<std::string, std::string>	groupName			= getGroupName(type, name, videoCodecOperation);
 
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, groupName.first.c_str(), groupName.second.c_str()));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, groupName.first.c_str()));
 
 	if (videoCodecOperation == 0)
 	{

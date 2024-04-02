@@ -1836,24 +1836,32 @@ void checkSupport (Context& context, const TestParams params)
 
 tcu::TestCaseGroup* createLayeredRenderingTests (tcu::TestContext& testCtx)
 {
-	MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "layered", "Layered rendering tests."));
+	MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "layered"));
 
 	const struct
 	{
 		TestType		test;
 		const char*		name;
-		const char*		description;
 	} testTypes[] =
 	{
-		{ TEST_TYPE_DEFAULT_LAYER,					"render_to_default_layer",			"Render to the default layer"															},
-		{ TEST_TYPE_SINGLE_LAYER,					"render_to_one",					"Render to one layer"																	},
-		{ TEST_TYPE_ALL_LAYERS,						"render_to_all",					"Render to all layers"																	},
-		{ TEST_TYPE_DIFFERENT_CONTENT,				"render_different_content",			"Render different data to different layers"												},
-		{ TEST_TYPE_LAYER_ID,						"fragment_layer",					"Read gl_Layer in fragment shader"														},
-		{ TEST_TYPE_INVOCATION_PER_LAYER,			"invocation_per_layer",				"Render to multiple layers with multiple invocations, one invocation per layer"			},
-		{ TEST_TYPE_MULTIPLE_LAYERS_PER_INVOCATION,	"multiple_layers_per_invocation",	"Render to multiple layers with multiple invocations, multiple layers per invocation",	},
-		{ TEST_TYPE_LAYERED_READBACK,				"readback",							"Render to multiple layers with two passes to check LOAD_OP_LOAD capability"			},
-		{ TEST_TYPE_SECONDARY_CMD_BUFFER,			"secondary_cmd_buffer",				"Layered rendering using secondary command buffer"										}
+		// Render to the default layer
+		{ TEST_TYPE_DEFAULT_LAYER,					"render_to_default_layer"},
+		// Render to one layer
+		{ TEST_TYPE_SINGLE_LAYER,					"render_to_one"},
+		// Render to all layers
+		{ TEST_TYPE_ALL_LAYERS,						"render_to_all"},
+		// Render different data to different layers
+		{ TEST_TYPE_DIFFERENT_CONTENT,				"render_different_content"},
+		// Read gl_Layer in fragment shader
+		{ TEST_TYPE_LAYER_ID,						"fragment_layer"},
+		// Render to multiple layers with multiple invocations, one invocation per layer
+		{ TEST_TYPE_INVOCATION_PER_LAYER,			"invocation_per_layer"},
+		// Render to multiple layers with multiple invocations, multiple layers per invocation
+		{ TEST_TYPE_MULTIPLE_LAYERS_PER_INVOCATION,	"multiple_layers_per_invocation"},
+		// Render to multiple layers with two passes to check LOAD_OP_LOAD capability
+		{ TEST_TYPE_LAYERED_READBACK,				"readback"},
+		// Layered rendering using secondary command buffer
+		{ TEST_TYPE_SECONDARY_CMD_BUFFER,			"secondary_cmd_buffer"}
 	};
 
 	const struct
@@ -1871,7 +1879,7 @@ tcu::TestCaseGroup* createLayeredRenderingTests (tcu::TestContext& testCtx)
 
 	for (int imageParamGroupNdx = 0; imageParamGroupNdx < DE_LENGTH_OF_ARRAY(imageParamGroups); ++imageParamGroupNdx)
 	{
-		MovePtr<tcu::TestCaseGroup> viewTypeMainGroup(new tcu::TestCaseGroup(testCtx, getShortImageViewTypeName(imageParamGroups[imageParamGroupNdx].viewType).c_str(), ""));
+		MovePtr<tcu::TestCaseGroup> viewTypeMainGroup(new tcu::TestCaseGroup(testCtx, getShortImageViewTypeName(imageParamGroups[imageParamGroupNdx].viewType).c_str()));
 
 		for (int imageParamNdx = 0; imageParamNdx < 2; imageParamNdx++)
 		{
@@ -1881,7 +1889,7 @@ tcu::TestCaseGroup* createLayeredRenderingTests (tcu::TestContext& testCtx)
 				viewTypeGroupName << imageParamGroups[imageParamGroupNdx].imageParams[imageParamNdx].size.depth;
 			else
 				viewTypeGroupName << imageParamGroups[imageParamGroupNdx].imageParams[imageParamNdx].numLayers;
-			MovePtr<tcu::TestCaseGroup> viewTypeGroup(new tcu::TestCaseGroup(testCtx, viewTypeGroupName.str().c_str(), ""));
+			MovePtr<tcu::TestCaseGroup> viewTypeGroup(new tcu::TestCaseGroup(testCtx, viewTypeGroupName.str().c_str()));
 
 			for (int testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
 			{
@@ -1893,15 +1901,15 @@ tcu::TestCaseGroup* createLayeredRenderingTests (tcu::TestContext& testCtx)
 				};
 
 				if (testTypes[testTypeNdx].test == TEST_TYPE_LAYERED_READBACK)
-					addFunctionCaseWithPrograms(viewTypeGroup.get(), testTypes[testTypeNdx].name, testTypes[testTypeNdx].description, checkSupport, initPrograms, testLayeredReadBack, params);
+					addFunctionCaseWithPrograms(viewTypeGroup.get(), testTypes[testTypeNdx].name, checkSupport, initPrograms, testLayeredReadBack, params);
 				else if (testTypes[testTypeNdx].test == TEST_TYPE_SECONDARY_CMD_BUFFER)
 				{
-					addFunctionCaseWithPrograms(viewTypeGroup.get(), "secondary_cmd_buffer", testTypes[testTypeNdx].description, checkSupport, initPrograms, testSecondaryCmdBuffer, params);
+					addFunctionCaseWithPrograms(viewTypeGroup.get(), "secondary_cmd_buffer", checkSupport, initPrograms, testSecondaryCmdBuffer, params);
 					params.inheritFramebuffer = true;
-					addFunctionCaseWithPrograms(viewTypeGroup.get(), "secondary_cmd_buffer_inherit_framebuffer", testTypes[testTypeNdx].description, checkSupport, initPrograms, testSecondaryCmdBuffer, params);
+					addFunctionCaseWithPrograms(viewTypeGroup.get(), "secondary_cmd_buffer_inherit_framebuffer", checkSupport, initPrograms, testSecondaryCmdBuffer, params);
 				}
 				else
-					addFunctionCaseWithPrograms(viewTypeGroup.get(), testTypes[testTypeNdx].name, testTypes[testTypeNdx].description, checkSupport, initPrograms, test, params);
+					addFunctionCaseWithPrograms(viewTypeGroup.get(), testTypes[testTypeNdx].name, checkSupport, initPrograms, test, params);
 			}
 			viewTypeMainGroup->addChild(viewTypeGroup.release());
 		}

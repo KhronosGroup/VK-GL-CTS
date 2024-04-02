@@ -321,19 +321,35 @@ void submitCommands (const DeviceInterface&			vk,
 					 const VkSemaphore*				pWaitSemaphores,
 					 const VkPipelineStageFlags*	pWaitDstStageMask,
 					 const deUint32					signalSemaphoreCount,
-					 const VkSemaphore*				pSignalSemaphores)
+					 const VkSemaphore*				pSignalSemaphores,
+					 const bool						useDeviceGroups,
+					 const deUint32					physicalDeviceID)
 {
+	const deUint32			deviceMask				= 1 << physicalDeviceID;
+	std::vector<deUint32>	deviceIndices			(waitSemaphoreCount, physicalDeviceID);
+	VkDeviceGroupSubmitInfo deviceGroupSubmitInfo	=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,			//VkStructureType		sType
+		DE_NULL,											// const void*			pNext
+		waitSemaphoreCount,									// uint32_t				waitSemaphoreCount
+		deviceIndices.size() ? &deviceIndices[0] : DE_NULL,	// const uint32_t*		pWaitSemaphoreDeviceIndices
+		1u,													// uint32_t				commandBufferCount
+		&deviceMask,										// const uint32_t*		pCommandBufferDeviceMasks
+		0u,													// uint32_t				signalSemaphoreCount
+		DE_NULL,											// const uint32_t*		pSignalSemaphoreDeviceIndices
+	};
+
 	const VkSubmitInfo submitInfo =
 	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-		DE_NULL,						// const void*					pNext;
-		waitSemaphoreCount,				// deUint32						waitSemaphoreCount;
-		pWaitSemaphores,				// const VkSemaphore*			pWaitSemaphores;
-		pWaitDstStageMask,				// const VkPipelineStageFlags*	pWaitDstStageMask;
-		1u,								// deUint32						commandBufferCount;
-		&commandBuffer,					// const VkCommandBuffer*		pCommandBuffers;
-		signalSemaphoreCount,			// deUint32						signalSemaphoreCount;
-		pSignalSemaphores,				// const VkSemaphore*			pSignalSemaphores;
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,						// VkStructureType				sType;
+		useDeviceGroups ? &deviceGroupSubmitInfo : DE_NULL,	// const void*					pNext;
+		waitSemaphoreCount,									// deUint32						waitSemaphoreCount;
+		pWaitSemaphores,									// const VkSemaphore*			pWaitSemaphores;
+		pWaitDstStageMask,									// const VkPipelineStageFlags*	pWaitDstStageMask;
+		1u,													// deUint32						commandBufferCount;
+		&commandBuffer,										// const VkCommandBuffer*		pCommandBuffers;
+		signalSemaphoreCount,								// deUint32						signalSemaphoreCount;
+		pSignalSemaphores,									// const VkSemaphore*			pSignalSemaphores;
 	};
 
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
@@ -759,6 +775,9 @@ std::string getImageFormatID (VkFormat format)
 		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT:
 		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT:
 		case VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT:
+#ifndef CTS_USES_VULKANSC
+		case VK_FORMAT_A8_UNORM_KHR:
+#endif // CTS_USES_VULKANSC
 			return de::toLower(std::string(getFormatName(format)).substr(10));
 
 		default:

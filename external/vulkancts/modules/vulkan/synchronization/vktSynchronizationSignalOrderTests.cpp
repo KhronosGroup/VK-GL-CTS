@@ -94,6 +94,24 @@ void hostSignal (const DeviceInterface& vk, const VkDevice& device, VkSemaphore 
 	VK_CHECK(vk.signalSemaphore(device, &ssi));
 }
 
+// Waits for the device to be idle when destroying the guard object.
+class DeviceWaitIdleGuard
+{
+public:
+	DeviceWaitIdleGuard (const DeviceInterface& vkd, const VkDevice device)
+		: m_vkd(vkd), m_device(device)
+		{}
+
+	~DeviceWaitIdleGuard ()
+	{
+		VK_CHECK(m_vkd.deviceWaitIdle(m_device));
+	}
+
+protected:
+	const DeviceInterface&	m_vkd;
+	const VkDevice			m_device;
+};
+
 Move<VkDevice> createTestDevice (const Context& context)
 {
 	const float									priority				= 0.0f;
@@ -122,6 +140,9 @@ Move<VkDevice> createTestDevice (const Context& context)
 
 	if (context.isDeviceFunctionalitySupported("VK_KHR_external_semaphore_win32"))
 		extensions.push_back("VK_KHR_external_semaphore_win32");
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_external_memory_win32"))
+		extensions.push_back("VK_KHR_external_memory_win32");
 
 	if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
 	{
@@ -605,7 +626,7 @@ public:
 		const VkDevice&										deviceA						= m_context.getDevice();
 		const Unique<VkDevice>&								deviceB						(SingletonDevice::getDevice(m_context));
 		const DeviceInterface&								vkA							= m_context.getDeviceInterface();
-		const DeviceDriver									vkB							(m_context.getPlatformInterface(), m_context.getInstance(), *deviceB, m_context.getUsedApiVersion());
+		const DeviceDriver									vkB							(m_context.getPlatformInterface(), m_context.getInstance(), *deviceB, m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine());
 		UniquePtr<SimpleAllocator>							allocatorA					(new SimpleAllocator(vkA, deviceA, vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(),
 																																								 m_context.getPhysicalDevice())));
 		UniquePtr<SimpleAllocator>							allocatorB					(new SimpleAllocator(vkB, *deviceB, vk::getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(),
@@ -631,6 +652,10 @@ public:
 		std::vector<deUint64>								timelineValuesB;
 		std::vector<QueueSubmitOrderSharedIteration>		iterations(12);
 		std::vector<VkPipelineStageFlags2KHR>				stageBits;
+
+		// These guards will wait for the device to be idle before tearing down the resources above.
+		const DeviceWaitIdleGuard							idleGuardA					(vkA, deviceA);
+		const DeviceWaitIdleGuard							idleGuardB					(vkB, *deviceB);
 
 		// Create a dozen of set of write/read operations.
 		for (deUint32 iterIdx = 0; iterIdx < iterations.size(); iterIdx++)
@@ -894,9 +919,6 @@ public:
 			}
 		}
 
-		VK_CHECK(vkA.deviceWaitIdle(deviceA));
-		VK_CHECK(vkB.deviceWaitIdle(*deviceB));
-
 		return tcu::TestStatus::pass("Success");
 	}
 
@@ -1041,7 +1063,7 @@ public:
 										  VkSemaphoreType						semaphoreType,
 										  VkExternalSemaphoreHandleTypeFlagBits	semaphoreHandleType,
 										  PipelineCacheData&					pipelineCacheData)
-		: TestCase				(testCtx, name.c_str(), "")
+		: TestCase				(testCtx, name.c_str())
 		, m_type				(type)
 		, m_writeOpSupport		(makeOperationSupport(writeOp, resourceDesc).release())
 		, m_readOpSupport		(makeOperationSupport(readOp, resourceDesc).release())
@@ -1107,7 +1129,7 @@ class QueueSubmitSignalOrderSharedTests : public tcu::TestCaseGroup
 {
 public:
 	QueueSubmitSignalOrderSharedTests (tcu::TestContext& testCtx, SynchronizationType type, VkSemaphoreType semaphoreType, const char *name)
-		: tcu::TestCaseGroup	(testCtx, name, "Signal ordering of semaphores")
+		: tcu::TestCaseGroup	(testCtx, name)
 		, m_type				(type)
 		, m_semaphoreType		(semaphoreType)
 	{
@@ -1200,7 +1222,7 @@ public:
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str()));
 
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
@@ -1283,7 +1305,7 @@ public:
 		, m_resourceDesc		(resourceDesc)
 		, m_semaphoreType		(semaphoreType)
 		, m_device				(SingletonDevice::getDevice(context))
-		, m_deviceInterface		(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion())
+		, m_deviceInterface		(context.getPlatformInterface(), context.getInstance(), *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
 		, m_allocator			(new SimpleAllocator(m_deviceInterface,
 													 *m_device,
 													 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
@@ -1362,6 +1384,9 @@ public:
 		std::vector<VkPipelineStageFlags2KHR>				stageBits;
 		std::vector<deUint32>								queueFamilies;
 		SynchronizationWrapperPtr							syncWrapper					= getSynchronizationWrapper(m_type, vk, isTimelineSemaphore);
+
+		// This guard will wait for the device to be idle before tearing down the resources above.
+		const DeviceWaitIdleGuard							idleGuard					(vk, device);
 
 		queueFamilies.push_back(m_queueFamilyIndexA);
 		queueFamilies.push_back(m_queueFamilyIndexB);
@@ -1557,8 +1582,6 @@ public:
 			}
 		}
 
-		VK_CHECK(vk.deviceWaitIdle(device));
-
 		return tcu::TestStatus::pass("Success");
 	}
 
@@ -1616,7 +1639,7 @@ public:
 									const ResourceDescription&	resourceDesc,
 									VkSemaphoreType				semaphoreType,
 									PipelineCacheData&			pipelineCacheData)
-		: TestCase				(testCtx, name.c_str(), "")
+		: TestCase				(testCtx, name.c_str())
 		, m_type				(type)
 		, m_writeOpSupport		(makeOperationSupport(writeOp, resourceDesc).release())
 		, m_readOpSupport		(makeOperationSupport(readOp, resourceDesc).release())
@@ -1665,7 +1688,7 @@ class QueueSubmitSignalOrderTests : public tcu::TestCaseGroup
 {
 public:
 	QueueSubmitSignalOrderTests (tcu::TestContext& testCtx, SynchronizationType type, VkSemaphoreType semaphoreType, const char *name)
-		: tcu::TestCaseGroup	(testCtx, name, "Signal ordering of semaphores")
+		: tcu::TestCaseGroup	(testCtx, name)
 		, m_type				(type)
 		, m_semaphoreType		(semaphoreType)
 	{
@@ -1737,7 +1760,7 @@ public:
 			const std::string	opGroupName = getOperationName(writeOp) + "_" + getOperationName(readOp);
 			bool				empty		= true;
 
-			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup> opGroup	(new tcu::TestCaseGroup(m_testCtx, opGroupName.c_str()));
 
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
@@ -1778,7 +1801,7 @@ private:
 
 tcu::TestCaseGroup* createSignalOrderTests (tcu::TestContext& testCtx, SynchronizationType type)
 {
-	de::MovePtr<tcu::TestCaseGroup> orderingTests(new tcu::TestCaseGroup(testCtx, "signal_order", "Signal ordering tests"));
+	de::MovePtr<tcu::TestCaseGroup> orderingTests(new tcu::TestCaseGroup(testCtx, "signal_order"));
 
 	orderingTests->addChild(new QueueSubmitSignalOrderTests(testCtx, type, VK_SEMAPHORE_TYPE_BINARY_KHR, "binary_semaphore"));
 	orderingTests->addChild(new QueueSubmitSignalOrderTests(testCtx, type, VK_SEMAPHORE_TYPE_TIMELINE_KHR, "timeline_semaphore"));

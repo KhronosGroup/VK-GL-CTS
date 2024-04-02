@@ -1997,7 +1997,7 @@ group invalid "Invalid Functions"
 
 end # invalid
 
-# https://github.com/KhronosGroup/WebGL/blob/master/sdk/tests/conformance2/glsl3/array-in-complex-expression.html
+# https://github.com/KhronosGroup/WebGL/blob/main/sdk/tests/conformance2/glsl3/array-in-complex-expression.html
 group complex_expression "Arrays in complex expressions"
 
 	case and_short_circuits

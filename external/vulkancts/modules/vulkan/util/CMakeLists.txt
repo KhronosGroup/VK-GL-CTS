@@ -6,6 +6,8 @@ include_directories(
 set(DEQP_VK_UTIL_SRCS
 	vktDrawUtil.cpp
 	vktDrawUtil.hpp
+	vktExternalMemoryAndroidHardwareBufferUtil.cpp
+	vktExternalMemoryAndroidHardwareBufferUtil.hpp
 	vktExternalMemoryUtil.cpp
 	vktExternalMemoryUtil.hpp
 	vktConstexprVectorUtil.hpp

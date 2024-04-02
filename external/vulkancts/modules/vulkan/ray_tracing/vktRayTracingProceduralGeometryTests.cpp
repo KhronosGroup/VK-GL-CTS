@@ -132,7 +132,7 @@ struct DeviceHelper
 
 		// Create custom device and related objects
 		device		= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion()));
+		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 		queue		= getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
 		allocator	= de::MovePtr<SimpleAllocator>(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
@@ -509,7 +509,7 @@ protected:
 };
 
 RayTracingProceduralGeometryTestCase::RayTracingProceduralGeometryTestCase(tcu::TestContext& context, const char* name, TestType testType)
-	: TestCase		(context, name, "")
+	: TestCase		(context, name)
 	, m_testType	(testType)
 {
 }
@@ -636,7 +636,8 @@ TestInstance* RayTracingProceduralGeometryTestCase::createInstance(Context& cont
 
 tcu::TestCaseGroup*	createProceduralGeometryTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "procedural_geometry", "Test procedural geometry with complex bouding box sets"));
+	// Test procedural geometry with complex bouding box sets
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "procedural_geometry"));
 
 	group->addChild(new RayTracingProceduralGeometryTestCase(testCtx, "object_behind_bounding_boxes",	TestType::OBJECT_BEHIND_BOUNDING_BOX));
 	group->addChild(new RayTracingProceduralGeometryTestCase(testCtx, "triangle_in_between",			TestType::TRIANGLE_IN_BETWEEN));

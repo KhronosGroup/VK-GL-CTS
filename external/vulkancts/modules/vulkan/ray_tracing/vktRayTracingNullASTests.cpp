@@ -234,7 +234,7 @@ struct DeviceHelper
 
 		// Create custom device and related objects.
 		device		= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &createInfo);
-		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion()));
+		vkd			= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 		queue		= getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
 		allocator	= de::MovePtr<SimpleAllocator>(new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
@@ -268,7 +268,7 @@ RayTracingBuildTestInstance::~RayTracingBuildTestInstance (void)
 class RayTracingTestCase : public TestCase
 {
 	public:
-							RayTracingTestCase	(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+							RayTracingTestCase	(tcu::TestContext& context, const char* name, const CaseDef data);
 							~RayTracingTestCase	(void);
 
 	virtual	void			initPrograms		(SourceCollections& programCollection) const;
@@ -279,8 +279,8 @@ private:
 	CaseDef					m_data;
 };
 
-RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -388,7 +388,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"#version 460 core\n"
 			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
-			"layout(location = 0) rayPayloadInEXT dummyPayload { vec4 dummy; };\n"
+			"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			"layout(r32ui, set = 0, binding = 0) uniform uimage2D result;\n"
 			"void main()\n"
 			"{\n"
@@ -547,14 +547,15 @@ tcu::TestStatus RayTracingBuildTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createNullAccelerationStructureTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "null_as", "Null Acceleration Structure is accepted as 'always miss' case"));
+	// Null Acceleration Structure is accepted as 'always miss' case
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "null_as"));
 
 	const CaseDef	caseDef					=
 	{
 		8,		//  deUint32	width;
 		8,		//  deUint32	height;
 	};
-	group->addChild(new RayTracingTestCase(testCtx, "test", "", caseDef));
+	group->addChild(new RayTracingTestCase(testCtx, "test", caseDef));
 
 	return group.release();
 }

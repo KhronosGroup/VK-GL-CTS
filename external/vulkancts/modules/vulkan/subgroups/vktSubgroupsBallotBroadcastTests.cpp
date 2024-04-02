@@ -53,6 +53,8 @@ struct CaseDefinition
 	deBool				extShaderSubGroupBallotTests;
 	deBool				subgroupSizeControl;
 	deUint32			requiredSubgroupSize;
+	deBool				requires8BitUniformBuffer;
+	deBool				requires16BitUniformBuffer;
 };
 
 bool checkVertexPipelineStages (const void*			internalData,
@@ -269,6 +271,22 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
 		TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
 
+	if (caseDef.requires16BitUniformBuffer)
+	{
+		if (!subgroups::is16BitUBOStorageSupported(context))
+		{
+			TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+		}
+	}
+
+	if (caseDef.requires8BitUniformBuffer)
+	{
+		if (!subgroups::is8BitUBOStorageSupported(context))
+		{
+			TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+		}
+	}
+
 	if (caseDef.extShaderSubGroupBallotTests)
 	{
 		context.requireDeviceFunctionality("VK_EXT_shader_subgroup_ballot");
@@ -436,20 +454,20 @@ namespace subgroups
 {
 TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "ballot_broadcast", "Subgroup ballot broadcast category tests"));
-	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics", "Subgroup ballot broadcast category tests: graphics"));
-	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup ballot broadcast category tests: compute"));
-	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup ballot broadcast category tests: framebuffer"));
+	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "ballot_broadcast"));
+	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer"));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup ballot broadcast category tests: ray tracing"));
-	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh", "Subgroup ballot broadcast category tests: mesh"));
-	de::MovePtr<TestCaseGroup>	meshGroupARB		(new TestCaseGroup(testCtx, "mesh", "Subgroup ballot broadcast category tests: mesh"));
+	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing"));
+	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh"));
+	de::MovePtr<TestCaseGroup>	meshGroupARB		(new TestCaseGroup(testCtx, "mesh"));
 #endif // CTS_USES_VULKANSC
 
-	de::MovePtr<TestCaseGroup>	groupARB			(new TestCaseGroup(testCtx, "ext_shader_subgroup_ballot", "VK_EXT_shader_subgroup_ballot category tests"));
-	de::MovePtr<TestCaseGroup>	graphicGroupARB		(new TestCaseGroup(testCtx, "graphics", "Subgroup ballot broadcast category tests: graphics"));
-	de::MovePtr<TestCaseGroup>	computeGroupARB		(new TestCaseGroup(testCtx, "compute", "Subgroup ballot broadcast category tests: compute"));
-	de::MovePtr<TestCaseGroup>	framebufferGroupARB	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup ballot broadcast category tests: framebuffer"));
+	de::MovePtr<TestCaseGroup>	groupARB			(new TestCaseGroup(testCtx, "ext_shader_subgroup_ballot"));
+	de::MovePtr<TestCaseGroup>	graphicGroupARB		(new TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<TestCaseGroup>	computeGroupARB		(new TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<TestCaseGroup>	framebufferGroupARB	(new TestCaseGroup(testCtx, "framebuffer"));
 
 	const VkShaderStageFlags	fbStages[]			=
 	{
@@ -479,6 +497,8 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 			const VkFormat	format						= formats[formatIndex];
 			// Vector, boolean and double types are not supported by functions defined in VK_EXT_shader_subgroup_ballot.
 			const bool		formatTypeIsSupportedARB	= format == VK_FORMAT_R32_SINT || format == VK_FORMAT_R32_UINT || format == VK_FORMAT_R32_SFLOAT;
+			const bool		needs8BitUBOStorage			= isFormat8bitTy(format);
+			const bool		needs16BitUBOStorage		= isFormat16BitTy(format);
 
 			for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 			{
@@ -503,10 +523,12 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 								de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 								extShaderSubGroupBallotTests,	//  deBool				extShaderSubGroupBallotTests;
 								DE_FALSE,						//  deBool				subgroupSizeControl;
-								0u								//  deUint32			requiredSubgroupSize;
+								0u,								//  deUint32			requiredSubgroupSize;
+								DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+								DE_FALSE,						//  deBool				requires16BitUniformBuffer;
 							};
 
-							addFunctionCaseWithPrograms(testGroup, name, "", supportedCheck, initPrograms, test, caseDef);
+							addFunctionCaseWithPrograms(testGroup, name,supportedCheck, initPrograms, test, caseDef);
 						}
 
 						for (deUint32 subgroupSize = 1; subgroupSize <= subgroups::maxSupportedSubgroupSize(); subgroupSize *= 2)
@@ -520,10 +542,12 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 								extShaderSubGroupBallotTests,	//  deBool				extShaderSubGroupBallotTests;
 								DE_TRUE,						//  deBool				subgroupSizeControl;
 								subgroupSize,					//  deUint32			requiredSubgroupSize;
+								DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+								DE_FALSE						//  deBool				requires16BitUniformBuffer;
 							};
 							const string			testName	= name + "_requiredsubgroupsize" + de::toString(subgroupSize);
 
-							addFunctionCaseWithPrograms(testGroup, testName, "", supportedCheck, initPrograms, test, caseDef);
+							addFunctionCaseWithPrograms(testGroup, testName,supportedCheck, initPrograms, test, caseDef);
 						}
 					}
 
@@ -542,10 +566,12 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 								de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 								extShaderSubGroupBallotTests,	//  deBool				extShaderSubGroupBallotTests;
 								DE_FALSE,						//  deBool				subgroupSizeControl;
-								0u								//  deUint32			requiredSubgroupSize;
+								0u,								//  deUint32			requiredSubgroupSize;
+								DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+								DE_FALSE,						//  deBool				requires16BitUniformBuffer;
 							};
 
-							addFunctionCaseWithPrograms(testGroup, name + stageName, "", supportedCheck, initPrograms, test, caseDef);
+							addFunctionCaseWithPrograms(testGroup, name + stageName, supportedCheck, initPrograms, test, caseDef);
 						}
 
 						for (deUint32 subgroupSize = 1; subgroupSize <= subgroups::maxSupportedSubgroupSize(); subgroupSize *= 2)
@@ -559,10 +585,12 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 								extShaderSubGroupBallotTests,	//  deBool				extShaderSubGroupBallotTests;
 								DE_TRUE,						//  deBool				subgroupSizeControl;
 								subgroupSize,					//  deUint32			requiredSubgroupSize;
+								DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+								DE_FALSE,						//  deBool				requires16BitUniformBuffer;
 							};
 							const string			testName	= name + "_requiredsubgroupsize" + de::toString(subgroupSize) + stageName;
 
-							addFunctionCaseWithPrograms(testGroup, testName, "", supportedCheck, initPrograms, test, caseDef);
+							addFunctionCaseWithPrograms(testGroup, testName,supportedCheck, initPrograms, test, caseDef);
 						}
 					}
 #endif // CTS_USES_VULKANSC
@@ -577,10 +605,12 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 							de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 							extShaderSubGroupBallotTests,	//  deBool				extShaderSubGroupBallotTests;
 							DE_FALSE,						//  deBool				subgroupSizeControl;
-							0u								//  deUint32			requiredSubgroupSize;
+							0u,								//  deUint32			requiredSubgroupSize;
+							DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+							DE_FALSE						//  deBool				requires16BitUniformBuffer;
 						};
 
-						addFunctionCaseWithPrograms(testGroup, name, "", supportedCheck, initPrograms, test, caseDef);
+						addFunctionCaseWithPrograms(testGroup, name,supportedCheck, initPrograms, test, caseDef);
 					}
 
 					{
@@ -596,10 +626,12 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 								de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 								extShaderSubGroupBallotTests,	//  deBool				extShaderSubGroupBallotTests;
 								DE_FALSE,						//  deBool				subgroupSizeControl;
-								0u								//  deUint32			requiredSubgroupSize;
+								0u,								//  deUint32			requiredSubgroupSize;
+								deBool(needs8BitUBOStorage),	//  deBool				requires8BitUniformBuffer;
+								deBool(needs16BitUBOStorage)	//  deBool				requires16BitUniformBuffer;
 							};
 
-							addFunctionCaseWithPrograms(testGroup, name + getShaderStageName(caseDef.shaderStage), "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+							addFunctionCaseWithPrograms(testGroup, name + getShaderStageName(caseDef.shaderStage),  supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 						}
 					}
 				}
@@ -628,10 +660,12 @@ TestCaseGroup* createSubgroupsBallotBroadcastTests (TestContext& testCtx)
 					de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 					DE_FALSE,						//  deBool				extShaderSubGroupBallotTests;
 					DE_FALSE,						//  deBool				subgroupSizeControl;
-					0								//  int					requiredSubgroupSize;
+					0,								//  int					requiredSubgroupSize;
+					DE_FALSE,						//  deBool				requires8BitUniformBuffer;
+					DE_FALSE						//  deBool				requires16BitUniformBuffer;
 				};
 
-				addFunctionCaseWithPrograms(raytracingGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(raytracingGroup.get(), name,  supportedCheck, initPrograms, test, caseDef);
 			}
 		}
 	}

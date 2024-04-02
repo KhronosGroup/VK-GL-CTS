@@ -511,22 +511,22 @@ namespace subgroups
 {
 TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "vote", "Subgroup vote category tests"));
-	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics", "Subgroup vote category tests: graphics"));
-	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute", "Subgroup vote category tests: compute"));
-	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup vote category tests: framebuffer"));
-	de::MovePtr<TestCaseGroup>	fragHelperGroup		(new TestCaseGroup(testCtx, "frag_helper", "Subgroup vote category tests: fragment helper invocation"));
+	de::MovePtr<TestCaseGroup>	group				(new TestCaseGroup(testCtx, "vote"));
+	de::MovePtr<TestCaseGroup>	graphicGroup		(new TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<TestCaseGroup>	computeGroup		(new TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<TestCaseGroup>	framebufferGroup	(new TestCaseGroup(testCtx, "framebuffer"));
+	de::MovePtr<TestCaseGroup>	fragHelperGroup		(new TestCaseGroup(testCtx, "frag_helper"));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing", "Subgroup vote category tests: raytracing"));
-	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh", "Subgroup vote category tests: mesh shading"));
-	de::MovePtr<TestCaseGroup>	meshGroupARB		(new TestCaseGroup(testCtx, "mesh", "Subgroup vote category tests: mesh shading"));
+	de::MovePtr<TestCaseGroup>	raytracingGroup		(new TestCaseGroup(testCtx, "ray_tracing"));
+	de::MovePtr<TestCaseGroup>	meshGroup			(new TestCaseGroup(testCtx, "mesh"));
+	de::MovePtr<TestCaseGroup>	meshGroupARB		(new TestCaseGroup(testCtx, "mesh"));
 #endif // CTS_USES_VULKANSC
 
-	de::MovePtr<TestCaseGroup>	groupARB			(new TestCaseGroup(testCtx, "ext_shader_subgroup_vote", "VK_EXT_shader_subgroup_vote category tests"));
-	de::MovePtr<TestCaseGroup>	graphicGroupARB		(new TestCaseGroup(testCtx, "graphics", "Subgroup vote category tests: graphics"));
-	de::MovePtr<TestCaseGroup>	computeGroupARB		(new TestCaseGroup(testCtx, "compute", "Subgroup vote category tests: compute"));
-	de::MovePtr<TestCaseGroup>	framebufferGroupARB	(new TestCaseGroup(testCtx, "framebuffer", "Subgroup vote category tests: framebuffer"));
-	de::MovePtr<TestCaseGroup>	fragHelperGroupARB	(new TestCaseGroup(testCtx, "frag_helper", "Subgroup vote category tests: fragment helper invocation"));
+	de::MovePtr<TestCaseGroup>	groupARB			(new TestCaseGroup(testCtx, "ext_shader_subgroup_vote"));
+	de::MovePtr<TestCaseGroup>	graphicGroupARB		(new TestCaseGroup(testCtx, "graphics"));
+	de::MovePtr<TestCaseGroup>	computeGroupARB		(new TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<TestCaseGroup>	framebufferGroupARB	(new TestCaseGroup(testCtx, "framebuffer"));
+	de::MovePtr<TestCaseGroup>	fragHelperGroupARB	(new TestCaseGroup(testCtx, "frag_helper"));
 	const deBool				boolValues[]		=
 	{
 		DE_FALSE,
@@ -611,7 +611,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 						deBool(false)					//  deBool				requires16BitUniformBuffer;
 					};
 
-					addFunctionCaseWithPrograms(computeGroupPtr, testName, "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(computeGroupPtr, testName,  supportedCheck, initPrograms, test, caseDef);
 				}
 
 #ifndef CTS_USES_VULKANSC
@@ -632,7 +632,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 							deBool(false)					//  deBool				requires16BitUniformBuffer;
 						};
 
-						addFunctionCaseWithPrograms(meshGroupPtr, testName, "", supportedCheck, initPrograms, test, caseDef);
+						addFunctionCaseWithPrograms(meshGroupPtr, testName,  supportedCheck, initPrograms, test, caseDef);
 					}
 				}
 #endif // CTS_USES_VULKANSC
@@ -649,7 +649,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 						deBool(false)					//  deBool				requires16BitUniformBuffer;
 					};
 
-					addFunctionCaseWithPrograms(graphicGroupPtr, name, "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(graphicGroupPtr, name,  supportedCheck, initPrograms, test, caseDef);
 				}
 
 				for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(fbStages); ++stageIndex)
@@ -661,12 +661,12 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 						format,							//  VkFormat			format;
 						de::SharedPtr<bool>(new bool),	//  de::SharedPtr<bool>	geometryPointSizeSupported;
 						DE_FALSE,						//  deBool				requiredSubgroupSize;
-						deBool(false),					//  deBool				requires8BitUniformBuffer;
-						deBool(false)					//  deBool				requires16BitUniformBuffer;
+						deBool(needs8BitUBOStorage),	//  deBool				requires8BitUniformBuffer;
+						deBool(needs16BitUBOStorage)	//  deBool				requires16BitUniformBuffer;
 					};
 					const string			testName	= name + "_" + getShaderStageName(caseDef.shaderStage);
 
-					addFunctionCaseWithPrograms(framebufferGroupPtr, testName, "", supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+					addFunctionCaseWithPrograms(framebufferGroupPtr, testName,  supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 				}
 
 				{
@@ -682,7 +682,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 					};
 					const string			testName	= name + "_" + getShaderStageName(caseDef.shaderStage);
 
-					addFunctionCaseWithPrograms(fragHelperGroupPtr, testName, "", supportedCheck, initFrameBufferProgramsFrag, noSSBOtest, caseDef);
+					addFunctionCaseWithPrograms(fragHelperGroupPtr, testName,  supportedCheck, initFrameBufferProgramsFrag, noSSBOtest, caseDef);
 				}
 			}
 		}
@@ -719,7 +719,7 @@ TestCaseGroup* createSubgroupsVoteTests (TestContext& testCtx)
 					DE_FALSE						//  deBool				requires16BitUniformBuffer;
 				};
 
-				addFunctionCaseWithPrograms(raytracingGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(raytracingGroup.get(), name,  supportedCheck, initPrograms, test, caseDef);
 			}
 		}
 	}

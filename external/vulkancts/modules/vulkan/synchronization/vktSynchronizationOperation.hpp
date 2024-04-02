@@ -175,6 +175,12 @@ public:
 	{
 		return m_context.isDeviceFunctionalitySupported(extension);
 	}
+
+	bool isComputeOnly(void)
+	{
+		return m_context.getTestContext().getCommandLine().isComputeOnly();
+	}
+
 	de::SharedPtr<vk::ResourceInterface>	getResourceInterface	(void) const { return m_context.getResourceInterface(); }
 private:
 	const vkt::Context&				m_context;
@@ -298,6 +304,8 @@ public:
 	virtual de::MovePtr<Operation>	build						(OperationContext& context, Resource& resource) const = 0;
 	virtual de::MovePtr<Operation>	build						(OperationContext& context, Resource& inResource, Resource& outResource) const = 0;
 
+	virtual vk::VkShaderStageFlagBits getShaderStage			(void) { return vk::VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM; }
+
 private:
 									OperationSupport			(const OperationSupport&);
 	OperationSupport&				operator=					(const OperationSupport&);
@@ -310,6 +318,7 @@ bool							isResourceSupported		(const OperationName opName, const ResourceDescr
 bool							isSpecializedAccessFlagSupported	(const OperationName opName);
 de::MovePtr<OperationSupport>	makeOperationSupport	(const OperationName opName, const ResourceDescription& resourceDesc, const bool specializedAccess = false);
 std::string						getOperationName		(const OperationName opName);
+bool							isStageSupported		(const vk::VkShaderStageFlagBits stage, const vk::VkQueueFlags queueFlags);
 
 } // synchronization
 } // vkt

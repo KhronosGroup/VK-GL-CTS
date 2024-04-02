@@ -120,6 +120,8 @@ static const EnumMapEntry s_resultItemMap[] =
 	{ 0xb30ed398,	"MissShader",			ri::TYPE_SHADER			},
 	{ 0x26150e53,	"IntersectionShader",	ri::TYPE_SHADER			},
 	{ 0x7e50944c,	"CallableShader",		ri::TYPE_SHADER			},
+	{ 0x925c7349,	"MeshShader",			ri::TYPE_SHADER			},
+	{ 0xc3a35d6f,	"TaskShader",			ri::TYPE_SHADER			},
 	{ 0x72863a54,	"ShaderProgram",		ri::TYPE_SHADERPROGRAM	},
 	{ 0xb4efc08d,	"ShaderSource",			ri::TYPE_SHADERSOURCE	},
 	{ 0xaee4380a,	"SpirVAssemblySource",	ri::TYPE_SPIRVSOURCE	},

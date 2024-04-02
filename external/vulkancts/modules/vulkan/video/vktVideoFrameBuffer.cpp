@@ -168,6 +168,8 @@ public:
 	VkSharedBaseObj<VkVideoRefCountBase>  stdSps;
 	// PPS
 	VkSharedBaseObj<VkVideoRefCountBase>  stdPps;
+	// AV1 SPS
+	VkSharedBaseObj<VkVideoRefCountBase>  stdAv1Sps;
 	// The bitstream Buffer
 	VkSharedBaseObj<VkVideoRefCountBase>  bitstreamData;
 
@@ -211,7 +213,8 @@ public:
 				 bool useImageArray = false,
 				 bool useImageViewArray = false,
 				 bool useSeparateOutputImages = false,
-				 bool useLinearOutput = false);
+				 bool useLinearOutput = false,
+				 bool resourcesWithoutProfiles = false);
 
 	~NvPerFrameDecodeImageSet()
 	{
@@ -311,18 +314,17 @@ class VkVideoFrameBuffer : public VulkanVideoFrameBuffer {
 public:
 	static constexpr size_t maxFramebufferImages = 32;
 
-	VkVideoFrameBuffer(DeviceContext& vkDevCtx, bool supportsQueries)
+	VkVideoFrameBuffer(DeviceContext& vkDevCtx, bool supportsQueries, bool resourcesWithoutProfiles)
 		: m_vkDevCtx(vkDevCtx),
 		m_refCount(0),
-		m_displayQueueMutex(),
 		m_perFrameDecodeImageSet(),
 		m_displayFrames(),
 		m_supportsQueries(supportsQueries),
+		m_resourcesWithoutProfiles(resourcesWithoutProfiles),
 		m_queryPool(VK_NULL_HANDLE),
 		m_ownedByDisplayMask(0),
 		m_frameNumInDecodeOrder(0),
 		m_frameNumInDisplayOrder(0),
-		m_codedExtent{0, 0},
 		m_numberParameterUpdates(0)
 	{ }
 
@@ -358,12 +360,10 @@ public:
 	}
 
 	deUint32 FlushDisplayQueue() {
-		std::lock_guard<std::mutex> lock(m_displayQueueMutex);
-
 		deUint32 flushedImages = 0;
 		while (!m_displayFrames.empty()) {
 			deUint8 pictureIndex = m_displayFrames.front();
-			DE_ASSERT((pictureIndex >= 0) && (pictureIndex < m_perFrameDecodeImageSet.size()));
+			DE_ASSERT(pictureIndex < m_perFrameDecodeImageSet.size());
 			m_displayFrames.pop();
 			if (m_perFrameDecodeImageSet[(deUint32)pictureIndex].IsAvailable()) {
 				// The frame is not released yet - force release it.
@@ -376,7 +376,7 @@ public:
 	}
 
 	int32_t InitImagePool(const VkVideoProfileInfoKHR* pDecodeProfile, deUint32 numImages, VkFormat dpbImageFormat,
-								  VkFormat outImageFormat, const VkExtent2D& codedExtent, const VkExtent2D& maxImageExtent,
+								  VkFormat outImageFormat, const VkExtent2D& maxImageExtent,
 								  VkImageUsageFlags dpbImageUsage, VkImageUsageFlags outImageUsage, deUint32 queueFamilyIndex,
 								  bool useImageArray, bool useImageViewArray,
 								  bool useSeparateOutputImage, bool useLinearOutput) override;
@@ -400,7 +400,6 @@ public:
 	int32_t QueueDecodedPictureForDisplay(int8_t picId, VulkanVideoDisplayPictureInfo* pDispInfo) override {
 		DE_ASSERT((deUint32)picId < m_perFrameDecodeImageSet.size());
 
-		std::lock_guard<std::mutex> lock(m_displayQueueMutex);
 		m_perFrameDecodeImageSet[picId].m_displayOrder = m_frameNumInDisplayOrder++;
 		m_perFrameDecodeImageSet[picId].m_timestamp = pDispInfo->timestamp;
 		m_perFrameDecodeImageSet[picId].AddRef();
@@ -408,10 +407,11 @@ public:
 		m_displayFrames.push((deUint8)picId);
 
 		if (videoLoggingEnabled()) {
-			std::cout << "==> Queue Display Picture picIdx: " << (deUint32)picId
-					  << "\t\tdisplayOrder: " << m_perFrameDecodeImageSet[picId].m_displayOrder
-					  << "\tdecodeOrder: " << m_perFrameDecodeImageSet[picId].m_decodeOrder << "\ttimestamp "
-					  << m_perFrameDecodeImageSet[picId].m_timestamp << std::endl;
+			std::cout << std::dec << ";;; framebuffer: queue picture for display: " << (deUint32)picId << " " << m_perFrameDecodeImageSet[picId].upscaledWidth << " x " << m_perFrameDecodeImageSet[picId].frameHeight
+					  << " displayOrder=" << m_perFrameDecodeImageSet[picId].m_displayOrder
+					  << " decodeOrder=" << m_perFrameDecodeImageSet[picId].m_decodeOrder
+					  << " timestamp=" << m_perFrameDecodeImageSet[picId].m_timestamp
+					  << std::endl;
 		}
 		return picId;
 	}
@@ -440,7 +440,6 @@ public:
 												   VkImageLayout newOutputImageLayerLayout = VK_IMAGE_LAYOUT_MAX_ENUM) override;
 
 	int32_t ReleaseImageResources(deUint32 numResources, const deUint32* indexes) override {
-		std::lock_guard<std::mutex> lock(m_displayQueueMutex);
 		for (unsigned int resId = 0; resId < numResources; resId++) {
 			if ((deUint32)indexes[resId] < m_perFrameDecodeImageSet.size()) {
 				m_perFrameDecodeImageSet[indexes[resId]].Deinit();
@@ -450,9 +449,8 @@ public:
 	}
 
 	int32_t SetPicNumInDecodeOrder(int32_t picId, int32_t picNumInDecodeOrder) override {
-		std::lock_guard<std::mutex> lock(m_displayQueueMutex);
 		if ((deUint32)picId < m_perFrameDecodeImageSet.size()) {
-			int32_t oldPicNumInDecodeOrder = m_perFrameDecodeImageSet[picId].m_decodeOrder;
+			int32_t oldPicNumInDecodeOrder = (int32_t)m_perFrameDecodeImageSet[picId].m_decodeOrder;
 			m_perFrameDecodeImageSet[picId].m_decodeOrder = picNumInDecodeOrder;
 			return oldPicNumInDecodeOrder;
 		}
@@ -461,7 +459,6 @@ public:
 	}
 
 	int32_t SetPicNumInDisplayOrder(int32_t picId, int32_t picNumInDisplayOrder) override {
-		std::lock_guard<std::mutex> lock(m_displayQueueMutex);
 		if ((deUint32)picId < m_perFrameDecodeImageSet.size()) {
 			int32_t oldPicNumInDisplayOrder = m_perFrameDecodeImageSet[picId].m_displayOrder;
 			m_perFrameDecodeImageSet[picId].m_displayOrder = picNumInDisplayOrder;
@@ -472,7 +469,6 @@ public:
 	}
 
 	virtual const VkSharedBaseObj<VkImageResourceView>& GetImageResourceByIndex(int8_t picId) {
-		std::lock_guard<std::mutex> lock(m_displayQueueMutex);
 		if ((deUint32)picId < m_perFrameDecodeImageSet.size()) {
 			return m_perFrameDecodeImageSet[picId].GetFrameImageView();
 		}
@@ -481,7 +477,6 @@ public:
 	}
 
 	vkPicBuffBase* ReservePictureBuffer() override {
-		std::lock_guard<std::mutex> lock(m_displayQueueMutex);
 		int foundPicId = -1;
 		for (int picId = 0; picId < m_perFrameDecodeImageSet.size(); picId++) {
 			if (m_perFrameDecodeImageSet[picId].IsAvailable()) {
@@ -502,7 +497,6 @@ public:
 	}
 
 	size_t GetSize() override {
-		std::lock_guard<std::mutex> lock(m_displayQueueMutex);
 		return m_perFrameDecodeImageSet.size();
 	}
 
@@ -511,23 +505,23 @@ public:
 private:
 	DeviceContext& m_vkDevCtx;
 	std::atomic<int32_t> m_refCount;
-	std::mutex m_displayQueueMutex;
 	NvPerFrameDecodeImageSet m_perFrameDecodeImageSet;
 	std::queue<deUint8> m_displayFrames;
 	bool m_supportsQueries;
+	bool m_resourcesWithoutProfiles;
 	VkQueryPool m_queryPool;
 	deUint32 m_ownedByDisplayMask;
 	int32_t m_frameNumInDecodeOrder;
 	int32_t m_frameNumInDisplayOrder;
-	VkExtent2D m_codedExtent;  // for the codedExtent, not the max image resolution
 	deUint32 m_numberParameterUpdates;
 };
 
 VkResult VulkanVideoFrameBuffer::Create(DeviceContext* vkDevCtx,
 										bool supportsQueries,
+										bool resourcesWithoutProfiles,
 										VkSharedBaseObj<VulkanVideoFrameBuffer>& vkVideoFrameBuffer)
 {
-	VkSharedBaseObj<VkVideoFrameBuffer> videoFrameBuffer(new VkVideoFrameBuffer(*vkDevCtx, supportsQueries));
+	VkSharedBaseObj<VkVideoFrameBuffer> videoFrameBuffer(new VkVideoFrameBuffer(*vkDevCtx, supportsQueries, resourcesWithoutProfiles));
 	if (videoFrameBuffer) {
 		vkVideoFrameBuffer = videoFrameBuffer;
 		return VK_SUCCESS;
@@ -555,19 +549,17 @@ int32_t VkVideoFrameBuffer::QueuePictureForDecode(int8_t picId, VkParserDecodePi
 {
 	DE_ASSERT((deUint32)picId < m_perFrameDecodeImageSet.size());
 
-	std::lock_guard<std::mutex> lock(m_displayQueueMutex);
 	m_perFrameDecodeImageSet[picId].m_picDispInfo = *pDecodePictureInfo;
 	m_perFrameDecodeImageSet[picId].m_decodeOrder = m_frameNumInDecodeOrder++;
 	m_perFrameDecodeImageSet[picId].stdPps = const_cast<VkVideoRefCountBase*>(pReferencedObjectsInfo->pStdPps);
 	m_perFrameDecodeImageSet[picId].stdSps = const_cast<VkVideoRefCountBase*>(pReferencedObjectsInfo->pStdSps);
 	m_perFrameDecodeImageSet[picId].stdVps = const_cast<VkVideoRefCountBase*>(pReferencedObjectsInfo->pStdVps);
+	m_perFrameDecodeImageSet[picId].stdAv1Sps = const_cast<VkVideoRefCountBase*>(pReferencedObjectsInfo->pStdAV1Sps);
 	m_perFrameDecodeImageSet[picId].bitstreamData = const_cast<VkVideoRefCountBase*>(pReferencedObjectsInfo->pBitstreamData);
 
 	if (videoLoggingEnabled()) {
-		std::cout << std::dec << "==> Queue Decode Picture picIdx: " << (deUint32)picId
-				  << "\t\tdisplayOrder: " << m_perFrameDecodeImageSet[picId].m_displayOrder
-				  << "\tdecodeOrder: " << m_perFrameDecodeImageSet[picId].m_decodeOrder << "\tFrameType "
-				  << m_perFrameDecodeImageSet[picId].m_picDispInfo.videoFrameType << std::endl;
+		static int counter = 0;
+		tcu::print(";;; %d queue decode: %d: decoderOrder=%d displayOrder=%d completeFence=%d consumerDoneFence=%d completeSem=%d consumerDoneSem=%d\n", counter++, picId, (int)m_perFrameDecodeImageSet[picId].m_decodeOrder, m_perFrameDecodeImageSet[picId].m_displayOrder, (deUint32)m_perFrameDecodeImageSet[picId].m_frameCompleteFence.getInternal(), (deUint32)m_perFrameDecodeImageSet[picId].m_frameConsumerDoneFence.getInternal(), (deUint32)m_perFrameDecodeImageSet[picId].m_frameCompleteSemaphore.getInternal(), (deUint32)m_perFrameDecodeImageSet[picId].m_frameConsumerDoneSemaphore.getInternal());
 	}
 
 	if (pFrameSynchronizationInfo->hasFrameCompleteSignalFence) {
@@ -605,11 +597,13 @@ int32_t VkVideoFrameBuffer::DequeueDecodedPicture(DecodedFrame* pDecodedFrame)
 {
 	int numberofPendingFrames = 0;
 	int pictureIndex = -1;
-	std::lock_guard<std::mutex> lock(m_displayQueueMutex);
 	if (!m_displayFrames.empty()) {
 		numberofPendingFrames = (int)m_displayFrames.size();
 		pictureIndex = m_displayFrames.front();
 		DE_ASSERT((pictureIndex >= 0) && ((deUint32)pictureIndex < m_perFrameDecodeImageSet.size()));
+		// TODO: This incorrectly trips in some Argon tests,
+		// suspect it's a problem with the showable vs never
+		// shown frames not being tracked correctly.
 		DE_ASSERT(!(m_ownedByDisplayMask & (1 << pictureIndex)));
 		m_ownedByDisplayMask |= (1 << pictureIndex);
 		m_displayFrames.pop();
@@ -617,6 +611,8 @@ int32_t VkVideoFrameBuffer::DequeueDecodedPicture(DecodedFrame* pDecodedFrame)
 
 	if ((deUint32)pictureIndex < m_perFrameDecodeImageSet.size()) {
 		pDecodedFrame->pictureIndex = pictureIndex;
+
+		pDecodedFrame->imageLayerIndex = m_perFrameDecodeImageSet[pictureIndex].m_picDispInfo.imageLayerIndex;
 
 		pDecodedFrame->decodedImageView = m_perFrameDecodeImageSet[pictureIndex].GetFrameImageView();
 		pDecodedFrame->outputImageView = m_perFrameDecodeImageSet[pictureIndex].GetDisplayImageView();
@@ -642,7 +638,7 @@ int32_t VkVideoFrameBuffer::DequeueDecodedPicture(DecodedFrame* pDecodedFrame)
 		pDecodedFrame->frameConsumerDoneSemaphore = m_perFrameDecodeImageSet[pictureIndex].m_frameConsumerDoneSemaphore;
 
 		pDecodedFrame->timestamp = m_perFrameDecodeImageSet[pictureIndex].m_timestamp;
-		pDecodedFrame->decodeOrder = m_perFrameDecodeImageSet[pictureIndex].m_decodeOrder;
+		pDecodedFrame->decodeOrder = (int32_t)m_perFrameDecodeImageSet[pictureIndex].m_decodeOrder;
 		pDecodedFrame->displayOrder = m_perFrameDecodeImageSet[pictureIndex].m_displayOrder;
 
 		pDecodedFrame->queryPool = m_queryPool;
@@ -650,16 +646,11 @@ int32_t VkVideoFrameBuffer::DequeueDecodedPicture(DecodedFrame* pDecodedFrame)
 		pDecodedFrame->numQueries = 1;
 	}
 
-	if (videoLoggingEnabled()) {
-		std::cout << "<<<<<<<<<<< Dequeue from Display: " << pictureIndex << " out of " << numberofPendingFrames
-				  << " ===========" << std::endl;
-	}
 	return numberofPendingFrames;
 }
 
 int32_t VkVideoFrameBuffer::ReleaseDisplayedPicture(DecodedFrameRelease** pDecodedFramesRelease, deUint32 numFramesToRelease)
 {
-	std::lock_guard<std::mutex> lock(m_displayQueueMutex);
 	for (deUint32 i = 0; i < numFramesToRelease; i++) {
 		const DecodedFrameRelease* pDecodedFrameRelease = pDecodedFramesRelease[i];
 		int picId = pDecodedFrameRelease->pictureIndex;
@@ -674,6 +665,7 @@ int32_t VkVideoFrameBuffer::ReleaseDisplayedPicture(DecodedFrameRelease** pDecod
 		m_perFrameDecodeImageSet[picId].stdPps = nullptr;
 		m_perFrameDecodeImageSet[picId].stdSps = nullptr;
 		m_perFrameDecodeImageSet[picId].stdVps = nullptr;
+		m_perFrameDecodeImageSet[picId].stdAv1Sps = nullptr;
 		m_perFrameDecodeImageSet[picId].Release();
 
 		m_perFrameDecodeImageSet[picId].m_hasConsummerSignalFence = pDecodedFrameRelease->hasConsummerSignalFence;
@@ -685,7 +677,6 @@ int32_t VkVideoFrameBuffer::ReleaseDisplayedPicture(DecodedFrameRelease** pDecod
 int32_t VkVideoFrameBuffer::GetDpbImageResourcesByIndex(deUint32 numResources, const int8_t* referenceSlotIndexes, VkVideoPictureResourceInfoKHR* dpbPictureResources, VulkanVideoFrameBuffer::PictureResourceInfo* dpbPictureResourcesInfo, VkImageLayout newDpbImageLayerLayout)
 {
 	DE_ASSERT(dpbPictureResources);
-	std::lock_guard<std::mutex> lock(m_displayQueueMutex);
 	for (unsigned int resId = 0; resId < numResources; resId++) {
 		if ((deUint32)referenceSlotIndexes[resId] < m_perFrameDecodeImageSet.size()) {
 			VkResult result =
@@ -700,19 +691,20 @@ int32_t VkVideoFrameBuffer::GetDpbImageResourcesByIndex(deUint32 numResources, c
 			DE_ASSERT(dpbPictureResources[resId].sType == VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR);
 			dpbPictureResources[resId].codedOffset = {
 				0, 0};  // FIXME: This parameter must to be adjusted based on the interlaced mode.
-			dpbPictureResources[resId].codedExtent = m_codedExtent;
+
+			dpbPictureResources[resId].codedExtent.width = m_perFrameDecodeImageSet[referenceSlotIndexes[resId]].upscaledWidth;
+			dpbPictureResources[resId].codedExtent.height = m_perFrameDecodeImageSet[referenceSlotIndexes[resId]].frameHeight;
 		}
 	}
 	return numResources;
 }
 
-int32_t VkVideoFrameBuffer::GetCurrentImageResourceByIndex(int8_t referenceSlotIndex, VkVideoPictureResourceInfoKHR* dpbPictureResource, VulkanVideoFrameBuffer::PictureResourceInfo* dpbPictureResourceInfo, VkImageLayout newDpbImageLayerLayout, VkVideoPictureResourceInfoKHR* outputPictureResource, VulkanVideoFrameBuffer::PictureResourceInfo* outputPictureResourceInfo, VkImageLayout newOutputImageLayerLayout)
+int32_t VkVideoFrameBuffer::GetCurrentImageResourceByIndex(int8_t picIdx, VkVideoPictureResourceInfoKHR* dpbPictureResource, VulkanVideoFrameBuffer::PictureResourceInfo* dpbPictureResourceInfo, VkImageLayout newDpbImageLayerLayout, VkVideoPictureResourceInfoKHR* outputPictureResource, VulkanVideoFrameBuffer::PictureResourceInfo* outputPictureResourceInfo, VkImageLayout newOutputImageLayerLayout)
 {
 	DE_ASSERT(dpbPictureResource);
-	std::lock_guard<std::mutex> lock(m_displayQueueMutex);
-	if ((deUint32)referenceSlotIndex < m_perFrameDecodeImageSet.size()) {
+	if ((deUint32)picIdx < m_perFrameDecodeImageSet.size()) {
 		VkResult result = m_perFrameDecodeImageSet.GetImageSetNewLayout(
-			m_vkDevCtx, referenceSlotIndex, newDpbImageLayerLayout, dpbPictureResource, dpbPictureResourceInfo,
+			m_vkDevCtx, picIdx, newDpbImageLayerLayout, dpbPictureResource, dpbPictureResourceInfo,
 			newOutputImageLayerLayout, outputPictureResource, outputPictureResourceInfo);
 		DE_ASSERT(result == VK_SUCCESS);
 		if (result != VK_SUCCESS) {
@@ -720,35 +712,21 @@ int32_t VkVideoFrameBuffer::GetCurrentImageResourceByIndex(int8_t referenceSlotI
 		}
 
 		DE_ASSERT(dpbPictureResource->sType == VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR);
-		dpbPictureResource->codedOffset = {0, 0};  // FIXME: This parameter must to be adjusted based on the interlaced mode.
-		dpbPictureResource->codedExtent = m_codedExtent;
-
-		if (outputPictureResource) {
-			DE_ASSERT(outputPictureResource->sType == VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR);
-			outputPictureResource->codedOffset = {
-				0, 0};  // FIXME: This parameter must to be adjusted based on the interlaced mode.
-			outputPictureResource->codedExtent = m_codedExtent;
-		}
 	}
-	return referenceSlotIndex;
+	return picIdx;
 }
 
-int32_t VkVideoFrameBuffer::InitImagePool(const VkVideoProfileInfoKHR* pDecodeProfile, deUint32 numImages, VkFormat dpbImageFormat, VkFormat outImageFormat, const VkExtent2D& codedExtent, const VkExtent2D& maxImageExtent, VkImageUsageFlags dpbImageUsage, VkImageUsageFlags outImageUsage, deUint32 queueFamilyIndex, bool useImageArray, bool useImageViewArray, bool useSeparateOutputImage, bool useLinearOutput)
+int32_t VkVideoFrameBuffer::InitImagePool(const VkVideoProfileInfoKHR* pDecodeProfile, deUint32 numImages, VkFormat dpbImageFormat, VkFormat outImageFormat, const VkExtent2D& maxImageExtent, VkImageUsageFlags dpbImageUsage, VkImageUsageFlags outImageUsage, deUint32 queueFamilyIndex, bool useImageArray, bool useImageViewArray, bool useSeparateOutputImage, bool useLinearOutput)
 {
-	std::lock_guard<std::mutex> lock(m_displayQueueMutex);
-
 	DE_ASSERT(numImages && (numImages <= maxFramebufferImages) && pDecodeProfile);
 
 	if (m_supportsQueries)
 		VK_CHECK(CreateVideoQueries(numImages, m_vkDevCtx, pDecodeProfile));
 
-	// m_extent is for the codedExtent, not the max image resolution
-	m_codedExtent = codedExtent;
-
 	int32_t imageSetCreateResult = m_perFrameDecodeImageSet.init(
 		m_vkDevCtx, pDecodeProfile, numImages, dpbImageFormat, outImageFormat, maxImageExtent, dpbImageUsage, outImageUsage,
 		queueFamilyIndex,
-		useImageArray, useImageViewArray, useSeparateOutputImage, useLinearOutput);
+		useImageArray, useImageViewArray, useSeparateOutputImage, useLinearOutput, m_resourcesWithoutProfiles);
 	m_numberParameterUpdates++;
 
 	return imageSetCreateResult;
@@ -877,6 +855,7 @@ void NvPerFrameDecodeResources::Deinit()
 	stdPps = nullptr;
 	stdSps = nullptr;
 	stdVps = nullptr;
+	stdAv1Sps = nullptr;
 
 	if (m_vkDevCtx == nullptr) {
 		assert ((m_frameCompleteFence == VK_NULL_HANDLE) &&
@@ -932,7 +911,8 @@ int32_t NvPerFrameDecodeImageSet::init(DeviceContext& vkDevCtx,
 									   bool                     useImageArray,
 									   bool                     useImageViewArray,
 									   bool                     useSeparateOutputImage,
-									   bool                     useLinearOutput)
+									   bool                     useLinearOutput,
+									   bool                     resourcesWithoutProfiles)
 {
 	if (numImages > m_perFrameDecodeResources.size()) {
 		DE_ASSERT(!"Number of requested images exceeds the max size of the image array");
@@ -963,8 +943,7 @@ int32_t NvPerFrameDecodeImageSet::init(DeviceContext& vkDevCtx,
 
 	// Image create info for the DPBs
 	m_dpbImageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	// m_imageCreateInfo.pNext = m_videoProfile.GetProfile();
-	m_dpbImageCreateInfo.pNext = m_videoProfile.GetProfileListInfo();
+	m_dpbImageCreateInfo.pNext = resourcesWithoutProfiles ? nullptr : m_videoProfile.GetProfileListInfo();
 	m_dpbImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 	m_dpbImageCreateInfo.format = dpbImageFormat;
 	m_dpbImageCreateInfo.extent = { maxImageExtent.width, maxImageExtent.height, 1 };
@@ -977,7 +956,7 @@ int32_t NvPerFrameDecodeImageSet::init(DeviceContext& vkDevCtx,
 	m_dpbImageCreateInfo.queueFamilyIndexCount = 1;
 	m_dpbImageCreateInfo.pQueueFamilyIndices = &m_queueFamilyIndex;
 	m_dpbImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	m_dpbImageCreateInfo.flags = 0;
+	m_dpbImageCreateInfo.flags = resourcesWithoutProfiles ? VK_IMAGE_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR : 0;
 
 	// Image create info for the output
 	if (useSeparateOutputImage || useLinearOutput) {

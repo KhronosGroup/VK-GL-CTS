@@ -158,7 +158,7 @@ CreateSamplerYcbcrConversionFunc			createSamplerYcbcrConversion;
 DestroySamplerYcbcrConversionFunc			destroySamplerYcbcrConversion;
 GetDeviceQueue2Func							getDeviceQueue2;
 GetDescriptorSetLayoutSupportFunc			getDescriptorSetLayoutSupport;
-GetCalibratedTimestampsEXTFunc				getCalibratedTimestampsEXT;
+GetCalibratedTimestampsKHRFunc				getCalibratedTimestampsKHR;
 SetDebugUtilsObjectNameEXTFunc				setDebugUtilsObjectNameEXT;
 SetDebugUtilsObjectTagEXTFunc				setDebugUtilsObjectTagEXT;
 QueueBeginDebugUtilsLabelEXTFunc			queueBeginDebugUtilsLabelEXT;
@@ -185,7 +185,7 @@ GetImageDrmFormatModifierPropertiesEXTFunc	getImageDrmFormatModifierPropertiesEX
 GetBufferOpaqueCaptureAddressFunc			getBufferOpaqueCaptureAddress;
 GetBufferDeviceAddressFunc					getBufferDeviceAddress;
 GetDeviceMemoryOpaqueCaptureAddressFunc		getDeviceMemoryOpaqueCaptureAddress;
-CmdSetLineStippleEXTFunc					cmdSetLineStippleEXT;
+CmdSetLineStippleKHRFunc					cmdSetLineStippleKHR;
 GetFaultDataFunc							getFaultData;
 CmdSetCullModeEXTFunc						cmdSetCullModeEXT;
 CmdSetFrontFaceEXTFunc						cmdSetFrontFaceEXT;

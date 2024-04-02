@@ -346,7 +346,7 @@ string generateTestCode(const string& outputType, const vector<string>& inputTyp
 	output << outputType << " v = ";
 	if (outputTypeInfo->second.beforeValueFn != DE_NULL)
 		outputTypeInfo->second.beforeValueFn(output, -1);
-	int outputElementsRemaining = outputTypeInfo->second.numElements;
+	int outputElementsRemaining = (int)outputTypeInfo->second.numElements;
 	int outputElementIndex = 0;
 	for(size_t i = 0; i < inputTypes.size() && outputElementsRemaining > 0; ++i)
 	{
@@ -479,7 +479,7 @@ GLSLVectorConstructorTestCase::IterateResult GLSLVectorConstructorTestCase::iter
 
 	const vector<glu::VertexArrayBinding>	vertexArrays	=
 	{
-		glu::va::Float("vPosition", 2, positions.size() / 2, 0, positions.data()),
+		glu::va::Float("vPosition", 2, (int)positions.size() / 2, 0, positions.data()),
 	};
 
 	gl.useProgram(program.getProgram());

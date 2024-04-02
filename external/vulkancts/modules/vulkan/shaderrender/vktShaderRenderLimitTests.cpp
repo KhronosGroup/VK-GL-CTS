@@ -118,7 +118,7 @@ void FragmentInputComponentCaseInstance::setupDefaultInputs (void)
 class FragmentInputComponentCase : public TestCase
 {
 public:
-	FragmentInputComponentCase	(TestContext& testCtx, const string& name, const string& description, const deUint16 inputComponents);
+	FragmentInputComponentCase	(TestContext& testCtx, const string& name, const deUint16 inputComponents);
 	virtual						~FragmentInputComponentCase(void);
 
 	void						initPrograms(SourceCollections& dst) const;
@@ -129,8 +129,8 @@ private:
 	const deUint16				m_inputComponents;
 };
 
-FragmentInputComponentCase::FragmentInputComponentCase (TestContext& testCtx, const string& name, const string& description, const deUint16 inputComponents)
-	: TestCase			(testCtx, name, description)
+FragmentInputComponentCase::FragmentInputComponentCase (TestContext& testCtx, const string& name, const deUint16 inputComponents)
+	: TestCase			(testCtx, name)
 	, m_inputComponents	(inputComponents)
 {
 }
@@ -249,10 +249,10 @@ TestInstance* FragmentInputComponentCase::createInstance (Context& context) cons
 
 TestCaseGroup* createLimitTests (TestContext& testCtx)
 {
-	de::MovePtr<TestCaseGroup> limitGroup			(new TestCaseGroup(testCtx,	"limits",			"Shader device limit tests"));
-	de::MovePtr<TestCaseGroup> nearGroup			(new TestCaseGroup(testCtx, "near_max",			"Shaders near maximum values"));
+	de::MovePtr<TestCaseGroup> limitGroup			(new TestCaseGroup(testCtx,	"limits"));
+	de::MovePtr<TestCaseGroup> nearGroup			(new TestCaseGroup(testCtx, "near_max"));
 
-	de::MovePtr<TestCaseGroup> inputComponentsGroup	(new TestCaseGroup(testCtx,	"fragment_input",	"Fragment input component variations"));
+	de::MovePtr<TestCaseGroup> inputComponentsGroup	(new TestCaseGroup(testCtx,	"fragment_input"));
 
 	// Fragment input component case
 	deUint16 fragmentComponentMaxLimits [] = { 64u, 128u, 256u };
@@ -260,7 +260,7 @@ TestCaseGroup* createLimitTests (TestContext& testCtx)
 	for (deUint16 limitNdx = 0; limitNdx < DE_LENGTH_OF_ARRAY(fragmentComponentMaxLimits); limitNdx++)
 	{
 		for (deInt16 cases = 5; cases > 0; cases--)
-			inputComponentsGroup->addChild(new FragmentInputComponentCase(testCtx, "components_" + de::toString(fragmentComponentMaxLimits[limitNdx] - cases), "Input component count", (deUint16)(fragmentComponentMaxLimits[limitNdx] - cases)));
+			inputComponentsGroup->addChild(new FragmentInputComponentCase(testCtx, "components_" + de::toString(fragmentComponentMaxLimits[limitNdx] - cases), (deUint16)(fragmentComponentMaxLimits[limitNdx] - cases)));
 	}
 
 	nearGroup->addChild(inputComponentsGroup.release());

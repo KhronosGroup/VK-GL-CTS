@@ -158,7 +158,7 @@ virtual VkResult			createSamplerYcbcrConversion			(VkDevice device, const VkSamp
 virtual void				destroySamplerYcbcrConversion			(VkDevice device, VkSamplerYcbcrConversion ycbcrConversion, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual void				getDeviceQueue2							(VkDevice device, const VkDeviceQueueInfo2* pQueueInfo, VkQueue* pQueue) const = 0;
 virtual void				getDescriptorSetLayoutSupport			(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport) const = 0;
-virtual VkResult			getCalibratedTimestampsEXT				(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const = 0;
+virtual VkResult			getCalibratedTimestampsKHR				(VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const = 0;
 virtual VkResult			setDebugUtilsObjectNameEXT				(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) const = 0;
 virtual VkResult			setDebugUtilsObjectTagEXT				(VkDevice device, const VkDebugUtilsObjectTagInfoEXT* pTagInfo) const = 0;
 virtual void				queueBeginDebugUtilsLabelEXT			(VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo) const = 0;
@@ -185,7 +185,7 @@ virtual VkResult			getImageDrmFormatModifierPropertiesEXT	(VkDevice device, VkIm
 virtual uint64_t			getBufferOpaqueCaptureAddress			(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const = 0;
 virtual VkDeviceAddress		getBufferDeviceAddress					(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const = 0;
 virtual uint64_t			getDeviceMemoryOpaqueCaptureAddress		(VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo) const = 0;
-virtual void				cmdSetLineStippleEXT					(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const = 0;
+virtual void				cmdSetLineStippleKHR					(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const = 0;
 virtual VkResult			getFaultData							(VkDevice device, VkFaultQueryBehavior faultQueryBehavior, VkBool32* pUnrecordedFaults, uint32_t* pFaultCount, VkFaultData* pFaults) const = 0;
 virtual void				cmdSetCullModeEXT						(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const = 0;
 virtual void				cmdSetFrontFaceEXT						(VkCommandBuffer commandBuffer, VkFrontFace frontFace) const = 0;

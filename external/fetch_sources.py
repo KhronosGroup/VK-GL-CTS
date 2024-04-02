@@ -31,6 +31,7 @@ import subprocess
 import ssl
 import stat
 import platform
+import logging
 
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "scripts")
 sys.path.insert(0, scriptPath)
@@ -58,8 +59,10 @@ class Source:
 		# Remove read-only first
 		readonlydir = os.path.join(fullDstPath, ".git")
 		if os.path.exists(readonlydir):
+			logging.debug("Deleting " + readonlydir)
 			shutil.rmtree(readonlydir, onerror = onReadonlyRemoveError)
 		if os.path.exists(fullDstPath):
+			logging.debug("Deleting " + fullDstPath)
 			shutil.rmtree(fullDstPath, ignore_errors=False)
 
 class SourcePackage (Source):
@@ -87,6 +90,7 @@ class SourcePackage (Source):
 	def removeArchives (self):
 		archiveDir = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.archiveDir)
 		if os.path.exists(archiveDir):
+			logging.debug("Deleting " + archiveDir)
 			shutil.rmtree(archiveDir, ignore_errors=False)
 
 	def isArchiveUpToDate (self):
@@ -140,7 +144,7 @@ class SourcePackage (Source):
 			raise Exception("Checksum mismatch for %s, expected %s, got %s" % (self.filename, self.checksum, checksum))
 
 		if not os.path.exists(os.path.dirname(dstPath)):
-			os.mkdir(os.path.dirname(dstPath))
+			os.makedirs(os.path.dirname(dstPath))
 
 		writeBinaryFile(dstPath, data)
 
@@ -251,6 +255,7 @@ class GitRepo (Source):
 			execute(["git", "clone", "--no-checkout", url, fullDstPath])
 
 		pushWorkingDir(fullDstPath)
+		print("Directory: " + fullDstPath)
 		try:
 			for tag in self.removeTags:
 				proc = subprocess.Popen(['git', 'tag', '-l', tag], stdout=subprocess.PIPE)
@@ -290,7 +295,7 @@ def postExtractLibpng (path):
 
 PACKAGES = [
 	SourcePackage(
-		"http://zlib.net/fossils/zlib-1.2.13.tar.gz",
+		"https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz",
 		"b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
 		"zlib"),
 	SourcePackage(
@@ -306,28 +311,33 @@ PACKAGES = [
 	GitRepo(
 		"https://gitlab.khronos.org/spirv/spirv-tools.git",
 		"git@gitlab.khronos.org:spirv/spirv-tools.git",
-		"89e236b84bb8fa6e4d54cc2bd14f652a05c2c5aa",
+		"7fbe758bfbbee7f2b1f669b3d54f1a4ce86d7e3f",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		"git@github.com:KhronosGroup/glslang.git",
-		"808c7ed17cbc5a5078264bad3e95f2199a42e939",
+		"bada5c87ec6db4441db129d8506742c4a72bd610",
 		"glslang",
 		removeTags = ["main-tot"]),
 	GitRepo(
 		"https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
 		"git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
-		"36b765fb607cfecdf0b9e843a19fed3e86bc4d9a",
+		"2ba1248145ba576df3ed8dae6aba3fa92e9873ce",
 		"spirv-headers"),
 	GitRepo(
 		"https://gitlab.khronos.org/vulkan/vulkan.git",
 		"git@gitlab.khronos.org:vulkan/vulkan.git",
-		"38e2a0c4807f8442d5eb78e8b731da66d887d7d8",
+		"2fbcf21a65daff33d1dc1677d4080812e780f842",
 		"vulkan-docs"),
+	GitRepo(
+		"https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
+		"git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
+		"f589bc456545fbab97caf49380b102b8aafe1f40",
+		"vulkan-validationlayers"),
 	GitRepo(
 		"https://github.com/google/amber.git",
 		"git@github.com:google/amber.git",
-		"933ecb4d6288675a92eb1650e0f52b1d7afe8273",
+		"8e90b2d2f532bcd4a80069e3f37a9698209a21bc",
 		"amber"),
 	GitRepo(
 		"https://github.com/open-source-parsers/jsoncpp.git",
@@ -340,13 +350,8 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/vk_video_samples.git",
 		"git@github.com:Igalia/vk_video_samples.git",
-		"cts-integration-0.9.9-1",
+		"ce80453dadeea7b1a6409434f3358ef1e46e4ae7",
 		"nvidia-video-samples"),
-	GitRepo(
-		"https://github.com/Igalia/ESExtractor.git",
-		"git@github.com:Igalia/ESExtractor.git",
-		"v0.3.3",
-		"ESExtractor"),
 ]
 
 def parseArgs ():
@@ -363,7 +368,10 @@ def parseArgs ():
 						help="Select protocol to checkout git repositories.")
 	parser.add_argument('--force', dest='force', action='store_true', default=False,
 						help="Pass --force to git fetch and checkout commands")
-
+	parser.add_argument("-v", "--verbose",
+						dest="verbose",
+						action="store_true",
+						help="Enable verbose logging")
 	args = parser.parse_args()
 
 	if args.insecure:
@@ -395,6 +403,7 @@ def run(*popenargs, **kwargs):
 
 if __name__ == "__main__":
 	args = parseArgs()
+	initializeLogger(args.verbose)
 
 	for pkg in PACKAGES:
 		if args.clean:

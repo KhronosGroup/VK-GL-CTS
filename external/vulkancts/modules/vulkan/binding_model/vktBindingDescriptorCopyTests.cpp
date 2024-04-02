@@ -437,7 +437,7 @@ private:
 class DescriptorCopyTestCase : public TestCase
 {
 	public:
-							DescriptorCopyTestCase	(tcu::TestContext& context, const char* name, const char* desc, DescriptorCommandsSp commands);
+							DescriptorCopyTestCase	(tcu::TestContext& context, const char* name, DescriptorCommandsSp commands);
 	virtual					~DescriptorCopyTestCase	(void);
 	virtual	void			initPrograms			(SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance			(Context& context) const;
@@ -2386,9 +2386,8 @@ DescriptorCopyTestInstance::~DescriptorCopyTestInstance (void)
 
 DescriptorCopyTestCase::DescriptorCopyTestCase (tcu::TestContext&		context,
 												const char*				name,
-												const char*				desc,
 												DescriptorCommandsSp	commands)
-: vkt::TestCase	(context, name, desc)
+: vkt::TestCase	(context, name)
 , m_commands	(commands)
 {
 }
@@ -2490,7 +2489,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_0").c_str(), "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_0").c_str(), commands));
 	}
 
 	// Simple test copying between different sets.
@@ -2509,7 +2508,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_1").c_str(), "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_1").c_str(), commands));
 	}
 
 	// Simple test copying between different sets. Destination not updated.
@@ -2528,7 +2527,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_2").c_str(), "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_2").c_str(), commands));
 	}
 
 	// Five sets and several copies.
@@ -2561,7 +2560,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_3").c_str(), "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_3").c_str(), commands));
 	}
 
 	// Several identical copies
@@ -2594,7 +2593,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_4").c_str(), "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_4").c_str(), commands));
 	}
 
 	// Copy descriptors back and forth
@@ -2627,7 +2626,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_5").c_str(), "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_5").c_str(), commands));
 	}
 
 	// Copy between non-consecutive descriptor sets
@@ -2648,7 +2647,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_6").c_str(), "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_6").c_str(), commands));
 	}
 
 	// Simple 3 sized array to 3 sized array inside the same set.
@@ -2674,7 +2673,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_array0").c_str(), "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_array0").c_str(), commands));
 	}
 
 	// Simple 2 sized array to 3 sized array into different set.
@@ -2698,7 +2697,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_array1").c_str(), "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_array1").c_str(), commands));
 	}
 
 	// Update array partially with writes and partially with a copy
@@ -2729,7 +2728,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_array2").c_str(), "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, (name + "_array2").c_str(), commands));
 	}
 }
 
@@ -2756,7 +2755,7 @@ void addSamplerCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, "sampler_0", "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, "sampler_0", commands));
 	}
 
 	// Simple 3 sized array to 3 sized array inside the same set.
@@ -2782,7 +2781,7 @@ void addSamplerCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, "sampler_array0", "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, "sampler_array0", commands));
 	}
 
 	// Simple 2 sized array to 3 sized array into different set.
@@ -2805,7 +2804,7 @@ void addSamplerCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, "sampler_array1", "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, "sampler_array1", commands));
 	}
 }
 
@@ -2832,7 +2831,7 @@ void addSampledImageCopyTests (tcu::TestContext&				testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, "sampled_image_0", "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, "sampled_image_0", commands));
 	}
 
 	// Simple 3 sized array to 3 sized array inside the same set.
@@ -2854,7 +2853,7 @@ void addSampledImageCopyTests (tcu::TestContext&				testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, "sampled_image_array0", "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, "sampled_image_array0", commands));
 	}
 }
 
@@ -2897,7 +2896,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_0", "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_0", commands));
 	}
 
 	{
@@ -2941,7 +2940,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_1", "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_1", commands));
 	}
 
 	if (pipelineType == PIPELINE_TYPE_GRAPHICS)
@@ -2977,7 +2976,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_2", "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_2", commands));
 	}
 
 #ifndef CTS_USES_VULKANSC
@@ -3023,7 +3022,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_3", "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_3", commands));
 	}
 #endif
 
@@ -3063,7 +3062,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_array0", "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_array0", commands));
 	}
 
 	// Similar to the previous one but including inline uniform blocks.
@@ -3112,7 +3111,7 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		commands->addResultBuffer();
 
-		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_array1", "", commands));
+		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_array1", commands));
 	}
 #endif
 }
@@ -3151,11 +3150,12 @@ void createTestsForAllDescriptorTypes (tcu::TestContext& testCtx, de::MovePtr<tc
 
 tcu::TestCaseGroup*	createDescriptorCopyTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> descriptorCopyGroup(new tcu::TestCaseGroup(testCtx, "descriptor_copy", "Descriptor copy tests"));
+	de::MovePtr<tcu::TestCaseGroup> descriptorCopyGroup(new tcu::TestCaseGroup(testCtx, "descriptor_copy"));
 
-	de::MovePtr<tcu::TestCaseGroup> computeGroup	(new tcu::TestCaseGroup(testCtx, "compute", "Compute tests"));
-	de::MovePtr<tcu::TestCaseGroup> graphicsGroup	(new tcu::TestCaseGroup(testCtx, "graphics", "Graphics tests"));
-	de::MovePtr<tcu::TestCaseGroup> graphicsUABGroup(new tcu::TestCaseGroup(testCtx, "graphics_uab", "Graphics tests with update after bind"));
+	de::MovePtr<tcu::TestCaseGroup> computeGroup	(new tcu::TestCaseGroup(testCtx, "compute"));
+	de::MovePtr<tcu::TestCaseGroup> graphicsGroup	(new tcu::TestCaseGroup(testCtx, "graphics"));
+	// Graphics tests with update after bind
+	de::MovePtr<tcu::TestCaseGroup> graphicsUABGroup(new tcu::TestCaseGroup(testCtx, "graphics_uab"));
 
 	createTestsForAllDescriptorTypes(testCtx, computeGroup,		PIPELINE_TYPE_COMPUTE);
 	createTestsForAllDescriptorTypes(testCtx, graphicsGroup,	PIPELINE_TYPE_GRAPHICS);

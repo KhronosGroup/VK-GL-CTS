@@ -1264,11 +1264,11 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"hitAttributeEXT vec3 unusedAttribute;\n"
 				"\n"
 				+ de::toString(hitPropsDefinition) +
 				"\n"
-				"layout(location = 0) rayPayloadInEXT      uint   dummy;\n"
+				"layout(location = 0) rayPayloadInEXT      uint   unusedPayload;\n"
 				"layout(set      = 0, binding = 0, std430) buffer result\n"
 				"{\n"
 				"    uint     nHitsRegistered;\n"
@@ -1339,7 +1339,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"layout(location = 0)              rayPayloadEXT uint               dummy;\n"
+				"layout(location = 0)              rayPayloadEXT uint               unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
 				"\n"
 				"void main()\n"
@@ -1580,7 +1580,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"hitAttributeEXT vec3 unusedAttribute;\n"
 				"\n"
 				+ de::toString(hitPropsDefinition) +
 				"\n"
@@ -1966,7 +1966,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"layout(location = 128) rayPayloadInEXT uint dummy;\n"
+				"layout(location = 128) rayPayloadInEXT uint unusedPayload;\n"
 				"\n"
 				"void main()\n"
 				"{\n"
@@ -2054,7 +2054,7 @@ public:
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
 				+ de::toString(callableDataDefinitions.at(0) ) +
-				"layout(location = 128)            rayPayloadEXT uint               dummy;\n"
+				"layout(location = 128)            rayPayloadEXT uint               unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
 				"\n"
 				"void main()\n"
@@ -2550,7 +2550,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"hitAttributeEXT vec3 unusedAttribute;\n"
 				"\n"
 				+ de::toString(hitPropsDefinition) +
 				"\n"
@@ -2927,7 +2927,7 @@ public:
 				+ de::toString(constantDefinitions)
 				+ de::toString(hitAttributeDefinition) +
 				"\n"
-				"layout(location = 0) rayPayloadInEXT uint dummy;\n"
+				"layout(location = 0) rayPayloadInEXT uint unusedPayload;\n"
 				+ de::toString(resultBufferDefinition) +
 				"\n"
 				"void main()\n"
@@ -3028,7 +3028,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"layout(location = 0)              rayPayloadEXT uint               dummy;\n"
+				"layout(location = 0)              rayPayloadEXT uint               unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
 				"\n"
 				"void main()\n"
@@ -3190,6 +3190,7 @@ class MAXRTInvocationsSupportedTest :	public TestBase,
 	bool init(	vkt::Context&			context,
 				RayTracingProperties*	rtPropertiesPtr) final
 	{
+		m_context = &context;
 		/* NOTE: In order to avoid running into a situation where the test attempts to create a buffer of size larger than permitted by Vulkan,
 		 *       we limit the maximum number of testable invocations to 2^29 on 64bit CTS build and driver or to 2^27 on 32bit */
 		const auto		maxComputeWorkGroupCount		= context.getDeviceProperties().limits.maxComputeWorkGroupCount;
@@ -3258,11 +3259,11 @@ class MAXRTInvocationsSupportedTest :	public TestBase,
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"hitAttributeEXT vec3 unusedAttribute;\n"
 				"\n"
 				+ de::toString(hitPropsDefinition) +
 				"\n"
-				"layout(location = 0) rayPayloadInEXT      uint   dummy;\n"
+				"layout(location = 0) rayPayloadInEXT      uint   unusedPayload;\n"
 				"layout(set      = 0, binding = 0, std430) buffer result\n"
 				"{\n"
 				"    uint     nHitsRegistered;\n"
@@ -3335,7 +3336,7 @@ class MAXRTInvocationsSupportedTest :	public TestBase,
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"layout(location = 0)              rayPayloadEXT uint               dummy;\n"
+				"layout(location = 0)              rayPayloadEXT uint               unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
 				"\n"
 				"void main()\n"
@@ -3389,6 +3390,8 @@ class MAXRTInvocationsSupportedTest :	public TestBase,
 
 		for (deUint32 nRay = 0; nRay < nHitsReported; ++nRay)
 		{
+			// Touch watch dog every 100000 loops to avoid timeout issue.
+			if(nRay > 0 && (nRay % 100000 == 0)) m_context->getTestContext().touchWatchdog();
 			const HitProperties* hitPropsPtr = reinterpret_cast<const HitProperties*>(resultU32Ptr + 2 /* preamble ints */) + nRay;
 
 			if (m_nRayToInstanceIndexExpected.at(nRay % m_nMaxCells) != hitPropsPtr->instanceCustomIndex)
@@ -3418,6 +3421,7 @@ private:
 		m_nRayToInstanceIndexExpected[cellLocation[0] ] = customIndexAssigned;
 	}
 
+	vkt::Context* m_context;
 	const AccelerationStructureLayout	m_asStructureLayout;
 	const GeometryType					m_geometryType;
 
@@ -3517,11 +3521,11 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"hitAttributeEXT vec3 unusedAttribute;\n"
 				"\n"
 				+ hitPropertiesDefinition +
 				"\n"
-				"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
+				"layout(location = 0) rayPayloadInEXT      vec3 unusedPayload;\n"
 				"layout(set      = 0, binding = 0, std430) buffer result\n"
 				"{\n"
 				"    HitProperties rayToHitProps[" << de::toString(m_nRaysToTrace) << "];\n"
@@ -3567,7 +3571,7 @@ public:
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
 				+ hitPropertiesDefinition +
-				"layout(location = 0) rayPayloadInEXT      vec3   dummy;\n"
+				"layout(location = 0) rayPayloadInEXT      vec3   unusedPayload;\n"
 				"layout(set      = 0, binding = 0, std430) buffer result\n"
 				"{\n"
 				"    HitProperties rayToHitProps[" << de::toString(m_nRaysToTrace) << "];\n"
@@ -3592,7 +3596,7 @@ public:
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
 				+ hitPropertiesDefinition +
-				"layout(location = 0)              rayPayloadEXT vec3                     dummy;\n"
+				"layout(location = 0)              rayPayloadEXT vec3                     unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform       accelerationStructureEXT topLevelAS;\n"
 				"\n"
 				"void main()\n"
@@ -4001,8 +4005,8 @@ public:
 			css << preamble
 				<<
 				"\n"
-				"                     hitAttributeEXT         vec3 dummyAttribute;\n"
-				"layout(location = 0) rayPayloadInEXT dummy { vec3 dummyVec;};\n"
+				"                     hitAttributeEXT vec3 unusedAttribute;\n"
+				"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 				"\n"				+
 				inputBufferGLSL		+
 				outputBufferGLSL	+
@@ -4021,7 +4025,7 @@ public:
 			css << preamble
 				<<
 				"\n"
-				"layout(location = 0) rayPayloadInEXT dummy { vec3 dummyVec;};\n"	+
+				"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"	+
 				inputBufferGLSL														+
 				outputBufferGLSL													+
 				"\n"
@@ -4060,7 +4064,7 @@ public:
 			css << preamble
 				<<
 				"\n"
-				"layout(location = 0) rayPayloadInEXT vec3 dummy;\n"
+				"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 				"\n"				+
 				inputBufferGLSL		+
 				outputBufferGLSL	+
@@ -4080,7 +4084,7 @@ public:
 
 			css << preamble
 				<<
-				"layout(location = 0)                      rayPayloadEXT vec3       dummy;\n"
+				"layout(location = 0)                      rayPayloadEXT vec3       unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
 				"\n"
 				"void main()\n"
@@ -6967,11 +6971,11 @@ public:
 			"\n"
 			"#extension GL_EXT_ray_tracing : require\n"
 			"\n"
-			"hitAttributeEXT vec3 dummyAttribute;\n"
+			"hitAttributeEXT vec3 unusedAttribute;\n"
 			"\n"
 			+ hitPropertiesDefinition +
 			"\n"
-			"layout(location = 0) rayPayloadInEXT dummy { vec3 dummyVec;};\n"
+			"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			+ hitPropertiesDeclaration +
 			"\n"
 			"void main()\n"
@@ -7015,7 +7019,7 @@ public:
 			"#extension GL_EXT_ray_tracing : require\n"
 			"\n"
 			+ hitPropertiesDefinition +
-			"layout(location = 0) rayPayloadInEXT vec3 dummy;\n"
+			"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			+ hitPropertiesDeclaration +
 			"\n"
 			"void main()\n"
@@ -7029,7 +7033,7 @@ public:
 			"#extension GL_EXT_ray_tracing : require\n"
 			"\n"
 			+ hitPropertiesDefinition +
-			"layout(location = 0)              rayPayloadEXT vec3                     dummy;\n"
+			"layout(location = 0)              rayPayloadEXT vec3                     unusedPayload;\n"
 			"layout(set      = 0, binding = 1) uniform       accelerationStructureEXT topLevelAS;\n"
 			"\n"
 			"void main()\n"
@@ -7546,9 +7550,9 @@ public:
 						"\n"
 						"#extension GL_EXT_ray_tracing : require\n"
 						"\n"
-						"hitAttributeEXT vec3 dummyAttribute;\n"
+						"hitAttributeEXT vec3 unusedAttribute;\n"
 						"\n"
-						"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
+						"layout(location = 0) rayPayloadInEXT      vec3 unusedPayload;\n"
 						"layout(set      = 0, binding = 0, std430) buffer result\n"
 						"{\n"
 						"    uint resultData[" + resultBufferSizeString + "];\n"
@@ -7580,9 +7584,9 @@ public:
 						"\n"
 						"#extension GL_EXT_ray_tracing : require\n"
 						"\n"
-						"hitAttributeEXT vec3 dummyAttribute;\n"
+						"hitAttributeEXT vec3 unusedAttribute;\n"
 						"\n"
-						"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
+						"layout(location = 0) rayPayloadInEXT      vec3 unusedPayload;\n"
 						"layout(set      = 0, binding = 0, std430) buffer result\n"
 						"{\n"
 						"    uint resultData[" + resultBufferSizeString + "];\n"
@@ -7610,9 +7614,9 @@ public:
 						"\n"
 						"#extension GL_EXT_ray_tracing : require\n"
 						"\n"
-						"hitAttributeEXT vec3 dummyAttribute;\n"
+						"hitAttributeEXT vec3 unusedAttribute;\n"
 						"\n"
-						"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
+						"layout(location = 0) rayPayloadInEXT      vec3 unusedPayload;\n"
 						"layout(set      = 0, binding = 0, std430) buffer result\n"
 						"{\n"
 						"    uint resultData[" + resultBufferSizeString + "];\n"
@@ -7644,9 +7648,9 @@ public:
 						"\n"
 						"#extension GL_EXT_ray_tracing : require\n"
 						"\n"
-						"hitAttributeEXT vec3 dummyAttribute;\n"
+						"hitAttributeEXT vec3 unusedAttribute;\n"
 						"\n"
-						"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
+						"layout(location = 0) rayPayloadInEXT      vec3 unusedPayload;\n"
 						"layout(set      = 0, binding = 0, std430) buffer result\n"
 						"{\n"
 						"    uint resultData[" + resultBufferSizeString + "];\n"
@@ -7674,9 +7678,9 @@ public:
 						"\n"
 						"#extension GL_EXT_ray_tracing : require\n"
 						"\n"
-						"hitAttributeEXT vec3 dummyAttribute;\n"
+						"hitAttributeEXT vec3 unusedAttribute;\n"
 						"\n"
-						"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
+						"layout(location = 0) rayPayloadInEXT      vec3 unusedPayload;\n"
 						"layout(set      = 0, binding = 0, std430) buffer result\n"
 						"{\n"
 						"    uint resultData[" + resultBufferSizeString + "];\n"
@@ -7763,7 +7767,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"layout(location = 0) rayPayloadInEXT      vec3   dummy;\n"
+				"layout(location = 0) rayPayloadInEXT      vec3   unusedPayload;\n"
 				"layout(set      = 0, binding = 0, std430) buffer result\n"
 				"{\n"
 				"    uint resultData[2];\n"
@@ -7785,7 +7789,7 @@ public:
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				"layout(location = 0)              rayPayloadEXT vec3                     dummy;\n"
+				"layout(location = 0)              rayPayloadEXT vec3                     unusedPayload;\n"
 				"layout(set      = 0, binding = 1) uniform       accelerationStructureEXT topLevelAS;\n"
 				"\n"
 				"void main()\n"
@@ -8927,7 +8931,6 @@ class RayTracingTestCase : public TestCase
 	public:
 							 RayTracingTestCase	(	tcu::TestContext&	context,
 													const char*			name,
-													const char*			desc,
 													const CaseDef		data);
 							~RayTracingTestCase	(	void);
 
@@ -8942,11 +8945,9 @@ private:
 
 RayTracingTestCase::RayTracingTestCase (tcu::TestContext&	context,
 										const char*			name,
-										const char*			desc,
 										const CaseDef		data)
 	: vkt::TestCase	(	context,
-						name,
-						desc)
+						name)
 	, m_data		(	data)
 {
 	/* Stub */
@@ -9470,10 +9471,10 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> miscGroupPtr(
+		// Miscellaneous ray-tracing tests
 		new tcu::TestCaseGroup(
 			testCtx,
-			"misc",
-			"Miscellaneous ray-tracing tests"));
+			"misc"));
 
 
 	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
@@ -9492,9 +9493,9 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 														((testType == TestType::CALLABLE_SHADER_STRESS_DYNAMIC_TEST)	? "dynamic"
 																														: "static");
 
+				// Verifies that the maximum ray hit attribute size property reported by the implementation is actually supported.
 				auto newTestCasePtr = new RayTracingTestCase(	testCtx,
 																newTestCaseName.data(),
-																"Verifies that the maximum ray hit attribute size property reported by the implementation is actually supported.",
 																CaseDef{testType, currentGeometryType, currentASLayout});
 
 				miscGroupPtr->addChild(newTestCasePtr);
@@ -9506,9 +9507,9 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 	{
 		const std::string newTestCaseName = "AS_stresstest_" + de::toString(getSuffixForGeometryType(currentGeometryType) );
 
+		// Verifies raygen shader invocations can simultaneously access as many AS instances as reported
 		auto newTestCasePtr = new RayTracingTestCase(	testCtx,
 														newTestCaseName.data(),
-														"Verifies raygen shader invocations can simultaneously access as many AS instances as reported",
 														CaseDef{TestType::AS_STRESS_TEST, currentGeometryType, AccelerationStructureLayout::ONE_TL_MANY_BLS_ONE_GEOMETRY});
 
 		miscGroupPtr->addChild(newTestCasePtr);
@@ -9522,9 +9523,9 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 			const auto			testType		= (nUseExtraCullMaskBits == 0)	? TestType::CULL_MASK
 																				: TestType::CULL_MASK_EXTRA_BITS;
 
+			// Verifies cull mask works as specified
 			auto newTestCasePtr = new RayTracingTestCase(	testCtx,
 															newTestCaseName.data(),
-															"Verifies cull mask works as specified",
 															CaseDef{testType, currentGeometryType, AccelerationStructureLayout::ONE_TL_MANY_BLS_ONE_GEOMETRY});
 
 			miscGroupPtr->addChild(newTestCasePtr);
@@ -9535,9 +9536,9 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 	{
 		const std::string newTestCaseName = "maxrtinvocations_" + de::toString(getSuffixForGeometryType(currentGeometryType) );
 
+		// Verifies top-level acceleration structures built of AABB and triangle bottom-level AS instances work as expected
 		auto newTestCasePtr = new RayTracingTestCase(	testCtx,
 														newTestCaseName.data(),
-														"Verifies top-level acceleration structures built of AABB and triangle bottom-level AS instances work as expected",
 														CaseDef{TestType::MAX_RT_INVOCATIONS_SUPPORTED, currentGeometryType, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
 
 		miscGroupPtr->addChild(newTestCasePtr);
@@ -9549,9 +9550,9 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 		{
 			const std::string newTestCaseName = "NO_DUPLICATE_ANY_HIT_" + de::toString(getSuffixForASLayout(currentASLayout) ) + "_" + de::toString(getSuffixForGeometryType(currentGeometryType) );
 
+			// Verifies the NO_DUPLICATE_ANY_HIT flag is adhered to when tracing rays
 			auto newTestCasePtr = new RayTracingTestCase(	testCtx,
 															newTestCaseName.data(),
-															"Verifies the NO_DUPLICATE_ANY_HIT flag is adhered to when tracing rays",
 															CaseDef{TestType::NO_DUPLICATE_ANY_HIT, currentGeometryType, currentASLayout});
 
 			miscGroupPtr->addChild(newTestCasePtr);
@@ -9559,9 +9560,9 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 	}
 
 	{
+		// Verifies top-level acceleration structures built of AABB and triangle bottom-level AS instances work as expected
 		auto newTestCasePtr = new RayTracingTestCase(	testCtx,
 														"mixedPrimTL",
-														"Verifies top-level acceleration structures built of AABB and triangle bottom-level AS instances work as expected",
 														CaseDef{TestType::AABBS_AND_TRIS_IN_ONE_TL, GeometryType::AABB_AND_TRIANGLES, AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES});
 
 		miscGroupPtr->addChild(newTestCasePtr);
@@ -9571,22 +9572,22 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 	{
 		const std::string newTestCaseName = "maxrayhitattributesize_" + de::toString(getSuffixForASLayout(currentASLayout) );
 
+		// Verifies that the maximum ray hit attribute size property reported by the implementation is actually supported.
 		auto newTestCasePtr = new RayTracingTestCase(	testCtx,
 														newTestCaseName.data(),
-														"Verifies that the maximum ray hit attribute size property reported by the implementation is actually supported.",
 														CaseDef{TestType::MAX_RAY_HIT_ATTRIBUTE_SIZE, GeometryType::AABB, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
 
 		miscGroupPtr->addChild(newTestCasePtr);
 	}
 
 	{
+		// Test the return value of reportIntersectionEXT
 		auto newTestCase1Ptr = new RayTracingTestCase(testCtx,
 														"report_intersection_result",
-														"Test the return value of reportIntersectionEXT",
 														CaseDef{TestType::REPORT_INTERSECTION_RESULT, GeometryType::AABB, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
+		// Test replacing VK_ACCESS_*_WRITE/READ_BIT with VK_ACCESS_MEMORY_WRITE/READ_BIT.
 		auto newTestCase2Ptr = new RayTracingTestCase(testCtx,
 														"memory_access",
-														"Test replacing VK_ACCESS_*_WRITE/READ_BIT with VK_ACCESS_MEMORY_WRITE/READ_BIT.",
 														CaseDef{TestType::USE_MEMORY_ACCESS, GeometryType::AABB, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY });
 
 		miscGroupPtr->addChild(newTestCase1Ptr);
@@ -9597,112 +9598,92 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 	{
 		const std::string newTestCaseName = "raypayloadin_" + de::toString(getSuffixForGeometryType(currentGeometryType) );
 
+		// Verifies that relevant shader stages can correctly read large ray payloads provided by raygen shader stage.
 		auto newTestCasePtr = new RayTracingTestCase(	testCtx,
 														newTestCaseName.data(),
-														"Verifies that relevant shader stages can correctly read large ray payloads provided by raygen shader stage.",
 														CaseDef{TestType::RAY_PAYLOAD_IN, currentGeometryType, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
 		miscGroupPtr->addChild(newTestCasePtr);
 	}
 
 	{
+		// Tests usage of various variables inside a shader record block using std430 layout
 		auto newTestCaseSTD430_1Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordSTD430_1",
-																"Tests usage of various variables inside a shader record block using std430 layout",
 																CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_1) );
 		auto newTestCaseSTD430_2Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordSTD430_2",
-																"Tests usage of various variables inside a shader record block using std430 layout",
 																CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_2) );
 		auto newTestCaseSTD430_3Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordSTD430_3",
-																"Tests usage of various variables inside a shader record block using std430 layout",
 																CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_3) );
 		auto newTestCaseSTD430_4Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordSTD430_4",
-																"Tests usage of various variables inside a shader record block using std430 layout",
 																CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_4) );
 		auto newTestCaseSTD430_5Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordSTD430_5",
-																"Tests usage of various variables inside a shader record block using std430 layout",
 																CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_5) );
 		auto newTestCaseSTD430_6Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordSTD430_6",
-																"Tests usage of various variables inside a shader record block using std430 layout",
 																CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_6) );
 
+		// Tests usage of various variables inside a shader record block using scalar layout
 		auto newTestCaseScalar_1Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordScalar_1",
-																"Tests usage of various variables inside a shader record block using scalar layout",
 																CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_1) );
 		auto newTestCaseScalar_2Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordScalar_2",
-																"Tests usage of various variables inside a shader record block using scalar layout",
 																CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_2) );
 		auto newTestCaseScalar_3Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordScalar_3",
-																"Tests usage of various variables inside a shader record block using scalar layout",
 																CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_3) );
 		auto newTestCaseScalar_4Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordScalar_4",
-																"Tests usage of various variables inside a shader record block using scalar layout",
 																CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_4) );
 		auto newTestCaseScalar_5Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordScalar_5",
-																"Tests usage of various variables inside a shader record block using scalar layout",
 																CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_5) );
 		auto newTestCaseScalar_6Ptr = new RayTracingTestCase(	testCtx,
 																"shaderRecordScalar_6",
-																"Tests usage of various variables inside a shader record block using scalar layout",
 																CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_6) );
 
+		// Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers
 		auto newTestCaseExplicitScalarOffset_1Ptr = new RayTracingTestCase(	testCtx,
 																			"shaderRecordExplicitScalarOffset_1",
-																			"Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers",
 																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1) );
 		auto newTestCaseExplicitScalarOffset_2Ptr = new RayTracingTestCase(	testCtx,
 																			"shaderRecordExplicitScalarOffset_2",
-																			"Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers",
 																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2) );
 		auto newTestCaseExplicitScalarOffset_3Ptr = new RayTracingTestCase(	testCtx,
 																			"shaderRecordExplicitScalarOffset_3",
-																			"Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers",
 																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3) );
 		auto newTestCaseExplicitScalarOffset_4Ptr = new RayTracingTestCase(	testCtx,
 																			"shaderRecordExplicitScalarOffset_4",
-																			"Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers",
 																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4) );
 		auto newTestCaseExplicitScalarOffset_5Ptr = new RayTracingTestCase(	testCtx,
 																			"shaderRecordExplicitScalarOffset_5",
-																			"Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers",
 																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5) );
 		auto newTestCaseExplicitScalarOffset_6Ptr = new RayTracingTestCase(	testCtx,
 																			"shaderRecordExplicitScalarOffset_6",
-																			"Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers",
 																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_6) );
 
+		// Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers
 		auto newTestCaseExplicitSTD430Offset_1Ptr = new RayTracingTestCase(	testCtx,
 																			"shaderRecordExplicitSTD430Offset_1",
-																			"Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers",
 																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1) );
 		auto newTestCaseExplicitSTD430Offset_2Ptr = new RayTracingTestCase(	testCtx,
 																			"shaderRecordExplicitSTD430Offset_2",
-																			"Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers",
 																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2) );
 		auto newTestCaseExplicitSTD430Offset_3Ptr = new RayTracingTestCase(	testCtx,
 																			"shaderRecordExplicitSTD430Offset_3",
-																			"Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers",
 																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3) );
 		auto newTestCaseExplicitSTD430Offset_4Ptr = new RayTracingTestCase(	testCtx,
 																			"shaderRecordExplicitSTD430Offset_4",
-																			"Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers",
 																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4) );
 		auto newTestCaseExplicitSTD430Offset_5Ptr = new RayTracingTestCase(	testCtx,
 																			"shaderRecordExplicitSTD430Offset_5",
-																			"Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers",
 																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5) );
 		auto newTestCaseExplicitSTD430Offset_6Ptr = new RayTracingTestCase(	testCtx,
 																			"shaderRecordExplicitSTD430Offset_6",
-																			"Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers",
 																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6) );
 		miscGroupPtr->addChild(newTestCaseSTD430_1Ptr);
 		miscGroupPtr->addChild(newTestCaseSTD430_2Ptr);
@@ -9739,9 +9720,9 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 
 		// 0 recursion levels.
 		{
+			// Verifies that relevant shader stages can correctly read large ray payloads provided by raygen shader stage.
 			auto newTestCasePtr = new RayTracingTestCase(	testCtx,
 															(newTestCaseName + "0").data(),
-															"Verifies that relevant shader stages can correctly read large ray payloads provided by raygen shader stage.",
 															CaseDef{TestType::RECURSIVE_TRACES_0, currentGeometryType, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
 
 			miscGroupPtr->addChild(newTestCasePtr);
@@ -9750,9 +9731,9 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 		// TODO: for (deUint32 nLevels = 1; nLevels <= 29; ++nLevels)
 		for (deUint32 nLevels = 1; nLevels <= 15; ++nLevels)
 		{
+			// Verifies that relevant shader stages can correctly read large ray payloads provided by raygen shader stage.
 			auto newTestCasePtr = new RayTracingTestCase(	testCtx,
 															(newTestCaseName + de::toString(nLevels) ).data(),
-															"Verifies that relevant shader stages can correctly read large ray payloads provided by raygen shader stage.",
 															CaseDef{static_cast<TestType>(static_cast<deUint32>(TestType::RECURSIVE_TRACES_1) + (nLevels - 1) ), currentGeometryType, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
 
 			miscGroupPtr->addChild(newTestCasePtr);
@@ -9760,29 +9741,29 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 	}
 
 	{
+		// Verifies that OpIgnoreIntersectionKHR works as per spec (static invocations).
 		auto newTestCase1Ptr = new RayTracingTestCase(	testCtx,
 														"OpIgnoreIntersectionKHR_AnyHitStatically",
-														"Verifies that OpIgnoreIntersectionKHR works as per spec (static invocations).",
 														CaseDef{static_cast<TestType>(static_cast<deUint32>(TestType::IGNORE_ANY_HIT_STATICALLY) ), GeometryType::TRIANGLES, AccelerationStructureLayout::COUNT});
+		// Verifies that OpIgnoreIntersectionKHR works as per spec (dynamic invocations).
 		auto newTestCase2Ptr = new RayTracingTestCase(	testCtx,
 														"OpIgnoreIntersectionKHR_AnyHitDynamically",
-														"Verifies that OpIgnoreIntersectionKHR works as per spec (dynamic invocations).",
 														CaseDef{static_cast<TestType>(static_cast<deUint32>(TestType::IGNORE_ANY_HIT_DYNAMICALLY) ), GeometryType::TRIANGLES, AccelerationStructureLayout::COUNT});
+		// Verifies that OpTerminateRayKHR works as per spec (static invocations).
 		auto newTestCase3Ptr = new RayTracingTestCase(	testCtx,
 														"OpTerminateRayKHR_AnyHitStatically",
-														"Verifies that OpTerminateRayKHR works as per spec (static invocations).",
 														CaseDef{static_cast<TestType>(static_cast<deUint32>(TestType::TERMINATE_ANY_HIT_STATICALLY) ), GeometryType::TRIANGLES, AccelerationStructureLayout::COUNT});
+		// Verifies that OpTerminateRayKHR works as per spec (dynamic invocations).
 		auto newTestCase4Ptr = new RayTracingTestCase(	testCtx,
 														"OpTerminateRayKHR_AnyHitDynamically",
-														"Verifies that OpTerminateRayKHR works as per spec (dynamic invocations).",
 														CaseDef{static_cast<TestType>(static_cast<deUint32>(TestType::TERMINATE_ANY_HIT_DYNAMICALLY) ), GeometryType::TRIANGLES, AccelerationStructureLayout::COUNT});
+		// Verifies that OpTerminateRayKHR works as per spec (static invocations).
 		auto newTestCase5Ptr = new RayTracingTestCase(	testCtx,
 														"OpTerminateRayKHR_IntersectionStatically",
-														"Verifies that OpTerminateRayKHR works as per spec (static invocations).",
 														CaseDef{static_cast<TestType>(static_cast<deUint32>(TestType::TERMINATE_INTERSECTION_STATICALLY) ), GeometryType::AABB, AccelerationStructureLayout::COUNT});
+		// Verifies that OpTerminateRayKHR works as per spec (dynamic invocations).
 		auto newTestCase6Ptr = new RayTracingTestCase(	testCtx,
 														"OpTerminateRayKHR_IntersectionDynamically",
-														"Verifies that OpTerminateRayKHR works as per spec (dynamic invocations).",
 														CaseDef{static_cast<TestType>(static_cast<deUint32>(TestType::TERMINATE_INTERSECTION_DYNAMICALLY) ), GeometryType::AABB, AccelerationStructureLayout::COUNT});
 
 		miscGroupPtr->addChild(newTestCase1Ptr);
@@ -9794,9 +9775,9 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 	}
 
 	{
-		addFunctionCaseWithPrograms(miscGroupPtr.get(), "null_miss", "", checkRTPipelineSupport, initBasicHitBufferPrograms, nullMissInstance);
-		addFunctionCaseWithPrograms(miscGroupPtr.get(), "reuse_creation_buffer_top", "", checkReuseCreationBufferSupport, initReuseCreationBufferPrograms, reuseCreationBufferInstance, true/*top*/);
-		addFunctionCaseWithPrograms(miscGroupPtr.get(), "reuse_creation_buffer_bottom", "", checkReuseCreationBufferSupport, initReuseCreationBufferPrograms, reuseCreationBufferInstance, false/*top*/);
+		addFunctionCaseWithPrograms(miscGroupPtr.get(), "null_miss", checkRTPipelineSupport, initBasicHitBufferPrograms, nullMissInstance);
+		addFunctionCaseWithPrograms(miscGroupPtr.get(), "reuse_creation_buffer_top", checkReuseCreationBufferSupport, initReuseCreationBufferPrograms, reuseCreationBufferInstance, true/*top*/);
+		addFunctionCaseWithPrograms(miscGroupPtr.get(), "reuse_creation_buffer_bottom", checkReuseCreationBufferSupport, initReuseCreationBufferPrograms, reuseCreationBufferInstance, false/*top*/);
 	}
 
 	return miscGroupPtr.release();

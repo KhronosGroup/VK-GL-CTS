@@ -617,45 +617,9 @@ const char* toString(DATA_TYPE type)
 	return translateTable[DE_ENUM_INDEX(type)];
 }
 
-const char* toString(COMPOSITE_DATA_TYPE type, bool useSpace = true)
+const char* toString(COMPOSITE_DATA_TYPE type)
 {
 	static const char* const translateTable[DE_ENUM_COUNT(CompositeDataTypes)] = {
-		"vec2 uint8",	// VEC2_UINT8
-		"vec3 uint8",	// VEC3_UINT8
-		"vec4 uint8",	// VEC4_UINT8
-		"vec2 int8",	// VEC2_INT8
-		"vec3 int8",	// VEC3_INT8
-		"vec4 int8",	// VEC4_INT8
-		"vec2 uint16",	// VEC2_UINT16
-		"vec3 uint16",	// VEC3_UINT16
-		"vec4 uint16",	// VEC4_UINT16
-		"vec2 int16",	// VEC2_INT16
-		"vec3 int16",	// VEC3_INT16
-		"vec4 int16",	// VEC4_INT16
-		"vec2 float16",	// VEC2_FLOAT16
-		"vec3 float16",	// VEC3_FLOAT16
-		"vec4 float16",	// VEC4_FLOAT16
-		"vec2 uint32",	// VEC2_UINT32
-		"vec3 uint32",	// VEC3_UINT32
-		"vec4 uint32",	// VEC4_UINT32
-		"vec2 int32",	// VEC2_INT32
-		"vec3 int32",	// VEC3_INT32
-		"vec4 int32",	// VEC4_INT32
-		"vec2 float32",	// VEC2_FLOAT32
-		"vec3 float32",	// VEC3_FLOAT32
-		"vec4 float32",	// VEC4_FLOAT32
-		"vec2 uint64",	// VEC2_UINT64
-		"vec3 uint64",	// VEC3_UINT64
-		"vec4 uint64",	// VEC4_UINT64
-		"vec2 int64",	// VEC2_INT64
-		"vec3 int64",	// VEC3_INT64
-		"vec4 int64",	// VEC4_INT64
-		"vec2 float64",	// VEC2_FLOAT64
-		"vec3 float64",	// VEC3_FLOAT64
-		"vec4 float64",	// VEC4_FLOAT64
-	};
-
-	static const char* const noSpaceTranslateTable[DE_ENUM_COUNT(CompositeDataTypes)] = {
 		"vec2_uint8",	// VEC2_UINT8
 		"vec3_uint8",	// VEC3_UINT8
 		"vec4_uint8",	// VEC4_UINT8
@@ -691,28 +655,12 @@ const char* toString(COMPOSITE_DATA_TYPE type, bool useSpace = true)
 		"vec4_float64",	// VEC4_FLOAT64
 	};
 
-	return useSpace ? translateTable[DE_ENUM_INDEX(type)] : noSpaceTranslateTable[DE_ENUM_INDEX(type)];
+	return translateTable[DE_ENUM_INDEX(type)];
 }
 
-const char* toString(ATOMIC_TEST_CASE testCase, deBool useSpace = DE_TRUE)
+const char* toString(ATOMIC_TEST_CASE testCase)
 {
 	static const char* const translateTable[DE_ENUM_COUNT(AtomicTestCases)] = {
-		"op atomic load",				// OP_ATOMIC_LOAD
-		"op atomic store",				// OP_ATOMIC_STORE
-		"op atomic exchange",			// OP_ATOMIC_EXCHANGE
-		"op atomic compare exchange",	// OP_ATOMIC_COMPARE_EXCHANGE
-		"op atomic increment",			// OP_ATOMIC_INCREMENT
-		"op atomic decrement",			// OP_ATOMIC_DECREMENT
-		"op atomic add",				// OP_ATOMIC_ADD
-		"op atomic sub",				// OP_ATOMIC_SUB
-		"op atomic min",				// OP_ATOMIC_MIN
-		"op atomic max",				// OP_ATOMIC_MAX
-		"op atomic and",				// OP_ATOMIC_AND
-		"op atomic or",					// OP_ATOMIC_OR
-		"op atomic xor",				// OP_ATOMIC_XOR
-	};
-
-	static const char* const noSpaceTranslateTable[DE_ENUM_COUNT(AtomicTestCases)] = {
 		"op_atomic_load",				// OP_ATOMIC_LOAD
 		"op_atomic_store",				// OP_ATOMIC_STORE
 		"op_atomic_exchange",			// OP_ATOMIC_EXCHANGE
@@ -728,31 +676,12 @@ const char* toString(ATOMIC_TEST_CASE testCase, deBool useSpace = DE_TRUE)
 		"op_atomic_xor",				// OP_ATOMIC_XOR
 	};
 
-	return useSpace ? translateTable[DE_ENUM_INDEX(testCase)] : noSpaceTranslateTable[DE_ENUM_INDEX(testCase)];
+	return translateTable[DE_ENUM_INDEX(testCase)];
 }
 
-const char* toString(POINTER_TEST_CASE testCase, deBool useSpace = DE_TRUE)
+const char* toString(POINTER_TEST_CASE testCase)
 {
 	static const char* const translateTable[DE_ENUM_COUNT(PointerTestCases)] = {
-		"op bitcast form untyped",	// OP_BITCAST_FROM_UNTYPED_PHYSICAL_STORAGE
-		"op bitcast to untyped",	// OP_BITCAST_TO_UNTYPED_PHYSICAL_STORAGE
-		"op select",				// OP_SELECT_PHYSICAL_STORAGE
-		"op phi",					// OP_PHI_PHYSICAL_STORAGE
-		"op ptr access chain",		// OP_PTR_ACCESS_CHAIN_PHYSICAL_STORAGE
-		"op function call",			// OP_FUNCTION_CALL_PHYSICAL_STORAGE
-		"op select",				// OP_SELECT_VARIABLE_PTR
-		"op phi",					// OP_PHI_VARIABLE_PTR
-		"op ptr access chain",		// OP_PTR_ACCESS_CHAIN_VARIABLE_PTR
-		"op ptr equal",				// OP_PTR_EQUAL_VARIABLE_PTR
-		"op ptr not equal",			// OP_PTR_NOT_EQUAL_VARIABLE_PTR
-		"op ptr diff",				// OP_PTR_DIFF_VARIABLE_PTR
-		"op function call",			// OP_FUNCTION_CALL_VARIABLE_PTR
-		"function variable",		// FUNCTION_VARIABLE_VARIABLE_PTR
-		"private variable",			// PRIVATE_VARIABLE_VARIABLE_PTR
-		"multiple access chains",	// MULTIPLE_ACCESS_CHAINS_VARIABLE_PTR
-	};
-
-	static const char* const noSpaceTranslateTable[DE_ENUM_COUNT(PointerTestCases)] = {
 		"op_bitcast_form_untyped",	// OP_BITCAST_FROM_UNTYPED_PHYSICAL_STORAGE
 		"op_bitcast_to_untyped",	// OP_BITCAST_TO_UNTYPED_PHYSICAL_STORAGE
 		"op_select",				// OP_SELECT_PHYSICAL_STORAGE
@@ -771,22 +700,17 @@ const char* toString(POINTER_TEST_CASE testCase, deBool useSpace = DE_TRUE)
 		"multiple_access_chains",	// MULTIPLE_ACCESS_CHAINS_VARIABLE_PTR
 	};
 
-	return useSpace ? translateTable[DE_ENUM_INDEX(testCase)] : noSpaceTranslateTable[DE_ENUM_INDEX(testCase)];
+	return translateTable[DE_ENUM_INDEX(testCase)];
 }
 
-const char* toString(WORKGROUP_TEST_CASE testCase, deBool useSpace = DE_TRUE)
+const char* toString(WORKGROUP_TEST_CASE testCase)
 {
 	static const char* const translateTable[DE_ENUM_COUNT(WorkgroupTestCases)] = {
-		"aliased",		// ALIASED
-		"not aliased",	// NOT_ALIASED
-	};
-
-	static const char* const noSpaceTranslateTable[DE_ENUM_COUNT(WorkgroupTestCases)] = {
 		"aliased",		// ALIASED
 		"not_aliased",	// NOT_ALIASED
 	};
 
-	return useSpace ? translateTable[DE_ENUM_INDEX(testCase)] : noSpaceTranslateTable[DE_ENUM_INDEX(testCase)];
+	return translateTable[DE_ENUM_INDEX(testCase)];
 }
 
 const char* toString(OPERATION_TYPE opType)
@@ -799,40 +723,27 @@ const char* toString(OPERATION_TYPE opType)
 	return translateTable[DE_ENUM_INDEX(opType)];
 }
 
-const char* toString(CONTAINER_TYPE contType, deBool useSpace = DE_TRUE)
+const char* toString(CONTAINER_TYPE contType)
 {
 	static const char* const translateTable[DE_ENUM_COUNT(ContainerTypes)] = {
-		"storage buffer",	// STORAGE_BUFFER
-		"uniform",			// UNIFORM
-		"push constant",	// PUSH_CONSTANT
-		"workgroup",		// WORKGROUP
-	};
-
-	static const char* const noSpaceTranslateTable[DE_ENUM_COUNT(ContainerTypes)] = {
 		"storage_buffer",	// STORAGE_BUFFER
 		"uniform",			// UNIFORM
 		"push_constant",	// PUSH_CONSTANT
 		"workgroup",		// WORKGROUP
 	};
 
-	return useSpace ? translateTable[DE_ENUM_INDEX(contType)] : noSpaceTranslateTable[DE_ENUM_INDEX(contType)];
+	return translateTable[DE_ENUM_INDEX(contType)];
 }
 
-const char* toString(COPY_OPERATION_TYPE type, deBool useSpace = DE_TRUE)
+const char* toString(COPY_OPERATION_TYPE type)
 {
 	static const char* const translateTable[DE_ENUM_COUNT(CopyOperationTypes)] = {
-		"copy object",			// COPY_OBJECT
-		"copy memory",			// COPY_MEMORY
-		"copy memory sized",	// COPY_MEMORY_SIZED
-	};
-
-	static const char* const noSpaceTranslateTable[DE_ENUM_COUNT(CopyOperationTypes)] = {
 		"copy_object",			// COPY_OBJECT
 		"copy_memory",			// COPY_MEMORY
 		"copy_memory_sized",	// COPY_MEMORY_SIZED
 	};
 
-	return useSpace ? translateTable[DE_ENUM_INDEX(type)] : noSpaceTranslateTable[DE_ENUM_INDEX(type)];
+	return translateTable[DE_ENUM_INDEX(type)];
 }
 
 const char* toString(MATRIX_TYPE type)
@@ -846,19 +757,14 @@ const char* toString(MATRIX_TYPE type)
 	return translateTable[DE_ENUM_INDEX(type)];
 }
 
-const char* toString(MATRIX_LAYOUT layout, deBool useSpace = DE_TRUE)
+const char* toString(MATRIX_LAYOUT layout)
 {
 	static const char* const translateTable[DE_ENUM_COUNT(MatrixLayouts)] = {
-		"row major",	// ROW_MAJOR
-		"col major",	// COL_MAJOR
-	};
-
-	static const char* const noSpaceTranslateTable[DE_ENUM_COUNT(MatrixLayouts)] = {
 		"row_major",	// ROW_MAJOR
 		"col_major",	// COL_MAJOR
 	};
 
-	return useSpace ? translateTable[DE_ENUM_INDEX(layout)] : noSpaceTranslateTable[DE_ENUM_INDEX(layout)];
+	return translateTable[DE_ENUM_INDEX(layout)];
 }
 
 const char* getCapability(DATA_TYPE type)
@@ -1456,41 +1362,10 @@ static void adjustSpecForAtomicAddOperations(ComputeShaderSpec& spec, std::map<s
 	}
 }
 
-static void adjustSpecForContainerType(ComputeShaderSpec& spec, std::map<std::string, std::string>& specMap, CONTAINER_TYPE containerType)
+static void adjustSpecForUntypedPointers(ComputeShaderSpec& spec, std::map<std::string, std::string>& specMap)
 {
-	switch (containerType)
-	{
-	case ContainerTypes::STORAGE_BUFFER:
-	{
-		specMap["storageCap"]	= "OpCapability UntypedPointersStorageBufferKHR";
-		spec.requestedVulkanFeatures.extShaderUntypedPointers.shaderUntypedPointersStorageBuffer	= VK_TRUE;
-		break;
-	}
-	case ContainerTypes::UNIFORM:
-	{
-		specMap["storageCap"]	= "OpCapability UntypedPointersUniformKHR";
-		spec.requestedVulkanFeatures.extShaderUntypedPointers.shaderUntypedPointersUniform	= VK_TRUE;
-		break;
-	}
-	case ContainerTypes::PUSH_CONSTANT:
-	{
-		specMap["storageCap"]	= "OpCapability UntypedPointersPushConstantKHR";
-		spec.requestedVulkanFeatures.extShaderUntypedPointers.shaderUntypedPointersPushConstant	= VK_TRUE;
-		break;
-	}
-	case ContainerTypes::WORKGROUP:
-	{
-		specMap["storageCap"]	= "OpCapability UntypedPointersWorkgroupKHR";
-		spec.requestedVulkanFeatures.extShaderUntypedPointers.shaderUntypedPointersWorkgroup	= VK_TRUE;
-		break;
-	}
-	default:
-	{
-		DE_ASSERT(0);
-		DE_FATAL("Unknown container type");
-		break;
-	}
-	}
+	specMap["storageCap"]	= "OpCapability UntypedPointersKHR";
+	spec.requestedVulkanFeatures.extShaderUntypedPointers.shaderUntypedPointers	= VK_TRUE;
 }
 
 static void adjustSpecForSmallContainerType(ComputeShaderSpec& spec, std::map<std::string, std::string>& specMap, CONTAINER_TYPE containerType, DATA_TYPE dataType)
@@ -2827,9 +2702,9 @@ std::string createShaderVariables(BASE_TEST_CASE testCase)
 			"%uint32_function_ptr                = OpTypePointer           Function      %uint32\n"
 
 			/* Objects */
-			"%id                                 = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer StorageBuffer\n"
-			"%output_data_var                    = OpVariable              %output_buffer_storage_buffer_ptr               StorageBuffer\n"
+			"%id                                 = OpVariable              %vec3_uint32_input_ptr            Input\n"
+			"%input_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                    = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
 		);
 
 		break;
@@ -2865,9 +2740,9 @@ std::string createShaderVariables(BASE_TEST_CASE testCase)
 			"%output_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer %output_buffer\n"
 
 			/* Objects */
-			"%id                               = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer StorageBuffer\n"
-			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr               StorageBuffer\n"
+			"%id                               = OpVariable              %vec3_uint32_input_ptr             Input\n"
+			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr        StorageBuffer %input_buffer\n"
+			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr  StorageBuffer\n"
 		);
 		break;
 	}
@@ -2901,9 +2776,9 @@ std::string createShaderVariables(BASE_TEST_CASE testCase)
 			"%output_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer %output_buffer\n"
 
 			/* Objects */
-			"%id                               = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer ${storageClass}\n"
-			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr               StorageBuffer\n"
+			"%id                               = OpVariable              %vec3_uint32_input_ptr            Input\n"
+			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       ${storageClass} %input_buffer\n"
+			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -2938,9 +2813,9 @@ std::string createShaderVariables(BASE_TEST_CASE testCase)
 			"%input_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer %input_buffer\n"
 
 			/* Objects */
-			"%id                              = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr                StorageBuffer\n"
-			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %output_buffer StorageBuffer\n"
+			"%id                              = OpVariable              %vec3_uint32_input_ptr           Input\n"
+			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      StorageBuffer %output_buffer\n"
 		);
 
 		break;
@@ -2975,9 +2850,9 @@ std::string createShaderVariables(BASE_TEST_CASE testCase)
 			"%input_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer %input_buffer\n"
 
 			/* Objects */
-			"%id                              = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr                StorageBuffer\n"
-			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %output_buffer StorageBuffer\n"
+			"%id                              = OpVariable              %vec3_uint32_input_ptr           Input\n"
+			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      StorageBuffer %output_buffer\n"
 		);
 		break;
 	}
@@ -3025,8 +2900,8 @@ std::string createShaderVariables(ATOMIC_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr      = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%id                              = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %output_buffer StorageBuffer\n"
+			"%id                              = OpVariable              %vec3_uint32_input_ptr      Input\n"
+			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr StorageBuffer %output_buffer\n"
 		);
 		break;
 	}
@@ -3060,8 +2935,8 @@ std::string createShaderVariables(ATOMIC_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr      = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%id                              = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %output_buffer StorageBuffer\n"
+			"%id                              = OpVariable              %vec3_uint32_input_ptr      Input\n"
+			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr StorageBuffer %output_buffer\n"
 		);
 		break;
 	}
@@ -3089,8 +2964,8 @@ std::string createShaderVariables(ATOMIC_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr      = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%id                              = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %output_buffer StorageBuffer\n"
+			"%id                              = OpVariable              %vec3_uint32_input_ptr      Input\n"
+			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr StorageBuffer %output_buffer\n"
 		);
 		break;
 	}
@@ -3123,9 +2998,9 @@ std::string createShaderVariables(ATOMIC_TEST_CASE testCase)
 			"%output_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer %output_buffer\n"
 
 			/* Objects */
-			"%id                               = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer StorageBuffer\n"
-			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr               StorageBuffer\n"
+			"%id                               = OpVariable              %vec3_uint32_input_ptr            Input\n"
+			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
 		);
 
 		break;
@@ -3159,9 +3034,9 @@ std::string createShaderVariables(ATOMIC_TEST_CASE testCase)
 			"%input_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer %input_buffer\n"
 
 			/* Objects */
-			"%id                              = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr                StorageBuffer\n"
-			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %output_buffer StorageBuffer\n"
+			"%id                              = OpVariable              %vec3_uint32_input_ptr           Input\n"
+			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      StorageBuffer %output_buffer\n"
 		);
 
 		break;
@@ -3217,9 +3092,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%output_buffer_storage_buffer_ptr   = OpTypePointer           StorageBuffer %output_buffer\n"
 
 			/* Objects */
-			"%id                                 = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer StorageBuffer\n"
-			"%output_data_var                    = OpVariable              %output_buffer_storage_buffer_ptr               StorageBuffer\n"
+			"%id                                 = OpVariable              %vec3_uint32_input_ptr            Input\n"
+			"%input_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                    = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -3253,9 +3128,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%storage_buffer_output_buffer_ptr = OpTypePointer           StorageBuffer %output_buffer\n"
 
 			/* Objects */
-			"%id                               = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer StorageBuffer\n"
-			"%output_data_var                  = OpVariable              %storage_buffer_output_buffer_ptr               StorageBuffer\n"
+			"%id                               = OpVariable              %vec3_uint32_input_ptr            Input\n"
+			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                  = OpVariable              %storage_buffer_output_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -3288,9 +3163,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%storage_buffer_output_buffer_ptr = OpTypePointer           StorageBuffer %output_buffer\n"
 
 			/* Objects */
-			"%id                               = OpVariable             %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_untyped_var           = OpUntypedVariableKHR   %storage_buffer_untyped_ptr       %input_buffer ${storageClass}\n"
-			"%output_data_var                  = OpVariable             %storage_buffer_output_buffer_ptr               StorageBuffer\n"
+			"%id                               = OpVariable             %vec3_uint32_input_ptr            Input\n"
+			"%input_data_untyped_var           = OpUntypedVariableKHR   %storage_buffer_untyped_ptr       ${storageClass} %input_buffer\n"
+			"%output_data_var                  = OpVariable             %storage_buffer_output_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -3324,9 +3199,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%storage_buffer_output_buffer_ptr = OpTypePointer           StorageBuffer %output_buffer\n"
 
 			/* Objects */
-			"%id                               = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer StorageBuffer\n"
-			"%output_data_var                  = OpVariable              %storage_buffer_output_buffer_ptr               StorageBuffer\n"
+			"%id                               = OpVariable              %vec3_uint32_input_ptr            Input\n"
+			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                  = OpVariable              %storage_buffer_output_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -3359,9 +3234,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%storage_buffer_output_buffer_ptr = OpTypePointer           StorageBuffer %output_buffer\n"
 
 			/* Objects */
-			"%id                               = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer ${storageClass}\n"
-			"%output_data_var                  = OpVariable              %storage_buffer_output_buffer_ptr               StorageBuffer\n"
+			"%id                               = OpVariable              %vec3_uint32_input_ptr            Input\n"
+			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       ${storageClass} %input_buffer\n"
+			"%output_data_var                  = OpVariable              %storage_buffer_output_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -3399,9 +3274,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%output_buffer_storage_buffer_ptr   = OpTypePointer           StorageBuffer %output_buffer\n"
 
 			/* Objects */
-			"%id                                 = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer ${storageClass}\n"
-			"%output_data_var                    = OpVariable              %output_buffer_storage_buffer_ptr               StorageBuffer\n"
+			"%id                                 = OpVariable              %vec3_uint32_input_ptr            Input\n"
+			"%input_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       ${storageClass} %input_buffer\n"
+			"%output_data_var                    = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -3440,9 +3315,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%input_buffer_storage_buffer_ptr    = OpTypePointer           StorageBuffer %input_buffer\n"
 
 			/* Objects */
-			"%id                                 = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_var                     = OpVariable              %input_buffer_storage_buffer_ptr                StorageBuffer\n"
-			"%output_data_untyped_var            = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %output_buffer StorageBuffer\n"
+			"%id                                 = OpVariable              %vec3_uint32_input_ptr           Input\n"
+			"%input_data_var                     = OpVariable              %input_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%output_data_untyped_var            = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      StorageBuffer %output_buffer\n"
 		);
 		break;
 	}
@@ -3480,9 +3355,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%input_buffer_storage_buffer_ptr    = OpTypePointer           StorageBuffer %input_buffer\n"
 
 			/* Objects */
-			"%id                                 = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_var                     = OpVariable              %input_buffer_storage_buffer_ptr                StorageBuffer\n"
-			"%output_data_untyped_var            = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %output_buffer StorageBuffer\n"
+			"%id                                 = OpVariable              %vec3_uint32_input_ptr           Input\n"
+			"%input_data_var                     = OpVariable              %input_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%output_data_untyped_var            = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      StorageBuffer %output_buffer\n"
 		);
 		break;
 	}
@@ -3515,9 +3390,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%input_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer %input_buffer\n"
 
 			/* Objects */
-			"%id                              = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr                StorageBuffer\n"
-			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %output_buffer StorageBuffer\n"
+			"%id                              = OpVariable              %vec3_uint32_input_ptr           Input\n"
+			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      StorageBuffer %output_buffer\n"
 		);
 		break;
 	}
@@ -3549,9 +3424,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%input_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer %input_buffer\n"
 
 			/* Objects */
-			"%id                              = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr                StorageBuffer\n"
-			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %output_buffer StorageBuffer\n"
+			"%id                              = OpVariable              %vec3_uint32_input_ptr           Input\n"
+			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      StorageBuffer %output_buffer\n"
 		);
 		break;
 	}
@@ -3584,9 +3459,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%input_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer %input_buffer\n"
 
 			/* Objects */
-			"%id                              = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr                StorageBuffer\n"
-			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %output_buffer StorageBuffer\n"
+			"%id                              = OpVariable              %vec3_uint32_input_ptr           Input\n"
+			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      StorageBuffer %output_buffer\n"
 		);
 		break;
 	}
@@ -3618,9 +3493,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%input_buffer_storage_buffer_ptr = OpTypePointer           StorageBuffer %input_buffer\n"
 
 			/* Objects */
-			"%id                              = OpVariable              %vec3_uint32_input_ptr                          Input\n"
-			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr                StorageBuffer\n"
-			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %output_buffer StorageBuffer\n"
+			"%id                              = OpVariable              %vec3_uint32_input_ptr           Input\n"
+			"%input_data_var                  = OpVariable              %input_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%output_data_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      StorageBuffer %output_buffer\n"
 		);
 		break;
 	}
@@ -3655,9 +3530,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr          = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%input_data_untyped_var              = OpUntypedVariableKHR    %storage_buffer_untyped_ptr        %input_buffer StorageBuffer\n"
-			"%output_data_var                     = OpVariable              %output_buffer_storage_buffer_ptr                StorageBuffer\n"
-			"%id                                  = OpVariable              %vec3_uint32_input_ptr                           Input\n"
+			"%input_data_untyped_var              = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                     = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%id                                  = OpVariable              %vec3_uint32_input_ptr            Input\n"
 		);
 		break;
 	}
@@ -3686,9 +3561,9 @@ std::string createShaderVariables(TYPE_PUNNING_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr               StorageBuffer\n"
-			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      %input_buffer  StorageBuffer\n"
-			"%id                               = OpVariable              %vec3_uint32_input_ptr                          Input\n"
+			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%id                               = OpVariable              %vec3_uint32_input_ptr            Input\n"
 		);
 
 		break;
@@ -3744,9 +3619,9 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 			"%output_buffer                                              = OpTypeStruct            %data_buffer_physical_storage_buffer_ptr\n"
 			"%output_buffer_storage_buffer_ptr                           = OpTypePointer           StorageBuffer %output_buffer\n"
 
-			"%input_data_0_untyped_var                                   = OpUntypedVariableKHR    %storage_buffer_untyped_ptr              %input_buffer_0 StorageBuffer\n"
-			"%input_data_1_untyped_var                                   = OpUntypedVariableKHR    %storage_buffer_untyped_ptr              %input_buffer_1 StorageBuffer\n"
-			"%output_data_var                                            = OpVariable              %output_buffer_storage_buffer_ptr                        StorageBuffer\n"
+			"%input_data_0_untyped_var                                   = OpUntypedVariableKHR    %storage_buffer_untyped_ptr              StorageBuffer %input_buffer_0\n"
+			"%input_data_1_untyped_var                                   = OpUntypedVariableKHR    %storage_buffer_untyped_ptr              StorageBuffer %input_buffer_1\n"
+			"%output_data_var                                            = OpVariable              %output_buffer_storage_buffer_ptr        StorageBuffer\n"
 		);
 
 		break;
@@ -3765,8 +3640,8 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 			"%output_buffer                                              = OpTypeStruct            %data_buffer_physical_storage_buffer_ptr\n"
 			"%output_buffer_storage_buffer_ptr                           = OpTypePointer           StorageBuffer %output_buffer\n"
 
-			"%input_data_untyped_var                                     = OpUntypedVariableKHR    %storage_buffer_untyped_ptr              %input_buffer StorageBuffer\n"
-			"%output_data_var                                            = OpVariable              %output_buffer_storage_buffer_ptr                      StorageBuffer\n"
+			"%input_data_untyped_var                                     = OpUntypedVariableKHR    %storage_buffer_untyped_ptr              StorageBuffer %input_buffer\n"
+			"%output_data_var                                            = OpVariable              %output_buffer_storage_buffer_ptr        StorageBuffer\n"
 		);
 		break;
 	}
@@ -3784,8 +3659,8 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 			"%output_buffer                                              = OpTypeStruct            %physical_storage_buffer_untyped_ptr\n"
 			"%input_buffer_storage_buffer_ptr                            = OpTypePointer           StorageBuffer %input_buffer\n"
 
-			"%input_data_var                                             = OpVariable              %input_buffer_storage_buffer_ptr                        StorageBuffer\n"
-			"%output_data_untyped_var                                    = OpUntypedVariableKHR    %storage_buffer_untyped_ptr              %output_buffer StorageBuffer\n"
+			"%input_data_var                                             = OpVariable              %input_buffer_storage_buffer_ptr         StorageBuffer\n"
+			"%output_data_untyped_var                                    = OpUntypedVariableKHR    %storage_buffer_untyped_ptr              StorageBuffer %output_buffer\n"
 		);
 		break;
 	}
@@ -3809,8 +3684,8 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 			"%output_buffer                                              = OpTypeStruct            %data_buffer_physical_storage_buffer_ptr\n"
 			"%output_buffer_storage_buffer_ptr                           = OpTypePointer           StorageBuffer %output_buffer\n"
 
-			"%input_data_untyped_var                                     = OpUntypedVariableKHR    %storage_buffer_untyped_ptr              %input_buffer StorageBuffer\n"
-			"%output_data_var                                            = OpVariable              %output_buffer_storage_buffer_ptr                      StorageBuffer\n"
+			"%input_data_untyped_var                                     = OpUntypedVariableKHR    %storage_buffer_untyped_ptr              StorageBuffer %input_buffer\n"
+			"%output_data_var                                            = OpVariable              %output_buffer_storage_buffer_ptr        StorageBuffer\n"
 		);
 		break;
 	}
@@ -3828,8 +3703,8 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 			"%output_buffer                                              = OpTypeStruct            %data_buffer_physical_storage_buffer_ptr\n"
 			"%output_buffer_storage_buffer_ptr                           = OpTypePointer           StorageBuffer %output_buffer\n"
 
-			"%input_data_untyped_var                                     = OpUntypedVariableKHR    %storage_buffer_untyped_ptr               %input_buffer StorageBuffer\n"
-			"%output_data_var                                            = OpVariable              %output_buffer_storage_buffer_ptr                       StorageBuffer\n"
+			"%input_data_untyped_var                                     = OpUntypedVariableKHR    %storage_buffer_untyped_ptr              StorageBuffer %input_buffer\n"
+			"%output_data_var                                            = OpVariable              %output_buffer_storage_buffer_ptr        StorageBuffer\n"
 		);
 		break;
 	}
@@ -3850,9 +3725,9 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%input_data_0_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer_0 StorageBuffer\n"
-			"%input_data_1_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer_1 StorageBuffer\n"
-			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr                 StorageBuffer\n"
+			"%input_data_0_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer_0\n"
+			"%input_data_1_untyped_var         = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer_1\n"
+			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -3876,8 +3751,8 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer  StorageBuffer\n"
-			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr                StorageBuffer\n"
+			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -3900,8 +3775,8 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer  StorageBuffer\n"
-			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr                StorageBuffer\n"
+			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -3918,8 +3793,8 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer  StorageBuffer\n"
-			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr                StorageBuffer\n"
+			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -3940,8 +3815,8 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr       = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer  StorageBuffer\n"
-			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr                StorageBuffer\n"
+			"%input_data_untyped_var           = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                  = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -3960,9 +3835,9 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr_function_ptr = OpTypePointer           Function                          %storage_buffer_untyped_ptr\n"
 
 			/* Objects */
-			"%input_data_0_untyped_var                = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer_0 StorageBuffer\n"
-			"%input_data_1_untyped_var                = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer_1 StorageBuffer\n"
-			"%output_data_var                         = OpVariable              %output_buffer_storage_buffer_ptr                 StorageBuffer\n"
+			"%input_data_0_untyped_var                = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer_0\n"
+			"%input_data_1_untyped_var                = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer_1\n"
+			"%output_data_var                         = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
 		);
 		break;
 	}
@@ -3981,10 +3856,10 @@ std::string createShaderVariables(POINTER_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr_private_ptr  = OpTypePointer           Private                           %storage_buffer_untyped_ptr\n"
 
 			/* Objects */
-			"%input_data_0_untyped_var                = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer_0 StorageBuffer\n"
-			"%input_data_1_untyped_var                = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       %input_buffer_1 StorageBuffer\n"
-			"%output_data_var                         = OpVariable              %output_buffer_storage_buffer_ptr                 StorageBuffer\n"
-			"%output_copy_private_var                 = OpVariable              %storage_buffer_untyped_ptr_private_ptr           Private\n"
+			"%input_data_0_untyped_var                = OpUntypedVariableKHR    %storage_buffer_untyped_ptr             StorageBuffer %input_buffer_0\n"
+			"%input_data_1_untyped_var                = OpUntypedVariableKHR    %storage_buffer_untyped_ptr             StorageBuffer %input_buffer_1\n"
+			"%output_data_var                         = OpVariable              %output_buffer_storage_buffer_ptr       StorageBuffer\n"
+			"%output_copy_private_var                 = OpVariable              %storage_buffer_untyped_ptr_private_ptr Private\n"
 		);
 		break;
 	}
@@ -4049,10 +3924,10 @@ std::string createShaderVariables(WORKGROUP_TEST_CASE testCase)
 			"%workgroup_untyped_ptr               = OpTypeUntypedPointerKHR Workgroup\n"
 
 			/* Objects */
-			"%input_data_var                      = OpVariable              %input_buffer_storage_buffer_ptr                 StorageBuffer\n"
-			"%output_data_var                     = OpVariable              %output_buffer_storage_buffer_ptr                StorageBuffer\n"
-			"%data_buffer_0_untyped_var           = OpUntypedVariableKHR    %workgroup_untyped_ptr              %data_buffer Workgroup\n"
-			"%data_buffer_1_untyped_var           = OpUntypedVariableKHR    %workgroup_untyped_ptr              %data_buffer Workgroup\n"
+			"%input_data_var                      = OpVariable              %input_buffer_storage_buffer_ptr  StorageBuffer\n"
+			"%output_data_var                     = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%data_buffer_0_untyped_var           = OpUntypedVariableKHR    %workgroup_untyped_ptr            Workgroup     %data_buffer\n"
+			"%data_buffer_1_untyped_var           = OpUntypedVariableKHR    %workgroup_untyped_ptr            Workgroup     %data_buffer\n"
 		);
 		break;
 	}
@@ -4115,9 +3990,9 @@ std::string createShaderVariables(COOPERATIVE_MATRIX_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr          = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%input_data_untyped_var              = OpUntypedVariableKHR    %storage_buffer_untyped_ptr         %input_buffer StorageBuffer\n"
-			"%output_data_var                     = OpVariable              %output_buffer_storage_buffer_ptr                 StorageBuffer\n"
-			"%id                                  = OpVariable              %vec3_uint32_input_ptr                            Input\n"
+			"%input_data_untyped_var              = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                     = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%id                                  = OpVariable              %vec3_uint32_input_ptr            Input\n"
 		);
 		break;
 	}
@@ -4158,9 +4033,9 @@ std::string createShaderVariables(COOPERATIVE_MATRIX_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr          = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%input_data_var                      = OpVariable              %input_buffer_storage_buffer_ptr                   StorageBuffer\n"
-			"%output_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr         %output_buffer StorageBuffer\n"
-			"%id                                  = OpVariable              %vec3_uint32_input_ptr                             Input\n"
+			"%input_data_var                      = OpVariable              %input_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%output_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      StorageBuffer %output_buffer\n"
+			"%id                                  = OpVariable              %vec3_uint32_input_ptr           Input\n"
 		);
 		break;
 	}
@@ -4203,9 +4078,9 @@ std::string createShaderVariables(COOPERATIVE_MATRIX_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr             = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%input_data_untyped_var              = OpUntypedVariableKHR    %storage_buffer_untyped_ptr         %input_buffer StorageBuffer\n"
-			"%output_data_var                     = OpVariable              %output_buffer_storage_buffer_ptr                 StorageBuffer\n"
-			"%id                                  = OpVariable              %vec3_uint32_input_ptr                            Input\n"
+			"%input_data_untyped_var              = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                     = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%id                                  = OpVariable              %vec3_uint32_input_ptr            Input\n"
 		);
 		break;
 	}
@@ -4248,9 +4123,9 @@ std::string createShaderVariables(COOPERATIVE_MATRIX_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr          = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%input_data_var                      = OpVariable              %input_buffer_storage_buffer_ptr                   StorageBuffer\n"
-			"%output_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr         %output_buffer StorageBuffer\n"
-			"%id                                  = OpVariable              %vec3_uint32_input_ptr                             Input\n"
+			"%input_data_var                      = OpVariable              %input_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%output_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      StorageBuffer %output_buffer\n"
+			"%id                                  = OpVariable              %vec3_uint32_input_ptr           Input\n"
 		);
 		break;
 	}
@@ -4292,9 +4167,9 @@ std::string createShaderVariables(COOPERATIVE_MATRIX_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr          = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%input_data_untyped_var              = OpUntypedVariableKHR    %storage_buffer_untyped_ptr         %input_buffer StorageBuffer\n"
-			"%output_data_var                     = OpVariable              %output_buffer_storage_buffer_ptr                 StorageBuffer\n"
-			"%id                                  = OpVariable              %vec3_uint32_input_ptr                            Input\n"
+			"%input_data_untyped_var              = OpUntypedVariableKHR    %storage_buffer_untyped_ptr       StorageBuffer %input_buffer\n"
+			"%output_data_var                     = OpVariable              %output_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%id                                  = OpVariable              %vec3_uint32_input_ptr            Input\n"
 		);
 		break;
 	}
@@ -4336,9 +4211,9 @@ std::string createShaderVariables(COOPERATIVE_MATRIX_TEST_CASE testCase)
 			"%storage_buffer_untyped_ptr          = OpTypeUntypedPointerKHR StorageBuffer\n"
 
 			/* Objects */
-			"%input_data_var                      = OpVariable              %input_buffer_storage_buffer_ptr                   StorageBuffer\n"
-			"%output_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr         %output_buffer StorageBuffer\n"
-			"%id                                  = OpVariable              %vec3_uint32_input_ptr                             Input\n"
+			"%input_data_var                      = OpVariable              %input_buffer_storage_buffer_ptr StorageBuffer\n"
+			"%output_data_untyped_var             = OpUntypedVariableKHR    %storage_buffer_untyped_ptr      StorageBuffer %output_buffer\n"
+			"%id                                  = OpVariable              %vec3_uint32_input_ptr           Input\n"
 		);
 		break;
 	}
@@ -5251,7 +5126,6 @@ void addOpArrayLengthTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= std::string("Test untyped pointer replacement in OpArrayLenght for ") + toString(BASE_DATA_TYPE_CASES[i]) + " type.";
 
 		const deUint32 numWorkgroup	= 16u;
 
@@ -5270,7 +5144,7 @@ void addOpArrayLengthTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 		}
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -5301,7 +5175,7 @@ void addOpArrayLengthTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -5334,9 +5208,8 @@ void addLoadTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 		for (deUint32 j = 0; j < DE_LENGTH_OF_ARRAY(LOAD_CONTAINER_TYPE_CASES); ++j)
 		{
 			std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-			std::string testDesc	= "Test load operation from " + std::string(toString(LOAD_CONTAINER_TYPE_CASES[j])) + " for " + toString(BASE_DATA_TYPE_CASES[i]) + " type.";
 
-			const deUint32 numWorkgroup = LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT ? 128 / 8 : Constants::numThreads;
+			const deUint32 numWorkgroup	= LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT ? 128 / 8 : Constants::numThreads;
 
 			std::map<std::string, std::string>	specMap;
 			if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
@@ -5364,7 +5237,7 @@ void addLoadTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 			}
 
 			ComputeShaderSpec spec;
-			adjustSpecForContainerType(spec, specMap, LOAD_CONTAINER_TYPE_CASES[j]);
+			adjustSpecForUntypedPointers(spec, specMap);
 			adjustSpecForMemoryModel(spec, specMap, memModel);
 			adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -5411,15 +5284,15 @@ void addLoadTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 
 			if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
 			{
-				uniformGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				uniformGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 			else if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::STORAGE_BUFFER)
 			{
-				storageGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				storageGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 			else // LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT
 			{
-				pushConstantGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				pushConstantGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -5452,7 +5325,6 @@ void addLoadAtomicTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMode
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test load atomic operation for " + std::string(toString(BASE_DATA_TYPE_CASES[i])) + " type.";
 
 		const deUint32 numWorkgroup	= Constants::numThreads;
 
@@ -5473,7 +5345,7 @@ void addLoadAtomicTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMode
 		}
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForAtomicOperations(spec, specMap, BASE_DATA_TYPE_CASES[i]);
@@ -5503,7 +5375,7 @@ void addLoadAtomicTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMode
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -5543,8 +5415,6 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 					const DATA_TYPE dataType	= sameSizeTypes[l];
 
 					std::string testName	= toString(BASE_DATA_TYPE_CASES[i]) + std::string("_to_") + toString(dataType);
-					std::string testDesc	= "Test load operation from " + std::string(toString(LOAD_CONTAINER_TYPE_CASES[j])) + " for " + toString(BASE_DATA_TYPE_CASES[i]) +
-												" to " + toString(dataType) + " type.";
 
 					const deUint32						numWorkgroup	= LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT ? 128 / 8 : Constants::numThreads;
 					const deUint32						caseIndex		= static_cast<deUint32>(dataType);
@@ -5578,7 +5448,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 					}
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, LOAD_CONTAINER_TYPE_CASES[j]);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -5625,15 +5495,15 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 
 					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
 					{
-						uniformGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						uniformGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 					else if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::STORAGE_BUFFER)
 					{
-						storageGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						storageGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 					else // LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT
 					{
-						pushConstantGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						pushConstantGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 				}
 			}
@@ -5668,9 +5538,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 					COMPOSITE_DATA_TYPE compositeType	= sameSizeTypes[l];
 					const deUint32 otherIndex			= static_cast<deUint32>(getCompositeBaseDataType(compositeType));
 
-					std::string testName	= toString(BASE_DATA_TYPE_CASES[i]) + std::string("_to_") + toString(compositeType, false);
-					std::string testDesc	= "Test load operation from " + std::string(toString(LOAD_CONTAINER_TYPE_CASES[j])) + " for " + toString(BASE_DATA_TYPE_CASES[i]) +
-											  " to " + toString(compositeType) + " type.";
+					std::string testName	= toString(BASE_DATA_TYPE_CASES[i]) + std::string("_to_") + toString(compositeType);
 
 					std::map<std::string, std::string>	specMap;
 					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
@@ -5689,7 +5557,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 					specMap["otherType"]			= toString(getCompositeBaseDataType(compositeType));
 					specMap["baseDecl"]				= getDeclaration(BASE_DATA_TYPE_CASES[i]);
 					specMap["otherTypeDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[otherIndex]);
-					specMap["otherVec"]				= toString(compositeType, false);
+					specMap["otherVec"]				= toString(compositeType);
 					specMap["otherVecDecl"]			= getDeclaration(compositeType);
 					specMap["otherCap"]				= getCapability(compositeType);
 					specMap["storageDecorations"]	= getScalarVectorResourceDecorations(LOAD_CONTAINER_TYPE_CASES[j]);
@@ -5710,7 +5578,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 					}
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, LOAD_CONTAINER_TYPE_CASES[j]);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -5783,15 +5651,15 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 
 					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
 					{
-						uniformGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						uniformGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 					else if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::STORAGE_BUFFER)
 					{
-						storageGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						storageGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 					else // LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT
 					{
-						pushConstantGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						pushConstantGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 				}
 			}
@@ -5826,9 +5694,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 					const DATA_TYPE	dataType	= sameSizeTypes[l];
 					const deUint32	otherIndex	= static_cast<deUint32>(dataType);
 
-					std::string testName	= toString(COMPOSITE_DATA_TYPE_CASES[i], false) + std::string("_to_") + toString(dataType);
-					std::string testDesc	= "Test load operation from " + std::string(toString(LOAD_CONTAINER_TYPE_CASES[j])) + " for " + toString(COMPOSITE_DATA_TYPE_CASES[i]) +
-											  " to " + toString(dataType) + " type.";
+					std::string testName	= toString(COMPOSITE_DATA_TYPE_CASES[i]) + std::string("_to_") + toString(dataType);
 
 					std::map<std::string, std::string>	specMap;
 					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
@@ -5848,7 +5714,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 					specMap["baseDecl"]				= getDeclaration(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
 					specMap["otherTypeDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[otherIndex]);
 					specMap["otherCap"]				= getCapability(dataType);
-					specMap["baseVec"]				= toString(COMPOSITE_DATA_TYPE_CASES[i], false);
+					specMap["baseVec"]				= toString(COMPOSITE_DATA_TYPE_CASES[i]);
 					specMap["baseVecDecl"]			= getDeclaration(COMPOSITE_DATA_TYPE_CASES[i]);
 					specMap["storageDecorations"]	= getScalarVectorResourceDecorations(LOAD_CONTAINER_TYPE_CASES[j]);
 
@@ -5865,7 +5731,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 					}
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, LOAD_CONTAINER_TYPE_CASES[j]);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
 
@@ -5936,15 +5802,15 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 
 					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
 					{
-						uniformGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						uniformGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 					else if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::STORAGE_BUFFER)
 					{
-						storageGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						storageGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 					else // LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT
 					{
-						pushConstantGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						pushConstantGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 				}
 			}
@@ -5979,8 +5845,6 @@ void addStoreTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test " + std::string(toString(STORE_OPERATION_CASES[0].type)) + " store operation for "
-								+ toString(BASE_DATA_TYPE_CASES[i]) + " type.";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
@@ -6000,7 +5864,7 @@ void addStoreTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 		}
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -6027,7 +5891,7 @@ void addStoreTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -6054,7 +5918,6 @@ void addStoreAtomicTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMod
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test store operation for " + std::string(toString(BASE_DATA_TYPE_CASES[i])) + " type.";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
@@ -6073,7 +5936,7 @@ void addStoreAtomicTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMod
 		}
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForAtomicOperations(spec, specMap, BASE_DATA_TYPE_CASES[i]);
@@ -6101,7 +5964,7 @@ void addStoreAtomicTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMod
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -6136,7 +5999,6 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 				const deUint32	otherIndex	= static_cast<deUint32>(dataType);
 
 				std::string testName	= toString(BASE_DATA_TYPE_CASES[i]) + std::string("_to_") + toString(dataType);
-				std::string testDesc	= "Test store operation for " + std::string(toString(BASE_DATA_TYPE_CASES[i])) + " to " + toString(dataType) + " type.";
 
 				std::map<std::string, std::string>	specMap;
 				specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
@@ -6158,7 +6020,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 				}
 
 				ComputeShaderSpec spec;
-				adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+				adjustSpecForUntypedPointers(spec, specMap);
 				adjustSpecForMemoryModel(spec, specMap, memModel);
 				adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -6185,7 +6047,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 				spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 				spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-				testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -6215,9 +6077,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 			{
 				const COMPOSITE_DATA_TYPE compositeType	= sameSizeTypes[k];
 
-				std::string testName	= toString(BASE_DATA_TYPE_CASES[i]) + std::string("_to_") + toString(compositeType, false);
-				std::string testDesc	= "Test " + std::string(toString(STORE_OPERATION_CASES[0].type)) + " store operation for "
-										+ toString(BASE_DATA_TYPE_CASES[i]) + " to " + toString(sameSizeTypes[k]) + " type.";
+				std::string testName	= toString(BASE_DATA_TYPE_CASES[i]) + std::string("_to_") + toString(compositeType);
 
 				std::map<std::string, std::string>	specMap;
 				specMap["alignment"]		= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
@@ -6227,7 +6087,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 				specMap["baseDecl"]			= getDeclaration(BASE_DATA_TYPE_CASES[i]);
 				specMap["otherTypeDecl"]	= getDeclaration(getCompositeBaseDataType(compositeType));
 				specMap["storeOp"]			= STORE_OPERATION_CASES[0].pOperation;
-				specMap["otherVec"]			= toString(compositeType, false);
+				specMap["otherVec"]			= toString(compositeType);
 				specMap["otherVecDecl"]		= getDeclaration(compositeType);
 				specMap["otherCap"]			= getCapability(compositeType);
 
@@ -6247,7 +6107,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 				}
 
 				ComputeShaderSpec spec;
-				adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+				adjustSpecForUntypedPointers(spec, specMap);
 				adjustSpecForMemoryModel(spec, specMap, memModel);
 				adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -6274,7 +6134,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 				spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 				spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-				testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -6305,9 +6165,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 				const DATA_TYPE	dataType	= sameSizeTypes[k];
 				const deUint32	otherIndex	= static_cast<deUint32>(dataType);
 
-				std::string testName	= toString(COMPOSITE_DATA_TYPE_CASES[i], false) + std::string("_to_") + toString(dataType);
-				std::string testDesc	= "Test " + std::string(toString(STORE_OPERATION_CASES[0].type)) + " store operation for " + toString(COMPOSITE_DATA_TYPE_CASES[i]) +
-										  " to " + toString(dataType) + " type.";
+				std::string testName	= toString(COMPOSITE_DATA_TYPE_CASES[i]) + std::string("_to_") + toString(dataType);
 
 				std::map<std::string, std::string>	specMap;
 				specMap["args"]				= STORE_OPERATION_CASES[0].pArgs;
@@ -6317,7 +6175,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 				specMap["baseDecl"]			= getDeclaration(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
 				specMap["otherTypeDecl"]	= getDeclaration(BASE_DATA_TYPE_CASES[otherIndex]);
 				specMap["otherCap"]			= getCapability(dataType);
-				specMap["baseVec"]			= toString(COMPOSITE_DATA_TYPE_CASES[i], false);
+				specMap["baseVec"]			= toString(COMPOSITE_DATA_TYPE_CASES[i]);
 				specMap["baseVecDecl"]		= getDeclaration(COMPOSITE_DATA_TYPE_CASES[i]);
 
 				if (COMPOSITE_DATA_TYPE_CASES[i] != CompositeDataTypes::VEC3_UINT32)
@@ -6333,7 +6191,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 				}
 
 				ComputeShaderSpec spec;
-				adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+				adjustSpecForUntypedPointers(spec, specMap);
 				adjustSpecForMemoryModel(spec, specMap, memModel);
 				adjustSpecForDataTypes(spec, specMap, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
 
@@ -6360,7 +6218,7 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 				spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 				spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-				testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -6371,7 +6229,6 @@ void addCopyTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel, deB
 	tcu::TestContext& testCtx = testGroup->getTestContext();
 
 	const BASE_TEST_CASE	testCase	= fromUntyped ? BaseTestCases::COPY_FROM : BaseTestCases::COPY_TO;
-	const char*				pCaseDesc	= fromUntyped ? "from untyped" : "to untyped";
 
 	de::MovePtr<tcu::TestCaseGroup>	objectGroup(new tcu::TestCaseGroup(testCtx, "op_copy_object", ""));
 	de::MovePtr<tcu::TestCaseGroup>	memoryGroup(new tcu::TestCaseGroup(testCtx, "op_copy_memory", ""));
@@ -6398,7 +6255,6 @@ void addCopyTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel, deB
 		for (deUint32 j = 0; j < DE_LENGTH_OF_ARRAY(COPY_OPERATION_CASES); ++j)
 		{
 			std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-			std::string testDesc	= "Test " + std::string(toString(COPY_OPERATION_CASES[j].type)) + " operation " + std::string(pCaseDesc) + " variable.";
 
 			std::map<std::string, std::string>	specMap;
 			specMap["copyOp"]		= COPY_OPERATION_CASES[j].pCopyOp;
@@ -6419,7 +6275,7 @@ void addCopyTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel, deB
 			}
 
 			ComputeShaderSpec spec;
-			adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+			adjustSpecForUntypedPointers(spec, specMap);
 			adjustSpecForMemoryModel(spec, specMap, memModel);
 			adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 			adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i]);
@@ -6449,15 +6305,15 @@ void addCopyTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel, deB
 
 			if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_OBJECT)
 			{
-				objectGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				objectGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 			else if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
 			{
-				memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 			else // COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY_SIZED
 			{
-				memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -6503,8 +6359,6 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 					const deUint32	otherIndex	= static_cast<deUint32>(dataType);
 
 					std::string testName	= std::string(toString(BASE_DATA_TYPE_CASES[i])) + "_to_" + toString(sameSizeTypes[k]);
-					std::string testDesc	= "Test " + std::string(toString(COPY_OPERATION_CASES[j].type)) + " operation from untyped "
-											+ toString(BASE_DATA_TYPE_CASES[i]) + " to " + toString(sameSizeTypes[k]);
 
 					std::map<std::string, std::string>	specMap;
 					specMap["copyOp"]		= COPY_OPERATION_CASES[j].pCopyOp;
@@ -6528,7 +6382,7 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 					}
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 					adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i]);
@@ -6558,11 +6412,11 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 
 					if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
 					{
-						memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 					else if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY_SIZED)
 					{
-						memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 				}
 			}
@@ -6597,9 +6451,7 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 					const COMPOSITE_DATA_TYPE	compositeType	= sameSizeTypes[k];
 					const deUint32				otherIndex		= static_cast<deUint32>(getCompositeBaseDataType(compositeType));
 
-					std::string testName	= std::string(toString(BASE_DATA_TYPE_CASES[i])) + "_to_" + toString(compositeType, false);
-					std::string testDesc	= "Test " + std::string(toString(COPY_OPERATION_CASES[j].type)) + " operation from untyped "
-											+ toString(BASE_DATA_TYPE_CASES[i]) + " to " + toString(compositeType);
+					std::string testName	= std::string(toString(BASE_DATA_TYPE_CASES[i])) + "_to_" + toString(compositeType);
 
 					std::map<std::string, std::string>	specMap;
 					specMap["copyOp"]			= COPY_OPERATION_CASES[j].pCopyOp;
@@ -6609,7 +6461,7 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 					specMap["otherType"]		= toString(getCompositeBaseDataType(compositeType));
 					specMap["sameSizeType"]		= toString(BASE_DATA_TYPE_CASES[otherIndex]);
 					specMap["otherTypeDecl"]	= getDeclaration(BASE_DATA_TYPE_CASES[otherIndex]);
-					specMap["otherVec"]			= toString(compositeType, false);
+					specMap["otherVec"]			= toString(compositeType);
 					specMap["otherVecDecl"]		= getDeclaration(compositeType);
 					specMap["size"]				= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 					specMap["otherCap"]			= getCapability(compositeType);
@@ -6631,7 +6483,7 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 					}
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 					adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i]);
@@ -6661,11 +6513,11 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 
 					if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
 					{
-						memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 					else if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY_SIZED)
 					{
-						memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 				}
 			}
@@ -6700,7 +6552,7 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 					const DATA_TYPE	dataType	= sameSizeTypes[k];
 					const deUint32	otherIndex	= static_cast<deUint32>(dataType);
 
-					std::string testName	= std::string(toString(COMPOSITE_DATA_TYPE_CASES[i], false)) + "_to_" + toString(dataType);
+					std::string testName	= std::string(toString(COMPOSITE_DATA_TYPE_CASES[i])) + "_to_" + toString(dataType);
 					std::string testDesc	= "Test " + std::string(toString(COPY_OPERATION_CASES[j].type)) + " operation from untyped "
 											+ toString(COMPOSITE_DATA_TYPE_CASES[i]) + " to " + toString(dataType);
 
@@ -6710,11 +6562,11 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 					specMap["baseDecl"]			= getDeclaration(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
 					specMap["otherType"]		= toString(dataType);
 					specMap["otherTypeDecl"]	= getDeclaration(BASE_DATA_TYPE_CASES[otherIndex]);
-					specMap["baseVec"]			= toString(COMPOSITE_DATA_TYPE_CASES[i], false);
+					specMap["baseVec"]			= toString(COMPOSITE_DATA_TYPE_CASES[i]);
 					specMap["baseVecDecl"]		= getDeclaration(COMPOSITE_DATA_TYPE_CASES[i]);
 					specMap["size"]				= std::to_string(getSizeInBytes(COMPOSITE_DATA_TYPE_CASES[i]));
 					specMap["otherCap"]			= getCapability(dataType);
-					specMap["copyType"]			= toString(COMPOSITE_DATA_TYPE_CASES[i], false);
+					specMap["copyType"]			= toString(COMPOSITE_DATA_TYPE_CASES[i]);
 
 					if (COMPOSITE_DATA_TYPE_CASES[i] != CompositeDataTypes::VEC3_UINT32)
 						specMap["inputVec"]		= "%vec3_uint32 = OpTypeVector %uint32 3";
@@ -6729,7 +6581,7 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 					}
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
 					adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
@@ -6759,11 +6611,11 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 
 					if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
 					{
-						memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 					else if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY_SIZED)
 					{
-						memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 				}
 			}
@@ -6810,8 +6662,6 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 					const deUint32	otherIndex	= static_cast<deUint32>(dataType);
 
 					std::string testName	= std::string(toString(BASE_DATA_TYPE_CASES[i])) + "_to_" + toString(dataType);
-					std::string testDesc	= "Test " + std::string(toString(COPY_OPERATION_CASES[j].type)) + " operation to untyped"
-											+ toString(BASE_DATA_TYPE_CASES[i]) + " to " + toString(dataType);
 
 					std::map<std::string, std::string>	specMap;
 					specMap["copyOp"]			= COPY_OPERATION_CASES[j].pCopyOp;
@@ -6835,7 +6685,7 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 					}
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 					adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i]);
@@ -6865,11 +6715,11 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 
 					if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
 					{
-						memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 					else if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY_SIZED)
 					{
-						memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 				}
 			}
@@ -6903,9 +6753,7 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 				{
 					const COMPOSITE_DATA_TYPE	compositeType	= sameSizeTypes[k];
 
-					std::string testName	= std::string(toString(BASE_DATA_TYPE_CASES[i])) + "_to_" + toString(compositeType, false);
-					std::string testDesc	= "Test " + std::string(toString(COPY_OPERATION_CASES[j].type)) + " operation to untyped"
-											+ toString(BASE_DATA_TYPE_CASES[i]) + " to " + toString(compositeType);
+					std::string testName	= std::string(toString(BASE_DATA_TYPE_CASES[i])) + "_to_" + toString(compositeType);
 
 					std::map<std::string, std::string>	specMap;
 					specMap["copyOp"]			= COPY_OPERATION_CASES[j].pCopyOp;
@@ -6913,7 +6761,7 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 					specMap["otherType"]		= toString(getCompositeBaseDataType(compositeType));
 					specMap["baseDecl"]			= getDeclaration(BASE_DATA_TYPE_CASES[i]);
 					specMap["otherTypeDecl"]	= getDeclaration(getCompositeBaseDataType(compositeType));
-					specMap["otherVec"]			= toString(compositeType, false);
+					specMap["otherVec"]			= toString(compositeType);
 					specMap["otherVecDecl"]		= getDeclaration(compositeType);
 					specMap["size"]				= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 					specMap["otherCap"]			= getCapability(compositeType);
@@ -6936,7 +6784,7 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 					}
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 					adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER, BASE_DATA_TYPE_CASES[i]);
@@ -6966,11 +6814,11 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 
 					if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
 					{
-						memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 					else if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY_SIZED)
 					{
-						memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 				}
 			}
@@ -7005,9 +6853,7 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 					const DATA_TYPE	dataType	= sameSizeTypes[k];
 					const deUint32	otherIndex	= static_cast<deUint32>(dataType);
 
-					std::string testName	= std::string(toString(COMPOSITE_DATA_TYPE_CASES[i], false)) + "_to_" + toString(dataType);
-					std::string testDesc	= "Test " + std::string(toString(COPY_OPERATION_CASES[j].type)) + " operation to untyped"
-											+ toString(COMPOSITE_DATA_TYPE_CASES[i]) + " to " + toString(dataType);
+					std::string testName	= std::string(toString(COMPOSITE_DATA_TYPE_CASES[i])) + "_to_" + toString(dataType);
 
 					std::map<std::string, std::string>	specMap;
 					specMap["copyOp"]			= COPY_OPERATION_CASES[j].pCopyOp;
@@ -7016,11 +6862,11 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 					specMap["otherType"]		= toString(dataType);
 					specMap["baseDecl"]			= getDeclaration(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
 					specMap["otherTypeDecl"]	= getDeclaration(BASE_DATA_TYPE_CASES[otherIndex]);
-					specMap["baseVec"]			= toString(COMPOSITE_DATA_TYPE_CASES[i], false);
+					specMap["baseVec"]			= toString(COMPOSITE_DATA_TYPE_CASES[i]);
 					specMap["baseVecDecl"]		= getDeclaration(COMPOSITE_DATA_TYPE_CASES[i]);
 					specMap["size"]				= std::to_string(getSizeInBytes(COMPOSITE_DATA_TYPE_CASES[i]));
 					specMap["otherCap"]			= getCapability(sameSizeTypes[k]);
-					specMap["copyType"]			= toString(COMPOSITE_DATA_TYPE_CASES[i], false);
+					specMap["copyType"]			= toString(COMPOSITE_DATA_TYPE_CASES[i]);
 
 					if (COMPOSITE_DATA_TYPE_CASES[i] != CompositeDataTypes::VEC3_UINT32)
 						specMap["inputVec"]		= "%vec3_uint32 = OpTypeVector %uint32 3";
@@ -7036,7 +6882,7 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 					}
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
 					adjustSpecForSmallContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER, getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
@@ -7066,11 +6912,11 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 
 					if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY)
 					{
-						memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						memoryGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 					else if (COPY_OPERATION_CASES[j].type == CopyOperationTypes::COPY_MEMORY_SIZED)
 					{
-						memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						memorySizedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 				}
 			}
@@ -7104,7 +6950,6 @@ void addAtomicAddTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test atomic add operator for " + std::string(toString(BASE_DATA_TYPE_CASES[i])) + ".";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -7113,7 +6958,7 @@ void addAtomicAddTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel
 		specMap["opValue"]		= std::to_string(16);
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForAtomicOperations(spec, specMap, BASE_DATA_TYPE_CASES[i]);
@@ -7153,7 +6998,7 @@ void addAtomicAddTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -7180,7 +7025,6 @@ void addAtomicSubtractTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(INT_BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(INT_BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test atomic subtract operator for " + std::string(toString(INT_BASE_DATA_TYPE_CASES[i])) + ".";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(INT_BASE_DATA_TYPE_CASES[i]);
@@ -7189,7 +7033,7 @@ void addAtomicSubtractTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 		specMap["opValue"]		= std::to_string(16);
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForAtomicOperations(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
@@ -7228,7 +7072,7 @@ void addAtomicSubtractTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -7237,7 +7081,6 @@ void addAtomicIncrementDecrementTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 	DE_ASSERT((testCase == AtomicTestCases::OP_ATOMIC_INCREMENT) || (testCase == AtomicTestCases::OP_ATOMIC_DECREMENT));
 
 	const AtomicOpType	opType	= testCase == AtomicTestCases::OP_ATOMIC_INCREMENT ? OP_ATOMIC_INCREMENT : OP_ATOMIC_DECREMENT;
-	const std::string	descStr	= testCase == AtomicTestCases::OP_ATOMIC_INCREMENT ? "increment" : "decrement";
 
 	tcu::TestContext& testCtx	= testGroup->getTestContext();
 
@@ -7260,7 +7103,6 @@ void addAtomicIncrementDecrementTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(INT_BASE_DATA_TYPE_CASES); ++i)
 	{
 		const std::string	testName	= toString(INT_BASE_DATA_TYPE_CASES[i]);
-		const std::string	testDesc	= "Test atomic " + descStr + " operator for " + std::string(toString(INT_BASE_DATA_TYPE_CASES[i])) + ".";
 		const std::string	opStr		= testCase == AtomicTestCases::OP_ATOMIC_INCREMENT ?
 										  getAtomicIncrementOperator(INT_BASE_DATA_TYPE_CASES[i]) : getAtomicDecrementOperator(INT_BASE_DATA_TYPE_CASES[i]);
 
@@ -7270,7 +7112,7 @@ void addAtomicIncrementDecrementTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 		specMap["opType"]		= opStr;
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForAtomicOperations(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
@@ -7307,7 +7149,7 @@ void addAtomicIncrementDecrementTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -7316,7 +7158,6 @@ void addAtomicMinMaxTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 	DE_ASSERT((testCase == AtomicTestCases::OP_ATOMIC_MIN) || (testCase == AtomicTestCases::OP_ATOMIC_MAX));
 
 	const AtomicOpType	opType	= testCase == AtomicTestCases::OP_ATOMIC_MIN ? OP_ATOMIC_MIN : OP_ATOMIC_MAX;
-	const std::string	descStr	= testCase == AtomicTestCases::OP_ATOMIC_MIN ? "min" : "max";
 
 	tcu::TestContext& testCtx = testGroup->getTestContext();
 
@@ -7339,7 +7180,6 @@ void addAtomicMinMaxTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(INT_BASE_DATA_TYPE_CASES); ++i)
 	{
 		const std::string	testName	= toString(INT_BASE_DATA_TYPE_CASES[i]);
-		const std::string	testDesc	= "Test atomic " + descStr + " operator for " + std::string(toString(INT_BASE_DATA_TYPE_CASES[i])) + ".";
 		const std::string	opStr		= testCase == AtomicTestCases::OP_ATOMIC_MIN ?
 										  getAtomicMinOperator(INT_BASE_DATA_TYPE_CASES[i]) : getAtomicMaxOperator(INT_BASE_DATA_TYPE_CASES[i]);
 
@@ -7350,7 +7190,7 @@ void addAtomicMinMaxTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 		specMap["opValue"]		= std::to_string(getSignedUnsignedMinMaxTestValue(INT_BASE_DATA_TYPE_CASES[i]));
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForAtomicOperations(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
@@ -7389,7 +7229,7 @@ void addAtomicMinMaxTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -7398,25 +7238,22 @@ void addAtomicBooleanTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 	DE_ASSERT((testCase == AtomicTestCases::OP_ATOMIC_AND) || (testCase == AtomicTestCases::OP_ATOMIC_OR) || (testCase == AtomicTestCases::OP_ATOMIC_XOR));
 
 	AtomicOpType	opType{};
-	std::string		descStr{};
+
 	switch (testCase)
 	{
 	case vkt::SpirVAssembly::AtomicTestCases::OP_ATOMIC_AND:
 	{
 		opType	= OP_ATOMIC_AND;
-		descStr = "and";
 		break;
 	}
 	case vkt::SpirVAssembly::AtomicTestCases::OP_ATOMIC_OR:
 	{
 		opType	= OP_ATOMIC_OR;
-		descStr	= "or";
 		break;
 	}
 	case vkt::SpirVAssembly::AtomicTestCases::OP_ATOMIC_XOR:
 	{
 		opType	= OP_ATOMIC_XOR;
-		descStr	= "xor";
 		break;
 	}
 	default:
@@ -7447,7 +7284,6 @@ void addAtomicBooleanTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(INT_BASE_DATA_TYPE_CASES); ++i)
 	{
 		const std::string	testName	= toString(INT_BASE_DATA_TYPE_CASES[i]);
-		const std::string	testDesc	= "Test atomic " + descStr + " operator for " + std::string(toString(INT_BASE_DATA_TYPE_CASES[i])) + ".";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(INT_BASE_DATA_TYPE_CASES[i]);
@@ -7457,7 +7293,7 @@ void addAtomicBooleanTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 		specMap["opValue"]		= std::to_string(1);
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForAtomicOperations(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
@@ -7496,7 +7332,7 @@ void addAtomicBooleanTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -7523,7 +7359,6 @@ void addAtomicExchangeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		const std::string	testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		const std::string	testDesc	= "Test atomic exchange operator for " + std::string(toString(BASE_DATA_TYPE_CASES[i])) + ".";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -7532,7 +7367,7 @@ void addAtomicExchangeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 		specMap["opValue"]		= std::to_string(1);
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForAtomicOperations(spec, specMap, BASE_DATA_TYPE_CASES[i]);
@@ -7571,7 +7406,7 @@ void addAtomicExchangeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE mem
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -7603,7 +7438,6 @@ void addAtomicCompareExchangeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_T
 		for(deUint32 j = 0; j < 2; ++j)
 		{
 			const std::string	testName	= toString(INT_BASE_DATA_TYPE_CASES[i]);
-			const std::string	testDesc	= "Test atomic exchange operator for " + std::string(toString(INT_BASE_DATA_TYPE_CASES[i])) + ".";
 
 			std::map<std::string, std::string>	specMap;
 			specMap["baseDecl"]		= getDeclaration(INT_BASE_DATA_TYPE_CASES[i]);
@@ -7614,7 +7448,7 @@ void addAtomicCompareExchangeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_T
 			specMap["opValue"]		= std::to_string(16);
 
 			ComputeShaderSpec spec;
-			adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+			adjustSpecForUntypedPointers(spec, specMap);
 			adjustSpecForMemoryModel(spec, specMap, memModel);
 			adjustSpecForDataTypes(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
 			adjustSpecForAtomicOperations(spec, specMap, INT_BASE_DATA_TYPE_CASES[i]);
@@ -7664,11 +7498,11 @@ void addAtomicCompareExchangeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_T
 
 			if (j)	// for 1 adding to exchange group
 			{
-				exchangedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				exchangedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 			else	// for 0 adding to not exchange group
 			{
-				notExchangedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				notExchangedGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -7705,27 +7539,24 @@ void addVariablePtrOpSelectTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYP
 		for (deUint32 j = 0; j < 2; ++j)
 		{
 			std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-			std::string testDesc	= "Test select operator for " + std::string(toString(BASE_DATA_TYPE_CASES[i])) + " with pointer when select condition is ";
 
 			std::map<std::string, std::string>	specMap;
 			if (j)
 			{
 				specMap["boolConst"]	= "%c_bool_true = OpConstantTrue %bool";
 				specMap["condition"]	= "%c_bool_true";
-				testDesc				+= "true.";
 			}
 			else
 			{
 				specMap["boolConst"]	= "%c_bool_false = OpConstantFalse %bool";
 				specMap["condition"]	= "%c_bool_false";
-				testDesc				+= "false.";
 			}
 
 			specMap["baseDecl"]	= getDeclaration(BASE_DATA_TYPE_CASES[i]);
 			specMap["baseType"]	= toString(BASE_DATA_TYPE_CASES[i]);
 
 			ComputeShaderSpec spec;
-			adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+			adjustSpecForUntypedPointers(spec, specMap);
 			adjustSpecForMemoryModel(spec, specMap, memModel);
 			adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 			adjustSpecForVariablePointers(spec, specMap);
@@ -7782,11 +7613,11 @@ void addVariablePtrOpSelectTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYP
 
 			if (j)
 			{
-				firstGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				firstGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 			else
 			{
-				secondGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				secondGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -7823,20 +7654,17 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL
 		for (deUint32 j = 0; j < 2; ++j)
 		{
 			std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-			std::string testDesc	= "Test select operator for " + std::string(toString(BASE_DATA_TYPE_CASES[i])) + " with pointer when select condition is ";
 
 			std::map<std::string, std::string>	specMap;
 			if (j)
 			{
 				specMap["boolConst"]	=  "%c_bool_true = OpConstantTrue %bool";
 				specMap["condition"]	=  "%c_bool_true";
-				testDesc				+= "true.";
 			}
 			else
 			{
 				specMap["boolConst"]	=  "%c_bool_false = OpConstantFalse %bool";
 				specMap["condition"]	=  "%c_bool_false";
-				testDesc				+= "false.";
 			}
 
 			specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -7844,7 +7672,7 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL
 			specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
 			ComputeShaderSpec spec;
-			adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+			adjustSpecForUntypedPointers(spec, specMap);
 			adjustSpecForMemoryModel(spec, specMap, memModel);
 			adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 			adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
@@ -7901,11 +7729,11 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL
 
 			if (j)
 			{
-				firstGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				firstGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 			else
 			{
-				secondGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				secondGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -7942,21 +7770,17 @@ void addVariablePtrOpPhiTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE m
 		for (deUint32 j = 0; j < 2; ++j)
 		{
 			std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-			std::string testDesc	= "Test " + std::string(toString(PointerTestCases::OP_PHI_VARIABLE_PTR)) + " interaction with variable pointers with "
-									+ std::string(toString(BASE_DATA_TYPE_CASES[i])) + " data type, when condition is ";
 
 			std::map<std::string, std::string>	specMap;
 			if (j)
 			{
 				specMap["boolConst"]	=  "%c_bool_true = OpConstantTrue %bool";
 				specMap["condition"]	=  "%c_bool_true";
-				testDesc				+= "true.";
 			}
 			else
 			{
 				specMap["boolConst"]	=  "%c_bool_false = OpConstantFalse %bool";
 				specMap["condition"]	=  "%c_bool_false";
-				testDesc				+= "false.";
 			}
 
 			specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -7964,7 +7788,7 @@ void addVariablePtrOpPhiTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE m
 			specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
 			ComputeShaderSpec spec;
-			adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+			adjustSpecForUntypedPointers(spec, specMap);
 			adjustSpecForMemoryModel(spec, specMap, memModel);
 			adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 			adjustSpecForVariablePointers(spec, specMap);
@@ -8021,11 +7845,11 @@ void addVariablePtrOpPhiTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE m
 
 			if (j)
 			{
-				firstGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				firstGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 			else
 			{
-				secondGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				secondGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -8062,21 +7886,17 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TY
 		for (deUint32 j = 0; j < 2; ++j)
 		{
 			std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-			std::string testDesc	= "Test " + std::string(toString(PointerTestCases::OP_PHI_PHYSICAL_STORAGE)) + " interaction with physical storage with "
-									+ std::string(toString(BASE_DATA_TYPE_CASES[i])) + " data type, when condition is ";
 
 			std::map<std::string, std::string>	specMap;
 			if (j)
 			{
 				specMap["boolConst"]	=  "%c_bool_true = OpConstantTrue %bool";
 				specMap["condition"]	=  "%c_bool_true";
-				testDesc				+= "true.";
 			}
 			else
 			{
 				specMap["boolConst"]	=  "%c_bool_false = OpConstantFalse %bool";
 				specMap["condition"]	=  "%c_bool_false";
-				testDesc				+= "false.";
 			}
 
 			specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -8084,7 +7904,7 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TY
 			specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
 			ComputeShaderSpec spec;
-			adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+			adjustSpecForUntypedPointers(spec, specMap);
 			adjustSpecForMemoryModel(spec, specMap, memModel);
 			adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 			adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
@@ -8141,11 +7961,11 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TY
 
 			if (j)
 			{
-				firstGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				firstGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 			else
 			{
-				secondGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				secondGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -8182,24 +8002,13 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_T
 		for (deUint32 j = 0; j < 2; ++j)
 		{
 			std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-			std::string testDesc	= "Test " + std::string(toString(PointerTestCases::OP_PTR_EQUAL_VARIABLE_PTR))
-									+ std::string(" operator for ") + toString(BASE_DATA_TYPE_CASES[i]) + " when pointers are ";
 
 			std::map<std::string, std::string>	specMap;
-			if (j)
-			{
-				testDesc	+= "equal.";
-			}
-			else
-			{
-				testDesc	+= "not equal.";
-			}
-
 			specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
 			specMap["baseType"]		= toString(BASE_DATA_TYPE_CASES[i]);
 
 			ComputeShaderSpec spec;
-			adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+			adjustSpecForUntypedPointers(spec, specMap);
 			adjustSpecForMemoryModel(spec, specMap, memModel);
 			adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 			adjustSpecForVariablePointers(spec, specMap);
@@ -8256,11 +8065,11 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_T
 
 			if (j)
 			{
-				equalGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				equalGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 			else
 			{
-				notEqualGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				notEqualGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -8297,24 +8106,13 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 		for (deUint32 j = 0; j < 2; ++j)
 		{
 			std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-			std::string testDesc	= "Test " + std::string(toString(PointerTestCases::OP_PTR_NOT_EQUAL_VARIABLE_PTR))
-									+ std::string(" operator for ") + toString(BASE_DATA_TYPE_CASES[i]) + " when pointers are ";
 
 			std::map<std::string, std::string>	specMap;
-			if (j)
-			{
-				testDesc	+= "equal.";
-			}
-			else
-			{
-				testDesc	+= "not equal.";
-			}
-
 			specMap["baseDecl"]	= getDeclaration(BASE_DATA_TYPE_CASES[i]);
 			specMap["baseType"]	= toString(BASE_DATA_TYPE_CASES[i]);
 
 			ComputeShaderSpec spec;
-			adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+			adjustSpecForUntypedPointers(spec, specMap);
 			adjustSpecForMemoryModel(spec, specMap, memModel);
 			adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 			adjustSpecForVariablePointers(spec, specMap);
@@ -8371,11 +8169,11 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 
 			if (j)
 			{
-				equalGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				equalGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 			else
 			{
-				notEqualGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+				notEqualGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 			}
 		}
 	}
@@ -8407,7 +8205,6 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TY
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test untyped pointer parameter to " + std::string(toString(PointerTestCases::OP_PTR_DIFF_VARIABLE_PTR)) + ".";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -8416,7 +8213,7 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TY
 		specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForVariablePointers(spec, specMap);
@@ -8460,7 +8257,7 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TY
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -8490,15 +8287,13 @@ void addVariablePtrOpFunctionCallTests(tcu::TestCaseGroup* testGroup, MEMORY_MOD
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test untyped pointer parameter to " + std::string(toString(PointerTestCases::OP_FUNCTION_CALL_VARIABLE_PTR))
-								+ " interaction with phisical storage for " + toString(BASE_DATA_TYPE_CASES[i]) + " type.";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]	= getDeclaration(BASE_DATA_TYPE_CASES[i]);
 		specMap["baseType"]	= toString(BASE_DATA_TYPE_CASES[i]);
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForVariablePointers(spec, specMap);
@@ -8537,7 +8332,7 @@ void addVariablePtrOpFunctionCallTests(tcu::TestCaseGroup* testGroup, MEMORY_MOD
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -8567,8 +8362,6 @@ void addPhysicalStorageOpFunctionCallTests(tcu::TestCaseGroup* testGroup, MEMORY
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test untyped pointer parameter to " + std::string(toString(PointerTestCases::OP_FUNCTION_CALL_VARIABLE_PTR))
-								+ " interaction with phisical storage for " + toString(BASE_DATA_TYPE_CASES[i]) + " type.";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -8576,7 +8369,7 @@ void addPhysicalStorageOpFunctionCallTests(tcu::TestCaseGroup* testGroup, MEMORY
 		specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
 		ComputeShaderSpec	spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
@@ -8615,7 +8408,7 @@ void addPhysicalStorageOpFunctionCallTests(tcu::TestCaseGroup* testGroup, MEMORY
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -8642,8 +8435,6 @@ void addVariablePtrOpPtrAccessChain(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test untyped pointer parameter to " + std::string(toString(PointerTestCases::OP_PTR_ACCESS_CHAIN_VARIABLE_PTR))
-								+ " interaction with variable pointers for " + std::string(toString(BASE_DATA_TYPE_CASES[i])) + " array.";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -8652,7 +8443,7 @@ void addVariablePtrOpPtrAccessChain(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 		specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForVariablePointers(spec, specMap);
@@ -8691,7 +8482,7 @@ void addVariablePtrOpPtrAccessChain(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -8718,8 +8509,6 @@ void addPhysicalStorageOpPtrAccessChainTests(tcu::TestCaseGroup* testGroup, MEMO
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test " + std::string(toString(PointerTestCases::OP_PTR_ACCESS_CHAIN_PHYSICAL_STORAGE))
-								+ " interaction with physical storage for " + std::string(toString(BASE_DATA_TYPE_CASES[i])) + " array.";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -8728,7 +8517,7 @@ void addPhysicalStorageOpPtrAccessChainTests(tcu::TestCaseGroup* testGroup, MEMO
 		specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
@@ -8767,7 +8556,7 @@ void addPhysicalStorageOpPtrAccessChainTests(tcu::TestCaseGroup* testGroup, MEMO
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -8794,7 +8583,6 @@ void addVariablePtrFunctionVariableTests(tcu::TestCaseGroup* testGroup, MEMORY_M
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test untyped pointer parameter to " + std::string(toString(PointerTestCases::FUNCTION_VARIABLE_VARIABLE_PTR)) + ".";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -8803,7 +8591,7 @@ void addVariablePtrFunctionVariableTests(tcu::TestCaseGroup* testGroup, MEMORY_M
 		specMap["condition"]	= "%c_bool_true";
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForVariablePointers(spec, specMap);
@@ -8845,7 +8633,7 @@ void addVariablePtrFunctionVariableTests(tcu::TestCaseGroup* testGroup, MEMORY_M
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -8872,7 +8660,6 @@ void addVariablePtrPrivateVariableTests(tcu::TestCaseGroup* testGroup, MEMORY_MO
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test untyped pointer parameter to " + std::string(toString(PointerTestCases::PRIVATE_VARIABLE_VARIABLE_PTR)) + ".";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -8881,7 +8668,7 @@ void addVariablePtrPrivateVariableTests(tcu::TestCaseGroup* testGroup, MEMORY_MO
 		specMap["condition"]	= "%c_bool_true";
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForVariablePointers(spec, specMap);
@@ -8923,7 +8710,7 @@ void addVariablePtrPrivateVariableTests(tcu::TestCaseGroup* testGroup, MEMORY_MO
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -8962,7 +8749,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 
 		ComputeShaderSpec spec;
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 
 		const std::string shaderAsm =
 			shaderHeader.specialize(specMap) +
@@ -9001,7 +8788,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "vec2_uint32_vec2_float32_to_vec4_int32", "Reinterpret struct containing vec2_uint32 and vec2_float32 as struct containing vec4_int32.", spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "vec2_uint32_vec2_float32_to_vec4_int32", spec));
 	}
 
 	{
@@ -9018,7 +8805,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 		ComputeShaderSpec spec;
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, DataTypes::UINT8);
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 
 		const std::string shaderAsm =
 			shaderHeader.specialize(specMap) +
@@ -9056,7 +8843,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "uint32_to_uint8_uint8_uint8_uint8", "Reinterpret struct containing uint32 as struct containing uint8, uint8, uint8 and uint8", spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "uint32_to_uint8_uint8_uint8_uint8", spec));
 	}
 
 	{
@@ -9079,7 +8866,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 
 		ComputeShaderSpec spec;
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForDataTypes(spec, specMap, DataTypes::FLOAT16);
 
 		const std::string shaderAsm =
@@ -9127,7 +8914,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "vec4_float16_vec2_int32_to_float16_vec2_float16_float16_int32_int32", "Reinterpret struct containing vec4_float16 and vec2_int32 as struct containing float16, vec2_float16, float16, int32 and int32.", spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "vec4_float16_vec2_int32_to_float16_vec2_float16_float16_int32_int32", spec));
 	}
 
 	{
@@ -9148,7 +8935,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 
 		ComputeShaderSpec spec;
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 
 		const std::string shaderAsm =
 			shaderHeader.specialize(specMap) +
@@ -9195,7 +8982,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "nested_struct_int32_int32_int32_int32_to_vec2_int32_vec2_int32", "Reinterpret struct containing nested struct with four int32 as struct containing vec2_int32, vec2_int32.", spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "nested_struct_int32_int32_int32_int32_to_vec2_int32_vec2_int32", spec));
 	}
 
 	{
@@ -9219,7 +9006,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 
 		ComputeShaderSpec spec;
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 
 
 		const std::string shaderAsm =
@@ -9268,7 +9055,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 		spec.requestedVulkanFeatures.coreFeatures.shaderFloat64	= VK_TRUE;
 		spec.requestedVulkanFeatures.coreFeatures.shaderInt64	= VK_TRUE;
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "int64_uint64_vec2_float64_to_nested_struct_vec4_int64", "Reinterpret struct containing int64, uint64, vec2_float64 as struct containing nested struct with vec4_int64.", spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "int64_uint64_vec2_float64_to_nested_struct_vec4_int64", spec));
 	}
 
 	{
@@ -9289,8 +9076,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 
 		ComputeShaderSpec spec;
 		adjustSpecForMemoryModel(spec, specMap, memModel);
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
-
+		adjustSpecForUntypedPointers(spec, specMap);
 
 		const std::string shaderAsm =
 			shaderHeader.specialize(specMap) +
@@ -9336,7 +9122,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 		spec.requestedVulkanFeatures.coreFeatures.shaderInt16	= VK_TRUE;
 		spec.requestedVulkanFeatures.coreFeatures.shaderInt64	= VK_TRUE;
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "uint64_to_nested_struct_uint16_uint16_uint16_uint16", "Reinterpret struct containing uint64 as struct containing nested struct with four uint16.", spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "uint64_to_nested_struct_uint16_uint16_uint16_uint16", spec));
 	}
 }
 
@@ -9363,7 +9149,6 @@ void addMultipleAccessChainTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYP
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test multiple access chain for vec2 of " + std::string(toString(BASE_DATA_TYPE_CASES[i])) + " data type.";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -9371,7 +9156,7 @@ void addMultipleAccessChainTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYP
 		specMap["size"]			= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
@@ -9407,7 +9192,7 @@ void addMultipleAccessChainTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYP
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -9434,8 +9219,6 @@ void addVariablePointersMultipleAccessChainTests(tcu::TestCaseGroup* testGroup, 
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test multiple access chain for vec2 of " + std::string(toString(BASE_DATA_TYPE_CASES[i]))
-								+ " data type for variable pointers extension.";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]	= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -9443,7 +9226,7 @@ void addVariablePointersMultipleAccessChainTests(tcu::TestCaseGroup* testGroup, 
 		specMap["size"]		= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForVariablePointers(spec, specMap);
@@ -9480,7 +9263,7 @@ void addVariablePointersMultipleAccessChainTests(tcu::TestCaseGroup* testGroup, 
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -9509,8 +9292,6 @@ void addPhysicalStorageOpBitcastTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc	= "Test " + std::string(toString(ptrTestType))
-								+ " interaction with physical storage for " + std::string(toString(BASE_DATA_TYPE_CASES[i])) + " array.";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -9519,7 +9300,7 @@ void addPhysicalStorageOpBitcastTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 		specMap["alignment"]	= std::to_string(getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForPhysicalStorageBuffer(spec, specMap, memModel);
@@ -9557,7 +9338,7 @@ void addPhysicalStorageOpBitcastTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -9584,8 +9365,6 @@ void addWorkgroupMemoryInteractionTests(tcu::TestCaseGroup* testGroup, MEMORY_MO
 	for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++i)
 	{
 		std::string testName = toString(BASE_DATA_TYPE_CASES[i]);
-		std::string testDesc = "Test " + std::string(toString(testCase, DE_FALSE))
-			+ " interaction with physical storage for " + std::string(toString(BASE_DATA_TYPE_CASES[i])) + " array.";
 
 		std::map<std::string, std::string>	specMap;
 		specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[i]);
@@ -9593,7 +9372,7 @@ void addWorkgroupMemoryInteractionTests(tcu::TestCaseGroup* testGroup, MEMORY_MO
 		specMap["vecOffset"]	= std::to_string(4 * getSizeInBytes(BASE_DATA_TYPE_CASES[i]));
 
 		ComputeShaderSpec spec;
-		adjustSpecForContainerType(spec, specMap, ContainerTypes::WORKGROUP);
+		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 		adjustSpecForWorkgroupMemoryExplicitLayout(spec, specMap);
@@ -9631,7 +9410,7 @@ void addWorkgroupMemoryInteractionTests(tcu::TestCaseGroup* testGroup, MEMORY_MO
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+		testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 	}
 }
 
@@ -9665,13 +9444,11 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup* testGroup, ME
 
 			for (deUint32 j = 0; j < DE_LENGTH_OF_ARRAY(MATRIX_LAYOUT_CASES); ++j)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	layoutGroup(new tcu::TestCaseGroup(testCtx, toString(MATRIX_LAYOUT_CASES[j], DE_FALSE), ""));
+				de::MovePtr<tcu::TestCaseGroup>	layoutGroup(new tcu::TestCaseGroup(testCtx, toString(MATRIX_LAYOUT_CASES[j]), ""));
 
 				for (deUint32 k = 0; k < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++k)
 				{
 					std::string testName	= toString(BASE_DATA_TYPE_CASES[k]);
-					std::string testDesc	= "Test load operation from untyped pointer to cooperative matrix for "
-											+ std::string(toString(BASE_DATA_TYPE_CASES[k])) + " base data type.";
 
 					std::map<std::string, std::string>	specMap;
 					specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[k]);
@@ -9681,7 +9458,7 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup* testGroup, ME
 					specMap["matrixLayout"]	= std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
 					adjustSpecForCooperativeMatrix(spec, specMap);
@@ -9719,7 +9496,7 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup* testGroup, ME
 					spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 					spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-					layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+					layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 				}
 
 				useCaseGroup->addChild(layoutGroup.release());
@@ -9757,13 +9534,11 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup* testGroup, ME
 
 			for (deUint32 j = 0; j < DE_LENGTH_OF_ARRAY(MATRIX_LAYOUT_CASES); ++j)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	layoutGroup(new tcu::TestCaseGroup(testCtx, toString(MATRIX_LAYOUT_CASES[j], DE_FALSE), ""));
+				de::MovePtr<tcu::TestCaseGroup>	layoutGroup(new tcu::TestCaseGroup(testCtx, toString(MATRIX_LAYOUT_CASES[j]), ""));
 
 				for (deUint32 k = 0; k < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++k)
 				{
 					std::string testName	= toString(BASE_DATA_TYPE_CASES[k]);
-					std::string testDesc	= "Test store operation from untyped pointer to cooperative matrix for "
-											+ std::string(toString(BASE_DATA_TYPE_CASES[i])) + " base data type.";
 
 					std::map<std::string, std::string>	specMap;
 					specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[k]);
@@ -9773,7 +9548,7 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup* testGroup, ME
 					specMap["matrixLayout"]	= std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
 					adjustSpecForCooperativeMatrix(spec, specMap);
@@ -9811,7 +9586,7 @@ void addCooperativeMatrixInteractionBasicTests(tcu::TestCaseGroup* testGroup, ME
 					spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 					spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-					layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+					layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 				}
 
 				useCaseGroup->addChild(layoutGroup.release());
@@ -9855,7 +9630,7 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup* testGro
 
 			for (deUint32 j = 0; j < DE_LENGTH_OF_ARRAY(MATRIX_LAYOUT_CASES); ++j)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	layoutGroup(new tcu::TestCaseGroup(testCtx, toString(MATRIX_LAYOUT_CASES[j], DE_FALSE), ""));
+				de::MovePtr<tcu::TestCaseGroup>	layoutGroup(new tcu::TestCaseGroup(testCtx, toString(MATRIX_LAYOUT_CASES[j]), ""));
 
 				for (deUint32 k = 0; k < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++k)
 				{
@@ -9864,8 +9639,6 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup* testGro
 					for (deUint32 l = 0; l < sameSizeTypes.size(); ++l)
 					{
 						std::string testName	= toString(BASE_DATA_TYPE_CASES[k]) + std::string("_to_") + toString(sameSizeTypes[l]);
-						std::string testDesc	= "Test load operation from untyped pointer of " + std::string(toString(BASE_DATA_TYPE_CASES[k]))
-												= "data type to cooperative matrix of " + std::string(toString(sameSizeTypes[l])) + " type.";
 
 						std::map<std::string, std::string>	specMap;
 						specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[k]);
@@ -9877,7 +9650,7 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup* testGro
 						specMap["matrixLayout"]	= std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
 						ComputeShaderSpec spec;
-						adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+						adjustSpecForUntypedPointers(spec, specMap);
 						adjustSpecForMemoryModel(spec, specMap, memModel);
 						adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
 						adjustSpecForCooperativeMatrix(spec, specMap);
@@ -9917,7 +9690,7 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup* testGro
 						spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 						spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-						layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 				}
 
@@ -9956,7 +9729,7 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup* testGro
 
 			for (deUint32 j = 0; j < DE_LENGTH_OF_ARRAY(MATRIX_LAYOUT_CASES); ++j)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	layoutGroup(new tcu::TestCaseGroup(testCtx, toString(MATRIX_LAYOUT_CASES[j], DE_FALSE), ""));
+				de::MovePtr<tcu::TestCaseGroup>	layoutGroup(new tcu::TestCaseGroup(testCtx, toString(MATRIX_LAYOUT_CASES[j]), ""));
 
 				for (deUint32 k = 0; k < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++k)
 				{
@@ -9965,8 +9738,6 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup* testGro
 					for (deUint32 l = 0; l < sameSizeTypes.size(); ++l)
 					{
 						std::string testName	= toString(BASE_DATA_TYPE_CASES[k]) + std::string("_to_") + toString(sameSizeTypes[l]);
-						std::string testDesc	= "Test store operation from untyped pointer of " + std::string(toString(BASE_DATA_TYPE_CASES[k]))
-												= "data type to cooperative matrix of " + std::string(toString(sameSizeTypes[l])) + " type.";
 
 						std::map<std::string, std::string>	specMap;
 						specMap["baseDecl"]		= getDeclaration(BASE_DATA_TYPE_CASES[k]);
@@ -9978,7 +9749,7 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup* testGro
 						specMap["matrixLayout"]	= std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
 						ComputeShaderSpec spec;
-						adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+						adjustSpecForUntypedPointers(spec, specMap);
 						adjustSpecForMemoryModel(spec, specMap, memModel);
 						adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
 						adjustSpecForCooperativeMatrix(spec, specMap);
@@ -10018,7 +9789,7 @@ void addCooperativeMatrixInteractionTypePunningTests(tcu::TestCaseGroup* testGro
 						spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 						spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-						layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+						layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 					}
 				}
 
@@ -10062,7 +9833,7 @@ tcu::TestContext& testCtx = testGroup->getTestContext();
 
 			for (deUint32 j = 0; j < DE_LENGTH_OF_ARRAY(MATRIX_LAYOUT_CASES); ++j)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	layoutGroup(new tcu::TestCaseGroup(testCtx, toString(MATRIX_LAYOUT_CASES[j], DE_FALSE), ""));
+				de::MovePtr<tcu::TestCaseGroup>	layoutGroup(new tcu::TestCaseGroup(testCtx, toString(MATRIX_LAYOUT_CASES[j]), ""));
 
 				for (deUint32 k = 0; k < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++k)
 				{
@@ -10079,7 +9850,7 @@ tcu::TestContext& testCtx = testGroup->getTestContext();
 					specMap["matrixLayout"]	= std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
 					adjustSpecForCooperativeMatrix(spec, specMap);
@@ -10117,7 +9888,7 @@ tcu::TestContext& testCtx = testGroup->getTestContext();
 					spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 					spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-					layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+					layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 				}
 
 				useCaseGroup->addChild(layoutGroup.release());
@@ -10155,7 +9926,7 @@ tcu::TestContext& testCtx = testGroup->getTestContext();
 
 			for (deUint32 j = 0; j < DE_LENGTH_OF_ARRAY(MATRIX_LAYOUT_CASES); ++j)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	layoutGroup(new tcu::TestCaseGroup(testCtx, toString(MATRIX_LAYOUT_CASES[j], DE_FALSE), ""));
+				de::MovePtr<tcu::TestCaseGroup>	layoutGroup(new tcu::TestCaseGroup(testCtx, toString(MATRIX_LAYOUT_CASES[j]), ""));
 
 				for (deUint32 k = 0; k < DE_LENGTH_OF_ARRAY(BASE_DATA_TYPE_CASES); ++k)
 				{
@@ -10172,7 +9943,7 @@ tcu::TestContext& testCtx = testGroup->getTestContext();
 					specMap["matrixLayout"]	= std::to_string(getMatrixBinaryLayout(MATRIX_LAYOUT_CASES[j]));
 
 					ComputeShaderSpec spec;
-					adjustSpecForContainerType(spec, specMap, ContainerTypes::STORAGE_BUFFER);
+					adjustSpecForUntypedPointers(spec, specMap);
 					adjustSpecForMemoryModel(spec, specMap, memModel);
 					adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[k]);
 					adjustSpecForCooperativeMatrix(spec, specMap);
@@ -10210,7 +9981,7 @@ tcu::TestContext& testCtx = testGroup->getTestContext();
 					spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 					spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
-					layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDesc.c_str(), spec));
+					layoutGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
 				}
 
 				useCaseGroup->addChild(layoutGroup.release());
@@ -10225,124 +9996,124 @@ tcu::TestContext& testCtx = testGroup->getTestContext();
 
 void addAtomicsTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 {
-	addTestGroup(testGroup, "load", "Test loading atomic data from untyped pointer.", addLoadAtomicTests, memModel);
-	addTestGroup(testGroup, "store", "Test storing atomic data in untyped pointer.", addStoreAtomicTests, memModel);
-	addTestGroup(testGroup, "add", "Test atomic add operation for untyped pointer.", addAtomicAddTests, memModel);
-	addTestGroup(testGroup, "subtract", "Test atomic subtract operation for untyped pointer.", addAtomicSubtractTests, memModel);
-	addTestGroup(testGroup, "increment", "Test atomic increment operation for untyped pointer.", addAtomicIncrementDecrementTests, memModel, AtomicTestCases::OP_ATOMIC_INCREMENT);
-	addTestGroup(testGroup, "decrement", "Test atomic decrement operation for untyped pointer.", addAtomicIncrementDecrementTests, memModel, AtomicTestCases::OP_ATOMIC_DECREMENT);
-	addTestGroup(testGroup, "min", "Test atomic min operation for untyped pointer.", addAtomicMinMaxTests, memModel, AtomicTestCases::OP_ATOMIC_MIN);
-	addTestGroup(testGroup, "max", "Test atomic max operation for untyped pointer.", addAtomicMinMaxTests, memModel, AtomicTestCases::OP_ATOMIC_MAX);
-	addTestGroup(testGroup, "and", "Test atomic max operation for untyped pointer.", addAtomicBooleanTests, memModel, AtomicTestCases::OP_ATOMIC_AND);
-	addTestGroup(testGroup, "or", "Test atomic max operation for untyped pointer.", addAtomicBooleanTests, memModel, AtomicTestCases::OP_ATOMIC_OR);
-	addTestGroup(testGroup, "xor", "Test atomic max operation for untyped pointer.", addAtomicBooleanTests, memModel, AtomicTestCases::OP_ATOMIC_XOR);
-	addTestGroup(testGroup, "exchange", "Test atomic exchange operation for untyped pointer.", addAtomicExchangeTests, memModel);
-	addTestGroup(testGroup, "compare_exchange", "Test atomic compare exchange operation for untyped pointer.", addAtomicCompareExchangeTests, memModel);
+	addTestGroup(testGroup, "load", addLoadAtomicTests, memModel);
+	addTestGroup(testGroup, "store", addStoreAtomicTests, memModel);
+	addTestGroup(testGroup, "add", addAtomicAddTests, memModel);
+	addTestGroup(testGroup, "subtract", addAtomicSubtractTests, memModel);
+	addTestGroup(testGroup, "increment", addAtomicIncrementDecrementTests, memModel, AtomicTestCases::OP_ATOMIC_INCREMENT);
+	addTestGroup(testGroup, "decrement", addAtomicIncrementDecrementTests, memModel, AtomicTestCases::OP_ATOMIC_DECREMENT);
+	addTestGroup(testGroup, "min", addAtomicMinMaxTests, memModel, AtomicTestCases::OP_ATOMIC_MIN);
+	addTestGroup(testGroup, "max", addAtomicMinMaxTests, memModel, AtomicTestCases::OP_ATOMIC_MAX);
+	addTestGroup(testGroup, "and", addAtomicBooleanTests, memModel, AtomicTestCases::OP_ATOMIC_AND);
+	addTestGroup(testGroup, "or", addAtomicBooleanTests, memModel, AtomicTestCases::OP_ATOMIC_OR);
+	addTestGroup(testGroup, "xor", addAtomicBooleanTests, memModel, AtomicTestCases::OP_ATOMIC_XOR);
+	addTestGroup(testGroup, "exchange", addAtomicExchangeTests, memModel);
+	addTestGroup(testGroup, "compare_exchange", addAtomicCompareExchangeTests, memModel);
 }
 
 void addPhysicalStorageOpBitcastTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 {
-	addTestGroup(testGroup, "from_untyped", "Test OpBitcast from untyped variable.", addPhysicalStorageOpBitcastTests, memModel, DE_TRUE);
-	addTestGroup(testGroup, "to_untyped", "Test OpBitcast to untyped variable.", addPhysicalStorageOpBitcastTests, memModel, DE_FALSE);
+	addTestGroup(testGroup, "from_untyped", addPhysicalStorageOpBitcastTests, memModel, DE_TRUE);
+	addTestGroup(testGroup, "to_untyped", addPhysicalStorageOpBitcastTests, memModel, DE_FALSE);
 }
 
 void addCopyTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 {
-	addTestGroup(testGroup, "from_untyped", "Test copying data from untyped variable.", addCopyTests, memModel, DE_TRUE);
-	addTestGroup(testGroup, "to_untyped", "Test copying data to untyped variable.", addCopyTests, memModel, DE_FALSE);
+	addTestGroup(testGroup, "from_untyped", addCopyTests, memModel, DE_TRUE);
+	addTestGroup(testGroup, "to_untyped", addCopyTests, memModel, DE_FALSE);
 }
 
 void addCopyMixedTypeTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 {
-	addTestGroup(testGroup, "from_untyped", "Test copying data from untyped variable with reinterpretation.", addCopyFromUntypedMixedTypeTests, memModel);
-	addTestGroup(testGroup, "to_untyped", "Test copying data to untyped variable with reinterpretation.", addCopyToUntypedMixedTypeTests, memModel);
+	addTestGroup(testGroup, "from_untyped", addCopyFromUntypedMixedTypeTests, memModel);
+	addTestGroup(testGroup, "to_untyped", addCopyToUntypedMixedTypeTests, memModel);
 }
 
 void addBasicUsecaseTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 {
-	addTestGroup(testGroup, "load", "Test loading data from untyped variable.", addLoadTests, memModel);
-	addTestGroup(testGroup, "store", "Test storing data in untyped variable.", addStoreTests, memModel);
-	addTestGroup(testGroup, "copy", "Test copying data from and to untyped variable.", addCopyTestGroup, memModel);
-	addTestGroup(testGroup, "array_length", "Test OpArrayLength with untyped pointer.", addOpArrayLengthTests, memModel);
-	addTestGroup(testGroup, "atomics", "Test atomic operations for untyped pointer.", addAtomicsTestGroup, memModel);
+	addTestGroup(testGroup, "load", addLoadTests, memModel);
+	addTestGroup(testGroup, "store", addStoreTests, memModel);
+	addTestGroup(testGroup, "copy", addCopyTestGroup, memModel);
+	addTestGroup(testGroup, "array_length", addOpArrayLengthTests, memModel);
+	addTestGroup(testGroup, "atomics", addAtomicsTestGroup, memModel);
 }
 
 void addDataReinterpretTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 {
-	addTestGroup(testGroup, "struct_as_type", "Test data reinterpretation when struct is the type.", addStructAsTypeTests, memModel);
-	addTestGroup(testGroup, "multiple_access_chains", "Test multiple access chains with untyped pointers.", addMultipleAccessChainTests, memModel);
+	addTestGroup(testGroup, "struct_as_type", addStructAsTypeTests, memModel);
+	addTestGroup(testGroup, "multiple_access_chains", addMultipleAccessChainTests, memModel);
 }
 
 void addTypePunningTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 {
-	addTestGroup(testGroup, "load", "Test loading data from untyped variable via untyped pointer.", addLoadMixedTypeTests, memModel);
-	addTestGroup(testGroup, "store", "Test storing data in untyped variable via untyped pointer.", addStoreMixedTypeTests, memModel);
-	addTestGroup(testGroup, "copy", "Test copying data from and to untyped variable via untyped pointer.", addCopyMixedTypeTestGroup, memModel);
-	addTestGroup(testGroup, "reinterpret", "Test data reinterpretation with untyped pointers.", addDataReinterpretTestGroup, memModel);
+	addTestGroup(testGroup, "load", addLoadMixedTypeTests, memModel);
+	addTestGroup(testGroup, "store", addStoreMixedTypeTests, memModel);
+	addTestGroup(testGroup, "copy", addCopyMixedTypeTestGroup, memModel);
+	addTestGroup(testGroup, "reinterpret", addDataReinterpretTestGroup, memModel);
 }
 
 void addPhysicalStorageBufferInteractionTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 {
-	addTestGroup(testGroup, "op_bitcast", "Tests OpBitcast for untyped pointers.", addPhysicalStorageOpBitcastTestGroup, memModel);
-	addTestGroup(testGroup, "op_select", "Tests OpSelect for untyped pointers.", addPhysicalStorageOpSelectTests, memModel);
-	addTestGroup(testGroup, "op_phi", "Tests OpPhi for untyped pointers.", addPhysicalStorageOpPhiTests, memModel);
-	addTestGroup(testGroup, "op_function_call", "Tests OpFunctionCall with untyped pointer as parameter.", addPhysicalStorageOpFunctionCallTests, memModel);
-	addTestGroup(testGroup, "op_ptr_access_chain", "Tests OpUntypedPtrAccessChainKHR.", addPhysicalStorageOpPtrAccessChainTests, memModel);
+	addTestGroup(testGroup, "op_bitcast", addPhysicalStorageOpBitcastTestGroup, memModel);
+	addTestGroup(testGroup, "op_select", addPhysicalStorageOpSelectTests, memModel);
+	addTestGroup(testGroup, "op_phi", addPhysicalStorageOpPhiTests, memModel);
+	addTestGroup(testGroup, "op_function_call", addPhysicalStorageOpFunctionCallTests, memModel);
+	addTestGroup(testGroup, "op_ptr_access_chain", addPhysicalStorageOpPtrAccessChainTests, memModel);
 }
 
 void addVariablePointersInteractionTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 {
-	addTestGroup(testGroup, "op_select", "Tests OpSelect for untyped pointers.", addVariablePtrOpSelectTests, memModel);
-	addTestGroup(testGroup, "op_ptr_equal", "Tests OpPtrEqual for untyped pointers.", addVariablePtrOpPtrEqualTests, memModel);
-	addTestGroup(testGroup, "op_ptr_not_equal", "Tests OpPtrNotEqual for untyped pointers.", addVariablePtrOpPtrNotEqualTests, memModel);
-	addTestGroup(testGroup, "op_ptr_diff", "Tests OpPtrDiff for untyped pointers.", addVariablePtrOpPtrDiffTests, memModel);
-	addTestGroup(testGroup, "op_phi", "Tests OpPhi for untyped pointers.", addVariablePtrOpPhiTests, memModel);
-	addTestGroup(testGroup, "op_function_call", "Tests OpFunctionCall with untyped pointer as parameter.", addVariablePtrOpFunctionCallTests, memModel);
-	addTestGroup(testGroup, "op_ptr_access_chain", "Tests OpUntypedPtrAccessChainKHR.", addVariablePtrOpPtrAccessChain, memModel);
-	addTestGroup(testGroup, "function_variable", "Tests function variable holding untyped pointer.", addVariablePtrFunctionVariableTests, memModel);
-	addTestGroup(testGroup, "private_variable", "Tests private variable holding untyped pointer.", addVariablePtrPrivateVariableTests, memModel);
-	addTestGroup(testGroup, "multiple_access_chains", "Tests multiple access chains with variable pointers", addVariablePointersMultipleAccessChainTests, memModel);
+	addTestGroup(testGroup, "op_select", addVariablePtrOpSelectTests, memModel);
+	addTestGroup(testGroup, "op_ptr_equal", addVariablePtrOpPtrEqualTests, memModel);
+	addTestGroup(testGroup, "op_ptr_not_equal", addVariablePtrOpPtrNotEqualTests, memModel);
+	addTestGroup(testGroup, "op_ptr_diff", addVariablePtrOpPtrDiffTests, memModel);
+	addTestGroup(testGroup, "op_phi", addVariablePtrOpPhiTests, memModel);
+	addTestGroup(testGroup, "op_function_call", addVariablePtrOpFunctionCallTests, memModel);
+	addTestGroup(testGroup, "op_ptr_access_chain", addVariablePtrOpPtrAccessChain, memModel);
+	addTestGroup(testGroup, "function_variable", addVariablePtrFunctionVariableTests, memModel);
+	addTestGroup(testGroup, "private_variable", addVariablePtrPrivateVariableTests, memModel);
+	addTestGroup(testGroup, "multiple_access_chains", addVariablePointersMultipleAccessChainTests, memModel);
 }
 
 void addWorkgroupMemoryInteractionTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 {
-	addTestGroup(testGroup, "aliased", "Interactions when all variables are aliased.", addWorkgroupMemoryInteractionTests, memModel, WorkgroupTestCases::ALIASED);
-	addTestGroup(testGroup, "not_aliased", "Interactions when all variables are aliased.", addWorkgroupMemoryInteractionTests, memModel, WorkgroupTestCases::NOT_ALIASED);
+	addTestGroup(testGroup, "aliased", addWorkgroupMemoryInteractionTests, memModel, WorkgroupTestCases::ALIASED);
+	addTestGroup(testGroup, "not_aliased", addWorkgroupMemoryInteractionTests, memModel, WorkgroupTestCases::NOT_ALIASED);
 }
 
 void addCooperativeMatrixInteractionTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 {
-	addTestGroup(testGroup, "basic_usecase", "Interactions for basic usecase.", addCooperativeMatrixInteractionBasicTests, memModel);
-	addTestGroup(testGroup, "type_punning", "Interactions for type punning scenario.", addCooperativeMatrixInteractionTypePunningTests, memModel);
-	addTestGroup(testGroup, "mixed", "Interactions with mixed typed / untyped variable.", addCooperativeMatrixInteractionMixedTests, memModel);
+	addTestGroup(testGroup, "basic_usecase", addCooperativeMatrixInteractionBasicTests, memModel);
+	addTestGroup(testGroup, "type_punning", addCooperativeMatrixInteractionTypePunningTests, memModel);
+	addTestGroup(testGroup, "mixed", addCooperativeMatrixInteractionMixedTests, memModel);
 }
 
 void addVulkanMemoryModelTestGroup(tcu::TestCaseGroup* testGroup)
 {
-	addTestGroup(testGroup, "basic_usecase", "Tests basic scenarios of using pointers.", addBasicUsecaseTestGroup, MemoryModelTypes::VULKAN);
-	addTestGroup(testGroup, "type_punning", "Tests type punning scenarios for untyped pointers.", addTypePunningTestGroup, MemoryModelTypes::VULKAN);
-	addTestGroup(testGroup, "variable_pointers", "Tests interactions of untyped pointers with variable pointers.", addVariablePointersInteractionTestGroup, MemoryModelTypes::VULKAN);
-	addTestGroup(testGroup, "physical_storage", "Tests interactions of untyped pointers with physical storage.", addPhysicalStorageBufferInteractionTestGroup, MemoryModelTypes::VULKAN);
-	addTestGroup(testGroup, "workgroup_memory", "Tests interactions of untyped pointers with workgroup memory explicit layout extension.", addWorkgroupMemoryInteractionTestGroup, MemoryModelTypes::VULKAN);
-	addTestGroup(testGroup, "cooperative_matrix", "Tests interactions of untyped pointers with cooperative matrix extension.", addCooperativeMatrixInteractionTestGroup, MemoryModelTypes::VULKAN);
+	addTestGroup(testGroup, "basic_usecase", addBasicUsecaseTestGroup, MemoryModelTypes::VULKAN);
+	addTestGroup(testGroup, "type_punning", addTypePunningTestGroup, MemoryModelTypes::VULKAN);
+	addTestGroup(testGroup, "variable_pointers", addVariablePointersInteractionTestGroup, MemoryModelTypes::VULKAN);
+	addTestGroup(testGroup, "physical_storage", addPhysicalStorageBufferInteractionTestGroup, MemoryModelTypes::VULKAN);
+	addTestGroup(testGroup, "workgroup_memory", addWorkgroupMemoryInteractionTestGroup, MemoryModelTypes::VULKAN);
+	addTestGroup(testGroup, "cooperative_matrix", addCooperativeMatrixInteractionTestGroup, MemoryModelTypes::VULKAN);
 }
 
 void addGLSLMemoryModelTestGroup(tcu::TestCaseGroup* testGroup)
 {
-	addTestGroup(testGroup, "basic_usecase", "Tests basic scenarios of using pointers.", addBasicUsecaseTestGroup, MemoryModelTypes::GLSL);
-	addTestGroup(testGroup, "type_punning", "Tests type punning scenarios for untyped pointers.", addTypePunningTestGroup, MemoryModelTypes::GLSL);
-	addTestGroup(testGroup, "variable_pointers", "Tests interactions of untyped pointers with variable pointers.", addVariablePointersInteractionTestGroup, MemoryModelTypes::GLSL);
-	addTestGroup(testGroup, "physical_storage", "Tests interactions of untyped pointers with physical storage.", addPhysicalStorageBufferInteractionTestGroup, MemoryModelTypes::GLSL);
-	addTestGroup(testGroup, "workgroup_memory", "Tests interactions of untyped pointers with workgroup memory explicit layout extension.", addWorkgroupMemoryInteractionTestGroup, MemoryModelTypes::GLSL);
-	addTestGroup(testGroup, "cooperative_matrix", "Tests interactions of untyped pointers with cooperative matrix extension.", addCooperativeMatrixInteractionTestGroup, MemoryModelTypes::GLSL);
+	addTestGroup(testGroup, "basic_usecase", addBasicUsecaseTestGroup, MemoryModelTypes::GLSL);
+	addTestGroup(testGroup, "type_punning", addTypePunningTestGroup, MemoryModelTypes::GLSL);
+	addTestGroup(testGroup, "variable_pointers", addVariablePointersInteractionTestGroup, MemoryModelTypes::GLSL);
+	addTestGroup(testGroup, "physical_storage", addPhysicalStorageBufferInteractionTestGroup, MemoryModelTypes::GLSL);
+	addTestGroup(testGroup, "workgroup_memory", addWorkgroupMemoryInteractionTestGroup, MemoryModelTypes::GLSL);
+	addTestGroup(testGroup, "cooperative_matrix", addCooperativeMatrixInteractionTestGroup, MemoryModelTypes::GLSL);
 }
 
 tcu::TestCaseGroup* createUntypedPointersTestGroup(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> untypedPointerTestGroup(new tcu::TestCaseGroup(testCtx, "untyped_pointers", "Tests for SPV_KHR_untyped_pointers extension tests."));
 
-	untypedPointerTestGroup->addChild(createTestGroup(testCtx, "vulkan_memory_model", "Tests using vulkan memory model.", addVulkanMemoryModelTestGroup));
-	untypedPointerTestGroup->addChild(createTestGroup(testCtx, "glsl_memory_model", "Tests using glsl memory model.", addGLSLMemoryModelTestGroup));
+	untypedPointerTestGroup->addChild(createTestGroup(testCtx, "vulkan_memory_model", addVulkanMemoryModelTestGroup));
+	untypedPointerTestGroup->addChild(createTestGroup(testCtx, "glsl_memory_model", addGLSLMemoryModelTestGroup));
 
 	return untypedPointerTestGroup.release();
 }

@@ -24,6 +24,7 @@
  * \brief Structure with parameters shared by all tests in 'renderpass' group.
  *//*--------------------------------------------------------------------*/
 #include "deSharedPtr.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 
 namespace vkt
 {
@@ -57,6 +58,9 @@ struct GroupParams
 	// commands are recorded to primary command buffer. This flag is checked only when
 	// useSecondaryCmdBuffer is true.
 	bool secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+
+	// Choose pipeline construction type.
+	vk::PipelineConstructionType pipelineConstructionType;
 };
 
 typedef de::SharedPtr<GroupParams> SharedGroupParams;

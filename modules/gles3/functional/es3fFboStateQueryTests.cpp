@@ -170,9 +170,21 @@ public:
 											m_context.getRenderTarget().getPixelFormat().greenBits > 0 ||
 											m_context.getRenderTarget().getPixelFormat().blueBits  > 0 ||
 											m_context.getRenderTarget().getPixelFormat().alphaBits > 0;
+
+		bool isGlCore45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+		GLenum colorAttachment = isGlCore45 ? GL_FRONT : GL_BACK;
+		if (isGlCore45) {
+			// Make sure GL_FRONT is available. If not, use GL_BACK instead.
+			GLint objectType = GL_NONE;
+			glGetFramebufferAttachmentParameteriv(m_framebufferTarget, colorAttachment, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &objectType);
+			if (objectType == GL_NONE) {
+				colorAttachment = GL_BACK;
+			}
+		}
+
 		const GLenum	attachments[] =
 		{
-			(GLenum)(glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)) ? GL_FRONT : GL_BACK),
+			colorAttachment,
 			GL_DEPTH,
 			GL_STENCIL
 		};

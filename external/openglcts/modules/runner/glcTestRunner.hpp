@@ -26,6 +26,7 @@
 
 #include "gluPlatform.hpp"
 #include "tcuDefs.hpp"
+#include "tcuTestPackage.hpp"
 
 #include <string>
 #include <vector>
@@ -67,6 +68,7 @@ struct TestRunSummary
 	bool					   isConformant;
 	std::string				   configLogFilename;
 	std::vector<TestRunParams> runParams;
+	std::vector<tcu::TestRunStatus> results;
 
 	TestRunSummary(void) : isConformant(false)
 	{
@@ -78,6 +80,7 @@ struct TestRunSummary
 		isConformant = false;
 		configLogFilename.clear();
 		runParams.clear();
+		results.clear();
 	}
 };
 
@@ -145,6 +148,26 @@ private:
 	int			   m_sessionsPassed;
 	int			   m_sessionsFailed;
 	TestRunSummary m_summary;
+};
+
+class TestParamCollectorRunner
+{
+public:
+
+	TestParamCollectorRunner(tcu::Platform& platform, const char* testParamsFilePath, glu::ApiType type);
+	~TestParamCollectorRunner(void);
+
+	bool iterate(void);
+
+private:
+	TestParamCollectorRunner(const TestRunner& other);
+	TestParamCollectorRunner operator=(const TestRunner& other);
+
+	tcu::Platform& m_platform;
+	std::string    m_testParamsFilePath;
+	glu::ApiType   m_type;
+
+	std::vector<TestRunParams>				   m_runSessionsParams;
 };
 
 } // glcts

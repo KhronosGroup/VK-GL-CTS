@@ -342,8 +342,8 @@ using ParamsPtr = std::unique_ptr<InterfaceVariableParams>;
 class InterfaceVariablesCase : public vkt::TestCase
 {
 public:
-					InterfaceVariablesCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: vkt::TestCase	(testCtx, name, description)
+					InterfaceVariablesCase		(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(std::move(params))
 						{}
 	virtual			~InterfaceVariablesCase		(void) {}
@@ -1621,7 +1621,7 @@ for line in sys.stdin:
 
 tcu::TestCaseGroup* createMeshShaderInOutTestsEXT (tcu::TestContext& testCtx)
 {
-	GroupPtr inOutTests (new tcu::TestCaseGroup(testCtx, "in_out", "Mesh Shader Tests checking Input/Output interfaces"));
+	GroupPtr inOutTests (new tcu::TestCaseGroup(testCtx, "in_out"));
 
 	const struct
 	{
@@ -1649,7 +1649,7 @@ tcu::TestCaseGroup* createMeshShaderInOutTestsEXT (tcu::TestContext& testCtx)
 
 	for (const auto& reqs : requiredFeatures)
 	{
-		GroupPtr reqsGroup (new tcu::TestCaseGroup(testCtx, reqs.name, ""));
+		GroupPtr reqsGroup (new tcu::TestCaseGroup(testCtx, reqs.name));
 
 		// Generate the variable list according to the group requirements.
 		IfaceVarVecPtr varsPtr(new IfaceVarVec);
@@ -1693,7 +1693,7 @@ tcu::TestCaseGroup* createMeshShaderInOutTestsEXT (tcu::TestContext& testCtx)
 		for (uint32_t combIdx = 0; combIdx < kPermutations; ++combIdx)
 		{
 			const auto caseName = "permutation_" + std::to_string(combIdx);
-			GroupPtr rndGroup(new tcu::TestCaseGroup(testCtx, caseName.c_str(), ""));
+			GroupPtr rndGroup(new tcu::TestCaseGroup(testCtx, caseName.c_str()));
 
 			// Duplicate and shuffle vector.
 			IfaceVarVecPtr permutVec (new IfaceVarVec(*varsPtr));
@@ -1736,7 +1736,7 @@ tcu::TestCaseGroup* createMeshShaderInOutTestsEXT (tcu::TestContext& testCtx)
 					/*useFloat16*/	reqs.f16,
 					/*vars*/		std::move(paramsVec)));
 
-				rndGroup->addChild(new InterfaceVariablesCase(testCtx, name, "", std::move(paramsPtr)));
+				rndGroup->addChild(new InterfaceVariablesCase(testCtx, name, std::move(paramsPtr)));
 			}
 
 			reqsGroup->addChild(rndGroup.release());

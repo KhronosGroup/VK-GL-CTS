@@ -70,7 +70,7 @@ public:
 		ELEM_NUM = 6
 	};
 
-							AttachmentAccessOrderTestCase(	tcu::TestContext& context, const std::string& name, const std::string& description,
+							AttachmentAccessOrderTestCase(	tcu::TestContext& context, const std::string& name,
 															bool explicitSync, bool overlapDraws, bool overlapPrimitives, bool overlapInstances,
 															VkSampleCountFlagBits sampleCount, deUint32 inputAttachmentNum, bool integerFormat);
 	virtual					~AttachmentAccessOrderTestCase	(void);
@@ -164,10 +164,10 @@ protected:
 class AttachmentAccessOrderColorTestCase : public AttachmentAccessOrderTestCase
 {
 public:
-	AttachmentAccessOrderColorTestCase(	tcu::TestContext& context, const std::string& name, const std::string& description,
+	AttachmentAccessOrderColorTestCase(	tcu::TestContext& context, const std::string& name,
 										bool explicitSync, bool overlapDraws, bool overlapPrimitives, bool overlapInstances,
 										VkSampleCountFlagBits sampleCount, deUint32 inputAttachmentNum, bool integerFormat)
-		:AttachmentAccessOrderTestCase(	context, name, description, explicitSync, overlapDraws, overlapPrimitives, overlapInstances, sampleCount,
+		:AttachmentAccessOrderTestCase(	context, name, explicitSync, overlapDraws, overlapPrimitives, overlapInstances, sampleCount,
 										inputAttachmentNum, integerFormat)
 	{}
 
@@ -198,10 +198,10 @@ protected:
 class AttachmentAccessOrderDepthTestCase : public AttachmentAccessOrderTestCase
 {
 public:
-	AttachmentAccessOrderDepthTestCase(	tcu::TestContext& context, const std::string& name, const std::string& description,
+	AttachmentAccessOrderDepthTestCase(	tcu::TestContext& context, const std::string& name,
 										bool explicitSync, bool overlapDraws, bool overlapPrimitives, bool overlapInstances,
 										VkSampleCountFlagBits sampleCount)
-		:AttachmentAccessOrderTestCase(	context, name, description, explicitSync, overlapDraws, overlapPrimitives, overlapInstances, sampleCount,
+		:AttachmentAccessOrderTestCase(	context, name, explicitSync, overlapDraws, overlapPrimitives, overlapInstances, sampleCount,
 										1, false)
 	{}
 	virtual deUint32	getInputAttachmentNum() const
@@ -245,10 +245,10 @@ protected:
 class AttachmentAccessOrderStencilTestCase : public AttachmentAccessOrderTestCase
 {
 public:
-	AttachmentAccessOrderStencilTestCase(	tcu::TestContext& context, const std::string& name, const std::string& description,
+	AttachmentAccessOrderStencilTestCase(	tcu::TestContext& context, const std::string& name,
 											bool explicitSync, bool overlapDraws, bool overlapPrimitives, bool overlapInstances,
 											VkSampleCountFlagBits sampleCount)
-		:AttachmentAccessOrderTestCase(	context, name, description, explicitSync, overlapDraws, overlapPrimitives, overlapInstances, sampleCount,
+		:AttachmentAccessOrderTestCase(	context, name, explicitSync, overlapDraws, overlapPrimitives, overlapInstances, sampleCount,
 										1, true)
 	{}
 	virtual deUint32	getInputAttachmentNum() const
@@ -376,10 +376,10 @@ protected:
 	};
 };
 
-AttachmentAccessOrderTestCase::AttachmentAccessOrderTestCase (	tcu::TestContext& context, const std::string& name, const std::string& description,
+AttachmentAccessOrderTestCase::AttachmentAccessOrderTestCase (	tcu::TestContext& context, const std::string& name,
 																bool explicitSync, bool overlapDraws, bool overlapPrimitives, bool overlapInstances,
 																VkSampleCountFlagBits sampleCount, deUint32 inputAttachmentNum, bool integerFormat)
-	: TestCase(context, name, description)
+	: TestCase(context, name)
 	, m_inputAttachmentNum(inputAttachmentNum)
 	, m_explicitSync(explicitSync)
 	, m_overlapDraws(overlapDraws)
@@ -994,7 +994,7 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createAttachments(	int su
 			attFormat,									// VkFormat					format;
 			makeComponentMappingRGBA(),					// VkComponentMapping		components;
 			{
-				aspect,										// VkImageAspectFlags			aspectMask;
+				(VkImageAspectFlags)aspect,					// VkImageAspectFlags			aspectMask;
 				0u,											// deUint32						baseMipLevel;
 				1u,											// deUint32						mipLevels;
 				0u,											// deUint32						baseArrayLayer;
@@ -1658,18 +1658,22 @@ static void createRasterizationOrderAttachmentAccessTestVariations(	tcu::TestCon
 	const struct
 	{
 		const std::string name;
-		const std::string description;
 		bool explicitSync;
 		bool overlapDraws;
 		bool overlapPrimitives;
 		bool overlapInstances;
 	} leafTestCreateParams[] =
 	{
-		{ "multi_draw_barriers",	"Basic test with overlapping draw commands with barriers",								true,  true,  false, false,	},
-		{ "multi_draw",				"Test with overlapping draw commands without barriers",									false, true,  false, false,	},
-		{ "multi_primitives",		"Test with a draw command with overlapping primitives",									false, false, true,  false,	},
-		{ "multi_instances",		"Test with a draw command with overlapping instances",									false, false, false, true,	},
-		{ "all",					"Test with overlapping draw commands, each with overlapping primitives and instances",	false, true,  true,  true,	},
+		// Basic test with overlapping draw commands with barriers
+		{ "multi_draw_barriers",								true,  true,  false, false,	},
+		// Test with overlapping draw commands without barriers
+		{ "multi_draw",									false, true,  false, false,	},
+		// Test with a draw command with overlapping primitives
+		{ "multi_primitives",									false, false, true,  false,	},
+		// Test with a draw command with overlapping instances
+		{ "multi_instances",									false, false, false, true,	},
+		// Test with overlapping draw commands, each with overlapping primitives and instances
+		{ "all",	false, true,  true,  true,	},
 	};
 	constexpr deUint32 leafTestCreateParamsNum = sizeof(leafTestCreateParams) / sizeof(leafTestCreateParams[0]);
 
@@ -1691,14 +1695,13 @@ static void createRasterizationOrderAttachmentAccessTestVariations(	tcu::TestCon
 		stringstream desc;
 		name << prefix_name << "samples_" << AttachmentAccessOrderTestCase::getSampleNum(sampleCountValues[i]);
 		desc << prefix_desc << AttachmentAccessOrderTestCase::getSampleNum(sampleCountValues[i]) << " samples per pixel";
-		tcu::TestCaseGroup *subgr = new tcu::TestCaseGroup(testCtx, name.str().c_str(), desc.str().c_str());
+		tcu::TestCaseGroup *subgr = new tcu::TestCaseGroup(testCtx, name.str().c_str());
 
 		for (deUint32 k = 0; k < leafTestCreateParamsNum; k++)
 		{
 			if (depth)
 			{
 				subgr->addChild(new AttachmentAccessOrderDepthTestCase(	testCtx, leafTestCreateParams[k].name,
-																		leafTestCreateParams[k].description,
 																		leafTestCreateParams[k].explicitSync,
 																		leafTestCreateParams[k].overlapDraws,
 																		leafTestCreateParams[k].overlapPrimitives,
@@ -1708,7 +1711,6 @@ static void createRasterizationOrderAttachmentAccessTestVariations(	tcu::TestCon
 			else if (stencil)
 			{
 				subgr->addChild(new AttachmentAccessOrderStencilTestCase(	testCtx, leafTestCreateParams[k].name,
-																			leafTestCreateParams[k].description,
 																			leafTestCreateParams[k].explicitSync,
 																			leafTestCreateParams[k].overlapDraws,
 																			leafTestCreateParams[k].overlapPrimitives,
@@ -1718,7 +1720,6 @@ static void createRasterizationOrderAttachmentAccessTestVariations(	tcu::TestCon
 			else
 			{
 				subgr->addChild(new AttachmentAccessOrderColorTestCase(	testCtx, leafTestCreateParams[k].name,
-																		leafTestCreateParams[k].description,
 																		leafTestCreateParams[k].explicitSync,
 																		leafTestCreateParams[k].overlapDraws,
 																		leafTestCreateParams[k].overlapPrimitives,
@@ -1739,11 +1740,11 @@ static void createRasterizationOrderAttachmentAccessFormatTests(tcu::TestContext
 
 	if (integerFormat)
 	{
-		formatGr = new tcu::TestCaseGroup(testCtx, "format_integer", "Tests with an integer format" );
+		formatGr = new tcu::TestCaseGroup(testCtx, "format_integer" );
 	}
 	else
 	{
-		formatGr = new tcu::TestCaseGroup(testCtx, "format_float", "Tests with an float format" );
+		formatGr = new tcu::TestCaseGroup(testCtx, "format_float" );
 	}
 
 	for (deUint32 i = 0; i < inputNumSize; i++)
@@ -1760,13 +1761,14 @@ static void createRasterizationOrderAttachmentAccessFormatTests(tcu::TestContext
 tcu::TestCaseGroup* createRasterizationOrderAttachmentAccessTests(tcu::TestContext& testCtx)
 {
 	/* Add the color tests */
-	tcu::TestCaseGroup *gr = new tcu::TestCaseGroup(testCtx, "rasterization_order_attachment_access", "Rasterization Order Attachment access tests");
+	// Rasterization Order Attachment access tests
+	tcu::TestCaseGroup *gr = new tcu::TestCaseGroup(testCtx, "rasterization_order_attachment_access");
 	createRasterizationOrderAttachmentAccessFormatTests(testCtx, gr, false);
 	createRasterizationOrderAttachmentAccessFormatTests(testCtx, gr, true);
 
 	/* Add the D/S tests */
-	tcu::TestCaseGroup *depth_gr = new tcu::TestCaseGroup(testCtx, "depth", "Tests depth rasterization order" );
-	tcu::TestCaseGroup *stencil_gr = new tcu::TestCaseGroup(testCtx, "stencil", "Tests stencil rasterization order" );
+	tcu::TestCaseGroup *depth_gr = new tcu::TestCaseGroup(testCtx, "depth" );
+	tcu::TestCaseGroup *stencil_gr = new tcu::TestCaseGroup(testCtx, "stencil" );
 	string name_prefix = "";
 	string desc_prefix = "Tests with ";
 	createRasterizationOrderAttachmentAccessTestVariations(testCtx, depth_gr, name_prefix, desc_prefix, 1, false, true, false);

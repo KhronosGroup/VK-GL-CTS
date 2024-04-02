@@ -28,8 +28,12 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingDynamicOffsetTests.hpp
 	vktBindingMutableTests.cpp
 	vktBindingMutableTests.hpp
+	vktBindingDescriptorCombinationTests.cpp
+	vktBindingDescriptorCombinationTests.hpp
 	vktBindingDescriptorBufferTests.cpp
 	vktBindingDescriptorBufferTests.hpp
+	vktBindingStagesTests.cpp
+	vktBindingStagesTests.hpp
 	)
 
 PCH(DEQP_VK_BINDING_MODEL_SRCS ../pch.cpp)

@@ -79,7 +79,8 @@ enum TestMode
 	TM_SETUP_RATE_WITH_LINEAR_TILED_IMAGE,
 
 	TM_TWO_SUBPASS,
-	TM_MEMORY_ACCESS
+	TM_MEMORY_ACCESS,
+	TM_MAINTENANCE_5
 };
 
 struct DepthStencilParams
@@ -900,8 +901,17 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline (VkDevice device,
 	};
 
 #ifndef CTS_USES_VULKANSC
+	VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure(pNext);
 	if (useShadingRate && m_params->useDynamicRendering)
-		pipelineCreateInfo.flags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+	{
+		if (m_params->mode == TM_MAINTENANCE_5)
+		{
+			pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+			pipelineCreateInfo.pNext = &pipelineFlags2CreateInfo;
+		}
+		else
+			pipelineCreateInfo.flags |= VK_PIPELINE_CREATE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+	}
 #endif // CTS_USES_VULKANSC
 
 	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
@@ -1073,6 +1083,7 @@ tcu::TestStatus AttachmentRateInstance::iterate(void)
 		{ TM_SETUP_RATE_WITH_LINEAR_TILED_IMAGE,								&AttachmentRateInstance::runFillLinearTiledImage },
 		{ TM_TWO_SUBPASS,														&AttachmentRateInstance::runTwoSubpassMode },
 		{ TM_MEMORY_ACCESS,														&AttachmentRateInstance::runFragmentShaderMode },
+		{ TM_MAINTENANCE_5,														&AttachmentRateInstance::runFragmentShaderMode },
 	};
 
 	if ((this->*modeFuncMap.at(m_params->mode))())
@@ -1744,6 +1755,8 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 	if (transferQueueFamilyIndex == std::numeric_limits<deUint32>::max())
 		TCU_THROW(NotSupportedError, "No separate transfer queue");
 
+	if (graphicsQueueFamilyIndex == std::numeric_limits<deUint32>::max())
+		TCU_THROW(NotSupportedError, "No separate graphics queue");
 	// using queueFamilies vector to determine if sr image uses exclusiv or concurrent sharing
 	std::vector<deUint32> queueFamilies;
 	if (m_params->mode == TM_SETUP_RATE_WITH_COPYING_FROM_CONCURENT_IMAGE_USING_TRANSFER_QUEUE)
@@ -1809,7 +1822,7 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
 		};
 
 		vk::Move<VkDevice>			customDevice	= createDevice(vkp, m_context.getInstance(), vki, pd, &deviceInfo);
-		de::MovePtr<DeviceDriver>	customDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, m_context.getInstance(), *customDevice, m_context.getUsedApiVersion()));
+		de::MovePtr<DeviceDriver>	customDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, m_context.getInstance(), *customDevice, m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
 		de::MovePtr<Allocator>		customAllocator	= de::MovePtr<Allocator>(new SimpleAllocator(*customDriver, *customDevice, getPhysicalDeviceMemoryProperties(vki, pd)));
 
 		device						= *customDevice;
@@ -2356,7 +2369,7 @@ private:
 };
 
 AttachmentRateTestCase::AttachmentRateTestCase(tcu::TestContext& context, const char* name, de::SharedPtr<TestParams> params)
-	: vkt::TestCase	(context, name, "")
+	: vkt::TestCase	(context, name)
 	, m_params		(params)
 {
 }
@@ -2408,6 +2421,9 @@ void AttachmentRateTestCase::checkSupport(Context& context) const
 			TCU_THROW(NotSupportedError, "Rate not supported");
 		}
 	}
+
+	if (m_params->mode == TM_MAINTENANCE_5)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
 	VkFormatFeatureFlags requiredFeatures = 0;
 	if (m_params->mode == TM_SETUP_RATE_WITH_ATOMICS_IN_COMPUTE_SHADER)
@@ -2508,7 +2524,7 @@ void AttachmentRateTestCase::initPrograms(SourceCollections& programCollection) 
 		programCollection.glslSources.add("vert") << glu::VertexSource(vertTemplate.specialize(specializationMap));
 	}
 
-	if ((m_params->mode == TM_SETUP_RATE_WITH_FRAGMENT_SHADER) || (m_params->mode == TM_MEMORY_ACCESS))
+	if ((m_params->mode == TM_SETUP_RATE_WITH_FRAGMENT_SHADER) || (m_params->mode == TM_MEMORY_ACCESS) || (m_params->mode == TM_MAINTENANCE_5))
 	{
 		// use large triangle that will cover whole color buffer
 		specializationMap["SCALE"]		= "9.0";
@@ -2611,15 +2627,15 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 		{ TM_SETUP_RATE_WITH_LINEAR_TILED_IMAGE,								"setup_with_linear_tiled_image" },
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "attachment_rate", ""));
+	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "attachment_rate"));
 
 	for (const auto& testModeParam : testModeParams)
 	{
-		de::MovePtr<tcu::TestCaseGroup> testModeGroup(new tcu::TestCaseGroup(testCtx, testModeParam.name, ""));
+		de::MovePtr<tcu::TestCaseGroup> testModeGroup(new tcu::TestCaseGroup(testCtx, testModeParam.name));
 
 		for (const auto& srFormat : srFormats)
 		{
-			de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, srFormat.name, ""));
+			de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, srFormat.name));
 			for (const auto& srRate : srRates)
 			{
 				formatGroup->addChild(new AttachmentRateTestCase(testCtx, srRate.name, de::SharedPtr<TestParams>(
@@ -2678,9 +2694,9 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 		mainGroup->addChild(testModeGroup.release());
 	}
 
+	de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 	if (!groupParams->useDynamicRendering)
 	{
-		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", ""));
 		miscGroup->addChild(new AttachmentRateTestCase(testCtx, "two_subpass", de::SharedPtr<TestParams>(
 			new TestParams
 			{
@@ -2736,8 +2752,26 @@ void createAttachmentRateTests(tcu::TestContext& testCtx, tcu::TestCaseGroup* pa
 				)));
 			}
 		}
-		mainGroup->addChild(miscGroup.release());
 	}
+	else
+	{
+#ifndef CTS_USES_VULKANSC
+		miscGroup->addChild(new AttachmentRateTestCase(testCtx, "maintenance5", de::SharedPtr<TestParams>(
+			new TestParams
+			{
+				TM_MAINTENANCE_5,								// TestMode			mode;
+				VK_FORMAT_R8_UINT,								// VkFormat			srFormat;
+				{1, 1},											// VkExtent2D		srRate;
+				true,											// bool				useDynamicRendering;
+				false,											// bool				useImagelessFramebuffer;
+				false,											// bool				useNullShadingRateImage;
+				tcu::Nothing									// OptDSParams		dsParams;
+			}
+		)));
+#endif
+	}
+	if (!miscGroup->empty())
+		mainGroup->addChild(miscGroup.release());
 
 	parentGroup->addChild(mainGroup.release());
 }

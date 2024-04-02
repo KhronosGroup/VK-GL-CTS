@@ -78,7 +78,6 @@ public:
 
 										InputAssemblyTest		(tcu::TestContext&					testContext,
 																 const std::string&					name,
-																 const std::string&					description,
 																 const PipelineConstructionType		pipelineConstructionType,
 																 VkPrimitiveTopology				primitiveTopology,
 																 int								primitiveCount,
@@ -113,7 +112,6 @@ class PrimitiveTopologyTest : public InputAssemblyTest
 public:
 										PrimitiveTopologyTest	(tcu::TestContext&			testContext,
 																 const std::string&			name,
-																 const std::string&			description,
 																 PipelineConstructionType	pipelineConstructionType,
 																 VkPrimitiveTopology		primitiveTopology,
 																 VkIndexType				indexType);
@@ -135,7 +133,6 @@ class PrimitiveRestartTest : public InputAssemblyTest
 public:
 										PrimitiveRestartTest	(tcu::TestContext&					testContext,
 																 const std::string&					name,
-																 const std::string&					description,
 																 const PipelineConstructionType		pipelineConstructionType,
 																 VkPrimitiveTopology				primitiveTopology,
 																 VkIndexType						indexType,
@@ -244,13 +241,12 @@ const deUint8 InputAssemblyTest::s_restartIndex8	= ~((deUint8)0u);
 
 InputAssemblyTest::InputAssemblyTest (tcu::TestContext&					testContext,
 									  const std::string&				name,
-									  const std::string&				description,
 									  const PipelineConstructionType	pipelineConstructionType,
 									  VkPrimitiveTopology				primitiveTopology,
 									  int								primitiveCount,
 									  bool								testPrimitiveRestart,
 									  VkIndexType						indexType)
-	: vkt::TestCase				(testContext, name, description)
+	: vkt::TestCase				(testContext, name)
 	, m_primitiveTopology		(primitiveTopology)
 	, m_primitiveCount(primitiveCount)
 	, m_pipelineConstructionType(pipelineConstructionType)
@@ -261,8 +257,11 @@ InputAssemblyTest::InputAssemblyTest (tcu::TestContext&					testContext,
 
 void InputAssemblyTest::checkSupport (Context& context) const
 {
-	if (m_indexType == VK_INDEX_TYPE_UINT8_EXT)
-		context.requireDeviceFunctionality("VK_EXT_index_type_uint8");
+	if (m_indexType == VK_INDEX_TYPE_UINT8_EXT) {
+		if (!context.isDeviceFunctionalitySupported("VK_KHR_index_type_uint8") && !context.isDeviceFunctionalitySupported("VK_EXT_index_type_uint8")) {
+			TCU_THROW(NotSupportedError, "VK_KHR_index_type_uint8 and VK_EXT_index_type_uint8 is not supported");
+		}
+	}
 
 	switch (m_primitiveTopology)
 	{
@@ -396,11 +395,10 @@ deUint32 InputAssemblyTest::getRestartIndex (VkIndexType indexType)
 
 PrimitiveTopologyTest::PrimitiveTopologyTest (tcu::TestContext&			testContext,
 											  const std::string&		name,
-											  const std::string&		description,
 											  PipelineConstructionType	pipelineConstructionType,
 											  VkPrimitiveTopology		primitiveTopology,
 											  VkIndexType				indexType)
-	: InputAssemblyTest	(testContext, name, description, pipelineConstructionType, primitiveTopology, 10, false, indexType)
+	: InputAssemblyTest	(testContext, name, pipelineConstructionType, primitiveTopology, 10, false, indexType)
 {
 }
 
@@ -741,13 +739,12 @@ void PrimitiveTopologyTest::createBufferData (VkPrimitiveTopology topology, int 
 
 PrimitiveRestartTest::PrimitiveRestartTest (tcu::TestContext&			testContext,
 											const std::string&			name,
-											const std::string&			description,
 											PipelineConstructionType	pipelineConstructionType,
 											VkPrimitiveTopology			primitiveTopology,
 											VkIndexType					indexType,
 											RestartType					restartType)
 
-	: InputAssemblyTest	(testContext, name, description, pipelineConstructionType, primitiveTopology, 10, true, indexType)
+	: InputAssemblyTest	(testContext, name, pipelineConstructionType, primitiveTopology, 10, true, indexType)
 	, m_restartType(restartType)
 {
 	deUint32 restartPrimitives[] = { 1, 5 };
@@ -1658,11 +1655,11 @@ std::string getPrimitiveTopologyCaseName (VkPrimitiveTopology topology)
 
 de::MovePtr<tcu::TestCaseGroup> createPrimitiveTopologyTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> primitiveTopologyTests (new tcu::TestCaseGroup(testCtx, "primitive_topology", ""));
+	de::MovePtr<tcu::TestCaseGroup> primitiveTopologyTests (new tcu::TestCaseGroup(testCtx, "primitive_topology"));
 
-	de::MovePtr<tcu::TestCaseGroup> indexUint16Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint16", ""));
-	de::MovePtr<tcu::TestCaseGroup> indexUint32Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint32", ""));
-	de::MovePtr<tcu::TestCaseGroup> indexUint8Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint8", ""));
+	de::MovePtr<tcu::TestCaseGroup> indexUint16Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint16"));
+	de::MovePtr<tcu::TestCaseGroup> indexUint32Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint32"));
+	de::MovePtr<tcu::TestCaseGroup> indexUint8Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint8"));
 
 	for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(InputAssemblyTest::s_primitiveTopologies); topologyNdx++)
 	{
@@ -1670,21 +1667,18 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveTopologyTests (tcu::TestContext& 
 
 		indexUint16Tests->addChild(new PrimitiveTopologyTest(testCtx,
 															 getPrimitiveTopologyCaseName(topology),
-															 "",
 															 pipelineConstructionType,
 															 topology,
 															 VK_INDEX_TYPE_UINT16));
 
 		indexUint32Tests->addChild(new PrimitiveTopologyTest(testCtx,
 															 getPrimitiveTopologyCaseName(topology),
-															 "",
 															 pipelineConstructionType,
 															 topology,
 															 VK_INDEX_TYPE_UINT32));
 
 		indexUint8Tests->addChild(new PrimitiveTopologyTest(testCtx,
 															 getPrimitiveTopologyCaseName(topology),
-															 "",
 															 pipelineConstructionType,
 															 topology,
 															 VK_INDEX_TYPE_UINT8_EXT));
@@ -1717,11 +1711,11 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 		VK_PRIMITIVE_TOPOLOGY_PATCH_LIST
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> primitiveRestartTests (new tcu::TestCaseGroup(testCtx, "primitive_restart", "Restarts indices of "));
+	de::MovePtr<tcu::TestCaseGroup> primitiveRestartTests (new tcu::TestCaseGroup(testCtx, "primitive_restart"));
 
-	de::MovePtr<tcu::TestCaseGroup> indexUint16Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint16", ""));
-	de::MovePtr<tcu::TestCaseGroup> indexUint32Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint32", ""));
-	de::MovePtr<tcu::TestCaseGroup> indexUint8Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint8", ""));
+	de::MovePtr<tcu::TestCaseGroup> indexUint16Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint16"));
+	de::MovePtr<tcu::TestCaseGroup> indexUint32Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint32"));
+	de::MovePtr<tcu::TestCaseGroup> indexUint8Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint8"));
 
 	constexpr struct RestartTest
 	{
@@ -1745,7 +1739,6 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 			}
 			indexUint16Tests->addChild(new PrimitiveRestartTest(testCtx,
 																restartTypes[useRestartNdx].name + getPrimitiveTopologyCaseName(topology),
-																"",
 																pipelineConstructionType,
 																topology,
 																VK_INDEX_TYPE_UINT16,
@@ -1753,7 +1746,6 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 
 			indexUint32Tests->addChild(new PrimitiveRestartTest(testCtx,
 																restartTypes[useRestartNdx].name + getPrimitiveTopologyCaseName(topology),
-																"",
 																pipelineConstructionType,
 																topology,
 																VK_INDEX_TYPE_UINT32,
@@ -1761,7 +1753,6 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 
 			indexUint8Tests->addChild(new PrimitiveRestartTest(testCtx,
 																restartTypes[useRestartNdx].name + getPrimitiveTopologyCaseName(topology),
-																"",
 																pipelineConstructionType,
 																topology,
 																VK_INDEX_TYPE_UINT8_EXT,
@@ -1796,9 +1787,9 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 		for (auto& test : tests)
 		{
 			std::string testName = "restart_disabled_" + test.name;
-			indexUint16Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", dataDir.c_str(), testName + "_uint16.amber", test.requirements));
-			test.requirements.push_back("VK_EXT_index_type_uint8");
-			indexUint8Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), "", dataDir.c_str(), testName + "_uint8.amber", test.requirements));
+			indexUint16Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), dataDir.c_str(), testName + "_uint16.amber", test.requirements));
+			test.requirements.push_back("IndexTypeUint8Features.indexTypeUint8");
+			indexUint8Tests->addChild(cts_amber::createAmberTestCase(testCtx, testName.c_str(), dataDir.c_str(), testName + "_uint8.amber", test.requirements));
 		}
 	}
 
@@ -1814,7 +1805,7 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 
 tcu::TestCaseGroup* createInputAssemblyTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup>		inputAssemblyTests (new tcu::TestCaseGroup(testCtx, "input_assembly", "Input assembly tests"));
+	de::MovePtr<tcu::TestCaseGroup>		inputAssemblyTests (new tcu::TestCaseGroup(testCtx, "input_assembly"));
 
 	inputAssemblyTests->addChild(createPrimitiveTopologyTests(testCtx, pipelineConstructionType).release());
 #ifndef CTS_USES_VULKANSC

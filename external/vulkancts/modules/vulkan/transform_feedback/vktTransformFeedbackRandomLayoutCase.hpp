@@ -58,7 +58,6 @@ class RandomInterfaceBlockCase : public InterfaceBlockCase
 public:
 								RandomInterfaceBlockCase	(tcu::TestContext&		testCtx,
 															 const std::string&		name,
-															 const std::string&		description,
 															 const TestStageFlags	testStageFlags,
 															 deUint32				features,
 															 deUint32				seed);

@@ -81,6 +81,9 @@ class SingletonDevice
 {
 	SingletonDevice	(Context& context)
 		: m_context(context)
+#ifdef CTS_USES_VULKANSC
+		, m_customInstance(createCustomInstanceFromContext(context))
+#endif // CTS_USES_VULKANSC
 		, m_logicalDevice()
 	{
 		// Note we are already checking the needed features are available in checkSupport().
@@ -155,10 +158,14 @@ class SingletonDevice
 		if (FEATURES & RF_PIPELINE_ROBUSTNESS)
 			features2.features.robustBufferAccess = VK_FALSE;
 #endif
-		m_logicalDevice = createRobustBufferAccessDevice(context, &features2);
+		m_logicalDevice = createRobustBufferAccessDevice(context,
+#ifdef CTS_USES_VULKANSC
+														m_customInstance,
+#endif // CTS_USES_VULKANSC
+														&features2);
 
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *m_logicalDevice, context.getUsedApiVersion()));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), instance, *m_logicalDevice, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), instance, *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
@@ -191,10 +198,13 @@ public:
 
 private:
 	const Context&								m_context;
-	Move<vk::VkDevice>							m_logicalDevice;
 #ifndef CTS_USES_VULKANSC
+	Move<vk::VkDevice>							m_logicalDevice;
 	de::MovePtr<vk::DeviceDriver>				m_deviceDriver;
 #else
+	// Construction needs to happen in this exact order to ensure proper resource destruction
+	CustomInstance								m_customInstance;
+	Move<vk::VkDevice>							m_logicalDevice;
 	de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter>	m_deviceDriver;
 #endif // CTS_USES_VULKANSC
 
@@ -362,7 +372,7 @@ RobustnessExtsTestInstance::~RobustnessExtsTestInstance (void)
 class RobustnessExtsTestCase : public TestCase
 {
 	public:
-								RobustnessExtsTestCase		(tcu::TestContext& context, const std::string& name, const std::string& desc, const CaseDef data);
+								RobustnessExtsTestCase		(tcu::TestContext& context, const std::string& name, const CaseDef data);
 								~RobustnessExtsTestCase	(void);
 	virtual	void				initPrograms					(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance					(Context& context) const;
@@ -372,8 +382,8 @@ private:
 	CaseDef					m_data;
 };
 
-RobustnessExtsTestCase::RobustnessExtsTestCase (tcu::TestContext& context, const std::string& name, const std::string& desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+RobustnessExtsTestCase::RobustnessExtsTestCase (tcu::TestContext& context, const std::string& name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -615,13 +625,20 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "Vulkan 1.1 not supported");
 
 #ifndef CTS_USES_VULKANSC
-	if ((m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) &&
-		!m_data.formatQualifier)
+	if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE && !m_data.formatQualifier)
 	{
 		const VkFormatProperties3 formatProperties = context.getFormatProperties(m_data.format);
 		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
 			TCU_THROW(NotSupportedError, "Format does not support reading without format");
 		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+			TCU_THROW(NotSupportedError, "Format does not support writing without format");
+	}
+	else if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER && !m_data.formatQualifier)
+	{
+		const VkFormatProperties3 formatProperties = context.getFormatProperties(m_data.format);
+		if (!(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
+			TCU_THROW(NotSupportedError, "Format does not support reading without format");
+		if (!(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
 			TCU_THROW(NotSupportedError, "Format does not support writing without format");
 	}
 #else
@@ -3286,7 +3303,7 @@ protected:
 class OutOfBoundsStrideCase : public vkt::TestCase
 {
 public:
-					OutOfBoundsStrideCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const OutOfBoundsStrideParams& params);
+					OutOfBoundsStrideCase	(tcu::TestContext& testCtx, const std::string& name, const OutOfBoundsStrideParams& params);
 	virtual			~OutOfBoundsStrideCase	(void) {}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -3297,8 +3314,8 @@ protected:
 	const OutOfBoundsStrideParams m_params;
 };
 
-OutOfBoundsStrideCase::OutOfBoundsStrideCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const OutOfBoundsStrideParams& params)
-	: vkt::TestCase		(testCtx, name, description)
+OutOfBoundsStrideCase::OutOfBoundsStrideCase (tcu::TestContext& testCtx, const std::string& name, const OutOfBoundsStrideParams& params)
+	: vkt::TestCase		(testCtx, name)
 	, m_params			(params)
 {
 #ifdef CTS_USES_VULKANSC
@@ -3558,166 +3575,169 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 	{
 		deUint32				count;
 		const char*				name;
-		const char*				description;
 	} TestGroupCase;
 
 	TestGroupCase fmtCases[] =
 	{
-		{ VK_FORMAT_R32_SINT,				"r32i",		""		},
-		{ VK_FORMAT_R32_UINT,				"r32ui",	""		},
-		{ VK_FORMAT_R32_SFLOAT,				"r32f",		""		},
-		{ VK_FORMAT_R32G32_SINT,			"rg32i",	""		},
-		{ VK_FORMAT_R32G32_UINT,			"rg32ui",	""		},
-		{ VK_FORMAT_R32G32_SFLOAT,			"rg32f",	""		},
-		{ VK_FORMAT_R32G32B32A32_SINT,		"rgba32i",	""		},
-		{ VK_FORMAT_R32G32B32A32_UINT,		"rgba32ui",	""		},
-		{ VK_FORMAT_R32G32B32A32_SFLOAT,	"rgba32f",	""		},
-		{ VK_FORMAT_R64_SINT,				"r64i",		""		},
-		{ VK_FORMAT_R64_UINT,				"r64ui",	""		},
+		{ VK_FORMAT_R32_SINT,				"r32i"},
+		{ VK_FORMAT_R32_UINT,				"r32ui"},
+		{ VK_FORMAT_R32_SFLOAT,				"r32f"},
+		{ VK_FORMAT_R32G32_SINT,			"rg32i"},
+		{ VK_FORMAT_R32G32_UINT,			"rg32ui"},
+		{ VK_FORMAT_R32G32_SFLOAT,			"rg32f"},
+		{ VK_FORMAT_R32G32B32A32_SINT,		"rgba32i"},
+		{ VK_FORMAT_R32G32B32A32_UINT,		"rgba32ui"},
+		{ VK_FORMAT_R32G32B32A32_SFLOAT,	"rgba32f"},
+		{ VK_FORMAT_R64_SINT,				"r64i"},
+		{ VK_FORMAT_R64_UINT,				"r64ui"},
 	};
 
 	TestGroupCase fullDescCases[] =
 	{
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				"uniform_buffer",			""		},
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				"storage_buffer",			""		},
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,		"uniform_buffer_dynamic",	""		},
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,		"storage_buffer_dynamic",	""		},
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,			"uniform_texel_buffer",		""		},
-		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,			"storage_texel_buffer",		""		},
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,					"storage_image",			""		},
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		"sampled_image",			""		},
-		{ VERTEX_ATTRIBUTE_FETCH,							"vertex_attribute_fetch",	""		},
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				"uniform_buffer"},
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				"storage_buffer"},
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,		"uniform_buffer_dynamic"},
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,		"storage_buffer_dynamic"},
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,			"uniform_texel_buffer"},
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,			"storage_texel_buffer"},
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,					"storage_image"},
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		"sampled_image"},
+		{ VERTEX_ATTRIBUTE_FETCH,							"vertex_attribute_fetch"},
 	};
 
 	TestGroupCase imgDescCases[] =
 	{
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,					"storage_image",			""		},
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		"sampled_image",			""		},
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,					"storage_image"},
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		"sampled_image"},
 	};
 
 	TestGroupCase fullLenCases32Bit[] =
 	{
-		{ ~0U,			"null_descriptor",	""		},
-		{ 0,			"img",				""		},
-		{ 4,			"len_4",			""		},
-		{ 8,			"len_8",			""		},
-		{ 12,			"len_12",			""		},
-		{ 16,			"len_16",			""		},
-		{ 20,			"len_20",			""		},
-		{ 31,			"len_31",			""		},
-		{ 32,			"len_32",			""		},
-		{ 33,			"len_33",			""		},
-		{ 35,			"len_35",			""		},
-		{ 36,			"len_36",			""		},
-		{ 39,			"len_39",			""		},
-		{ 40,			"len_41",			""		},
-		{ 252,			"len_252",			""		},
-		{ 256,			"len_256",			""		},
-		{ 260,			"len_260",			""		},
+		{ ~0U,			"null_descriptor"},
+		{ 0,			"img"},
+		{ 4,			"len_4"},
+		{ 8,			"len_8"},
+		{ 12,			"len_12"},
+		{ 16,			"len_16"},
+		{ 20,			"len_20"},
+		{ 31,			"len_31"},
+		{ 32,			"len_32"},
+		{ 33,			"len_33"},
+		{ 35,			"len_35"},
+		{ 36,			"len_36"},
+		{ 39,			"len_39"},
+		{ 40,			"len_41"},
+		{ 252,			"len_252"},
+		{ 256,			"len_256"},
+		{ 260,			"len_260"},
 	};
 
 	TestGroupCase fullLenCases64Bit[] =
 	{
-		{ ~0U,			"null_descriptor",	""		},
-		{ 0,			"img",				""		},
-		{ 8,			"len_8",			""		},
-		{ 16,			"len_16",			""		},
-		{ 24,			"len_24",			""		},
-		{ 32,			"len_32",			""		},
-		{ 40,			"len_40",			""		},
-		{ 62,			"len_62",			""		},
-		{ 64,			"len_64",			""		},
-		{ 66,			"len_66",			""		},
-		{ 70,			"len_70",			""		},
-		{ 72,			"len_72",			""		},
-		{ 78,			"len_78",			""		},
-		{ 80,			"len_80",			""		},
-		{ 504,			"len_504",			""		},
-		{ 512,			"len_512",			""		},
-		{ 520,			"len_520",			""		},
+		{ ~0U,			"null_descriptor"},
+		{ 0,			"img"},
+		{ 8,			"len_8"},
+		{ 16,			"len_16"},
+		{ 24,			"len_24"},
+		{ 32,			"len_32"},
+		{ 40,			"len_40"},
+		{ 62,			"len_62"},
+		{ 64,			"len_64"},
+		{ 66,			"len_66"},
+		{ 70,			"len_70"},
+		{ 72,			"len_72"},
+		{ 78,			"len_78"},
+		{ 80,			"len_80"},
+		{ 504,			"len_504"},
+		{ 512,			"len_512"},
+		{ 520,			"len_520"},
 	};
 
 	TestGroupCase imgLenCases[] =
 	{
-		{ 0,	"img",	""		},
+		{ 0,	"img"},
 	};
 
 	TestGroupCase viewCases[] =
 	{
-		{ VK_IMAGE_VIEW_TYPE_1D,			"1d",			""		},
-		{ VK_IMAGE_VIEW_TYPE_2D,			"2d",			""		},
-		{ VK_IMAGE_VIEW_TYPE_3D,			"3d",			""		},
-		{ VK_IMAGE_VIEW_TYPE_CUBE,			"cube",			""		},
-		{ VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array",		""		},
-		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array",		""		},
-		{ VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array",	""		},
+		{ VK_IMAGE_VIEW_TYPE_1D,			"1d"},
+		{ VK_IMAGE_VIEW_TYPE_2D,			"2d"},
+		{ VK_IMAGE_VIEW_TYPE_3D,			"3d"},
+		{ VK_IMAGE_VIEW_TYPE_CUBE,			"cube"},
+		{ VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array"},
+		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array"},
+		{ VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array"},
 	};
 
 	TestGroupCase sampCases[] =
 	{
-		{ VK_SAMPLE_COUNT_1_BIT,			"samples_1",	""		},
-		{ VK_SAMPLE_COUNT_4_BIT,			"samples_4",	""		},
+		{ VK_SAMPLE_COUNT_1_BIT,			"samples_1"},
+		{ VK_SAMPLE_COUNT_4_BIT,			"samples_4"},
 	};
 
 	TestGroupCase stageCases[] =
 	{
-		{ STAGE_COMPUTE,	"comp",		"compute"	},
-		{ STAGE_FRAGMENT,	"frag",		"fragment"	},
-		{ STAGE_VERTEX,		"vert",		"vertex"	},
+		// compute
+		{ STAGE_COMPUTE,	"comp"},
+		// fragment
+		{ STAGE_FRAGMENT,	"frag"},
+		// vertex
+		{ STAGE_VERTEX,		"vert"},
 #ifndef CTS_USES_VULKANSC
-		{ STAGE_RAYGEN,		"rgen",		"raygen"	},
+		// raygen
+		{ STAGE_RAYGEN,		"rgen"},
 #endif
 	};
 
 	TestGroupCase volCases[] =
 	{
-		{ 0,			"nonvolatile",	""		},
-		{ 1,			"volatile",		""		},
+		{ 0,			"nonvolatile"},
+		{ 1,			"volatile"},
 	};
 
 	TestGroupCase unrollCases[] =
 	{
-		{ 0,			"dontunroll",	""		},
-		{ 1,			"unroll",		""		},
+		{ 0,			"dontunroll"},
+		{ 1,			"unroll"},
 	};
 
 	TestGroupCase tempCases[] =
 	{
-		{ 0,			"notemplate",	""		},
+		{ 0,			"notemplate"},
 #ifndef CTS_USES_VULKANSC
-		{ 1,			"template",		""		},
+		{ 1,			"template"},
 #endif
 	};
 
 	TestGroupCase pushCases[] =
 	{
-		{ 0,			"bind",			""		},
+		{ 0,			"bind"},
 #ifndef CTS_USES_VULKANSC
-		{ 1,			"push",			""		},
+		{ 1,			"push"},
 #endif
 	};
 
 	TestGroupCase fmtQualCases[] =
 	{
-		{ 0,			"no_fmt_qual",	""		},
-		{ 1,			"fmt_qual",		""		},
+		{ 0,			"no_fmt_qual"},
+		{ 1,			"fmt_qual"},
 	};
 
 	TestGroupCase readOnlyCases[] =
 	{
-		{ 0,			"readwrite",	""		},
-		{ 1,			"readonly",		""		},
+		{ 0,			"readwrite"},
+		{ 1,			"readonly"},
 	};
 
 	for (int pushNdx = 0; pushNdx < DE_LENGTH_OF_ARRAY(pushCases); pushNdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup> pushGroup(new tcu::TestCaseGroup(testCtx, pushCases[pushNdx].name, pushCases[pushNdx].name));
+		de::MovePtr<tcu::TestCaseGroup> pushGroup(new tcu::TestCaseGroup(testCtx, pushCases[pushNdx].name));
 		for (int tempNdx = 0; tempNdx < DE_LENGTH_OF_ARRAY(tempCases); tempNdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup> tempGroup(new tcu::TestCaseGroup(testCtx, tempCases[tempNdx].name, tempCases[tempNdx].name));
+			de::MovePtr<tcu::TestCaseGroup> tempGroup(new tcu::TestCaseGroup(testCtx, tempCases[tempNdx].name));
 			for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(fmtCases); fmtNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup> fmtGroup(new tcu::TestCaseGroup(testCtx, fmtCases[fmtNdx].name, fmtCases[fmtNdx].name));
+				de::MovePtr<tcu::TestCaseGroup> fmtGroup(new tcu::TestCaseGroup(testCtx, fmtCases[fmtNdx].name));
 
 				// Avoid too much duplication by excluding certain test cases
 				if (pipelineRobustness &&
@@ -3730,7 +3750,7 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 
 				for (int unrollNdx = 0; unrollNdx < DE_LENGTH_OF_ARRAY(unrollCases); unrollNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup> unrollGroup(new tcu::TestCaseGroup(testCtx, unrollCases[unrollNdx].name, unrollCases[unrollNdx].name));
+					de::MovePtr<tcu::TestCaseGroup> unrollGroup(new tcu::TestCaseGroup(testCtx, unrollCases[unrollNdx].name));
 
 					// Avoid too much duplication by excluding certain test cases
 					if (unrollNdx > 0 && pipelineRobustness)
@@ -3738,14 +3758,14 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 
 					for (int volNdx = 0; volNdx < DE_LENGTH_OF_ARRAY(volCases); volNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup> volGroup(new tcu::TestCaseGroup(testCtx, volCases[volNdx].name, volCases[volNdx].name));
+						de::MovePtr<tcu::TestCaseGroup> volGroup(new tcu::TestCaseGroup(testCtx, volCases[volNdx].name));
 
 						int numDescCases = robustness2 ? DE_LENGTH_OF_ARRAY(fullDescCases) : DE_LENGTH_OF_ARRAY(imgDescCases);
 						TestGroupCase *descCases = robustness2 ? fullDescCases : imgDescCases;
 
 						for (int descNdx = 0; descNdx < numDescCases; descNdx++)
 						{
-							de::MovePtr<tcu::TestCaseGroup> descGroup(new tcu::TestCaseGroup(testCtx, descCases[descNdx].name, descCases[descNdx].name));
+							de::MovePtr<tcu::TestCaseGroup> descGroup(new tcu::TestCaseGroup(testCtx, descCases[descNdx].name));
 
 							// Avoid too much duplication by excluding certain test cases
 							if (pipelineRobustness &&
@@ -3757,7 +3777,7 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 
 							for (int roNdx = 0; roNdx < DE_LENGTH_OF_ARRAY(readOnlyCases); roNdx++)
 							{
-								de::MovePtr<tcu::TestCaseGroup> rwGroup(new tcu::TestCaseGroup(testCtx, readOnlyCases[roNdx].name, readOnlyCases[roNdx].name));
+								de::MovePtr<tcu::TestCaseGroup> rwGroup(new tcu::TestCaseGroup(testCtx, readOnlyCases[roNdx].name));
 
 								// readonly cases are just for storage_buffer
 								if (readOnlyCases[roNdx].count != 0 &&
@@ -3773,7 +3793,7 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 
 								for (int fmtQualNdx = 0; fmtQualNdx < DE_LENGTH_OF_ARRAY(fmtQualCases); fmtQualNdx++)
 								{
-									de::MovePtr<tcu::TestCaseGroup> fmtQualGroup(new tcu::TestCaseGroup(testCtx, fmtQualCases[fmtQualNdx].name, fmtQualCases[fmtQualNdx].name));
+									de::MovePtr<tcu::TestCaseGroup> fmtQualGroup(new tcu::TestCaseGroup(testCtx, fmtQualCases[fmtQualNdx].name));
 
 									// format qualifier is only used for storage image and storage texel buffers
 									if (fmtQualCases[fmtQualNdx].count &&
@@ -3821,14 +3841,22 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 											continue;
 
 
-										de::MovePtr<tcu::TestCaseGroup> lenGroup(new tcu::TestCaseGroup(testCtx, lenCases[lenNdx].name, lenCases[lenNdx].name));
+										de::MovePtr<tcu::TestCaseGroup> lenGroup(new tcu::TestCaseGroup(testCtx, lenCases[lenNdx].name));
 										for (int sampNdx = 0; sampNdx < DE_LENGTH_OF_ARRAY(sampCases); sampNdx++)
 										{
-											de::MovePtr<tcu::TestCaseGroup> sampGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name, sampCases[sampNdx].name));
+											de::MovePtr<tcu::TestCaseGroup> sampGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name));
 
 											// Avoid too much duplication by excluding certain test cases
 											if (pipelineRobustness && sampCases[sampNdx].count != VK_SAMPLE_COUNT_1_BIT)
 											    continue;
+
+											// Buffers don't support different sample counts at all
+											if (sampCases[sampNdx].count != VK_SAMPLE_COUNT_1_BIT &&
+												descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE &&
+												descCases[descNdx].count != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+											{
+												continue;
+											}
 
 											for (int viewNdx = 0; viewNdx < DE_LENGTH_OF_ARRAY(viewCases); viewNdx++)
 											{
@@ -3853,7 +3881,7 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 													continue;
 												}
 
-												de::MovePtr<tcu::TestCaseGroup> viewGroup(new tcu::TestCaseGroup(testCtx, viewCases[viewNdx].name, viewCases[viewNdx].name));
+												de::MovePtr<tcu::TestCaseGroup> viewGroup(new tcu::TestCaseGroup(testCtx, viewCases[viewNdx].name));
 												for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
 												{
 													Stage currentStage = static_cast<Stage>(stageCases[stageNdx].count);
@@ -3923,8 +3951,8 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 															(bool)(readOnlyCases[roNdx].count == 1),						// bool readOnly;
 														};
 
-														const auto nameDesc = stageCases[stageNdx].name + getGPLSuffix(pipelineRobustnessCase);
-														viewGroup->addChild(new RobustnessExtsTestCase(testCtx, nameDesc, nameDesc, c));
+														const auto name = stageCases[stageNdx].name + getGPLSuffix(pipelineRobustnessCase);
+														viewGroup->addChild(new RobustnessExtsTestCase(testCtx, name, c));
 													}
 												}
 												sampGroup->addChild(viewGroup.release());
@@ -3962,7 +3990,7 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 
 	if (robustness2)
 	{
-		de::MovePtr<tcu::TestCaseGroup> miscGroup (new tcu::TestCaseGroup(testCtx, "misc", "Miscellaneous robustness tests"));
+		de::MovePtr<tcu::TestCaseGroup> miscGroup (new tcu::TestCaseGroup(testCtx, "misc"));
 
 		for (const auto dynamicStride : { false, true })
 		{
@@ -3970,7 +3998,7 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 			const std::string				nameSuffix	(dynamicStride ? "_dynamic_stride" : "");
 			const std::string				testName	("out_of_bounds_stride" + nameSuffix);
 
-			miscGroup->addChild(new OutOfBoundsStrideCase(testCtx, testName, "Test in-bounds attribute in out-of-bounds stride", params));
+			miscGroup->addChild(new OutOfBoundsStrideCase(testCtx, testName, params));
 		}
 
 		group->addChild(miscGroup.release());
@@ -3992,13 +4020,13 @@ static void createPipelineRobustnessTests (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
-	tcu::TestCaseGroup *robustness2Group = new tcu::TestCaseGroup(testCtx, "robustness2", "robustness2");
+	tcu::TestCaseGroup *robustness2Group = new tcu::TestCaseGroup(testCtx, "robustness2");
 
 	createTests(robustness2Group, /*robustness2=*/true, /*pipelineRobustness=*/true);
 
 	group->addChild(robustness2Group);
 
-	tcu::TestCaseGroup *imageRobustness2Group = new tcu::TestCaseGroup(testCtx, "image_robustness", "image_robustness");
+	tcu::TestCaseGroup *imageRobustness2Group = new tcu::TestCaseGroup(testCtx, "image_robustness");
 
 	createTests(imageRobustness2Group, /*robustness2=*/false, /*pipelineRobustness=*/true);
 
@@ -4018,20 +4046,20 @@ static void cleanupGroup (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createRobustness2Tests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "robustness2", "VK_EXT_robustness2 tests",
+	return createTestGroup(testCtx, "robustness2",
 							createRobustness2Tests, cleanupGroup);
 }
 
 tcu::TestCaseGroup* createImageRobustnessTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "image_robustness", "VK_EXT_image_robustness tests",
+	return createTestGroup(testCtx, "image_robustness",
 							createImageRobustnessTests, cleanupGroup);
 }
 
 #ifndef CTS_USES_VULKANSC
 tcu::TestCaseGroup* createPipelineRobustnessTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "pipeline_robustness", "VK_EXT_pipeline_robustness tests",
+	return createTestGroup(testCtx, "pipeline_robustness",
 							createPipelineRobustnessTests, cleanupGroup);
 }
 #endif

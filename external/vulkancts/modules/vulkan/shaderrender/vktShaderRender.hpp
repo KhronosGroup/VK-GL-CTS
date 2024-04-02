@@ -287,7 +287,6 @@ class ShaderRenderCase : public vkt::TestCase
 public:
 													ShaderRenderCase	(tcu::TestContext&			testCtx,
 																		 const std::string&			name,
-																		 const std::string&			description,
 																		 const bool					isVertexCase,
 																		 const ShaderEvalFunc		evalFunc,
 																		 const UniformSetup*		uniformSetup,
@@ -295,7 +294,6 @@ public:
 
 													ShaderRenderCase	(tcu::TestContext&			testCtx,
 																		 const std::string&			name,
-																		 const std::string&			description,
 																		 const bool					isVertexCase,
 																		 const ShaderEvaluator*		evaluator,
 																		 const UniformSetup*		uniformSetup,

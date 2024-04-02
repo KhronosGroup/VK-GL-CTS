@@ -553,6 +553,9 @@ Full list of parameters for the `glcts` binary:
   -h, --help
     Show this help
 
+  -q, --quiet
+    Suppress messages to standard output
+
   -n, --deqp-case=<value>
     Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)
 
@@ -669,6 +672,9 @@ Full list of parameters for the `glcts` binary:
     Enable or disable log file fflush
     default: 'enable'
 
+  --deqp-log-compact=[enable|disable]
+    Enable or disable the compact version of the log
+    default: 'disable'
 
   --deqp-renderdoc=[enable|disable]
     Enable RenderDoc frame markers
@@ -692,6 +698,10 @@ Full list of parameters for the `glcts` binary:
 
   --deqp-terminate-on-fail=[enable|disable]
     Terminate the run on first failure
+    default: 'disable'
+
+  --deqp-terminate-on-device-lost=[enable|disable]
+    Terminate the run on first device lost error
     default: 'disable'
 
   --deqp-egl-config-id=<value>

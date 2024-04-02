@@ -393,7 +393,7 @@ TessCoordTest::TessCoordTest (tcu::TestContext&			testCtx,
 							  const TessPrimitiveType	primitiveType,
 							  const SpacingMode			spacingMode,
 							  const bool				executionModeInEvaluationShader)
-	: TestCase							(testCtx, getCaseName(primitiveType, spacingMode, executionModeInEvaluationShader), "")
+	: TestCase							(testCtx, getCaseName(primitiveType, spacingMode, executionModeInEvaluationShader))
 	, m_primitiveType					(primitiveType)
 	, m_spacingMode						(spacingMode)
 	, m_executionModeInEvaluationShader	(executionModeInEvaluationShader)
@@ -765,7 +765,7 @@ tcu::TestStatus TessCoordTestInstance::iterate (void)
 
 		// Reset the command buffer and begin recording.
 		beginCommandBuffer(vk, *cmdBuffer);
-		beginRenderPassWithRasterizationDisabled(vk, *cmdBuffer, *renderPass, *framebuffer);
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(1, 1));
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
@@ -841,7 +841,7 @@ TestInstance* TessCoordTest::createInstance (Context& context) const
 //! The test still fails if not enough coordinates are generated, or if coordinates don't match the reference data.
 tcu::TestCaseGroup* createCoordinatesTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "tesscoord", "Tessellation coordinates tests"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "tesscoord"));
 
 	for (int primitiveTypeNdx = 0; primitiveTypeNdx < TESSPRIMITIVETYPE_LAST; ++primitiveTypeNdx)
 		for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; ++spacingModeNdx)

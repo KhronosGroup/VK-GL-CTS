@@ -43,6 +43,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassDitheringTests.hpp
 	vktDynamicRenderingTests.cpp
 	vktDynamicRenderingTests.hpp
+	vktDynamicRenderingLocalReadTests.cpp
+	vktDynamicRenderingLocalReadTests.hpp
 	vktRenderPassDepthStencilWriteConditionsTests.cpp
 	vktRenderPassDepthStencilWriteConditionsTests.hpp
 	vktRenderPassSubpassMergeFeedbackTests.cpp
@@ -51,6 +53,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktDynamicRenderingRandomTests.hpp
 	vktDynamicRenderingUnusedAttachmentsTests.cpp
 	vktDynamicRenderingUnusedAttachmentsTests.hpp
+	vktDynamicRenderingDepthStencilResolveTests.cpp
+	vktDynamicRenderingDepthStencilResolveTests.hpp
 	)
 
 PCH(DEQP_VK_RENDER_PASS_SRCS ../pch.cpp)

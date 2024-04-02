@@ -40,6 +40,12 @@ enum ComputePipelineConstructionType
 	COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY,		// Use VK_EXT_shader_object and construct a shader object from binary
 };
 
+inline bool isComputePipelineConstructionTypeShaderObject (ComputePipelineConstructionType pipelineConstructionType)
+{
+	return (pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV
+			|| pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY);
+}
+
 inline ComputePipelineConstructionType graphicsToComputeConstructionType (PipelineConstructionType pipelineConstructionType)
 {
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV || pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_LINKED_SPIRV)
@@ -76,6 +82,8 @@ public:
 	void								setDescriptorSetLayouts	(deUint32 setLayoutCount, const VkDescriptorSetLayout* descriptorSetLayouts);
 	void								setSpecializationInfo	(VkSpecializationInfo specializationInfo);
 	void								setPipelineCreateFlags	(VkPipelineCreateFlags pipelineCreateFlags);
+	void								setPipelineCreatePNext	(void* pipelineCreatePNext);
+	void								setSubgroupSize			(uint32_t subgroupSize);
 	void								buildPipeline			(void);
 	void								bind					(VkCommandBuffer commandBuffer);
 
@@ -92,6 +100,8 @@ private:
 	std::vector<VkDescriptorSetLayout>	m_descriptorSetLayouts;
 	VkSpecializationInfo				m_specializationInfo;
 	VkPipelineCreateFlags				m_pipelineCreateFlags;
+	void*								m_pipelineCreatePNext;
+	uint32_t							m_subgroupSize;
 
 	Move<VkPipeline>					m_pipeline;
 	Move<VkPipelineLayout>				m_pipelineLayout;

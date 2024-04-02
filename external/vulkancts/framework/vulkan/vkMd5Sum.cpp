@@ -75,6 +75,7 @@ void byteReverse(deUint8* buf, unsigned longs)
 #define F4(x, y, z) (y ^ (x | ~z))
 /* This is the central step in the MD5 algorithm. */
 #define MD5STEP(f, w, x, y, z, data, s) (w += f(x, y, z) + data, w = w << s | w >> (32 - s), w += x)
+
 /*
  * The core of the MD5 algorithm, this alters an existing MD5 hash to
  * reflect the addition of 16 longwords of new data.  MD5Update blocks

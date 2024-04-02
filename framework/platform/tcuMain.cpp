@@ -29,11 +29,21 @@
 #include "tcuTestLog.hpp"
 #include "tcuTestSessionExecutor.hpp"
 #include "deUniquePtr.hpp"
+#include "qpDebugOut.h"
 
 #include <cstdio>
 
 // Implement this in your platform port.
 tcu::Platform* createPlatform (void);
+
+namespace
+{
+
+deBool	disableRawWrites	(int, const char*)			{ return false; }
+deBool	disableFmtWrites	(int, const char*, va_list)	{ return false; }
+void	disableStdout		()							{ qpRedirectOut(disableRawWrites, disableFmtWrites); }
+
+} // anonymous namespace
 
 int main (int argc, char** argv)
 {
@@ -47,6 +57,10 @@ int main (int argc, char** argv)
 	try
 	{
 		tcu::CommandLine				cmdLine		(argc, argv);
+
+		if (cmdLine.quietMode())
+			disableStdout();
+
 		tcu::DirArchive					archive		(cmdLine.getArchiveDir());
 		tcu::TestLog					log			(cmdLine.getLogFileName(), cmdLine.getLogFlags());
 		de::UniquePtr<tcu::Platform>	platform	(createPlatform());

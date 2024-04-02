@@ -41,8 +41,8 @@ using vk::VkInstance;
 #ifndef CTS_USES_VULKANSC
 using vk::InstanceDriver;
 using vk::DebugReportRecorder;
-using vk::VkDebugReportCallbackCreateInfoEXT;
-using vk::VkDebugReportCallbackEXT;
+using vk::VkDebugUtilsMessengerCreateInfoEXT;
+using vk::VkDebugUtilsMessengerEXT;
 #else
 using vk::InstanceDriverSC;
 #endif // CTS_USES_VULKANSC
@@ -110,7 +110,7 @@ CustomInstance::CustomInstance(Context& context, Move<VkInstance> instance)
 	, m_instance	(instance)
 #ifndef CTS_USES_VULKANSC
 	, m_driver		(new InstanceDriver(context.getPlatformInterface(), *m_instance))
-	, m_callback	(m_recorder ? m_recorder->createCallback(*m_driver, *m_instance) : Move<VkDebugReportCallbackEXT>())
+	, m_callback	(m_recorder ? m_recorder->createCallback(*m_driver, *m_instance) : Move<VkDebugUtilsMessengerEXT>())
 #else
 	, m_driver		(new InstanceDriverSC(context.getPlatformInterface(), *m_instance, context.getTestContext().getCommandLine(), context.getResourceInterface()))
 #endif // CTS_USES_VULKANSC
@@ -158,7 +158,7 @@ void CustomInstance::swap (CustomInstance& other)
 	Move<VkInstance> aux = m_instance; m_instance = other.m_instance; other.m_instance = aux;
 	m_driver.swap(other.m_driver);
 #ifndef CTS_USES_VULKANSC
-	Move<VkDebugReportCallbackEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
+	Move<VkDebugUtilsMessengerEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
 #endif // CTS_USES_VULKANSC
 }
 
@@ -208,7 +208,7 @@ UncheckedInstance::UncheckedInstance(Context& context, vk::VkInstance instance, 
 	, m_instance	(instance)
 #ifndef CTS_USES_VULKANSC
 	, m_driver((m_instance != DE_NULL) ? new InstanceDriver(context.getPlatformInterface(), m_instance) : nullptr)
-	, m_callback	((m_driver && m_recorder) ? m_recorder->createCallback(*m_driver, m_instance) : Move<VkDebugReportCallbackEXT>())
+	, m_callback	((m_driver && m_recorder) ? m_recorder->createCallback(*m_driver, m_instance) : Move<VkDebugUtilsMessengerEXT>())
 #else
 	, m_driver((m_instance != DE_NULL) ? new InstanceDriverSC(context.getPlatformInterface(), m_instance, context.getTestContext().getCommandLine(), context.getResourceInterface()) : nullptr)
 #endif // CTS_USES_VULKANSC
@@ -225,7 +225,7 @@ UncheckedInstance::~UncheckedInstance ()
 	if (m_instance != DE_NULL)
 	{
 #ifndef CTS_USES_VULKANSC
-		m_callback.~Move<vk::VkDebugReportCallbackEXT>();
+		m_callback = vk::Move<vk::VkDebugUtilsMessengerEXT>();
 		m_recorder.reset(nullptr);
 #endif // CTS_USES_VULKANSC
 		m_driver->destroyInstance(m_instance, m_allocator);
@@ -242,7 +242,7 @@ void UncheckedInstance::swap (UncheckedInstance& other)
 	vk::VkInstance aux = m_instance; m_instance = other.m_instance; other.m_instance = aux;
 	m_driver.swap(other.m_driver);
 #ifndef CTS_USES_VULKANSC
-	Move<VkDebugReportCallbackEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
+	Move<VkDebugUtilsMessengerEXT> aux2 = m_callback; m_callback = other.m_callback; other.m_callback = aux2;
 #endif // CTS_USES_VULKANSC
 }
 
@@ -343,7 +343,22 @@ CustomInstance createCustomInstanceFromContext (Context& context, const vk::VkAl
 	return createCustomInstanceWithExtensions(context, std::vector<std::string>(), pAllocator, allowLayers);
 }
 
-const char kDebugReportExt[] = "VK_EXT_debug_report";
+static std::vector<const char*> copyExtensions(const vk::VkInstanceCreateInfo& createInfo)
+{
+	std::vector<const char*> extensions(createInfo.enabledExtensionCount);
+	for (size_t i = 0u; i < extensions.size(); ++i)
+		extensions[i] = createInfo.ppEnabledExtensionNames[i];
+	return extensions;
+}
+
+static void addExtension(std::vector<const char*>& presentExtensions, const char* extension)
+{
+	if (std::find_if(presentExtensions.cbegin(), presentExtensions.cend(), [extension](const char* name) { return (strcmp(name, extension) == 0); })
+		== presentExtensions.cend())
+	{
+		presentExtensions.emplace_back(extension);
+	}
+}
 
 vector<const char*> addDebugReportExt(const vk::PlatformInterface& vkp, const vk::VkInstanceCreateInfo& createInfo)
 {
@@ -352,16 +367,9 @@ vector<const char*> addDebugReportExt(const vk::PlatformInterface& vkp, const vk
 
 	vector<const char*> actualExtensions;
 	if (createInfo.enabledExtensionCount != 0u)
-	{
-		for (deUint32 i = 0u; i < createInfo.enabledExtensionCount; ++i)
-			actualExtensions.push_back(createInfo.ppEnabledExtensionNames[i]);
-	}
+		actualExtensions = copyExtensions(createInfo);
 
-	if (std::find_if(begin(actualExtensions), end(actualExtensions), [](const char* name) { return (strcmp(name, kDebugReportExt) == 0); })
-		== end(actualExtensions))
-	{
-		actualExtensions.push_back(kDebugReportExt);
-	}
+	addExtension(actualExtensions, "VK_EXT_debug_report");
 
 	return actualExtensions;
 }
@@ -379,7 +387,7 @@ CustomInstance createCustomInstanceFromInfo (Context& context, const vk::VkInsta
 	const vk::PlatformInterface&			vkp						= context.getPlatformInterface();
 #ifndef CTS_USES_VULKANSC
 	std::unique_ptr<DebugReportRecorder>	recorder;
-	VkDebugReportCallbackCreateInfoEXT		callbackInfo;
+	VkDebugUtilsMessengerCreateInfoEXT		callbackInfo;
 #endif // CTS_USES_VULKANSC
 
 	if (validationEnabled && allowLayers)
@@ -406,6 +414,19 @@ CustomInstance createCustomInstanceFromInfo (Context& context, const vk::VkInsta
 	}
 
 #ifndef CTS_USES_VULKANSC
+	// Enable portability if available. Needed for portability drivers, otherwise loader will complain and make tests fail
+	std::vector<vk::VkExtensionProperties> availableExtensions = vk::enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL);
+	if (vk::isExtensionStructSupported(availableExtensions, vk::RequiredExtension("VK_KHR_portability_enumeration")))
+	{
+		if (enabledExtensions.empty() && createInfo.enabledExtensionCount != 0u)
+			enabledExtensions = copyExtensions(createInfo);
+
+		addExtension(enabledExtensions, "VK_KHR_portability_enumeration");
+		createInfo.enabledExtensionCount = static_cast<deUint32>(enabledExtensions.size());
+		createInfo.ppEnabledExtensionNames = enabledExtensions.data();
+		createInfo.flags |= vk::VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+	}
+
 	return CustomInstance(context, vk::createInstance(vkp, &createInfo, pAllocator), recorder);
 #else
 	return CustomInstance(context, vk::createInstance(vkp, &createInfo, pAllocator));
@@ -445,11 +466,26 @@ vk::VkResult createUncheckedInstance (Context& context, const vk::VkInstanceCrea
 
 #ifndef CTS_USES_VULKANSC
 		recorder.reset(new DebugReportRecorder(printValidationErrors));
-		// No need to add VkDebugReportCallbackCreateInfoEXT to VkInstanceCreateInfo since we
+		// No need to add VkDebugUtilsMessengerCreateInfoEXT to VkInstanceCreateInfo since we
 		// don't want to check for errors at instance creation. This is intended since we use
 		// UncheckedInstance to try to create invalid instances for driver stability
 #endif // CTS_USES_VULKANSC
 	}
+
+#ifndef CTS_USES_VULKANSC
+	// Enable portability if available. Needed for portability drivers, otherwise loader will complain and make tests fail
+	std::vector<vk::VkExtensionProperties> availableExtensions = vk::enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL);
+	if (vk::isExtensionStructSupported(availableExtensions, vk::RequiredExtension("VK_KHR_portability_enumeration")))
+	{
+		if (enabledExtensions.empty() && createInfo.enabledExtensionCount != 0u)
+			enabledExtensions = copyExtensions(createInfo);
+
+		addExtension(enabledExtensions, "VK_KHR_portability_enumeration");
+		createInfo.enabledExtensionCount = static_cast<deUint32>(enabledExtensions.size());
+		createInfo.ppEnabledExtensionNames = enabledExtensions.data();
+		createInfo.flags |= vk::VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+	}
+#endif // CTS_USES_VULKANSC
 
 	vk::VkInstance	raw_instance = DE_NULL;
 	vk::VkResult	result = vkp.createInstance(&createInfo, pAllocator, &raw_instance);
@@ -555,11 +591,11 @@ void VideoDevice::checkSupport (Context&						context,
 	if (isVideoDecodeOperation(videoCodecOperation))
 		context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
 
-	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT) != 0)
-		context.requireDeviceFunctionality("VK_EXT_video_encode_h264");
+	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR) != 0)
+		context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
 
-	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT) != 0)
-		context.requireDeviceFunctionality("VK_EXT_video_encode_h265");
+	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR) != 0)
+		context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
 
 	if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR) != 0)
 		context.requireDeviceFunctionality("VK_KHR_video_decode_h264");
@@ -594,6 +630,8 @@ VideoDevice::VideoDevice (Context&							context,
 	: VideoDevice	(context)
 {
 #ifndef CTS_USES_VULKANSC
+
+	// TODO encode only device case
 	const vk::VkQueueFlags	queueFlagsRequired	= getQueueFlags(videoCodecOperation);
 	const vk::VkDevice		result				= getDeviceSupportingQueue(queueFlagsRequired, videoCodecOperation, videoDeviceFlags);
 
@@ -626,8 +664,8 @@ vk::VkQueueFlags VideoDevice::getQueueFlags (const VideoCodecOperationFlags vide
 bool VideoDevice::isVideoEncodeOperation (const VideoCodecOperationFlags videoCodecOperationFlags)
 {
 #ifndef CTS_USES_VULKANSC
-	const vk::VkVideoCodecOperationFlagsKHR	encodeOperations	= vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT
-																| vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT;
+	const vk::VkVideoCodecOperationFlagsKHR	encodeOperations	= vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR
+																| vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR;
 
 	return (encodeOperations & videoCodecOperationFlags) != 0;
 #else
@@ -671,8 +709,8 @@ void VideoDevice::addVideoDeviceExtensions (std::vector<const char*>&		deviceExt
 	static const char videoQueue[]			= "VK_KHR_video_queue";
 	static const char videoEncodeQueue[]	= "VK_KHR_video_encode_queue";
 	static const char videoDecodeQueue[]	= "VK_KHR_video_decode_queue";
-	static const char videoEncodeH264[]		= "VK_EXT_video_encode_h264";
-	static const char videoEncodeH265[]		= "VK_EXT_video_encode_h265";
+	static const char videoEncodeH264[]		= "VK_KHR_video_encode_h264";
+	static const char videoEncodeH265[]		= "VK_KHR_video_encode_h265";
 	static const char videoDecodeH264[]		= "VK_KHR_video_decode_h264";
 	static const char videoDecodeH265[]		= "VK_KHR_video_decode_h265";
 
@@ -687,11 +725,11 @@ void VideoDevice::addVideoDeviceExtensions (std::vector<const char*>&		deviceExt
 		if (!vk::isCoreDeviceExtension(apiVersion, videoDecodeQueue))
 			deviceExtensions.push_back(videoDecodeQueue);
 
-	if ((videoCodecOperationFlags & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT) != 0)
+	if ((videoCodecOperationFlags & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR) != 0)
 		if (!vk::isCoreDeviceExtension(apiVersion, videoEncodeH264))
 			deviceExtensions.push_back(videoEncodeH264);
 
-	if ((videoCodecOperationFlags & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_EXT) != 0)
+	if ((videoCodecOperationFlags & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR) != 0)
 		if (!vk::isCoreDeviceExtension(apiVersion, videoEncodeH265))
 			deviceExtensions.push_back(videoEncodeH265);
 
@@ -746,8 +784,11 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	const deUint32												apiVersion									= m_context.getUsedApiVersion();
 	const bool													validationEnabled							= m_context.getTestContext().getCommandLine().isValidationEnabled();
 	const bool													queryWithStatusForDecodeSupport				= (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_DECODE_SUPPORT) != 0;
+	const bool													queryWithStatusForEncodeSupport				= (videoDeviceFlags & VIDEO_DEVICE_FLAG_QUERY_WITH_STATUS_FOR_ENCODE_SUPPORT) != 0;
+	const bool													requireMaintenance1							= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_1) != 0;
 	const bool													requireYCBCRorNotSupported					= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_YCBCR_OR_NOT_SUPPORTED) != 0;
 	const bool													requireSync2orNotSupported					= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED) != 0;
+	const bool													requireTimelineSemOrNotSupported			= (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_TIMELINE_OR_NOT_SUPPORTED) != 0;
 	const float													queueFamilyPriority							= 1.0f;
 	deUint32													queueFamilyPropertiesCount					= 0u;
 	deUint32													queueFamilyTransfer							= VK_QUEUE_FAMILY_IGNORED;
@@ -817,8 +858,11 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 
 				if ((usefulQueueFlags & vk::VK_QUEUE_VIDEO_ENCODE_BIT_KHR) != 0 && queueFamilyEncode == VK_QUEUE_FAMILY_IGNORED)
 				{
-					queueFamilyEncode	= ndx;
-					assigned			= true;
+					if (!queryWithStatusForEncodeSupport || (queryWithStatusForEncodeSupport && VkQueueFamilyQueryResultStatusPropertiesKHR[ndx].queryResultStatusSupport))
+					{
+						queueFamilyEncode	= ndx;
+						assigned			= true;
+					}
 				}
 			}
 
@@ -860,6 +904,14 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_synchronization2"))
 			deviceExtensions.push_back("VK_KHR_synchronization2");
 
+	if (requireMaintenance1)
+		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_video_maintenance1"))
+			deviceExtensions.push_back("VK_KHR_video_maintenance1");
+
+	if (requireTimelineSemOrNotSupported)
+		if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
+			deviceExtensions.push_back("VK_KHR_timeline_semaphore");
+
 	vk::VkPhysicalDeviceSynchronization2FeaturesKHR		synchronization2Features		=
 	{
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR,	//  VkStructureType	sType;
@@ -872,6 +924,21 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 		DE_NULL,																	//  void*			pNext;
 		DE_FALSE,																	//  VkBool32		samplerYcbcrConversion;
 	};
+
+	vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR	maintenance1Features			=
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR,	//  VkStructureType	sType;
+		DE_NULL,																//  void*			pNext;
+		DE_FALSE,																//  VkBool32		videoMaintenance1;
+	};
+
+	vk::VkPhysicalDeviceTimelineSemaphoreFeatures	timelineSemaphoreFeatures			=
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,			//	VkStructureType	sType;
+		DE_NULL,																	//	void*			pNext;
+		DE_TRUE																	//	VkBool32		timelineSemaphore;
+	};
+
 	vk::VkPhysicalDeviceFeatures2						features2						=
 	{
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,	//  VkStructureType				sType;
@@ -885,6 +952,13 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	if (requireSync2orNotSupported)
 		appendStructurePtrToVulkanChain((const void**)&features2.pNext, &synchronization2Features);
 
+	if (requireMaintenance1)
+		appendStructurePtrToVulkanChain((const void**)&features2.pNext, &maintenance1Features);
+
+	if (requireTimelineSemOrNotSupported)
+		if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
+			appendStructurePtrToVulkanChain((const void**)&features2.pNext, &timelineSemaphoreFeatures);
+
 	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
 	if (requireYCBCRorNotSupported && samplerYcbcrConversionFeatures.samplerYcbcrConversion == DE_FALSE)
@@ -892,6 +966,13 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 
 	if (requireSync2orNotSupported && synchronization2Features.synchronization2 == DE_FALSE)
 		TCU_THROW(NotSupportedError, "synchronization2Features.synchronization2 is required");
+
+	if (requireTimelineSemOrNotSupported && timelineSemaphoreFeatures.timelineSemaphore == DE_FALSE)
+		TCU_THROW(NotSupportedError, "timelineSemaphore extension is required");
+
+	if (requireMaintenance1 && maintenance1Features.videoMaintenance1 == DE_FALSE)
+		TCU_THROW(NotSupportedError, "videoMaintenance1 feature is required");
+
 
 	features2.features.robustBufferAccess = DE_FALSE;
 
@@ -910,7 +991,7 @@ bool VideoDevice::createDeviceSupportingQueue (const vk::VkQueueFlags			queueFla
 	};
 
 	m_logicalDevice			= createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-	m_deviceDriver			= de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(vkp, instance, *m_logicalDevice, apiVersion));
+	m_deviceDriver			= de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(vkp, instance, *m_logicalDevice, apiVersion, m_context.getTestContext().getCommandLine()));
 	m_allocator				= de::MovePtr<vk::Allocator>(new vk::SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	m_queueFamilyTransfer	= queueFamilyTransfer;
 	m_queueFamilyDecode		= queueFamilyDecode;

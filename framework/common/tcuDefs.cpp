@@ -93,6 +93,11 @@ TestException::TestException (const std::string& message, qpTestResult result)
 {
 }
 
+TestError::TestError (const char* message, const char* expr, const char* file, int line, qpTestResult result)
+        : TestException(message, expr, file, line, result)
+{
+}
+
 TestError::TestError (const char* message, const char* expr, const char* file, int line)
 	: TestException(message, expr, file, line, QP_TEST_RESULT_FAIL)
 {
@@ -144,6 +149,21 @@ NotSupportedError::NotSupportedError (const std::string& message, const char* ex
 
 NotSupportedError::NotSupportedError (const std::string& message)
 	: TestException(message, QP_TEST_RESULT_NOT_SUPPORTED)
+{
+}
+
+QualityWarning::QualityWarning (const char* message, const char* expr, const char* file, int line)
+	: TestException(message, expr, file, line, QP_TEST_RESULT_QUALITY_WARNING)
+{
+}
+
+QualityWarning::QualityWarning (const std::string& message, const char* expr, const char* file, int line)
+	: TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_QUALITY_WARNING)
+{
+}
+
+QualityWarning::QualityWarning (const std::string& message)
+	: TestException(message, QP_TEST_RESULT_QUALITY_WARNING)
 {
 }
 

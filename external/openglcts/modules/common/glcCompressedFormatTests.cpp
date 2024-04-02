@@ -367,7 +367,7 @@ void SharedData::deinit ()
 	gl.deleteBuffers(DE_LENGTH_OF_ARRAY(m_vboIds), m_vboIds);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteBuffers() failed");
 
-	gl.deleteTextures(m_texIds.size(), m_texIds.data());
+	gl.deleteTextures((glw::GLsizei)m_texIds.size(), m_texIds.data());
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteTextures() failed");
 }
 
@@ -529,14 +529,14 @@ ApiCaseParams	apiTests[] =
 			{
 				[](ApiTestContext& context)
 				{
-					context.gl.compressedTexImage2D(GL_TEXTURE_3D, 0, GL_COMPRESSED_RGB8_ETC2, invalidTexture.width, invalidTexture.height, 0, invalidTexture.data.size(), invalidTexture.data.data());
+					context.gl.compressedTexImage2D(GL_TEXTURE_3D, 0, GL_COMPRESSED_RGB8_ETC2, invalidTexture.width, invalidTexture.height, 0, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 				},
 				GL_INVALID_ENUM
 			},
 			{
 				[](ApiTestContext& context)
 				{
-					context.gl.compressedTexSubImage2D(GL_TEXTURE_3D, 0, 0, 0, invalidTexture.width, invalidTexture.height, GL_COMPRESSED_RGB8_ETC2, invalidTexture.data.size(), invalidTexture.data.data());
+					context.gl.compressedTexSubImage2D(GL_TEXTURE_3D, 0, 0, 0, invalidTexture.width, invalidTexture.height, GL_COMPRESSED_RGB8_ETC2, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 				},
 				GL_INVALID_ENUM
 			},
@@ -574,7 +574,7 @@ ApiCaseParams	apiTests[] =
 					{
 						[i](ApiTestContext& context)
 						{
-							context.gl.compressedTexImage2D(cubemapFaces[i], 0, GL_COMPRESSED_RGB8_ETC2, invalidTexture.width - i % 2, invalidTexture.height - (i + 1) % 2, 0, invalidTexture.data.size(), invalidTexture.data.data());
+							context.gl.compressedTexImage2D(cubemapFaces[i], 0, GL_COMPRESSED_RGB8_ETC2, invalidTexture.width - i % 2, invalidTexture.height - (i + 1) % 2, 0, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 						},
 						GL_INVALID_VALUE
 					});
@@ -587,14 +587,14 @@ ApiCaseParams	apiTests[] =
 							const GLsizei	blockDataSize	= 8;
 							const auto		data			= loadImage(context.archive, format, 0);
 							const auto&		gl				= context.gl;
-							gl.compressedTexImage2D(cubemapFaces[i], 0, format, data.width, data.height, 0, data.data.size(), data.data.data());
+							gl.compressedTexImage2D(cubemapFaces[i], 0, format, data.width, data.height, 0, (glw::GLsizei)data.data.size(), data.data.data());
 							GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D() failed");
 
 							const auto		updateWidth		= invalidTexture.width - (i % 2) * blockSize;
 							const auto		updateHeight	= invalidTexture.height - ((i + 1) % 2) * blockSize;
 							const auto		updateDataSize	= (updateWidth / blockSize) * (updateHeight / blockSize) * blockDataSize;
 							DE_ASSERT(updateDataSize <= invalidTexture.data.size());
-							context.gl.compressedTexSubImage2D(cubemapFaces[i], 0, 0, 0, updateWidth, updateHeight, format, updateDataSize, invalidTexture.data.data());
+							context.gl.compressedTexSubImage2D(cubemapFaces[i], 0, 0, 0, (glw::GLsizei)updateWidth, (glw::GLsizei)updateHeight, format, (glw::GLsizei)updateDataSize, invalidTexture.data.data());
 						},
 						GL_NO_ERROR
 					});
@@ -618,7 +618,7 @@ ApiCaseParams	apiTests[] =
 			{
 				[](ApiTestContext& context)
 				{
-					context.gl.compressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_RGB8_ETC2, invalidTexture.width - 1, invalidTexture.height, 6, 0, invalidTexture.data.size(), invalidTexture.data.data());
+					context.gl.compressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_RGB8_ETC2, invalidTexture.width - 1, invalidTexture.height, 6, 0, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 				},
 				GL_INVALID_VALUE
 			}
@@ -642,7 +642,7 @@ ApiCaseParams	apiTests[] =
 					{
 						DE_ASSERT(context.texIds.size() >= 3);
 						context.bindTexture(GL_TEXTURE_2D, context.texIds[0]);
-						context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, -1, 0, data.data.size(), data.data.data());
+						context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, -1, 0, (glw::GLsizei)data.data.size(), data.data.data());
 					},
 					GL_INVALID_VALUE
 				});
@@ -650,7 +650,7 @@ ApiCaseParams	apiTests[] =
 				{
 					[format, data](ApiTestContext& context)
 					{
-						context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, data.height, 0, data.data.size(), data.data.data());
+						context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, data.height, 0, (glw::GLsizei)data.data.size(), data.data.data());
 					},
 					GL_NO_ERROR
 				});
@@ -658,7 +658,7 @@ ApiCaseParams	apiTests[] =
 				{
 					[format, data](ApiTestContext& context)
 					{
-						context.gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.width, -1, format, data.data.size(), data.data.data());
+						context.gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.width, -1, format, (glw::GLsizei)data.data.size(), data.data.data());
 					},
 					GL_INVALID_VALUE
 				});
@@ -668,7 +668,7 @@ ApiCaseParams	apiTests[] =
 					{
 						DE_ASSERT(context.texIds.size() >= 3);
 						context.bindTexture(GL_TEXTURE_2D, context.texIds[1]);
-						context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, -276, data.height, 0, data.data.size(), data.data.data());
+						context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, -276, data.height, 0, (glw::GLsizei)data.data.size(), data.data.data());
 					},
 					GL_INVALID_VALUE
 				});
@@ -676,7 +676,7 @@ ApiCaseParams	apiTests[] =
 				{
 					[format, data](ApiTestContext& context)
 					{
-						context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, data.height, 0, data.data.size(), data.data.data());
+						context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, data.height, 0, (glw::GLsizei)data.data.size(), data.data.data());
 					},
 					GL_NO_ERROR
 				});
@@ -684,7 +684,7 @@ ApiCaseParams	apiTests[] =
 				{
 					[format, data](ApiTestContext& context)
 					{
-						context.gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, -276, data.height, format, data.data.size(), data.data.data());
+						context.gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, -276, data.height, format, (glw::GLsizei)data.data.size(), data.data.data());
 					},
 					GL_INVALID_VALUE
 				});
@@ -702,7 +702,7 @@ ApiCaseParams	apiTests[] =
 				{
 					[format, data](ApiTestContext& context)
 					{
-						context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, data.height, 0, data.data.size(), data.data.data());
+						context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, data.height, 0, (glw::GLsizei)data.data.size(), data.data.data());
 					},
 					GL_NO_ERROR
 				});
@@ -727,7 +727,7 @@ ApiCaseParams	apiTests[] =
 				[](ApiTestContext& context)
 				{
 					context.bindTexture(GL_TEXTURE_2D, context.texIds[0]);
-					context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB8_ETC2, invalidTexture.width, invalidTexture.height, 1, invalidTexture.data.size(), invalidTexture.data.data());
+					context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB8_ETC2, invalidTexture.width, invalidTexture.height, 1, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 				},
 				GL_INVALID_VALUE
 			},
@@ -740,7 +740,7 @@ ApiCaseParams	apiTests[] =
 						[j](ApiTestContext& context)
 						{
 							context.bindTexture(GL_TEXTURE_CUBE_MAP, context.texIds[1]);
-							context.gl.compressedTexImage2D(cubemapFaces[j], 0, GL_COMPRESSED_RGB8_ETC2, invalidTexture.width, invalidTexture.height, 1, invalidTexture.data.size(), invalidTexture.data.data());
+							context.gl.compressedTexImage2D(cubemapFaces[j], 0, GL_COMPRESSED_RGB8_ETC2, invalidTexture.width, invalidTexture.height, 1, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 						},
 						GL_INVALID_VALUE
 					});
@@ -757,7 +757,7 @@ ApiCaseParams	apiTests[] =
 				[](ApiTestContext& context)
 				{
 					context.bindTexture(GL_TEXTURE_CUBE_MAP, context.texIds[0]);
-					context.gl.compressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_RGB8_ETC2, invalidTexture.width, invalidTexture.height, invalidTexture.depth, 1, invalidTexture.data.size(), invalidTexture.data.data());
+					context.gl.compressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_COMPRESSED_RGB8_ETC2, invalidTexture.width, invalidTexture.height, invalidTexture.depth, 1, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 				},
 				GL_INVALID_VALUE
 			},
@@ -783,9 +783,9 @@ ApiCaseParams	apiTests[] =
 
 					context.bindTexture(GL_TEXTURE_2D, context.texIds[0]);
 
-					gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format0, data0.width, data0.height, 0, data0.data.size(), data0.data.data());
+					gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format0, data0.width, data0.height, 0, (glw::GLsizei)data0.data.size(), data0.data.data());
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D() failed");
-					gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data1.width, data1.height, format1, data1.data.size(), data1.data.data());
+					gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data1.width, data1.height, format1, (glw::GLsizei)data1.data.size(), data1.data.data());
 				},
 				GL_INVALID_OPERATION
 			},
@@ -819,7 +819,7 @@ ApiCaseParams	apiTests[] =
 					{
 						[i, data](ApiTestContext& context)
 						{
-							context.gl.compressedTexImage3D(GL_TEXTURE_2D, 0, compressedFormats[i].internalFormat, data.width, data.height, 1, 0, data.data.size(), data.data.data());
+							context.gl.compressedTexImage3D(GL_TEXTURE_2D, 0, compressedFormats[i].internalFormat, data.width, data.height, 1, 0, (glw::GLsizei)data.data.size(), data.data.data());
 						},
 						GL_INVALID_ENUM
 					});
@@ -827,7 +827,7 @@ ApiCaseParams	apiTests[] =
 					{
 						[i, data](ApiTestContext& context)
 						{
-							context.gl.compressedTexSubImage3D(GL_TEXTURE_2D, 0, 0, 0, 0, data.width, data.height, 1, compressedFormats[i].internalFormat, data.data.size(), data.data.data());
+							context.gl.compressedTexSubImage3D(GL_TEXTURE_2D, 0, 0, 0, 0, data.width, data.height, 1, compressedFormats[i].internalFormat, (glw::GLsizei)data.data.size(), data.data.data());
 						},
 						GL_INVALID_ENUM
 					});
@@ -919,14 +919,14 @@ ApiCaseParams	apiTests[] =
 			{
 				[](ApiTestContext& context)
 				{
-					context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, invalidTexture.width, invalidTexture.height, 0, invalidTexture.data.size(), invalidTexture.data.data());
+					context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, invalidTexture.width, invalidTexture.height, 0, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 				},
 				GL_INVALID_ENUM
 			},
 			{
 				[](ApiTestContext& context)
 				{
-					context.gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, invalidTexture.width, invalidTexture.height, GL_RGB, invalidTexture.data.size(), invalidTexture.data.data());
+					context.gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, invalidTexture.width, invalidTexture.height, GL_RGB, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 				},
 				GL_INVALID_OPERATION
 			},
@@ -936,10 +936,10 @@ ApiCaseParams	apiTests[] =
 					const GLenum	format	= GL_COMPRESSED_RGB8_ETC2;
 					const auto		data	= loadImage(context.archive, format, 0);
 					const auto&		gl		= context.gl;
-					gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, data.height, 0, data.data.size(), data.data.data());
+					gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, data.height, 0, (glw::GLsizei)data.data.size(), data.data.data());
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D() failed");
 
-					context.gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, invalidTexture.width, invalidTexture.height, GL_RGB, invalidTexture.data.size(), invalidTexture.data.data());
+					context.gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, invalidTexture.width, invalidTexture.height, GL_RGB, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 				},
 				GL_INVALID_OPERATION
 			},
@@ -959,7 +959,7 @@ ApiCaseParams	apiTests[] =
 					{
 						[j](ApiTestContext& context)
 						{
-							context.gl.compressedTexImage2D(cubemapFaces[j], 0, GL_RGB, invalidTexture.width, invalidTexture.height, 0, invalidTexture.data.size(), invalidTexture.data.data());
+							context.gl.compressedTexImage2D(cubemapFaces[j], 0, GL_RGB, invalidTexture.width, invalidTexture.height, 0, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 						},
 						GL_INVALID_ENUM
 					});
@@ -970,10 +970,10 @@ ApiCaseParams	apiTests[] =
 							const GLenum	format	= GL_COMPRESSED_RGB8_ETC2;
 							const auto		data	= loadImage(context.archive, format, 0);
 							const auto&		gl		= context.gl;
-							gl.compressedTexImage2D(cubemapFaces[j], 0, format, data.width, data.height, 0, data.data.size(), data.data.data());
+							gl.compressedTexImage2D(cubemapFaces[j], 0, format, data.width, data.height, 0, (glw::GLsizei)data.data.size(), data.data.data());
 							GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D() failed");
 
-							context.gl.compressedTexSubImage2D(cubemapFaces[j], 0, 0, 0, invalidTexture.width, invalidTexture.height, GL_RGB, invalidTexture.data.size(), invalidTexture.data.data());
+							context.gl.compressedTexSubImage2D(cubemapFaces[j], 0, 0, 0, invalidTexture.width, invalidTexture.height, GL_RGB, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 						},
 						GL_INVALID_OPERATION
 					});
@@ -997,7 +997,7 @@ ApiCaseParams	apiTests[] =
 			{
 				[](ApiTestContext& context)
 				{
-					context.gl.compressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGB, invalidTexture.width, invalidTexture.height, 6, 0, invalidTexture.data.size(), invalidTexture.data.data());
+					context.gl.compressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGB, invalidTexture.width, invalidTexture.height, 6, 0, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 				},
 				GL_INVALID_ENUM
 			},
@@ -1012,10 +1012,11 @@ ApiCaseParams	apiTests[] =
 					for(size_t k = 0; k < 6; ++k)
 						std::copy(data.data.begin(), data.data.end(), std::back_inserter(arrayData));
 
-					context.gl.compressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, format, data.width, data.height, 6, 0, arrayData.size(), arrayData.data());
+					context.gl.compressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, format, data.width, data.height, 6, 0, (glw::GLsizei)arrayData.size(), arrayData.data());
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage3D() failed");
 
-					context.gl.compressedTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, 0, invalidTexture.width, invalidTexture.height, 6, GL_RGB, invalidTexture.data.size(), invalidTexture.data.data());context.gl.compressedTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, 0, invalidTexture.width, invalidTexture.height, 6, GL_RGB, invalidTexture.data.size(), invalidTexture.data.data());
+					context.gl.compressedTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, 0, invalidTexture.width, invalidTexture.height, 6, GL_RGB, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
+					context.gl.compressedTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, 0, invalidTexture.width, invalidTexture.height, 6, GL_RGB, (glw::GLsizei)invalidTexture.data.size(), invalidTexture.data.data());
 				},
 				GL_INVALID_OPERATION
 			}
@@ -1041,7 +1042,7 @@ ApiCaseParams	apiTests[] =
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() failed");
 					gl.bufferData(GL_PIXEL_UNPACK_BUFFER, data.data.size() / 2, data.data.data(), GL_STATIC_READ);
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed");
-					gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, data.height, 0, data.data.size(), 0);
+					gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, data.height, 0, (glw::GLsizei)data.data.size(), 0);
 				},
 				GL_INVALID_OPERATION
 			},
@@ -1054,13 +1055,13 @@ ApiCaseParams	apiTests[] =
 
 					context.bindTexture(GL_TEXTURE_2D, context.texIds[0]);
 					gl.bindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-					gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, data.height, 0, data.data.size(), data.data.data());
+					gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format, data.width, data.height, 0, (glw::GLsizei)data.data.size(), data.data.data());
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D() failed");
 					gl.bindBuffer(GL_PIXEL_UNPACK_BUFFER, context.bufferIds[0]);
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() failed");
 					gl.bufferData(GL_PIXEL_UNPACK_BUFFER, data.data.size() / 2, data.data.data(), GL_STATIC_READ);
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() failed");
-					gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.width, data.height, format, data.data.size(), 0);
+					gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.width, data.height, format, (glw::GLsizei)data.data.size(), 0);
 				},
 				GL_INVALID_OPERATION
 			}
@@ -1091,7 +1092,7 @@ ApiCaseParams	apiTests[] =
 						{
 							const auto&	gl		= context.gl;
 							context.bindTexture(GL_TEXTURE_2D, context.texIds[0]);
-							gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format.internalFormat, data0.width - 12, data0.height - 12, 0, data0.data.size(), data0.data.data());
+							gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format.internalFormat, data0.width - 12, data0.height - 12, 0, (glw::GLsizei)data0.data.size(), data0.data.data());
 						},
 						GL_INVALID_VALUE
 					});
@@ -1128,7 +1129,7 @@ ApiCaseParams	apiTests[] =
 						{
 							[j, format, data0](ApiTestContext& context)
 							{
-								context.gl.compressedTexImage2D(cubemapFaces[j], 0, format.internalFormat, data0.width, data0.height, 0, data0.data.size(), data0.data.data());
+								context.gl.compressedTexImage2D(cubemapFaces[j], 0, format.internalFormat, data0.width, data0.height, 0, (glw::GLsizei)data0.data.size(), data0.data.data());
 							},
 							GL_NO_ERROR
 						});
@@ -1141,7 +1142,7 @@ ApiCaseParams	apiTests[] =
 							for(size_t k = 0; k < 6; ++k)
 								std::copy(data0.data.begin(), data0.data.end(), std::back_inserter(arrayData));
 							context.bindTexture(GL_TEXTURE_CUBE_MAP, context.texIds[1]);
-							context.gl.compressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, format.internalFormat, data0.width, data0.height, 6, 0, arrayData.size(), arrayData.data());
+							context.gl.compressedTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, format.internalFormat, data0.width, data0.height, 6, 0, (glw::GLsizei)arrayData.size(), arrayData.data());
 						},
 						GL_NO_ERROR
 					});
@@ -1149,7 +1150,7 @@ ApiCaseParams	apiTests[] =
 					{
 						[format, data1](ApiTestContext& context)
 						{
-							context.gl.compressedTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, 0, data1.width, data1.height, 1, format.internalFormat, data1.data.size() - 1, data1.data.data());
+							context.gl.compressedTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, 0, 0, 0, data1.width, data1.height, 1, format.internalFormat, (glw::GLsizei)data1.data.size() - 1, data1.data.data());
 						},
 						GL_INVALID_VALUE
 					});
@@ -1178,7 +1179,7 @@ ApiCaseParams	apiTests[] =
 						[format, data0](ApiTestContext& context)
 						{
 							context.bindTexture(GL_TEXTURE_2D, context.texIds[0]);
-							context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format.internalFormat, data0.width, data0.height, 0, data0.data.size(), data0.data.data());
+							context.gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format.internalFormat, data0.width, data0.height, 0, (glw::GLsizei)data0.data.size(), data0.data.data());
 						},
 						GL_NO_ERROR
 					});
@@ -1186,7 +1187,7 @@ ApiCaseParams	apiTests[] =
 					{
 						[format, data1](ApiTestContext& context)
 						{
-							context.gl.compressedTexImage2D(GL_TEXTURE_2D, 1, format.internalFormat, data1.width, data1.height, 0, data1.data.size(), data1.data.data());
+							context.gl.compressedTexImage2D(GL_TEXTURE_2D, 1, format.internalFormat, data1.width, data1.height, 0, (glw::GLsizei)data1.data.size(), data1.data.data());
 						},
 						GL_NO_ERROR
 					});
@@ -1194,7 +1195,7 @@ ApiCaseParams	apiTests[] =
 					{
 						[format, data1](ApiTestContext& context)
 						{
-							context.gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, format.blockSize.x() - 2, 0, data1.width, data1.height, format.internalFormat, data1.data.size(), data1.data.data());
+							context.gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, format.blockSize.x() - 2, 0, data1.width, data1.height, format.internalFormat, (glw::GLsizei)data1.data.size(), data1.data.data());
 						},
 						GL_INVALID_OPERATION
 					});
@@ -1202,7 +1203,7 @@ ApiCaseParams	apiTests[] =
 					{
 						[format, data1](ApiTestContext& context)
 						{
-							context.gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, format.blockSize.y() - 2, data1.width, data1.height, format.internalFormat, data1.data.size(), data1.data.data());
+							context.gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, format.blockSize.y() - 2, data1.width, data1.height, format.internalFormat, (glw::GLsizei)data1.data.size(), data1.data.data());
 						},
 						GL_INVALID_OPERATION
 					});
@@ -1254,7 +1255,7 @@ ApiCaseParams	apiTests[] =
 									setTextureParameters(context.gl, GL_TEXTURE_2D);
 
 									context.bindTexture(GL_TEXTURE_2D, context.texIds[1]);
-									gl.compressedTexImage2D(GL_TEXTURE_2D, 0, compressedFormat, image[0].width, image[0].height, 0, textureData.data.size(), textureData.data.data());
+									gl.compressedTexImage2D(GL_TEXTURE_2D, 0, compressedFormat, image[0].width, image[0].height, 0, (glw::GLsizei)textureData.data.size(), textureData.data.data());
 									GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D() failed");
 									setTextureParameters(context.gl, GL_TEXTURE_2D);
 
@@ -1314,7 +1315,7 @@ ApiCaseParams	apiTests[] =
 									setTextureParameters(context.gl, GL_TEXTURE_2D);
 
 									context.bindTexture(GL_TEXTURE_2D, context.texIds[1]);
-									gl.compressedTexImage2D(GL_TEXTURE_2D, 0, compressedFormat, image[0].width, image[0].height, 0, textureData.data.size(), textureData.data.data());
+									gl.compressedTexImage2D(GL_TEXTURE_2D, 0, compressedFormat, image[0].width, image[0].height, 0, (glw::GLsizei)textureData.data.size(), textureData.data.data());
 									GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D() failed");
 									setTextureParameters(context.gl, GL_TEXTURE_2D);
 
@@ -1356,12 +1357,12 @@ ApiCaseParams	apiTests[] =
 									DE_ASSERT(image0.width == 2 * image1.width && image0.height == 2 * image1.height);
 
 									context.bindTexture(GL_TEXTURE_2D, context.texIds[0]);
-									gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format0, image0.width, image0.height, 0, image0.data.size(), image0.data.data());
+									gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format0, image0.width, image0.height, 0, (glw::GLsizei)image0.data.size(), image0.data.data());
 									GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D() failed");
 									setTextureParameters(context.gl, GL_TEXTURE_2D);
 
 									context.bindTexture(GL_TEXTURE_2D, context.texIds[1]);
-									gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format1, image1.width, image1.height, 0, image1.data.size(), image1.data.data());
+									gl.compressedTexImage2D(GL_TEXTURE_2D, 0, format1, image1.width, image1.height, 0, (glw::GLsizei)image1.data.size(), image1.data.data());
 									GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D() failed");
 									setTextureParameters(context.gl, GL_TEXTURE_2D);
 
@@ -1410,10 +1411,10 @@ void CompressedApiTest::init (void)
 	if (m_params.texIdsCount > 0)
 	{
 		m_texIds.resize(m_params.texIdsCount);
-		gl.genTextures(m_texIds.size(), m_texIds.data());
+		gl.genTextures((glw::GLsizei)m_texIds.size(), m_texIds.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() failed");
 		m_bufferIds.resize(m_params.bufferIdsCount);
-		gl.genBuffers(m_bufferIds.size(), m_bufferIds.data());
+		gl.genBuffers((glw::GLsizei)m_bufferIds.size(), m_bufferIds.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGenBuffers() failed");
 	}
 }
@@ -1423,13 +1424,13 @@ void CompressedApiTest::deinit (void)
 	const auto&	gl	= m_context.getRenderContext().getFunctions();
 	if (!m_bufferIds.empty())
 	{
-		gl.deleteBuffers(m_bufferIds.size(), m_bufferIds.data());
+		gl.deleteBuffers((glw::GLsizei)m_bufferIds.size(), m_bufferIds.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteBuffers() failed");
 		m_bufferIds.erase(m_bufferIds.begin(), m_bufferIds.end());
 	}
 	if (!m_texIds.empty())
 	{
-		gl.deleteTextures(m_texIds.size(), m_texIds.data());
+		gl.deleteTextures((glw::GLsizei)m_texIds.size(), m_texIds.data());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteTextures() failed");
 		m_texIds.erase(m_texIds.begin(), m_texIds.end());
 	}
@@ -1601,9 +1602,9 @@ CompressedFormatTest::IterateResult CompressedFormatTest::iterate (void)
 	// compressed image
 	gl.bindTexture(GL_TEXTURE_2D, texIds[1]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture() failed");
-	gl.compressedTexImage2D(GL_TEXTURE_2D, 0, formatInfo.internalFormat, image0.width, image0.height, 0, image0.data.size(), image0.data.data());
+	gl.compressedTexImage2D(GL_TEXTURE_2D, 0, formatInfo.internalFormat, image0.width, image0.height, 0, (glw::GLsizei)image0.data.size(), image0.data.data());
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D() failed");
-	gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image1.width, image1.height, formatInfo.internalFormat, image1.data.size(), image1.data.data());
+	gl.compressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image1.width, image1.height, formatInfo.internalFormat, (glw::GLsizei)image1.data.size(), image1.data.data());
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexSubImage2D() failed");
 	setTextureParameters(gl, GL_TEXTURE_2D);
 

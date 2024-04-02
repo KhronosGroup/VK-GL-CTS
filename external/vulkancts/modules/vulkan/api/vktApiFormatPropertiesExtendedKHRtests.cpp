@@ -73,7 +73,7 @@ void createTestCases (tcu::TestCaseGroup* group)
 	for (VkFormat format = VK_FORMAT_R4G4_UNORM_PACK8; format < VK_CORE_FORMAT_LAST; format = static_cast<VkFormat>(format+1))
 	{
 		std::string testName = de::toLower(std::string(getFormatName(format)).substr(10));
-		addFunctionCase(group, testName, std::string(), checkSupport, test, format);
+		addFunctionCase(group, testName, checkSupport, test, format);
 	}
 }
 
@@ -86,7 +86,7 @@ namespace api
 
 tcu::TestCaseGroup*	createFormatPropertiesExtendedKHRTests	(tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "format_feature_flags2", "VK_KHR_format_feature_flags2 tests", createTestCases);
+	return createTestGroup(testCtx, "format_feature_flags2", createTestCases);
 }
 
 } // api

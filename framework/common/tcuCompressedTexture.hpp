@@ -91,6 +91,9 @@ enum CompressedTexFormat
 	COMPRESSEDTEXFORMAT_BC7_UNORM_BLOCK,
 	COMPRESSEDTEXFORMAT_BC7_SRGB_BLOCK,
 
+	COMPRESSEDTEXFORMAT_AHB_RAW10,
+	COMPRESSEDTEXFORMAT_AHB_RAW12,
+
 	COMPRESSEDTEXFORMAT_LAST
 };
 
@@ -103,6 +106,7 @@ bool				isAstcSRGBFormat			(CompressedTexFormat format);
 bool				isBcFormat					(CompressedTexFormat format);
 bool				isBcBitExactFormat			(CompressedTexFormat format);
 bool				isBcSRGBFormat				(CompressedTexFormat format);
+bool				isAhbRawFormat				(CompressedTexFormat format);
 
 TextureFormat		getUncompressedFormat		(CompressedTexFormat format);
 CompressedTexFormat getAstcFormatByBlockSize	(const IVec3& size, bool isSRGB);

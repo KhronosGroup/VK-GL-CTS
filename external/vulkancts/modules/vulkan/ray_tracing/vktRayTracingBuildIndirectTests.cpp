@@ -205,7 +205,7 @@ RayTracingBuildIndirectTestInstance::~RayTracingBuildIndirectTestInstance (void)
 class RayTracingTestCase : public TestCase
 {
 	public:
-							RayTracingTestCase	(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+							RayTracingTestCase	(tcu::TestContext& context, const char* name, const CaseDef data);
 							~RayTracingTestCase	(void);
 
 	virtual	void			initPrograms		(SourceCollections& programCollection) const;
@@ -216,8 +216,8 @@ private:
 	CaseDef					m_data;
 };
 
-RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+RayTracingTestCase::RayTracingTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 	DE_ASSERT((m_data.width * m_data.height * m_data.depth) == (m_data.squaresGroupCount * m_data.geometriesGroupCount * m_data.instancesGroupCount));
@@ -340,7 +340,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		css <<
 			"#version 460 core\n"
 			"#extension GL_EXT_ray_tracing : require\n"
-			"layout(location = 0) rayPayloadInEXT dummyPayload { vec4 dummy; };\n"
+			"layout(location = 0) rayPayloadInEXT vec3 unusedPayload;\n"
 			"layout(set = 0, binding = 0, r32ui) uniform uimage3D result;\n"
 			"void main()\n"
 			"{\n"
@@ -673,7 +673,8 @@ tcu::TestStatus RayTracingBuildIndirectTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createBuildIndirectTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "indirect", "Build acceleration structure indirect ray tracing tests"));
+	// Build acceleration structure indirect ray tracing tests
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "indirect"));
 
 	const deUint32	width					= 512u;
 	const deUint32	height					= 128u;
@@ -693,7 +694,7 @@ tcu::TestCaseGroup*	createBuildIndirectTests (tcu::TestContext& testCtx)
 	};
 	const std::string	testName			= "build_structure";
 
-	group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+	group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), caseDef));
 
 	return group.release();
 }

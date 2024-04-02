@@ -251,7 +251,7 @@ class SingletonDevice
 
 		VkDeviceCreateInfo createInfo		= initVulkanStructure(&features2);
 		createInfo.flags					= 0u;
-		createInfo.queueCreateInfoCount		= de::arrayLength(queues);
+		createInfo.queueCreateInfoCount		= (deUint32)de::arrayLength(queues);
 		createInfo.pQueueCreateInfos		= queues;
 		createInfo.enabledLayerCount		= 0u;
 		createInfo.ppEnabledLayerNames		= nullptr;
@@ -268,7 +268,7 @@ class SingletonDevice
 			&createInfo,
 			nullptr);
 
-		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, *m_logicalDevice, m_context.getUsedApiVersion()));
+		m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, *m_logicalDevice, m_context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 	}
 
 public:
@@ -335,7 +335,7 @@ void checkRequirements (Context& context, TestParams params)
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	const auto supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+	const auto& supportedExtensions = enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
 	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_AMD_shader_fragment_mask")))
 		TCU_THROW(NotSupportedError, "VK_AMD_shader_fragment_mask not supported");
 
@@ -1361,14 +1361,14 @@ void createShaderFragmentMaskTestsInGroup (tcu::TestCaseGroup* rootGroup, Pipeli
 	{
 		for (const VkSampleCountFlagBits* pSampleCount = sampleCounts; pSampleCount != DE_ARRAY_END(sampleCounts); ++pSampleCount)
 		{
-			MovePtr<tcu::TestCaseGroup> sampleCountGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), ("samples_" + de::toString(*pSampleCount)).c_str(), ""));
+			MovePtr<tcu::TestCaseGroup> sampleCountGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), ("samples_" + de::toString(*pSampleCount)).c_str()));
 			for (const SourceCase* pSourceCase = sourceCases; pSourceCase != DE_ARRAY_END(sourceCases); ++pSourceCase)
 			{
 				// Input attachments cannot be used with dynamic rendering.
 				if (pSourceCase->sampleSource == SAMPLE_SOURCE_SUBPASS_INPUT && isConstructionTypeShaderObject(pipelineConstructionType))
 					continue;
 
-				MovePtr<tcu::TestCaseGroup> sourceGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), pSourceCase->name, ""));
+				MovePtr<tcu::TestCaseGroup> sourceGroup (new tcu::TestCaseGroup(rootGroup->getTestContext(), pSourceCase->name));
 				for (const VkFormat* pColorFormat = colorFormats; pColorFormat != DE_ARRAY_END(colorFormats); ++pColorFormat)
 				{
 					TestParams params;
@@ -1379,7 +1379,7 @@ void createShaderFragmentMaskTestsInGroup (tcu::TestCaseGroup* rootGroup, Pipeli
 					params.numLayers				= pSourceCase->numLayers;
 					params.sampleSource				= pSourceCase->sampleSource;
 
-					addFunctionCaseWithPrograms(sourceGroup.get(), getFormatShortString(*pColorFormat), "", checkRequirements, initPrograms, test, params);
+					addFunctionCaseWithPrograms(sourceGroup.get(), getFormatShortString(*pColorFormat), checkRequirements, initPrograms, test, params);
 				}
 				sampleCountGroup->addChild(sourceGroup.release());
 			}
@@ -1394,9 +1394,9 @@ tcu::TestCaseGroup* createMultisampleShaderFragmentMaskTests (tcu::TestContext& 
 {
 	const auto	cleanGroup	= [](tcu::TestCaseGroup*, PipelineConstructionType) { SingletonDevice::destroy(); };
 	const char*	groupName	= "shader_fragment_mask";
-	const char*	groupDesc	= "Access raw texel values in a compressed MSAA surface";
 
-	return createTestGroup(testCtx, groupName, groupDesc, createShaderFragmentMaskTestsInGroup, pipelineConstructionType, cleanGroup);
+	// Access raw texel values in a compressed MSAA surface
+	return createTestGroup(testCtx, groupName, createShaderFragmentMaskTestsInGroup, pipelineConstructionType, cleanGroup);
 }
 
 } // pipeline

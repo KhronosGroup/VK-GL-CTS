@@ -1195,7 +1195,7 @@ tcu::TestStatus conversionTest (Context& context, TestConfig config)
 			vk::VK_IMAGE_TILING_OPTIMAL,								// tiling
 			vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
 			vk::VK_IMAGE_USAGE_SAMPLED_BIT,								// usage
-			ycbcrImageFlags												// flags
+			(vk::VkImageCreateFlags)ycbcrImageFlags						// flags
 		};
 
 		vk::VkSamplerYcbcrConversionImageFormatProperties	samplerYcbcrConversionImage = {};
@@ -1294,7 +1294,7 @@ tcu::TestStatus conversionTest (Context& context, TestConfig config)
 
 tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "ycbcr", "YCbCr conversion tests"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "ycbcr"));
 
 	struct {
 		const char *			name;
@@ -1433,12 +1433,13 @@ tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx)
 	{
 		const vk::VkFormat				format		(testFormats[formatNdx]);
 		const std::string				formatName	(de::toLower(std::string(getFormatName(format)).substr(10)));
-		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ("Tests for color conversion using format " + formatName).c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 
 		for (size_t shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(shaderTypes); shaderNdx++)
 		{
 			const char*						shaderTypeName	= shaderTypes[shaderNdx].name;
-			de::MovePtr<tcu::TestCaseGroup>	shaderGroup (new tcu::TestCaseGroup(testCtx, shaderTypeName, "YCbCr conversion tests"));
+			// YCbCr conversion tests
+			de::MovePtr<tcu::TestCaseGroup>	shaderGroup (new tcu::TestCaseGroup(testCtx, shaderTypeName));
 
 			for (size_t modelNdx = 0; modelNdx < DE_LENGTH_OF_ARRAY(colorModels); modelNdx++)
 			{
@@ -1448,7 +1449,8 @@ tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx)
 				if (colorModel != vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY && ycbcr::getYCbCrFormatChannelCount(format) < 3)
 					continue;
 
-				de::MovePtr<tcu::TestCaseGroup> colorModelGroup (new tcu::TestCaseGroup(testCtx, colorModelName, "YCbCr conversion tests"));
+				// YCbCr conversion tests
+				de::MovePtr<tcu::TestCaseGroup> colorModelGroup (new tcu::TestCaseGroup(testCtx, colorModelName));
 
 				for (size_t rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(colorRanges); rangeNdx++)
 				{
@@ -1463,7 +1465,7 @@ tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx)
 							continue;
 					}
 
-					de::MovePtr<tcu::TestCaseGroup>		colorRangeGroup	(new tcu::TestCaseGroup(testCtx, colorRangeName, ("Tests for color range " + std::string(colorRangeName)).c_str()));
+					de::MovePtr<tcu::TestCaseGroup>		colorRangeGroup	(new tcu::TestCaseGroup(testCtx, colorRangeName));
 
 					for (size_t chromaOffsetNdx = 0; chromaOffsetNdx < DE_LENGTH_OF_ARRAY(chromaLocations); chromaOffsetNdx++)
 					{
@@ -1491,7 +1493,6 @@ tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx)
 
 							addFunctionCaseWithPrograms(colorRangeGroup.get(),
 														std::string(tilingName) + "_" + chromaOffsetName + (disjoint ? "_disjoint" : ""),
-														"",
 														checkSupport,
 														testShaders,
 														conversionTest,

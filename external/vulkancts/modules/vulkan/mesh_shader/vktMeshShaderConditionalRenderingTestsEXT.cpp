@@ -38,6 +38,7 @@
 
 #include "tcuVector.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuTextureUtil.hpp"
 
 #include <vector>
 #include <sstream>
@@ -92,9 +93,10 @@ std::string paddedHex (uint32_t value)
 	return repr.str();
 }
 
-tcu::Vec4 getOutputColor (void)
+tcu::Vec4 getOutputColor (int layerIndex)
 {
-	return tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
+	DE_ASSERT(layerIndex >= 0 && layerIndex <= 1);
+	return tcu::Vec4(static_cast<float>(layerIndex), 0.0f, 1.0f, 1.0f);
 }
 
 tcu::Vec4 getClearColor (void)
@@ -111,6 +113,7 @@ struct TestParams
 	uint32_t		condValue;
 	bool			inverted;
 	bool			useTask;
+	bool			multiView;
 
 	bool needsSecondaryCmdBuffer (void) const
 	{
@@ -121,8 +124,8 @@ struct TestParams
 class ConditionalRenderingCase : public vkt::TestCase
 {
 public:
-					ConditionalRenderingCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-						: vkt::TestCase	(testCtx, name, description)
+					ConditionalRenderingCase	(tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+						: vkt::TestCase	(testCtx, name)
 						, m_params		(params)
 						{}
 	virtual			~ConditionalRenderingCase	(void) {}
@@ -313,15 +316,20 @@ void ConditionalRenderingCase::initPrograms (vk::SourceCollections& programColle
 		;
 	programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
 
-	const auto outColor = getOutputColor();
+	const auto outColor = getOutputColor(0u);
 	std::ostringstream frag;
 	frag
 		<< "#version 460\n"
+		<< (m_params.multiView ? "#extension GL_EXT_multiview : enable\n" : "")
 		<< "\n"
 		<< "layout (location=0) out vec4 outColor;\n"
 		<< "\n"
 		<< "void main (void) {\n"
-		<< "    outColor = vec4" << outColor << ";\n"
+		<< "    outColor = vec4("
+		<< (m_params.multiView ? "gl_ViewIndex" : std::to_string(outColor.x())) << ", "
+		<< outColor.y() << ", "
+		<< outColor.z() << ", "
+		<< outColor.w() << ");\n"
 		<< "}\n"
 		;
 	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
@@ -347,6 +355,15 @@ void ConditionalRenderingCase::checkSupport (Context& context) const
 		if (!condRenderingFeatures.inheritedConditionalRendering)
 			TCU_THROW(NotSupportedError, "inheritedConditionalRendering not supported");
 	}
+
+	if (m_params.multiView)
+	{
+		context.requireDeviceFunctionality("VK_KHR_multiview");
+
+		const auto& meshFeatures = context.getMeshShaderFeaturesEXT();
+		if (!meshFeatures.multiviewMeshShader)
+			TCU_THROW(NotSupportedError, "multiviewMeshShader not supported");
+	}
 }
 
 tcu::TestStatus ConditionalRenderingInstance::iterate ()
@@ -360,10 +377,11 @@ tcu::TestStatus ConditionalRenderingInstance::iterate ()
 	const auto			colorFormat		= VK_FORMAT_R8G8B8A8_UNORM;
 	const auto			colorUsage		= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 	const auto			tcuFormat		= mapVkFormat(colorFormat);
-	const auto			colorExtent		= makeExtent3D(4u, 4u, 1u);
-	const tcu::IVec3	iExtent3D		(static_cast<int>(colorExtent.width), static_cast<int>(colorExtent.height), static_cast<int>(colorExtent.depth));
+	const auto			imageLayers		= (m_params.multiView ? 2 : 1);
+	const tcu::IVec3	fbExtent		(4, 4, imageLayers);
+	const auto			uImageLayers	= static_cast<uint32_t>(imageLayers);
+	const auto			colorExtent		= makeExtent3D(static_cast<uint32_t>(fbExtent.x()), static_cast<uint32_t>(fbExtent.y()), 1u);
 	const auto			clearColor		= getClearColor();
-	const auto			drawColor		= getOutputColor();
 	const auto			bindPoint		= VK_PIPELINE_BIND_POINT_GRAPHICS;
 	const auto			needsSecCmd		= m_params.needsSecondaryCmdBuffer();
 
@@ -377,7 +395,7 @@ tcu::TestStatus ConditionalRenderingInstance::iterate ()
 		colorFormat,							//	VkFormat				format;
 		colorExtent,							//	VkExtent3D				extent;
 		1u,										//	uint32_t				mipLevels;
-		1u,										//	uint32_t				arrayLayers;
+		uImageLayers,							//	uint32_t				arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
 		colorUsage,								//	VkImageUsageFlags		usage;
@@ -387,16 +405,37 @@ tcu::TestStatus ConditionalRenderingInstance::iterate ()
 		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
 	};
 	ImageWithMemory	colorAtt		(vkd, device, alloc, colorAttCreateInfo, MemoryRequirement::Any);
-	const auto		colorSRR		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const auto		colorSRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
-	const auto		colorAttView	= makeImageView(vkd, device, colorAtt.get(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
+	const auto		colorSRR		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, imageLayers);
+	const auto		colorSRL		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, imageLayers);
+	const auto		viewType		= (m_params.multiView ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
+	const auto		colorAttView	= makeImageView(vkd, device, colorAtt.get(), viewType, colorFormat, colorSRR);
+
+	const uint32_t							multiviewMask		= 0x3u;
+	const VkRenderPassMultiviewCreateInfo	multiviewCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO,	//	VkStructureType	sType;
+		nullptr,												//	const void*		pNext;
+		1u,														//	uint32_t		subpassCount;
+		&multiviewMask,											//	const uint32_t*	pViewMasks;
+		0u,														//	uint32_t		dependencyCount;
+		nullptr,												//	const int32_t*	pViewOffsets;
+		0u,														//	uint32_t		correlationMaskCount;
+		nullptr,												//	const uint32_t*	pCorrelationMasks;
+	};
 
 	// Render pass and framebuffer.
-	const auto renderPass	= makeRenderPass(vkd, device, colorFormat);
+	const auto renderPass	= makeRenderPass(vkd, device,
+		colorFormat, VK_FORMAT_UNDEFINED,
+		VK_ATTACHMENT_LOAD_OP_CLEAR,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		nullptr, (m_params.multiView ? &multiviewCreateInfo : nullptr));
 	const auto framebuffer	= makeFramebuffer(vkd, device, renderPass.get(), colorAttView.get(), colorExtent.width, colorExtent.height);
 
 	// Verification buffer.
-	const auto			verifBufferSize			= static_cast<VkDeviceSize>(tcu::getPixelSize(tcuFormat) * iExtent3D.x() * iExtent3D.y() * iExtent3D.z());
+	const auto			verifBufferSize			= static_cast<VkDeviceSize>(tcu::getPixelSize(tcuFormat) * fbExtent.x() * fbExtent.y() * fbExtent.z());
 	const auto			verifBufferCreateInfo	= makeBufferCreateInfo(verifBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	BufferWithMemory	verifBuffer				(vkd, device, alloc, verifBufferCreateInfo, MemoryRequirement::HostVisible);
 	auto&				verifBufferAlloc		= verifBuffer.getAllocation();
@@ -432,8 +471,8 @@ tcu::TestStatus ConditionalRenderingInstance::iterate ()
 
 	// Common conditional rendering begin info.
 	const auto									conditionalRenderingFlags	=	(m_params.inverted
-																				? VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT
-																				: static_cast<VkConditionalRenderingFlagBitsEXT>(0));
+																				? (VkConditionalRenderingFlagsEXT)VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT
+																				: static_cast<VkConditionalRenderingFlagsEXT>(0));
 	const VkConditionalRenderingBeginInfoEXT	conditionalRenderingBegin	=
 	{
 		VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT,					//	VkStructureType					sType;
@@ -541,14 +580,19 @@ tcu::TestStatus ConditionalRenderingInstance::iterate ()
 
 	invalidateAlloc(vkd, device, verifBufferAlloc);
 
-	const tcu::ConstPixelBufferAccess	resultAccess	(tcuFormat, iExtent3D, verifBufferData);
+	const tcu::ConstPixelBufferAccess	resultAccess	(tcuFormat, fbExtent, verifBufferData);
 	const bool							expectDraw		= ((m_params.condValue != 0u) != m_params.inverted);
-	const auto							expectedColor	= (expectDraw ? drawColor : clearColor);
 	const tcu::Vec4						threshold		(0.0f, 0.0f, 0.0f, 0.0f);
 
-	auto& log = m_context.getTestContext().getLog();
-	if (!tcu::floatThresholdCompare(log, "Result", "", expectedColor, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
-		TCU_FAIL("Check log for details");
+	for (int k = 0; k < imageLayers; ++k)
+	{
+		const auto layerAccess		= tcu::getSubregion(resultAccess, 0, 0, k, fbExtent.x(), fbExtent.y(), 1);
+		const auto expectedColor	= (expectDraw ? getOutputColor(k) : clearColor);
+
+		auto& log = m_context.getTestContext().getLog();
+		if (!tcu::floatThresholdCompare(log, "Result", "", expectedColor, layerAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+			TCU_FAIL("Check log for details");
+	}
 
 	return tcu::TestStatus::pass("Pass");
 }
@@ -557,7 +601,7 @@ tcu::TestStatus ConditionalRenderingInstance::iterate ()
 
 tcu::TestCaseGroup* createMeshShaderConditionalRenderingTestsEXT (tcu::TestContext& testCtx)
 {
-	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "conditional_rendering", "Mesh Shader with Conditional Rendering"));
+	GroupPtr mainGroup (new tcu::TestCaseGroup(testCtx, "conditional_rendering"));
 
 	const struct
 	{
@@ -625,42 +669,59 @@ tcu::TestCaseGroup* createMeshShaderConditionalRenderingTestsEXT (tcu::TestConte
 
 	for (const auto& drawTypeCase : drawTypeCases)
 	{
-		GroupPtr drawTypeGroup (new tcu::TestCaseGroup(testCtx, drawTypeCase.name, ""));
+		GroupPtr drawTypeGroup (new tcu::TestCaseGroup(testCtx, drawTypeCase.name));
 
 		for (const auto& cmdBufferTypeCase : cmdBufferTypeCases)
 		{
-			GroupPtr cmdBufferTypeGroup (new tcu::TestCaseGroup(testCtx, cmdBufferTypeCase.name, ""));
+			GroupPtr cmdBufferTypeGroup (new tcu::TestCaseGroup(testCtx, cmdBufferTypeCase.name));
 
 			for (const auto& bindWithOffsetCase : bindWithOffsetCases)
 			{
-				GroupPtr bindWithOffsetGroup (new tcu::TestCaseGroup(testCtx, bindWithOffsetCase.name, ""));
+				GroupPtr bindWithOffsetGroup (new tcu::TestCaseGroup(testCtx, bindWithOffsetCase.name));
 
 				for (const auto& condWithOffsetCase : condWithOffsetCases)
 				{
-					GroupPtr condWithOffsetGroup (new tcu::TestCaseGroup(testCtx, condWithOffsetCase.name, ""));
+					GroupPtr condWithOffsetGroup (new tcu::TestCaseGroup(testCtx, condWithOffsetCase.name));
 
 					for (const auto& inversionCase : inversionCases)
 					{
-						GroupPtr inversionGroup (new tcu::TestCaseGroup(testCtx, inversionCase.name, ""));
+						GroupPtr inversionGroup (new tcu::TestCaseGroup(testCtx, inversionCase.name));
 
 						for (const auto& useTaskCase : useTaskCases)
 						{
-							GroupPtr useTaskGroup (new tcu::TestCaseGroup(testCtx, useTaskCase.name, ""));
+							GroupPtr useTaskGroup (new tcu::TestCaseGroup(testCtx, useTaskCase.name));
 
 							for (const auto& condValue : condValues)
 							{
-								const auto			testName	= "value_" + paddedHex(condValue);
-								const TestParams	params		=
+								for (const auto multiView : { false, true })
 								{
-									drawTypeCase.drawType,				//	DrawType		drawType;
-									cmdBufferTypeCase.cmdBufferType,	//	CmdBufferType	cmdBufferType;
-									bindWithOffsetCase.bindWithOffset,	//	bool			bindWithOffset;
-									condWithOffsetCase.condWithOffset,	//	bool			condWithOffset;
-									condValue,							//	uint32_t		condValue;
-									inversionCase.inverted,				//	bool			inverted;
-									useTaskCase.useTask,				//	bool			useTask;
-								};
-								useTaskGroup->addChild(new ConditionalRenderingCase(testCtx, testName, "", params));
+									if (multiView)
+									{
+										// Skip some multiview combinations which are not that interesting.
+										if (condValue != 0u && condValue != 1u)
+											continue;
+
+										if (bindWithOffsetCase.bindWithOffset)
+											continue;
+
+										if (condWithOffsetCase.condWithOffset)
+											continue;
+									}
+
+									const auto			testName	= "value_" + paddedHex(condValue) + (multiView ? "_multiview" : "");
+									const TestParams	params		=
+									{
+										drawTypeCase.drawType,				//	DrawType		drawType;
+										cmdBufferTypeCase.cmdBufferType,	//	CmdBufferType	cmdBufferType;
+										bindWithOffsetCase.bindWithOffset,	//	bool			bindWithOffset;
+										condWithOffsetCase.condWithOffset,	//	bool			condWithOffset;
+										condValue,							//	uint32_t		condValue;
+										inversionCase.inverted,				//	bool			inverted;
+										useTaskCase.useTask,				//	bool			useTask;
+										multiView,							//	bool			multiView;
+									};
+									useTaskGroup->addChild(new ConditionalRenderingCase(testCtx, testName, params));
+								}
 							}
 
 							inversionGroup->addChild(useTaskGroup.release());

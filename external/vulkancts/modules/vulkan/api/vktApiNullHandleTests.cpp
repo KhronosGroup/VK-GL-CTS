@@ -149,6 +149,13 @@ inline void release (Context& context, VkShaderModule shaderModule, const VkAllo
 #endif // CTS_USES_VULKANSC
 }
 
+#ifndef CTS_USES_VULKANSC
+inline void release(Context& context, VkShaderEXT shaderObject, const VkAllocationCallbacks* pAllocator)
+{
+	context.getDeviceInterface().destroyShaderEXT(context.getDevice(), shaderObject, pAllocator);
+}
+#endif // CTS_USES_VULKANSC
+
 inline void release (Context& context, VkDevice device, VkCommandPool cmdPool, deUint32 numCmdBuffers, const VkCommandBuffer* pCmdBuffers)
 {
 	DE_ASSERT(device		!= DE_NULL);
@@ -243,6 +250,13 @@ tcu::TestStatus test<VkCommandBuffer> (Context& context)
 #endif // CTS_USES_VULKANSC
 }
 
+#ifndef CTS_USES_VULKANSC
+void checkSupportShaderObject (Context& context)
+{
+	context.requireDeviceFunctionality("VK_EXT_shader_object");
+}
+#endif // CTS_USES_VULKANSC
+
 void checkSupportFreeDescriptorSets (Context& context)
 {
 #ifdef CTS_USES_VULKANSC
@@ -314,37 +328,40 @@ void checkEventSupport (Context& context)
 
 void addTestsToGroup (tcu::TestCaseGroup* group)
 {
-	addFunctionCase(group,	"destroy_buffer",					"",		test<VkBuffer>);
-	addFunctionCase(group,	"destroy_buffer_view",				"",		test<VkBufferView>);
+	addFunctionCase(group,	"destroy_buffer", test<VkBuffer>);
+	addFunctionCase(group,	"destroy_buffer_view", test<VkBufferView>);
 #ifndef CTS_USES_VULKANSC
 	// Removed from Vulkan SC test set: vkDestroyCommandPool and vkDestroyDescriptorPool command do not exist in Vulkan SC
-	addFunctionCase(group,	"destroy_command_pool",				"",		test<VkCommandPool>);
-	addFunctionCase(group,	"destroy_descriptor_pool",			"",		test<VkDescriptorPool>);
+	addFunctionCase(group,	"destroy_command_pool", test<VkCommandPool>);
+	addFunctionCase(group,	"destroy_descriptor_pool", test<VkDescriptorPool>);
 #endif // CTS_USES_VULKANSC
-	addFunctionCase(group,	"destroy_descriptor_set_layout",	"",		test<VkDescriptorSetLayout>);
-	addFunctionCase(group,	"destroy_device",					"",		test<VkDevice>);
-	addFunctionCase(group,	"destroy_event",					"",		checkEventSupport, test<VkEvent>);
-	addFunctionCase(group,	"destroy_fence",					"",		test<VkFence>);
-	addFunctionCase(group,	"destroy_framebuffer",				"",		test<VkFramebuffer>);
-	addFunctionCase(group,	"destroy_image",					"",		test<VkImage>);
-	addFunctionCase(group,	"destroy_image_view",				"",		test<VkImageView>);
-	addFunctionCase(group,	"destroy_instance",					"",		test<VkInstance>);
-	addFunctionCase(group,	"destroy_pipeline",					"",		test<VkPipeline>);
-	addFunctionCase(group,	"destroy_pipeline_cache",			"",		test<VkPipelineCache>);
-	addFunctionCase(group,	"destroy_pipeline_layout",			"",		test<VkPipelineLayout>);
+	addFunctionCase(group,	"destroy_descriptor_set_layout", test<VkDescriptorSetLayout>);
+	addFunctionCase(group,	"destroy_device", test<VkDevice>);
+	addFunctionCase(group,	"destroy_event", checkEventSupport, test<VkEvent>);
+	addFunctionCase(group,	"destroy_fence", test<VkFence>);
+	addFunctionCase(group,	"destroy_framebuffer", test<VkFramebuffer>);
+	addFunctionCase(group,	"destroy_image", test<VkImage>);
+	addFunctionCase(group,	"destroy_image_view", test<VkImageView>);
+	addFunctionCase(group,	"destroy_instance", test<VkInstance>);
+	addFunctionCase(group,	"destroy_pipeline", test<VkPipeline>);
+	addFunctionCase(group,	"destroy_pipeline_cache", test<VkPipelineCache>);
+	addFunctionCase(group,	"destroy_pipeline_layout", test<VkPipelineLayout>);
 #ifndef CTS_USES_VULKANSC
 	// Removed from Vulkan SC test set: vkDestroyQueryPool command does not exist in Vulkan SC
-	addFunctionCase(group,	"destroy_query_pool",				"",		test<VkQueryPool>);
+	addFunctionCase(group,	"destroy_query_pool", test<VkQueryPool>);
 #endif // CTS_USES_VULKANSC
-	addFunctionCase(group,	"destroy_render_pass",				"",		test<VkRenderPass>);
-	addFunctionCase(group,	"destroy_sampler",					"",		test<VkSampler>);
-	addFunctionCase(group,	"destroy_semaphore",				"",		test<VkSemaphore>);
-	addFunctionCase(group,	"destroy_shader_module",			"",		test<VkShaderModule>);
-	addFunctionCase(group,	"free_command_buffers",				"",		test<VkCommandBuffer>);
-	addFunctionCase(group,	"free_descriptor_sets",				"",		checkSupportFreeDescriptorSets, test<VkDescriptorSet>);
+	addFunctionCase(group,	"destroy_render_pass", test<VkRenderPass>);
+	addFunctionCase(group,	"destroy_sampler", test<VkSampler>);
+	addFunctionCase(group,	"destroy_semaphore", test<VkSemaphore>);
+	addFunctionCase(group,	"destroy_shader_module", test<VkShaderModule>);
+#ifndef CTS_USES_VULKANSC
+	addFunctionCase(group,	"destroy_shader_object", checkSupportShaderObject, test<VkShaderEXT>);
+#endif // CTS_USES_VULKANSC
+	addFunctionCase(group,	"free_command_buffers", test<VkCommandBuffer>);
+	addFunctionCase(group,	"free_descriptor_sets", checkSupportFreeDescriptorSets, test<VkDescriptorSet>);
 #ifndef CTS_USES_VULKANSC
 	// Removed from Vulkan SC test set: vkFreeMemory command does not exist in Vulkan SC
-	addFunctionCase(group,	"free_memory",						"",		test<VkDeviceMemory>);
+	addFunctionCase(group,	"free_memory", test<VkDeviceMemory>);
 #endif // CTS_USES_VULKANSC
 }
 
@@ -352,7 +369,8 @@ void addTestsToGroup (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createNullHandleTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "null_handle", "Destroying/freeing a VK_NULL_HANDLE should be silently ignored", addTestsToGroup);
+	// Destroying/freeing a VK_NULL_HANDLE should be silently ignored
+	return createTestGroup(testCtx, "null_handle", addTestsToGroup);
 }
 
 } // api

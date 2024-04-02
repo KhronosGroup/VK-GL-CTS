@@ -22,6 +22,9 @@
  *//*--------------------------------------------------------------------*/
 
 #include "deRandom.hpp"
+#include "deMemory.h"
+
+#include <cstdint>
 
 inline bool operator== (const deRandom& a, const deRandom& b)
 {
@@ -182,6 +185,38 @@ void Random_selfTest (void)
 			for(int j = 0; j < DE_LENGTH_OF_ARRAY(items); j++)
 				DE_TEST_ASSERT(expected[i][j] == items[j]);
 		}
+	}
+}
+
+void fillWithRandomData (de::Random& rnd, void* data, size_t size)
+{
+	char*	bytes		= reinterpret_cast<char*>(data);
+	size_t	remaining	= size;
+
+	// Proceed in blocks of 4 bytes, then 2 bytes, then single bytes.
+
+	while (remaining >= sizeof(uint32_t))
+	{
+		const auto value = rnd.getUint32();
+		deMemcpy(bytes, &value, sizeof(value));
+		remaining -= sizeof(value);
+		bytes += sizeof(value);
+	}
+
+	while (remaining >= sizeof(uint16_t))
+	{
+		const auto value = rnd.getUint16();
+		deMemcpy(bytes, &value, sizeof(value));
+		remaining -= sizeof(value);
+		bytes += sizeof(value);
+	}
+
+	while (remaining >= sizeof(uint8_t))
+	{
+		const auto value = rnd.getUint8();
+		deMemcpy(bytes, &value, sizeof(value));
+		remaining -= sizeof(value);
+		bytes += sizeof(value);
 	}
 }
 

@@ -54,9 +54,11 @@ using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx, const std::string& name)
 {
-	GroupPtr mainGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), "Mesh Shader Tests"));
-	GroupPtr nvGroup	(new tcu::TestCaseGroup(testCtx, "nv", "Tests for VK_NV_mesh_shader"));
-	GroupPtr extGroup	(new tcu::TestCaseGroup(testCtx, "ext", "Tests for VK_EXT_mesh_shader"));
+	GroupPtr mainGroup	(new tcu::TestCaseGroup(testCtx, name.c_str()));
+	// Tests for VK_NV_mesh_shader
+	GroupPtr nvGroup	(new tcu::TestCaseGroup(testCtx, "nv"));
+	// Tests for VK_EXT_mesh_shader
+	GroupPtr extGroup	(new tcu::TestCaseGroup(testCtx, "ext"));
 
 	nvGroup->addChild(createMeshShaderSmokeTests(testCtx));
 	nvGroup->addChild(createMeshShaderApiTests(testCtx));

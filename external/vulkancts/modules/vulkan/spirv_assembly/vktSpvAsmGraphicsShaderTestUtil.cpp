@@ -38,6 +38,8 @@
 
 #include "deRandom.hpp"
 
+#include <cmath>
+
 namespace vkt
 {
 namespace SpirVAssembly
@@ -4622,7 +4624,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 							instance.customizedStages == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
 							instance.customizedStages == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 						{
-							if (deFloatIsInf(outputFloats[expectedNdx]) || deFloatIsNaN(outputFloats[expectedNdx]))
+							if (std::isinf(outputFloats[expectedNdx]) || std::isnan(outputFloats[expectedNdx]))
 								return tcu::TestStatus::fail("Value returned is invalid");
 
 							diff = outputFloats[expectedNdx] - expectedFloats[expectedNdx];
@@ -4759,7 +4761,7 @@ void createTestForStage (vk::VkShaderStageFlagBits	stage,
 
 	ctx.renderFullSquare = renderFullSquare;
 	ctx.splitRenderArea	= splitRenderArea;
-	addFunctionCaseWithPrograms<InstanceContext>(tests, name, "", stageData.initProgramsFn, runAndVerifyDefaultPipeline, ctx);
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name, stageData.initProgramsFn, runAndVerifyDefaultPipeline, ctx);
 }
 
 void createTestsForAllStages (const std::string&			name,

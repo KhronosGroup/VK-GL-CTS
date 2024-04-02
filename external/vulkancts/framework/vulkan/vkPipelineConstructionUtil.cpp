@@ -39,9 +39,11 @@
 #include "tcuTextureUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkPipelineConstructionUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include <memory>
 #include <set>
+#include <map>
 
 namespace vk
 {
@@ -208,17 +210,22 @@ void checkPipelineConstructionRequirements (const InstanceInterface&		vki,
 	if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 		return;
 
+	const auto& supportedExtensions = enumerateCachedDeviceExtensionProperties(vki, physicalDevice);
+
 	if (isConstructionTypeShaderObject(pipelineConstructionType))
 	{
-		const auto supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 		if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_shader_object")))
 			TCU_THROW(NotSupportedError, "VK_EXT_shader_object not supported");
 		return;
 	}
 
-	const auto supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 	if (!isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_graphics_pipeline_library")))
 		TCU_THROW(NotSupportedError, "VK_EXT_graphics_pipeline_library not supported");
+}
+
+PipelineCreateFlags2 translateCreateFlag(VkPipelineCreateFlags flagToTranslate)
+{
+	return (PipelineCreateFlags2)flagToTranslate;
 }
 
 void addToChain(void** structThatStartsChain, void* structToAddAtTheEnd)
@@ -259,16 +266,6 @@ void addToChain(void** structThatStartsChain, void* structToAddAtTheEnd)
 
 	// probably safetyCouter is to small
 	DE_ASSERT(false);
-}
-
-const void* findPNext (const void* pNext, VkStructureType sType) {
-	while (pNext != DE_NULL)
-	{
-		if (((VkBaseOutStructure*)pNext)->sType == sType)
-			return (const void*)pNext;
-		pNext = ((VkBaseOutStructure*)pNext)->pNext;
-	}
-	return (const void*)DE_NULL;
 }
 
 namespace {
@@ -428,6 +425,18 @@ PipelineLayoutWrapper::PipelineLayoutWrapper (PipelineConstructionType pipelineC
 	m_pipelineLayout = createPipelineLayout(vk, device, &createInfo);
 }
 
+PipelineLayoutWrapper::PipelineLayoutWrapper(PipelineLayoutWrapper&& rhs) noexcept
+	: m_pipelineConstructionType	(rhs.m_pipelineConstructionType)
+	, m_vk							(rhs.m_vk)
+	, m_device						(rhs.m_device)
+	, m_flags						(rhs.m_flags)
+	, m_setLayoutCount				(rhs.m_setLayoutCount)
+	, m_setLayouts					(std::move(rhs.m_setLayouts))
+	, m_pushConstantRangeCount		(rhs.m_pushConstantRangeCount)
+	, m_pushConstantRanges			(std::move(rhs.m_pushConstantRanges))
+	, m_pipelineLayout				(rhs.m_pipelineLayout)
+{ }
+
 PipelineLayoutWrapper& PipelineLayoutWrapper::operator=	(PipelineLayoutWrapper&& rhs)
 {
 	m_pipelineConstructionType = rhs.m_pipelineConstructionType;
@@ -456,21 +465,64 @@ void PipelineLayoutWrapper::bindDescriptorSets (VkCommandBuffer commandBuffer, V
 	}
 }
 
+#ifndef CTS_USES_VULKANSC
+RenderPassWrapper::SubpassDependency::SubpassDependency (const VkSubpassDependency& dependency)
+	: srcSubpass		(dependency.srcSubpass)
+	, dstSubpass		(dependency.dstSubpass)
+	, srcStageMask		(dependency.srcStageMask)
+	, dstStageMask		(dependency.dstStageMask)
+	, srcAccessMask		(dependency.srcAccessMask)
+	, dstAccessMask		(dependency.dstAccessMask)
+	, dependencyFlags	(dependency.dependencyFlags)
+	, sync2				(false)
+{
+}
+
+RenderPassWrapper::SubpassDependency::SubpassDependency (const VkSubpassDependency2& dependency)
+	: srcSubpass		(dependency.srcSubpass)
+	, dstSubpass		(dependency.dstSubpass)
+	, srcStageMask		(0u)
+	, dstStageMask		(0u)
+	, srcAccessMask		(0u)
+	, dstAccessMask		(0u)
+	, dependencyFlags	(dependency.dependencyFlags)
+	, sync2				(false)
+{
+	DE_ASSERT(dependency.viewOffset == 0);
+	const auto memBarrier = findStructure<VkMemoryBarrier2>(dependency.pNext);
+	if (memBarrier)
+	{
+		srcStageMask	= memBarrier->srcStageMask;
+		dstStageMask	= memBarrier->dstStageMask;
+		srcAccessMask	= memBarrier->srcAccessMask;
+		dstAccessMask	= memBarrier->dstAccessMask;
+		sync2			= true;
+	}
+	else
+	{
+		srcStageMask	= dependency.srcStageMask;
+		dstStageMask	= dependency.dstStageMask;
+		srcAccessMask	= dependency.srcAccessMask;
+		dstAccessMask	= dependency.dstAccessMask;
+	}
+}
+#endif // CTS_USES_VULKANSC
+
 RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstructionType, const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo* pCreateInfo)
-	: m_pipelineConstructionType	(pipelineConstructionType)
+	: m_isDynamicRendering			(vk::isConstructionTypeShaderObject(pipelineConstructionType))
 #ifndef CTS_USES_VULKANSC
 	, m_renderingInfo				()
 	, m_secondaryCommandBuffers		(false)
 #endif
 {
-	if (!isConstructionTypeShaderObject(pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		m_renderPass = vk::createRenderPass(vk, device, pCreateInfo);
 	}
 	else
 	{
 #ifndef CTS_USES_VULKANSC
-		VkRenderPassMultiviewCreateInfo* multiView = (VkRenderPassMultiviewCreateInfo*)findPNext(pCreateInfo->pNext, VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO);
+		const auto multiView = findStructure<VkRenderPassMultiviewCreateInfo>(pCreateInfo->pNext);
 		if (multiView)
 		{
 			for (deUint32 i = 0; i < multiView->subpassCount; ++i)
@@ -580,26 +632,34 @@ RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstruct
 				}
 			}
 		}
+
+		m_dependencies.reserve(pCreateInfo->dependencyCount);
+		for (uint32_t depIdx = 0u; depIdx < pCreateInfo->dependencyCount; ++depIdx)
+			m_dependencies.emplace_back(pCreateInfo->pDependencies[depIdx]);
 #endif
 	}
 }
 
 RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstructionType, const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo)
-	: m_pipelineConstructionType	(pipelineConstructionType)
+	: RenderPassWrapper (vk, device, pCreateInfo, isConstructionTypeShaderObject(pipelineConstructionType))
+	{}
+
+RenderPassWrapper::RenderPassWrapper (const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo, bool dynamicRendering)
+	: m_isDynamicRendering			(dynamicRendering)
 #ifndef CTS_USES_VULKANSC
 	, m_renderingInfo				()
 	, m_secondaryCommandBuffers		(false)
 #endif
 {
 
-	if (!isConstructionTypeShaderObject(pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		m_renderPass = vk::createRenderPass2(vk, device, pCreateInfo);
 	}
 	else
 	{
 #ifndef CTS_USES_VULKANSC
-		VkRenderPassMultiviewCreateInfo* multiView = (VkRenderPassMultiviewCreateInfo*)findPNext(pCreateInfo->pNext, VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO);
+		const auto multiView = findStructure<VkRenderPassMultiviewCreateInfo>(pCreateInfo->pNext);
 		if (multiView)
 		{
 			for (deUint32 i = 0; i < multiView->subpassCount; ++i)
@@ -622,11 +682,11 @@ RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstruct
 			auto& subpass = m_subpasses[s];
 			subpass.m_colorAttachments.resize(pCreateInfo->pSubpasses[s].colorAttachmentCount);
 
-			VkMultisampledRenderToSingleSampledInfoEXT* msrtss = (VkMultisampledRenderToSingleSampledInfoEXT*)findPNext(pCreateInfo->pSubpasses[s].pNext, VK_STRUCTURE_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_INFO_EXT);
+			const auto msrtss = findStructure<VkMultisampledRenderToSingleSampledInfoEXT>(pCreateInfo->pSubpasses[s].pNext);
 			if (msrtss)
 				subpass.m_msrtss = *msrtss;
 
-			VkSubpassDescriptionDepthStencilResolve* dsr = (VkSubpassDescriptionDepthStencilResolve*)findPNext(pCreateInfo->pSubpasses[s].pNext, VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE);
+			const auto dsr = findStructure<VkSubpassDescriptionDepthStencilResolve>(pCreateInfo->pSubpasses[s].pNext);
 			if (dsr)
 			{
 				subpass.m_dsr = *dsr;
@@ -715,19 +775,23 @@ RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstruct
 				}
 			}
 		}
+
+		m_dependencies.reserve(pCreateInfo->dependencyCount);
+		for (uint32_t depIdx = 0u; depIdx < pCreateInfo->dependencyCount; ++depIdx)
+			m_dependencies.emplace_back(pCreateInfo->pDependencies[depIdx]);
 #endif
 	}
 }
 
 RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstructionType, const DeviceInterface& vk, const VkDevice device, const VkFormat colorFormat, const VkFormat depthStencilFormat, const VkAttachmentLoadOp loadOperation, const VkImageLayout finalLayoutColor,
 	const VkImageLayout finalLayoutDepthStencil, const VkImageLayout subpassLayoutColor, const VkImageLayout subpassLayoutDepthStencil, const VkAllocationCallbacks* const allocationCallbacks)
-	: m_pipelineConstructionType	(pipelineConstructionType)
+	: m_isDynamicRendering			(isConstructionTypeShaderObject(pipelineConstructionType))
 #ifndef CTS_USES_VULKANSC
 	, m_renderingInfo				()
 #endif
 {
 
-	if (!isConstructionTypeShaderObject(pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		m_renderPass = vk::makeRenderPass(vk, device, colorFormat, depthStencilFormat, loadOperation, finalLayoutColor, finalLayoutDepthStencil, subpassLayoutColor, subpassLayoutDepthStencil, allocationCallbacks);
 	}
@@ -814,11 +878,12 @@ RenderPassWrapper::RenderPassWrapper (PipelineConstructionType pipelineConstruct
 }
 
 RenderPassWrapper::RenderPassWrapper (RenderPassWrapper&& rhs) noexcept
-	: m_pipelineConstructionType	(rhs.m_pipelineConstructionType)
+	: m_isDynamicRendering			(rhs.m_isDynamicRendering)
 	, m_renderPass					(rhs.m_renderPass)
 	, m_framebuffer					(rhs.m_framebuffer)
 #ifndef CTS_USES_VULKANSC
 	, m_subpasses					(std::move(rhs.m_subpasses))
+	, m_dependencies				(std::move(rhs.m_dependencies))
 	, m_attachments					(std::move(rhs.m_attachments))
 	, m_images						(std::move(rhs.m_images))
 	, m_imageViews					(std::move(rhs.m_imageViews))
@@ -836,11 +901,12 @@ RenderPassWrapper::RenderPassWrapper (RenderPassWrapper&& rhs) noexcept
 
 RenderPassWrapper& RenderPassWrapper::operator=	(RenderPassWrapper&& rhs) noexcept
 {
-	m_pipelineConstructionType = rhs.m_pipelineConstructionType;
+	m_isDynamicRendering = rhs.m_isDynamicRendering;
 	m_renderPass = rhs.m_renderPass;
 	m_framebuffer = rhs.m_framebuffer;
 #ifndef CTS_USES_VULKANSC
 	m_subpasses = std::move(rhs.m_subpasses);
+	m_dependencies = std::move(rhs.m_dependencies);
 	m_attachments = std::move(rhs.m_attachments);
 	m_images = std::move(rhs.m_images);
 	m_imageViews = std::move(rhs.m_imageViews);
@@ -903,8 +969,91 @@ void RenderPassWrapper::updateLayout(VkImage updatedImage, VkImageLayout newLayo
 			m_layouts[i] = newLayout;
 }
 
+namespace
+{
+
+void recordImageBarrier (const DeviceInterface&			vk,
+						 const VkCommandBuffer			commandBuffer,
+						 const bool						sync2,
+						 const VkPipelineStageFlags2	srcStageMask,
+						 const VkAccessFlags2			srcAccessMask,
+						 const VkPipelineStageFlags2	dstStageMask,
+						 const VkAccessFlags2			dstAccessMask,
+						 const VkImageLayout			prevLayout,
+						 const VkImageLayout			newLayout,
+						 const VkImage					image,
+						 const VkImageSubresourceRange&	subresourceRange)
+{
+	if (sync2)
+	{
+		const auto barrier = makeImageMemoryBarrier2(
+			srcStageMask,
+			srcAccessMask,
+			dstStageMask,
+			dstAccessMask,
+			prevLayout,
+			newLayout,
+			image,
+			subresourceRange);
+
+		const VkDependencyInfo depInfo =
+		{
+			VK_STRUCTURE_TYPE_DEPENDENCY_INFO,	//	VkStructureType					sType;
+			nullptr,							//	const void*						pNext;
+			0u,									//	VkDependencyFlags				dependencyFlags;
+			0u,									//	uint32_t						memoryBarrierCount;
+			nullptr,							//	const VkMemoryBarrier2*			pMemoryBarriers;
+			0u,									//	uint32_t						bufferMemoryBarrierCount;
+			nullptr,							//	const VkBufferMemoryBarrier2*	pBufferMemoryBarriers;
+			1u,									//	uint32_t						imageMemoryBarrierCount;
+			&barrier,							//	const VkImageMemoryBarrier2*	pImageMemoryBarriers;
+		};
+
+		vk.cmdPipelineBarrier2(commandBuffer, &depInfo);
+	}
+	else
+	{
+		const auto barrier = makeImageMemoryBarrier(
+			static_cast<VkAccessFlags>(srcAccessMask),
+			static_cast<VkAccessFlags>(dstAccessMask),
+			prevLayout,
+			newLayout,
+			image,
+			subresourceRange);
+
+		vk.cmdPipelineBarrier(
+			commandBuffer,
+			static_cast<VkPipelineStageFlags>(srcStageMask),
+			static_cast<VkPipelineStageFlags>(dstStageMask),
+			0u, 0u, nullptr, 0u, nullptr, 1u, &barrier);
+	}
+}
+
+} // anonymous namespace
+
 void RenderPassWrapper::transitionLayouts (const DeviceInterface& vk, const VkCommandBuffer commandBuffer, const Subpass& subpass, bool renderPassBegin) const
 {
+	// Use the access and stage flags for dependencies on external subpasses in
+	// the initial layout transitions for images.
+	VkAccessFlags2			externalAccessFlags	= 0u;
+	VkPipelineStageFlags2	externalStageFlags	= 0u;
+	bool					sync2				= false;
+
+	if (renderPassBegin)
+	{
+		for (const auto& dep : m_dependencies)
+		{
+			if (dep.srcSubpass == VK_SUBPASS_EXTERNAL)
+			{
+				externalAccessFlags	|= dep.srcAccessMask;
+				externalStageFlags	|= dep.srcStageMask;
+			}
+
+			if (dep.sync2)
+				sync2 = true;
+		}
+	}
+
 	for (deUint32 i = 0; i < (deUint32)m_attachments.size(); ++i)
 	{
 		// renderPassBegin is true when vkCmdBeginRenderPass should be called in a normal renderPass, and it is false when vkCmdNextSupass should be called
@@ -918,31 +1067,39 @@ void RenderPassWrapper::transitionLayouts (const DeviceInterface& vk, const VkCo
 			{
 				if (subpass.m_colorAttachments[j].index == i)
 				{
-					vk::VkImageMemoryBarrier imageMemoryBarrier = vk::initVulkanStructure();
-					imageMemoryBarrier.srcAccessMask = vk::VK_ACCESS_NONE_KHR;
-					imageMemoryBarrier.dstAccessMask = vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-					imageMemoryBarrier.oldLayout = m_layouts[i];
-					imageMemoryBarrier.newLayout = subpass.m_colorAttachments[j].attachmentInfo.imageLayout;
-					imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					imageMemoryBarrier.image = m_images[i];
-					imageMemoryBarrier.subresourceRange =
-					{
-						vk::VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-						0u,								// uint32_t				baseMipLevel;
-						VK_REMAINING_MIP_LEVELS,		// uint32_t				levelCount;
-						0u,								// uint32_t				baseArrayLayer;
-						VK_REMAINING_ARRAY_LAYERS,		// uint32_t				layerCount;
-					};
-					vk.cmdPipelineBarrier(commandBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
-					updateLayout(imageMemoryBarrier.image, imageMemoryBarrier.newLayout);
+					const auto subresourceRange = makeImageSubresourceRange(
+						vk::VK_IMAGE_ASPECT_COLOR_BIT,
+						0u,
+						VK_REMAINING_MIP_LEVELS,
+						0u,
+						VK_REMAINING_ARRAY_LAYERS);
+
+					const VkPipelineStageFlags2	srcStageMask	= (vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | externalStageFlags);
+					const VkAccessFlags2		srcAccessMask	= externalAccessFlags;
+					const VkPipelineStageFlags2	dstStageMask	= vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+					const VkAccessFlags2		dstAccessMask	= vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+					const VkImageLayout			newLayout		= subpass.m_colorAttachments[j].attachmentInfo.imageLayout;
+
+					recordImageBarrier(vk,
+									   commandBuffer,
+									   sync2,
+									   srcStageMask,
+									   srcAccessMask,
+									   dstStageMask,
+									   dstAccessMask,
+									   m_layouts[i],
+									   newLayout,
+									   m_images[i],
+									   subresourceRange);
+
+					updateLayout(m_images[i], newLayout);
 				}
 			}
 			if (subpass.m_depthStencilAttachment.index == i)
 			{
-				const auto tcuFormat = vk::mapVkFormat(subpass.m_depthStencilAttachment.format);
-				bool hasDepthAspect = tcu::hasDepthComponent(tcuFormat.order);
-				bool hasStencilAspect = tcu::hasStencilComponent(tcuFormat.order);
+				const auto tcuFormat		= vk::mapVkFormat(subpass.m_depthStencilAttachment.format);
+				const bool hasDepthAspect	= tcu::hasDepthComponent(tcuFormat.order);
+				const bool hasStencilAspect	= tcu::hasStencilComponent(tcuFormat.order);
 
 				VkImageAspectFlags aspect = (VkImageAspectFlags)0u;
 				if (hasDepthAspect)
@@ -950,56 +1107,72 @@ void RenderPassWrapper::transitionLayouts (const DeviceInterface& vk, const VkCo
 				if (hasStencilAspect)
 					aspect |= vk::VK_IMAGE_ASPECT_STENCIL_BIT;
 
-				vk::VkImageMemoryBarrier imageMemoryBarrier = vk::initVulkanStructure();
-				imageMemoryBarrier.srcAccessMask = vk::VK_ACCESS_NONE_KHR;
-				imageMemoryBarrier.dstAccessMask = vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-				imageMemoryBarrier.oldLayout = m_layouts[i];
-				imageMemoryBarrier.newLayout = subpass.m_depthStencilAttachment.attachmentInfo.imageLayout;
-				imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				imageMemoryBarrier.image = m_images[i];
-				imageMemoryBarrier.subresourceRange =
-				{
-					aspect,							// VkImageAspectFlags   aspectMask;
-					0u,								// uint32_t                             baseMipLevel;
-					VK_REMAINING_MIP_LEVELS,		// uint32_t				levelCount;
-					0u,								// uint32_t				baseArrayLayer;
-					VK_REMAINING_ARRAY_LAYERS,		// uint32_t				layerCount;
-				};
-				vk.cmdPipelineBarrier(commandBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
-				updateLayout(imageMemoryBarrier.image, imageMemoryBarrier.newLayout);
+				const auto subresourceRange = makeImageSubresourceRange(
+					aspect,
+					0u,
+					VK_REMAINING_MIP_LEVELS,
+					0u,
+					VK_REMAINING_ARRAY_LAYERS);
+
+				const VkPipelineStageFlags2	srcStageMask	= (vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | externalStageFlags);
+				const VkAccessFlags2		srcAccessMask	= externalAccessFlags;
+				const VkPipelineStageFlags2	dstStageMask	= (vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+				const VkAccessFlags2		dstAccessMask	= (vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+				const VkImageLayout			newLayout		= subpass.m_depthStencilAttachment.attachmentInfo.imageLayout;
+
+				recordImageBarrier(vk,
+								   commandBuffer,
+								   sync2,
+								   srcStageMask,
+								   srcAccessMask,
+								   dstStageMask,
+								   dstAccessMask,
+								   m_layouts[i],
+								   newLayout,
+								   m_images[i],
+								   subresourceRange);
+
+				updateLayout(m_images[i], newLayout);
 			}
 			for (deUint32 j = 0; j < (deUint32)subpass.m_resolveAttachments.size(); ++j)
 			{
 				if (subpass.m_resolveAttachments[j].index == i)
 				{
-					vk::VkImageMemoryBarrier imageMemoryBarrier = vk::initVulkanStructure();
-					imageMemoryBarrier.srcAccessMask = vk::VK_ACCESS_NONE_KHR;
-					imageMemoryBarrier.dstAccessMask = vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-					imageMemoryBarrier.oldLayout = m_layouts[i];
-					imageMemoryBarrier.newLayout = subpass.m_resolveAttachments[j].attachmentInfo.imageLayout;
-					imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					imageMemoryBarrier.image = m_images[i];
-					imageMemoryBarrier.subresourceRange =
-					{
-						vk::VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-						0u,								// uint32_t				baseMipLevel;
-						VK_REMAINING_MIP_LEVELS,		// uint32_t				levelCount;
-						0u,								// uint32_t				baseArrayLayer;
-						VK_REMAINING_ARRAY_LAYERS,		// uint32_t				layerCount;
-					};
-					vk.cmdPipelineBarrier(commandBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
-					updateLayout(imageMemoryBarrier.image, imageMemoryBarrier.newLayout);
+					const auto subresourceRange = makeImageSubresourceRange(
+						vk::VK_IMAGE_ASPECT_COLOR_BIT,
+						0u,
+						VK_REMAINING_MIP_LEVELS,
+						0u,
+						VK_REMAINING_ARRAY_LAYERS);
+
+					const VkPipelineStageFlags2	srcStageMask	= (vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | externalStageFlags);
+					const VkAccessFlags2		srcAccessMask	= externalAccessFlags;
+					const VkPipelineStageFlags2	dstStageMask	= vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+					const VkAccessFlags2		dstAccessMask	= vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+					const VkImageLayout			newLayout		= subpass.m_resolveAttachments[j].attachmentInfo.imageLayout;
+
+					recordImageBarrier(vk,
+									   commandBuffer,
+									   sync2,
+									   srcStageMask,
+									   srcAccessMask,
+									   dstStageMask,
+									   dstAccessMask,
+									   m_layouts[i],
+									   newLayout,
+									   m_images[i],
+									   subresourceRange);
+
+					updateLayout(m_images[i], newLayout);
 				}
 			}
 			if (subpass.m_dsr.sType == vk::VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE)
 			{
 				if (subpass.m_dsr.pDepthStencilResolveAttachment && i == subpass.m_dsr.pDepthStencilResolveAttachment->attachment)
 				{
-					const auto tcuFormat = vk::mapVkFormat(subpass.m_depthStencilAttachment.format);
-					bool hasDepthAspect = tcu::hasDepthComponent(tcuFormat.order);
-					bool hasStencilAspect = tcu::hasStencilComponent(tcuFormat.order);
+					const auto tcuFormat		= vk::mapVkFormat(subpass.m_depthStencilAttachment.format);
+					const bool hasDepthAspect	= tcu::hasDepthComponent(tcuFormat.order);
+					const bool hasStencilAspect	= tcu::hasStencilComponent(tcuFormat.order);
 
 					VkImageAspectFlags aspect = (VkImageAspectFlags)0u;
 					if (hasDepthAspect)
@@ -1007,26 +1180,86 @@ void RenderPassWrapper::transitionLayouts (const DeviceInterface& vk, const VkCo
 					if (hasStencilAspect)
 						aspect |= vk::VK_IMAGE_ASPECT_STENCIL_BIT;
 
-					vk::VkImageMemoryBarrier imageMemoryBarrier = vk::initVulkanStructure();
-					imageMemoryBarrier.srcAccessMask = vk::VK_ACCESS_NONE_KHR;
-					imageMemoryBarrier.dstAccessMask = vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-					imageMemoryBarrier.oldLayout = m_layouts[i];
-					imageMemoryBarrier.newLayout = subpass.m_dsr.pDepthStencilResolveAttachment->layout;
-					imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					imageMemoryBarrier.image = m_images[i];
-					imageMemoryBarrier.subresourceRange =
-					{
-						aspect,							// VkImageAspectFlags   aspectMask;
-						0u,								// uint32_t                             baseMipLevel;
-						VK_REMAINING_MIP_LEVELS,		// uint32_t				levelCount;
-						0u,								// uint32_t				baseArrayLayer;
-						VK_REMAINING_ARRAY_LAYERS,		// uint32_t				layerCount;
-					};
-					vk.cmdPipelineBarrier(commandBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
-					updateLayout(imageMemoryBarrier.image, imageMemoryBarrier.newLayout);
+					const auto subresourceRange = makeImageSubresourceRange(
+						aspect,
+						0u,
+						VK_REMAINING_MIP_LEVELS,
+						0u,
+						VK_REMAINING_ARRAY_LAYERS);
+
+					const VkPipelineStageFlags2	srcStageMask	= (vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | externalStageFlags);
+					const VkAccessFlags2		srcAccessMask	= externalAccessFlags;
+					const VkPipelineStageFlags2	dstStageMask	= (vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+					const VkAccessFlags2		dstAccessMask	= vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+					const VkImageLayout			newLayout		= subpass.m_dsr.pDepthStencilResolveAttachment->layout;
+
+					recordImageBarrier(vk,
+									   commandBuffer,
+									   sync2,
+									   srcStageMask,
+									   srcAccessMask,
+									   dstStageMask,
+									   dstAccessMask,
+									   m_layouts[i],
+									   newLayout,
+									   m_images[i],
+									   subresourceRange);
+
+					updateLayout(m_images[i], newLayout);
 				}
 			}
+		}
+	}
+}
+
+void RenderPassWrapper::insertDependencies (const DeviceInterface& vk, const VkCommandBuffer commandBuffer, uint32_t subpassIdx) const
+{
+	for (const auto& dep : m_dependencies)
+	{
+		// Subpass self-dependencies should be handled with manual barriers inside the render pass.
+		if (dep.dstSubpass != subpassIdx || dep.srcSubpass == subpassIdx)
+			continue;
+
+		if (dep.sync2)
+		{
+			const VkMemoryBarrier2 barrier =
+			{
+				VK_STRUCTURE_TYPE_MEMORY_BARRIER,	//	VkStructureType			sType;
+				nullptr,							//	const void*				pNext;
+				dep.srcStageMask,					//	VkPipelineStageFlags2	srcStageMask;
+				dep.srcAccessMask,					//	VkAccessFlags2			srcAccessMask;
+				dep.dstStageMask,					//	VkPipelineStageFlags2	dstStageMask;
+				dep.dstAccessMask,					//	VkAccessFlags2			dstAccessMask;
+			};
+			const VkDependencyInfo depInfo =
+			{
+				VK_STRUCTURE_TYPE_DEPENDENCY_INFO,	//	VkStructureType					sType;
+				nullptr,							//	const void*						pNext;
+				dep.dependencyFlags,				//	VkDependencyFlags				dependencyFlags;
+				1u,									//	uint32_t						memoryBarrierCount;
+				&barrier,							//	const VkMemoryBarrier2*			pMemoryBarriers;
+				0u,									//	uint32_t						bufferMemoryBarrierCount;
+				nullptr,							//	const VkBufferMemoryBarrier2*	pBufferMemoryBarriers;
+				0u,									//	uint32_t						imageMemoryBarrierCount;
+				nullptr,							//	const VkImageMemoryBarrier2*	pImageMemoryBarriers;
+			};
+			vk.cmdPipelineBarrier2(commandBuffer, &depInfo);
+		}
+		else
+		{
+			const VkMemoryBarrier barrier =
+			{
+				VK_STRUCTURE_TYPE_MEMORY_BARRIER,				//	VkStructureType	sType;
+				nullptr,										//	const void*		pNext;
+				static_cast<VkAccessFlags>(dep.srcAccessMask),	//	VkAccessFlags	srcAccessMask;
+				static_cast<VkAccessFlags>(dep.dstAccessMask),	//	VkAccessFlags	dstAccessMask;
+			};
+			vk.cmdPipelineBarrier(commandBuffer,
+				static_cast<VkPipelineStageFlags>(dep.srcStageMask),
+				static_cast<VkPipelineStageFlags>(dep.dstStageMask),
+				dep.dependencyFlags,
+				1u, &barrier,
+				0u, nullptr, 0u, nullptr);
 		}
 	}
 }
@@ -1064,7 +1297,7 @@ void RenderPassWrapper::begin (const DeviceInterface&	vk,
 							   const VkSubpassContents	contents,
 							   const void*				pNext) const
 {
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		beginRenderPass(vk, commandBuffer, *m_renderPass, *m_framebuffer, renderArea, clearValueCount, clearValues, contents, pNext);
 	}
@@ -1079,6 +1312,8 @@ void RenderPassWrapper::begin (const DeviceInterface&	vk,
 
 		for (deUint32 i = 0; i < (deUint32)m_subpasses.size(); ++i)
 			transitionLayouts(vk, commandBuffer, m_subpasses[i], true);
+
+		insertDependencies(vk, commandBuffer, 0u);
 
 		m_secondaryCommandBuffers = contents == vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
 
@@ -1131,7 +1366,7 @@ void RenderPassWrapper::begin(const DeviceInterface& vk, const VkCommandBuffer c
 
 void RenderPassWrapper::end (const DeviceInterface& vk, const VkCommandBuffer commandBuffer) const
 {
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		vk.cmdEndRenderPass(commandBuffer);
 	}
@@ -1140,39 +1375,70 @@ void RenderPassWrapper::end (const DeviceInterface& vk, const VkCommandBuffer co
 #ifndef CTS_USES_VULKANSC
 		vk.cmdEndRendering(commandBuffer);
 
+		// Use dependencies for external subpasses to extract destination access
+		// flags and pipeline stage flags for the final layout transition
+		// barriers.
+		VkAccessFlags2			externalAccessFlags	= 0u;
+		VkPipelineStageFlags2	externalStageFlags	= 0u;
+		bool					sync2				= false;
+
+		for (const auto& dep : m_dependencies)
+		{
+			if (dep.dstSubpass == VK_SUBPASS_EXTERNAL)
+			{
+				externalAccessFlags	|= dep.dstAccessMask;
+				externalStageFlags	|= dep.dstStageMask;
+			}
+			if (dep.sync2)
+				sync2 = true;
+		}
+
 		for (deUint32 i = 0; i < (deUint32)m_attachments.size(); ++i)
 		{
-			bool color					= !vk::isDepthStencilFormat(m_attachments[i].format);
-			VkImageAspectFlags aspect	= color ? (vk::VkImageAspectFlags)vk::VK_IMAGE_ASPECT_COLOR_BIT : (vk::VkImageAspectFlags)0u;
+			if (m_layouts[i] == m_attachments[i].finalLayout)
+				continue;
+
+			const bool			color	= !vk::isDepthStencilFormat(m_attachments[i].format);
+			VkImageAspectFlags	aspect	= color ? (vk::VkImageAspectFlags)vk::VK_IMAGE_ASPECT_COLOR_BIT : (vk::VkImageAspectFlags)0u;
+
 			if (!color)
 			{
-				bool hasDepthAspect = tcu::hasDepthComponent(vk::mapVkFormat(m_attachments[i].format).order);
-				bool hasStencilAspect = tcu::hasStencilComponent(vk::mapVkFormat(m_attachments[i].format).order);
+				const bool hasDepthAspect	= tcu::hasDepthComponent(vk::mapVkFormat(m_attachments[i].format).order);
+				const bool hasStencilAspect	= tcu::hasStencilComponent(vk::mapVkFormat(m_attachments[i].format).order);
+
 				if (hasDepthAspect)
 					aspect |= vk::VK_IMAGE_ASPECT_DEPTH_BIT;
 				if (hasStencilAspect)
 					aspect |= vk::VK_IMAGE_ASPECT_STENCIL_BIT;
 			}
 
-			vk::VkImageMemoryBarrier imageMemoryBarrier = vk::initVulkanStructure();
-			imageMemoryBarrier.srcAccessMask = color ? vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			imageMemoryBarrier.dstAccessMask = vk::VK_ACCESS_NONE;
-			imageMemoryBarrier.oldLayout = m_layouts[i];
-			imageMemoryBarrier.newLayout = m_attachments[i].finalLayout;
-			imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageMemoryBarrier.image = m_images[i];
-			imageMemoryBarrier.subresourceRange =
-			{
-				aspect,							// VkImageAspectFlags	aspectMask;
-				0u,								// uint32_t				baseMipLevel;
-				VK_REMAINING_MIP_LEVELS,		// uint32_t				levelCount;
-				0u,								// uint32_t				baseArrayLayer;
-				VK_REMAINING_ARRAY_LAYERS,		// uint32_t				layerCount;
-			};
-			vk::VkPipelineStageFlags srcStageMask = color ? vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-			vk.cmdPipelineBarrier(commandBuffer, srcStageMask, vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
+			const auto subresourceRange = makeImageSubresourceRange(
+				aspect,
+				0u,
+				VK_REMAINING_MIP_LEVELS,
+				0u,
+				VK_REMAINING_ARRAY_LAYERS);
+
+			const VkPipelineStageFlags2	srcStageMask	= (color ? vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+			const VkAccessFlags2		srcAccessMask	= (color ? vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+			const VkPipelineStageFlags2	dstStageMask	= (vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT | externalStageFlags);
+			const VkAccessFlags2		dstAccessMask	= externalAccessFlags;
+			const VkImageLayout			newLayout		= m_attachments[i].finalLayout;
+
+			recordImageBarrier(vk,
+							   commandBuffer,
+							   sync2,
+							   srcStageMask,
+							   srcAccessMask,
+							   dstStageMask,
+							   dstAccessMask,
+							   m_layouts[i],
+							   newLayout,
+							   m_images[i],
+							   subresourceRange);
 		}
+
+		insertDependencies(vk, commandBuffer, VK_SUBPASS_EXTERNAL);
 #endif
 	}
 }
@@ -1260,7 +1526,7 @@ void RenderPassWrapper::beginRendering (const DeviceInterface& vk, const VkComma
 
 void RenderPassWrapper::nextSubpass (const DeviceInterface& vk, const VkCommandBuffer commandBuffer, const VkSubpassContents contents) const
 {
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		vk.cmdNextSubpass(commandBuffer, contents);
 	}
@@ -1275,6 +1541,8 @@ void RenderPassWrapper::nextSubpass (const DeviceInterface& vk, const VkCommandB
 
 		transitionLayouts(vk, commandBuffer, subpass, false);
 
+		insertDependencies(vk, commandBuffer, m_activeSubpass);
+
 		beginRendering(vk, commandBuffer);
 #endif
 	}
@@ -1283,7 +1551,7 @@ void RenderPassWrapper::nextSubpass (const DeviceInterface& vk, const VkCommandB
 void RenderPassWrapper::createFramebuffer (const DeviceInterface& vk, const VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const std::vector<vk::VkImage>& images)
 {
 	DE_UNREF(images);
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		m_framebuffer = vk::createFramebuffer(vk, device, pCreateInfo);
 	}
@@ -1324,7 +1592,7 @@ void RenderPassWrapper::createFramebuffer (const DeviceInterface& vk, const VkDe
 {
 	DE_UNREF(colorImage);
 	DE_UNREF(depthStencilImage);
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		m_framebuffer = vk::createFramebuffer(vk, device, pCreateInfo);
 	}
@@ -1357,7 +1625,7 @@ void RenderPassWrapper::createFramebuffer (const DeviceInterface& vk, const VkDe
 void RenderPassWrapper::createFramebuffer (const DeviceInterface& vk, const VkDevice device, const VkImage colorImage, const VkImageView colorAttachment, const deUint32 width, const deUint32 height, const deUint32 layers)
 {
 	DE_UNREF(colorImage);
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		VkFramebufferCreateInfo createInfo = initVulkanStructure();
 		createInfo.flags = (VkFramebufferCreateFlags)0u;
@@ -1389,7 +1657,7 @@ void RenderPassWrapper::createFramebuffer (const DeviceInterface& vk, const VkDe
 void RenderPassWrapper::createFramebuffer (const DeviceInterface& vk, const VkDevice device, const deUint32 attachmentCount, const VkImage* imagesArray, const VkImageView* attachmentsArray, const deUint32 width, const deUint32 height, const deUint32 layers)
 {
 	DE_UNREF(imagesArray);
-	if (!isConstructionTypeShaderObject(m_pipelineConstructionType))
+	if (!m_isDynamicRendering)
 	{
 		VkFramebufferCreateInfo createInfo = initVulkanStructure();
 		createInfo.flags = (VkFramebufferCreateFlags)0u;
@@ -1542,6 +1810,7 @@ struct GraphicsPipelineWrapper::InternalData
 	const std::vector<std::string>&						deviceExtensions;
 	const PipelineConstructionType						pipelineConstructionType;
 	const VkPipelineCreateFlags							pipelineFlags;
+	PipelineCreateFlags2								pipelineFlags2;
 
 	// attribute used for making sure pipeline is configured in correct order
 	int													setupState;
@@ -1554,6 +1823,8 @@ struct GraphicsPipelineWrapper::InternalData
 	VkPipelineTessellationStateCreateInfo				tessellationState;
 	VkPipelineFragmentShadingRateStateCreateInfoKHR*	pFragmentShadingRateState;
 	PipelineRenderingCreateInfoWrapper					pRenderingState;
+	RenderingAttachmentLocationInfoWrapper				pRenderingAttachmentLocation;
+	RenderingInputAttachmentIndexInfoWrapper			pRenderingInputAttachmentIndex;
 	const VkPipelineDynamicStateCreateInfo*				pDynamicState;
 	PipelineRepresentativeFragmentTestCreateInfoWrapper	pRepresentativeFragmentTestState;
 
@@ -1566,6 +1837,7 @@ struct GraphicsPipelineWrapper::InternalData
 	deBool												useDefaultVertexInputState;
 	bool												failOnCompileWhenLinking;
 
+	bool												explicitLinkPipelineLayoutSet;
 	VkGraphicsPipelineCreateInfo						monolithicPipelineCreateInfo;
 
 	ShaderWrapper										vertexShader;
@@ -1591,6 +1863,8 @@ struct GraphicsPipelineWrapper::InternalData
 		std::vector<VkViewport>								viewports;
 		std::vector<VkRect2D>								scissors;
 		float												lineWidth = 1.0f;
+		VkDepthBiasRepresentationEXT						depthBiasRepresentation = vk::VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORMAT_EXT;
+		VkBool32											depthBiasExact = VK_FALSE;
 		float												depthBiasConstantFactor = 0.0f;
 		float												depthBiasClamp = 0.0f;
 		float												depthBiasSlopeFactor = 1.0f;
@@ -1680,6 +1954,7 @@ struct GraphicsPipelineWrapper::InternalData
 		, deviceExtensions			(deviceExts)
 		, pipelineConstructionType	(constructionType)
 		, pipelineFlags				(pipelineCreateFlags)
+		, pipelineFlags2			(0u)
 		, setupState				(PSS_NONE)
 		, inputAssemblyState
 		{
@@ -1733,6 +2008,7 @@ struct GraphicsPipelineWrapper::InternalData
 		, useDefaultMultisampleState	(DE_FALSE)
 		, useDefaultVertexInputState	(DE_TRUE)
 		, failOnCompileWhenLinking		(false)
+		, explicitLinkPipelineLayoutSet	(false)
 		, tessellationShaderFeature		(false)
 		, geometryShaderFeature			(false)
 		, taskShaderFeature				(false)
@@ -1772,6 +2048,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setMonolithicPipelineLayout(co
 	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
 
 	m_internalData->monolithicPipelineCreateInfo.layout = *layout;
+	m_internalData->explicitLinkPipelineLayoutSet = true;
 
 	return *this;
 }
@@ -1793,6 +2070,15 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setRepresentativeFragmentTestS
 	DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_FRAGMENT_SHADER));
 
 	m_internalData->pRepresentativeFragmentTestState = representativeFragmentTestState;
+	return *this;
+}
+
+GraphicsPipelineWrapper& GraphicsPipelineWrapper::setPipelineCreateFlags2(PipelineCreateFlags2 pipelineFlags2)
+{
+	// make sure states are not yet setup - all pipeline states must know about createFlags2
+	DE_ASSERT(m_internalData && m_internalData->setupState == PSS_NONE);
+
+	m_internalData->pipelineFlags2 = pipelineFlags2;
 	return *this;
 }
 
@@ -2155,6 +2441,14 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupVertexInputState(const Vk
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		if (m_internalData->pipelineFlags2)
+		{
+			pipelineFlags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+			addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+			pipelinePartCreateInfo.flags = 0u;
+		}
+
 		m_pipelineParts[0] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
 #endif // CTS_USES_VULKANSC
@@ -2412,12 +2706,13 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 		}
 	}
 
+	// if pipeline layout was not specified with setupMonolithicPipelineLayout
+	// then use layout from setupPreRasterizationShaderState for link pipeline
+	if (!m_internalData->explicitLinkPipelineLayoutSet)
+		m_internalData->monolithicPipelineCreateInfo.layout = *layout;
+
 	if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		// make sure we dont overwrite layout specified with setupMonolithicPipelineLayout
-		if (m_internalData->monolithicPipelineCreateInfo.layout == 0)
-			m_internalData->monolithicPipelineCreateInfo.layout = *layout;
-
 		m_internalData->monolithicPipelineCreateInfo.renderPass				= renderPass;
 		m_internalData->monolithicPipelineCreateInfo.subpass				= subpass;
 		m_internalData->monolithicPipelineCreateInfo.pRasterizationState	= pRasterizationState;
@@ -2468,6 +2763,14 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationShaderSta
 
 		if ((shaderModuleIdFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT) != 0)
 			m_internalData->failOnCompileWhenLinking = true;
+
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		if (m_internalData->pipelineFlags2)
+		{
+			pipelineFlags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+			addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+			pipelinePartCreateInfo.flags = 0u;
+		}
 
 		m_pipelineParts[1] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
@@ -2572,12 +2875,13 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShade
 		}
 	}
 
+	// if pipeline layout was not specified with setupMonolithicPipelineLayout
+	// then use layout from setupPreRasterizationMeshShaderState for link pipeline
+	if (!m_internalData->explicitLinkPipelineLayoutSet)
+		m_internalData->monolithicPipelineCreateInfo.layout = *layout;
+
 	if (!isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
 	{
-		// make sure we dont overwrite layout specified with setupMonolithicPipelineLayout
-		if (m_internalData->monolithicPipelineCreateInfo.layout == 0)
-			m_internalData->monolithicPipelineCreateInfo.layout = *layout;
-
 		m_internalData->monolithicPipelineCreateInfo.renderPass				= renderPass;
 		m_internalData->monolithicPipelineCreateInfo.subpass				= subpass;
 		m_internalData->monolithicPipelineCreateInfo.pRasterizationState	= pRasterizationState;
@@ -2605,7 +2909,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShade
 			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
 		}
 
-
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext			= firstStructInChain;
 		pipelinePartCreateInfo.flags			= m_internalData->pipelineFlags | VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
@@ -2622,6 +2925,14 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupPreRasterizationMeshShade
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		if (m_internalData->pipelineFlags2)
+		{
+			pipelineFlags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+			addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+			pipelinePartCreateInfo.flags = 0u;
+		}
+
 		m_pipelineParts[1] = createGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
 
@@ -2637,7 +2948,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const
 																		   const VkPipelineMultisampleStateCreateInfo*		multisampleState,
 																		   const VkSpecializationInfo*						specializationInfo,
 																		   const VkPipelineCache							partPipelineCache,
-																		   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback)
+																		   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback,
+																		   RenderingInputAttachmentIndexInfoWrapper			renderingInputAttachmentIndexInfo)
 {
 	return setupFragmentShaderState2(layout,
 									 renderPass,
@@ -2648,7 +2960,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState(const
 									 multisampleState,
 									 specializationInfo,
 									 partPipelineCache,
-									 partCreationFeedback);
+									 partCreationFeedback,
+									 renderingInputAttachmentIndexInfo);
 }
 
 GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(const PipelineLayoutWrapper&								layout,
@@ -2660,7 +2973,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 																			const VkPipelineMultisampleStateCreateInfo*					multisampleState,
 																			const VkSpecializationInfo*									specializationInfo,
 																			const VkPipelineCache										partPipelineCache,
-																			PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback)
+																			PipelineCreationFeedbackCreateInfoWrapper					partCreationFeedback,
+																			RenderingInputAttachmentIndexInfoWrapper					renderingInputAttachmentIndexInfo)
 {
 	// make sure pipeline was not already build
 	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
@@ -2677,6 +2991,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 	DE_UNREF(fragmentShaderModuleId);
 
 	m_internalData->setupState |= PSS_FRAGMENT_SHADER;
+	m_internalData->pRenderingInputAttachmentIndex.ptr = renderingInputAttachmentIndexInfo.ptr;
 
 	const auto pDepthStencilState	= depthStencilState ? depthStencilState
 														: (m_internalData->useDefaultDepthStencilState ? &defaultDepthStencilState : DE_NULL);
@@ -2734,6 +3049,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 		void*	firstStructInChain	= reinterpret_cast<void*>(&libraryCreateInfo);
 		addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
 		addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
+		addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
 		addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
 
@@ -2747,7 +3063,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 			pickedDynamicStateInfo.pDynamicStates = states.data();
 			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
 		}
-
 
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
@@ -2767,6 +3082,14 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentShaderState2(cons
 		if ((shaderModuleIdFlags & VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT) != 0)
 			m_internalData->failOnCompileWhenLinking = true;
 
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		if (m_internalData->pipelineFlags2)
+		{
+			pipelineFlags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+			addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+			pipelinePartCreateInfo.flags = 0u;
+		}
+
 		m_pipelineParts[2] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
 #endif // CTS_USES_VULKANSC
@@ -2779,7 +3102,8 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 																		   const VkPipelineColorBlendStateCreateInfo*		colorBlendState,
 																		   const VkPipelineMultisampleStateCreateInfo*		multisampleState,
 																		   const VkPipelineCache							partPipelineCache,
-																		   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback)
+																		   PipelineCreationFeedbackCreateInfoWrapper		partCreationFeedback,
+																		   RenderingAttachmentLocationInfoWrapper			renderingAttachmentLocationInfo)
 {
 	// make sure pipeline was not already build
 	DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
@@ -2787,6 +3111,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 	// make sure states are set in order - no need to complicate logic to support out of order specification - this state needs to be set last
 	DE_ASSERT(m_internalData && (m_internalData->setupState == (PSS_VERTEX_INPUT_INTERFACE | PSS_PRE_RASTERIZATION_SHADERS | PSS_FRAGMENT_SHADER)));
 	m_internalData->setupState |= PSS_FRAGMENT_OUTPUT_INTERFACE;
+	m_internalData->pRenderingAttachmentLocation.ptr = renderingAttachmentLocationInfo.ptr;
 
 	// Unreference variables that are not used in Vulkan SC. No need to put this in ifdef.
 	DE_UNREF(renderPass);
@@ -2822,7 +3147,7 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 		auto libraryCreateInfo = makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
 		addToChain(&firstStructInChain, &libraryCreateInfo);
 		addToChain(&firstStructInChain, partCreationFeedback.ptr);
-
+		addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
 
 		VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
 		std::vector<VkDynamicState> states;
@@ -2834,7 +3159,6 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 			pickedDynamicStateInfo.pDynamicStates = states.data();
 			pickedDynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(states.size());
 		}
-
 
 		VkGraphicsPipelineCreateInfo pipelinePartCreateInfo = initVulkanStructure();
 		pipelinePartCreateInfo.pNext				= firstStructInChain;
@@ -2848,6 +3172,14 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 		if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
 			pipelinePartCreateInfo.flags |= VK_PIPELINE_CREATE_RETAIN_LINK_TIME_OPTIMIZATION_INFO_BIT_EXT;
 
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		if (m_internalData->pipelineFlags2)
+		{
+			pipelineFlags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pipelinePartCreateInfo.flags);
+			addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+			pipelinePartCreateInfo.flags = 0u;
+		}
+
 		m_pipelineParts[3] = makeGraphicsPipeline(m_internalData->vk, m_internalData->device, partPipelineCache, &pipelinePartCreateInfo);
 	}
 #endif // CTS_USES_VULKANSC
@@ -2856,44 +3188,85 @@ GraphicsPipelineWrapper& GraphicsPipelineWrapper::setupFragmentOutputState(const
 }
 
 #ifndef CTS_USES_VULKANSC
-vk::VkShaderStageFlags getNextStages (vk::VkShaderStageFlagBits shaderStage, bool tessellationShaders, bool geometryShaders)
+vk::VkShaderStageFlags GraphicsPipelineWrapper::getNextStages (vk::VkShaderStageFlagBits shaderStage, bool tessellationShaders, bool geometryShaders, bool link)
 {
-	if (shaderStage == vk::VK_SHADER_STAGE_VERTEX_BIT)
+	if (link)
 	{
-		VkShaderStageFlags flags = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
-		if (tessellationShaders)
-			flags |= vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-		if (geometryShaders)
-			flags |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
-		return flags;
+		if (shaderStage == vk::VK_SHADER_STAGE_VERTEX_BIT)
+		{
+			if (m_internalData->tessellationControlShader.isSet())
+				return vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+			if (m_internalData->geometryShader.isSet())
+				return vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+			if (m_internalData->fragmentShader.isSet())
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+			return vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+		{
+			if (m_internalData->geometryShader.isSet())
+				return vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+			if (m_internalData->fragmentShader.isSet())
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		if (shaderStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT)
+		{
+			if (m_internalData->fragmentShader.isSet())
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		if (shaderStage == vk::VK_SHADER_STAGE_TASK_BIT_EXT)
+		{
+			if (m_internalData->meshShader.isSet())
+				return vk::VK_SHADER_STAGE_MESH_BIT_EXT;
+			if (m_internalData->fragmentShader.isSet())
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		if (shaderStage == vk::VK_SHADER_STAGE_MESH_BIT_EXT)
+		{
+			if (m_internalData->fragmentShader.isSet())
+				return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
 	}
-	else if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+	else
 	{
-		return vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-	}
-	else if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
-	{
-		VkShaderStageFlags flags = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
-		if (geometryShaders)
-			flags |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
-		return flags;
-	}
-	else if (shaderStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT)
-	{
-		return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
-	}
-	else if (shaderStage == vk::VK_SHADER_STAGE_TASK_BIT_EXT)
-	{
-		return vk::VK_SHADER_STAGE_MESH_BIT_EXT;
-	}
-	else if (shaderStage == vk::VK_SHADER_STAGE_MESH_BIT_EXT)
-	{
-		return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		if (shaderStage == vk::VK_SHADER_STAGE_VERTEX_BIT)
+		{
+			VkShaderStageFlags flags = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+			if (tessellationShaders)
+				flags |= vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+			if (geometryShaders)
+				flags |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+			return flags;
+		}
+		else if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+		{
+			return vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		}
+		else if (shaderStage == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+		{
+			VkShaderStageFlags flags = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+			if (geometryShaders)
+				flags |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+			return flags;
+		}
+		else if (shaderStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT)
+		{
+			return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		else if (shaderStage == vk::VK_SHADER_STAGE_TASK_BIT_EXT)
+		{
+			return vk::VK_SHADER_STAGE_MESH_BIT_EXT;
+		}
+		else if (shaderStage == vk::VK_SHADER_STAGE_MESH_BIT_EXT)
+		{
+			return vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
 	}
 	return 0;
 }
 
-vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo (VkShaderStageFlagBits stage, ShaderWrapper& shader, bool link, bool binary)
+vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo (VkShaderStageFlagBits stage, ShaderWrapper& shader, bool link, bool binary, ShaderWrapper& other)
 {
 	if (binary)
 		shader.getShaderBinary();
@@ -2901,7 +3274,7 @@ vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo (VkShade
 	vk::VkShaderCreateInfoEXT shaderCreateInfo = vk::initVulkanStructure();
 	shaderCreateInfo.flags = link ? (vk::VkShaderCreateFlagsEXT)vk::VK_SHADER_CREATE_LINK_STAGE_BIT_EXT : (vk::VkShaderCreateFlagsEXT)0u;
 	shaderCreateInfo.stage = stage;
-	shaderCreateInfo.nextStage = getNextStages(stage, m_internalData->tessellationShaderFeature, m_internalData->geometryShaderFeature);
+	shaderCreateInfo.nextStage = getNextStages(stage, m_internalData->tessellationShaderFeature, m_internalData->geometryShaderFeature, link);
 	if (binary)
 	{
 		shaderCreateInfo.codeType = vk::VK_SHADER_CODE_TYPE_BINARY_EXT;
@@ -2922,6 +3295,17 @@ vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo (VkShade
 		shaderCreateInfo.pushConstantRangeCount = shader.getPipelineLayout()->getPushConstantRangeCount();
 		shaderCreateInfo.pPushConstantRanges = shader.getPipelineLayout()->getPushConstantRanges();
 	}
+	// Pipeline layouts and push constant ranges must match between shaders that are used together
+	if (other.isSet() && shaderCreateInfo.setLayoutCount == 0)
+	{
+		shaderCreateInfo.setLayoutCount = other.getPipelineLayout()->getSetLayoutCount();
+		shaderCreateInfo.pSetLayouts = other.getPipelineLayout()->getSetLayouts();
+	}
+	if (other.isSet() && shaderCreateInfo.pushConstantRangeCount == 0)
+	{
+		shaderCreateInfo.pushConstantRangeCount = other.getPipelineLayout()->getPushConstantRangeCount();
+		shaderCreateInfo.pPushConstantRanges = other.getPipelineLayout()->getPushConstantRanges();
+	}
 	shaderCreateInfo.pSpecializationInfo = shader.getSpecializationInfo();
 	return shaderCreateInfo;
 }
@@ -2930,20 +3314,20 @@ void GraphicsPipelineWrapper::createShaders (bool linked, bool binary)
 {
 	std::vector<vk::VkShaderCreateInfoEXT> createInfos;
 	if (m_internalData->vertexShader.isSet())
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_VERTEX_BIT, m_internalData->vertexShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_VERTEX_BIT, m_internalData->vertexShader, linked, binary, m_internalData->fragmentShader));
 	if (m_internalData->tessellationControlShader.isSet())
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, m_internalData->tessellationControlShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, m_internalData->tessellationControlShader, linked, binary, m_internalData->fragmentShader));
 	if (m_internalData->tessellationEvaluationShader.isSet())
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_internalData->tessellationEvaluationShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_internalData->tessellationEvaluationShader, linked, binary, m_internalData->fragmentShader));
 	if (m_internalData->geometryShader.isSet())
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_GEOMETRY_BIT, m_internalData->geometryShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_GEOMETRY_BIT, m_internalData->geometryShader, linked, binary, m_internalData->fragmentShader));
 	if (m_internalData->fragmentShader.isSet())
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_FRAGMENT_BIT, m_internalData->fragmentShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_FRAGMENT_BIT, m_internalData->fragmentShader, linked, binary, m_internalData->vertexShader));
 	if (m_internalData->taskShader.isSet())
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_TASK_BIT_EXT, m_internalData->taskShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_TASK_BIT_EXT, m_internalData->taskShader, linked, binary, m_internalData->fragmentShader));
 	if (m_internalData->meshShader.isSet())
 	{
-		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_MESH_BIT_EXT, m_internalData->meshShader, linked, binary));
+		createInfos.push_back(makeShaderCreateInfo(vk::VK_SHADER_STAGE_MESH_BIT_EXT, m_internalData->meshShader, linked, binary, m_internalData->fragmentShader));
 		if (!m_internalData->taskShader.isSet())
 			createInfos.back().flags |= vk::VK_SHADER_CREATE_NO_TASK_SHADER_BIT_EXT;
 	}
@@ -3068,12 +3452,12 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT);
 		if (m_internalData->extensionEnabled("VK_EXT_conservative_rasterization"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT);
-		if (m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
+		if (m_internalData->extensionEnabled("VK_KHR_line_rasterization") || m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT);
-		if (m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
+		if (m_internalData->extensionEnabled("VK_KHR_line_rasterization") ||m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT);
-		if (m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
-			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT);
+		if (m_internalData->extensionEnabled("VK_KHR_line_rasterization") ||m_internalData->extensionEnabled("VK_EXT_line_rasterization"))
+			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LINE_STIPPLE_KHR);
 		if (m_internalData->extensionEnabled("VK_EXT_provoking_vertex"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT);
 		if (m_internalData->extensionEnabled("VK_KHR_fragment_shading_rate"))
@@ -3097,6 +3481,8 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_ENABLE_NV);
 		if (m_internalData->extensionEnabled("VK_NV_clip_space_w_scaling"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV);
+		if (m_internalData->extensionEnabled("VK_NV_scissor_exclusive"))
+			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV);
 		if (m_internalData->extensionEnabled("VK_NV_scissor_exclusive"))
 			dynamicStates.push_back(vk::VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV);
 		if (m_internalData->extensionEnabled("VK_EXT_discard_rectangles"))
@@ -3158,10 +3544,10 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 					state->scissors[i] = pointerToCreateInfo->pViewportState->pScissors[i];
 			}
 
-			VkPipelineViewportDepthClipControlCreateInfoEXT* depthClipControl = (VkPipelineViewportDepthClipControlCreateInfoEXT*)findPNext(pointerToCreateInfo->pViewportState->pNext, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT);
+			const auto depthClipControl = findStructure<VkPipelineViewportDepthClipControlCreateInfoEXT>(pointerToCreateInfo->pViewportState->pNext);
 			if (depthClipControl)
 				state->negativeOneToOne = depthClipControl->negativeOneToOne;
-			VkPipelineViewportShadingRateImageStateCreateInfoNV* viewportShadingRate = (VkPipelineViewportShadingRateImageStateCreateInfoNV*)findPNext(pointerToCreateInfo->pViewportState->pNext, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SHADING_RATE_IMAGE_STATE_CREATE_INFO_NV);
+			const auto viewportShadingRate = findStructure<VkPipelineViewportShadingRateImageStateCreateInfoNV>(pointerToCreateInfo->pViewportState->pNext);
 			if (viewportShadingRate)
 			{
 				state->shadingRateImageEnable = viewportShadingRate->shadingRateImageEnable;
@@ -3177,14 +3563,14 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 					state->shadingRatePalettes[i].pShadingRatePaletteEntries = state->shadingRatePaletteEntries[i].data();
 				}
 			}
-			VkPipelineViewportSwizzleStateCreateInfoNV* viewportSwizzle = (VkPipelineViewportSwizzleStateCreateInfoNV*)findPNext(pointerToCreateInfo->pViewportState->pNext, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SWIZZLE_STATE_CREATE_INFO_NV);
+			const auto viewportSwizzle = findStructure<VkPipelineViewportSwizzleStateCreateInfoNV>(pointerToCreateInfo->pViewportState->pNext);
 			if (viewportSwizzle)
 			{
 				state->viewportSwizzles.resize(viewportSwizzle->viewportCount);
 				for (deUint32 i = 0; i < viewportSwizzle->viewportCount; ++i)
 					state->viewportSwizzles[i] = viewportSwizzle->pViewportSwizzles[i];
 			}
-			VkPipelineViewportWScalingStateCreateInfoNV* viewportWScaling = (VkPipelineViewportWScalingStateCreateInfoNV*)findPNext(pointerToCreateInfo->pViewportState->pNext, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_W_SCALING_STATE_CREATE_INFO_NV);
+			const auto viewportWScaling = findStructure<VkPipelineViewportWScalingStateCreateInfoNV>(pointerToCreateInfo->pViewportState->pNext);
 			if (viewportWScaling)
 			{
 				state->viewportWScalingEnable = viewportWScaling->viewportWScalingEnable;
@@ -3193,7 +3579,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 				for (deUint32 i = 0; i < viewportWScaling->viewportCount; ++i)
 					state->viewportWScalings[i] = viewportWScaling->pViewportWScalings[i];
 			}
-			VkPipelineViewportCoarseSampleOrderStateCreateInfoNV* coarseSampleOrder = (VkPipelineViewportCoarseSampleOrderStateCreateInfoNV*)findPNext(pointerToCreateInfo->pViewportState->pNext, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_COARSE_SAMPLE_ORDER_STATE_CREATE_INFO_NV);
+			const auto coarseSampleOrder = findStructure<VkPipelineViewportCoarseSampleOrderStateCreateInfoNV>(pointerToCreateInfo->pViewportState->pNext);
 			if (coarseSampleOrder)
 			{
 				state->coarseSampleOrderType = coarseSampleOrder->sampleOrderType;
@@ -3221,20 +3607,20 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			state->frontFace = pointerToCreateInfo->pRasterizationState->frontFace;
 			state->depthBiasEnable = pointerToCreateInfo->pRasterizationState->depthBiasEnable;
 			state->rasterizerDiscardEnable = pointerToCreateInfo->pRasterizationState->rasterizerDiscardEnable;
-			VkPipelineRasterizationConservativeStateCreateInfoEXT* conservative = (VkPipelineRasterizationConservativeStateCreateInfoEXT*)findPNext(pointerToCreateInfo->pRasterizationState->pNext, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT);
+			const auto conservative = findStructure<VkPipelineRasterizationConservativeStateCreateInfoEXT>(pointerToCreateInfo->pRasterizationState->pNext);
 			if (conservative)
 			{
 				state->conservativeRasterizationMode = conservative->conservativeRasterizationMode;
 				state->extraPrimitiveOverestimationSize = conservative->extraPrimitiveOverestimationSize;
 			}
 			state->depthClampEnable = pointerToCreateInfo->pRasterizationState->depthClampEnable;
-			VkPipelineRasterizationDepthClipStateCreateInfoEXT* depthClip = (VkPipelineRasterizationDepthClipStateCreateInfoEXT*)findPNext(pointerToCreateInfo->pRasterizationState->pNext, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT);
+			const auto depthClip = findStructure<VkPipelineRasterizationDepthClipStateCreateInfoEXT>(pointerToCreateInfo->pRasterizationState->pNext);
 			if (depthClip)
 				state->depthClipEnable = depthClip->depthClipEnable;
 			else
 				state->depthClipEnable = !pointerToCreateInfo->pRasterizationState->depthClampEnable && !depthClampEnableDynamic;
 
-			VkPipelineRasterizationLineStateCreateInfoEXT* rasterizationLine = (VkPipelineRasterizationLineStateCreateInfoEXT*)findPNext(pointerToCreateInfo->pRasterizationState->pNext, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT);
+			const auto rasterizationLine = findStructure<VkPipelineRasterizationLineStateCreateInfoEXT>(pointerToCreateInfo->pRasterizationState->pNext);
 			if (rasterizationLine)
 			{
 				state->lineRasterizationMode = rasterizationLine->lineRasterizationMode;
@@ -3242,19 +3628,25 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 				state->lineStippleFactor = rasterizationLine->lineStippleFactor;
 				state->lineStipplePattern = rasterizationLine->lineStipplePattern;
 			}
-			VkPipelineRasterizationStateStreamCreateInfoEXT* rasterizationStream = (VkPipelineRasterizationStateStreamCreateInfoEXT*)findPNext(pointerToCreateInfo->pRasterizationState->pNext, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_STREAM_CREATE_INFO_EXT);
+			const auto rasterizationStream = findStructure<VkPipelineRasterizationStateStreamCreateInfoEXT>(pointerToCreateInfo->pRasterizationState->pNext);
 			if (rasterizationStream)
 				state->rasterizationStream = rasterizationStream->rasterizationStream;
 			state->polygonMode = pointerToCreateInfo->pRasterizationState->polygonMode;
-			VkPipelineRasterizationProvokingVertexStateCreateInfoEXT* provokingVertex = (VkPipelineRasterizationProvokingVertexStateCreateInfoEXT*)findPNext(pointerToCreateInfo->pRasterizationState->pNext, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_PROVOKING_VERTEX_STATE_CREATE_INFO_EXT);
+			const auto provokingVertex = findStructure<VkPipelineRasterizationProvokingVertexStateCreateInfoEXT>(pointerToCreateInfo->pRasterizationState->pNext);
 			 if (provokingVertex)
 				 state->provokingVertexMode = provokingVertex->provokingVertexMode;
+			 const auto depthBiasRepresentationInfo = findStructure<VkDepthBiasRepresentationInfoEXT>(pointerToCreateInfo->pRasterizationState->pNext);
+			 if (depthBiasRepresentationInfo)
+			 {
+				 state->depthBiasRepresentation = depthBiasRepresentationInfo->depthBiasRepresentation;
+				 state->depthBiasExact = depthBiasRepresentationInfo->depthBiasExact;
+			 }
 		}
 		if (pointerToCreateInfo->pColorBlendState)
 		{
 			memcpy(&state->blendConstants, pointerToCreateInfo->pColorBlendState->blendConstants, sizeof(float) * 4);
 			state->logicOp = pointerToCreateInfo->pColorBlendState->logicOp;
-			VkPipelineColorBlendAdvancedStateCreateInfoEXT* blendAdvancedState = (VkPipelineColorBlendAdvancedStateCreateInfoEXT*)findPNext(pointerToCreateInfo->pColorBlendState->pNext, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT);
+			const auto blendAdvancedState = findStructure<VkPipelineColorBlendAdvancedStateCreateInfoEXT>(pointerToCreateInfo->pColorBlendState->pNext);
 			if (blendAdvancedState)
 			{
 				state->colorBlendAdvanced.resize(pointerToCreateInfo->pColorBlendState->attachmentCount);
@@ -3293,7 +3685,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 				}
 			}
 			state->logicOpEnable = pointerToCreateInfo->pColorBlendState->logicOpEnable;
-			VkPipelineColorWriteCreateInfoEXT* colorWrite = (VkPipelineColorWriteCreateInfoEXT*)findPNext(pointerToCreateInfo->pColorBlendState->pNext, VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT);
+			const auto colorWrite = findStructure<VkPipelineColorWriteCreateInfoEXT>(pointerToCreateInfo->pColorBlendState->pNext);
 			if (colorWrite)
 			{
 				state->colorWriteEnableAttachmentCount = colorWrite->attachmentCount;
@@ -3332,7 +3724,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 				state->attributes[i].offset = pointerToCreateInfo->pVertexInputState->pVertexAttributeDescriptions[i].offset;
 			}
 
-			VkPipelineVertexInputDivisorStateCreateInfoEXT* divisorInfo = (VkPipelineVertexInputDivisorStateCreateInfoEXT*)findPNext(pointerToCreateInfo->pVertexInputState->pNext, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT);
+			const auto divisorInfo = findStructure<VkPipelineVertexInputDivisorStateCreateInfoEXT>(pointerToCreateInfo->pVertexInputState->pNext);
 
 			for (deUint32 i = 0; i < pointerToCreateInfo->pVertexInputState->vertexBindingDescriptionCount; ++i)
 			{
@@ -3356,7 +3748,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 		if (pointerToCreateInfo->pTessellationState)
 		{
 			state->patchControlPoints = pointerToCreateInfo->pTessellationState->patchControlPoints;
-			VkPipelineTessellationDomainOriginStateCreateInfo* tessellationDomainOrigin = (VkPipelineTessellationDomainOriginStateCreateInfo*)findPNext(pointerToCreateInfo->pTessellationState->pNext, VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO);
+			const auto tessellationDomainOrigin = findStructure<VkPipelineTessellationDomainOriginStateCreateInfo>(pointerToCreateInfo->pTessellationState->pNext);
 			if (tessellationDomainOrigin)
 				state->domainOrigin = tessellationDomainOrigin->domainOrigin;
 		}
@@ -3364,7 +3756,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 		{
 			state->alphaToCoverageEnable = pointerToCreateInfo->pMultisampleState->alphaToCoverageEnable;
 			state->alphaToOneEnable = pointerToCreateInfo->pMultisampleState->alphaToOneEnable;
-			VkPipelineCoverageModulationStateCreateInfoNV* coverageModulation = (VkPipelineCoverageModulationStateCreateInfoNV*)findPNext(pointerToCreateInfo->pMultisampleState->pNext, VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_MODULATION_STATE_CREATE_INFO_NV);
+			const auto coverageModulation = findStructure<VkPipelineCoverageModulationStateCreateInfoNV>(pointerToCreateInfo->pMultisampleState->pNext);
 			if (coverageModulation)
 			{
 				state->coverageModulationMode = coverageModulation->coverageModulationMode;
@@ -3373,17 +3765,17 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 				for (deUint32 i = 0; i < (deUint32)coverageModulation->coverageModulationTableCount; ++i)
 					state->coverageModulationTable[i] = coverageModulation->pCoverageModulationTable[i];
 			}
-			VkPipelineCoverageReductionStateCreateInfoNV* coverageReduction = (VkPipelineCoverageReductionStateCreateInfoNV*)findPNext(pointerToCreateInfo->pMultisampleState->pNext, VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_REDUCTION_STATE_CREATE_INFO_NV);
+			const auto coverageReduction = findStructure<VkPipelineCoverageReductionStateCreateInfoNV>(pointerToCreateInfo->pMultisampleState->pNext);
 			if (coverageReduction)
 				state->coverageReductionMode = coverageReduction->coverageReductionMode;
-			VkPipelineCoverageToColorStateCreateInfoNV* coverageToColor = (VkPipelineCoverageToColorStateCreateInfoNV*)findPNext(pointerToCreateInfo->pMultisampleState->pNext, VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_TO_COLOR_STATE_CREATE_INFO_NV);
+			const auto coverageToColor = findStructure<VkPipelineCoverageToColorStateCreateInfoNV>(pointerToCreateInfo->pMultisampleState->pNext);
 			if (coverageToColor)
 			{
 				state->coverageToColorEnable = coverageToColor->coverageToColorEnable;
 				state->coverageToColorLocation = coverageToColor->coverageToColorLocation;
 			}
 			state->rasterizationSamples = pointerToCreateInfo->pMultisampleState->rasterizationSamples;
-			VkPipelineSampleLocationsStateCreateInfoEXT* sampleLocations = (VkPipelineSampleLocationsStateCreateInfoEXT*)findPNext(pointerToCreateInfo->pMultisampleState->pNext, VK_STRUCTURE_TYPE_PIPELINE_SAMPLE_LOCATIONS_STATE_CREATE_INFO_EXT);
+			const auto sampleLocations = findStructure<VkPipelineSampleLocationsStateCreateInfoEXT>(pointerToCreateInfo->pMultisampleState->pNext);
 			if (sampleLocations)
 			{
 				state->sampleLocationsEnable = sampleLocations->sampleLocationsEnable;
@@ -3402,19 +3794,19 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 				else
 					state->sampleMasks[i] = 0xFF; // If pSampleMask is NULL, it is treated as if the mask has all bits set to 1
 		}
-		VkPipelineRepresentativeFragmentTestStateCreateInfoNV* representativeFragment = (VkPipelineRepresentativeFragmentTestStateCreateInfoNV*)findPNext(pointerToCreateInfo->pNext, VK_STRUCTURE_TYPE_PIPELINE_REPRESENTATIVE_FRAGMENT_TEST_STATE_CREATE_INFO_NV);
+		const auto representativeFragment = findStructure<VkPipelineRepresentativeFragmentTestStateCreateInfoNV>(pointerToCreateInfo->pNext);
 		if (representativeFragment)
 		{
 			state->representativeFragmentTestEnable = representativeFragment->representativeFragmentTestEnable;
 		}
-		VkPipelineFragmentShadingRateStateCreateInfoKHR* fragmentShadingRate = (VkPipelineFragmentShadingRateStateCreateInfoKHR*)findPNext(pointerToCreateInfo->pNext, VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR);
+		const auto fragmentShadingRate = findStructure<VkPipelineFragmentShadingRateStateCreateInfoKHR>(pointerToCreateInfo->pNext);
 		if (fragmentShadingRate)
 		{
 			state->fragmentShadingRateSize = fragmentShadingRate->fragmentSize;
 			state->combinerOps[0] = fragmentShadingRate->combinerOps[0];
 			state->combinerOps[1] = fragmentShadingRate->combinerOps[1];
 		}
-		VkPipelineViewportExclusiveScissorStateCreateInfoNV* exclusiveScissor = (VkPipelineViewportExclusiveScissorStateCreateInfoNV*)findPNext(pointerToCreateInfo->pNext, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_EXCLUSIVE_SCISSOR_STATE_CREATE_INFO_NV);
+		const auto exclusiveScissor = findStructure<VkPipelineViewportExclusiveScissorStateCreateInfoNV>(pointerToCreateInfo->pNext);
 		if (exclusiveScissor)
 		{
 			state->exclusiveScissorCount = exclusiveScissor->exclusiveScissorCount;
@@ -3422,7 +3814,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			for (deUint32 i = 0; i < exclusiveScissor->exclusiveScissorCount; ++i)
 				state->exclussiveScissors[i] = exclusiveScissor->pExclusiveScissors[i];
 		}
-		VkPipelineDiscardRectangleStateCreateInfoEXT* discardRectangle = (VkPipelineDiscardRectangleStateCreateInfoEXT*)findPNext(pointerToCreateInfo->pNext, VK_STRUCTURE_TYPE_PIPELINE_DISCARD_RECTANGLE_STATE_CREATE_INFO_EXT);
+		const auto discardRectangle = findStructure<VkPipelineDiscardRectangleStateCreateInfoEXT>(pointerToCreateInfo->pNext);
 		if (discardRectangle)
 		{
 			state->discardRectangleEnable = discardRectangle->discardRectangleCount > 0;
@@ -3472,8 +3864,16 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			linkingInfo.libraryCount	= static_cast<uint32_t>(rawPipelines.size());
 			linkingInfo.pLibraries		= de::dataOrNull(rawPipelines);
 
-			linkedCreateInfo.flags		= m_internalData->pipelineFlags;
+			// If a test hits the following assert, it's likely missing a call
+			// to the setMonolithicPipelineLayout() method. Related VUs:
+			//   * VUID-VkGraphicsPipelineCreateInfo-flags-06642
+			//   * VUID-VkGraphicsPipelineCreateInfo-None-07826
+			//   * VUID-VkGraphicsPipelineCreateInfo-layout-07827
+			//   * VUID-VkGraphicsPipelineCreateInfo-flags-06729
+			//   * VUID-VkGraphicsPipelineCreateInfo-flags-06730
+			DE_ASSERT(m_internalData->monolithicPipelineCreateInfo.layout != VK_NULL_HANDLE);
 			linkedCreateInfo.layout		= m_internalData->monolithicPipelineCreateInfo.layout;
+			linkedCreateInfo.flags		= m_internalData->pipelineFlags;
 			linkedCreateInfo.pNext		= &linkingInfo;
 
 			pointerToCreateInfo			= &linkedCreateInfo;
@@ -3490,7 +3890,18 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache						pipelineC
 			void* firstStructInChain = static_cast<void*>(pointerToCreateInfo);
 			addToChain(&firstStructInChain, creationFeedback.ptr);
 			addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
+			addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
+			addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
 			addToChain(&firstStructInChain, pNext);
+		}
+
+		VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
+		if (m_internalData->pipelineFlags2)
+		{
+			void* firstStructInChain = static_cast<void*>(pointerToCreateInfo);
+			pipelineFlags2CreateInfo.flags = m_internalData->pipelineFlags2 | translateCreateFlag(pointerToCreateInfo->flags);
+			addToChain(&firstStructInChain, &pipelineFlags2CreateInfo);
+			pointerToCreateInfo->flags = 0u;
 		}
 #endif // CTS_USES_VULKANSC
 
@@ -3563,7 +3974,23 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			break;
 		case vk::VK_DYNAMIC_STATE_DEPTH_BIAS:
 			if (rasterizerDiscardDisabled && depthBiasEnabled)
-				vk.cmdSetDepthBias(cmdBuffer, state->depthBiasConstantFactor, state->depthBiasClamp, state->depthBiasSlopeFactor);
+			{
+				if (m_internalData->extensionEnabled("VK_EXT_depth_bias_control")) {
+					VkDepthBiasRepresentationInfoEXT depthBiasRepresentationInfo = vk::initVulkanStructure();
+					depthBiasRepresentationInfo.depthBiasRepresentation = state->depthBiasRepresentation;
+					depthBiasRepresentationInfo.depthBiasExact = state->depthBiasExact;
+
+					vk::VkDepthBiasInfoEXT depthBiasInfo = vk::initVulkanStructure(&depthBiasRepresentationInfo);
+					depthBiasInfo.depthBiasConstantFactor = state->depthBiasConstantFactor;
+					depthBiasInfo.depthBiasClamp = state->depthBiasClamp;
+					depthBiasInfo.depthBiasSlopeFactor = state->depthBiasSlopeFactor;
+					vk.cmdSetDepthBias2EXT(cmdBuffer, &depthBiasInfo);
+				}
+				else
+				{
+					vk.cmdSetDepthBias(cmdBuffer, state->depthBiasConstantFactor, state->depthBiasClamp, state->depthBiasSlopeFactor);
+				}
+			}
 			break;
 		case vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS:
 			if (rasterizerDiscardDisabled && blendFactorConstant)
@@ -3666,16 +4093,53 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			}
 			break;
 		case vk::VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT:
-			if (!state->colorBlendEnables.empty() && rasterizerDiscardDisabled)
-				vk.cmdSetColorBlendEnableEXT(cmdBuffer, 0, (deUint32)state->colorBlendEnables.size(), state->colorBlendEnables.data());
+			if (rasterizerDiscardDisabled)
+			{
+				if (!state->colorBlendEnables.empty())
+				{
+					vk.cmdSetColorBlendEnableEXT(cmdBuffer, 0, (deUint32)state->colorBlendEnables.size(), state->colorBlendEnables.data());
+				}
+				else
+				{
+					VkBool32 disable = VK_FALSE;
+					vk.cmdSetColorBlendEnableEXT(cmdBuffer, 0, 1u, &disable);
+				}
+			}
 			break;
 		case vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT:
-			if (!state->blendEquations.empty() && state->colorBlendAdvanced.empty() && rasterizerDiscardDisabled)
-				vk.cmdSetColorBlendEquationEXT(cmdBuffer, 0, (deUint32)state->blendEquations.size(), state->blendEquations.data());
+			if (rasterizerDiscardDisabled)
+			{
+				if (!state->blendEquations.empty())
+				{
+					vk.cmdSetColorBlendEquationEXT(cmdBuffer, 0, (deUint32)state->blendEquations.size(), state->blendEquations.data());
+				}
+				else
+				{
+					vk::VkColorBlendEquationEXT blendEquation = {
+						VK_BLEND_FACTOR_SRC_ALPHA,	// VkBlendFactor	srcColorBlendFactor;
+						VK_BLEND_FACTOR_DST_ALPHA,	// VkBlendFactor	dstColorBlendFactor;
+						VK_BLEND_OP_ADD,			// VkBlendOp		colorBlendOp;
+						VK_BLEND_FACTOR_SRC_ALPHA,	// VkBlendFactor	srcAlphaBlendFactor;
+						VK_BLEND_FACTOR_DST_ALPHA,	// VkBlendFactor	dstAlphaBlendFactor;
+						VK_BLEND_OP_ADD,			// VkBlendOp		alphaBlendOp;
+					};
+					vk.cmdSetColorBlendEquationEXT(cmdBuffer, 0, 1u, &blendEquation);
+				}
+			}
 			break;
 		case vk::VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT:
-			if (!state->colorWriteMasks.empty() && rasterizerDiscardDisabled)
-				vk.cmdSetColorWriteMaskEXT(cmdBuffer, 0, (deUint32)state->colorWriteMasks.size(), state->colorWriteMasks.data());
+			if (rasterizerDiscardDisabled)
+			{
+				if (!state->colorWriteMasks.empty())
+				{
+					vk.cmdSetColorWriteMaskEXT(cmdBuffer, 0, (deUint32)state->colorWriteMasks.size(), state->colorWriteMasks.data());
+				}
+				else
+				{
+					VkColorComponentFlags colorWriteMask = 0u;
+					vk.cmdSetColorWriteMaskEXT(cmdBuffer, 0, 1u, &colorWriteMask);
+				}
+			}
 			break;
 		case vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT:
 			vk.cmdSetConservativeRasterizationModeEXT(cmdBuffer, state->conservativeRasterizationMode);
@@ -3712,6 +4176,11 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 		case vk::VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT:
 			if (state->colorWriteEnableAttachmentCount > 0)
 				vk.cmdSetColorWriteEnableEXT(cmdBuffer, state->colorWriteEnableAttachmentCount, state->colorWriteEnables.data());
+			else
+			{
+				std::vector<VkBool32> enable(state->colorBlendEnables.empty() ? 1u : state->colorBlendEnables.size(), VK_TRUE);
+				vk.cmdSetColorWriteEnableEXT(cmdBuffer, (deUint32)enable.size(), enable.data());
+			}
 			break;
 		case vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT:
 			vk.cmdSetExtraPrimitiveOverestimationSizeEXT(cmdBuffer, state->extraPrimitiveOverestimationSize);
@@ -3724,7 +4193,7 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			break;
 		case vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT:
 			if (stippledLineEnabled)
-				vk.cmdSetLineStippleEXT(cmdBuffer, state->lineStippleFactor, state->lineStipplePattern);
+				vk.cmdSetLineStippleKHR(cmdBuffer, state->lineStippleFactor, state->lineStipplePattern);
 			break;
 		case vk::VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT:
 			if (rasterizerDiscardDisabled)
@@ -3768,7 +4237,23 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			break;
 		case vk::VK_DYNAMIC_STATE_VIEWPORT_SWIZZLE_NV:
 			if (!state->viewportSwizzles.empty())
+			{
 				vk.cmdSetViewportSwizzleNV(cmdBuffer, 0, (deUint32)state->viewportSwizzles.size(), state->viewportSwizzles.data());
+			}
+			else
+			{
+				std::vector<vk::VkViewportSwizzleNV> idSwizzles(4u);
+				for (auto& swizzle : idSwizzles)
+				{
+					swizzle = {
+						vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_X_NV,
+						vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_Y_NV,
+						vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_Z_NV,
+						vk::VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_W_NV,
+					};
+				}
+				vk.cmdSetViewportSwizzleNV(cmdBuffer, 0u, (deUint32)idSwizzles.size(), idSwizzles.data());
+			}
 			break;
 		case vk::VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_ENABLE_NV:
 			vk.cmdSetViewportWScalingEnableNV(cmdBuffer, state->viewportWScalingEnable);
@@ -3788,6 +4273,20 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates (vk::VkCommandBuffer 
 			if (state->shadingRatePaletteCount > 0)
 				vk.cmdSetViewportShadingRatePaletteNV(cmdBuffer, 0, state->shadingRatePaletteCount, state->shadingRatePalettes.data());
 			break;
+		case vk::VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_ENABLE_NV:
+		{
+			if (state->exclusiveScissorCount > 0)
+			{
+				std::vector<VkBool32> exclusiveScissorEnable(state->exclusiveScissorCount, VK_TRUE);
+				vk.cmdSetExclusiveScissorEnableNV(cmdBuffer, 0u, state->exclusiveScissorCount, exclusiveScissorEnable.data());
+			}
+			else
+			{
+				VkBool32 enable = VK_FALSE;
+				vk.cmdSetExclusiveScissorEnableNV(cmdBuffer, 0u, 1u, &enable);
+			}
+			break;
+		}
 		case vk::VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV:
 			if (state->exclusiveScissorCount > 0)
 				vk.cmdSetExclusiveScissorNV(cmdBuffer, 0u, state->exclusiveScissorCount, state->exclussiveScissors.data());

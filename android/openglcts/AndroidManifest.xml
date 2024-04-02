@@ -18,6 +18,18 @@
 					   android:value="createTestActivity" />
 		</activity>
 
+		<!-- Activity that exports test run session parameters -->
+		<activity android:name="org.khronos.cts.ES32GetTestParamActivity"
+				  android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+				  android:label="ES32 CTS test params"
+				  android:configChanges="orientation|keyboardHidden|screenLayout"
+				  android:exported="true">
+			<meta-data android:name="android.app.lib_name"
+					   android:value="deqp" />
+			<meta-data android:name="android.app.func_name"
+					   android:value="createExportES32TestParamActivity" />
+		</activity>
+
 		<!-- CTS activities -->
 		<activity android:name="org.khronos.cts.ES2Activity"
 				  android:theme="@android:style/Theme.NoTitleBar.Fullscreen"

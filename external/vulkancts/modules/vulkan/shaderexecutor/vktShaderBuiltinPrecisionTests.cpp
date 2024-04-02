@@ -1469,7 +1469,11 @@ public:
 				VariableP	(void) {}
 				VariableP	(const Super& ptr) : Super(ptr) {}
 
-	operator	ExprP<T>	(void) const { return exprP(SharedPtr<const Expr<T> >(*this)); }
+	operator	ExprP<T>	(void) const
+	{
+		SharedPtr<const Expr<T> > ptr = *this;
+		return exprP(ptr);
+	}
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -2438,7 +2442,7 @@ protected:
 
 		// Allow either representable number on both sides of the exact value,
 		// but require exactly representable values to be preserved.
-		return ctx.format.roundOut(exact, !deIsInf(x) && !deIsInf(y));
+		return ctx.format.roundOut(exact, !std::isinf(x) && !std::isinf(y));
 	}
 
 	double			precision		(const EvalContext&, double, double, double) const
@@ -2465,7 +2469,7 @@ protected:
 
 		// Allow either representable number on both sides of the exact value,
 		// but require exactly representable values to be preserved.
-		return ctx.format.roundOut(exact, !deIsInf(x) && !deIsInf(y));
+		return ctx.format.roundOut(exact, !std::isinf(x) && !std::isinf(y));
 	}
 
 	double			precision		(const EvalContext&, double, double, double) const
@@ -2727,7 +2731,7 @@ protected:
 	{
 		Interval ret = FloatFunc2<T>::applyPoint(ctx, x, y);
 
-		if (!deIsInf(x) && !deIsInf(y) && y != 0.0)
+		if (!std::isinf(x) && !std::isinf(y) && y != 0.0)
 		{
 			const Interval dst = ctx.format.convert(ret);
 			if (dst.contains(-TCU_INFINITY)) ret |= -ctx.format.getMaxValue();
@@ -6439,7 +6443,7 @@ class PrecisionCase : public TestCase
 {
 protected:
 						PrecisionCase	(const CaseContext& context, const string& name, const Interval& inputRange, const string& extension = "")
-							: TestCase		(context.testContext, name.c_str(), name.c_str())
+							: TestCase		(context.testContext, name.c_str())
 							, m_ctx			(context)
 							, m_extension	(extension)
 							{
@@ -6551,9 +6555,9 @@ struct InputLess<float>
 {
 	bool operator() (const float& val1, const float& val2) const
 	{
-		if (deIsNaN(val1))
+		if (std::isnan(val1))
 			return false;
-		if (deIsNaN(val2))
+		if (std::isnan(val2))
 			return true;
 		return val1 < val2;
 	}
@@ -6860,7 +6864,7 @@ public:
 
 	MovePtr<TestNode>	createCase			(const CaseContext& ctx) const
 	{
-		TestCaseGroup* group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
+		TestCaseGroup* group = new TestCaseGroup(ctx.testContext, ctx.name.c_str());
 
 		group->addChild(createFuncCase(ctx, "scalar",	m_funcs.func,	m_modularOp));
 		group->addChild(createFuncCase(ctx, "vec2",		m_funcs.func2,	m_modularOp));
@@ -6884,7 +6888,7 @@ class TemplateFuncCaseFactory : public FuncCaseFactory
 public:
 	MovePtr<TestNode>	createCase		(const CaseContext& ctx) const
 	{
-		TestCaseGroup*	group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
+		TestCaseGroup*	group = new TestCaseGroup(ctx.testContext, ctx.name.c_str());
 
 		group->addChild(createFuncCase(ctx, "scalar", instance<GenF<1, T> >()));
 		group->addChild(createFuncCase(ctx, "vec2", instance<GenF<2, T> >()));
@@ -6904,7 +6908,7 @@ class SquareMatrixFuncCaseFactory : public FuncCaseFactory
 public:
 	MovePtr<TestNode>	createCase		(const CaseContext& ctx) const
 	{
-		TestCaseGroup* group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
+		TestCaseGroup* group = new TestCaseGroup(ctx.testContext, ctx.name.c_str());
 
 		group->addChild(createFuncCase(ctx, "mat2", instance<GenF<2> >()));
 
@@ -6957,7 +6961,7 @@ class MatrixFuncCaseFactory : public FuncCaseFactory
 public:
 	MovePtr<TestNode>	createCase		(const CaseContext& ctx) const
 	{
-		TestCaseGroup*	const group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
+		TestCaseGroup*	const group = new TestCaseGroup(ctx.testContext, ctx.name.c_str());
 
 		this->addCase<2, 2>(ctx, group);
 		this->addCase<3, 2>(ctx, group);
@@ -7266,7 +7270,7 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 
 TestCaseGroup* createFuncGroup (TestContext& ctx, const CaseFactory& factory, int numRandoms)
 {
-	TestCaseGroup* const	group	= new TestCaseGroup(ctx, factory.getName().c_str(), factory.getDesc().c_str());
+	TestCaseGroup* const	group	= new TestCaseGroup(ctx, factory.getName().c_str());
 	const FloatFormat		highp		(-126, 127, 23, true,
 										 tcu::MAYBE,	// subnormals
 										 tcu::YES,		// infinities
@@ -7289,7 +7293,7 @@ TestCaseGroup* createFuncGroup (TestContext& ctx, const CaseFactory& factory, in
 
 TestCaseGroup* createFuncGroupDouble (TestContext& ctx, const CaseFactory& factory, int numRandoms)
 {
-	TestCaseGroup* const	group		= new TestCaseGroup(ctx, factory.getName().c_str(), factory.getDesc().c_str());
+	TestCaseGroup* const	group		= new TestCaseGroup(ctx, factory.getName().c_str());
 	const Precision			precision	= Precision(glu::PRECISION_LAST);
 	const FloatFormat		highp		(-1022, 1023, 52, true,
 										 tcu::MAYBE,	// subnormals
@@ -7306,7 +7310,7 @@ TestCaseGroup* createFuncGroupDouble (TestContext& ctx, const CaseFactory& facto
 
 TestCaseGroup* createFuncGroup16Bit(TestContext& ctx, const CaseFactory& factory, int numRandoms, bool storage32)
 {
-	TestCaseGroup* const	group = new TestCaseGroup(ctx, factory.getName().c_str(), factory.getDesc().c_str());
+	TestCaseGroup* const	group = new TestCaseGroup(ctx, factory.getName().c_str());
 	const Precision			precision = Precision(glu::PRECISION_LAST);
 	const FloatFormat		float16	(-14, 15, 10, true, tcu::MAYBE);
 
@@ -7355,7 +7359,7 @@ void addBuiltinPrecisionDoubleTests (TestContext&		ctx,
 }
 
 BuiltinPrecisionTests::BuiltinPrecisionTests (tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup(testCtx, "precision", "Builtin precision tests")
+	: tcu::TestCaseGroup(testCtx, "precision")
 {
 }
 
@@ -7369,7 +7373,7 @@ void BuiltinPrecisionTests::init (void)
 }
 
 BuiltinPrecisionDoubleTests::BuiltinPrecisionDoubleTests (tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup(testCtx, "precision_double", "Builtin precision tests")
+	: tcu::TestCaseGroup(testCtx, "precision_double")
 {
 }
 
@@ -7383,7 +7387,7 @@ void BuiltinPrecisionDoubleTests::init (void)
 }
 
 BuiltinPrecision16BitTests::BuiltinPrecision16BitTests (tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup(testCtx, "precision_fp16_storage16b", "Builtin precision tests")
+	: tcu::TestCaseGroup(testCtx, "precision_fp16_storage16b")
 {
 }
 
@@ -7397,7 +7401,7 @@ void BuiltinPrecision16BitTests::init (void)
 }
 
 BuiltinPrecision16Storage32BitTests::BuiltinPrecision16Storage32BitTests(tcu::TestContext& testCtx)
-	: tcu::TestCaseGroup(testCtx, "precision_fp16_storage32b", "Builtin precision tests")
+	: tcu::TestCaseGroup(testCtx, "precision_fp16_storage32b")
 {
 }
 

@@ -1159,8 +1159,8 @@ struct WriteSampleParams
 class WriteSampleTest : public vkt::TestCase
 {
 public:
-									WriteSampleTest		(tcu::TestContext& testCtx, const std::string& name, const std::string& desc, const WriteSampleParams& params)
-										: vkt::TestCase(testCtx, name, desc), m_params(params)
+									WriteSampleTest		(tcu::TestContext& testCtx, const std::string& name, const WriteSampleParams& params)
+										: vkt::TestCase(testCtx, name), m_params(params)
 										{}
 	virtual							~WriteSampleTest	(void) {}
 
@@ -1518,7 +1518,7 @@ using WriteSampleMaskParams = WriteSampleParams;
 class WriteSampleMaskTestCase : public vkt::TestCase
 {
 public:
-							WriteSampleMaskTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const WriteSampleMaskParams& params);
+							WriteSampleMaskTestCase		(tcu::TestContext& testCtx, const std::string& name, const WriteSampleMaskParams& params);
 	virtual					~WriteSampleMaskTestCase	(void) {}
 
 	virtual void			checkSupport				(Context& context) const;
@@ -1552,8 +1552,8 @@ private:
 	WriteSampleMaskParams		m_params;
 };
 
-WriteSampleMaskTestCase::WriteSampleMaskTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const WriteSampleMaskParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+WriteSampleMaskTestCase::WriteSampleMaskTestCase (tcu::TestContext& testCtx, const std::string& name, const WriteSampleMaskParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -2099,7 +2099,7 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate (void)
 
 tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "multisample_shader_builtin", "Multisample Shader BuiltIn Tests"));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "multisample_shader_builtin"));
 
 	const tcu::UVec3 imageSizes[] =
 	{
@@ -2123,7 +2123,7 @@ tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testC
 
 	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleID> >(testCtx, "sample_id", pipelineConstructionType, imageSizes, sizesElemCount, samplesSetFull, samplesSetFullCount));
 
-	de::MovePtr<tcu::TestCaseGroup> samplePositionGroup(new tcu::TestCaseGroup(testCtx, "sample_position", "Sample Position Tests"));
+	de::MovePtr<tcu::TestCaseGroup> samplePositionGroup(new tcu::TestCaseGroup(testCtx, "sample_position"));
 
 	samplePositionGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSamplePosDistribution> >(testCtx, "distribution", pipelineConstructionType, imageSizes, sizesElemCount, samplesSetFull, samplesSetFullCount));
 	samplePositionGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSamplePosCorrectness> > (testCtx, "correctness", pipelineConstructionType, imageSizes, sizesElemCount, samplesSetFull, samplesSetFullCount));
@@ -2141,7 +2141,7 @@ tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testC
 
 	const deUint32 samplesSetReducedCount = static_cast<deUint32>(DE_LENGTH_OF_ARRAY(samplesSetReduced));
 
-	de::MovePtr<tcu::TestCaseGroup> sampleMaskGroup(new tcu::TestCaseGroup(testCtx, "sample_mask", "Sample Mask Tests"));
+	de::MovePtr<tcu::TestCaseGroup> sampleMaskGroup(new tcu::TestCaseGroup(testCtx, "sample_mask"));
 
 	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskPattern> >	(testCtx, "pattern",		pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
 	sampleMaskGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleMaskBitCount> >	(testCtx, "bit_count",		pipelineConstructionType, imageSizes, sizesElemCount, samplesSetReduced, samplesSetReducedCount));
@@ -2154,7 +2154,8 @@ tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testC
 	// Write image sample tests using a storage images (tests construct only compute pipeline).
 	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 	{
-		de::MovePtr<tcu::TestCaseGroup> imageWriteSampleGroup(new tcu::TestCaseGroup(testCtx, "image_write_sample", "Test OpImageWrite with a sample ID"));
+		// Test OpImageWrite with a sample ID
+		de::MovePtr<tcu::TestCaseGroup> imageWriteSampleGroup(new tcu::TestCaseGroup(testCtx, "image_write_sample"));
 
 		for (auto count : multisample::kValidSquareSampleCounts)
 		{
@@ -2163,7 +2164,7 @@ tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testC
 
 			multisample::WriteSampleParams params { pipelineConstructionType, static_cast<vk::VkSampleCountFlagBits>(count) };
 			const auto countStr = de::toString(count);
-			imageWriteSampleGroup->addChild(new multisample::WriteSampleTest(testCtx, countStr + "_samples", "Test image with " + countStr + " samples", params));
+			imageWriteSampleGroup->addChild(new multisample::WriteSampleTest(testCtx, countStr + "_samples", params));
 		}
 
 		testGroup->addChild(imageWriteSampleGroup.release());
@@ -2171,13 +2172,13 @@ tcu::TestCaseGroup* createMultisampleShaderBuiltInTests (tcu::TestContext& testC
 
 	// Write to gl_SampleMask from the fragment shader.
 	{
-		de::MovePtr<tcu::TestCaseGroup> writeSampleMaskGroup(new tcu::TestCaseGroup(testCtx, "write_sample_mask", "Test writes to SampleMask variable"));
+		de::MovePtr<tcu::TestCaseGroup> writeSampleMaskGroup(new tcu::TestCaseGroup(testCtx, "write_sample_mask"));
 
 		for (auto count : multisample::kValidSquareSampleCounts)
 		{
 			multisample::WriteSampleMaskParams params { pipelineConstructionType, static_cast<vk::VkSampleCountFlagBits>(count) };
 			const auto countStr = de::toString(count);
-			writeSampleMaskGroup->addChild(new multisample::WriteSampleMaskTestCase(testCtx, countStr + "_samples", "Test image with " + countStr + " samples", params));
+			writeSampleMaskGroup->addChild(new multisample::WriteSampleMaskTestCase(testCtx, countStr + "_samples", params));
 		}
 
 		testGroup->addChild(writeSampleMaskGroup.release());

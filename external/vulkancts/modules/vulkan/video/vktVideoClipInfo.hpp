@@ -25,13 +25,15 @@
  * See the <vulkan_data_dir>/vulkan/video/frame_checksums.py file for
  * instructions on generating the checksums for new tests.
  *--------------------------------------------------------------------*/
-#include "deDefs.hpp"
-#include "vktVideoTestUtils.hpp"
-
 #include <array>
+#include <vector>
 #include <string>
 #include <sstream>
 
+#include "deDefs.hpp"
+#include "vktVideoTestUtils.hpp"
+
+#include "vktDemuxer.hpp"
 
 namespace vkt
 {
@@ -44,31 +46,70 @@ enum ClipName
 	CLIP_B,
 	CLIP_C,
 	CLIP_D,
+	CLIP_E,
+	CLIP_F,
+	CLIP_G,
+	CLIP_H,
 	CLIP_H264_4K_26_IBP_MAIN,
 	CLIP_JELLY_HEVC,
+	CLIP_NONE_HEVC,
+
+	CLIP_BASIC_8,
+	CLIP_ALLINTRA_8,
+	CLIP_ALLINTRA_INTRABC_8,
+	CLIP_CDFUPDATE_8,
+	CLIP_GLOBALMOTION_8,
+	CLIP_FILMGRAIN_8,
+	CLIP_SVCL1T2_8,
+	CLIP_SUPERRES_8,
+	CLIP_SIZEUP_8,
+	CLIP_ARGON_SEQCHANGE_AFFINE_8,
+
+	CLIP_BASIC_10,
+	CLIP_ORDERHINT_10,
+	CLIP_FORWARDKEYFRAME_10,
+	CLIP_LOSSLESS_10,
+	CLIP_LOOPFILTER_10,
+	CLIP_CDEF_10,
+	CLIP_ARGON_FILMGRAIN_10,
+	CLIP_ARGON_TEST_787,
 
 	CLIP_LAST,
 };
-
 struct VideoProfileInfo
 {
-	VkVideoCodecOperationFlagBitsKHR	codecOperation;
-	VkVideoChromaSubsamplingFlagBitsKHR subsamplingFlags;
-	VkVideoComponentBitDepthFlagBitsKHR lumaBitDepth;
-	VkVideoComponentBitDepthFlagBitsKHR chromaBitDepth;
+	VkVideoCodecOperationFlagBitsKHR		codecOperation;
+	VkVideoChromaSubsamplingFlagBitsKHR		subsamplingFlags;
+	VkVideoComponentBitDepthFlagBitsKHR		lumaBitDepth;
+	VkVideoComponentBitDepthFlagBitsKHR		chromaBitDepth;
+	int										profileIDC;
 
-	int profileIDC; // TODO: Avoid type-punning
+	VideoProfileInfo(
+		VkVideoCodecOperationFlagBitsKHR	codecOp,
+		VkVideoChromaSubsamplingFlagBitsKHR	subsampleFlags = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
+		VkVideoComponentBitDepthFlagBitsKHR	lumaDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+		VkVideoComponentBitDepthFlagBitsKHR	chromaDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+		int									profile = 0
+	) :
+		codecOperation(codecOp),
+		subsamplingFlags(subsampleFlags),
+		lumaBitDepth(lumaDepth),
+		chromaBitDepth(chromaDepth),
+		profileIDC(profile) {}
 };
 
 struct ClipInfo
 {
-	ClipName	 name;
-	const char*	 filename;
-	VideoProfileInfo profile;
-	int			 totalFrames;
-	int			 framesInGOP;
-	int			 numGOPs;
-	const char** frameChecksums;
+	ClipName						name;
+	const char*						filename;
+	std::vector<VideoProfileInfo>	sessionProfiles;
+	ElementaryStreamFraming			framing { ElementaryStreamFraming::UNKNOWN };
+	uint32_t						frameWidth{ 0 };
+	uint32_t						frameHeight{ 0 };
+	uint32_t						frameRate{ 0 };
+	int								totalFrames{ 0 };
+	uint32_t						framesInGOP{ 0 };
+	const char**					frameChecksums{ nullptr };
 };
 
 const ClipInfo* clipInfo(ClipName c);

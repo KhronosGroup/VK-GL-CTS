@@ -134,9 +134,8 @@ class MultipleSubpassesMultipleCommandBuffersTest : public vkt::TestCase
 {
 public:
 										MultipleSubpassesMultipleCommandBuffersTest	(tcu::TestContext&	testContext,
-																	 const std::string&	name,
-																	 const std::string&	description)
-											: vkt::TestCase(testContext, name, description)
+																	 const std::string&	name)
+											: vkt::TestCase(testContext, name)
 											{}
 	virtual								~MultipleSubpassesMultipleCommandBuffersTest	(void) {}
 	virtual void						initPrograms				(SourceCollections&	sourceCollections) const;
@@ -864,9 +863,9 @@ tcu::TestStatus	MultipleSubpassesMultipleCommandBuffersTestInstance::iterate (vo
 
 tcu::TestCaseGroup* createRenderPassMultipleSubpassesMultipleCommandBuffersTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "multiple_subpasses_multiple_command_buffers", "Multiple subpasses multiple command buffers"));
+	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "multiple_subpasses_multiple_command_buffers"));
 
-	testGroup->addChild(new MultipleSubpassesMultipleCommandBuffersTest(testCtx, "test", ""));
+	testGroup->addChild(new MultipleSubpassesMultipleCommandBuffersTest(testCtx, "test"));
 
 	return testGroup.release();
 }

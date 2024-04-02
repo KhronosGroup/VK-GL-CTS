@@ -1,8 +1,27 @@
 # Issue 448: Precision issues with software texture sampling on X86 Linux
-dEQP-VK.glsl.texture_functions.textureoffset.isampler2darray_vertex
-dEQP-VK.glsl.texture_functions.textureoffset.usampler2darray_vertex
-dEQP-VK.glsl.texture_functions.textureoffset.usampler3d_vertex
-dEQP-VK.glsl.texture_functions.texturegradoffset.usampler2darray_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.clamp_to_edge.isampler2darray_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.clamp_to_border.isampler2darray_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.repeat.isampler2darray_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.mirrored_repeat.isampler2darray_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.mirrored.isampler2darray_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.clamp_to_edge.usampler2darray_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.clamp_to_border.usampler2darray_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.repeat.usampler2darray_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.mirrored_repeat.usampler2darray_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.mirrored.usampler2darray_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.clamp_to_edge.usampler3d_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.clamp_to_border.usampler3d_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.repeat.usampler3d_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.mirrored_repeat.usampler3d_vertex
+dEQP-VK.glsl.texture_functions.textureoffset.mirrored.usampler3d_vertex
+dEQP-VK.glsl.texture_functions.texturegradoffset.clamp_to_edge.usampler2darray_vertex
+dEQP-VK.glsl.texture_functions.texturegradoffset.clamp_to_border.usampler2darray_vertex
+dEQP-VK.glsl.texture_functions.texturegradoffset.repeat.usampler2darray_vertex
+dEQP-VK.glsl.texture_functions.texturegradoffset.mirrored_repeat.usampler2darray_vertex
+dEQP-VK.glsl.texture_functions.texturegradoffset.mirrored.usampler2darray_vertex
 
 # Issue 4372
 dEQP-VK.subgroups.subgroup_uniform_control_flow.*partial*
+
+# Issue 4894
+dEQP-VK.image.extended_usage_bit_compatibility.image_format_list.*

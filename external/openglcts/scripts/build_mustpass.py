@@ -97,6 +97,7 @@ ES2KHR_MODULE					= getModuleByName("KHR-GLES2")
 ES3KHR_MODULE					= getModuleByName("KHR-GLES3")
 ES31KHR_MODULE					= getModuleByName("KHR-GLES31")
 ES32KHR_MODULE					= getModuleByName("KHR-GLES32")
+ESEXTKHR_MODULE					= getModuleByName("KHR-GLESEXT")
 NOCTX_ES2_KHR_MODULE			= getModuleByName("KHR-NOCTX-ES2")
 NOCTX_ES32_KHR_MODULE			= getModuleByName("KHR-NOCTX-ES32")
 SINGLE_ES32_KHR_MODULE			= getModuleByName("KHR-Single-GLES32")
@@ -106,22 +107,22 @@ ES3GTF_MODULE					= getModuleByName("GTF-GLES3")
 ES31GTF_MODULE					= getModuleByName("GTF-GLES31")
 
 GLCTS_GLES2_PKG						= Package(module = ES2CTS_MODULE, configurations = [
-		# Master
-		Configuration(name			= "master",
+		# Main
+		Configuration(name			= "main",
 					glconfig		= "rgba8888d24s8ms0",
 					rotation		= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
-					filters			= [include("gles2-master.txt")]),
+					filters			= [include("gles2-main.txt")]),
 	])
 GLCTS_3_2_2_GLES3_PKG					= Package(module = ES3CTS_MODULE, configurations = [
-		# Master
-		Configuration(name			= "master",
+		# Main
+		Configuration(name			= "main",
 					glconfig		= "rgba8888d24s8ms0",
 					rotation		= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
-					filters			= [include("gles3-master.txt")]),
+					filters			= [include("gles3-main.txt")]),
 
 		# Rotations
 		Configuration(name			= "rotate-portrait",
@@ -130,28 +131,28 @@ GLCTS_3_2_2_GLES3_PKG					= Package(module = ES3CTS_MODULE, configurations = [
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters			= [include("gles3-master.txt"), include("gles3-rotation.txt")]),
+					filters			= [include("gles3-main.txt"), include("gles3-rotation.txt")]),
 		Configuration(name			= "rotate-landscape",
 					glconfig		= "rgba8888d24s8ms0",
 					rotation		= "90",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters			= [include("gles3-master.txt"), include("gles3-rotation.txt")]),
+					filters			= [include("gles3-main.txt"), include("gles3-rotation.txt")]),
 		Configuration(name			= "rotate-reverse-portrait",
 					glconfig		= "rgba8888d24s8ms0",
 					rotation		= "180",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters			= [include("gles3-master.txt"), include("gles3-rotation.txt")]),
+					filters			= [include("gles3-main.txt"), include("gles3-rotation.txt")]),
 		Configuration(name			= "rotate-reverse-landscape",
 					glconfig		= "rgba8888d24s8ms0",
 					rotation		= "270",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters		= [include("gles3-master.txt"), include("gles3-rotation.txt")]),
+					filters		= [include("gles3-main.txt"), include("gles3-rotation.txt")]),
 
 		# MSAA
 		Configuration(name			= "multisample",
@@ -159,7 +160,7 @@ GLCTS_3_2_2_GLES3_PKG					= Package(module = ES3CTS_MODULE, configurations = [
 					rotation		= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
-					filters			= [include("gles3-master.txt"),
+					filters			= [include("gles3-main.txt"),
 									   include("gles3-multisample.txt"),
 									   exclude("gles3-multisample-issues.txt")]),
 
@@ -170,18 +171,18 @@ GLCTS_3_2_2_GLES3_PKG					= Package(module = ES3CTS_MODULE, configurations = [
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters			= [include("gles3-master.txt"),
+					filters			= [include("gles3-main.txt"),
 									   include("gles3-pixelformat.txt"),
 									   exclude("gles3-pixelformat-issues.txt")]),
 	])
 GLCTS_3_2_2_GLES31_PKG					= Package(module = ES31CTS_MODULE, configurations = [
-		# Master
-		Configuration(name			= "master",
+		# Main
+		Configuration(name			= "main",
 					glconfig		= "rgba8888d24s8ms0",
 					rotation		= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
-					filters			= [include("gles31-master.txt")]),
+					filters			= [include("gles31-main.txt")]),
 		# Rotations
 		Configuration(name			= "rotate-portrait",
 					glconfig		= "rgba8888d24s8ms0",
@@ -189,28 +190,28 @@ GLCTS_3_2_2_GLES31_PKG					= Package(module = ES31CTS_MODULE, configurations = [
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters			= [include("gles31-master.txt"), include("gles31-rotation.txt")]),
+					filters			= [include("gles31-main.txt"), include("gles31-rotation.txt")]),
 		Configuration(name			= "rotate-landscape",
 					glconfig		= "rgba8888d24s8ms0",
 					rotation		= "90",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters			= [include("gles31-master.txt"), include("gles31-rotation.txt")]),
+					filters			= [include("gles31-main.txt"), include("gles31-rotation.txt")]),
 		Configuration(name			= "rotate-reverse-portrait",
 					glconfig		= "rgba8888d24s8ms0",
 					rotation		= "180",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters			= [include("gles31-master.txt"), include("gles31-rotation.txt")]),
+					filters			= [include("gles31-main.txt"), include("gles31-rotation.txt")]),
 		Configuration(name			= "rotate-reverse-landscape",
 					glconfig		= "rgba8888d24s8ms0",
 					rotation		= "270",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters			= [include("gles31-master.txt"), include("gles31-rotation.txt")]),
+					filters			= [include("gles31-main.txt"), include("gles31-rotation.txt")]),
 
 		# MSAA
 		Configuration(name			= "multisample",
@@ -218,7 +219,7 @@ GLCTS_3_2_2_GLES31_PKG					= Package(module = ES31CTS_MODULE, configurations = [
 					rotation		= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
-					filters			= [include("gles31-master.txt"), include("gles31-multisample.txt")]),
+					filters			= [include("gles31-main.txt"), include("gles31-multisample.txt")]),
 
 		# Pixel format
 		Configuration(name			= "565-no-depth-no-stencil",
@@ -227,18 +228,18 @@ GLCTS_3_2_2_GLES31_PKG					= Package(module = ES31CTS_MODULE, configurations = [
 					surfacewidth	= "256",
 					surfaceheight	= "256",
 					os				= "android",
-					filters			= [include("gles31-master.txt"), include("gles31-pixelformat.txt")]),
+					filters			= [include("gles31-main.txt"), include("gles31-pixelformat.txt")]),
 	])
 
 # 3.2.3.x
-GLCTS_3_2_3_EGL_COMMON_FILTERS			= [include("egl-master.txt"),
+GLCTS_3_2_3_EGL_COMMON_FILTERS			= [include("egl-main.txt"),
 		exclude("egl-test-issues.txt"),
 		exclude("egl-internal-api-tests.txt"),
 		exclude("egl-driver-issues.txt")
 	]
 GLCTS_3_2_3_EGL_PKG						= Package(module = EGL_MODULE, configurations = [
-		# Master
-		Configuration(name			= "master",
+		# Main
+		Configuration(name			= "main",
 					glconfig		= "rgba8888d24s8ms0",
 					rotation		= "unspecified",
 					surfacewidth    = "256",
@@ -247,15 +248,15 @@ GLCTS_3_2_3_EGL_PKG						= Package(module = EGL_MODULE, configurations = [
 	])
 
 GLCTS_3_2_3_GLES2_COMMON_FILTERS	= [
-		include("gles2-master.txt"),
+		include("gles2-main.txt"),
 		exclude("gles2-test-issues.txt"),
 		exclude("gles2-spec-issues.txt"),
 		exclude("gles2-driver-issues.txt"),
 		exclude("gles2-hw-issues.txt")
 	]
 GLCTS_3_2_3_GLES2_PKG         = Package(module = ES2CTS_MODULE, configurations = [
-        # Master
-        Configuration(name          = "master",
+        # Main
+        Configuration(name          = "main",
                     glconfig        = "rgba8888d24s8ms0",
                     rotation        = "unspecified",
                     surfacewidth    = "256",
@@ -264,15 +265,15 @@ GLCTS_3_2_3_GLES2_PKG         = Package(module = ES2CTS_MODULE, configurations =
     ])
 
 GLCTS_3_2_3_GLES3_COMMON_FILTERS		= [
-		include("gles3-master.txt"),
+		include("gles3-main.txt"),
 		exclude("gles3-test-issues.txt"),
 		exclude("gles3-spec-issues.txt"),
 		exclude("gles3-driver-issues.txt"),
 	]
 
 GLCTS_3_2_3_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
-		# Master
-		Configuration(name			= "master",
+		# Main
+		Configuration(name			= "main",
 					glconfig	= "rgba8888d24s8ms0",
 					rotation	= "unspecified",
 					surfacewidth    = "256",
@@ -328,7 +329,7 @@ GLCTS_3_2_3_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
 	])
 
 GLCTS_3_2_3_GLES31_COMMON_FILTERS	= [
-		include("gles31-master.txt"),
+		include("gles31-main.txt"),
 		exclude("gles31-test-issues.txt"),
 		exclude("gles31-spec-issues.txt"),
 		exclude("gles31-driver-issues.txt"),
@@ -336,8 +337,8 @@ GLCTS_3_2_3_GLES31_COMMON_FILTERS	= [
 	]
 
 GLCTS_3_2_3_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
-		# Master
-		Configuration(name			= "master",
+		# Main
+		Configuration(name			= "main",
 					glconfig	= "rgba8888d24s8ms0",
 					rotation	= "unspecified",
 					surfacewidth	= "256",
@@ -380,7 +381,7 @@ GLCTS_3_2_3_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
 					rotation	= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
-					filters		= [include("gles31-master.txt"),
+					filters		= [include("gles31-main.txt"),
 									include("gles31-multisample.txt"),
 									exclude("gles31-multisample-test-issues.txt")]),
 
@@ -395,30 +396,30 @@ GLCTS_3_2_3_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
 	])
 
 GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS	= [
-		include("gles32-khr-master.txt"),
+		include("gles32-khr-main.txt"),
 		exclude("gles32-khr-test-issues.txt"),
 		exclude("gles32-khr-spec-issues.txt")
 	]
 
 GLCTS_3_2_3_GLES32_KHR_PKG_1CFG			= Package(module = ES32KHR_MODULE, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
 					filters			= GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS),
-		Configuration(name			= "khr-master",
+		Configuration(name			= "khr-main",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
 					filters			= GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS),
-		Configuration(name			= "khr-master",
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "-1",
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
 					filters			= GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS),
-		Configuration(name			= "khr-master",
+		Configuration(name			= "khr-main",
 					surfacewidth	= "-1",
 					surfaceheight	= "64",
 					baseseed		= "3",
@@ -427,13 +428,13 @@ GLCTS_3_2_3_GLES32_KHR_PKG_1CFG			= Package(module = ES32KHR_MODULE, configurati
 	])
 
 GLCTS_3_2_3_GLES32_KHR_PKG_N1CFG		= Package(module = ES32KHR_MODULE, useforfirsteglconfig = False, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
 					filters			= GLCTS_3_2_3_GLES32_KHR_COMMON_FILTERS),
-		Configuration(name			= "khr-master",
+		Configuration(name			= "khr-main",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
@@ -441,13 +442,13 @@ GLCTS_3_2_3_GLES32_KHR_PKG_N1CFG		= Package(module = ES32KHR_MODULE, useforfirst
 	])
 
 
-# master
-MAIN_EGL_COMMON_FILTERS			= [include("egl-master.txt"),
+# main
+MAIN_EGL_COMMON_FILTERS			= [include("egl-main.txt"),
 										exclude("egl-test-issues.txt"),
 										exclude("egl-internal-api-tests.txt")]
 MAIN_EGL_PKG						= Package(module = EGL_MODULE, configurations = [
-		# Master
-		Configuration(name			= "master",
+		# Main
+		Configuration(name			= "main",
 					glconfig		= "rgba8888d24s8ms0",
 					rotation		= "unspecified",
 					surfacewidth	= "256",
@@ -456,13 +457,13 @@ MAIN_EGL_PKG						= Package(module = EGL_MODULE, configurations = [
 	])
 
 MAIN_GLES2_COMMON_FILTERS			= [
-				include("gles2-master.txt"),
+				include("gles2-main.txt"),
 				exclude("gles2-test-issues.txt"),
 				exclude("gles2-spec-issues.txt")
 		]
 MAIN_GLES2_PKG         = Package(module = ES2CTS_MODULE, configurations = [
-        # Master
-        Configuration(name          = "master",
+        # Main
+        Configuration(name          = "main",
                     glconfig        = "rgba8888d24s8ms0",
                     rotation        = "unspecified",
                     surfacewidth    = "256",
@@ -471,13 +472,13 @@ MAIN_GLES2_PKG         = Package(module = ES2CTS_MODULE, configurations = [
     ])
 
 MAIN_GLES3_COMMON_FILTERS		= [
-		include("gles3-master.txt"),
+		include("gles3-main.txt"),
 		exclude("gles3-test-issues.txt"),
 		exclude("gles3-spec-issues.txt")
 	]
 MAIN_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
-		# Master
-		Configuration(name			= "master",
+		# Main
+		Configuration(name			= "main",
 					glconfig	= "rgba8888d24s8ms0",
 					rotation	= "unspecified",
 					surfacewidth    = "256",
@@ -531,14 +532,14 @@ MAIN_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
 					filters		= MAIN_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt")]),
 	])
 MAIN_GLES31_COMMON_FILTERS             = [
-		include("gles31-master.txt"),
+		include("gles31-main.txt"),
 		exclude("gles31-test-issues.txt"),
 		exclude("gles31-spec-issues.txt")
 	]
 
 MAIN_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
-		# Master
-		Configuration(name			= "master",
+		# Main
+		Configuration(name			= "main",
 					glconfig	= "rgba8888d24s8ms0",
 					rotation	= "unspecified",
 					surfacewidth	= "256",
@@ -594,47 +595,47 @@ MAIN_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
 	])
 
 GLCTS_GLES2_KHR_PKG_1CFG			= Package(module = ES2KHR_MODULE, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles2-khr-master.txt")]),
+					filters			= [include("gles2-khr-main.txt")]),
 	])
 
 GLCTS_GLES2_DEQP_PKG_1CFG			= Package(module = ES2CTS_MODULE, configurations = [
-		# Master
-		Configuration(name			= "deqp-master",
+		# Main
+		Configuration(name			= "deqp-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles2-deqp-master.txt")]),
+					filters			= [include("gles2-deqp-main.txt")]),
 	])
 
 GLCTS_GLES2_GTF_PKG_1CFG			= Package(module = ES2GTF_MODULE, configurations = [
-		# Master
-		Configuration(name			= "gtf-master",
+		# Main
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles2-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
+					filters			= [include("gles2-gtf-main.txt")]),
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
-					filters			= [include("gles2-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
+					filters			= [include("gles2-gtf-main.txt")]),
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "64",
 					surfaceheight	= "-1",
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
-					filters			= [include("gles2-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
+					filters			= [include("gles2-gtf-main.txt")]),
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "-1",
 					surfaceheight	= "64",
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
-					filters			= [include("gles2-gtf-master.txt")]),
+					filters			= [include("gles2-gtf-main.txt")]),
 		Configuration(name			= "gtf-egl",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
@@ -648,213 +649,213 @@ GLCTS_GLES2_GTF_PKG_1CFG			= Package(module = ES2GTF_MODULE, configurations = [
 	])
 
 GLCTS_GLES2_KHR_PKG_N1CFG			= Package(module = ES2KHR_MODULE, useforfirsteglconfig = False, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles2-khr-master.txt")]),
+					filters			= [include("gles2-khr-main.txt")]),
 	])
 
 GLCTS_GLES2_DEQP_PKG_N1CFG			= Package(module = ES2CTS_MODULE, useforfirsteglconfig = False, configurations = [
-		# Master
-		Configuration(name			= "deqp-master",
+		# Main
+		Configuration(name			= "deqp-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles2-deqp-master.txt")]),
+					filters			= [include("gles2-deqp-main.txt")]),
 	])
 
 GLCTS_GLES2_GTF_PKG_N1CFG			= Package(module = ES2GTF_MODULE, useforfirsteglconfig = False, configurations = [
-		# Master
-		Configuration(name			= "gtf-master",
+		# Main
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters		= [include("gles2-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
+					filters		= [include("gles2-gtf-main.txt")]),
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
-					filters			= [include("gles2-gtf-master.txt")]),
+					filters			= [include("gles2-gtf-main.txt")]),
 	])
 
 GLCTS_GLES3_DEQP_PKG_1CFG			= Package(module = ES3CTS_MODULE, configurations = [
-		# Master
-		Configuration(name			= "deqp-master",
+		# Main
+		Configuration(name			= "deqp-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles3-deqp-master.txt")]),
+					filters			= [include("gles3-deqp-main.txt")]),
 	])
 
 GLCTS_GLES3_KHR_PKG_1CFG			= Package(module = ES3KHR_MODULE, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles3-khr-master.txt")]),
+					filters			= [include("gles3-khr-main.txt")]),
 	])
 
 GLCTS_GLES3_GTF_PKG_1CFG			= Package(module = ES3GTF_MODULE, configurations = [
-		# Master
-		Configuration(name			= "gtf-master",
+		# Main
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles3-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
+					filters			= [include("gles3-gtf-main.txt")]),
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
-					filters			= [include("gles3-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
+					filters			= [include("gles3-gtf-main.txt")]),
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "64",
 					surfaceheight	= "-1",
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
-					filters			= [include("gles3-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
+					filters			= [include("gles3-gtf-main.txt")]),
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "-1",
 					surfaceheight	= "64",
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
-					filters			= [include("gles3-gtf-master.txt")]),
+					filters			= [include("gles3-gtf-main.txt")]),
 	])
 
 GLCTS_GLES3_DEQP_PKG_N1CFG			= Package(module = ES3CTS_MODULE, useforfirsteglconfig = False, configurations = [
-		# Master
-		Configuration(name			= "deqp-master",
+		# Main
+		Configuration(name			= "deqp-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles3-deqp-master.txt")]),
+					filters			= [include("gles3-deqp-main.txt")]),
 	])
 
 GLCTS_GLES3_KHR_PKG_N1CFG			= Package(module = ES3KHR_MODULE, useforfirsteglconfig = False, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles3-khr-master.txt")]),
+					filters			= [include("gles3-khr-main.txt")]),
 	])
 GLCTS_GLES3_GTF_PKG_N1CFG			= Package(module = ES3GTF_MODULE, useforfirsteglconfig = False, configurations = [
-		# Master
-		Configuration(name			= "gtf-master",
+		# Main
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles3-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
+					filters			= [include("gles3-gtf-main.txt")]),
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
-					filters			= [include("gles3-gtf-master.txt")]),
+					filters			= [include("gles3-gtf-main.txt")]),
 	])
 
 GLCTS_GLES31_DEQP_PKG_1CFG			= Package(module = ES31CTS_MODULE, configurations = [
-		# Master
-		Configuration(name			= "deqp-master",
+		# Main
+		Configuration(name			= "deqp-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles31-deqp-master.txt")]),
+					filters			= [include("gles31-deqp-main.txt")]),
 	])
 
 GLCTS_GLES31_KHR_PKG_1CFG			= Package(module = ES31KHR_MODULE, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles31-khr-master.txt")]),
+					filters			= [include("gles31-khr-main.txt")]),
 	])
 
 GLCTS_GLES31_GTF_PKG_1CFG			= Package(module = ES31GTF_MODULE, configurations = [
-		# Master
-		Configuration(name			= "gtf-master",
+		# Main
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles31-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
+					filters			= [include("gles31-gtf-main.txt")]),
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
-					filters			= [include("gles31-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
+					filters			= [include("gles31-gtf-main.txt")]),
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "64",
 					surfaceheight	= "-1",
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
-					filters			= [include("gles31-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
+					filters			= [include("gles31-gtf-main.txt")]),
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "-1",
 					surfaceheight	= "64",
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
-					filters			= [include("gles31-gtf-master.txt")]),
+					filters			= [include("gles31-gtf-main.txt")]),
 	])
 
 GLCTS_GLES31_KHR_PKG_N1CFG			= Package(module = ES31KHR_MODULE, useforfirsteglconfig = False, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles31-khr-master.txt")]),
+					filters			= [include("gles31-khr-main.txt")]),
 	])
 
 GLCTS_GLES31_DEQP_PKG_N1CFG			= Package(module = ES31CTS_MODULE, useforfirsteglconfig = False, configurations = [
-		# Master
-		Configuration(name			= "deqp-master",
+		# Main
+		Configuration(name			= "deqp-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles31-deqp-master.txt")]),
+					filters			= [include("gles31-deqp-main.txt")]),
 	])
 
 GLCTS_GLES31_GTF_PKG_N1CFG			= Package(module = ES31GTF_MODULE, useforfirsteglconfig = False, configurations = [
-		# Master
-		Configuration(name			= "gtf-master",
+		# Main
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles31-gtf-master.txt")]),
-		Configuration(name			= "gtf-master",
+					filters			= [include("gles31-gtf-main.txt")]),
+		Configuration(name			= "gtf-main",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
-					filters			= [include("gles31-gtf-master.txt")]),
+					filters			= [include("gles31-gtf-main.txt")]),
 	])
 
 MAIN_GLES32_COMMON_FILTERS             = [
-		include("gles32-khr-master.txt"),
+		include("gles32-khr-main.txt"),
 		exclude("gles32-khr-test-issues.txt"),
 		exclude("gles32-khr-spec-issues.txt")
 	]
 
 GLCTS_GLES32_KHR_PKG_1CFG			= Package(module = ES32KHR_MODULE, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
 					filters			= MAIN_GLES32_COMMON_FILTERS),
-		Configuration(name			= "khr-master",
+		Configuration(name			= "khr-main",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
 					filters			= MAIN_GLES32_COMMON_FILTERS),
-		Configuration(name			= "khr-master",
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "-1",
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
 					filters			= MAIN_GLES32_COMMON_FILTERS),
-		Configuration(name			= "khr-master",
+		Configuration(name			= "khr-main",
 					surfacewidth	= "-1",
 					surfaceheight	= "64",
 					baseseed		= "3",
@@ -863,13 +864,13 @@ GLCTS_GLES32_KHR_PKG_1CFG			= Package(module = ES32KHR_MODULE, configurations = 
 	])
 
 GLCTS_GLES32_KHR_PKG_N1CFG			= Package(module = ES32KHR_MODULE, useforfirsteglconfig = False, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
 					filters			= MAIN_GLES32_COMMON_FILTERS),
-		Configuration(name			= "khr-master",
+		Configuration(name			= "khr-main",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
@@ -877,17 +878,17 @@ GLCTS_GLES32_KHR_PKG_N1CFG			= Package(module = ES32KHR_MODULE, useforfirsteglco
 	])
 
 GLCTS_NOCTX_ES2_KHR_PKG			= Package(module = NOCTX_ES2_KHR_MODULE, configurations = [
-		# Master
-		Configuration(name			= "khr-noctx-master",
+		# Main
+		Configuration(name			= "khr-noctx-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles2-khr-master.txt")]),
+					filters			= [include("gles2-khr-main.txt")]),
 	])
 
 GLCTS_NOCTX_ES32_KHR_PKG		= Package(module = NOCTX_ES32_KHR_MODULE, configurations = [
-		# Master
-		Configuration(name			= "khr-noctx-master",
+		# Main
+		Configuration(name			= "khr-noctx-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
@@ -895,12 +896,21 @@ GLCTS_NOCTX_ES32_KHR_PKG		= Package(module = NOCTX_ES32_KHR_MODULE, configuratio
 	])
 
 GLCTS_SINGLE_ES32_KHR_PKG		= Package(module = SINGLE_ES32_KHR_MODULE, configurations = [
-		# Master
+		# Main
 		Configuration(name			= "khr-single",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
 					filters			= [include("gles32-khr-single.txt")]),
+	])
+
+GLCTS_ESEXT_KHR_PKG		= Package(module = ESEXTKHR_MODULE, configurations = [
+		# Master
+		Configuration(name			= "khr-glesext",
+					surfacewidth	= "64",
+					surfaceheight	= "64",
+					baseseed		= "1",
+					filters			= [include("glesext-khr-master.txt")]),
 	])
 
 
@@ -1011,6 +1021,7 @@ ES_MUSTPASS_LISTS		= [
 						GLCTS_GLES31_KHR_PKG_N1CFG,
 						GLCTS_GLES32_KHR_PKG_1CFG,
 						GLCTS_GLES32_KHR_PKG_N1CFG,
+						GLCTS_ESEXT_KHR_PKG,
 						]),
 
 	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "3.2.6.x", isCurrent=False,
@@ -1036,6 +1047,7 @@ ES_MUSTPASS_LISTS		= [
 						GLCTS_GLES31_KHR_PKG_N1CFG,
 						GLCTS_GLES32_KHR_PKG_1CFG,
 						GLCTS_GLES32_KHR_PKG_N1CFG,
+						GLCTS_ESEXT_KHR_PKG,
 						]),
 
 	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "main", isCurrent=True,
@@ -1084,29 +1096,29 @@ GL_CTS_GLES_PROJECT					= Project(name = "Khronos Mustpass AOSP for GL", path = 
 
 
 GL_MODULES							= OrderedDict([
-			('KHR-GL46',		['master',		[include('gl46-master.txt'), exclude('gl46-test-issues.txt')]]),
-			('KHR-GL45',		['master',		[include('gl45-master.txt'), exclude('gl45-test-issues.txt')]]),
-			('KHR-GL44',		['master',		[include('gl44-master.txt'), exclude('gl44-test-issues.txt')]]),
-			('KHR-GL43',		['master',		[include('gl43-master.txt'), exclude('gl43-test-issues.txt')]]),
-			('KHR-GL42',		['master',		[include('gl42-master.txt'), exclude('gl42-test-issues.txt')]]),
-			('KHR-GL42-COMPAT',	['master',		[include('gl42-compat-master.txt')]]),
-			('KHR-GL41',		['master',		[include('gl41-master.txt'), exclude('gl41-test-issues.txt')]]),
-			('KHR-GL40',		['master',		[include('gl40-master.txt'), exclude('gl40-test-issues.txt')]]),
-			('KHR-GL33',		['master',		[include('gl33-master.txt'), exclude('gl33-test-issues.txt')]]),
-			('KHR-GL32',		['master',		[include('gl32-master.txt'), exclude('gl32-test-issues.txt')]]),
-			('KHR-GL31',		['master',		[include('gl31-master.txt'), exclude('gl31-test-issues.txt')]]),
-			('KHR-GL30',		['master',		[include('gl30-master.txt'), exclude('gl30-test-issues.txt')]]),
-			('GTF-GL46',		['gtf-master',	[include('gl46-gtf-master.txt')]]),
-			('GTF-GL45',		['gtf-master',	[include('gl45-gtf-master.txt')]]),
-			('GTF-GL44',		['gtf-master',	[include('gl44-gtf-master.txt')]]),
-			('GTF-GL43',		['gtf-master',	[include('gl43-gtf-master.txt')]]),
-			('GTF-GL42',		['gtf-master',	[include('gl42-gtf-master.txt')]]),
-			('GTF-GL41',		['gtf-master',	[include('gl41-gtf-master.txt')]]),
-			('GTF-GL40',		['gtf-master',	[include('gl40-gtf-master.txt')]]),
-			('GTF-GL33',		['gtf-master',	[include('gl33-gtf-master.txt')]]),
-			('GTF-GL32',		['gtf-master',	[include('gl32-gtf-master.txt')]]),
-			('GTF-GL31',		['gtf-master',	[include('gl31-gtf-master.txt')]]),
-			('GTF-GL30',		['gtf-master',	[include('gl30-gtf-master.txt')]])
+			('KHR-GL46',		['main',		[include('gl46-main.txt'), exclude('gl46-test-issues.txt')]]),
+			('KHR-GL45',		['main',		[include('gl45-main.txt'), exclude('gl45-test-issues.txt')]]),
+			('KHR-GL44',		['main',		[include('gl44-main.txt'), exclude('gl44-test-issues.txt')]]),
+			('KHR-GL43',		['main',		[include('gl43-main.txt'), exclude('gl43-test-issues.txt')]]),
+			('KHR-GL42',		['main',		[include('gl42-main.txt'), exclude('gl42-test-issues.txt')]]),
+			('KHR-GL42-COMPAT',	['main',		[include('gl42-compat-main.txt')]]),
+			('KHR-GL41',		['main',		[include('gl41-main.txt'), exclude('gl41-test-issues.txt')]]),
+			('KHR-GL40',		['main',		[include('gl40-main.txt'), exclude('gl40-test-issues.txt')]]),
+			('KHR-GL33',		['main',		[include('gl33-main.txt'), exclude('gl33-test-issues.txt')]]),
+			('KHR-GL32',		['main',		[include('gl32-main.txt'), exclude('gl32-test-issues.txt')]]),
+			('KHR-GL31',		['main',		[include('gl31-main.txt'), exclude('gl31-test-issues.txt')]]),
+			('KHR-GL30',		['main',		[include('gl30-main.txt'), exclude('gl30-test-issues.txt')]]),
+			('GTF-GL46',		['gtf-main',	[include('gl46-gtf-main.txt')]]),
+			('GTF-GL45',		['gtf-main',	[include('gl45-gtf-main.txt')]]),
+			('GTF-GL44',		['gtf-main',	[include('gl44-gtf-main.txt')]]),
+			('GTF-GL43',		['gtf-main',	[include('gl43-gtf-main.txt')]]),
+			('GTF-GL42',		['gtf-main',	[include('gl42-gtf-main.txt')]]),
+			('GTF-GL41',		['gtf-main',	[include('gl41-gtf-main.txt')]]),
+			('GTF-GL40',		['gtf-main',	[include('gl40-gtf-main.txt')]]),
+			('GTF-GL33',		['gtf-main',	[include('gl33-gtf-main.txt')]]),
+			('GTF-GL32',		['gtf-main',	[include('gl32-gtf-main.txt')]]),
+			('GTF-GL31',		['gtf-main',	[include('gl31-gtf-main.txt')]]),
+			('GTF-GL30',		['gtf-main',	[include('gl30-gtf-main.txt')]])
 		])
 
 NOCTX_GL30_KHR_MODULE			= getModuleByName("KHR-NOCTX-GL30")
@@ -1119,43 +1131,43 @@ SINGLE_GL45_KHR_MODULE			= getModuleByName("KHR-Single-GL45")
 SINGLE_GL46_KHR_MODULE			= getModuleByName("KHR-Single-GL46")
 
 GLCTS_NOCTX_GL30_KHR_PKG			= Package(module = NOCTX_GL30_KHR_MODULE, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gl30-khr-master.txt")]),
+					filters			= [include("gl30-khr-main.txt")]),
 	])
 
 GLCTS_NOCTX_GL40_KHR_PKG			= Package(module = NOCTX_GL40_KHR_MODULE, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gl40-khr-master.txt")]),
+					filters			= [include("gl40-khr-main.txt")]),
 	])
 
 GLCTS_NOCTX_GL43_KHR_PKG			= Package(module = NOCTX_GL43_KHR_MODULE, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gl43-khr-master.txt")]),
+					filters			= [include("gl43-khr-main.txt")]),
 	])
 
 GLCTS_NOCTX_GL45_KHR_PKG			= Package(module = NOCTX_GL45_KHR_MODULE, configurations = [
-		# Master
-		Configuration(name			= "khr-master",
+		# Main
+		Configuration(name			= "khr-main",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gl45-khr-master.txt")]),
+					filters			= [include("gl45-khr-main.txt")]),
 	])
 
 GLCTS_SINGLE_GL43_KHR_PKG			= Package(module = SINGLE_GL43_KHR_MODULE, configurations = [
-		# Master
+		# Main
 		Configuration(name			= "khr-single",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
@@ -1164,7 +1176,7 @@ GLCTS_SINGLE_GL43_KHR_PKG			= Package(module = SINGLE_GL43_KHR_MODULE, configura
 	])
 
 GLCTS_SINGLE_GL44_KHR_PKG			= Package(module = SINGLE_GL44_KHR_MODULE, configurations = [
-		# Master
+		# Main
 		Configuration(name			= "khr-single",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
@@ -1173,7 +1185,7 @@ GLCTS_SINGLE_GL44_KHR_PKG			= Package(module = SINGLE_GL44_KHR_MODULE, configura
 	])
 
 GLCTS_SINGLE_GL45_KHR_PKG			= Package(module = SINGLE_GL45_KHR_MODULE, configurations = [
-		# Master
+		# Main
 		Configuration(name			= "khr-single",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
@@ -1182,7 +1194,7 @@ GLCTS_SINGLE_GL45_KHR_PKG			= Package(module = SINGLE_GL45_KHR_MODULE, configura
 	])
 
 GLCTS_SINGLE_GL46_KHR_PKG			= Package(module = SINGLE_GL46_KHR_MODULE, configurations = [
-		# Master
+		# Main
 		Configuration(name			= "khr-single",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
@@ -1191,23 +1203,23 @@ GLCTS_SINGLE_GL46_KHR_PKG			= Package(module = SINGLE_GL46_KHR_MODULE, configura
 	])
 
 MAIN_GL_ES3_PKG						= Package(module = GL45ES3_MODULE, configurations = [
-		# Master
-		Configuration(name			= "es3-master",
+		# Main
+		Configuration(name			= "es3-main",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacewidth	= "256",
 					  surfaceheight	= "256",
-					  filters		= [include("gl45es3-master.txt"), exclude("gl45es3-test-issues.txt"), exclude("gl45es3-spec-issues.txt")])
+					  filters		= [include("gl45es3-main.txt"), exclude("gl45es3-test-issues.txt"), exclude("gl45es3-spec-issues.txt")])
 	])
 
 MAIN_GL_ES31_PKG					= Package(module = GL45ES31_MODULE, configurations = [
-		# Master
-		Configuration(name			= "es31-master",
+		# Main
+		Configuration(name			= "es31-main",
 					  glconfig		= "rgba8888d24s8ms0",
 					  rotation		= "unspecified",
 					  surfacewidth	= "256",
 					  surfaceheight	= "256",
-					  filters		= [include("gl45es31-master.txt"), exclude("gl45es31-test-issues.txt"), exclude("gl45es31-spec-issues.txt")])
+					  filters		= [include("gl45es31-main.txt"), exclude("gl45es31-test-issues.txt"), exclude("gl45es31-spec-issues.txt")])
 	])
 
 def generateGLMustpass():

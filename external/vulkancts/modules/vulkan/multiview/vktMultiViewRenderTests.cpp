@@ -96,11 +96,20 @@ enum TestType
 	TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR,
 	TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR,
 	TEST_TYPE_DEPTH,
+	TEST_TYPE_DEPTH_WITHOUT_FRAGMENT_SHADER,
 	TEST_TYPE_DEPTH_DIFFERENT_RANGES,
 	TEST_TYPE_STENCIL,
 	TEST_TYPE_VIEW_MASK_ITERATION,
+	TEST_TYPE_NESTED_CMD_BUFFER,
 	TEST_TYPE_LAST
 };
+
+bool isQueryTestType (TestType testType)
+{
+	return (TEST_TYPE_QUERIES == testType ||
+			TEST_TYPE_NON_PRECISE_QUERIES == testType ||
+			TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY == testType);
+}
 
 enum RenderingType
 {
@@ -111,6 +120,7 @@ enum RenderingType
 
 enum QueryType
 {
+	QUERY_TYPE_NONE = 0,
 	QUERY_TYPE_GET_QUERY_POOL_RESULTS,
 	QUERY_TYPE_CMD_COPY_QUERY_POOL_RESULTS
 };
@@ -314,7 +324,7 @@ protected:
 																	 const bool									useStencilTest = false,
 																	 const float								minDepth = 0.0f,
 																	 const float								maxDepth = 1.0f,
-																	 const VkFormat                                                         dsFormat = VK_FORMAT_UNDEFINED);
+																	 const VkFormat								dsFormat = VK_FORMAT_UNDEFINED);
 	void									readImage				(VkImage image, const tcu::PixelBufferAccess& dst);
 	bool									checkImage				(tcu::ConstPixelBufferAccess& dst);
 	const tcu::Vec4							getQuarterRefColor		(const deUint32 quarterNdx, const int colorNdx, const int layerNdx, const bool background = true, const deUint32 subpassNdx = 0u) const;
@@ -326,6 +336,8 @@ protected:
 #ifndef CTS_USES_VULKANSC
 	void									addRenderingSubpassDependencyIfRequired (deUint32 currentSubpassNdx);
 #endif // CTS_USES_VULKANSC
+	VkFormat								getVerificationFormat	(void) const;
+
 
 	const TestParameters			m_parameters;
 	const bool						m_useDynamicRendering;
@@ -383,7 +395,8 @@ MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, cons
 	createMultiViewDevices();
 
 	// Color attachment
-	m_colorAttachment = de::SharedPtr<ImageAttachment>(new ImageAttachment(*m_logicalDevice, *m_device, *m_allocator, m_parameters.extent, m_parameters.colorFormat, m_parameters.samples));
+	if (m_parameters.colorFormat != VK_FORMAT_UNDEFINED)
+		m_colorAttachment = de::SharedPtr<ImageAttachment>(new ImageAttachment(*m_logicalDevice, *m_device, *m_allocator, m_parameters.extent, m_parameters.colorFormat, m_parameters.samples));
 }
 
 MultiViewRenderTestInstance::~MultiViewRenderTestInstance()
@@ -439,6 +452,9 @@ tcu::TestStatus MultiViewRenderTestInstance::iterate (void)
 
 void MultiViewRenderTestInstance::beforeRenderPass (void)
 {
+	if (!m_colorAttachment)
+		return;
+
 	const VkImageSubresourceRange	subresourceRange		=
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,	//VkImageAspectFlags	aspectMask;
@@ -457,12 +473,15 @@ void MultiViewRenderTestInstance::beforeRenderPass (void)
 
 	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		VK_ACCESS_TRANSFER_WRITE_BIT, (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
 		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
 void MultiViewRenderTestInstance::afterRenderPass (void)
 {
+	if (!m_colorAttachment)
+		return;
+
 	const VkImageSubresourceRange	subresourceRange		=
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,	//VkImageAspectFlags	aspectMask;
@@ -481,6 +500,9 @@ void MultiViewRenderTestInstance::afterRenderPass (void)
 #ifndef CTS_USES_VULKANSC
 void MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired (deUint32 currentSubpassNdx)
 {
+	if (!m_colorAttachment)
+		return;
+
 	// Get the combined view mask since the last pipeline barrier.
 	deUint32 viewMask = 0;
 
@@ -514,6 +536,11 @@ void MultiViewRenderTestInstance::addRenderingSubpassDependencyIfRequired (deUin
 	}
 }
 #endif // CTS_USES_VULKANSC
+
+VkFormat MultiViewRenderTestInstance::getVerificationFormat (void) const
+{
+	return (m_parameters.colorFormat == VK_FORMAT_UNDEFINED ? VK_FORMAT_R8G8B8A8_UNORM : m_parameters.colorFormat);
+}
 
 void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
@@ -786,6 +813,15 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	enabledFeatures.sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	enabledFeatures.pNext					= &multiviewFeatures;
 
+#ifndef CTS_USES_VULKANSC
+	VkPhysicalDeviceNestedCommandBufferFeaturesEXT nestedCommandBufferFeatures = vk::initVulkanStructure();
+	if (m_parameters.viewIndex == TEST_TYPE_NESTED_CMD_BUFFER)
+	{
+		nestedCommandBufferFeatures.pNext = enabledFeatures.pNext;
+		enabledFeatures.pNext = &nestedCommandBufferFeatures;
+	}
+#endif
+
 	instanceDriver.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
 
 	if (!multiviewFeatures.multiview)
@@ -839,6 +875,9 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 
 		if (m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
 			deviceExtensions.push_back("VK_EXT_depth_range_unrestricted");
+
+		if (m_parameters.viewIndex == TEST_TYPE_NESTED_CMD_BUFFER)
+			deviceExtensions.push_back("VK_EXT_nested_command_buffer");
 
 		void* pNext												= &enabledFeatures;
 #ifdef CTS_USES_VULKANSC
@@ -896,7 +935,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 
 		m_logicalDevice					= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 #ifndef CTS_USES_VULKANSC
-		m_device						= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *m_logicalDevice, m_context.getUsedApiVersion()));
+		m_device						= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *m_logicalDevice, m_context.getUsedApiVersion(),  m_context.getTestContext().getCommandLine()));
 #else
 		m_device						= de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(m_context.getPlatformInterface(), instance, *m_logicalDevice, m_context.getTestContext().getCommandLine(), m_context.getResourceInterface(), m_context.getDeviceVulkanSC10Properties(), m_context.getDeviceProperties(), m_context.getUsedApiVersion()), vk::DeinitDeviceDeleter(m_context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
@@ -974,8 +1013,12 @@ void MultiViewRenderTestInstance::madeShaderModule (map<VkShaderStageFlagBits, S
 		case TEST_TYPE_DEPTH:
 		case TEST_TYPE_DEPTH_DIFFERENT_RANGES:
 		case TEST_TYPE_STENCIL:
+		case TEST_TYPE_NESTED_CMD_BUFFER:
 			shaderModule[VK_SHADER_STAGE_VERTEX_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("vertex"), 0))));
 			shaderModule[VK_SHADER_STAGE_FRAGMENT_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("fragment"), 0))));
+			break;
+		case TEST_TYPE_DEPTH_WITHOUT_FRAGMENT_SHADER:
+			shaderModule[VK_SHADER_STAGE_VERTEX_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("vertex"), 0))));
 			break;
 		case TEST_TYPE_VIEW_INDEX_IN_GEOMETRY:
 		case TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY:
@@ -1204,15 +1247,19 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 	};
 
 #ifndef CTS_USES_VULKANSC
+	std::vector<VkFormat> colorFormats;
+	if (m_parameters.colorFormat != VK_FORMAT_UNDEFINED)
+		colorFormats.push_back(m_parameters.colorFormat);
+
 	VkPipelineRenderingCreateInfoKHR				renderingCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
 		DE_NULL,
 		m_parameters.viewMasks[subpass],
-		1u,
-		&m_parameters.colorFormat,
+		de::sizeU32(colorFormats),
+		de::dataOrNull(colorFormats),
 		dsFormat,
-		dsFormat
+		dsFormat,
 	};
 #else
 	DE_UNREF(dsFormat);
@@ -1335,15 +1382,17 @@ void MultiViewRenderTestInstance::readImage (VkImage image, const tcu::PixelBuff
 
 bool MultiViewRenderTestInstance::checkImage (tcu::ConstPixelBufferAccess& renderedFrame)
 {
+	const auto							verifFormat		= getVerificationFormat();
+	const auto							tcuVerifFormat	= mapVkFormat(verifFormat);
 	const MovePtr<tcu::Texture2DArray>	referenceFrame	= imageData();
 	const bool							result			= tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
-															"Result", "Image comparison result", referenceFrame->getLevel(0), renderedFrame, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
+															"Result", "Image comparison result", referenceFrame->getLevel(0), renderedFrame, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
 
 	if (!result)
 		for (deUint32 layerNdx = 0u; layerNdx < m_parameters.extent.depth; layerNdx++)
 		{
-			tcu::ConstPixelBufferAccess ref (mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, 1u, referenceFrame->getLevel(0).getPixelPtr(0, 0, layerNdx));
-			tcu::ConstPixelBufferAccess dst (mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, 1u, renderedFrame.getPixelPtr(0 ,0, layerNdx));
+			tcu::ConstPixelBufferAccess ref (tcuVerifFormat, m_parameters.extent.width, m_parameters.extent.height, 1u, referenceFrame->getLevel(0).getPixelPtr(0, 0, layerNdx));
+			tcu::ConstPixelBufferAccess dst (tcuVerifFormat, m_parameters.extent.width, m_parameters.extent.height, 1u, renderedFrame.getPixelPtr(0 ,0, layerNdx));
 			tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", ref, dst, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
 		}
 
@@ -1382,6 +1431,7 @@ const tcu::Vec4 MultiViewRenderTestInstance::getQuarterRefColor (const deUint32 
 		case TEST_TYPE_CLEAR_ATTACHMENTS:
 		case TEST_TYPE_SECONDARY_CMD_BUFFER:
 		case TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY:
+		case TEST_TYPE_NESTED_CMD_BUFFER:
 			return m_vertexColor[colorNdx] + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.0, 0.0);
 
 		case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
@@ -1404,6 +1454,7 @@ const tcu::Vec4 MultiViewRenderTestInstance::getQuarterRefColor (const deUint32 
 				return m_vertexColor[colorNdx];
 
 		case TEST_TYPE_DEPTH:
+		case TEST_TYPE_DEPTH_WITHOUT_FRAGMENT_SHADER:
 			if (background)
 				if (subpassNdx < 4)
 					return tcu::Vec4(0.66f, 0.0f, 0.0f, 1.0f);
@@ -1491,6 +1542,7 @@ void MultiViewRenderTestInstance::fillQuarter (const tcu::PixelBufferAccess& pix
 
 	if (TEST_TYPE_STENCIL == m_parameters.viewIndex ||
 		TEST_TYPE_DEPTH == m_parameters.viewIndex ||
+		TEST_TYPE_DEPTH_WITHOUT_FRAGMENT_SHADER == m_parameters.viewIndex ||
 		TEST_TYPE_DEPTH_DIFFERENT_RANGES == m_parameters.viewIndex)
 	{
 		if (subpassNdx < 4)
@@ -1513,6 +1565,7 @@ void MultiViewRenderTestInstance::fillQuarter (const tcu::PixelBufferAccess& pix
 		}
 
 		if (TEST_TYPE_DEPTH == m_parameters.viewIndex ||
+			TEST_TYPE_DEPTH_WITHOUT_FRAGMENT_SHADER == m_parameters.viewIndex ||
 			TEST_TYPE_DEPTH_DIFFERENT_RANGES == m_parameters.viewIndex)
 		{
 			for (int y = yStart; y < yEnd; ++y)
@@ -2447,6 +2500,18 @@ protected:
 MultiViewSecondaryCommandBufferTestInstance::MultiViewSecondaryCommandBufferTestInstance (Context& context, const TestParameters& parameters)
 	: MultiViewRenderTestInstance	(context, parameters)
 {
+	if (TEST_TYPE_NESTED_CMD_BUFFER == parameters.viewIndex) {
+		context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+#ifndef CTS_USES_VULKANSC
+		const auto& features = *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+		if (!features.nestedCommandBuffer)
+#endif // CTS_USES_VULKANSC
+			TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+#ifndef CTS_USES_VULKANSC
+		if (!features.nestedCommandBufferRendering)
+#endif // CTS_USES_VULKANSC
+			TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
+	}
 }
 
 void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
@@ -2488,9 +2553,13 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 		1u,												// deUint32					bufferCount;
 	};
 	vector<VkCommandBufferSp>	cmdBufferSecondary;
+	vector<VkCommandBufferSp>	cmdBufferNested;
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
+		if (TEST_TYPE_NESTED_CMD_BUFFER == m_parameters.viewIndex) {
+			cmdBufferNested.push_back(VkCommandBufferSp(new Unique<VkCommandBuffer>(allocateCommandBuffer(*m_device, *m_logicalDevice, &cmdBufferAllocateInfo))));
+		}
 		cmdBufferSecondary.push_back(VkCommandBufferSp(new Unique<VkCommandBuffer>(allocateCommandBuffer(*m_device, *m_logicalDevice, &cmdBufferAllocateInfo))));
 
 #ifndef CTS_USES_VULKANSC
@@ -2532,6 +2601,10 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 			&secCmdBufInheritInfo,												// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
 		};
 
+		if (TEST_TYPE_NESTED_CMD_BUFFER == m_parameters.viewIndex) {
+			VK_CHECK(m_device->beginCommandBuffer(cmdBufferNested.back().get()->get(), &info));
+		}
+
 		VK_CHECK(m_device->beginCommandBuffer(cmdBufferSecondary.back().get()->get(), &info));
 
 		m_device->cmdBindVertexBuffers(cmdBufferSecondary.back().get()->get(), 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
@@ -2561,7 +2634,14 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 
 		VK_CHECK(m_device->endCommandBuffer(cmdBufferSecondary.back().get()->get()));
 
-		m_device->cmdExecuteCommands(*m_cmdBuffer, 1u, &cmdBufferSecondary.back().get()->get());
+		if (TEST_TYPE_NESTED_CMD_BUFFER == m_parameters.viewIndex) {
+			m_device->cmdExecuteCommands(cmdBufferNested.back().get()->get(), 1u, &cmdBufferSecondary.back().get()->get());
+			VK_CHECK(m_device->endCommandBuffer(cmdBufferNested.back().get()->get()));
+			m_device->cmdExecuteCommands(*m_cmdBuffer, 1u, &cmdBufferNested.back().get()->get());
+		} else {
+			m_device->cmdExecuteCommands(*m_cmdBuffer, 1u, &cmdBufferSecondary.back().get()->get());
+		}
+
 #ifndef CTS_USES_VULKANSC
 		if (m_useDynamicRendering)
 			endRendering(*m_device, *m_cmdBuffer);
@@ -2962,6 +3042,8 @@ MultiViewQueriesTestInstance::MultiViewQueriesTestInstance (Context& context, co
 		TCU_THROW(NotSupportedError, "Device does not support timestamp.");
 
 	m_timestampMask = 0xFFFFFFFFFFFFFFFFull >> (64 - queueProperties[0].timestampValidBits);
+
+	DE_ASSERT(m_parameters.queryType != QUERY_TYPE_NONE);
 }
 
 void verifyAvailabilityBits (const std::vector<uint64_t>& bits, const char* setName)
@@ -3557,8 +3639,8 @@ protected:
 																		 VkRenderPass					renderPass,
 																		 VkFramebuffer					frameBuffer,
 																		 vector<PipelineSp>&			pipelines) override;
-	void							beforeRenderPass							(void) override;
-	void							afterRenderPass							(void) override;
+	void							beforeRenderPass					(void) override;
+	void							afterRenderPass						(void) override;
 	vector<VkImageView>				makeAttachmentsVector				(void);
 	MovePtr<tcu::Texture2DArray>	imageData							(void) const override;
 	void							readImage							(VkImage						image,
@@ -3576,6 +3658,7 @@ MultiViewDepthStencilTestInstance::MultiViewDepthStencilTestInstance (Context& c
 	: MultiViewRenderTestInstance	(context, parameters)
 	, m_dsFormat					(VK_FORMAT_UNDEFINED)
 	, m_depthTest					(m_parameters.viewIndex == TEST_TYPE_DEPTH ||
+									 m_parameters.viewIndex == TEST_TYPE_DEPTH_WITHOUT_FRAGMENT_SHADER ||
 									 m_parameters.viewIndex == TEST_TYPE_DEPTH_DIFFERENT_RANGES)
 	, m_stencilTest					(m_parameters.viewIndex == TEST_TYPE_STENCIL)
 {
@@ -3607,7 +3690,8 @@ vector<VkImageView>	MultiViewDepthStencilTestInstance::makeAttachmentsVector (vo
 {
 	vector<VkImageView> attachments;
 
-	attachments.push_back(m_colorAttachment->getImageView());
+	if (m_colorAttachment)
+		attachments.push_back(m_colorAttachment->getImageView());
 	attachments.push_back(m_dsAttachment->getImageView());
 
 	return attachments;
@@ -3615,12 +3699,14 @@ vector<VkImageView>	MultiViewDepthStencilTestInstance::makeAttachmentsVector (vo
 
 MovePtr<tcu::Texture2DArray> MultiViewDepthStencilTestInstance::imageData(void) const
 {
-	MovePtr<tcu::Texture2DArray>	referenceFrame		= MovePtr<tcu::Texture2DArray>(new tcu::Texture2DArray(mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth));
+	const auto						verifFormat			= getVerificationFormat();
+	const auto						tcuVerifFormat		= mapVkFormat(verifFormat);
+	MovePtr<tcu::Texture2DArray>	referenceFrame		= MovePtr<tcu::Texture2DArray>(new tcu::Texture2DArray(tcuVerifFormat, m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth));
 	const deUint32					subpassCount		= static_cast<deUint32>(m_parameters.viewMasks.size());
 	const vector<tcu::Vec2>			depthRanges			= getDepthRanges();
 
 	referenceFrame->allocLevel(0);
-	deMemset(referenceFrame->getLevel(0).getDataPtr(), 0, m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth* mapVkFormat(m_parameters.colorFormat).getPixelSize());
+	deMemset(referenceFrame->getLevel(0).getDataPtr(), 0, m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth* tcuVerifFormat.getPixelSize());
 
 	for (deUint32 layerNdx = 0; layerNdx < m_parameters.extent.depth; ++layerNdx)
 		fillLayer(referenceFrame->getLevel(0), getQuarterRefColor(0u, 0u, 0u, false), layerNdx);
@@ -3805,12 +3891,6 @@ tcu::TestStatus MultiViewDepthStencilTestInstance::iterate (void)
 		frameBuffer	= makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, static_cast<deUint32>(attachments.size()), attachments.data(), m_parameters.extent.width, m_parameters.extent.height, 1u);
 	}
 
-	if (m_parameters.renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
-	{
-		renderPass	= makeRenderPassWithDepth(*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, m_dsFormat, m_parameters.renderingType);
-		frameBuffer	= makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, static_cast<deUint32>(attachments.size()), attachments.data(), m_parameters.extent.width, m_parameters.extent.height, 1u);
-	}
-
 	{
 		vector<VkPipelineShaderStageCreateInfo>	shaderStageParams;
 		madeShaderModule(shaderModule, shaderStageParams);
@@ -3833,8 +3913,10 @@ tcu::TestStatus MultiViewDepthStencilTestInstance::iterate (void)
 	draw(subpassCount, *renderPass, *frameBuffer, pipelines);
 
 	{
-		vector<deUint8>			pixelAccessData	(m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth * mapVkFormat(m_parameters.colorFormat).getPixelSize());
-		tcu::PixelBufferAccess	dst				(mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth, pixelAccessData.data());
+		const VkFormat			verifFormat		= getVerificationFormat();
+		const auto				tcuVerifFormat	= mapVkFormat(verifFormat);
+		vector<deUint8>			pixelAccessData	(m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth * tcuVerifFormat.getPixelSize());
+		tcu::PixelBufferAccess	dst				(tcuVerifFormat, m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth, pixelAccessData.data());
 
 		readImage(m_dsAttachment->getImage(), dst);
 
@@ -4016,19 +4098,24 @@ void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRen
 		{
 			addRenderingSubpassDependencyIfRequired(subpassNdx);
 
-			VkRenderingAttachmentInfoKHR colorAttachment
+			std::vector<VkRenderingAttachmentInfoKHR> colorAttachments;
+
+			if (m_colorAttachment)
 			{
-				vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,	// VkStructureType						sType;
-				DE_NULL,												// const void*							pNext;
-				m_colorAttachment->getImageView(),						// VkImageView							imageView;
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
-				VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
-				DE_NULL,												// VkImageView							resolveImageView;
-				VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
-				VK_ATTACHMENT_LOAD_OP_LOAD,								// VkAttachmentLoadOp					loadOp;
-				vk::VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp					storeOp;
-				renderPassClearValue									// VkClearValue							clearValue;
-			};
+				colorAttachments.emplace_back(VkRenderingAttachmentInfoKHR
+				{
+					vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,	// VkStructureType						sType;
+					DE_NULL,												// const void*							pNext;
+					m_colorAttachment->getImageView(),						// VkImageView							imageView;
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout						imageLayout;
+					VK_RESOLVE_MODE_NONE,									// VkResolveModeFlagBits				resolveMode;
+					DE_NULL,												// VkImageView							resolveImageView;
+					VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout						resolveImageLayout;
+					VK_ATTACHMENT_LOAD_OP_LOAD,								// VkAttachmentLoadOp					loadOp;
+					vk::VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp					storeOp;
+					renderPassClearValue									// VkClearValue							clearValue;
+				});
+			}
 
 			VkRenderingAttachmentInfoKHR dsAttachment
 			{
@@ -4052,8 +4139,8 @@ void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRen
 				renderArea,												// VkRect2D								renderArea;
 				m_parameters.extent.depth,								// deUint32								layerCount;
 				m_parameters.viewMasks[subpassNdx],						// deUint32								viewMask;
-				1u,														// deUint32								colorAttachmentCount;
-				&colorAttachment,										// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
+				de::sizeU32(colorAttachments),							// deUint32								colorAttachmentCount;
+				de::dataOrNull(colorAttachments),						// const VkRenderingAttachmentInfoKHR*	pColorAttachments;
 				(m_depthTest ? &dsAttachment : DE_NULL),				// const VkRenderingAttachmentInfoKHR*	pDepthAttachment;
 				(m_stencilTest ? &dsAttachment : DE_NULL),				// const VkRenderingAttachmentInfoKHR*	pStencilAttachment;
 			};
@@ -4382,8 +4469,8 @@ tcu::TestStatus MultiViewMaskIterationTestInstance::iterate (void)
 class MultiViewRenderTestsCase : public vkt::TestCase
 {
 public:
-	MultiViewRenderTestsCase (tcu::TestContext &context, const char *name, const char *description, const TestParameters& parameters)
-		: TestCase			(context, name, description)
+	MultiViewRenderTestsCase (tcu::TestContext &context, const char *name, const TestParameters& parameters)
+		: TestCase			(context, name)
 		, m_parameters		(parameters)
 	{
 		DE_ASSERT(m_parameters.extent.width == m_parameters.extent.height);
@@ -4411,7 +4498,8 @@ private:
 			return new MultiViewClearAttachmentsTestInstance(context, m_parameters);
 
 		if (TEST_TYPE_SECONDARY_CMD_BUFFER == m_parameters.viewIndex ||
-			TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == m_parameters.viewIndex)
+			TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == m_parameters.viewIndex ||
+			TEST_TYPE_NESTED_CMD_BUFFER == m_parameters.viewIndex)
 			return new MultiViewSecondaryCommandBufferTestInstance(context, m_parameters);
 
 		if (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex)
@@ -4420,9 +4508,7 @@ private:
 		if (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex)
 			return new MultiViewMultsampleTestInstance(context, m_parameters);
 
-		if (TEST_TYPE_QUERIES == m_parameters.viewIndex ||
-			TEST_TYPE_NON_PRECISE_QUERIES == m_parameters.viewIndex ||
-			TEST_TYPE_NON_PRECISE_QUERIES_WITH_AVAILABILITY == m_parameters.viewIndex)
+		if (isQueryTestType(m_parameters.viewIndex))
 			return new MultiViewQueriesTestInstance(context, m_parameters);
 
 		if (TEST_TYPE_VIEW_MASK == m_parameters.viewIndex ||
@@ -4439,6 +4525,7 @@ private:
 			return new MultiViewReadbackTestInstance(context, m_parameters);
 
 		if (TEST_TYPE_DEPTH == m_parameters.viewIndex ||
+			TEST_TYPE_DEPTH_WITHOUT_FRAGMENT_SHADER == m_parameters.viewIndex ||
 			TEST_TYPE_DEPTH_DIFFERENT_RANGES == m_parameters.viewIndex ||
 			TEST_TYPE_STENCIL == m_parameters.viewIndex)
 			return new MultiViewDepthStencilTestInstance(context, m_parameters);
@@ -4463,6 +4550,8 @@ private:
 			context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted");
 		if (m_parameters.viewIndex == TEST_TYPE_QUERIES)
 			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_OCCLUSION_QUERY_PRECISE);
+		if (m_parameters.viewIndex == TEST_TYPE_NESTED_CMD_BUFFER)
+			context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
 
 #ifdef CTS_USES_VULKANSC
 		const InstanceInterface&			instance			= context.getInstanceInterface();
@@ -4711,7 +4800,8 @@ private:
 					<< "void main()\n"
 					<<"{\n";
 				if (TEST_TYPE_VIEW_INDEX_IN_FRAGMENT == m_parameters.viewIndex ||
-					TEST_TYPE_SECONDARY_CMD_BUFFER == m_parameters.viewIndex)
+					TEST_TYPE_SECONDARY_CMD_BUFFER == m_parameters.viewIndex ||
+					TEST_TYPE_NESTED_CMD_BUFFER == m_parameters.viewIndex)
 					source << "	out_color = in_color + vec4(0.0, gl_ViewIndex * 0.10f, 0.0, 0.0);\n";
 				else
 					source << "	out_color = in_color;\n";
@@ -4779,9 +4869,11 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		"readback_implicit_clear",
 		"readback_explicit_clear",
 		"depth",
+		"depth_without_fragment_shader",
 		"depth_different_ranges",
 		"stencil",
 		"view_mask_iteration",
+		"nested_cmd_buffer",
 	};
 	const VkExtent3D			extent3D[testCaseCount]		=
 	{
@@ -4847,30 +4939,33 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		if (renderPassTypeNdx == 1)
 		{
 			renderPassType	= RENDERING_TYPE_RENDERPASS2;
-			targetGroup		= MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(group->getTestContext(), "renderpass2", "RenderPass2 index tests"));
+			targetGroup		= MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(group->getTestContext(), "renderpass2"));
 			targetGroupPtr	= targetGroup.get();
 		}
 		else if (renderPassTypeNdx == 2)
 		{
 			renderPassType	= RENDERING_TYPE_DYNAMIC_RENDERING;
-			targetGroup		= MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(group->getTestContext(), "dynamic_rendering", "Dynamic rendering tests"));
+			targetGroup		= MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(group->getTestContext(), "dynamic_rendering"));
 			targetGroupPtr	= targetGroup.get();
 		}
 
 		tcu::TestContext&			testCtx				(targetGroupPtr->getTestContext());
-		MovePtr<tcu::TestCaseGroup>	groupViewIndex		(new tcu::TestCaseGroup(testCtx, "index", "ViewIndex rendering tests."));
+		// ViewIndex rendering tests.
+		MovePtr<tcu::TestCaseGroup>	groupViewIndex		(new tcu::TestCaseGroup(testCtx, "index"));
 
 		for (int testTypeNdx = TEST_TYPE_VIEW_MASK; testTypeNdx < TEST_TYPE_LAST; ++testTypeNdx)
 		{
-			MovePtr<tcu::TestCaseGroup>	groupShader			(new tcu::TestCaseGroup(testCtx, shaderName[testTypeNdx].c_str(), ""));
+			MovePtr<tcu::TestCaseGroup>	groupShader			(new tcu::TestCaseGroup(testCtx, shaderName[testTypeNdx].c_str()));
 			const TestType				testType			= static_cast<TestType>(testTypeNdx);
 			const VkSampleCountFlagBits	sampleCountFlags	= (testType == TEST_TYPE_MULTISAMPLE) ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
-			VkFormat				colorFormat;
+			VkFormat					colorFormat;
 
 			if (testType == TEST_TYPE_MULTISAMPLE)
 				colorFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
 			else if (testType == TEST_TYPE_VIEW_MASK_ITERATION)
 				colorFormat = VK_FORMAT_R8G8B8A8_UINT;
+			else if (testType == TEST_TYPE_DEPTH_WITHOUT_FRAGMENT_SHADER)
+				colorFormat = VK_FORMAT_UNDEFINED;
 			else
 				colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
@@ -4885,44 +4980,64 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 					const TestParameters	parameters	=	{ extent3D[testCaseNdx], viewMasks[testCaseNdx], testType, sampleCountFlags, colorFormat, QUERY_TYPE_GET_QUERY_POOL_RESULTS, renderPassType };
 					const std::string		testName	=	createViewMasksName(parameters.viewMasks);
 
-					groupShader->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), "", parameters));
+					groupShader->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), parameters));
 				}
 			}
 			else
 			{
-				for (int queryTypeNdx = 0; queryTypeNdx < 2; ++queryTypeNdx)
+				const struct
 				{
-					const std::string queryTestName = queryTypeNdx == 0 ? "get_query_pool_results" : "cmd_copy_query_pool_results";
-					const auto queryType = queryTypeNdx == 0 ? QUERY_TYPE_GET_QUERY_POOL_RESULTS : QUERY_TYPE_CMD_COPY_QUERY_POOL_RESULTS;
-					MovePtr<tcu::TestCaseGroup>	queryTypeGroup(new tcu::TestCaseGroup(testCtx, queryTestName.c_str(), "Query type."));
+					QueryType   queryType;
+					const char* groupName;
+				} queryTypeCases[] =
+				{
+					{ QUERY_TYPE_NONE,							"no_queries"					},
+					{ QUERY_TYPE_GET_QUERY_POOL_RESULTS,		"get_query_pool_results"		},
+					{ QUERY_TYPE_CMD_COPY_QUERY_POOL_RESULTS,	"cmd_copy_query_pool_results"	},
+				};
+
+				for (const auto& queryTypeCase : queryTypeCases)
+				{
+					const bool isQuery = isQueryTestType(static_cast<TestType>(testTypeNdx));
+
+					// Query test types have to be added only to the get and copy groups.
+					// Other test types have to be added only to the no queries group.
+					if ((isQuery && queryTypeCase.queryType == QUERY_TYPE_NONE) ||
+					    (!isQuery && queryTypeCase.queryType != QUERY_TYPE_NONE))
+					{
+						continue;
+					}
+
+					MovePtr<tcu::TestCaseGroup>	queryTypeGroup(new tcu::TestCaseGroup(testCtx, queryTypeCase.groupName));
 
 					if (testTypeNdx == TEST_TYPE_DEPTH ||
+						testTypeNdx == TEST_TYPE_DEPTH_WITHOUT_FRAGMENT_SHADER ||
 						testTypeNdx == TEST_TYPE_DEPTH_DIFFERENT_RANGES ||
 						testTypeNdx == TEST_TYPE_STENCIL)
 					{
 						const VkExtent3D		dsTestExtent3D	= { 64u, 64u, 4u };
-						const TestParameters	parameters		= { dsTestExtent3D, tripleDepthStencilMasks(depthStencilMasks), testType, sampleCountFlags, colorFormat, queryType, renderPassType };
+						const TestParameters	parameters		= { dsTestExtent3D, tripleDepthStencilMasks(depthStencilMasks), testType, sampleCountFlags, colorFormat, queryTypeCase.queryType, renderPassType };
 						const std::string		testName		= createViewMasksName(parameters.viewMasks);
 
-						queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), "", parameters));
+						queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), parameters));
 					}
 					else
 					{
 						for (deUint32 testCaseNdx = 0u; testCaseNdx < testCaseCount; ++testCaseNdx)
 						{
-							const TestParameters	parameters	=	{ extent3D[testCaseNdx], viewMasks[testCaseNdx], testType, sampleCountFlags, colorFormat, queryType, renderPassType };
+							const TestParameters	parameters	=	{ extent3D[testCaseNdx], viewMasks[testCaseNdx], testType, sampleCountFlags, colorFormat, queryTypeCase.queryType, renderPassType };
 							const std::string		testName	=	createViewMasksName(parameters.viewMasks);
 
-							queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), "", parameters));
+							queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), parameters));
 						}
 
 						// maxMultiviewViewCount case
 						{
 							const VkExtent3D		incompleteExtent3D	= { 16u, 16u, 0u };
 							const vector<deUint32>	unusedMasks;
-							const TestParameters	parameters			= { incompleteExtent3D, unusedMasks, testType, sampleCountFlags, colorFormat, queryType, renderPassType };
+							const TestParameters	parameters			= { incompleteExtent3D, unusedMasks, testType, sampleCountFlags, colorFormat, queryTypeCase.queryType, renderPassType };
 
-							queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, "max_multi_view_view_count", "", parameters));
+							queryTypeGroup->addChild(new MultiViewRenderTestsCase(testCtx, "max_multi_view_view_count", parameters));
 						}
 					}
 					groupShader->addChild(queryTypeGroup.release());
@@ -4950,9 +5065,11 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 				case TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR:
 				case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
 				case TEST_TYPE_DEPTH:
+				case TEST_TYPE_DEPTH_WITHOUT_FRAGMENT_SHADER:
 				case TEST_TYPE_DEPTH_DIFFERENT_RANGES:
 				case TEST_TYPE_STENCIL:
 				case TEST_TYPE_VIEW_MASK_ITERATION:
+				case TEST_TYPE_NESTED_CMD_BUFFER:
 					targetGroupPtr->addChild(groupShader.release());
 					break;
 				case TEST_TYPE_VIEW_INDEX_IN_VERTEX:
@@ -4976,4 +5093,3 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 
 } //MultiView
 } //vkt
-

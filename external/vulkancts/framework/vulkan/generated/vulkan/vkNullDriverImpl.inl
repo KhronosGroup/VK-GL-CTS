@@ -303,6 +303,18 @@ VKAPI_ATTR VkResult VKAPI_CALL createBufferCollectionFUCHSIA (VkDevice device, c
 	VK_NULL_RETURN((*pCollection = allocateNonDispHandle<BufferCollectionFUCHSIA, VkBufferCollectionFUCHSIA>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createCudaModuleNV (VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaModuleNV* pModule)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pModule = allocateNonDispHandle<CudaModuleNV, VkCudaModuleNV>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createCudaFunctionNV (VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaFunctionNV* pFunction)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pFunction = allocateNonDispHandle<CudaFunctionNV, VkCudaFunctionNV>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createMicromapEXT (VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap)
 {
 	DE_UNREF(pAllocator);
@@ -545,6 +557,18 @@ VKAPI_ATTR void VKAPI_CALL destroyBufferCollectionFUCHSIA (VkDevice device, VkBu
 {
 	DE_UNREF(device);
 	freeNonDispHandle<BufferCollectionFUCHSIA, VkBufferCollectionFUCHSIA>(collection, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyCudaModuleNV (VkDevice device, VkCudaModuleNV module, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<CudaModuleNV, VkCudaModuleNV>(module, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyCudaFunctionNV (VkDevice device, VkCudaFunctionNV function, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<CudaFunctionNV, VkCudaFunctionNV>(function, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyMicromapEXT (VkDevice device, VkMicromapEXT micromap, const VkAllocationCallbacks* pAllocator)
@@ -2154,7 +2178,7 @@ VKAPI_ATTR void VKAPI_CALL setLocalDimmingAMD (VkDevice device, VkSwapchainKHR s
 	DE_UNREF(localDimmingEnable);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCalibrateableTimeDomainsEXT (VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains)
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCalibrateableTimeDomainsKHR (VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainKHR* pTimeDomains)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pTimeDomainCount);
@@ -2162,7 +2186,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCalibrateableTimeDomainsEXT (VkP
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getCalibratedTimestampsEXT (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation)
+VKAPI_ATTR VkResult VKAPI_CALL getCalibratedTimestampsKHR (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation)
 {
 	DE_UNREF(device);
 	DE_UNREF(timestampCount);
@@ -2917,7 +2941,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutableInternalRepresentationsKHR (
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern)
+VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleKHR (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(lineStippleFactor);
@@ -3772,6 +3796,21 @@ VKAPI_ATTR VkResult VKAPI_CALL getBufferCollectionPropertiesFUCHSIA (VkDevice de
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getCudaModuleCacheNV (VkDevice device, VkCudaModuleNV module, size_t* pCacheSize, void* pCacheData)
+{
+	DE_UNREF(device);
+	DE_UNREF(module);
+	DE_UNREF(pCacheSize);
+	DE_UNREF(pCacheData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCudaLaunchKernelNV (VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pLaunchInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdBeginRendering (VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo)
 {
 	DE_UNREF(commandBuffer);
@@ -4091,6 +4130,90 @@ VKAPI_ATTR void VKAPI_CALL cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer co
 	DE_UNREF(countInfo);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdBindDescriptorSets2KHR (VkCommandBuffer commandBuffer, const VkBindDescriptorSetsInfoKHR* pBindDescriptorSetsInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pBindDescriptorSetsInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdPushConstants2KHR (VkCommandBuffer commandBuffer, const VkPushConstantsInfoKHR* pPushConstantsInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pPushConstantsInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSet2KHR (VkCommandBuffer commandBuffer, const VkPushDescriptorSetInfoKHR* pPushDescriptorSetInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pPushDescriptorSetInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetWithTemplate2KHR (VkCommandBuffer commandBuffer, const VkPushDescriptorSetWithTemplateInfoKHR* pPushDescriptorSetWithTemplateInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pPushDescriptorSetWithTemplateInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetDescriptorBufferOffsets2EXT (VkCommandBuffer commandBuffer, const VkSetDescriptorBufferOffsetsInfoEXT* pSetDescriptorBufferOffsetsInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pSetDescriptorBufferOffsetsInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBindDescriptorBufferEmbeddedSamplers2EXT (VkCommandBuffer commandBuffer, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pBindDescriptorBufferEmbeddedSamplersInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pSleepModeInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pSleepInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pLatencyMarkerInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pLatencyMarkerInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL queueNotifyOutOfBandNV (VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo)
+{
+	DE_UNREF(queue);
+	DE_UNREF(pQueueTypeInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetRenderingAttachmentLocationsKHR (VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pLocationInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pLocationInfo);
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -4172,7 +4295,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlaneProperties2KHR,						getPhysicalDeviceDisplayPlaneProperties2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,										getDisplayModeProperties2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilities2KHR,									getDisplayPlaneCapabilities2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT,						getPhysicalDeviceCalibrateableTimeDomainsEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCalibrateableTimeDomainsKHR,						getPhysicalDeviceCalibrateableTimeDomainsKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateDebugUtilsMessengerEXT,										createDebugUtilsMessengerEXT),
 	VK_NULL_FUNC_ENTRY(vkDestroyDebugUtilsMessengerEXT,										destroyDebugUtilsMessengerEXT),
 	VK_NULL_FUNC_ENTRY(vkSubmitDebugUtilsMessageEXT,										submitDebugUtilsMessageEXT),
@@ -4408,7 +4531,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutSupport,								getDescriptorSetLayoutSupport),
 	VK_NULL_FUNC_ENTRY(vkGetShaderInfoAMD,											getShaderInfoAMD),
 	VK_NULL_FUNC_ENTRY(vkSetLocalDimmingAMD,										setLocalDimmingAMD),
-	VK_NULL_FUNC_ENTRY(vkGetCalibratedTimestampsEXT,								getCalibratedTimestampsEXT),
+	VK_NULL_FUNC_ENTRY(vkGetCalibratedTimestampsKHR,								getCalibratedTimestampsKHR),
 	VK_NULL_FUNC_ENTRY(vkSetDebugUtilsObjectNameEXT,								setDebugUtilsObjectNameEXT),
 	VK_NULL_FUNC_ENTRY(vkSetDebugUtilsObjectTagEXT,									setDebugUtilsObjectTagEXT),
 	VK_NULL_FUNC_ENTRY(vkQueueBeginDebugUtilsLabelEXT,								queueBeginDebugUtilsLabelEXT),
@@ -4502,7 +4625,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutablePropertiesKHR,						getPipelineExecutablePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableStatisticsKHR,						getPipelineExecutableStatisticsKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableInternalRepresentationsKHR,			getPipelineExecutableInternalRepresentationsKHR),
-	VK_NULL_FUNC_ENTRY(vkCmdSetLineStippleEXT,										cmdSetLineStippleEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetLineStippleKHR,										cmdSetLineStippleKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureKHR,							createAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresKHR,							cmdBuildAccelerationStructuresKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresIndirectKHR,					cmdBuildAccelerationStructuresIndirectKHR),
@@ -4629,6 +4752,12 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkSetBufferCollectionImageConstraintsFUCHSIA,				setBufferCollectionImageConstraintsFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkDestroyBufferCollectionFUCHSIA,							destroyBufferCollectionFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkGetBufferCollectionPropertiesFUCHSIA,						getBufferCollectionPropertiesFUCHSIA),
+	VK_NULL_FUNC_ENTRY(vkCreateCudaModuleNV,										createCudaModuleNV),
+	VK_NULL_FUNC_ENTRY(vkGetCudaModuleCacheNV,										getCudaModuleCacheNV),
+	VK_NULL_FUNC_ENTRY(vkCreateCudaFunctionNV,										createCudaFunctionNV),
+	VK_NULL_FUNC_ENTRY(vkDestroyCudaModuleNV,										destroyCudaModuleNV),
+	VK_NULL_FUNC_ENTRY(vkDestroyCudaFunctionNV,										destroyCudaFunctionNV),
+	VK_NULL_FUNC_ENTRY(vkCmdCudaLaunchKernelNV,										cmdCudaLaunchKernelNV),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginRendering,											cmdBeginRendering),
 	VK_NULL_FUNC_ENTRY(vkCmdEndRendering,											cmdEndRendering),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutHostMappingInfoVALVE,				getDescriptorSetLayoutHostMappingInfoVALVE),
@@ -4676,5 +4805,18 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdDispatchGraphAMDX,										cmdDispatchGraphAMDX),
 	VK_NULL_FUNC_ENTRY(vkCmdDispatchGraphIndirectAMDX,								cmdDispatchGraphIndirectAMDX),
 	VK_NULL_FUNC_ENTRY(vkCmdDispatchGraphIndirectCountAMDX,							cmdDispatchGraphIndirectCountAMDX),
+	VK_NULL_FUNC_ENTRY(vkCmdBindDescriptorSets2KHR,									cmdBindDescriptorSets2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdPushConstants2KHR,										cmdPushConstants2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSet2KHR,									cmdPushDescriptorSet2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetWithTemplate2KHR,						cmdPushDescriptorSetWithTemplate2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDescriptorBufferOffsets2EXT,							cmdSetDescriptorBufferOffsets2EXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBindDescriptorBufferEmbeddedSamplers2EXT,				cmdBindDescriptorBufferEmbeddedSamplers2EXT),
+	VK_NULL_FUNC_ENTRY(vkSetLatencySleepModeNV,										setLatencySleepModeNV),
+	VK_NULL_FUNC_ENTRY(vkLatencySleepNV,											latencySleepNV),
+	VK_NULL_FUNC_ENTRY(vkSetLatencyMarkerNV,										setLatencyMarkerNV),
+	VK_NULL_FUNC_ENTRY(vkGetLatencyTimingsNV,										getLatencyTimingsNV),
+	VK_NULL_FUNC_ENTRY(vkQueueNotifyOutOfBandNV,									queueNotifyOutOfBandNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetRenderingAttachmentLocationsKHR,						cmdSetRenderingAttachmentLocationsKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdSetRenderingInputAttachmentIndicesKHR,					cmdSetRenderingInputAttachmentIndicesKHR),
 };
 

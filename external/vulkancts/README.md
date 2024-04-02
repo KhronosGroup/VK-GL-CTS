@@ -136,7 +136,7 @@ Current Vulkan mustpass is checked into repository and can be found at:
 
 Current Vulkan SC mustpass can be found at:
 
-	external/vulkancts/mustpass/master/vksc-default.txt
+	external/vulkancts/mustpass/main/vksc-default.txt
 
 This file contains list of files located in vk-default or vksc-default subdirectory. Those files contain
 tests from bigest test groups and together they contain all test cases that should pass.
@@ -155,7 +155,7 @@ Following command line options MUST be used when running CTS:
 	--deqp-log-images=disable
 	--deqp-log-shader-sources=disable
 
-If an implementation ships with [implicit layers](https://github.com/KhronosGroup/Vulkan-Loader/blob/master/loader/LoaderAndLayerInterface.md#implicit-vs-explicit-layers) enabled, then such layers must be enabled
+If an implementation ships with [implicit layers](https://github.com/KhronosGroup/Vulkan-Loader/blob/main/loader/LoaderAndLayerInterface.md#implicit-vs-explicit-layers) enabled, then such layers must be enabled
 when running CTS.
 
 In addition, on multi-device systems the device for which conformance is claimed
@@ -191,9 +191,9 @@ CTS execution may be split into N fractions ( for the purpose of running it in p
 
 	--deqp-fraction=I,N
 
-where I denotes index of current CTS execution ( I=[0..N-1], N=[1..8] )
+where I denotes index of current CTS execution ( I=[0..N-1], N=[1..16] )
 
-When collecting results for a Conformance Submission Package the number of fractions must not exceed 8,
+When collecting results for a Conformance Submission Package the number of fractions must not exceed 16,
 and a list of mandatory information tests for each fraction must be supplied:
 
 	--deqp-fraction-mandatory-caselist-file=<vulkancts>external/vulkancts/mustpass/main/vk-fraction-mandatory-tests.txt
@@ -212,6 +212,10 @@ Also non-informative empty LogInfo sections can be removed
 from output into log by specifying:
 
 	--deqp-log-empty-loginfo=disable
+
+Vulkan compute-only implementations must be tested using option
+
+	--deqp-compute-only=enable
 
 There are several additional options used only in conjunction with Vulkan SC tests
 ( for Vulkan SC CTS tests deqp-vksc application should be used ).
@@ -513,9 +517,11 @@ are excluded from the log, but that can be customized by modifying
 `vk::DebugReportMessage::shouldBeLogged()` in `vkDebugReportUtil.hpp`.
 
 On the Android target, layers can be added to the APK during the build process
-by setting the `--layers-path` command line option to point into the NDK or to
-a locally-built layers tree. The layers are expected to be found under $abi/
-under the layers path.
+by setting the `--layers-path` command line option to point to the downloaded
+Validation Layers binaries or a locally-built layers tree. The layers are
+expected to be found under $abi/ under the layers path.
+The Validation Layers releases including prebuilt binaries are available at
+https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases.
 
 
 Cherry GUI
@@ -657,7 +663,7 @@ to Vulkan SC requirements:
 
 - Vulkan SC CTS contains its own mustpass list
 
-  external/vulkancts/mustpass/master/vksc-default.txt
+  external/vulkancts/mustpass/main/vksc-default.txt
 
 - Vulkan SC CTS uses its own executable module to perform tests: deqp-vksc
 
@@ -693,6 +699,9 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
 
   -h, --help
     Show this help
+
+  -q, --quiet
+    Suppress messages to standard output
 
   -n, --deqp-case=<value>
     Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)
@@ -785,6 +794,10 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Enable or disable log file fflush
     default: 'enable'
 
+  --deqp-log-compact=[enable|disable]
+    Enable or disable the compact version of the log
+    default: 'disable'
+
   --deqp-validation=[enable|disable]
     Enable or disable test case validation
     default: 'disable'
@@ -834,6 +847,13 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
 
   --deqp-terminate-on-fail=[enable|disable]
     Terminate the run on first failure
+    default: 'disable'
+
+  --deqp-terminate-on-device-lost=[enable|disable]
+    Terminate the run on first device lost error
+
+  --deqp-compute-only=[enable|disable]
+    Perform tests for devices implementing compute-only functionality
     default: 'disable'
 
   --deqp-subprocess=[enable|disable]

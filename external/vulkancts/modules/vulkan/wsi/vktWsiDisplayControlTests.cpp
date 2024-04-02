@@ -715,7 +715,7 @@ SwapchainCounterTestInstance::SwapchainCounterTestInstance (Context& context)
 
 	, m_queueFamilyIndex		(chooseQueueFamilyIndex(m_vki, m_physicalDevice, m_surface))
 	, m_device					(createTestDevice(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex))
-	, m_vkd						(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
+	, m_vkd						(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
 	, m_commandPool				(createCommandPool(m_vkd, *m_device, m_queueFamilyIndex))
@@ -922,7 +922,7 @@ public:
 };
 
 SwapchainCounterTestCase::SwapchainCounterTestCase(tcu::TestContext& context, const char* name)
-	: vkt::TestCase(context, name, name)
+	: vkt::TestCase(context, name)
 {
 }
 
@@ -1109,9 +1109,9 @@ tcu::TestStatus testDeviceEvent(Context& context)
 void createDisplayControlTests (tcu::TestCaseGroup* testGroup)
 {
 	testGroup->addChild(new SwapchainCounterTestCase(testGroup->getTestContext(), "swapchain_counter"));
-	addFunctionCase(testGroup, "display_power_control",		"Test display power control",	testDisplayPowerControl);
-	addFunctionCase(testGroup, "register_display_event",	"Test register display event",	testDisplayEvent);
-	addFunctionCase(testGroup, "register_device_event",		"Test register device event",	testDeviceEvent);
+	addFunctionCase(testGroup, "display_power_control",	testDisplayPowerControl);
+	addFunctionCase(testGroup, "register_display_event",	testDisplayEvent);
+	addFunctionCase(testGroup, "register_device_event",	testDeviceEvent);
 }
 
 } // wsi

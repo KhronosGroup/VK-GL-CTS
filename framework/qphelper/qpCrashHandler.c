@@ -35,9 +35,11 @@
 
 #if (DE_OS == DE_OS_UNIX)
 #	include <unistd.h>
-#	include <execinfo.h>
 #	include <errno.h>
 #	include <inttypes.h>
+#if defined(__GLIBC__) || defined(__FreeBSD__)
+#	include <execinfo.h>
+#endif
 #endif
 
 #if 0
@@ -535,7 +537,7 @@ void qpCrashHandler_writeCrashInfo (qpCrashHandler* crashHandler, qpWriteCrashIn
 {
 	qpCrashInfo_write(&crashHandler->crashInfo, writeInfo, userPtr);
 
-#if (DE_OS == DE_OS_UNIX)
+#if (DE_OS == DE_OS_UNIX && (defined(__GLIBC__) || defined(__FreeBSD__)))
 	{
 		char	tmpFileName[]	= "backtrace-XXXXXX";
 		int		tmpFile			= mkstemp(tmpFileName);

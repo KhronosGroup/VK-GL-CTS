@@ -307,6 +307,7 @@ tcu::TestStatus InterfaceMatchingTestInstance::iterate(void)
 	const std::vector<VkRect2D>		scissors	{ makeRect2D(renderSize) };
 
 	m_graphicsPipeline.setDefaultTopology(useTess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+					  .setDefaultPatchControlPoints(useTess ? 1u : 0u)
 					  .setDefaultRasterizationState()
 					  .setDefaultDepthStencilState()
 					  .setDefaultMultisampleState()
@@ -464,7 +465,7 @@ private:
 
 InterfaceMatchingTestCase::InterfaceMatchingTestCase(tcu::TestContext&	testContext,
 													 TestParamsSp		params)
-	: vkt::TestCase	(testContext, generateName(*params), "")
+	: vkt::TestCase	(testContext, generateName(*params))
 	, m_params		(params)
 {
 }
@@ -1067,9 +1068,9 @@ tcu::TestCaseGroup* createInterfaceMatchingTests(tcu::TestContext& testCtx, Pipe
 		DefinitionType::MEMBER_OF_ARRAY_OF_STRUCTURES_IN_BLOCK,
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "interface_matching", ""));
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "interface_matching"));
 
-	de::MovePtr<tcu::TestCaseGroup> vectorMatching(new tcu::TestCaseGroup(testCtx, "vector_length", "Tests vector matching"));
+	de::MovePtr<tcu::TestCaseGroup> vectorMatching(new tcu::TestCaseGroup(testCtx, "vector_length"));
 	for (PipelineType pipelineType : pipelineTypeList)
 		for (DefinitionType defType : definitionsTypeList)
 		{
@@ -1118,7 +1119,7 @@ tcu::TestCaseGroup* createInterfaceMatchingTests(tcu::TestContext& testCtx, Pipe
 		{ DecorationType::NONE,				DecorationType::COMPONENT0 },
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> decorationMismatching(new tcu::TestCaseGroup(testCtx, "decoration_mismatch", "Decoration mismatch tests"));
+	de::MovePtr<tcu::TestCaseGroup> decorationMismatching(new tcu::TestCaseGroup(testCtx, "decoration_mismatch"));
 	for (PipelineType stageType : pipelineTypeList)
 		for (DefinitionType defType : definitionsTypeList)
 			for (const auto& decoration : decorationPairs)

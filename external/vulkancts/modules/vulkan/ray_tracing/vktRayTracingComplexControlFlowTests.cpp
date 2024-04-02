@@ -590,12 +590,12 @@ de::MovePtr<BufferWithMemory> RayTracingComplexControlFlowInstance::runTest (voi
 
 		cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preImageBarrier);
 		vkd.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
-		cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, ALL_RAY_TRACING_STAGES, &postImageBarrier);
+		cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &postImageBarrier);
 
 		bottomLevelAccelerationStructures = initBottomAccelerationStructures(*cmdBuffer);
 		topLevelAccelerationStructure = initTopAccelerationStructure(*cmdBuffer, bottomLevelAccelerationStructures);
 
-		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, ALL_RAY_TRACING_STAGES, &preTraceMemoryBarrier);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &preTraceMemoryBarrier);
 
 		const TopLevelAccelerationStructure*			topLevelAccelerationStructurePtr		= topLevelAccelerationStructure.get();
 		VkWriteDescriptorSetAccelerationStructureKHR	accelerationStructureWriteDescriptorSet	=
@@ -623,7 +623,7 @@ de::MovePtr<BufferWithMemory> RayTracingComplexControlFlowInstance::runTest (voi
 			&callableShaderBindingTableRegion,
 			m_data.width, m_data.height, 1);
 
-		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, ALL_RAY_TRACING_STAGES, VK_PIPELINE_STAGE_TRANSFER_BIT, &postTraceMemoryBarrier);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_TRANSFER_BIT, &postTraceMemoryBarrier);
 
 		vkd.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_GENERAL, **buffer, 1u, &bufferImageRegion);
 
@@ -1025,7 +1025,7 @@ tcu::TestStatus RayTracingComplexControlFlowInstance::iterate (void)
 class ComplexControlFlowTestCase : public TestCase
 {
 	public:
-										ComplexControlFlowTestCase	(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+										ComplexControlFlowTestCase	(tcu::TestContext& context, const char* name, const CaseDef data);
 										~ComplexControlFlowTestCase	(void);
 
 	virtual	void						initPrograms				(SourceCollections& programCollection) const;
@@ -1040,8 +1040,8 @@ private:
 	CaseDef								m_data;
 };
 
-ComplexControlFlowTestCase::ComplexControlFlowTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+ComplexControlFlowTestCase::ComplexControlFlowTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -1746,17 +1746,18 @@ tcu::TestCaseGroup*	createComplexControlFlowTests (tcu::TestContext& testCtx)
 		{ "nested_function_call",		TEST_TYPE_NESTED_FUNCTION_CALL		},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "complexcontrolflow", "Ray tracing complex control flow tests"));
+	// Ray tracing complex control flow tests
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "complexcontrolflow"));
 
 	for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
 	{
 		const TestType					testType		= testTypes[testTypeNdx].testType;
-		de::MovePtr<tcu::TestCaseGroup> testTypeGroup	(new tcu::TestCaseGroup(testCtx, testTypes[testTypeNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> testTypeGroup	(new tcu::TestCaseGroup(testCtx, testTypes[testTypeNdx].name));
 
 		for (size_t testOpNdx = 0; testOpNdx < DE_LENGTH_OF_ARRAY(testOps); ++testOpNdx)
 		{
 			const TestOp					testOp		= testOps[testOpNdx].op;
-			de::MovePtr<tcu::TestCaseGroup> testOpGroup	(new tcu::TestCaseGroup(testCtx, testOps[testOpNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> testOpGroup	(new tcu::TestCaseGroup(testCtx, testOps[testOpNdx].name));
 
 			for (size_t testStagesNdx = 0; testStagesNdx < DE_LENGTH_OF_ARRAY(testStages); ++testStagesNdx)
 			{
@@ -1776,7 +1777,7 @@ tcu::TestCaseGroup*	createComplexControlFlowTests (tcu::TestContext& testCtx)
 				if ((testOps[testOpNdx].applicableInStages & static_cast<VkShaderStageFlags>(testStage)) == 0)
 					continue;
 
-				testOpGroup->addChild(new ComplexControlFlowTestCase(testCtx, testName.c_str(), "", caseDef));
+				testOpGroup->addChild(new ComplexControlFlowTestCase(testCtx, testName.c_str(), caseDef));
 			}
 
 			testTypeGroup->addChild(testOpGroup.release());

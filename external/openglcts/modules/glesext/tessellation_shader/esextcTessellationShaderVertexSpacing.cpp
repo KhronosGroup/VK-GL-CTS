@@ -29,6 +29,7 @@
 #include "glwFunctions.hpp"
 #include "tcuTestLog.hpp"
 #include <algorithm>
+#include <utility>
 
 /* Precision, with which the test should be executed. */
 const float epsilon = 1e-3f;
@@ -525,7 +526,7 @@ TessellationShaderVertexSpacing::_tess_edges TessellationShaderVertexSpacing::ge
 TessellationShaderVertexSpacing::_tess_edges TessellationShaderVertexSpacing::getEdgesForTrianglesTessellation(
 	const _run& run)
 {
-	DE_ASSERT(run.data_cartesian != DE_NULL);
+	DE_ASSERT(!run.data_cartesian.empty());
 
 	/* Before we proceed, convert the raw arrayed data into a vector. We'll need to take items out
 	 * in an undefined order */
@@ -533,7 +534,7 @@ TessellationShaderVertexSpacing::_tess_edges TessellationShaderVertexSpacing::ge
 
 	for (unsigned int n_vertex = 0; n_vertex < run.n_vertices; ++n_vertex)
 	{
-		const float* vertex_data_cartesian = (const float*)run.data_cartesian + n_vertex * 2; /* components */
+		const float* vertex_data_cartesian = (const float*)(&run.data_cartesian.at(n_vertex * 2)); /* components */
 
 		_tess_coordinate_cartesian cartesian;
 
@@ -1000,13 +1001,12 @@ void TessellationShaderVertexSpacing::initTest()
 				 * continue, we need to convert the data to Euclidean space */
 				if (run.primitive_mode == TESSELLATION_SHADER_PRIMITIVE_MODE_TRIANGLES)
 				{
-					run.data_cartesian = new float[run.n_vertices * 2 /* components */];
+					run.data_cartesian.resize(run.n_vertices * 2/* components */);
 
 					for (unsigned int n_vertex = 0; n_vertex < run.n_vertices; ++n_vertex)
 					{
-						const float* barycentric_vertex_data =
-							(const float*)(&run.data[0]) + n_vertex * 3;						  /* components */
-						float* cartesian_vertex_data = (float*)run.data_cartesian + n_vertex * 2; /* components */
+						const float* barycentric_vertex_data = (const float*)(&run.data[0]) + n_vertex * 3;	/* components */
+						float* cartesian_vertex_data = (float*)(&run.data_cartesian.at(n_vertex * 2));		/* components */
 
 						TessellationShaderUtils::convertBarycentricCoordinatesToCartesian(barycentric_vertex_data,
 																						  cartesian_vertex_data);
@@ -1014,11 +1014,11 @@ void TessellationShaderVertexSpacing::initTest()
 				} /* if (run.primitive_mode == TESSELLATION_SHADER_PRIMITIVE_MODE_TRIANGLES) */
 				else
 				{
-					run.data_cartesian = DE_NULL;
+					run.data_cartesian.clear();
 				}
 
 				/* Store the run data */
-				m_runs.push_back(run);
+				m_runs.emplace_back(std::move(run));
 			} /* for (all tessellation level values ) */
 		}	 /* for (all primitive modes) */
 	}		  /* for (all vertex spacing modes) */

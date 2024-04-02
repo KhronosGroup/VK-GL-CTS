@@ -49,7 +49,7 @@ namespace
 
 tcu::TestCaseGroup* createGeometryInteractionTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "geometry_interaction", "Tessellation and geometry shader interaction tests"));
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "geometry_interaction"));
 
 	group->addChild(createGeometryPassthroughTests		(testCtx));
 	group->addChild(createGeometryGridRenderLimitsTests	(testCtx));
@@ -80,7 +80,7 @@ void createChildren (tcu::TestCaseGroup* tessellationTests)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name.c_str(), "Tessellation tests", createChildren);
+	return createTestGroup(testCtx, name.c_str(), createChildren);
 }
 
 } // tessellation

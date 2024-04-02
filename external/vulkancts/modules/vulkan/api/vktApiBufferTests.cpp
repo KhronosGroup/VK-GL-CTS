@@ -122,9 +122,8 @@ class BuffersTestCase : public TestCase
 public:
 										BuffersTestCase					(tcu::TestContext&			testCtx,
 																		 const std::string&			name,
-																		 const std::string&			description,
 																		 BufferCaseParameters		testCase)
-										: TestCase						(testCtx, name, description)
+										: TestCase						(testCtx, name)
 										, m_testCase					(testCase)
 	{
 	}
@@ -164,9 +163,8 @@ class DedicatedAllocationBuffersTestCase : public TestCase
 										DedicatedAllocationBuffersTestCase
 																		(tcu::TestContext&			testCtx,
 																		 const std::string&			name,
-																		 const std::string&			description,
 																		 BufferCaseParameters		testCase)
-										: TestCase						(testCtx, name, description)
+										: TestCase						(testCtx, name)
 										, m_testCase					(testCase)
 	{
 	}
@@ -620,7 +618,7 @@ void createBufferUsageCases (tcu::TestCaseGroup& testGroup, const deUint32 first
 	{
 		const deUint32					newBufferUsageFlags	= bufferUsageFlags | bufferUsageModes[currentNdx];
 		const std::string				newGroupName		= getBufferUsageFlagsName(bufferUsageModes[currentNdx]);
-		de::MovePtr<tcu::TestCaseGroup>	newTestGroup		(new tcu::TestCaseGroup(testCtx, newGroupName.c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup>	newTestGroup		(new tcu::TestCaseGroup(testCtx, newGroupName.c_str()));
 
 		createBufferUsageCases(*newTestGroup, currentNdx + 1u, newBufferUsageFlags, allocationKind);
 		testGroup.addChild(newTestGroup.release());
@@ -644,7 +642,7 @@ void createBufferUsageCases (tcu::TestCaseGroup& testGroup, const deUint32 first
 		// Dedicated allocation does not support sparse feature
 		const int						numBufferCreateFlags	= (allocationKind == ALLOCATION_KIND_SUBALLOCATED) ? DE_LENGTH_OF_ARRAY(bufferCreateFlags) : 1;
 
-		de::MovePtr<tcu::TestCaseGroup>	newTestGroup			(new tcu::TestCaseGroup(testCtx, "create", ""));
+		de::MovePtr<tcu::TestCaseGroup>	newTestGroup			(new tcu::TestCaseGroup(testCtx, "create"));
 
 		for (int bufferCreateFlagsNdx = 0; bufferCreateFlagsNdx < numBufferCreateFlags; bufferCreateFlagsNdx++)
 		{
@@ -657,15 +655,14 @@ void createBufferUsageCases (tcu::TestCaseGroup& testGroup, const deUint32 first
 
 			const std::string			allocStr	= (allocationKind == ALLOCATION_KIND_SUBALLOCATED) ? "suballocation of " : "dedicated alloc. of ";
 			const std::string			caseName	= getBufferCreateFlagsName(bufferCreateFlags[bufferCreateFlagsNdx]);
-			const std::string			caseDesc	= "vkCreateBuffer test: " + allocStr + de::toString(bufferUsageFlags) + " " + de::toString(testParams.flags);
 
 			switch (allocationKind)
 			{
 				case ALLOCATION_KIND_SUBALLOCATED:
-					newTestGroup->addChild(new BuffersTestCase(testCtx, caseName.c_str(), caseDesc.c_str(), testParams));
+					newTestGroup->addChild(new BuffersTestCase(testCtx, caseName.c_str(), testParams));
 					break;
 				case ALLOCATION_KIND_DEDICATED:
-					newTestGroup->addChild(new DedicatedAllocationBuffersTestCase(testCtx, caseName.c_str(), caseDesc.c_str(), testParams));
+					newTestGroup->addChild(new DedicatedAllocationBuffersTestCase(testCtx, caseName.c_str(), testParams));
 					break;
 				default:
 					DE_FATAL("Unknown test type");
@@ -768,38 +765,41 @@ void checkMaintenance4Support(Context& context, LargeBufferParameters params)
 
  tcu::TestCaseGroup* createBufferTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> buffersTests (new tcu::TestCaseGroup(testCtx, "buffer", "Buffer Tests"));
+	de::MovePtr<tcu::TestCaseGroup> buffersTests (new tcu::TestCaseGroup(testCtx, "buffer"));
 
 	{
-		de::MovePtr<tcu::TestCaseGroup>	regularAllocation	(new tcu::TestCaseGroup(testCtx, "suballocation", "Regular suballocation of memory."));
+		de::MovePtr<tcu::TestCaseGroup>	regularAllocation	(new tcu::TestCaseGroup(testCtx, "suballocation"));
 		createBufferUsageCases(*regularAllocation, 0u, 0u, ALLOCATION_KIND_SUBALLOCATED);
 		buffersTests->addChild(regularAllocation.release());
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup>	dedicatedAllocation	(new tcu::TestCaseGroup(testCtx, "dedicated_alloc", "Dedicated allocation of memory."));
+		de::MovePtr<tcu::TestCaseGroup>	dedicatedAllocation	(new tcu::TestCaseGroup(testCtx, "dedicated_alloc"));
 		createBufferUsageCases(*dedicatedAllocation, 0u, 0u, ALLOCATION_KIND_DEDICATED);
 		buffersTests->addChild(dedicatedAllocation.release());
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "basic", "Basic buffer tests."));
+		de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "basic"));
 #ifndef CTS_USES_VULKANSC
-		addFunctionCase(basicTests.get(), "max_size", "Creating buffer using maxBufferSize limit.",
+		// Creating buffer using maxBufferSize limit.
+		addFunctionCase(basicTests.get(), "max_size",
 						checkMaintenance4Support, testLargeBuffer, LargeBufferParameters
 						{
 							0u,
 							true,
 							0u
 						});
-		addFunctionCase(basicTests.get(), "max_size_sparse", "Creating sparse buffer using maxBufferSize limit.",
+		// Creating sparse buffer using maxBufferSize limit.
+		addFunctionCase(basicTests.get(), "max_size_sparse",
 						checkMaintenance4Support, testLargeBuffer, LargeBufferParameters
 						{
 							0u,
 							true,
 							VK_BUFFER_CREATE_SPARSE_BINDING_BIT
 						});
-		addFunctionCase(basicTests.get(), "size_max_uint64", "Creating a ULLONG_MAX buffer and verify that it either succeeds or returns one of the allowed errors.",
+		// Creating a ULLONG_MAX buffer and verify that it either succeeds or returns one of the allowed errors.
+		addFunctionCase(basicTests.get(), "size_max_uint64",
 						checkMaintenance4Support, testLargeBuffer, LargeBufferParameters
 						{
 							std::numeric_limits<deUint64>::max(),
@@ -822,13 +822,14 @@ void checkMaintenance4Support(Context& context, LargeBufferParameters params)
 			VK_FORMAT_X8_D24_UNORM_PACK32
 		};
 
-		de::MovePtr<tcu::TestCaseGroup>	invalidBufferFeatures(new tcu::TestCaseGroup(testCtx, "invalid_buffer_features", "Checks that drivers are not exposing undesired format features for depth/stencil formats."));
+		// Checks that drivers are not exposing undesired format features for depth/stencil formats.
+		de::MovePtr<tcu::TestCaseGroup>	invalidBufferFeatures(new tcu::TestCaseGroup(testCtx, "invalid_buffer_features"));
 
 		for (const auto& testFormat : dsFormats)
 		{
 			std::string formatName = de::toLower(getFormatName(testFormat));
 
-			addFunctionCase(invalidBufferFeatures.get(), formatName, formatName, testDepthStencilBufferFeatures, testFormat);
+			addFunctionCase(invalidBufferFeatures.get(), formatName, testDepthStencilBufferFeatures, testFormat);
 		}
 
 		buffersTests->addChild(invalidBufferFeatures.release());

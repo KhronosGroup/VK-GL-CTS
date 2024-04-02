@@ -217,6 +217,10 @@ void FragmentShadingRateAttachment::setupTest(void)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Error attaching texture to frame buffer");
 	}
 
+	// Adjust viewport to fit new framebuffer
+	gl.viewport(0, 0, m_tcParam.framebufferSize, m_tcParam.framebufferSize);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "viewport");
+
 	// Generate a shading rate texture name
 	if (m_tcParam.attachmentShadingRate)
 	{

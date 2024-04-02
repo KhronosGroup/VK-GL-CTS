@@ -82,6 +82,7 @@ private:
 class TestError : public TestException
 {
 public:
+                    TestError (const char* message, const char* expr, const char* file, int line, qpTestResult result);
 					TestError			(const char* message, const char* expr, const char* file, int line);
 					TestError			(const std::string& message, const char* expr, const char* file, int line);
 					TestError			(const std::string& message);
@@ -117,6 +118,16 @@ public:
 					NotSupportedError	(const std::string& message, const char* expr, const char* file, int line);
 					NotSupportedError	(const std::string& message);
 	virtual			~NotSupportedError	(void) throw() {}
+};
+
+//! Quality warning.
+class QualityWarning : public TestException
+{
+public:
+					QualityWarning	(const char* message, const char* expr, const char* file, int line);
+					QualityWarning	(const std::string& message, const char* expr, const char* file, int line);
+					QualityWarning	(const std::string& message);
+	virtual			~QualityWarning	(void) throw() {}
 };
 
 } // tcu

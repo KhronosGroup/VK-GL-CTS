@@ -496,7 +496,7 @@ protected:
 		m_vk.cmdSetBlendConstants(*m_cmdBuffer, blendConstantsants);
 	}
 
-	void setDynamicDepthStencilState(const float minDepthBounds = -1.0f,
+	void setDynamicDepthStencilState(const float minDepthBounds = 0.0f,
 									 const float maxDepthBounds = 1.0f,
 									 const deUint32 stencilFrontCompareMask = 0xffffffffu,
 									 const deUint32 stencilFrontWriteMask = 0xffffffffu,
@@ -1012,11 +1012,11 @@ public:
 			m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
 
 			m_pipeline_1.bind(*m_cmdBuffer);
-			setDynamicDepthStencilState(-1.0f, 1.0f, 0xFF, m_writeMask, 0x0F, 0xFF, m_writeMask, 0x0F);
+			setDynamicDepthStencilState(0.0f, 1.0f, 0xFF, m_writeMask, 0x0F, 0xFF, m_writeMask, 0x0F);
 			pushVertexOffset(0u); m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, 2u, 1u, 1u);
 
 			m_pipeline_2.bind(*m_cmdBuffer);
-			setDynamicDepthStencilState(-1.0f, 1.0f, m_readMask, 0xFF, m_expectedValue, m_readMask, 0xFF, m_expectedValue);
+			setDynamicDepthStencilState(0.0f, 1.0f, m_readMask, 0xFF, m_expectedValue, m_readMask, 0xFF, m_expectedValue);
 			pushVertexOffset(4u); m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, 2u, 1u, 1u);
 		}
 		else
@@ -1027,11 +1027,11 @@ public:
 			m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
 			m_pipeline_1.bind(*m_cmdBuffer);
-			setDynamicDepthStencilState(-1.0f, 1.0f, 0xFF, m_writeMask, 0x0F, 0xFF, m_writeMask, 0x0F);
+			setDynamicDepthStencilState(0.0f, 1.0f, 0xFF, m_writeMask, 0x0F, 0xFF, m_writeMask, 0x0F);
 			m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
 
 			m_pipeline_2.bind(*m_cmdBuffer);
-			setDynamicDepthStencilState(-1.0f, 1.0f, m_readMask, 0xFF, m_expectedValue, m_readMask, 0xFF, m_expectedValue);
+			setDynamicDepthStencilState(0.0f, 1.0f, m_readMask, 0xFF, m_expectedValue, m_readMask, 0xFF, m_expectedValue);
 			m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 4, 0);
 		}
 
@@ -1129,12 +1129,12 @@ protected:
 	const bool						m_isMesh;
 
 public:
-	StencilParamsBasicTestCase (tcu::TestContext& context, const std::string& name, const std::string& description,
+	StencilParamsBasicTestCase (tcu::TestContext& context, const std::string& name,
 								const vk::PipelineConstructionType pipelineConstructionType,
 								const deUint32 writeMask, const deUint32 readMask,
 								const deUint32 expectedValue, const tcu::Vec4 expectedColor,
 								const bool isMesh)
-		: TestCase						(context, name, description)
+		: TestCase						(context, name)
 		, m_pipelineConstructionType	(pipelineConstructionType)
 		, m_writeMask					(writeMask)
 		, m_readMask					(readMask)
@@ -1218,11 +1218,11 @@ public:
 			m_vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u, nullptr);
 
 			m_pipeline_1.bind(*m_cmdBuffer);
-			setDynamicDepthStencilState(-1.0f, 1.0f, 0xFF, 0x0E, 0x0F, 0xFF, 0x0E, 0x0F);
+			setDynamicDepthStencilState(0.0f, 1.0f, 0xFF, 0x0E, 0x0F, 0xFF, 0x0E, 0x0F);
 			pushVertexOffset(0u); m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, 2u, 1u, 1u);
 
 			m_pipeline_2.bind(*m_cmdBuffer);
-			setDynamicDepthStencilState(-1.0f, 1.0f, 0xFF, 0xFF, 0x0E, 0xFF, 0xFF, 0x0E);
+			setDynamicDepthStencilState(0.0f, 1.0f, 0xFF, 0xFF, 0x0E, 0xFF, 0xFF, 0x0E);
 			pushVertexOffset(4u); m_vk.cmdDrawMeshTasksEXT(*m_cmdBuffer, 2u, 1u, 1u);
 		}
 		else
@@ -1233,11 +1233,11 @@ public:
 			m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 
 			m_pipeline_1.bind(*m_cmdBuffer);
-			setDynamicDepthStencilState(-1.0f, 1.0f, 0xFF, 0x0E, 0x0F, 0xFF, 0x0E, 0x0F);
+			setDynamicDepthStencilState(0.0f, 1.0f, 0xFF, 0x0E, 0x0F, 0xFF, 0x0E, 0x0F);
 			m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 0, 0);
 
 			m_pipeline_2.bind(*m_cmdBuffer);
-			setDynamicDepthStencilState(-1.0f, 1.0f, 0xFF, 0xFF, 0x0E, 0xFF, 0xFF, 0x0E);
+			setDynamicDepthStencilState(0.0f, 1.0f, 0xFF, 0xFF, 0x0E, 0xFF, 0xFF, 0x0E);
 			m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 4, 0);
 		}
 
@@ -1300,8 +1300,9 @@ void checkDepthBoundsAndMeshShaderSupport (Context& context)
 
 } //anonymous
 
+// Tests for depth stencil state
 DynamicStateDSTests::DynamicStateDSTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
-	: TestCaseGroup					(testCtx, "ds_state", "Tests for depth stencil state")
+	: TestCaseGroup					(testCtx, "ds_state")
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
@@ -1325,7 +1326,6 @@ void DynamicStateDSTests::init (void)
 		FunctionSupport0::Function	depthBoundsCheck	= nullptr;
 		FunctionSupport0::Function	meshSupportCheck	= (useMesh ? checkMeshShaderSupport : checkNothing);
 		std::string					nameSuffix;
-		std::string					descSuffix;
 
 		if (useMesh)
 		{
@@ -1333,7 +1333,6 @@ void DynamicStateDSTests::init (void)
 			shaderPaths[glu::SHADERTYPE_MESH] = "vulkan/dynamic_state/VertexFetch.mesh";
 			depthBoundsCheck = checkDepthBoundsAndMeshShaderSupport;
 			nameSuffix = "_mesh";
-			descSuffix = " using mesh shaders";
 #else
 			continue;
 #endif // CTS_USES_VULKANSC
@@ -1344,13 +1343,13 @@ void DynamicStateDSTests::init (void)
 			depthBoundsCheck = checkDepthBoundsSupport;
 		}
 
-		addChild(new InstanceFactory<DepthBoundsParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_1" + nameSuffix, "Perform depth bounds test 1" + descSuffix, m_pipelineConstructionType, shaderPaths, depthBoundsCheck));
-		addChild(new InstanceFactory<DepthBoundsTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_2" + nameSuffix, "Perform depth bounds test 1" + descSuffix, m_pipelineConstructionType, shaderPaths, depthBoundsCheck));
+		addChild(new InstanceFactory<DepthBoundsParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_1" + nameSuffix, m_pipelineConstructionType, shaderPaths, depthBoundsCheck));
+		addChild(new InstanceFactory<DepthBoundsTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_2" + nameSuffix, m_pipelineConstructionType, shaderPaths, depthBoundsCheck));
 #ifndef CTS_USES_VULKANSC
-		addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_1" + nameSuffix, "Perform basic stencil test 1" + descSuffix, m_pipelineConstructionType, 0x0D, 0x06, 0x05, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), useMesh));
-		addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_2" + nameSuffix, "Perform basic stencil test 2" + descSuffix, m_pipelineConstructionType, 0x06, 0x02, 0x05, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f), useMesh));
+		addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_1" + nameSuffix, m_pipelineConstructionType, 0x0D, 0x06, 0x05, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), useMesh));
+		addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_2" + nameSuffix, m_pipelineConstructionType, 0x06, 0x02, 0x05, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f), useMesh));
 #endif // CTS_USES_VULKANSC
-		addChild(new InstanceFactory<StencilParamsAdvancedTestInstance, FunctionSupport0>(m_testCtx, "stencil_params_advanced" + nameSuffix, "Perform advanced stencil test" + descSuffix, m_pipelineConstructionType, shaderPaths, meshSupportCheck));
+		addChild(new InstanceFactory<StencilParamsAdvancedTestInstance, FunctionSupport0>(m_testCtx, "stencil_params_advanced" + nameSuffix, m_pipelineConstructionType, shaderPaths, meshSupportCheck));
 	}
 }
 

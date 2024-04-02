@@ -1955,10 +1955,10 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup*						group,
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(size); ++sizeNdx)
 	for (int layerNdx = 0; layerNdx < DE_LENGTH_OF_ARRAY(numLayers); ++layerNdx)
 	{
-		MovePtr<tcu::TestCaseGroup>	sizeLayerGroup(new tcu::TestCaseGroup(group->getTestContext(), getSizeLayerString(size[sizeNdx], numLayers[layerNdx]).c_str(), ""));
+		MovePtr<tcu::TestCaseGroup>	sizeLayerGroup(new tcu::TestCaseGroup(group->getTestContext(), getSizeLayerString(size[sizeNdx], numLayers[layerNdx]).c_str()));
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(format); ++formatNdx)
 		{
-			MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(group->getTestContext(), getFormatString(format[formatNdx]).c_str(), ""));
+			MovePtr<tcu::TestCaseGroup>	formatGroup(new tcu::TestCaseGroup(group->getTestContext(), getFormatString(format[formatNdx]).c_str()));
 			for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); ++samplesNdx)
 			{
 				std::ostringstream caseName;
@@ -1974,7 +1974,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup*						group,
 					false,						// bool						colorQuad;
 				};
 
-				addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), "", checkSupport, initPrograms, testFunc, caseDef);
+				addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), checkSupport, initPrograms, testFunc, caseDef);
 			}
 			sizeLayerGroup->addChild(formatGroup.release());
 		}
@@ -2005,7 +2005,7 @@ void addStandardSamplePositionTestCasesWithFunctions (tcu::TestCaseGroup*					gr
 
 	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(format); ++formatNdx)
 	{
-		MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(group->getTestContext(), getFormatString(format[formatNdx]).c_str(), ""));
+		MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(group->getTestContext(), getFormatString(format[formatNdx]).c_str()));
 		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); ++samplesNdx)
 		{
 			std::ostringstream caseName;
@@ -2021,7 +2021,7 @@ void addStandardSamplePositionTestCasesWithFunctions (tcu::TestCaseGroup*					gr
 				true,						// bool						colorQuad;
 			};
 
-			addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), "", checkSupport, initPrograms, testFunc, caseDef);
+			addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), checkSupport, initPrograms, testFunc, caseDef);
 		}
 		group->addChild(formatGroup.release());
 	}
@@ -2047,19 +2047,19 @@ void createStandardSamplePositionTestsInGroup (tcu::TestCaseGroup* group, Pipeli
 //! Render to a multisampled image and sample from it in a fragment shader.
 tcu::TestCaseGroup* createMultisampleSampledImageTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "sampled_image", "Multisampled image direct sample access", createSampledImageTestsInGroup, pipelineConstructionType);
+	return createTestGroup(testCtx, "sampled_image", createSampledImageTestsInGroup, pipelineConstructionType);
 }
 
 //! Render to a multisampled image and access it with load/stores in a compute shader.
 tcu::TestCaseGroup* createMultisampleStorageImageTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "storage_image", "Multisampled image draw and read/write in compute shader", createStorageImageTestsInGroup, pipelineConstructionType);
+	return createTestGroup(testCtx, "storage_image", createStorageImageTestsInGroup, pipelineConstructionType);
 }
 
 //! Render to a multisampled image and verify standard multisample positions.
 tcu::TestCaseGroup* createMultisampleStandardSamplePositionTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "standardsampleposition", "Multisampled image standard sample position tests", createStandardSamplePositionTestsInGroup, pipelineConstructionType);
+	return createTestGroup(testCtx, "standardsampleposition", createStandardSamplePositionTestsInGroup, pipelineConstructionType);
 }
 
 } // pipeline

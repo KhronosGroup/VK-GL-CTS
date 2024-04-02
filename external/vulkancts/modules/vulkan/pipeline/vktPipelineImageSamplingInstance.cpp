@@ -191,6 +191,22 @@ static MovePtr<TestTexture> createTestTexture (const TcuFormatType format, VkIma
 void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceParams params)
 {
 
+	const VkSamplerReductionModeCreateInfo			*reductionModeInfo	= NULL;
+	const VkSamplerYcbcrConversionInfo				*ycbcrInfo			= NULL;
+	const VkSamplerCustomBorderColorCreateInfoEXT	*borderColorInfo	= NULL;
+
+	for (const VkBaseInStructure *pNext = static_cast<const VkBaseInStructure *>(params.samplerParams.pNext); pNext != NULL; pNext = pNext->pNext)
+	{
+		switch (pNext->sType)
+		{
+			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO:			reductionModeInfo	= reinterpret_cast<const VkSamplerReductionModeCreateInfo *>(pNext); break;
+			case VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO:				ycbcrInfo			= reinterpret_cast<const VkSamplerYcbcrConversionInfo *>(pNext); break;
+			case VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT:	borderColorInfo		= reinterpret_cast<const VkSamplerCustomBorderColorCreateInfoEXT *>(pNext); break;
+			default:
+				TCU_FAIL("Unrecognized sType in chained sampler create info");
+		}
+	}
+
 	if (de::abs(params.samplerParams.mipLodBias) > context.getDeviceProperties().limits.maxSamplerLodBias)
 		TCU_THROW(NotSupportedError, "Unsupported sampler Lod bias value");
 
@@ -200,11 +216,21 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 	if ((deUint32)params.imageCount > context.getDeviceProperties().limits.maxColorAttachments)
 		throw tcu::NotSupportedError(std::string("Unsupported render target count: ") + de::toString(params.imageCount));
 
-	if ((params.samplerParams.minFilter == VK_FILTER_LINEAR ||
-		 params.samplerParams.magFilter == VK_FILTER_LINEAR ||
-		 params.samplerParams.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR) &&
-		!isLinearFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
-		throw tcu::NotSupportedError(std::string("Unsupported format for linear filtering: ") + getFormatName(params.imageFormat));
+	if (params.samplerParams.minFilter == VK_FILTER_LINEAR ||
+		params.samplerParams.magFilter == VK_FILTER_LINEAR ||
+		params.samplerParams.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR)
+	{
+		if (reductionModeInfo == NULL || reductionModeInfo->reductionMode == VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE)
+		{
+			if (!isLinearFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
+				throw tcu::NotSupportedError(std::string("Unsupported format for linear filtering: ") + getFormatName(params.imageFormat));
+		}
+		else
+		{
+			if (!isMinMaxFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
+				throw tcu::NotSupportedError(std::string("Unsupported format for min/max filtering: ") + getFormatName(params.imageFormat));
+		}
+	}
 
 	if (params.separateStencilUsage)
 	{
@@ -256,40 +282,15 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 		}
 	}
 
-	void const* pNext = params.samplerParams.pNext;
-	while (pNext != DE_NULL)
-	{
-		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(pNext);
-		switch (nextType)
-		{
-			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO:
-			{
-				context.requireDeviceFunctionality("VK_EXT_sampler_filter_minmax");
+	if (reductionModeInfo != NULL)
+		context.requireDeviceFunctionality("VK_EXT_sampler_filter_minmax");
 
-				if (!isMinMaxFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
-					throw tcu::NotSupportedError(std::string("Unsupported format for min/max filtering: ") + getFormatName(params.imageFormat));
+	if (ycbcrInfo != NULL)
+		context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion");
 
-				pNext = reinterpret_cast<const VkSamplerReductionModeCreateInfo*>(pNext)->pNext;
-				break;
-			}
-			case VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO:
-				context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion");
-
-				pNext = reinterpret_cast<const VkSamplerYcbcrConversionInfo*>(pNext)->pNext;
-				break;
-			case VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT:
-				pNext = reinterpret_cast<const VkSamplerCustomBorderColorCreateInfoEXT*>(pNext)->pNext;
-
-				if (!context.getCustomBorderColorFeaturesEXT().customBorderColors)
-				{
-					throw tcu::NotSupportedError("customBorderColors feature is not supported");
-				}
-
-				break;
-			default:
-				TCU_FAIL("Unrecognized sType in chained sampler create info");
-		}
-	}
+	if (borderColorInfo != NULL)
+		if (!context.getCustomBorderColorFeaturesEXT().customBorderColors)
+			throw tcu::NotSupportedError("customBorderColors feature is not supported");
 
 	if (params.samplerParams.addressModeU == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ||
 		params.samplerParams.addressModeV == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ||

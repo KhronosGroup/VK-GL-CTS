@@ -89,7 +89,7 @@ PIPELINE graphics pipeline2
     COMPARE_OP greater
     CLAMP off
     BOUNDS min 0.0 max 1.0
-    BIAS constant 1.0 clamp 0.0 slope 0.0
+    BIAS constant 2.0 clamp 0.0 slope 0.0
   END
 END
 

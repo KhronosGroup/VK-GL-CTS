@@ -65,7 +65,7 @@ struct ExplicitModifier
 	VkSubresourceLayout*	pPlaneLayouts;
 };
 
-void checkModifiersSupported (Context& context, VkFormat)
+void checkModifiersSupported (Context& context, VkFormat format)
 {
 	if (!context.isDeviceFunctionalitySupported("VK_EXT_image_drm_format_modifier"))
 		TCU_THROW(NotSupportedError, "VK_EXT_image_drm_format_modifier is not supported");
@@ -78,6 +78,11 @@ void checkModifiersSupported (Context& context, VkFormat)
 
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_image_format_list"))
 		TCU_THROW(NotSupportedError, "VK_KHR_image_format_list not supported");
+
+#ifndef CTS_USES_VULKANSC
+	if (format == VK_FORMAT_A8_UNORM_KHR || format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+		context.requireDeviceFunctionality("VK_KHR_maintenance5");
+#endif // CTS_USES_VULKANSC
 }
 
 void checkModifiersList2Supported (Context& context, VkFormat fmt)
@@ -162,7 +167,10 @@ bool verifyHandleTypeForFormatModifier (const InstanceInterface&				vki,
 	if (vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
 		return false;
 
-	if ((externalImageProperties.externalMemoryProperties.compatibleHandleTypes & handleType) != handleType)
+
+	vk::VkExternalMemoryFeatureFlags required_bits = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT;
+	if ((externalImageProperties.externalMemoryProperties.compatibleHandleTypes & handleType) != handleType ||
+        !((externalImageProperties.externalMemoryProperties.externalMemoryFeatures & required_bits) == required_bits))
 		return false;
 
 	return true;
@@ -179,11 +187,11 @@ static deBool featuresCompatible(FlagsType modifierFeatures, VkFormatFeatureFlag
 }
 
 template <typename ModifierList, typename ModifierProps, VkStructureType modifierListSType>
-std::vector<deUint64> getExportImportCompatibleModifiers (Context& context, VkFormat format)
+std::vector<ModifierProps> getExportImportCompatibleModifiers (Context& context, VkFormat format)
 {
 	const auto&				vki					= context.getInstanceInterface();
 	const auto				drmFormatModifiers	= getDrmFormatModifiers<ModifierList, ModifierProps, modifierListSType>(vki, context.getPhysicalDevice(), format);
-	std::vector<deUint64>	compatibleModifiers;
+	std::vector<ModifierProps>	compatibleModifiers;
 
 	if (drmFormatModifiers.empty())
 		return compatibleModifiers;
@@ -211,7 +219,7 @@ std::vector<deUint64> getExportImportCompatibleModifiers (Context& context, VkFo
 		if (!supported)
 			continue;
 
-		compatibleModifiers.push_back(modifier);
+		compatibleModifiers.push_back(modifierProps);
 	}
 
 	return compatibleModifiers;
@@ -220,29 +228,6 @@ std::vector<deUint64> getExportImportCompatibleModifiers (Context& context, VkFo
 template <typename ModifierList, typename ModifierProps, VkStructureType modifierListSType>
 void checkExportImportExtensions (Context& context, VkFormat format)
 {
-	// tcuTexture.cpp getChannelSize, that is used by intThresholdCompare does not support the following formats.
-	// TODO: Add tcuTexture.cpp support for the following formats.
-	const VkFormat					skippedFormats[]				=
-	{
-		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-		VK_FORMAT_A2R10G10B10_SNORM_PACK32,
-		VK_FORMAT_A2R10G10B10_USCALED_PACK32,
-		VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
-		VK_FORMAT_A2R10G10B10_UINT_PACK32,
-		VK_FORMAT_A2R10G10B10_SINT_PACK32,
-		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-		VK_FORMAT_A2B10G10R10_SNORM_PACK32,
-		VK_FORMAT_A2B10G10R10_USCALED_PACK32,
-		VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
-		VK_FORMAT_A2B10G10R10_UINT_PACK32,
-		VK_FORMAT_A2B10G10R10_SINT_PACK32,
-		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
-	};
-
-	if (std::find(std::begin(skippedFormats), std::end(skippedFormats), format) != std::end(skippedFormats))
-		TCU_THROW(NotSupportedError, de::toString(format) + " can't be checked for correctness");
-
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_external_memory_fd"))
 		TCU_THROW(NotSupportedError, "VK_KHR_external_memory_fd not supported");
 
@@ -668,7 +653,8 @@ deUint32 chooseMemoryType(deUint32 bits)
 	return -1;
 }
 
-bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat format, deUint64 modifier)
+template <typename ModifierProps>
+bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat format, const ModifierProps& modifier)
 {
 	const InstanceInterface&						vki					= context.getInstanceInterface();
 	const DeviceInterface&							vkd					= context.getDeviceInterface();
@@ -679,13 +665,13 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 															 VK_IMAGE_TYPE_2D,
 															 (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
 															 VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
-															 modifier);
+															 modifier.drmFormatModifier);
 
 	if (!supported)
-		TCU_FAIL("Modifier " + de::toString(modifier) + " for format " + de::toString(format) + " expected to be compatible");
+		TCU_FAIL("Modifier " + de::toString(modifier.drmFormatModifier) + " for format " + de::toString(format) + " expected to be compatible");
 
 	std::vector<deUint64>					modifiers;
-	modifiers.push_back(modifier);
+	modifiers.push_back(modifier.drmFormatModifier);
 
 
 	const UVec2									imageSize		(64, 64);
@@ -837,11 +823,38 @@ bool exportImportMemoryExplicitModifiersCase (Context& context, const VkFormat f
 	TCU_CHECK(properties.drmFormatModifier == modifiers.front());
 	inputImageMemFd	= vkt::ExternalMemoryUtil::getMemoryFd(vkd, device, *dstMemory, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
 
-	Move<VkImage>				importedSrcImage		(createImageWithDrmFormatModifiers(vkd, device, VK_IMAGE_TYPE_2D,
+	ExplicitModifier explicitModifier =
+	{
+		modifier.drmFormatModifier,
+		modifier.drmFormatModifierPlaneCount,
+		DE_NULL,								// pPlaneLayouts
+	};
+	std::vector<VkSubresourceLayout>	planeLayouts;
+	for (uint32_t i = 0; i < modifier.drmFormatModifierPlaneCount; i++)
+	{
+		VkImageSubresource imageSubresource;
+		VkSubresourceLayout subresourceLayout;
+
+		deMemset(&imageSubresource, 0, sizeof(imageSubresource));
+
+		imageSubresource.aspectMask = VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT << i;
+
+		vkd.getImageSubresourceLayout(device, *dstImage, &imageSubresource, &subresourceLayout);
+
+		subresourceLayout.size = 0;
+		subresourceLayout.arrayPitch = 0;
+		subresourceLayout.depthPitch = 0;
+
+		planeLayouts.push_back(subresourceLayout);
+
+	}
+	explicitModifier.pPlaneLayouts = planeLayouts.data();
+
+	Move<VkImage>				importedSrcImage		(createImageWithDrmFormatExplicitModifier(vkd, device, VK_IMAGE_TYPE_2D,
 																																						 VK_IMAGE_USAGE_TRANSFER_DST_BIT |
 																																						 VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 																																						 VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
-																																						 {format}, UVec2(64, 64), modifiers));
+																																						 {format}, UVec2(64, 64), explicitModifier));
 
 	VkMemoryRequirements importedSrcImageMemoryReq = getImageMemoryRequirements(vkd, device, *importedSrcImage);
 
@@ -959,7 +972,7 @@ tcu::TestStatus exportImportMemoryExplicitModifiersCase (Context& context, const
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	de::MovePtr<tcu::TestCaseGroup>	drmFormatModifiersGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), "DRM format modifiers tests"));
+	de::MovePtr<tcu::TestCaseGroup>	drmFormatModifiersGroup	(new tcu::TestCaseGroup(testCtx, name.c_str()));
 	const VkFormat					formats[]				=
 	{
 		VK_FORMAT_R4G4_UNORM_PACK8,
@@ -970,6 +983,9 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
 		VK_FORMAT_B5G5R5A1_UNORM_PACK16,
 		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_USCALED,
@@ -977,6 +993,9 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 		VK_FORMAT_R8_UINT,
 		VK_FORMAT_R8_SINT,
 		VK_FORMAT_R8_SRGB,
+#ifndef CTS_USES_VULKANSC
+		VK_FORMAT_A8_UNORM_KHR,
+#endif // CTS_USES_VULKANSC
 		VK_FORMAT_R8G8_UNORM,
 		VK_FORMAT_R8G8_SNORM,
 		VK_FORMAT_R8G8_USCALED,
@@ -1090,13 +1109,17 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 	};
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "list_modifiers", "Check that listing supported modifiers is functional"));
-		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "list_modifiers_fmt_features2", "Check that listing supported modifiers is functional with VK_KHR_format_feature_flags2"));
+		// Check that listing supported modifiers is functional
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "list_modifiers"));
+		// Check that listing supported modifiers is functional with VK_KHR_format_feature_flags2
+		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "list_modifiers_fmt_features2"));
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
-			addFunctionCase(group.get(), getFormatCaseName(formats[formatNdx]), "Check that listing supported modifiers is functional", checkModifiersSupported, listModifiersCase<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>, formats[formatNdx]);
-			addFunctionCase(group2.get(), getFormatCaseName(formats[formatNdx]), "Check that listing supported modifiers is functional", checkModifiersList2Supported, listModifiersCase<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>, formats[formatNdx]);
+			// Check that listing supported modifiers is functional
+			addFunctionCase(group.get(), getFormatCaseName(formats[formatNdx]), checkModifiersSupported, listModifiersCase<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>, formats[formatNdx]);
+			// Check that listing supported modifiers is functional
+			addFunctionCase(group2.get(), getFormatCaseName(formats[formatNdx]), checkModifiersList2Supported, listModifiersCase<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>, formats[formatNdx]);
 		}
 
 		drmFormatModifiersGroup->addChild(group.release());
@@ -1104,13 +1127,15 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "create_list_modifiers", "Check that creating images with modifier list is functional"));
-		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "create_list_modifiers_fmt_features2", "Check that creating images with modifier list is functional with VK_KHR_format_feature_flags2"));
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "create_list_modifiers"));
+		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "create_list_modifiers_fmt_features2"));
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
-			addFunctionCase(group.get(), getFormatCaseName(formats[formatNdx]), "Check that creating images with modifier list is functional", checkModifiersSupported, createImageListModifiersCase<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>, formats[formatNdx]);
-			addFunctionCase(group2.get(), getFormatCaseName(formats[formatNdx]), "Check that creating images with modifier list is functional", checkModifiersList2Supported, createImageListModifiersCase<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>, formats[formatNdx]);
+			// Check that creating images with modifier list is functional
+			addFunctionCase(group.get(), getFormatCaseName(formats[formatNdx]), checkModifiersSupported, createImageListModifiersCase<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>, formats[formatNdx]);
+			// Check that creating images with modifier list is functional
+			addFunctionCase(group2.get(), getFormatCaseName(formats[formatNdx]), checkModifiersList2Supported, createImageListModifiersCase<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>, formats[formatNdx]);
 		}
 
 		drmFormatModifiersGroup->addChild(group.release());
@@ -1118,13 +1143,15 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "create_explicit_modifier", "Check that creating images with an explicit modifier is functional"));
-		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "create_explicit_modifier_fmt_features2", "Check that creating images with an explicit modifier is functional with VK_KHR_format_feature_flags2"));
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "create_explicit_modifier"));
+		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "create_explicit_modifier_fmt_features2"));
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
-			addFunctionCase(group.get(), getFormatCaseName(formats[formatNdx]), "Check that creating images with an explicit modifier is functional", checkModifiersSupported, createImageModifierExplicitCase<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>, formats[formatNdx]);
-			addFunctionCase(group2.get(), getFormatCaseName(formats[formatNdx]), "Check that creating images with an explicit modifier is functional", checkModifiersList2Supported, createImageModifierExplicitCase<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>, formats[formatNdx]);
+			// Check that creating images with an explicit modifier is functional
+			addFunctionCase(group.get(), getFormatCaseName(formats[formatNdx]), checkModifiersSupported, createImageModifierExplicitCase<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>, formats[formatNdx]);
+			// Check that creating images with an explicit modifier is functional
+			addFunctionCase(group2.get(), getFormatCaseName(formats[formatNdx]), checkModifiersList2Supported, createImageModifierExplicitCase<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>, formats[formatNdx]);
 		}
 
 		drmFormatModifiersGroup->addChild(group.release());
@@ -1132,13 +1159,15 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& n
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "export_import", "Test exporting/importing images with modifiers"));
-		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "export_import_fmt_features2", "Test exporting/importing images with modifiers with VK_KHR_format_feature_flags2"));
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "export_import"));
+		de::MovePtr<tcu::TestCaseGroup> group2(new tcu::TestCaseGroup(testCtx, "export_import_fmt_features2"));
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
-			addFunctionCase(group.get(), getFormatCaseName(formats[formatNdx]), "Test exporting/importing images with modifiers", checkExportImportExtensions<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>, exportImportMemoryExplicitModifiersCase<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>, formats[formatNdx]);
-			addFunctionCase(group2.get(), getFormatCaseName(formats[formatNdx]), "Test exporting/importing images with modifiers", checkExportImportExtensions<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>, exportImportMemoryExplicitModifiersCase<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>, formats[formatNdx]);
+			// Test exporting/importing images with modifiers
+			addFunctionCase(group.get(), getFormatCaseName(formats[formatNdx]), checkExportImportExtensions<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>, exportImportMemoryExplicitModifiersCase<VkDrmFormatModifierPropertiesListEXT, VkDrmFormatModifierPropertiesEXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT>, formats[formatNdx]);
+			// Test exporting/importing images with modifiers
+			addFunctionCase(group2.get(), getFormatCaseName(formats[formatNdx]), checkExportImportExtensions<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>, exportImportMemoryExplicitModifiersCase<VkDrmFormatModifierPropertiesList2EXT, VkDrmFormatModifierProperties2EXT, VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2_EXT>, formats[formatNdx]);
 		}
 
 		drmFormatModifiersGroup->addChild(group.release());

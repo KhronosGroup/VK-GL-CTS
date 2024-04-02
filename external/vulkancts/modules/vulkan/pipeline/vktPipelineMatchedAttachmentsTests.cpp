@@ -257,10 +257,10 @@ void addMatchedAttachmentsTestCasesWithFunctions (tcu::TestCaseGroup* group, Pip
 	if (!isConstructionTypeShaderObject(pipelineConstructionType))
 	{
 		const MatchedAttachmentsTestParams useCache = { pipelineConstructionType, true };
-		addFunctionCaseWithPrograms(group, "cache", "", checkSupport, initPrograms, testMatchedAttachments, useCache);
+		addFunctionCaseWithPrograms(group, "cache", checkSupport, initPrograms, testMatchedAttachments, useCache);
 
 		const MatchedAttachmentsTestParams noCache = { pipelineConstructionType, false };
-		addFunctionCaseWithPrograms(group, "no_cache", "", checkSupport, initPrograms, testMatchedAttachments, noCache);
+		addFunctionCaseWithPrograms(group, "no_cache", checkSupport, initPrograms, testMatchedAttachments, noCache);
 	}
 }
 
@@ -268,7 +268,7 @@ void addMatchedAttachmentsTestCasesWithFunctions (tcu::TestCaseGroup* group, Pip
 
 tcu::TestCaseGroup* createMatchedAttachmentsTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	return createTestGroup(testCtx, "matched_attachments", "Matched attachments tests", addMatchedAttachmentsTestCasesWithFunctions, pipelineConstructionType);
+	return createTestGroup(testCtx, "matched_attachments", addMatchedAttachmentsTestCasesWithFunctions, pipelineConstructionType);
 }
 
 } // pipeline

@@ -125,7 +125,7 @@ using ParamsPtr = std::unique_ptr<MiscTestParams>;
 class MeshShaderMiscCase : public vkt::TestCase
 {
 public:
-					MeshShaderMiscCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params);
+					MeshShaderMiscCase		(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params);
 	virtual			~MeshShaderMiscCase		(void) {}
 
 	void			checkSupport			(Context& context) const override;
@@ -135,8 +135,8 @@ protected:
 	std::unique_ptr<MiscTestParams> m_params;
 };
 
-MeshShaderMiscCase::MeshShaderMiscCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-	: vkt::TestCase	(testCtx, name, description)
+MeshShaderMiscCase::MeshShaderMiscCase (tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params.release())
 {}
 
@@ -396,8 +396,8 @@ tcu::TestStatus MeshShaderMiscInstance::iterate ()
 class ComplexTaskDataCase : public MeshShaderMiscCase
 {
 public:
-					ComplexTaskDataCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					ComplexTaskDataCase		(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -614,8 +614,8 @@ TestInstance* ComplexTaskDataCase::createInstance (Context& context) const
 class SinglePointCase : public MeshShaderMiscCase
 {
 public:
-					SinglePointCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					SinglePointCase		(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -681,8 +681,8 @@ void SinglePointInstance::generateReferenceLevel ()
 class SingleLineCase : public MeshShaderMiscCase
 {
 public:
-					SingleLineCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					SingleLineCase		(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -751,8 +751,8 @@ void SingleLineInstance::generateReferenceLevel ()
 class SingleTriangleCase : public MeshShaderMiscCase
 {
 public:
-					SingleTriangleCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					SingleTriangleCase		(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -825,8 +825,8 @@ void SingleTriangleInstance::generateReferenceLevel ()
 class MaxPointsCase : public MeshShaderMiscCase
 {
 public:
-					MaxPointsCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					MaxPointsCase		(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -920,8 +920,8 @@ void MaxPointsInstance::generateReferenceLevel ()
 class MaxLinesCase : public MeshShaderMiscCase
 {
 public:
-					MaxLinesCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					MaxLinesCase		(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -1015,8 +1015,8 @@ void MaxLinesInstance::generateReferenceLevel ()
 class MaxTrianglesCase : public MeshShaderMiscCase
 {
 public:
-					MaxTrianglesCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					MaxTrianglesCase		(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -1101,8 +1101,8 @@ void MaxTrianglesInstance::generateReferenceLevel ()
 class LargeWorkGroupCase : public MeshShaderMiscCase
 {
 public:
-					LargeWorkGroupCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					LargeWorkGroupCase	(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -1250,8 +1250,8 @@ struct NoPrimitivesParams : public MiscTestParams
 class NoPrimitivesCase : public MeshShaderMiscCase
 {
 public:
-					NoPrimitivesCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					NoPrimitivesCase	(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -1311,8 +1311,8 @@ void NoPrimitivesCase::initPrograms (vk::SourceCollections& programCollection) c
 class NoPrimitivesExtraWritesCase : public NoPrimitivesCase
 {
 public:
-					NoPrimitivesExtraWritesCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: NoPrimitivesCase (testCtx, name, description, std::move(params))
+					NoPrimitivesExtraWritesCase	(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: NoPrimitivesCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -1451,8 +1451,8 @@ void NoPrimitivesExtraWritesCase::initPrograms (vk::SourceCollections& programCo
 class SimpleBarrierCase : public MeshShaderMiscCase
 {
 public:
-					SimpleBarrierCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					SimpleBarrierCase	(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -1619,8 +1619,8 @@ struct MemoryBarrierParams : public MiscTestParams
 class MemoryBarrierCase : public MeshShaderMiscCase
 {
 public:
-					MemoryBarrierCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					MemoryBarrierCase	(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -1792,8 +1792,8 @@ void MemoryBarrierCase::initPrograms (vk::SourceCollections& programCollection) 
 class CustomAttributesCase : public MeshShaderMiscCase
 {
 public:
-					CustomAttributesCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase(testCtx, name, description, std::move(params)) {}
+					CustomAttributesCase		(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase(testCtx, name, std::move(params)) {}
 	virtual			~CustomAttributesCase		(void) {}
 
 	TestInstance*	createInstance				(Context& context) const override;
@@ -2328,8 +2328,8 @@ tcu::TestStatus CustomAttributesInstance::iterate ()
 class PushConstantCase : public MeshShaderMiscCase
 {
 public:
-					PushConstantCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					PushConstantCase	(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms			(vk::SourceCollections& programCollection) const override;
@@ -2618,8 +2618,8 @@ struct MaximizeThreadsParams : public MiscTestParams
 class MaximizePrimitivesCase : public MeshShaderMiscCase
 {
 public:
-					MaximizePrimitivesCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					MaximizePrimitivesCase	(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{
 						const auto mtParams = dynamic_cast<MaximizeThreadsParams*>(m_params.get());
 						DE_ASSERT(mtParams);
@@ -2720,8 +2720,8 @@ void MaximizePrimitivesInstance::generateReferenceLevel ()
 class MaximizeVerticesCase : public MeshShaderMiscCase
 {
 public:
-					MaximizeVerticesCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					MaximizeVerticesCase	(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{
 						const auto mtParams = dynamic_cast<MaximizeThreadsParams*>(m_params.get());
 						DE_ASSERT(mtParams);
@@ -2839,8 +2839,8 @@ void MaximizeVerticesInstance::generateReferenceLevel ()
 class MaximizeInvocationsCase : public MeshShaderMiscCase
 {
 public:
-					MaximizeInvocationsCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					MaximizeInvocationsCase	(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{
 						const auto mtParams = dynamic_cast<MaximizeThreadsParams*>(m_params.get());
 						DE_ASSERT(mtParams);
@@ -3171,8 +3171,8 @@ struct InterfaceVariableParams : public MiscTestParams
 class InterfaceVariablesCase : public MeshShaderMiscCase
 {
 public:
-					InterfaceVariablesCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase(testCtx, name, description, std::move(params))
+					InterfaceVariablesCase		(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase(testCtx, name, std::move(params))
 						{
 
 						}
@@ -4729,8 +4729,8 @@ tcu::TestStatus testMixedPipelines (Context& context)
 class CountReadCase : public MeshShaderMiscCase
 {
 public:
-					CountReadCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, ParamsPtr params)
-						: MeshShaderMiscCase (testCtx, name, description, std::move(params))
+					CountReadCase	(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params)
+						: MeshShaderMiscCase (testCtx, name, std::move(params))
 					{}
 
 	void			initPrograms	(vk::SourceCollections& programCollection) const override;
@@ -4835,7 +4835,7 @@ void CountReadCase::initPrograms (vk::SourceCollections& programCollection) cons
 
 tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 {
-	GroupPtr miscTests (new tcu::TestCaseGroup(testCtx, "misc", "Mesh Shader Misc Tests"));
+	GroupPtr miscTests (new tcu::TestCaseGroup(testCtx, "misc"));
 
 	{
 		ParamsPtr paramsPtr (new MiscTestParams(
@@ -4844,7 +4844,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*width*/		8u,
 			/*height*/		8u));
 
-		miscTests->addChild(new ComplexTaskDataCase(testCtx, "complex_task_data", "Pass a complex structure from the task to the mesh shader", std::move(paramsPtr)));
+		// Pass a complex structure from the task to the mesh shader
+		miscTests->addChild(new ComplexTaskDataCase(testCtx, "complex_task_data", std::move(paramsPtr)));
 	}
 
 	{
@@ -4854,7 +4855,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*width*/		5u,		// Use an odd value so there's a pixel in the exact center.
 			/*height*/		7u));	// Idem.
 
-		miscTests->addChild(new SinglePointCase(testCtx, "single_point", "Draw a single point", std::move(paramsPtr)));
+		// Draw a single point
+		miscTests->addChild(new SinglePointCase(testCtx, "single_point", std::move(paramsPtr)));
 	}
 
 	{
@@ -4864,7 +4866,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*width*/		8u,
 			/*height*/		5u));	// Use an odd value so there's a center line.
 
-		miscTests->addChild(new SingleLineCase(testCtx, "single_line", "Draw a single line", std::move(paramsPtr)));
+		// Draw a single line
+		miscTests->addChild(new SingleLineCase(testCtx, "single_line", std::move(paramsPtr)));
 	}
 
 	{
@@ -4874,7 +4877,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*width*/		5u,		// Use an odd value so there's a pixel in the exact center.
 			/*height*/		7u));	// Idem.
 
-		miscTests->addChild(new SingleTriangleCase(testCtx, "single_triangle", "Draw a single triangle", std::move(paramsPtr)));
+		// Draw a single triangle
+		miscTests->addChild(new SingleTriangleCase(testCtx, "single_triangle", std::move(paramsPtr)));
 	}
 
 	{
@@ -4884,7 +4888,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*width*/		16u,
 			/*height*/		16u));
 
-		miscTests->addChild(new MaxPointsCase(testCtx, "max_points", "Draw the maximum number of points", std::move(paramsPtr)));
+		// Draw the maximum number of points
+		miscTests->addChild(new MaxPointsCase(testCtx, "max_points", std::move(paramsPtr)));
 	}
 
 	{
@@ -4894,7 +4899,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*width*/		1u,
 			/*height*/		1020u));
 
-		miscTests->addChild(new MaxLinesCase(testCtx, "max_lines", "Draw the maximum number of lines", std::move(paramsPtr)));
+		// Draw the maximum number of lines
+		miscTests->addChild(new MaxLinesCase(testCtx, "max_lines", std::move(paramsPtr)));
 	}
 
 	{
@@ -4904,7 +4910,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*width*/		512u,
 			/*height*/		512u));
 
-		miscTests->addChild(new MaxTrianglesCase(testCtx, "max_triangles", "Draw the maximum number of triangles", std::move(paramsPtr)));
+		// Draw the maximum number of triangles
+		miscTests->addChild(new MaxTrianglesCase(testCtx, "max_triangles", std::move(paramsPtr)));
 	}
 
 	{
@@ -4914,7 +4921,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*width*/		1360u,
 			/*height*/		1542u));
 
-		miscTests->addChild(new LargeWorkGroupCase(testCtx, "many_task_work_groups", "Generate a large number of task work groups", std::move(paramsPtr)));
+		// Generate a large number of task work groups
+		miscTests->addChild(new LargeWorkGroupCase(testCtx, "many_task_work_groups", std::move(paramsPtr)));
 	}
 
 	{
@@ -4924,7 +4932,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*width*/		1360u,
 			/*height*/		1542u));
 
-		miscTests->addChild(new LargeWorkGroupCase(testCtx, "many_mesh_work_groups", "Generate a large number of mesh work groups", std::move(paramsPtr)));
+		// Generate a large number of mesh work groups
+		miscTests->addChild(new LargeWorkGroupCase(testCtx, "many_mesh_work_groups", std::move(paramsPtr)));
 	}
 
 	{
@@ -4934,7 +4943,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*width*/		4096u,
 			/*height*/		2048u));
 
-		miscTests->addChild(new LargeWorkGroupCase(testCtx, "many_task_mesh_work_groups", "Generate a large number of task and mesh work groups", std::move(paramsPtr)));
+		// Generate a large number of task and mesh work groups
+		miscTests->addChild(new LargeWorkGroupCase(testCtx, "many_task_mesh_work_groups", std::move(paramsPtr)));
 	}
 
 	{
@@ -4960,11 +4970,10 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 				ParamsPtr			paramsPtr	(params.release());
 				const auto			primName	= primitiveTypeName(primType);
 				const std::string	name		= "no_" + primName + (extraWrites ? "_extra_writes" : "");
-				const std::string	desc		= "Run a pipeline that generates no " + primName + (extraWrites ? " but generates primitive data" : "");
 
 				miscTests->addChild(extraWrites
-					? (new NoPrimitivesExtraWritesCase(testCtx, name, desc, std::move(paramsPtr)))
-					: (new NoPrimitivesCase(testCtx, name, desc, std::move(paramsPtr))));
+					? (new NoPrimitivesExtraWritesCase(testCtx, name, std::move(paramsPtr)))
+					: (new NoPrimitivesCase(testCtx, name, std::move(paramsPtr))));
 			}
 		}
 	}
@@ -4982,9 +4991,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 
 			const std::string shader	= (useTaskShader ? "task" : "mesh");
 			const std::string name		= "barrier_in_" + shader;
-			const std::string desc		= "Use a control barrier in the " + shader + " shader";
 
-			miscTests->addChild(new SimpleBarrierCase(testCtx, name, desc, std::move(paramsPtr)));
+			miscTests->addChild(new SimpleBarrierCase(testCtx, name, std::move(paramsPtr)));
 		}
 	}
 
@@ -5014,9 +5022,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 
 				const std::string shader	= (useTaskShader ? "task" : "mesh");
 				const std::string name		= barrierCase.caseName + "_in_" + shader;
-				const std::string desc		= "Use " + paramsPtr->glslFunc() + "() in the " + shader + " shader";
 
-				miscTests->addChild(new MemoryBarrierCase(testCtx, name, desc, std::move(paramsPtr)));
+				miscTests->addChild(new MemoryBarrierCase(testCtx, name, std::move(paramsPtr)));
 			}
 		}
 	}
@@ -5026,7 +5033,6 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 		{
 			const bool useTaskShader	= (i > 0);
 			const auto name				= std::string("custom_attributes") + (useTaskShader ? "_and_task_shader" : "");
-			const auto desc				= std::string("Use several custom vertex and primitive attributes") + (useTaskShader ? " and also a task shader" : "");
 
 			ParamsPtr paramsPtr (new MiscTestParams(
 				/*taskCount*/	(useTaskShader ? tcu::just(1u) : tcu::Nothing),
@@ -5034,7 +5040,7 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 				/*width*/		32u,
 				/*height*/		32u));
 
-			miscTests->addChild(new CustomAttributesCase(testCtx, name, desc, std::move(paramsPtr)));
+			miscTests->addChild(new CustomAttributesCase(testCtx, name, std::move(paramsPtr)));
 		}
 	}
 
@@ -5043,7 +5049,6 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 		{
 			const bool useTaskShader	= (i > 0);
 			const auto name				= std::string("push_constant") + (useTaskShader ? "_and_task_shader" : "");
-			const auto desc				= std::string("Use push constants in the mesh shader stage") + (useTaskShader ? " and also in the task shader stage" : "");
 
 			ParamsPtr paramsPtr (new MiscTestParams(
 				/*taskCount*/	(useTaskShader ? tcu::just(1u) : tcu::Nothing),
@@ -5051,7 +5056,7 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 				/*width*/		16u,
 				/*height*/		16u));
 
-			miscTests->addChild(new PushConstantCase(testCtx, name, desc, std::move(paramsPtr)));
+			miscTests->addChild(new PushConstantCase(testCtx, name, std::move(paramsPtr)));
 		}
 	}
 
@@ -5065,7 +5070,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*numVertices*/		128u,
 			/*numPrimitives*/	256u));
 
-		miscTests->addChild(new MaximizePrimitivesCase(testCtx, "maximize_primitives", "Use a large number of primitives compared to other sizes", std::move(paramsPtr)));
+		// Use a large number of primitives compared to other sizes
+		miscTests->addChild(new MaximizePrimitivesCase(testCtx, "maximize_primitives", std::move(paramsPtr)));
 	}
 
 	{
@@ -5078,7 +5084,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*numVertices*/		256u,
 			/*numPrimitives*/	128u));
 
-		miscTests->addChild(new MaximizeVerticesCase(testCtx, "maximize_vertices", "Use a large number of vertices compared to other sizes", std::move(paramsPtr)));
+		// Use a large number of vertices compared to other sizes
+		miscTests->addChild(new MaximizeVerticesCase(testCtx, "maximize_vertices", std::move(paramsPtr)));
 	}
 
 	{
@@ -5098,7 +5105,8 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 				/*numVertices*/		numPixels,
 				/*numPrimitives*/	numPixels));
 
-			miscTests->addChild(new MaximizeInvocationsCase(testCtx, "maximize_invocations_" + invsStr, "Use a large number of invocations compared to other sizes: " + invsStr, std::move(paramsPtr)));
+			// Use a large number of invocations compared to other sizes
+			miscTests->addChild(new MaximizeInvocationsCase(testCtx, "maximize_invocations_" + invsStr, std::move(paramsPtr)));
 		}
 	}
 
@@ -5110,18 +5118,21 @@ tcu::TestCaseGroup* createMeshShaderMiscTests (tcu::TestContext& testCtx)
 			/*width*/		32u,
 			/*height*/		128u));
 
-		miscTests->addChild(new CountReadCase(testCtx, "count_reads", "Attempt to read gl_TaskCountNV and gl_PrimitiveCountNV from multiple invocations", std::move(paramsPtr)));
+		// Attempt to read gl_TaskCountNV and gl_PrimitiveCountNV from multiple invocations
+		miscTests->addChild(new CountReadCase(testCtx, "count_reads", std::move(paramsPtr)));
 	}
 
 
-	addFunctionCaseWithPrograms(miscTests.get(), "mixed_pipelines", "Mix classic and mesh shader pipelines in the same render pass", checkMeshSupport, initMixedPipelinesPrograms, testMixedPipelines);
+	// Mix classic and mesh shader pipelines in the same render pass
+	addFunctionCaseWithPrograms(miscTests.get(), "mixed_pipelines", checkMeshSupport, initMixedPipelinesPrograms, testMixedPipelines);
 
 	return miscTests.release();
 }
 
 tcu::TestCaseGroup* createMeshShaderInOutTests (tcu::TestContext& testCtx)
 {
-	GroupPtr inOutTests (new tcu::TestCaseGroup(testCtx, "in_out", "Mesh Shader Tests checking Input/Output interfaces"));
+	// Mesh Shader Tests checking Input/Output interfaces
+	GroupPtr inOutTests (new tcu::TestCaseGroup(testCtx, "in_out"));
 
 	const struct
 	{
@@ -5149,7 +5160,7 @@ tcu::TestCaseGroup* createMeshShaderInOutTests (tcu::TestContext& testCtx)
 
 	for (const auto& reqs : requiredFeatures)
 	{
-		GroupPtr reqsGroup (new tcu::TestCaseGroup(testCtx, reqs.name, ""));
+		GroupPtr reqsGroup (new tcu::TestCaseGroup(testCtx, reqs.name));
 
 		// Generate the variable list according to the group requirements.
 		IfaceVarVecPtr varsPtr(new IfaceVarVec);
@@ -5193,7 +5204,7 @@ tcu::TestCaseGroup* createMeshShaderInOutTests (tcu::TestContext& testCtx)
 		for (uint32_t combIdx = 0; combIdx < kPermutations; ++combIdx)
 		{
 			const auto caseName = "permutation_" + std::to_string(combIdx);
-			GroupPtr rndGroup(new tcu::TestCaseGroup(testCtx, caseName.c_str(), ""));
+			GroupPtr rndGroup(new tcu::TestCaseGroup(testCtx, caseName.c_str()));
 
 			// Duplicate and shuffle vector.
 			IfaceVarVecPtr permutVec (new IfaceVarVec(*varsPtr));
@@ -5236,7 +5247,7 @@ tcu::TestCaseGroup* createMeshShaderInOutTests (tcu::TestContext& testCtx)
 					/*useFloat16*/	reqs.f16,
 					/*vars*/		std::move(paramsVec)));
 
-				rndGroup->addChild(new InterfaceVariablesCase(testCtx, name, "", std::move(paramsPtr)));
+				rndGroup->addChild(new InterfaceVariablesCase(testCtx, name, std::move(paramsPtr)));
 			}
 
 			reqsGroup->addChild(rndGroup.release());

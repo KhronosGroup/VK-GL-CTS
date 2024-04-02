@@ -44,6 +44,8 @@
 
 #include "vkDefs.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 namespace vkt
 {
@@ -447,10 +449,489 @@ void checkNothing (Context&)
 {
 }
 
+void initStaticStencilMaskZeroPrograms (vk::SourceCollections& dst, vk::PipelineConstructionType)
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "layout (location=0) in vec4 inPos;\n"
+		<< "layout (location=1) in vec4 inColor;\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = inPos;\n"
+		<< "    outColor = inColor;\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	// Fragment shader such that it will actually discard all fragments.
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) in vec4 inColor;\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    if (inColor == vec4(0.0, 0.0, 1.0, 1.0)) {\n"
+		<< "        discard;\n"
+		<< "    }\n"
+		<< "    outColor = inColor;\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+void checkStaticStencilMaskZeroSupport (vkt::Context& context, vk::PipelineConstructionType pipelineConstructionType)
+{
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	checkPipelineConstructionRequirements(vki, physicalDevice, pipelineConstructionType);
+}
+
+// Find a suitable format for the depth/stencil buffer.
+vk::VkFormat chooseDepthStencilFormat (const vk::InstanceInterface& vki, vk::VkPhysicalDevice physDev)
+{
+	// The spec mandates support for one of these two formats.
+	const vk::VkFormat candidates[] = { vk::VK_FORMAT_D32_SFLOAT_S8_UINT, vk::VK_FORMAT_D24_UNORM_S8_UINT };
+
+	for (const auto& format : candidates)
+	{
+		const auto properties = getPhysicalDeviceFormatProperties(vki, physDev, format);
+		if ((properties.optimalTilingFeatures & vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0u)
+			return format;
+	}
+
+	TCU_FAIL("No suitable depth/stencil format found");
+	return vk::VK_FORMAT_UNDEFINED; // Unreachable.
+}
+
+// On some implementations, when the static state is 0, the pipeline is created
+// such that it is unable to avoid writing to stencil when a pixel is discarded.
+tcu::TestStatus staticStencilMaskZeroProgramsTest (Context& context, vk::PipelineConstructionType pipelineConstructionType)
+{
+	const auto&			ctx			= context.getContextCommonData();
+	const tcu::IVec3	fbExtent	(1, 1, 1);
+	const auto			pixelCount	= fbExtent.x() * fbExtent.y() * fbExtent.z();
+	const auto			vkExtent	= vk::makeExtent3D(fbExtent);
+	const auto			fbFormat	= vk::VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat	= mapVkFormat(fbFormat);
+	const auto			fbUsage		= (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto			dsFormat	= chooseDepthStencilFormat(ctx.vki, ctx.physicalDevice);
+	const auto			depthFormat	= vk::getDepthCopyFormat(dsFormat);
+	const auto			stencilFmt	= vk::getStencilCopyFormat(dsFormat);
+	const auto			dsUsage		= (vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const tcu::Vec4		clearColor	(0.0f, 0.0f, 0.0f, 1.0f);
+	const float			clearDepth	= 1.0f;
+	const uint32_t		clearStenc	= 0u;
+	const tcu::Vec4		geomColor	(0.0f, 0.0f, 1.0f, 1.0f); // Must match frag shader discard color.
+	const tcu::Vec4		threshold	(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+	const auto			colorSRR	= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto			dsSRR		= vk::makeImageSubresourceRange((vk::VK_IMAGE_ASPECT_DEPTH_BIT | vk::VK_IMAGE_ASPECT_STENCIL_BIT), 0u, 1u, 0u, 1u);
+	const auto			colorSRL	= vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const auto			depthSRL	= vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u);
+	const auto			stencilSRL	= vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u);
+
+	// Color buffer with verification buffer.
+	vk::ImageWithBuffer colorBuffer (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		vkExtent,
+		fbFormat,
+		fbUsage,
+		vk::VK_IMAGE_TYPE_2D);
+
+	// Depth/stencil buffer.
+	const vk::VkImageCreateInfo dsCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,									//	const void*				pNext;
+		0u,											//	VkImageCreateFlags		flags;
+		vk::VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		dsFormat,									//	VkFormat				format;
+		vkExtent,									//	VkExtent3D				extent;
+		1u,											//	uint32_t				mipLevels;
+		1u,											//	uint32_t				arrayLayers;
+		vk::VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		vk::VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		dsUsage,									//	VkImageUsageFlags		usage;
+		vk::VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,											//	uint32_t				queueFamilyIndexCount;
+		nullptr,									//	const uint32_t*			pQueueFamilyIndices;
+		vk::VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	vk::ImageWithMemory dsBuffer (ctx.vkd, ctx.device, ctx.allocator, dsCreateInfo, vk::MemoryRequirement::Any);
+	const auto dsImageView = vk::makeImageView(ctx.vkd, ctx.device, dsBuffer.get(), vk::VK_IMAGE_VIEW_TYPE_2D, dsFormat, dsSRR);
+
+	// Verification buffers for depth and stencil.
+	const auto depthVerifBufferSize = static_cast<vk::VkDeviceSize>(tcu::getPixelSize(depthFormat) * pixelCount);
+	const auto depthVerifBufferInfo = vk::makeBufferCreateInfo(depthVerifBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	vk::BufferWithMemory depthVerifBuffer (ctx.vkd, ctx.device, ctx.allocator, depthVerifBufferInfo, vk::MemoryRequirement::HostVisible);
+
+	const auto stencilVerifBufferSize = static_cast<vk::VkDeviceSize>(tcu::getPixelSize(stencilFmt) * pixelCount);
+	const auto stencilVerifBufferInfo = vk::makeBufferCreateInfo(stencilVerifBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	vk::BufferWithMemory stencilVerifBuffer (ctx.vkd, ctx.device, ctx.allocator, stencilVerifBufferInfo, vk::MemoryRequirement::HostVisible);
+
+	// Vertices.
+	const std::vector<PositionColorVertex> vertices
+	{
+		PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), geomColor),
+		PositionColorVertex(tcu::Vec4(-1.0f,  3.0f, 0.0f, 1.0f), geomColor),
+		PositionColorVertex(tcu::Vec4( 3.0f, -1.0f, 0.0f, 1.0f), geomColor),
+	};
+
+	// Vertex buffer
+	const auto				vbSize			= static_cast<vk::VkDeviceSize>(de::dataSize(vertices));
+	const auto				vbInfo			= vk::makeBufferCreateInfo(vbSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	vk::BufferWithMemory	vertexBuffer	(ctx.vkd, ctx.device, ctx.allocator, vbInfo, vk::MemoryRequirement::HostVisible);
+	const auto				vbAlloc			= vertexBuffer.getAllocation();
+	void*					vbData			= vbAlloc.getHostPtr();
+	const auto				vbOffset		= static_cast<vk::VkDeviceSize>(0);
+
+	deMemcpy(vbData, de::dataOrNull(vertices), de::dataSize(vertices));
+	flushAlloc(ctx.vkd, ctx.device, vbAlloc); // strictly speaking, not needed.
+
+	const std::vector<vk::VkImage> framebufferImages
+	{
+		colorBuffer.getImage(),
+		dsBuffer.get(),
+	};
+
+	const std::vector<vk::VkImageView> framebufferViews
+	{
+		colorBuffer.getImageView(),
+		dsImageView.get(),
+	};
+
+	const auto	pipelineLayout	= vk::PipelineLayoutWrapper(pipelineConstructionType, ctx.vkd, ctx.device);
+	auto		renderPass		= vk::RenderPassWrapper(pipelineConstructionType, ctx.vkd, ctx.device, fbFormat, dsFormat);
+
+	DE_ASSERT(framebufferImages.size() == framebufferViews.size());
+	renderPass.createFramebuffer(ctx.vkd, ctx.device, de::sizeU32(framebufferViews), de::dataOrNull(framebufferImages), de::dataOrNull(framebufferViews), vkExtent.width, vkExtent.height);
+
+	// Modules.
+	const auto&	binaries		= context.getBinaryCollection();
+	const auto	vertModule		= vk::ShaderWrapper(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragModule		= vk::ShaderWrapper(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<vk::VkViewport>	viewports	(1u, makeViewport(vkExtent));
+	const std::vector<vk::VkRect2D>		scissors	(1u, makeRect2D(vkExtent));
+
+	const auto stencilStaticWriteMask	= 0u; // This is key for this test and what was causing issues in some implementations.
+	const auto stencilDynamicWriteMask	= 0xFFu;
+
+	const std::vector<vk::VkDynamicState> dynamicStates { vk::VK_DYNAMIC_STATE_STENCIL_WRITE_MASK };
+
+	// The stencil op state is such that it will overwrite the stencil value for all non-discarded fragments.
+	// However, the fragment shader should discard all fragments.
+	const auto stencilOpState = vk::makeStencilOpState(vk::VK_STENCIL_OP_REPLACE,
+													   vk::VK_STENCIL_OP_REPLACE,
+													   vk::VK_STENCIL_OP_REPLACE,
+													   vk::VK_COMPARE_OP_ALWAYS,
+													   0xFFu,
+													   stencilStaticWriteMask,
+													   0xFFu);
+
+	const auto vtxBindingDesc = vk::makeVertexInputBindingDescription(
+		0u, static_cast<uint32_t>(sizeof(PositionColorVertex)), vk::VK_VERTEX_INPUT_RATE_VERTEX);
+
+	const std::vector<vk::VkVertexInputAttributeDescription> vtxAttributes
+	{
+		vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, static_cast<uint32_t>(offsetof(PositionColorVertex, position))),
+		vk::makeVertexInputAttributeDescription(1u, 0u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, static_cast<uint32_t>(offsetof(PositionColorVertex, color))),
+	};
+
+	const vk::VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	VkStructureType								sType;
+		nullptr,														//	const void*									pNext;
+		0u,																//	VkPipelineVertexInputStateCreateFlags		flags;
+		1u,																//	uint32_t									vertexBindingDescriptionCount;
+		&vtxBindingDesc,												//	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+		de::sizeU32(vtxAttributes),										//	uint32_t									vertexAttributeDescriptionCount;
+		de::dataOrNull(vtxAttributes),									//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	const vk::VkPipelineDepthStencilStateCreateInfo depthStencilState =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,														//	const void*								pNext;
+		0u,																//	VkPipelineDepthStencilStateCreateFlags	flags;
+		VK_FALSE,														//	VkBool32								depthTestEnable;
+		VK_TRUE,														//	VkBool32								depthWriteEnable;
+		vk::VK_COMPARE_OP_LESS,											//	VkCompareOp								depthCompareOp;
+		VK_FALSE,														//	VkBool32								depthBoundsTestEnable;
+		VK_TRUE,														//	VkBool32								stencilTestEnable;
+		stencilOpState,													//	VkStencilOpState						front;
+		stencilOpState,													//	VkStencilOpState						back;
+		0.0f,															//	float									minDepthBounds;
+		1.0f,															//	float									maxDepthBounds;
+	};
+
+	const vk::VkPipelineDynamicStateCreateInfo dynamicStateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,													//	const void*							pNext;
+		0u,															//	VkPipelineDynamicStateCreateFlags	flags;
+		de::sizeU32(dynamicStates),									//	uint32_t							dynamicStateCount;
+		de::dataOrNull(dynamicStates),								//	const VkDynamicState*				pDynamicStates;
+	};
+
+	vk::GraphicsPipelineWrapper pipeline (ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(), pipelineConstructionType);
+	pipeline
+		.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+		.setDefaultMultisampleState()
+		.setDefaultRasterizationState()
+		.setDefaultColorBlendState()
+		.setDynamicState(&dynamicStateInfo)
+		.setupVertexInputState(&vertexInputStateCreateInfo)
+		.setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertModule)
+		.setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule, &depthStencilState)
+		.setupFragmentOutputState(*renderPass)
+		.setMonolithicPipelineLayout(pipelineLayout)
+		.buildPipeline()
+		;
+
+	vk::CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	const std::vector<vk::VkClearValue> clearValues
+	{
+		vk::makeClearValueColor(clearColor),
+		vk::makeClearValueDepthStencil(clearDepth, clearStenc),
+	};
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), de::sizeU32(clearValues), de::dataOrNull(clearValues));
+	ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vbOffset);
+	pipeline.bind(cmdBuffer);
+	ctx.vkd.cmdSetStencilWriteMask(cmdBuffer, vk::VK_STENCIL_FACE_FRONT_AND_BACK, stencilDynamicWriteMask);	// Write every value.
+	ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+	renderPass.end(ctx.vkd, cmdBuffer);
+	{
+		// Insert barriers and copy images to the different verification buffers.
+		const std::vector<vk::VkImageMemoryBarrier> imageBarriers
+		{
+			// Color barrier.
+			vk::makeImageMemoryBarrier(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+									   vk::VK_ACCESS_TRANSFER_READ_BIT,
+									   vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+									   vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+									   colorBuffer.getImage(),
+									   colorSRR),
+			// Depth/stencil barrier.
+			vk::makeImageMemoryBarrier(vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+									   vk::VK_ACCESS_TRANSFER_READ_BIT,
+									   vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+									   vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+									   dsBuffer.get(),
+									   dsSRR),
+		};
+		const auto srcPipelineStages =
+			(	vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+			|	vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+			|	vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT		);
+
+		ctx.vkd.cmdPipelineBarrier(cmdBuffer,
+								   srcPipelineStages,
+								   vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+								   0u, 0u, nullptr, 0u, nullptr,
+								   de::sizeU32(imageBarriers), de::dataOrNull(imageBarriers));
+
+		const auto colorRegion = vk::makeBufferImageCopy(vkExtent, colorSRL);
+		ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.getImage(), vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+									 colorBuffer.getBuffer(), 1u, &colorRegion);
+
+		const auto depthRegion = vk::makeBufferImageCopy(vkExtent, depthSRL);
+		ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, dsBuffer.get(), vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+									 depthVerifBuffer.get(), 1u, &depthRegion);
+
+		const auto stencilRegion = vk::makeBufferImageCopy(vkExtent, stencilSRL);
+		ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, dsBuffer.get(), vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+									 stencilVerifBuffer.get(), 1u, &stencilRegion);
+	}
+	{
+		// Transfer to host sync barrier.
+		const auto transfer2Host = vk::makeMemoryBarrier(vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT);
+		ctx.vkd.cmdPipelineBarrier(cmdBuffer,
+								   vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+								   vk::VK_PIPELINE_STAGE_HOST_BIT,
+								   0u, 1u, &transfer2Host, 0u, nullptr, 0u, nullptr);
+	}
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	auto& log = context.getTestContext().getLog();
+
+	// Verify color output.
+	vk::invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+	tcu::PixelBufferAccess resColorAccess (tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+	tcu::TextureLevel	refColorLevel	(tcuFormat, fbExtent.x(), fbExtent.y());
+	auto				refColorAccess	= refColorLevel.getAccess();
+	tcu::clear(refColorAccess, clearColor);	// All fragments should have been discarded.
+
+	if (!tcu::floatThresholdCompare(log, "ColorResult", "", refColorAccess, resColorAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+	// Verify depth.
+	vk::invalidateAlloc(ctx.vkd, ctx.device, depthVerifBuffer.getAllocation());
+	tcu::PixelBufferAccess resDepthAccess (depthFormat, fbExtent, depthVerifBuffer.getAllocation().getHostPtr());
+
+	tcu::TextureLevel	refDepthLevel	(depthFormat, fbExtent.x(), fbExtent.y());
+	auto				refDepthAccess	= refDepthLevel.getAccess();
+	tcu::clearDepth(refDepthAccess, clearDepth);	// All fragments should have been discarded.
+
+	if (!tcu::dsThresholdCompare(log, "DepthResult", "", refDepthAccess, resDepthAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected depth in result buffer; check log for details");
+
+	// Verify stencil.
+	vk::invalidateAlloc(ctx.vkd, ctx.device, stencilVerifBuffer.getAllocation());
+	tcu::PixelBufferAccess resStencilAccess (stencilFmt, fbExtent, stencilVerifBuffer.getAllocation().getHostPtr());
+
+	tcu::TextureLevel	refStencilLevel		(stencilFmt, fbExtent.x(), fbExtent.y());
+	auto				refStencilAccess	= refStencilLevel.getAccess();
+	tcu::clearStencil(refStencilAccess, static_cast<int>(clearStenc));	// All fragments should have been discarded.
+
+	if (!tcu::dsThresholdCompare(log, "StencilResult", "", refStencilAccess, resStencilAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected stencil value in result buffer; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+void initDoubleBindPrograms (vk::SourceCollections& dst)
+{
+	std::ostringstream vert;
+	vert
+		<< "#version 460\n"
+		<< "const vec4 vertices[] = vec4[](\n"
+		<< "    vec4(-1.0, -1.0, 0.0, 1.0),\n"
+		<< "    vec4(-1.0,  3.0, 0.0, 1.0),\n"
+		<< "    vec4( 3.0, -1.0, 0.0, 1.0)\n"
+		<< ");\n"
+		<< "void main (void) {\n"
+		<< "    gl_Position = vertices[gl_VertexIndex % 3];\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+	std::ostringstream frag;
+	frag
+		<< "#version 460\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main (void) {\n"
+		<< "    outColor = vec4(0.0f, 0.0f, 1.0f, 1.0f);\n"
+		<< "}\n"
+		;
+	dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+// The test does:
+// - bind pipeline with some static state.
+// - set state command for that static state (to a bad value).
+// - bind the same pipeline again.
+// - draw.
+// - verify the good value has been used.
+// In this case, the bad state and value will be the scissor, but the pipeline will also have a dynamic viewport.
+tcu::TestStatus doubleBindTest (Context& context)
+{
+	const auto&			ctx			= context.getContextCommonData();
+	const tcu::IVec3	fbExtent	(2, 2, 1);
+	const auto			vkExtent	= vk::makeExtent3D(fbExtent);
+	const auto			fbFormat	= vk::VK_FORMAT_R8G8B8A8_UNORM;
+	const auto			tcuFormat	= mapVkFormat(fbFormat);
+	const auto			fbUsage		= (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const tcu::Vec4		clearColor	(0.0f, 0.0f, 0.0f, 1.0f);
+	const tcu::Vec4		geomColor	(0.0f, 0.0f, 1.0f, 1.0f); // Must match frag shader.
+	const tcu::Vec4		threshold	(0.0f, 0.0f, 0.0f, 0.0f); // When using 0 and 1 only, we expect exact results.
+	const auto			bindPoint	= vk::VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+	// Color buffer with verification buffer.
+	vk::ImageWithBuffer colorBuffer (
+		ctx.vkd,
+		ctx.device,
+		ctx.allocator,
+		vkExtent,
+		fbFormat,
+		fbUsage,
+		vk::VK_IMAGE_TYPE_2D);
+
+	const auto pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device);
+	const auto renderPass		= makeRenderPass(ctx.vkd, ctx.device, fbFormat);
+	const auto framebuffer		= makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), vkExtent.width, vkExtent.height);
+
+	// Modules.
+	const auto&	binaries		= context.getBinaryCollection();
+	const auto	vertModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+	const auto	fragModule		= createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+	const std::vector<vk::VkDynamicState> dynamicStates
+	{
+		vk::VK_DYNAMIC_STATE_VIEWPORT,
+	};
+
+	const vk::VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,													//	const void*							pNext;
+		0u,															//	VkPipelineDynamicStateCreateFlags	flags;
+		de::sizeU32(dynamicStates),									//	uint32_t							dynamicStateCount;
+		de::dataOrNull(dynamicStates),								//	const VkDynamicState*				pDynamicStates;
+	};
+
+	const auto goodViewport	= makeViewport(vkExtent);
+	const auto goodScissor	= vk::makeRect2D(vkExtent);
+	const auto badViewport	= vk::makeViewport(1u, 1u);	// Needs to be smaller than the framebuffer.
+	const auto badScissor	= vk::makeRect2D(1u, 1u);	// Needs to be smaller than the framebuffer.
+
+	const std::vector<vk::VkViewport>	staticViewports	(1u, badViewport);
+	const std::vector<vk::VkRect2D>		staticScissors	(1u, goodScissor);
+
+	const vk::VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = vk::initVulkanStructure();
+
+	const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout,
+		*vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule,
+		*renderPass, staticViewports, staticScissors,
+		vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputStateCreateInfo, nullptr, nullptr, nullptr, nullptr,
+		&dynamicStateCreateInfo);
+
+	vk::CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
+	const auto cmdBuffer = *cmd.cmdBuffer;
+
+	beginCommandBuffer(ctx.vkd, cmdBuffer);
+	beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, goodScissor, clearColor);
+	ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+	ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &badScissor); // This should not be taken into account.
+	ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+	ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 1u, &goodViewport); // The static one was bad too.
+	ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+	endRenderPass(ctx.vkd, cmdBuffer);
+	copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(),
+		fbExtent.swizzle(0, 1), vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+		vk::VK_IMAGE_ASPECT_COLOR_BIT, vk::VK_IMAGE_ASPECT_COLOR_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+	endCommandBuffer(ctx.vkd, cmdBuffer);
+	submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+	// Verify color output.
+	invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+	tcu::PixelBufferAccess resultAccess (tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+	tcu::TextureLevel	referenceLevel	(tcuFormat, fbExtent.x(), fbExtent.y());
+	auto				referenceAccess	= referenceLevel.getAccess();
+	tcu::clear(referenceAccess, geomColor);
+
+	auto& log = context.getTestContext().getLog();
+	if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
+		return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } //anonymous
 
+// General tests for dynamic states
 DynamicStateGeneralTests::DynamicStateGeneralTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType)
-	: TestCaseGroup					(testCtx, "general_state", "General tests for dynamic states")
+	: TestCaseGroup					(testCtx, "general_state")
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {
 	/* Left blank on purpose */
@@ -470,7 +951,6 @@ void DynamicStateGeneralTests::init (void)
 		const bool					isMesh				= (i > 0);
 		ShaderMap					shaderPaths			(basePaths);
 		std::string					nameSuffix;
-		std::string					descSuffix;
 		FunctionSupport0::Function	checkSupportFunc;
 
 		if (isMesh)
@@ -478,7 +958,6 @@ void DynamicStateGeneralTests::init (void)
 #ifndef CTS_USES_VULKANSC
 			shaderPaths[glu::SHADERTYPE_MESH] = "vulkan/dynamic_state/VertexFetch.mesh";
 			nameSuffix = "_mesh";
-			descSuffix = " using mesh shaders";
 			checkSupportFunc = checkMeshShaderSupport;
 #else
 			continue;
@@ -490,10 +969,21 @@ void DynamicStateGeneralTests::init (void)
 			checkSupportFunc = checkNothing;
 		}
 
-		addChild(new InstanceFactory<StateSwitchTestInstance, FunctionSupport0>(m_testCtx, "state_switch" + nameSuffix, "Perform multiple draws with different VP states (scissor test)" + descSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
-		addChild(new InstanceFactory<BindOrderTestInstance, FunctionSupport0>(m_testCtx, "bind_order" + nameSuffix, "Check if binding order is not important for pipeline configuration" + descSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
-		if (!isMesh)
-			addChild(new InstanceFactory<StatePersistenceTestInstance>(m_testCtx, "state_persistence" + nameSuffix, "Check if bound states are persistent across pipelines" + descSuffix, m_pipelineConstructionType, shaderPaths));
+		// Perform multiple draws with different VP states (scissor test)
+		addChild(new InstanceFactory<StateSwitchTestInstance, FunctionSupport0>(m_testCtx, "state_switch" + nameSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
+		// Check if binding order is not important for pipeline configuration
+		addChild(new InstanceFactory<BindOrderTestInstance, FunctionSupport0>(m_testCtx, "bind_order" + nameSuffix, m_pipelineConstructionType, shaderPaths, checkSupportFunc));
+		if (!isMesh) {
+			// Check if bound states are persistent across pipelines
+			addChild(new InstanceFactory<StatePersistenceTestInstance>(m_testCtx, "state_persistence" + nameSuffix, m_pipelineConstructionType, shaderPaths));
+		}
+	}
+
+	addFunctionCaseWithPrograms(this, "static_stencil_mask_zero", checkStaticStencilMaskZeroSupport, initStaticStencilMaskZeroPrograms, staticStencilMaskZeroProgramsTest, m_pipelineConstructionType);
+
+	if (!vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
+	{
+		addFunctionCaseWithPrograms(this, "double_static_bind", initDoubleBindPrograms, doubleBindTest);
 	}
 }
 

@@ -153,7 +153,7 @@ constexpr deUint32 kExpectedBufferValueRayTracing	= 3u;
 class BindPointTest : public vkt::TestCase
 {
 public:
-							BindPointTest		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+							BindPointTest		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params);
 	virtual					~BindPointTest		(void) {}
 
 	virtual void			checkSupport		(Context& context) const;
@@ -176,8 +176,8 @@ protected:
 	TestParams					m_params;
 };
 
-BindPointTest::BindPointTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
-	: vkt::TestCase	(testCtx, name, description)
+BindPointTest::BindPointTest (tcu::TestContext& testCtx, const std::string& name, const TestParams& params)
+	: vkt::TestCase	(testCtx, name)
 	, m_params		(params)
 {}
 
@@ -878,7 +878,7 @@ tcu::TestCaseGroup* createBindPointTests (tcu::TestContext& testCtx, PipelineCon
 	using GroupPtr		= de::MovePtr<tcu::TestCaseGroup>;
 	using BindPointPair	= tcu::Vector<VkPipelineBindPoint, kTestBindPoints>;
 
-	GroupPtr bindPointGroup(new tcu::TestCaseGroup(testCtx, "bind_point", "Tests checking bind points are independent and used properly"));
+	GroupPtr bindPointGroup(new tcu::TestCaseGroup(testCtx, "bind_point"));
 
 	// Bind point combinations to test.
 	const BindPointPair testPairs[] =
@@ -949,7 +949,7 @@ tcu::TestCaseGroup* createBindPointTests (tcu::TestContext& testCtx, PipelineCon
 		}
 
 		const std::string	pairName	= toString(testPair[0]) + "_" + toString(testPair[1]);
-		GroupPtr			pairGroup	(new tcu::TestCaseGroup(testCtx, pairName.c_str(), ""));
+		GroupPtr			pairGroup	(new tcu::TestCaseGroup(testCtx, pairName.c_str()));
 
 		// Combine two update types.
 		for (int firstUpdateTypeIdx = 0; firstUpdateTypeIdx < static_cast<int>(SetUpdateType::TYPE_COUNT); ++firstUpdateTypeIdx)
@@ -958,7 +958,7 @@ tcu::TestCaseGroup* createBindPointTests (tcu::TestContext& testCtx, PipelineCon
 			const auto			firstUpdateType		= static_cast<SetUpdateType>(firstUpdateTypeIdx);
 			const auto			secondUpdateType	= static_cast<SetUpdateType>(secondUpdateTypeIdx);
 			const std::string	updateGroupName		= toString(firstUpdateType) + "_" + toString(secondUpdateType);
-			GroupPtr			updateGroup			(new tcu::TestCaseGroup(testCtx, updateGroupName.c_str(), ""));
+			GroupPtr			updateGroup			(new tcu::TestCaseGroup(testCtx, updateGroupName.c_str()));
 
 			// Change update types of the relevant sets.
 			*updateTypePtrs[0] = firstUpdateType;
@@ -976,7 +976,7 @@ tcu::TestCaseGroup* createBindPointTests (tcu::TestContext& testCtx, PipelineCon
 			do
 			{
 				const auto	setupGroupName	= toString(params.setupSequence);
-				GroupPtr	setupGroup		(new tcu::TestCaseGroup(testCtx, setupGroupName.c_str(), ""));
+				GroupPtr	setupGroup		(new tcu::TestCaseGroup(testCtx, setupGroupName.c_str()));
 
 				// Reset dispatch sequence permutation.
 				params.dispatchSequence = dispatches;
@@ -986,7 +986,7 @@ tcu::TestCaseGroup* createBindPointTests (tcu::TestContext& testCtx, PipelineCon
 				do
 				{
 					const auto testName = toString(params.dispatchSequence);
-					setupGroup->addChild(new BindPointTest(testCtx, testName, "", params));
+					setupGroup->addChild(new BindPointTest(testCtx, testName, params));
 				} while (std::next_permutation(dsBegin, dsEnd));
 
 				updateGroup->addChild(setupGroup.release());
@@ -1005,4 +1005,3 @@ tcu::TestCaseGroup* createBindPointTests (tcu::TestContext& testCtx, PipelineCon
 
 } // pipeline
 } // vkt
-

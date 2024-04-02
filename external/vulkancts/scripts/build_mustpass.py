@@ -54,23 +54,23 @@ BUILD_CONFIG		= getBuildConfig(DEFAULT_BUILD_DIR, DEFAULT_TARGET, "Debug")
 # main
 
 VULKAN_MAIN_PKG	= Package(module = VULKAN_MODULE, configurations = [
-		  # Master
+		  # Main
 		  Configuration(name					= "default",
-						filters					= [include("master.txt"),
+						filters					= [include("main.txt"),
 												   exclude("test-issues.txt"),
 												   exclude("excluded-tests.txt"),
 												   exclude("android-tests.txt")],
-						listOfGroupsToSplit		= ["dEQP-VK", "dEQP-VK.pipeline"]),
+						listOfGroupsToSplit		= ["dEQP-VK", "dEQP-VK.pipeline", "dEQP-VK.image", "dEQP-VK.shader_object"]),
 		  Configuration(name					= "fraction-mandatory-tests",
 						filters					= [include("fraction-mandatory-tests.txt")]),
 	 ])
 
 VULKAN_SC_MAIN_PKG	= Package(module = VULKAN_SC_MODULE, configurations = [
-		  # Master
+		  # Main
 		  Configuration(name					= "default",
-						filters					= [include("master_sc.txt"),
+						filters					= [include("main_sc.txt"),
 												   exclude("android-tests-sc.txt")],
-						listOfGroupsToSplit		= ["dEQP-VKSC", "dEQP-VKSC.pipeline"]),
+						listOfGroupsToSplit		= ["dEQP-VKSC", "dEQP-VKSC.pipeline", "dEQP-VKSC.image", "dEQP-VKSC.shader_object"]),
 	])
 
 MUSTPASS_LISTS		= [

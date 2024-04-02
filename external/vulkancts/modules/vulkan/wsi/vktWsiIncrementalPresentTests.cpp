@@ -368,16 +368,18 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			DE_NULL,
-			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
-			vk::VK_ACCESS_TRANSFER_READ_BIT | vk::VK_ACCESS_TRANSFER_WRITE_BIT,
-			isFirst ? vk::VK_IMAGE_LAYOUT_UNDEFINED : vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			0u,
+			0u,
+			(isFirst ? vk::VK_IMAGE_LAYOUT_UNDEFINED : vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR),
 			vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			VK_QUEUE_FAMILY_IGNORED,
 			VK_QUEUE_FAMILY_IGNORED,
 			image,
 			subRange
 		};
-		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+		const vk::VkPipelineStageFlags srcStages = (vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT | vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+		const vk::VkPipelineStageFlags dstStages = vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		vkd.cmdPipelineBarrier(*commandBuffer, srcStages, dstStages, 0u, 0u, nullptr, 0u, nullptr, 1u, &barrier);
 	}
 
 	beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, vk::makeRect2D(imageWidth, imageHeight), tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
@@ -811,7 +813,7 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance (Context& context
 	, m_queueFamilyIndex		(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
 	, m_deviceExtensions		(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
 	, m_device					(createDeviceWithWsi(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, testConfig.useIncrementalPresent, context.getTestContext().getCommandLine().isValidationEnabled()))
-	, m_vkd						(m_vkp, m_instance, *m_device, context.getUsedApiVersion())
+	, m_vkd						(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
 	, m_commandPool				(createCommandPool(m_vkd, *m_device, m_queueFamilyIndex))
@@ -940,7 +942,7 @@ void IncrementalPresentTestInstance::render (void)
 	deUint32			imageIndex;
 
 	// Acquire next image
-	VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, (vk::VkFence)0, &imageIndex));
+	VK_CHECK_WSI(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, (vk::VkFence)0, &imageIndex));
 
 	// Create command buffer
 	{
@@ -1047,7 +1049,7 @@ tcu::TestStatus IncrementalPresentTestInstance::iterate (void)
 	}
 	catch (const vk::Error& error)
 	{
-		if (error.getError() == vk::VK_ERROR_OUT_OF_DATE_KHR)
+		if (error.getError() == vk::VK_ERROR_OUT_OF_DATE_KHR || error.getError() == vk::VK_SUBOPTIMAL_KHR)
 		{
 			m_swapchainConfigs = generateSwapchainConfigs(*m_surface, &m_queueFamilyIndex, m_testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, m_testConfig.presentMode, m_testConfig.transform, m_testConfig.alpha);
 
@@ -1063,7 +1065,7 @@ tcu::TestStatus IncrementalPresentTestInstance::iterate (void)
 			else
 			{
 				m_context.getTestContext().getLog() << TestLog::Message << "Frame " << m_frameNdx << ": Swapchain out of date." << TestLog::EndMessage;
-				m_resultCollector.fail("Received too many VK_ERROR_OUT_OF_DATE_KHR errors. Received " + de::toString(m_outOfDateCount) + ", max " + de::toString(m_maxOutOfDateCount));
+				m_resultCollector.fail("Received too many VK_ERROR_OUT_OF_DATE_KHR or VK_SUBOPTIMAL_KHR errors. Received " + de::toString(m_outOfDateCount) + ", max " + de::toString(m_maxOutOfDateCount));
 			}
 		}
 		else
@@ -1204,19 +1206,19 @@ void createIncrementalPresentTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type
 
 		{
 
-			de::MovePtr<tcu::TestCaseGroup>	scaleGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), scaling[scalingNdx].name, scaling[scalingNdx].name));
+			de::MovePtr<tcu::TestCaseGroup>	scaleGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), scaling[scalingNdx].name));
 
 			for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name, presentModes[presentModeNdx].name));
+				de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name));
 
 				for (size_t transformNdx = 0; transformNdx < DE_LENGTH_OF_ARRAY(transforms); transformNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup>	transformGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), transforms[transformNdx].name, transforms[transformNdx].name));
+					de::MovePtr<tcu::TestCaseGroup>	transformGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), transforms[transformNdx].name));
 
 					for (size_t alphaNdx = 0; alphaNdx < DE_LENGTH_OF_ARRAY(alphas); alphaNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup>	alphaGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), alphas[alphaNdx].name, alphas[alphaNdx].name));
+						de::MovePtr<tcu::TestCaseGroup>	alphaGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), alphas[alphaNdx].name));
 
 						for (size_t ref = 0; ref < 2; ref++)
 						{
@@ -1231,7 +1233,7 @@ void createIncrementalPresentTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type
 							config.transform				= transforms[transformNdx].transform;
 							config.alpha					= alphas[alphaNdx].alpha;
 
-							alphaGroup->addChild(new vkt::InstanceFactory1<IncrementalPresentTestInstance, TestConfig, Programs>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, name, Programs(), config));
+							alphaGroup->addChild(new vkt::InstanceFactory1<IncrementalPresentTestInstance, TestConfig, Programs>(testGroup->getTestContext(), name, Programs(), config));
 						}
 
 						transformGroup->addChild(alphaGroup.release());

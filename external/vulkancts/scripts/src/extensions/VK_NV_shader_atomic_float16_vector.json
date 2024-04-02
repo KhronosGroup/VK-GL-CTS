@@ -1,0 +1,9 @@
+{
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV":
+		[
+			{ "features": ["shaderFloat16VectorAtomics"],		"requirements": ["VK_NV_shader_atomic_float16_vector", "physicalDeviceShaderAtomicFloat16VectorFeaturesNV.shaderFloat16VectorAtomics"] }
+		]
+	}
+}

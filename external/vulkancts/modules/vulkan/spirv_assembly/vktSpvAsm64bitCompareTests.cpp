@@ -150,43 +150,43 @@ private:
 	const Implementation& m_impl;
 };
 
-#define GEN_INT_IMPL(INTTYPE, TYPECHAR, OPNAME, OPERATOR)															\
-	struct INTTYPE##OPNAME##IntImplClass : public IntCompareOperation<INTTYPE>::Implementation						\
+#define GEN_INT_IMPL(INTTYPE, PREFIX, TYPECHAR, OPNAME, OPERATOR)													\
+	struct PREFIX##OPNAME##IntImplClass : public IntCompareOperation<INTTYPE>::Implementation						\
 	{																												\
 		virtual std::string	typeChar	()								const	{ return #TYPECHAR;	}				\
 		virtual std::string	opName		()								const	{ return #OPNAME;	}				\
 		virtual bool		run			(INTTYPE left, INTTYPE right)	const	{ return left OPERATOR right; }		\
 	};																												\
-	INTTYPE##OPNAME##IntImplClass INTTYPE##OPNAME##IntImplInstance;
+	PREFIX##OPNAME##IntImplClass PREFIX##OPNAME##IntImplInstance;
 
-#define GEN_ALL_INT_TYPE_IMPL(INTTYPE, TYPECHAR)				\
-	GEN_INT_IMPL(INTTYPE, I,		Equal,				==	)	\
-	GEN_INT_IMPL(INTTYPE, I,		NotEqual,			!=	)	\
-	GEN_INT_IMPL(INTTYPE, TYPECHAR,	GreaterThan,		>	)	\
-	GEN_INT_IMPL(INTTYPE, TYPECHAR,	GreaterThanEqual,	>=	)	\
-	GEN_INT_IMPL(INTTYPE, TYPECHAR,	LessThan,			<	)	\
-	GEN_INT_IMPL(INTTYPE, TYPECHAR,	LessThanEqual,		<=	)
+#define GEN_ALL_INT_TYPE_IMPL(INTTYPE, PREFIX, TYPECHAR)				\
+	GEN_INT_IMPL(INTTYPE, PREFIX, I,		Equal,				==	)	\
+	GEN_INT_IMPL(INTTYPE, PREFIX, I,		NotEqual,			!=	)	\
+	GEN_INT_IMPL(INTTYPE, PREFIX, TYPECHAR,	GreaterThan,		>	)	\
+	GEN_INT_IMPL(INTTYPE, PREFIX, TYPECHAR,	GreaterThanEqual,	>=	)	\
+	GEN_INT_IMPL(INTTYPE, PREFIX, TYPECHAR,	LessThan,			<	)	\
+	GEN_INT_IMPL(INTTYPE, PREFIX, TYPECHAR,	LessThanEqual,		<=	)
 
-GEN_ALL_INT_TYPE_IMPL(deInt64,	S)
-GEN_ALL_INT_TYPE_IMPL(deUint64,	U)
+GEN_ALL_INT_TYPE_IMPL(deInt64,	int64, S)
+GEN_ALL_INT_TYPE_IMPL(deUint64,	uint64, U)
 
-#define GEN_INT_OP(INTTYPE, OPNAME)																			\
-	struct INTTYPE##OPNAME##OpClass: public IntCompareOperation<INTTYPE>									\
-	{																										\
-		INTTYPE##OPNAME##OpClass () : IntCompareOperation<INTTYPE>(INTTYPE##OPNAME##IntImplInstance) {}		\
-	};																										\
-	INTTYPE##OPNAME##OpClass INTTYPE##OPNAME##Op;
+#define GEN_INT_OP(INTTYPE, PREFIX, OPNAME)																\
+	struct PREFIX##OPNAME##OpClass: public IntCompareOperation<INTTYPE>									\
+	{																									\
+		PREFIX##OPNAME##OpClass () : IntCompareOperation<INTTYPE>(PREFIX##OPNAME##IntImplInstance) {}	\
+	};																									\
+	PREFIX##OPNAME##OpClass PREFIX##OPNAME##Op;
 
-#define GEN_ALL_INT_OPS(INTTYPE)				\
-	GEN_INT_OP(INTTYPE, Equal				)	\
-	GEN_INT_OP(INTTYPE, NotEqual			)	\
-	GEN_INT_OP(INTTYPE, GreaterThan			)	\
-	GEN_INT_OP(INTTYPE, GreaterThanEqual	)	\
-	GEN_INT_OP(INTTYPE, LessThan			)	\
-	GEN_INT_OP(INTTYPE, LessThanEqual		)
+#define GEN_ALL_INT_OPS(INTTYPE, PREFIX)				\
+	GEN_INT_OP(INTTYPE, PREFIX, Equal				)	\
+	GEN_INT_OP(INTTYPE, PREFIX, NotEqual			)	\
+	GEN_INT_OP(INTTYPE, PREFIX, GreaterThan			)	\
+	GEN_INT_OP(INTTYPE, PREFIX, GreaterThanEqual	)	\
+	GEN_INT_OP(INTTYPE, PREFIX, LessThan			)	\
+	GEN_INT_OP(INTTYPE, PREFIX, LessThanEqual		)
 
-GEN_ALL_INT_OPS(deInt64)
-GEN_ALL_INT_OPS(deUint64)
+GEN_ALL_INT_OPS(deInt64, int64)
+GEN_ALL_INT_OPS(deUint64, uint64)
 
 enum DataType {
 	DATA_TYPE_SINGLE = 0,
@@ -1631,7 +1631,7 @@ template <class T>
 class T64bitCompareTest : public TestCase
 {
 public:
-							T64bitCompareTest	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParameters<T>& params);
+							T64bitCompareTest	(tcu::TestContext& testCtx, const std::string& name, const TestParameters<T>& params);
 	virtual void			checkSupport		(Context& context) const;
 	virtual void			initPrograms		(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance		(Context& ctx) const;
@@ -1641,8 +1641,8 @@ private:
 };
 
 template <class T>
-T64bitCompareTest<T>::T64bitCompareTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParameters<T>& params)
-	: TestCase(testCtx, name, description), m_params(params)
+T64bitCompareTest<T>::T64bitCompareTest (tcu::TestContext& testCtx, const std::string& name, const TestParameters<T>& params)
+	: TestCase(testCtx, name), m_params(params)
 {
 	// This is needed so that the same operands can be used for single-element comparisons or for vectorized comparisons (which use *vec4 types).
 	DE_ASSERT(m_params.operands.size() % 4 == 0);
@@ -1790,7 +1790,7 @@ void createDoubleCompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName
 	{
 		TestParameters<double>	params		= { typeNamePair.first, *opPtr, stageNamePair.first, DOUBLE_OPERANDS, requireNanPair.first };
 		std::string				testName	= stageNamePair.second + "_" + de::toLower(opPtr->spirvName()) + "_" + requireNanPair.second + "_" + typeNamePair.second;
-		tests->addChild(new T64bitCompareTest<double>(tests->getTestContext(), testName, "", params));
+		tests->addChild(new T64bitCompareTest<double>(tests->getTestContext(), testName, params));
 	}
 }
 
@@ -1798,12 +1798,12 @@ void createInt64CompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName*
 {
 	static const std::vector<const CompareOperation<deInt64>*> operationList =
 	{
-		&deInt64EqualOp,
-		&deInt64NotEqualOp,
-		&deInt64LessThanOp,
-		&deInt64LessThanEqualOp,
-		&deInt64GreaterThanOp,
-		&deInt64GreaterThanEqualOp,
+		&int64EqualOp,
+		&int64NotEqualOp,
+		&int64LessThanOp,
+		&int64LessThanEqualOp,
+		&int64GreaterThanOp,
+		&int64GreaterThanEqualOp,
 	};
 
 	for (const auto&	stageNamePair	: *stageNames)
@@ -1812,7 +1812,7 @@ void createInt64CompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName*
 	{
 		TestParameters<deInt64>	params		= { typeNamePair.first, *opPtr, stageNamePair.first, INT64_OPERANDS, false };
 		std::string				testName	= stageNamePair.second + "_" + de::toLower(opPtr->spirvName()) + "_" + typeNamePair.second;
-		tests->addChild(new T64bitCompareTest<deInt64>(tests->getTestContext(), testName, "", params));
+		tests->addChild(new T64bitCompareTest<deInt64>(tests->getTestContext(), testName, params));
 	}
 }
 
@@ -1820,12 +1820,12 @@ void createUint64CompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName
 {
 	static const std::vector<const CompareOperation<deUint64>*> operationList =
 	{
-		&deUint64EqualOp,
-		&deUint64NotEqualOp,
-		&deUint64LessThanOp,
-		&deUint64LessThanEqualOp,
-		&deUint64GreaterThanOp,
-		&deUint64GreaterThanEqualOp,
+		&uint64EqualOp,
+		&uint64NotEqualOp,
+		&uint64LessThanOp,
+		&uint64LessThanEqualOp,
+		&uint64GreaterThanOp,
+		&uint64GreaterThanEqualOp,
 	};
 
 	for (const auto&	stageNamePair	: *stageNames)
@@ -1834,7 +1834,7 @@ void createUint64CompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName
 	{
 		TestParameters<deUint64>	params		= { typeNamePair.first, *opPtr, stageNamePair.first, UINT64_OPERANDS, false };
 		std::string					testName	= stageNamePair.second + "_" + de::toLower(opPtr->spirvName()) + "_" + typeNamePair.second;
-		tests->addChild(new T64bitCompareTest<deUint64>(tests->getTestContext(), testName, "", params));
+		tests->addChild(new T64bitCompareTest<deUint64>(tests->getTestContext(), testName, params));
 	}
 }
 
@@ -1849,19 +1849,12 @@ struct TestMgr
 	static std::string getGroupName ();
 
 	template <class T>
-	static std::string getGroupDesc ();
-
-	template <class T>
 	static CreationFunctionPtr getCreationFunction ();
 };
 
 template <> std::string TestMgr::getGroupName<double>()		{ return "double";	}
 template <> std::string TestMgr::getGroupName<deInt64>()	{ return "int64";	}
 template <> std::string TestMgr::getGroupName<deUint64>()	{ return "uint64";	}
-
-template <> std::string TestMgr::getGroupDesc<double>()		{ return "64-bit floating point tests";		}
-template <> std::string TestMgr::getGroupDesc<deInt64>()	{ return "64-bit signed integer tests";		}
-template <> std::string TestMgr::getGroupDesc<deUint64>()	{ return "64-bit unsigned integer tests";	}
 
 template <> TestMgr::CreationFunctionPtr TestMgr::getCreationFunction<double> ()	{ return createDoubleCompareTestsInGroup;	}
 template <> TestMgr::CreationFunctionPtr TestMgr::getCreationFunction<deInt64> ()	{ return createInt64CompareTestsInGroup;	}
@@ -1877,10 +1870,10 @@ tcu::TestCaseGroup* create64bitCompareGraphicsGroup (tcu::TestContext& testCtx)
 		std::make_pair(vk::VK_SHADER_STAGE_FRAGMENT_BIT,	"frag"),
 	};
 
-	tcu::TestCaseGroup* newGroup = new tcu::TestCaseGroup(testCtx, TestMgr::getParentGroupName(), TestMgr::getParentGroupDesc());
-	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<double>(),	TestMgr::getGroupDesc<double>(),	TestMgr::getCreationFunction<double>(),		&graphicStages));
-	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deInt64>(),	TestMgr::getGroupDesc<deInt64>(),	TestMgr::getCreationFunction<deInt64>(),	&graphicStages));
-	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deUint64>(),	TestMgr::getGroupDesc<deUint64>(),	TestMgr::getCreationFunction<deUint64>(),	&graphicStages));
+	tcu::TestCaseGroup* newGroup = new tcu::TestCaseGroup(testCtx, TestMgr::getParentGroupName());
+	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<double>(), TestMgr::getCreationFunction<double>(),		&graphicStages));
+	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deInt64>(), TestMgr::getCreationFunction<deInt64>(),	&graphicStages));
+	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deUint64>(), TestMgr::getCreationFunction<deUint64>(),	&graphicStages));
 	return newGroup;
 }
 
@@ -1891,10 +1884,10 @@ tcu::TestCaseGroup* create64bitCompareComputeGroup (tcu::TestContext& testCtx)
 		std::make_pair(vk::VK_SHADER_STAGE_COMPUTE_BIT,		"comp"),
 	};
 
-	tcu::TestCaseGroup* newGroup = new tcu::TestCaseGroup(testCtx, TestMgr::getParentGroupName(), TestMgr::getParentGroupDesc());
-	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<double>(),	TestMgr::getGroupDesc<double>(),	TestMgr::getCreationFunction<double>(),		&computeStages));
-	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deInt64>(),	TestMgr::getGroupDesc<deInt64>(),	TestMgr::getCreationFunction<deInt64>(),	&computeStages));
-	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deUint64>(),	TestMgr::getGroupDesc<deUint64>(),	TestMgr::getCreationFunction<deUint64>(),	&computeStages));
+	tcu::TestCaseGroup* newGroup = new tcu::TestCaseGroup(testCtx, TestMgr::getParentGroupName());
+	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<double>(),	TestMgr::getCreationFunction<double>(),		&computeStages));
+	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deInt64>(),TestMgr::getCreationFunction<deInt64>(),	&computeStages));
+	newGroup->addChild(createTestGroup(testCtx, TestMgr::getGroupName<deUint64>(),TestMgr::getCreationFunction<deUint64>(),	&computeStages));
 	return newGroup;
 }
 

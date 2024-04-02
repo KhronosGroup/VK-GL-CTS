@@ -140,9 +140,9 @@ tcu::TestStatus EmptyDescriptorUpdateCase (Context& context)
 
 tcu::TestCaseGroup* createEmptyDescriptorUpdateTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "empty_descriptor", "Update last descriptor in a set that includes an empty binding"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "empty_descriptor"));
 
-	addFunctionCase(group.get(), "uniform_buffer", "", EmptyDescriptorUpdateCase);
+	addFunctionCase(group.get(), "uniform_buffer", EmptyDescriptorUpdateCase);
 
 	return group.release();
 }
@@ -164,7 +164,7 @@ struct SamplerlessParams
 class SamplerlessDescriptorWriteTestCase : public vkt::TestCase
 {
 public:
-								SamplerlessDescriptorWriteTestCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const SamplerlessParams& params);
+								SamplerlessDescriptorWriteTestCase	(tcu::TestContext& testCtx, const std::string& name, const SamplerlessParams& params);
 	virtual						~SamplerlessDescriptorWriteTestCase	(void) {}
 
 	virtual void				initPrograms						(vk::SourceCollections& programCollection) const;
@@ -203,8 +203,8 @@ const vk::VkExtent3D	SamplerlessDescriptorWriteTestInstance::kFramebufferExtent	
 const vk::VkExtent3D	SamplerlessDescriptorWriteTestInstance::kMinimumExtent		= vk::makeExtent3D(1u, 1u, 1u);
 const tcu::Vec4			SamplerlessDescriptorWriteTestInstance::kDescriptorColor	{0.0f, 1.0f, 0.0f, 1.0f};
 
-SamplerlessDescriptorWriteTestCase::SamplerlessDescriptorWriteTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const SamplerlessParams& params)
-	: vkt::TestCase{testCtx, name, description}
+SamplerlessDescriptorWriteTestCase::SamplerlessDescriptorWriteTestCase (tcu::TestContext& testCtx, const std::string& name, const SamplerlessParams& params)
+	: vkt::TestCase{testCtx, name}
 	, m_params(params)
 {
 }
@@ -342,7 +342,7 @@ vk::VkSampler SamplerlessDescriptorWriteTestInstance::getSamplerHandle (void) co
 {
 	if (m_params.pointer == PointerCase::ZERO)	return vk::VkSampler{DE_NULL};
 	if (m_params.pointer == PointerCase::ONE)	return vk::VkSampler{1};
-	static const DestroyedSampler destroyedSampler{m_context};
+	DestroyedSampler destroyedSampler{m_context};
 	return destroyedSampler.sampler;
 }
 
@@ -686,7 +686,7 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate (void)
 
 tcu::TestCaseGroup* createSamplerlessWriteTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "samplerless", "Verify sampler unused with some descriptor image types"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "samplerless"));
 
 	const std::vector<std::pair<vk::VkDescriptorType, std::string>> descriptorTypes =
 	{
@@ -713,7 +713,7 @@ tcu::TestCaseGroup* createSamplerlessWriteTests (tcu::TestContext& testCtx)
 			caseName += "_set_" + std::to_string(descriptorSet);
 		}
 
-		group->addChild(new SamplerlessDescriptorWriteTestCase(testCtx, caseName, "", params));
+		group->addChild(new SamplerlessDescriptorWriteTestCase(testCtx, caseName, params));
 	}
 
 	return group.release();
@@ -722,7 +722,7 @@ tcu::TestCaseGroup* createSamplerlessWriteTests (tcu::TestContext& testCtx)
 class RandomDescriptorUpdateTestCase : public vkt::TestCase
 {
 public:
-	RandomDescriptorUpdateTestCase				(tcu::TestContext& testCtx, const std::string& name, const std::string& description);
+	RandomDescriptorUpdateTestCase				(tcu::TestContext& testCtx, const std::string& name);
 	virtual	~RandomDescriptorUpdateTestCase		(void) {}
 
 	virtual void				initPrograms	(vk::SourceCollections& programCollection) const;
@@ -755,8 +755,8 @@ const deUint32			RandomDescriptorUpdateTestInstance::kNumBuffers			= 3u;
 const deUint32			RandomDescriptorUpdateTestInstance::kNumOffsets			= 5u;
 const deUint32			RandomDescriptorUpdateTestInstance::kNumIterations		= 1000u;
 
-RandomDescriptorUpdateTestCase::RandomDescriptorUpdateTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description)
-: vkt::TestCase(testCtx, name, description)
+RandomDescriptorUpdateTestCase::RandomDescriptorUpdateTestCase (tcu::TestContext& testCtx, const std::string& name)
+: vkt::TestCase(testCtx, name)
 {
 }
 
@@ -1294,9 +1294,10 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 
 tcu::TestCaseGroup* createRandomDescriptorUpdateTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "random", "Update descriptors randomly between draws"));
+	// Update descriptors randomly between draws
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "random"));
 
-	group->addChild(new RandomDescriptorUpdateTestCase(testCtx, "uniform_buffer", ""));
+	group->addChild(new RandomDescriptorUpdateTestCase(testCtx, "uniform_buffer"));
 	return group.release();
 }
 
@@ -1304,7 +1305,7 @@ tcu::TestCaseGroup* createRandomDescriptorUpdateTests (tcu::TestContext& testCtx
 
 tcu::TestCaseGroup* createDescriptorUpdateTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "descriptor_update", "Update descriptor sets"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "descriptor_update"));
 
 	group->addChild(createEmptyDescriptorUpdateTests(testCtx));
 	group->addChild(createSamplerlessWriteTests(testCtx));

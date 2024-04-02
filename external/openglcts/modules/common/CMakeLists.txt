@@ -31,6 +31,8 @@ set(GLCTS_COMMON_SRCS
 	glcExposedExtensionsTests.hpp
 	glcFragDepthTests.cpp
 	glcFragDepthTests.hpp
+	glcFramebufferBlitTests.cpp
+	glcFramebufferBlitTests.hpp
 	glcInfoTests.cpp
 	glcInfoTests.hpp
 	glcInternalformatTests.cpp
@@ -99,8 +101,12 @@ set(GLCTS_COMMON_SRCS
 	glcTestPackage.hpp
 	glcTextureCompatibilityTests.cpp
 	glcTextureCompatibilityTests.hpp
+	glcTextureLodBiasTests.cpp
+	glcTextureLodBiasTests.hpp
 	glcTextureFilterAnisotropicTests.cpp
 	glcTextureFilterAnisotropicTests.hpp
+	glcTextureLodBasicTests.cpp
+	glcTextureLodBasicTests.hpp
 	glcTextureRepeatModeTests.cpp
 	glcTextureRepeatModeTests.hpp
 	glcUniformBlockCase.cpp

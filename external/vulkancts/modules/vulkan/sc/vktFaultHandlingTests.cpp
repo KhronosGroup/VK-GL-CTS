@@ -235,11 +235,13 @@ tcu::TestStatus testCreateDeviceWithFaultCallbackInfo (Context& context, FaultCa
 
 tcu::TestCaseGroup*	createFaultHandlingTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "fault_handling", "Tests verifying Vulkan SC fault handling"));
+	// Tests verifying Vulkan SC fault handling
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "fault_handling"));
 
 	// add tests for vkGetFaultData function
 	{
-		de::MovePtr<tcu::TestCaseGroup>	getFaultDataGroup(new tcu::TestCaseGroup(testCtx, "get_fault_data", "Testing vkGetFaultData results"));
+		// Testing vkGetFaultData results
+		de::MovePtr<tcu::TestCaseGroup>	getFaultDataGroup(new tcu::TestCaseGroup(testCtx, "get_fault_data"));
 
 		const struct
 		{
@@ -262,13 +264,13 @@ tcu::TestCaseGroup*	createFaultHandlingTests (tcu::TestContext& testCtx)
 
 		for (int behaviourIdx = 0; behaviourIdx < DE_LENGTH_OF_ARRAY(behaviours); ++behaviourIdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> behaviourGroup(new tcu::TestCaseGroup(testCtx, behaviours[behaviourIdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> behaviourGroup(new tcu::TestCaseGroup(testCtx, behaviours[behaviourIdx].name));
 
 			for (int faultIdx = 0; faultIdx < DE_LENGTH_OF_ARRAY(faults); ++faultIdx)
 			{
 				TestParams testParams{ behaviours[behaviourIdx].queryBehaviour, faults[faultIdx].faultValue };
 
-				addFunctionCase(behaviourGroup.get(), faults[faultIdx].name, "", testGetFaultData, testParams);
+				addFunctionCase(behaviourGroup.get(), faults[faultIdx].name, testGetFaultData, testParams);
 			}
 			getFaultDataGroup->addChild(behaviourGroup.release());
 		}
@@ -277,15 +279,15 @@ tcu::TestCaseGroup*	createFaultHandlingTests (tcu::TestContext& testCtx)
 
 	// add tests for VkFaultCallbackInfo
 	{
-		de::MovePtr<tcu::TestCaseGroup>	faultCallbackInfoGroup(new tcu::TestCaseGroup(testCtx, "fault_callback_info", "Testing vkGetFaultData results"));
+		de::MovePtr<tcu::TestCaseGroup>	faultCallbackInfoGroup(new tcu::TestCaseGroup(testCtx, "fault_callback_info"));
 
 		{
 			FaultCallbackInfoTestParams testParams { true };
-			addFunctionCase(faultCallbackInfoGroup.get(), "create_device_with_callback_with_fault_data", "", testCreateDeviceWithFaultCallbackInfo, testParams);
+			addFunctionCase(faultCallbackInfoGroup.get(), "create_device_with_callback_with_fault_data", testCreateDeviceWithFaultCallbackInfo, testParams);
 		}
 		{
 			FaultCallbackInfoTestParams testParams { false };
-			addFunctionCase(faultCallbackInfoGroup.get(), "create_device_with_callback_without_fault_data", "", testCreateDeviceWithFaultCallbackInfo, testParams);
+			addFunctionCase(faultCallbackInfoGroup.get(), "create_device_with_callback_without_fault_data", testCreateDeviceWithFaultCallbackInfo, testParams);
 		}
 		group->addChild(faultCallbackInfoGroup.release());
 	}

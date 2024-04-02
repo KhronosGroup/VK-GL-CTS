@@ -279,7 +279,7 @@ void setFragmentShadingRage (const DeviceInterface* vkd, VkCommandBuffer cmdBuff
 
 void setLineStipple (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
 {
-	vkd->cmdSetLineStippleEXT(cmdBuffer, 1u, 1u);
+	vkd->cmdSetLineStippleKHR(cmdBuffer, 1u, 1u);
 }
 
 void setCullMode (const DeviceInterface* vkd, VkCommandBuffer cmdBuffer, const DynamicStateData*)
@@ -541,7 +541,7 @@ const StateInfo& getDynamicStateInfo (VkDynamicState state)
 		{	VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR,	{	{ "VK_KHR_ray_tracing_pipeline" },		setRTPipelineStatckSize			}	},
 #endif // CTS_USES_VULKANSC
 		{	VK_DYNAMIC_STATE_FRAGMENT_SHADING_RATE_KHR,				{	{ "VK_KHR_fragment_shading_rate" },		setFragmentShadingRage			}	},
-		{	VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,						{	{ "VK_EXT_line_rasterization" },		setLineStipple					}	},
+		{	VK_DYNAMIC_STATE_LINE_STIPPLE_EXT,						{	{ "VK_KHR_or_EXT_line_rasterization" },	setLineStipple					}	},
 		{	VK_DYNAMIC_STATE_CULL_MODE_EXT,							{	{ "VK_EXT_extended_dynamic_state" },	setCullMode						}	},
 		{	VK_DYNAMIC_STATE_FRONT_FACE_EXT,						{	{ "VK_EXT_extended_dynamic_state" },	setFrontFace					}	},
 		{	VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT,				{	{ "VK_EXT_extended_dynamic_state" },	setPrimitiveTopology			}	},
@@ -670,7 +670,7 @@ public:
 		};
 
 		m_device	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki, physicalDevice, &deviceCreateInfo);
-		m_vkd		.reset(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion()));
+		m_vkd		.reset(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 		m_queue		= getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
 		m_allocator	.reset(new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
 	}
@@ -738,7 +738,7 @@ class DynamicStateComputeCase : public vkt::TestCase
 {
 public:
 
-							DynamicStateComputeCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params, PipelineConstructionType pipelineConstructionType);
+							DynamicStateComputeCase		(tcu::TestContext& testCtx, const std::string& name, const TestParams& params, PipelineConstructionType pipelineConstructionType);
 	virtual					~DynamicStateComputeCase	(void) {}
 
 	virtual void			checkSupport				(Context& context) const;
@@ -766,8 +766,8 @@ protected:
 	PipelineConstructionType	m_pipelineConstructionType;
 };
 
-DynamicStateComputeCase::DynamicStateComputeCase(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params, PipelineConstructionType pipelineConstructionType)
-	: vkt::TestCase					(testCtx, name, description)
+DynamicStateComputeCase::DynamicStateComputeCase(tcu::TestContext& testCtx, const std::string& name, const TestParams& params, PipelineConstructionType pipelineConstructionType)
+	: vkt::TestCase					(testCtx, name)
 	, m_params						(params)
 	, m_pipelineConstructionType	(pipelineConstructionType)
 {}
@@ -780,12 +780,21 @@ DynamicStateComputeInstance::DynamicStateComputeInstance (Context& context, cons
 
 void DynamicStateComputeCase::checkSupport (Context& context) const
 {
+	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), m_pipelineConstructionType);
+
 	// Check required functionalities.
 	for (const auto& state : m_params.states)
 	{
 		const auto stateInfo = getDynamicStateInfo(state);
-		for (const auto& functionality : stateInfo.requirements)
-			context.requireDeviceFunctionality(functionality);
+		for (const auto& functionality : stateInfo.requirements) {
+			if (functionality == "VK_KHR_or_EXT_line_rasterization") {
+				if (!context.isDeviceFunctionalitySupported("VK_KHR_line_rasterization") && !context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization")) {
+					TCU_THROW(NotSupportedError, "VK_KHR_line_rasterization and VK_EXT_line_rasterization are not supported");
+				}
+			} else {
+				context.requireDeviceFunctionality(functionality);
+			}
+		}
 	}
 }
 
@@ -1106,7 +1115,8 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, v
 {
 	using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-	GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "compute_transfer", "Dynamic state mixed with compute and transfer operations"));
+	// Dynamic state mixed with compute and transfer operations
+	GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "compute_transfer"));
 
 	const struct
 	{
@@ -1130,18 +1140,18 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, v
 
 	// Tests with a single dynamic state.
 	{
-		GroupPtr singleStateGroup(new tcu::TestCaseGroup(testCtx, "single", "Tests using a single dynamic state"));
+		GroupPtr singleStateGroup(new tcu::TestCaseGroup(testCtx, "single"));
 
 		for (int operIdx = 0; operIdx < DE_LENGTH_OF_ARRAY(operations); ++operIdx)
 		{
-			GroupPtr operationGroup(new tcu::TestCaseGroup(testCtx, operations[operIdx].name, ""));
+			GroupPtr operationGroup(new tcu::TestCaseGroup(testCtx, operations[operIdx].name));
 
 			for (int stateIdx = 0; stateIdx < DE_LENGTH_OF_ARRAY(dynamicStateList); ++stateIdx)
 			{
 				const auto	state		= dynamicStateList[stateIdx];
 				const auto	stateName	= getDynamicStateBriefName(state);
 
-				GroupPtr stateGroup(new tcu::TestCaseGroup(testCtx, stateName.c_str(), ""));
+				GroupPtr stateGroup(new tcu::TestCaseGroup(testCtx, stateName.c_str()));
 
 				for (int momentIdx = 0; momentIdx < DE_LENGTH_OF_ARRAY(moments); ++momentIdx)
 				{
@@ -1152,7 +1162,7 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, v
 						std::vector<VkDynamicState>(1, state),	//	std::vector<VkDynamicState>	state;
 					};
 
-					stateGroup->addChild(new DynamicStateComputeCase(testCtx, moments[momentIdx].name, "", testParams, pipelineConstructionType));
+					stateGroup->addChild(new DynamicStateComputeCase(testCtx, moments[momentIdx].name, testParams, pipelineConstructionType));
 				}
 
 				operationGroup->addChild(stateGroup.release());
@@ -1166,11 +1176,11 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, v
 
 	// A few tests with several dynamic states.
 	{
-		GroupPtr multiStateGroup(new tcu::TestCaseGroup(testCtx, "multi", "Tests using multiple dynamic states"));
+		GroupPtr multiStateGroup(new tcu::TestCaseGroup(testCtx, "multi"));
 
 		for (int operIdx = 0; operIdx < DE_LENGTH_OF_ARRAY(operations); ++operIdx)
 		{
-			GroupPtr operationGroup(new tcu::TestCaseGroup(testCtx, operations[operIdx].name, ""));
+			GroupPtr operationGroup(new tcu::TestCaseGroup(testCtx, operations[operIdx].name));
 
 			for (int momentIdx = 0; momentIdx < DE_LENGTH_OF_ARRAY(moments); ++momentIdx)
 			{
@@ -1189,7 +1199,7 @@ tcu::TestCaseGroup* createDynamicStateComputeTests (tcu::TestContext& testCtx, v
 						break;
 				}
 
-				operationGroup->addChild(new DynamicStateComputeCase(testCtx, moments[momentIdx].name, "", testParams, pipelineConstructionType));
+				operationGroup->addChild(new DynamicStateComputeCase(testCtx, moments[momentIdx].name, testParams, pipelineConstructionType));
 			}
 
 			multiStateGroup->addChild(operationGroup.release());

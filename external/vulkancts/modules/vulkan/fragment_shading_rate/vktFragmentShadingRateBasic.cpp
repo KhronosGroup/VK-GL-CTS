@@ -121,6 +121,7 @@ struct CaseDef
 	bool dsClearOp;
 	uint32_t dsBaseMipLevel;
 	bool multiSubpasses;
+	bool maintenance6;
 
 	bool useAttachment () const
 	{
@@ -153,6 +154,9 @@ private:
 	deUint32			m_supportedFragmentShadingRateCount;
 	vector<VkPhysicalDeviceFragmentShadingRateKHR>	m_supportedFragmentShadingRates;
 	VkPhysicalDeviceFragmentShadingRatePropertiesKHR	m_shadingRateProperties;
+#ifndef CTS_USES_VULKANSC
+	VkPhysicalDeviceMaintenance6PropertiesKHR			m_maintenance6Properties;
+#endif
 
 protected:
 
@@ -270,6 +274,9 @@ FSRTestInstance::FSRTestInstance (Context& context, const CaseDef& data)
 	m_context.getInstanceInterface().getPhysicalDeviceFragmentShadingRatesKHR(m_context.getPhysicalDevice(), &m_supportedFragmentShadingRateCount, &m_supportedFragmentShadingRates[0]);
 
 	m_shadingRateProperties = m_context.getFragmentShadingRateProperties();
+#ifndef CTS_USES_VULKANSC
+	m_maintenance6Properties = m_context.getMaintenance6Properties();
+#endif
 }
 
 FSRTestInstance::~FSRTestInstance (void)
@@ -279,7 +286,7 @@ FSRTestInstance::~FSRTestInstance (void)
 class FSRTestCase : public TestCase
 {
 	public:
-								FSRTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+								FSRTestCase		(tcu::TestContext& context, const char* name, const CaseDef data);
 								~FSRTestCase	(void);
 	virtual	void				initPrograms	(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance	(Context& context) const;
@@ -289,8 +296,8 @@ private:
 	CaseDef						m_data;
 };
 
-FSRTestCase::FSRTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
-	: vkt::TestCase	(context, name, desc)
+FSRTestCase::FSRTestCase (tcu::TestContext& context, const char* name, const CaseDef data)
+	: vkt::TestCase	(context, name)
 	, m_data		(data)
 {
 }
@@ -446,6 +453,9 @@ void FSRTestCase::checkSupport(Context& context) const
 		if (context.getShaderEarlyAndLateFragmentTestsFeaturesAMD().shaderEarlyAndLateFragmentTests == VK_FALSE)
 			TCU_THROW(NotSupportedError, "shaderEarlyAndLateFragmentTests is not supported");
 	}
+
+	if (m_data.maintenance6)
+		context.requireDeviceFunctionality("VK_KHR_maintenance6");
 #endif
 }
 
@@ -582,7 +592,13 @@ void FSRTestCase::initPrograms (SourceCollections& programCollection) const
 
 		mss <<
 			"#version 450 core\n"
-			"#extension GL_EXT_mesh_shader : enable\n"
+			"#extension GL_EXT_mesh_shader : enable\n";
+
+		if (m_data.shaderWritesRate) {
+			mss << "#extension GL_EXT_fragment_shading_rate : enable\n";
+		}
+
+		mss <<
 			"layout(local_size_x=3) in;\n"
 			"layout(triangles) out;\n"
 			"layout(max_vertices=3, max_primitives=1) out;\n"
@@ -906,6 +922,15 @@ deInt32 FSRTestInstance::CombineMasks(deInt32 rateMask0, deInt32 rateMask1, VkFr
 
 deInt32 FSRTestInstance::Simulate(deInt32 rate0, deInt32 rate1, deInt32 rate2)
 {
+	bool	allowUnclampedInputs	= true;
+
+#ifndef CTS_USES_VULKANSC
+	if (m_data.maintenance6)
+	{
+		allowUnclampedInputs = !m_maintenance6Properties.fragmentShadingRateClampCombinerInputs;
+	}
+#endif
+
 	deInt32 &cachedRate = m_simulateCache[(rate2*m_simulateValueCount + rate1)*m_simulateValueCount + rate0];
 	if (cachedRate != ~0)
 		return cachedRate;
@@ -922,7 +947,7 @@ deInt32 FSRTestInstance::Simulate(deInt32 rate0, deInt32 rate1, deInt32 rate2)
 	const deInt32 extentMask2 = ShadingRateExtentToClampedMask(extent2) | (1 << rate2);
 
 	// Combine rate 0 and 1, get a mask of possible clamped rates
-	deInt32 intermedMask = CombineMasks(extentMask0, extentMask1, m_data.combinerOp[0], true /* allowUnclampedResult */);
+	deInt32 intermedMask = CombineMasks(extentMask0, extentMask1, m_data.combinerOp[0], allowUnclampedInputs /* allowUnclampedResult */);
 
 	// For each clamped rate, combine that with rate 2 and accumulate the possible clamped rates
 	for (int i = 0; i < 16; ++i)
@@ -3513,108 +3538,138 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 	{
 		deUint32				count;
 		const char*				name;
-		const char*				description;
 	} TestGroupCase;
 
 	typedef struct
 	{
 		VkExtent2D				count;
 		const char*				name;
-		const char*				description;
 	} TestGroupCase2D;
 
 	typedef struct
 	{
 		AttachmentUsage			usage;
 		const char*				name;
-		const char*				description;
 	} TestGroupUsageCase;
 
 	TestGroupCase groupCases[] =
 	{
-		{ 0,	"basic",					"basic tests"											},
-		{ 1,	"apisamplemask",			"use pSampleMask"										},
-		{ 2,	"samplemaskin",				"use gl_SampleMaskIn"									},
-		{ 3,	"conservativeunder",		"conservative underestimation"							},
-		{ 4,	"conservativeover",			"conservative overestimation"							},
-		{ 5,	"fragdepth",				"depth shader output"									},
-		{ 6,	"fragstencil",				"stencil shader output"									},
-		{ 7,	"multiviewport",			"multiple viewports and gl_ViewportIndex"				},
-		{ 8,	"colorlayered",				"multiple layer color, single layer shading rate"		},
-		{ 9,	"srlayered",				"multiple layer color, multiple layers shading rate"	},
-		{ 10,	"multiview",				"multiview"												},
-		{ 11,	"multiviewsrlayered",		"multiview and multilayer shading rate"					},
-		{ 12,	"multiviewcorrelation",		"multiview with correlation mask"						},
-		{ 13,	"interlock",				"fragment shader interlock"								},
-		{ 14,	"samplelocations",			"custom sample locations"								},
-		{ 15,	"sampleshadingenable",		"enable sample shading in createinfo"					},
-		{ 16,	"sampleshadinginput",		"enable sample shading by using gl_SampleID"			},
+		// basic tests
+		{ 0,	"basic"},
+		// use pSampleMask
+		{ 1,	"apisamplemask"},
+		// use gl_SampleMaskIn
+		{ 2,	"samplemaskin"},
+		// conservative underestimation
+		{ 3,	"conservativeunder"},
+		// conservative overestimation
+		{ 4,	"conservativeover"},
+		// depth shader output
+		{ 5,	"fragdepth"},
+		// stencil shader output
+		{ 6,	"fragstencil"},
+		// multiple viewports and gl_ViewportIndex
+		{ 7,	"multiviewport"},
+		// multiple layer color, single layer shading rate
+		{ 8,	"colorlayered"},
+		// multiple layer color, multiple layers shading rate
+		{ 9,	"srlayered"},
+		// multiview
+		{ 10,	"multiview"},
+		// multiview and multilayer shading rate
+		{ 11,	"multiviewsrlayered"},
+		// multiview with correlation mask
+		{ 12,	"multiviewcorrelation"},
+		// fragment shader interlock
+		{ 13,	"interlock"},
+		// custom sample locations
+		{ 14,	"samplelocations"},
+		// enable sample shading in createinfo
+		{ 15,	"sampleshadingenable"},
+		// enable sample shading by using gl_SampleID
+		{ 16,	"sampleshadinginput"},
 #ifndef CTS_USES_VULKANSC
-		{ 17,	"fragdepth_early_late",		"depth shader output"									},
-		{ 18,	"fragstencil_early_late",	"stencil shader output"									},
+		// depth shader output
+		{ 17,	"fragdepth_early_late"},
+		// stencil shader output
+		{ 18,	"fragstencil_early_late"},
 #endif
-		{ 19,	"fragdepth_clear",			"depth shader output with clear operation"				},
-		{ 20,	"fragstencil_clear",		"stencil shader output with clear operation"			},
-		{ 21,	"fragdepth_baselevel",		"depth shader output with base level > 0"				},
-		{ 22,	"fragstencil_baselevel",	"stencil shader output with base level > 0"				},
-		{ 23,	"multipass",				"multipass"												},
-		{ 24,	"multipass_fragdepth",		"multipass with depth attachment"						},
-		{ 25,	"multipass_fragstencil",	"multipass with stencil attachment"						},
+		{ 19,	"fragdepth_clear" },
+		{ 20,	"fragstencil_clear" },
+		{ 21,	"fragdepth_baselevel" },
+		{ 22,	"fragstencil_baselevel" },
+		{ 23,	"multipass" },
+		{ 24,	"multipass_fragdepth" },
+		{ 25,	"multipass_fragstencil" },
+#ifndef CTS_USES_VULKANSC
+		{ 26,	"maintenance6" },
+#endif
 	};
 
 	TestGroupCase dynCases[] =
 	{
-		{ 1,	"dynamic",	"uses dynamic shading rate state"	},
-		{ 0,	"static",	"uses static shading rate state"	},
+		// uses dynamic shading rate state
+		{ 1,	"dynamic"},
+		// uses static shading rate state
+		{ 0,	"static"},
 	};
 
 	TestGroupUsageCase attCases[] =
 	{
-		{ AttachmentUsage::NO_ATTACHMENT,						"noattachment",				"no shading rate attachment"					},
-		{ AttachmentUsage::WITH_ATTACHMENT,						"attachment",				"has shading rate attachment"					},
-		{ AttachmentUsage::NO_ATTACHMENT_PTR,					"noattachmentptr",			"no shading rate attachment pointer"			},
-		{ AttachmentUsage::WITH_ATTACHMENT_WITHOUT_IMAGEVIEW,	"attachment_noimageview",	"has shading rate attachment without imageview"	},
+		// no shading rate attachment
+		{ AttachmentUsage::NO_ATTACHMENT,						"noattachment"},
+		// has shading rate attachment
+		{ AttachmentUsage::WITH_ATTACHMENT,						"attachment"},
+		// no shading rate attachment pointer
+		{ AttachmentUsage::NO_ATTACHMENT_PTR,					"noattachmentptr"},
+		// has shading rate attachment without imageview
+		{ AttachmentUsage::WITH_ATTACHMENT_WITHOUT_IMAGEVIEW,	"attachment_noimageview"},
 	};
 
 	TestGroupCase shdCases[] =
 	{
-		{ 0,	"noshaderrate",	"shader doesn't write rate"	},
-		{ 1,	"shaderrate",	"shader writes rate"	},
+		// shader doesn't write rate
+		{ 0,	"noshaderrate"},
+		// shader writes rate
+		{ 1,	"shaderrate"},
 	};
 
 	TestGroupCase combCases[] =
 	{
-		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,	"keep",		"keep"	},
-		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR,	"replace",	"replace"	},
-		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MIN_KHR,		"min",		"min"	},
-		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_KHR,		"max",		"max"	},
-		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MUL_KHR,		"mul",		"mul"	},
+		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,	"keep"},
+		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR,	"replace"},
+		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MIN_KHR,		"min"},
+		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_KHR,		"max"},
+		{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_MUL_KHR,		"mul"},
 	};
 
 	TestGroupCase2D extentCases[] =
 	{
-		{ {1,   1},		"1x1",		"1x1"		},
-		{ {4,   4},		"4x4",		"4x4"		},
-		{ {33,  35},	"33x35",	"33x35"		},
-		{ {151, 431},	"151x431",	"151x431"	},
-		{ {256, 256},	"256x256",	"256x256"	},
+		{ {1,   1},		"1x1"},
+		{ {4,   4},		"4x4"},
+		{ {33,  35},	"33x35"},
+		{ {151, 431},	"151x431"},
+		{ {256, 256},	"256x256"},
 	};
 
 	TestGroupCase sampCases[] =
 	{
-		{ VK_SAMPLE_COUNT_1_BIT,	"samples1",		"1 raster sample"	},
-		{ VK_SAMPLE_COUNT_2_BIT,	"samples2",		"2 raster samples"	},
-		{ VK_SAMPLE_COUNT_4_BIT,	"samples4",		"4 raster samples"	},
-		{ VK_SAMPLE_COUNT_8_BIT,	"samples8",		"8 raster samples"	},
-		{ VK_SAMPLE_COUNT_16_BIT,	"samples16",	"16 raster samples"	},
+		{ VK_SAMPLE_COUNT_1_BIT,	"samples1"},
+		{ VK_SAMPLE_COUNT_2_BIT,	"samples2"},
+		{ VK_SAMPLE_COUNT_4_BIT,	"samples4"},
+		{ VK_SAMPLE_COUNT_8_BIT,	"samples8"},
+		{ VK_SAMPLE_COUNT_16_BIT,	"samples16"},
 	};
 
 	TestGroupCase shaderCases[] =
 	{
-		{ 0,	"vs",	"vertex shader only"			},
-		{ 1,	"gs",	"vertex and geometry shader"	},
+		// vertex shader only
+		{ 0,	"vs"},
+		// vertex and geometry shader
+		{ 1,	"gs"},
 #ifndef CTS_USES_VULKANSC
-		{ 2,	"ms",	"mesh shader"					},
+		// mesh shader
+		{ 2,	"ms"},
 #endif // CTS_USES_VULKANSC
 	};
 
@@ -3622,7 +3677,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 
 	for (int groupNdx = 0; groupNdx < DE_LENGTH_OF_ARRAY(groupCases); groupNdx++)
 	{
-		if (groupParams->useDynamicRendering && groupNdx == 12)
+		if (groupParams->useDynamicRendering && (groupNdx == 12 || groupNdx == 26))
 			continue;
 
 		if (groupParams->pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
@@ -3632,14 +3687,14 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 				continue;
 		}
 
-		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, groupCases[groupNdx].name, groupCases[groupNdx].description));
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, groupCases[groupNdx].name));
 		for (int dynNdx = 0; dynNdx < DE_LENGTH_OF_ARRAY(dynCases); dynNdx++)
 		{
 			// reduce number of tests for dynamic rendering cases where secondary command buffer is used
 			if (groupParams->useSecondaryCmdBuffer && (dynNdx != 0))
 				continue;
 
-			de::MovePtr<tcu::TestCaseGroup> dynGroup(new tcu::TestCaseGroup(testCtx, dynCases[dynNdx].name, dynCases[dynNdx].description));
+			de::MovePtr<tcu::TestCaseGroup> dynGroup(new tcu::TestCaseGroup(testCtx, dynCases[dynNdx].name));
 			for (int attNdx = 0; attNdx < DE_LENGTH_OF_ARRAY(attCases); attNdx++)
 			{
 				if (groupParams->useDynamicRendering && attCases[attNdx].usage == AttachmentUsage::NO_ATTACHMENT_PTR)
@@ -3649,16 +3704,16 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 				if (!groupParams->useDynamicRendering && attCases[attNdx].usage == AttachmentUsage::WITH_ATTACHMENT_WITHOUT_IMAGEVIEW)
 					continue;
 
-				de::MovePtr<tcu::TestCaseGroup> attGroup(new tcu::TestCaseGroup(testCtx, attCases[attNdx].name, attCases[attNdx].description));
+				de::MovePtr<tcu::TestCaseGroup> attGroup(new tcu::TestCaseGroup(testCtx, attCases[attNdx].name));
 				for (int shdNdx = 0; shdNdx < DE_LENGTH_OF_ARRAY(shdCases); shdNdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup> shdGroup(new tcu::TestCaseGroup(testCtx, shdCases[shdNdx].name, shdCases[shdNdx].description));
+					de::MovePtr<tcu::TestCaseGroup> shdGroup(new tcu::TestCaseGroup(testCtx, shdCases[shdNdx].name));
 					for (int cmb0Ndx = 0; cmb0Ndx < DE_LENGTH_OF_ARRAY(combCases); cmb0Ndx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup> cmb0Group(new tcu::TestCaseGroup(testCtx, combCases[cmb0Ndx].name, combCases[cmb0Ndx].description));
+						de::MovePtr<tcu::TestCaseGroup> cmb0Group(new tcu::TestCaseGroup(testCtx, combCases[cmb0Ndx].name));
 						for (int cmb1Ndx = 0; cmb1Ndx < DE_LENGTH_OF_ARRAY(combCases); cmb1Ndx++)
 						{
-							de::MovePtr<tcu::TestCaseGroup> cmb1Group(new tcu::TestCaseGroup(testCtx, combCases[cmb1Ndx].name, combCases[cmb1Ndx].description));
+							de::MovePtr<tcu::TestCaseGroup> cmb1Group(new tcu::TestCaseGroup(testCtx, combCases[cmb1Ndx].name));
 							for (int extNdx = 0; extNdx < DE_LENGTH_OF_ARRAY(extentCases); extNdx++)
 							{
 								// reduce number of cases repeat every other extent case for graphics pipeline library
@@ -3669,17 +3724,17 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 								if (groupParams->useSecondaryCmdBuffer && (extNdx != 1))
 									continue;
 
-								de::MovePtr<tcu::TestCaseGroup> extGroup(new tcu::TestCaseGroup(testCtx, extentCases[extNdx].name, extentCases[extNdx].description));
+								de::MovePtr<tcu::TestCaseGroup> extGroup(new tcu::TestCaseGroup(testCtx, extentCases[extNdx].name));
 								for (int sampNdx = 0; sampNdx < DE_LENGTH_OF_ARRAY(sampCases); sampNdx++)
 								{
 									// reduce number of tests for dynamic rendering cases where secondary command buffer is used
 									if (groupParams->useSecondaryCmdBuffer && (sampNdx != 1))
 										continue;
 
-									de::MovePtr<tcu::TestCaseGroup> sampGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name, sampCases[sampNdx].description));
+									de::MovePtr<tcu::TestCaseGroup> sampGroup(new tcu::TestCaseGroup(testCtx, sampCases[sampNdx].name));
 									for (int shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(shaderCases); shaderNdx++)
 									{
-										de::MovePtr<tcu::TestCaseGroup> shaderGroup(new tcu::TestCaseGroup(testCtx, shaderCases[shaderNdx].name, shaderCases[shaderNdx].description));
+										de::MovePtr<tcu::TestCaseGroup> shaderGroup(new tcu::TestCaseGroup(testCtx, shaderCases[shaderNdx].name));
 										// reduce number of tests for dynamic rendering cases where secondary command buffer is used
 										if (groupParams->useSecondaryCmdBuffer && (shaderNdx != 0))
 											continue;
@@ -3704,6 +3759,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 										bool opClear = groupNdx == 19 || groupNdx == 20;
 										uint32_t baseMipLevel = (groupNdx == 21 || groupNdx == 22) ? 1 : 0;
 										bool multiPass = (groupNdx == 23 || groupNdx == 24 || groupNdx == 25);
+										bool maintenance6 = (groupNdx == 26);
 
 										VkConservativeRasterizationModeEXT conservativeMode = (groupNdx == 3) ? VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT : VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
 										deUint32 numColorLayers = (colorLayered || multiView) ? 2u : 1u;
@@ -3720,7 +3776,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 											continue;
 
 										// Don't bother with geometry shader if we're testing conservative raster, sample mask, depth/stencil
-										if (useGeometryShader && (useApiSampleMask || useSampleMaskIn || consRast || fragDepth || fragStencil))
+										if (useGeometryShader && (useApiSampleMask || useSampleMaskIn || consRast || fragDepth || fragStencil || maintenance6))
 											continue;
 
 										// Don't bother with geometry shader if we're testing non-dynamic state
@@ -3745,6 +3801,10 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 
 										// Test multipass for DS cases with only attachment, single sample, and renderpass.
 										if (multiPass && (attCases[attNdx].usage != AttachmentUsage::WITH_ATTACHMENT || groupParams->useDynamicRendering || sampCases[sampNdx].count > VK_SAMPLE_COUNT_1_BIT))
+											continue;
+
+										// Skip maintenance6 tests if there is no FSR attachment
+										if (maintenance6 && attCases[attNdx].usage != AttachmentUsage::WITH_ATTACHMENT)
 											continue;
 
 										CaseDef c
@@ -3785,9 +3845,10 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 											opClear,												// bool dsClearOp;
 											baseMipLevel,											// uint32_t dsBaseMipLevel;
 											multiPass,												// bool multiSubpasses;
+											maintenance6,											// bool maintenance6;
 										};
 
-										sampGroup->addChild(new FSRTestCase(testCtx, shaderCases[shaderNdx].name, shaderCases[shaderNdx].description, c));
+										sampGroup->addChild(new FSRTestCase(testCtx, shaderCases[shaderNdx].name, c));
 									}
 									extGroup->addChild(sampGroup.release());
 								}
@@ -3807,11 +3868,12 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 	}
 
 	{
-		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "misc_tests", "Single tests that don't need to be part of above test matrix"));
+		// Single tests that don't need to be part of above test matrix
+		de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "misc_tests"));
 
 		if (!groupParams->useSecondaryCmdBuffer)
 		{
-			group->addChild(new FSRTestCase(testCtx, "sample_mask_test", "", {
+			group->addChild(new FSRTestCase(testCtx, "sample_mask_test", {
 				groupParams,											// SharedGroupParams groupParams;
 				123,													// deInt32 seed;
 				{32,  33},												// VkExtent2D framebufferDim;
@@ -3848,13 +3910,14 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 				false,													// bool dsClearOp;
 				0,														// uint32_t dsBaseMipLevel;
 				false,													// bool multiSubpasses;
+				false,													// bool maintenance6;
 			}));
 		}
 
 #ifndef CTS_USES_VULKANSC
 		if (groupParams->useDynamicRendering && groupParams->pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
 		{
-			group->addChild(new FSRTestCase(testCtx, "garbage_color_attachment", "", {
+			group->addChild(new FSRTestCase(testCtx, "garbage_color_attachment", {
 				groupParams,											// SharedGroupParams groupParams;
 				123,													// deInt32 seed;
 				{32,  33},												// VkExtent2D framebufferDim;
@@ -3891,6 +3954,7 @@ void createBasicTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* parentGrou
 				false,													// bool dsClearOp;
 				0,														// uint32_t dsBaseMipLevel;
 				false,													// bool multiSubpasses;
+				false,													// bool maintenance6;
 			}));
 		}
 #endif // CTS_USES_VULKANSC

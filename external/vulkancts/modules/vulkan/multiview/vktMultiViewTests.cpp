@@ -33,7 +33,7 @@ namespace MultiView
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
 {
-	return createTestGroup(testCtx, name.c_str(), "MultiView render tests", multiViewRenderCreateTests);
+	return createTestGroup(testCtx, name.c_str(), multiViewRenderCreateTests);
 }
 
 } // MultiView

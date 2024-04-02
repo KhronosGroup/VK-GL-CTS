@@ -116,11 +116,16 @@ if (NOT PNG_INCLUDE_PATH OR NOT PNG_LIBRARY)
 	# \note PNG_LIBRARY and PNG_INCLUDE_PATH are promoted from external/libpng/CMakeLists.txt
 endif ()
 
-# glslang
-add_subdirectory(external/glslang EXCLUDE_FROM_ALL)
+# vulkan-validationlayers.  Supported only on 64-bit
+if ("${DE_CPU}" STREQUAL "DE_CPU_X86_64" OR "${DE_CPU}" STREQUAL "DE_CPU_ARM_64")
+	add_subdirectory(external/vulkan-validationlayers)
+endif ()
 
 # spirv-tools
 add_subdirectory(external/spirv-tools EXCLUDE_FROM_ALL)
+
+# glslang
+add_subdirectory(external/glslang EXCLUDE_FROM_ALL)
 
 # spirv-headers
 set(SPIRV_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/spirv-headers/src/include")
@@ -142,10 +147,8 @@ include_directories(external/renderdoc/src)
 
 # Vulkan video support libraries
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
-	# Used for elementary stream demuxing
-	add_subdirectory(external/ESExtractor EXCLUDE_FROM_ALL)
-	# Used for the heavy lifting in video decoding, depends on ESExtrator at runtime.
-	add_subdirectory(external/nvidia-video-samples EXCLUDE_FROM_ALL)
+   # Some of the parsing / codec code is used from here.
+   add_subdirectory(external/nvidia-video-samples EXCLUDE_FROM_ALL)
 endif()
 
 include_directories(${PNG_INCLUDE_PATH})

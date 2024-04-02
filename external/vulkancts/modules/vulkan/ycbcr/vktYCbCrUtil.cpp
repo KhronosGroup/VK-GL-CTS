@@ -31,7 +31,7 @@
 
 #include "tcuTextureUtil.hpp"
 #include "deMath.h"
-#include "deFloat16.h"
+#include "tcuFloat.hpp"
 #include "tcuVector.hpp"
 #include "tcuVectorUtil.hpp"
 
@@ -266,8 +266,8 @@ void fillRandomNoNaN(de::Random* randomGen, deUint8* const data, deUint32 size, 
 			}
 			else if (stride == 2)
 			{
-				deFloat16* ptr = reinterpret_cast<deFloat16*>(&data[ndx]);
-				*ptr = deFloat32To16(randomGen->getFloat());
+				tcu::float16_t *const ptr = reinterpret_cast<tcu::float16_t*>(&data[ndx]);
+				*ptr = tcu::Float16(randomGen->getFloat()).bits();
 			}
 			else if (stride == 4)
 			{
@@ -372,7 +372,7 @@ vector<AllocationSp> allocateAndBindImageMemory (const DeviceInterface&	vkd,
 
 	return allocations;
 }
-
+// Accept only NV12
 void uploadImage (const DeviceInterface&		vkd,
 				  VkDevice						device,
 				  deUint32						queueFamilyNdx,
@@ -562,7 +562,8 @@ void downloadImage (const DeviceInterface&	vkd,
 					VkImage					image,
 					MultiPlaneImageData*	imageData,
 					VkAccessFlags			prevAccess,
-					VkImageLayout			initialLayout)
+					VkImageLayout			initialLayout,
+					uint32_t			baseArrayLayer)
 {
 	const VkQueue					queue			= getDeviceQueue(vkd, device, queueFamilyNdx, 0u);
 	const Unique<VkCommandPool>		cmdPool			(createCommandPool(vkd, device, (VkCommandPoolCreateFlags)0, queueFamilyNdx));
@@ -597,7 +598,7 @@ void downloadImage (const DeviceInterface&	vkd,
 					static_cast<vk::VkImageAspectFlags>(aspect),
 					0u,
 					1u,
-					0u,
+					baseArrayLayer,
 					1u
 				}
 			};
@@ -621,7 +622,7 @@ void downloadImage (const DeviceInterface&	vkd,
 				0u,		// bufferOffset
 				0u,		// bufferRowLength
 				0u,		// bufferImageHeight
-				{ (VkImageAspectFlags)aspect, 0u, 0u, 1u },
+				{ (VkImageAspectFlags)aspect, 0u, baseArrayLayer, 1u },
 				makeOffset3D(0u, 0u, 0u),
 				planeExtent
 			};

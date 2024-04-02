@@ -87,6 +87,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_AMD_texture_gather_bias_lod",
 		"VK_AMD_shader_early_and_late_fragment_tests",
 		"VK_ANDROID_external_memory_android_hardware_buffer",
+		"VK_ANDROID_external_format_resolve",
 		"VK_VALVE_mutable_descriptor_type",
 		"VK_NV_shader_subgroup_partitioned",
 		"VK_NV_clip_space_w_scaling",
@@ -100,6 +101,9 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_NV_coverage_reduction_mode",
 		"VK_NV_viewport_swizzle",
 		"VK_NV_representative_fragment_test",
+		"VK_NV_device_generated_commands", // This filter also applies to _compute.
+		"VK_NV_shader_atomic_float16_vector",
+		"VK_MVK_macos_surface",
 	};
 
 	const char* exclusions[] =
@@ -265,21 +269,59 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 									VkInstance								instance,
 									const InstanceInterface&				vki,
 									VkPhysicalDevice						physicalDevice,
-									deUint32								queueIndex,
+									deUint32								universalQueueIndex,
 									deUint32								sparseQueueIndex,
+									int										computeQueueIndex,
+									int										transferQueueIndex,
 									const VkPhysicalDeviceFeatures2&		enabledFeatures,
 									const vector<const char*>&				usedExtensions,
 									const tcu::CommandLine&					cmdLine,
 									de::SharedPtr<vk::ResourceInterface>	resourceInterface)
 {
-	VkDeviceQueueCreateInfo		queueInfo[2];
+	VkDeviceQueueCreateInfo			queueInfo[4];
 	VkDeviceCreateInfo			deviceInfo;
 	vector<const char*>			enabledLayers;
-	const float					queuePriority	= 1.0f;
-	const deUint32				numQueues = (enabledFeatures.features.sparseBinding && (queueIndex != sparseQueueIndex)) ? 2 : 1;
+	const float				queuePriority	= 1.0f;
+	deUint32				numQueues = 1;
 
 	deMemset(&queueInfo,	0, sizeof(queueInfo));
-	deMemset(&deviceInfo,	0, sizeof(deviceInfo));
+
+	// Always create the universal queue.
+	queueInfo[0].sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueInfo[0].pNext						= DE_NULL;
+	queueInfo[0].flags						= (VkDeviceQueueCreateFlags)0u;
+	queueInfo[0].queueFamilyIndex			= universalQueueIndex;
+	queueInfo[0].queueCount					= 1u;
+	queueInfo[0].pQueuePriorities			= &queuePriority;
+
+	// And the optional queues if they differ from the "universal" queue, and are supported.
+	if (enabledFeatures.features.sparseBinding && (universalQueueIndex != sparseQueueIndex)) {
+		queueInfo[numQueues].sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueInfo[numQueues].pNext						= DE_NULL;
+		queueInfo[numQueues].flags						= (VkDeviceQueueCreateFlags)0u;
+		queueInfo[numQueues].queueFamilyIndex			= sparseQueueIndex;
+		queueInfo[numQueues].queueCount					= 1u;
+		queueInfo[numQueues].pQueuePriorities			= &queuePriority;
+		numQueues++;
+	}
+	if (computeQueueIndex != -1 && (universalQueueIndex != (deUint32)computeQueueIndex)) {
+		queueInfo[numQueues].sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueInfo[numQueues].pNext						= DE_NULL;
+		queueInfo[numQueues].flags						= (VkDeviceQueueCreateFlags)0u;
+		queueInfo[numQueues].queueFamilyIndex			= computeQueueIndex;
+		queueInfo[numQueues].queueCount					= 1u;
+		queueInfo[numQueues].pQueuePriorities			= &queuePriority;
+		numQueues++;
+	}
+	if (transferQueueIndex != -1 && (universalQueueIndex != (deUint32)transferQueueIndex)) {
+		queueInfo[numQueues].sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueInfo[numQueues].pNext						= DE_NULL;
+		queueInfo[numQueues].flags						= (VkDeviceQueueCreateFlags)0u;
+		queueInfo[numQueues].queueFamilyIndex			= transferQueueIndex;
+		queueInfo[numQueues].queueCount					= 1u;
+		queueInfo[numQueues].pQueuePriorities			= &queuePriority;
+		numQueues++;
+	}
 
 	if (cmdLine.isValidationEnabled())
 	{
@@ -288,23 +330,7 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 			TCU_THROW(NotSupportedError, "No validation layers found");
 	}
 
-	queueInfo[0].sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueInfo[0].pNext						= DE_NULL;
-	queueInfo[0].flags						= (VkDeviceQueueCreateFlags)0u;
-	queueInfo[0].queueFamilyIndex			= queueIndex;
-	queueInfo[0].queueCount					= 1u;
-	queueInfo[0].pQueuePriorities			= &queuePriority;
-
-	if (numQueues > 1)
-	{
-		queueInfo[1].sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueInfo[1].pNext						= DE_NULL;
-		queueInfo[1].flags						= (VkDeviceQueueCreateFlags)0u;
-		queueInfo[1].queueFamilyIndex			= sparseQueueIndex;
-		queueInfo[1].queueCount					= 1u;
-		queueInfo[1].pQueuePriorities			= &queuePriority;
-	}
-
+	deMemset(&deviceInfo,	0, sizeof(deviceInfo));
 	// VK_KHR_get_physical_device_properties2 is used if enabledFeatures.pNext != 0
 	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceInfo.pNext						= enabledFeatures.pNext ? &enabledFeatures : nullptr;
@@ -332,7 +358,7 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 	std::vector<VkPipelinePoolSize> poolSizes;
 	if (cmdLine.isSubProcess())
 	{
-		resourceInterface->importPipelineCacheData(vkp, instance, vki, physicalDevice, queueIndex);
+		resourceInterface->importPipelineCacheData(vkp, instance, vki, physicalDevice, universalQueueIndex);
 
 		dmrCI									= resourceInterface->getStatMax();
 
@@ -393,6 +419,16 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&				vkp,
 }
 
 } // anonymous
+
+int findQueueFamilyIndexWithCapsNoThrow(const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps, VkQueueFlags excludedCaps)
+{
+	try {
+		return static_cast<int>(findQueueFamilyIndexWithCaps(vkInstance, physicalDevice, requiredCaps, excludedCaps));
+	} catch (const tcu::NotSupportedError&) {
+		return -1;
+	}
+}
+
 
 deUint32 findQueueFamilyIndexWithCaps(const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps, VkQueueFlags excludedCaps)
 {
@@ -458,7 +494,10 @@ public:
 	VkQueue															getUniversalQueue						(void) const;
 	deUint32														getSparseQueueFamilyIndex				(void) const { return m_sparseQueueFamilyIndex;								}
 	VkQueue															getSparseQueue							(void) const;
-
+	int																getTransferQueueFamilyIndex				(void) const { return m_transferQueueFamilyIndex;							}
+	VkQueue															getTransferQueue						(void) const;
+	int																getComputeQueueFamilyIndex				(void) const { return m_computeQueueFamilyIndex;							}
+	VkQueue															getComputeQueue							(void) const;
 #ifndef CTS_USES_VULKANSC
 	bool															hasDebugReportRecorder					(void) const { return m_debugReportRecorder.get() != nullptr;				}
 	vk::DebugReportRecorder&										getDebugReportRecorder					(void) const { return *m_debugReportRecorder.get();							}
@@ -467,7 +506,7 @@ public:
 private:
 #ifndef CTS_USES_VULKANSC
 	using DebugReportRecorderPtr		= de::UniquePtr<vk::DebugReportRecorder>;
-	using DebugReportCallbackPtr		= vk::Move<VkDebugReportCallbackEXT>;
+	using DebugReportCallbackPtr		= vk::Move<VkDebugUtilsMessengerEXT>;
 #endif // CTS_USES_VULKANSC
 
 	const deUint32						m_maximumFrameworkVulkanVersion;
@@ -496,6 +535,11 @@ private:
 
 	const deUint32						m_universalQueueFamilyIndex;
 	const deUint32						m_sparseQueueFamilyIndex;
+
+	// Optional exclusive queues
+	const int							m_computeQueueFamilyIndex;
+	const int							m_transferQueueFamilyIndex;
+
 	const DeviceProperties				m_deviceProperties;
 	const vector<const char*>			m_creationExtensions;
 
@@ -583,20 +627,22 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 
 	, m_deviceExtensions				(addCoreDeviceExtensions(filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, DE_NULL)), m_usedApiVersion))
 	, m_deviceFeatures					(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions, m_deviceExtensions)
-	, m_universalQueueFamilyIndex		(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
+	, m_universalQueueFamilyIndex		(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, cmdLine.isComputeOnly() ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 #ifndef CTS_USES_VULKANSC
 	, m_sparseQueueFamilyIndex			(m_deviceFeatures.getCoreFeatures2().features.sparseBinding ? findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_SPARSE_BINDING_BIT) : 0)
 #else
 	, m_sparseQueueFamilyIndex			(0)
 #endif // CTS_USES_VULKANSC
+	, m_computeQueueFamilyIndex			(findQueueFamilyIndexWithCapsNoThrow(m_instanceInterface, m_physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT))
+	, m_transferQueueFamilyIndex		(findQueueFamilyIndexWithCapsNoThrow(m_instanceInterface, m_physicalDevice, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 	, m_deviceProperties				(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions, m_deviceExtensions)
 	// When the default device is created, we remove the core extensions from the extension list, but those core extensions are
 	// still reported as part of Context::getDeviceExtensions(). If we need the list of extensions actually used when creating the
 	// default device, we can use Context::getDeviceCreationExtensions().
 	, m_creationExtensions				(removeCoreExtensions(m_usedApiVersion, m_deviceExtensions))
-	, m_device							(createDefaultDevice(vkPlatform, *m_instance, m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(), m_creationExtensions, cmdLine, resourceInterface))
+	, m_device							(createDefaultDevice(vkPlatform, *m_instance, m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_computeQueueFamilyIndex, m_transferQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(), m_creationExtensions, cmdLine, resourceInterface))
 #ifndef CTS_USES_VULKANSC
-	, m_deviceInterface					(de::MovePtr<DeviceDriver>(new DeviceDriver(vkPlatform, *m_instance, *m_device, m_usedApiVersion)))
+	, m_deviceInterface					(de::MovePtr<DeviceDriver>(new DeviceDriver(vkPlatform, *m_instance, *m_device, m_usedApiVersion, cmdLine)))
 #else
 	, m_deviceInterface					(de::MovePtr<DeviceDriverSC>(new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, resourceInterface, getDeviceVulkanSC10Properties(), getDeviceProperties(), m_usedApiVersion)))
 #endif // CTS_USES_VULKANSC
@@ -622,6 +668,22 @@ VkQueue DefaultDevice::getSparseQueue (void) const
 		TCU_THROW(NotSupportedError, "Sparse binding not supported.");
 
 	return getDeviceQueue(*m_deviceInterface, *m_device, m_sparseQueueFamilyIndex, 0);
+}
+
+VkQueue DefaultDevice::getComputeQueue (void) const
+{
+	if (m_computeQueueFamilyIndex == -1)
+		TCU_THROW(NotSupportedError, "Exclusive compute queue not supported.");
+
+	return getDeviceQueue(*m_deviceInterface, *m_device, m_computeQueueFamilyIndex, 0);
+}
+
+VkQueue DefaultDevice::getTransferQueue (void) const
+{
+	if (m_transferQueueFamilyIndex == -1)
+		TCU_THROW(NotSupportedError, "Exclusive transfer queue not supported.");
+
+	return getDeviceQueue(*m_deviceInterface, *m_device, m_transferQueueFamilyIndex, 0);
 }
 
 namespace
@@ -801,6 +863,10 @@ vk::VkDevice							Context::getDevice							(void) const { return m_device->getD
 const vk::DeviceInterface&				Context::getDeviceInterface					(void) const { return m_device->getDeviceInterface();			}
 deUint32								Context::getUniversalQueueFamilyIndex		(void) const { return m_device->getUniversalQueueFamilyIndex();	}
 vk::VkQueue								Context::getUniversalQueue					(void) const { return m_device->getUniversalQueue();			}
+int										Context::getComputeQueueFamilyIndex			(void) const { return m_device->getComputeQueueFamilyIndex();	}
+vk::VkQueue								Context::getComputeQueue					(void) const { return m_device->getComputeQueue();				}
+int										Context::getTransferQueueFamilyIndex		(void) const { return m_device->getTransferQueueFamilyIndex();	}
+vk::VkQueue								Context::getTransferQueue					(void) const { return m_device->getTransferQueue();				}
 deUint32								Context::getSparseQueueFamilyIndex			(void) const { return m_device->getSparseQueueFamilyIndex();	}
 vk::VkQueue								Context::getSparseQueue						(void) const { return m_device->getSparseQueue();				}
 de::SharedPtr<vk::ResourceInterface>	Context::getResourceInterface				(void) const { return m_resourceInterface;						}
@@ -919,6 +985,58 @@ bool Context::requireDeviceCoreFeature (const DeviceCoreFeature requiredFeature)
 
 #ifndef CTS_USES_VULKANSC
 
+static bool isSpirvCompatibleFormat(VkFormat format)
+{
+	switch (format)
+	{
+		case VK_FORMAT_R32G32B32A32_SFLOAT:
+		case VK_FORMAT_R32G32_SFLOAT:
+		case VK_FORMAT_R32_SFLOAT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+		case VK_FORMAT_R16G16_SFLOAT:
+		case VK_FORMAT_R16_SFLOAT:
+		case VK_FORMAT_R16G16B16A16_UNORM:
+		case VK_FORMAT_R16G16_UNORM:
+		case VK_FORMAT_R16_UNORM:
+		case VK_FORMAT_R16G16B16A16_SNORM:
+		case VK_FORMAT_R16G16_SNORM:
+		case VK_FORMAT_R16_SNORM:
+		case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+		case VK_FORMAT_B10G11R11_UFLOAT_PACK32:
+		case VK_FORMAT_R8G8B8A8_UNORM:
+		case VK_FORMAT_R8G8_UNORM:
+		case VK_FORMAT_R8_UNORM:
+		case VK_FORMAT_R8G8B8A8_SNORM:
+		case VK_FORMAT_R8G8_SNORM:
+		case VK_FORMAT_R8_SNORM:
+		case VK_FORMAT_R32G32B32A32_SINT:
+		case VK_FORMAT_R32G32_SINT:
+		case VK_FORMAT_R32_SINT:
+		case VK_FORMAT_R16G16B16A16_SINT:
+		case VK_FORMAT_R16G16_SINT:
+		case VK_FORMAT_R16_SINT:
+		case VK_FORMAT_R8G8B8A8_SINT:
+		case VK_FORMAT_R8G8_SINT:
+		case VK_FORMAT_R8_SINT:
+		case VK_FORMAT_R32G32B32A32_UINT:
+		case VK_FORMAT_R32G32_UINT:
+		case VK_FORMAT_R32_UINT:
+		case VK_FORMAT_R16G16B16A16_UINT:
+		case VK_FORMAT_R16G16_UINT:
+		case VK_FORMAT_R16_UINT:
+		case VK_FORMAT_A2B10G10R10_UINT_PACK32:
+		case VK_FORMAT_R8G8B8A8_UINT:
+		case VK_FORMAT_R8G8_UINT:
+		case VK_FORMAT_R8_UINT:
+		case VK_FORMAT_R64_SINT:
+		case VK_FORMAT_R64_UINT:
+			// These formats can be explicitly expressed in SPIR-V.
+			return true;
+		default:
+			return false;
+	}
+}
+
 static bool isExtendedStorageFormat (VkFormat format)
 {
 	switch(format)
@@ -1010,6 +1128,26 @@ vk::VkFormatProperties3 Context::getRequiredFormatProperties(const vk::VkFormat&
 			p.linearTilingFeatures	|= VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR;
 		if (p.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT_KHR)
 			p.optimalTilingFeatures	|= VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR;
+	}
+	// If an implementation exposes storage image/buffer feature on formats not in the SPIR-V compatibility table,
+	// the implementation must at least expose one of the WITHOUT_FORMAT (either READ or WRITE) storage features.
+	if (!isSpirvCompatibleFormat(format))
+	{
+		if ((p.linearTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) ||
+			(p.linearTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+		{
+			p.linearTilingFeatures |= VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT_KHR;
+		}
+		if ((p.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) ||
+			(p.optimalTilingFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+		{
+			p.optimalTilingFeatures |= VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT_KHR;
+		}
+		if ((p.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) ||
+			(p.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT_KHR))
+		{
+			p.bufferFeatures |= VK_FORMAT_FEATURE_2_STORAGE_TEXEL_BUFFER_BIT_KHR;
+		}
 	}
 	if (isDepthFormat(format) && (p.linearTilingFeatures & (VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT_KHR)))
 		p.linearTilingFeatures |= VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT_KHR;

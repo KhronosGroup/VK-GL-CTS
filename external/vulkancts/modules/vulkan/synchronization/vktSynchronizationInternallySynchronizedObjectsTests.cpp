@@ -175,7 +175,7 @@ public:
 	{
 		m_logicalDevice = device;
 #ifndef CTS_USES_VULKANSC
-		m_deviceDriver = de::MovePtr<DeviceDriver>		(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice, context.getUsedApiVersion()));
+		m_deviceDriver = de::MovePtr<DeviceDriver>		(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice, context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
 #else
 		m_deviceDriver = de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice, context.getTestContext().getCommandLine(), context.getResourceInterface(), context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(), context.getUsedApiVersion()), vk::DeinitDeviceDeleter(context.getResourceInterface().get(), *m_logicalDevice));
 #endif // CTS_USES_VULKANSC
@@ -1120,9 +1120,8 @@ class PipelineCacheComputeTest : public TestCase
 {
 public:
 							PipelineCacheComputeTest	(TestContext&		testCtx,
-														const string&		name,
-														const string&		description)
-								:TestCase	(testCtx, name, description)
+														const string&		name)
+								:TestCase	(testCtx, name)
 	{
 	}
 
@@ -1193,9 +1192,8 @@ class PipelineCacheGraphicTest : public TestCase
 {
 public:
 							PipelineCacheGraphicTest	(TestContext&		testCtx,
-														const string&		name,
-														const string&		description)
-								:TestCase	(testCtx, name, description)
+														const string&		name)
+								:TestCase	(testCtx, name)
 	{
 
 	}
@@ -1286,9 +1284,12 @@ public:
 
 tcu::TestCaseGroup* createInternallySynchronizedObjects (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> tests(new tcu::TestCaseGroup(testCtx, "internally_synchronized_objects", "Internally synchronized objects"));
-	tests->addChild(new PipelineCacheComputeTest(testCtx, "pipeline_cache_compute", "Internally synchronized object VkPipelineCache for compute pipeline is tested"));
-	tests->addChild(new PipelineCacheGraphicTest(testCtx, "pipeline_cache_graphics", "Internally synchronized object VkPipelineCache for graphics pipeline is tested"));
+	// Internally synchronized objects
+	de::MovePtr<tcu::TestCaseGroup> tests(new tcu::TestCaseGroup(testCtx, "internally_synchronized_objects"));
+	// Internally synchronized object VkPipelineCache for compute pipeline is tested
+	tests->addChild(new PipelineCacheComputeTest(testCtx, "pipeline_cache_compute"));
+	// Internally synchronized object VkPipelineCache for graphics pipeline is tested
+	tests->addChild(new PipelineCacheGraphicTest(testCtx, "pipeline_cache_graphics"));
 	return tests.release();
 }
 

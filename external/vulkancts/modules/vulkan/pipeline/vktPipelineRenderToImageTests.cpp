@@ -645,38 +645,6 @@ IVec4 getMaxImageSize (const VkImageViewType viewType, const IVec4& sizeHint)
 	return size;
 }
 
-deUint32 getMemoryTypeNdx (Context& context, const CaseDef& caseDef)
-{
-	const DeviceInterface&					vk					= context.getDeviceInterface();
-	const InstanceInterface&				vki					= context.getInstanceInterface();
-	const VkDevice							device				= context.getDevice();
-	const VkPhysicalDevice					physDevice			= context.getPhysicalDevice();
-
-	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physDevice);
-	Move<VkImage>							colorImage;
-	VkMemoryRequirements					memReqs;
-
-	const VkImageUsageFlags					imageUsage	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-	const IVec4								imageSize	= getMaxImageSize(caseDef.viewType, caseDef.imageSizeHint);
-
-	//create image, don't bind any memory to it
-	colorImage	= makeImage(vk, device, getImageCreateFlags(caseDef.viewType), getImageType(caseDef.viewType), caseDef.colorFormat,
-								imageSize.swizzle(0, 1, 2), 1u, imageSize.w(), imageUsage);
-
-	vk.getImageMemoryRequirements(device, *colorImage, &memReqs);
-	return selectMatchingMemoryType(memoryProperties, memReqs.memoryTypeBits, MemoryRequirement::Any);
-}
-
-VkDeviceSize getMaxDeviceHeapSize (Context& context, const CaseDef& caseDef)
-{
-	const InstanceInterface&				vki					= context.getInstanceInterface();
-	const VkPhysicalDevice					physDevice			= context.getPhysicalDevice();
-	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physDevice);
-	const deUint32							memoryTypeNdx		= getMemoryTypeNdx (context, caseDef);
-
-	return memoryProperties.memoryHeaps[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].size;
-}
-
 //! Get a smaller image size. Returns a vector of zeroes, if it can't reduce more.
 IVec4 getReducedImageSize (const CaseDef& caseDef, IVec4 size)
 {
@@ -704,6 +672,41 @@ IVec4 getReducedImageSize (const CaseDef& caseDef, IVec4 size)
 		size = IVec4(0);
 
 	return size;
+}
+
+//! Get the image memory requirements for the image size under test, expecting potential image
+//! creation failure if the required size is larger than the device's maxResourceSize, returning
+//! false if creation failed.
+bool getSupportedImageMemoryRequirements(Context& context, const CaseDef& caseDef, const VkFormat format, const IVec4 size, const VkImageUsageFlags usage, VkMemoryRequirements& imageMemoryRequiements)
+{
+	const DeviceInterface& vk = context.getDeviceInterface();
+	const VkDevice device = context.getDevice();
+	bool imageCreationPossible = true;
+
+	try
+	{
+		Move<VkImage> image = makeImage(
+			vk,
+			device,
+			getImageCreateFlags(caseDef.viewType),
+			getImageType(caseDef.viewType),
+			format,
+			size.swizzle(0, 1, 2),
+			1u,
+			size.w(),
+			usage
+		);
+
+		vk.getImageMemoryRequirements(device, *image, &imageMemoryRequiements);
+	}
+	// vkCreateImage is allowed to return VK_ERROR_OUT_OF_HOST_MEMORY if the image's
+	// memory requirements will exceed maxResourceSize.
+	catch (const vk::OutOfMemoryError&)
+	{
+		imageCreationPossible = false;
+	}
+
+	return imageCreationPossible;
 }
 
 bool isDepthStencilFormatSupported (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkFormat format)
@@ -794,72 +797,150 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&						allocator			= context.getDefaultAllocator();
 
-	// The memory might be too small to allocate a largest possible attachment, so try to account for that.
-	const bool						useDepthStencil		= (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED);
-
 	IVec4							imageSize			= getMaxImageSize(caseDef.viewType, caseDef.imageSizeHint);
-	VkDeviceSize					colorSize			= product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.colorFormat));
-	VkDeviceSize					depthStencilSize	= (useDepthStencil ? product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.depthStencilFormat)) : 0ull);
 
-	const VkDeviceSize				reserveForChecking	= 500ull * 1024ull;	//left 512KB
-	const float						additionalMemory	= 1.15f;			//left some free memory on device (15%)
-	VkDeviceSize					neededMemory		= static_cast<VkDeviceSize>(static_cast<float>(colorSize + depthStencilSize) * additionalMemory) + reserveForChecking;
-	VkDeviceSize					maxMemory			= getMaxDeviceHeapSize(context, caseDef) >> 2;
+	const VkImageUsageFlags colorImageUsage	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	const VkImageUsageFlags	depthStencilImageUsage	= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	const bool useDepthStencil		= (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED);
 
-	tcu::PlatformMemoryLimits		memoryLimits;
-	context.getTestContext().getPlatform().getMemoryLimits(memoryLimits);
-	maxMemory = std::min(maxMemory, VkDeviceSize(memoryLimits.totalSystemMemory));
-
-	const VkDeviceSize				deviceMemoryBudget	= std::min(neededMemory, maxMemory);
-	bool							allocationPossible	= false;
-
-	// Keep reducing the size, if image size is too big
-	while (neededMemory > deviceMemoryBudget)
 	{
-		imageSize = getReducedImageSize(caseDef, imageSize);
+		VkImageFormatProperties	colorImageFormatProperties;
+		const auto result = vki.getPhysicalDeviceImageFormatProperties(
+			physDevice,
+			caseDef.colorFormat,
+			getImageType(caseDef.viewType),
+			VK_IMAGE_TILING_OPTIMAL,
+			colorImageUsage,
+			getImageCreateFlags(caseDef.viewType),
+			&colorImageFormatProperties
+		);
 
-		if (imageSize == IVec4())
-			return tcu::TestStatus::fail("Couldn't create an image with required size");
+		VK_CHECK(result);
 
-		colorSize			= product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.colorFormat));
-		depthStencilSize	= (useDepthStencil ? product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.depthStencilFormat)) : 0ull);
-		neededMemory		= static_cast<VkDeviceSize>(static_cast<double>(colorSize + depthStencilSize) * additionalMemory);
+		imageSize.x() = std::min(static_cast<deUint32>(imageSize.x()), colorImageFormatProperties.maxExtent.width);
+		imageSize.y() = std::min(static_cast<deUint32>(imageSize.y()), colorImageFormatProperties.maxExtent.height);
+		imageSize.z() = std::min(static_cast<deUint32>(imageSize.z()), colorImageFormatProperties.maxExtent.depth);
+		imageSize.w() = std::min(static_cast<deUint32>(imageSize.w()), colorImageFormatProperties.maxArrayLayers);
 	}
 
-	// Keep reducing the size, if allocation return out of any memory
+	if (useDepthStencil)
+	{
+		VkImageFormatProperties	depthStencilImageFormatProperties;
+		const auto result = vki.getPhysicalDeviceImageFormatProperties(
+			physDevice,
+			caseDef.depthStencilFormat,
+			getImageType(caseDef.viewType),
+			VK_IMAGE_TILING_OPTIMAL,
+			depthStencilImageUsage,
+			getImageCreateFlags(caseDef.viewType),
+			&depthStencilImageFormatProperties
+		);
+
+		VK_CHECK(result);
+
+		imageSize.x() = std::min(static_cast<deUint32>(imageSize.x()), depthStencilImageFormatProperties.maxExtent.width);
+		imageSize.y() = std::min(static_cast<deUint32>(imageSize.y()), depthStencilImageFormatProperties.maxExtent.height);
+		imageSize.z() = std::min(static_cast<deUint32>(imageSize.z()), depthStencilImageFormatProperties.maxExtent.depth);
+		imageSize.w() = std::min(static_cast<deUint32>(imageSize.w()), depthStencilImageFormatProperties.maxArrayLayers);
+	}
+
+	bool allocationPossible = false;
 	while (!allocationPossible)
 	{
-		VkDeviceMemory				object			= 0;
-		const VkMemoryAllocateInfo	allocateInfo	=
-		{
-			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//VkStructureType	sType;
-			DE_NULL,								//const void*		pNext;
-			neededMemory,							//VkDeviceSize		allocationSize;
-			getMemoryTypeNdx(context, caseDef)		//deUint32			memoryTypeIndex;
-		};
+		// Get the image memory requirements
+		VkMemoryRequirements colorImageMemReqs;
+		VkDeviceSize neededMemory = 0;
+		deUint32 memoryTypeNdx = 0;
 
-		const VkResult				result			= vk.allocateMemory(device, &allocateInfo, DE_NULL, &object);
-
-		if (VK_ERROR_OUT_OF_DEVICE_MEMORY == result || VK_ERROR_OUT_OF_HOST_MEMORY == result)
+		if (!getSupportedImageMemoryRequirements(context, caseDef, caseDef.colorFormat, imageSize, colorImageUsage, colorImageMemReqs))
 		{
+			// Try again with reduced image size
 			imageSize = getReducedImageSize(caseDef, imageSize);
-
 			if (imageSize == IVec4())
 				return tcu::TestStatus::fail("Couldn't create an image with required size");
+			else
+				continue;
+		}
 
-			colorSize			= product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.colorFormat));
-			depthStencilSize	= (useDepthStencil ? product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.depthStencilFormat)) : 0ull);
-			neededMemory		= static_cast<VkDeviceSize>(static_cast<double>(colorSize + depthStencilSize) * additionalMemory) + reserveForChecking;
-		}
-		else if (VK_SUCCESS != result)
+		neededMemory = colorImageMemReqs.size;
+
+		if (useDepthStencil)
 		{
-			return tcu::TestStatus::fail("Couldn't allocate memory");
+			VkMemoryRequirements depthStencilImageMemReqs;
+
+			if (!getSupportedImageMemoryRequirements(context, caseDef, caseDef.depthStencilFormat, imageSize, depthStencilImageUsage, depthStencilImageMemReqs))
+			{
+				// Try again with reduced image size
+				imageSize = getReducedImageSize(caseDef, imageSize);
+				if (imageSize == IVec4())
+					return tcu::TestStatus::fail("Couldn't create an image with required size");
+				else
+					continue;
+			}
+
+			neededMemory += depthStencilImageMemReqs.size;
 		}
-		else
+
+		// Reserve an additional 15% device memory, plus the 512KB for checking results
 		{
-			//free memory using Move pointer
-			Move<VkDeviceMemory> memoryAllocated (check<VkDeviceMemory>(object), Deleter<VkDeviceMemory>(vk, device, DE_NULL));
-			allocationPossible = true;
+			const VkDeviceSize reserveForChecking = 500ull * 1024ull;
+			const float additionalMemory = 1.15f;
+			neededMemory = static_cast<VkDeviceSize>(static_cast<float>(neededMemory) * additionalMemory) + reserveForChecking;
+		}
+
+		// Query the available memory in the corresponding memory heap
+		{
+			const VkPhysicalDeviceMemoryProperties	memoryProperties = getPhysicalDeviceMemoryProperties(vki, physDevice);
+			// Use the color image memory requirements, assume depth stencil uses the same memory type
+			memoryTypeNdx = selectMatchingMemoryType(memoryProperties, colorImageMemReqs.memoryTypeBits, MemoryRequirement::Any);
+			tcu::PlatformMemoryLimits memoryLimits;
+			context.getTestContext().getPlatform().getMemoryLimits(memoryLimits);
+			VkDeviceSize maxMemory = std::min(
+				memoryProperties.memoryHeaps[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].size,
+				VkDeviceSize(memoryLimits.totalSystemMemory)
+			);
+
+			if (neededMemory > maxMemory)
+			{
+				// Try again with reduced image size
+				imageSize = getReducedImageSize(caseDef, imageSize);
+				if (imageSize == IVec4())
+					return tcu::TestStatus::fail("Couldn't create an image with required size");
+				else
+					continue;
+			}
+		}
+
+		// Attempt a memory allocation
+		{
+			VkDeviceMemory				object			= 0;
+			const VkMemoryAllocateInfo	allocateInfo	=
+			{
+				VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//VkStructureType	sType;
+				DE_NULL,								//const void*		pNext;
+				neededMemory,							//VkDeviceSize		allocationSize;
+				memoryTypeNdx							//deUint32			memoryTypeIndex;
+			};
+
+			const VkResult				result			= vk.allocateMemory(device, &allocateInfo, DE_NULL, &object);
+
+			if (VK_ERROR_OUT_OF_DEVICE_MEMORY == result || VK_ERROR_OUT_OF_HOST_MEMORY == result)
+			{
+				// Try again with reduced image size
+				imageSize = getReducedImageSize(caseDef, imageSize);
+				if (imageSize == IVec4())
+					return tcu::TestStatus::fail("Couldn't create an image with required size");
+			}
+			else if (VK_SUCCESS != result)
+			{
+				return tcu::TestStatus::fail("Couldn't allocate memory");
+			}
+			else
+			{
+				//free memory using Move pointer
+				Move<VkDeviceMemory> memoryAllocated (check<VkDeviceMemory>(object), Deleter<VkDeviceMemory>(vk, device, DE_NULL));
+				allocationPossible = true;
+			}
 		}
 	}
 
@@ -907,20 +988,16 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 
 	// Create a color image
 	{
-		const VkImageUsageFlags	imageUsage	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-
 		colorImage		= makeImage(vk, device, getImageCreateFlags(caseDef.viewType), getImageType(caseDef.viewType), caseDef.colorFormat,
-									imageSize.swizzle(0, 1, 2), 1u, imageSize.w(), imageUsage);
+									imageSize.swizzle(0, 1, 2), 1u, imageSize.w(), colorImageUsage);
 		colorImageAlloc	= bindImage(vki, vk, physDevice, device, *colorImage, MemoryRequirement::Any, allocator, caseDef.allocationKind);
 	}
 
 	// Create a depth/stencil image (always a 2D image, optionally layered)
 	if (useDepthStencil)
 	{
-		const VkImageUsageFlags	imageUsage	= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-
 		depthStencilImage		= makeImage(vk, device, (VkImageCreateFlags)0, VK_IMAGE_TYPE_2D, caseDef.depthStencilFormat,
-											IVec3(imageSize.x(), imageSize.y(), 1), 1u, numSlices, imageUsage);
+											IVec3(imageSize.x(), imageSize.y(), 1), 1u, numSlices, depthStencilImageUsage);
 		depthStencilImageAlloc	= bindImage(vki, vk, physDevice, device, *depthStencilImage, MemoryRequirement::Any, allocator, caseDef.allocationKind);
 	}
 
@@ -1153,13 +1230,51 @@ void checkImageViewTypeRequirements (Context& context, const VkImageViewType vie
 
 void checkSupportAttachmentSize (Context& context, const CaseDef caseDef)
 {
+	const InstanceInterface& vki = context.getInstanceInterface();
+	const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+
 	checkImageViewTypeRequirements(context, caseDef.viewType);
 
 	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
 		context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 
-	if (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED  && !isDepthStencilFormatSupported(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.depthStencilFormat))
-		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
+	{
+		VkImageFormatProperties	colorImageFormatProperties;
+		const auto result = vki.getPhysicalDeviceImageFormatProperties(
+			physDevice,
+			caseDef.colorFormat,
+			getImageType(caseDef.viewType),
+			VK_IMAGE_TILING_OPTIMAL,
+			(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
+			getImageCreateFlags(caseDef.viewType),
+			&colorImageFormatProperties
+		);
+
+		if (result != VK_SUCCESS)
+		{
+			TCU_THROW(NotSupportedError, "Unsupported color attachment format");
+		}
+	}
+
+	if (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED)
+	{
+
+		VkImageFormatProperties	depthStencilImageFormatProperties;
+		const auto result = vki.getPhysicalDeviceImageFormatProperties(
+			physDevice,
+			caseDef.depthStencilFormat,
+			getImageType(caseDef.viewType),
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+			getImageCreateFlags(caseDef.viewType),
+			&depthStencilImageFormatProperties
+		);
+
+		if (result != VK_SUCCESS)
+		{
+			TCU_THROW(NotSupportedError, "Unsupported depth/stencil attachment format");
+		}
+	}
 
 	checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.pipelineConstructionType);
 }
@@ -1694,7 +1809,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 
 	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(testCase); ++caseNdx)
 	{
-		MovePtr<tcu::TestCaseGroup>	imageGroup(new tcu::TestCaseGroup(group->getTestContext(), getShortImageViewTypeName(testCase[caseNdx].viewType).c_str(), ""));
+		MovePtr<tcu::TestCaseGroup>	imageGroup(new tcu::TestCaseGroup(group->getTestContext(), getShortImageViewTypeName(testCase[caseNdx].viewType).c_str()));
 
 		// Generate attachment size cases
 		{
@@ -1705,8 +1820,8 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 			sizes.erase(std::remove_if(begin(sizes), end(sizes), [&](const IVec4& v) { return v.x() == MAX_SIZE && v.y() == MAX_SIZE; }), end(sizes));
 #endif // CTS_USES_VULKANSC
 
-			MovePtr<tcu::TestCaseGroup>	smallGroup(new tcu::TestCaseGroup(group->getTestContext(), "small", ""));
-			MovePtr<tcu::TestCaseGroup>	hugeGroup (new tcu::TestCaseGroup(group->getTestContext(), "huge",  ""));
+			MovePtr<tcu::TestCaseGroup>	smallGroup(new tcu::TestCaseGroup(group->getTestContext(), "small"));
+			MovePtr<tcu::TestCaseGroup>	hugeGroup (new tcu::TestCaseGroup(group->getTestContext(), "huge"));
 
 			imageGroup->addChild(smallGroup.get());
 			imageGroup->addChild(hugeGroup.get());
@@ -1728,14 +1843,14 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 							depthStencilFormat[dsFormatNdx],	// VkFormat						depthStencilFormat;
 							allocationKind						// AllocationKind				allocationKind;
 						};
-						addFunctionCaseWithPrograms(smallGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
+						addFunctionCaseWithPrograms(smallGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
 					}
 				}
 				else // All huge cases go into a separate group
 				{
 					if (allocationKind != ALLOCATION_KIND_DEDICATED)
 					{
-						MovePtr<tcu::TestCaseGroup>	sizeGroup	(new tcu::TestCaseGroup(group->getTestContext(), getSizeDescription(*sizeIter).c_str(), ""));
+						MovePtr<tcu::TestCaseGroup>	sizeGroup	(new tcu::TestCaseGroup(group->getTestContext(), getSizeDescription(*sizeIter).c_str()));
 						const VkFormat				colorFormat	= VK_FORMAT_R8G8B8A8_UNORM;
 
 						// Use the same color format for all cases, to reduce the number of permutations
@@ -1750,7 +1865,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 								depthStencilFormat[dsFormatNdx],	// VkFormat						depthStencilFormat;
 								allocationKind						// AllocationKind				allocationKind;
 							};
-							addFunctionCaseWithPrograms(sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]), "", checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
+							addFunctionCaseWithPrograms(sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]), checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
 						}
 						hugeGroup->addChild(sizeGroup.release());
 					}
@@ -1762,7 +1877,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 
 		// Generate mip map cases
 		{
-			MovePtr<tcu::TestCaseGroup>	mipmapGroup(new tcu::TestCaseGroup(group->getTestContext(), "mipmap", ""));
+			MovePtr<tcu::TestCaseGroup>	mipmapGroup(new tcu::TestCaseGroup(group->getTestContext(), "mipmap"));
 
 			for (int dsFormatNdx = 0; dsFormatNdx < DE_LENGTH_OF_ARRAY(depthStencilFormat); ++dsFormatNdx)
 			for (int formatNdx   = 0; formatNdx   < DE_LENGTH_OF_ARRAY(format);             ++formatNdx)
@@ -1776,7 +1891,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, PipelineConstructionT
 					depthStencilFormat[dsFormatNdx],	// VkFormat						depthStencilFormat;
 					allocationKind						// AllocationKind				allocationKind;
 				};
-				addFunctionCaseWithPrograms(mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", checkSupportRenderToMipMaps, initPrograms, testRenderToMipMaps, caseDef);
+				addFunctionCaseWithPrograms(mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), checkSupportRenderToMipMaps, initPrograms, testRenderToMipMaps, caseDef);
 			}
 			imageGroup->addChild(mipmapGroup.release());
 		}
@@ -1799,10 +1914,12 @@ void addDedicatedAllocationRenderToImageTests (tcu::TestCaseGroup* group, Pipeli
 
 tcu::TestCaseGroup* createRenderToImageTests (tcu::TestContext& testCtx, PipelineConstructionType pipelineConstructionType)
 {
-	de::MovePtr<tcu::TestCaseGroup>	renderToImageTests	(new tcu::TestCaseGroup(testCtx, "render_to_image", "Render to image tests"));
+	de::MovePtr<tcu::TestCaseGroup>	renderToImageTests	(new tcu::TestCaseGroup(testCtx, "render_to_image"));
 
-	renderToImageTests->addChild(createTestGroup(testCtx, "core",					"Core render to image tests",								addCoreRenderToImageTests, pipelineConstructionType));
-	renderToImageTests->addChild(createTestGroup(testCtx, "dedicated_allocation",	"Render to image tests for dedicated memory allocation",	addDedicatedAllocationRenderToImageTests, pipelineConstructionType));
+	// Core render to image tests
+	renderToImageTests->addChild(createTestGroup(testCtx, "core", addCoreRenderToImageTests, pipelineConstructionType));
+	// Render to image tests for dedicated memory allocation
+	renderToImageTests->addChild(createTestGroup(testCtx, "dedicated_allocation", addDedicatedAllocationRenderToImageTests, pipelineConstructionType));
 
 	return renderToImageTests.release();
 }
