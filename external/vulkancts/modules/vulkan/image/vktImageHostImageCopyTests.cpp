@@ -1013,25 +1013,43 @@ tcu::TestStatus HostImageCopyTestInstance::iterate (void)
 		const Allocation& outputAlloc = colorOutputBuffer->getAllocation();
 		deMemcpy(resultData.data(), outputAlloc.getHostPtr(), sampledBufferSize);
 
-		for (uint32_t i = 0; i < sampledBufferSize; ++i) {
-			if (resultData[i] != testData[i]) {
-
-				if (!isCompressedFormat(m_parameters.imageSampledFormat))
-				{
-					const tcu::ConstPixelBufferAccess bufferData(mapVkFormat(m_parameters.imageSampledFormat),
-						m_parameters.imageSize.width,
-						m_parameters.imageSize.height,
-						m_parameters.imageSize.depth,
-						outputAlloc.getHostPtr());
-
-					m_context.getTestContext().getLog()
-						<< tcu::TestLog::Section("host_copy_result", "host_copy_result")
-						<< tcu::LogImage("image", "", bufferData)
-						<< tcu::TestLog::EndSection;
+		bool match = true;
+		if (m_parameters.imageOutputFormat == VK_FORMAT_R10X6_UNORM_PACK16)
+		{
+			for (deUint32 i = 0; i < sampledBufferSize / 2; ++i) {
+				deUint16 ref = ((deUint16*)testData.data())[i];
+				deUint16 result = ((deUint16*)resultData.data())[i];
+				if ((ref & 0xffc0) != (result & 0xffc0)) {
+					match = false;
+					break;
 				}
-
-				return tcu::TestStatus::fail("Image verification failed");
 			}
+		}
+		else
+		{
+			for (uint32_t i = 0; i < sampledBufferSize; ++i) {
+				if (resultData[i] != testData[i]) {
+					match = false;
+					break;
+				}
+			}
+		}
+		if (!match)
+		{
+			if (!isCompressedFormat(m_parameters.imageSampledFormat))
+			{
+				const tcu::ConstPixelBufferAccess bufferData(mapVkFormat(m_parameters.imageSampledFormat),
+					m_parameters.imageSize.width,
+					m_parameters.imageSize.height,
+					m_parameters.imageSize.depth,
+					outputAlloc.getHostPtr());
+
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Section("host_copy_result", "host_copy_result")
+					<< tcu::LogImage("image", "", bufferData)
+					<< tcu::TestLog::EndSection;
+			}
+			return tcu::TestStatus::fail("Image verification failed");
 		}
 	}
 	return tcu::TestStatus::pass("Pass");
