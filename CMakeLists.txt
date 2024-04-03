@@ -118,7 +118,7 @@ endif ()
 
 # vulkan-validationlayers.  Supported only on 64-bit
 if ("${DE_CPU}" STREQUAL "DE_CPU_X86_64" OR "${DE_CPU}" STREQUAL "DE_CPU_ARM_64")
-	add_subdirectory(external/vulkan-validationlayers)
+	add_subdirectory(external/vulkan-validationlayers ${MAYBE_EXCLUDE_FROM_ALL})
 endif ()
 
 # spirv-tools
