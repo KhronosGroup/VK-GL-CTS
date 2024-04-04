@@ -7241,6 +7241,9 @@ void PolygonModeLargePointsCase::checkSupport (Context &context) const
 #ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().pointPolygons)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Point polygons are not supported by this implementation");
+
+	if (!context.getMaintenance5Properties().polygonModePointSize && !m_config.defaultSize)
+		TCU_THROW(NotSupportedError, "VK_KHR_maintenance5: polygonModePointSize property is not supported by this implementation");
 #else
 	DE_ASSERT(false);
 #endif // CTS_USES_VULKANSC

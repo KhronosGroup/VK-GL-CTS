@@ -1774,6 +1774,8 @@ void VideoBaseDecoder::QueryDecodeResults(de::MovePtr<CachedDecodeParameters> &c
 	auto& vk						   = m_deviceContext->getDeviceDriver();
 	auto  device					   = m_deviceContext->device;
 
+	WaitForFrameFences(cachedParameters);
+
 	VkQueryResultStatusKHR decodeStatus;
 	VkResult result = vk.getQueryPoolResults(device,
 											 cachedParameters->frameSynchronizationInfo.queryPool,

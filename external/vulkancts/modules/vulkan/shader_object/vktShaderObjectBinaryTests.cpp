@@ -311,7 +311,8 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate (void)
 		}
 		else if (m_params.queryType == NEW_DEVICE || m_params.queryType == DEVICE_NO_EXTS_FEATURES)
 		{
-			vk::VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures	= m_context.getShaderObjectFeaturesEXT();
+			vk::VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures	= vk::initVulkanStructure();
+			shaderObjectFeatures.shaderObject = VK_TRUE;
 			vk::VkPhysicalDeviceFeatures2				features2;
 			std::vector<const char*>					extensions;
 
