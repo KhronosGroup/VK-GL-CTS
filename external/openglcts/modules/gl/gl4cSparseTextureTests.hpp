@@ -76,6 +76,11 @@ public:
 
     static void getTextureLevelSize(GLint target, TextureState &state, GLint level, GLint &width, GLint &height,
                                     GLint &depth);
+    static std::string getTextureTargetString(GLint target);
+    static std::string getTextureFormatString(GLint format);
+
+private:
+    static void removeGLPrefixAndLowerCase(std::string &name);
 };
 
 /** Represents texture static helper
@@ -117,17 +122,17 @@ class TextureParameterQueriesTestCase : public deqp::TestCase
 {
 public:
     /* Public methods */
-    TextureParameterQueriesTestCase(deqp::Context &context);
+    TextureParameterQueriesTestCase(deqp::Context &context, const char *name, const char *description,
+                                    GLint supportedTarget, GLint notSupportedTarget);
 
-    void init();
     tcu::TestNode::IterateResult iterate();
 
 private:
     /* Private members */
     std::stringstream mLog;
 
-    std::vector<GLint> mSupportedTargets;
-    std::vector<GLint> mNotSupportedTargets;
+    GLint mSupportedTarget;
+    GLint mNotSupportedTarget;
 
     /* Private methods */
     bool testTextureSparseARB(const Functions &gl, GLint target, GLint expectedError = GL_NO_ERROR);
@@ -147,17 +152,17 @@ class InternalFormatQueriesTestCase : public deqp::TestCase
 {
 public:
     /* Public methods */
-    InternalFormatQueriesTestCase(deqp::Context &context);
+    InternalFormatQueriesTestCase(deqp::Context &context, const char *name, const char *description, GLint target,
+                                  GLint format);
 
-    void init();
     tcu::TestNode::IterateResult iterate();
 
 private:
     /* Private methods */
     std::stringstream mLog;
 
-    std::vector<GLint> mSupportedTargets;
-    std::vector<GLint> mSupportedInternalFormats;
+    GLint mTarget;
+    GLint mFormat;
 
     /* Private members */
 };
@@ -189,20 +194,18 @@ class SparseTextureAllocationTestCase : public deqp::TestCase
 {
 public:
     /* Public methods */
-    SparseTextureAllocationTestCase(deqp::Context &context);
+    SparseTextureAllocationTestCase(deqp::Context &context, const char *name, const char *description, GLint target,
+                                    GLint fullArrayTarget, GLint format);
 
-    SparseTextureAllocationTestCase(deqp::Context &context, const char *name, const char *description);
-
-    virtual void init();
     virtual tcu::TestNode::IterateResult iterate();
 
 protected:
     /* Protected methods */
     std::stringstream mLog;
 
-    std::vector<GLint> mSupportedTargets;
-    std::vector<GLint> mFullArrayTargets;
-    std::vector<GLint> mSupportedInternalFormats;
+    GLint mTarget;
+    GLint mFullArrayTarget;
+    GLint mFormat;
 
     /* Protected members */
     bool positiveTesting(const Functions &gl, GLint target, GLint format);
@@ -214,23 +217,23 @@ protected:
 
 /** Test verifies glTexPageCommitmentARB functionality added by ARB_sparse_texture extension
  **/
+
 class SparseTextureCommitmentTestCase : public deqp::TestCase
 {
 public:
     /* Public methods */
-    SparseTextureCommitmentTestCase(deqp::Context &context);
 
-    SparseTextureCommitmentTestCase(deqp::Context &context, const char *name, const char *description);
+    SparseTextureCommitmentTestCase(deqp::Context &context, const char *name, const char *description, GLint target,
+                                    GLint format);
 
-    virtual void init();
     virtual tcu::TestNode::IterateResult iterate();
 
 protected:
     /* Protected members */
     std::stringstream mLog;
 
-    std::vector<GLint> mSupportedTargets;
-    std::vector<GLint> mSupportedInternalFormats;
+    GLint mTarget;
+    GLint mFormat;
 
     TextureState mState;
 
@@ -261,7 +264,8 @@ class SparseDSATextureCommitmentTestCase : public SparseTextureCommitmentTestCas
 {
 public:
     /* Public methods */
-    SparseDSATextureCommitmentTestCase(deqp::Context &context);
+    SparseDSATextureCommitmentTestCase(deqp::Context &context, const char *name, const char *description, GLint target,
+                                       GLint format);
 
     virtual tcu::TestNode::IterateResult iterate();
 
@@ -284,6 +288,12 @@ public:
 private:
     SparseTextureTests(const SparseTextureTests &other);
     SparseTextureTests &operator=(const SparseTextureTests &other);
+
+    void addTextureParameterQueriesTestCase();
+    void addInternalFormatQueriesTestCase();
+    void addSparseTextureAllocationTestCase();
+    void addSparseTextureCommitmentTestCase();
+    void addSparseDSATextureCommitmentTestCase();
 };
 
 } // namespace gl4cts

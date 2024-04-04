@@ -826,14 +826,12 @@ tcu::TestNode::IterateResult PageSizeGetterTest::iterate()
  *
  *  @param gl                         GL entry-points container
  *  @param testContext                CTS test context
- *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
- *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  *  @param all_pages_committed        true to run the test with all data memory pages committed,
  *                                    false to leave some of them without an actual memory backing.
  */
 AtomicCounterBufferStorageTestCase::AtomicCounterBufferStorageTestCase(const glw::Functions &gl,
                                                                        tcu::TestContext &testContext,
-                                                                       glw::GLint page_size, bool all_pages_committed)
+                                                                       bool all_pages_committed)
     : m_all_pages_committed(all_pages_committed)
     , m_gl(gl)
     , m_gl_atomic_counter_uniform_array_stride(0)
@@ -842,7 +840,6 @@ AtomicCounterBufferStorageTestCase::AtomicCounterBufferStorageTestCase(const glw
     , m_helper_bo_size(0)
     , m_helper_bo_size_rounded(0)
     , m_n_draw_calls(3) /* as per test spec */
-    , m_page_size(page_size)
     , m_po(0)
     , m_sparse_bo(0)
     , m_sparse_bo_data_size(0)
@@ -1032,6 +1029,10 @@ bool AtomicCounterBufferStorageTestCase::initTestCaseGlobal()
     std::string n_counters_string;
     bool result = true;
 
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &m_page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+
     static const char *vs_body_preamble = "#version 430 core\n"
                                           "\n";
 
@@ -1198,17 +1199,14 @@ bool AtomicCounterBufferStorageTestCase::initTestCaseIteration(glw::GLuint spars
  *  @param gl                         GL entry-points container
  *  @param context                    CTS rendering context
  *  @param testContext                CTS test context
- *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
- *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  */
 BufferTextureStorageTestCase::BufferTextureStorageTestCase(const glw::Functions &gl, deqp::Context &context,
-                                                           tcu::TestContext &testContext, glw::GLint page_size)
+                                                           tcu::TestContext &testContext)
     : m_gl(gl)
     , m_helper_bo(0)
     , m_helper_bo_data(DE_NULL)
     , m_helper_bo_data_size(0)
     , m_is_texture_buffer_range_supported(false)
-    , m_page_size(page_size)
     , m_po(0)
     , m_po_local_wg_size(1024)
     , m_sparse_bo(0)
@@ -1476,6 +1474,10 @@ bool BufferTextureStorageTestCase::initTestCaseGlobal()
         "    }\n"
         "}\n";
 
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &m_page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+
     m_po = SparseBufferTestUtilities::createComputeProgram(m_gl, &cs_body, 1); /* n_cs_body_parts */
 
     /* Set up a data buffer we will use to initialize the SSBO with default data.
@@ -1572,25 +1574,29 @@ bool BufferTextureStorageTestCase::initTestCaseIteration(glw::GLuint sparse_bo)
     return result;
 }
 
+namespace ClearOpsBufferStorageTest
+{
+const unsigned int CLEAR_OP_TYPE_MAX = 2;
+const unsigned int ITERATION_MAX     = 2;
+} // namespace ClearOpsBufferStorageTest
 /** Constructor.
  *
  *  @param gl                         GL entry-points container
  *  @param testContext                CTS test context
- *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
- *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  */
 ClearOpsBufferStorageTestCase::ClearOpsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext,
-                                                             glw::GLint page_size)
+                                                             unsigned int clear_op_type, unsigned int iteration)
     : m_gl(gl)
     , m_helper_bo(0)
     , m_initial_data(DE_NULL)
     , m_n_pages_to_use(16)
-    , m_page_size(page_size)
     , m_sparse_bo(0)
     , m_sparse_bo_size_rounded(0)
     , m_testCtx(testContext)
+    , m_clear_op_type(clear_op_type)
+    , m_iteration(iteration)
 {
-    /* Left blank intentionally */
+    /* Left blank on purpose */
 }
 
 /** Releases all GL objects used across all test case iterations.
@@ -1645,190 +1651,169 @@ bool ClearOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
     bool result                   = true;
     const unsigned int data_rgba8 = 0x12345678;
 
-    for (unsigned int n_clear_op_type = 0; n_clear_op_type < 2; /* glClearBufferData(), glClearBufferSubData() */
-         ++n_clear_op_type)
+    const bool use_clear_buffer_data_call = (m_clear_op_type == 0);
+
+    const bool all_pages_committed = (m_iteration == 0);
+
+    if (!all_pages_committed)
     {
-        const bool use_clear_buffer_data_call = (n_clear_op_type == 0);
+        m_gl.bindBuffer(GL_ARRAY_BUFFER, m_sparse_bo);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
-        /* We will run the test case in two iterations:
-         *
-         * 1) All pages will have a physical backing.
-         * 2) Half of the pages will have a physical backing.
-         */
-        for (unsigned int n_iteration = 0; n_iteration < 2; ++n_iteration)
+        m_gl.bufferPageCommitmentARB(GL_ARRAY_BUFFER, m_sparse_bo_size_rounded / 2, /* offset */
+                                     m_sparse_bo_size_rounded / 2,                  /* size   */
+                                     GL_TRUE);                                      /* commit */
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
+    }
+
+    /* Set up the sparse buffer contents */
+    m_gl.bindBuffer(GL_ARRAY_BUFFER, m_helper_bo);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
+    m_gl.bufferSubData(GL_ARRAY_BUFFER, 0, /* offset */
+                       m_sparse_bo_size_rounded, m_initial_data);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferSubData() call failed.");
+
+    m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
+    m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bo);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call(s) failed.");
+
+    m_gl.copyBufferSubData(GL_COPY_READ_BUFFER,  /* readTarget  */
+                           GL_COPY_WRITE_BUFFER, /* writeTarget */
+                           0,                    /* readOffset */
+                           0,                    /* writeOffset */
+                           m_sparse_bo_size_rounded);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
+
+    /* Issue the clear call */
+    unsigned int clear_region_size         = 0;
+    unsigned int clear_region_start_offset = 0;
+
+    if (use_clear_buffer_data_call)
+    {
+        DE_ASSERT((m_sparse_bo_size_rounded % sizeof(unsigned int)) == 0);
+
+        clear_region_size         = m_sparse_bo_size_rounded;
+        clear_region_start_offset = 0;
+
+        m_gl.clearBufferData(GL_COPY_WRITE_BUFFER, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, &data_rgba8);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClearBufferData() call failed.");
+    }
+    else
+    {
+        DE_ASSERT(((m_sparse_bo_size_rounded / 2) % sizeof(unsigned int)) == 0);
+        DE_ASSERT(((m_sparse_bo_size_rounded) % sizeof(unsigned int)) == 0);
+
+        clear_region_size         = m_sparse_bo_size_rounded / 2;
+        clear_region_start_offset = m_sparse_bo_size_rounded / 2;
+
+        m_gl.clearBufferSubData(GL_COPY_WRITE_BUFFER, GL_RGBA8, clear_region_start_offset, clear_region_size, GL_RGBA,
+                                GL_UNSIGNED_BYTE, &data_rgba8);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClearBufferSubData() call failed.");
+    }
+
+    /* Retrieve the modified buffer's contents */
+    const unsigned char *result_data = NULL;
+
+    m_gl.copyBufferSubData(GL_COPY_WRITE_BUFFER, /* readTarget  */
+                           GL_COPY_READ_BUFFER,  /* writeTarget */
+                           0,                    /* readOffset  */
+                           0,                    /* writeOffset */
+                           m_sparse_bo_size_rounded);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
+
+    result_data = (unsigned char *)m_gl.mapBufferRange(GL_COPY_READ_BUFFER, 0, /* offset */
+                                                       m_sparse_bo_size_rounded, GL_MAP_READ_BIT);
+
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBufferRange() call failed.");
+
+    /* Verify the result data: unmodified region */
+    bool result_local                                 = true;
+    const unsigned int unmodified_region_size         = (use_clear_buffer_data_call) ? 0 : clear_region_start_offset;
+    const unsigned int unmodified_region_start_offset = 0;
+
+    for (unsigned int n_current_byte = unmodified_region_start_offset;
+         (n_current_byte < unmodified_region_start_offset + unmodified_region_size) && result_local; ++n_current_byte)
+    {
+        const unsigned int current_initial_data_offset = n_current_byte - unmodified_region_start_offset;
+        const unsigned char expected_value             = m_initial_data[current_initial_data_offset];
+        const unsigned char found_value                = result_data[n_current_byte];
+
+        if (expected_value != found_value)
         {
-            /* By default, for each iteration all sparse buffer pages are commited.
-             *
-             * For the last iteration, we need to de-commit the latter half before
-             * proceeding with the test.
-             */
-            const bool all_pages_committed = (n_iteration == 0);
+            m_testCtx.getLog() << tcu::TestLog::Message
+                               << "Unmodified buffer object region has invalid contents. Expected byte "
+                               << "[" << (int)expected_value
+                               << "]"
+                                  ", found byte:"
+                                  "["
+                               << (int)found_value
+                               << "]"
+                                  " at index "
+                                  "["
+                               << n_current_byte
+                               << "]; "
+                                  "call type:"
+                                  "["
+                               << ((use_clear_buffer_data_call) ? "glClearBufferData()" : "glClearBufferSubData()")
+                               << "]"
+                                  ", all required pages committed?:"
+                                  "["
+                               << ((all_pages_committed) ? "yes" : "no") << "]" << tcu::TestLog::EndMessage;
 
-            if (!all_pages_committed)
-            {
-                m_gl.bindBuffer(GL_ARRAY_BUFFER, m_sparse_bo);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+            result_local = false;
+            break;
+        }
+    }
 
-                m_gl.bufferPageCommitmentARB(GL_ARRAY_BUFFER, m_sparse_bo_size_rounded / 2, /* offset */
-                                             m_sparse_bo_size_rounded / 2,                  /* size   */
-                                             GL_TRUE);                                      /* commit */
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
-            }
+    result &= result_local;
+    result_local = true;
 
-            /* Set up the sparse buffer contents */
-            m_gl.bindBuffer(GL_ARRAY_BUFFER, m_helper_bo);
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+    /* Verify the result data: modified region (clamped to the memory region
+     * with actual physical backing) */
+    const unsigned int modified_region_size         = (all_pages_committed) ? clear_region_size : 0;
+    const unsigned int modified_region_start_offset = clear_region_start_offset;
 
-            m_gl.bufferSubData(GL_ARRAY_BUFFER, 0, /* offset */
-                               m_sparse_bo_size_rounded, m_initial_data);
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferSubData() call failed.");
+    for (unsigned int n_current_byte = modified_region_start_offset;
+         (n_current_byte < modified_region_start_offset + modified_region_size) && result_local; ++n_current_byte)
+    {
+        const unsigned char component_offset = n_current_byte % 4;
+        const unsigned char expected_value =
+            static_cast<unsigned char>((data_rgba8 & (0xFFu << (component_offset * 8))) >> (component_offset * 8));
+        const unsigned char found_value = result_data[n_current_byte];
 
-            m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_helper_bo);
-            m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_sparse_bo);
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call(s) failed.");
+        if (expected_value != found_value)
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message
+                               << "Modified buffer object region has invalid contents. Expected byte "
+                               << "[" << (int)expected_value
+                               << "]"
+                                  ", found byte:"
+                                  "["
+                               << (int)found_value
+                               << "]"
+                                  " at index "
+                                  "["
+                               << n_current_byte
+                               << "]; "
+                                  "call type:"
+                                  "["
+                               << ((use_clear_buffer_data_call) ? "glClearBufferData()" : "glClearBufferSubData()")
+                               << "]"
+                                  ", all required pages committed?:"
+                                  "["
+                               << ((all_pages_committed) ? "yes" : "no") << "]" << tcu::TestLog::EndMessage;
 
-            m_gl.copyBufferSubData(GL_COPY_READ_BUFFER,  /* readTarget  */
-                                   GL_COPY_WRITE_BUFFER, /* writeTarget */
-                                   0,                    /* readOffset */
-                                   0,                    /* writeOffset */
-                                   m_sparse_bo_size_rounded);
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
+            result_local = false;
+            break;
+        }
+    }
 
-            /* Issue the clear call */
-            unsigned int clear_region_size         = 0;
-            unsigned int clear_region_start_offset = 0;
+    result &= result_local;
 
-            if (use_clear_buffer_data_call)
-            {
-                DE_ASSERT((m_sparse_bo_size_rounded % sizeof(unsigned int)) == 0);
-
-                clear_region_size         = m_sparse_bo_size_rounded;
-                clear_region_start_offset = 0;
-
-                m_gl.clearBufferData(GL_COPY_WRITE_BUFFER, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, &data_rgba8);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClearBufferData() call failed.");
-            }
-            else
-            {
-                DE_ASSERT(((m_sparse_bo_size_rounded / 2) % sizeof(unsigned int)) == 0);
-                DE_ASSERT(((m_sparse_bo_size_rounded) % sizeof(unsigned int)) == 0);
-
-                clear_region_size         = m_sparse_bo_size_rounded / 2;
-                clear_region_start_offset = m_sparse_bo_size_rounded / 2;
-
-                m_gl.clearBufferSubData(GL_COPY_WRITE_BUFFER, GL_RGBA8, clear_region_start_offset, clear_region_size,
-                                        GL_RGBA, GL_UNSIGNED_BYTE, &data_rgba8);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClearBufferSubData() call failed.");
-            }
-
-            /* Retrieve the modified buffer's contents */
-            const unsigned char *result_data = NULL;
-
-            m_gl.copyBufferSubData(GL_COPY_WRITE_BUFFER, /* readTarget  */
-                                   GL_COPY_READ_BUFFER,  /* writeTarget */
-                                   0,                    /* readOffset  */
-                                   0,                    /* writeOffset */
-                                   m_sparse_bo_size_rounded);
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
-
-            result_data = (unsigned char *)m_gl.mapBufferRange(GL_COPY_READ_BUFFER, 0, /* offset */
-                                                               m_sparse_bo_size_rounded, GL_MAP_READ_BIT);
-
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBufferRange() call failed.");
-
-            /* Verify the result data: unmodified region */
-            bool result_local                         = true;
-            const unsigned int unmodified_region_size = (use_clear_buffer_data_call) ? 0 : clear_region_start_offset;
-            const unsigned int unmodified_region_start_offset = 0;
-
-            for (unsigned int n_current_byte = unmodified_region_start_offset;
-                 (n_current_byte < unmodified_region_start_offset + unmodified_region_size) && result_local;
-                 ++n_current_byte)
-            {
-                const unsigned int current_initial_data_offset = n_current_byte - unmodified_region_start_offset;
-                const unsigned char expected_value             = m_initial_data[current_initial_data_offset];
-                const unsigned char found_value                = result_data[n_current_byte];
-
-                if (expected_value != found_value)
-                {
-                    m_testCtx.getLog() << tcu::TestLog::Message
-                                       << "Unmodified buffer object region has invalid contents. Expected byte "
-                                       << "[" << (int)expected_value
-                                       << "]"
-                                          ", found byte:"
-                                          "["
-                                       << (int)found_value
-                                       << "]"
-                                          " at index "
-                                          "["
-                                       << n_current_byte
-                                       << "]; "
-                                          "call type:"
-                                          "["
-                                       << ((use_clear_buffer_data_call) ? "glClearBufferData()" :
-                                                                          "glClearBufferSubData()")
-                                       << "]"
-                                          ", all required pages committed?:"
-                                          "["
-                                       << ((all_pages_committed) ? "yes" : "no") << "]" << tcu::TestLog::EndMessage;
-
-                    result_local = false;
-                    break;
-                }
-            }
-
-            result &= result_local;
-            result_local = true;
-
-            /* Verify the result data: modified region (clamped to the memory region
-             * with actual physical backing) */
-            const unsigned int modified_region_size         = (all_pages_committed) ? clear_region_size : 0;
-            const unsigned int modified_region_start_offset = clear_region_start_offset;
-
-            for (unsigned int n_current_byte = modified_region_start_offset;
-                 (n_current_byte < modified_region_start_offset + modified_region_size) && result_local;
-                 ++n_current_byte)
-            {
-                const unsigned char component_offset = n_current_byte % 4;
-                const unsigned char expected_value   = static_cast<unsigned char>(
-                    (data_rgba8 & (0xFFu << (component_offset * 8))) >> (component_offset * 8));
-                const unsigned char found_value = result_data[n_current_byte];
-
-                if (expected_value != found_value)
-                {
-                    m_testCtx.getLog() << tcu::TestLog::Message
-                                       << "Modified buffer object region has invalid contents. Expected byte "
-                                       << "[" << (int)expected_value
-                                       << "]"
-                                          ", found byte:"
-                                          "["
-                                       << (int)found_value
-                                       << "]"
-                                          " at index "
-                                          "["
-                                       << n_current_byte
-                                       << "]; "
-                                          "call type:"
-                                          "["
-                                       << ((use_clear_buffer_data_call) ? "glClearBufferData()" :
-                                                                          "glClearBufferSubData()")
-                                       << "]"
-                                          ", all required pages committed?:"
-                                          "["
-                                       << ((all_pages_committed) ? "yes" : "no") << "]" << tcu::TestLog::EndMessage;
-
-                    result_local = false;
-                    break;
-                }
-            }
-
-            result &= result_local;
-
-            /* Unmap the storage before proceeding */
-            m_gl.unmapBuffer(GL_COPY_READ_BUFFER);
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUnmapBuffer() call failed.");
-        } /* for (both iterations) */
-    }     /* for (both clear types) */
+    /* Unmap the storage before proceeding */
+    m_gl.unmapBuffer(GL_COPY_READ_BUFFER);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUnmapBuffer() call failed.");
 
     return result;
 }
@@ -1839,6 +1824,10 @@ bool ClearOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
  */
 bool ClearOpsBufferStorageTestCase::initTestCaseGlobal()
 {
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &m_page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+
     unsigned int n_bytes_filled       = 0;
     const unsigned int n_bytes_needed = m_n_pages_to_use * m_page_size;
 
@@ -1905,15 +1894,12 @@ bool ClearOpsBufferStorageTestCase::initTestCaseIteration(glw::GLuint sparse_bo)
  *
  *  @param gl                         GL entry-points container
  *  @param testContext                CTS test context
- *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
  *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  */
-CopyOpsBufferStorageTestCase::CopyOpsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext,
-                                                           glw::GLint page_size)
+CopyOpsBufferStorageTestCase::CopyOpsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext)
     : m_gl(gl)
     , m_helper_bo(0)
     , m_immutable_bo(0)
-    , m_page_size(page_size)
     , m_sparse_bo_size(0)
     , m_sparse_bo_size_rounded(0)
     , m_testCtx(testContext)
@@ -2291,6 +2277,10 @@ void CopyOpsBufferStorageTestCase::initReferenceData()
  */
 bool CopyOpsBufferStorageTestCase::initTestCaseGlobal()
 {
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &m_page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+
     m_sparse_bo_size         = 2 * 3 * 4 * m_page_size;
     m_sparse_bo_size_rounded = SparseBufferTestUtilities::alignOffset(m_sparse_bo_size, m_page_size);
 
@@ -2579,19 +2569,16 @@ void CopyOpsBufferStorageTestCase::initTestCases()
  *
  *  @param gl                         GL entry-points container
  *  @param testContext                CTS test context
- *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
  *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  */
 IndirectDispatchBufferStorageTestCase::IndirectDispatchBufferStorageTestCase(const glw::Functions &gl,
-                                                                             tcu::TestContext &testContext,
-                                                                             glw::GLint page_size)
+                                                                             tcu::TestContext &testContext)
     : m_dispatch_draw_call_args_start_offset(-1)
     , m_expected_ac_value(0)
     , m_gl(gl)
     , m_global_wg_size_x(2048)
     , m_helper_bo(0)
     , m_local_wg_size_x(1023) /* must stay in sync with the local work-groups's size hardcoded in m_po's body! */
-    , m_page_size(page_size)
     , m_po(0)
     , m_sparse_bo(0)
     , m_sparse_bo_size(0)
@@ -2735,6 +2722,10 @@ bool IndirectDispatchBufferStorageTestCase::execute(glw::GLuint sparse_bo_storag
  */
 bool IndirectDispatchBufferStorageTestCase::initTestCaseGlobal()
 {
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &m_page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+
     bool result = true;
 
     /* One of the cases the test case implementation needs to support is the scenario
@@ -2838,14 +2829,11 @@ bool IndirectDispatchBufferStorageTestCase::initTestCaseIteration(glw::GLuint sp
  *
  *  @param gl                         GL entry-points container
  *  @param testContext                CTS test context
- *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
- *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  */
 InvalidateBufferStorageTestCase::InvalidateBufferStorageTestCase(const glw::Functions &gl,
-                                                                 tcu::TestContext &testContext, glw::GLint page_size)
+                                                                 tcu::TestContext &testContext)
     : m_gl(gl)
     , m_n_pages_to_use(4)
-    , m_page_size(page_size)
     , m_sparse_bo(0)
     , m_sparse_bo_size(0)
     , m_sparse_bo_size_rounded(0)
@@ -2929,6 +2917,10 @@ bool InvalidateBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flag
  */
 bool InvalidateBufferStorageTestCase::initTestCaseGlobal()
 {
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &m_page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+
     const unsigned int n_bytes_needed = m_n_pages_to_use * m_page_size;
 
     /* Determine the number of bytes both the helper and the sparse buffer
@@ -2969,18 +2961,14 @@ bool InvalidateBufferStorageTestCase::initTestCaseIteration(glw::GLuint sparse_b
  *
  *  @param gl                         GL entry-points container
  *  @param testContext                CTS test context
- *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
- *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  */
-PixelPackBufferStorageTestCase::PixelPackBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext,
-                                                               glw::GLint page_size)
+PixelPackBufferStorageTestCase::PixelPackBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext)
     : m_color_rb(0)
     , m_color_rb_height(1024)
     , m_color_rb_width(1024)
     , m_fbo(0)
     , m_gl(gl)
     , m_helper_bo(0)
-    , m_page_size(page_size)
     , m_po(0)
     , m_ref_data_ptr(DE_NULL)
     , m_ref_data_size(0)
@@ -3255,6 +3243,10 @@ bool PixelPackBufferStorageTestCase::initTestCaseGlobal()
                                    "    }\n"
                                    "}\n";
 
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &m_page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+
     m_po = SparseBufferTestUtilities::createProgram(m_gl, &gradient_fs_code, 1, /* n_fs_body_parts */
                                                     &gradient_vs_code, 1,       /* n_vs_body_parts*/
                                                     NULL,                       /* attribute_names */
@@ -3365,14 +3357,11 @@ bool PixelPackBufferStorageTestCase::initTestCaseIteration(glw::GLuint sparse_bo
  *
  *  @param gl                         GL entry-points container
  *  @param testContext                CTS test context
- *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
- *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  */
 PixelUnpackBufferStorageTestCase::PixelUnpackBufferStorageTestCase(const glw::Functions &gl,
-                                                                   tcu::TestContext &testContext, glw::GLint page_size)
+                                                                   tcu::TestContext &testContext)
     : m_gl(gl)
     , m_helper_bo(0)
-    , m_page_size(page_size)
     , m_read_data_ptr(DE_NULL)
     , m_sparse_bo(0)
     , m_sparse_bo_size(0)
@@ -3636,6 +3625,10 @@ bool PixelUnpackBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_fla
  */
 bool PixelUnpackBufferStorageTestCase::initTestCaseGlobal()
 {
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &m_page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+
     /* Determine sparse buffer storage size */
     m_sparse_bo_size         = m_texture_data_size;
     m_sparse_bo_size_rounded = SparseBufferTestUtilities::alignOffset(m_sparse_bo_size, m_page_size);
@@ -3708,15 +3701,13 @@ bool PixelUnpackBufferStorageTestCase::initTestCaseIteration(glw::GLuint sparse_
  *
  *  @param gl                         GL entry-points container
  *  @param testContext                CTS test context
- *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
  *  @param ibo_usage                  Specifies if an indexed draw call should be used by the test. For more details,
  *                                    please see documentation for _ibo_usage.
  *  @param use_color_data             true to use the color data for the tested draw call;
  *                                    false to omit usage of attribute data.
- *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  */
 QuadsBufferStorageTestCase::QuadsBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext,
-                                                       glw::GLint page_size, _ibo_usage ibo_usage, bool use_color_data)
+                                                       _ibo_usage ibo_usage, bool use_color_data)
     : m_attribute_color_location(0)    /* predefined attribute locations */
     , m_attribute_position_location(1) /* predefined attribute locations */
     , m_color_data_offset(0)
@@ -3774,8 +3765,6 @@ QuadsBufferStorageTestCase::QuadsBufferStorageTestCase(const glw::Functions &gl,
                                                 2 *                                                /* triangles */
                                                 3)); /* vertices per triangle */
     }
-
-    m_data_size_rounded = SparseBufferTestUtilities::alignOffset(m_data_size, page_size);
 }
 
 /** Allocates a data buffer and fills it with vertex/index/color data. Vertex data is always stored,
@@ -4281,6 +4270,12 @@ void QuadsBufferStorageTestCase::initSparseBO(bool decommit_data_pages_after_upl
  */
 bool QuadsBufferStorageTestCase::initTestCaseGlobal()
 {
+    glw::GLint page_size = 0;
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+    m_data_size_rounded = SparseBufferTestUtilities::alignOffset(m_data_size, page_size);
+
     bool result = true;
 
     /* Set up the texture object */
@@ -4389,12 +4384,10 @@ bool QuadsBufferStorageTestCase::initTestCaseIteration(glw::GLuint sparse_bo)
  *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
  *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  */
-QueryBufferStorageTestCase::QueryBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext,
-                                                       glw::GLint page_size)
+QueryBufferStorageTestCase::QueryBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext)
     : m_gl(gl)
     , m_helper_bo(0)
     , m_n_triangles(15)
-    , m_page_size(page_size)
     , m_po(0)
     , m_qo(0)
     , m_sparse_bo(0)
@@ -4600,6 +4593,10 @@ bool QueryBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
  */
 bool QueryBufferStorageTestCase::initTestCaseGlobal()
 {
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &m_page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+
     /* Determine sparse buffer storage size */
     m_sparse_bo_size         = sizeof(glw::GLuint64);
     m_sparse_bo_size_rounded = SparseBufferTestUtilities::alignOffset(m_sparse_bo_size, m_page_size);
@@ -4674,13 +4671,10 @@ bool QueryBufferStorageTestCase::initTestCaseIteration(glw::GLuint sparse_bo)
  *
  *  @param gl                         GL entry-points container
  *  @param testContext                CTS test context
- *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
- *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  */
-SSBOStorageTestCase::SSBOStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext, glw::GLint page_size)
+SSBOStorageTestCase::SSBOStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext)
     : m_gl(gl)
     , m_helper_bo(0)
-    , m_page_size(page_size)
     , m_po(0)
     , m_po_local_wg_size(1024)
     , m_result_bo(0)
@@ -4699,8 +4693,6 @@ SSBOStorageTestCase::SSBOStorageTestCase(const glw::Functions &gl, tcu::TestCont
      * NOTE: 16777216 % 1024 = 0, which is awesome because we can hardcode the
      *       local workgroup size directly in the CS.
      */
-    m_sparse_bo_size         = (16777216 / (sizeof(int) * 4) /* std140 */) * (sizeof(int) * 4);
-    m_sparse_bo_size_rounded = SparseBufferTestUtilities::alignOffset(m_sparse_bo_size, m_page_size);
 }
 
 /** Releases all GL objects used across all test case iterations.
@@ -4924,6 +4916,13 @@ bool SSBOStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
  */
 bool SSBOStorageTestCase::initTestCaseGlobal()
 {
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &m_page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+
+    m_sparse_bo_size         = (16777216 / (sizeof(int) * 4) /* std140 */) * (sizeof(int) * 4);
+    m_sparse_bo_size_rounded = SparseBufferTestUtilities::alignOffset(m_sparse_bo_size, m_page_size);
+
     /* Set up the test program */
     static const char *cs_body =
         "#version 430 core\n"
@@ -5008,19 +5007,23 @@ bool SSBOStorageTestCase::initTestCaseIteration(glw::GLuint sparse_bo)
     return result;
 }
 
+namespace TransformFeedbackBufferStorageTest
+{
+const unsigned int TF_TYPE_MAX = 2;
+}
+
 /** Constructor.
  *
  *  @param gl                         GL entry-points container
  *  @param testContext                CTS test context
- *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
- *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  *  @param all_pages_committed        true to provide memory backing for all memory pages holding data used by the test.
  *                                    false to leave some of them uncommitted.
  */
 TransformFeedbackBufferStorageTestCase::TransformFeedbackBufferStorageTestCase(const glw::Functions &gl,
                                                                                tcu::TestContext &testContext,
-                                                                               glw::GLint page_size,
-                                                                               bool all_pages_committed)
+                                                                               bool all_pages_committed,
+                                                                               unsigned int tf_type,
+                                                                               unsigned int draw_call_type)
     : m_all_pages_committed(all_pages_committed)
     , m_data_bo(0)
     , m_data_bo_index_data_offset(0)
@@ -5044,7 +5047,6 @@ TransformFeedbackBufferStorageTestCase::TransformFeedbackBufferStorageTestCase(c
     , m_multidrawcall_primcount(-1)
     , m_n_instances_to_test(4)
     , m_n_vertices_per_instance(0)
-    , m_page_size(page_size)
     , m_po_ia(0)
     , m_po_sa(0)
     , m_result_bo(0)
@@ -5052,6 +5054,8 @@ TransformFeedbackBufferStorageTestCase::TransformFeedbackBufferStorageTestCase(c
     , m_result_bo_size_rounded(0)
     , m_testCtx(testContext)
     , m_vao(0)
+    , m_tf_type(tf_type)
+    , m_draw_call_type(draw_call_type)
 {
     /* Left blank on purpose */
 }
@@ -5132,702 +5136,679 @@ bool TransformFeedbackBufferStorageTestCase::execute(glw::GLuint sparse_bo_stora
 {
     bool result = true;
 
-    /* Iterate through two different transform feedback modes we need to test */
-    for (unsigned int n_tf_type = 0; n_tf_type < 2; /* interleaved & separate attribs */
-         ++n_tf_type)
+    const bool is_ia_iteration = (m_tf_type == 0);
+
+    /* Bind the test PO to the context */
+    m_gl.useProgram(is_ia_iteration ? m_po_ia : m_po_sa);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUseProgram() call failed.");
+
+    /* Set up TF general binding, which is needed for a glClearBufferData() call
+     * we'll be firing shortly.
+     */
+    m_gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, /* needed for the subsequent glClearBufferData() call */
+                    m_result_bo);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
+    int draw_call_count                          = 0; /* != 1 for multi-draw calls only */
+    int draw_call_first_instance_id[2]           = {-1};
+    int draw_call_first_vertex_id[2]             = {-1};
+    int draw_call_n_instances[2]                 = {0};
+    int draw_call_n_vertices[2]                  = {0};
+    bool draw_call_is_vertex_id_ascending        = false;
+    const _draw_call draw_call_type              = (_draw_call)m_draw_call_type;
+    unsigned int n_result_bytes_per_instance[2]  = {0};
+    const unsigned int n_result_bytes_per_vertex = sizeof(unsigned int) * 2;
+    unsigned int n_result_bytes_total            = 0;
+    glw::GLuint *result_ptr                      = DE_NULL;
+
+    m_gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_data_bo);
+    m_gl.bindBuffer(GL_DRAW_INDIRECT_BUFFER, m_data_bo);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call(s) failed.");
+
+    /* Commit pages needed to execute transform feed-back */
+    if (m_all_pages_committed)
     {
-        const bool is_ia_iteration = (n_tf_type == 0);
-
-        /* Bind the test PO to the context */
-        m_gl.useProgram(is_ia_iteration ? m_po_ia : m_po_sa);
-        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUseProgram() call failed.");
-
-        /* Set up TF general binding, which is needed for a glClearBufferData() call
-         * we'll be firing shortly.
-         */
-        m_gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, /* needed for the subsequent glClearBufferData() call */
-                        m_result_bo);
-        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
-
-        /* Iterate through all draw call types */
-        for (unsigned int n_draw_call_type = 0; n_draw_call_type < DRAW_CALL_COUNT; ++n_draw_call_type)
+        m_gl.bufferPageCommitmentARB(GL_TRANSFORM_FEEDBACK_BUFFER, 0,    /* offset */
+                                     m_result_bo_size_rounded, GL_TRUE); /* commit */
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
+    }
+    else
+    {
+        for (unsigned int n_page = 0; n_page < m_result_bo_size_rounded / m_page_size; ++n_page)
         {
-            int draw_call_count                          = 0; /* != 1 for multi-draw calls only */
-            int draw_call_first_instance_id[2]           = {-1};
-            int draw_call_first_vertex_id[2]             = {-1};
-            int draw_call_n_instances[2]                 = {0};
-            int draw_call_n_vertices[2]                  = {0};
-            bool draw_call_is_vertex_id_ascending        = false;
-            const _draw_call draw_call_type              = (_draw_call)n_draw_call_type;
-            unsigned int n_result_bytes_per_instance[2]  = {0};
-            const unsigned int n_result_bytes_per_vertex = sizeof(unsigned int) * 2;
-            unsigned int n_result_bytes_total            = 0;
-            glw::GLuint *result_ptr                      = DE_NULL;
+            m_gl.bufferPageCommitmentARB(GL_TRANSFORM_FEEDBACK_BUFFER, n_page * m_page_size, /* offset */
+                                         m_page_size,                                        /* size   */
+                                         (n_page % 2 == 0) ? GL_TRUE : GL_FALSE);            /* commit */
+        }
 
-            m_gl.bindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_data_bo);
-            m_gl.bindBuffer(GL_DRAW_INDIRECT_BUFFER, m_data_bo);
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call(s) failed.");
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
+    }
 
-            /* Commit pages needed to execute transform feed-back */
-            if (m_all_pages_committed)
+    /* Zero out the target BO before we begin the TF */
+    static const unsigned char data_zero = 0;
+
+    m_gl.clearBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &data_zero);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClearBufferData() call failed.");
+
+    /* Set up transform feed-back buffer bindings */
+    DE_ASSERT(m_result_bo_size != 0);
+
+    if (is_ia_iteration)
+    {
+        DE_ASSERT(m_result_bo != 0);
+
+        m_gl.bindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, /* index */
+                             m_result_bo, 0,                  /* offset */
+                             m_result_bo_size);
+
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferRange() call failed.");
+    }
+    else
+    {
+        DE_ASSERT(m_result_bo_size % 2 == 0);
+
+        m_gl.bindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, /* index */
+                             m_result_bo, 0,                  /* offset */
+                             m_result_bo_size / 2);
+        m_gl.bindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 1, /* index */
+                             m_result_bo, m_result_bo_size / 2, m_result_bo_size / 2);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferRange() call(s) failed.");
+    }
+
+    m_gl.beginTransformFeedback(GL_POINTS);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBeginTransformFeedback() call failed.");
+
+    /* NOTE: Some discussion about the expected "vertex id" value:
+     *
+     * In GL 4.5 core spec (Feb2/2015 version), we have:
+     *
+     * >>
+     * The index of any element transferred to the GL by DrawElementsOneInstance
+     * is referred to as its vertex ID, and may be read by a vertex shader as
+     * gl_VertexID. The vertex ID of the ith element transferred is the sum of
+     * basevertex and the value stored in the currently bound element array buffer at
+     * offset indices +i.
+     * <<
+     *
+     * So for glDrawElements*() derivatives, we will be expecting gl_VertexID to be set to
+     * (basevertex + index[i] + i)
+     *
+     * DrawArrays does not support the "base vertex" concept at all:
+     *
+     * >>
+     * The index of any element transferred to the GL by DrawArraysOneInstance
+     * is referred to as its vertex ID, and may be read by a vertex shader as gl_VertexID.
+     * The vertex ID of the ith element transferred is first + i.
+     * <<
+     *
+     * For regular draw calls, gl_VertexID should be of form:
+     *
+     * (first + i)
+     *
+     * In both cases, gl_InstanceID does NOT include the baseinstance value, as per:
+     *
+     * >>
+     * If an enabled vertex attribute array is instanced (it has a non-zero divisor as
+     * specified by VertexAttribDivisor), the element index that is transferred to the GL,
+     * for all vertices, is given by
+     *
+     * floor(instance / divisor) + baseinstance
+     *
+     * The value of instance may be read by a vertex shader as gl_InstanceID, as
+     * described in section 11.1.3.9
+     * <<
+     */
+    switch (draw_call_type)
+    {
+    case DRAW_CALL_INDEXED:
+    {
+        m_gl.drawElements(GL_POINTS, m_n_vertices_per_instance, GL_UNSIGNED_INT,
+                          (const glw::GLvoid *)(intptr_t)m_data_bo_index_data_offset);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawElements() call failed.");
+
+        draw_call_count                  = 1;
+        draw_call_first_instance_id[0]   = 0;
+        draw_call_first_vertex_id[0]     = m_n_vertices_per_instance;
+        draw_call_is_vertex_id_ascending = false;
+        draw_call_n_instances[0]         = 1;
+        draw_call_n_vertices[0]          = m_n_vertices_per_instance;
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_n_vertices_per_instance;
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
+
+        break;
+    }
+
+    case DRAW_CALL_INDEXED_BASE_VERTEX:
+    {
+        m_gl.drawElementsBaseVertex(GL_POINTS, m_n_vertices_per_instance, GL_UNSIGNED_INT,
+                                    (const glw::GLvoid *)(intptr_t)m_data_bo_index_data_offset, m_draw_call_baseVertex);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawElementsBaseVertex() call failed.");
+
+        draw_call_count                  = 1;
+        draw_call_first_instance_id[0]   = 0;
+        draw_call_first_vertex_id[0]     = m_draw_call_baseVertex + m_n_vertices_per_instance;
+        draw_call_is_vertex_id_ascending = false;
+        draw_call_n_instances[0]         = 1;
+        draw_call_n_vertices[0]          = m_n_vertices_per_instance;
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_n_vertices_per_instance;
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
+
+        break;
+    }
+
+    case DRAW_CALL_INDEXED_INDIRECT:
+    {
+        m_gl.drawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT,
+                                  (const glw::GLvoid *)(intptr_t)m_data_bo_indexed_indirect_arg_offset);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawElementsIndirect() call failed.");
+
+        draw_call_count                = 1;
+        draw_call_first_instance_id[0] = 0;
+        draw_call_first_vertex_id[0] =
+            m_draw_call_baseVertex +
+            m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[1] - m_data_bo_index_data_offset) /
+                         sizeof(unsigned int)];
+        draw_call_is_vertex_id_ascending = false;
+        draw_call_n_instances[0]         = m_n_instances_to_test;
+        draw_call_n_vertices[0]          = m_multidrawcall_count[1];
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * draw_call_n_vertices[0];
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
+
+        break;
+    }
+
+    case DRAW_CALL_INDEXED_INDIRECT_MULTI:
+    {
+        m_gl.multiDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT,
+                                       (const glw::GLvoid *)(intptr_t)m_data_bo_indexed_mdi_arg_offset,
+                                       m_multidrawcall_drawcount, 0); /* stride */
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMultiDrawElementsIndirect() call failed.");
+
+        draw_call_count                = m_multidrawcall_drawcount;
+        draw_call_first_instance_id[0] = 0;
+        draw_call_first_instance_id[1] = 0;
+        draw_call_first_vertex_id[0] =
+            m_draw_call_baseVertex +
+            m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[0] - m_data_bo_index_data_offset) /
+                         sizeof(unsigned int)];
+        draw_call_first_vertex_id[1] =
+            m_draw_call_baseVertex +
+            m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[1] - m_data_bo_index_data_offset) /
+                         sizeof(unsigned int)];
+        draw_call_is_vertex_id_ascending = false;
+        draw_call_n_instances[0]         = 1;
+        draw_call_n_instances[1]         = m_n_instances_to_test;
+        draw_call_n_vertices[0]          = m_multidrawcall_count[0];
+        draw_call_n_vertices[1]          = m_multidrawcall_count[1];
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * draw_call_n_vertices[0];
+        n_result_bytes_per_instance[1]   = n_result_bytes_per_vertex * draw_call_n_vertices[1];
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0] +
+                               n_result_bytes_per_instance[1] * draw_call_n_instances[1];
+
+        break;
+    }
+
+    case DRAW_CALL_INDEXED_MULTI:
+    {
+        m_gl.multiDrawElements(GL_POINTS, m_multidrawcall_count, GL_UNSIGNED_INT, m_multidrawcall_index,
+                               m_multidrawcall_drawcount);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMultiDrawElements() call failed");
+
+        draw_call_count                = m_multidrawcall_drawcount;
+        draw_call_first_instance_id[0] = 0;
+        draw_call_first_instance_id[1] = 0;
+        draw_call_first_vertex_id[0] =
+            m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[0] - m_data_bo_index_data_offset) /
+                         sizeof(unsigned int)];
+        draw_call_first_vertex_id[1] =
+            m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[1] - m_data_bo_index_data_offset) /
+                         sizeof(unsigned int)];
+        draw_call_is_vertex_id_ascending = false;
+        draw_call_n_instances[0]         = 1;
+        draw_call_n_instances[1]         = 1;
+        draw_call_n_vertices[0]          = m_multidrawcall_count[0];
+        draw_call_n_vertices[1]          = m_multidrawcall_count[1];
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_multidrawcall_count[0];
+        n_result_bytes_per_instance[1]   = n_result_bytes_per_vertex * m_multidrawcall_count[1];
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0] +
+                               n_result_bytes_per_instance[1] * draw_call_n_instances[1];
+
+        break;
+    }
+
+    case DRAW_CALL_INDEXED_MULTI_BASE_VERTEX:
+    {
+        m_gl.multiDrawElementsBaseVertex(GL_POINTS, m_multidrawcall_count, GL_UNSIGNED_INT, m_multidrawcall_index,
+                                         m_multidrawcall_drawcount, m_multidrawcall_basevertex);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMultiDrawElementsBaseVertex() call failed.");
+
+        draw_call_count                = m_multidrawcall_drawcount;
+        draw_call_first_instance_id[0] = 0;
+        draw_call_first_instance_id[1] = 0;
+        draw_call_first_vertex_id[0] =
+            m_multidrawcall_basevertex[0] +
+            m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[0] - m_data_bo_index_data_offset) /
+                         sizeof(unsigned int)];
+        draw_call_first_vertex_id[1] =
+            m_multidrawcall_basevertex[1] +
+            m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[1] - m_data_bo_index_data_offset) /
+                         sizeof(unsigned int)];
+        draw_call_is_vertex_id_ascending = false;
+        draw_call_n_instances[0]         = 1;
+        draw_call_n_instances[1]         = 1;
+        draw_call_n_vertices[0]          = m_multidrawcall_count[0];
+        draw_call_n_vertices[1]          = m_multidrawcall_count[1];
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_multidrawcall_count[0];
+        n_result_bytes_per_instance[1]   = n_result_bytes_per_vertex * m_multidrawcall_count[1];
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0] +
+                               n_result_bytes_per_instance[1] * draw_call_n_instances[1];
+
+        break;
+    }
+
+    case DRAW_CALL_INSTANCED_INDEXED:
+    {
+        m_gl.drawElementsInstanced(GL_POINTS, m_n_vertices_per_instance, GL_UNSIGNED_INT,
+                                   (const glw::GLvoid *)(intptr_t)m_data_bo_index_data_offset, m_n_instances_to_test);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawElementsInstanced() call failed.");
+
+        draw_call_count                  = 1;
+        draw_call_first_instance_id[0]   = 0;
+        draw_call_first_vertex_id[0]     = m_index_data[0];
+        draw_call_is_vertex_id_ascending = false;
+        draw_call_n_instances[0]         = m_n_instances_to_test;
+        draw_call_n_vertices[0]          = m_n_vertices_per_instance;
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_n_vertices_per_instance;
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
+
+        break;
+    }
+
+    case DRAW_CALL_INSTANCED_INDEXED_BASE_VERTEX:
+    {
+        m_gl.drawElementsInstancedBaseVertex(GL_POINTS, m_n_vertices_per_instance, GL_UNSIGNED_INT,
+                                             (const glw::GLvoid *)(intptr_t)m_data_bo_index_data_offset,
+                                             m_n_instances_to_test, m_draw_call_baseVertex);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawElementsInstancedBaseVertex() call failed.");
+
+        draw_call_count                  = 1;
+        draw_call_first_instance_id[0]   = 0;
+        draw_call_first_vertex_id[0]     = m_draw_call_baseVertex + m_index_data[0];
+        draw_call_is_vertex_id_ascending = false;
+        draw_call_n_instances[0]         = m_n_instances_to_test;
+        draw_call_n_vertices[0]          = m_n_vertices_per_instance;
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_n_vertices_per_instance;
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
+
+        break;
+    }
+
+    case DRAW_CALL_INSTANCED_INDEXED_BASE_VERTEX_BASE_INSTANCE:
+    {
+        m_gl.drawElementsInstancedBaseVertexBaseInstance(GL_POINTS, m_n_vertices_per_instance, GL_UNSIGNED_INT,
+                                                         (const glw::GLvoid *)(intptr_t)m_data_bo_index_data_offset,
+                                                         m_n_instances_to_test, m_draw_call_baseVertex,
+                                                         m_draw_call_baseInstance);
+
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawElementsInstancedBaseVertexBaseInstance() call failed.");
+
+        draw_call_count                  = 1;
+        draw_call_first_instance_id[0]   = 0;
+        draw_call_first_vertex_id[0]     = m_draw_call_baseVertex + m_index_data[0];
+        draw_call_is_vertex_id_ascending = false;
+        draw_call_n_instances[0]         = m_n_instances_to_test;
+        draw_call_n_vertices[0]          = m_n_vertices_per_instance;
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_n_vertices_per_instance;
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
+
+        break;
+    }
+
+    case DRAW_CALL_REGULAR:
+    {
+        m_gl.drawArrays(GL_POINTS, m_draw_call_first, m_n_vertices_per_instance);
+
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawArrays() call failed");
+
+        draw_call_count                  = 1;
+        draw_call_first_instance_id[0]   = 0;
+        draw_call_first_vertex_id[0]     = m_draw_call_first;
+        draw_call_is_vertex_id_ascending = true;
+        draw_call_n_instances[0]         = 1;
+        draw_call_n_vertices[0]          = m_n_vertices_per_instance;
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_n_vertices_per_instance;
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
+
+        break;
+    }
+
+    case DRAW_CALL_REGULAR_INDIRECT:
+    {
+        m_gl.drawArraysIndirect(GL_POINTS, (glw::GLvoid *)(intptr_t)m_data_bo_regular_indirect_arg_offset);
+
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawArraysIndirect() call failed.");
+
+        draw_call_count                  = 1;
+        draw_call_first_instance_id[0]   = 0;
+        draw_call_first_vertex_id[0]     = m_draw_call_first;
+        draw_call_is_vertex_id_ascending = true;
+        draw_call_n_instances[0]         = m_n_instances_to_test;
+        draw_call_n_vertices[0]          = m_multidrawcall_count[1];
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * draw_call_n_vertices[0];
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
+
+        break;
+    }
+
+    case DRAW_CALL_REGULAR_INDIRECT_MULTI:
+    {
+        m_gl.multiDrawArraysIndirect(GL_POINTS, (glw::GLvoid *)(intptr_t)m_data_bo_regular_mdi_arg_offset,
+                                     m_multidrawcall_drawcount, 0); /* stride */
+
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMultiDrawArraysIndirect() call failed.");
+
+        draw_call_count                  = 2;
+        draw_call_first_instance_id[0]   = 0;
+        draw_call_first_instance_id[1]   = 0;
+        draw_call_first_vertex_id[0]     = m_draw_call_first;
+        draw_call_first_vertex_id[1]     = m_draw_call_first;
+        draw_call_is_vertex_id_ascending = true;
+        draw_call_n_instances[0]         = 1;
+        draw_call_n_instances[1]         = m_n_instances_to_test;
+        draw_call_n_vertices[0]          = m_multidrawcall_count[0];
+        draw_call_n_vertices[1]          = m_multidrawcall_count[1];
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * draw_call_n_vertices[0];
+        n_result_bytes_per_instance[1]   = n_result_bytes_per_vertex * draw_call_n_vertices[1];
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0] +
+                               n_result_bytes_per_instance[1] * draw_call_n_instances[1];
+
+        break;
+    }
+
+    case DRAW_CALL_REGULAR_INSTANCED:
+    {
+        m_gl.drawArraysInstanced(GL_POINTS, m_draw_call_first, m_n_vertices_per_instance, m_n_instances_to_test);
+
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawArraysInstanced() call failed.");
+
+        draw_call_count                  = 1;
+        draw_call_first_instance_id[0]   = 0;
+        draw_call_first_vertex_id[0]     = m_draw_call_first;
+        draw_call_is_vertex_id_ascending = true;
+        draw_call_n_instances[0]         = m_n_instances_to_test;
+        draw_call_n_vertices[0]          = m_n_vertices_per_instance;
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * draw_call_n_vertices[0];
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
+
+        break;
+    }
+
+    case DRAW_CALL_REGULAR_INSTANCED_BASE_INSTANCE:
+    {
+        m_gl.drawArraysInstancedBaseInstance(GL_POINTS, m_draw_call_first, m_n_vertices_per_instance,
+                                             m_n_instances_to_test, m_draw_call_baseInstance);
+
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawArraysInstancedBaseInstance() call failed.");
+
+        draw_call_count                  = 1;
+        draw_call_first_instance_id[0]   = 0;
+        draw_call_first_vertex_id[0]     = m_draw_call_first;
+        draw_call_is_vertex_id_ascending = true;
+        draw_call_n_instances[0]         = m_n_instances_to_test;
+        draw_call_n_vertices[0]          = m_n_vertices_per_instance;
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * draw_call_n_vertices[0];
+        n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
+
+        break;
+    }
+
+    case DRAW_CALL_REGULAR_MULTI:
+    {
+        m_gl.multiDrawArrays(GL_POINTS, m_multidrawcall_first, m_multidrawcall_count, m_multidrawcall_drawcount);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMultiDrawArrays() call failed.");
+
+        draw_call_count                  = m_multidrawcall_drawcount;
+        draw_call_first_instance_id[0]   = 0;
+        draw_call_first_instance_id[1]   = 0;
+        draw_call_first_vertex_id[0]     = m_multidrawcall_first[0];
+        draw_call_first_vertex_id[1]     = m_multidrawcall_first[1];
+        draw_call_is_vertex_id_ascending = true;
+        draw_call_n_instances[0]         = 1;
+        draw_call_n_instances[1]         = 1;
+        draw_call_n_vertices[0]          = m_multidrawcall_count[0];
+        draw_call_n_vertices[1]          = m_multidrawcall_count[1];
+        n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_multidrawcall_count[0];
+        n_result_bytes_per_instance[1]   = n_result_bytes_per_vertex * m_multidrawcall_count[1];
+        n_result_bytes_total             = n_result_bytes_per_instance[0] + n_result_bytes_per_instance[1];
+
+        break;
+    }
+
+    default:
+    {
+        TCU_FAIL("Unrecognized draw call type");
+    }
+    } /* switch (draw_call_type) */
+
+    DE_ASSERT(n_result_bytes_total <= m_result_bo_size);
+
+    m_gl.endTransformFeedback();
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glEndTransformFeedback() call failed.");
+
+    /* Retrieve the captured data */
+    glw::GLuint mappable_bo_id            = m_helper_bo;
+    unsigned int mappable_bo_start_offset = 0;
+
+    /* We cannot map the result BO storage directly into process space, since
+     * it's a sparse buffer. Copy the generated data to a helper BO and map
+     * that BO instead. */
+    m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_result_bo);
+    m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_helper_bo);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call(s) failed.");
+
+    if (is_ia_iteration)
+    {
+        m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
+                               0,                                            /* writeOffset */
+                               n_result_bytes_total);
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
+    }
+    else
+    {
+        DE_ASSERT((n_result_bytes_total % 2) == 0);
+
+        m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
+                               0,                                            /* writeOffset */
+                               n_result_bytes_total / 2);
+        m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, m_result_bo_size / 2, /* readOffset  */
+                               m_result_bo_size / 2,                                            /* writeOffset */
+                               n_result_bytes_total / 2);                                       /* size        */
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
+    }
+
+    m_gl.bindBuffer(GL_ARRAY_BUFFER, mappable_bo_id);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
+
+    result_ptr = (unsigned int *)m_gl.mapBufferRange(GL_ARRAY_BUFFER, mappable_bo_start_offset, m_result_bo_size,
+                                                     GL_MAP_READ_BIT);
+
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBufferRange() call failed.");
+
+    /* Verify the generated output */
+    bool continue_checking                = true;
+    glw::GLuint result_instance_id_stride = 0;
+    glw::GLuint result_vertex_id_stride   = 0;
+
+    if (is_ia_iteration)
+    {
+        result_instance_id_stride = 2;
+        result_vertex_id_stride   = 2;
+    }
+    else
+    {
+        result_instance_id_stride = 1;
+        result_vertex_id_stride   = 1;
+    }
+
+    /* For all draw calls.. */
+    for (int n_draw_call = 0; n_draw_call < draw_call_count && continue_checking; ++n_draw_call)
+    {
+        /* ..and resulting draw call instances.. */
+        for (int n_instance = 0; n_instance < draw_call_n_instances[n_draw_call] && continue_checking; ++n_instance)
+        {
+            DE_ASSERT((n_result_bytes_per_instance[n_draw_call] % sizeof(unsigned int)) == 0);
+
+            /* Determine where the result TF data start from */
+            const glw::GLuint expected_instance_id        = draw_call_first_instance_id[n_draw_call] + n_instance;
+            glw::GLuint *result_instance_id_traveller_ptr = DE_NULL;
+            glw::GLuint *result_vertex_id_traveller_ptr   = DE_NULL;
+
+            if (is_ia_iteration)
             {
-                m_gl.bufferPageCommitmentARB(GL_TRANSFORM_FEEDBACK_BUFFER, 0,    /* offset */
-                                             m_result_bo_size_rounded, GL_TRUE); /* commit */
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
-            }
-            else
-            {
-                for (unsigned int n_page = 0; n_page < m_result_bo_size_rounded / m_page_size; ++n_page)
+                result_instance_id_traveller_ptr = result_ptr;
+
+                for (int n_prev_draw_call = 0; n_prev_draw_call < n_draw_call; ++n_prev_draw_call)
                 {
-                    m_gl.bufferPageCommitmentARB(GL_TRANSFORM_FEEDBACK_BUFFER, n_page * m_page_size, /* offset */
-                                                 m_page_size,                                        /* size   */
-                                                 (n_page % 2 == 0) ? GL_TRUE : GL_FALSE);            /* commit */
+                    result_instance_id_traveller_ptr += draw_call_n_instances[n_prev_draw_call] *
+                                                        n_result_bytes_per_instance[n_prev_draw_call] /
+                                                        sizeof(unsigned int);
                 }
 
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
-            }
-
-            /* Zero out the target BO before we begin the TF */
-            static const unsigned char data_zero = 0;
-
-            m_gl.clearBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, GL_R8, GL_RED, GL_UNSIGNED_BYTE, &data_zero);
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glClearBufferData() call failed.");
-
-            /* Set up transform feed-back buffer bindings */
-            DE_ASSERT(m_result_bo_size != 0);
-
-            if (is_ia_iteration)
-            {
-                DE_ASSERT(m_result_bo != 0);
-
-                m_gl.bindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, /* index */
-                                     m_result_bo, 0,                  /* offset */
-                                     m_result_bo_size);
-
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferRange() call failed.");
-            }
+                result_instance_id_traveller_ptr +=
+                    n_instance * n_result_bytes_per_instance[n_draw_call] / sizeof(unsigned int);
+                result_vertex_id_traveller_ptr = result_instance_id_traveller_ptr + 1;
+            } /* if (is_ia_iteration) */
             else
             {
-                DE_ASSERT(m_result_bo_size % 2 == 0);
+                DE_ASSERT((m_result_bo_size % 2) == 0);
 
-                m_gl.bindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, /* index */
-                                     m_result_bo, 0,                  /* offset */
-                                     m_result_bo_size / 2);
-                m_gl.bindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 1, /* index */
-                                     m_result_bo, m_result_bo_size / 2, m_result_bo_size / 2);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferRange() call(s) failed.");
-            }
+                result_instance_id_traveller_ptr = result_ptr;
 
-            m_gl.beginTransformFeedback(GL_POINTS);
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBeginTransformFeedback() call failed.");
-
-            /* NOTE: Some discussion about the expected "vertex id" value:
-             *
-             * In GL 4.5 core spec (Feb2/2015 version), we have:
-             *
-             * >>
-             * The index of any element transferred to the GL by DrawElementsOneInstance
-             * is referred to as its vertex ID, and may be read by a vertex shader as
-             * gl_VertexID. The vertex ID of the ith element transferred is the sum of
-             * basevertex and the value stored in the currently bound element array buffer at
-             * offset indices +i.
-             * <<
-             *
-             * So for glDrawElements*() derivatives, we will be expecting gl_VertexID to be set to
-             * (basevertex + index[i] + i)
-             *
-             * DrawArrays does not support the "base vertex" concept at all:
-             *
-             * >>
-             * The index of any element transferred to the GL by DrawArraysOneInstance
-             * is referred to as its vertex ID, and may be read by a vertex shader as gl_VertexID.
-             * The vertex ID of the ith element transferred is first + i.
-             * <<
-             *
-             * For regular draw calls, gl_VertexID should be of form:
-             *
-             * (first + i)
-             *
-             * In both cases, gl_InstanceID does NOT include the baseinstance value, as per:
-             *
-             * >>
-             * If an enabled vertex attribute array is instanced (it has a non-zero divisor as
-             * specified by VertexAttribDivisor), the element index that is transferred to the GL,
-             * for all vertices, is given by
-             *
-             * floor(instance / divisor) + baseinstance
-             *
-             * The value of instance may be read by a vertex shader as gl_InstanceID, as
-             * described in section 11.1.3.9
-             * <<
-             */
-            switch (draw_call_type)
-            {
-            case DRAW_CALL_INDEXED:
-            {
-                m_gl.drawElements(GL_POINTS, m_n_vertices_per_instance, GL_UNSIGNED_INT,
-                                  (const glw::GLvoid *)(intptr_t)m_data_bo_index_data_offset);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawElements() call failed.");
-
-                draw_call_count                  = 1;
-                draw_call_first_instance_id[0]   = 0;
-                draw_call_first_vertex_id[0]     = m_n_vertices_per_instance;
-                draw_call_is_vertex_id_ascending = false;
-                draw_call_n_instances[0]         = 1;
-                draw_call_n_vertices[0]          = m_n_vertices_per_instance;
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_n_vertices_per_instance;
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
-
-                break;
-            }
-
-            case DRAW_CALL_INDEXED_BASE_VERTEX:
-            {
-                m_gl.drawElementsBaseVertex(GL_POINTS, m_n_vertices_per_instance, GL_UNSIGNED_INT,
-                                            (const glw::GLvoid *)(intptr_t)m_data_bo_index_data_offset,
-                                            m_draw_call_baseVertex);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawElementsBaseVertex() call failed.");
-
-                draw_call_count                  = 1;
-                draw_call_first_instance_id[0]   = 0;
-                draw_call_first_vertex_id[0]     = m_draw_call_baseVertex + m_n_vertices_per_instance;
-                draw_call_is_vertex_id_ascending = false;
-                draw_call_n_instances[0]         = 1;
-                draw_call_n_vertices[0]          = m_n_vertices_per_instance;
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_n_vertices_per_instance;
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
-
-                break;
-            }
-
-            case DRAW_CALL_INDEXED_INDIRECT:
-            {
-                m_gl.drawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT,
-                                          (const glw::GLvoid *)(intptr_t)m_data_bo_indexed_indirect_arg_offset);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawElementsIndirect() call failed.");
-
-                draw_call_count                = 1;
-                draw_call_first_instance_id[0] = 0;
-                draw_call_first_vertex_id[0] =
-                    m_draw_call_baseVertex +
-                    m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[1] - m_data_bo_index_data_offset) /
-                                 sizeof(unsigned int)];
-                draw_call_is_vertex_id_ascending = false;
-                draw_call_n_instances[0]         = m_n_instances_to_test;
-                draw_call_n_vertices[0]          = m_multidrawcall_count[1];
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * draw_call_n_vertices[0];
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
-
-                break;
-            }
-
-            case DRAW_CALL_INDEXED_INDIRECT_MULTI:
-            {
-                m_gl.multiDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT,
-                                               (const glw::GLvoid *)(intptr_t)m_data_bo_indexed_mdi_arg_offset,
-                                               m_multidrawcall_drawcount, 0); /* stride */
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMultiDrawElementsIndirect() call failed.");
-
-                draw_call_count                = m_multidrawcall_drawcount;
-                draw_call_first_instance_id[0] = 0;
-                draw_call_first_instance_id[1] = 0;
-                draw_call_first_vertex_id[0] =
-                    m_draw_call_baseVertex +
-                    m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[0] - m_data_bo_index_data_offset) /
-                                 sizeof(unsigned int)];
-                draw_call_first_vertex_id[1] =
-                    m_draw_call_baseVertex +
-                    m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[1] - m_data_bo_index_data_offset) /
-                                 sizeof(unsigned int)];
-                draw_call_is_vertex_id_ascending = false;
-                draw_call_n_instances[0]         = 1;
-                draw_call_n_instances[1]         = m_n_instances_to_test;
-                draw_call_n_vertices[0]          = m_multidrawcall_count[0];
-                draw_call_n_vertices[1]          = m_multidrawcall_count[1];
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * draw_call_n_vertices[0];
-                n_result_bytes_per_instance[1]   = n_result_bytes_per_vertex * draw_call_n_vertices[1];
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0] +
-                                       n_result_bytes_per_instance[1] * draw_call_n_instances[1];
-
-                break;
-            }
-
-            case DRAW_CALL_INDEXED_MULTI:
-            {
-                m_gl.multiDrawElements(GL_POINTS, m_multidrawcall_count, GL_UNSIGNED_INT, m_multidrawcall_index,
-                                       m_multidrawcall_drawcount);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMultiDrawElements() call failed");
-
-                draw_call_count                = m_multidrawcall_drawcount;
-                draw_call_first_instance_id[0] = 0;
-                draw_call_first_instance_id[1] = 0;
-                draw_call_first_vertex_id[0] =
-                    m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[0] - m_data_bo_index_data_offset) /
-                                 sizeof(unsigned int)];
-                draw_call_first_vertex_id[1] =
-                    m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[1] - m_data_bo_index_data_offset) /
-                                 sizeof(unsigned int)];
-                draw_call_is_vertex_id_ascending = false;
-                draw_call_n_instances[0]         = 1;
-                draw_call_n_instances[1]         = 1;
-                draw_call_n_vertices[0]          = m_multidrawcall_count[0];
-                draw_call_n_vertices[1]          = m_multidrawcall_count[1];
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_multidrawcall_count[0];
-                n_result_bytes_per_instance[1]   = n_result_bytes_per_vertex * m_multidrawcall_count[1];
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0] +
-                                       n_result_bytes_per_instance[1] * draw_call_n_instances[1];
-
-                break;
-            }
-
-            case DRAW_CALL_INDEXED_MULTI_BASE_VERTEX:
-            {
-                m_gl.multiDrawElementsBaseVertex(GL_POINTS, m_multidrawcall_count, GL_UNSIGNED_INT,
-                                                 m_multidrawcall_index, m_multidrawcall_drawcount,
-                                                 m_multidrawcall_basevertex);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMultiDrawElementsBaseVertex() call failed.");
-
-                draw_call_count                = m_multidrawcall_drawcount;
-                draw_call_first_instance_id[0] = 0;
-                draw_call_first_instance_id[1] = 0;
-                draw_call_first_vertex_id[0] =
-                    m_multidrawcall_basevertex[0] +
-                    m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[0] - m_data_bo_index_data_offset) /
-                                 sizeof(unsigned int)];
-                draw_call_first_vertex_id[1] =
-                    m_multidrawcall_basevertex[1] +
-                    m_index_data[((unsigned int)(intptr_t)m_multidrawcall_index[1] - m_data_bo_index_data_offset) /
-                                 sizeof(unsigned int)];
-                draw_call_is_vertex_id_ascending = false;
-                draw_call_n_instances[0]         = 1;
-                draw_call_n_instances[1]         = 1;
-                draw_call_n_vertices[0]          = m_multidrawcall_count[0];
-                draw_call_n_vertices[1]          = m_multidrawcall_count[1];
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_multidrawcall_count[0];
-                n_result_bytes_per_instance[1]   = n_result_bytes_per_vertex * m_multidrawcall_count[1];
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0] +
-                                       n_result_bytes_per_instance[1] * draw_call_n_instances[1];
-
-                break;
-            }
-
-            case DRAW_CALL_INSTANCED_INDEXED:
-            {
-                m_gl.drawElementsInstanced(GL_POINTS, m_n_vertices_per_instance, GL_UNSIGNED_INT,
-                                           (const glw::GLvoid *)(intptr_t)m_data_bo_index_data_offset,
-                                           m_n_instances_to_test);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawElementsInstanced() call failed.");
-
-                draw_call_count                  = 1;
-                draw_call_first_instance_id[0]   = 0;
-                draw_call_first_vertex_id[0]     = m_index_data[0];
-                draw_call_is_vertex_id_ascending = false;
-                draw_call_n_instances[0]         = m_n_instances_to_test;
-                draw_call_n_vertices[0]          = m_n_vertices_per_instance;
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_n_vertices_per_instance;
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
-
-                break;
-            }
-
-            case DRAW_CALL_INSTANCED_INDEXED_BASE_VERTEX:
-            {
-                m_gl.drawElementsInstancedBaseVertex(GL_POINTS, m_n_vertices_per_instance, GL_UNSIGNED_INT,
-                                                     (const glw::GLvoid *)(intptr_t)m_data_bo_index_data_offset,
-                                                     m_n_instances_to_test, m_draw_call_baseVertex);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawElementsInstancedBaseVertex() call failed.");
-
-                draw_call_count                  = 1;
-                draw_call_first_instance_id[0]   = 0;
-                draw_call_first_vertex_id[0]     = m_draw_call_baseVertex + m_index_data[0];
-                draw_call_is_vertex_id_ascending = false;
-                draw_call_n_instances[0]         = m_n_instances_to_test;
-                draw_call_n_vertices[0]          = m_n_vertices_per_instance;
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_n_vertices_per_instance;
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
-
-                break;
-            }
-
-            case DRAW_CALL_INSTANCED_INDEXED_BASE_VERTEX_BASE_INSTANCE:
-            {
-                m_gl.drawElementsInstancedBaseVertexBaseInstance(
-                    GL_POINTS, m_n_vertices_per_instance, GL_UNSIGNED_INT,
-                    (const glw::GLvoid *)(intptr_t)m_data_bo_index_data_offset, m_n_instances_to_test,
-                    m_draw_call_baseVertex, m_draw_call_baseInstance);
-
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawElementsInstancedBaseVertexBaseInstance() call failed.");
-
-                draw_call_count                  = 1;
-                draw_call_first_instance_id[0]   = 0;
-                draw_call_first_vertex_id[0]     = m_draw_call_baseVertex + m_index_data[0];
-                draw_call_is_vertex_id_ascending = false;
-                draw_call_n_instances[0]         = m_n_instances_to_test;
-                draw_call_n_vertices[0]          = m_n_vertices_per_instance;
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_n_vertices_per_instance;
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
-
-                break;
-            }
-
-            case DRAW_CALL_REGULAR:
-            {
-                m_gl.drawArrays(GL_POINTS, m_draw_call_first, m_n_vertices_per_instance);
-
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawArrays() call failed");
-
-                draw_call_count                  = 1;
-                draw_call_first_instance_id[0]   = 0;
-                draw_call_first_vertex_id[0]     = m_draw_call_first;
-                draw_call_is_vertex_id_ascending = true;
-                draw_call_n_instances[0]         = 1;
-                draw_call_n_vertices[0]          = m_n_vertices_per_instance;
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_n_vertices_per_instance;
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
-
-                break;
-            }
-
-            case DRAW_CALL_REGULAR_INDIRECT:
-            {
-                m_gl.drawArraysIndirect(GL_POINTS, (glw::GLvoid *)(intptr_t)m_data_bo_regular_indirect_arg_offset);
-
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawArraysIndirect() call failed.");
-
-                draw_call_count                  = 1;
-                draw_call_first_instance_id[0]   = 0;
-                draw_call_first_vertex_id[0]     = m_draw_call_first;
-                draw_call_is_vertex_id_ascending = true;
-                draw_call_n_instances[0]         = m_n_instances_to_test;
-                draw_call_n_vertices[0]          = m_multidrawcall_count[1];
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * draw_call_n_vertices[0];
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
-
-                break;
-            }
-
-            case DRAW_CALL_REGULAR_INDIRECT_MULTI:
-            {
-                m_gl.multiDrawArraysIndirect(GL_POINTS, (glw::GLvoid *)(intptr_t)m_data_bo_regular_mdi_arg_offset,
-                                             m_multidrawcall_drawcount, 0); /* stride */
-
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMultiDrawArraysIndirect() call failed.");
-
-                draw_call_count                  = 2;
-                draw_call_first_instance_id[0]   = 0;
-                draw_call_first_instance_id[1]   = 0;
-                draw_call_first_vertex_id[0]     = m_draw_call_first;
-                draw_call_first_vertex_id[1]     = m_draw_call_first;
-                draw_call_is_vertex_id_ascending = true;
-                draw_call_n_instances[0]         = 1;
-                draw_call_n_instances[1]         = m_n_instances_to_test;
-                draw_call_n_vertices[0]          = m_multidrawcall_count[0];
-                draw_call_n_vertices[1]          = m_multidrawcall_count[1];
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * draw_call_n_vertices[0];
-                n_result_bytes_per_instance[1]   = n_result_bytes_per_vertex * draw_call_n_vertices[1];
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0] +
-                                       n_result_bytes_per_instance[1] * draw_call_n_instances[1];
-
-                break;
-            }
-
-            case DRAW_CALL_REGULAR_INSTANCED:
-            {
-                m_gl.drawArraysInstanced(GL_POINTS, m_draw_call_first, m_n_vertices_per_instance,
-                                         m_n_instances_to_test);
-
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawArraysInstanced() call failed.");
-
-                draw_call_count                  = 1;
-                draw_call_first_instance_id[0]   = 0;
-                draw_call_first_vertex_id[0]     = m_draw_call_first;
-                draw_call_is_vertex_id_ascending = true;
-                draw_call_n_instances[0]         = m_n_instances_to_test;
-                draw_call_n_vertices[0]          = m_n_vertices_per_instance;
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * draw_call_n_vertices[0];
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
-
-                break;
-            }
-
-            case DRAW_CALL_REGULAR_INSTANCED_BASE_INSTANCE:
-            {
-                m_gl.drawArraysInstancedBaseInstance(GL_POINTS, m_draw_call_first, m_n_vertices_per_instance,
-                                                     m_n_instances_to_test, m_draw_call_baseInstance);
-
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glDrawArraysInstancedBaseInstance() call failed.");
-
-                draw_call_count                  = 1;
-                draw_call_first_instance_id[0]   = 0;
-                draw_call_first_vertex_id[0]     = m_draw_call_first;
-                draw_call_is_vertex_id_ascending = true;
-                draw_call_n_instances[0]         = m_n_instances_to_test;
-                draw_call_n_vertices[0]          = m_n_vertices_per_instance;
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * draw_call_n_vertices[0];
-                n_result_bytes_total             = n_result_bytes_per_instance[0] * draw_call_n_instances[0];
-
-                break;
-            }
-
-            case DRAW_CALL_REGULAR_MULTI:
-            {
-                m_gl.multiDrawArrays(GL_POINTS, m_multidrawcall_first, m_multidrawcall_count,
-                                     m_multidrawcall_drawcount);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMultiDrawArrays() call failed.");
-
-                draw_call_count                  = m_multidrawcall_drawcount;
-                draw_call_first_instance_id[0]   = 0;
-                draw_call_first_instance_id[1]   = 0;
-                draw_call_first_vertex_id[0]     = m_multidrawcall_first[0];
-                draw_call_first_vertex_id[1]     = m_multidrawcall_first[1];
-                draw_call_is_vertex_id_ascending = true;
-                draw_call_n_instances[0]         = 1;
-                draw_call_n_instances[1]         = 1;
-                draw_call_n_vertices[0]          = m_multidrawcall_count[0];
-                draw_call_n_vertices[1]          = m_multidrawcall_count[1];
-                n_result_bytes_per_instance[0]   = n_result_bytes_per_vertex * m_multidrawcall_count[0];
-                n_result_bytes_per_instance[1]   = n_result_bytes_per_vertex * m_multidrawcall_count[1];
-                n_result_bytes_total             = n_result_bytes_per_instance[0] + n_result_bytes_per_instance[1];
-
-                break;
-            }
-
-            default:
-            {
-                TCU_FAIL("Unrecognized draw call type");
-            }
-            } /* switch (draw_call_type) */
-
-            DE_ASSERT(n_result_bytes_total <= m_result_bo_size);
-
-            m_gl.endTransformFeedback();
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glEndTransformFeedback() call failed.");
-
-            /* Retrieve the captured data */
-            glw::GLuint mappable_bo_id            = m_helper_bo;
-            unsigned int mappable_bo_start_offset = 0;
-
-            /* We cannot map the result BO storage directly into process space, since
-             * it's a sparse buffer. Copy the generated data to a helper BO and map
-             * that BO instead. */
-            m_gl.bindBuffer(GL_COPY_READ_BUFFER, m_result_bo);
-            m_gl.bindBuffer(GL_COPY_WRITE_BUFFER, m_helper_bo);
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call(s) failed.");
-
-            if (is_ia_iteration)
-            {
-                m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
-                                       0,                                            /* writeOffset */
-                                       n_result_bytes_total);
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
-            }
-            else
-            {
-                DE_ASSERT((n_result_bytes_total % 2) == 0);
-
-                m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, /* readOffset */
-                                       0,                                            /* writeOffset */
-                                       n_result_bytes_total / 2);
-                m_gl.copyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER,
-                                       m_result_bo_size / 2,      /* readOffset  */
-                                       m_result_bo_size / 2,      /* writeOffset */
-                                       n_result_bytes_total / 2); /* size        */
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glCopyBufferSubData() call failed.");
-            }
-
-            m_gl.bindBuffer(GL_ARRAY_BUFFER, mappable_bo_id);
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
-
-            result_ptr = (unsigned int *)m_gl.mapBufferRange(GL_ARRAY_BUFFER, mappable_bo_start_offset,
-                                                             m_result_bo_size, GL_MAP_READ_BIT);
-
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBufferRange() call failed.");
-
-            /* Verify the generated output */
-            bool continue_checking                = true;
-            glw::GLuint result_instance_id_stride = 0;
-            glw::GLuint result_vertex_id_stride   = 0;
-
-            if (is_ia_iteration)
-            {
-                result_instance_id_stride = 2;
-                result_vertex_id_stride   = 2;
-            }
-            else
-            {
-                result_instance_id_stride = 1;
-                result_vertex_id_stride   = 1;
-            }
-
-            /* For all draw calls.. */
-            for (int n_draw_call = 0; n_draw_call < draw_call_count && continue_checking; ++n_draw_call)
-            {
-                /* ..and resulting draw call instances.. */
-                for (int n_instance = 0; n_instance < draw_call_n_instances[n_draw_call] && continue_checking;
-                     ++n_instance)
+                for (int n_prev_draw_call = 0; n_prev_draw_call < n_draw_call; ++n_prev_draw_call)
                 {
-                    DE_ASSERT((n_result_bytes_per_instance[n_draw_call] % sizeof(unsigned int)) == 0);
+                    result_instance_id_traveller_ptr +=
+                        draw_call_n_instances[n_prev_draw_call] * n_result_bytes_per_instance[n_prev_draw_call] /
+                        2 / /* instance id..instance id data | vertex id..vertex id data */
+                        sizeof(unsigned int);
+                }
 
-                    /* Determine where the result TF data start from */
-                    const glw::GLuint expected_instance_id = draw_call_first_instance_id[n_draw_call] + n_instance;
-                    glw::GLuint *result_instance_id_traveller_ptr = DE_NULL;
-                    glw::GLuint *result_vertex_id_traveller_ptr   = DE_NULL;
+                result_instance_id_traveller_ptr +=
+                    n_instance * n_result_bytes_per_instance[n_draw_call] / 2 / sizeof(unsigned int);
+                result_vertex_id_traveller_ptr =
+                    result_instance_id_traveller_ptr + (m_result_bo_size / 2) / sizeof(unsigned int);
+            }
 
-                    if (is_ia_iteration)
+            /* Start checking the generated output */
+            for (int n_point = 0; n_point < draw_call_n_vertices[n_draw_call] && continue_checking; ++n_point)
+            {
+                glw::GLuint expected_vertex_id    = 1;
+                glw::GLuint retrieved_instance_id = 2;
+                glw::GLuint retrieved_vertex_id   = 3;
+
+                if (draw_call_is_vertex_id_ascending)
+                {
+                    expected_vertex_id = draw_call_first_vertex_id[n_draw_call] + n_point;
+                } /* if (draw_call_is_vertex_id_ascending) */
+                else
+                {
+                    if (draw_call_first_vertex_id[n_draw_call] >= n_point)
                     {
-                        result_instance_id_traveller_ptr = result_ptr;
-
-                        for (int n_prev_draw_call = 0; n_prev_draw_call < n_draw_call; ++n_prev_draw_call)
-                        {
-                            result_instance_id_traveller_ptr += draw_call_n_instances[n_prev_draw_call] *
-                                                                n_result_bytes_per_instance[n_prev_draw_call] /
-                                                                sizeof(unsigned int);
-                        }
-
-                        result_instance_id_traveller_ptr +=
-                            n_instance * n_result_bytes_per_instance[n_draw_call] / sizeof(unsigned int);
-                        result_vertex_id_traveller_ptr = result_instance_id_traveller_ptr + 1;
-                    } /* if (is_ia_iteration) */
+                        expected_vertex_id = draw_call_first_vertex_id[n_draw_call] - n_point;
+                    }
                     else
                     {
-                        DE_ASSERT((m_result_bo_size % 2) == 0);
-
-                        result_instance_id_traveller_ptr = result_ptr;
-
-                        for (int n_prev_draw_call = 0; n_prev_draw_call < n_draw_call; ++n_prev_draw_call)
-                        {
-                            result_instance_id_traveller_ptr +=
-                                draw_call_n_instances[n_prev_draw_call] *
-                                n_result_bytes_per_instance[n_prev_draw_call] /
-                                2 / /* instance id..instance id data | vertex id..vertex id data */
-                                sizeof(unsigned int);
-                        }
-
-                        result_instance_id_traveller_ptr +=
-                            n_instance * n_result_bytes_per_instance[n_draw_call] / 2 / sizeof(unsigned int);
-                        result_vertex_id_traveller_ptr =
-                            result_instance_id_traveller_ptr + (m_result_bo_size / 2) / sizeof(unsigned int);
+                        expected_vertex_id = 0;
                     }
+                }
 
-                    /* Start checking the generated output */
-                    for (int n_point = 0; n_point < draw_call_n_vertices[n_draw_call] && continue_checking; ++n_point)
-                    {
-                        glw::GLuint expected_vertex_id    = 1;
-                        glw::GLuint retrieved_instance_id = 2;
-                        glw::GLuint retrieved_vertex_id   = 3;
-
-                        if (draw_call_is_vertex_id_ascending)
-                        {
-                            expected_vertex_id = draw_call_first_vertex_id[n_draw_call] + n_point;
-                        } /* if (draw_call_is_vertex_id_ascending) */
-                        else
-                        {
-                            if (draw_call_first_vertex_id[n_draw_call] >= n_point)
-                            {
-                                expected_vertex_id = draw_call_first_vertex_id[n_draw_call] - n_point;
-                            }
-                            else
-                            {
-                                expected_vertex_id = 0;
-                            }
-                        }
-
-                        /* Only perform the check if the offsets refer to pages with physical backing.
-                         *
-                         * Note that, on platforms, whose page size % 4 != 0, the values can land partially out of bounds,
-                         * and partially in the safe zone. In such cases, skip the verification. */
-                        const bool result_instance_id_page_has_physical_backing =
-                            (((((char *)result_instance_id_traveller_ptr - (char *)result_ptr) / m_page_size) % 2) ==
-                             0) &&
-                            ((((((char *)result_instance_id_traveller_ptr - (char *)result_ptr) + sizeof(unsigned int) -
-                                1) /
-                               m_page_size) %
-                              2) == 0);
-                        const bool result_vertex_id_page_has_physical_backing =
-                            (((((char *)result_vertex_id_traveller_ptr - (char *)result_ptr) / m_page_size) % 2) ==
-                             0) &&
-                            ((((((char *)result_vertex_id_traveller_ptr - (char *)result_ptr) + sizeof(unsigned int) -
-                                1) /
-                               m_page_size) %
-                              2) == 0);
-
-                        retrieved_instance_id = *result_instance_id_traveller_ptr;
-                        result_instance_id_traveller_ptr += result_instance_id_stride;
-
-                        retrieved_vertex_id = *result_vertex_id_traveller_ptr;
-                        result_vertex_id_traveller_ptr += result_vertex_id_stride;
-
-                        if ((result_instance_id_page_has_physical_backing &&
-                             retrieved_instance_id != expected_instance_id) ||
-                            (result_vertex_id_page_has_physical_backing && retrieved_vertex_id != expected_vertex_id))
-                        {
-                            m_testCtx.getLog()
-                                << tcu::TestLog::Message
-                                << "For "
-                                   "["
-                                << getName()
-                                << "]"
-                                   ", sparse BO flags "
-                                   "["
-                                << SparseBufferTestUtilities::getSparseBOFlagsString(sparse_bo_storage_flags)
-                                << "]"
-                                   ", draw call type "
-                                << getDrawCallTypeString(draw_call_type)
-                                << " at index "
-                                   "["
-                                << n_draw_call << " / " << (draw_call_count - 1)
-                                << "]"
-                                   ", TF mode "
-                                   "["
-                                << ((is_ia_iteration) ? "interleaved attribs" : "separate attribs") << "]"
-                                << ", instance "
-                                   "["
-                                << n_instance << " / " << (draw_call_n_instances[n_draw_call] - 1) << "]"
-                                << ", point at index "
-                                   "["
-                                << n_point << " / " << (draw_call_n_vertices[n_draw_call] - 1) << "]"
-                                << ", VS-level gl_VertexID was equal to "
-                                   "["
-                                << retrieved_vertex_id
-                                << "]"
-                                   " and gl_InstanceID was set to "
-                                   "["
-                                << retrieved_instance_id
-                                << "]"
-                                   ", whereas gl_VertexID of value "
-                                   "["
-                                << expected_vertex_id
-                                << "]"
-                                   " and gl_InstanceID of value "
-                                   "["
-                                << expected_instance_id
-                                << "]"
-                                   " were anticipated."
-                                << tcu::TestLog::EndMessage;
-
-                            continue_checking = false;
-                            result            = false;
-
-                            break;
-                        } /* if (reported gl_InstanceID / gl_VertexID values are wrong) */
-                    }     /* for (all drawn points) */
-                }         /* for (all instances) */
-
-                /* Release memory pages we have allocated for the transform feed-back.
+                /* Only perform the check if the offsets refer to pages with physical backing.
                  *
-                 * NOTE: For some iterations, this call will attempt to de-commit pages which
-                 *       have not been assigned physical backing. This is a valid behavior,
-                 *       as per spec.
-                 */
-                m_gl.bufferPageCommitmentARB(GL_TRANSFORM_FEEDBACK_BUFFER, 0,     /* offset */
-                                             m_result_bo_size_rounded, GL_FALSE); /* commit */
-                GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
-            } /* for (all draw call) */
+                 * Note that, on platforms, whose page size % 4 != 0, the values can land partially out of bounds,
+                 * and partially in the safe zone. In such cases, skip the verification. */
+                const bool result_instance_id_page_has_physical_backing =
+                    (((((char *)result_instance_id_traveller_ptr - (char *)result_ptr) / m_page_size) % 2) == 0) &&
+                    ((((((char *)result_instance_id_traveller_ptr - (char *)result_ptr) + sizeof(unsigned int) - 1) /
+                       m_page_size) %
+                      2) == 0);
+                const bool result_vertex_id_page_has_physical_backing =
+                    (((((char *)result_vertex_id_traveller_ptr - (char *)result_ptr) / m_page_size) % 2) == 0) &&
+                    ((((((char *)result_vertex_id_traveller_ptr - (char *)result_ptr) + sizeof(unsigned int) - 1) /
+                       m_page_size) %
+                      2) == 0);
 
-            m_gl.unmapBuffer(GL_ARRAY_BUFFER);
-            GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUnmapBuffer() call failed.");
-        } /* for (all draw call types) */
-    }     /* for (both TF modes) */
+                retrieved_instance_id = *result_instance_id_traveller_ptr;
+                result_instance_id_traveller_ptr += result_instance_id_stride;
+
+                retrieved_vertex_id = *result_vertex_id_traveller_ptr;
+                result_vertex_id_traveller_ptr += result_vertex_id_stride;
+
+                if ((result_instance_id_page_has_physical_backing && retrieved_instance_id != expected_instance_id) ||
+                    (result_vertex_id_page_has_physical_backing && retrieved_vertex_id != expected_vertex_id))
+                {
+                    m_testCtx.getLog() << tcu::TestLog::Message
+                                       << "For "
+                                          "["
+                                       << getName()
+                                       << "]"
+                                          ", sparse BO flags "
+                                          "["
+                                       << SparseBufferTestUtilities::getSparseBOFlagsString(sparse_bo_storage_flags)
+                                       << "]"
+                                          ", draw call type "
+                                       << getDrawCallTypeString(draw_call_type)
+                                       << " at index "
+                                          "["
+                                       << n_draw_call << " / " << (draw_call_count - 1)
+                                       << "]"
+                                          ", TF mode "
+                                          "["
+                                       << ((is_ia_iteration) ? "interleaved attribs" : "separate attribs") << "]"
+                                       << ", instance "
+                                          "["
+                                       << n_instance << " / " << (draw_call_n_instances[n_draw_call] - 1) << "]"
+                                       << ", point at index "
+                                          "["
+                                       << n_point << " / " << (draw_call_n_vertices[n_draw_call] - 1) << "]"
+                                       << ", VS-level gl_VertexID was equal to "
+                                          "["
+                                       << retrieved_vertex_id
+                                       << "]"
+                                          " and gl_InstanceID was set to "
+                                          "["
+                                       << retrieved_instance_id
+                                       << "]"
+                                          ", whereas gl_VertexID of value "
+                                          "["
+                                       << expected_vertex_id
+                                       << "]"
+                                          " and gl_InstanceID of value "
+                                          "["
+                                       << expected_instance_id
+                                       << "]"
+                                          " were anticipated."
+                                       << tcu::TestLog::EndMessage;
+
+                    continue_checking = false;
+                    result            = false;
+
+                    break;
+                } /* if (reported gl_InstanceID / gl_VertexID values are wrong) */
+            }     /* for (all drawn points) */
+        }         /* for (all instances) */
+
+        /* Release memory pages we have allocated for the transform feed-back.
+         *
+         * NOTE: For some iterations, this call will attempt to de-commit pages which
+         *       have not been assigned physical backing. This is a valid behavior,
+         *       as per spec.
+         */
+        m_gl.bufferPageCommitmentARB(GL_TRANSFORM_FEEDBACK_BUFFER, 0,     /* offset */
+                                     m_result_bo_size_rounded, GL_FALSE); /* commit */
+        GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBufferPageCommitmentARB() call failed.");
+    } /* for (all draw call) */
+
+    m_gl.unmapBuffer(GL_ARRAY_BUFFER);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glUnmapBuffer() call failed.");
 
     return result;
 }
@@ -5897,6 +5878,65 @@ const char *TransformFeedbackBufferStorageTestCase::getDrawCallTypeString(_draw_
     return result;
 }
 
+const char *TransformFeedbackBufferStorageTestCase::drawCallTypeEnumToString(unsigned int draw_call)
+{
+    const char *result = "default";
+
+    switch (static_cast<_draw_call>(draw_call))
+    {
+    case DRAW_CALL_INDEXED:
+        result = "draw_call_indexed";
+        break;
+    case DRAW_CALL_INDEXED_BASE_VERTEX:
+        result = "draw_call_indexed_base_vertex";
+        break;
+    case DRAW_CALL_INDEXED_INDIRECT:
+        result = "draw_call_indexed_indirect";
+        break;
+    case DRAW_CALL_INDEXED_INDIRECT_MULTI:
+        result = "draw_call_indexed_indirect_multi";
+        break;
+    case DRAW_CALL_INDEXED_MULTI:
+        result = "draw_call_indexed_multi";
+        break;
+    case DRAW_CALL_INDEXED_MULTI_BASE_VERTEX:
+        result = "draw_call_indexed_multi_base_vertex";
+        break;
+    case DRAW_CALL_INSTANCED_INDEXED:
+        result = "draw_call_instanced_indexed";
+        break;
+    case DRAW_CALL_INSTANCED_INDEXED_BASE_VERTEX:
+        result = "draw_call_instanced_indexed_base_vertex";
+        break;
+    case DRAW_CALL_INSTANCED_INDEXED_BASE_VERTEX_BASE_INSTANCE:
+        result = "draw_call_instanced_indexed_base_vertex_base_instance";
+        break;
+    case DRAW_CALL_REGULAR:
+        result = "draw_call_regular";
+        break;
+    case DRAW_CALL_REGULAR_INDIRECT:
+        result = "draw_call_regular_indirect";
+        break;
+    case DRAW_CALL_REGULAR_INDIRECT_MULTI:
+        result = "draw_call_regular_indirect_multi";
+        break;
+    case DRAW_CALL_REGULAR_INSTANCED:
+        result = "draw_call_regular_instanced";
+        break;
+    case DRAW_CALL_REGULAR_INSTANCED_BASE_INSTANCE:
+        result = "draw_call_regular_instanced_base_instance";
+        break;
+    case DRAW_CALL_REGULAR_MULTI:
+        result = "draw_call_regular_multi";
+        break;
+
+    default:
+        break;
+    } /* switch (draw_call) */
+
+    return result;
+}
+
 /** Initializes test data buffer, and then sets up:
  *
  *  - an immutable buffer object (id stored in m_data_bo), to which the test data
@@ -5948,6 +5988,10 @@ void TransformFeedbackBufferStorageTestCase::initDataBO()
  */
 bool TransformFeedbackBufferStorageTestCase::initTestCaseGlobal()
 {
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &m_page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+
     bool result = true;
 
     /* Initialize test program object */
@@ -6184,17 +6228,13 @@ void TransformFeedbackBufferStorageTestCase::initTestData()
  *
  *  @param gl                         GL entry-points container
  *  @param testContext                CTS test context
- *  @param page_size                  Page size, as reported by implementation for the GL_SPARSE_BUFFER_PAGE_SIZE_ARB query.
- *  @param pGLBufferPageCommitmentARB Func ptr to glBufferPageCommitmentARB() entry-point.
  */
-UniformBufferStorageTestCase::UniformBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext,
-                                                           glw::GLint page_size)
+UniformBufferStorageTestCase::UniformBufferStorageTestCase(const glw::Functions &gl, tcu::TestContext &testContext)
     : m_gl(gl)
     , m_gl_uniform_buffer_offset_alignment_value(0)
     , m_helper_bo(0)
     , m_n_pages_to_use(4)
     , m_n_ubo_uints(0)
-    , m_page_size(page_size)
     , m_po(0)
     , m_sparse_bo(0)
     , m_sparse_bo_data_size(0)
@@ -6438,6 +6478,10 @@ bool UniformBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
  */
 bool UniformBufferStorageTestCase::initTestCaseGlobal()
 {
+    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
+    m_gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &m_page_size);
+    GLU_EXPECT_NO_ERROR(m_gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
+
     /* Cache GL constant values */
     glw::GLint gl_max_uniform_block_size_value = 0;
 
@@ -6595,9 +6639,11 @@ bool UniformBufferStorageTestCase::initTestCaseIteration(glw::GLuint sparse_bo)
  *  @param name        Test name
  *  @param description Test description
  */
-BufferStorageTest::BufferStorageTest(deqp::Context &context)
-    : TestCase(context, "BufferStorageTest", "Tests various interactions between sparse buffers and other API areas")
+
+BufferStorageTest::BufferStorageTest(deqp::Context &context, BufferStorageTestCase *testCase, const char *name)
+    : TestCase(context, name, "Tests various interactions between sparse buffers and other API areas")
     , m_sparse_bo(0)
+    , mTestCase(testCase)
 {
     /* Left blank intentionally */
 }
@@ -6607,15 +6653,8 @@ void BufferStorageTest::deinit()
 {
     const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-    /* De-initialize all test the test cases */
-    for (TestCasesVectorIterator itTestCase = m_testCases.begin(); itTestCase != m_testCases.end(); ++itTestCase)
-    {
-        (*itTestCase)->deinitTestCaseGlobal();
-
-        delete (*itTestCase);
-    } /* for (all registered test case objects) */
-
-    m_testCases.clear();
+    mTestCase->deinitTestCaseGlobal();
+    delete mTestCase;
 
     if (m_sparse_bo != 0)
     {
@@ -6630,85 +6669,6 @@ void BufferStorageTest::init()
 {
     /* We cannot initialize the test case objects here as there are cases where there
      * is no rendering context bound to the thread, when this method is called. */
-}
-
-/** Fills m_testCases with BufferStorageTestCase instances which implement the sub-cases
- *  for the second test described in the CTS_ARB_sparse_buffer test specification
- **/
-void BufferStorageTest::initTestCases()
-{
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-    glw::GLint page_size     = 0;
-
-    /* Retrieve "sparse buffer" GL constant values and entry-point func ptrs */
-    gl.getIntegerv(GL_SPARSE_BUFFER_PAGE_SIZE_ARB, &page_size);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv() failed for GL_SPARSE_BUFFER_PAGE_SIZE_ARB pname");
-
-    /* Initialize all test case objects:
-     *
-     * Test cases a1-a6 */
-    m_testCases.push_back(new QuadsBufferStorageTestCase(
-        gl, m_testCtx, page_size, QuadsBufferStorageTestCase::IBO_USAGE_NONE, false)); /* use_color_data */
-    m_testCases.push_back(new QuadsBufferStorageTestCase(
-        gl, m_testCtx, page_size, QuadsBufferStorageTestCase::IBO_USAGE_INDEXED_DRAW_CALL, false)); /* use_color_data */
-    m_testCases.push_back(new QuadsBufferStorageTestCase(gl, m_testCtx, page_size,
-                                                         QuadsBufferStorageTestCase::IBO_USAGE_INDEXED_RANGED_DRAW_CALL,
-                                                         false)); /* use_color_data */
-    m_testCases.push_back(new QuadsBufferStorageTestCase(
-        gl, m_testCtx, page_size, QuadsBufferStorageTestCase::IBO_USAGE_INDEXED_DRAW_CALL, true)); /* use_color_data */
-    m_testCases.push_back(new QuadsBufferStorageTestCase(gl, m_testCtx, page_size,
-                                                         QuadsBufferStorageTestCase::IBO_USAGE_INDEXED_RANGED_DRAW_CALL,
-                                                         true)); /* use_color_data */
-
-    /* Test case b1 */
-    m_testCases.push_back(
-        new TransformFeedbackBufferStorageTestCase(gl, m_testCtx, page_size, true)); /* all_tf_pages_committed */
-
-    /* Test case b2 */
-    m_testCases.push_back(
-        new TransformFeedbackBufferStorageTestCase(gl, m_testCtx, page_size, false)); /* all_tf_pages_committed */
-
-    /* Test case c */
-    m_testCases.push_back(new ClearOpsBufferStorageTestCase(gl, m_testCtx, page_size));
-
-    /* Test case d */
-    m_testCases.push_back(new InvalidateBufferStorageTestCase(gl, m_testCtx, page_size));
-
-    /* Test case e */
-    m_testCases.push_back(
-        new AtomicCounterBufferStorageTestCase(gl, m_testCtx, page_size, false)); /* all_pages_committed */
-    m_testCases.push_back(
-        new AtomicCounterBufferStorageTestCase(gl, m_testCtx, page_size, true)); /* all_pages_committed */
-
-    /* Test case f */
-    m_testCases.push_back(new BufferTextureStorageTestCase(gl, m_context, m_testCtx, page_size));
-
-    /* Test case g */
-    m_testCases.push_back(new CopyOpsBufferStorageTestCase(gl, m_testCtx, page_size));
-
-    /* Test case h */
-    m_testCases.push_back(new IndirectDispatchBufferStorageTestCase(gl, m_testCtx, page_size));
-
-    /* Test case i */
-    m_testCases.push_back(new SSBOStorageTestCase(gl, m_testCtx, page_size));
-
-    /* Test case j */
-    m_testCases.push_back(new UniformBufferStorageTestCase(gl, m_testCtx, page_size));
-
-    /* Test case k */
-    m_testCases.push_back(new PixelPackBufferStorageTestCase(gl, m_testCtx, page_size));
-
-    /* Test case l */
-    m_testCases.push_back(new PixelUnpackBufferStorageTestCase(gl, m_testCtx, page_size));
-
-    /* Test case m */
-    m_testCases.push_back(new QueryBufferStorageTestCase(gl, m_testCtx, page_size));
-
-    /* Initialize all test cases */
-    for (TestCasesVectorIterator itTestCase = m_testCases.begin(); itTestCase != m_testCases.end(); ++itTestCase)
-    {
-        (*itTestCase)->initTestCaseGlobal();
-    }
 }
 
 /** Executes test iteration.
@@ -6732,8 +6692,7 @@ tcu::TestNode::IterateResult BufferStorageTest::iterate()
         throw tcu::NotSupportedError("GL_ARB_sparse_buffer conformance tests require OpenGL 4.3 core feature-set");
     }
 
-    /* Register & initialize the test case objects */
-    initTestCases();
+    mTestCase->initTestCaseGlobal();
 
     /* Iterate over all sparse BO flag combinations. We need to consider a total of 4 flags:
      *
@@ -6783,14 +6742,13 @@ tcu::TestNode::IterateResult BufferStorageTest::iterate()
 
         GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferStorage() call failed.");
 
-        for (TestCasesVectorIterator itTestCase = m_testCases.begin(); itTestCase != m_testCases.end(); ++itTestCase)
         {
             gl.bindBuffer(GL_ARRAY_BUFFER, m_sparse_bo);
             GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed.");
 
-            if (!(*itTestCase)->initTestCaseIteration(m_sparse_bo))
+            if (!(mTestCase)->initTestCaseIteration(m_sparse_bo))
             {
-                m_testCtx.getLog() << tcu::TestLog::Message << "Test case [" << (*itTestCase)->getName()
+                m_testCtx.getLog() << tcu::TestLog::Message << "Test case [" << mTestCase->getName()
                                    << "] "
                                       "has failed to initialize."
                                    << tcu::TestLog::EndMessage;
@@ -6799,9 +6757,9 @@ tcu::TestNode::IterateResult BufferStorageTest::iterate()
                 goto end;
             }
 
-            if (!(*itTestCase)->execute(flags))
+            if (!(mTestCase)->execute(flags))
             {
-                m_testCtx.getLog() << tcu::TestLog::Message << "Test case [" << (*itTestCase)->getName()
+                m_testCtx.getLog() << tcu::TestLog::Message << "Test case [" << mTestCase->getName()
                                    << "] "
                                       "has failed to execute correctly."
                                    << tcu::TestLog::EndMessage;
@@ -6809,7 +6767,7 @@ tcu::TestNode::IterateResult BufferStorageTest::iterate()
                 result = false;
             } /* if (!testCaseResult) */
 
-            (*itTestCase)->deinitTestCaseIteration();
+            mTestCase->deinitTestCaseIteration();
         } /* for (all added test cases) */
 
         /* Release the sparse BO */
@@ -6837,9 +6795,132 @@ SparseBufferTests::SparseBufferTests(deqp::Context &context)
 /** Initializes the test group contents. */
 void SparseBufferTests::init()
 {
-    addChild(new BufferStorageTest(m_context));
     addChild(new NegativeTests(m_context));
     addChild(new PageSizeGetterTest(m_context));
+
+    addBufferStorageTests();
+}
+
+void SparseBufferTests::addBufferStorageTests()
+{
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+    BufferStorageTestCase *testCase = new QuadsBufferStorageTestCase(
+        m_context.getRenderContext().getFunctions(), m_testCtx, QuadsBufferStorageTestCase::IBO_USAGE_NONE, false);
+    std::string name = std::string("BufferStorageTest_") + testCase->getName() + "_1";
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    testCase =
+        new QuadsBufferStorageTestCase(gl, m_testCtx, QuadsBufferStorageTestCase::IBO_USAGE_INDEXED_DRAW_CALL, false);
+    name = std::string("BufferStorageTest_") + testCase->getName() + "_2";
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    testCase = new QuadsBufferStorageTestCase(gl, m_testCtx,
+                                              QuadsBufferStorageTestCase::IBO_USAGE_INDEXED_RANGED_DRAW_CALL, false);
+    name     = std::string("BufferStorageTest_") + testCase->getName() + "_3";
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    testCase =
+        new QuadsBufferStorageTestCase(gl, m_testCtx, QuadsBufferStorageTestCase::IBO_USAGE_INDEXED_DRAW_CALL, true);
+    name = std::string("BufferStorageTest_") + testCase->getName() + "_4";
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    testCase = new QuadsBufferStorageTestCase(gl, m_testCtx,
+                                              QuadsBufferStorageTestCase::IBO_USAGE_INDEXED_RANGED_DRAW_CALL, true);
+    name     = std::string("BufferStorageTest_") + testCase->getName();
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    /* Test case b1 b2*/
+    for (unsigned int all_pages_committed = 0; all_pages_committed < 2; ++all_pages_committed)
+    {
+        for (unsigned int n_tf_type = 0; n_tf_type < TransformFeedbackBufferStorageTest::TF_TYPE_MAX; ++n_tf_type)
+        {
+            for (unsigned int n_draw_call_type = 0;
+                 n_draw_call_type < TransformFeedbackBufferStorageTestCase::_draw_call::DRAW_CALL_COUNT;
+                 ++n_draw_call_type)
+            {
+                testCase = new TransformFeedbackBufferStorageTestCase(gl, m_testCtx, all_pages_committed, n_tf_type,
+                                                                      n_draw_call_type);
+                name     = std::string("BufferStorageTest_") + testCase->getName();
+                name.append("_tf_type_");
+                name.append(std::to_string(n_tf_type));
+                name.append("_");
+                name.append(dynamic_cast<TransformFeedbackBufferStorageTestCase *>(testCase)->drawCallTypeEnumToString(
+                    n_draw_call_type));
+                addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+            }
+        }
+    }
+
+    /* Test case c */
+    for (unsigned int n_clear_op_type = 0; n_clear_op_type < ClearOpsBufferStorageTest::CLEAR_OP_TYPE_MAX;
+         ++n_clear_op_type)
+    {
+        for (unsigned int n_iteration = 0; n_iteration < ClearOpsBufferStorageTest::ITERATION_MAX; ++n_iteration)
+        {
+            testCase = new ClearOpsBufferStorageTestCase(gl, m_testCtx, n_clear_op_type, n_iteration);
+            name     = std::string("BufferStorageTest_") + testCase->getName();
+            name.append("_clear_op_type_");
+            name.append(std::to_string(n_clear_op_type));
+            name.append("_iteration_");
+            name.append(std::to_string(n_iteration));
+            addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+        }
+    }
+
+    /* Test case d */
+    testCase = new InvalidateBufferStorageTestCase(gl, m_testCtx);
+    name     = std::string("BufferStorageTest_") + testCase->getName();
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    /* Test case e */
+    testCase = new AtomicCounterBufferStorageTestCase(gl, m_testCtx, false);
+    name     = std::string("BufferStorageTest_") + testCase->getName();
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    testCase = new AtomicCounterBufferStorageTestCase(gl, m_testCtx, true);
+    name     = std::string("BufferStorageTest_") + testCase->getName();
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    /* Test case f */
+    testCase = new BufferTextureStorageTestCase(gl, m_context, m_testCtx);
+    name     = std::string("BufferStorageTest_") + testCase->getName();
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    /* Test case g */
+    testCase = new CopyOpsBufferStorageTestCase(gl, m_testCtx);
+    name     = std::string("BufferStorageTest_") + testCase->getName();
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    /* Test case h */
+    testCase = new IndirectDispatchBufferStorageTestCase(gl, m_testCtx);
+    name     = std::string("BufferStorageTest_") + testCase->getName();
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    /* Test case i */
+    testCase = new SSBOStorageTestCase(gl, m_testCtx);
+    name     = std::string("BufferStorageTest_") + testCase->getName();
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    /* Test case j */
+    testCase = new UniformBufferStorageTestCase(gl, m_testCtx);
+    name     = std::string("BufferStorageTest_") + testCase->getName();
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    /* Test case k */
+    testCase = new PixelPackBufferStorageTestCase(gl, m_testCtx);
+    name     = std::string("BufferStorageTest_") + testCase->getName();
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    /* Test case l */
+    testCase = new PixelUnpackBufferStorageTestCase(gl, m_testCtx);
+    name     = std::string("BufferStorageTest_") + testCase->getName();
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
+
+    /* Test case m */
+    testCase = new QueryBufferStorageTestCase(gl, m_testCtx);
+    name     = std::string("BufferStorageTest_") + testCase->getName();
+    addChild(new BufferStorageTest(m_context, testCase, name.c_str()));
 }
 
 } // namespace gl4cts

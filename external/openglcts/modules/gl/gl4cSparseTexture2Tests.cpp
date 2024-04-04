@@ -47,6 +47,9 @@ using namespace glu;
 namespace gl4cts
 {
 
+extern std::vector<GLint> SparseTextureCommitmentFormats;
+extern std::vector<GLint> SparseTextureCommitmentTargets;
+
 const char *st2_compute_textureFill = "#version 430 core\n"
                                       "\n"
                                       "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
@@ -326,67 +329,14 @@ tcu::TestNode::IterateResult ShaderExtensionTestCase::iterate()
  *
  *  @param context     Rendering context
  */
-StandardPageSizesTestCase::StandardPageSizesTestCase(deqp::Context &context)
-    : TestCase(context, "StandardPageSizesTestCase",
+StandardPageSizesTestCase::StandardPageSizesTestCase(deqp::Context &context, const char *name, GLint target,
+                                                     std::pair<GLint, PageSizeStruct> format)
+    : TestCase(context, name,
                "Verifies if values returned by GetInternalFormativ query matches Standard Virtual Page Sizes")
+    , mTarget(target)
+    , mFormat(format)
 {
     /* Left blank intentionally */
-}
-
-/** Stub init method */
-void StandardPageSizesTestCase::init()
-{
-    mSupportedTargets.push_back(GL_TEXTURE_1D);
-    mSupportedTargets.push_back(GL_TEXTURE_1D_ARRAY);
-    mSupportedTargets.push_back(GL_TEXTURE_2D);
-    mSupportedTargets.push_back(GL_TEXTURE_2D_ARRAY);
-    mSupportedTargets.push_back(GL_TEXTURE_CUBE_MAP);
-    mSupportedTargets.push_back(GL_TEXTURE_CUBE_MAP_ARRAY);
-    mSupportedTargets.push_back(GL_TEXTURE_RECTANGLE);
-    mSupportedTargets.push_back(GL_TEXTURE_BUFFER);
-    mSupportedTargets.push_back(GL_RENDERBUFFER);
-
-    mStandardVirtualPageSizesTable[GL_R8]             = PageSizeStruct(256, 256, 1);
-    mStandardVirtualPageSizesTable[GL_R8_SNORM]       = PageSizeStruct(256, 256, 1);
-    mStandardVirtualPageSizesTable[GL_R8I]            = PageSizeStruct(256, 256, 1);
-    mStandardVirtualPageSizesTable[GL_R8UI]           = PageSizeStruct(256, 256, 1);
-    mStandardVirtualPageSizesTable[GL_R16]            = PageSizeStruct(256, 128, 1);
-    mStandardVirtualPageSizesTable[GL_R16_SNORM]      = PageSizeStruct(256, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RG8]            = PageSizeStruct(256, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RG8_SNORM]      = PageSizeStruct(256, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RGB565]         = PageSizeStruct(256, 128, 1);
-    mStandardVirtualPageSizesTable[GL_R16F]           = PageSizeStruct(256, 128, 1);
-    mStandardVirtualPageSizesTable[GL_R16I]           = PageSizeStruct(256, 128, 1);
-    mStandardVirtualPageSizesTable[GL_R16UI]          = PageSizeStruct(256, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RG8I]           = PageSizeStruct(256, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RG8UI]          = PageSizeStruct(256, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RG16]           = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RG16_SNORM]     = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RGBA8]          = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RGBA8_SNORM]    = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RGB10_A2]       = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RGB10_A2UI]     = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RG16F]          = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_R32F]           = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_R11F_G11F_B10F] = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RGB9_E5]        = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_R32I]           = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_R32UI]          = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RG16I]          = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RG16UI]         = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RGBA8I]         = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RGBA8UI]        = PageSizeStruct(128, 128, 1);
-    mStandardVirtualPageSizesTable[GL_RGBA16]         = PageSizeStruct(128, 64, 1);
-    mStandardVirtualPageSizesTable[GL_RGBA16_SNORM]   = PageSizeStruct(128, 64, 1);
-    mStandardVirtualPageSizesTable[GL_RGBA16F]        = PageSizeStruct(128, 64, 1);
-    mStandardVirtualPageSizesTable[GL_RG32F]          = PageSizeStruct(128, 64, 1);
-    mStandardVirtualPageSizesTable[GL_RG32I]          = PageSizeStruct(128, 64, 1);
-    mStandardVirtualPageSizesTable[GL_RG32UI]         = PageSizeStruct(128, 64, 1);
-    mStandardVirtualPageSizesTable[GL_RGBA16I]        = PageSizeStruct(128, 64, 1);
-    mStandardVirtualPageSizesTable[GL_RGBA16UI]       = PageSizeStruct(128, 64, 1);
-    mStandardVirtualPageSizesTable[GL_RGBA32F]        = PageSizeStruct(64, 64, 1);
-    mStandardVirtualPageSizesTable[GL_RGBA32I]        = PageSizeStruct(64, 64, 1);
-    mStandardVirtualPageSizesTable[GL_RGBA32UI]       = PageSizeStruct(64, 64, 1);
 }
 
 /** Executes test iteration.
@@ -405,55 +355,22 @@ tcu::TestNode::IterateResult StandardPageSizesTestCase::iterate()
 
     m_testCtx.getLog() << tcu::TestLog::Message << "Testing getInternalformativ" << tcu::TestLog::EndMessage;
 
-    for (std::vector<glw::GLint>::const_iterator iter = mSupportedTargets.begin(); iter != mSupportedTargets.end();
-         ++iter)
+    const PageSizeStruct &page = mFormat.second;
+
+    GLint pageSizeX;
+    GLint pageSizeY;
+    GLint pageSizeZ;
+    SparseTextureUtils::getTexturePageSizes(gl, mTarget, mFormat.first, pageSizeX, pageSizeY, pageSizeZ);
+
+    if (pageSizeX != page.xSize || pageSizeY != page.ySize || pageSizeZ != page.zSize)
     {
-        const GLint &target = *iter;
+        m_testCtx.getLog() << tcu::TestLog::Message << "Standard Virtual Page Size mismatch, target: " << mTarget
+                           << ", format: " << mFormat.first << ", returned: " << pageSizeX << "/" << pageSizeY << "/"
+                           << pageSizeZ << ", expected: " << page.xSize << "/" << page.ySize << "/" << page.zSize
+                           << tcu::TestLog::EndMessage;
 
-        for (std::map<glw::GLint, PageSizeStruct>::const_iterator formIter = mStandardVirtualPageSizesTable.begin();
-             formIter != mStandardVirtualPageSizesTable.end(); ++formIter)
-        {
-            const PageSizePair &format = *formIter;
-            const PageSizeStruct &page = format.second;
-
-            if (target == GL_TEXTURE_BUFFER)
-            {
-                /* filter out invalid texture buffer formats according to ARB_texture_buffer_object */
-                switch (format.first)
-                {
-                case GL_RGB10_A2:
-                case GL_RGB10_A2UI:
-                case GL_R11F_G11F_B10F:
-                case GL_RGB9_E5:
-                case GL_RGB565:
-                case GL_R8_SNORM:
-                case GL_RG8_SNORM:
-                case GL_RGBA8_SNORM:
-                case GL_R16_SNORM:
-                case GL_RG16_SNORM:
-                case GL_RGBA16_SNORM:
-                    continue;
-                default:
-                    break;
-                }
-            }
-
-            GLint pageSizeX;
-            GLint pageSizeY;
-            GLint pageSizeZ;
-            SparseTextureUtils::getTexturePageSizes(gl, target, format.first, pageSizeX, pageSizeY, pageSizeZ);
-
-            if (pageSizeX != page.xSize || pageSizeY != page.ySize || pageSizeZ != page.zSize)
-            {
-                m_testCtx.getLog() << tcu::TestLog::Message << "Standard Virtual Page Size mismatch, target: " << target
-                                   << ", format: " << format.first << ", returned: " << pageSizeX << "/" << pageSizeY
-                                   << "/" << pageSizeZ << ", expected: " << page.xSize << "/" << page.ySize << "/"
-                                   << page.zSize << tcu::TestLog::EndMessage;
-
-                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-                return STOP;
-            }
-        }
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+        return STOP;
     }
 
     m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -465,63 +382,13 @@ tcu::TestNode::IterateResult StandardPageSizesTestCase::iterate()
  *
  *  @param context     Rendering context
  */
-SparseTexture2AllocationTestCase::SparseTexture2AllocationTestCase(deqp::Context &context)
-    : SparseTextureAllocationTestCase(context, "SparseTexture2Allocation",
-                                      "Verifies TexStorage* functionality added in CTS_ARB_sparse_texture2")
+SparseTexture2AllocationTestCase::SparseTexture2AllocationTestCase(deqp::Context &context, const char *name,
+                                                                   GLint target, GLint fullArrayTarget, GLint format)
+    : SparseTextureAllocationTestCase(context, name,
+                                      "Verifies TexStorage* functionality added in CTS_ARB_sparse_texture2", target,
+                                      fullArrayTarget, format)
 {
     /* Left blank intentionally */
-}
-
-/** Initializes the test group contents. */
-void SparseTexture2AllocationTestCase::init()
-{
-    mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
-    mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
-
-    mFullArrayTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
-
-    mSupportedInternalFormats.push_back(GL_R8);
-    mSupportedInternalFormats.push_back(GL_R8_SNORM);
-    mSupportedInternalFormats.push_back(GL_R16);
-    mSupportedInternalFormats.push_back(GL_R16_SNORM);
-    mSupportedInternalFormats.push_back(GL_RG8);
-    mSupportedInternalFormats.push_back(GL_RG8_SNORM);
-    mSupportedInternalFormats.push_back(GL_RG16);
-    mSupportedInternalFormats.push_back(GL_RG16_SNORM);
-    mSupportedInternalFormats.push_back(GL_RGB565);
-    mSupportedInternalFormats.push_back(GL_RGBA8);
-    mSupportedInternalFormats.push_back(GL_RGBA8_SNORM);
-    mSupportedInternalFormats.push_back(GL_RGB10_A2);
-    mSupportedInternalFormats.push_back(GL_RGB10_A2UI);
-    mSupportedInternalFormats.push_back(GL_RGBA16);
-    mSupportedInternalFormats.push_back(GL_RGBA16_SNORM);
-    mSupportedInternalFormats.push_back(GL_R16F);
-    mSupportedInternalFormats.push_back(GL_RG16F);
-    mSupportedInternalFormats.push_back(GL_RGBA16F);
-    mSupportedInternalFormats.push_back(GL_R32F);
-    mSupportedInternalFormats.push_back(GL_RG32F);
-    mSupportedInternalFormats.push_back(GL_RGBA32F);
-    mSupportedInternalFormats.push_back(GL_R11F_G11F_B10F);
-    // RGB9_E5 isn't color renderable, and thus isn't valid for multisample
-    // textures.
-    //mSupportedInternalFormats.push_back(GL_RGB9_E5);
-    mSupportedInternalFormats.push_back(GL_R8I);
-    mSupportedInternalFormats.push_back(GL_R8UI);
-    mSupportedInternalFormats.push_back(GL_R16I);
-    mSupportedInternalFormats.push_back(GL_R16UI);
-    mSupportedInternalFormats.push_back(GL_R32I);
-    mSupportedInternalFormats.push_back(GL_R32UI);
-    mSupportedInternalFormats.push_back(GL_RG8I);
-    mSupportedInternalFormats.push_back(GL_RG8UI);
-    mSupportedInternalFormats.push_back(GL_RG16I);
-    mSupportedInternalFormats.push_back(GL_RG16UI);
-    mSupportedInternalFormats.push_back(GL_RG32I);
-    mSupportedInternalFormats.push_back(GL_RG32UI);
-    mSupportedInternalFormats.push_back(GL_RGBA8I);
-    mSupportedInternalFormats.push_back(GL_RGBA8UI);
-    mSupportedInternalFormats.push_back(GL_RGBA16I);
-    mSupportedInternalFormats.push_back(GL_RGBA16UI);
-    mSupportedInternalFormats.push_back(GL_RGBA32I);
 }
 
 /** Executes test iteration.
@@ -546,33 +413,10 @@ tcu::TestNode::IterateResult SparseTexture2AllocationTestCase::iterate()
  *  @param description Test description
  */
 SparseTexture2CommitmentTestCase::SparseTexture2CommitmentTestCase(deqp::Context &context, const char *name,
-                                                                   const char *description)
-    : SparseTextureCommitmentTestCase(context, name, description)
+                                                                   const char *description, GLint target, GLint format)
+    : SparseTextureCommitmentTestCase(context, name, description, target, format)
 {
     /* Left blank intentionally */
-}
-
-/** Constructor.
- *
- *  @param context     Rendering context
- */
-SparseTexture2CommitmentTestCase::SparseTexture2CommitmentTestCase(deqp::Context &context)
-    : SparseTextureCommitmentTestCase(
-          context, "SparseTexture2Commitment",
-          "Verifies glTexPageCommitmentARB functionality added by ARB_sparse_texture2 extension")
-{
-    /* Left blank intentionally */
-}
-
-/** Initializes the test group contents. */
-void SparseTexture2CommitmentTestCase::init()
-{
-    SparseTextureCommitmentTestCase::init();
-
-    //Verify all targets once again and multisample targets as it was added in ARB_sparse_texture2 extension
-    mSupportedTargets.clear();
-    mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
-    mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
 }
 
 /** Executes test iteration.
@@ -1382,20 +1226,11 @@ const GLuint indices[] = {0, 1, 2, 1, 2, 3};
  *
  *  @param context     Rendering context
  */
-UncommittedRegionsAccessTestCase::UncommittedRegionsAccessTestCase(deqp::Context &context)
-    : SparseTexture2CommitmentTestCase(context, "UncommittedRegionsAccess",
-                                       "Verifies if access to uncommitted regions of sparse texture works as expected")
+UncommittedRegionsAccessTestCase::UncommittedRegionsAccessTestCase(deqp::Context &context, const char *name,
+                                                                   const char *description, GLint target, GLint format)
+    : SparseTexture2CommitmentTestCase(context, name, description, target, format)
 {
     /* Left blank intentionally */
-}
-
-/** Stub init method */
-void UncommittedRegionsAccessTestCase::init()
-{
-    SparseTextureCommitmentTestCase::init();
-
-    mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
-    mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
 }
 
 /** Executes test iteration.
@@ -1410,50 +1245,36 @@ tcu::TestNode::IterateResult UncommittedRegionsAccessTestCase::iterate()
         return STOP;
     }
 
-    const Functions &gl = m_context.getRenderContext().getFunctions();
-
-    bool result = true;
-
-    GLuint texture;
-
-    for (std::vector<glw::GLint>::const_iterator iter = mSupportedTargets.begin(); iter != mSupportedTargets.end();
-         ++iter)
+    if (caseAllowed(mTarget, mFormat))
     {
-        const GLint &target = *iter;
+        const Functions &gl = m_context.getRenderContext().getFunctions();
+        bool result         = true;
+        GLuint texture;
 
-        for (std::vector<glw::GLint>::const_iterator formIter = mSupportedInternalFormats.begin();
-             formIter != mSupportedInternalFormats.end(); ++formIter)
+        mLog.str("");
+        mLog << "Testing uncommitted regions access for target: " << mTarget << ", format: " << mFormat << " - ";
+
+        sparseAllocateTexture(gl, mTarget, mFormat, texture, 3);
+        for (int l = 0; l < mState.levels; ++l)
         {
-            const GLint &format = *formIter;
-
-            if (!caseAllowed(target, format))
-                continue;
-
-            mLog.str("");
-            mLog << "Testing uncommitted regions access for target: " << target << ", format: " << format << " - ";
-
-            sparseAllocateTexture(gl, target, format, texture, 3);
-            for (int l = 0; l < mState.levels; ++l)
+            if (commitTexturePage(gl, mTarget, mFormat, texture, l))
             {
-                if (commitTexturePage(gl, target, format, texture, l))
-                {
-                    writeDataToTexture(gl, target, format, texture, l);
-                    result = result && UncommittedReads(gl, target, format, texture, l);
-                    result = result && UncommittedAtomicOperations(gl, target, format, texture, l);
-                }
-
-                if (!result)
-                    break;
+                writeDataToTexture(gl, mTarget, mFormat, texture, l);
+                result = result && UncommittedReads(gl, mTarget, mFormat, texture, l);
+                result = result && UncommittedAtomicOperations(gl, mTarget, mFormat, texture, l);
             }
-
-            Texture::Delete(gl, texture);
 
             if (!result)
-            {
-                m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail" << tcu::TestLog::EndMessage;
-                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-                return STOP;
-            }
+                break;
+        }
+
+        Texture::Delete(gl, texture);
+
+        if (!result)
+        {
+            m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail" << tcu::TestLog::EndMessage;
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+            return STOP;
         }
     }
 
@@ -2282,20 +2103,9 @@ bool UncommittedRegionsAccessTestCase::verifyDepthBoundsTest(const Functions &gl
  *
  *  @param context     Rendering context
  */
-SparseTexture2LookupTestCase::SparseTexture2LookupTestCase(deqp::Context &context)
-    : SparseTexture2CommitmentTestCase(context, "SparseTexture2Lookup",
-                                       "Verifies if sparse texture lookup functions for GLSL works as expected")
-{
-    /* Left blank intentionally */
-}
-
-/** Constructor.
- *
- *  @param context     Rendering context
- */
 SparseTexture2LookupTestCase::SparseTexture2LookupTestCase(deqp::Context &context, const char *name,
-                                                           const char *description)
-    : SparseTexture2CommitmentTestCase(context, name, description)
+                                                           const char *description, GLint target, GLint format)
+    : SparseTexture2CommitmentTestCase(context, name, description, target, format)
 {
     /* Left blank intentionally */
 }
@@ -2303,12 +2113,6 @@ SparseTexture2LookupTestCase::SparseTexture2LookupTestCase(deqp::Context &contex
 /** Initializes the test group contents. */
 void SparseTexture2LookupTestCase::init()
 {
-    SparseTextureCommitmentTestCase::init();
-    mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
-    mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
-
-    mSupportedInternalFormats.push_back(GL_DEPTH_COMPONENT16);
-
     FunctionToken f;
     f = FunctionToken("sparseTextureARB", "<CUBE_REFZ_DEF>");
     f.allowedTargets.insert(GL_TEXTURE_2D);
@@ -2420,66 +2224,52 @@ tcu::TestNode::IterateResult SparseTexture2LookupTestCase::iterate()
         return STOP;
     }
 
-    const Functions &gl = m_context.getRenderContext().getFunctions();
-
-    bool result = true;
-
-    GLuint texture;
-
-    for (std::vector<glw::GLint>::const_iterator iter = mSupportedTargets.begin(); iter != mSupportedTargets.end();
-         ++iter)
+    if (caseAllowed(mTarget, mFormat))
     {
-        const GLint &target = *iter;
-
-        for (std::vector<glw::GLint>::const_iterator formIter = mSupportedInternalFormats.begin();
-             formIter != mSupportedInternalFormats.end(); ++formIter)
+        for (std::vector<FunctionToken>::const_iterator tokIter = mFunctions.begin(); tokIter != mFunctions.end();
+             ++tokIter)
         {
-            const GLint &format = *formIter;
+            const Functions &gl = m_context.getRenderContext().getFunctions();
+            GLuint texture;
+            bool result = true;
 
-            if (!caseAllowed(target, format))
+            // Check if target is allowed for current lookup function
+            FunctionToken funcToken = *tokIter;
+            if (!funcAllowed(mTarget, mFormat, funcToken))
                 continue;
 
-            for (std::vector<FunctionToken>::const_iterator tokIter = mFunctions.begin(); tokIter != mFunctions.end();
-                 ++tokIter)
+            mLog.str("");
+            mLog << "Testing sparse texture lookup functions for target: " << mTarget << ", format: " << mFormat
+                 << " - ";
+
+            sparseAllocateTexture(gl, mTarget, mFormat, texture, 3);
+            if (mFormat == GL_DEPTH_COMPONENT16)
+                setupDepthMode(gl, mTarget, texture);
+
+            if ((getTextureChannelClass(mState.format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
+                 getTextureChannelClass(mState.format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER) &&
+                mTarget != GL_TEXTURE_2D_MULTISAMPLE && mTarget != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+                setupNearestFilter(gl, mTarget, texture);
+
+            for (int l = 0; l < mState.levels; ++l)
             {
-                // Check if target is allowed for current lookup function
-                FunctionToken funcToken = *tokIter;
-                if (!funcAllowed(target, format, funcToken))
-                    continue;
-
-                mLog.str("");
-                mLog << "Testing sparse texture lookup functions for target: " << target << ", format: " << format
-                     << " - ";
-
-                sparseAllocateTexture(gl, target, format, texture, 3);
-                if (format == GL_DEPTH_COMPONENT16)
-                    setupDepthMode(gl, target, texture);
-
-                if ((getTextureChannelClass(mState.format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
-                     getTextureChannelClass(mState.format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER) &&
-                    target != GL_TEXTURE_2D_MULTISAMPLE && target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
-                    setupNearestFilter(gl, target, texture);
-
-                for (int l = 0; l < mState.levels; ++l)
+                if (commitTexturePage(gl, mTarget, mFormat, texture, l))
                 {
-                    if (commitTexturePage(gl, target, format, texture, l))
-                    {
-                        writeDataToTexture(gl, target, format, texture, l);
-                        result = result && verifyLookupTextureData(gl, target, format, texture, l, funcToken);
-                    }
-
-                    if (!result)
-                        break;
+                    writeDataToTexture(gl, mTarget, mFormat, texture, l);
+                    result = result && verifyLookupTextureData(gl, mTarget, mFormat, texture, l, funcToken);
                 }
-
-                Texture::Delete(gl, texture);
 
                 if (!result)
-                {
-                    m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail" << tcu::TestLog::EndMessage;
-                    m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-                    return STOP;
-                }
+                    break;
+            }
+
+            Texture::Delete(gl, texture);
+
+            if (!result)
+            {
+                m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail" << tcu::TestLog::EndMessage;
+                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+                return STOP;
             }
         }
     }
@@ -3084,11 +2874,277 @@ SparseTexture2Tests::SparseTexture2Tests(deqp::Context &context)
 void SparseTexture2Tests::init()
 {
     addChild(new ShaderExtensionTestCase(m_context, "GL_ARB_sparse_texture2"));
-    addChild(new StandardPageSizesTestCase(m_context));
-    addChild(new SparseTexture2AllocationTestCase(m_context));
-    addChild(new SparseTexture2CommitmentTestCase(m_context));
-    addChild(new UncommittedRegionsAccessTestCase(m_context));
-    addChild(new SparseTexture2LookupTestCase(m_context));
+
+    addStandardPageSizesTestCase();
+    addSparseTexture2AllocationTestCase();
+    addSparseTexture2CommitmentTestCase();
+    addUncommittedRegionsAccessTestCase();
+    addSparseTexture2LookupTestCase();
+}
+
+void SparseTexture2Tests::addStandardPageSizesTestCase()
+{
+    std::vector<GLint> supportedTargets;
+    supportedTargets.push_back(GL_TEXTURE_1D);
+    supportedTargets.push_back(GL_TEXTURE_1D_ARRAY);
+    supportedTargets.push_back(GL_TEXTURE_2D);
+    supportedTargets.push_back(GL_TEXTURE_2D_ARRAY);
+    supportedTargets.push_back(GL_TEXTURE_CUBE_MAP);
+    supportedTargets.push_back(GL_TEXTURE_CUBE_MAP_ARRAY);
+    supportedTargets.push_back(GL_TEXTURE_RECTANGLE);
+    supportedTargets.push_back(GL_TEXTURE_BUFFER);
+    supportedTargets.push_back(GL_RENDERBUFFER);
+
+    std::map<GLint, PageSizeStruct> standardVirtualPageSizesTable;
+    standardVirtualPageSizesTable[GL_R8]             = PageSizeStruct(256, 256, 1);
+    standardVirtualPageSizesTable[GL_R8_SNORM]       = PageSizeStruct(256, 256, 1);
+    standardVirtualPageSizesTable[GL_R8I]            = PageSizeStruct(256, 256, 1);
+    standardVirtualPageSizesTable[GL_R8UI]           = PageSizeStruct(256, 256, 1);
+    standardVirtualPageSizesTable[GL_R16]            = PageSizeStruct(256, 128, 1);
+    standardVirtualPageSizesTable[GL_R16_SNORM]      = PageSizeStruct(256, 128, 1);
+    standardVirtualPageSizesTable[GL_RG8]            = PageSizeStruct(256, 128, 1);
+    standardVirtualPageSizesTable[GL_RG8_SNORM]      = PageSizeStruct(256, 128, 1);
+    standardVirtualPageSizesTable[GL_RGB565]         = PageSizeStruct(256, 128, 1);
+    standardVirtualPageSizesTable[GL_R16F]           = PageSizeStruct(256, 128, 1);
+    standardVirtualPageSizesTable[GL_R16I]           = PageSizeStruct(256, 128, 1);
+    standardVirtualPageSizesTable[GL_R16UI]          = PageSizeStruct(256, 128, 1);
+    standardVirtualPageSizesTable[GL_RG8I]           = PageSizeStruct(256, 128, 1);
+    standardVirtualPageSizesTable[GL_RG8UI]          = PageSizeStruct(256, 128, 1);
+    standardVirtualPageSizesTable[GL_RG16]           = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_RG16_SNORM]     = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_RGBA8]          = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_RGBA8_SNORM]    = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_RGB10_A2]       = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_RGB10_A2UI]     = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_RG16F]          = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_R32F]           = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_R11F_G11F_B10F] = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_RGB9_E5]        = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_R32I]           = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_R32UI]          = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_RG16I]          = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_RG16UI]         = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_RGBA8I]         = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_RGBA8UI]        = PageSizeStruct(128, 128, 1);
+    standardVirtualPageSizesTable[GL_RGBA16]         = PageSizeStruct(128, 64, 1);
+    standardVirtualPageSizesTable[GL_RGBA16_SNORM]   = PageSizeStruct(128, 64, 1);
+    standardVirtualPageSizesTable[GL_RGBA16F]        = PageSizeStruct(128, 64, 1);
+    standardVirtualPageSizesTable[GL_RG32F]          = PageSizeStruct(128, 64, 1);
+    standardVirtualPageSizesTable[GL_RG32I]          = PageSizeStruct(128, 64, 1);
+    standardVirtualPageSizesTable[GL_RG32UI]         = PageSizeStruct(128, 64, 1);
+    standardVirtualPageSizesTable[GL_RGBA16I]        = PageSizeStruct(128, 64, 1);
+    standardVirtualPageSizesTable[GL_RGBA16UI]       = PageSizeStruct(128, 64, 1);
+    standardVirtualPageSizesTable[GL_RGBA32F]        = PageSizeStruct(64, 64, 1);
+    standardVirtualPageSizesTable[GL_RGBA32I]        = PageSizeStruct(64, 64, 1);
+    standardVirtualPageSizesTable[GL_RGBA32UI]       = PageSizeStruct(64, 64, 1);
+
+    for (std::vector<GLint>::iterator targetIter = supportedTargets.begin(); targetIter != supportedTargets.end();
+         ++targetIter)
+    {
+        for (std::map<GLint, PageSizeStruct>::iterator formIter = standardVirtualPageSizesTable.begin();
+             formIter != standardVirtualPageSizesTable.end(); ++formIter)
+        {
+            if (*targetIter == GL_TEXTURE_BUFFER)
+            {
+                /* filter out invalid texture buffer formats according to ARB_texture_buffer_object */
+                switch (formIter->first)
+                {
+                case GL_RGB10_A2:
+                case GL_RGB10_A2UI:
+                case GL_R11F_G11F_B10F:
+                case GL_RGB9_E5:
+                case GL_RGB565:
+                case GL_R8_SNORM:
+                case GL_RG8_SNORM:
+                case GL_RGBA8_SNORM:
+                case GL_R16_SNORM:
+                case GL_RG16_SNORM:
+                case GL_RGBA16_SNORM:
+                    continue;
+                default:
+                    break;
+                }
+            }
+            std::string name = std::string("StandardPageSizesTestCase") + "_" +
+                               SparseTextureUtils::getTextureTargetString(*targetIter) + "_" +
+                               SparseTextureUtils::getTextureFormatString(formIter->first);
+            addChild(new StandardPageSizesTestCase(m_context, name.c_str(), *targetIter, *formIter));
+        }
+    }
+}
+
+void SparseTexture2Tests::addSparseTexture2AllocationTestCase()
+{
+    std::vector<GLint> supportedTargets;
+    supportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
+    supportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+
+    std::vector<GLint> fullArrayTargets;
+    fullArrayTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+
+    std::vector<GLint> supportedInternalFormats;
+    supportedInternalFormats.push_back(GL_R8);
+    supportedInternalFormats.push_back(GL_R8_SNORM);
+    supportedInternalFormats.push_back(GL_R16);
+    supportedInternalFormats.push_back(GL_R16_SNORM);
+    supportedInternalFormats.push_back(GL_RG8);
+    supportedInternalFormats.push_back(GL_RG8_SNORM);
+    supportedInternalFormats.push_back(GL_RG16);
+    supportedInternalFormats.push_back(GL_RG16_SNORM);
+    supportedInternalFormats.push_back(GL_RGB565);
+    supportedInternalFormats.push_back(GL_RGBA8);
+    supportedInternalFormats.push_back(GL_RGBA8_SNORM);
+    supportedInternalFormats.push_back(GL_RGB10_A2);
+    supportedInternalFormats.push_back(GL_RGB10_A2UI);
+    supportedInternalFormats.push_back(GL_RGBA16);
+    supportedInternalFormats.push_back(GL_RGBA16_SNORM);
+    supportedInternalFormats.push_back(GL_R16F);
+    supportedInternalFormats.push_back(GL_RG16F);
+    supportedInternalFormats.push_back(GL_RGBA16F);
+    supportedInternalFormats.push_back(GL_R32F);
+    supportedInternalFormats.push_back(GL_RG32F);
+    supportedInternalFormats.push_back(GL_RGBA32F);
+    supportedInternalFormats.push_back(GL_R11F_G11F_B10F);
+    // RGB9_E5 isn't color renderable, and thus isn't valid for multisample
+    // textures.
+    //supportedInternalFormats.push_back(GL_RGB9_E5);
+    supportedInternalFormats.push_back(GL_R8I);
+    supportedInternalFormats.push_back(GL_R8UI);
+    supportedInternalFormats.push_back(GL_R16I);
+    supportedInternalFormats.push_back(GL_R16UI);
+    supportedInternalFormats.push_back(GL_R32I);
+    supportedInternalFormats.push_back(GL_R32UI);
+    supportedInternalFormats.push_back(GL_RG8I);
+    supportedInternalFormats.push_back(GL_RG8UI);
+    supportedInternalFormats.push_back(GL_RG16I);
+    supportedInternalFormats.push_back(GL_RG16UI);
+    supportedInternalFormats.push_back(GL_RG32I);
+    supportedInternalFormats.push_back(GL_RG32UI);
+    supportedInternalFormats.push_back(GL_RGBA8I);
+    supportedInternalFormats.push_back(GL_RGBA8UI);
+    supportedInternalFormats.push_back(GL_RGBA16I);
+    supportedInternalFormats.push_back(GL_RGBA16UI);
+    supportedInternalFormats.push_back(GL_RGBA32I);
+
+    for (std::vector<GLint>::iterator formIter = supportedInternalFormats.begin();
+         formIter != supportedInternalFormats.end(); ++formIter)
+    {
+        for (std::vector<GLint>::iterator targetIter = supportedTargets.begin(); targetIter != supportedTargets.end();
+             ++targetIter)
+        {
+            std::string name = std::string("SparseTexture2Allocation") + "_" +
+                               SparseTextureUtils::getTextureTargetString(*targetIter) + "_" +
+                               SparseTextureUtils::getTextureFormatString(*formIter);
+            addChild(new SparseTexture2AllocationTestCase(m_context, name.c_str(), *targetIter, GL_INVALID_VALUE,
+                                                          *formIter));
+        }
+        for (std::vector<GLint>::iterator targetIter = fullArrayTargets.begin(); targetIter != fullArrayTargets.end();
+             ++targetIter)
+        {
+            std::string name = std::string("SparseTexture2Allocation") + "_fullArray_" +
+                               SparseTextureUtils::getTextureTargetString(*targetIter) + "_" +
+                               SparseTextureUtils::getTextureFormatString(*formIter);
+            addChild(new SparseTexture2AllocationTestCase(m_context, name.c_str(), GL_INVALID_VALUE, *targetIter,
+                                                          *formIter));
+        }
+    }
+}
+
+void SparseTexture2Tests::addSparseTexture2CommitmentTestCase()
+{
+    std::vector<GLint> additionalTargets;
+    additionalTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
+    additionalTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+
+    const char *description = "Verifies glTexPageCommitmentARB functionality added by ARB_sparse_texture2 extension";
+
+    auto addTest = [&](GLint target, GLint format)
+    {
+        std::string name = std::string("SparseTexture2Commitment") + "_" +
+                           SparseTextureUtils::getTextureTargetString(target) + "_" +
+                           SparseTextureUtils::getTextureFormatString(format);
+        addChild(new SparseTexture2CommitmentTestCase(m_context, name.c_str(), description, target, format));
+    };
+
+    for (size_t format = 0; format < SparseTextureCommitmentFormats.size(); format++)
+    {
+        for (size_t target = 0; target < additionalTargets.size(); target++)
+        {
+            addTest(additionalTargets[target], SparseTextureCommitmentFormats[format]);
+        }
+    }
+}
+
+void SparseTexture2Tests::addUncommittedRegionsAccessTestCase()
+{
+    std::vector<GLint> additionalTargets;
+    additionalTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
+    additionalTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+
+    const char *description = "Verifies if access to uncommitted regions of sparse texture works as expected";
+
+    auto addTest = [&](GLint target, GLint format)
+    {
+        std::string name = std::string("UncommittedRegionsAccess") + "_" +
+                           SparseTextureUtils::getTextureTargetString(target) + "_" +
+                           SparseTextureUtils::getTextureFormatString(format);
+        addChild(new UncommittedRegionsAccessTestCase(m_context, name.c_str(), description, target, format));
+    };
+
+    for (size_t format = 0; format < SparseTextureCommitmentFormats.size(); format++)
+    {
+        for (size_t target = 0; target < SparseTextureCommitmentTargets.size(); target++)
+        {
+            addTest(SparseTextureCommitmentTargets[target], SparseTextureCommitmentFormats[format]);
+        }
+        for (size_t target = 0; target < additionalTargets.size(); target++)
+        {
+            addTest(additionalTargets[target], SparseTextureCommitmentFormats[format]);
+        }
+    }
+}
+
+void SparseTexture2Tests::addSparseTexture2LookupTestCase()
+{
+    std::vector<GLint> additionalTargets;
+    additionalTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
+    additionalTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+
+    std::vector<GLint> additionalFormats;
+    additionalFormats.push_back(GL_DEPTH_COMPONENT16);
+
+    const char *description = "Verifies if sparse texture lookup functions for GLSL works as expected";
+
+    auto addTest = [&](GLint target, GLint format)
+    {
+        std::string name = std::string("SparseTexture2Lookup") + "_" +
+                           SparseTextureUtils::getTextureTargetString(target) + "_" +
+                           SparseTextureUtils::getTextureFormatString(format);
+        addChild(new SparseTexture2LookupTestCase(m_context, name.c_str(), description, target, format));
+    };
+
+    for (size_t format = 0; format < SparseTextureCommitmentFormats.size(); format++)
+    {
+        for (size_t target = 0; target < SparseTextureCommitmentTargets.size(); target++)
+        {
+            addTest(SparseTextureCommitmentTargets[target], SparseTextureCommitmentFormats[format]);
+        }
+        for (size_t target = 0; target < additionalTargets.size(); target++)
+        {
+            addTest(additionalTargets[target], SparseTextureCommitmentFormats[format]);
+        }
+    }
+    for (size_t format = 0; format < additionalFormats.size(); format++)
+    {
+        for (size_t target = 0; target < SparseTextureCommitmentTargets.size(); target++)
+        {
+            addTest(SparseTextureCommitmentTargets[target], additionalFormats[format]);
+        }
+        for (size_t target = 0; target < additionalTargets.size(); target++)
+        {
+            addTest(additionalTargets[target], additionalFormats[format]);
+        }
+    }
 }
 
 } // namespace gl4cts
