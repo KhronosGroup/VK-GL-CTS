@@ -837,14 +837,14 @@ VkImageUsageFlags getImageUsageForTestCase (const CaseDef& caseDef)
 class UploadDownloadExecutor
 {
 public:
-	UploadDownloadExecutor(Context& context, VkDevice device, VkQueue queue, deUint32 queueFamilyIndex, const CaseDef& caseSpec) :
+	UploadDownloadExecutor(Context& context, bool haveMaintenance2, const DeviceInterface& deviceInterface, VkDevice device, VkQueue queue, deUint32 queueFamilyIndex, const CaseDef& caseSpec) :
 	m_caseDef(caseSpec),
-	m_haveMaintenance2(context.isDeviceFunctionalitySupported("VK_KHR_maintenance2")),
-	m_vk(context.getDeviceInterface()),
+	m_haveMaintenance2(haveMaintenance2),
+	m_vk(deviceInterface),
 	m_device(device),
 	m_queue(queue),
 	m_queueFamilyIndex(queueFamilyIndex),
-	m_allocator(context.getDeviceInterface(), device,
+	m_allocator(m_vk, device,
 		    getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
 						      context.getPhysicalDevice()))
 	{
@@ -1603,7 +1603,7 @@ tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 	flushAlloc(vk, device, *colorBufferAlloc);
 
 	// Execute the test
-	UploadDownloadExecutor executor(context, device, context.getUniversalQueue(), context.getUniversalQueueFamilyIndex(), caseDef);
+	UploadDownloadExecutor executor(context, context.isDeviceFunctionalitySupported("VK_KHR_maintenance2"), context.getDeviceInterface(), device, context.getUniversalQueue(), context.getUniversalQueueFamilyIndex(), caseDef);
 	executor.run(context, *colorBuffer);
 
 	// Verify results
@@ -2144,9 +2144,8 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 	deMemset(colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
 	flushAlloc(vk, device, *colorBufferAlloc);
 
-
 	// Execute the test
-	UploadDownloadExecutor executor(context, device, devHelper.queue, devHelper.queueFamilyIndex, caseDef);
+	UploadDownloadExecutor executor(context, false, vk, device, devHelper.queue, devHelper.queueFamilyIndex, caseDef);
 
 	executor.runSwapchain(context, *colorBuffer, swapchainImages[0]);
 
