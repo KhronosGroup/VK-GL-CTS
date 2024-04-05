@@ -31,21 +31,21 @@ namespace vkt
 namespace video
 {
 
-std::unique_ptr<Demuxer> Demuxer::create(Params&& params)
+std::shared_ptr<Demuxer> Demuxer::create(Params&& params)
 {
 	switch (params.codecOperation)
 	{
 	case vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
 	case vk::VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
 	{
-		return std::make_unique<H26XAnnexBDemuxer>(std::move(params));
+		return std::make_shared<H26XAnnexBDemuxer>(std::move(params));
 	} break;
 	case vk::VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
 	{
 		if (params.framing == ElementaryStreamFraming::AV1_ANNEXB)
-			return std::make_unique<AV1AnnexBDemuxer>(std::move(params));
+			return std::make_shared<AV1AnnexBDemuxer>(std::move(params));
 		else if (params.framing == ElementaryStreamFraming::IVF)
-			return std::make_unique<DuckIVFDemuxer>(std::move(params));
+			return std::make_shared<DuckIVFDemuxer>(std::move(params));
 		else
 			TCU_THROW(InternalError, "unknown elementary stream framing");
 	} break;

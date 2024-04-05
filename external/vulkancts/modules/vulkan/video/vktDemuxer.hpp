@@ -58,7 +58,7 @@ public:
 		ElementaryStreamFraming				framing;
 	};
 
-	static std::unique_ptr<Demuxer> create(Params&& params);
+	static std::shared_ptr<Demuxer> create(Params&& params);
 
 	vk::VkVideoCodecOperationFlagBitsKHR codecOperation() const { return m_params.codecOperation; };
 	ElementaryStreamFraming framing() const { return m_params.framing; }

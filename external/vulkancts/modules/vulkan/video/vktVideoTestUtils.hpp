@@ -1232,10 +1232,12 @@ VkResult					  getVideoCapabilities(DeviceContext&			 devCtx,
 												   const VkVideoCoreProfile& videoProfile,
 												   VkVideoCapabilitiesKHR*	 pVideoCapabilities);
 
-VkResult					  getVideoDecodeCapabilities(DeviceContext&				   devCtx,
+VkResult					getVideoDecodeCapabilities(DeviceContext&				   devCtx,
 														 const VkVideoCoreProfile&	   videoProfile,
 														 VkVideoCapabilitiesKHR&	   videoCapabilities,
 														 VkVideoDecodeCapabilitiesKHR& videoDecodeCapabilities);
+double						PSNR(const std::vector<deUint8>& img1, const std::vector<deUint8>& img2);
+
 } // namespace util
 
 } // video

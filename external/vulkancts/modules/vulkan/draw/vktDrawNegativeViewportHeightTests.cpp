@@ -887,11 +887,28 @@ tcu::TestStatus OffScreenViewportInstance::iterate (void)
 	const std::vector<VkViewport>	viewports(1u, testViewport);
 	const std::vector<VkRect2D>		scissors (1u, makeRect2D(fbExtent));
 
+	void* pNext = DE_NULL;
+#ifndef CTS_USES_VULKANSC
+	vk::VkPipelineRenderingCreateInfoKHR renderingCreateInfo
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		DE_NULL,
+		0u,
+		1u,
+		&fbFormat,
+		vk::VK_FORMAT_UNDEFINED,
+		vk::VK_FORMAT_UNDEFINED
+	};
+	if (m_params.groupParams->useDynamicRendering)
+		pNext = &renderingCreateInfo;
+#endif
+
 	const auto pipelineLayout	= makePipelineLayout(ctx.vkd, ctx.device);
 	const auto pipelineRP		= (m_params.groupParams->useDynamicRendering ? VK_NULL_HANDLE : renderPass.get());
 	const auto pipeline			= makeGraphicsPipeline(ctx.vkd, ctx.device, pipelineLayout.get(),
 		vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, fragModule.get(),
-		pipelineRP, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &vertexInputStateCreateInfo);
+		pipelineRP, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u, &vertexInputStateCreateInfo,
+		DE_NULL, DE_NULL, DE_NULL, DE_NULL, DE_NULL, pNext);
 
 	const auto cmdBuffer		= cmd.cmdBuffer.get();
 	const auto secCmdBufferPtr	= (m_params.groupParams->useSecondaryCmdBuffer
