@@ -3216,6 +3216,43 @@ tcu::TestStatus testPhysicalDeviceFeatureAttachmentFeedbackLoopDynamicStateFeatu
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureLegacyVertexAttributesFeaturesEXT (Context& context)
+{
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+	const CustomInstance		instance		(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver&		vki				(instance.getDriver());
+	const int					count			= 2u;
+	TestLog&					log				= context.getTestContext().getLog();
+	VkPhysicalDeviceFeatures2	extFeatures;
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT	deviceLegacyVertexAttributesFeaturesEXT[count];
+	const bool											isLegacyVertexAttributesFeaturesEXT = checkExtension(properties, "VK_EXT_legacy_vertex_attributes");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceLegacyVertexAttributesFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT));
+		deviceLegacyVertexAttributesFeaturesEXT[ndx].sType = isLegacyVertexAttributesFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceLegacyVertexAttributesFeaturesEXT[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceLegacyVertexAttributesFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isLegacyVertexAttributesFeaturesEXT)
+		log << TestLog::Message << deviceLegacyVertexAttributesFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isLegacyVertexAttributesFeaturesEXT &&
+		(deviceLegacyVertexAttributesFeaturesEXT[0].legacyVertexAttributes != deviceLegacyVertexAttributesFeaturesEXT[1].legacyVertexAttributes))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureMutableDescriptorTypeFeaturesEXT (Context& context)
 {
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
@@ -5436,6 +5473,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "image_2d_view_of_3d_features_ext", testPhysicalDeviceFeatureImage2DViewOf3DFeaturesEXT);
 	addFunctionCase(testGroup, "image_sliced_view_of_3d_features_ext", testPhysicalDeviceFeatureImageSlicedViewOf3DFeaturesEXT);
 	addFunctionCase(testGroup, "attachment_feedback_loop_dynamic_state_features_ext", testPhysicalDeviceFeatureAttachmentFeedbackLoopDynamicStateFeaturesEXT);
+	addFunctionCase(testGroup, "legacy_vertex_attributes_features_ext", testPhysicalDeviceFeatureLegacyVertexAttributesFeaturesEXT);
 	addFunctionCase(testGroup, "mutable_descriptor_type_features_ext", testPhysicalDeviceFeatureMutableDescriptorTypeFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clip_control_features_ext", testPhysicalDeviceFeatureDepthClipControlFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT);

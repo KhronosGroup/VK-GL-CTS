@@ -467,6 +467,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceLegacyDitheringFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT physicalDeviceLegacyVertexAttributesFeaturesEXT;
+	deMemset(&physicalDeviceLegacyVertexAttributesFeaturesEXT, 0, sizeof(physicalDeviceLegacyVertexAttributesFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_legacy_vertex_attributes") )
+	{
+		physicalDeviceLegacyVertexAttributesFeaturesEXT.sType = getStructureType<VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT>();
+		*nextPtr = &physicalDeviceLegacyVertexAttributesFeaturesEXT;
+		nextPtr  = &physicalDeviceLegacyVertexAttributesFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceLineRasterizationFeaturesEXT physicalDeviceLineRasterizationFeaturesEXT;
 	deMemset(&physicalDeviceLineRasterizationFeaturesEXT, 0, sizeof(physicalDeviceLineRasterizationFeaturesEXT));
 
@@ -1875,6 +1885,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceLegacyDitheringFeaturesEXT.legacyDithering == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature legacyDithering not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_legacy_vertex_attributes")) )
+	{
+		if ( physicalDeviceLegacyVertexAttributesFeaturesEXT.legacyVertexAttributes == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature legacyVertexAttributes not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

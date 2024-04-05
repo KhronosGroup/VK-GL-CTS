@@ -25,13 +25,12 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineVertexInputTests.hpp"
+#include "vktPipelineLegacyAttrTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
-#include "vktPipelineReferenceRenderer.hpp"
 #include "vktTestCase.hpp"
-#include "vktTestCaseUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
@@ -44,6 +43,7 @@
 #include "tcuFloat.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuFloat.hpp"
+#include "tcuTextureUtil.hpp"
 #include "deMemory.h"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
@@ -2622,6 +2622,13 @@ void createVertexInputTests (tcu::TestCaseGroup* vertexInputTests, PipelineConst
 
 	// Miscellaneous tests.
 	addTestGroup(vertexInputTests, "misc", createMiscVertexInputTests, pipelineConstructionType);
+
+	if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+		pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
+		pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+	{
+		addTestGroup(vertexInputTests, "legacy_vertex_attributes", createLegacyVertexAttributesTests, pipelineConstructionType);
+	}
 }
 
 } // pipeline

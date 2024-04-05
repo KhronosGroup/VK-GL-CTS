@@ -6199,6 +6199,20 @@ struct VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT
 	VkBool32		attachmentFeedbackLoopDynamicState;
 };
 
+struct VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		legacyVertexAttributes;
+};
+
+struct VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		nativeUnalignedPerformance;
+};
+
 struct VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT
 {
 	VkStructureType	sType;
@@ -7421,6 +7435,13 @@ struct VkPhysicalDeviceRayTracingMotionBlurFeaturesNV
 	void*			pNext;
 	VkBool32		rayTracingMotionBlur;
 	VkBool32		rayTracingMotionBlurPipelineTraceRaysIndirect;
+};
+
+struct VkPhysicalDeviceRayTracingValidationFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rayTracingValidation;
 };
 
 struct VkAccelerationStructureGeometryMotionTrianglesDataNV
@@ -9404,6 +9425,13 @@ struct VkMemoryMapPlacedInfoEXT
 	VkStructureType	sType;
 	const void*		pNext;
 	void*			pPlacedAddress;
+};
+
+struct VkPhysicalDeviceRawAccessChainsFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderRawAccessChains;
 };
 
 struct StdVideoH264SpsVuiFlags
