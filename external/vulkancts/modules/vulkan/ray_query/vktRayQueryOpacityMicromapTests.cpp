@@ -112,6 +112,9 @@ struct TestParams
 };
 
 static constexpr deUint32 kNumThreadsAtOnce = 1024;
+static constexpr deUint32 kWorkGroupCount = 8;
+static constexpr deUint32 kLocalSize = 128;
+DE_STATIC_ASSERT(kWorkGroupCount * kLocalSize == kNumThreadsAtOnce);
 
 
 class OpacityMicromapCase : public TestCase
@@ -291,11 +294,11 @@ void OpacityMicromapCase::initPrograms (vk::SourceCollections& programCollection
 		std::ostringstream comp;
 		comp
 			<< sharedHeader.str()
-			<< "layout(local_size_x=1024, local_size_y=1, local_size_z=1) in;\n"
+			<< "layout(local_size_x="<< kLocalSize <<", local_size_y=1, local_size_z=1) in;\n"
 			<< "\n"
 			<< "void main()\n"
 			<< "{\n"
-			<< "  uint index             = gl_LocalInvocationID.x;\n"
+			<< "  uint index             = gl_GlobalInvocationID.x;\n"
 			<< mainLoop.str()
 			<< "}\n"
 			;
@@ -954,7 +957,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate (void)
 		// Dispatch work with ray queries.
 		vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get());
 		vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
-		vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+		vkd.cmdDispatch(cmdBuffer, kWorkGroupCount, 1u, 1u);
 	}
 
 	// Barrier for the output buffer.
