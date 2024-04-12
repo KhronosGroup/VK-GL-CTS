@@ -1307,14 +1307,14 @@ bool SparseTexture2CommitmentTestCase::verifyTextureData(const Functions& gl, GL
 				gl.bindImageTexture(0, //unit
 									verifyTexture,
 									0,		  //level
-									GL_FALSE, //layered
+									depth > 1, //layered
 									0,		  //layer
 									GL_WRITE_ONLY, GL_R8UI);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
 				gl.bindImageTexture(1, //unit
 									texture,
 									level,	//level
-									GL_FALSE, //layered
+									depth > 1, //layered
 									0,		  //layer
 									GL_READ_ONLY, format);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
@@ -2446,6 +2446,11 @@ tcu::TestNode::IterateResult SparseTexture2LookupTestCase::iterate()
 				if (format == GL_DEPTH_COMPONENT16)
 					setupDepthMode(gl, target, texture);
 
+				if ((getTextureChannelClass(mState.format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
+						getTextureChannelClass(mState.format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER) &&
+					target != GL_TEXTURE_2D_MULTISAMPLE && target != GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+					setupNearestFilter(gl, target, texture);
+
 				for (int l = 0; l < mState.levels; ++l)
 				{
 					if (commitTexturePage(gl, target, format, texture, l))
@@ -2843,6 +2848,21 @@ void SparseTexture2LookupTestCase::setupDepthMode(const Functions& gl, GLint tar
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri");
 }
 
+/** Setup nearest filtering for a texture
+ *
+ * @param gl           GL API functions
+ * @param target       Target for which texture is binded
+ * @param texture      Texture object
+ */
+void SparseTexture2LookupTestCase::setupNearestFilter(const Functions& gl, GLint target, GLuint& texture)
+{
+	Texture::Bind(gl, texture, target);
+    gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri");
+    gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri");
+}
+
 /** Verify if data stored in texture is as expected
  *
  * @param gl           GL API functions
@@ -2966,7 +2986,7 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 			gl.bindImageTexture(1, //unit
 								verifyTexture,
 								0,		 //level
-								GL_TRUE, //layered
+								depth > 1, //layered
 								0,		 //layer
 								GL_WRITE_ONLY, GL_R8UI);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
@@ -2988,7 +3008,7 @@ bool SparseTexture2LookupTestCase::verifyLookupTextureData(const Functions& gl, 
 				gl.bindImageTexture(0, //unit
 									texture,
 									level,	//level
-									GL_FALSE, //layered
+									depth > 1, //layered
 									0,		  //layer
 									GL_READ_ONLY, format);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
