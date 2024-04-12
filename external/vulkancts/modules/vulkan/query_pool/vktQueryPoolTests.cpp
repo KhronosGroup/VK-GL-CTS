@@ -30,6 +30,7 @@
 #include "vktQueryPoolPerformanceTests.hpp"
 #include "vktQueryPoolConcurrentTests.hpp"
 #include "vktQueryPoolFragInvocationTests.hpp"
+#include "vktQueryMaintenance7Tests.hpp"
 
 namespace vkt
 {
@@ -47,6 +48,7 @@ void createChildren(tcu::TestCaseGroup *queryPoolTests)
     queryPoolTests->addChild(new QueryPoolStatisticsTests(testCtx));
 #ifndef CTS_USES_VULKANSC
     queryPoolTests->addChild(new QueryPoolPerformanceTests(testCtx));
+    queryPoolTests->addChild(createQueryMaintenance7Tests(testCtx));
 #endif
     queryPoolTests->addChild(new QueryPoolConcurrentTests(testCtx));
     queryPoolTests->addChild(createFragInvocationTests(testCtx));
