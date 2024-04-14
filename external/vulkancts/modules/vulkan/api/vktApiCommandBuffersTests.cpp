@@ -1995,16 +1995,28 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context& cont
 
 tcu::TestStatus renderPassContinueNestedTest(Context& context, bool framebufferHint)
 {
-	context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
+	bool maintenance7 = false;
 #ifndef CTS_USES_VULKANSC
-	const auto& features = *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
-	if (!features.nestedCommandBuffer)
-#endif // CTS_USES_VULKANSC
-		TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+	if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance7"))
+	{
+		const auto& features = *vk::findStructure<vk::VkPhysicalDeviceMaintenance7FeaturesKHR>(&context.getDeviceFeatures2());
+		maintenance7 = features.maintenance7;
+	}
+#endif
+
+	if (!maintenance7)
+	{
+		context.requireDeviceFunctionality("VK_EXT_nested_command_buffer");
 #ifndef CTS_USES_VULKANSC
-	if (!features.nestedCommandBufferRendering)
+		const auto& features = *findStructure<VkPhysicalDeviceNestedCommandBufferFeaturesEXT>(&context.getDeviceFeatures2());
+		if (!features.nestedCommandBuffer)
 #endif // CTS_USES_VULKANSC
-		TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
+			TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
+#ifndef CTS_USES_VULKANSC
+		if (!features.nestedCommandBufferRendering)
+#endif // CTS_USES_VULKANSC
+			TCU_THROW(NotSupportedError, "nestedCommandBufferRendering is not supported");
+	}
 
 	const DeviceInterface&					vkd						= context.getDeviceInterface();
 	CommandBufferRenderPassTestEnvironment	env						(context, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
