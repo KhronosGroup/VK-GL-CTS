@@ -13,6 +13,8 @@ set(GLCTS_COMMON_SRCS
 	glcAggressiveShaderOptimizationsTests.hpp
 	glcBlendEquationAdvancedTests.cpp
 	glcBlendEquationAdvancedTests.hpp
+	glcBufferObjectsTests.cpp
+	glcBufferObjectsTests.hpp
 	glcConfigList.hpp
 	glcConfigList.cpp
 	glcConfigListCase.cpp

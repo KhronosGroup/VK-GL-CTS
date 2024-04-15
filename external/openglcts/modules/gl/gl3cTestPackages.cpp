@@ -34,12 +34,15 @@
 #include "gl3cTransformFeedbackTests.hpp"
 #include "gl3cTransformFeedback3Tests.hpp"
 #include "gl4cPipelineStatisticsQueryTests.hpp"
-#include "glcPixelStorageModesTests.hpp"
+#include "glcBufferObjectsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcFramebufferBlitTests.hpp"
+#include "glcGLSLVectorConstructorTests.hpp"
 #include "glcInfoTests.hpp"
+#include "glcNearestEdgeTests.hpp"
 #include "glcPackedDepthStencilTests.hpp"
 #include "glcPackedPixelsTests.hpp"
+#include "glcPixelStorageModesTests.hpp"
 #include "glcShaderFunctionTests.hpp"
 #include "glcShaderIndexingTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
@@ -52,8 +55,6 @@
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "glcUniformBlockNegativeTests.hpp"
-#include "glcNearestEdgeTests.hpp"
-#include "glcGLSLVectorConstructorTests.hpp"
 #include "gluStateReset.hpp"
 #include "qpTestLog.h"
 #include "tcuTestLog.hpp"
@@ -181,6 +182,7 @@ void GL30TestPackage::init(void)
 		addChild(new deqp::Functional::TextureShadowLodTest(getContext()));
 		addChild(new glcts::FramebufferBlitTests(getContext()));
 		addChild(new glcts::TextureLodBiasTests(getContext()));
+		addChild(new glcts::BufferObjectsTests(getContext()));
 	}
 	catch (...)
 	{

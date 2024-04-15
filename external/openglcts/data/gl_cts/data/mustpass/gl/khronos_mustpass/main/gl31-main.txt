@@ -862,6 +862,11 @@ KHR-GL31.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_vertex
 KHR-GL31.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_fragment
 KHR-GL31.framebuffer_blit.framebuffer_blit_functionality_multisampled_to_singlesampled_blit
 KHR-GL31.texture_lod_bias.texture_lod_bias_all
+KHR-GL31.buffer_objects.gen_buffers
+KHR-GL31.buffer_objects.triangles
+KHR-GL31.buffer_objects.elements
+KHR-GL31.buffer_objects.multi_texture
+KHR-GL31.buffer_objects.sub_data
 KHR-GL31.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL31.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL31.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

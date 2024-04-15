@@ -870,6 +870,7 @@ cc_library_static {
     srcs: [
         "external/openglcts/modules/common/glcAggressiveShaderOptimizationsTests.cpp",
         "external/openglcts/modules/common/glcBlendEquationAdvancedTests.cpp",
+        "external/openglcts/modules/common/glcBufferObjectsTests.cpp",
         "external/openglcts/modules/common/glcCompressedFormatTests.cpp",
         "external/openglcts/modules/common/glcConfigList.cpp",
         "external/openglcts/modules/common/glcConfigListCase.cpp",
