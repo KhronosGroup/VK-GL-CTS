@@ -14397,6 +14397,8 @@ do { \
 			{
 			}
 
+			virtual ~fp16PerComponent () {}
+
 			bool			callOncePerComponent	()									{ return true; }
 			deUint32		getComponentValidity	()									{ return static_cast<deUint32>(-1); }
 

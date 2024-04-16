@@ -48,7 +48,7 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	set(CMAKE_C_STANDARD 99)
 	set(CMAKE_CXX_STANDARD 17)
 	set(CMAKE_C_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_C_FLAGS} -pedantic ")
-	set(CMAKE_CXX_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS} -Wno-delete-non-virtual-dtor")
+	set(CMAKE_CXX_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 	# Set _FILE_OFFSET_BITS=64 on 32-bit build on Linux to enable output log files to exceed 2GB
 	if ((DE_CPU_X86) AND (DE_OS_UNIX))

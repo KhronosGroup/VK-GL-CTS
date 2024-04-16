@@ -80,6 +80,8 @@ protected:
 class IBufferAllocator
 {
 public:
+	virtual ~IBufferAllocator () {}
+
 	virtual tcu::TestStatus				createTestBuffer				(VkDeviceSize				size,
 																		 VkBufferUsageFlags			usage,
 																		 Context&					context,

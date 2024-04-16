@@ -256,6 +256,8 @@ bool validValueVkBool32 (const VkBool32 value)
 class IBufferMemoryRequirements
 {
 public:
+	virtual ~IBufferMemoryRequirements () {}
+
 	virtual void populateTestGroup			(tcu::TestCaseGroup*						group) = 0;
 
 protected:
@@ -798,6 +800,8 @@ struct ImageTestParams
 class IImageMemoryRequirements
 {
 public:
+	virtual ~IImageMemoryRequirements () {}
+
 	virtual void populateTestGroup			(tcu::TestCaseGroup*						group) = 0;
 
 protected:

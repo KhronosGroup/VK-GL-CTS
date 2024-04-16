@@ -51,6 +51,8 @@ enum class ElementaryStreamFraming
 class Demuxer
 {
 public:
+	virtual ~Demuxer () {}
+
 	struct Params
 	{
 		std::unique_ptr<BufferedReader>			data;

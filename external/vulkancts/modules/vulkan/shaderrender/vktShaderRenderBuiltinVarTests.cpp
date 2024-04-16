@@ -75,6 +75,8 @@ public:
 		m_inputs[0].type = rr::GENERICVECTYPE_FLOAT;
 	}
 
+	virtual ~FrontFacingVertexShader () {}
+
 	void shadeVertices (const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const
 	{
 		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
@@ -94,6 +96,8 @@ public:
 	{
 		m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
 	}
+
+	virtual ~FrontFacingFragmentShader () {}
 
 	void shadeFragments (rr::FragmentPacket* , const int numPackets, const rr::FragmentShadingContext& context) const
 	{
