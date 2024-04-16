@@ -48,6 +48,7 @@ namespace Constants
 {
 	constexpr deUint32	numThreads				= 64;
 	constexpr deUint32	uniformAlignment		= 16;
+	constexpr deUint32	pushConstArraySize		= 2;
 }
 
 enum class DataTypes : deUint8
@@ -265,7 +266,7 @@ struct CopyOperation
 
 static const DATA_TYPE BASE_DATA_TYPE_CASES[] = {
 	DataTypes::UINT8,
-	DataTypes::INT8	,
+	DataTypes::INT8,
 	DataTypes::UINT16,
 	DataTypes::INT16,
 	DataTypes::FLOAT16,
@@ -570,7 +571,7 @@ static std::vector<DATA_TYPE> getSameSizeBaseDataType(COMPOSITE_DATA_TYPE type)
 
 static std::vector<COMPOSITE_DATA_TYPE> getSameSizeCompositeType(DATA_TYPE type)
 {
-	static const std::vector<COMPOSITE_DATA_TYPE> sameSizeDataTable[DE_ENUM_COUNT(DataTypes)] = {
+	static std::vector<COMPOSITE_DATA_TYPE> sameSizeDataTable[DE_ENUM_COUNT(DataTypes)] = {
 		{},																												// UINT8
 		{},																												// INT8
 		{	CompositeDataTypes::VEC2_UINT8,		CompositeDataTypes::VEC2_INT8										},	// UINT16
@@ -1897,72 +1898,6 @@ static Resource createFilledResource(const FilledResourceDesc& desc)
 	}
 
 	return Resource(BufferSp(new Buffer<deUint8>(std::vector<deUint8>(), desc.padding)), desc.descriptorType);
-}
-
-struct VectorResourceDesc
-{
-	std::vector<deUint8>	data;
-	DATA_TYPE				dataType;
-	vk::VkDescriptorType	descriptorType;
-};
-
-static Resource createResourceFromVector(const VectorResourceDesc& desc)
-{
-	const DATA_TYPE type = desc.dataType;
-
-	switch (type)
-	{
-	case DataTypes::UINT8:
-	{
-		return Resource(BufferSp(new Buffer<deUint8>(std::vector<deUint8>(desc.data.data(), desc.data.data() + desc.data.size()))), desc.descriptorType);
-	}
-	case DataTypes::INT8:
-	{
-		return Resource(BufferSp(new Buffer<deInt8>(std::vector<deInt8>(desc.data.data(), desc.data.data() + desc.data.size()))), desc.descriptorType);
-	}
-	case DataTypes::UINT16:
-	{
-		return Resource(BufferSp(new Buffer<deUint16>(std::vector<deUint16>(desc.data.data(), desc.data.data() + desc.data.size()))), desc.descriptorType);
-	}
-	case DataTypes::INT16:
-	{
-		return Resource(BufferSp(new Buffer<deInt16>(std::vector<deInt16>(desc.data.data(), desc.data.data() + desc.data.size()))), desc.descriptorType);
-	}
-	case DataTypes::FLOAT16:
-	{
-		return Resource(BufferSp(new Buffer<deFloat16>(std::vector<deFloat16>(desc.data.data(), desc.data.data() + desc.data.size()))), desc.descriptorType);
-	}
-	case DataTypes::UINT32:
-	{
-		return Resource(BufferSp(new Buffer<deUint32>(std::vector<deUint32>(desc.data.data(), desc.data.data() + desc.data.size()))), desc.descriptorType);
-	}
-	case DataTypes::INT32:
-	{
-		return Resource(BufferSp(new Buffer<deInt32>(std::vector<deInt32>(desc.data.data(), desc.data.data() + desc.data.size()))), desc.descriptorType);
-	}
-	case DataTypes::FLOAT32:
-	{
-		return Resource(BufferSp(new Buffer<float>(std::vector<float>(desc.data.data(), desc.data.data() + desc.data.size()))), desc.descriptorType);
-	}
-	case DataTypes::UINT64:
-	{
-		return Resource(BufferSp(new Buffer<deUint64>(std::vector<deUint64>(desc.data.data(), desc.data.data() + desc.data.size()))), desc.descriptorType);
-	}
-	case DataTypes::INT64:
-	{
-		return Resource(BufferSp(new Buffer<deInt64>(std::vector<deInt64>(desc.data.data(), desc.data.data() + desc.data.size()))), desc.descriptorType);
-	}
-	case DataTypes::FLOAT64:
-	{
-		return Resource(BufferSp(new Buffer<double>(std::vector<double>(desc.data.data(), desc.data.data() + desc.data.size()))), desc.descriptorType);
-	}
-	default:
-		DE_ASSERT(0);
-		DE_FATAL("Unsupported data type");
-		return Resource(BufferSp(new Buffer<deUint8>(std::vector<deUint8>())));
-	}
-
-	return Resource(BufferSp(new Buffer<deUint8>(std::vector<deUint8>())));
 }
 
 static Resource createAtomicResource(const AtomicResourceDesc& desc, const std::vector<AtomicOpDesc>& atomicOpDescs)
@@ -5299,7 +5234,7 @@ void addLoadTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 		{
 			std::string testName	= toString(BASE_DATA_TYPE_CASES[i]);
 
-			const deUint32 numWorkgroup	= LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT ? 128 / 8 : Constants::numThreads;
+			const deUint32 numWorkgroup	= LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT ? Constants::pushConstArraySize : Constants::numThreads;
 
 			std::map<std::string, std::string>	specMap;
 			if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
@@ -5506,7 +5441,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 
 					std::string testName	= toString(BASE_DATA_TYPE_CASES[i]) + std::string("_to_") + toString(dataType);
 
-					const deUint32						numWorkgroup	= LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT ? 128 / 8 : Constants::numThreads;
+					const deUint32						numWorkgroup	= LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT ? Constants::pushConstArraySize : Constants::numThreads;
 					const deUint32						caseIndex		= static_cast<deUint32>(dataType);
 					std::map<std::string, std::string>	specMap;
 					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
@@ -5550,7 +5485,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 
 					FilledResourceDesc desc;
 					desc.dataType	= sameSizeTypes[l];
-					desc.elemCount	= Constants::numThreads;
+					desc.elemCount	= numWorkgroup;
 					desc.fillType	= FillingTypes::RANDOM;
 					desc.seed		= deStringHash(testGroup->getName());
 					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
@@ -5579,7 +5514,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 						spec.outputs.push_back(outputResource);
 					}
 					spec.assembly		= shaderAsm;
-					spec.numWorkGroups	= tcu::IVec3(Constants::numThreads, 1, 1);
+					spec.numWorkGroups	= tcu::IVec3(numWorkgroup, 1, 1);
 					spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 					spec.extensions.push_back("VK_KHR_shader_untyped_pointers");
 
@@ -5679,51 +5614,18 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 						shaderFunctions.specialize(specMap);
 
 					FilledResourceDesc desc;
-					desc.dataType	= BASE_DATA_TYPE_CASES[i];
-					desc.elemCount	= 1;
-					desc.fillType	= FillingTypes::VALUE;
-					desc.value		= 1;
-					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
-					{
-						desc.descriptorType	= vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-						desc.padding		= Constants::uniformAlignment - getSizeInBytes(BASE_DATA_TYPE_CASES[i]);
-					}
-					else
-					{
-						desc.descriptorType	= vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-						desc.padding		= 0;
-					}
+					desc.dataType		= BASE_DATA_TYPE_CASES[i];
+					desc.elemCount		= 1;
+					desc.padding		= 0;
+					desc.fillType		= FillingTypes::VALUE;
+					desc.value			= 1;
+					desc.descriptorType	= LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM ?
+										  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER :
+										  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
 					Resource inputResource	= createFilledResource(desc);
-
-					std::vector<deUint8>	outputData;
-					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
-					{
-						const deUint32 alignedSize	= std::max(getSizeInBytes(compositeType), Constants::uniformAlignment);
-						outputData.assign(alignedSize, 0xff);
-						const deUint32 dataSize	= getSizeInBytes(getCompositeBaseDataType(compositeType));
-						const deUint32 elemCnt	= getElementCount(compositeType);
-						for (deUint32 ndx = 0; ndx < elemCnt * dataSize - 1; ++ndx)
-						{
-							outputData[ndx]	= 0;
-						}
-						outputData[elemCnt * dataSize - 1]	= 1;
-					}
-					else
-					{
-						const deUint32 sizeInBytes	= getSizeInBytes(compositeType);
-						outputData.resize(sizeInBytes);
-						for (deUint32 ndx = 0; ndx < sizeInBytes - 1; ++ndx)
-						{
-							outputData[ndx]	= 0;
-						}
-						outputData[sizeInBytes - 1]	= 1;
-					}
-					VectorResourceDesc outputDesc;
-					outputDesc.descriptorType	= vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-					outputDesc.data				= outputData;
-					outputDesc.dataType			= getCompositeBaseDataType(compositeType);
-					Resource outputResource		= createResourceFromVector(outputDesc);
+					desc.descriptorType		= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+					Resource outputResource = createFilledResource(desc);
 
 					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT)
 					{
@@ -5733,6 +5635,7 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 					{
 						spec.inputs.push_back(inputResource);
 					}
+
 					spec.assembly		= shaderAsm;
 					spec.numWorkGroups	= tcu::IVec3(1, 1, 1);
 					spec.outputs.push_back(outputResource);
@@ -5831,59 +5734,29 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memM
 						shaderVariablesStr +
 						shaderFunctions.specialize(specMap);
 
-					std::vector<deUint8>	inputData;
-					VectorResourceDesc inputDesc;
-					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
-					{
-						const deUint32 alignedSize	= std::max(getSizeInBytes(COMPOSITE_DATA_TYPE_CASES[i]), Constants::uniformAlignment);
-						inputData.assign(alignedSize, 0xff);
-						const deUint32 dataSize	= getSizeInBytes(getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]));
-						const deUint32 elemCnt	= getElementCount(COMPOSITE_DATA_TYPE_CASES[i]);
-						for (deUint32 ndx = 0; ndx < elemCnt * dataSize - 1; ++ndx)
-						{
-							inputData[ndx]	= 0;
-						}
-						inputData[elemCnt * dataSize - 1]	= 1;
-						inputDesc.descriptorType			= vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-					}
-					else
-					{
-						const deUint32 sizeInBytes	= getSizeInBytes(COMPOSITE_DATA_TYPE_CASES[i]);
-						inputData.resize(sizeInBytes);
-						for (deUint32 ndx = 0; ndx < sizeInBytes - 1; ++ndx)
-						{
-							inputData[ndx]	= 0;
-						}
-						inputData[sizeInBytes - 1]	= 1;
-						inputDesc.descriptorType	= vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-					}
-					inputDesc.data				= inputData;
-					inputDesc.dataType			= getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]);
-					Resource inputResource		= createResourceFromVector(inputDesc);
+					FilledResourceDesc desc;
+					desc.dataType		= getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]);
+					desc.elemCount		= getElementCount(COMPOSITE_DATA_TYPE_CASES[i]);
+					desc.padding		= 0;
+					desc.fillType		= FillingTypes::VALUE;
+					desc.value			= 1;
+					desc.descriptorType	= LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM ?
+										  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER :
+										  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
-					FilledResourceDesc outputDesc;
-					outputDesc.dataType	= dataType;
-					outputDesc.elemCount	= 1;
-					outputDesc.fillType	= FillingTypes::VALUE;
-					outputDesc.value		= 1;
-					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
-					{
-						outputDesc.padding		= Constants::uniformAlignment - getSizeInBytes(COMPOSITE_DATA_TYPE_CASES[i]);
-					}
-					else
-					{
-						outputDesc.padding		= 0;
-					}
-					Resource outputResource	= createFilledResource(outputDesc);
+					Resource inputResource	= createFilledResource(desc);
+					desc.descriptorType		= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+					Resource outputResource = createFilledResource(desc);
 
 					if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT)
 					{
-						spec.pushConstants	= inputResource.getBuffer();
+						spec.pushConstants = inputResource.getBuffer();
 					}
 					else
 					{
 						spec.inputs.push_back(inputResource);
 					}
+
 					spec.assembly		= shaderAsm;
 					spec.numWorkGroups	= tcu::IVec3(1, 1, 1);
 					spec.outputs.push_back(outputResource);
