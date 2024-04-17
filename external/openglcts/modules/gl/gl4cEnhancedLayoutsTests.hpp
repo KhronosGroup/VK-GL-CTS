@@ -1340,8 +1340,19 @@ protected:
 class GLSLContantImmutablityTest : public NegativeTestBase
 {
 public:
+    /* Private enums */
+    enum CONSTANTS
+    {
+        GL_ARB_ENHANCED_LAYOUTS,
+        GL_MAX_XFB,
+        GL_MAX_XFB_INT_COMP,
+
+        /* */
+        CONSTANTS_MAX,
+    };
+
     /* Public methods */
-    GLSLContantImmutablityTest(deqp::Context &context);
+    GLSLContantImmutablityTest(deqp::Context &context, glw::GLuint constant, glw::GLuint stage);
 
     virtual ~GLSLContantImmutablityTest()
     {
@@ -1357,17 +1368,6 @@ protected:
     virtual void testInit();
 
 private:
-    /* Private enums */
-    enum CONSTANTS
-    {
-        GL_ARB_ENHANCED_LAYOUTS,
-        GL_MAX_XFB,
-        GL_MAX_XFB_INT_COMP,
-
-        /* */
-        CONSTANTS_MAX,
-    };
-
     /* Private types */
     struct testCase
     {
@@ -1380,6 +1380,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_constant;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test GLSLConstantIntegralExpression. Description follows:
@@ -1537,8 +1539,20 @@ private:
 class UniformBlockLayoutQualifierConflictTest : public NegativeTestBase
 {
 public:
+    /* Private enums */
+    enum QUALIFIERS
+    {
+        DEFAULT,
+        STD140,
+        SHARED,
+        PACKED,
+
+        /* */
+        QUALIFIERS_MAX,
+    };
+
     /* Public methods */
-    UniformBlockLayoutQualifierConflictTest(deqp::Context &context);
+    UniformBlockLayoutQualifierConflictTest(deqp::Context &context, glw::GLuint qualifier, glw::GLuint stage);
 
     virtual ~UniformBlockLayoutQualifierConflictTest()
     {
@@ -1556,18 +1570,6 @@ protected:
     virtual void testInit();
 
 private:
-    /* Private enums */
-    enum QUALIFIERS
-    {
-        DEFAULT,
-        STD140,
-        SHARED,
-        PACKED,
-
-        /* */
-        QUALIFIERS_MAX,
-    };
-
     /* Private types */
     struct testCase
     {
@@ -1580,6 +1582,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_qualifier;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test UniformBlockMemberInvalidOffsetAlignment. Description follows:
@@ -1605,13 +1609,18 @@ class UniformBlockMemberInvalidOffsetAlignmentTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    UniformBlockMemberInvalidOffsetAlignmentTest(deqp::Context &context);
+    UniformBlockMemberInvalidOffsetAlignmentTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
 
     UniformBlockMemberInvalidOffsetAlignmentTest(deqp::Context &context, const glw::GLchar *name,
-                                                 const glw::GLchar *description);
+                                                 const glw::GLchar *description, glw::GLuint type, glw::GLuint stage);
 
     virtual ~UniformBlockMemberInvalidOffsetAlignmentTest()
     {
+    }
+
+    inline bool stageAllowed(glw::GLuint stage)
+    {
+        return isStageSupported(static_cast<Utils::Shader::STAGES>(stage));
     }
 
 protected:
@@ -1635,6 +1644,9 @@ protected:
         Utils::Shader::STAGES m_stage;
         Utils::Type m_type;
     };
+
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
 
     /* Protected fields */
     std::vector<testCase> m_test_cases;
@@ -1671,10 +1683,10 @@ class UniformBlockMemberOverlappingOffsetsTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    UniformBlockMemberOverlappingOffsetsTest(deqp::Context &context);
+    UniformBlockMemberOverlappingOffsetsTest(deqp::Context &context, glw::GLuint type_i, glw::GLuint type_j);
 
     UniformBlockMemberOverlappingOffsetsTest(deqp::Context &context, const glw::GLchar *name,
-                                             const glw::GLchar *description);
+                                             const glw::GLchar *description, glw::GLuint type_i, glw::GLuint type_j);
 
     virtual ~UniformBlockMemberOverlappingOffsetsTest()
     {
@@ -1707,6 +1719,9 @@ protected:
 
     /* Protected fields */
     std::vector<testCase> m_test_cases;
+
+    glw::GLuint m_type_i;
+    glw::GLuint m_type_j;
 };
 
 /** Implementation of test UniformBlockMemberAlignNonPowerOf2. Description follows:
@@ -1730,10 +1745,10 @@ class UniformBlockMemberAlignNonPowerOf2Test : public NegativeTestBase
 {
 public:
     /* Public methods */
-    UniformBlockMemberAlignNonPowerOf2Test(deqp::Context &context);
+    UniformBlockMemberAlignNonPowerOf2Test(deqp::Context &context, glw::GLuint type);
 
     UniformBlockMemberAlignNonPowerOf2Test(deqp::Context &context, const glw::GLchar *name,
-                                           const glw::GLchar *description);
+                                           const glw::GLchar *description, glw::GLuint type);
 
     virtual ~UniformBlockMemberAlignNonPowerOf2Test()
     {
@@ -1765,6 +1780,7 @@ protected:
 
     /* Protected fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test UniformBlockAlignment. Description follows:
@@ -1863,11 +1879,28 @@ private:
 class SSBLayoutQualifierConflictTest : public NegativeTestBase
 {
 public:
+    enum QUALIFIERS
+    {
+        DEFAULT,
+        STD140,
+        STD430,
+        SHARED,
+        PACKED,
+
+        /* */
+        QUALIFIERS_MAX,
+    };
+
     /* Public methods */
-    SSBLayoutQualifierConflictTest(deqp::Context &context);
+    SSBLayoutQualifierConflictTest(deqp::Context &context, glw::GLuint qualifier, glw::GLuint stage);
 
     virtual ~SSBLayoutQualifierConflictTest()
     {
+    }
+
+    inline bool stageAllowed(glw::GLuint stage)
+    {
+        return isStageSupported(static_cast<Utils::Shader::STAGES>(stage));
     }
 
 protected:
@@ -1881,19 +1914,6 @@ protected:
     virtual void testInit();
 
 private:
-    /* Private enums */
-    enum QUALIFIERS
-    {
-        DEFAULT,
-        STD140,
-        STD430,
-        SHARED,
-        PACKED,
-
-        /* */
-        QUALIFIERS_MAX,
-    };
-
     /* Private types */
     struct testCase
     {
@@ -1907,6 +1927,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_qualifier;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test SSBMemberInvalidOffsetAlignment. Description follows:
@@ -1921,10 +1943,15 @@ class SSBMemberInvalidOffsetAlignmentTest : public UniformBlockMemberInvalidOffs
 {
 public:
     /* Public methods */
-    SSBMemberInvalidOffsetAlignmentTest(deqp::Context &context);
+    SSBMemberInvalidOffsetAlignmentTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
 
     virtual ~SSBMemberInvalidOffsetAlignmentTest()
     {
+    }
+
+    inline bool stageAllowed(glw::GLuint stage)
+    {
+        return isStageSupported(static_cast<Utils::Shader::STAGES>(stage));
     }
 
 protected:
@@ -1946,7 +1973,7 @@ class SSBMemberOverlappingOffsetsTest : public UniformBlockMemberOverlappingOffs
 {
 public:
     /* Public methods */
-    SSBMemberOverlappingOffsetsTest(deqp::Context &context);
+    SSBMemberOverlappingOffsetsTest(deqp::Context &context, glw::GLuint type_i, glw::GLuint type_j);
     virtual ~SSBMemberOverlappingOffsetsTest()
     {
     }
@@ -1969,7 +1996,7 @@ class SSBMemberAlignNonPowerOf2Test : public UniformBlockMemberAlignNonPowerOf2T
 {
 public:
     /* Public methods */
-    SSBMemberAlignNonPowerOf2Test(deqp::Context &context);
+    SSBMemberAlignNonPowerOf2Test(deqp::Context &context, glw::GLuint type);
 
     virtual ~SSBMemberAlignNonPowerOf2Test()
     {
@@ -2303,7 +2330,7 @@ protected:
 class VaryingStructureMemberLocationTest : public NegativeTestBase
 {
 public:
-    VaryingStructureMemberLocationTest(deqp::Context &context);
+    VaryingStructureMemberLocationTest(deqp::Context &context, glw::GLuint m_stage);
 
     ~VaryingStructureMemberLocationTest()
     {
@@ -2328,6 +2355,7 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test VaryingBlockLocations. Description follows:
@@ -2425,7 +2453,7 @@ class VaryingBlockMemberLocationsTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    VaryingBlockMemberLocationsTest(deqp::Context &context);
+    VaryingBlockMemberLocationsTest(deqp::Context &context, glw::GLuint stage);
 
     virtual ~VaryingBlockMemberLocationsTest()
     {
@@ -2452,6 +2480,7 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test VaryingBlockAutomaticMemberLocations. Description follows:
@@ -2478,7 +2507,7 @@ class VaryingBlockAutomaticMemberLocationsTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    VaryingBlockAutomaticMemberLocationsTest(deqp::Context &context);
+    VaryingBlockAutomaticMemberLocationsTest(deqp::Context &context, glw::GLuint stage);
 
     virtual ~VaryingBlockAutomaticMemberLocationsTest()
     {
@@ -2503,6 +2532,7 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test VaryingLocationLimit. Description follows:
@@ -2523,7 +2553,7 @@ class VaryingLocationLimitTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    VaryingLocationLimitTest(deqp::Context &context);
+    VaryingLocationLimitTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
 
     virtual ~VaryingLocationLimitTest()
     {
@@ -2550,6 +2580,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test VaryingComponents. Description follows:
@@ -2577,29 +2609,6 @@ private:
 class VaryingComponentsTest : public VaryingLocationsTest
 {
 public:
-    VaryingComponentsTest(deqp::Context &context);
-
-    VaryingComponentsTest(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description);
-
-    ~VaryingComponentsTest()
-    {
-    }
-
-protected:
-    /* Protected methods */
-    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
-                                     Utils::VaryingPassthrough &varying_passthrough);
-
-    virtual std::string getTestCaseName(glw::GLuint test_case_index);
-    virtual glw::GLuint getTestCaseNumber();
-    virtual void testInit();
-    virtual bool useComponentQualifier(glw::GLuint test_case_index);
-
-    /* To be implemented by children */
-    virtual glw::GLuint getArrayLength();
-
-private:
-    /* Private enums */
     enum COMPONENTS_LAYOUT
     {
         G64VEC2,
@@ -2614,6 +2623,34 @@ private:
         SCALAR_SCALAR_SCALAR_SCALAR,
     };
 
+    VaryingComponentsTest(deqp::Context &context, COMPONENTS_LAYOUT layout, Utils::Type::TYPES type);
+
+    VaryingComponentsTest(deqp::Context &context, const glw::GLchar *test_name, const glw::GLchar *test_description,
+                          COMPONENTS_LAYOUT layout, Utils::Type::TYPES type);
+
+    ~VaryingComponentsTest()
+    {
+    }
+
+    std::string getComponentsLayoutName(COMPONENTS_LAYOUT layout);
+    std::string getTypesName(Utils::Type::TYPES type);
+
+protected:
+    /* Protected methods */
+    virtual void getProgramInterface(glw::GLuint test_case_index, Utils::ProgramInterface &program_interface,
+                                     Utils::VaryingPassthrough &varying_passthrough);
+
+    virtual std::string getTestCaseName(glw::GLuint test_case_index);
+    virtual glw::GLuint getTestCaseNumber();
+    virtual void testInit();
+    virtual bool useComponentQualifier(glw::GLuint test_case_index);
+
+    /* To be implemented by children */
+    virtual glw::GLuint getArrayLength();
+    COMPONENTS_LAYOUT m_layout;
+    Utils::Type::TYPES m_type;
+
+private:
     /* Private struct */
     struct descriptor
     {
@@ -2670,7 +2707,7 @@ private:
 class VaryingArrayComponentsTest : public VaryingComponentsTest
 {
 public:
-    VaryingArrayComponentsTest(deqp::Context &context);
+    VaryingArrayComponentsTest(deqp::Context &context, COMPONENTS_LAYOUT layout, Utils::Type::TYPES type);
 
     ~VaryingArrayComponentsTest()
     {
@@ -2707,10 +2744,15 @@ class VaryingInvalidValueComponentTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    VaryingInvalidValueComponentTest(deqp::Context &context);
+    VaryingInvalidValueComponentTest(deqp::Context &context, glw::GLuint type);
 
     virtual ~VaryingInvalidValueComponentTest()
     {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
     }
 
 protected:
@@ -2735,6 +2777,7 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test VaryingExceedingComponents. Description follows:
@@ -2760,10 +2803,15 @@ class VaryingExceedingComponentsTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    VaryingExceedingComponentsTest(deqp::Context &context);
+    VaryingExceedingComponentsTest(deqp::Context &context, glw::GLuint type);
 
     virtual ~VaryingExceedingComponentsTest()
     {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
     }
 
 protected:
@@ -2787,6 +2835,7 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test VaryingComponentWithoutLocation. Description follows:
@@ -2807,10 +2856,15 @@ class VaryingComponentWithoutLocationTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    VaryingComponentWithoutLocationTest(deqp::Context &context);
+    VaryingComponentWithoutLocationTest(deqp::Context &context, glw::GLuint type);
 
     virtual ~VaryingComponentWithoutLocationTest()
     {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
     }
 
 protected:
@@ -2834,6 +2888,7 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test VaryingComponentOfInvalidType. Description follows:
@@ -2890,7 +2945,7 @@ class VaryingComponentOfInvalidTypeTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    VaryingComponentOfInvalidTypeTest(deqp::Context &context);
+    VaryingComponentOfInvalidTypeTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
 
     virtual ~VaryingComponentOfInvalidTypeTest()
     {
@@ -2932,6 +2987,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test InputComponentAliasing. Description follows:
@@ -2963,10 +3020,15 @@ class InputComponentAliasingTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    InputComponentAliasingTest(deqp::Context &context);
+    InputComponentAliasingTest(deqp::Context &context, glw::GLuint type);
 
     virtual ~InputComponentAliasingTest()
     {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
     }
 
 protected:
@@ -2992,6 +3054,7 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test OutputComponentAliasing. Description follows:
@@ -3013,10 +3076,15 @@ class OutputComponentAliasingTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    OutputComponentAliasingTest(deqp::Context &context);
+    OutputComponentAliasingTest(deqp::Context &context, glw::GLuint type);
 
     virtual ~OutputComponentAliasingTest()
     {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
     }
 
 protected:
@@ -3040,6 +3108,7 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test VaryingLocationAliasingWithMixedTypes. Description follows:
@@ -3062,10 +3131,15 @@ class VaryingLocationAliasingWithMixedTypesTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    VaryingLocationAliasingWithMixedTypesTest(deqp::Context &context);
+    VaryingLocationAliasingWithMixedTypesTest(deqp::Context &context, glw::GLuint type_gohan, glw::GLuint type_goten);
 
     virtual ~VaryingLocationAliasingWithMixedTypesTest()
     {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
     }
 
 protected:
@@ -3091,6 +3165,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type_gohan;
+    glw::GLuint m_type_goten;
 };
 
 /** Implementation of test VaryingLocationAliasingWithMixedInterpolation. Description follows:
@@ -3118,10 +3194,16 @@ class VaryingLocationAliasingWithMixedInterpolationTest : public NegativeTestBas
 {
 public:
     /* Public methods */
-    VaryingLocationAliasingWithMixedInterpolationTest(deqp::Context &context);
+    VaryingLocationAliasingWithMixedInterpolationTest(deqp::Context &context, glw::GLuint type_gohan,
+                                                      glw::GLuint type_goten);
 
     virtual ~VaryingLocationAliasingWithMixedInterpolationTest()
     {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
     }
 
 protected:
@@ -3162,6 +3244,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type_gohan;
+    glw::GLuint m_type_goten;
 };
 
 /** Implementation of test VaryingLocationAliasingWithMixedAuxiliaryStorage. Description follows:
@@ -3186,10 +3270,16 @@ class VaryingLocationAliasingWithMixedAuxiliaryStorageTest : public NegativeTest
 {
 public:
     /* Public methods */
-    VaryingLocationAliasingWithMixedAuxiliaryStorageTest(deqp::Context &context);
+    VaryingLocationAliasingWithMixedAuxiliaryStorageTest(deqp::Context &context, glw::GLuint type_gohan,
+                                                         glw::GLuint type_goten);
 
     virtual ~VaryingLocationAliasingWithMixedAuxiliaryStorageTest()
     {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
     }
 
 protected:
@@ -3231,6 +3321,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type_gohan;
+    glw::GLuint m_type_goten;
 };
 
 /** Implementation of test VertexAttribLocationAPI. Description follows:
@@ -3369,8 +3461,18 @@ private:
 class XFBInputTest : public NegativeTestBase
 {
 public:
+    enum QUALIFIERS
+    {
+        BUFFER = 0,
+        STRIDE,
+        OFFSET,
+
+        /* */
+        QUALIFIERS_MAX
+    };
+
     /* Public methods */
-    XFBInputTest(deqp::Context &context);
+    XFBInputTest(deqp::Context &context, glw::GLuint qualifier, glw::GLuint stage);
     virtual ~XFBInputTest()
     {
     }
@@ -3385,16 +3487,6 @@ protected:
     virtual void testInit();
 
 private:
-    enum QUALIFIERS
-    {
-        BUFFER = 0,
-        STRIDE,
-        OFFSET,
-
-        /* */
-        QUALIFIERS_MAX
-    };
-
     /* Private types */
     struct testCase
     {
@@ -3402,8 +3494,12 @@ private:
         Utils::Shader::STAGES m_stage;
     };
 
+    const glw::GLchar *getQualifierName(QUALIFIERS qualifier);
+
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_qualifier;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBAllStages. Description follows:
@@ -3620,8 +3716,19 @@ private:
 class XFBTooSmallStrideTest : public NegativeTestBase
 {
 public:
+    enum CASES
+    {
+        OFFSET = 0,
+        STRIDE,
+        BLOCK,
+        ARRAY,
+
+        /* */
+        CASE_MAX
+    };
+
     /* Public methods */
-    XFBTooSmallStrideTest(deqp::Context &context);
+    XFBTooSmallStrideTest(deqp::Context &context, glw::GLuint constant, glw::GLuint stage);
 
     virtual ~XFBTooSmallStrideTest()
     {
@@ -3635,19 +3742,9 @@ protected:
     virtual glw::GLuint getTestCaseNumber();
     virtual bool isComputeRelevant(glw::GLuint test_case_index);
     virtual void testInit();
+    std::string getCaseEnumName(glw::GLuint case_index);
 
 private:
-    enum CASES
-    {
-        OFFSET = 0,
-        STRIDE,
-        BLOCK,
-        ARRAY,
-
-        /* */
-        CASE_MAX
-    };
-
     /* Private types */
     struct testCase
     {
@@ -3657,6 +3754,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_constant;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBVariableStride. Description follows:
@@ -3685,8 +3784,17 @@ private:
 class XFBVariableStrideTest : public NegativeTestBase
 {
 public:
+    enum CASES
+    {
+        VALID = 0,
+        INVALID,
+
+        /* */
+        CASE_MAX
+    };
+
     /* Public methods */
-    XFBVariableStrideTest(deqp::Context &context);
+    XFBVariableStrideTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage, glw::GLuint constant);
     virtual ~XFBVariableStrideTest()
     {
     }
@@ -3700,17 +3808,9 @@ protected:
     virtual bool isComputeRelevant(glw::GLuint test_case_index);
     virtual bool isFailureExpected(glw::GLuint test_case_index);
     virtual void testInit();
+    std::string getCaseEnumName(glw::GLuint case_index);
 
 private:
-    enum CASES
-    {
-        VALID = 0,
-        INVALID,
-
-        /* */
-        CASE_MAX
-    };
-
     /* Private types */
     struct testCase
     {
@@ -3721,6 +3821,9 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
+    glw::GLuint m_constant;
 };
 
 /** Implementation of test XFBBlockStride. Description follows:
@@ -3743,7 +3846,7 @@ class XFBBlockStrideTest : public TestBase
 {
 public:
     /* Public methods */
-    XFBBlockStrideTest(deqp::Context &context);
+    XFBBlockStrideTest(deqp::Context &context, glw::GLuint stage);
 
     virtual ~XFBBlockStrideTest()
     {
@@ -3764,6 +3867,7 @@ private:
 
     /* Private fields */
     std::vector<Utils::Shader::STAGES> m_test_cases;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBBlockMemberStride. Description follows:
@@ -3833,8 +3937,17 @@ protected:
 class XFBDuplicatedStrideTest : public NegativeTestBase
 {
 public:
+    enum CASES
+    {
+        VALID = 0,
+        INVALID,
+
+        /* */
+        CASE_MAX
+    };
+
     /* Public methods */
-    XFBDuplicatedStrideTest(deqp::Context &context);
+    XFBDuplicatedStrideTest(deqp::Context &context, glw::GLuint constant, glw::GLuint stage);
 
     virtual ~XFBDuplicatedStrideTest()
     {
@@ -3849,17 +3962,9 @@ protected:
     virtual bool isComputeRelevant(glw::GLuint test_case_index);
     virtual bool isFailureExpected(glw::GLuint test_case_index);
     virtual void testInit();
+    std::string getCaseEnumName(glw::GLuint test_case_index);
 
 private:
-    enum CASES
-    {
-        VALID = 0,
-        INVALID,
-
-        /* */
-        CASE_MAX
-    };
-
     /* Private types */
     struct testCase
     {
@@ -3869,6 +3974,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_constant;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBGetProgramResourceAPI. Description follows:
@@ -3913,10 +4020,15 @@ class XFBGetProgramResourceAPITest : public TestBase
 {
 public:
     /* Public methods */
-    XFBGetProgramResourceAPITest(deqp::Context &context);
+    XFBGetProgramResourceAPITest(deqp::Context &context, glw::GLuint type);
 
     virtual ~XFBGetProgramResourceAPITest()
     {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
     }
 
 protected:
@@ -3951,6 +4063,7 @@ private:
 
     /* Private fields */
     std::vector<test_Case> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test XFBOverrideQualifiersWithAPI. Description follows:
@@ -4115,8 +4228,18 @@ protected:
 class XFBExceedBufferLimitTest : public NegativeTestBase
 {
 public:
+    enum CASES
+    {
+        BLOCK = 0,
+        GLOBAL,
+        VECTOR,
+
+        /* */
+        CASE_MAX
+    };
+
     /* Public methods */
-    XFBExceedBufferLimitTest(deqp::Context &context);
+    XFBExceedBufferLimitTest(deqp::Context &context, glw::GLuint constant, glw::GLuint stage);
     virtual ~XFBExceedBufferLimitTest()
     {
     }
@@ -4129,18 +4252,9 @@ protected:
     virtual glw::GLuint getTestCaseNumber();
     virtual bool isComputeRelevant(glw::GLuint test_case_index);
     virtual void testInit();
+    std::string getCaseEnumName(glw::GLuint test_case_index);
 
 private:
-    enum CASES
-    {
-        BLOCK = 0,
-        GLOBAL,
-        VECTOR,
-
-        /* */
-        CASE_MAX
-    };
-
     /* Private types */
     struct testCase
     {
@@ -4150,6 +4264,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_constant;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBExceedOffsetLimit. Description follows:
@@ -4184,8 +4300,18 @@ private:
 class XFBExceedOffsetLimitTest : public NegativeTestBase
 {
 public:
+    enum CASES
+    {
+        BLOCK = 0,
+        GLOBAL,
+        VECTOR,
+
+        /* */
+        CASE_MAX
+    };
+
     /* Public methods */
-    XFBExceedOffsetLimitTest(deqp::Context &context);
+    XFBExceedOffsetLimitTest(deqp::Context &context, glw::GLuint constant, glw::GLuint stage);
     virtual ~XFBExceedOffsetLimitTest()
     {
     }
@@ -4198,18 +4324,9 @@ protected:
     virtual glw::GLuint getTestCaseNumber();
     virtual bool isComputeRelevant(glw::GLuint test_case_index);
     virtual void testInit();
+    std::string getCaseEnumName(glw::GLuint test_case_index);
 
 private:
-    enum CASES
-    {
-        BLOCK = 0,
-        GLOBAL,
-        VECTOR,
-
-        /* */
-        CASE_MAX
-    };
-
     /* Private types */
     struct testCase
     {
@@ -4219,6 +4336,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_constant;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBGlobalBuffer. Description follows:
@@ -4255,10 +4374,15 @@ private:
 class XFBGlobalBufferTest : public BufferTestBase
 {
 public:
-    XFBGlobalBufferTest(deqp::Context &context);
+    XFBGlobalBufferTest(deqp::Context &context, glw::GLuint type);
 
     ~XFBGlobalBufferTest()
     {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
     }
 
 protected:
@@ -4281,6 +4405,7 @@ private:
 
     /* Private fields */
     std::vector<_testCase> m_test_cases;
+    glw::GLuint m_type;
 };
 
 /** Implementation of test XFBStride. Description follows:
@@ -4298,7 +4423,7 @@ private:
 class XFBStrideTest : public BufferTestBase
 {
 public:
-    XFBStrideTest(deqp::Context &context);
+    XFBStrideTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
     ~XFBStrideTest()
     {
     }
@@ -4332,6 +4457,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBBlockMemberBuffer. Description follows:
@@ -4354,7 +4481,7 @@ class XFBBlockMemberBufferTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    XFBBlockMemberBufferTest(deqp::Context &context);
+    XFBBlockMemberBufferTest(deqp::Context &context, glw::GLuint stage);
 
     virtual ~XFBBlockMemberBufferTest()
     {
@@ -4378,6 +4505,7 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBOutputOverlapping. Description follows:
@@ -4400,10 +4528,15 @@ class XFBOutputOverlappingTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    XFBOutputOverlappingTest(deqp::Context &context);
+    XFBOutputOverlappingTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
 
     virtual ~XFBOutputOverlappingTest()
     {
+    }
+
+    inline Utils::Type getTypeHelper(glw::GLuint index) const
+    {
+        return getType(index);
     }
 
 protected:
@@ -4426,6 +4559,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBInvalidOffsetAlignment. Description follows:
@@ -4449,7 +4584,7 @@ class XFBInvalidOffsetAlignmentTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    XFBInvalidOffsetAlignmentTest(deqp::Context &context);
+    XFBInvalidOffsetAlignmentTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
 
     virtual ~XFBInvalidOffsetAlignmentTest()
     {
@@ -4475,6 +4610,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBCaptureInactiveOutputVariable. Description follows:
@@ -4753,7 +4890,7 @@ class XFBCaptureUnsizedArrayTest : public NegativeTestBase
 {
 public:
     /* Public methods */
-    XFBCaptureUnsizedArrayTest(deqp::Context &context);
+    XFBCaptureUnsizedArrayTest(deqp::Context &context, glw::GLuint stage);
     virtual ~XFBCaptureUnsizedArrayTest()
     {
     }
@@ -4776,6 +4913,7 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBExplicitLocationTest. Description follows:
@@ -4799,7 +4937,7 @@ private:
 class XFBExplicitLocationTest : public BufferTestBase
 {
 public:
-    XFBExplicitLocationTest(deqp::Context &context);
+    XFBExplicitLocationTest(deqp::Context &context, glw::GLuint type, glw::GLuint stage);
     ~XFBExplicitLocationTest()
     {
     }
@@ -4834,6 +4972,8 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_type;
+    glw::GLuint m_stage;
 };
 
 /** Implementation of test XFBExplicitLocationStructTest. Description follows:
@@ -4861,7 +5001,7 @@ private:
 class XFBExplicitLocationStructTest : public BufferTestBase
 {
 public:
-    XFBExplicitLocationStructTest(deqp::Context &context);
+    XFBExplicitLocationStructTest(deqp::Context &context, glw::GLuint stage);
     ~XFBExplicitLocationStructTest()
     {
     }
@@ -4903,6 +5043,7 @@ private:
 
     /* Private fields */
     std::vector<testCase> m_test_cases;
+    glw::GLuint m_stage;
 };
 
 } // namespace EnhancedLayouts
@@ -4920,10 +5061,54 @@ public:
 
     virtual void init(void);
 
+    void addGLSLContantImmutablityTest();
+    void addUniformBlockLayoutQualifierConflictTest();
+    void addSSBMemberInvalidOffsetAlignmentTest();
+    void addSSBMemberOverlappingOffsetsTest();
+    void addVaryingInvalidValueComponentTest();
+    void addVaryingExceedingComponentsTest();
+    void addVaryingComponentOfInvalidTypeTest();
+    void addOutputComponentAliasingTest();
+    void addXFBInputTest();
+    void addXFBStrideTest();
+    void addUniformBlockMemberInvalidOffsetAlignmentTest();
+    void addUniformBlockMemberOverlappingOffsetsTest();
+    void addUniformBlockMemberAlignNonPowerOf2Test();
+    void addSSBLayoutQualifierConflictTest();
+    void addSSBMemberAlignNonPowerOf2Test();
+    void addVaryingStructureMemberLocationTest();
+    void addVaryingBlockAutomaticMemberLocationsTest();
+    void addVaryingComponentWithoutLocationTest();
+    void addInputComponentAliasingTest();
+    void addVaryingLocationAliasingWithMixedTypesTest();
+    void addVaryingLocationAliasingWithMixedInterpolationTest();
+    void addVaryingLocationAliasingWithMixedAuxiliaryStorageTest();
+    void addXFBTooSmallStrideTest();
+    void addXFBDuplicatedStrideTest();
+    void addXFBGetProgramResourceAPITest();
+    void addXFBExceedBufferLimitTest();
+    void addXFBExceedOffsetLimitTest();
+    void addXFBBlockMemberBufferTest();
+    void addXFBOutputOverlappingTest();
+    void addXFBInvalidOffsetAlignmentTest();
+    void addXFBCaptureUnsizedArrayTest();
+    void addVaryingBlockMemberLocationsTest();
+    void addXFBVariableStrideTest();
+    void addXFBBlockStrideTest();
+    void addXFBGlobalBufferTest();
+    void addXFBExplicitLocationTest();
+    void addXFBExplicitLocationStructTest();
+    void addVaryingLocationLimitTest();
+    void addVaryingComponentsTest();
+    void addVaryingArrayComponentsTest();
+
 private:
     /* Private methods */
     EnhancedLayoutsTests(const EnhancedLayoutsTests &other);
     EnhancedLayoutsTests &operator=(const EnhancedLayoutsTests &other);
+
+    template <class varyingClass>
+    void addVaryingTest();
 };
 
 } // namespace gl4cts
