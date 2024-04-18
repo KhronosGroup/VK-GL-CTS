@@ -1588,13 +1588,51 @@ static void adjustSpecForPhysicalStorageBuffer(ComputeShaderSpec& spec, std::map
 	}
 }
 
-static void adjustSpecForWorkgroupMemoryExplicitLayout(ComputeShaderSpec& spec, std::map<std::string, std::string>& specMap)
+static void adjustSpecForWorkgroupMemoryExplicitLayout(ComputeShaderSpec& spec, std::map<std::string, std::string>& specMap, DATA_TYPE dataType)
 {
-	specMap["otherCap"]	= "OpCapability WorkgroupMemoryExplicitLayoutKHR\n"
-						  "OpCapability WorkgroupMemoryExplicitLayout8BitAccessKHR\n"
-						  "OpCapability WorkgroupMemoryExplicitLayout16BitAccessKHR\n";
-	specMap["otherExt"]	= "OpExtension \"SPV_KHR_workgroup_memory_explicit_layout\"";
+	switch (dataType)
+	{
+	case DataTypes::UINT8:
+	case DataTypes::INT8:
+	{
+		specMap["otherCap"]	= "OpCapability WorkgroupMemoryExplicitLayoutKHR\n"
+							  "OpCapability WorkgroupMemoryExplicitLayout8BitAccessKHR\n";
+
+		spec.requestedVulkanFeatures.extWorkgroupMemoryExplicitLayout.workgroupMemoryExplicitLayout8BitAccess	= VK_TRUE;
+		break;
+	}
+	case DataTypes::UINT16:
+	case DataTypes::INT16:
+	case DataTypes::FLOAT16:
+	{
+		specMap["otherCap"]	= "OpCapability WorkgroupMemoryExplicitLayoutKHR\n"
+							  "OpCapability WorkgroupMemoryExplicitLayout16BitAccessKHR\n";
+
+		spec.requestedVulkanFeatures.extWorkgroupMemoryExplicitLayout.workgroupMemoryExplicitLayout16BitAccess	= VK_TRUE;
+		break;
+	}
+	case DataTypes::UINT32:
+	case DataTypes::INT32:
+	case DataTypes::FLOAT32:
+	case DataTypes::UINT64:
+	case DataTypes::INT64:
+	case DataTypes::FLOAT64:
+	{
+		specMap["otherCap"]	= "OpCapability WorkgroupMemoryExplicitLayoutKHR\n";
+		break;
+	}
+	default:
+	{
+		DE_ASSERT(0);
+		DE_FATAL("Unknown data type");
+		break;
+	}
+	}
+
+	spec.requestedVulkanFeatures.extWorkgroupMemoryExplicitLayout.workgroupMemoryExplicitLayout	= VK_TRUE;
 	spec.extensions.push_back("VK_KHR_workgroup_memory_explicit_layout");
+
+	specMap["otherExt"]	= "OpExtension \"SPV_KHR_workgroup_memory_explicit_layout\"";
 }
 
 static void adjustSpecForCooperativeMatrix(ComputeShaderSpec& spec, std::map<std::string, std::string>& specMap)
@@ -9316,7 +9354,7 @@ void addPhysicalStorageOpBitcastTests(tcu::TestCaseGroup* testGroup, MEMORY_MODE
 	}
 }
 
-void addWorkgroupMemoryInteractionTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel, WORKGROUP_TEST_CASE testCase)
+void addWorkgroupMemoryExplicitLayoutInteractionTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel, WORKGROUP_TEST_CASE testCase)
 {
 	tcu::TestContext& testCtx	= testGroup->getTestContext();
 
@@ -9349,7 +9387,7 @@ void addWorkgroupMemoryInteractionTests(tcu::TestCaseGroup* testGroup, MEMORY_MO
 		adjustSpecForUntypedPointers(spec, specMap);
 		adjustSpecForMemoryModel(spec, specMap, memModel);
 		adjustSpecForDataTypes(spec, specMap, BASE_DATA_TYPE_CASES[i]);
-		adjustSpecForWorkgroupMemoryExplicitLayout(spec, specMap);
+		adjustSpecForWorkgroupMemoryExplicitLayout(spec, specMap, BASE_DATA_TYPE_CASES[i]);
 
 		const tcu::StringTemplate tempShaderFunctions = tcu::StringTemplate(shaderFunctions.specialize(specMap));
 
@@ -10049,10 +10087,10 @@ void addVariablePointersInteractionTestGroup(tcu::TestCaseGroup* testGroup, MEMO
 	addTestGroup(testGroup, "multiple_access_chains", addVariablePointersMultipleAccessChainTests, memModel);
 }
 
-void addWorkgroupMemoryInteractionTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
+void addWorkgroupMemoryExplicitLayoutInteractionTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
 {
-	addTestGroup(testGroup, "aliased", addWorkgroupMemoryInteractionTests, memModel, WorkgroupTestCases::ALIASED);
-	addTestGroup(testGroup, "not_aliased", addWorkgroupMemoryInteractionTests, memModel, WorkgroupTestCases::NOT_ALIASED);
+	addTestGroup(testGroup, "aliased", addWorkgroupMemoryExplicitLayoutInteractionTests, memModel, WorkgroupTestCases::ALIASED);
+	addTestGroup(testGroup, "not_aliased", addWorkgroupMemoryExplicitLayoutInteractionTests, memModel, WorkgroupTestCases::NOT_ALIASED);
 }
 
 void addCooperativeMatrixInteractionTestGroup(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memModel)
@@ -10068,7 +10106,7 @@ void addVulkanMemoryModelTestGroup(tcu::TestCaseGroup* testGroup)
 	addTestGroup(testGroup, "type_punning", addTypePunningTestGroup, MemoryModelTypes::VULKAN);
 	addTestGroup(testGroup, "variable_pointers", addVariablePointersInteractionTestGroup, MemoryModelTypes::VULKAN);
 	addTestGroup(testGroup, "physical_storage", addPhysicalStorageBufferInteractionTestGroup, MemoryModelTypes::VULKAN);
-	addTestGroup(testGroup, "workgroup_memory", addWorkgroupMemoryInteractionTestGroup, MemoryModelTypes::VULKAN);
+	addTestGroup(testGroup, "workgroup_memory_explicit_layout", addWorkgroupMemoryExplicitLayoutInteractionTestGroup, MemoryModelTypes::VULKAN);
 	addTestGroup(testGroup, "cooperative_matrix", addCooperativeMatrixInteractionTestGroup, MemoryModelTypes::VULKAN);
 }
 
@@ -10078,7 +10116,7 @@ void addGLSLMemoryModelTestGroup(tcu::TestCaseGroup* testGroup)
 	addTestGroup(testGroup, "type_punning", addTypePunningTestGroup, MemoryModelTypes::GLSL);
 	addTestGroup(testGroup, "variable_pointers", addVariablePointersInteractionTestGroup, MemoryModelTypes::GLSL);
 	addTestGroup(testGroup, "physical_storage", addPhysicalStorageBufferInteractionTestGroup, MemoryModelTypes::GLSL);
-	addTestGroup(testGroup, "workgroup_memory", addWorkgroupMemoryInteractionTestGroup, MemoryModelTypes::GLSL);
+	addTestGroup(testGroup, "workgroup_memory_explicit_layout", addWorkgroupMemoryExplicitLayoutInteractionTestGroup, MemoryModelTypes::GLSL);
 	addTestGroup(testGroup, "cooperative_matrix", addCooperativeMatrixInteractionTestGroup, MemoryModelTypes::GLSL);
 }
 

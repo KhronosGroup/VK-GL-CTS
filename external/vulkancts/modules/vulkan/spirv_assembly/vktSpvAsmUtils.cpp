@@ -211,6 +211,8 @@ bool isWorkgroupMemoryExplicitLayoutSupported(const Context& context, const vk::
 	const VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR& extensionFeatures = context.getWorkgroupMemoryExplicitLayoutFeatures();
 
 	IS_AVAIL("WorkgroupMemoryExplicitLayout.", workgroupMemoryExplicitLayout);
+	IS_AVAIL("WorkgroupMemoryExplicitLayout.", workgroupMemoryExplicitLayout8BitAccess);
+	IS_AVAIL("WorkgroupMemoryExplicitLayout.", workgroupMemoryExplicitLayout16BitAccess);
 
 	return true;
 }
