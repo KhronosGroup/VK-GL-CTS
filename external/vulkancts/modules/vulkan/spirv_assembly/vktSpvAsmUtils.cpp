@@ -245,6 +245,15 @@ bool isFloatControls2FeaturesSupported(const Context& context, const vk::VkPhysi
 
 	return true;
 }
+
+bool isCooperativeMatrixFeaturesSupported(const Context& context, const vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR& toCheck, const char** missingFeature)
+{
+	const VkPhysicalDeviceCooperativeMatrixFeaturesKHR& extensionFeatures = context.getCooperativeMatrixFeatures();
+
+	IS_AVAIL("CooperativeMatrix.", cooperativeMatrix);
+
+	return true;
+}
 #endif // CTS_USES_VULKANSC
 
 #undef IS_AVAIL
@@ -372,6 +381,9 @@ bool isVulkanFeaturesSupported(const Context& context, const VulkanFeatures& req
 		return false;
 
 	if (!isFloatControls2FeaturesSupported(context, requested.extFloatControls2, missingFeature))
+		return false;
+
+	if (!isCooperativeMatrixFeaturesSupported(context, requested.extCooperativeMatrix, missingFeature))
 		return false;
 #endif // CTS_USES_VULKANSC
 

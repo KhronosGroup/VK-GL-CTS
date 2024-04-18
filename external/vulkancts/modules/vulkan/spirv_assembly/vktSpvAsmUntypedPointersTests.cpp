@@ -1602,6 +1602,7 @@ static void adjustSpecForCooperativeMatrix(ComputeShaderSpec& spec, std::map<std
 	specMap["otherCap"]	= "OpCapability CooperativeMatrixKHR\n";
 	specMap["otherExt"]	= "OpExtension \"SPV_KHR_cooperative_matrix\"";
 	spec.extensions.push_back("VK_KHR_cooperative_matrix");
+	spec.requestedVulkanFeatures.extCooperativeMatrix.cooperativeMatrix	= VK_TRUE;
 }
 
 enum class FillingTypes : deUint8
