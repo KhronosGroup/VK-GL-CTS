@@ -1759,6 +1759,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/subgroups/vktSubgroupsSizeControlTests.cpp",
         "external/vulkancts/modules/vulkan/subgroups/vktSubgroupsTests.cpp",
         "external/vulkancts/modules/vulkan/subgroups/vktSubgroupsTestsUtils.cpp",
+        "external/vulkancts/modules/vulkan/subgroups/vktSubgroupsUniformDescriptorIndexingTests.cpp",
         "external/vulkancts/modules/vulkan/subgroups/vktSubgroupsVoteTests.cpp",
         "external/vulkancts/modules/vulkan/synchronization/vktGlobalPriorityQueueTests.cpp",
         "external/vulkancts/modules/vulkan/synchronization/vktGlobalPriorityQueueUtils.cpp",
