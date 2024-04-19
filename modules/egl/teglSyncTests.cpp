@@ -413,7 +413,9 @@ class CreateLongRunningSyncTest : public SyncTest {
 	{
 		const Library& egl = m_eglTestCtx.getLibrary();
 
-		m_gl.useProgram(0);
+		if (m_gl.useProgram)
+			m_gl.useProgram(0);
+
 		if (m_buffer != 0) {
 			m_gl.deleteBuffers(2, &m_buffer);
 			m_buffer = 0;
