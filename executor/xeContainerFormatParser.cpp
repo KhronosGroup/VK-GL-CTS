@@ -124,6 +124,12 @@ int ContainerFormatParser::getChar (int offset) const
 		return END_OF_BUFFER;
 }
 
+const char* ContainerFormatParser::getTestRunsParams(void) const
+{
+	DE_ASSERT(m_element == CONTAINERELEMENT_TEST_RUN_PARAM_BEGIN);
+	return m_value.c_str();
+}
+
 void ContainerFormatParser::advance (void)
 {
 	if (m_element != CONTAINERELEMENT_INCOMPLETE)
@@ -198,7 +204,11 @@ void ContainerFormatParser::parseContainerLine (void)
 		{ "terminateTestCaseResult",	CONTAINERELEMENT_TERMINATE_TEST_CASE_RESULT	},
 		{ "sessionInfo",				CONTAINERELEMENT_SESSION_INFO				},
 		{ "beginSession",				CONTAINERELEMENT_BEGIN_SESSION				},
-		{ "endSession",					CONTAINERELEMENT_END_SESSION				}
+		{ "endSession",					CONTAINERELEMENT_END_SESSION				},
+		{ "beginTestRunParamsCollection", CONTAINERELEMENT_TEST_RUN_PARAM_SESSION_BEGIN},
+		{ "endTestRunParamsCollection",   CONTAINERELEMENT_TEST_RUN_PARAM_SESSION_END},
+		{ "beginTestRunParams",         CONTAINERELEMENT_TEST_RUN_PARAM_BEGIN},
+		{ "endTestRunParams",           CONTAINERELEMENT_TEST_RUN_PARAM_END},
 	};
 
 	DE_ASSERT(m_elementLen >= 1);
@@ -242,10 +252,14 @@ void ContainerFormatParser::parseContainerLine (void)
 		case CONTAINERELEMENT_BEGIN_SESSION:
 		case CONTAINERELEMENT_END_SESSION:
 		case CONTAINERELEMENT_END_TEST_CASE_RESULT:
+		case CONTAINERELEMENT_TEST_RUN_PARAM_SESSION_BEGIN:
+		case CONTAINERELEMENT_TEST_RUN_PARAM_SESSION_END:
+		case CONTAINERELEMENT_TEST_RUN_PARAM_END:
 			break; // No attribute or value.
 
 		case CONTAINERELEMENT_BEGIN_TEST_CASE_RESULT:
 		case CONTAINERELEMENT_TERMINATE_TEST_CASE_RESULT:
+		case CONTAINERELEMENT_TEST_RUN_PARAM_BEGIN:
 			if (getChar(offset) != ' ')
 				error("Expected value after instruction");
 			offset += 1;

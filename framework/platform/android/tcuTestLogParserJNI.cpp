@@ -44,7 +44,7 @@ class TestLogListener
 {
 public:
 						TestLogListener		(JNIEnv* env, jobject object);
-						~TestLogListener	(void);
+						virtual ~TestLogListener	(void);
 
 	void				beginSession		(void);
 	void				endSession			(void);
@@ -58,7 +58,12 @@ public:
 
 	void				testLogData			(const char* data);
 
-private:
+    virtual void        beginTestRunParamsCollection (void);
+	virtual void        endTestRunParamsCollection (void);
+	virtual void        beginTestRunParams (const char* testRunsParams);
+	virtual void        endTestRunParams (void);
+
+protected:
 	JNIEnv*				m_env;
 	jobject				m_object;
 	jclass				m_class;
@@ -164,13 +169,89 @@ void TestLogListener::testLogData (const char* data)
 	m_env->DeleteLocalRef(logData);
 }
 
+void TestLogListener::beginTestRunParamsCollection(void)
+{
+}
+
+void TestLogListener::endTestRunParamsCollection(void)
+{
+}
+
+void TestLogListener::beginTestRunParams(const char*)
+{
+}
+
+void TestLogListener::endTestRunParams(void)
+{
+}
+
+class KhronosCTSTestLogListener : public TestLogListener
+{
+public:
+	KhronosCTSTestLogListener (JNIEnv* env, jobject object);
+	virtual ~KhronosCTSTestLogListener();
+
+	virtual void                beginTestRunParamsCollection (void);
+	virtual void                endTestRunParamsCollection (void);
+	virtual void                beginTestRunParams (const char* testRunsParams);
+	virtual void                endTestRunParams (void);
+
+
+private:
+	jmethodID           m_beginTestRunParamsCollectionID;
+	jmethodID           m_endTestRunParamsCollectionID;
+	jmethodID           m_beginTestRunParamsID;
+	jmethodID           m_endTestRunParamsID;
+};
+
+KhronosCTSTestLogListener::KhronosCTSTestLogListener (JNIEnv* env, jobject object)
+	: TestLogListener(env, object)
+{
+
+	m_beginTestRunParamsCollectionID = m_env->GetMethodID(m_class, "beginTestRunParamsCollection",    "()V");
+	m_endTestRunParamsCollectionID = m_env->GetMethodID(m_class, "endTestRunParamsCollection",    "()V");
+	m_beginTestRunParamsID = m_env->GetMethodID(m_class, "beginTestRunParams",    "(Ljava/lang/String;)V");
+	m_endTestRunParamsID = m_env->GetMethodID(m_class, "endTestRunParams",    "()V");
+
+	TCU_CHECK_INTERNAL(m_beginTestRunParamsCollectionID);
+	TCU_CHECK_INTERNAL(m_endTestRunParamsCollectionID);
+	TCU_CHECK_INTERNAL(m_beginTestRunParamsID);
+	TCU_CHECK_INTERNAL(m_endTestRunParamsID);
+}
+
+KhronosCTSTestLogListener::~KhronosCTSTestLogListener (void)
+{
+}
+
+void KhronosCTSTestLogListener::beginTestRunParamsCollection(void)
+{
+	m_env->CallVoidMethod(m_object, m_beginTestRunParamsCollectionID);
+}
+
+void KhronosCTSTestLogListener::endTestRunParamsCollection(void)
+{
+	m_env->CallVoidMethod(m_object, m_endTestRunParamsCollectionID);
+}
+
+void KhronosCTSTestLogListener::beginTestRunParams(const char* testRunsParams)
+{
+	jstring jTestRunsParams = m_env->NewStringUTF(testRunsParams);
+	m_env->CallVoidMethod(m_object, m_beginTestRunParamsID, jTestRunsParams);
+	m_env->DeleteLocalRef(jTestRunsParams);
+}
+
+void KhronosCTSTestLogListener::endTestRunParams(void)
+{
+	m_env->CallVoidMethod(m_object, m_endTestRunParamsID);
+}
+
 class TestLogParser
 {
 public:
 								TestLogParser	(bool logData);
 								~TestLogParser	(void);
 
-	void						parse			(TestLogListener& listener, const char* buffer, size_t size);
+	void						parse			(TestLogListener* listener, const char* buffer, size_t size);
 
 private:
 	const bool					m_logData;
@@ -196,7 +277,7 @@ TestLogParser::~TestLogParser (void)
 {
 }
 
-void TestLogParser::parse (TestLogListener& listener, const char* buffer, size_t size)
+void TestLogParser::parse (TestLogListener* listener, const char* buffer, size_t size)
 {
 	m_containerParser.feed((const deUint8*)buffer, size);
 
@@ -209,19 +290,19 @@ void TestLogParser::parse (TestLogListener& listener, const char* buffer, size_t
 				break;
 
 			case xe::CONTAINERELEMENT_BEGIN_SESSION:
-				listener.beginSession();
+				listener->beginSession();
 				break;
 
 			case xe::CONTAINERELEMENT_END_SESSION:
-				listener.endSession();
+				listener->endSession();
 				break;
 
 			case xe::CONTAINERELEMENT_SESSION_INFO:
-				listener.sessionInfo(m_containerParser.getSessionInfoAttribute(), m_containerParser.getSessionInfoValue());
+				listener->sessionInfo(m_containerParser.getSessionInfoAttribute(), m_containerParser.getSessionInfoValue());
 				break;
 
 			case xe::CONTAINERELEMENT_BEGIN_TEST_CASE_RESULT:
-				listener.beginTestCase(m_containerParser.getTestCasePath());
+				listener->beginTestCase(m_containerParser.getTestCasePath());
 
 				m_inTestCase		= DE_TRUE;
 				m_loggedResult		= DE_FALSE;
@@ -233,7 +314,7 @@ void TestLogParser::parse (TestLogListener& listener, const char* buffer, size_t
 			case xe::CONTAINERELEMENT_END_TEST_CASE_RESULT:
 				if (m_testCaseResult.statusCode != xe::TESTSTATUSCODE_LAST && !m_loggedResult)
 				{
-					listener.testCaseResult(xe::getTestStatusCodeName(m_testCaseResult.statusCode), m_testCaseResult.statusDetails.c_str());
+					listener->testCaseResult(xe::getTestStatusCodeName(m_testCaseResult.statusCode), m_testCaseResult.statusDetails.c_str());
 					m_loggedResult = DE_TRUE;
 				}
 
@@ -247,10 +328,10 @@ void TestLogParser::parse (TestLogListener& listener, const char* buffer, size_t
 
 					xe::writeTestResult(m_testCaseResult, xmlWriter);
 
-					listener.testLogData(testLog.str().c_str());
+					listener->testLogData(testLog.str().c_str());
 				}
 
-				listener.endTestCase();
+				listener->endTestCase();
 
 				m_inTestCase = DE_FALSE;
 				break;
@@ -266,16 +347,16 @@ void TestLogParser::parse (TestLogListener& listener, const char* buffer, size_t
 
 					xe::writeTestResult(m_testCaseResult, xmlWriter);
 
-					listener.testLogData(testLog.str().c_str());
+					listener->testLogData(testLog.str().c_str());
 				}
 
 				if (m_testCaseResult.statusCode != xe::TESTSTATUSCODE_LAST && !m_loggedResult)
 				{
-					listener.testCaseResult(xe::getTestStatusCodeName(m_testCaseResult.statusCode), m_testCaseResult.statusDetails.c_str());
+					listener->testCaseResult(xe::getTestStatusCodeName(m_testCaseResult.statusCode), m_testCaseResult.statusDetails.c_str());
 					m_loggedResult = DE_TRUE;
 				}
 
-				listener.terminateTestCase(m_containerParser.getTerminateReason());
+				listener->terminateTestCase(m_containerParser.getTerminateReason());
 				m_inTestCase = DE_FALSE;
 				break;
 
@@ -292,7 +373,7 @@ void TestLogParser::parse (TestLogListener& listener, const char* buffer, size_t
 					{
 						if (m_testCaseResult.statusCode != xe::TESTSTATUSCODE_LAST && !m_loggedResult)
 						{
-							listener.testCaseResult(xe::getTestStatusCodeName(m_testCaseResult.statusCode), m_testCaseResult.statusDetails.c_str());
+							listener->testCaseResult(xe::getTestStatusCodeName(m_testCaseResult.statusCode), m_testCaseResult.statusDetails.c_str());
 							m_loggedResult = DE_TRUE;
 						}
 					}
@@ -300,6 +381,22 @@ void TestLogParser::parse (TestLogListener& listener, const char* buffer, size_t
 
 				break;
 			}
+
+			case xe::CONTAINERELEMENT_TEST_RUN_PARAM_SESSION_BEGIN:
+				listener->beginTestRunParamsCollection();
+				break;
+
+			case xe::CONTAINERELEMENT_TEST_RUN_PARAM_SESSION_END:
+				listener->endTestRunParamsCollection();
+				break;
+
+			case xe::CONTAINERELEMENT_TEST_RUN_PARAM_BEGIN:
+				listener->beginTestRunParams(m_containerParser.getTestRunsParams());
+				break;
+
+			case xe::CONTAINERELEMENT_TEST_RUN_PARAM_END:
+				listener->endTestRunParams();
+				break;
 
 			default:
 				DE_ASSERT(DE_FALSE);
@@ -369,7 +466,66 @@ JNIEXPORT void JNICALL Java_com_drawelements_deqp_testercore_TestLogParser_nativ
 
 		logData = env->GetByteArrayElements(buffer, NULL);
 
-		parser->parse(listener, (const char*)logData, (size_t)size);
+		parser->parse(&listener, (const char*)logData, (size_t)size);
+		env->ReleaseByteArrayElements(buffer, logData, JNI_ABORT);
+		logData = DE_NULL;
+	}
+	catch (const std::exception& e)
+	{
+		__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "%s", e.what());
+
+		if (logData)
+			env->ReleaseByteArrayElements(buffer, logData, JNI_ABORT);
+
+		throwJNIException(env, e);
+	}
+}
+
+JNIEXPORT jlong JNICALL Java_org_khronos_cts_testercore_KhronosCTSTestLogParser_nativeCreate (JNIEnv* env, jclass, jboolean logData)
+{
+	DE_UNREF(env);
+
+	try
+	{
+		return (jlong)new TestLogParser(logData);
+	}
+	catch (const std::exception& e)
+	{
+		__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "%s", e.what());
+
+		throwJNIException(env, e);
+		return 0;
+	}
+}
+
+JNIEXPORT void JNICALL Java_org_khronos_cts_testercore_KhronosCTSTestLogParser_nativeDestroy (JNIEnv* env, jclass, jlong nativePointer)
+{
+	DE_UNREF(env);
+
+	try
+	{
+		delete ((TestLogParser*)nativePointer);
+	}
+	catch (const std::exception& e)
+	{
+		__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "%s", e.what());
+
+		throwJNIException(env, e);
+	}
+}
+
+JNIEXPORT void JNICALL Java_org_khronos_cts_testercore_KhronosCTSTestLogParser_nativeParse (JNIEnv* env, jclass, jlong nativePointer, jobject instrumentation, jbyteArray buffer, jint size)
+{
+	jbyte* logData = DE_NULL;
+
+	try
+	{
+		TestLogParser*	parser		= (TestLogParser*)nativePointer;
+		TestLogListener	listener	(env, instrumentation);
+
+		logData = env->GetByteArrayElements(buffer, NULL);
+
+		parser->parse(&listener, (const char*)logData, (size_t)size);
 		env->ReleaseByteArrayElements(buffer, logData, JNI_ABORT);
 		logData = DE_NULL;
 	}
