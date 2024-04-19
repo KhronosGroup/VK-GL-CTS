@@ -460,6 +460,7 @@ const deUint8* RawUpdateRegistry::getRawPointer () const
 void bindDescriptorSets (const vk::DeviceInterface& m_vki,
 						 vk::VkCommandBuffer cmdBuffer,
 						 vk::VkShaderStageFlags stageFlags,
+						 vk::VkShaderStageFlags existingStages,
 						 vk::VkPipelineBindPoint bindPoint,
 						 vk::VkPipelineLayout layout,
 						 uint32_t first,
@@ -468,23 +469,24 @@ void bindDescriptorSets (const vk::DeviceInterface& m_vki,
 						 uint32_t dynamicOffsetCount,
 						 const uint32_t* dynamicOffsets,
 						 bool bind2) {
-	(void)stageFlags;
+	DE_UNREF(stageFlags);
+	DE_UNREF(existingStages);
 	if (bind2)
 	{
 #ifndef CTS_USES_VULKANSC
-		vk::VkBindDescriptorSetsInfoKHR bindDescriptorSetsInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO_KHR,	// VkStructureType			sType;
-			DE_NULL,												// const void*				pNext;
-			stageFlags,												// VkShaderStageFlags		stageFlags;
-			layout,													// VkPipelineLayout			layout;
-			first,													// uint32_t					firstSet;
-			count,													// uint32_t					descriptorSetCount;
-			descriptorSets,											// const VkDescriptorSet*	pDescriptorSets;
-			dynamicOffsetCount,										// uint32_t					dynamicOffsetCount;
-			dynamicOffsets											// const uint32_t*			pDynamicOffsets;
-		};
-		m_vki.cmdBindDescriptorSets2KHR(cmdBuffer, &bindDescriptorSetsInfo);
+			vk::VkBindDescriptorSetsInfoKHR bindDescriptorSetsInfo =
+			{
+				vk::VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO_KHR,	// VkStructureType			sType;
+				DE_NULL,												// const void*				pNext;
+				existingStages,											// VkShaderStageFlags		stageFlags;
+				layout,													// VkPipelineLayout			layout;
+				first,													// uint32_t					firstSet;
+				count,													// uint32_t					descriptorSetCount;
+				descriptorSets,											// const VkDescriptorSet*	pDescriptorSets;
+				dynamicOffsetCount,										// uint32_t					dynamicOffsetCount;
+				dynamicOffsets											// const uint32_t*			pDynamicOffsets;
+			};
+			m_vki.cmdBindDescriptorSets2KHR(cmdBuffer, &bindDescriptorSetsInfo);
 #endif
 	}
 	else
@@ -1190,6 +1192,7 @@ public:
 																					 vk::VkDescriptorType								descriptorType,
 																					 DescriptorSetCount									descriptorSetCount,
 																					 vk::VkShaderStageFlags								stageFlags,
+																					 vk::VkShaderStageFlags								existingStages,
 																					 ShaderInputInterface								shaderInterface,
 																					 bool												viewOffset,
 																					 bool												dynamicOffset,
@@ -1323,6 +1326,7 @@ public:
 	const bool										m_setDynamicOffset;
 	const bool										m_dynamicOffsetNonZero;
 	const vk::VkShaderStageFlags					m_stageFlags;
+	const vk::VkShaderStageFlags					m_existingStages;
 
 	const std::vector<deUint32>						m_viewOffset;
 	const std::vector<deUint32>						m_dynamicOffset;
@@ -1347,6 +1351,7 @@ BufferRenderInstance::BufferRenderInstance	(Context&						context,
 											 vk::VkDescriptorType			descriptorType,
 											 DescriptorSetCount				descriptorSetCount,
 											 vk::VkShaderStageFlags			stageFlags,
+											 vk::VkShaderStageFlags			existingStages,
 											 ShaderInputInterface			shaderInterface,
 											 bool							viewOffset,
 											 bool							dynamicOffset,
@@ -1361,6 +1366,7 @@ BufferRenderInstance::BufferRenderInstance	(Context&						context,
 	, m_setDynamicOffset			(dynamicOffset)
 	, m_dynamicOffsetNonZero		(dynamicOffsetNonZero)
 	, m_stageFlags					(stageFlags)
+	, m_existingStages				(existingStages)
 	, m_viewOffset					(getViewOffsets(m_descriptorSetCount, m_shaderInterface, m_setViewOffset))
 	, m_dynamicOffset				(getDynamicOffsets(m_descriptorSetCount, m_shaderInterface, m_dynamicOffsetNonZero))
 	, m_bufferMemory				()
@@ -1934,7 +1940,7 @@ void BufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) const
 				const deUint32			numOffsets			= (!m_setDynamicOffset) ? (0u) : ((deUint32)m_dynamicOffset.size());
 				const deUint32* const	dynamicOffsetPtr	= (!m_setDynamicOffset) ? (DE_NULL) : (&m_dynamicOffset.front());
 
-				bindDescriptorSets(m_vki, cmd, m_stageFlags, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0, (int)sets.size(), &sets.front(), numOffsets, dynamicOffsetPtr, m_bind2);
+				bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0, (int)sets.size(), &sets.front(), numOffsets, dynamicOffsetPtr, m_bind2);
 				break;
 			}
 			case DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS:
@@ -1948,7 +1954,7 @@ void BufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) const
 					const deUint32* const	dynamicOffsetPtr	= (!m_setDynamicOffset) ? (DE_NULL) : (&m_dynamicOffset[dynamicOffsetNdx]);
 					const deUint32			descriptorSetNdx	= getDescriptorSetNdx(m_descriptorSetCount, setNdx);
 
-					bindDescriptorSets(m_vki, cmd, m_stageFlags, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), descriptorSetNdx, 1, &sets[setNdx], numOffsets, dynamicOffsetPtr, m_bind2);
+					bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), descriptorSetNdx, 1, &sets[setNdx], numOffsets, dynamicOffsetPtr, m_bind2);
 
 					dynamicOffsetNdx += getInterfaceNumResources(m_shaderInterface);
 				}
@@ -2328,7 +2334,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 			case DESCRIPTOR_SET_COUNT_SINGLE:
 			case DESCRIPTOR_SET_COUNT_MULTIPLE:
 			{
-				bindDescriptorSets(m_vki, *cmd, vk::VK_SHADER_STAGE_COMPUTE_BIT, vk::VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 0, getDescriptorSetCount(m_descriptorSetCount), m_descriptorSets, m_numDynamicOffsets, m_dynamicOffsets, m_bind2);
+				bindDescriptorSets(m_vki, *cmd, vk::VK_SHADER_STAGE_COMPUTE_BIT, vk::VK_SHADER_STAGE_COMPUTE_BIT, vk::VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 0, getDescriptorSetCount(m_descriptorSetCount), m_descriptorSets, m_numDynamicOffsets, m_dynamicOffsets, m_bind2);
 				break;
 			}
 			case DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS:
@@ -2342,7 +2348,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 					const deUint32* const	dynamicOffsetPtr	= (!m_numDynamicOffsets) ? (DE_NULL) : (&m_dynamicOffsets[dynamicOffsetNdx]);
 					const deUint32			descriptorSetNdx	= getDescriptorSetNdx(m_descriptorSetCount, setNdx);
 
-					bindDescriptorSets(m_vki, *cmd, vk::VK_SHADER_STAGE_COMPUTE_BIT, vk::VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, descriptorSetNdx, 1u, &m_descriptorSets[setNdx], numOffsets, dynamicOffsetPtr, m_bind2);
+					bindDescriptorSets(m_vki, *cmd, vk::VK_SHADER_STAGE_COMPUTE_BIT, vk::VK_SHADER_STAGE_COMPUTE_BIT, vk::VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, descriptorSetNdx, 1u, &m_descriptorSets[setNdx], numOffsets, dynamicOffsetPtr, m_bind2);
 
 					dynamicOffsetNdx += getInterfaceNumResources(m_shaderInterface);
 				}
@@ -3698,7 +3704,7 @@ vkt::TestInstance* BufferDescriptorCase::createInstance (vkt::Context& context) 
 		return new BufferComputeInstance(context, m_updateMethod, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewOffset, m_dynamicOffsetSet, m_dynamicOffsetNonZero, m_bind2);
 	}
 	else
-		return new BufferRenderInstance(context, m_updateMethod, m_isPrimaryCmdBuf, m_descriptorType, m_descriptorSetCount, m_activeStages, m_shaderInterface, m_viewOffset, m_dynamicOffsetSet, m_dynamicOffsetNonZero, m_bind2);
+		return new BufferRenderInstance(context, m_updateMethod, m_isPrimaryCmdBuf, m_descriptorType, m_descriptorSetCount, m_activeStages, m_exitingStages, m_shaderInterface, m_viewOffset, m_dynamicOffsetSet, m_dynamicOffsetNonZero, m_bind2);
 }
 
 void BufferDescriptorCase::checkSupport (Context& context) const
@@ -4192,6 +4198,7 @@ public:
 																					 vk::VkDescriptorType							descriptorType,
 																					 DescriptorSetCount								descriptorSetCount,
 																					 vk::VkShaderStageFlags							stageFlags,
+																					 vk::VkShaderStageFlags							existingStages,
 																					 ShaderInputInterface							shaderInterface,
 																					 vk::VkImageViewType							viewType,
 																					 deUint32										baseMipLevel,
@@ -4277,6 +4284,7 @@ private:
 	const vk::VkDescriptorType						m_descriptorType;
 	const DescriptorSetCount						m_descriptorSetCount;
 	const vk::VkShaderStageFlags					m_stageFlags;
+	const vk::VkShaderStageFlags					m_existingStages;
 	const ShaderInputInterface						m_shaderInterface;
 	const vk::VkImageViewType						m_viewType;
 	const deUint32									m_numLevels;
@@ -4302,6 +4310,7 @@ ImageFetchRenderInstance::ImageFetchRenderInstance	(vkt::Context&			context,
 													 vk::VkDescriptorType	descriptorType,
 													 DescriptorSetCount		descriptorSetCount,
 													 vk::VkShaderStageFlags	stageFlags,
+													 vk::VkShaderStageFlags	existingStages,
 													 ShaderInputInterface	shaderInterface,
 													 vk::VkImageViewType	viewType,
 													 deUint32				baseMipLevel,
@@ -4312,6 +4321,7 @@ ImageFetchRenderInstance::ImageFetchRenderInstance	(vkt::Context&			context,
 	, m_descriptorType			(descriptorType)
 	, m_descriptorSetCount		(descriptorSetCount)
 	, m_stageFlags				(stageFlags)
+	, m_existingStages			(existingStages)
 	, m_shaderInterface			(shaderInterface)
 	, m_viewType				(viewType)
 	, m_numLevels				(baseMipLevel + 1u)
@@ -4735,7 +4745,7 @@ void ImageFetchRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) cons
 			case DESCRIPTOR_SET_COUNT_SINGLE:
 			case DESCRIPTOR_SET_COUNT_MULTIPLE:
 			{
-				bindDescriptorSets(m_vki, cmd, m_stageFlags, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0, (int)sets.size(), &sets.front(), 0, DE_NULL, m_bind2);
+				bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0, (int)sets.size(), &sets.front(), 0, DE_NULL, m_bind2);
 				break;
 			}
 			case DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS:
@@ -4743,7 +4753,7 @@ void ImageFetchRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) cons
 				for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
 				{
 					const deUint32 descriptorSetNdx = getDescriptorSetNdx(m_descriptorSetCount, setNdx);
-					bindDescriptorSets(m_vki, cmd, m_stageFlags, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), descriptorSetNdx, 1, &sets[setNdx], 0, DE_NULL, m_bind2);
+					bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), descriptorSetNdx, 1, &sets[setNdx], 0, DE_NULL, m_bind2);
 				}
 				break;
 			}
@@ -5686,6 +5696,7 @@ public:
 																								 vk::VkDescriptorType	descriptorType,
 																								 DescriptorSetCount		descriptorSetCount,
 																								 vk::VkShaderStageFlags	stageFlags,
+																								 vk::VkShaderStageFlags	existingStages,
 																								 ShaderInputInterface	shaderInterface,
 																								 vk::VkImageViewType	viewType,
 																								 deUint32				baseMipLevel,
@@ -5799,6 +5810,7 @@ private:
 	const vk::VkDescriptorType						m_descriptorType;
 	const DescriptorSetCount						m_descriptorSetCount;
 	const vk::VkShaderStageFlags					m_stageFlags;
+	const vk::VkShaderStageFlags					m_existingStages;
 	const ShaderInputInterface						m_shaderInterface;
 	const vk::VkImageViewType						m_viewType;
 	const deUint32									m_numLevels;
@@ -5824,6 +5836,7 @@ ImageSampleRenderInstance::ImageSampleRenderInstance (vkt::Context&				context,
 													  vk::VkDescriptorType		descriptorType,
 													  DescriptorSetCount		descriptorSetCount,
 													  vk::VkShaderStageFlags	stageFlags,
+													  vk::VkShaderStageFlags	existingStages,
 													  ShaderInputInterface		shaderInterface,
 													  vk::VkImageViewType		viewType,
 													  deUint32					baseMipLevel,
@@ -5835,6 +5848,7 @@ ImageSampleRenderInstance::ImageSampleRenderInstance (vkt::Context&				context,
 	, m_descriptorType			(descriptorType)
 	, m_descriptorSetCount		(descriptorSetCount)
 	, m_stageFlags				(stageFlags)
+	, m_existingStages			(existingStages)
 	, m_shaderInterface			(shaderInterface)
 	, m_viewType				(viewType)
 	, m_numLevels				(baseMipLevel + 1u)
@@ -6517,7 +6531,7 @@ void ImageSampleRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) con
 			case DESCRIPTOR_SET_COUNT_SINGLE:
 			case DESCRIPTOR_SET_COUNT_MULTIPLE:
 			{
-				bindDescriptorSets(m_vki, cmd, m_stageFlags, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0u, (int)setHandles.size(), &setHandles.front(), 0u, DE_NULL, m_bind2);
+				bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0u, (int)setHandles.size(), &setHandles.front(), 0u, DE_NULL, m_bind2);
 				break;
 			}
 			case DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS:
@@ -6525,7 +6539,7 @@ void ImageSampleRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) con
 				for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
 				{
 					const deUint32 descriptorSetNdx = getDescriptorSetNdx(m_descriptorSetCount, setNdx);
-					bindDescriptorSets(m_vki, cmd, m_stageFlags, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), descriptorSetNdx, 1u, &setHandles[setNdx], 0u, DE_NULL, m_bind2);
+					bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), descriptorSetNdx, 1u, &setHandles[setNdx], 0u, DE_NULL, m_bind2);
 				}
 				break;
 			}
@@ -7812,7 +7826,7 @@ vkt::TestInstance* ImageDescriptorCase::createInstance (vkt::Context& context) c
 				return new ImageSampleComputeInstance(context, m_updateMethod, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice, m_isImmutableSampler, m_bind2);
 			}
 			else
-				return new ImageSampleRenderInstance(context, m_updateMethod, m_isPrimaryCmdBuf, m_descriptorType, m_descriptorSetCount, m_activeStages, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice, m_isImmutableSampler, m_bind2);
+				return new ImageSampleRenderInstance(context, m_updateMethod, m_isPrimaryCmdBuf, m_descriptorType, m_descriptorSetCount, m_activeStages, m_exitingStages, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice, m_isImmutableSampler, m_bind2);
 
 		case vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 		case vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
@@ -7822,7 +7836,7 @@ vkt::TestInstance* ImageDescriptorCase::createInstance (vkt::Context& context) c
 				return new ImageFetchComputeInstance(context, m_updateMethod, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice, m_bind2);
 			}
 			else
-				return new ImageFetchRenderInstance(context, m_updateMethod, m_isPrimaryCmdBuf, m_descriptorType, m_descriptorSetCount, m_activeStages, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice, m_bind2);
+				return new ImageFetchRenderInstance(context, m_updateMethod, m_isPrimaryCmdBuf, m_descriptorType, m_descriptorSetCount, m_activeStages, m_exitingStages, m_shaderInterface, m_viewType, m_baseMipLevel, m_baseArraySlice, m_bind2);
 
 		default:
 			DE_FATAL("Impossible");
@@ -8201,6 +8215,7 @@ public:
 																					 vk::VkDescriptorType							descriptorType,
 																					 DescriptorSetCount								descriptorSetCount,
 																					 vk::VkShaderStageFlags							stageFlags,
+																					 vk::VkShaderStageFlags							 existingStages,
 																					 ShaderInputInterface							shaderInterface,
 																					 bool											nonzeroViewOffset,
 																					 const bool										bind2);
@@ -8285,6 +8300,7 @@ private:
 	const vk::VkDescriptorType						m_descriptorType;
 	const DescriptorSetCount						m_descriptorSetCount;
 	const vk::VkShaderStageFlags					m_stageFlags;
+	const vk::VkShaderStageFlags					m_existingStages;
 	const ShaderInputInterface						m_shaderInterface;
 	const bool										m_nonzeroViewOffset;
 
@@ -8307,6 +8323,7 @@ TexelBufferRenderInstance::TexelBufferRenderInstance (vkt::Context&					context,
 													  vk::VkDescriptorType			descriptorType,
 													  DescriptorSetCount			descriptorSetCount,
 													  vk::VkShaderStageFlags		stageFlags,
+													  vk::VkShaderStageFlags		existingStages,
 													  ShaderInputInterface			shaderInterface,
 													  bool							nonzeroViewOffset,
 													  const bool					bind2)
@@ -8315,6 +8332,7 @@ TexelBufferRenderInstance::TexelBufferRenderInstance (vkt::Context&					context,
 	, m_descriptorType			(descriptorType)
 	, m_descriptorSetCount		(descriptorSetCount)
 	, m_stageFlags				(stageFlags)
+	, m_existingStages			(existingStages)
 	, m_shaderInterface			(shaderInterface)
 	, m_nonzeroViewOffset		(nonzeroViewOffset)
 #ifndef CTS_USES_VULKANSC
@@ -8732,7 +8750,7 @@ void TexelBufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) con
 			case DESCRIPTOR_SET_COUNT_SINGLE:
 			case DESCRIPTOR_SET_COUNT_MULTIPLE:
 			{
-				bindDescriptorSets(m_vki, cmd, m_stageFlags, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0, (deUint32)sets.size(), &sets.front(), 0, DE_NULL, m_bind2);
+				bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), 0, (deUint32)sets.size(), &sets.front(), 0, DE_NULL, m_bind2);
 				break;
 			}
 			case DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS:
@@ -8740,7 +8758,7 @@ void TexelBufferRenderInstance::writeDrawCmdBuffer (vk::VkCommandBuffer cmd) con
 				for (deUint32 setNdx = 0; setNdx < getDescriptorSetCount(m_descriptorSetCount); setNdx++)
 				{
 					const deUint32 descriptorSetNdx	= getDescriptorSetNdx(m_descriptorSetCount, setNdx);
-					bindDescriptorSets(m_vki, cmd, m_stageFlags, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), descriptorSetNdx, 1, &sets[setNdx], 0, DE_NULL, m_bind2);
+					bindDescriptorSets(m_vki, cmd, m_stageFlags, m_existingStages, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, getPipelineLayout(), descriptorSetNdx, 1, &sets[setNdx], 0, DE_NULL, m_bind2);
 				}
 				break;
 			}
@@ -9480,7 +9498,7 @@ vkt::TestInstance* TexelBufferDescriptorCase::createInstance (vkt::Context& cont
 		return new TexelBufferComputeInstance(context, m_updateMethod, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_nonzeroViewOffset, m_bind2);
 	}
 	else
-		return new TexelBufferRenderInstance(context, m_updateMethod, m_isPrimaryCmdBuf, m_descriptorType, m_descriptorSetCount, m_activeStages, m_shaderInterface, m_nonzeroViewOffset, m_bind2);
+		return new TexelBufferRenderInstance(context, m_updateMethod, m_isPrimaryCmdBuf, m_descriptorType, m_descriptorSetCount, m_activeStages, m_exitingStages, m_shaderInterface, m_nonzeroViewOffset, m_bind2);
 }
 
 void createShaderAccessImageTests (tcu::TestCaseGroup*		group,

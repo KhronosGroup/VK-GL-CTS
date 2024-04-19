@@ -5650,6 +5650,8 @@ template <typename T>
 class Sampling
 {
 public:
+	virtual ~Sampling () {}
+
 	virtual void	genFixeds			(const FloatFormat&, const Precision, vector<T>&, const Interval&)	const {}
 	virtual T		genRandom			(const FloatFormat&,const Precision, Random&, const Interval&)		const { return T(); }
 	virtual void	removeNotInRange	(vector<T>&, const Interval&, const Precision)						const {}

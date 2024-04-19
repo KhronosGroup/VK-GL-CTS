@@ -60,6 +60,8 @@ typedef de::SharedPtr<vk::ProgramBinary>	ProgramBinarySp;
 class Task
 {
 public:
+	virtual ~Task () {}
+
 	virtual void	execute		(void) = 0;
 };
 

@@ -153,6 +153,8 @@ public:
 	{
 	}
 
+	virtual ~Resource () {}
+
 	virtual const BufferSp&			getBuffer			() const							{ return buffer; }
 	virtual void					getBytes			(std::vector<deUint8>& bytes) const	{ buffer->getBytes(bytes); }
 	virtual size_t					getByteSize			(void) const						{ return buffer->getByteSize(); }

@@ -219,6 +219,8 @@ private:
 	template<class rayPayloadEXT, class shaderRecordEXT>
 	struct Shader
 	{
+		virtual ~Shader () {}
+
 		virtual bool			ignoreIntersection	(const rayPayloadEXT&, const shaderRecordEXT&) const { return false; }
 		virtual	rayPayloadEXT	invoke				(const rayPayloadEXT&, const shaderRecordEXT&) const = 0;
 	};

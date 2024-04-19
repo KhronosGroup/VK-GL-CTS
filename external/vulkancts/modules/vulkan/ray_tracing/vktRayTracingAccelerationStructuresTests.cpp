@@ -145,6 +145,8 @@ struct TestParams;
 class TestConfiguration
 {
 public:
+	virtual ~TestConfiguration () {}
+
 	virtual std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	initBottomAccelerationStructures	(Context&							context,
 																												 TestParams&						testParams) = 0;
 	virtual de::MovePtr<TopLevelAccelerationStructure>						initTopAccelerationStructure		(Context&							context,
@@ -3271,6 +3273,7 @@ protected:
 
 struct ASInterface
 {
+	virtual ~ASInterface () {}
 	virtual VkAccelerationStructureKHR getPtr() const = 0;
 	virtual VkAccelerationStructureBuildSizesInfoKHR getStructureBuildSizes() const = 0;
 	virtual ASInterfacePtr clone (Context& ctx, VkAccelerationStructureBuildTypeKHR buildType, const VkCommandBuffer cmd, VkDeviceSize size) = 0;

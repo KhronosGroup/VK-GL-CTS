@@ -55,6 +55,8 @@ template <typename T>
 class CompareOperation
 {
 public:
+	virtual ~CompareOperation () {}
+
 	virtual std::string		spirvName	()					const = 0;
 	virtual bool			run			(T left, T right)	const = 0;
 };
@@ -65,6 +67,7 @@ class DoubleCompareOperation: public CompareOperation<double>
 public:
 	struct BasicImplementation
 	{
+		virtual ~BasicImplementation () {}
 		virtual std::string	nameSuffix	()							const = 0;
 		virtual bool		run			(double left, double right)	const = 0; // No NaNs here.
 	};
@@ -127,6 +130,8 @@ class IntCompareOperation: public CompareOperation<IntClass>
 public:
 	struct Implementation
 	{
+		virtual ~Implementation () {}
+
 		virtual std::string	typeChar	()								const = 0;
 		virtual std::string	opName		()								const = 0;
 		virtual bool		run			(IntClass left, IntClass right)	const = 0;

@@ -190,6 +190,8 @@ public:
 		m_outputs[0].type	= rr::GENERICVECTYPE_FLOAT;
 	}
 
+	virtual ~TestVertShader () {}
+
 	void shadeVertices (const rr::VertexAttrib* inputs,
 						rr::VertexPacket* const* packets,
 						const int numPackets) const
@@ -219,6 +221,8 @@ public:
 		m_inputs[0].type	= rr::GENERICVECTYPE_FLOAT;
 		m_outputs[0].type	= rr::GENERICVECTYPE_FLOAT;
 	}
+
+	virtual ~TestFragShader () {}
 
 	void shadeFragments (rr::FragmentPacket* packets,
 						 const int numPackets,
