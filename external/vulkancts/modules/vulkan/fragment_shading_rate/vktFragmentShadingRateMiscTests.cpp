@@ -736,7 +736,7 @@ void checkOobSupport(Context &context, TestParams param)
     bool allowOobFSRAttachment = false;
 #ifndef CTS_USES_VULKANSC
     const VkPhysicalDeviceMaintenance7PropertiesKHR &m_maintenance7Properties = context.getMaintenance7Properties();
-    allowOobFSRAttachment = m_maintenance7Properties.fragmentShadingRateAttachmentMismatchedSize;
+    allowOobFSRAttachment = m_maintenance7Properties.robustFragmentShadingRateAttachmentAccess;
 #endif
     if (!allowOobFSRAttachment)
         TCU_THROW(NotSupportedError, "Fragment shading rate attachment size must match render area size");

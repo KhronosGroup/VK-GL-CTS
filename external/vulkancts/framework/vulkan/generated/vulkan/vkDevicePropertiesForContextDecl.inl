@@ -78,6 +78,7 @@ const vk::VkPhysicalDeviceMaintenance5PropertiesKHR&				getMaintenance5Propertie
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				getShaderObjectPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	getRayTracingInvocationReorderProperties	(void) const;
 const vk::VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&	getExtendedSparseAddressSpacePropertiesNV	(void) const;
+const vk::VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&		getLegacyVertexAttributesPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			getShaderCoreBuiltinsPropertiesARM			(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			getCooperativeMatrixProperties				(void) const;
 const vk::VkPhysicalDeviceImageProcessing2PropertiesQCOM&			getImageProcessing2PropertiesQCOM			(void) const;
@@ -86,5 +87,6 @@ const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&				getLayeredDriverProper
 const vk::VkPhysicalDeviceLineRasterizationPropertiesKHR&			getLineRasterizationProperties				(void) const;
 const vk::VkPhysicalDeviceMaintenance6PropertiesKHR&				getMaintenance6Properties					(void) const;
 const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&				getMaintenance7Properties					(void) const;
+const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&		getImageAlignmentControlPropertiesMESA		(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const;

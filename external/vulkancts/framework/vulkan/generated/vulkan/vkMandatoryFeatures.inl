@@ -16,7 +16,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 
 	VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 	const InstanceInterface&			vki					= context.getInstanceInterface();
-	const vector<VkExtensionProperties>	deviceExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const vector<VkExtensionProperties>	deviceExtensions	= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 	const uint32_t						usedApiVersion		= context.getUsedApiVersion();
 
 	tcu::TestLog& log = context.getTestContext().getLog();

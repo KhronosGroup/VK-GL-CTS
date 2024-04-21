@@ -2123,6 +2123,11 @@ template<> VkStructureType getStructureType<VkPerformanceQuerySubmitInfoKHR> (vo
 	return VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPerformanceQueryReservationInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_RESERVATION_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkHeadlessSurfaceCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT;
@@ -2731,6 +2736,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceVertexInputDynamicSt
 template<> VkStructureType getStructureType<VkPhysicalDeviceExternalMemoryRDMAFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkVertexInputBindingDescription2EXT> (void)
@@ -4491,5 +4501,25 @@ template<> VkStructureType getStructureType<VkMemoryMapPlacedInfoEXT> (void)
 template<> VkStructureType getStructureType<VkPhysicalDeviceRawAccessChainsFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageAlignmentControlFeaturesMESA> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageAlignmentControlPropertiesMESA> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA;
+}
+
+template<> VkStructureType getStructureType<VkImageAlignmentControlCreateInfoMESA> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT;
 }
 

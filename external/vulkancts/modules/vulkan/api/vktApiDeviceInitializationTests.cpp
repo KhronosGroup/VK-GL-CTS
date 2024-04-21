@@ -1047,7 +1047,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
     for (VkQueueGlobalPriorityEXT globalPriority : globalPriorities)
     {
         const VkDeviceQueueGlobalPriorityCreateInfoEXT queueGlobalPriority = {
-            VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT, //sType;
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR, //sType;
             DE_NULL,                                                        //pNext;
             globalPriority                                                  //globalPriority;
         };
@@ -1111,7 +1111,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
             TCU_CHECK(!!queue);
 
             result = deviceDriver.queueWaitIdle(queue);
-            if (result == VK_ERROR_NOT_PERMITTED_EXT && mayBeDenied)
+            if (result == VK_ERROR_NOT_PERMITTED_KHR && mayBeDenied)
             {
                 continue;
             }
@@ -1141,7 +1141,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
         }
         catch (const Error &error)
         {
-            if ((error.getError() == VK_ERROR_NOT_PERMITTED_EXT && mayBeDenied)
+            if ((error.getError() == VK_ERROR_NOT_PERMITTED_KHR && mayBeDenied)
 #ifndef CTS_USES_VULKANSC
                 || (error.getError() == VK_ERROR_INITIALIZATION_FAILED && mustFail)
 #endif // CTS_USES_VULKANSC

@@ -229,6 +229,16 @@ VkResult InstanceDriver::releaseDisplayEXT (VkPhysicalDevice physicalDevice, VkD
     return m_vk.releaseDisplayEXT(physicalDevice, display);
 }
 
+VkResult InstanceDriver::acquireWinrtDisplayNV (VkPhysicalDevice physicalDevice, VkDisplayKHR display) const
+{
+    return m_vk.acquireWinrtDisplayNV(physicalDevice, display);
+}
+
+VkResult InstanceDriver::getWinrtDisplayNV (VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay) const
+{
+    return m_vk.getWinrtDisplayNV(physicalDevice, deviceRelativeId, pDisplay);
+}
+
 VkResult InstanceDriver::getPhysicalDeviceSurfaceCapabilities2EXT (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilities2EXT* pSurfaceCapabilities) const
 {
     return m_vk.getPhysicalDeviceSurfaceCapabilities2EXT(physicalDevice, surface, pSurfaceCapabilities);

@@ -2529,6 +2529,21 @@ struct VkDeviceQueueGlobalPriorityCreateInfoKHR
 	VkQueueGlobalPriorityKHR	globalPriority;
 };
 
+struct VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		globalPriorityQuery;
+};
+
+struct VkQueueFamilyGlobalPriorityPropertiesKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	uint32_t					priorityCount;
+	VkQueueGlobalPriorityKHR	priorities[VK_MAX_GLOBAL_PRIORITY_SIZE_KHR];
+};
+
 struct VkDebugUtilsObjectNameInfoEXT
 {
 	VkStructureType	sType;
@@ -2862,11 +2877,12 @@ struct VkPipelineVertexInputDivisorStateCreateInfoKHR
 	const VkVertexInputBindingDivisorDescriptionKHR*	pVertexBindingDivisors;
 };
 
-struct VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
+struct VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	uint32_t		maxVertexAttribDivisor;
+	VkBool32		supportsNonZeroFirstInstance;
 };
 
 struct VkPhysicalDevicePCIBusInfoPropertiesEXT
@@ -3331,7 +3347,7 @@ struct VkPhysicalDeviceSubgroupSizeControlPropertiesEXT
 	VkShaderStageFlags	requiredSubgroupSizeStages;
 };
 
-struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT
+struct VkShaderRequiredSubgroupSizeCreateInfoEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -4389,6 +4405,10 @@ typedef VkPhysicalDeviceHostQueryResetFeatures VkPhysicalDeviceHostQueryResetFea
 
 typedef VkDeviceQueueGlobalPriorityCreateInfoKHR VkDeviceQueueGlobalPriorityCreateInfoEXT;
 
+typedef VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT;
+
+typedef VkQueueFamilyGlobalPriorityPropertiesKHR VkQueueFamilyGlobalPriorityPropertiesEXT;
+
 typedef VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT;
 
 typedef VkPhysicalDeviceDescriptorIndexingFeatures VkPhysicalDeviceDescriptorIndexingFeaturesEXT;
@@ -4473,7 +4493,7 @@ typedef VkAttachmentReferenceStencilLayout VkAttachmentReferenceStencilLayoutKHR
 
 typedef VkAttachmentDescriptionStencilLayout VkAttachmentDescriptionStencilLayoutKHR;
 
-typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT VkShaderRequiredSubgroupSizeCreateInfoEXT;
+typedef VkShaderRequiredSubgroupSizeCreateInfoEXT VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT;
 
 typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAllocateInfoKHR;
 

@@ -3214,7 +3214,7 @@ struct VkPhysicalDeviceMaintenance7PropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
-	VkBool32		fragmentShadingRateAttachmentMismatchedSize;
+	VkBool32		robustFragmentShadingRateAttachmentAccess;
 	VkBool32		separateDepthStencilAttachmentAccess;
 	uint32_t		maxDescriptorSetTotalUniformBuffersDynamic;
 	uint32_t		maxDescriptorSetTotalStorageBuffersDynamic;
@@ -4939,6 +4939,13 @@ struct VkPerformanceQuerySubmitInfoKHR
 	uint32_t		counterPassIndex;
 };
 
+struct VkPerformanceQueryReservationInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		maxPerformanceQueriesPerPool;
+};
+
 struct VkHeadlessSurfaceCreateInfoEXT
 {
 	VkStructureType					sType;
@@ -6306,6 +6313,13 @@ struct VkPhysicalDeviceExternalMemoryRDMAFeaturesNV
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		externalMemoryRDMA;
+};
+
+struct VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderRelaxedExtendedInstruction;
 };
 
 struct VkVertexInputBindingDescription2EXT
@@ -9478,6 +9492,34 @@ struct VkPhysicalDeviceRawAccessChainsFeaturesNV
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shaderRawAccessChains;
+};
+
+struct VkPhysicalDeviceImageAlignmentControlFeaturesMESA
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imageAlignmentControl;
+};
+
+struct VkPhysicalDeviceImageAlignmentControlPropertiesMESA
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		supportedImageAlignmentMask;
+};
+
+struct VkImageAlignmentControlCreateInfoMESA
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		maximumRequestedAlignment;
+};
+
+struct VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderReplicatedComposites;
 };
 
 struct StdVideoH264SpsVuiFlags

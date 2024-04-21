@@ -22,6 +22,8 @@
 * \file
 *//*--------------------------------------------------------------------*/
 
+#include "vkQueryUtil.hpp"
+
 #include "tcuTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 
@@ -195,12 +197,121 @@ public:
 private:
 };
 
+class Maintenance7TotalDynamicBuffersPropertiesTestInstance : public vkt::TestInstance
+{
+public:
+    Maintenance7TotalDynamicBuffersPropertiesTestInstance(vkt::Context &context) : vkt::TestInstance(context)
+    {
+    }
+
+private:
+    tcu::TestStatus iterate(void);
+};
+
+tcu::TestStatus Maintenance7TotalDynamicBuffersPropertiesTestInstance::iterate(void)
+{
+    vk::VkPhysicalDeviceMaintenance7PropertiesKHR maint7Prop = vk::initVulkanStructure();
+    vk::VkPhysicalDeviceProperties2 prop2                    = vk::initVulkanStructure(&maint7Prop);
+    tcu::TestLog &log                                        = m_context.getTestContext().getLog();
+
+    m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &prop2);
+
+    // check dynamic buffers limits
+    auto &deviceLimits = m_context.getDeviceProperties().limits;
+    if (maint7Prop.maxDescriptorSetTotalUniformBuffersDynamic < deviceLimits.maxDescriptorSetUniformBuffersDynamic)
+    {
+        log << tcu::TestLog::Message
+            << "maxDescriptorSetTotalUniformBuffersDynamic: " << maint7Prop.maxDescriptorSetTotalUniformBuffersDynamic
+            << "is less than maxDescriptorSetUniformBuffersDynamic: "
+            << deviceLimits.maxDescriptorSetUniformBuffersDynamic << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    if (maint7Prop.maxDescriptorSetTotalStorageBuffersDynamic < deviceLimits.maxDescriptorSetStorageBuffersDynamic)
+    {
+        log << tcu::TestLog::Message
+            << "maxDescriptorSetTotalStorageBuffersDynamic: " << maint7Prop.maxDescriptorSetTotalStorageBuffersDynamic
+            << "is less than maxDescriptorSetStorageBuffersDynamic: "
+            << deviceLimits.maxDescriptorSetStorageBuffersDynamic << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    if (maint7Prop.maxDescriptorSetTotalBuffersDynamic <
+        deviceLimits.maxDescriptorSetUniformBuffersDynamic + deviceLimits.maxDescriptorSetStorageBuffersDynamic)
+    {
+        log << tcu::TestLog::Message
+            << "maxDescriptorSetTotalBuffersDynamic: " << maint7Prop.maxDescriptorSetTotalBuffersDynamic
+            << "is less than some of maxDescriptorSetUniformBuffersDynamic: "
+            << deviceLimits.maxDescriptorSetUniformBuffersDynamic
+            << " and maxDescriptorSetStorageBuffersDynamic: " << deviceLimits.maxDescriptorSetStorageBuffersDynamic
+            << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    // check update after bind dynamic buffers limits
+    auto &deviceProp12 = m_context.getDeviceVulkan12Properties();
+    if (maint7Prop.maxDescriptorSetUpdateAfterBindTotalUniformBuffersDynamic <
+        deviceProp12.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic)
+    {
+        log << tcu::TestLog::Message << "maxDescriptorSetUpdateAfterBindTotalUniformBuffersDynamic: "
+            << maint7Prop.maxDescriptorSetUpdateAfterBindTotalUniformBuffersDynamic
+            << "is less than maxDescriptorSetUpdateAfterBindUniformBuffersDynamic: "
+            << deviceProp12.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    if (maint7Prop.maxDescriptorSetUpdateAfterBindTotalStorageBuffersDynamic <
+        deviceProp12.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic)
+    {
+        log << tcu::TestLog::Message << "maxDescriptorSetUpdateAfterBindTotalStorageBuffersDynamic: "
+            << maint7Prop.maxDescriptorSetUpdateAfterBindTotalStorageBuffersDynamic
+            << "is less than maxDescriptorSetUpdateAfterBindStorageBuffersDynamic: "
+            << deviceProp12.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    if (maint7Prop.maxDescriptorSetUpdateAfterBindTotalBuffersDynamic <
+        deviceProp12.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic +
+            deviceProp12.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic)
+    {
+        log << tcu::TestLog::Message << "maxDescriptorSetUpdateAfterBindTotalBuffersDynamic: "
+            << maint7Prop.maxDescriptorSetUpdateAfterBindTotalBuffersDynamic
+            << "is less than some of maxDescriptorSetUpdateAfterBindUniformBuffersDynamic: "
+            << deviceProp12.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic
+            << " and maxDescriptorSetUpdateAfterBindStorageBuffersDynamic: "
+            << deviceProp12.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class Maintenance7TotalDynamicBuffersPropertiesTestCase : public TestCase
+{
+public:
+    Maintenance7TotalDynamicBuffersPropertiesTestCase(tcu::TestContext &testCtx, const char *name)
+        : TestCase(testCtx, name)
+    {
+    }
+
+    virtual void checkSupport(Context &ctx) const
+    {
+        ctx.requireDeviceFunctionality("VK_KHR_maintenance7");
+    }
+    virtual TestInstance *createInstance(Context &context) const
+    {
+        return new Maintenance7TotalDynamicBuffersPropertiesTestInstance(context);
+    }
+};
+
 tcu::TestCaseGroup *createMaintenance7Tests(tcu::TestContext &testCtx)
 {
 
     de::MovePtr<tcu::TestCaseGroup> main7Tests(new tcu::TestCaseGroup(testCtx, "maintenance7", "Maintenance7 Tests"));
 
     main7Tests->addChild(new Maintenance7LayeredApiVulkanPropertiesTestCase(testCtx, "layered_api_vulkan_properties"));
+    main7Tests->addChild(
+        new Maintenance7TotalDynamicBuffersPropertiesTestCase(testCtx, "total_dynamic_buffers_properties"));
 
     return main7Tests.release();
 }

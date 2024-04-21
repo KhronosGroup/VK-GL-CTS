@@ -680,4 +680,4 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* SetLatencyMarkerNVFunc)												(VkD
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetLatencyTimingsNVFunc)												(VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* QueueNotifyOutOfBandNVFunc)											(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRenderingAttachmentLocationsKHRFunc)								(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRenderingInputAttachmentIndicesKHRFunc)							(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetRenderingInputAttachmentIndicesKHRFunc)							(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pInputAttachmentIndexInfo);

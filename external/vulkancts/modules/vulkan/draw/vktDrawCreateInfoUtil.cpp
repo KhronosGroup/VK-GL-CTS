@@ -686,7 +686,7 @@ PipelineCreateInfo::VertexInputState::VertexInputState(
 PipelineCreateInfo::VertexInputState &PipelineCreateInfo::VertexInputState::addDivisors(
     uint32_t _vertexBindingDivisorCount, const vk::VkVertexInputBindingDivisorDescriptionEXT *_pVertexBindingDivisors)
 {
-    m_divisorState.sType = vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT;
+    m_divisorState.sType = vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR;
     m_divisorState.vertexBindingDivisorCount = _vertexBindingDivisorCount;
     m_divisorState.pVertexBindingDivisors    = _pVertexBindingDivisors;
 
