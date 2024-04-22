@@ -2316,6 +2316,7 @@ KHR-GLES3.shaders.uniform_block.random.all_shared_buffer.18
 KHR-GLES3.shaders.uniform_block.random.all_shared_buffer.19
 KHR-GLES3.shaders.uniform_block.common.precision_matching
 KHR-GLES3.shaders.uniform_block.common.name_matching
+KHR-GLES3.shaders.uniform_block_negative.structure_declaration
 KHR-GLES3.shaders.glsl_constructors.vec2_from_mat2_vs
 KHR-GLES3.shaders.glsl_constructors.vec2_from_mat2_fs
 KHR-GLES3.shaders.glsl_constructors.vec2_from_mat2_mat2_invalid_vs

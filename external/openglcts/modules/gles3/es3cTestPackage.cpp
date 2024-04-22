@@ -51,6 +51,7 @@
 #include "glcTextureLodBiasTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
+#include "glcUniformBlockNegativeTests.hpp"
 #include "gluStateReset.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -155,6 +156,7 @@ public:
 		addChild(new deqp::ShaderLibraryGroup(m_context, "name_hiding", "Name Hiding Tests", "name_hiding.test"));
 		addChild(new deqp::ShaderStructTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::UniformBlockTests(m_context, glu::GLSL_VERSION_300_ES));
+		addChild(new deqp::UniformBlockNegativeTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::GLSLVectorConstructorTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderIntegerMixTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_300_ES));

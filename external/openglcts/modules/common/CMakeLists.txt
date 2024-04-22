@@ -113,6 +113,8 @@ set(GLCTS_COMMON_SRCS
 	glcUniformBlockCase.hpp
 	glcUniformBlockTests.cpp
 	glcUniformBlockTests.hpp
+	glcUniformBlockNegativeTests.cpp
+	glcUniformBlockNegativeTests.hpp
 	glcViewportArrayTests.cpp
 	glcViewportArrayTests.hpp
 	glcTestSubcase.cpp

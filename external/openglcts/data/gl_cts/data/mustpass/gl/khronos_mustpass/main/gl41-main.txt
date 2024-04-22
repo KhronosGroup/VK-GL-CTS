@@ -844,6 +844,7 @@ KHR-GL41.shaders30.glsl_constructors.bvec4_from_bool_mat4x3_vs
 KHR-GL41.shaders30.glsl_constructors.bvec4_from_bool_mat4x3_fs
 KHR-GL41.shaders30.glsl_constructors.bvec4_from_bool_mat4x3_bool_invalid_vs
 KHR-GL41.shaders30.glsl_constructors.bvec4_from_bool_mat4x3_bool_invalid_fs
+KHR-GL41.shaders30.uniform_block_negative.structure_declaration
 KHR-GL41.ext_texture_shadow_lod.texture.sampler2darrayshadow_fragment
 KHR-GL41.ext_texture_shadow_lod.texture.sampler2darrayshadow_bias_fragment
 KHR-GL41.ext_texture_shadow_lod.texture.samplercubearrayshadow_vertex

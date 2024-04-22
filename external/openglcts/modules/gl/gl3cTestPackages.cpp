@@ -51,6 +51,7 @@
 #include "glcTextureLodBiasTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
+#include "glcUniformBlockNegativeTests.hpp"
 #include "glcNearestEdgeTests.hpp"
 #include "glcGLSLVectorConstructorTests.hpp"
 #include "gluStateReset.hpp"
@@ -147,6 +148,7 @@ public:
 	{
 		addChild(new deqp::ShaderLibraryGroup(m_context, "declarations", "Declaration Tests", "gl30/declarations.test"));
 		addChild(new deqp::GLSLVectorConstructorTests(m_context, glu::GLSL_VERSION_130));
+		addChild(new deqp::UniformBlockNegativeTests(m_context, glu::GLSL_VERSION_150));
 	}
 };
 
