@@ -142,6 +142,8 @@ struct CaseDef
 	UseType								useType;
 	SubgroupSizeMode					subgroupSizeMode;
 	vk::ComputePipelineConstructionType	computePipelineConstructionType;
+	deUint32							inputComponentCount;
+	deUint32							outputComponentCount;
 };
 
 bool isKhr (UseType useType)
@@ -980,16 +982,19 @@ string dumpWholeMatrix (void* data, VkComponentTypeKHR dt, bool colMajor, deUint
 
 tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 {
-	const DeviceInterface&	vk						= m_context.getDeviceInterface();
-	const VkDevice			device					= m_context.getDevice();
-	Allocator&				allocator				= m_context.getDefaultAllocator();
-	MemoryRequirement		memoryDeviceAddress		= m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER &&
-													  m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any;
-	qpTestResult			finalres				= QP_TEST_RESULT_NOT_SUPPORTED;
-	tcu::TestLog&			log						= m_context.getTestContext().getLog();
-	const bool				saturated				= (m_data.testType == TT_MATRIXMULADD_SATURATED);
-	const deUint32			subgroupSize			= getSubgroupSizeFromMode(m_context, m_data.subgroupSizeMode);
-	const float				epsilon					= 1.0f / float(1ull<<17); // 131072 is epsilon circa 1e-5
+	const DeviceInterface&			vk					= m_context.getDeviceInterface();
+	const VkDevice					device				= m_context.getDevice();
+	Allocator&						allocator			= m_context.getDefaultAllocator();
+	MemoryRequirement				memoryDeviceAddress	= m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER &&
+														  m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any;
+	qpTestResult					finalres			= QP_TEST_RESULT_NOT_SUPPORTED;
+	tcu::TestLog&					log					= m_context.getTestContext().getLog();
+	const bool						saturated			= (m_data.testType == TT_MATRIXMULADD_SATURATED);
+	const deUint32					subgroupSize		= getSubgroupSizeFromMode(m_context, m_data.subgroupSizeMode);
+	const float						epsilon				= 1.0f / float(1ull<<17); // 131072 is epsilon circa 1e-5
+	vk::VkPhysicalDeviceProperties	vkproperties;
+
+	m_context.getInstanceInterface().getPhysicalDeviceProperties(m_context.getPhysicalDevice(), &vkproperties);
 
 	deRandom rnd;
 	deRandom_init(&rnd, 1234);
@@ -1108,6 +1113,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 		deUint32 strides[4]; // in elements
 		deUint32 loadStrides[4];
 		deUint32 totalElements[4];
+		size_t sharedMemoryUsage[4];
+		size_t totalSharedMemoryUsage = 0;
 
 		for (deUint32 i = 0; i < 5; ++i)
 		{
@@ -1120,8 +1127,18 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 				strides[i] = (m_data.colMajor ? dims[i].rows : dims[i].cols) * m_data.subgroupsPerWorkgroupX * m_data.workgroupsX;
 				loadStrides[i] = strides[i];
 				totalElements[i] = strides[i] * (m_data.colMajor ? dims[i].cols : dims[i].rows) * m_data.subgroupsPerWorkgroupY * m_data.workgroupsY;
+				sharedMemoryUsage[i] =	dims[i].cols * dims[i].rows * m_data.subgroupsPerWorkgroupX * m_data.subgroupsPerWorkgroupY *
+										elementSize[i] * ((i < 2) ? m_data.inputComponentCount : m_data.outputComponentCount);
 
 				bufferSizes[i] = totalElements[i] * elementSize[i];
+
+				// Check there is enough shared memory supported
+				if ((m_data.useType != UT_NV) && ((m_data.storageClass == SC_WORKGROUP) || (m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)))
+				{
+					totalSharedMemoryUsage += sharedMemoryUsage[i];
+					if (totalSharedMemoryUsage > vkproperties.limits.maxComputeSharedMemorySize)
+						throw tcu::NotSupportedError("Not enough shared memory supported.");
+				}
 			}
 			else
 			{
@@ -1910,6 +1927,8 @@ tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& test
 							useType,							//  UseType								useType;
 							sgsCases[sgsNdx].value,				//  SubgroupSizeMode					subgroupSizeMode;
 							computePipelineConstructionType,	//  vk::ComputePipelineConstructionType	computePipelineConstructionType;
+							1,									//  deUint32							inputComponentCount;
+							1,									//  deUint32							outputComponentCount;
 						};
 
 						scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
@@ -1955,6 +1974,8 @@ tcu::TestCaseGroup*	createCooperativeMatrixTestsInternal (tcu::TestContext& test
 							useType,							//  UseType								useType;
 							SUBGROUP_SIZE_NONE,					//  SubgroupSizeMode					subgroupSizeMode;
 							computePipelineConstructionType,	//  vk::ComputePipelineConstructionType	computePipelineConstructionType;
+							1,									//  deUint32							inputComponentCount;
+							1,									//  deUint32							outputComponentCount;
 						};
 
 						scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
