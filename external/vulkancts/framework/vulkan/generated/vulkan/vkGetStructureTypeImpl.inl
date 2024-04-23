@@ -3378,6 +3378,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingMotionBlur
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MOTION_BLUR_FEATURES_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingValidationFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV;
+}
+
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryMotionTrianglesDataNV> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_MOTION_TRIANGLES_DATA_NV;
@@ -4446,5 +4451,10 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMapMemoryPlacedPrope
 template<> VkStructureType getStructureType<VkMemoryMapPlacedInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRawAccessChainsFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV;
 }
 

@@ -355,8 +355,8 @@ bool check_VK_EXT_image_drm_format_modifier(const tcu::UVec2& v, const ExtPropVe
 	if (!isSupported(vDEP, "VK_EXT_image_drm_format_modifier"))
 		return true;
 
-	// depends attribute in xml: ((VK_KHR_bind_memory2+VK_KHR_get_physical_device_properties2+VK_KHR_sampler_ycbcr_conversion),VK_VERSION_1_1)+(VK_KHR_image_format_list,VK_VERSION_1_2)
-	return ((true && true && true)) && (true);
+	// depends attribute in xml: (((VK_KHR_bind_memory2+VK_KHR_get_physical_device_properties2+VK_KHR_sampler_ycbcr_conversion),VK_VERSION_1_1)+VK_KHR_image_format_list),VK_VERSION_1_2
+	return (((true && true && true)) && true);
 }
 
 bool check_VK_EXT_external_memory_host(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -467,8 +467,8 @@ bool check_VK_KHR_fragment_shading_rate(const tcu::UVec2& v, const ExtPropVect& 
 	if (!isSupported(vDEP, "VK_KHR_fragment_shading_rate"))
 		return true;
 
-	// depends attribute in xml: (VK_KHR_create_renderpass2,VK_VERSION_1_2)+(VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)
-	return (true) && (true);
+	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_create_renderpass2),VK_VERSION_1_2
+	return ((true) && true);
 }
 
 bool check_VK_EXT_shader_image_atomic_int64(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -785,7 +785,7 @@ bool check_VK_NV_device_diagnostic_checkpoints(const tcu::UVec2& v, const ExtPro
 	if (!isSupported(vDEP, "VK_NV_device_diagnostic_checkpoints"))
 		return true;
 
-	// depends attribute in xml: VK_KHR_get_physical_device_properties2
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
 	return true;
 }
 
@@ -799,7 +799,7 @@ bool check_VK_KHR_format_feature_flags2(const tcu::UVec2& v, const ExtPropVect& 
 	if (!isSupported(vDEP, "VK_KHR_format_feature_flags2"))
 		return true;
 
-	// depends attribute in xml: VK_KHR_get_physical_device_properties2
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
 	return true;
 }
 

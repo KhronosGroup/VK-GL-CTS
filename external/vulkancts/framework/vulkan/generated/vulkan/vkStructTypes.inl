@@ -7423,6 +7423,13 @@ struct VkPhysicalDeviceRayTracingMotionBlurFeaturesNV
 	VkBool32		rayTracingMotionBlurPipelineTraceRaysIndirect;
 };
 
+struct VkPhysicalDeviceRayTracingValidationFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rayTracingValidation;
+};
+
 struct VkAccelerationStructureGeometryMotionTrianglesDataNV
 {
 	VkStructureType					sType;
@@ -9404,6 +9411,13 @@ struct VkMemoryMapPlacedInfoEXT
 	VkStructureType	sType;
 	const void*		pNext;
 	void*			pPlacedAddress;
+};
+
+struct VkPhysicalDeviceRawAccessChainsFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderRawAccessChains;
 };
 
 struct StdVideoH264SpsVuiFlags
