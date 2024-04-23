@@ -345,7 +345,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/vk_video_samples.git",
 		"git@github.com:Igalia/vk_video_samples.git",
-		"ce80453dadeea7b1a6409434f3358ef1e46e4ae7",
+		"6821adf11eb4f84a2168264b954c170d03237699",
 		"nvidia-video-samples"),
 ]
 
