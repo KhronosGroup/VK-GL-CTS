@@ -3277,24 +3277,24 @@ void testGenerator(tcu::TestCaseGroup *group)
             for (const auto &extent : extentCases)
             {
                 const TestParameters parameters = {
-                    true,                                 // bool                copyMemoryToImage
-                    true,                                 // bool                hostCopyImageToMemory
-                    true,                                 // bool                hostTransferLayout
-                    true,                                 // bool                outputImageHostTransition
-                    false,                                // bool                memcpyFlag
-                    false,                                // bool                dynamicRendering
-                    DRAW,                                 // Command            command
-                    sampledFormat,                        // VkFormat            imageSampledFormat
-                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout    srcLayout
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout    dstLayout
-                    VK_IMAGE_LAYOUT_GENERAL,              // VkImageLayout    intermediateLayout
-                    VK_IMAGE_TILING_OPTIMAL,              // VkImageTiling sampledTiling;
-                    outputFormat,                         // VkFormat            imageOutputFormat
-                    extent,                               // VkExtent3D        imageSize
-                    false,                                // bool                sparse
-                    0u,                                   // uint32_t            mipLevel
-                    1u,                                   // uint32_t            regionsCount
-                    0u,                                   // uint32_t            padding
+                    true,                    // bool          copyMemoryToImage
+                    true,                    // bool          hostCopyImageToMemory
+                    true,                    // bool          hostTransferLayout
+                    true,                    // bool          outputImageHostTransition
+                    false,                   // bool          memcpyFlag
+                    false,                   // bool          dynamicRendering
+                    DRAW,                    // Command       command
+                    sampledFormat,           // VkFormat      imageSampledFormat
+                    VK_IMAGE_LAYOUT_GENERAL, // VkImageLayout srcLayout
+                    VK_IMAGE_LAYOUT_GENERAL, // VkImageLayout dstLayout
+                    VK_IMAGE_LAYOUT_GENERAL, // VkImageLayout intermediateLayout
+                    VK_IMAGE_TILING_OPTIMAL, // VkImageTiling sampledTiling;
+                    outputFormat,            // VkFormat      imageOutputFormat
+                    extent,                  // VkExtent3D    imageSize
+                    false,                   // bool          sparse
+                    0u,                      // uint32_t      mipLevel
+                    1u,                      // uint32_t      regionsCount
+                    0u,                      // uint32_t      padding
                 };
 
                 const std::string testName = getFormatShortString(sampledFormat) + "_" + std::to_string(extent.height) +
