@@ -4020,12 +4020,19 @@ struct VkPhysicalDeviceCornerSampledImageFeaturesNV
 	VkBool32		cornerSampledImage;
 };
 
-struct VkPhysicalDeviceComputeShaderDerivativesFeaturesNV
+struct VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		computeDerivativeGroupQuads;
 	VkBool32		computeDerivativeGroupLinear;
+};
+
+struct VkPhysicalDeviceComputeShaderDerivativesPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		meshAndTaskShaderDerivatives;
 };
 
 struct VkPhysicalDeviceShaderImageFootprintFeaturesNV
@@ -11023,6 +11030,8 @@ typedef VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR VkPhysicalDeviceVertex
 typedef VkPhysicalDeviceDepthStencilResolveProperties VkPhysicalDeviceDepthStencilResolvePropertiesKHR;
 
 typedef VkSubpassDescriptionDepthStencilResolve VkSubpassDescriptionDepthStencilResolveKHR;
+
+typedef VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR VkPhysicalDeviceComputeShaderDerivativesFeaturesNV;
 
 typedef VkImageStencilUsageCreateInfo VkImageStencilUsageCreateInfoEXT;
 

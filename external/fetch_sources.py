@@ -317,9 +317,9 @@ PACKAGES = [
         "e7b5f0aa5b1b0eadc63a1c624c0ca7f5af133aa857d6a4271b0ef3d0bdb6868e",
         "renderdoc"),
     GitRepo(
-        "https://github.com/KhronosGroup/SPIRV-Tools.git",
-        "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "4c7e1fa5c3d988cca0e626d359d30b117b9c2822",
+        "https://gitlab.khronos.org/spirv/spirv-tools.git",
+        "git@gitlab.khronos.org:spirv/spirv-tools.git",
+        "926ad92e40fc8465f61ffda664e87e47b08322d5",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
@@ -328,14 +328,14 @@ PACKAGES = [
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
-        "https://github.com/KhronosGroup/SPIRV-Headers.git",
-        "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "db5a00f8cebe81146cafabf89019674a3c4bf03d",
+        "https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
+        "git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
+        "f08f815e67a074a7fd62319654d08a074482f533",
         "spirv-headers"),
     GitRepo(
-        "https://github.com/KhronosGroup/Vulkan-Docs.git",
-        "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "7bb606eb87cde1d34f65f36f4d4c6f2c78f072c8",
+        "https://gitlab.khronos.org/vulkan/vulkan.git",
+        "git@gitlab.khronos.org:vulkan/vulkan.git",
+        "a776ed0fd4bc89c2c3c2e24329b8b97cc9d74793",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",

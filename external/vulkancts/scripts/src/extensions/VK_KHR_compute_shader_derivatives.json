@@ -1,0 +1,21 @@
+{
+    "register_extension":
+        {
+            "type": "device",
+            "core": ""
+        },
+    "mandatory_features":
+        {
+            "VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR":
+                [
+                    {
+                        "features": [
+                            "computeDerivativeGroupLinear"
+                        ],
+                        "requirements": [
+                            "VK_KHR_compute_shader_derivatives"
+                        ]
+                    }
+                ]
+        }
+}

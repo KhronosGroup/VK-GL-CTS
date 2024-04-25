@@ -3337,6 +3337,18 @@ bool check_VK_KHR_cooperative_matrix(const tcu::UVec2& v, const ExtPropVect& vIE
 	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
 }
 
+bool check_VK_KHR_compute_shader_derivatives(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_compute_shader_derivatives"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 bool check_VK_KHR_video_decode_av1(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3805,6 +3817,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_dynamic_rendering_unused_attachments",			&check_VK_EXT_dynamic_rendering_unused_attachments),
 	std::make_pair("VK_NV_low_latency2",									&check_VK_NV_low_latency2),
 	std::make_pair("VK_KHR_cooperative_matrix",								&check_VK_KHR_cooperative_matrix),
+	std::make_pair("VK_KHR_compute_shader_derivatives",						&check_VK_KHR_compute_shader_derivatives),
 	std::make_pair("VK_KHR_video_decode_av1",								&check_VK_KHR_video_decode_av1),
 	std::make_pair("VK_KHR_video_maintenance1",								&check_VK_KHR_video_maintenance1),
 	std::make_pair("VK_NV_per_stage_descriptor_set",						&check_VK_NV_per_stage_descriptor_set),
@@ -4184,6 +4197,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_low_latency2"),
 	std::make_tuple(1, 0, "VK_KHR_cooperative_matrix"),
 	std::make_tuple(1, 0, "VK_QCOM_multiview_per_view_render_areas"),
+	std::make_tuple(1, 0, "VK_KHR_compute_shader_derivatives"),
 	std::make_tuple(1, 0, "VK_KHR_video_decode_av1"),
 	std::make_tuple(1, 0, "VK_KHR_video_maintenance1"),
 	std::make_tuple(1, 1, "VK_NV_per_stage_descriptor_set"),

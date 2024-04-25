@@ -131,6 +131,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceColorWriteEnableFeaturesEXT.pNext;
 	}
 
+	vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR physicalDeviceComputeShaderDerivativesFeaturesKHR;
+	deMemset(&physicalDeviceComputeShaderDerivativesFeaturesKHR, 0, sizeof(physicalDeviceComputeShaderDerivativesFeaturesKHR));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_compute_shader_derivatives") || canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_compute_shader_derivatives") )
+	{
+		physicalDeviceComputeShaderDerivativesFeaturesKHR.sType = getStructureType<VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR>();
+		*nextPtr = &physicalDeviceComputeShaderDerivativesFeaturesKHR;
+		nextPtr  = &physicalDeviceComputeShaderDerivativesFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT physicalDeviceConditionalRenderingFeaturesEXT;
 	deMemset(&physicalDeviceConditionalRenderingFeaturesEXT, 0, sizeof(physicalDeviceConditionalRenderingFeaturesEXT));
 
@@ -2244,6 +2254,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature bufferDeviceAddress not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_compute_shader_derivatives")) )
+	{
+		if ( physicalDeviceComputeShaderDerivativesFeaturesKHR.computeDerivativeGroupLinear == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature computeDerivativeGroupLinear not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

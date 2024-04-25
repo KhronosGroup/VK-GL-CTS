@@ -81,6 +81,7 @@ const vk::VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&	getExtendedSpa
 const vk::VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&		getLegacyVertexAttributesPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			getShaderCoreBuiltinsPropertiesARM			(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			getCooperativeMatrixProperties				(void) const;
+const vk::VkPhysicalDeviceComputeShaderDerivativesPropertiesKHR&	getComputeShaderDerivativesProperties		(void) const;
 const vk::VkPhysicalDeviceImageProcessing2PropertiesQCOM&			getImageProcessing2PropertiesQCOM			(void) const;
 const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		getVertexAttributeDivisorProperties			(void) const;
 const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&				getLayeredDriverPropertiesMSFT				(void) const;

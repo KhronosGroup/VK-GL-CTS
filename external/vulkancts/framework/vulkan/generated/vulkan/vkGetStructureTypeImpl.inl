@@ -1658,9 +1658,14 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceCornerSampledImageFe
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CORNER_SAMPLED_IMAGE_FEATURES_NV;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceComputeShaderDerivativesFeaturesNV> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_NV;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceComputeShaderDerivativesPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_PROPERTIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderImageFootprintFeaturesNV> (void)

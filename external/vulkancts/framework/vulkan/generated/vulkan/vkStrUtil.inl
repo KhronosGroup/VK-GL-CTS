@@ -1098,7 +1098,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineRepresentativeFragmen
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExclusiveScissorFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineViewportExclusiveScissorStateCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCornerSampledImageFeaturesNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceComputeShaderDerivativesFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceComputeShaderDerivativesPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderImageFootprintFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCopyMemoryIndirectFeaturesNV& value);

@@ -1618,7 +1618,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCornerSampledImageFeature
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestComputeShaderDerivativesFeaturesNV (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestComputeShaderDerivativesFeaturesKHR (Context& context)
 {
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
@@ -1643,14 +1643,14 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestComputeShaderDerivativesF
     const auto& extensionNames = context.getDeviceCreationExtensions();
     DE_UNREF(extensionNames); // In some cases this is not used.
 
-    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceComputeShaderDerivativesFeaturesNV>()))
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR>()))
     {
         static const Feature features[] =
         {
-        FEATURE_ITEM (VkPhysicalDeviceComputeShaderDerivativesFeaturesNV, computeDerivativeGroupQuads),
-        FEATURE_ITEM (VkPhysicalDeviceComputeShaderDerivativesFeaturesNV, computeDerivativeGroupLinear),
+        FEATURE_ITEM (VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR, computeDerivativeGroupQuads),
+        FEATURE_ITEM (VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR, computeDerivativeGroupLinear),
         };
-        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceComputeShaderDerivativesFeaturesNV*>(featuresStruct);
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR*>(featuresStruct);
         checkFeatures(vkp, instance, instanceDriver, physicalDevice, 2, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, isSubProcess, context.getUsedApiVersion(), commandLine);
     }
 
@@ -8402,7 +8402,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "representative_fragment_test_features_nv", createDeviceWithUnsupportedFeaturesTestRepresentativeFragmentTestFeaturesNV);
 	addFunctionCase(testGroup, "exclusive_scissor_features_nv", createDeviceWithUnsupportedFeaturesTestExclusiveScissorFeaturesNV);
 	addFunctionCase(testGroup, "corner_sampled_image_features_nv", createDeviceWithUnsupportedFeaturesTestCornerSampledImageFeaturesNV);
-	addFunctionCase(testGroup, "compute_shader_derivatives_features_nv", createDeviceWithUnsupportedFeaturesTestComputeShaderDerivativesFeaturesNV);
+	addFunctionCase(testGroup, "compute_shader_derivatives_features_khr", createDeviceWithUnsupportedFeaturesTestComputeShaderDerivativesFeaturesKHR);
 	addFunctionCase(testGroup, "shader_image_footprint_features_nv", createDeviceWithUnsupportedFeaturesTestShaderImageFootprintFeaturesNV);
 	addFunctionCase(testGroup, "dedicated_allocation_image_aliasing_features_nv", createDeviceWithUnsupportedFeaturesTestDedicatedAllocationImageAliasingFeaturesNV);
 	addFunctionCase(testGroup, "copy_memory_indirect_features_nv", createDeviceWithUnsupportedFeaturesTestCopyMemoryIndirectFeaturesNV);
