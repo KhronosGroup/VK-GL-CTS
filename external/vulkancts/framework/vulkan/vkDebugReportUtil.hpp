@@ -94,7 +94,7 @@ private:
 
 #endif // CTS_USES_VULKANSC
 
-bool isDebugReportSupported (const PlatformInterface& vkp);
+bool isDebugUtilsSupported (const PlatformInterface& vkp);
 
 } // vk
 
