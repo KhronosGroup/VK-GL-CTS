@@ -6,6 +6,7 @@
 static const VkConformanceVersion knownConformanceVersions[]
 {
 #ifndef CTS_USES_VULKANSC
+	makeConformanceVersion(1, 3, 8, 3),
 	makeConformanceVersion(1, 3, 8, 2),
 	makeConformanceVersion(1, 3, 8, 1),
 	makeConformanceVersion(1, 3, 8, 0),
@@ -20,8 +21,6 @@ static const VkConformanceVersion knownConformanceVersions[]
 	makeConformanceVersion(1, 3, 5, 2),
 	makeConformanceVersion(1, 3, 5, 1),
 	makeConformanceVersion(1, 3, 5, 0),
-	makeConformanceVersion(1, 3, 4, 1),
-	makeConformanceVersion(1, 3, 4, 0),
 #else
 	makeConformanceVersion(1, 0, 2, 0),
 	makeConformanceVersion(1, 0, 1, 1),
