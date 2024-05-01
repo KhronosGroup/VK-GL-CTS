@@ -28,7 +28,7 @@ import re
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
 sys.path.insert(0, scriptPath)
 
-from ctsbuild.common import DEQP_DIR, execute
+from ctsbuild.common import *
 from khr_util.format import writeInlFile
 
 VULKAN_HEADERS_INCLUDE_DIR	  = os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include")
@@ -93,6 +93,10 @@ def parseCmdLineArgs():
 						dest="outdir",
 						default="",
 						help="Choose output directory")
+	parser.add_argument("-v", "--verbose",
+						dest="verbose",
+						action="store_true",
+						help="Enable verbose logging")
 	return parser.parse_args()
 
 def getApiName (args):
@@ -102,6 +106,7 @@ def getApiName (args):
 
 if __name__ == "__main__":
 	args					= parseCmdLineArgs()
+	initializeLogger(args.verbose)
 
 	outputPath = DEFAULT_OUTPUT_DIR[args.api]
 	# if argument was specified it is interpreted as a path to which .inl file will be written

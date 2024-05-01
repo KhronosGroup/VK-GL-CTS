@@ -35,7 +35,7 @@ from lxml import etree
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
 sys.path.insert(0, scriptPath)
 
-from ctsbuild.common import DEQP_DIR, execute
+from ctsbuild.common import *
 from khr_util.format import indentLines, writeInlFile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "scripts"))
@@ -3832,7 +3832,13 @@ def writeGetDeviceProcAddr(api, filename):
 
 def writeConformanceVersions(filename):
 	# get list of all vulkan/vulkansc tags from git
-	listOfTags = os.popen("git ls-remote -t").read()
+	remote_urls = os.popen("git remote -v").read().split('\n')
+	remote_url = None
+	for line in remote_urls:
+		if "gerrit.khronos.org:29418/vk-gl-cts" in line:
+			remote_url = line.split()[1]
+			break
+	listOfTags = os.popen("git ls-remote -t %s" % (remote_url)).read()
 	vkMatches = re.findall("vulkan-cts-(\d).(\d).(\d).(\d)", listOfTags, re.M)
 	scMatches = re.findall("vulkansc-cts-(\d).(\d).(\d).(\d)", listOfTags, re.M)
 	if len(vkMatches) == 0 or len(scMatches) == 0:
@@ -3892,6 +3898,10 @@ def parseCmdLineArgs():
 						dest="outdir",
 						default="",
 						help="Choose output directory")
+	parser.add_argument("-v", "--verbose",
+						dest="verbose",
+						action="store_true",
+						help="Enable verbose logging")
 	return parser.parse_args()
 
 if __name__ == "__main__":
