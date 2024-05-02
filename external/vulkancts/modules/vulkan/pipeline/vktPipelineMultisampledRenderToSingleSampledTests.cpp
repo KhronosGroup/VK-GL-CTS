@@ -1859,6 +1859,8 @@ void checkRequirements (Context& context, TestParams params)
 			TCU_THROW(NotSupportedError, "Depth/stencil resolve mode not supported");
 		}
 	}
+
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 void checkHasMsrtss (Context& context, VkFormat)

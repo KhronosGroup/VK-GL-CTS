@@ -3,6 +3,7 @@ vk-main-2024-03-01/clipping.txt
 vk-main-2024-03-01/compute.txt
 vk-main-2024-03-01/descriptor-indexing.txt
 vk-main-2024-03-01/draw.txt
+vk-main-2024-03-01/dynamic-rendering.txt
 vk-main-2024-03-01/fragment-shading-rate.txt
 vk-main-2024-03-01/glsl.txt
 vk-main-2024-03-01/memory.txt
