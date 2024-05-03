@@ -164,6 +164,8 @@ protected:
     void populateLevels(const std::vector<tcu::PixelBufferAccess> &levels);
     void populateCompressedLevels(tcu::CompressedTexFormat format,
                                   const std::vector<tcu::PixelBufferAccess> &decompressedLevels);
+    void populateCompressedLevelsVoidExtent(tcu::CompressedTexFormat format,
+                                            const std::vector<tcu::PixelBufferAccess> &decompressedLevels);
 
     static void fillWithGradient(const tcu::PixelBufferAccess &levelAccess);
 
@@ -236,7 +238,7 @@ private:
 public:
     TestTexture2D(const tcu::TextureFormat &format, int width, int height);
     TestTexture2D(const tcu::TextureFormat &format, int width, int height, int miplevels);
-    TestTexture2D(const tcu::CompressedTexFormat &format, int width, int height);
+    TestTexture2D(const tcu::CompressedTexFormat &format, int width, int height, bool voidExtent = false);
     virtual ~TestTexture2D(void);
 
     virtual int getNumLevels(void) const;

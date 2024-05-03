@@ -127,6 +127,7 @@ struct Compressed2DTestParameters : public Texture2DTestCaseParameters
 {
     Compressed2DTestParameters(void);
     TextureBinding::ImageBackingMode backingMode;
+    bool voidExtent;
 };
 
 Compressed2DTestParameters::Compressed2DTestParameters(void) : backingMode(TextureBinding::IMAGE_BACKING_MODE_REGULAR)
@@ -155,8 +156,8 @@ Compressed2DTestInstance::Compressed2DTestInstance(Context &context, const Param
     : TestInstance(context)
     , m_testParameters(testParameters)
     , m_compressedFormat(mapVkCompressedFormat(testParameters.format))
-    , m_texture(
-          TestTexture2DSp(new pipeline::TestTexture2D(m_compressedFormat, testParameters.width, testParameters.height)))
+    , m_texture(TestTexture2DSp(new pipeline::TestTexture2D(m_compressedFormat, testParameters.width,
+                                                            testParameters.height, testParameters.voidExtent)))
     , m_renderer(context, testParameters.sampleCount, testParameters.width, testParameters.height)
 {
     m_renderer.add2DTexture(m_texture, testParameters.aspectMask, testParameters.backingMode);
@@ -575,11 +576,21 @@ void populateTextureCompressedFormatTests(tcu::TestCaseGroup *compressedTextureT
                 testParameters.magFilter   = tcu::Sampler::NEAREST;
                 testParameters.aspectMask  = VK_IMAGE_ASPECT_COLOR_BIT;
                 testParameters.programs.push_back(PROGRAM_2D_FLOAT);
-                testParameters.mipmaps = sizes[sizeNdx].mipmaps;
+                testParameters.mipmaps    = sizes[sizeNdx].mipmaps;
+                testParameters.voidExtent = false;
 
                 compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(
                     testCtx, (nameBase + "_2d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(),
                     testParameters));
+
+                if (tcu::isAstcFormat(mapVkCompressedFormat(testParameters.format)))
+                {
+                    testParameters.voidExtent = true;
+                    compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(
+                        testCtx,
+                        (nameBase + "_voidextent_2d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(),
+                        testParameters));
+                }
             }
 }
 

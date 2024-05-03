@@ -999,6 +999,28 @@ void TestTexture::populateCompressedLevels(tcu::CompressedTexFormat format,
     }
 }
 
+void TestTexture::populateCompressedLevelsVoidExtent(tcu::CompressedTexFormat format,
+                                                     const std::vector<tcu::PixelBufferAccess> &decompressedLevels)
+{
+    DE_ASSERT(tcu::isAstcFormat(format));
+
+    // Generate void extent block test data
+    for (size_t levelNdx = 0; levelNdx < decompressedLevels.size(); levelNdx++)
+    {
+        const tcu::PixelBufferAccess level = decompressedLevels[levelNdx];
+        std::vector<uint8_t> data;
+
+        tcu::astc::generateBlockCaseTestData(data, format, tcu::astc::BLOCK_TEST_TYPE_VOID_EXTENT_LDR);
+        tcu::CompressedTexture *compressedLevel =
+            new tcu::CompressedTexture(format, level.getWidth(), level.getHeight(), level.getDepth(), std::move(data));
+
+        m_compressedLevels.push_back(compressedLevel);
+
+        // Store decompressed data
+        compressedLevel->decompress(level, tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_LDR));
+    }
+}
+
 void TestTexture::fillWithGradient(const tcu::PixelBufferAccess &levelAccess)
 {
     const tcu::TextureFormatInfo formatInfo = tcu::getTextureFormatInfo(levelAccess.getFormat());
@@ -1164,12 +1186,22 @@ TestTexture2D::TestTexture2D(const tcu::TextureFormat &format, int width, int he
     TestTexture::populateLevels(getLevelsVector(m_texture));
 }
 
-TestTexture2D::TestTexture2D(const tcu::CompressedTexFormat &format, int width, int height)
+TestTexture2D::TestTexture2D(const tcu::CompressedTexFormat &format, int width, int height, bool voidExtent)
     : TestTexture(format, width, height, 1)
     , m_texture(tcu::getUncompressedFormat(format), width, height)
 {
     allocateLevels(m_texture);
-    TestTexture::populateCompressedLevels(format, getLevelsVector(m_texture));
+    const auto decompressedLevels = getLevelsVector(m_texture);
+
+    if (!voidExtent)
+    {
+        TestTexture::populateCompressedLevels(format, decompressedLevels);
+    }
+    else
+    {
+        DE_ASSERT(tcu::isAstcFormat(format));
+        TestTexture::populateCompressedLevelsVoidExtent(format, decompressedLevels);
+    }
 }
 
 TestTexture2D::~TestTexture2D(void)
