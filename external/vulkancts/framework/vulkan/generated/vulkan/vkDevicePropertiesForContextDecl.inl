@@ -78,6 +78,7 @@ const vk::VkPhysicalDeviceMaintenance5PropertiesKHR&				getMaintenance5Propertie
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				getShaderObjectPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	getRayTracingInvocationReorderProperties	(void) const;
 const vk::VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&	getExtendedSparseAddressSpacePropertiesNV	(void) const;
+const vk::VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&		getLegacyVertexAttributesPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			getShaderCoreBuiltinsPropertiesARM			(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			getCooperativeMatrixProperties				(void) const;
 const vk::VkPhysicalDeviceImageProcessing2PropertiesQCOM&			getImageProcessing2PropertiesQCOM			(void) const;

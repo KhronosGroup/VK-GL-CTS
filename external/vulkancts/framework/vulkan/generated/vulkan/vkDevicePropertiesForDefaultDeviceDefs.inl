@@ -78,6 +78,7 @@ const VkPhysicalDeviceMaintenance5PropertiesKHR&				getMaintenance5Properties			
 const VkPhysicalDeviceShaderObjectPropertiesEXT&				getShaderObjectPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderObjectPropertiesEXT>();					}
 const VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	getRayTracingInvocationReorderProperties	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV>();	}
 const VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&	getExtendedSparseAddressSpacePropertiesNV	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV>();		}
+const VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&		getLegacyVertexAttributesPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT>();		}
 const VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			getShaderCoreBuiltinsPropertiesARM			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM>();			}
 const VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			getCooperativeMatrixProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCooperativeMatrixPropertiesKHR>();				}
 const VkPhysicalDeviceImageProcessing2PropertiesQCOM&			getImageProcessing2PropertiesQCOM			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceImageProcessing2PropertiesQCOM>();				}
