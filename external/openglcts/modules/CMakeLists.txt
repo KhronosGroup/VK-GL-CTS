@@ -59,7 +59,7 @@ set(GLCTS_LIBS
 add_deqp_module(glcts "${GLCTS_SRCS}" "${GLCTS_LIBS}" "tcutil-platform" glcTestPackageEntry.cpp)
 
 # Data directories
-add_data_dir(glcts ../data gl_cts/data)
+add_data_dir(glcts ../data/gl_cts gl_cts)
 add_data_dir(glcts ../../../data/gles2 gles2)
 add_data_dir(glcts ../../../data/gles3 gles3)
 add_data_dir(glcts ../../../external/graphicsfuzz/data/gles3 gles3)

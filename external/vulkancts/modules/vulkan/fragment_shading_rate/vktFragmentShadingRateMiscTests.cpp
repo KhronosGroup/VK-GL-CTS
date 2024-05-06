@@ -212,8 +212,8 @@ tcu::TestStatus testEnableDisable (Context& context)
 	// Adjust image extent to an acceptable range so it's covered by a single FSR attachment pixel.
 	auto				vkExtent		= getDefaultExtent();
 	{
-		de::clamp(vkExtent.width,	minSize.width,	maxSize.width);
-		de::clamp(vkExtent.height,	minSize.height,	maxSize.height);
+		vkExtent.width	= de::clamp(vkExtent.width,		minSize.width,	maxSize.width);
+		vkExtent.height = de::clamp(vkExtent.height,	minSize.height,	maxSize.height);
 	}
 	const tcu::IVec3	fbExtent		(static_cast<int>(vkExtent.width), static_cast<int>(vkExtent.height), static_cast<int>(vkExtent.depth));
 

@@ -124,7 +124,7 @@ void checkSupport (Context& context, ConditionalTestSpec testSpec)
 	context.requireDeviceFunctionality("VK_EXT_transform_feedback");
 
 	if (context.getConditionalRenderingFeaturesEXT().conditionalRendering == VK_FALSE)
-		TCU_FAIL("conditionalRendering feature not supported");
+		TCU_THROW(NotSupportedError, "conditionalRendering feature not supported");
 
 	if (testSpec.command == DRAW_COMMAND_TYPE_DRAW_INDIRECT_COUNT || testSpec.command == DRAW_COMMAND_TYPE_DRAW_INDEXED_INDIRECT_COUNT)
 		context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
@@ -133,9 +133,9 @@ void checkSupport (Context& context, ConditionalTestSpec testSpec)
 		context.requireDeviceFunctionality("VK_EXT_multi_draw");
 
 	if (context.getTransformFeedbackPropertiesEXT().transformFeedbackDraw == VK_FALSE)
-		TCU_FAIL("transformFeedbackDraw feature not supported");
+		TCU_THROW(NotSupportedError, "transformFeedbackDraw feature not supported");
 	if (context.getTransformFeedbackPropertiesEXT().maxTransformFeedbackBuffers < 4)
-		TCU_FAIL("maxTransformFeedbackBuffers is less than required");
+		TCU_THROW(NotSupportedError, "maxTransformFeedbackBuffers is less than required");
 }
 
 ConditionalTransformFeedbackDraw::ConditionalTransformFeedbackDraw (Context &context, ConditionalTestSpec testSpec)

@@ -35,6 +35,7 @@
 #include "deUniquePtr.hpp"
 
 #include <sstream>
+#include <cmath>
 
 namespace dit
 {
@@ -1315,7 +1316,7 @@ bool componentEqual (T a, T b)
 template<>
 bool componentEqual<float> (float a, float b)
 {
-	return (a == b) || (deFloatIsNaN(a) && deFloatIsNaN(b));
+	return (a == b) || (std::isnan(a) && std::isnan(b));
 }
 
 template<typename T, int Size>

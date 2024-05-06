@@ -1004,43 +1004,6 @@ VkVideoReferenceSlotInfoKHR makeVideoReferenceSlot(deInt32 slotIndex, const VkVi
 // Vulkan video is not supported on android platform
 // all external libraries, helper functions and test instances has been excluded
 #ifdef DE_BUILD_VIDEO
-void absDiff(const std::vector<deUint8> *src1, const std::vector<deUint8> *src2, std::vector<deUint8> *dst)
-{
-	if (src1->size() != src2->size())
-	{
-		TCU_THROW(InternalError, "Input and output YUVs have different sizes");
-	}
-
-	dst->resize(src1->size());
-
-	for (size_t i = 0; i < src1->size(); i++)
-	{
-		int diff = static_cast<int>((*src1)[i]) - static_cast<int>((*src2)[i]);
-		(*dst)[i] = static_cast<deUint8>(std::abs(diff));
-	}
-}
-
-double calculatePSNR(const std::vector<deUint8> *img1, const std::vector<deUint8> *img2)
-{
-	// First, get the absolute difference
-	std::vector<deUint8> diff;
-	absDiff(img1, img2, &diff);
-
-	// Calculate the mean square error
-	double mse = 0.0;
-	for (const auto &val : diff)
-	{
-		mse += val * val;
-	}
-
-	DE_ASSERT(diff.size() > 0);
-	mse /= static_cast<double>(diff.size());
-	DE_ASSERT(mse != 0);
-	// Use the MSE to calculate the PSNR
-	return 10.0 * log10((255.0 * 255.0) / mse);
-}
-
-
 
 static shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, const VkVideoCoreProfile *profile, size_t framesToCheck, bool resolutionChange)
 {
@@ -2162,26 +2125,17 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 	auto decodeProfile = VkVideoCoreProfile(videoCodecDecodeOperation, VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR, VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR, VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR, profileIdc);
 	auto basicDecoder = createBasicDecoder(&deviceContext, &decodeProfile, m_testDefinition->framesToCheck(), resolutionChange);
 
-	const VkExtensionProperties h264DecodeStdExtension	= {VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION};
-	const VkExtensionProperties h265DecodeStdExtension	= {VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION};
-
-	const VkExtensionProperties decodeStdExtension		= m_testDefinition->getProfile()->IsH264() ? h264DecodeStdExtension : h265DecodeStdExtension;
-
 	Demuxer::Params demuxParams = {};
-	std::string encodedBufferString(reinterpret_cast<char *>(encodeBuffer.getAllocation().getHostPtr()
-), encodeBufferSize);
-
-	std::istringstream iss(encodedBufferString, std::ios::binary);
-	demuxParams.data = std::make_unique<BufferedReader>(iss);
+	demuxParams.data = std::make_unique<BufferedReader>(static_cast<const char*>(encodeBuffer.getAllocation().getHostPtr()), encodeBufferSize);
 	demuxParams.codecOperation = videoCodecDecodeOperation;
 	demuxParams.framing = ElementaryStreamFraming::H26X_BYTE_STREAM;
 	auto demuxer = Demuxer::create(std::move(demuxParams));
 	VkVideoParser parser;
-	createParser(demuxer->codecOperation(), &decodeStdExtension, basicDecoder, parser, demuxer->framing());
+	// TODO: Check for decoder extension support before attempting validation!
+	createParser(demuxer->codecOperation(), basicDecoder, parser, demuxer->framing());
 
 	FrameProcessor processor(
 		std::move(demuxer),
-		parser,
 		basicDecoder
 	);
 	std::vector<int> incorrectFrames;
@@ -2199,9 +2153,7 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 		const string outputFileName = "out_" + std::to_string(NALIdx) + ".yuv";
 		saveYUVfile(out, outputFileName);
 #endif
-		std::vector<deUint8> *inRef = inVector[NALIdx].get();
-
-		double psnr = calculatePSNR(inRef, out.get());
+		double psnr = util::PSNR(*inVector[NALIdx], *out);
 
 		double higherPsnrThreshold		= 30.0;
 		double lowerPsnrThreshold		= 20.0;

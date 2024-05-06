@@ -1485,7 +1485,8 @@ FboSRGBQueryCase::~FboSRGBQueryCase (void)
 void FboSRGBQueryCase::init (void)
 {
 	// extension requirements for test
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_sRGB_write_control"))
+	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_sRGB_write_control") &&
+        !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)))
 		TCU_THROW(NotSupportedError, "Test requires extension GL_EXT_sRGB_write_control");
 }
 

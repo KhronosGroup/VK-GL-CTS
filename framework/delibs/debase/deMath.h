@@ -62,14 +62,6 @@ void				deMath_selfTest		(void);
 
 /* Float properties */
 
-/* \note The NaN test probably won't work with -ffast-math */
-
-DE_INLINE int		deFloatIsInf		(float x)		{ return (x > FLT_MAX) - (x < -FLT_MAX); }
-DE_INLINE deBool	deFloatIsNaN		(float x)		{ return (x != x); }
-
-DE_INLINE int		deIsInf				(double x)		{ return (x > DBL_MAX) - (x < -DBL_MAX); }
-DE_INLINE deBool	deIsNaN				(double x)		{ return (x != x); }
-
 DE_INLINE deUint32 deFloatBitsToUint32(float x)
 {
 	deUint32 bits;
@@ -174,7 +166,7 @@ DE_INLINE float		deFloatLdExp		(float a, int exponent)		{ return (float)ldexp(a,
 DE_INLINE float		deFloatFrExp		(float x, int* exponent)	{ return (float)frexp(x, exponent); }
 float				deFloatFractExp		(float x, int* exponent);
 
-DE_INLINE double	deSign				(double x)						{ return deIsNaN(x) ? x : (double)((x > 0.0) - (x < 0.0)); }
+DE_INLINE double	deSign				(double x)						{ return isnan(x) ? x : (double)((x > 0.0) - (x < 0.0)); }
 DE_INLINE int		deIntSign			(double x)						{ return (x > 0.0) - (x < 0.0); }
 DE_INLINE double	deFloor				(double a)						{ return floor(a); }
 DE_INLINE double	deCeil				(double a)						{ return ceil(a); }

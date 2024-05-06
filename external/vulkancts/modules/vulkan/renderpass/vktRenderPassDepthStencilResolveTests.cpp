@@ -1318,6 +1318,11 @@ struct Programs
 	}
 };
 
+void checkSupport(Context& context)
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+}
+
 enum class MiscTestType
 {
 	PROPERTIES									= 0,
@@ -1797,7 +1802,7 @@ TestInstance* MiscTestCase::createInstance(Context& context) const
 
 void initTests (tcu::TestCaseGroup* group)
 {
-	typedef InstanceFactory1<DepthStencilResolveTest, TestConfig, Programs> DSResolveTestInstance;
+	typedef InstanceFactory1WithSupport<DepthStencilResolveTest, TestConfig, FunctionSupport0, Programs> DSResolveTestInstance;
 
 	struct FormatData
 	{
@@ -1996,7 +2001,7 @@ void initTests (tcu::TestCaseGroup* group)
 										tcu::Nothing,
 										false
 									};
-									formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testConfig));
+									formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testConfig, checkSupport));
 
 									if (sampleCountNdx == 0 && imageDataNdx == 0 && dResolve.flag != VK_RESOLVE_MODE_NONE)
 									{
@@ -2008,7 +2013,7 @@ void initTests (tcu::TestCaseGroup* group)
 											TestConfig compatibilityTestConfig			= testConfig;
 											compatibilityTestConfig.compatibleFormat	= tcu::just(compatibleFormat);
 
-											formatGroup->addChild(new DSResolveTestInstance(testCtx, compatibilityTestName.c_str(), compatibilityTestConfig));
+											formatGroup->addChild(new DSResolveTestInstance(testCtx, compatibilityTestName.c_str(), compatibilityTestConfig, checkSupport));
 										}
 									}
 								}
@@ -2040,14 +2045,14 @@ void initTests (tcu::TestCaseGroup* group)
 										tcu::Nothing,
 										false
 									};
-									formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testConfig));
+									formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testConfig, checkSupport));
 
 									if (dResolve.flag == VK_RESOLVE_MODE_SAMPLE_ZERO_BIT)
 									{
 										std::string samplemaskTestName = name + "_samplemask";
 										TestConfig samplemaskTestConfig = testConfig;
 										samplemaskTestConfig.sampleMask = true;
-										formatGroup->addChild(new DSResolveTestInstance(testCtx, samplemaskTestName.c_str(), samplemaskTestConfig));
+										formatGroup->addChild(new DSResolveTestInstance(testCtx, samplemaskTestName.c_str(), samplemaskTestConfig, checkSupport));
 									}
 
 									// All formats with stencil and depth aspects have incompatible formats and sizes in the depth
@@ -2059,7 +2064,7 @@ void initTests (tcu::TestCaseGroup* group)
 										TestConfig compatibilityTestConfig			= testConfig;
 										compatibilityTestConfig.compatibleFormat	= tcu::just(VK_FORMAT_S8_UINT);
 
-										formatGroup->addChild(new DSResolveTestInstance(testCtx, compatibilityTestName.c_str(), compatibilityTestConfig));
+										formatGroup->addChild(new DSResolveTestInstance(testCtx, compatibilityTestName.c_str(), compatibilityTestConfig, checkSupport));
 									}
 								}
 							}
@@ -2157,7 +2162,7 @@ void initTests (tcu::TestCaseGroup* group)
 									tcu::Nothing,
 									false
 								};
-								formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testConfig));
+								formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testConfig, checkSupport));
 							}
 
 							// there is no average resolve mode for stencil - go to next iteration
@@ -2191,7 +2196,7 @@ void initTests (tcu::TestCaseGroup* group)
 									tcu::Nothing,
 									false
 								};
-								formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testConfig));
+								formatGroup->addChild(new DSResolveTestInstance(testCtx, testName, testConfig, checkSupport));
 							}
 						}
 					}

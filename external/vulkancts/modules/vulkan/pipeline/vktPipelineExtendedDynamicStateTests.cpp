@@ -182,6 +182,8 @@ std::string topologyClassName (TopologyClass tclass)
 class VertexGenerator
 {
 public:
+	virtual ~VertexGenerator () {}
+
 	// Some generators may need specific features.
 	virtual void													checkSupport (Context&) const {}
 
@@ -311,21 +313,21 @@ protected:
 	};
 
 public:
-	virtual std::vector<std::string> getAttributeDeclarations() const override
+	std::vector<std::string> getAttributeDeclarations() const override
 	{
 		std::vector<std::string> declarations;
 		declarations.push_back("layout(location=0) in vec2 position;");
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getVertexCoordCalc() const override
+	std::vector<std::string> getVertexCoordCalc() const override
 	{
 		std::vector<std::string> statements;
 		statements.push_back("vec2 vertexCoords = position;");
 		return statements;
 	}
 
-	virtual std::vector<std::string> getDescriptorDeclarations() const override
+	std::vector<std::string> getDescriptorDeclarations() const override
 	{
 		std::vector<std::string> declarations;
 		declarations.reserve(7u);
@@ -339,7 +341,7 @@ public:
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
+	std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
 	{
 		std::vector<std::string> statements;
 
@@ -370,7 +372,7 @@ public:
 		return statements;
 	}
 
-	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
+	std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
 	{
 		std::vector<vk::VkVertexInputAttributeDescription> descriptions;
 		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
@@ -378,7 +380,7 @@ public:
 	}
 
 	// Vertex attributes for VK_EXT_vertex_input_dynamic_state.
-	virtual std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
+	std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
 	{
 		std::vector<vk::VkVertexInputAttributeDescription2EXT> descriptions;
 		descriptions.push_back(makeVertexInputAttributeDescription2EXT(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
@@ -386,7 +388,7 @@ public:
 	}
 
 	// Vertex bindings for VkPipelineVertexInputStateCreateInfo.
-	virtual std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
+	std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
 	{
 		std::vector<vk::VkVertexInputBindingDescription> descriptions;
 		descriptions.push_back(vk::makeVertexInputBindingDescription(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
@@ -394,19 +396,19 @@ public:
 	}
 
 	// Vertex bindings for VK_EXT_vertex_input_dynamic_state.
-	virtual std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
+	std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
 	{
 		std::vector<vk::VkVertexInputBindingDescription2EXT> descriptions;
 		descriptions.push_back(makeVertexInputBindingDescription2EXT(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
 		return descriptions;
 	}
 
-	virtual std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
+	std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
 	{
 		return std::vector<std::vector<deUint8>>(1u, createSingleBindingVertexData<VertexData>(coords, dataOffset, trailingPadding, paddingPattern, patternSize));
 	}
 
-	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
+	std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
 	{
 		return std::vector<vk::VkDeviceSize>(1u, static_cast<vk::VkDeviceSize>(sizeof(VertexData)));
 	}
@@ -428,7 +430,7 @@ protected:
 	};
 
 public:
-	virtual void checkSupport (Context& context) const override
+	void checkSupport (Context& context) const override
 	{
 		// We need shaderFloat16 and storageInputOutput16.
 		const auto& sf16i8Features = context.getShaderFloat16Int8Features();
@@ -440,28 +442,28 @@ public:
 			TCU_THROW(NotSupportedError, "storageInputOutput16 not supported");
 	}
 
-	virtual std::vector<std::string> getGLSLExtensions() const override
+	std::vector<std::string> getGLSLExtensions() const override
 	{
 		std::vector<std::string> extensions;
 		extensions.push_back("#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require");
 		return extensions;
 	}
 
-	virtual std::vector<std::string> getAttributeDeclarations() const override
+	std::vector<std::string> getAttributeDeclarations() const override
 	{
 		std::vector<std::string> declarations;
 		declarations.push_back("layout(location=0) in f16vec2 position;");
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getVertexCoordCalc() const override
+	std::vector<std::string> getVertexCoordCalc() const override
 	{
 		std::vector<std::string> statements;
 		statements.push_back("f16vec2 vertexCoords = position;");
 		return statements;
 	}
 
-	virtual std::vector<std::string> getDescriptorDeclarations() const override
+	std::vector<std::string> getDescriptorDeclarations() const override
 	{
 		std::vector<std::string> declarations;
 		declarations.reserve(7u);
@@ -475,7 +477,7 @@ public:
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
+	std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
 	{
 		std::vector<std::string> statements;
 
@@ -506,7 +508,7 @@ public:
 		return statements;
 	}
 
-	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
+	std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
 	{
 		std::vector<vk::VkVertexInputAttributeDescription> descriptions;
 		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R16G16_SFLOAT, 0u));
@@ -514,7 +516,7 @@ public:
 	}
 
 	// Vertex attributes for VK_EXT_vertex_input_dynamic_state.
-	virtual std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
+	std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
 	{
 		std::vector<vk::VkVertexInputAttributeDescription2EXT> descriptions;
 		descriptions.push_back(makeVertexInputAttributeDescription2EXT(0u, 0u, vk::VK_FORMAT_R16G16_SFLOAT, 0u));
@@ -522,7 +524,7 @@ public:
 	}
 
 	// Vertex bindings for VkPipelineVertexInputStateCreateInfo.
-	virtual std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
+	std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
 	{
 		std::vector<vk::VkVertexInputBindingDescription> descriptions;
 		descriptions.push_back(vk::makeVertexInputBindingDescription(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
@@ -530,19 +532,19 @@ public:
 	}
 
 	// Vertex bindings for VK_EXT_vertex_input_dynamic_state.
-	virtual std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
+	std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
 	{
 		std::vector<vk::VkVertexInputBindingDescription2EXT> descriptions;
 		descriptions.push_back(makeVertexInputBindingDescription2EXT(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
 		return descriptions;
 	}
 
-	virtual std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
+	std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
 	{
 		return std::vector<std::vector<deUint8>>(1u, createSingleBindingVertexData<VertexData>(coords, dataOffset, trailingPadding, paddingPattern, patternSize));
 	}
 
-	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
+	std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
 	{
 		return std::vector<vk::VkDeviceSize>(1u, static_cast<vk::VkDeviceSize>(sizeof(VertexData)));
 	}
@@ -567,7 +569,7 @@ protected:
 	};
 
 public:
-	virtual std::vector<std::string> getAttributeDeclarations() const override
+	std::vector<std::string> getAttributeDeclarations() const override
 	{
 		std::vector<std::string> declarations;
 		declarations.push_back("layout(location=0) in vec2 position;");
@@ -575,26 +577,26 @@ public:
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getVertexCoordCalc() const override
+	std::vector<std::string> getVertexCoordCalc() const override
 	{
 		std::vector<std::string> statements;
 		statements.push_back("vec2 vertexCoords = vec2(position.x, position.y * scaleAndOffsetY.x + scaleAndOffsetY.y);");
 		return statements;
 	}
 
-	virtual std::vector<std::string> getDescriptorDeclarations() const override
+	std::vector<std::string> getDescriptorDeclarations() const override
 	{
 		DE_ASSERT(false); // This vertex generator should not be used with mesh shaders.
 		return std::vector<std::string>();
 	}
 
-	virtual std::vector<std::string> getDescriptorCoordCalc(TopologyClass) const override
+	std::vector<std::string> getDescriptorCoordCalc(TopologyClass) const override
 	{
 		DE_ASSERT(false); // This vertex generator should not be used with mesh shaders.
 		return std::vector<std::string>();
 	}
 
-	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
+	std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
 	{
 		std::vector<vk::VkVertexInputAttributeDescription> descriptions;
 		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
@@ -603,7 +605,7 @@ public:
 	}
 
 	// Vertex attributes for VK_EXT_vertex_input_dynamic_state.
-	virtual std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
+	std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
 	{
 		std::vector<vk::VkVertexInputAttributeDescription2EXT> descriptions;
 		descriptions.push_back(makeVertexInputAttributeDescription2EXT(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
@@ -612,7 +614,7 @@ public:
 	}
 
 	// Vertex bindings for VkPipelineVertexInputStateCreateInfo.
-	virtual std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
+	std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
 	{
 		std::vector<vk::VkVertexInputBindingDescription> descriptions;
 		descriptions.push_back(vk::makeVertexInputBindingDescription(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
@@ -621,7 +623,7 @@ public:
 	}
 
 	// Vertex bindings for VK_EXT_vertex_input_dynamic_state.
-	virtual std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
+	std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
 	{
 		std::vector<vk::VkVertexInputBindingDescription2EXT> descriptions;
 		descriptions.push_back(makeVertexInputBindingDescription2EXT(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
@@ -629,7 +631,7 @@ public:
 		return descriptions;
 	}
 
-	virtual std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
+	std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
 	{
 		// Instance data for 2 instances. Scale and offset like we do with push constants.
 		const std::vector<tcu::Vec2> instanceIds
@@ -646,7 +648,7 @@ public:
 		return buffers;
 	}
 
-	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
+	std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
 	{
 		std::vector<vk::VkDeviceSize> strides;
 		strides.reserve(2u);
@@ -668,21 +670,21 @@ public:
 		: m_lastVertex (lastVertex)
 	{}
 
-	virtual std::vector<std::string> getAttributeDeclarations() const override
+	std::vector<std::string> getAttributeDeclarations() const override
 	{
 		auto declarations = VertexWithPadding::getAttributeDeclarations();
 		declarations.push_back("layout(location=0) flat out uint colorMultiplier;");
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getDescriptorDeclarations() const override
+	std::vector<std::string> getDescriptorDeclarations() const override
 	{
 		auto declarations = VertexWithPadding::getDescriptorDeclarations();
 		declarations.push_back("layout(location=0) flat out uint colorMultiplier[];");
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getVertexCoordCalc() const override
+	std::vector<std::string> getVertexCoordCalc() const override
 	{
 		auto statements = VertexWithPadding::getVertexCoordCalc();
 		statements.push_back("const bool provokingLast = " + std::string(m_lastVertex ? "true" : "false") + ";");
@@ -690,7 +692,7 @@ public:
 		return statements;
 	}
 
-	virtual std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
+	std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
 	{
 		auto statements = VertexWithPadding::getDescriptorCoordCalc(topology);
 		statements.push_back("const bool provokingLast = " + std::string(m_lastVertex ? "true" : "false") + ";");
@@ -698,7 +700,7 @@ public:
 		return statements;
 	}
 
-	virtual std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
+	std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
 	{
 		static constexpr uint32_t kExpectecdCoordCount = 3u;
 		DE_UNREF(kExpectecdCoordCount); // For release builds.
@@ -706,14 +708,14 @@ public:
 		return VertexWithPadding::createVertexData(coords, dataOffset, trailingPadding, paddingPattern, patternSize);
 	}
 
-	virtual std::vector<std::string> getFragInputAttributes() const override
+	std::vector<std::string> getFragInputAttributes() const override
 	{
 		std::vector<std::string> declarations;
 		declarations.push_back("layout(location=0) flat in uint colorMultiplier;");
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getFragOutputCalc() const override
+	std::vector<std::string> getFragOutputCalc() const override
 	{
 		std::vector<std::string> statements;
 		statements.push_back("color = color * float(colorMultiplier);");
@@ -740,7 +742,7 @@ protected:
 	};
 
 public:
-	virtual std::vector<std::string> getAttributeDeclarations() const override
+	std::vector<std::string> getAttributeDeclarations() const override
 	{
 		std::vector<std::string> declarations;
 		declarations.reserve(2u);
@@ -749,7 +751,7 @@ public:
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getVertexCoordCalc() const override
+	std::vector<std::string> getVertexCoordCalc() const override
 	{
 		std::vector<std::string> statements;
 		statements.reserve(2u);
@@ -758,7 +760,7 @@ public:
 		return statements;
 	}
 
-	virtual std::vector<std::string> getDescriptorDeclarations() const override
+	std::vector<std::string> getDescriptorDeclarations() const override
 	{
 		std::vector<std::string> declarations;
 		declarations.reserve(8u);
@@ -773,7 +775,7 @@ public:
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
+	std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
 	{
 		std::vector<std::string> statements;
 
@@ -808,7 +810,7 @@ public:
 		return statements;
 	}
 
-	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
+	std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
 	{
 		std::vector<vk::VkVertexInputAttributeDescription> descriptions;
 		descriptions.push_back(vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
@@ -816,7 +818,7 @@ public:
 		return descriptions;
 	}
 
-	virtual std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
+	std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
 	{
 		std::vector<vk::VkVertexInputAttributeDescription2EXT> descriptions;
 		descriptions.push_back(makeVertexInputAttributeDescription2EXT(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u));
@@ -824,26 +826,26 @@ public:
 		return descriptions;
 	}
 
-	virtual std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
+	std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
 	{
 		std::vector<vk::VkVertexInputBindingDescription> descriptions;
 		descriptions.push_back(vk::makeVertexInputBindingDescription(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
 		return descriptions;
 	}
 
-	virtual std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
+	std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
 	{
 		std::vector<vk::VkVertexInputBindingDescription2EXT> descriptions;
 		descriptions.push_back(makeVertexInputBindingDescription2EXT(0u, static_cast<deUint32>(strides.at(0)), vk::VK_VERTEX_INPUT_RATE_VERTEX));
 		return descriptions;
 	}
 
-	virtual std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
+	std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
 	{
 		return std::vector<std::vector<deUint8>>(1u, createSingleBindingVertexData<VertexData>(coords, dataOffset, trailingPadding, paddingPattern, patternSize));
 	}
 
-	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
+	std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
 	{
 		return std::vector<vk::VkDeviceSize>(1u, static_cast<vk::VkDeviceSize>(sizeof(VertexData)));
 	}
@@ -907,7 +909,7 @@ protected:
 	};
 
 public:
-	virtual std::vector<std::string> getAttributeDeclarations() const override
+	std::vector<std::string> getAttributeDeclarations() const override
 	{
 		std::vector<std::string> declarations;
 		declarations.reserve(3u);
@@ -919,7 +921,7 @@ public:
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getVertexCoordCalc() const override
+	std::vector<std::string> getVertexCoordCalc() const override
 	{
 		std::vector<std::string> statements;
 		statements.reserve(2u);
@@ -930,7 +932,7 @@ public:
 		return statements;
 	}
 
-	virtual std::vector<std::string> getDescriptorDeclarations() const override
+	std::vector<std::string> getDescriptorDeclarations() const override
 	{
 		std::vector<std::string> declarations;
 		declarations.reserve(23u);
@@ -962,7 +964,7 @@ public:
 		return declarations;
 	}
 
-	virtual std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
+	std::vector<std::string> getDescriptorCoordCalc(TopologyClass topology) const override
 	{
 		std::vector<std::string> statements;
 
@@ -1001,7 +1003,7 @@ public:
 		return statements;
 	}
 
-	virtual std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
+	std::vector<vk::VkVertexInputAttributeDescription> getAttributeDescriptions() const override
 	{
 		// We create the descriptions vector out of order to make it more interesting. See the attribute declarations.
 		std::vector<vk::VkVertexInputAttributeDescription> descriptions;
@@ -1014,7 +1016,7 @@ public:
 		return descriptions;
 	}
 
-	virtual std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
+	std::vector<vk::VkVertexInputAttributeDescription2EXT> getAttributeDescriptions2() const override
 	{
 		// We create the descriptions vector out of order to make it more interesting. See the attribute declarations.
 		std::vector<vk::VkVertexInputAttributeDescription2EXT> descriptions;
@@ -1027,7 +1029,7 @@ public:
 		return descriptions;
 	}
 
-	virtual std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
+	std::vector<vk::VkVertexInputBindingDescription> getBindingDescriptions(const StrideVec& strides) const override
 	{
 		// Provide descriptions out of order to make it more interesting.
 		std::vector<vk::VkVertexInputBindingDescription> descriptions;
@@ -1043,7 +1045,7 @@ public:
 		return descriptions;
 	}
 
-	virtual std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
+	std::vector<vk::VkVertexInputBindingDescription2EXT> getBindingDescriptions2(const StrideVec& strides) const override
 	{
 		// Provide descriptions out of order to make it more interesting.
 		std::vector<vk::VkVertexInputBindingDescription2EXT> descriptions;
@@ -1059,7 +1061,7 @@ public:
 		return descriptions;
 	}
 
-	virtual std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
+	std::vector<std::vector<deUint8>> createVertexData (const std::vector<tcu::Vec2>& coords, vk::VkDeviceSize dataOffset, vk::VkDeviceSize trailingPadding, const void* paddingPattern, size_t patternSize) const override
 	{
 		std::vector<std::vector<deUint8>> result;
 		result.reserve(6u);
@@ -1074,7 +1076,7 @@ public:
 		return result;
 	}
 
-	virtual std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
+	std::vector<vk::VkDeviceSize> getVertexDataStrides() const override
 	{
 		std::vector<vk::VkDeviceSize> strides;
 		strides.reserve(6u);
@@ -1412,6 +1414,7 @@ class ReferenceColorGenerator
 {
 public:
 	typedef std::unique_ptr<ReferenceColorGenerator> P;
+	virtual ~ReferenceColorGenerator () {}
 
 	virtual void	operator()	(tcu::PixelBufferAccess&)	const = 0;
 	virtual P		clone		()							const = 0;
@@ -2979,6 +2982,8 @@ vk::VkImageCreateInfo makeImageCreateInfo (vk::VkFormat format, vk::VkExtent3D e
 	return imageCreateInfo;
 }
 
+using TestConfigSharedPtr = de::SharedPtr<TestConfig>;
+
 class ExtendedDynamicStateTest : public vkt::TestCase
 {
 public:
@@ -2990,24 +2995,27 @@ public:
 	virtual TestInstance*	createInstance					(Context& context) const;
 
 private:
-	TestConfig				m_testConfig;
+	const TestConfigSharedPtr m_testConfigPtr;
+	TestConfig&               m_testConfig;
 };
 
 class ExtendedDynamicStateInstance : public vkt::TestInstance
 {
 public:
-								ExtendedDynamicStateInstance	(Context& context, const TestConfig& testConfig);
+								ExtendedDynamicStateInstance	(Context& context, const TestConfigSharedPtr& testConfig);
 	virtual						~ExtendedDynamicStateInstance	(void) {}
 
 	virtual tcu::TestStatus		iterate							(void);
 
 private:
-	TestConfig					m_testConfig;
+	const TestConfigSharedPtr m_testConfigPtr;
+	TestConfig&               m_testConfig;
 };
 
 ExtendedDynamicStateTest::ExtendedDynamicStateTest (tcu::TestContext& testCtx, const std::string& name, const TestConfig& testConfig)
-	: vkt::TestCase	(testCtx, name)
-	, m_testConfig	(testConfig)
+	: vkt::TestCase	  (testCtx, name)
+	, m_testConfigPtr (new TestConfig(testConfig))
+	, m_testConfig    (*m_testConfigPtr.get())
 {
 	const auto staticTopologyClass = getTopologyClass(testConfig.topologyConfig.staticValue);
 	DE_UNREF(staticTopologyClass); // For release builds.
@@ -3863,12 +3871,13 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 
 TestInstance* ExtendedDynamicStateTest::createInstance (Context& context) const
 {
-	return new ExtendedDynamicStateInstance(context, m_testConfig);
+	return new ExtendedDynamicStateInstance(context, m_testConfigPtr);
 }
 
-ExtendedDynamicStateInstance::ExtendedDynamicStateInstance(Context& context, const TestConfig& testConfig)
-	: vkt::TestInstance	(context)
-	, m_testConfig		(testConfig)
+ExtendedDynamicStateInstance::ExtendedDynamicStateInstance (Context& context, const TestConfigSharedPtr& testConfig)
+	: vkt::TestInstance (context)
+	, m_testConfigPtr   (testConfig)
+	, m_testConfig      (*m_testConfigPtr.get())
 {
 }
 
@@ -6550,9 +6559,9 @@ deUint8 stencilResult(vk::VkStencilOp op, deUint8 storedValue, deUint8 reference
 class TestGroupWithClean : public tcu::TestCaseGroup
 {
 public:
-			TestGroupWithClean	(tcu::TestContext& testCtx, const char* name)
-				: tcu::TestCaseGroup(testCtx, name)
-		{}
+	TestGroupWithClean	(tcu::TestContext& testCtx, const char* name)
+		: tcu::TestCaseGroup(testCtx, name)
+	{}
 
 	void deinit (void) override { cleanupDevices(); }
 };

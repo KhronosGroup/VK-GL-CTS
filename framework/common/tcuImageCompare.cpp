@@ -34,6 +34,7 @@
 #include "tcuFloat.hpp"
 
 #include <string.h>
+#include <cmath>
 
 namespace tcu
 {
@@ -499,7 +500,7 @@ int measurePixelDiffAccuracy (TestLog& log, const char* imageSetName, const char
  *//*--------------------------------------------------------------------*/
 static deInt32 getPositionOfIEEEFloatWithoutDenormals (float x)
 {
-	DE_ASSERT(!deIsNaN(x)); // not sane
+	DE_ASSERT(!std::isnan(x)); // not valid
 
 	if (x == 0.0f)
 		return 0;
@@ -532,9 +533,9 @@ static deInt32 getPositionOfIEEEFloatWithoutDenormals (float x)
 
 static deUint32 computeFloatFlushRelaxedULPDiff (float a, float b)
 {
-	if (deIsNaN(a) && deIsNaN(b))
+	if (std::isnan(a) && std::isnan(b))
 		return 0;
-	else if (deIsNaN(a) || deIsNaN(b))
+	else if (std::isnan(a) || std::isnan(b))
 	{
 		return 0xFFFFFFFFu;
 	}

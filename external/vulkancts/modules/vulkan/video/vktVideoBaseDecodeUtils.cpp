@@ -77,17 +77,16 @@ static constexpr deUint32 H26X_MAX_DPB_SLOTS = 16u;
 
 using VkVideoParser = VkSharedBaseObj<VulkanVideoDecodeParser>;
 
-void createParser(VkVideoCodecOperationFlagBitsKHR		codecOperation,
-				  const VkExtensionProperties*			extensionProperties,
-				  std::shared_ptr<VideoBaseDecoder>	decoder,
-				  VkVideoParser& parser,
-				  ElementaryStreamFraming framing)
+void createParser(VkVideoCodecOperationFlagBitsKHR codecOperation,
+				  std::shared_ptr<VideoBaseDecoder>		decoder,
+				  VkVideoParser&						parser,
+				  ElementaryStreamFraming				framing)
 {
 	const VkVideoCapabilitiesKHR*		videoCaps = decoder->getVideoCaps();
 	const VkParserInitDecodeParameters pdParams = {
 		NV_VULKAN_VIDEO_PARSER_API_VERSION,
 		dynamic_cast<VkParserVideoDecodeClient*>(decoder.get()),
-		static_cast<deUint32>(2 * 1024 * 1024), // 2MiB is an arbitrary choice.
+		static_cast<deUint32>(2 * 1024 * 1024), // 2MiB is an arbitrary choice (and pointless for the CTS)
 		static_cast<deUint32>(videoCaps->minBitstreamBufferOffsetAlignment),
 		static_cast<deUint32>(videoCaps->minBitstreamBufferSizeAlignment),
 		0,
@@ -96,53 +95,28 @@ void createParser(VkVideoCodecOperationFlagBitsKHR		codecOperation,
 		true,
 	};
 
-	// TODO: Should validate option codec features from the test definition
-	//  - filmgrain (need some capability to check that)
-	//  - intrabc
-	//  - others?
-
-	DE_ASSERT(extensionProperties);
-
 	switch (codecOperation)
 	{
 		case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
 		{
-			if (strcmp(extensionProperties->extensionName, VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME) || extensionProperties->specVersion != VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION)
-			{
-				tcu::die("The requested decoder h.264 Codec STD version is NOT supported. The supported decoder h.264 Codec STD version is version %d of %s\n",
-						 VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION,
-						 VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME);
-			}
 			VkSharedBaseObj<VulkanH264Decoder> nvVideoH264DecodeParser(new VulkanH264Decoder(codecOperation));
 			parser = nvVideoH264DecodeParser;
 			break;
 		}
 		case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
 		{
-			if (strcmp(extensionProperties->extensionName, VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME) || extensionProperties->specVersion != VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION)
-			{
-				tcu::die("The requested decoder h.265 Codec STD version is NOT supported. The supported decoder h.265 Codec STD version is version %d of %s\n",
-						 VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION,
-						 VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME);
-			}
 			VkSharedBaseObj<VulkanH265Decoder> nvVideoH265DecodeParser(new VulkanH265Decoder(codecOperation));
 			parser = nvVideoH265DecodeParser;
 			break;
 		}
 		case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
 		{
-			if (strcmp(extensionProperties->extensionName, VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME) || extensionProperties->specVersion != VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION)
-			{
-				tcu::die("The requested AV1 Codec STD version is NOT supported. The supported AV1 STD version is version %d of %s\n",
-						 VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION,
-						 VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME);
-			}
 			VkSharedBaseObj<VulkanAV1Decoder> nvVideoAV1DecodeParser(new VulkanAV1Decoder(codecOperation, framing == ElementaryStreamFraming::AV1_ANNEXB));
 			parser = nvVideoAV1DecodeParser;
 			break;
 		}
 		default:
-			TCU_FAIL("Unsupported codec type!");
+			TCU_FAIL("Unsupported codec type");
 	}
 
 	VK_CHECK(parser->Initialize(&pdParams));
@@ -412,9 +386,11 @@ VideoBaseDecoder::VideoBaseDecoder(Parameters&& params)
 	, m_profile(*params.profile)
 	, m_framesToCheck(params.framesToCheck)
 	, m_dpb(3)
+	, m_layeredDpb(params.layeredDpb)
 	, m_videoFrameBuffer(params.framebuffer)
 	, m_decodeFramesData(params.context->getDeviceDriver(), params.context->device, params.context->decodeQueueFamilyIdx())
 	, m_resetPictureParametersFrameTriggerHack(params.pictureParameterUpdateTriggerHack)
+	, m_forceDisableFilmGrain(params.forceDisableFilmGrain)
 	, m_queryResultWithStatus(params.queryDecodeStatus)
 	, m_useInlineQueries(params.useInlineQueries)
 	, m_resourcesWithoutProfiles(params.resourcesWithoutProfiles)
@@ -567,16 +543,25 @@ void VideoBaseDecoder::StartVideoSequence (const VkParserDetectedVideoFormat* pV
 									   VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 	VkImageUsageFlags dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
 
-	if (dpbAndOutputCoincide() && !pVideoFormat->filmGrainEnabled) {
+	if (dpbAndOutputCoincide() && (!pVideoFormat->filmGrainEnabled || m_forceDisableFilmGrain)) {
 		dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR | VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	} else {
 		m_useSeparateOutputImages = true;
 	}
 
-	if(!(m_videoCaps.flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR)) {
-		// The implementation does not support individual images for DPB and so must use arrays
+	if(!(m_videoCaps.flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR) && !m_layeredDpb) {
+		TCU_THROW(NotSupportedError, "separate reference images are not supported");
+	}
+
+	if (m_layeredDpb)
+	{
 		m_useImageArray = true;
 		m_useImageViewArray = true;
+	}
+	else
+	{
+		m_useImageArray = false;
+		m_useImageViewArray = false;
 	}
 
 	bool useLinearOutput = false;
@@ -1356,6 +1341,11 @@ bool VideoBaseDecoder::DecodePicture (VkParserPictureData* pd,
 			}
 		}
 
+		if (m_forceDisableFilmGrain)
+		{
+			pStd->flags.apply_grain = 0;
+		}
+
 		cachedParameters->pictureParams.filmGrainEnabled = pStd->flags.apply_grain;
 
 		pDecodePictureInfo->displayWidth	= p->upscaled_width;
@@ -1419,8 +1409,11 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
 			pPicParams->decodeFrameInfo.srcBufferRange
 	};
 
-	deUint32 baseArrayLayer = (m_useImageArray || m_useImageViewArray) ? pPicParams->currPicIdx : 0;
-	const VkImageSubresourceRange imageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, baseArrayLayer, 1);
+	bool isLayeredDpb = m_useImageArray || m_useImageViewArray;
+	deUint32 currPicArrayLayer = isLayeredDpb ? pPicParams->currPicIdx : 0;
+	const VkImageSubresourceRange currPicSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, currPicArrayLayer, 1);
+	// The destination image is never layered.
+	const VkImageSubresourceRange dstSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
 
 	cachedParameters->currentDpbPictureResourceInfo = VulkanVideoFrameBuffer::PictureResourceInfo();
 	cachedParameters->currentOutputPictureResourceInfo = VulkanVideoFrameBuffer::PictureResourceInfo();
@@ -1488,7 +1481,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
 																		  pOutputPictureResourceInfo->currentImageLayout,
 																		  VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
 																		  pOutputPictureResourceInfo->image,
-																		  imageSubresourceRange);
+																		  dstSubresourceRange);
 			cachedParameters->imageBarriers.push_back(dstBarrier);
 		}
 	}
@@ -1502,7 +1495,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
 																	  pOutputPictureResourceInfo->currentImageLayout,
 																	  VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
 																	  cachedParameters->currentDpbPictureResourceInfo.image,
-																	  imageSubresourceRange);
+																	  currPicSubresourceRange);
 		cachedParameters->imageBarriers.push_back(dpbBarrier);
 	}
 
@@ -1521,15 +1514,17 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
 		}
 		for (int32_t resId = 0; resId < pPicParams->numGopReferenceSlots; resId++)
 		{
-			VkImageMemoryBarrier2KHR gopBarrier = makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
+			const VkImageSubresourceRange dpbSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, isLayeredDpb? pGopReferenceImagesIndexes[resId] : 0, 1);
+
+			VkImageMemoryBarrier2KHR dpbBarrier = makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
 																		  VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
 																		  VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
 																		  VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR,
 																		  cachedParameters->pictureResourcesInfo[resId].currentImageLayout,
 																		  VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
 																		  cachedParameters->pictureResourcesInfo[resId].image,
-																		  imageSubresourceRange);
-			cachedParameters->imageBarriers.push_back(gopBarrier);
+																		  dpbSubresourceRange);
+			cachedParameters->imageBarriers.push_back(dpbBarrier);
 		}
 
 		if (videoLoggingEnabled())
@@ -1773,6 +1768,8 @@ void VideoBaseDecoder::QueryDecodeResults(de::MovePtr<CachedDecodeParameters> &c
 {
 	auto& vk						   = m_deviceContext->getDeviceDriver();
 	auto  device					   = m_deviceContext->device;
+
+	WaitForFrameFences(cachedParameters);
 
 	VkQueryResultStatusKHR decodeStatus;
 	VkResult result = vk.getQueryPoolResults(device,
@@ -2587,11 +2584,6 @@ VkResult VulkanVideoSession::Create(DeviceContext& vkDevCtx,
 	return result;
 }
 
-
-
-
-
-
 VkResult VkImageResource::Create(DeviceContext&					   vkDevCtx,
 								 const VkImageCreateInfo*		   pImageCreateInfo,
 								 VkSharedBaseObj<VkImageResource>& imageResource)
@@ -2602,10 +2594,11 @@ VkResult VkImageResource::Create(DeviceContext&					   vkDevCtx,
 	return VK_SUCCESS;
 }
 
-VkResult VkImageResourceView::Create(DeviceContext& vkDevCtx,
-									 VkSharedBaseObj<VkImageResource>& imageResource,
-									 VkImageSubresourceRange &imageSubresourceRange,
-									 VkSharedBaseObj<VkImageResourceView>& imageResourceView)
+VkResult VkImageResourceView::Create(DeviceContext&							vkDevCtx,
+									 VkSharedBaseObj<VkImageResource>&		imageResource,
+									 const VkImageCreateInfo*				pImageCreateInfo,
+									 VkImageSubresourceRange&				imageSubresourceRange,
+									 VkSharedBaseObj<VkImageResourceView>&	imageResourceView)
 {
 	auto& vk = vkDevCtx.getDeviceDriver();
 	VkDevice device = vkDevCtx.device;
@@ -2614,7 +2607,7 @@ VkResult VkImageResourceView::Create(DeviceContext& vkDevCtx,
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.pNext = nullptr;
 	viewInfo.image = imageResource->GetImage();
-	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.viewType = pImageCreateInfo->arrayLayers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
 	viewInfo.format = imageResource->GetImageCreateInfo().format;
 	viewInfo.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
 							VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY};

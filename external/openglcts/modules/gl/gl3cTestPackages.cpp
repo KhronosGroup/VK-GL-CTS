@@ -32,6 +32,7 @@
 #include "gl3cTextureSwizzleTests.hpp"
 #include "gl3cTransformFeedbackOverflowQueryTests.hpp"
 #include "gl3cTransformFeedbackTests.hpp"
+#include "gl3cTransformFeedback3Tests.hpp"
 #include "gl4cPipelineStatisticsQueryTests.hpp"
 #include "glcPixelStorageModesTests.hpp"
 #include "glcFragDepthTests.hpp"
@@ -171,6 +172,7 @@ void GL30TestPackage::init(void)
 		addChild(new gl3cts::ClipDistance::Tests(getContext()));
 		addChild(new gl3cts::GLSLnoperspectiveTests(getContext()));
 		addChild(new gl3cts::TransformFeedback::Tests(getContext()));
+		addChild(new gl3cts::TransformFeedback3Tests(getContext()));
 		addChild(new glcts::TextureRepeatModeTests(getContext()));
 		addChild(new glcts::TextureLodBasicTests(getContext()));
 		addChild(new GL30ShaderTests(getContext()));

@@ -138,6 +138,8 @@ struct TestParams
 class PhysicalDeviceImageFormatProperties
 {
 public:
+	virtual ~PhysicalDeviceImageFormatProperties () {}
+
 	virtual VkResult getPhysicalDeviceImageFormatProperties(const InstanceInterface &vki, VkPhysicalDevice device, VkFormat viewFormat, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags)
 	{
 		VkImageFormatProperties formatProperties;

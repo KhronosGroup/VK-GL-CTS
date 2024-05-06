@@ -1115,7 +1115,6 @@ void addCompute8bitUniform8To32Group (tcu::TestCaseGroup* group)
 		"${stride}"
 
 		"OpDecorate %SSBO32 Block\n"
-		"OpDecorate %SSBO8 Block\n"
 		"OpMemberDecorate %SSBO32 0 Offset 0\n"
 		"OpMemberDecorate %SSBO8 0 Offset 0\n"
 		"OpDecorate %SSBO8 ${storage}\n"
@@ -1595,7 +1594,6 @@ void addCompute8bitUniform8To16Group (tcu::TestCaseGroup* group)
 		"${stride}"
 
 		"OpDecorate %SSBO16 Block\n"
-		"OpDecorate %SSBO8 Block\n"
 		"OpMemberDecorate %SSBO16 0 Offset 0\n"
 		"OpMemberDecorate %SSBO8 0 Offset 0\n"
 		"OpDecorate %SSBO8 ${storage}\n"

@@ -17,7 +17,9 @@ else ()
 	set(VULKAN_VALIDATIONLAYERS_ABS_PATH "${CMAKE_SOURCE_DIR}/${VULKAN_VALIDATIONLAYERS_SRC_PATH}")
 endif ()
 
-if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
+# VVL have issues building on Windows caused by build type mismatch in dependencies.
+# We exclude them from the Windows build for now. VK-GL-CTS issue: 5052
+if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS AND NOT DE_OS_IS_WIN32 AND "${SBT_STRIPPED}" STREQUAL "")
 	if (EXISTS ${VULKAN_VALIDATIONLAYERS_ABS_PATH}/CMakeLists.txt)
 		message(STATUS "vulkan-validationlayers found")
 		set(CMAKE_C_FLAGS ${DE_3RD_PARTY_C_FLAGS})

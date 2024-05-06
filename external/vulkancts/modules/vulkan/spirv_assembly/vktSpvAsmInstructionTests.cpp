@@ -5728,10 +5728,8 @@ do { \
 
 				for (size_t idx = 0; idx < byteSize / sizeof(float); ++idx)
 				{
-					if (!deFloatIsNaN(output_as_float[idx]))
-					{
+					if (!std::isnan(output_as_float[idx]))
 						return false;
-					}
 				}
 
 				return true;
@@ -14435,6 +14433,8 @@ do { \
 					, argCompCount(3, 0)
 			{
 			}
+
+			virtual ~fp16PerComponent () {}
 
 			bool			callOncePerComponent	()									{ return true; }
 			deUint32		getComponentValidity	()									{ return static_cast<deUint32>(-1); }

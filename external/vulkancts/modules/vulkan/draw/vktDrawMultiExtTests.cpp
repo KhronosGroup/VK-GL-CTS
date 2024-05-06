@@ -1528,6 +1528,15 @@ tcu::TestCaseGroup*	createDrawMultiExtTests (tcu::TestContext& testCtx, const Sh
 										if (extraBytes >= 0)
 											testStride = static_cast<deUint32>(baseStride) + static_cast<deUint32>(extraBytes);
 
+										if (drawCountCase.drawCount > 1u)
+										{
+											// VUID-vkCmdDrawMultiEXT-drawCount-09628
+											// VUID-vkCmdDrawMultiIndexedEXT-drawCount-09629
+											const auto minStride = static_cast<uint32_t>(isIndexed ? sizeof(VkMultiDrawIndexedInfoEXT) : sizeof(VkMultiDrawInfoEXT));
+											if (testStride < minStride || testStride % 4u != 0u)
+												continue;
+										}
+
 										// For overlapping triangles we will skip instanced drawing.
 										if (instanceCase.instanceCount > 1u && meshTypeCase.meshType == MeshType::OVERLAPPING)
 											continue;

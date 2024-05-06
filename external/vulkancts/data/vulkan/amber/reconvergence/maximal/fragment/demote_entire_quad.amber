@@ -7,22 +7,21 @@ SHADER fragment frag_shader GLSL TARGET_ENV spv1.3
 
 #extension GL_EXT_maximal_reconvergence : require
 #extension GL_KHR_shader_subgroup_ballot : require
-#extension GL_KHR_shader_subgroup_arithmetic : require
 #extension GL_EXT_demote_to_helper_invocation : require
 
-layout(binding = 0) readonly buffer X { ivec4 fragments; };
-layout(binding = 1) buffer Y { uint result; };
+layout(binding = 0) readonly buffer X { uvec4 fragments; };
+layout(binding = 1)          buffer Y { uint  result; };
 layout(location = 0) out vec4 dEQP_FragColor;
 
 void main()
-[[maximal_reconvergence]]
+[[maximally_reconverges]]
 {
 	const uvec4	fullBallot		= subgroupBallot(true);
-	const uint	fragmentID		= uint(gl_FragCoord.y) * 8 + uint(gl_FragCoord.x);
+	const uint	fragmentID		= uint(gl_FragCoord.y) * 16 + uint(gl_FragCoord.x);
 	const uvec4	quadBallot		= subgroupBallot((fragments[gl_SubgroupInvocationID % 4] - fragmentID) == 0);
 	const bool	quadSubgroup	= subgroupBallotBitCount(quadBallot) == 4;
 
-	if (subgroupInverseBallot(quadBallot))
+	if (quadSubgroup && subgroupInverseBallot(quadBallot))
 	{
 		switch (gl_SubgroupInvocationID % 4)
 		{
@@ -83,13 +82,12 @@ void main()
 	}
 
 	const uvec4 nonHelperBallot = subgroupBallot( ! helperInvocationEXT() );
-	const uvec4	demoBallot		= subgroupOr(nonHelperBallot) ^ fullBallot;
-	const uint	writeInvocation	= subgroupMin(subgroupBallotFindLSB(nonHelperBallot));
+	const uvec4	demotedBallot	= nonHelperBallot ^ fullBallot;
+	const uint	writeInvocation	= subgroupBallotFindLSB(nonHelperBallot);
 
 	if (quadSubgroup && gl_SubgroupInvocationID == writeInvocation)
 	{
-		result = subgroupBallotBitCount(demoBallot);
-		result = (demoBallot == quadBallot) ? 1 : 0;
+		result = (demotedBallot == quadBallot) ? 1 : 0;
 	}
 
 	dEQP_FragColor = vec4(1.0);
@@ -100,11 +98,11 @@ BUFFER vertices DATA_TYPE R32G32_SFLOAT DATA
 -1.0 3.5    -1.0 -1.0    3.5 -1.0
 END
 
-BUFFER fragments DATA_TYPE R32G32B32A32_SINT DATA
-  18  19  26  27
+BUFFER fragments DATA_TYPE R32G32B32A32_UINT DATA
+   34   35   50   51
 END
 
-BUFFER result DATA_TYPE R32_UINT DATA 0 END
+BUFFER result DATA_TYPE R32_UINT DATA 99 END
 
 BUFFER framebuffer FORMAT R32G32B32A32_SFLOAT
 
@@ -112,7 +110,7 @@ PIPELINE graphics mainPipeline
 	ATTACH vert_shader
 	ATTACH frag_shader
 
-	FRAMEBUFFER_SIZE 8 8
+	FRAMEBUFFER_SIZE 16 16
 
     BIND BUFFER fragments AS storage DESCRIPTOR_SET 0 BINDING 0
 	BIND BUFFER result AS storage DESCRIPTOR_SET 0 BINDING 1
