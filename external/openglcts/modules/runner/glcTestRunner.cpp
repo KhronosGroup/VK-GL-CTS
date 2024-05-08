@@ -647,7 +647,7 @@ static const char *getRunTypeName(glu::ApiType type)
     if (!(X))        \
     throw tcu::Exception("Writing XML failed")
 
-static void writeRunSummary(const TestRunSummary &summary, const char *filename)
+static void writeRunSummary(const TestRunSummary &summary, bool printSummary, const char *filename)
 {
     de::UniquePtr<FILE, FileDeleter> out(fopen(filename, "wb"));
     if (!out)
@@ -663,9 +663,11 @@ static void writeRunSummary(const TestRunSummary &summary, const char *filename)
         qpXmlAttribute attribs[2];
 
         attribs[0] = qpSetStringAttrib("Type", getRunTypeName(summary.runType));
-        attribs[1] = qpSetBoolAttrib("Conformant", summary.isConformant ? true : false);
+        if (!printSummary)
+            attribs[1] = qpSetBoolAttrib("Conformant", summary.isConformant ? true : false);
 
-        XML_CHECK(qpXmlWriter_startElement(writer.get(), "Summary", DE_LENGTH_OF_ARRAY(attribs), attribs));
+        XML_CHECK(
+            qpXmlWriter_startElement(writer.get(), "Summary", printSummary ? 1 : DE_LENGTH_OF_ARRAY(attribs), attribs));
     }
 
     // Config run
@@ -695,18 +697,22 @@ static void writeRunSummary(const TestRunSummary &summary, const char *filename)
         attribs[1] = qpSetStringAttrib("CmdLine", cmdLine.c_str());
 
         XML_CHECK(qpXmlWriter_startElement(writer.get(), "TestRun", 2, attribs));
-        if (++sessionIndex < summary.results.size())
+        if (!printSummary)
         {
-            const tcu::TestRunStatus &results = summary.results[sessionIndex];
-            attribs[0]                        = qpSetIntAttrib("Passed", results.numPassed);
-            attribs[1]                        = qpSetIntAttrib("Failed", results.numFailed);
-            attribs[2]                        = qpSetIntAttrib("NotSupported", results.numNotSupported);
-            attribs[3]                        = qpSetIntAttrib("Warnings", results.numWarnings);
-            attribs[4]                        = qpSetIntAttrib("Waived", results.numWaived);
-            attribs[5]                        = qpSetIntAttrib("DeviceLost", results.numDeviceLost);
-            attribs[6]                        = qpSetIntAttrib("Executed", results.numExecuted);
-            XML_CHECK(qpXmlWriter_startElement(writer.get(), "TestResult", DE_LENGTH_OF_ARRAY(attribs), attribs));
-            XML_CHECK(qpXmlWriter_endElement(writer.get(), "TestResult"));
+            // don't print stats on a summary run
+            if (++sessionIndex < summary.results.size())
+            {
+                const tcu::TestRunStatus &results = summary.results[sessionIndex];
+                attribs[0]                        = qpSetIntAttrib("Passed", results.numPassed);
+                attribs[1]                        = qpSetIntAttrib("Failed", results.numFailed);
+                attribs[2]                        = qpSetIntAttrib("NotSupported", results.numNotSupported);
+                attribs[3]                        = qpSetIntAttrib("Warnings", results.numWarnings);
+                attribs[4]                        = qpSetIntAttrib("Waived", results.numWaived);
+                attribs[5]                        = qpSetIntAttrib("DeviceLost", results.numDeviceLost);
+                attribs[6]                        = qpSetIntAttrib("Executed", results.numExecuted);
+                XML_CHECK(qpXmlWriter_startElement(writer.get(), "TestResult", DE_LENGTH_OF_ARRAY(attribs), attribs));
+                XML_CHECK(qpXmlWriter_endElement(writer.get(), "TestResult"));
+            }
         }
         XML_CHECK(qpXmlWriter_endElement(writer.get(), "TestRun"));
     }
@@ -828,7 +834,8 @@ void TestRunner::deinit(void)
     m_summary.isConformant = isConformant_;
 
     // Write out summary.
-    writeRunSummary(m_summary, de::FilePath::join(m_logDirPath, "cts-run-summary.xml").getPath());
+    writeRunSummary(m_summary, (m_flags & PRINT_SUMMARY) > 0,
+                    de::FilePath::join(m_logDirPath, "cts-run-summary.xml").getPath());
 
     m_runSessions.clear();
 }
