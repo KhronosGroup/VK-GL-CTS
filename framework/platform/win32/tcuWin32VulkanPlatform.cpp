@@ -33,6 +33,14 @@
 #include "deUniquePtr.hpp"
 #include "deMemory.h"
 
+#if !defined(DEQP_VULKAN_LIBRARY_PATH)
+#ifdef CTS_USES_VULKANSC
+#define DEQP_VULKAN_LIBRARY_PATH "vulkansc-1.dll"
+#else
+#define DEQP_VULKAN_LIBRARY_PATH "vulkan-1.dll"
+#endif
+#endif
+
 namespace tcu
 {
 namespace win32
@@ -98,7 +106,7 @@ class VulkanLibrary : public vk::Library
 {
 public:
     VulkanLibrary(const char *libraryPath)
-        : m_library(libraryPath != DE_NULL ? libraryPath : "vulkan-1.dll")
+        : m_library(libraryPath != DE_NULL ? libraryPath : DEQP_VULKAN_LIBRARY_PATH)
         , m_driver(m_library)
     {
     }
