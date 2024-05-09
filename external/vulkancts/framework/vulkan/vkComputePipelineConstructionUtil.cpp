@@ -198,10 +198,18 @@ void ComputePipelineWrapper::buildPipeline(void)
             m_subgroupSize,                                                  // uint32_t requiredSubgroupSize;
         };
 
+        vk::VkShaderCreateFlagsEXT flags = 0u;
+        if (m_pipelineCreateFlags & vk::VK_PIPELINE_CREATE_DISPATCH_BASE)
+            flags |= vk::VK_SHADER_CREATE_DISPATCH_BASE_BIT_EXT;
+
+        const auto createFlags2 = findStructure<VkPipelineCreateFlags2CreateInfoKHR>(m_pipelineCreatePNext);
+        if (createFlags2 && (createFlags2->flags & vk::VK_PIPELINE_CREATE_2_DISPATCH_BASE_BIT_KHR))
+            flags |= vk::VK_SHADER_CREATE_DISPATCH_BASE_BIT_EXT;
+
         vk::VkShaderCreateInfoEXT createInfo = {
             vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,            // VkStructureType sType;
             m_subgroupSize != 0 ? &subgroupSizeCreateInfo : DE_NULL, // const void* pNext;
-            0u,                                                      // VkShaderCreateFlagsEXT flags;
+            flags,                                                   // VkShaderCreateFlagsEXT flags;
             vk::VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             0u,                                                      // VkShaderStageFlags nextStage;
             vk::VK_SHADER_CODE_TYPE_SPIRV_EXT,                       // VkShaderCodeTypeEXT codeType;
