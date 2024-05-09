@@ -822,7 +822,11 @@ tcu::TestStatus ShaderObjectDispatchPerformanceInstance::iterate (void)
 		.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
 		.update(vk, device);
 
-	const auto							compShader		= vk::createShader(vk, device, vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_COMPUTE_BIT, binaries.get("comp"), tessellationSupported, geometrySupported, &*descriptorSetLayout));
+	vk::VkShaderCreateInfoEXT shaderCreateInfo = vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_COMPUTE_BIT, binaries.get("comp"), tessellationSupported, geometrySupported, &*descriptorSetLayout);
+	if (m_dispatchType == DISPATCH_BASE)
+		shaderCreateInfo.flags |= vk::VK_SHADER_CREATE_DISPATCH_BASE_BIT_EXT;
+
+	const auto							compShader		= vk::createShader(vk, device, shaderCreateInfo);
 	const vk::VkPipelineCreateFlags		pipelineFlags	= (m_dispatchType == DISPATCH) ? (vk::VkPipelineCreateFlags)0u : (vk::VkPipelineCreateFlags)vk::VK_PIPELINE_CREATE_DISPATCH_BASE_BIT;
 	const auto							computePipeline	= vk::makeComputePipeline(vk, device, pipelineLayout.get(), pipelineFlags, nullptr, compShaderModule.get(), (vk::VkPipelineShaderStageCreateFlags)0u);
 
