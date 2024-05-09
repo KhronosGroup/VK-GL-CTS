@@ -323,7 +323,11 @@ tcu::TestStatus DitheringTestInstance::iterate (void)
 			const tcu::ConstPixelBufferAccess&	resultAccess					= resultTextureLevelResult->getAccess();
 
 			// 1 ULP will always be 1 bit difference no matter the format
-			const tcu::UVec4					threshold						(1u, 1u, 1u, 1u);
+			// However, we allow N ULP for additive blending tests since drivers may do dithering while rendering (per draw)
+			// which can cause dither pattern to exceed 1ULP threshold with additive blending, see discussion in:
+			// https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/3785#note_384389
+			const deUint32				n_ulp					= (m_testParams.blending && m_testParams.dstFactor == VK_BLEND_FACTOR_ONE) ? 4u : 1u;
+			const tcu::UVec4			threshold				(n_ulp, n_ulp, n_ulp, n_ulp);
 
 			if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "", "", referenceAccess,
 										  resultAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
