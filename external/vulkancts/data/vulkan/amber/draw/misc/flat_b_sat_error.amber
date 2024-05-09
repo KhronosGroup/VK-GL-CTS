@@ -1,0 +1,51 @@
+#!amber
+# Reproducer for https://gitlab.freedesktop.org/mesa/mesa/-/issues/10999
+
+SHADER vertex vtex_shader GLSL
+#version 430
+layout(location = 0) in vec2 data_in;
+layout(location = 0) out flat float data_out;
+void main() {
+  const float count = 5.0;
+  gl_PointSize = 1.0;
+  gl_Position = vec4((((data_in.x + 0.5) / count) * 2.0) - 1.0, 0.0, 0.0, 1.0);
+  data_out = data_in.y;
+}
+END
+
+SHADER fragment frag_shader GLSL
+#version 430
+layout(location = 0) in flat float data_in;
+layout(location = 0) out vec4 final_color;
+void main() {
+  const float epsilon = 0.0009765625; // Makes sure 0.5 is rounded up to 128.
+  final_color = vec4(max(0.0, min(max(data_in, 0.0), 1.0) - 0.5) + epsilon, 0.0, 0.0, 1.0);
+}
+END
+
+BUFFER position_buf DATA_TYPE vec2<float> DATA
+0 0.0
+1 0.5
+2 1.0
+3 1.5
+4 2.0
+END
+
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics pipeline
+  ATTACH vtex_shader
+  ATTACH frag_shader
+
+  VERTEX_DATA position_buf LOCATION 0
+  FRAMEBUFFER_SIZE 5 1
+  VIEWPORT 0 0 SIZE 5 1
+  BIND BUFFER framebuffer AS color LOCATION 0
+END
+
+RUN pipeline DRAW_ARRAY AS POINT_LIST START_IDX 0
+EXPECT framebuffer IDX 0 0 SIZE 1 1 EQ_RGBA 0 0 0 255
+EXPECT framebuffer IDX 1 0 SIZE 1 1 EQ_RGBA 0 0 0 255
+EXPECT framebuffer IDX 2 0 SIZE 1 1 EQ_RGBA 128 0 0 255
+EXPECT framebuffer IDX 3 0 SIZE 1 1 EQ_RGBA 128 0 0 255
+EXPECT framebuffer IDX 4 0 SIZE 1 1 EQ_RGBA 128 0 0 255

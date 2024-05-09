@@ -18273,6 +18273,7 @@ dEQP-VK.draw.renderpass.basic_draw.draw_indirect.triangle_strip_with_adjacency.3
 dEQP-VK.draw.renderpass.basic_draw.draw_indirect.triangle_strip_with_adjacency.45_multi_command
 dEQP-VK.draw.renderpass.basic_draw.draw_indirect.triangle_strip_with_adjacency.45_multi_command_multi_draw
 dEQP-VK.draw.renderpass.basic_draw.draw_indirect.triangle_strip_with_adjacency.45_single_command
+dEQP-VK.draw.renderpass.basic_draw.misc.flat_b_sat_error
 dEQP-VK.draw.renderpass.basic_draw.misc.maintenance5
 dEQP-VK.draw.renderpass.concurrent.compute_and_triangle_list
 dEQP-VK.draw.renderpass.depth_bias.depth_bias_patch_list_tri_fill
