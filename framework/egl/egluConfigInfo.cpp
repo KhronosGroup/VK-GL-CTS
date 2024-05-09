@@ -169,8 +169,7 @@ void queryCoreConfigInfo(const Library &egl, EGLDisplay display, EGLConfig confi
 
 void queryExtConfigInfo(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLConfig config, ConfigInfo *dst)
 {
-    const std::vector<std::string> extensions       = getDisplayExtensions(egl, display);
-    const std::vector<std::string> clientExtensions = getClientExtensions(egl);
+    const std::vector<std::string> extensions = getDisplayExtensions(egl, display);
 
     if (de::contains(extensions.begin(), extensions.end(), "EGL_EXT_yuv_surface"))
     {
@@ -200,7 +199,7 @@ void queryExtConfigInfo(const eglw::Library &egl, eglw::EGLDisplay display, eglw
     else
         dst->colorComponentType = EGL_COLOR_COMPONENT_TYPE_FIXED_EXT;
 
-    if (de::contains(clientExtensions.begin(), clientExtensions.end(), "EGL_EXT_config_select_group"))
+    if (hasExtension(egl, display, "EGL_EXT_config_select_group"))
     {
         egl.getConfigAttrib(display, config, EGL_CONFIG_SELECT_GROUP_EXT, (EGLint *)&dst->groupId);
 
