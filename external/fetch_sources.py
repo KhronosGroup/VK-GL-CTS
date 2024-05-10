@@ -300,17 +300,18 @@ def postExtractLibpng (path):
 				os.path.join(path, "pnglibconf.h"))
 
 if SYSTEM_NAME == 'Windows' or SYSTEM_NAME.startswith('CYGWIN') or SYSTEM_NAME.startswith('MINGW'):
-    ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-win64-lgpl-shared-4.4.zip"
-    ffmpeg_hash_value = "670df8e9d2ddd5e761459b3538f64b8826566270ef1ed13bcbfc63e73aab3fd9"
+	ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-win64-lgpl-shared-4.4.zip"
+	ffmpeg_hash_value = "670df8e9d2ddd5e761459b3538f64b8826566270ef1ed13bcbfc63e73aab3fd9"
+	print("ffmpeg " + ffmpeg_url + " not currently available for Windows")
 elif SYSTEM_NAME == 'Linux':
-    ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2022-05-31-12-34/ffmpeg-n4.4.2-1-g8e98dfc57f-linux64-gpl-shared-4.4.tar.xz"
-    ffmpeg_hash_value = "817f8c93ff1ef7ede3dad15b20415d5e366bcd6848844d55046111fd3de827d0"
+	ffmpeg_url = "https://people.igalia.com/rgarcia/pub/ffmpeg-n4.4.2-1-g8e98dfc57f-linux64-gpl-shared-4.4.tar.xz"
+	ffmpeg_hash_value = "817f8c93ff1ef7ede3dad15b20415d5e366bcd6848844d55046111fd3de827d0"
 elif SYSTEM_NAME == 'Darwin':
-    ffmpeg_url = ""
-    ffmpeg_hash_value = ""
+	ffmpeg_url = ""
+	ffmpeg_hash_value = ""
 else:
-    ffmpeg_url = None
-    ffmpeg_hash_value = None
+	ffmpeg_url = None
+	ffmpeg_hash_value = None
 
 PACKAGES = [
 	SourcePackage(
