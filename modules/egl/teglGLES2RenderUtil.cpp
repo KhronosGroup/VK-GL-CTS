@@ -34,6 +34,7 @@ namespace gles2
 
 void clear (const glw::Functions& gl, int x, int y, int width, int height, const tcu::Vec4& color)
 {
+	gl.disable(GL_DITHER);
 	gl.enable(GL_SCISSOR_TEST);
 	gl.scissor(x, y, width, height);
 	gl.clearColor(color.x(), color.y(), color.z(), color.w());
