@@ -867,6 +867,7 @@ KHR-GL43.buffer_objects.triangles
 KHR-GL43.buffer_objects.elements
 KHR-GL43.buffer_objects.multi_texture
 KHR-GL43.buffer_objects.sub_data
+KHR-GL43.transform_feedback2.transform_feedback2_states
 KHR-GL43.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL43.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL43.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp

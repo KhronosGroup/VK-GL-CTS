@@ -928,6 +928,7 @@ cc_library_static {
         "external/openglcts/modules/common/glcTextureLodBasicTests.cpp",
         "external/openglcts/modules/common/glcTextureLodBiasTests.cpp",
         "external/openglcts/modules/common/glcTextureRepeatModeTests.cpp",
+        "external/openglcts/modules/common/glcTransformFeedbackTests.cpp",
         "external/openglcts/modules/common/glcUniformBlockCase.cpp",
         "external/openglcts/modules/common/glcUniformBlockNegativeTests.cpp",
         "external/openglcts/modules/common/glcUniformBlockTests.cpp",

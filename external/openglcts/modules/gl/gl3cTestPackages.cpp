@@ -53,6 +53,7 @@
 #include "glcTextureLodBasicTests.hpp"
 #include "glcTextureLodBiasTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
+#include "glcTransformFeedbackTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "glcUniformBlockNegativeTests.hpp"
 #include "gluStateReset.hpp"
@@ -186,6 +187,7 @@ void GL30TestPackage::init(void)
         addChild(new glcts::FramebufferBlitTests(getContext()));
         addChild(new glcts::TextureLodBiasTests(getContext()));
         addChild(new glcts::BufferObjectsTests(getContext()));
+        addChild(new glcts::TransformFeedbackTests(getContext()));
     }
     catch (...)
     {
