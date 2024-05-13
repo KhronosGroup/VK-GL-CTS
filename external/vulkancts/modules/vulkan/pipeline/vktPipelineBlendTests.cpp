@@ -162,7 +162,8 @@ public:
 
     DualSourceBlendTest(tcu::TestContext &testContext, const std::string &name,
                         PipelineConstructionType pipelineConstructionType, const VkFormat colorFormat,
-                        const VkPipelineColorBlendAttachmentState blendStates[QUAD_COUNT]);
+                        const VkPipelineColorBlendAttachmentState blendStates[QUAD_COUNT],
+                        const bool shaderOutputInArray);
     virtual ~DualSourceBlendTest(void);
     virtual void initPrograms(SourceCollections &sourceCollections) const;
     virtual void checkSupport(Context &context) const;
@@ -171,6 +172,7 @@ public:
 private:
     const PipelineConstructionType m_pipelineConstructionType;
     const VkFormat m_colorFormat;
+    const bool m_shaderOutputInArray;
     VkPipelineColorBlendAttachmentState m_blendStates[QUAD_COUNT];
 };
 
@@ -504,10 +506,12 @@ const tcu::Vec4 DualSourceBlendTest::s_blendConst = tcu::Vec4(0.1f, 0.2f, 0.3f, 
 
 DualSourceBlendTest::DualSourceBlendTest(tcu::TestContext &testContext, const std::string &name,
                                          PipelineConstructionType pipelineConstructionType, const VkFormat colorFormat,
-                                         const VkPipelineColorBlendAttachmentState blendStates[QUAD_COUNT])
+                                         const VkPipelineColorBlendAttachmentState blendStates[QUAD_COUNT],
+                                         const bool shaderOutputInArray)
     : vkt::TestCase(testContext, name)
     , m_pipelineConstructionType(pipelineConstructionType)
     , m_colorFormat(colorFormat)
+    , m_shaderOutputInArray(shaderOutputInArray)
 {
     deMemcpy(m_blendStates, blendStates, sizeof(VkPipelineColorBlendAttachmentState) * QUAD_COUNT);
 }
@@ -560,8 +564,6 @@ void DualSourceBlendTest::checkSupport(Context &context) const
 
 void DualSourceBlendTest::initPrograms(SourceCollections &sourceCollections) const
 {
-    std::ostringstream fragmentSource;
-
     sourceCollections.glslSources.add("color_vert")
         << glu::VertexSource("#version 450\n"
                              "layout(location = 0) in highp vec4 position;\n"
@@ -576,20 +578,34 @@ void DualSourceBlendTest::initPrograms(SourceCollections &sourceCollections) con
                              "    vtxColor1 = color1;\n"
                              "}\n");
 
-    fragmentSource << "#version 450\n"
-                      "layout(location = 0) in highp vec4 vtxColor0;\n"
-                      "layout(location = 1) in highp vec4 vtxColor1;\n"
-                      "layout(location = 0, index = 0) out highp vec4 fragColor0;\n"
-                      "layout(location = 0, index = 1) out highp vec4 fragColor1;\n"
-                      "void main (void)\n"
-                      "{\n"
-                      "    fragColor0 = vtxColor0;\n"
-                      "    fragColor1 = vtxColor1;\n"
-                      "   if (int(gl_FragCoord.x) == 2 || int(gl_FragCoord.y) == 3)\n"
-                      "      discard;\n"
-                      "}\n";
+    const char *fragmentSourceOutputVariable = "#version 450\n"
+                                               "layout(location = 0) in highp vec4 vtxColor0;\n"
+                                               "layout(location = 1) in highp vec4 vtxColor1;\n"
+                                               "layout(location = 0, index = 0) out highp vec4 fragColor0;\n"
+                                               "layout(location = 0, index = 1) out highp vec4 fragColor1;\n"
+                                               "void main (void)\n"
+                                               "{\n"
+                                               "    fragColor0 = vtxColor0;\n"
+                                               "    fragColor1 = vtxColor1;\n"
+                                               "   if (int(gl_FragCoord.x) == 2 || int(gl_FragCoord.y) == 3)\n"
+                                               "      discard;\n"
+                                               "}\n";
 
-    sourceCollections.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource.str());
+    const char *fragmentSourceOutputArray = "#version 450\n"
+                                            "layout(location = 0) in highp vec4 vtxColor0;\n"
+                                            "layout(location = 1) in highp vec4 vtxColor1;\n"
+                                            "layout(location = 0, index = 0) out highp vec4 fragColor0[1];\n"
+                                            "layout(location = 0, index = 1) out highp vec4 fragColor1[1];\n"
+                                            "void main (void)\n"
+                                            "{\n"
+                                            "    fragColor0[0] = vtxColor0;\n"
+                                            "    fragColor1[0] = vtxColor1;\n"
+                                            "   if (int(gl_FragCoord.x) == 2 || int(gl_FragCoord.y) == 3)\n"
+                                            "      discard;\n"
+                                            "}\n";
+
+    sourceCollections.glslSources.add("color_frag")
+        << glu::FragmentSource(m_shaderOutputInArray ? fragmentSourceOutputArray : fragmentSourceOutputVariable);
 }
 
 // BlendTestInstance
@@ -2099,6 +2115,11 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
         VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
     };
 
+    const std::pair<const char *, bool> shaderOutputTypes[]{
+        {"output_variable", false},
+        {"output_array", true},
+    };
+
     // Blend tests
     de::MovePtr<tcu::TestCaseGroup> blendTests(new tcu::TestCaseGroup(testCtx, "blend"));
     // Uses different blend formats
@@ -2106,6 +2127,9 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
     de::MovePtr<tcu::TestCaseGroup> clampTests(new tcu::TestCaseGroup(testCtx, "clamp"));
     de::MovePtr<tcu::TestCaseGroup> dualSourceBlendTests(new tcu::TestCaseGroup(testCtx, "dual_source"));
     de::MovePtr<tcu::TestCaseGroup> dualSourceFormatTests(new tcu::TestCaseGroup(testCtx, "format"));
+
+    de::MovePtr<tcu::TestCaseGroup> outputVariableTests(new tcu::TestCaseGroup(testCtx, "output_variable"));
+    de::MovePtr<tcu::TestCaseGroup> outputArrayTests(new tcu::TestCaseGroup(testCtx, "output_array"));
 
     BlendStateUniqueRandomIterator blendStateItr(blendStatesPerFormat, 123);
     BlendStateUniqueRandomIteratorDualSource dualSourceBlendStateItr(blendStatesPerFormat, 123);
@@ -2152,41 +2176,50 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
             {
                 de::MovePtr<tcu::TestCaseGroup> formatTest(
                     new tcu::TestCaseGroup(testCtx, getFormatCaseName(format).c_str()));
-                de::MovePtr<tcu::TestCaseGroup> blendStateTests;
-                {
-                    std::ostringstream blendStateDescription;
-                    blendStateDescription << "Combines blend factors, operators and channel write masks. The constant "
-                                             "color used in all tests is "
-                                          << BlendTest::s_blendConst;
-                    blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
-                }
 
-                dualSourceBlendStateItr.reset();
-
-                while (dualSourceBlendStateItr.hasNext())
+                for (const std::pair<const char *, bool> &shaderOutputType : shaderOutputTypes)
                 {
-                    VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
-                    bool isDualSourceBlendTest = false;
-                    for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
+                    de::MovePtr<tcu::TestCaseGroup> shaderOutputTypeTests(
+                        new tcu::TestCaseGroup(testCtx, shaderOutputType.first));
+
+                    de::MovePtr<tcu::TestCaseGroup> blendStateTests;
                     {
-                        quadBlendConfigs[quadNdx]                = dualSourceBlendStateItr.next();
-                        quadBlendConfigs[quadNdx].colorWriteMask = BlendTest::s_colorWriteMasks[quadNdx];
-                        isDualSourceBlendTest                    = isDualSourceBlendTest ||
-                                                isSrc1BlendFactor(quadBlendConfigs[quadNdx].srcColorBlendFactor) ||
-                                                isSrc1BlendFactor(quadBlendConfigs[quadNdx].dstColorBlendFactor) ||
-                                                isSrc1BlendFactor(quadBlendConfigs[quadNdx].srcAlphaBlendFactor) ||
-                                                isSrc1BlendFactor(quadBlendConfigs[quadNdx].dstAlphaBlendFactor);
+                        std::ostringstream blendStateDescription;
+                        blendStateDescription << "Combines blend factors, operators and channel write masks. The "
+                                                 "constant color used in all tests is "
+                                              << BlendTest::s_blendConst;
+                        blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
                     }
 
-                    // Skip tests that don't have dual-source blend factors as they are already tested.
-                    if (!isDualSourceBlendTest)
-                        continue;
+                    dualSourceBlendStateItr.reset();
 
-                    blendStateTests->addChild(new DualSourceBlendTest(testCtx, getBlendStateSetName(quadBlendConfigs),
-                                                                      pipelineConstructionType, format,
-                                                                      quadBlendConfigs));
+                    while (dualSourceBlendStateItr.hasNext())
+                    {
+                        VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
+                        bool isDualSourceBlendTest = false;
+                        for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
+                        {
+                            quadBlendConfigs[quadNdx]                = dualSourceBlendStateItr.next();
+                            quadBlendConfigs[quadNdx].colorWriteMask = BlendTest::s_colorWriteMasks[quadNdx];
+                            isDualSourceBlendTest                    = isDualSourceBlendTest ||
+                                                    isSrc1BlendFactor(quadBlendConfigs[quadNdx].srcColorBlendFactor) ||
+                                                    isSrc1BlendFactor(quadBlendConfigs[quadNdx].dstColorBlendFactor) ||
+                                                    isSrc1BlendFactor(quadBlendConfigs[quadNdx].srcAlphaBlendFactor) ||
+                                                    isSrc1BlendFactor(quadBlendConfigs[quadNdx].dstAlphaBlendFactor);
+                        }
+
+                        // Skip tests that don't have dual-source blend factors as they are already tested.
+                        if (!isDualSourceBlendTest)
+                            continue;
+
+                        blendStateTests->addChild(new DualSourceBlendTest(
+                            testCtx, getBlendStateSetName(quadBlendConfigs), pipelineConstructionType, format,
+                            quadBlendConfigs, shaderOutputType.second));
+                    }
+
+                    shaderOutputTypeTests->addChild(blendStateTests.release());
+                    formatTest->addChild(shaderOutputTypeTests.release());
                 }
-                formatTest->addChild(blendStateTests.release());
                 dualSourceFormatTests->addChild(formatTest.release());
             }
         }
