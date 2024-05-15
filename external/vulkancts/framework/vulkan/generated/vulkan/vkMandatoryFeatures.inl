@@ -683,6 +683,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	vk::VkPhysicalDeviceRawAccessChainsFeaturesNV physicalDeviceRawAccessChainsFeaturesNV;
+	deMemset(&physicalDeviceRawAccessChainsFeaturesNV, 0, sizeof(physicalDeviceRawAccessChainsFeaturesNV));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_raw_access_chains") )
+	{
+		physicalDeviceRawAccessChainsFeaturesNV.sType = getStructureType<VkPhysicalDeviceRawAccessChainsFeaturesNV>();
+		*nextPtr = &physicalDeviceRawAccessChainsFeaturesNV;
+		nextPtr  = &physicalDeviceRawAccessChainsFeaturesNV.pNext;
+	}
+
 	vk::VkPhysicalDeviceRayQueryFeaturesKHR physicalDeviceRayQueryFeaturesKHR;
 	deMemset(&physicalDeviceRayQueryFeaturesKHR, 0, sizeof(physicalDeviceRayQueryFeaturesKHR));
 
@@ -2617,6 +2627,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_raw_access_chains")) )
+	{
+		if ( physicalDeviceRawAccessChainsFeaturesNV.shaderRawAccessChains == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderRawAccessChains not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_shader_atomic_float16_vector")) && physicalDeviceShaderAtomicFloat16VectorFeaturesNV.shaderFloat16VectorAtomics )
 	{

@@ -104,6 +104,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_NV_device_generated_commands", // This filter also applies to _compute.
 		"VK_NV_shader_atomic_float16_vector",
 		"VK_MVK_macos_surface",
+		"VK_NV_raw_access_chains",
 	};
 
 	const char* exclusions[] =
