@@ -346,7 +346,9 @@ void FramebufferFetchTestCase::deinit (void)
 	delete m_program;
 	m_program = DE_NULL;
 
-	if (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5))) {
+	if (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)) &&
+		m_gl.disable)
+	{
 		m_gl.disable(GL_FRAMEBUFFER_SRGB);
 	}
 

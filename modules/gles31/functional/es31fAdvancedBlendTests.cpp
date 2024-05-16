@@ -369,8 +369,12 @@ void AdvancedBlendCase::deinit (void)
 			m_resolveFbo = 0;
 		}
 
-		if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()) && RENDERTARGETTYPE_SRGB_FBO == m_rtType)
+		if (glu::isContextTypeGLCore(m_context.getRenderContext().getType()) &&
+			RENDERTARGETTYPE_SRGB_FBO == m_rtType &&
+			gl.disable)
+		{
 			gl.disable(GL_FRAMEBUFFER_SRGB);
+		}
 	}
 }
 
