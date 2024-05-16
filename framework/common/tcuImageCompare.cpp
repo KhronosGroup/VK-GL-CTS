@@ -350,6 +350,80 @@ bool bitwiseCompare (TestLog& log, const char* imageSetName, const char* imageSe
 }
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Fuzzy image comparison using maximum error
+ *
+ * Variant of fuzzyCompare that uses the maximum error per pixel as a metric,
+ * instead of accumulating errors for the entire image.
+ *
+ * The minimum possible error is sqrt(1)/255 (~0.0039), corresponding to a
+ * 5-shade difference (1 over MIN_ERR_THRESHOLD) on one channel.
+ *
+ * The maximum possible error is sqrt(4*(251^2))/255 (~1.96), corresponding
+ * to a 255-shade difference on all four channels.
+ *
+ * This image comparison is designed for comparing images rendered by 3D
+ * graphics APIs such as OpenGL. The comparison allows small local differences
+ * and compensates for aliasing.
+ *
+ * The algorithm first performs light blurring on both images and then
+ * does per-pixel analysis. Pixels are compared to 3x3 bilinear surface
+ * defined by adjecent pixels. This compensates for both 1-pixel deviations
+ * in geometry and aliasing in texture data.
+ *
+ * On failure error image is generated that shows where the failing pixels
+ * are.
+ *
+ * \note				Currently supports only UNORM_INT8 formats
+ * \param log			Test log for results
+ * \param imageSetName	Name for image set when logging results
+ * \param imageSetDesc	Description for image set
+ * \param reference		Reference image
+ * \param result		Result image
+ * \param threshold		Error metric threshold
+ * \param logMode		Logging mode
+ * \return true if comparison passes, false otherwise
+ *//*--------------------------------------------------------------------*/
+bool fuzzyCompareMaxError (TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, float threshold, CompareLogMode logMode)
+{
+	FuzzyCompareParams	params			(8, true);
+	TextureLevel		errorMask		(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), reference.getWidth(), reference.getHeight());
+	float				difference		= fuzzyCompare(params, reference, result, errorMask.getAccess());
+	bool				isOk			= difference <= threshold;
+	Vec4				pixelBias		(0.0f, 0.0f, 0.0f, 0.0f);
+	Vec4				pixelScale		(1.0f, 1.0f, 1.0f, 1.0f);
+
+	if (!isOk || logMode == COMPARE_LOG_EVERYTHING)
+	{
+		// Generate more accurate error mask.
+		params.maxSampleSkip = 0;
+		fuzzyCompare(params, reference, result, errorMask.getAccess());
+
+		if (result.getFormat() != TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8) && reference.getFormat() != TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8))
+			computeScaleAndBias(reference, result, pixelScale, pixelBias);
+
+		if (!isOk)
+			log << TestLog::Message << "Image comparison failed: difference = " << difference << ", threshold = " << threshold << TestLog::EndMessage;
+
+		log << TestLog::ImageSet(imageSetName, imageSetDesc)
+			<< TestLog::Image("Result",		"Result",		result,		pixelScale, pixelBias)
+			<< TestLog::Image("Reference",	"Reference",	reference,	pixelScale, pixelBias)
+			<< TestLog::Image("ErrorMask",	"Error mask",	errorMask)
+			<< TestLog::EndImageSet;
+	}
+	else if (logMode == COMPARE_LOG_RESULT)
+	{
+		if (result.getFormat() != TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8))
+			computePixelScaleBias(result, pixelScale, pixelBias);
+
+		log << TestLog::ImageSet(imageSetName, imageSetDesc)
+			<< TestLog::Image("Result",		"Result",		result, pixelScale, pixelBias)
+			<< TestLog::EndImageSet;
+	}
+
+	return isOk;
+}
+
+/*--------------------------------------------------------------------*//*!
  * \brief Fuzzy image comparison
  *
  * This image comparison is designed for comparing images rendered by 3D
@@ -381,6 +455,46 @@ bool bitwiseCompare (TestLog& log, const char* imageSetName, const char* imageSe
 bool fuzzyCompare (TestLog& log, const char* imageSetName, const char* imageSetDesc, const Surface& reference, const Surface& result, float threshold, CompareLogMode logMode)
 {
 	return fuzzyCompare(log, imageSetName, imageSetDesc, reference.getAccess(), result.getAccess(), threshold, logMode);
+}
+
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Fuzzy image comparison using maximum error
+ *
+ * Variant of fuzzyCompare that uses the maximum error per pixel as a metric,
+ * instead of accumulating errors for the entire image.
+ *
+ * The minimum possible error is sqrt(1)/255 (~0.0039), corresponding to a
+ * 5-shade difference (1 over MIN_ERR_THRESHOLD) on one channel.
+ *
+ * The maximum possible error is sqrt(4*(251^2))/255 (~1.96), corresponding
+ * to a 255-shade difference on all four channels.
+ *
+ * This image comparison is designed for comparing images rendered by 3D
+ * graphics APIs such as OpenGL. The comparison allows small local differences
+ * and compensates for aliasing.
+ *
+ * The algorithm first performs light blurring on both images and then
+ * does per-pixel analysis. Pixels are compared to 3x3 bilinear surface
+ * defined by adjecent pixels. This compensates for both 1-pixel deviations
+ * in geometry and aliasing in texture data.
+ *
+ * On failure error image is generated that shows where the failing pixels
+ * are.
+ *
+ * \note				Currently supports only UNORM_INT8 formats
+ * \param log			Test log for results
+ * \param imageSetName	Name for image set when logging results
+ * \param imageSetDesc	Description for image set
+ * \param reference		Reference image
+ * \param result		Result image
+ * \param threshold		Error metric threshold
+ * \param logMode		Logging mode
+ * \return true if comparison passes, false otherwise
+ *//*--------------------------------------------------------------------*/
+bool fuzzyCompareMaxError (TestLog& log, const char* imageSetName, const char* imageSetDesc, const Surface& reference, const Surface& result, float threshold, CompareLogMode logMode)
+{
+	return fuzzyCompareMaxError(log, imageSetName, imageSetDesc, reference.getAccess(), result.getAccess(), threshold, logMode);
 }
 
 static deInt64 computeSquaredDiffSum (const ConstPixelBufferAccess& ref, const ConstPixelBufferAccess& cmp, const PixelBufferAccess& diffMask, int diffFactor)
