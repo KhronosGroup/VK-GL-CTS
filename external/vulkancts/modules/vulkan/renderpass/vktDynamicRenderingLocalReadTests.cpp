@@ -564,6 +564,14 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate (void)
 	// read pipelines need input attachments remaping
 	renderingCreateInfo.pNext = &renderingInputAttachmentIndexInfo;
 
+	// Per spec, if either of pDepthInputAttachmentIndex or pStencilInputAttachmentIndex are set to NULL it means that these are only accessible in the shader
+	// if the shader does not associate these input attachments with an InputAttachmentIndex.
+	if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX)
+	{
+		renderingInputAttachmentIndexInfo.pDepthInputAttachmentIndex	= NULL;
+		renderingInputAttachmentIndexInfo.pStencilInputAttachmentIndex	= NULL;
+	}
+
 	for (deUint32 pipelineIndex = 0; pipelineIndex < m_outputDrawsCount; ++pipelineIndex)
 	{
 		renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices	= m_colorAttachmentInputIndices[pipelineIndex].data();
@@ -1066,9 +1074,9 @@ void LocalReadTestCase::initPrograms (SourceCollections& programCollection) cons
 	{
 		glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(2));
 
-		// If depthInputAttachmentIndex and stencilInputAttachmentIndex are set to VK_ATTACHMENT_UNUSED
-		// it means that these are only accessible in the shader if the shader does not associate these
-		// input attachments with an InputAttachmentIndex.
+		// Per spec, if either of pDepthInputAttachmentIndex or pStencilInputAttachmentIndex are set to
+		// NULL it means that these are only accessible in the shader if the shader does not associate
+		// these input attachments with an InputAttachmentIndex.
 
 		// NOTE at the memoment glslang doesn't support input attachments without
 		// input_attachment_index qualifiers
