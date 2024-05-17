@@ -683,6 +683,8 @@ static bool verifyGatherOffsets (TestLog&						log,
 class PixelCompareRefZ
 {
 public:
+	virtual ~PixelCompareRefZ () {}
+
 	virtual float operator() (const IVec2& pixCoord) const = 0;
 };
 

@@ -2470,7 +2470,34 @@ VkResult getVideoEncodeCapabilities(DeviceContext& devCtx,
 	return result;
 }
 
-} //util
+double PSNR(const std::vector<deUint8>& img1, const std::vector<deUint8>& img2)
+{
+	TCU_CHECK_AND_THROW(InternalError,
+		(img1.size() > 0) && (img1.size() == img2.size()),
+		"Input and output YUVs have different sizes " + de::toString(img1.size()) + " vs " + de::toString(img2.size())
+	);
+
+	using sizet = std::vector<deUint8>::size_type;
+	sizet sz = img1.size();
+	double squaredError = 0.0;
+
+	for (sizet i = 0; i < sz; i++)
+	{
+		int diff = static_cast<int>(img1[i]) - static_cast<int>(img2[i]);
+		squaredError += std::abs(diff);
+	}
+
+	double mse = squaredError / static_cast<double>(sz);
+	if (mse == 0)
+	{
+		return std::numeric_limits<double>::infinity();
+	}
+
+	return 10 * std::log10((255.0 * 255.0) / mse);
+}
+
+} // namespace util
+
 de::MovePtr<StdVideoDecodeH264PictureInfo> getStdVideoDecodeH264PictureInfo(void)
 {
 	const StdVideoDecodeH264PictureInfoFlags				stdPictureInfoFlags =

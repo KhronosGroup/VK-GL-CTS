@@ -410,7 +410,7 @@ vector<vk::VkDescriptorSetLayoutBinding> calculateBindings( const DevProp1&					
 			b.descriptorCount = tc.second.count;
 			b.descriptorType = tc.first;
 			b.pImmutableSamplers = DE_NULL;
-			b.stageFlags = vk::VK_SHADER_STAGE_ALL;
+			b.stageFlags = tc.first == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT ? vk::VK_SHADER_STAGE_FRAGMENT_BIT : vk::VK_SHADER_STAGE_ALL;
 
 			bindings.push_back(b);
 		}

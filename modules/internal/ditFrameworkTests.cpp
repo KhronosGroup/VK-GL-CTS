@@ -40,6 +40,7 @@
 #include "deArrayUtil.hpp"
 
 #include <stdexcept>
+#include <cmath>
 
 namespace dit
 {
@@ -662,7 +663,7 @@ public:
 					do
 					{
 						v = tcu::Float32(rnd.getUint32()).asFloat();
-					} while (deFloatIsInf(v) || deFloatIsNaN(v));
+					} while (std::isinf(v) || std::isnan(v));
 					c.varying[compNdx] = v;
 				}
 				m_cases.push_back(c);

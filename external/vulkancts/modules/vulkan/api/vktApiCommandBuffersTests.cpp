@@ -5471,6 +5471,7 @@ void initManyIndirectDrawsPrograms (SourceCollections& dst)
 		<< "#version 460\n"
 		<< "layout (location=0) in vec4 inPos;\n"
 		<< "void main (void) {\n"
+		<< "    gl_PointSize = 1.0;\n"
 		<< "    gl_Position = inPos;\n"
 		<< "}\n"
 		;

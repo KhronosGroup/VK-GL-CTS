@@ -3403,12 +3403,12 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections& programCollect
 					<< "    uint barNdx = vIdx / 6;\n"
 
 					<< "    for (int i = 0; i < " << numClipDistances << "; ++i)\n"
-					<< "      gl_MeshVerticesEXT[vIdx].gl_ClipDistance[i] = ((barNdx == i) ? gl_MeshVerticesEXT[vIdx].gl_Position.y : 0);\n"
+					<< "      gl_MeshVerticesEXT[vIdx].gl_ClipDistance[i] = ((barNdx == i) ? cb.coords[vIdx].y : 0);\n"
 
 					<< "    for (int i = 0; i < " << numCullDistances << "; ++i)\n"
-					<< "      gl_MeshVerticesEXT[vIdx].gl_CullDistance[i] = ((gl_MeshVerticesEXT[vIdx].gl_Position.y < 0) ? -0.5 : 0.5);\n"
+					<< "      gl_MeshVerticesEXT[vIdx].gl_CullDistance[i] = ((cb.coords[vIdx].y < 0) ? -0.5 : 0.5);\n"
 
-					<< "    float xx = gl_MeshVerticesEXT[vIdx].gl_Position.x;\n"
+					<< "    float xx = cb.coords[vIdx].x;\n"
 					<< "    v_out[vIdx].color = vec4(1.0, 0.5 * (xx + 1.0), 0.0, 1.0);\n"
 					<< "  }\n"
 					<< "  gl_PrimitiveTriangleIndicesEXT[gl_LocalInvocationIndex] = uvec3(idx, idx+1, idx+2);\n"

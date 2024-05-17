@@ -101,10 +101,15 @@ def parseArgs ():
 						default="1.2",
 						choices=["1.0", "1.1", "1.2"],
 						help="Target Vulkan version")
+	parser.add_argument("-v", "--verbose",
+						dest="verbose",
+						action="store_true",
+						help="Enable verbose logging")
 	return parser.parse_args()
 
 if __name__ == "__main__":
 	args = parseArgs()
+	initializeLogger(args.verbose)
 
 	generator	= ANY_GENERATOR
 	buildCfg	= getBuildConfig(args.buildDir, args.targetName, args.buildType)

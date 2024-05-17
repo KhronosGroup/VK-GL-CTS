@@ -1923,6 +1923,8 @@ void prepareAttachmentRemapping(const Subpass&							subpass,
 								const std::vector<deUint32>&			colorAttachmentIndices,
 								std::vector<deUint32>&					colorAttachmentLocations,
 								std::vector<deUint32>&					colorAttachmentInputIndices,
+								deUint32								localDepthAttachmentIndex,
+								deUint32								localStencilAttachmentIndex,
 								VkRenderingAttachmentLocationInfoKHR&	renderingAttachmentLocationInfo,
 								VkRenderingInputAttachmentIndexInfoKHR&	renderingInputAttachmentIndexInfo)
 {
@@ -1930,8 +1932,6 @@ void prepareAttachmentRemapping(const Subpass&							subpass,
 	VkFormat stencilFormat					= VK_FORMAT_UNDEFINED;
 	deUint32 globalDepthAttachmentIndex		= VK_ATTACHMENT_UNUSED;
 	deUint32 globalStencilAttachmentIndex	= VK_ATTACHMENT_UNUSED;
-	deUint32 localDepthAttachmentIndex		= VK_ATTACHMENT_UNUSED;
-	deUint32 localStencilAttachmentIndex	= VK_ATTACHMENT_UNUSED;
 
 	findDepthStencilAttachments(allAttachments, depthFormat, stencilFormat,
 		globalDepthAttachmentIndex, globalStencilAttachmentIndex);
@@ -1982,6 +1982,8 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 	std::vector<VkFormat>						colorAttachmentFormats;
 	std::vector<deUint32>						colorAttachmentLocations;
 	std::vector<deUint32>						colorAttachmentInputIndices;
+	deUint32									localDepthAttachmentIndex			= VK_ATTACHMENT_UNUSED;
+	deUint32									localStencilAttachmentIndex			= VK_ATTACHMENT_UNUSED;
 
 	if (dynamicRenderPass && pSubpassInfo)
 	{
@@ -2025,6 +2027,7 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 		{
 			prepareAttachmentRemapping(subpass, allAttachments,
 				colorAttachmentIndices, colorAttachmentLocations, colorAttachmentInputIndices,
+				localDepthAttachmentIndex, localStencilAttachmentIndex,
 				renderingAttachmentLocationInfo, renderingInputAttachmentIndexInfo);
 
 			inheritanceRenderingInfo.pNext = &renderingInputAttachmentIndexInfo;
@@ -2573,9 +2576,40 @@ public:
 	{
 		DE_UNREF(secondaryCommandBuffer);
 
-		std::vector<deUint32> colorAttachmentIndices;
-		std::vector<VkFormat> colorAttachmentFormats;
+		VkImageLayout			inputAttachmenLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		std::vector<deUint32>	colorAttachmentIndices;
+		std::vector<VkFormat>	colorAttachmentFormats;
 		findColorAttachments(m_renderPassInfo, colorAttachmentIndices, colorAttachmentFormats);
+
+#ifndef CTS_USES_VULKANSC
+		if (dynamicRendering && (m_renderPassInfo.getSubpasses().size() > 1u))
+		{
+			inputAttachmenLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
+			if (!secondaryCommandBuffer)
+			{
+				const deUint32							subpassIndex						= m_renderInfo.getSubpassIndex();
+				const std::vector<Subpass>&				allSubapsses						= m_renderPassInfo.getSubpasses();
+				const auto&								allAttachments						= m_renderPassInfo.getAttachments();
+				const auto&								subpass								= allSubapsses[subpassIndex];
+				deUint32								colorAttachmentCount				= (deUint32)colorAttachmentIndices.size();
+				std::vector<deUint32>					colorAttachmentLocations			(colorAttachmentCount, VK_ATTACHMENT_UNUSED);
+				std::vector<deUint32>					colorAttachmentInputIndices			(colorAttachmentCount, VK_ATTACHMENT_UNUSED);
+				deUint32								localDepthAttachmentIndex			= VK_ATTACHMENT_UNUSED;
+				deUint32								localStencilAttachmentIndex			= VK_ATTACHMENT_UNUSED;
+				VkRenderingAttachmentLocationInfoKHR	renderingAttachmentLocationInfo		= initVulkanStructure();
+				VkRenderingInputAttachmentIndexInfoKHR	renderingInputAttachmentIndexInfo	= initVulkanStructure();
+
+				prepareAttachmentRemapping(subpass, allAttachments,
+					colorAttachmentIndices, colorAttachmentLocations, colorAttachmentInputIndices,
+					localDepthAttachmentIndex, localStencilAttachmentIndex,
+					renderingAttachmentLocationInfo, renderingInputAttachmentIndexInfo);
+
+				vk.cmdSetRenderingAttachmentLocationsKHR(commandBuffer, &renderingAttachmentLocationInfo);
+				vk.cmdSetRenderingInputAttachmentIndicesKHR(commandBuffer, &renderingInputAttachmentIndexInfo);
+			}
+		}
+#endif // CTS_USES_VULKANSC
 
 		if (!m_renderInfo.getColorClears().empty())
 		{
@@ -2650,13 +2684,6 @@ public:
 		vector<VkImageMemoryBarrier>	selfDeps;
 		VkPipelineStageFlags			srcStages = 0;
 		VkPipelineStageFlags			dstStages = 0;
-		VkImageLayout					inputAttachmenLayout		= VK_IMAGE_LAYOUT_GENERAL;
-
-#ifndef CTS_USES_VULKANSC
-		const bool isMultiPassDynamicRendering = (dynamicRendering && (m_renderPassInfo.getSubpasses().size() > 1u));
-		if (isMultiPassDynamicRendering)
-			inputAttachmenLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR;
-#endif // CTS_USES_VULKANSC
 
 		for (deUint32 inputAttachmentNdx = 0; inputAttachmentNdx < m_renderInfo.getInputAttachmentCount(); inputAttachmentNdx++)
 		{
@@ -2745,28 +2772,6 @@ public:
 			const VkBuffer		vertexBuffer	= *m_vertexBuffer;
 
 			vk.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.getPipeline());
-
-#ifndef CTS_USES_VULKANSC
-			if (isMultiPassDynamicRendering && !secondaryCommandBuffer)
-			{
-				const deUint32							subpassIndex						= m_renderInfo.getSubpassIndex();
-				const std::vector<Subpass>&				allSubapsses						= m_renderPassInfo.getSubpasses();
-				const auto&								allAttachments						= m_renderPassInfo.getAttachments();
-				const auto&								subpass								= allSubapsses[subpassIndex];
-				deUint32								colorAttachmentCount				= (deUint32)colorAttachmentIndices.size();
-				std::vector<deUint32>					colorAttachmentLocations			(colorAttachmentCount, VK_ATTACHMENT_UNUSED);
-				std::vector<deUint32>					colorAttachmentInputIndices			(colorAttachmentCount, VK_ATTACHMENT_UNUSED);
-				VkRenderingAttachmentLocationInfoKHR	renderingAttachmentLocationInfo		= initVulkanStructure();
-				VkRenderingInputAttachmentIndexInfoKHR	renderingInputAttachmentIndexInfo	= initVulkanStructure();
-
-				prepareAttachmentRemapping(subpass, allAttachments,
-										   colorAttachmentIndices, colorAttachmentLocations, colorAttachmentInputIndices,
-										   renderingAttachmentLocationInfo, renderingInputAttachmentIndexInfo);
-
-				vk.cmdSetRenderingAttachmentLocationsKHR(commandBuffer, &renderingAttachmentLocationInfo);
-				vk.cmdSetRenderingInputAttachmentIndicesKHR(commandBuffer, &renderingInputAttachmentIndexInfo);
-			}
-#endif // CTS_USES_VULKANSC
 
 			if (m_descriptorSet)
 			{
@@ -3438,11 +3443,14 @@ void pushDynamicRenderingCommands (const DeviceInterface&								vk,
 					deUint32								colorAttachmentCount				((deUint32)colorAttachmentIndices.size());
 					std::vector<deUint32>					colorAttachmentLocations			(colorAttachmentCount, VK_ATTACHMENT_UNUSED);
 					std::vector<deUint32>					colorAttachmentInputIndices			(colorAttachmentCount, VK_ATTACHMENT_UNUSED);
+					deUint32								localDepthAttachmentIndex			= VK_ATTACHMENT_UNUSED;
+					deUint32								localStencilAttachmentIndex			= VK_ATTACHMENT_UNUSED;
 					VkRenderingAttachmentLocationInfoKHR	renderingAttachmentLocationInfo		= initVulkanStructure();
 					VkRenderingInputAttachmentIndexInfoKHR	renderingInputAttachmentIndexInfo	= initVulkanStructure();
 
 					prepareAttachmentRemapping(renderPassInfo.getSubpasses()[subpassNdx], allAttachments,
 											   colorAttachmentIndices, colorAttachmentLocations, colorAttachmentInputIndices,
+											   localDepthAttachmentIndex, localStencilAttachmentIndex,
 											   renderingAttachmentLocationInfo, renderingInputAttachmentIndexInfo);
 
 					vk.cmdSetRenderingAttachmentLocationsKHR(commandBuffer, &renderingAttachmentLocationInfo);

@@ -83,6 +83,8 @@ struct TestParams;
 class TestConfiguration
 {
 public:
+	virtual ~TestConfiguration () {}
+
 	virtual std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	initBottomAccelerationStructures	(Context&							context,
 																												 TestParams&						testParams) = 0;
 	virtual de::MovePtr<TopLevelAccelerationStructure>						initTopAccelerationStructure		(Context&							context,

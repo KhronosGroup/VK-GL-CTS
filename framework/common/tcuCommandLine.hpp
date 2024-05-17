@@ -142,7 +142,7 @@ public:
 									CommandLine						(void);
 									CommandLine						(int argc, const char* const* argv);
 	explicit						CommandLine						(const std::string& cmdLine);
-									~CommandLine					(void);
+	virtual							~CommandLine					(void);
 
 	bool							parse							(int argc, const char* const* argv);
 	bool							parse							(const std::string& cmdLine);

@@ -29,6 +29,7 @@
 #include <sstream>
 #include <iomanip>
 #include <limits>
+#include <cmath>
 
 namespace tcu
 {
@@ -100,9 +101,9 @@ double FloatFormat::ulp (double x, double count) const
 	int				exp		= 0;
 	const double	frac	= deFractExp(deAbs(x), &exp);
 
-	if (deIsNaN(frac))
+	if (std::isnan(frac))
 		return TCU_NAN;
-	else if (deIsInf(frac))
+	else if (std::isinf(frac))
 		return deLdExp(1.0, m_maxExp - m_fractionBits);
 	else if (frac == 1.0)
 	{
@@ -157,12 +158,12 @@ Interval FloatFormat::clampValue (double d) const
 	const double	rSign		= deSign(d);
 	int				rExp		= 0;
 
-	DE_ASSERT(!deIsNaN(d));
+	DE_ASSERT(!std::isnan(d));
 
 	deFractExp(d, &rExp);
 	if (rExp < m_minExp)
 		return chooseInterval(m_hasSubnormal, rSign * 0.0, d);
-	else if (deIsInf(d) || rExp > m_maxExp)
+	else if (std::isinf(d) || rExp > m_maxExp)
 		return chooseInterval(m_hasInf, rSign * getMaxValue(), rSign * TCU_INFINITY);
 
 	return Interval(d);
@@ -226,9 +227,9 @@ Interval FloatFormat::roundOut (const Interval& x, bool roundUnderOverflow) cons
 
 std::string	FloatFormat::floatToHex	(double x) const
 {
-	if (deIsNaN(x))
+	if (std::isnan(x))
 		return "NaN";
-	else if (deIsInf(x))
+	else if (std::isinf(x))
 		return (x < 0.0 ? "-" : "+") + std::string("inf");
 	else if (x == 0.0) // \todo [2014-03-27 lauri] Negative zero
 		return "0.0";

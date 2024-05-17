@@ -6447,6 +6447,9 @@ dEQP-VK.renderpass.fragment_density_map.1_view.render_copy.non_divisible_density
 dEQP-VK.renderpass.fragment_density_map.1_view.render_copy.non_divisible_density_size.8_samples.static_subsampled_1_2
 dEQP-VK.renderpass.fragment_density_map.1_view.render_copy.non_divisible_density_size.8_samples.static_subsampled_2_1
 dEQP-VK.renderpass.fragment_density_map.1_view.render_copy.non_divisible_density_size.8_samples.static_subsampled_2_2
+dEQP-VK.renderpass.fragment_density_map.depth_format.d16_unorm
+dEQP-VK.renderpass.fragment_density_map.depth_format.d24_unorm_s8_uint
+dEQP-VK.renderpass.fragment_density_map.depth_format.d32_sfloat
 dEQP-VK.renderpass.fragment_density_map.properties.2_subsampled_samplers
 dEQP-VK.renderpass.fragment_density_map.properties.4_subsampled_samplers
 dEQP-VK.renderpass.fragment_density_map.properties.6_subsampled_samplers

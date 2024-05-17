@@ -199,6 +199,8 @@ public:
 		m_outputs[0].type	= rr::GENERICVECTYPE_FLOAT;
 	}
 
+	virtual ~DepthVertShader () {}
+
 	void shadeVertices (const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const
 	{
 		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
@@ -224,6 +226,8 @@ public:
 		m_outputs[0].type	= rr::GENERICVECTYPE_FLOAT;
 	}
 
+	virtual ~DepthFragShader () {}
+
 	void shadeFragments (rr::FragmentPacket* packets, const int numPackets, const rr::FragmentShadingContext& context) const
 	{
 		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
@@ -248,6 +252,8 @@ public:
 		m_inputs[0].type	= rr::GENERICVECTYPE_FLOAT;
 	}
 
+	virtual ~SelfDependencyBackwardsVertShader () {}
+
 	void shadeVertices (const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const
 	{
 		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
@@ -267,6 +273,8 @@ public:
 	{
 		m_outputs[0].type	= rr::GENERICVECTYPE_FLOAT;
 	}
+
+	virtual ~SelfDependencyBackwardsFragShader () {}
 
 	void shadeFragments (rr::FragmentPacket* packets, const int numPackets, const rr::FragmentShadingContext& context) const
 	{

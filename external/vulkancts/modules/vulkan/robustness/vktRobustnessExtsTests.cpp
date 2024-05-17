@@ -3850,6 +3850,14 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2, bool pipel
 											if (pipelineRobustness && sampCases[sampNdx].count != VK_SAMPLE_COUNT_1_BIT)
 											    continue;
 
+											// Buffers don't support different sample counts at all
+											if (sampCases[sampNdx].count != VK_SAMPLE_COUNT_1_BIT &&
+												descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE &&
+												descCases[descNdx].count != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+											{
+												continue;
+											}
+
 											for (int viewNdx = 0; viewNdx < DE_LENGTH_OF_ARRAY(viewCases); viewNdx++)
 											{
 												if (viewCases[viewNdx].count != VK_IMAGE_VIEW_TYPE_1D &&

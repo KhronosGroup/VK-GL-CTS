@@ -69,7 +69,7 @@ public:
 				// Intentionally not explicit. Conversion from double to Interval is common
 				// and reasonable.
 				Interval			(double val)
-					: m_hasNaN		(!!deIsNaN(val))
+					: m_hasNaN		(!!std::isnan(val))
 					, m_lo			(m_hasNaN ? TCU_INFINITY : val)
 					, m_hi			(m_hasNaN ? -TCU_INFINITY : val)
 					, m_warningLo	(-TCU_INFINITY)

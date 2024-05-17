@@ -172,6 +172,8 @@ TestConfiguration::~TestConfiguration()
 class SceneBuilder
 {
 public:
+	virtual ~SceneBuilder () {}
+
 	virtual std::vector<de::SharedPtr<BottomLevelAccelerationStructure>>	initBottomAccelerationStructures	(Context&							context,
 																												 TestParams&						testParams) = 0;
 	virtual de::MovePtr<TopLevelAccelerationStructure>						initTopAccelerationStructure		(Context&							context,

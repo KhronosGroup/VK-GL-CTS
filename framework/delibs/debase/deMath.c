@@ -106,7 +106,7 @@ deBool deSetRoundingMode (deRoundingMode mode)
 
 double deFractExp (double x, int* exponent)
 {
-	if (deIsInf(x))
+	if (isinf(x))
 	{
 		*exponent = 0;
 		return x;

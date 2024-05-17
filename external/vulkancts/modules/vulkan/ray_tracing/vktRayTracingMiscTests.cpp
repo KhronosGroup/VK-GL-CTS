@@ -8704,6 +8704,67 @@ tcu::TestStatus nullMissInstance (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+void initEmptyPrograms(vk::SourceCollections& programCollection)
+{
+	const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+	std::string source(
+		"#version 460\n"
+		"#extension GL_EXT_ray_tracing : require\n"
+		"void main()\n"
+		"{\n"
+		"}\n");
+
+	programCollection.glslSources.add("rgen") << glu::RaygenSource(source) << buildOptions;
+	programCollection.glslSources.add("miss") << glu::MissSource(source) << buildOptions;
+}
+
+tcu::TestStatus emptyPipelineLayoutInstance(Context& context)
+{
+	const auto&	vk				= context.getDeviceInterface();
+	const auto	device			= context.getDevice();
+	const auto	pipelineLayout	= makePipelineLayout(vk, device);
+	auto		rgenModule		= createShaderModule(vk, device, context.getBinaryCollection().get("rgen"));
+	auto		missModule		= createShaderModule(vk, device, context.getBinaryCollection().get("miss"));
+
+	VkPipelineShaderStageCreateInfo defaultShaderCreateInfo = initVulkanStructure();
+	defaultShaderCreateInfo.pName = "main";
+	std::vector<VkPipelineShaderStageCreateInfo> shaderCreateInfoVect(2, defaultShaderCreateInfo);
+	shaderCreateInfoVect[0].stage	= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+	shaderCreateInfoVect[0].module	= *rgenModule;
+	shaderCreateInfoVect[1].stage	= VK_SHADER_STAGE_MISS_BIT_KHR;
+	shaderCreateInfoVect[1].module	= *missModule;
+
+	const VkRayTracingShaderGroupCreateInfoKHR defaultShaderGroupCreateInfo
+	{
+		VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,	// VkStructureType					sType;
+		DE_NULL,													// const void*						pNext;
+		VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,				// VkRayTracingShaderGroupTypeKHR	type;
+		VK_SHADER_UNUSED_KHR,										// deUint32							generalShader;
+		VK_SHADER_UNUSED_KHR,										// deUint32							closestHitShader;
+		VK_SHADER_UNUSED_KHR,										// deUint32							anyHitShader;
+		VK_SHADER_UNUSED_KHR,										// deUint32							intersectionShader;
+		DE_NULL,													// const void*						pShaderGroupCaptureReplayHandle;
+	};
+	std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroupCreateInfoVect(2, defaultShaderGroupCreateInfo);
+	shaderGroupCreateInfoVect[0].generalShader	= 0u;
+	shaderGroupCreateInfoVect[1].generalShader	= 1u;
+
+	VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo = initVulkanStructure();
+	pipelineCreateInfo.stageCount					= 2;
+	pipelineCreateInfo.pStages						= shaderCreateInfoVect.data();
+	pipelineCreateInfo.groupCount					= 2u;
+	pipelineCreateInfo.pGroups						= shaderGroupCreateInfoVect.data();
+	pipelineCreateInfo.maxPipelineRayRecursionDepth	= 1u;
+	pipelineCreateInfo.layout						= *pipelineLayout;
+
+	// make sure there is no crash when pipeline layout is empty
+	auto pipeline = createRayTracingPipelineKHR(vk, device, 0, 0, &pipelineCreateInfo);
+	pipeline = Move<VkPipeline>();
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 std::vector<tcu::Vec3> getInRangeTrianglePoints (float offset)
 {
 	std::vector<tcu::Vec3> triangle;
@@ -9776,6 +9837,7 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 
 	{
 		addFunctionCaseWithPrograms(miscGroupPtr.get(), "null_miss", checkRTPipelineSupport, initBasicHitBufferPrograms, nullMissInstance);
+		addFunctionCaseWithPrograms(miscGroupPtr.get(), "empty_pipeline_layout", checkRTPipelineSupport, initEmptyPrograms, emptyPipelineLayoutInstance);
 		addFunctionCaseWithPrograms(miscGroupPtr.get(), "reuse_creation_buffer_top", checkReuseCreationBufferSupport, initReuseCreationBufferPrograms, reuseCreationBufferInstance, true/*top*/);
 		addFunctionCaseWithPrograms(miscGroupPtr.get(), "reuse_creation_buffer_bottom", checkReuseCreationBufferSupport, initReuseCreationBufferPrograms, reuseCreationBufferInstance, false/*top*/);
 	}

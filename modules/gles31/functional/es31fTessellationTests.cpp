@@ -7143,13 +7143,13 @@ ReferencedByTessellationQueryCase::IterateResult ReferencedByTessellationQueryCa
 		result.fail("failed to build program");
 	else
 	{
-		const deUint32 props[1] = { (deUint32)((m_isCtrlCase) ? (GL_REFERENCED_BY_TESS_CONTROL_SHADER) : (GL_REFERENCED_BY_TESS_EVALUATION_SHADER)) };
+		const deUint32 props[] = { GL_REFERENCED_BY_TESS_CONTROL_SHADER, GL_REFERENCED_BY_TESS_EVALUATION_SHADER };
 
 		{
 			const tcu::ScopedLogSection section		(m_testCtx.getLog(), "UnreferencedUniform", "Unreferenced uniform u_unreferenced");
 			deUint32					resourcePos;
-			glw::GLsizei				length		= 0;
-			glw::GLint					referenced	= 0;
+			glw::GLsizei				length			= 0;
+			glw::GLint					referenced[]	= {0, 0};
 
 			resourcePos = gl.glGetProgramResourceIndex(program.getProgram(), GL_UNIFORM, "u_unreferenced");
 			m_testCtx.getLog() << tcu::TestLog::Message << "u_unreferenced resource index: " << resourcePos << tcu::TestLog::EndMessage;
@@ -7158,17 +7158,23 @@ ReferencedByTessellationQueryCase::IterateResult ReferencedByTessellationQueryCa
 				result.fail("resourcePos was GL_INVALID_INDEX");
 			else
 			{
-				gl.glGetProgramResourceiv(program.getProgram(), GL_UNIFORM, resourcePos, 1, props, 1, &length, &referenced);
+				gl.glGetProgramResourceiv(program.getProgram(), GL_UNIFORM, resourcePos, 2, props, 2, &length, referenced);
 				m_testCtx.getLog()
 					<< tcu::TestLog::Message
-					<< "Query " << glu::getProgramResourcePropertyStr(props[0])
-					<< ", got " << length << " value(s), value[0] = " << glu::getBooleanStr(referenced)
+					<< "Query " << glu::getProgramResourcePropertyStr(props[0]) << ", " << glu::getProgramResourcePropertyStr(props[1])
+					<< ", got " << length << " value(s), value[0] = " << glu::getBooleanStr(referenced[0]) << ", value[1] = " << glu::getBooleanStr(referenced[1])
 					<< tcu::TestLog::EndMessage;
 
 				GLS_COLLECT_GL_ERROR(result, gl.glGetError(), "query resource");
 
-				if (length == 0 || referenced != GL_FALSE)
-					result.fail("expected GL_FALSE");
+				if (length != 2)
+					result.fail("expected 2 param returns");
+				else
+				{
+					deUint32 count = referenced[0] + referenced[1];
+					if (count < 1)
+						result.fail("u_unreferenced must be referenced by at least one stage");
+				}
 			}
 		}
 
@@ -7176,7 +7182,7 @@ ReferencedByTessellationQueryCase::IterateResult ReferencedByTessellationQueryCa
 			const tcu::ScopedLogSection section		(m_testCtx.getLog(), "ReferencedUniform", "Referenced uniform u_referenced");
 			deUint32					resourcePos;
 			glw::GLsizei				length		= 0;
-			glw::GLint					referenced	= 0;
+			glw::GLint					referenced[]	= {0, 0};
 
 			resourcePos = gl.glGetProgramResourceIndex(program.getProgram(), GL_UNIFORM, "u_referenced");
 			m_testCtx.getLog() << tcu::TestLog::Message << "u_referenced resource index: " << resourcePos << tcu::TestLog::EndMessage;
@@ -7185,17 +7191,23 @@ ReferencedByTessellationQueryCase::IterateResult ReferencedByTessellationQueryCa
 				result.fail("resourcePos was GL_INVALID_INDEX");
 			else
 			{
-				gl.glGetProgramResourceiv(program.getProgram(), GL_UNIFORM, resourcePos, 1, props, 1, &length, &referenced);
+				gl.glGetProgramResourceiv(program.getProgram(), GL_UNIFORM, resourcePos, 2, props, 2, &length, referenced);
 				m_testCtx.getLog()
 					<< tcu::TestLog::Message
-					<< "Query " << glu::getProgramResourcePropertyStr(props[0])
-					<< ", got " << length << " value(s), value[0] = " << glu::getBooleanStr(referenced)
+					<< "Query " << glu::getProgramResourcePropertyStr(props[0]) << ", " << glu::getProgramResourcePropertyStr(props[1])
+					<< ", got " << length << " value(s), value[0] = " << glu::getBooleanStr(referenced[0]) << ", value[1] = " << glu::getBooleanStr(referenced[1])
 					<< tcu::TestLog::EndMessage;
 
 				GLU_EXPECT_NO_ERROR(gl.glGetError(), "query resource");
 
-				if (length == 0 || referenced != GL_TRUE)
-					result.fail("expected GL_TRUE");
+				if (length != 2)
+					result.fail("expected 2 param returns");
+				else
+				{
+					deUint32 count = referenced[0] + referenced[1];
+					if (count < 1)
+						result.fail("u_referenced must be referenced by at least one stage");
+				}
 			}
 		}
 	}

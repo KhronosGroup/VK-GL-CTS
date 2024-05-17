@@ -104,6 +104,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_NV_device_generated_commands", // This filter also applies to _compute.
 		"VK_NV_shader_atomic_float16_vector",
 		"VK_MVK_macos_surface",
+		"VK_NV_raw_access_chains",
 	};
 
 	const char* exclusions[] =
@@ -250,8 +251,8 @@ Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersi
 
 	if (isValidationEnabled)
 	{
-		if (!isDebugReportSupported(vkp))
-			TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
+		if (!isDebugUtilsSupported(vkp))
+			TCU_THROW(NotSupportedError, "VK_EXT_utils_report is not supported");
 
 		enabledLayers = vkt::getValidationLayers(vkp);
 		if (enabledLayers.empty())
@@ -558,10 +559,10 @@ deUint32 sanitizeApiVersion(deUint32 v)
 #ifndef CTS_USES_VULKANSC
 de::MovePtr<vk::DebugReportRecorder> createDebugReportRecorder (const vk::PlatformInterface& vkp, bool printValidationErrors)
 {
-	if (isDebugReportSupported(vkp))
+	if (isDebugUtilsSupported(vkp))
 		return de::MovePtr<vk::DebugReportRecorder>(new vk::DebugReportRecorder(printValidationErrors));
 	else
-		TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
+		TCU_THROW(NotSupportedError, "VK_EXT_debug_utils is not supported");
 }
 #endif // CTS_USES_VULKANSC
 

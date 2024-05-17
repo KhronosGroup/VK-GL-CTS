@@ -427,6 +427,7 @@ void checkSupport(Context& context, TestParameters params)
 
 struct PixelSetter
 {
+	virtual ~PixelSetter () {}
 	PixelSetter (const tcu::PixelBufferAccess& access) : m_access(access) {}
 	virtual void setPixel(const tcu::Vec4& rawValues, int x, int y, int z) const = 0;
 protected:

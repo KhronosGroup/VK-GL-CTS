@@ -401,7 +401,7 @@ public:
 	};
 
 							Platform			(void) {}
-							~Platform			(void) {}
+	virtual					~Platform			(void) {}
 #ifdef DE_PLATFORM_USE_LIBRARY_TYPE
 	virtual Library*		createLibrary		(LibraryType libraryType = LIBRARY_TYPE_VULKAN, const char* libraryPath = DE_NULL) const = 0;
 #else

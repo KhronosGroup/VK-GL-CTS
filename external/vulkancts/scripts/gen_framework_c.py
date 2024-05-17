@@ -28,7 +28,7 @@ import re
 scriptPath = os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
 sys.path.insert(0, scriptPath)
 
-from ctsbuild.common import DEQP_DIR, execute, initializeLogger
+from ctsbuild.common import *
 from khr_util.format import writeInlFile
 
 VULKAN_HEADERS_INCLUDE_DIR	  = os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include")
