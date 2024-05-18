@@ -34,11 +34,11 @@ namespace egl
 class NativeColorMappingTests : public TestCaseGroup
 {
 public:
-			NativeColorMappingTests	(EglTestContext& eglTestCtx);
-	void	init					(void);
+    NativeColorMappingTests(EglTestContext &eglTestCtx);
+    void init(void);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLNATIVECOLORMAPPINGTESTS_HPP

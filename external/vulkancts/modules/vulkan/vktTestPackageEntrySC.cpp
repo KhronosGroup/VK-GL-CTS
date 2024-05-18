@@ -25,9 +25,9 @@
 
 // Register package to test executor.
 
-static tcu::TestPackage* createTestPackageSC (tcu::TestContext& testCtx)
+static tcu::TestPackage *createTestPackageSC(tcu::TestContext &testCtx)
 {
-	return new vkt::TestPackageSC(testCtx);
+    return new vkt::TestPackageSC(testCtx);
 }
 
 tcu::TestPackageDescriptor g_vktPackageDescriptor("dEQP-VKSC", createTestPackageSC);

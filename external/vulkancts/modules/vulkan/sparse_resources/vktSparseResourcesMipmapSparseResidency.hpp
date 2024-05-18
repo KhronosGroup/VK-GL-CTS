@@ -31,10 +31,10 @@ namespace vkt
 namespace sparse
 {
 
-tcu::TestCaseGroup* createMipmapSparseResidencyTests(tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createDeviceGroupMipmapSparseResidencyTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMipmapSparseResidencyTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createDeviceGroupMipmapSparseResidencyTests(tcu::TestContext &testCtx);
 
-} // sparse
-} // vkt
+} // namespace sparse
+} // namespace vkt
 
 #endif // _VKTSPARSERESOURCESMIPMAPSPARSERESIDENCY_HPP

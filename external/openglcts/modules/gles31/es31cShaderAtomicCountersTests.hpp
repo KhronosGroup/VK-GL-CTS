@@ -33,15 +33,15 @@ namespace glcts
 class ShaderAtomicCountersTests : public glcts::TestCaseGroup
 {
 public:
-	ShaderAtomicCountersTests(glcts::Context& context);
-	~ShaderAtomicCountersTests(void);
+    ShaderAtomicCountersTests(glcts::Context &context);
+    ~ShaderAtomicCountersTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderAtomicCountersTests(const ShaderAtomicCountersTests& other);
-	ShaderAtomicCountersTests& operator=(const ShaderAtomicCountersTests& other);
+    ShaderAtomicCountersTests(const ShaderAtomicCountersTests &other);
+    ShaderAtomicCountersTests &operator=(const ShaderAtomicCountersTests &other);
 };
-}
+} // namespace glcts
 
 #endif // _ES31CSHADERATOMICCOUNTERSTESTS_HPP

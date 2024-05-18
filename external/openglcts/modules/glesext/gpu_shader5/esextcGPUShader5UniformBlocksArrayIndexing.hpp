@@ -95,37 +95,37 @@ namespace glcts
 class GPUShader5UniformBlocksArrayIndexing : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GPUShader5UniformBlocksArrayIndexing(Context& context, const ExtParameters& extParams, const char* name,
-										 const char* description);
+    /* Public methods */
+    GPUShader5UniformBlocksArrayIndexing(Context &context, const ExtParameters &extParams, const char *name,
+                                         const char *description);
 
-	virtual ~GPUShader5UniformBlocksArrayIndexing()
-	{
-	}
+    virtual ~GPUShader5UniformBlocksArrayIndexing()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void initTest(void);
+    /* Private methods */
+    void initTest(void);
 
-	/* Private variables */
-	static const char*		  m_fragment_shader_code;
-	static const glw::GLuint  m_n_array_size;
-	static const glw::GLuint  m_n_position_components;
-	static const glw::GLfloat m_position_data[];
-	static const char*		  m_vertex_shader_code;
+    /* Private variables */
+    static const char *m_fragment_shader_code;
+    static const glw::GLuint m_n_array_size;
+    static const glw::GLuint m_n_position_components;
+    static const glw::GLfloat m_position_data[];
+    static const char *m_vertex_shader_code;
 
-	glw::GLuint  m_fragment_shader_id;
-	glw::GLuint  m_program_id;
-	glw::GLuint  m_tf_buffer_id;
-	glw::GLuint* m_uniform_buffer_ids;
-	glw::GLuint  m_vertex_shader_id;
-	glw::GLuint  m_vao_id;
+    glw::GLuint m_fragment_shader_id;
+    glw::GLuint m_program_id;
+    glw::GLuint m_tf_buffer_id;
+    glw::GLuint *m_uniform_buffer_ids;
+    glw::GLuint m_vertex_shader_id;
+    glw::GLuint m_vao_id;
 
-	/* Private functions */
-	bool drawAndCheckResult(glw::GLuint index_location, glw::GLuint index_value);
+    /* Private functions */
+    bool drawAndCheckResult(glw::GLuint index_location, glw::GLuint index_value);
 };
 
 } // namespace glcts

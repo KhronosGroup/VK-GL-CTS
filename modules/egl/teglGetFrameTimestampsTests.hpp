@@ -31,9 +31,9 @@ namespace deqp
 namespace egl
 {
 
-TestCaseGroup* createGetFrameTimestampsTests (EglTestContext& eglTestCtx);
+TestCaseGroup *createGetFrameTimestampsTests(EglTestContext &eglTestCtx);
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLGETFRAMETIMESTAMPSTESTS_HPP

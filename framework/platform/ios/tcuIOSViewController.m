@@ -23,13 +23,13 @@
 
 #import <QuartzCore/QuartzCore.h>
 
-#import "tcuIOSViewController.h"
 #import "tcuEAGLView.h"
+#import "tcuIOSViewController.h"
 
 #include "qpDebugOut.h"
 
 @interface tcuIOSViewController ()
-@property (nonatomic, assign) CADisplayLink *displayLink;
+@property(nonatomic, assign) CADisplayLink *displayLink;
 @end
 
 @implementation tcuIOSViewController
@@ -38,55 +38,59 @@
 
 - (void)loadView
 {
-	tcuEAGLView *view = [[tcuEAGLView alloc] initWithFrame:[UIScreen mainScreen].applicationFrame];
-	self.view = view;
-	[view release];
+    tcuEAGLView *view = [[tcuEAGLView alloc]
+        initWithFrame:[UIScreen mainScreen].applicationFrame];
+    self.view = view;
+    [view release];
 }
 
 - (void)viewDidLoad
 {
-	[super viewDidLoad];
+    [super viewDidLoad];
 
-    isIterating			= FALSE;
-    self.displayLink	= nil;
-	app					= tcuIOSApp_create(self.view);
+    isIterating = FALSE;
+    self.displayLink = nil;
+    app = tcuIOSApp_create(self.view);
 }
 
 - (void)dealloc
 {
-	[super dealloc];
+    [super dealloc];
 }
 
 - (void)didReceiveMemoryWarning
 {
-	[super didReceiveMemoryWarning];
+    [super didReceiveMemoryWarning];
 }
 
 - (void)viewWillAppear:(BOOL)animated
 {
-	[super viewWillAppear:animated];
+    [super viewWillAppear:animated];
 }
 
 - (void)viewWillDisappear:(BOOL)animated
 {
-	[super viewWillDisappear:animated];
+    [super viewWillDisappear:animated];
 }
 
 - (void)viewDidUnload
 {
-	[super viewDidUnload];
+    [super viewDidUnload];
 }
 
 - (void)startTestIteration
 {
     if (!isIterating)
-	{
-		DE_ASSERT(self.displayLink == nil);
+    {
+        DE_ASSERT(self.displayLink == nil);
 
-		// Obtain display link.
-        self.displayLink = [[UIScreen mainScreen] displayLinkWithTarget:self selector:@selector(iterate)];
+        // Obtain display link.
+        self.displayLink =
+            [[UIScreen mainScreen] displayLinkWithTarget:self
+                                                selector:@selector(iterate)];
         [self.displayLink setFrameInterval:1];
-        [self.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+        [self.displayLink addToRunLoop:[NSRunLoop currentRunLoop]
+                               forMode:NSDefaultRunLoopMode];
 
         isIterating = TRUE;
     }
@@ -95,7 +99,7 @@
 - (void)stopTestIteration
 {
     if (isIterating)
-	{
+    {
         isIterating = FALSE;
         [self.displayLink invalidate];
         self.displayLink = nil;
@@ -104,16 +108,16 @@
 
 - (void)iterate
 {
-	if (isIterating)
-	{
-		deBool result = tcuIOSApp_iterate(app);
+    if (isIterating)
+    {
+        bool result = tcuIOSApp_iterate(app);
 
-		if (!result)
-		{
-			[self stopTestIteration];
-			qpDief("Fatal error occurred in test execution, killing process.");
-		}
-	}
+        if (!result)
+        {
+            [self stopTestIteration];
+            qpDief("Fatal error occurred in test execution, killing process.");
+        }
+    }
 }
 
 @end

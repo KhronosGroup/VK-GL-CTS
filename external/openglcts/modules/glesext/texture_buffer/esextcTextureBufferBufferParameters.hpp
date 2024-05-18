@@ -104,31 +104,31 @@ namespace glcts
 class TextureBufferBufferParameters : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureBufferBufferParameters(Context& context, const ExtParameters& extParams, const char* name,
-								  const char* description);
+    /* Public methods */
+    TextureBufferBufferParameters(Context &context, const ExtParameters &extParams, const char *name,
+                                  const char *description);
 
-	virtual ~TextureBufferBufferParameters()
-	{
-	}
+    virtual ~TextureBufferBufferParameters()
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	void initTest(void);
+    /* Private methods */
+    void initTest(void);
 
-	glw::GLboolean queryBufferParameteriv(glw::GLenum target, glw::GLenum pname, glw::GLint expected_data);
-	glw::GLboolean queryBufferParameteri64v(glw::GLenum target, glw::GLenum pname, glw::GLint64 expected_data);
-	glw::GLboolean queryBufferPointerv(glw::GLenum target, glw::GLenum pname, glw::GLvoid* expected_params);
+    glw::GLboolean queryBufferParameteriv(glw::GLenum target, glw::GLenum pname, glw::GLint expected_data);
+    glw::GLboolean queryBufferParameteri64v(glw::GLenum target, glw::GLenum pname, glw::GLint64 expected_data);
+    glw::GLboolean queryBufferPointerv(glw::GLenum target, glw::GLenum pname, glw::GLvoid *expected_params);
 
-	/* Private variables */
-	glw::GLuint   m_bo_id;			/* Buffer Object */
-	glw::GLubyte* m_buffer_pointer; /* Pointer to mapped buffer */
+    /* Private variables */
+    glw::GLuint m_bo_id;            /* Buffer Object */
+    glw::GLubyte *m_buffer_pointer; /* Pointer to mapped buffer */
 
-	/* Private static constants */
-	static const glw::GLint m_bo_size; /* Buffer object size */
+    /* Private static constants */
+    static const glw::GLint m_bo_size; /* Buffer object size */
 };
 
 } // namespace glcts

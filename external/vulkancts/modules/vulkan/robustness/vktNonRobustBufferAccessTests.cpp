@@ -36,25 +36,26 @@ namespace robustness
 {
 using namespace cts_amber;
 
-tcu::TestCaseGroup*	createNonRobustBufferAccessTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createNonRobustBufferAccessTests(tcu::TestContext &testCtx)
 {
-	static const std::string										kGroupName					= "non_robust_buffer_access";
-	static const std::vector<std::pair<std::string, std::string>>	nonRobustBufferAccessTests	=
-	{
-		{ "unexecuted_oob_underflow",	"Test for correct handling of buffer access index underflow in unexecuted shader code paths" },
-		{ "unexecuted_oob_overflow",	"Test for correct handling of buffer access index overflow in unexecuted shader code paths" }
-	};
+    static const std::string kGroupName = "non_robust_buffer_access";
+    static const std::vector<std::pair<std::string, std::string>> nonRobustBufferAccessTests = {
+        {"unexecuted_oob_underflow",
+         "Test for correct handling of buffer access index underflow in unexecuted shader code paths"},
+        {"unexecuted_oob_overflow",
+         "Test for correct handling of buffer access index overflow in unexecuted shader code paths"}};
 
-	de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str()}};
+    de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str()}};
 #ifndef CTS_USES_VULKANSC
-	for (const auto& test : nonRobustBufferAccessTests)
-	{
-		group->addChild(createAmberTestCase(testCtx, test.first.c_str(), test.second.c_str(), kGroupName.c_str(), test.first + ".amber"));
-	}
+    for (const auto &test : nonRobustBufferAccessTests)
+    {
+        group->addChild(createAmberTestCase(testCtx, test.first.c_str(), test.second.c_str(), kGroupName.c_str(),
+                                            test.first + ".amber"));
+    }
 #endif
 
-	return group.release();
+    return group.release();
 }
 
-} // cts_amber
-} // vkt
+} // namespace robustness
+} // namespace vkt

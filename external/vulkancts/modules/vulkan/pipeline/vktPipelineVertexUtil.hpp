@@ -37,41 +37,41 @@ namespace pipeline
 
 struct Vertex4RGBA
 {
-	tcu::Vec4 position;
-	tcu::Vec4 color;
+    tcu::Vec4 position;
+    tcu::Vec4 color;
 };
 
 struct Vertex4RGBARGBA
 {
-	tcu::Vec4 position;
-	tcu::Vec4 color0;
-	tcu::Vec4 color1;
+    tcu::Vec4 position;
+    tcu::Vec4 color0;
+    tcu::Vec4 color1;
 };
 
 struct Vertex4Tex4
 {
-	tcu::Vec4 position;
-	tcu::Vec4 texCoord;
+    tcu::Vec4 position;
+    tcu::Vec4 texCoord;
 };
 
-deUint32					getVertexFormatSize					(vk::VkFormat format);
-deUint32					getVertexFormatComponentCount		(vk::VkFormat format);
-deUint32					getVertexFormatComponentSize		(vk::VkFormat format);
-deUint32					getPackedVertexFormatComponentWidth	(vk::VkFormat format, deUint32 componentNdx);
-bool						isVertexFormatComponentOrderBGR		(vk::VkFormat format);
-bool						isVertexFormatComponentOrderABGR	(vk::VkFormat format);
-bool						isVertexFormatComponentOrderARGB	(vk::VkFormat format);
-bool						isVertexFormatSint					(vk::VkFormat format);
-bool						isVertexFormatUint					(vk::VkFormat format);
-bool						isVertexFormatSfloat				(vk::VkFormat format);
-bool						isVertexFormatUfloat				(vk::VkFormat format);
-bool						isVertexFormatUnorm					(vk::VkFormat format);
-bool						isVertexFormatSnorm					(vk::VkFormat format);
-bool						isVertexFormatSRGB					(vk::VkFormat format);
-bool						isVertexFormatSscaled				(vk::VkFormat format);
-bool						isVertexFormatUscaled				(vk::VkFormat format);
-bool						isVertexFormatDouble				(vk::VkFormat format);
-bool						isVertexFormatPacked				(vk::VkFormat format);
+uint32_t getVertexFormatSize(vk::VkFormat format);
+uint32_t getVertexFormatComponentCount(vk::VkFormat format);
+uint32_t getVertexFormatComponentSize(vk::VkFormat format);
+uint32_t getPackedVertexFormatComponentWidth(vk::VkFormat format, uint32_t componentNdx);
+bool isVertexFormatComponentOrderBGR(vk::VkFormat format);
+bool isVertexFormatComponentOrderABGR(vk::VkFormat format);
+bool isVertexFormatComponentOrderARGB(vk::VkFormat format);
+bool isVertexFormatSint(vk::VkFormat format);
+bool isVertexFormatUint(vk::VkFormat format);
+bool isVertexFormatSfloat(vk::VkFormat format);
+bool isVertexFormatUfloat(vk::VkFormat format);
+bool isVertexFormatUnorm(vk::VkFormat format);
+bool isVertexFormatSnorm(vk::VkFormat format);
+bool isVertexFormatSRGB(vk::VkFormat format);
+bool isVertexFormatSscaled(vk::VkFormat format);
+bool isVertexFormatUscaled(vk::VkFormat format);
+bool isVertexFormatDouble(vk::VkFormat format);
+bool isVertexFormatPacked(vk::VkFormat format);
 
 /*! \brief Creates a pattern of 4 overlapping quads.
  *
@@ -79,17 +79,17 @@ bool						isVertexFormatPacked				(vk::VkFormat format);
  *  Each quad covers one of the quadrants of the scene and partially extends to the other 3 quadrants.
  *  The triangles of each quad have different winding orders (CW/CCW).
  */
-std::vector<Vertex4RGBA>		createOverlappingQuads				(void);
-std::vector<Vertex4RGBARGBA>	createOverlappingQuadsDualSource	(void);
+std::vector<Vertex4RGBA> createOverlappingQuads(void);
+std::vector<Vertex4RGBARGBA> createOverlappingQuadsDualSource(void);
 
-std::vector<Vertex4Tex4>	createFullscreenQuad		(void);
-std::vector<Vertex4Tex4>	createQuadMosaic			(int rows, int columns);
-std::vector<Vertex4Tex4>	createQuadMosaicCube		(void);
-std::vector<Vertex4Tex4>	createQuadMosaicCubeArray	(int faceArrayIndices[6]);
+std::vector<Vertex4Tex4> createFullscreenQuad(void);
+std::vector<Vertex4Tex4> createQuadMosaic(int rows, int columns);
+std::vector<Vertex4Tex4> createQuadMosaicCube(void);
+std::vector<Vertex4Tex4> createQuadMosaicCubeArray(int faceArrayIndices[6]);
 
-std::vector<Vertex4Tex4>	createTestQuadMosaic		(vk::VkImageViewType viewType);
+std::vector<Vertex4Tex4> createTestQuadMosaic(vk::VkImageViewType viewType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEVERTEXUTIL_HPP

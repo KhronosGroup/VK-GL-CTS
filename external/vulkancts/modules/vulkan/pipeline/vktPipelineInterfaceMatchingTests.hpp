@@ -31,9 +31,10 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createInterfaceMatchingTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup *createInterfaceMatchingTests(tcu::TestContext &testCtx,
+                                                 vk::PipelineConstructionType pipelineConstructionType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEINTERFACEMATCHINGTESTS_HPP

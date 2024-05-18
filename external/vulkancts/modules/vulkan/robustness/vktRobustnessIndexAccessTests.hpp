@@ -32,10 +32,10 @@ namespace vkt
 namespace robustness
 {
 
-tcu::TestCaseGroup* createIndexAccessTests (tcu::TestContext& testCtx);
-tcu::TestCaseGroup* createCmdBindIndexBuffer2Tests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createIndexAccessTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createCmdBindIndexBuffer2Tests(tcu::TestContext &testCtx);
 
-} // robustness
-} // vkt
+} // namespace robustness
+} // namespace vkt
 
 #endif // _VKTROBUSTNESSINDEXACCESSTESTS_HPP

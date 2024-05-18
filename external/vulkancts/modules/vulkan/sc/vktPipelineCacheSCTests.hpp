@@ -31,9 +31,9 @@ namespace vkt
 namespace sc
 {
 
-tcu::TestCaseGroup*	createPipelineCacheTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createPipelineCacheTests(tcu::TestContext &testCtx);
 
-} // sc
-} // vkt
+} // namespace sc
+} // namespace vkt
 
 #endif // _VKTPIPELINECACHESCTESTS_HPP

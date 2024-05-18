@@ -37,7 +37,7 @@
 
 namespace glu
 {
-	class ShaderProgram;
+class ShaderProgram;
 }
 
 namespace glcts
@@ -46,58 +46,58 @@ namespace glcts
 class TextureLodBiasAllTestCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TextureLodBiasAllTestCase(deqp::Context& context);
+    /* Public methods */
+    TextureLodBiasAllTestCase(deqp::Context &context);
 
-	void						 deinit();
-	void						 init();
-	tcu::TestNode::IterateResult iterate();
+    void deinit();
+    void init();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void createRenderingResources();
-	bool drawQuad(glw::GLuint, bool, float, float, float, float, float);
-	void releaseRenderingResources();
-	void setBuffers(const glu::ShaderProgram& program);
-	void releaseBuffers();
+    /* Private methods */
+    void createRenderingResources();
+    bool drawQuad(glw::GLuint, bool, float, float, float, float, float);
+    void releaseRenderingResources();
+    void setBuffers(const glu::ShaderProgram &program);
+    void releaseBuffers();
 
-	/* Private members */
-	static const glw::GLchar* m_vert_shader_sampler_vert;
-	static const glw::GLchar* m_frag_shader_sampler_vert;
+    /* Private members */
+    static const glw::GLchar *m_vert_shader_sampler_vert;
+    static const glw::GLchar *m_frag_shader_sampler_vert;
 
-	static const glw::GLchar* m_vert_shader_sampler_frag;
-	static const glw::GLchar* m_frag_shader_sampler_frag;
+    static const glw::GLchar *m_vert_shader_sampler_frag;
+    static const glw::GLchar *m_frag_shader_sampler_frag;
 
-	std::map<std::string, std::string> specializationMap;
+    std::map<std::string, std::string> specializationMap;
 
-	glw::GLuint m_texture;
-	glw::GLuint m_target;
-	glw::GLuint m_fbo;
+    glw::GLuint m_texture;
+    glw::GLuint m_target;
+    glw::GLuint m_fbo;
 
-	glw::GLuint m_vao;
-	glw::GLuint m_vbo;
+    glw::GLuint m_vao;
+    glw::GLuint m_vbo;
 
-	bool m_isContextES;
-	bool m_testSupported;
-	bool m_vertexLookupSupported;
+    bool m_isContextES;
+    bool m_testSupported;
+    bool m_vertexLookupSupported;
 
-	int m_maxErrorTolerance;
+    int m_maxErrorTolerance;
 };
 
 /** Test group which encapsulates all conformance tests */
 class TextureLodBiasTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	TextureLodBiasTests(deqp::Context& context);
+    /* Public methods */
+    TextureLodBiasTests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	TextureLodBiasTests(const TextureLodBiasTests& other);
-	TextureLodBiasTests& operator=(const TextureLodBiasTests& other);
+    TextureLodBiasTests(const TextureLodBiasTests &other);
+    TextureLodBiasTests &operator=(const TextureLodBiasTests &other);
 };
 
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _GLCTEXTURELODBIASTESTS_HPP

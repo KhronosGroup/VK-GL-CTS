@@ -38,17 +38,17 @@ namespace glcts
 class DisjointTimerQueryHandleReuse : public DisjointTimerQueryBase
 {
 public:
-	DisjointTimerQueryHandleReuse			(Context& context, const ExtParameters& extParams, const char* name,
-											 const char* description);
+    DisjointTimerQueryHandleReuse(Context &context, const ExtParameters &extParams, const char *name,
+                                  const char *description);
 
-	virtual ~DisjointTimerQueryHandleReuse	()
-	{
-	}
+    virtual ~DisjointTimerQueryHandleReuse()
+    {
+    }
 
-	virtual IterateResult iterate(void);
+    virtual IterateResult iterate(void);
 
 private:
-	void		initTest(void);
+    void initTest(void);
 };
 
 } // namespace glcts

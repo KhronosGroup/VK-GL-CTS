@@ -33,9 +33,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createExplicitVertexParameterTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams);
+tcu::TestCaseGroup *createExplicitVertexParameterTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWEXPLICITVERTEXPARAMETERTESTS_HPP

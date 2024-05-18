@@ -36,18 +36,18 @@ namespace Performance
 class StateChangeCallTests : public TestCaseGroup
 {
 public:
-							StateChangeCallTests	(Context& context);
-							~StateChangeCallTests	(void);
+    StateChangeCallTests(Context &context);
+    ~StateChangeCallTests(void);
 
-	void					init						(void);
+    void init(void);
 
 private:
-							StateChangeCallTests	(const StateChangeCallTests& other);
-	StateChangeCallTests&	operator=				(const StateChangeCallTests& other);
+    StateChangeCallTests(const StateChangeCallTests &other);
+    StateChangeCallTests &operator=(const StateChangeCallTests &other);
 };
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2PSTATECHANGECALLTESTS_HPP

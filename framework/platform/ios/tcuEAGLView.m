@@ -33,7 +33,7 @@
     return [CAEAGLLayer class];
 }
 
-- (id)initWithCoder:(NSCoder*)coder
+- (id)initWithCoder:(NSCoder *)coder
 {
     self = [super initWithCoder:coder];
     return self;
@@ -51,7 +51,7 @@
 
 - (CAEAGLLayer *)getEAGLLayer
 {
-    return (CAEAGLLayer*)self.layer;
+    return (CAEAGLLayer *)self.layer;
 }
 
 @end

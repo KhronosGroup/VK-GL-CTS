@@ -32,12 +32,12 @@ namespace dit
 class TestLogTests : public tcu::TestCaseGroup
 {
 public:
-					TestLogTests		(tcu::TestContext& testCtx);
-					~TestLogTests		(void);
+    TestLogTests(tcu::TestContext &testCtx);
+    ~TestLogTests(void);
 
-	void			init				(void);
+    void init(void);
 };
 
-} // dit
+} // namespace dit
 
 #endif // _DITTESTLOGTESTS_HPP

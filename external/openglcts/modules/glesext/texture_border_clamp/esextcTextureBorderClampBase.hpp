@@ -41,35 +41,35 @@ namespace glcts
 class TextureBorderClampBase : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureBorderClampBase(Context& context, const ExtParameters& extParams, const char* name, const char* description);
+    /* Public methods */
+    TextureBorderClampBase(Context &context, const ExtParameters &extParams, const char *name, const char *description);
 
-	virtual ~TextureBorderClampBase()
-	{
-	}
+    virtual ~TextureBorderClampBase()
+    {
+    }
 
-	virtual void deinit(void);
-	virtual void initTest(void);
+    virtual void deinit(void);
+    virtual void initTest(void);
 
 protected:
-	/* Protected methods */
-	void deinitAllTextures(void);
-	void initAllTextures(void);
+    /* Protected methods */
+    void deinitAllTextures(void);
+    void initAllTextures(void);
 
-	const char* getPNameString(glw::GLenum pname);
-	const char* getTexTargetString(glw::GLenum target);
+    const char *getPNameString(glw::GLenum pname);
+    const char *getTexTargetString(glw::GLenum target);
 
-	/* Protected variables */
-	glw::GLuint m_texture_2D_array_id;
-	glw::GLuint m_texture_2D_id;
-	glw::GLuint m_texture_2D_multisample_array_id;
-	glw::GLuint m_texture_2D_multisample_id;
-	glw::GLuint m_texture_3D_id;
-	glw::GLuint m_texture_buffer_id;
-	glw::GLuint m_texture_cube_map_id;
-	glw::GLuint m_texture_cube_map_array_id;
+    /* Protected variables */
+    glw::GLuint m_texture_2D_array_id;
+    glw::GLuint m_texture_2D_id;
+    glw::GLuint m_texture_2D_multisample_array_id;
+    glw::GLuint m_texture_2D_multisample_id;
+    glw::GLuint m_texture_3D_id;
+    glw::GLuint m_texture_buffer_id;
+    glw::GLuint m_texture_cube_map_id;
+    glw::GLuint m_texture_cube_map_array_id;
 
-	std::vector<glw::GLenum> m_texture_target_list;
+    std::vector<glw::GLenum> m_texture_target_list;
 };
 
 } // namespace glcts

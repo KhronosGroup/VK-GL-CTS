@@ -35,71 +35,68 @@ namespace vkt
 namespace wsi
 {
 
-de::MovePtr<vk::wsi::Display> NativeObjects::createDisplay	(const vk::Platform&				platform,
-															 const NativeObjects::Extensions&	supportedExtensions,
-															 vk::wsi::Type						wsiType)
+de::MovePtr<vk::wsi::Display> NativeObjects::createDisplay(const vk::Platform &platform,
+                                                           const NativeObjects::Extensions &supportedExtensions,
+                                                           vk::wsi::Type wsiType)
 {
-	try
-	{
-		return de::MovePtr<vk::wsi::Display>(platform.createWsiDisplay(wsiType));
-	}
-	catch (const tcu::NotSupportedError& e)
-	{
-		if (vk::isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(vk::wsi::getExtensionName(wsiType))) &&
-			platform.hasDisplay(wsiType))
-		{
-			// If VK_KHR_{platform}_surface was supported, vk::Platform implementation
-			// must support creating native display & window for that WSI type.
-			throw tcu::TestError(e.getMessage());
-		}
-		else
-			throw;
-	}
+    try
+    {
+        return de::MovePtr<vk::wsi::Display>(platform.createWsiDisplay(wsiType));
+    }
+    catch (const tcu::NotSupportedError &e)
+    {
+        if (vk::isExtensionStructSupported(supportedExtensions,
+                                           vk::RequiredExtension(vk::wsi::getExtensionName(wsiType))) &&
+            platform.hasDisplay(wsiType))
+        {
+            // If VK_KHR_{platform}_surface was supported, vk::Platform implementation
+            // must support creating native display & window for that WSI type.
+            throw tcu::TestError(e.getMessage());
+        }
+        else
+            throw;
+    }
 }
 
-de::MovePtr<vk::wsi::Window> NativeObjects::createWindow (const vk::wsi::Display& display, const tcu::Maybe<tcu::UVec2>& initialSize)
+de::MovePtr<vk::wsi::Window> NativeObjects::createWindow(const vk::wsi::Display &display,
+                                                         const tcu::Maybe<tcu::UVec2> &initialSize)
 {
-	try
-	{
-		return de::MovePtr<vk::wsi::Window>(display.createWindow(initialSize));
-	}
-	catch (const tcu::NotSupportedError& e)
-	{
-		// See createDisplay - assuming that wsi::Display was supported platform port
-		// should also support creating a window.
-		throw tcu::TestError(e.getMessage());
-	}
+    try
+    {
+        return de::MovePtr<vk::wsi::Window>(display.createWindow(initialSize));
+    }
+    catch (const tcu::NotSupportedError &e)
+    {
+        // See createDisplay - assuming that wsi::Display was supported platform port
+        // should also support creating a window.
+        throw tcu::TestError(e.getMessage());
+    }
 }
 
-NativeObjects::NativeObjects (Context&						context,
-							  const Extensions&				supportedExtensions,
-							  vk::wsi::Type					wsiType,
-							  size_t						windowCount,
-							  const tcu::Maybe<tcu::UVec2>&	initialWindowSize)
-	: display (createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), supportedExtensions, wsiType))
+NativeObjects::NativeObjects(Context &context, const Extensions &supportedExtensions, vk::wsi::Type wsiType,
+                             size_t windowCount, const tcu::Maybe<tcu::UVec2> &initialWindowSize)
+    : display(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), supportedExtensions, wsiType))
 {
-	DE_ASSERT(windowCount > 0u);
-	for (size_t i = 0; i < windowCount; ++i)
-		windows.emplace_back(createWindow(*display, initialWindowSize));
+    DE_ASSERT(windowCount > 0u);
+    for (size_t i = 0; i < windowCount; ++i)
+        windows.emplace_back(createWindow(*display, initialWindowSize));
 }
 
-NativeObjects::NativeObjects (NativeObjects&& other)
-	: display	(other.display.move())
-	, windows	()
+NativeObjects::NativeObjects(NativeObjects &&other) : display(other.display.move()), windows()
 {
-	windows.swap(other.windows);
+    windows.swap(other.windows);
 }
 
-vk::wsi::Display& NativeObjects::getDisplay	() const
+vk::wsi::Display &NativeObjects::getDisplay() const
 {
-	return *display;
+    return *display;
 }
 
-vk::wsi::Window& NativeObjects::getWindow (size_t index) const
+vk::wsi::Window &NativeObjects::getWindow(size_t index) const
 {
-	DE_ASSERT(index < windows.size());
-	return *windows[index];
+    DE_ASSERT(index < windows.size());
+    return *windows[index];
 }
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt

@@ -47,63 +47,62 @@ namespace vkt
 namespace ProtectedMem
 {
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	de::MovePtr<tcu::TestCaseGroup> protectedTests (new tcu::TestCaseGroup(testCtx, name.c_str()));
+    de::MovePtr<tcu::TestCaseGroup> protectedTests(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
-	// Attachment test case group
-	{
-		de::MovePtr<tcu::TestCaseGroup> attachmentTestGroup (new tcu::TestCaseGroup(testCtx, "attachment"));
-		attachmentTestGroup->addChild(createAttachmentLoadTests(testCtx));
-		attachmentTestGroup->addChild(createAttachmentClearTests(testCtx));
-		protectedTests->addChild(attachmentTestGroup.release());
-	}
+    // Attachment test case group
+    {
+        de::MovePtr<tcu::TestCaseGroup> attachmentTestGroup(new tcu::TestCaseGroup(testCtx, "attachment"));
+        attachmentTestGroup->addChild(createAttachmentLoadTests(testCtx));
+        attachmentTestGroup->addChild(createAttachmentClearTests(testCtx));
+        protectedTests->addChild(attachmentTestGroup.release());
+    }
 
-	// Image test case group
-	{
-		de::MovePtr<tcu::TestCaseGroup> imageTestGroup (new tcu::TestCaseGroup(testCtx, "image"));
-		imageTestGroup->addChild(createCopyImageTests(testCtx));
-		imageTestGroup->addChild(createBlitImageTests(testCtx));
-		imageTestGroup->addChild(createClearColorImageTests(testCtx));
-		imageTestGroup->addChild(createCopyBufferToImageTests(testCtx));
-		imageTestGroup->addChild(createShaderImageAccessTests(testCtx));
-		protectedTests->addChild(imageTestGroup.release());
-	}
+    // Image test case group
+    {
+        de::MovePtr<tcu::TestCaseGroup> imageTestGroup(new tcu::TestCaseGroup(testCtx, "image"));
+        imageTestGroup->addChild(createCopyImageTests(testCtx));
+        imageTestGroup->addChild(createBlitImageTests(testCtx));
+        imageTestGroup->addChild(createClearColorImageTests(testCtx));
+        imageTestGroup->addChild(createCopyBufferToImageTests(testCtx));
+        imageTestGroup->addChild(createShaderImageAccessTests(testCtx));
+        protectedTests->addChild(imageTestGroup.release());
+    }
 
-	// Buffer test case group
-	{
-		de::MovePtr<tcu::TestCaseGroup> bufferTestGroup (new tcu::TestCaseGroup(testCtx, "buffer"));
-		bufferTestGroup->addChild(createFillBufferTests(testCtx));
-		bufferTestGroup->addChild(createUpdateBufferTests(testCtx));
-		bufferTestGroup->addChild(createCopyBufferTests(testCtx));
-		bufferTestGroup->addChild(createCopyImageToFloatBufferTests(testCtx));
-		protectedTests->addChild(bufferTestGroup.release());
-	}
+    // Buffer test case group
+    {
+        de::MovePtr<tcu::TestCaseGroup> bufferTestGroup(new tcu::TestCaseGroup(testCtx, "buffer"));
+        bufferTestGroup->addChild(createFillBufferTests(testCtx));
+        bufferTestGroup->addChild(createUpdateBufferTests(testCtx));
+        bufferTestGroup->addChild(createCopyBufferTests(testCtx));
+        bufferTestGroup->addChild(createCopyImageToFloatBufferTests(testCtx));
+        protectedTests->addChild(bufferTestGroup.release());
+    }
 
-	// Storage buffer test case group
-	{
-		de::MovePtr<tcu::TestCaseGroup> ssboTestGroup (new tcu::TestCaseGroup(testCtx, "ssbo"));
-		ssboTestGroup->addChild(createReadStorageBufferTests(testCtx));
-		ssboTestGroup->addChild(createWriteStorageBufferTests(testCtx));
-		ssboTestGroup->addChild(createAtomicStorageBufferTests(testCtx));
-		protectedTests->addChild(ssboTestGroup.release());
-	}
+    // Storage buffer test case group
+    {
+        de::MovePtr<tcu::TestCaseGroup> ssboTestGroup(new tcu::TestCaseGroup(testCtx, "ssbo"));
+        ssboTestGroup->addChild(createReadStorageBufferTests(testCtx));
+        ssboTestGroup->addChild(createWriteStorageBufferTests(testCtx));
+        ssboTestGroup->addChild(createAtomicStorageBufferTests(testCtx));
+        protectedTests->addChild(ssboTestGroup.release());
+    }
 
-	{
-		de::MovePtr<tcu::TestCaseGroup> interactionTestGroup (new tcu::TestCaseGroup(testCtx, "interaction"));
+    {
+        de::MovePtr<tcu::TestCaseGroup> interactionTestGroup(new tcu::TestCaseGroup(testCtx, "interaction"));
 #ifndef CTS_USES_VULKANSC
-		interactionTestGroup->addChild(createSwapchainTests(testCtx));
+        interactionTestGroup->addChild(createSwapchainTests(testCtx));
 #endif
-		interactionTestGroup->addChild(createYCbCrConversionTests(testCtx));
-		protectedTests->addChild(interactionTestGroup.release());
-	}
+        interactionTestGroup->addChild(createYCbCrConversionTests(testCtx));
+        protectedTests->addChild(interactionTestGroup.release());
+    }
 
-	protectedTests->addChild(createWorkgroupStorageTests(testCtx));
-	protectedTests->addChild(createStackTests(testCtx));
+    protectedTests->addChild(createWorkgroupStorageTests(testCtx));
+    protectedTests->addChild(createStackTests(testCtx));
 
-	return protectedTests.release();
-
+    return protectedTests.release();
 }
 
-} // ProtectedMem
-} // vkt
+} // namespace ProtectedMem
+} // namespace vkt

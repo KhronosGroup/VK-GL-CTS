@@ -31,93 +31,98 @@ namespace xe
 
 enum ContainerElement
 {
-	CONTAINERELEMENT_INCOMPLETE = 0,
-	CONTAINERELEMENT_END_OF_STRING,
-	CONTAINERELEMENT_BEGIN_SESSION,
-	CONTAINERELEMENT_END_SESSION,
-	CONTAINERELEMENT_SESSION_INFO,
-	CONTAINERELEMENT_BEGIN_TEST_CASE_RESULT,
-	CONTAINERELEMENT_END_TEST_CASE_RESULT,
-	CONTAINERELEMENT_TERMINATE_TEST_CASE_RESULT,
-	CONTAINERELEMENT_TEST_LOG_DATA,
-	CONTAINERELEMENT_TEST_RUN_PARAM_SESSION_BEGIN,
-	CONTAINERELEMENT_TEST_RUN_PARAM_SESSION_END,
-	CONTAINERELEMENT_TEST_RUN_PARAM_BEGIN,
-	CONTAINERELEMENT_TEST_RUN_PARAM_END,
+    CONTAINERELEMENT_INCOMPLETE = 0,
+    CONTAINERELEMENT_END_OF_STRING,
+    CONTAINERELEMENT_BEGIN_SESSION,
+    CONTAINERELEMENT_END_SESSION,
+    CONTAINERELEMENT_SESSION_INFO,
+    CONTAINERELEMENT_BEGIN_TEST_CASE_RESULT,
+    CONTAINERELEMENT_END_TEST_CASE_RESULT,
+    CONTAINERELEMENT_TERMINATE_TEST_CASE_RESULT,
+    CONTAINERELEMENT_TEST_LOG_DATA,
+    CONTAINERELEMENT_TEST_RUN_PARAM_SESSION_BEGIN,
+    CONTAINERELEMENT_TEST_RUN_PARAM_SESSION_END,
+    CONTAINERELEMENT_TEST_RUN_PARAM_BEGIN,
+    CONTAINERELEMENT_TEST_RUN_PARAM_END,
 
-	CONTAINERELEMENT_LAST
+    CONTAINERELEMENT_LAST
 };
 
 class ContainerParseError : public ParseError
 {
 public:
-	ContainerParseError (const std::string& message) : ParseError(message) {}
+    ContainerParseError(const std::string &message) : ParseError(message)
+    {
+    }
 };
 
 class ContainerFormatParser
 {
 public:
-								ContainerFormatParser		(void);
-								~ContainerFormatParser		(void);
+    ContainerFormatParser(void);
+    ~ContainerFormatParser(void);
 
-	void						clear						(void);
+    void clear(void);
 
-	void						feed						(const deUint8* bytes, size_t numBytes);
-	void						advance						(void);
+    void feed(const uint8_t *bytes, size_t numBytes);
+    void advance(void);
 
-	ContainerElement			getElement					(void) const { return m_element; }
+    ContainerElement getElement(void) const
+    {
+        return m_element;
+    }
 
-	// SESSION_INFO
-	const char*					getSessionInfoAttribute		(void) const;
-	const char*					getSessionInfoValue			(void) const;
+    // SESSION_INFO
+    const char *getSessionInfoAttribute(void) const;
+    const char *getSessionInfoValue(void) const;
 
-	// BEGIN_TEST_CASE
-	const char*					getTestCasePath				(void) const;
+    // BEGIN_TEST_CASE
+    const char *getTestCasePath(void) const;
 
-	// TERMINATE_TEST_CASE
-	const char*					getTerminateReason			(void) const;
+    // TERMINATE_TEST_CASE
+    const char *getTerminateReason(void) const;
 
-	// TEST_LOG_DATA
-	int							getDataSize					(void) const;
-	void						getData						(deUint8* dst, int numBytes, int offset);
+    // TEST_LOG_DATA
+    int getDataSize(void) const;
+    void getData(uint8_t *dst, int numBytes, int offset);
 
     // TEST_RUN_PARAM
-	const char*                 getTestRunsParams           (void) const;
+    const char *getTestRunsParams(void) const;
 
 private:
-								ContainerFormatParser		(const ContainerFormatParser& other);
-	ContainerFormatParser&		operator=					(const ContainerFormatParser& other);
+    ContainerFormatParser(const ContainerFormatParser &other);
+    ContainerFormatParser &operator=(const ContainerFormatParser &other);
 
-	void						error						(const std::string& what);
+    void error(const std::string &what);
 
-	enum State
-	{
-		STATE_AT_LINE_START,
-		STATE_CONTAINER_LINE,
-		STATE_DATA,
+    enum State
+    {
+        STATE_AT_LINE_START,
+        STATE_CONTAINER_LINE,
+        STATE_DATA,
 
-		STATE_LAST
-	};
+        STATE_LAST
+    };
 
-	enum
-	{
-		END_OF_STRING	= 0,			//!< End of string (0).
-		END_OF_BUFFER	= 0xffffffff	//!< End of current data buffer.
-	};
+    enum
+    {
+        END_OF_STRING = 0,         //!< End of string (0).
+        END_OF_BUFFER = 0xffffffff //!< End of current data buffer.
+    };
 
-	int							getChar						(int offset) const;
-	void						parseContainerLine			(void);
-	void						parseContainerValue			(std::string& dst, int& offset) const;
+    int getChar(int offset) const;
+    void parseContainerLine(void);
+    void parseContainerValue(std::string &dst, int &offset) const;
 
-	ContainerElement			m_element;
-	int							m_elementLen;
-	State						m_state;
-	std::string					m_attribute;
-	std::string					m_value;
+    ContainerElement m_element;
+    int m_elementLen;
+    State m_state;
+    std::string m_attribute;
+    std::string m_value;
 
-	de::RingBuffer<deUint8>		m_buf;
+    de::RingBuffer<uint8_t> m_buf;
 };
 
-} // xe
+} // namespace xe
 
 #endif // _XECONTAINERFORMATPARSER_HPP

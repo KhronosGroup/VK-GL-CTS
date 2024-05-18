@@ -32,11 +32,11 @@ namespace vkt
 namespace ProtectedMem
 {
 
-tcu::TestCaseGroup*		createReadStorageBufferTests	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*		createWriteStorageBufferTests	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*		createAtomicStorageBufferTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createReadStorageBufferTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createWriteStorageBufferTests(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createAtomicStorageBufferTests(tcu::TestContext &testCtx);
 
-} // ProtectedMem
-} // vkt
+} // namespace ProtectedMem
+} // namespace vkt
 
 #endif // _VKTPROTECTEDMEMSTORAGEBUFFERTESTS_HPP

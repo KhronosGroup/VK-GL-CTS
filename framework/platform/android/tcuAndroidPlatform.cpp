@@ -36,9 +36,9 @@
 // Assume no call translation is needed
 #include <android/native_window.h>
 struct egl_native_pixmap_t;
-DE_STATIC_ASSERT(sizeof(eglw::EGLNativeDisplayType) == sizeof(void*));
-DE_STATIC_ASSERT(sizeof(eglw::EGLNativePixmapType) == sizeof(struct egl_native_pixmap_t*));
-DE_STATIC_ASSERT(sizeof(eglw::EGLNativeWindowType) == sizeof(ANativeWindow*));
+DE_STATIC_ASSERT(sizeof(eglw::EGLNativeDisplayType) == sizeof(void *));
+DE_STATIC_ASSERT(sizeof(eglw::EGLNativePixmapType) == sizeof(struct egl_native_pixmap_t *));
+DE_STATIC_ASSERT(sizeof(eglw::EGLNativeWindowType) == sizeof(ANativeWindow *));
 
 namespace tcu
 {
@@ -47,146 +47,174 @@ namespace Android
 
 using namespace eglw;
 
-static const eglu::NativeDisplay::Capability	DISPLAY_CAPABILITIES	= eglu::NativeDisplay::CAPABILITY_GET_DISPLAY_LEGACY;
-static const eglu::NativeWindow::Capability		WINDOW_CAPABILITIES		= (eglu::NativeWindow::Capability)(eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY |
-																										   eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM |
-																										   eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION |
-																										   eglu::NativeWindow::CAPABILITY_SET_SURFACE_SIZE |
-																										   eglu::NativeWindow::CAPABILITY_GET_SCREEN_SIZE);
+static const eglu::NativeDisplay::Capability DISPLAY_CAPABILITIES = eglu::NativeDisplay::CAPABILITY_GET_DISPLAY_LEGACY;
+static const eglu::NativeWindow::Capability WINDOW_CAPABILITIES   = (eglu::NativeWindow::Capability)(
+    eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY | eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM |
+    eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION | eglu::NativeWindow::CAPABILITY_SET_SURFACE_SIZE |
+    eglu::NativeWindow::CAPABILITY_GET_SCREEN_SIZE);
 
 class NativeDisplay : public eglu::NativeDisplay
 {
 public:
-									NativeDisplay			(void) : eglu::NativeDisplay(DISPLAY_CAPABILITIES), m_library("libEGL.so") {}
-	virtual							~NativeDisplay			(void) {}
+    NativeDisplay(void) : eglu::NativeDisplay(DISPLAY_CAPABILITIES), m_library("libEGL.so")
+    {
+    }
+    virtual ~NativeDisplay(void)
+    {
+    }
 
-	virtual EGLNativeDisplayType	getLegacyNative			(void)			{ return EGL_DEFAULT_DISPLAY;	}
-	virtual const eglw::Library&	getLibrary				(void) const	{ return m_library;				}
+    virtual EGLNativeDisplayType getLegacyNative(void)
+    {
+        return EGL_DEFAULT_DISPLAY;
+    }
+    virtual const eglw::Library &getLibrary(void) const
+    {
+        return m_library;
+    }
 
 private:
-	eglw::DefaultLibrary			m_library;
+    eglw::DefaultLibrary m_library;
 };
 
 class NativeDisplayFactory : public eglu::NativeDisplayFactory
 {
 public:
-									NativeDisplayFactory	(WindowRegistry& windowRegistry);
-									~NativeDisplayFactory	(void) {}
+    NativeDisplayFactory(WindowRegistry &windowRegistry);
+    ~NativeDisplayFactory(void)
+    {
+    }
 
-	virtual eglu::NativeDisplay*	createDisplay			(const EGLAttrib* attribList) const;
+    virtual eglu::NativeDisplay *createDisplay(const EGLAttrib *attribList) const;
 };
 
 class NativeWindow : public eglu::NativeWindow
 {
 public:
-									NativeWindow			(Window* window, int width, int height, int32_t format);
-	virtual							~NativeWindow			(void);
+    NativeWindow(Window *window, int width, int height, int32_t format);
+    virtual ~NativeWindow(void);
 
-	virtual EGLNativeWindowType		getLegacyNative			(void)			{ return m_window->getNativeWindow();	}
-	virtual EGLNativeWindowType		getPlatformExtension	(void)			{ return m_window->getNativeWindow();	}
-	virtual EGLNativeWindowType		getPlatformNative		(void)			{ return m_window->getNativeWindow();	}
-	IVec2							getScreenSize			(void) const	{ return m_window->getSize();			}
+    virtual EGLNativeWindowType getLegacyNative(void)
+    {
+        return m_window->getNativeWindow();
+    }
+    virtual EGLNativeWindowType getPlatformExtension(void)
+    {
+        return m_window->getNativeWindow();
+    }
+    virtual EGLNativeWindowType getPlatformNative(void)
+    {
+        return m_window->getNativeWindow();
+    }
+    IVec2 getScreenSize(void) const
+    {
+        return m_window->getSize();
+    }
 
-	void							setSurfaceSize			(IVec2 size);
+    void setSurfaceSize(IVec2 size);
 
-	virtual void					processEvents			(void);
+    virtual void processEvents(void);
 
 private:
-	Window*							m_window;
-	int32_t							m_format;
+    Window *m_window;
+    int32_t m_format;
 };
 
 class NativeWindowFactory : public eglu::NativeWindowFactory
 {
 public:
-									NativeWindowFactory		(WindowRegistry& windowRegistry);
-									~NativeWindowFactory	(void);
+    NativeWindowFactory(WindowRegistry &windowRegistry);
+    ~NativeWindowFactory(void);
 
-	virtual eglu::NativeWindow*		createWindow			(eglu::NativeDisplay* nativeDisplay, const eglu::WindowParams& params) const;
-	virtual eglu::NativeWindow*		createWindow			(eglu::NativeDisplay* nativeDisplay, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, const eglu::WindowParams& params) const;
+    virtual eglu::NativeWindow *createWindow(eglu::NativeDisplay *nativeDisplay,
+                                             const eglu::WindowParams &params) const;
+    virtual eglu::NativeWindow *createWindow(eglu::NativeDisplay *nativeDisplay, EGLDisplay display, EGLConfig config,
+                                             const EGLAttrib *attribList, const eglu::WindowParams &params) const;
 
 private:
-	virtual eglu::NativeWindow*		createWindow			(const eglu::WindowParams& params, int32_t format) const;
+    virtual eglu::NativeWindow *createWindow(const eglu::WindowParams &params, int32_t format) const;
 
-	WindowRegistry&					m_windowRegistry;
+    WindowRegistry &m_windowRegistry;
 };
 
 // NativeWindow
 
-NativeWindow::NativeWindow (Window* window, int width, int height, int32_t format)
-	: eglu::NativeWindow	(WINDOW_CAPABILITIES)
-	, m_window				(window)
-	, m_format				(format)
+NativeWindow::NativeWindow(Window *window, int width, int height, int32_t format)
+    : eglu::NativeWindow(WINDOW_CAPABILITIES)
+    , m_window(window)
+    , m_format(format)
 {
-	// Set up buffers.
-	setSurfaceSize(IVec2(width, height));
+    // Set up buffers.
+    setSurfaceSize(IVec2(width, height));
 }
 
-NativeWindow::~NativeWindow (void)
+NativeWindow::~NativeWindow(void)
 {
-	m_window->release();
+    m_window->release();
 }
 
-void NativeWindow::processEvents (void)
+void NativeWindow::processEvents(void)
 {
-	if (m_window->isPendingDestroy())
-		throw eglu::WindowDestroyedError("Window has been destroyed");
+    if (m_window->isPendingDestroy())
+        throw eglu::WindowDestroyedError("Window has been destroyed");
 }
 
-void NativeWindow::setSurfaceSize (tcu::IVec2 size)
+void NativeWindow::setSurfaceSize(tcu::IVec2 size)
 {
-	m_window->setBuffersGeometry(size.x() != eglu::WindowParams::SIZE_DONT_CARE ? size.x() : 0,
-								 size.y() != eglu::WindowParams::SIZE_DONT_CARE ? size.y() : 0,
-								 m_format);
+    m_window->setBuffersGeometry(size.x() != eglu::WindowParams::SIZE_DONT_CARE ? size.x() : 0,
+                                 size.y() != eglu::WindowParams::SIZE_DONT_CARE ? size.y() : 0, m_format);
 }
 
 // NativeWindowFactory
 
-NativeWindowFactory::NativeWindowFactory (WindowRegistry& windowRegistry)
-	: eglu::NativeWindowFactory	("default", "Default display", WINDOW_CAPABILITIES)
-	, m_windowRegistry			(windowRegistry)
+NativeWindowFactory::NativeWindowFactory(WindowRegistry &windowRegistry)
+    : eglu::NativeWindowFactory("default", "Default display", WINDOW_CAPABILITIES)
+    , m_windowRegistry(windowRegistry)
 {
 }
 
-NativeWindowFactory::~NativeWindowFactory (void)
+NativeWindowFactory::~NativeWindowFactory(void)
 {
 }
 
-eglu::NativeWindow* NativeWindowFactory::createWindow (eglu::NativeDisplay* nativeDisplay, const eglu::WindowParams& params) const
+eglu::NativeWindow *NativeWindowFactory::createWindow(eglu::NativeDisplay *nativeDisplay,
+                                                      const eglu::WindowParams &params) const
 {
-	DE_UNREF(nativeDisplay);
-	return createWindow(params, WINDOW_FORMAT_RGBA_8888);
+    DE_UNREF(nativeDisplay);
+    return createWindow(params, WINDOW_FORMAT_RGBA_8888);
 }
 
-eglu::NativeWindow* NativeWindowFactory::createWindow (eglu::NativeDisplay* nativeDisplay, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList, const eglu::WindowParams& params) const
+eglu::NativeWindow *NativeWindowFactory::createWindow(eglu::NativeDisplay *nativeDisplay, EGLDisplay display,
+                                                      EGLConfig config, const EGLAttrib *attribList,
+                                                      const eglu::WindowParams &params) const
 {
-	const int32_t format = (int32_t)eglu::getConfigAttribInt(nativeDisplay->getLibrary(), display, config, EGL_NATIVE_VISUAL_ID);
-	DE_UNREF(nativeDisplay && attribList);
-	return createWindow(params, format);
+    const int32_t format =
+        (int32_t)eglu::getConfigAttribInt(nativeDisplay->getLibrary(), display, config, EGL_NATIVE_VISUAL_ID);
+    DE_UNREF(nativeDisplay && attribList);
+    return createWindow(params, format);
 }
 
-eglu::NativeWindow* NativeWindowFactory::createWindow (const eglu::WindowParams& params, int32_t format) const
+eglu::NativeWindow *NativeWindowFactory::createWindow(const eglu::WindowParams &params, int32_t format) const
 {
-	Window* window = m_windowRegistry.tryAcquireWindow();
+    Window *window = m_windowRegistry.tryAcquireWindow();
 
-	if (!window)
-		throw ResourceError("Native window is not available", DE_NULL, __FILE__, __LINE__);
+    if (!window)
+        throw ResourceError("Native window is not available", DE_NULL, __FILE__, __LINE__);
 
-	return new NativeWindow(window, params.width, params.height, format);
+    return new NativeWindow(window, params.width, params.height, format);
 }
 
 // NativeDisplayFactory
 
-NativeDisplayFactory::NativeDisplayFactory (WindowRegistry& windowRegistry)
-	: eglu::NativeDisplayFactory("default", "Default display", DISPLAY_CAPABILITIES)
+NativeDisplayFactory::NativeDisplayFactory(WindowRegistry &windowRegistry)
+    : eglu::NativeDisplayFactory("default", "Default display", DISPLAY_CAPABILITIES)
 {
-	m_nativeWindowRegistry.registerFactory(new NativeWindowFactory(windowRegistry));
+    m_nativeWindowRegistry.registerFactory(new NativeWindowFactory(windowRegistry));
 }
 
-eglu::NativeDisplay* NativeDisplayFactory::createDisplay (const EGLAttrib* attribList) const
+eglu::NativeDisplay *NativeDisplayFactory::createDisplay(const EGLAttrib *attribList) const
 {
-	DE_UNREF(attribList);
-	return new NativeDisplay();
+    DE_UNREF(attribList);
+    return new NativeDisplay();
 }
 
 // Vulkan
@@ -194,197 +222,197 @@ eglu::NativeDisplay* NativeDisplayFactory::createDisplay (const EGLAttrib* attri
 class VulkanLibrary : public vk::Library
 {
 public:
-	VulkanLibrary (const char* libraryPath)
-		: m_library	(libraryPath != DE_NULL ? libraryPath : "libvulkan.so")
-		, m_driver	(m_library)
-	{
-	}
+    VulkanLibrary(const char *libraryPath)
+        : m_library(libraryPath != DE_NULL ? libraryPath : "libvulkan.so")
+        , m_driver(m_library)
+    {
+    }
 
-	const vk::PlatformInterface& getPlatformInterface		(void) const
-	{
-		return m_driver;
-	}
+    const vk::PlatformInterface &getPlatformInterface(void) const
+    {
+        return m_driver;
+    }
 
-	const tcu::FunctionLibrary&		getFunctionLibrary		(void) const
-	{
-		return m_library;
-	}
+    const tcu::FunctionLibrary &getFunctionLibrary(void) const
+    {
+        return m_library;
+    }
 
 private:
-	const tcu::DynamicFunctionLibrary	m_library;
-	const vk::PlatformDriver			m_driver;
+    const tcu::DynamicFunctionLibrary m_library;
+    const vk::PlatformDriver m_driver;
 };
 
-DE_STATIC_ASSERT(sizeof(vk::pt::AndroidNativeWindowPtr) == sizeof(ANativeWindow*));
+DE_STATIC_ASSERT(sizeof(vk::pt::AndroidNativeWindowPtr) == sizeof(ANativeWindow *));
 
 class VulkanWindow : public vk::wsi::AndroidWindowInterface
 {
 public:
-	VulkanWindow (tcu::Android::Window& window)
-		: vk::wsi::AndroidWindowInterface	(vk::pt::AndroidNativeWindowPtr(window.getNativeWindow()))
-		, m_window							(window)
-	{
-	}
+    VulkanWindow(tcu::Android::Window &window)
+        : vk::wsi::AndroidWindowInterface(vk::pt::AndroidNativeWindowPtr(window.getNativeWindow()))
+        , m_window(window)
+    {
+    }
 
-	void setVisible(bool visible)
-	{
-		DE_UNREF(visible);
-	}
+    void setVisible(bool visible)
+    {
+        DE_UNREF(visible);
+    }
 
-	void resize(const UVec2& newSize)
-	{
-		DE_UNREF(newSize);
-	}
+    void resize(const UVec2 &newSize)
+    {
+        DE_UNREF(newSize);
+    }
 
-	void setMinimized(bool minimized)
-	{
-		DE_UNREF(minimized);
-		TCU_THROW(NotSupportedError, "Minimized on Android is not implemented");
-	}
+    void setMinimized(bool minimized)
+    {
+        DE_UNREF(minimized);
+        TCU_THROW(NotSupportedError, "Minimized on Android is not implemented");
+    }
 
-	~VulkanWindow (void)
-	{
-		m_window.release();
-	}
+    ~VulkanWindow(void)
+    {
+        m_window.release();
+    }
 
 private:
-	tcu::Android::Window&	m_window;
+    tcu::Android::Window &m_window;
 };
 
 class VulkanDisplay : public vk::wsi::Display
 {
 public:
-	VulkanDisplay (WindowRegistry& windowRegistry)
-		: m_windowRegistry(windowRegistry)
-	{
-	}
+    VulkanDisplay(WindowRegistry &windowRegistry) : m_windowRegistry(windowRegistry)
+    {
+    }
 
-	vk::wsi::Window* createWindow (const Maybe<UVec2>& initialSize) const
-	{
-		Window* const	window	= m_windowRegistry.tryAcquireWindow();
+    vk::wsi::Window *createWindow(const Maybe<UVec2> &initialSize) const
+    {
+        Window *const window = m_windowRegistry.tryAcquireWindow();
 
-		if (window)
-		{
-			try
-			{
-				if (initialSize)
-					window->setBuffersGeometry((int)initialSize->x(), (int)initialSize->y(), WINDOW_FORMAT_RGBA_8888);
+        if (window)
+        {
+            try
+            {
+                if (initialSize)
+                    window->setBuffersGeometry((int)initialSize->x(), (int)initialSize->y(), WINDOW_FORMAT_RGBA_8888);
 
-				return new VulkanWindow(*window);
-			}
-			catch (...)
-			{
-				window->release();
-				throw;
-			}
-		}
-		else
-			TCU_THROW(ResourceError, "Native window is not available");
-	}
+                return new VulkanWindow(*window);
+            }
+            catch (...)
+            {
+                window->release();
+                throw;
+            }
+        }
+        else
+            TCU_THROW(ResourceError, "Native window is not available");
+    }
 
 private:
-	WindowRegistry&		m_windowRegistry;
+    WindowRegistry &m_windowRegistry;
 };
 
-static size_t getTotalSystemMemory (ANativeActivity* activity)
+static size_t getTotalSystemMemory(ANativeActivity *activity)
 {
-	const size_t	MiB		= (size_t)(1<<20);
+    const size_t MiB = (size_t)(1 << 20);
 
-	try
-	{
-		const size_t totalMemory = getTotalAndroidSystemMemory(activity);
-		print("Device has %.2f MiB of system memory\n", static_cast<double>(totalMemory) / static_cast<double>(MiB));
-		return totalMemory;
-	}
-	catch (const std::exception& e)
-	{
-		// Use relatively high fallback size to encourage CDD-compliant behavior
-		const size_t	fallbackSize	= (sizeof(void*) == sizeof(deUint64)) ? 2048*MiB : 1024*MiB;
+    try
+    {
+        const size_t totalMemory = getTotalAndroidSystemMemory(activity);
+        print("Device has %.2f MiB of system memory\n", static_cast<double>(totalMemory) / static_cast<double>(MiB));
+        return totalMemory;
+    }
+    catch (const std::exception &e)
+    {
+        // Use relatively high fallback size to encourage CDD-compliant behavior
+        const size_t fallbackSize = (sizeof(void *) == sizeof(uint64_t)) ? 2048 * MiB : 1024 * MiB;
 
-		print("WARNING: Failed to determine system memory size required by CDD: %s\n", e.what());
-		print("WARNING: Using fall-back size of %.2f MiB\n", double(fallbackSize) / double(MiB));
+        print("WARNING: Failed to determine system memory size required by CDD: %s\n", e.what());
+        print("WARNING: Using fall-back size of %.2f MiB\n", double(fallbackSize) / double(MiB));
 
-		return fallbackSize;
-	}
+        return fallbackSize;
+    }
 }
 
 // Platform
 
-Platform::Platform (NativeActivity& activity)
-	: m_activity			(activity)
-	, m_totalSystemMemory	(getTotalSystemMemory(activity.getNativeActivity()))
+Platform::Platform(NativeActivity &activity)
+    : m_activity(activity)
+    , m_totalSystemMemory(getTotalSystemMemory(activity.getNativeActivity()))
 {
-	m_nativeDisplayFactoryRegistry.registerFactory(new NativeDisplayFactory(m_windowRegistry));
-	m_contextFactoryRegistry.registerFactory(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
+    m_nativeDisplayFactoryRegistry.registerFactory(new NativeDisplayFactory(m_windowRegistry));
+    m_contextFactoryRegistry.registerFactory(new eglu::GLContextFactory(m_nativeDisplayFactoryRegistry));
 }
 
-Platform::~Platform (void)
+Platform::~Platform(void)
 {
 }
 
-bool Platform::processEvents (void)
+bool Platform::processEvents(void)
 {
-	m_windowRegistry.garbageCollect();
-	return true;
+    m_windowRegistry.garbageCollect();
+    return true;
 }
 
-vk::Library* Platform::createLibrary (const char* libraryPath) const
+vk::Library *Platform::createLibrary(const char *libraryPath) const
 {
-	return new VulkanLibrary(libraryPath);
+    return new VulkanLibrary(libraryPath);
 }
 
-void Platform::describePlatform (std::ostream& dst) const
+void Platform::describePlatform(std::ostream &dst) const
 {
-	tcu::Android::describePlatform(m_activity.getNativeActivity(), dst);
+    tcu::Android::describePlatform(m_activity.getNativeActivity(), dst);
 }
 
-void Platform::getMemoryLimits (tcu::PlatformMemoryLimits& limits) const
+void Platform::getMemoryLimits(tcu::PlatformMemoryLimits &limits) const
 {
-	// Worst-case estimates
-	const size_t	MiB				= (size_t)(1<<20);
-	const size_t	baseMemUsage	= 400*MiB;
+    // Worst-case estimates
+    const size_t MiB          = (size_t)(1 << 20);
+    const size_t baseMemUsage = 400 * MiB;
 
 #if (DE_PTR_SIZE == 4)
-	// Some tests, such as:
-	//
-	// dEQP-VK.api.object_management.max_concurrent.*
-	// dEQP-VK.memory.allocation.random.*
-	//
-	// when run in succession, can lead to system memory fragmentation. It depends on the allocator, and on some 32-bit
-	// systems can lead to out of memory errors. As a workaround, we use a smaller amount of memory on 32-bit systems,
-	// as this typically avoids out of memory errors caused by fragmentation.
-	const double	safeUsageRatio	= 0.1;
+    // Some tests, such as:
+    //
+    // dEQP-VK.api.object_management.max_concurrent.*
+    // dEQP-VK.memory.allocation.random.*
+    //
+    // when run in succession, can lead to system memory fragmentation. It depends on the allocator, and on some 32-bit
+    // systems can lead to out of memory errors. As a workaround, we use a smaller amount of memory on 32-bit systems,
+    // as this typically avoids out of memory errors caused by fragmentation.
+    const double safeUsageRatio = 0.1;
 #else
-	const double	safeUsageRatio	= 0.25;
+    const double safeUsageRatio = 0.25;
 #endif
 
-	limits.totalSystemMemory					= de::max((size_t)(double(deInt64(m_totalSystemMemory)-deInt64(baseMemUsage)) * safeUsageRatio), 16*MiB);
+    limits.totalSystemMemory =
+        de::max((size_t)(double(int64_t(m_totalSystemMemory) - int64_t(baseMemUsage)) * safeUsageRatio), 16 * MiB);
 
-	// Assume UMA architecture
-	limits.totalDeviceLocalMemory				= 0;
+    // Assume UMA architecture
+    limits.totalDeviceLocalMemory = 0;
 
-	// Reasonable worst-case estimates
-	limits.deviceMemoryAllocationGranularity	= 64*1024;
-	limits.devicePageSize						= 4096;
-	limits.devicePageTableEntrySize				= 8;
-	limits.devicePageTableHierarchyLevels		= 3;
+    // Reasonable worst-case estimates
+    limits.deviceMemoryAllocationGranularity = 64 * 1024;
+    limits.devicePageSize                    = 4096;
+    limits.devicePageTableEntrySize          = 8;
+    limits.devicePageTableHierarchyLevels    = 3;
 }
 
-vk::wsi::Display* Platform::createWsiDisplay (vk::wsi::Type wsiType) const
+vk::wsi::Display *Platform::createWsiDisplay(vk::wsi::Type wsiType) const
 {
-	if (wsiType == vk::wsi::TYPE_ANDROID)
-		return new VulkanDisplay(const_cast<WindowRegistry&>(m_windowRegistry));
-	else
-		TCU_THROW(NotSupportedError, "WSI type not supported on Android");
+    if (wsiType == vk::wsi::TYPE_ANDROID)
+        return new VulkanDisplay(const_cast<WindowRegistry &>(m_windowRegistry));
+    else
+        TCU_THROW(NotSupportedError, "WSI type not supported on Android");
 }
 
-bool Platform::hasDisplay (vk::wsi::Type wsiType) const
+bool Platform::hasDisplay(vk::wsi::Type wsiType) const
 {
-	if (wsiType == vk::wsi::TYPE_ANDROID)
-		return true;
+    if (wsiType == vk::wsi::TYPE_ANDROID)
+        return true;
 
-	return false;
+    return false;
 }
 
-} // Android
-} // tcu
+} // namespace Android
+} // namespace tcu

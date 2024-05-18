@@ -33,15 +33,15 @@ namespace glcts
 class ShaderImageSizeTests : public glcts::TestCaseGroup
 {
 public:
-	ShaderImageSizeTests(glcts::Context& context);
-	~ShaderImageSizeTests(void);
+    ShaderImageSizeTests(glcts::Context &context);
+    ~ShaderImageSizeTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderImageSizeTests(const ShaderImageSizeTests& other);
-	ShaderImageSizeTests& operator=(const ShaderImageSizeTests& other);
+    ShaderImageSizeTests(const ShaderImageSizeTests &other);
+    ShaderImageSizeTests &operator=(const ShaderImageSizeTests &other);
 };
-}
+} // namespace glcts
 
 #endif // _ES31CSHADERIMAGESIZETESTS_HPP

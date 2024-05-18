@@ -32,9 +32,9 @@ namespace vkt
 namespace ShaderObject
 {
 
-tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx, const std::string& name);
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
 
-} // ShaderObject
-} // vkt
+} // namespace ShaderObject
+} // namespace vkt
 
 #endif // _VKTSHADEROBJECTTESTS_HPP

@@ -37,11 +37,11 @@ namespace wayland
 namespace egl
 {
 
-eglu::NativeDisplayFactory* createDisplayFactory (EventState& eventState);
+eglu::NativeDisplayFactory *createDisplayFactory(EventState &eventState);
 
-} // egl
-} // wayland
-} // lnx
-} // tcu
+} // namespace egl
+} // namespace wayland
+} // namespace lnx
+} // namespace tcu
 
 #endif // _TCULNXWAYLANDEGLDISPLAYFACTORY_HPP

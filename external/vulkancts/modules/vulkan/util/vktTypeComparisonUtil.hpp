@@ -32,11 +32,11 @@ namespace vkt
 {
 namespace typecomputil
 {
-const	char*			getCompareFuncForType (glu::DataType type);
-		void			getCompareDependencies (std::set<glu::DataType> &compareFuncs, glu::DataType basicType);
-		void			collectUniqueBasicTypes (std::set<glu::DataType> &basicTypes, const glu::VarType &type);
-		glu::DataType	getPromoteType (glu::DataType type);
-} // typecomputil
-} // vkt
+const char *getCompareFuncForType(glu::DataType type);
+void getCompareDependencies(std::set<glu::DataType> &compareFuncs, glu::DataType basicType);
+void collectUniqueBasicTypes(std::set<glu::DataType> &basicTypes, const glu::VarType &type);
+glu::DataType getPromoteType(glu::DataType type);
+} // namespace typecomputil
+} // namespace vkt
 
 #endif // _VKTTYPECOMPARISONUTIL_HPP

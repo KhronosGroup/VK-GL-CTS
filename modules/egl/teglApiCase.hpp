@@ -39,51 +39,65 @@ namespace egl
 class ApiCase : public TestCase, protected eglu::CallLogWrapper
 {
 public:
-						ApiCase					(EglTestContext& eglTestCtx, const char* name, const char* description);
-	virtual				~ApiCase				(void);
+    ApiCase(EglTestContext &eglTestCtx, const char *name, const char *description);
+    virtual ~ApiCase(void);
 
-	void				init					(void);
-	void				deinit					(void);
+    void init(void);
+    void deinit(void);
 
-	IterateResult		iterate					(void);
+    IterateResult iterate(void);
 
 protected:
-	virtual void		test					(void) = DE_NULL;
+    virtual void test(void) = DE_NULL;
 
-	void				expectError				(eglw::EGLenum error);
-	void				expectEitherError		(eglw::EGLenum errorA, eglw::EGLenum errorB);
-	void				expectBoolean			(eglw::EGLBoolean expected, eglw::EGLBoolean got);
+    void expectError(eglw::EGLenum error);
+    void expectEitherError(eglw::EGLenum errorA, eglw::EGLenum errorB);
+    void expectBoolean(eglw::EGLBoolean expected, eglw::EGLBoolean got);
 
-	void				expectNoContext			(eglw::EGLContext got);
-	void				expectNoSurface			(eglw::EGLSurface got);
-	void				expectNoDisplay			(eglw::EGLDisplay got);
-	void				expectNull				(const void* got);
+    void expectNoContext(eglw::EGLContext got);
+    void expectNoSurface(eglw::EGLSurface got);
+    void expectNoDisplay(eglw::EGLDisplay got);
+    void expectNull(const void *got);
 
-	inline void			expectTrue				(eglw::EGLBoolean got) { expectBoolean(EGL_TRUE, got); }
-	inline void			expectFalse				(eglw::EGLBoolean got) { expectBoolean(EGL_FALSE, got); }
+    inline void expectTrue(eglw::EGLBoolean got)
+    {
+        expectBoolean(EGL_TRUE, got);
+    }
+    inline void expectFalse(eglw::EGLBoolean got)
+    {
+        expectBoolean(EGL_FALSE, got);
+    }
 
-	eglw::EGLDisplay	getDisplay				(void)						{ return m_display;							}
-	bool				isAPISupported			(eglw::EGLenum api) const;
-	bool				getConfig				(eglw::EGLConfig* cfg, const eglu::FilterList& filters);
+    eglw::EGLDisplay getDisplay(void)
+    {
+        return m_display;
+    }
+    bool isAPISupported(eglw::EGLenum api) const;
+    bool getConfig(eglw::EGLConfig *cfg, const eglu::FilterList &filters);
 
 private:
-	eglw::EGLDisplay							m_display;
-	std::vector<eglw::EGLenum>					m_supportedClientAPIs;
+    eglw::EGLDisplay m_display;
+    std::vector<eglw::EGLenum> m_supportedClientAPIs;
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 // Helper macro for declaring ApiCases.
-#define TEGL_ADD_API_CASE(NAME, DESCRIPTION, TEST_FUNC_BODY)									\
-	do {																						\
-		class ApiCase_##NAME : public deqp::egl::ApiCase {										\
-		public:																					\
-			ApiCase_##NAME (EglTestContext& context) : ApiCase(context, #NAME, DESCRIPTION) {}	\
-		protected:																				\
-			void test (void) TEST_FUNC_BODY	 /* NOLINT(TEST_FUNC_BODY) */						\
-		};																						\
-		addChild(new ApiCase_##NAME(m_eglTestCtx));												\
-	} while (deGetFalse())
+#define TEGL_ADD_API_CASE(NAME, DESCRIPTION, TEST_FUNC_BODY)                               \
+    do                                                                                     \
+    {                                                                                      \
+        class ApiCase_##NAME : public deqp::egl::ApiCase                                   \
+        {                                                                                  \
+        public:                                                                            \
+            ApiCase_##NAME(EglTestContext &context) : ApiCase(context, #NAME, DESCRIPTION) \
+            {                                                                              \
+            }                                                                              \
+                                                                                           \
+        protected:                                                                         \
+            void test(void) TEST_FUNC_BODY /* NOLINT(TEST_FUNC_BODY) */                    \
+        };                                                                                 \
+        addChild(new ApiCase_##NAME(m_eglTestCtx));                                        \
+    } while (false)
 
 #endif // _TEGLAPICASE_HPP

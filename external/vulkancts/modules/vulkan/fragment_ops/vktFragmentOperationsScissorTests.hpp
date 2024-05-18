@@ -32,9 +32,9 @@ namespace vkt
 namespace FragmentOperations
 {
 
-tcu::TestCaseGroup*		createScissorTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createScissorTests(tcu::TestContext &testCtx);
 
-} // FragmentOperations
-} // vkt
+} // namespace FragmentOperations
+} // namespace vkt
 
 #endif // _VKTFRAGMENTOPERATIONSSCISSORTESTS_HPP

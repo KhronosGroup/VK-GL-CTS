@@ -32,9 +32,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*	createDeviceDrmPropertiesTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDeviceDrmPropertiesTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIDEVICEDRMPROPERTIESTESTS_HPP

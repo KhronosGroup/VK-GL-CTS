@@ -31,9 +31,9 @@ namespace vkt
 namespace QueryPool
 {
 
-tcu::TestCaseGroup* createFragInvocationTests (tcu::TestContext& testContext);
+tcu::TestCaseGroup *createFragInvocationTests(tcu::TestContext &testContext);
 
-} // QueryPool
-} // vkt
+} // namespace QueryPool
+} // namespace vkt
 
 #endif // _VKTQUERYPOOLFRAGINVOCATIONTESTS_HPP

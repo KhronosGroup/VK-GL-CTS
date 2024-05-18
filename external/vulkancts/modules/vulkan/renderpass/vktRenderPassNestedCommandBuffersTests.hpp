@@ -31,9 +31,9 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createNestedCommandBufferTests (tcu::TestContext& testCtx, const SharedGroupParams groupParams);
+tcu::TestCaseGroup *createNestedCommandBufferTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTRENDERPASSNESTEDCOMMANDBUFFERSTESTS_HPP

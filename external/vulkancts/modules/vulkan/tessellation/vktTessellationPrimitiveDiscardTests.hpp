@@ -32,9 +32,9 @@ namespace vkt
 namespace tessellation
 {
 
-tcu::TestCaseGroup* createPrimitiveDiscardTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createPrimitiveDiscardTests(tcu::TestContext &testCtx);
 
-} // tessellation
-} // vkt
+} // namespace tessellation
+} // namespace vkt
 
 #endif // _VKTTESSELLATIONPRIMITIVEDISCARDTESTS_HPP

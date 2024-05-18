@@ -31,9 +31,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageDepthStencilSeparateTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageDepthStencilSeparateTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGEDEPTHSTENCILSEPARATETESTS_HPP

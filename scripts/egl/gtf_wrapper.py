@@ -28,78 +28,78 @@ from khr_util.format import indentLines
 from itertools import chain
 
 try:
-	from itertools import imap
+    from itertools import imap
 except ImportError:
-	imap=map
+    imap=map
 
 def getMangledName (funcName):
-	assert funcName[:3] == "egl"
-	return "eglw" + funcName[3:]
+    assert funcName[:3] == "egl"
+    return "eglw" + funcName[3:]
 
 def commandAliasDefinition (command):
-	return "#define\t%s\t%s" % (command.name, getMangledName(command.name))
+    return "#define\t%s\t%s" % (command.name, getMangledName(command.name))
 
 def commandWrapperDeclaration (command):
-	return "%s\t%s\t(%s);" % (
-		command.type,
-		getMangledName(command.name),
-		", ".join([param.declaration for param in command.params]))
+    return "%s\t%s\t(%s);" % (
+        command.type,
+        getMangledName(command.name),
+        ", ".join([param.declaration for param in command.params]))
 
 NATIVE_TYPES = [
-	"EGLNativeWindowType",
-	"EGLNativeDisplayType",
-	"EGLNativePixmapType",
+    "EGLNativeWindowType",
+    "EGLNativeDisplayType",
+    "EGLNativePixmapType",
 ]
 
 def commandWrapperDefinition (command):
-	template = """
+    template = """
 {returnType} {mangledName} ({paramDecls})
 {{
-	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
-	if (!egl)
-		return{defaultReturn};
-	{maybeReturn}egl->{memberName}({arguments});
+    const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+    if (!egl)
+        return{defaultReturn};
+    {maybeReturn}egl->{memberName}({arguments});
 }}"""
 
-	arguments = []
+    arguments = []
 
-	for param in command.params:
-		if param.type in NATIVE_TYPES:
-			arguments.append("(void*)" + param.name)
-		else:
-			arguments.append(param.name)
+    for param in command.params:
+        if param.type in NATIVE_TYPES:
+            arguments.append("(void*)" + param.name)
+        else:
+            arguments.append(param.name)
 
-	return template.format(
-		returnType		= command.type,
-		mangledName		= "eglw" + command.name[3:],
-		paramDecls		= commandParams(command),
-		defaultReturn	= " " + getDefaultReturn(command) if command.type != 'void' else "",
-		maybeReturn		= "return " if command.type != 'void' else "",
-		memberName		= getFunctionMemberName(command.name),
-		arguments		= ", ".join(arguments))
+    return template.format(
+        returnType = command.type,
+        mangledName = "eglw" + command.name[3:],
+        paramDecls = commandParams(command),
+        defaultReturn = " " + getDefaultReturn(command) if command.type != 'void' else "",
+        maybeReturn = "return " if command.type != 'void' else "",
+        memberName = getFunctionMemberName(command.name),
+        arguments = ", ".join(arguments))
 
 def getDefaultReturn (command):
-	if command.name == "glGetError":
-		return "GL_INVALID_OPERATION"
-	else:
-		assert command.type != 'void'
-		return "(%s)0" % command.type
+    if command.name == "glGetError":
+        return "GL_INVALID_OPERATION"
+    else:
+        assert command.type != 'void'
+        return "(%s)0" % command.type
 
 commandParams = khr_util.format.commandParams
 
 def enumDefinitionC (enum):
-	return "#define %s\t%s" % (enum.name, enumValue(enum))
+    return "#define %s\t%s" % (enum.name, enumValue(enum))
 
 def gen (registry):
-	noExtIface		= getInterface(registry, 'egl', VERSION)
-	extOnlyIface	= getExtOnlyIface(registry, 'egl', EXTENSIONS)
-	defaultIface	= getDefaultInterface()
-	defines			= imap(commandAliasDefinition, defaultIface.commands)
-	prototypes		= imap(commandWrapperDeclaration, defaultIface.commands)
-	src				= indentLines(chain(defines, prototypes))
+    noExtIface = getInterface(registry, 'egl', VERSION)
+    extOnlyIface = getExtOnlyIface(registry, 'egl', EXTENSIONS)
+    defaultIface = getDefaultInterface()
+    defines = imap(commandAliasDefinition, defaultIface.commands)
+    prototypes = imap(commandWrapperDeclaration, defaultIface.commands)
+    src = indentLines(chain(defines, prototypes))
 
-	writeInlFile(os.path.join(EGL_WRAPPER_DIR, "eglwApi.inl"), src)
-	writeInlFile(os.path.join(EGL_WRAPPER_DIR, "eglwEnumsC.inl"), indentLines(map(enumDefinitionC, defaultIface.enums)))
-	genCommandList(noExtIface, commandWrapperDefinition, EGL_WRAPPER_DIR, "eglwImpl.inl")
-	genCommandList(extOnlyIface, commandWrapperDefinition, EGL_WRAPPER_DIR, "eglwImplExt.inl")
+    writeInlFile(os.path.join(EGL_WRAPPER_DIR, "eglwApi.inl"), src)
+    writeInlFile(os.path.join(EGL_WRAPPER_DIR, "eglwEnumsC.inl"), indentLines(map(enumDefinitionC, defaultIface.enums)))
+    genCommandList(noExtIface, commandWrapperDefinition, EGL_WRAPPER_DIR, "eglwImpl.inl")
+    genCommandList(extOnlyIface, commandWrapperDefinition, EGL_WRAPPER_DIR, "eglwImplExt.inl")
 

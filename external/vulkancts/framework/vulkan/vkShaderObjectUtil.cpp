@@ -29,37 +29,44 @@ namespace vk
 {
 
 #ifndef CTS_USES_VULKANSC
-inline Move<VkShaderEXT> createShader(const DeviceInterface& vk, VkDevice device, const vk::VkShaderCreateInfoEXT& shaderCreateInfo)
+inline Move<VkShaderEXT> createShader(const DeviceInterface &vk, VkDevice device,
+                                      const vk::VkShaderCreateInfoEXT &shaderCreateInfo)
 {
-	VkShaderEXT object;
-	VK_CHECK(vk.createShadersEXT(device, 1u, &shaderCreateInfo, DE_NULL, &object));
-	return Move<VkShaderEXT>(check<VkShaderEXT>(object), Deleter<VkShaderEXT>(vk, device, DE_NULL));
+    VkShaderEXT object;
+    VK_CHECK(vk.createShadersEXT(device, 1u, &shaderCreateInfo, DE_NULL, &object));
+    return Move<VkShaderEXT>(check<VkShaderEXT>(object), Deleter<VkShaderEXT>(vk, device, DE_NULL));
 }
 
-std::vector<std::string> removeUnsupportedShaderObjectExtensions (const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physicalDevice, const std::vector<std::string>& deviceExtensions)
+std::vector<std::string> removeUnsupportedShaderObjectExtensions(const vk::InstanceInterface &vki,
+                                                                 const vk::VkPhysicalDevice physicalDevice,
+                                                                 const std::vector<std::string> &deviceExtensions)
 {
-	std::vector<std::string> extensions = deviceExtensions;
+    std::vector<std::string> extensions = deviceExtensions;
 
-	const auto extensionProperties = vk::enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    const auto extensionProperties = vk::enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
-	deUint32 discardRectanglesVersion = 0;
-	deUint32 scissorExclusiveVersion = 0;
-	for (const auto& extProp : extensionProperties)
-	{
-		if (strcmp(extProp.extensionName, "VK_EXT_discard_rectangles") == 0)
-			discardRectanglesVersion = extProp.specVersion;
+    uint32_t discardRectanglesVersion = 0;
+    uint32_t scissorExclusiveVersion  = 0;
+    for (const auto &extProp : extensionProperties)
+    {
+        if (strcmp(extProp.extensionName, "VK_EXT_discard_rectangles") == 0)
+            discardRectanglesVersion = extProp.specVersion;
 
-		if (strcmp(extProp.extensionName, "VK_NV_scissor_exclusive") == 0)
-			scissorExclusiveVersion = extProp.specVersion;
-	}
+        if (strcmp(extProp.extensionName, "VK_NV_scissor_exclusive") == 0)
+            scissorExclusiveVersion = extProp.specVersion;
+    }
 
-	if (discardRectanglesVersion < 2 && std::find(extensions.begin(), extensions.end(), "VK_EXT_discard_rectangles") != extensions.end())
-		extensions.erase(std::remove(extensions.begin(), extensions.end(), "VK_EXT_discard_rectangles"), extensions.end());
-	if (scissorExclusiveVersion < 2 && std::find(extensions.begin(), extensions.end(), "VK_NV_scissor_exclusive") != extensions.end())
-		extensions.erase(std::remove(extensions.begin(), extensions.end(), "VK_NV_scissor_exclusive"), extensions.end());
+    if (discardRectanglesVersion < 2 &&
+        std::find(extensions.begin(), extensions.end(), "VK_EXT_discard_rectangles") != extensions.end())
+        extensions.erase(std::remove(extensions.begin(), extensions.end(), "VK_EXT_discard_rectangles"),
+                         extensions.end());
+    if (scissorExclusiveVersion < 2 &&
+        std::find(extensions.begin(), extensions.end(), "VK_NV_scissor_exclusive") != extensions.end())
+        extensions.erase(std::remove(extensions.begin(), extensions.end(), "VK_NV_scissor_exclusive"),
+                         extensions.end());
 
-	return extensions;
+    return extensions;
 }
 #endif
 
-} // vk
+} // namespace vk

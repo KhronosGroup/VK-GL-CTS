@@ -435,9 +435,9 @@ static const PropertyStructCreationData propertyStructCreationArray[] =
 	{ createPropertyStructWrapper<VkPhysicalDeviceProtectedMemoryProperties>, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0 },
 };
 
-deUint32 getBlobPropertiesVersion (VkStructureType sType)
+uint32_t getBlobPropertiesVersion (VkStructureType sType)
 {
-	const std::map<VkStructureType, deUint32> sTypeBlobMap
+	const std::map<VkStructureType, uint32_t> sTypeBlobMap
 	{
 		// Vulkan11
 		{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR,							VK_API_VERSION_1_1 },

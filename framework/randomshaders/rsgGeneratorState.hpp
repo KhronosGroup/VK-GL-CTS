@@ -40,67 +40,124 @@ class Statement;
 
 enum ExpressionFlags
 {
-	CONST_EXPR			= (1<<0),
-	NO_VAR_ALLOCATION	= (1<<1)
+    CONST_EXPR        = (1 << 0),
+    NO_VAR_ALLOCATION = (1 << 1)
 };
 
 enum
 {
-	PRECEDENCE_MAX		= 100
+    PRECEDENCE_MAX = 100
 };
 
 class GeneratorState
 {
 public:
-								GeneratorState				(const ProgramParameters& programParams, de::Random& random);
-								~GeneratorState				(void);
+    GeneratorState(const ProgramParameters &programParams, de::Random &random);
+    ~GeneratorState(void);
 
-	const ProgramParameters&	getProgramParameters		(void) const	{ return m_programParams;	}
-	de::Random&					getRandom					(void)			{ return m_random;			}
+    const ProgramParameters &getProgramParameters(void) const
+    {
+        return m_programParams;
+    }
+    de::Random &getRandom(void)
+    {
+        return m_random;
+    }
 
-	const ShaderParameters&		getShaderParameters			(void) const	{ return *m_shaderParams;	}
-	Shader&						getShader					(void)			{ return *m_shader;			}
+    const ShaderParameters &getShaderParameters(void) const
+    {
+        return *m_shaderParams;
+    }
+    Shader &getShader(void)
+    {
+        return *m_shader;
+    }
 
-	void						setShader					(const ShaderParameters& params, Shader& shader);
+    void setShader(const ShaderParameters &params, Shader &shader);
 
-	NameAllocator&				getNameAllocator			(void)							{ return m_nameAllocator;		}
-	VariableManager&			getVariableManager			(void)							{ return *m_varManager;			}
-	const VariableManager&		getVariableManager			(void) const					{ return *m_varManager;			}
-	void						setVariableManager			(VariableManager& varManager)	{ m_varManager = &varManager;	}
+    NameAllocator &getNameAllocator(void)
+    {
+        return m_nameAllocator;
+    }
+    VariableManager &getVariableManager(void)
+    {
+        return *m_varManager;
+    }
+    const VariableManager &getVariableManager(void) const
+    {
+        return *m_varManager;
+    }
+    void setVariableManager(VariableManager &varManager)
+    {
+        m_varManager = &varManager;
+    }
 
-	// \todo [2011-06-10 pyry] Could we not expose whole statement stack to everyone?
-	int							getStatementDepth			(void) const						{ return (int)m_statementStack->size();	}
-	void						setStatementStack			(std::vector<Statement*>& stack)	{ m_statementStack = &stack;			}
-	const Statement*			getStatementStackEntry		(int ndx) const						{ return m_statementStack->at(ndx);		}
+    // \todo [2011-06-10 pyry] Could we not expose whole statement stack to everyone?
+    int getStatementDepth(void) const
+    {
+        return (int)m_statementStack->size();
+    }
+    void setStatementStack(std::vector<Statement *> &stack)
+    {
+        m_statementStack = &stack;
+    }
+    const Statement *getStatementStackEntry(int ndx) const
+    {
+        return m_statementStack->at(ndx);
+    }
 
-	int							getExpressionDepth			(void) const					{ return m_expressionDepth;		}
-	void						setExpressionDepth			(int depth)						{ m_expressionDepth = depth;	}
+    int getExpressionDepth(void) const
+    {
+        return m_expressionDepth;
+    }
+    void setExpressionDepth(int depth)
+    {
+        m_expressionDepth = depth;
+    }
 
-	// \todo [2011-03-21 pyry] A bit of a hack... Move to ValueRange?
-	deUint32					getExpressionFlags			(void) const					{ return m_exprFlagStack.back();	}
-	void						pushExpressionFlags			(deUint32 flags)				{ m_exprFlagStack.push_back(flags);	}
-	void						popExpressionFlags			(void)							{ m_exprFlagStack.pop_back();		}
+    // \todo [2011-03-21 pyry] A bit of a hack... Move to ValueRange?
+    uint32_t getExpressionFlags(void) const
+    {
+        return m_exprFlagStack.back();
+    }
+    void pushExpressionFlags(uint32_t flags)
+    {
+        m_exprFlagStack.push_back(flags);
+    }
+    void popExpressionFlags(void)
+    {
+        m_exprFlagStack.pop_back();
+    }
 
-	int							getPrecedence				(void) const					{ return m_precedenceStack.back();			}
-	void						pushPrecedence				(int precedence)				{ m_precedenceStack.push_back(precedence);	}
-	void						popPrecedence				(void)							{ m_precedenceStack.pop_back();				}
+    int getPrecedence(void) const
+    {
+        return m_precedenceStack.back();
+    }
+    void pushPrecedence(int precedence)
+    {
+        m_precedenceStack.push_back(precedence);
+    }
+    void popPrecedence(void)
+    {
+        m_precedenceStack.pop_back();
+    }
 
 private:
-	const ProgramParameters&	m_programParams;
-	de::Random&					m_random;
+    const ProgramParameters &m_programParams;
+    de::Random &m_random;
 
-	const ShaderParameters*		m_shaderParams;
-	Shader*						m_shader;
+    const ShaderParameters *m_shaderParams;
+    Shader *m_shader;
 
-	NameAllocator				m_nameAllocator;
-	VariableManager*			m_varManager;
+    NameAllocator m_nameAllocator;
+    VariableManager *m_varManager;
 
-	std::vector<Statement*>*	m_statementStack;
-	int							m_expressionDepth;
-	std::vector<deUint32>		m_exprFlagStack;
-	std::vector<int>			m_precedenceStack;
+    std::vector<Statement *> *m_statementStack;
+    int m_expressionDepth;
+    std::vector<uint32_t> m_exprFlagStack;
+    std::vector<int> m_precedenceStack;
 };
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGGENERATORSTATE_HPP

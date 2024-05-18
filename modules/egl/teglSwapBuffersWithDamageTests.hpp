@@ -34,15 +34,15 @@ namespace egl
 class SwapBuffersWithDamageTests : public TestCaseGroup
 {
 public:
-								SwapBuffersWithDamageTests		(EglTestContext& eglTestCtx);
-	void						init							(void);
+    SwapBuffersWithDamageTests(EglTestContext &eglTestCtx);
+    void init(void);
 
 private:
-								SwapBuffersWithDamageTests		(const SwapBuffersWithDamageTests&);
-	SwapBuffersWithDamageTests&	operator=						(const SwapBuffersWithDamageTests&);
+    SwapBuffersWithDamageTests(const SwapBuffersWithDamageTests &);
+    SwapBuffersWithDamageTests &operator=(const SwapBuffersWithDamageTests &);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLSWAPBUFFERSWITHDAMAGETESTS_HPP

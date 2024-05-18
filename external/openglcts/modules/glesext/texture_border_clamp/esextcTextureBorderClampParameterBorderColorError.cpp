@@ -47,10 +47,12 @@ const glw::GLuint TextureBorderClampParameterBorderColorErrorTest::m_texture_uni
  *  @param description   Test case's description
  **/
 TextureBorderClampParameterBorderColorErrorTest::TextureBorderClampParameterBorderColorErrorTest(
-	Context& context, const ExtParameters& extParams, const char* name, const char* description)
-	: TextureBorderClampBase(context, extParams, name, description), m_sampler_id(0), m_test_passed(true)
+    Context &context, const ExtParameters &extParams, const char *name, const char *description)
+    : TextureBorderClampBase(context, extParams, name, description)
+    , m_sampler_id(0)
+    , m_test_passed(true)
 {
-	/* Left blank on purpose */
+    /* Left blank on purpose */
 }
 
 /** Deinitializes GLES objects created during the test.
@@ -58,21 +60,21 @@ TextureBorderClampParameterBorderColorErrorTest::TextureBorderClampParameterBord
  */
 void TextureBorderClampParameterBorderColorErrorTest::deinit(void)
 {
-	/* Retrieve ES entry-points */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+    /* Retrieve ES entry-points */
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	/* Release sampler object */
-	gl.bindSampler(m_texture_unit, 0);
+    /* Release sampler object */
+    gl.bindSampler(m_texture_unit, 0);
 
-	if (0 != m_sampler_id)
-	{
-		gl.deleteSamplers(1, &m_sampler_id);
+    if (0 != m_sampler_id)
+    {
+        gl.deleteSamplers(1, &m_sampler_id);
 
-		m_sampler_id = 0;
-	}
+        m_sampler_id = 0;
+    }
 
-	/* Deinitializes base class */
-	TextureBorderClampBase::deinit();
+    /* Deinitializes base class */
+    TextureBorderClampBase::deinit();
 }
 
 /** Initializes GLES objects used during the test.
@@ -80,23 +82,23 @@ void TextureBorderClampParameterBorderColorErrorTest::deinit(void)
  */
 void TextureBorderClampParameterBorderColorErrorTest::initTest(void)
 {
-	if (!m_is_texture_border_clamp_supported)
-	{
-		throw tcu::NotSupportedError(TEXTURE_BORDER_CLAMP_NOT_SUPPORTED, "", __FILE__, __LINE__);
-	}
+    if (!m_is_texture_border_clamp_supported)
+    {
+        throw tcu::NotSupportedError(TEXTURE_BORDER_CLAMP_NOT_SUPPORTED, "", __FILE__, __LINE__);
+    }
 
-	/* Initialize base class implementation */
-	TextureBorderClampBase::initTest();
+    /* Initialize base class implementation */
+    TextureBorderClampBase::initTest();
 
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	/* Generate a sampler object */
-	gl.genSamplers(1, &m_sampler_id);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error generating a sampler object");
+    /* Generate a sampler object */
+    gl.genSamplers(1, &m_sampler_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error generating a sampler object");
 
-	/* Bind a sampler object to the texture unit we will use for the test*/
-	gl.bindSampler(m_texture_unit, m_sampler_id);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Error binding a sampler object to texture unit");
+    /* Bind a sampler object to the texture unit we will use for the test*/
+    gl.bindSampler(m_texture_unit, m_sampler_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error binding a sampler object to texture unit");
 }
 
 /** Executes the test.
@@ -109,62 +111,62 @@ void TextureBorderClampParameterBorderColorErrorTest::initTest(void)
  **/
 tcu::TestNode::IterateResult TextureBorderClampParameterBorderColorErrorTest::iterate(void)
 {
-	/* Initialize all ES objects necessary to run the test */
-	initTest();
+    /* Initialize all ES objects necessary to run the test */
+    initTest();
 
-	for (unsigned int i = 0; i < m_texture_target_list.size(); ++i)
-	{
-		/* Check if function glTexParameterf works properly for all the texture targets supported
-		 * in ES3.1.
-		 */
-		VerifyGLTexParameterf(m_texture_target_list[i], GL_TEXTURE_BASE_LEVEL, 0.0f, /* param */
-							  GL_NO_ERROR /* expected_error */);
+    for (unsigned int i = 0; i < m_texture_target_list.size(); ++i)
+    {
+        /* Check if function glTexParameterf works properly for all the texture targets supported
+         * in ES3.1.
+         */
+        VerifyGLTexParameterf(m_texture_target_list[i], GL_TEXTURE_BASE_LEVEL, 0.0f, /* param */
+                              GL_NO_ERROR /* expected_error */);
 
-		/* Make sure that the functions report GL_INVALID_ENUM if
-		 * any of them attempts to modify GL_TEXTURE_BORDER_COLOR_EXT
-		 * parameter.
-		 */
-		VerifyGLTexParameterf(m_texture_target_list[i], m_glExtTokens.TEXTURE_BORDER_COLOR, 0.0f, /* param */
-							  GL_INVALID_ENUM /* expected_error */);
+        /* Make sure that the functions report GL_INVALID_ENUM if
+         * any of them attempts to modify GL_TEXTURE_BORDER_COLOR_EXT
+         * parameter.
+         */
+        VerifyGLTexParameterf(m_texture_target_list[i], m_glExtTokens.TEXTURE_BORDER_COLOR, 0.0f, /* param */
+                              GL_INVALID_ENUM /* expected_error */);
 
-		/* Check that glTexParameteri() accepts all ES3.1 texture targets */
-		VerifyGLTexParameteri(m_texture_target_list[i], GL_TEXTURE_BASE_LEVEL, 0, /* param */
-							  GL_NO_ERROR /* expected_error */);
+        /* Check that glTexParameteri() accepts all ES3.1 texture targets */
+        VerifyGLTexParameteri(m_texture_target_list[i], GL_TEXTURE_BASE_LEVEL, 0, /* param */
+                              GL_NO_ERROR /* expected_error */);
 
-		/* Check that glTexParameteri() reports GL_INVALID_ENUM if used for
-		 * GL_TEXTURE_BORDER_COLOR_EXT pname */
-		VerifyGLTexParameteri(m_texture_target_list[i], m_glExtTokens.TEXTURE_BORDER_COLOR, 0, /* param */
-							  GL_INVALID_ENUM /* expected_error */);
-	}
+        /* Check that glTexParameteri() reports GL_INVALID_ENUM if used for
+         * GL_TEXTURE_BORDER_COLOR_EXT pname */
+        VerifyGLTexParameteri(m_texture_target_list[i], m_glExtTokens.TEXTURE_BORDER_COLOR, 0, /* param */
+                              GL_INVALID_ENUM /* expected_error */);
+    }
 
-	/* Check that glSamplerParameter{f,i} functions correctly handle
-	 * GL_TEXTURE_MIN_FILTER pname.
-	 **/
-	VerifyGLSamplerParameterf(GL_TEXTURE_MIN_FILTER, GL_NEAREST, /* param */
-							  GL_NO_ERROR /* expected_error */);
+    /* Check that glSamplerParameter{f,i} functions correctly handle
+     * GL_TEXTURE_MIN_FILTER pname.
+     **/
+    VerifyGLSamplerParameterf(GL_TEXTURE_MIN_FILTER, GL_NEAREST, /* param */
+                              GL_NO_ERROR /* expected_error */);
 
-	VerifyGLSamplerParameteri(GL_TEXTURE_MIN_FILTER, GL_NEAREST, /* param */
-							  GL_NO_ERROR /* expected_error */);
+    VerifyGLSamplerParameteri(GL_TEXTURE_MIN_FILTER, GL_NEAREST, /* param */
+                              GL_NO_ERROR /* expected_error */);
 
-	/* Make sure that glSamplerParameter*() functions report GL_INVALID_ENUM
-	 * if called with GL_TEXTURE_BORDER_COLOR_EXT pname
-	 */
-	VerifyGLSamplerParameterf(m_glExtTokens.TEXTURE_BORDER_COLOR, 0.0f, /* param */
-							  GL_INVALID_ENUM /* expected_error */);
+    /* Make sure that glSamplerParameter*() functions report GL_INVALID_ENUM
+     * if called with GL_TEXTURE_BORDER_COLOR_EXT pname
+     */
+    VerifyGLSamplerParameterf(m_glExtTokens.TEXTURE_BORDER_COLOR, 0.0f, /* param */
+                              GL_INVALID_ENUM /* expected_error */);
 
-	VerifyGLSamplerParameteri(m_glExtTokens.TEXTURE_BORDER_COLOR, 0, /* param */
-							  GL_INVALID_ENUM /* expected_error */);
+    VerifyGLSamplerParameteri(m_glExtTokens.TEXTURE_BORDER_COLOR, 0, /* param */
+                              GL_INVALID_ENUM /* expected_error */);
 
-	if (m_test_passed)
-	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-	}
-	else
-	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-	}
+    if (m_test_passed)
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    }
+    else
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+    }
 
-	return STOP;
+    return STOP;
 }
 
 /** Check if calling glTexParameterf() with user-provided set of arguments causes
@@ -178,24 +180,24 @@ tcu::TestNode::IterateResult TextureBorderClampParameterBorderColorErrorTest::it
  * @param expected_error expected error code.
  */
 void TextureBorderClampParameterBorderColorErrorTest::VerifyGLTexParameterf(glw::GLenum target, glw::GLenum pname,
-																			glw::GLfloat param,
-																			glw::GLenum  expected_error)
+                                                                            glw::GLfloat param,
+                                                                            glw::GLenum expected_error)
 {
-	glw::GLenum			  error_code = GL_NO_ERROR;
-	const glw::Functions& gl		 = m_context.getRenderContext().getFunctions();
+    glw::GLenum error_code   = GL_NO_ERROR;
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	gl.texParameterf(target, pname, param);
+    gl.texParameterf(target, pname, param);
 
-	error_code = gl.getError();
-	if (expected_error != error_code)
-	{
-		m_test_passed = false;
-		m_testCtx.getLog() << tcu::TestLog::Message << "glTexParameterf() failed:["
-						   << "target:" << getTexTargetString(target) << ", pname:" << getPNameString(pname)
-						   << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
-						   << glu::getErrorStr(expected_error) << "]\n"
-						   << tcu::TestLog::EndMessage;
-	}
+    error_code = gl.getError();
+    if (expected_error != error_code)
+    {
+        m_test_passed = false;
+        m_testCtx.getLog() << tcu::TestLog::Message << "glTexParameterf() failed:["
+                           << "target:" << getTexTargetString(target) << ", pname:" << getPNameString(pname)
+                           << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
+                           << glu::getErrorStr(expected_error) << "]\n"
+                           << tcu::TestLog::EndMessage;
+    }
 }
 
 /** Check if calling glTexParameteri() with user-provided set of arguments causes
@@ -209,25 +211,25 @@ void TextureBorderClampParameterBorderColorErrorTest::VerifyGLTexParameterf(glw:
  * @param expected_error expected error code.
  */
 void TextureBorderClampParameterBorderColorErrorTest::VerifyGLTexParameteri(glw::GLenum target, glw::GLenum pname,
-																			glw::GLint  param,
-																			glw::GLenum expected_error)
+                                                                            glw::GLint param,
+                                                                            glw::GLenum expected_error)
 {
-	glw::GLenum			  error_code = GL_NO_ERROR;
-	const glw::Functions& gl		 = m_context.getRenderContext().getFunctions();
+    glw::GLenum error_code   = GL_NO_ERROR;
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	gl.texParameteri(target, pname, param);
+    gl.texParameteri(target, pname, param);
 
-	error_code = gl.getError();
-	if (expected_error != error_code)
-	{
-		m_test_passed = false;
+    error_code = gl.getError();
+    if (expected_error != error_code)
+    {
+        m_test_passed = false;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "glTexParameteri() failed:["
-						   << "target:" << getTexTargetString(target) << ", pname:" << getPNameString(pname)
-						   << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
-						   << glu::getErrorStr(expected_error) << "]\n"
-						   << tcu::TestLog::EndMessage;
-	}
+        m_testCtx.getLog() << tcu::TestLog::Message << "glTexParameteri() failed:["
+                           << "target:" << getTexTargetString(target) << ", pname:" << getPNameString(pname)
+                           << "] reported error code:[" << glu::getErrorStr(error_code) << "] expected error code:["
+                           << glu::getErrorStr(expected_error) << "]\n"
+                           << tcu::TestLog::EndMessage;
+    }
 }
 
 /** Check if calling glSamplerParameterf() with user-provided set of arguments causes
@@ -240,24 +242,24 @@ void TextureBorderClampParameterBorderColorErrorTest::VerifyGLTexParameteri(glw:
  * @param expected_error expected error code.
  */
 void TextureBorderClampParameterBorderColorErrorTest::VerifyGLSamplerParameterf(glw::GLenum pname, glw::GLfloat param,
-																				glw::GLenum expected_error)
+                                                                                glw::GLenum expected_error)
 {
-	glw::GLenum			  error_code = GL_NO_ERROR;
-	const glw::Functions& gl		 = m_context.getRenderContext().getFunctions();
+    glw::GLenum error_code   = GL_NO_ERROR;
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	gl.samplerParameterf(m_sampler_id, pname, param);
+    gl.samplerParameterf(m_sampler_id, pname, param);
 
-	error_code = gl.getError();
-	if (expected_error != error_code)
-	{
-		m_test_passed = false;
+    error_code = gl.getError();
+    if (expected_error != error_code)
+    {
+        m_test_passed = false;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "glSamplerParameterf() failed:["
-						   << ", pname:" << getPNameString(pname) << "] reported error code:["
-						   << glu::getErrorStr(error_code) << "] expected error code:["
-						   << glu::getErrorStr(expected_error) << "]\n"
-						   << tcu::TestLog::EndMessage;
-	}
+        m_testCtx.getLog() << tcu::TestLog::Message << "glSamplerParameterf() failed:["
+                           << ", pname:" << getPNameString(pname) << "] reported error code:["
+                           << glu::getErrorStr(error_code) << "] expected error code:["
+                           << glu::getErrorStr(expected_error) << "]\n"
+                           << tcu::TestLog::EndMessage;
+    }
 }
 
 /** Check if calling glSamplerParameteri() with user-provided set of arguments causes
@@ -270,24 +272,24 @@ void TextureBorderClampParameterBorderColorErrorTest::VerifyGLSamplerParameterf(
  * @param expected_error expected error code.
  */
 void TextureBorderClampParameterBorderColorErrorTest::VerifyGLSamplerParameteri(glw::GLenum pname, glw::GLint param,
-																				glw::GLenum expected_error)
+                                                                                glw::GLenum expected_error)
 {
-	glw::GLenum			  error_code = GL_NO_ERROR;
-	const glw::Functions& gl		 = m_context.getRenderContext().getFunctions();
+    glw::GLenum error_code   = GL_NO_ERROR;
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
 
-	gl.samplerParameteri(m_sampler_id, pname, param);
+    gl.samplerParameteri(m_sampler_id, pname, param);
 
-	error_code = gl.getError();
-	if (expected_error != error_code)
-	{
-		m_test_passed = false;
+    error_code = gl.getError();
+    if (expected_error != error_code)
+    {
+        m_test_passed = false;
 
-		m_testCtx.getLog() << tcu::TestLog::Message << "glSamplerParameteri() failed:["
-						   << ", pname:" << getPNameString(pname) << "] reported error code:["
-						   << glu::getErrorStr(error_code) << "] expected error code:["
-						   << glu::getErrorStr(expected_error) << "]\n"
-						   << tcu::TestLog::EndMessage;
-	}
+        m_testCtx.getLog() << tcu::TestLog::Message << "glSamplerParameteri() failed:["
+                           << ", pname:" << getPNameString(pname) << "] reported error code:["
+                           << glu::getErrorStr(error_code) << "] expected error code:["
+                           << glu::getErrorStr(expected_error) << "]\n"
+                           << tcu::TestLog::EndMessage;
+    }
 }
 
 } // namespace glcts

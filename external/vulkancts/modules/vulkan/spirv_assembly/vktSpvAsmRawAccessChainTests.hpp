@@ -4,7 +4,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
-  * Copyright (c) 2023 The Khronos Group Inc.
+ * Copyright (c) 2023 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createRawAccessChainGroup (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createRawAccessChainGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMRAWACCESSCHAINTESTS_HPP

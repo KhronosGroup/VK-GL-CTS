@@ -37,17 +37,17 @@ namespace subgroups
 class GlSubgroupTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	GlSubgroupTests(deqp::Context& context);
+    /* Public methods */
+    GlSubgroupTests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	GlSubgroupTests(const GlSubgroupTests& other);
-	GlSubgroupTests& operator=(const GlSubgroupTests& other);
+    GlSubgroupTests(const GlSubgroupTests &other);
+    GlSubgroupTests &operator=(const GlSubgroupTests &other);
 };
 
-} // subgroups
-} // glc
+} // namespace subgroups
+} // namespace glc
 
 #endif // _GLCSUBGROUPSTESTS_HPP

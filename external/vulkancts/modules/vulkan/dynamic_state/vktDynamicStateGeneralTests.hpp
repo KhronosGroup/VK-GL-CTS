@@ -36,18 +36,18 @@ namespace DynamicState
 class DynamicStateGeneralTests : public tcu::TestCaseGroup
 {
 public:
-								DynamicStateGeneralTests	(tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
-								~DynamicStateGeneralTests	(void);
-	void						init						(void);
+    DynamicStateGeneralTests(tcu::TestContext &testCtx, vk::PipelineConstructionType pipelineConstructionType);
+    ~DynamicStateGeneralTests(void);
+    void init(void);
 
 private:
-	DynamicStateGeneralTests								(const DynamicStateGeneralTests& other);
-	DynamicStateGeneralTests&	operator=					(const DynamicStateGeneralTests& other);
+    DynamicStateGeneralTests(const DynamicStateGeneralTests &other);
+    DynamicStateGeneralTests &operator=(const DynamicStateGeneralTests &other);
 
-	vk::PipelineConstructionType	m_pipelineConstructionType;
+    vk::PipelineConstructionType m_pipelineConstructionType;
 };
 
-} // DynamicState
-} // vkt
+} // namespace DynamicState
+} // namespace vkt
 
 #endif // _VKTDYNAMICSTATEGENERALTESTS_HPP

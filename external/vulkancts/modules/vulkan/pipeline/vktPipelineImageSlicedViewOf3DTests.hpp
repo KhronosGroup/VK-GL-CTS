@@ -32,9 +32,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createImageSlicedViewOf3DTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageSlicedViewOf3DTests(tcu::TestContext &testCtx);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEIMAGESLICEDVIEWOF3DTESTS_HPP

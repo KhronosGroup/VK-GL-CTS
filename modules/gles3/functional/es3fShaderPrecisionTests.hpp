@@ -35,18 +35,18 @@ namespace Functional
 class ShaderPrecisionTests : public TestCaseGroup
 {
 public:
-								ShaderPrecisionTests		(Context& context);
-	virtual						~ShaderPrecisionTests		(void);
+    ShaderPrecisionTests(Context &context);
+    virtual ~ShaderPrecisionTests(void);
 
-	virtual void				init						(void);
+    virtual void init(void);
 
 private:
-								ShaderPrecisionTests		(const ShaderPrecisionTests&);		// not allowed!
-	ShaderPrecisionTests&		operator=					(const ShaderPrecisionTests&);		// not allowed!
+    ShaderPrecisionTests(const ShaderPrecisionTests &);            // not allowed!
+    ShaderPrecisionTests &operator=(const ShaderPrecisionTests &); // not allowed!
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSHADERPRECISIONTESTS_HPP

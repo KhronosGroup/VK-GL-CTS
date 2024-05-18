@@ -98,39 +98,39 @@ namespace glcts
 class GeometryShaderNonarrayInputCase : public TestCaseBase
 {
 public:
-	/* Public methods */
-	GeometryShaderNonarrayInputCase(Context& context, const ExtParameters& extParams, const char* name,
-									const char* description);
+    /* Public methods */
+    GeometryShaderNonarrayInputCase(Context &context, const ExtParameters &extParams, const char *name,
+                                    const char *description);
 
-	virtual ~GeometryShaderNonarrayInputCase(void)
-	{
-	}
+    virtual ~GeometryShaderNonarrayInputCase(void)
+    {
+    }
 
-	void		  deinit(void);
-	IterateResult iterate(void);
+    void deinit(void);
+    IterateResult iterate(void);
 
 protected:
-	/* Protected variables */
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_fs;
-	glw::GLuint m_gs_invalid_non_ib;
-	glw::GLuint m_gs_invalid_ib;
-	glw::GLuint m_gs_valid_non_ib;
-	glw::GLuint m_gs_valid_ib;
-	glw::GLuint m_po_a_invalid;
-	glw::GLuint m_po_b_invalid;
-	glw::GLuint m_po_a_valid;
-	glw::GLuint m_po_b_valid;
-	glw::GLuint m_to_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_valid_ib;
-	glw::GLuint m_vs_valid_non_ib;
+    /* Protected variables */
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_fs;
+    glw::GLuint m_gs_invalid_non_ib;
+    glw::GLuint m_gs_invalid_ib;
+    glw::GLuint m_gs_valid_non_ib;
+    glw::GLuint m_gs_valid_ib;
+    glw::GLuint m_po_a_invalid;
+    glw::GLuint m_po_b_invalid;
+    glw::GLuint m_po_a_valid;
+    glw::GLuint m_po_b_valid;
+    glw::GLuint m_to_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_valid_ib;
+    glw::GLuint m_vs_valid_non_ib;
 
-	static const char* m_fs_code;
-	static const char* m_gs_code_preamble;
-	static const char* m_gs_code_body;
-	static const char* m_vs_code_preamble;
-	static const char* m_vs_code_body;
+    static const char *m_fs_code;
+    static const char *m_gs_code_preamble;
+    static const char *m_gs_code_body;
+    static const char *m_vs_code_preamble;
+    static const char *m_vs_code_body;
 };
 
 } // namespace glcts

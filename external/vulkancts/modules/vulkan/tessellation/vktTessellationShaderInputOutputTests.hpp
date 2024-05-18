@@ -32,9 +32,9 @@ namespace vkt
 namespace tessellation
 {
 
-tcu::TestCaseGroup* createShaderInputOutputTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createShaderInputOutputTests(tcu::TestContext &testCtx);
 
-} // tessellation
-} // vkt
+} // namespace tessellation
+} // namespace vkt
 
 #endif // _VKTTESSELLATIONSHADERINPUTOUTPUTTESTS_HPP

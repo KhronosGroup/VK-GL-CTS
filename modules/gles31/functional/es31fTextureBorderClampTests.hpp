@@ -36,20 +36,20 @@ namespace Functional
 class TextureBorderClampTests : public TestCaseGroup
 {
 public:
-								TextureBorderClampTests		(Context& context, bool isGL45);
-								~TextureBorderClampTests	(void);
+    TextureBorderClampTests(Context &context, bool isGL45);
+    ~TextureBorderClampTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								TextureBorderClampTests		(const TextureBorderClampTests& other);
-	TextureBorderClampTests&	operator=					(const TextureBorderClampTests& other);
+    TextureBorderClampTests(const TextureBorderClampTests &other);
+    TextureBorderClampTests &operator=(const TextureBorderClampTests &other);
 
-	bool						m_isGL45;
+    bool m_isGL45;
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FTEXTUREBORDERCLAMPTESTS_HPP

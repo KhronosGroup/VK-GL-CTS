@@ -25,4 +25,4 @@
 
 namespace rr
 {
-} // rr
+} // namespace rr

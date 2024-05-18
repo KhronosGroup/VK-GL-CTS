@@ -24,123 +24,123 @@
 #include "xeTestCaseListParser.hpp"
 #include "deString.h"
 
-using std::vector;
 using std::string;
+using std::vector;
 
 namespace xe
 {
 
-static TestCaseType getTestCaseType (const char* caseType)
+static TestCaseType getTestCaseType(const char *caseType)
 {
-	// \todo [2012-06-11 pyry] Use hashes for speedup.
-	static const struct
-	{
-		const char*		name;
-		TestCaseType	caseType;
-	} s_caseTypeMap[] =
-	{
-		{ "SelfValidate",	TESTCASETYPE_SELF_VALIDATE	},
-		{ "Capability",		TESTCASETYPE_CAPABILITY		},
-		{ "Accuracy",		TESTCASETYPE_ACCURACY		},
-		{ "Performance",	TESTCASETYPE_PERFORMANCE	}
-	};
+    // \todo [2012-06-11 pyry] Use hashes for speedup.
+    static const struct
+    {
+        const char *name;
+        TestCaseType caseType;
+    } s_caseTypeMap[] = {{"SelfValidate", TESTCASETYPE_SELF_VALIDATE},
+                         {"Capability", TESTCASETYPE_CAPABILITY},
+                         {"Accuracy", TESTCASETYPE_ACCURACY},
+                         {"Performance", TESTCASETYPE_PERFORMANCE}};
 
-	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_caseTypeMap); ndx++)
-	{
-		if (deStringEqual(caseType, s_caseTypeMap[ndx].name))
-			return s_caseTypeMap[ndx].caseType;
-	}
+    for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_caseTypeMap); ndx++)
+    {
+        if (deStringEqual(caseType, s_caseTypeMap[ndx].name))
+            return s_caseTypeMap[ndx].caseType;
+    }
 
-	XE_FAIL((string("Unknown test case type '") + caseType + "'").c_str());
+    XE_FAIL((string("Unknown test case type '") + caseType + "'").c_str());
 }
 
-TestCaseListParser::TestCaseListParser (void)
-	: m_root(DE_NULL)
+TestCaseListParser::TestCaseListParser(void) : m_root(DE_NULL)
 {
 }
 
-TestCaseListParser::~TestCaseListParser (void)
+TestCaseListParser::~TestCaseListParser(void)
 {
 }
 
-void TestCaseListParser::clear (void)
+void TestCaseListParser::clear(void)
 {
-	m_xmlParser.clear();
-	m_nodeStack.clear();
-	m_root = DE_NULL;
+    m_xmlParser.clear();
+    m_nodeStack.clear();
+    m_root = DE_NULL;
 }
 
-void TestCaseListParser::init (TestGroup* rootGroup)
+void TestCaseListParser::init(TestGroup *rootGroup)
 {
-	clear();
-	m_root = rootGroup;
+    clear();
+    m_root = rootGroup;
 }
 
-void TestCaseListParser::parse (const deUint8* bytes, int numBytes)
+void TestCaseListParser::parse(const uint8_t *bytes, int numBytes)
 {
-	DE_ASSERT(m_root);
-	m_xmlParser.feed(bytes, numBytes);
+    DE_ASSERT(m_root);
+    m_xmlParser.feed(bytes, numBytes);
 
-	for (;;)
-	{
-		xml::Element element = m_xmlParser.getElement();
+    for (;;)
+    {
+        xml::Element element = m_xmlParser.getElement();
 
-		if (element == xml::ELEMENT_INCOMPLETE ||
-			element == xml::ELEMENT_END_OF_STRING)
-			break;
+        if (element == xml::ELEMENT_INCOMPLETE || element == xml::ELEMENT_END_OF_STRING)
+            break;
 
-		if (element == xml::ELEMENT_START || element == xml::ELEMENT_END)
-		{
-			bool		isStart		= element == xml::ELEMENT_START;
-			const char* elemName	= m_xmlParser.getElementName();
+        if (element == xml::ELEMENT_START || element == xml::ELEMENT_END)
+        {
+            bool isStart         = element == xml::ELEMENT_START;
+            const char *elemName = m_xmlParser.getElementName();
 
-			if (deStringEqual(elemName, "TestCase"))
-			{
-				if (isStart)
-				{
-					XE_CHECK_MSG(!m_nodeStack.empty(), "<TestCase> outside of <TestCaseList>");
+            if (deStringEqual(elemName, "TestCase"))
+            {
+                if (isStart)
+                {
+                    XE_CHECK_MSG(!m_nodeStack.empty(), "<TestCase> outside of <TestCaseList>");
 
-					TestNode*		parent		= m_nodeStack.back();
-					const char*		name		= m_xmlParser.hasAttribute("Name")			? m_xmlParser.getAttribute("Name")			: DE_NULL;
-					const char*		description	= m_xmlParser.hasAttribute("Description")	? m_xmlParser.getAttribute("Description")	: DE_NULL;
-					const char*		caseType	= m_xmlParser.hasAttribute("CaseType")		? m_xmlParser.getAttribute("CaseType")		: DE_NULL;
+                    TestNode *parent = m_nodeStack.back();
+                    const char *name = m_xmlParser.hasAttribute("Name") ? m_xmlParser.getAttribute("Name") : DE_NULL;
+                    const char *description =
+                        m_xmlParser.hasAttribute("Description") ? m_xmlParser.getAttribute("Description") : DE_NULL;
+                    const char *caseType =
+                        m_xmlParser.hasAttribute("CaseType") ? m_xmlParser.getAttribute("CaseType") : DE_NULL;
 
-					XE_CHECK_MSG(name && description && caseType, "Missing attribute in <TestCase>");
-					XE_CHECK_MSG(parent->getNodeType() == TESTNODETYPE_GROUP, "Only TestGroups are allowed to have child nodes");
+                    XE_CHECK_MSG(name && description && caseType, "Missing attribute in <TestCase>");
+                    XE_CHECK_MSG(parent->getNodeType() == TESTNODETYPE_GROUP,
+                                 "Only TestGroups are allowed to have child nodes");
 
-					bool			isGroup		= deStringEqual(caseType, "TestGroup") == DE_TRUE;
-					TestNode*		node		= isGroup ? static_cast<TestNode*>(static_cast<TestGroup*>(parent)->createGroup(name))
-														  : static_cast<TestNode*>(static_cast<TestGroup*>(parent)->createCase(getTestCaseType(caseType), name));
+                    bool isGroup = deStringEqual(caseType, "TestGroup") == true;
+                    TestNode *node =
+                        isGroup ? static_cast<TestNode *>(static_cast<TestGroup *>(parent)->createGroup(name)) :
+                                  static_cast<TestNode *>(
+                                      static_cast<TestGroup *>(parent)->createCase(getTestCaseType(caseType), name));
 
-					m_nodeStack.push_back(node);
-				}
-				else
-				{
-					XE_CHECK_MSG(m_nodeStack.size() >= 2, "Unexpected </TestCase>");
-					m_nodeStack.pop_back();
-				}
-			}
-			else if (deStringEqual(elemName, "TestCaseList"))
-			{
-				if (isStart)
-				{
-					XE_CHECK_MSG(m_nodeStack.empty(), "Unexpected <TestCaseList>");
-					m_nodeStack.push_back(m_root);
-				}
-				else
-				{
-					XE_CHECK_MSG(m_nodeStack.size() == 1, "Unexpected </TestCaseList>");
-					m_nodeStack.pop_back();
-				}
-			}
-			else
-				XE_FAIL((string("Unexpected <") + elemName + ">").c_str());
-		}
-		else if (element != xml::ELEMENT_DATA)
-			DE_ASSERT(false); // \note Data elements are just ignored, they should be whitespace anyway.
+                    m_nodeStack.push_back(node);
+                }
+                else
+                {
+                    XE_CHECK_MSG(m_nodeStack.size() >= 2, "Unexpected </TestCase>");
+                    m_nodeStack.pop_back();
+                }
+            }
+            else if (deStringEqual(elemName, "TestCaseList"))
+            {
+                if (isStart)
+                {
+                    XE_CHECK_MSG(m_nodeStack.empty(), "Unexpected <TestCaseList>");
+                    m_nodeStack.push_back(m_root);
+                }
+                else
+                {
+                    XE_CHECK_MSG(m_nodeStack.size() == 1, "Unexpected </TestCaseList>");
+                    m_nodeStack.pop_back();
+                }
+            }
+            else
+                XE_FAIL((string("Unexpected <") + elemName + ">").c_str());
+        }
+        else if (element != xml::ELEMENT_DATA)
+            DE_ASSERT(false); // \note Data elements are just ignored, they should be whitespace anyway.
 
-		m_xmlParser.advance();
-	}
+        m_xmlParser.advance();
+    }
 }
 
-} // xe
+} // namespace xe

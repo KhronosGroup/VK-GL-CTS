@@ -32,9 +32,9 @@ namespace vkt
 namespace subgroups
 {
 
-tcu::TestCaseGroup* createMultipleDispatchesUniformSubgroupSizeTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createMultipleDispatchesUniformSubgroupSizeTests(tcu::TestContext &testCtx);
 
-} // subgroups
-} // vkt
+} // namespace subgroups
+} // namespace vkt
 
 #endif // _VKTSUBGROUPSMULTIPLEDISPATCHESUNIFORMSUBGROUPSIZETESTS_HPP

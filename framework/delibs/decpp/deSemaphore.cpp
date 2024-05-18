@@ -31,23 +31,23 @@ namespace de
 
 /*--------------------------------------------------------------------*//*!
  * \brief Construct semaphore.
- * \param initialValue	Initial value for semaphore. Must be 0 or greater.
- * \param flags			Semaphore flags (reserved for further use).
+ * \param initialValue    Initial value for semaphore. Must be 0 or greater.
+ * \param flags            Semaphore flags (reserved for further use).
  *//*--------------------------------------------------------------------*/
-Semaphore::Semaphore (int initialValue, deUint32 flags)
+Semaphore::Semaphore(int initialValue, uint32_t flags)
 {
-	deSemaphoreAttributes attribs;
-	deMemset(&attribs, 0, sizeof(attribs));
-	attribs.flags = flags;
+    deSemaphoreAttributes attribs;
+    deMemset(&attribs, 0, sizeof(attribs));
+    attribs.flags = flags;
 
-	m_semaphore = deSemaphore_create(initialValue, &attribs);
-	if (!m_semaphore)
-		throw std::bad_alloc();
+    m_semaphore = deSemaphore_create(initialValue, &attribs);
+    if (!m_semaphore)
+        throw std::bad_alloc();
 }
 
-Semaphore::~Semaphore (void)
+Semaphore::~Semaphore(void)
 {
-	deSemaphore_destroy(m_semaphore);
+    deSemaphore_destroy(m_semaphore);
 }
 
-} // de
+} // namespace de
