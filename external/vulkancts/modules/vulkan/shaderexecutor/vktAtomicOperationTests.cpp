@@ -737,7 +737,7 @@ void TestBufferFloatingPoint<T>::checkOperationFloatingPoint(const BufferDataFlo
         {
             exp.push_back(Expected<T>(floatAdd(floatAdd(originalInout, input0), input1), originalInout,
                                       floatAdd(originalInout, input0)));
-            exp.push_back(Expected<T>(floatAdd(floatAdd(originalInout, input0), input1),
+            exp.push_back(Expected<T>(floatAdd(floatAdd(originalInout, input1), input0),
                                       floatAdd(originalInout, input1), originalInout));
         }
         break;
