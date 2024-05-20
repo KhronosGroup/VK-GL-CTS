@@ -32,9 +32,9 @@ namespace vkt
 namespace sr
 {
 
-tcu::TestCaseGroup*	createBuiltinVarTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBuiltinVarTests(tcu::TestContext &testCtx);
 
-} // sr
-} // vkt
+} // namespace sr
+} // namespace vkt
 
 #endif // _VKTSHADERRENDERBUILTINVARTESTS_HPP

@@ -1,14 +1,24 @@
 {
-	"register_extension":
-	{
-		"type": "device",
-		"core": ""
-	},
-	"mandatory_features":
-	{
-		"VkPhysicalDevicePresentWaitFeaturesKHR":
-		[
-			{ "features": ["presentWait"],	"requirements": ["VK_KHR_present_wait"],		"mandatory_variant": ["vulkan"] }
-		]
-	}
+    "register_extension":
+        {
+            "type": "device",
+            "core": ""
+        },
+    "mandatory_features":
+        {
+            "VkPhysicalDevicePresentWaitFeaturesKHR":
+                [
+                    {
+                        "features": [
+                            "presentWait"
+                        ],
+                        "requirements": [
+                            "VK_KHR_present_wait"
+                        ],
+                        "mandatory_variant": [
+                            "vulkan"
+                        ]
+                    }
+                ]
+        }
 }

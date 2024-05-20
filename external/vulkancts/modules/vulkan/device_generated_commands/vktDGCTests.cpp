@@ -44,29 +44,29 @@ namespace
 using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 }
 
-tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx, const std::string& name)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	GroupPtr mainGroup		(new tcu::TestCaseGroup(testCtx, name.c_str()));
-	GroupPtr nvGroup		(new tcu::TestCaseGroup(testCtx, "nv"));
-	GroupPtr computeGroup	(new tcu::TestCaseGroup(testCtx, "compute"));
-	GroupPtr miscGroup		(new tcu::TestCaseGroup(testCtx, "misc"));
+    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
+    GroupPtr nvGroup(new tcu::TestCaseGroup(testCtx, "nv"));
+    GroupPtr computeGroup(new tcu::TestCaseGroup(testCtx, "compute"));
+    GroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 
-	computeGroup->addChild(createDGCComputeGetInfoTests(testCtx));
-	computeGroup->addChild(createDGCComputeSmokeTests(testCtx));
-	computeGroup->addChild(createDGCComputeLayoutTests(testCtx));
-	computeGroup->addChild(createDGCComputeMiscTests(testCtx));
-	computeGroup->addChild(createDGCComputePreprocessTests(testCtx));
-	computeGroup->addChild(createDGCComputeSubgroupTests(testCtx));
-	computeGroup->addChild(createDGCComputeConditionalTests(testCtx));
+    computeGroup->addChild(createDGCComputeGetInfoTests(testCtx));
+    computeGroup->addChild(createDGCComputeSmokeTests(testCtx));
+    computeGroup->addChild(createDGCComputeLayoutTests(testCtx));
+    computeGroup->addChild(createDGCComputeMiscTests(testCtx));
+    computeGroup->addChild(createDGCComputePreprocessTests(testCtx));
+    computeGroup->addChild(createDGCComputeSubgroupTests(testCtx));
+    computeGroup->addChild(createDGCComputeConditionalTests(testCtx));
 
-	miscGroup->addChild(createDGCPropertyTests(testCtx));
+    miscGroup->addChild(createDGCPropertyTests(testCtx));
 
-	nvGroup->addChild(computeGroup.release());
-	nvGroup->addChild(miscGroup.release());
-	mainGroup->addChild(nvGroup.release());
+    nvGroup->addChild(computeGroup.release());
+    nvGroup->addChild(miscGroup.release());
+    mainGroup->addChild(nvGroup.release());
 
-	return mainGroup.release();
+    return mainGroup.release();
 }
 
-} // DGC
-} // vkt
+} // namespace DGC
+} // namespace vkt

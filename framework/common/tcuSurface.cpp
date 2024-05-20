@@ -25,16 +25,11 @@
 
 using namespace tcu;
 
-Surface::Surface (void)
-	: m_width		(0)
-	, m_height		(0)
+Surface::Surface(void) : m_width(0), m_height(0)
 {
 }
 
-Surface::Surface(int width, int height)
-	: m_width		(width)
-	, m_height		(height)
-	, m_pixels		(width*height)
+Surface::Surface(int width, int height) : m_width(width), m_height(height), m_pixels(width * height)
 {
 }
 
@@ -46,12 +41,12 @@ Surface::~Surface()
  * \brief Resize surface.
  *
  * Old contents are not preserved.
- * \param width		New width.
- * \param height	New height.
+ * \param width        New width.
+ * \param height    New height.
  *//*--------------------------------------------------------------------*/
-void Surface::setSize (int width, int height)
+void Surface::setSize(int width, int height)
 {
-	m_width		= width;
-	m_height	= height;
-	m_pixels.setStorage(width * height);
+    m_width  = width;
+    m_height = height;
+    m_pixels.setStorage(width * height);
 }

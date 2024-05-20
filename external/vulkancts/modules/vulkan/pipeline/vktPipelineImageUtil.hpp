@@ -43,35 +43,29 @@ class TestTexture;
 
 enum BorderColor
 {
-	BORDER_COLOR_OPAQUE_BLACK,
-	BORDER_COLOR_OPAQUE_WHITE,
-	BORDER_COLOR_TRANSPARENT_BLACK,
-	BORDER_COLOR_CUSTOM,
+    BORDER_COLOR_OPAQUE_BLACK,
+    BORDER_COLOR_OPAQUE_WHITE,
+    BORDER_COLOR_TRANSPARENT_BLACK,
+    BORDER_COLOR_CUSTOM,
 
-	BORDER_COLOR_COUNT
+    BORDER_COLOR_COUNT
 };
 
-bool							isSupportedSamplableFormat	(const vk::InstanceInterface&	instanceInterface,
-															 vk::VkPhysicalDevice			device,
-															 vk::VkFormat					format);
-bool							isLinearFilteringSupported	(const vk::InstanceInterface&	instanceInterface,
-															 vk::VkPhysicalDevice			device,
-															 vk::VkFormat					format,
-															 vk::VkImageTiling				tiling);
+bool isSupportedSamplableFormat(const vk::InstanceInterface &instanceInterface, vk::VkPhysicalDevice device,
+                                vk::VkFormat format);
+bool isLinearFilteringSupported(const vk::InstanceInterface &instanceInterface, vk::VkPhysicalDevice device,
+                                vk::VkFormat format, vk::VkImageTiling tiling);
 
-bool							isMinMaxFilteringSupported	(const vk::InstanceInterface&	instanceInterface,
-															 vk::VkPhysicalDevice			device,
-															 vk::VkFormat					format,
-															 vk::VkImageTiling				tiling);
+bool isMinMaxFilteringSupported(const vk::InstanceInterface &instanceInterface, vk::VkPhysicalDevice device,
+                                vk::VkFormat format, vk::VkImageTiling tiling);
 
-vk::VkBorderColor				getFormatBorderColor		(BorderColor color, vk::VkFormat format, bool useStencilAspect);
+vk::VkBorderColor getFormatBorderColor(BorderColor color, vk::VkFormat format, bool useStencilAspect);
 
-rr::GenericVec4					getFormatCustomBorderColor	(tcu::Vec4 floatValue, tcu::IVec4 intValue, vk::VkFormat format, bool useStencilAspect);
+rr::GenericVec4 getFormatCustomBorderColor(tcu::Vec4 floatValue, tcu::IVec4 intValue, vk::VkFormat format,
+                                           bool useStencilAspect);
 
-void							getLookupScaleBias			(vk::VkFormat					format,
-															 tcu::Vec4&						lookupScale,
-															 tcu::Vec4&						lookupBias,
-															 bool							useStencilAspect = false);
+void getLookupScaleBias(vk::VkFormat format, tcu::Vec4 &lookupScale, tcu::Vec4 &lookupBias,
+                        bool useStencilAspect = false);
 
 /*--------------------------------------------------------------------*//*!
  * Gets a tcu::TextureLevel initialized with data from a VK color
@@ -80,16 +74,10 @@ void							getLookupScaleBias			(vk::VkFormat					format,
  * The VkImage must be non-multisampled and able to be used as a source
  * operand for transfer operations.
  *//*--------------------------------------------------------------------*/
-de::MovePtr<tcu::TextureLevel>	readColorAttachment			 (const vk::DeviceInterface&	vk,
-															  vk::VkDevice					device,
-															  vk::VkQueue					queue,
-															  deUint32						queueFamilyIndex,
-															  vk::Allocator&				allocator,
-															  vk::VkImage					image,
-															  vk::VkFormat					format,
-															  const tcu::UVec2&				renderSize,
-															  vk::VkImageLayout				oldLayout = vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
+de::MovePtr<tcu::TextureLevel> readColorAttachment(
+    const vk::DeviceInterface &vk, vk::VkDevice device, vk::VkQueue queue, uint32_t queueFamilyIndex,
+    vk::Allocator &allocator, vk::VkImage image, vk::VkFormat format, const tcu::UVec2 &renderSize,
+    vk::VkImageLayout oldLayout = vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 /*--------------------------------------------------------------------*//*!
  * Gets a tcu::TextureLevel initialized with data from a VK depth
@@ -98,15 +86,10 @@ de::MovePtr<tcu::TextureLevel>	readColorAttachment			 (const vk::DeviceInterface
  * The VkImage must be non-multisampled and able to be used as a source
  * operand for transfer operations.
  *//*--------------------------------------------------------------------*/
-de::MovePtr<tcu::TextureLevel>	readDepthAttachment			 (const vk::DeviceInterface&	vk,
-															  vk::VkDevice					device,
-															  vk::VkQueue					queue,
-															  deUint32						queueFamilyIndex,
-															  vk::Allocator&				allocator,
-															  vk::VkImage					image,
-															  vk::VkFormat					format,
-															  const tcu::UVec2&				renderSize,
-															  vk::VkImageLayout				currentLayout = vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+de::MovePtr<tcu::TextureLevel> readDepthAttachment(
+    const vk::DeviceInterface &vk, vk::VkDevice device, vk::VkQueue queue, uint32_t queueFamilyIndex,
+    vk::Allocator &allocator, vk::VkImage image, vk::VkFormat format, const tcu::UVec2 &renderSize,
+    vk::VkImageLayout currentLayout = vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 /*--------------------------------------------------------------------*//*!
  * Gets a tcu::TextureLevel initialized with data from a VK stencil
@@ -115,16 +98,10 @@ de::MovePtr<tcu::TextureLevel>	readDepthAttachment			 (const vk::DeviceInterface
  * The VkImage must be non-multisampled and able to be used as a source
  * operand for transfer operations.
  *//*--------------------------------------------------------------------*/
-de::MovePtr<tcu::TextureLevel>	readStencilAttachment		 (const vk::DeviceInterface&	vk,
-															  vk::VkDevice					device,
-															  vk::VkQueue					queue,
-															  deUint32						queueFamilyIndex,
-															  vk::Allocator&				allocator,
-															  vk::VkImage					image,
-															  vk::VkFormat					format,
-															  const tcu::UVec2&				renderSize,
-															  vk::VkImageLayout				currentLayout = vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
+de::MovePtr<tcu::TextureLevel> readStencilAttachment(
+    const vk::DeviceInterface &vk, vk::VkDevice device, vk::VkQueue queue, uint32_t queueFamilyIndex,
+    vk::Allocator &allocator, vk::VkImage image, vk::VkFormat format, const tcu::UVec2 &renderSize,
+    vk::VkImageLayout currentLayout = vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 /*--------------------------------------------------------------------*//*!
  * Uploads data from a test texture to a destination VK image.
@@ -132,14 +109,9 @@ de::MovePtr<tcu::TextureLevel>	readStencilAttachment		 (const vk::DeviceInterfac
  * The VkImage must be non-multisampled and able to be used as a
  * destination operand for transfer operations.
  *//*--------------------------------------------------------------------*/
-void							uploadTestTexture			(const vk::DeviceInterface&		vk,
-															 vk::VkDevice					device,
-															 vk::VkQueue					queue,
-															 deUint32						queueFamilyIndex,
-															 vk::Allocator&					allocator,
-															 const TestTexture&				testTexture,
-															 vk::VkImage					destImage,
-															 vk::VkImageLayout				destImageLayout = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+void uploadTestTexture(const vk::DeviceInterface &vk, vk::VkDevice device, vk::VkQueue queue, uint32_t queueFamilyIndex,
+                       vk::Allocator &allocator, const TestTexture &testTexture, vk::VkImage destImage,
+                       vk::VkImageLayout destImageLayout = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 /*--------------------------------------------------------------------*//*!
  * Uploads data from a test texture to a destination VK image using sparse
@@ -148,211 +120,254 @@ void							uploadTestTexture			(const vk::DeviceInterface&		vk,
  * The VkImage must be non-multisampled and able to be used as a
  * destination operand for transfer operations.
  *//*--------------------------------------------------------------------*/
-void							uploadTestTextureSparse		(const vk::DeviceInterface&						vk,
-															 vk::VkDevice									device,
-															 const vk::VkPhysicalDevice						physicalDevice,
-															 const vk::InstanceInterface&					instance,
-															 const vk::VkImageCreateInfo&					imageCreateInfo,
-															 vk::VkQueue									universalQueue,
-															 deUint32										universalQueueFamilyIndex,
-															 vk::VkQueue									sparseQueue,
-															 vk::Allocator&									allocator,
-															 std::vector<de::SharedPtr<vk::Allocation> >&	allocations,
-															 const TestTexture&								srcTexture,
-															 vk::VkImage									destImage);
+void uploadTestTextureSparse(const vk::DeviceInterface &vk, vk::VkDevice device,
+                             const vk::VkPhysicalDevice physicalDevice, const vk::InstanceInterface &instance,
+                             const vk::VkImageCreateInfo &imageCreateInfo, vk::VkQueue universalQueue,
+                             uint32_t universalQueueFamilyIndex, vk::VkQueue sparseQueue, vk::Allocator &allocator,
+                             std::vector<de::SharedPtr<vk::Allocation>> &allocations, const TestTexture &srcTexture,
+                             vk::VkImage destImage);
 
 class TestTexture
 {
 public:
-												TestTexture					(const tcu::TextureFormat& format, int width, int height, int depth);
-												TestTexture					(const tcu::CompressedTexFormat& format, int width, int height, int depth);
-	virtual										~TestTexture				(void);
+    TestTexture(const tcu::TextureFormat &format, int width, int height, int depth);
+    TestTexture(const tcu::CompressedTexFormat &format, int width, int height, int depth);
+    virtual ~TestTexture(void);
 
-	virtual int									getNumLevels				(void) const = 0;
-	virtual deUint32							getSize						(void) const;
-	virtual int									getArraySize				(void) const { return 1; }
+    virtual int getNumLevels(void) const = 0;
+    virtual uint32_t getSize(void) const;
+    virtual int getArraySize(void) const
+    {
+        return 1;
+    }
 
-	virtual bool								isCompressed				(void) const { return !m_compressedLevels.empty(); }
-	virtual deUint32							getCompressedSize			(void) const;
+    virtual bool isCompressed(void) const
+    {
+        return !m_compressedLevels.empty();
+    }
+    virtual uint32_t getCompressedSize(void) const;
 
-	virtual tcu::PixelBufferAccess				getLevel					(int level, int layer) = 0;
-	virtual const tcu::ConstPixelBufferAccess	getLevel					(int level, int layer) const = 0;
+    virtual tcu::PixelBufferAccess getLevel(int level, int layer)                  = 0;
+    virtual const tcu::ConstPixelBufferAccess getLevel(int level, int layer) const = 0;
 
-	virtual tcu::CompressedTexture&				getCompressedLevel			(int level, int layer);
-	virtual const tcu::CompressedTexture&		getCompressedLevel			(int level, int layer) const;
+    virtual tcu::CompressedTexture &getCompressedLevel(int level, int layer);
+    virtual const tcu::CompressedTexture &getCompressedLevel(int level, int layer) const;
 
-	virtual std::vector<vk::VkBufferImageCopy>	getBufferCopyRegions		(void) const;
-	virtual void								write						(deUint8* destPtr) const;
-	virtual de::MovePtr<TestTexture>			copy						(const tcu::TextureFormat) const = 0;
+    virtual std::vector<vk::VkBufferImageCopy> getBufferCopyRegions(void) const;
+    virtual void write(uint8_t *destPtr) const;
+    virtual de::MovePtr<TestTexture> copy(const tcu::TextureFormat) const = 0;
 
-	virtual const tcu::TextureFormat&			getTextureFormat			(void) const = 0;
-	virtual tcu::UVec3							getTextureDimension			(void) const = 0;
-
-protected:
-	void										populateLevels				(const std::vector<tcu::PixelBufferAccess>& levels);
-	void										populateCompressedLevels	(tcu::CompressedTexFormat format, const std::vector<tcu::PixelBufferAccess>& decompressedLevels);
-
-	static void									fillWithGradient			(const tcu::PixelBufferAccess& levelAccess);
-
-	void										copyToTexture				(TestTexture&) const;
+    virtual const tcu::TextureFormat &getTextureFormat(void) const = 0;
+    virtual tcu::UVec3 getTextureDimension(void) const             = 0;
 
 protected:
-	std::vector<tcu::CompressedTexture*>		m_compressedLevels;
+    void populateLevels(const std::vector<tcu::PixelBufferAccess> &levels);
+    void populateCompressedLevels(tcu::CompressedTexFormat format,
+                                  const std::vector<tcu::PixelBufferAccess> &decompressedLevels);
+
+    static void fillWithGradient(const tcu::PixelBufferAccess &levelAccess);
+
+    void copyToTexture(TestTexture &) const;
+
+protected:
+    std::vector<tcu::CompressedTexture *> m_compressedLevels;
 };
 
 class TestTexture1D : public TestTexture
 {
 private:
-	tcu::Texture1D								m_texture;
+    tcu::Texture1D m_texture;
 
 public:
-												TestTexture1D		(const tcu::TextureFormat& format, int width);
-												TestTexture1D		(const tcu::CompressedTexFormat& format, int width);
-	virtual										~TestTexture1D		(void);
+    TestTexture1D(const tcu::TextureFormat &format, int width);
+    TestTexture1D(const tcu::CompressedTexFormat &format, int width);
+    virtual ~TestTexture1D(void);
 
-	virtual int getNumLevels (void) const;
-	virtual tcu::PixelBufferAccess				getLevel			(int level, int layer);
-	virtual const tcu::ConstPixelBufferAccess	getLevel			(int level, int layer) const;
-	virtual const tcu::Texture1D&				getTexture			(void) const;
-	virtual tcu::Texture1D&						getTexture			(void);
-	virtual const tcu::TextureFormat&			getTextureFormat	(void) const { return m_texture.getFormat(); }
-	virtual tcu::UVec3							getTextureDimension	(void) const { return tcu::UVec3(m_texture.getWidth(), 1, 1); }
+    virtual int getNumLevels(void) const;
+    virtual tcu::PixelBufferAccess getLevel(int level, int layer);
+    virtual const tcu::ConstPixelBufferAccess getLevel(int level, int layer) const;
+    virtual const tcu::Texture1D &getTexture(void) const;
+    virtual tcu::Texture1D &getTexture(void);
+    virtual const tcu::TextureFormat &getTextureFormat(void) const
+    {
+        return m_texture.getFormat();
+    }
+    virtual tcu::UVec3 getTextureDimension(void) const
+    {
+        return tcu::UVec3(m_texture.getWidth(), 1, 1);
+    }
 
-	virtual de::MovePtr<TestTexture>			copy				(const tcu::TextureFormat) const;
+    virtual de::MovePtr<TestTexture> copy(const tcu::TextureFormat) const;
 };
 
 class TestTexture1DArray : public TestTexture
 {
 private:
-	tcu::Texture1DArray							m_texture;
+    tcu::Texture1DArray m_texture;
 
 public:
-												TestTexture1DArray	(const tcu::TextureFormat& format, int width, int arraySize);
-												TestTexture1DArray	(const tcu::CompressedTexFormat& format, int width, int arraySize);
-	virtual										~TestTexture1DArray	(void);
+    TestTexture1DArray(const tcu::TextureFormat &format, int width, int arraySize);
+    TestTexture1DArray(const tcu::CompressedTexFormat &format, int width, int arraySize);
+    virtual ~TestTexture1DArray(void);
 
-	virtual int									getNumLevels		(void) const;
-	virtual tcu::PixelBufferAccess				getLevel			(int level, int layer);
-	virtual const tcu::ConstPixelBufferAccess	getLevel			(int level, int layer) const;
-	virtual const tcu::Texture1DArray&			getTexture			(void) const;
-	virtual tcu::Texture1DArray&				getTexture			(void);
-	virtual int									getArraySize		(void) const;
-	virtual const tcu::TextureFormat&			getTextureFormat	(void) const { return m_texture.getFormat(); }
-	virtual tcu::UVec3							getTextureDimension	(void) const { return tcu::UVec3(m_texture.getWidth(), 1, 1); }
+    virtual int getNumLevels(void) const;
+    virtual tcu::PixelBufferAccess getLevel(int level, int layer);
+    virtual const tcu::ConstPixelBufferAccess getLevel(int level, int layer) const;
+    virtual const tcu::Texture1DArray &getTexture(void) const;
+    virtual tcu::Texture1DArray &getTexture(void);
+    virtual int getArraySize(void) const;
+    virtual const tcu::TextureFormat &getTextureFormat(void) const
+    {
+        return m_texture.getFormat();
+    }
+    virtual tcu::UVec3 getTextureDimension(void) const
+    {
+        return tcu::UVec3(m_texture.getWidth(), 1, 1);
+    }
 
-	virtual de::MovePtr<TestTexture>			copy				(const tcu::TextureFormat) const;
+    virtual de::MovePtr<TestTexture> copy(const tcu::TextureFormat) const;
 };
 
 class TestTexture2D : public TestTexture
 {
 private:
-	tcu::Texture2D								m_texture;
+    tcu::Texture2D m_texture;
 
 public:
-												TestTexture2D		(const tcu::TextureFormat& format, int width, int height);
-												TestTexture2D		(const tcu::TextureFormat& format, int width, int height, int miplevels);
-												TestTexture2D		(const tcu::CompressedTexFormat& format, int width, int height);
-	virtual										~TestTexture2D		(void);
+    TestTexture2D(const tcu::TextureFormat &format, int width, int height);
+    TestTexture2D(const tcu::TextureFormat &format, int width, int height, int miplevels);
+    TestTexture2D(const tcu::CompressedTexFormat &format, int width, int height);
+    virtual ~TestTexture2D(void);
 
-	virtual int									getNumLevels		(void) const;
-	virtual tcu::PixelBufferAccess				getLevel			(int level, int layer);
-	virtual const tcu::ConstPixelBufferAccess	getLevel			(int level, int layer) const;
-	virtual const tcu::Texture2D&				getTexture			(void) const;
-	virtual tcu::Texture2D&						getTexture			(void);
-	virtual const tcu::TextureFormat&			getTextureFormat	(void) const { return m_texture.getFormat(); }
-	virtual tcu::UVec3							getTextureDimension	(void) const { return tcu::UVec3(m_texture.getWidth(), m_texture.getHeight(), 1); }
+    virtual int getNumLevels(void) const;
+    virtual tcu::PixelBufferAccess getLevel(int level, int layer);
+    virtual const tcu::ConstPixelBufferAccess getLevel(int level, int layer) const;
+    virtual const tcu::Texture2D &getTexture(void) const;
+    virtual tcu::Texture2D &getTexture(void);
+    virtual const tcu::TextureFormat &getTextureFormat(void) const
+    {
+        return m_texture.getFormat();
+    }
+    virtual tcu::UVec3 getTextureDimension(void) const
+    {
+        return tcu::UVec3(m_texture.getWidth(), m_texture.getHeight(), 1);
+    }
 
-	virtual de::MovePtr<TestTexture>			copy				(const tcu::TextureFormat) const;
+    virtual de::MovePtr<TestTexture> copy(const tcu::TextureFormat) const;
 };
 
 class TestTexture2DArray : public TestTexture
 {
 private:
-	tcu::Texture2DArray	m_texture;
+    tcu::Texture2DArray m_texture;
 
 public:
-												TestTexture2DArray	(const tcu::TextureFormat& format, int width, int height, int arraySize);
-												TestTexture2DArray	(const tcu::CompressedTexFormat& format, int width, int height, int arraySize);
-	virtual										~TestTexture2DArray	(void);
+    TestTexture2DArray(const tcu::TextureFormat &format, int width, int height, int arraySize);
+    TestTexture2DArray(const tcu::CompressedTexFormat &format, int width, int height, int arraySize);
+    virtual ~TestTexture2DArray(void);
 
-	virtual int									getNumLevels		(void) const;
-	virtual tcu::PixelBufferAccess				getLevel			(int level, int layer);
-	virtual const tcu::ConstPixelBufferAccess	getLevel			(int level, int layer) const;
-	virtual const tcu::Texture2DArray&			getTexture			(void) const;
-	virtual tcu::Texture2DArray&				getTexture			(void);
-	virtual int									getArraySize		(void) const;
-	virtual const tcu::TextureFormat&			getTextureFormat	(void) const { return m_texture.getFormat(); }
-	virtual tcu::UVec3							getTextureDimension	(void) const { return tcu::UVec3(m_texture.getWidth(), m_texture.getHeight(), 1); }
+    virtual int getNumLevels(void) const;
+    virtual tcu::PixelBufferAccess getLevel(int level, int layer);
+    virtual const tcu::ConstPixelBufferAccess getLevel(int level, int layer) const;
+    virtual const tcu::Texture2DArray &getTexture(void) const;
+    virtual tcu::Texture2DArray &getTexture(void);
+    virtual int getArraySize(void) const;
+    virtual const tcu::TextureFormat &getTextureFormat(void) const
+    {
+        return m_texture.getFormat();
+    }
+    virtual tcu::UVec3 getTextureDimension(void) const
+    {
+        return tcu::UVec3(m_texture.getWidth(), m_texture.getHeight(), 1);
+    }
 
-	virtual de::MovePtr<TestTexture>			copy				(const tcu::TextureFormat) const;
+    virtual de::MovePtr<TestTexture> copy(const tcu::TextureFormat) const;
 };
 
 class TestTexture3D : public TestTexture
 {
 private:
-	tcu::Texture3D	m_texture;
+    tcu::Texture3D m_texture;
 
 public:
-												TestTexture3D		(const tcu::TextureFormat& format, int width, int height, int depth);
-												TestTexture3D		(const tcu::CompressedTexFormat& format, int width, int height, int depth);
-	virtual										~TestTexture3D		(void);
+    TestTexture3D(const tcu::TextureFormat &format, int width, int height, int depth);
+    TestTexture3D(const tcu::CompressedTexFormat &format, int width, int height, int depth);
+    virtual ~TestTexture3D(void);
 
-	virtual int									getNumLevels		(void) const;
-	virtual tcu::PixelBufferAccess				getLevel			(int level, int layer);
-	virtual const tcu::ConstPixelBufferAccess	getLevel			(int level, int layer) const;
-	virtual const tcu::Texture3D&				getTexture			(void) const;
-	virtual tcu::Texture3D&						getTexture			(void);
-	virtual const tcu::TextureFormat&			getTextureFormat	(void) const { return m_texture.getFormat(); }
-	virtual tcu::UVec3							getTextureDimension	(void) const { return tcu::UVec3(m_texture.getWidth(), m_texture.getHeight(), m_texture.getDepth()); }
+    virtual int getNumLevels(void) const;
+    virtual tcu::PixelBufferAccess getLevel(int level, int layer);
+    virtual const tcu::ConstPixelBufferAccess getLevel(int level, int layer) const;
+    virtual const tcu::Texture3D &getTexture(void) const;
+    virtual tcu::Texture3D &getTexture(void);
+    virtual const tcu::TextureFormat &getTextureFormat(void) const
+    {
+        return m_texture.getFormat();
+    }
+    virtual tcu::UVec3 getTextureDimension(void) const
+    {
+        return tcu::UVec3(m_texture.getWidth(), m_texture.getHeight(), m_texture.getDepth());
+    }
 
-	virtual de::MovePtr<TestTexture>			copy				(const tcu::TextureFormat) const;
+    virtual de::MovePtr<TestTexture> copy(const tcu::TextureFormat) const;
 };
 
 class TestTextureCube : public TestTexture
 {
 private:
-	tcu::TextureCube							m_texture;
+    tcu::TextureCube m_texture;
 
 public:
-												TestTextureCube			(const tcu::TextureFormat& format, int size);
-												TestTextureCube			(const tcu::CompressedTexFormat& format, int size);
-	virtual										~TestTextureCube		(void);
+    TestTextureCube(const tcu::TextureFormat &format, int size);
+    TestTextureCube(const tcu::CompressedTexFormat &format, int size);
+    virtual ~TestTextureCube(void);
 
-	virtual int									getNumLevels			(void) const;
-	virtual tcu::PixelBufferAccess				getLevel				(int level, int layer);
-	virtual const tcu::ConstPixelBufferAccess	getLevel				(int level, int layer) const;
-	virtual int									getArraySize			(void) const;
-	virtual const tcu::TextureCube&				getTexture				(void) const;
-	virtual tcu::TextureCube&					getTexture				(void);
-	virtual const tcu::TextureFormat&			getTextureFormat		(void) const { return m_texture.getFormat(); }
-	virtual tcu::UVec3							getTextureDimension		(void) const { return tcu::UVec3(m_texture.getSize(), m_texture.getSize(), 1); }
+    virtual int getNumLevels(void) const;
+    virtual tcu::PixelBufferAccess getLevel(int level, int layer);
+    virtual const tcu::ConstPixelBufferAccess getLevel(int level, int layer) const;
+    virtual int getArraySize(void) const;
+    virtual const tcu::TextureCube &getTexture(void) const;
+    virtual tcu::TextureCube &getTexture(void);
+    virtual const tcu::TextureFormat &getTextureFormat(void) const
+    {
+        return m_texture.getFormat();
+    }
+    virtual tcu::UVec3 getTextureDimension(void) const
+    {
+        return tcu::UVec3(m_texture.getSize(), m_texture.getSize(), 1);
+    }
 
-	virtual de::MovePtr<TestTexture>			copy					(const tcu::TextureFormat) const;
+    virtual de::MovePtr<TestTexture> copy(const tcu::TextureFormat) const;
 };
 
-class TestTextureCubeArray: public TestTexture
+class TestTextureCubeArray : public TestTexture
 {
 private:
-	tcu::TextureCubeArray						m_texture;
+    tcu::TextureCubeArray m_texture;
 
 public:
-												TestTextureCubeArray	(const tcu::TextureFormat& format, int size, int arraySize);
-												TestTextureCubeArray	(const tcu::CompressedTexFormat& format, int size, int arraySize);
-	virtual										~TestTextureCubeArray	(void);
+    TestTextureCubeArray(const tcu::TextureFormat &format, int size, int arraySize);
+    TestTextureCubeArray(const tcu::CompressedTexFormat &format, int size, int arraySize);
+    virtual ~TestTextureCubeArray(void);
 
-	virtual int									getNumLevels			(void) const;
-	virtual tcu::PixelBufferAccess				getLevel				(int level, int layer);
-	virtual const tcu::ConstPixelBufferAccess	getLevel				(int level, int layer) const;
-	virtual int									getArraySize			(void) const;
-	virtual const tcu::TextureCubeArray&		getTexture				(void) const;
-	virtual tcu::TextureCubeArray&				getTexture				(void);
-	virtual const tcu::TextureFormat&			getTextureFormat		(void) const { return m_texture.getFormat(); }
-	virtual tcu::UVec3							getTextureDimension		(void) const { return tcu::UVec3(m_texture.getSize(), m_texture.getSize(), 1); }
+    virtual int getNumLevels(void) const;
+    virtual tcu::PixelBufferAccess getLevel(int level, int layer);
+    virtual const tcu::ConstPixelBufferAccess getLevel(int level, int layer) const;
+    virtual int getArraySize(void) const;
+    virtual const tcu::TextureCubeArray &getTexture(void) const;
+    virtual tcu::TextureCubeArray &getTexture(void);
+    virtual const tcu::TextureFormat &getTextureFormat(void) const
+    {
+        return m_texture.getFormat();
+    }
+    virtual tcu::UVec3 getTextureDimension(void) const
+    {
+        return tcu::UVec3(m_texture.getSize(), m_texture.getSize(), 1);
+    }
 
-	virtual de::MovePtr<TestTexture>			copy					(const tcu::TextureFormat) const;
+    virtual de::MovePtr<TestTexture> copy(const tcu::TextureFormat) const;
 };
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEIMAGEUTIL_HPP

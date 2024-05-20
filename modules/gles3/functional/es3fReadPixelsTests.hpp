@@ -36,12 +36,12 @@ namespace Functional
 class ReadPixelsTests : public TestCaseGroup
 {
 public:
-			ReadPixelsTests	(Context& context);
-	void	init			(void);
+    ReadPixelsTests(Context &context);
+    void init(void);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FREADPIXELSTESTS_HPP

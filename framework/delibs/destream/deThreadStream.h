@@ -31,8 +31,9 @@
 
 DE_BEGIN_EXTERN_C
 
-void deThreadInStream_init	(deInStream* stream, deInStream* input, int ringbufferBlockSize, int ringbufferBlockCount);
-void deThreadOutStream_init	(deOutStream* stream, deOutStream* output, int ringbufferBlockSize, int ringbufferBlockCount);
+void deThreadInStream_init(deInStream *stream, deInStream *input, int ringbufferBlockSize, int ringbufferBlockCount);
+void deThreadOutStream_init(deOutStream *stream, deOutStream *output, int ringbufferBlockSize,
+                            int ringbufferBlockCount);
 
 DE_END_EXTERN_C
 

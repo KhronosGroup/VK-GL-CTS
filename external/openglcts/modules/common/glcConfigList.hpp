@@ -36,120 +36,120 @@ namespace glcts
 
 enum ConfigType
 {
-	CONFIGTYPE_DEFAULT = 0, //!< Only default config (no parameters).
-	CONFIGTYPE_EGL,			//!< EGL config.
-	CONFIGTYPE_WGL,			//!< WGL config.
+    CONFIGTYPE_DEFAULT = 0, //!< Only default config (no parameters).
+    CONFIGTYPE_EGL,         //!< EGL config.
+    CONFIGTYPE_WGL,         //!< WGL config.
 
-	CONFIGTYPE_LAST
+    CONFIGTYPE_LAST
 };
 
 enum SurfaceTypeFlags
 {
-	SURFACETYPE_WINDOW  = (1 << tcu::SURFACETYPE_WINDOW),
-	SURFACETYPE_PIXMAP  = (1 << tcu::SURFACETYPE_OFFSCREEN_NATIVE),
-	SURFACETYPE_PBUFFER = (1 << tcu::SURFACETYPE_OFFSCREEN_GENERIC),
-	SURFACETYPE_FBO		= (1 << tcu::SURFACETYPE_FBO),
+    SURFACETYPE_WINDOW  = (1 << tcu::SURFACETYPE_WINDOW),
+    SURFACETYPE_PIXMAP  = (1 << tcu::SURFACETYPE_OFFSCREEN_NATIVE),
+    SURFACETYPE_PBUFFER = (1 << tcu::SURFACETYPE_OFFSCREEN_GENERIC),
+    SURFACETYPE_FBO     = (1 << tcu::SURFACETYPE_FBO),
 };
 
 enum ExcludeReason
 {
-	EXCLUDEREASON_NOT_COMPATIBLE = 0, //!< Not compatible with target API
-	EXCLUDEREASON_NOT_CONFORMANT,	 //!< Compatible but not conformant
-	EXCLUDEREASON_MSAA,				  //!< Compatible but not testable with current tests
-	EXCLUDEREASON_FLOAT,			  //!< Compatible but not testable with current tests
-	EXCLUDEREASON_YUV,				  //!< Compatible but not testable with current tests
-	EXCLUDEREASON_LAST
+    EXCLUDEREASON_NOT_COMPATIBLE = 0, //!< Not compatible with target API
+    EXCLUDEREASON_NOT_CONFORMANT,     //!< Compatible but not conformant
+    EXCLUDEREASON_MSAA,               //!< Compatible but not testable with current tests
+    EXCLUDEREASON_FLOAT,              //!< Compatible but not testable with current tests
+    EXCLUDEREASON_YUV,                //!< Compatible but not testable with current tests
+    EXCLUDEREASON_LAST
 };
 
 struct Config
 {
-	Config(ConfigType type_, int id_, deUint32 surfaceTypes_) : type(type_), id(id_), surfaceTypes(surfaceTypes_)
-	{
-	}
+    Config(ConfigType type_, int id_, uint32_t surfaceTypes_) : type(type_), id(id_), surfaceTypes(surfaceTypes_)
+    {
+    }
 
-	Config(void) : type(CONFIGTYPE_LAST), id(0), surfaceTypes(0)
-	{
-	}
+    Config(void) : type(CONFIGTYPE_LAST), id(0), surfaceTypes(0)
+    {
+    }
 
-	ConfigType type;
-	int		   id;
-	deUint32   surfaceTypes;
+    ConfigType type;
+    int id;
+    uint32_t surfaceTypes;
 };
 
 struct ExcludedConfig
 {
-	ExcludedConfig(ConfigType type_, int id_, ExcludeReason reason_) : type(type_), id(id_), reason(reason_)
-	{
-	}
+    ExcludedConfig(ConfigType type_, int id_, ExcludeReason reason_) : type(type_), id(id_), reason(reason_)
+    {
+    }
 
-	ExcludedConfig(void) : type(CONFIGTYPE_LAST), id(0), reason(EXCLUDEREASON_LAST)
-	{
-	}
+    ExcludedConfig(void) : type(CONFIGTYPE_LAST), id(0), reason(EXCLUDEREASON_LAST)
+    {
+    }
 
-	ConfigType	type;
-	int			  id;
-	ExcludeReason reason;
+    ConfigType type;
+    int id;
+    ExcludeReason reason;
 };
 
 struct AOSPConfig
 {
-	AOSPConfig(ConfigType type_, int id_, deUint32 surfaceTypes_, deInt32 redBits_, deInt32 greenBits_,
-			   deInt32 blueBits_, deInt32 alphaBits_, deInt32 depthBits_, deInt32 stencilBits_, deInt32 samples_)
-		: type(type_)
-		, id(id_)
-		, surfaceTypes(surfaceTypes_)
-		, redBits(redBits_)
-		, greenBits(greenBits_)
-		, blueBits(blueBits_)
-		, alphaBits(alphaBits_)
-		, depthBits(depthBits_)
-		, stencilBits(stencilBits_)
-		, samples(samples_)
-	{
-	}
+    AOSPConfig(ConfigType type_, int id_, uint32_t surfaceTypes_, int32_t redBits_, int32_t greenBits_,
+               int32_t blueBits_, int32_t alphaBits_, int32_t depthBits_, int32_t stencilBits_, int32_t samples_)
+        : type(type_)
+        , id(id_)
+        , surfaceTypes(surfaceTypes_)
+        , redBits(redBits_)
+        , greenBits(greenBits_)
+        , blueBits(blueBits_)
+        , alphaBits(alphaBits_)
+        , depthBits(depthBits_)
+        , stencilBits(stencilBits_)
+        , samples(samples_)
+    {
+    }
 
-	AOSPConfig(void)
-		: type(CONFIGTYPE_LAST)
-		, id(0)
-		, surfaceTypes(0)
-		, redBits(0)
-		, greenBits(0)
-		, blueBits(0)
-		, alphaBits(0)
-		, depthBits(0)
-		, stencilBits(0)
-		, samples(0)
-	{
-	}
+    AOSPConfig(void)
+        : type(CONFIGTYPE_LAST)
+        , id(0)
+        , surfaceTypes(0)
+        , redBits(0)
+        , greenBits(0)
+        , blueBits(0)
+        , alphaBits(0)
+        , depthBits(0)
+        , stencilBits(0)
+        , samples(0)
+    {
+    }
 
-	ConfigType type;
-	int		   id;
-	deUint32   surfaceTypes;
-	deInt32	redBits;
-	deInt32	greenBits;
-	deInt32	blueBits;
-	deInt32	alphaBits;
-	deInt32	depthBits;
-	deInt32	stencilBits;
-	deInt32	samples;
+    ConfigType type;
+    int id;
+    uint32_t surfaceTypes;
+    int32_t redBits;
+    int32_t greenBits;
+    int32_t blueBits;
+    int32_t alphaBits;
+    int32_t depthBits;
+    int32_t stencilBits;
+    int32_t samples;
 };
 
 class ConfigList
 {
 public:
-	// Configs exposed by an implementation which are required to pass all non-AOSP tests.
-	// This includes all configs marked as conformant but not multisample configs.
-	std::vector<Config> configs;
-	// Configs exposed by an implementation which are not required to pass the CTS.
-	// This includes non-conformant and multisample configs.
-	std::vector<ExcludedConfig> excludedConfigs;
-	// Configs exposed by an implementation which will be used to determine AOSP runs parameters.
-	// This includes all configs marked as conformant.
-	std::vector<AOSPConfig> aospConfigs;
+    // Configs exposed by an implementation which are required to pass all non-AOSP tests.
+    // This includes all configs marked as conformant but not multisample configs.
+    std::vector<Config> configs;
+    // Configs exposed by an implementation which are not required to pass the CTS.
+    // This includes non-conformant and multisample configs.
+    std::vector<ExcludedConfig> excludedConfigs;
+    // Configs exposed by an implementation which will be used to determine AOSP runs parameters.
+    // This includes all configs marked as conformant.
+    std::vector<AOSPConfig> aospConfigs;
 };
 
-void getDefaultConfigList(tcu::Platform& platform, glu::ApiType type, ConfigList& configList);
+void getDefaultConfigList(tcu::Platform &platform, glu::ApiType type, ConfigList &configList);
 
-} // glcts
+} // namespace glcts
 
 #endif // _GLCCONFIGLIST_HPP

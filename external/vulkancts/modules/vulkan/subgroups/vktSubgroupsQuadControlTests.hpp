@@ -31,9 +31,9 @@ namespace vkt
 namespace subgroups
 {
 
-tcu::TestCaseGroup* createSubgroupsQuadControlTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createSubgroupsQuadControlTests(tcu::TestContext &testCtx);
 
-} // subgroups
-} // vkt
+} // namespace subgroups
+} // namespace vkt
 
 #endif // _VKTSUBGROUPSQUADCONTROLTESTS_HPP

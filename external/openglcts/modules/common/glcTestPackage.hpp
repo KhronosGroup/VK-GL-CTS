@@ -33,7 +33,7 @@
 
 namespace tcu
 {
-	class WaiverUtil;
+class WaiverUtil;
 }
 
 namespace deqp
@@ -42,59 +42,59 @@ namespace deqp
 class PackageContext
 {
 public:
-	PackageContext(tcu::TestContext& testCtx, glu::ContextType renderContextType);
-	~PackageContext(void);
+    PackageContext(tcu::TestContext &testCtx, glu::ContextType renderContextType);
+    ~PackageContext(void);
 
-	Context& getContext(void)
-	{
-		return m_context;
-	}
-	TestCaseWrapper& getTestCaseWrapper(void)
-	{
-		return m_caseWrapper;
-	}
+    Context &getContext(void)
+    {
+        return m_context;
+    }
+    TestCaseWrapper &getTestCaseWrapper(void)
+    {
+        return m_caseWrapper;
+    }
 
 private:
-	Context			m_context;
-	TestCaseWrapper m_caseWrapper;
+    Context m_context;
+    TestCaseWrapper m_caseWrapper;
 };
 
 class TestPackage : public tcu::TestPackage
 {
 public:
-	TestPackage(tcu::TestContext& testCtx, const char* name, const char* description,
-				glu::ContextType renderContextType, const char* resourcesPath);
-	virtual ~TestPackage(void);
+    TestPackage(tcu::TestContext &testCtx, const char *name, const char *description,
+                glu::ContextType renderContextType, const char *resourcesPath);
+    virtual ~TestPackage(void);
 
-	void init(void);
-	void deinit(void);
+    void init(void);
+    void deinit(void);
 
-	TestCaseWrapper& getTestCaseWrapper(void)
-	{
-		return m_packageCtx->getTestCaseWrapper();
-	}
-	tcu::Archive* getArchive(void)
-	{
-		return &m_archive;
-	}
+    TestCaseWrapper &getTestCaseWrapper(void)
+    {
+        return m_packageCtx->getTestCaseWrapper();
+    }
+    tcu::Archive *getArchive(void)
+    {
+        return &m_archive;
+    }
 
-	Context& getContext(void)
-	{
-		return m_packageCtx->getContext();
-	}
+    Context &getContext(void)
+    {
+        return m_packageCtx->getContext();
+    }
 
 protected:
-	de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
+    de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
 
 private:
-	TestPackage(const TestPackage& other);
-	TestPackage& operator=(const TestPackage& other);
+    TestPackage(const TestPackage &other);
+    TestPackage &operator=(const TestPackage &other);
 
-	glu::ContextType				m_renderContextType;
-	PackageContext*					m_packageCtx;
-	tcu::ResourcePrefix				m_archive;
+    glu::ContextType m_renderContextType;
+    PackageContext *m_packageCtx;
+    tcu::ResourcePrefix m_archive;
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCTESTPACKAGE_HPP

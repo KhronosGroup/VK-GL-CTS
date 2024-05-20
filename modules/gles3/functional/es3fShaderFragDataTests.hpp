@@ -35,18 +35,18 @@ namespace Functional
 class ShaderFragDataTests : public TestCaseGroup
 {
 public:
-							ShaderFragDataTests		(Context& context);
-	virtual					~ShaderFragDataTests	(void);
+    ShaderFragDataTests(Context &context);
+    virtual ~ShaderFragDataTests(void);
 
-	virtual void			init					(void);
+    virtual void init(void);
 
 private:
-							ShaderFragDataTests		(const ShaderFragDataTests&);		// not allowed!
-	ShaderFragDataTests&	operator=				(const ShaderFragDataTests&);		// not allowed!
+    ShaderFragDataTests(const ShaderFragDataTests &);            // not allowed!
+    ShaderFragDataTests &operator=(const ShaderFragDataTests &); // not allowed!
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FSHADERFRAGDATATESTS_HPP

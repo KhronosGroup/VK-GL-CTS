@@ -29,15 +29,14 @@
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
 
-
 namespace vkt
 {
 namespace FragmentShadingRate
 {
 
-void createFragmentShadingRateMiscTests (tcu::TestCaseGroup* group);
+void createFragmentShadingRateMiscTests(tcu::TestCaseGroup *group);
 
-} // FragmentShadingRate
-} // vkt
+} // namespace FragmentShadingRate
+} // namespace vkt
 
 #endif // _VKTFRAGMENTSHADINGRATEMISCTESTS_HPP

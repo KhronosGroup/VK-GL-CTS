@@ -42,36 +42,36 @@ namespace rsg
 class ProgramExecutor
 {
 public:
-								ProgramExecutor			(const tcu::PixelBufferAccess& dst, int gridWidth, int gridHeight);
-								~ProgramExecutor		(void);
+    ProgramExecutor(const tcu::PixelBufferAccess &dst, int gridWidth, int gridHeight);
+    ~ProgramExecutor(void);
 
-	void						setTexture				(int samplerNdx, const tcu::Texture2D* texture, const tcu::Sampler& sampler);
-	void						setTexture				(int samplerNdx, const tcu::TextureCube* texture, const tcu::Sampler& sampler);
+    void setTexture(int samplerNdx, const tcu::Texture2D *texture, const tcu::Sampler &sampler);
+    void setTexture(int samplerNdx, const tcu::TextureCube *texture, const tcu::Sampler &sampler);
 
-	void						execute					(const Shader& vertexShader, const Shader& fragmentShader, const std::vector<VariableValue>& uniforms);
+    void execute(const Shader &vertexShader, const Shader &fragmentShader, const std::vector<VariableValue> &uniforms);
 
 private:
-	tcu::PixelBufferAccess		m_dst;
-	int							m_gridWidth;
-	int							m_gridHeight;
+    tcu::PixelBufferAccess m_dst;
+    int m_gridWidth;
+    int m_gridHeight;
 
-	Sampler2DMap				m_samplers2D;
-	SamplerCubeMap				m_samplersCube;
+    Sampler2DMap m_samplers2D;
+    SamplerCubeMap m_samplersCube;
 };
 
-inline void getVertexInterpolationCoords (float& xd, float& yd, float x, float y, int inputElementNdx)
+inline void getVertexInterpolationCoords(float &xd, float &yd, float x, float y, int inputElementNdx)
 {
-	if (inputElementNdx % 4 < 2)
-		xd = x;
-	else
-		xd = 1.0f - x;
+    if (inputElementNdx % 4 < 2)
+        xd = x;
+    else
+        xd = 1.0f - x;
 
-	if (inputElementNdx % 2 == 0)
-		yd = y;
-	else
-		yd = 1.0f - y;
+    if (inputElementNdx % 2 == 0)
+        yd = y;
+    else
+        yd = 1.0f - y;
 }
 
-} // rsg
+} // namespace rsg
 
 #endif // _RSGPROGRAMEXECUTOR_HPP

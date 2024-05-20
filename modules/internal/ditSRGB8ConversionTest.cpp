@@ -33,72 +33,73 @@ namespace dit
 namespace
 {
 
-deUint32 calculateDiscreteFloatDistance (float a, float b)
+uint32_t calculateDiscreteFloatDistance(float a, float b)
 {
-	const deUint32		au		= tcu::Float32(a).bits();
-	const deUint32		bu		= tcu::Float32(b).bits();
+    const uint32_t au = tcu::Float32(a).bits();
+    const uint32_t bu = tcu::Float32(b).bits();
 
-	const bool			asign	= (au & (0x1u << 31u)) != 0u;
-	const bool			bsign	= (bu & (0x1u << 31u)) != 0u;
+    const bool asign = (au & (0x1u << 31u)) != 0u;
+    const bool bsign = (bu & (0x1u << 31u)) != 0u;
 
-	const deUint32		avalue	= (au & ((0x1u << 31u) - 1u));
-	const deUint32		bvalue	= (bu & ((0x1u << 31u) - 1u));
+    const uint32_t avalue = (au & ((0x1u << 31u) - 1u));
+    const uint32_t bvalue = (bu & ((0x1u << 31u) - 1u));
 
-	if (asign != bsign)
-		return avalue + bvalue + 1u;
-	else if (avalue < bvalue)
-		return bvalue - avalue;
-	else
-		return avalue - bvalue;
+    if (asign != bsign)
+        return avalue + bvalue + 1u;
+    else if (avalue < bvalue)
+        return bvalue - avalue;
+    else
+        return avalue - bvalue;
 }
 
-const tcu::UVec4 calculateDiscreteFloatDistance (const tcu::Vec4& ref, const tcu::Vec4& res)
+const tcu::UVec4 calculateDiscreteFloatDistance(const tcu::Vec4 &ref, const tcu::Vec4 &res)
 {
-	return tcu::UVec4(calculateDiscreteFloatDistance(ref[0], res[0]), calculateDiscreteFloatDistance(ref[1], res[1]), calculateDiscreteFloatDistance(ref[2], res[2]), calculateDiscreteFloatDistance(ref[3], res[3]));
+    return tcu::UVec4(calculateDiscreteFloatDistance(ref[0], res[0]), calculateDiscreteFloatDistance(ref[1], res[1]),
+                      calculateDiscreteFloatDistance(ref[2], res[2]), calculateDiscreteFloatDistance(ref[3], res[3]));
 }
 
 class SRGB8ConversionTest : public tcu::TestCase
 {
 public:
-	SRGB8ConversionTest (tcu::TestContext& context)
-		: tcu::TestCase	(context, "srgb8", "SRGB8 conversion test")
-	{
-	}
+    SRGB8ConversionTest(tcu::TestContext &context) : tcu::TestCase(context, "srgb8", "SRGB8 conversion test")
+    {
+    }
 
-	IterateResult iterate (void)
-	{
-		bool			isOk	= true;
-		tcu::TestLog&	log		= m_testCtx.getLog();
+    IterateResult iterate(void)
+    {
+        bool isOk         = true;
+        tcu::TestLog &log = m_testCtx.getLog();
 
-		for (int i = 0; i < 256; i++)
-		{
-			const tcu::UVec4	src					(i);
-			const tcu::Vec4		res					(tcu::sRGBA8ToLinear(src));
-			const tcu::Vec4		ref					(tcu::sRGBToLinear(src.cast<float>() / tcu::Vec4(255.0f)));
-			const tcu::Vec4		diff				(res - ref);
-			const tcu::UVec4	discreteFloatDiff	(calculateDiscreteFloatDistance(ref, res));
+        for (int i = 0; i < 256; i++)
+        {
+            const tcu::UVec4 src(i);
+            const tcu::Vec4 res(tcu::sRGBA8ToLinear(src));
+            const tcu::Vec4 ref(tcu::sRGBToLinear(src.cast<float>() / tcu::Vec4(255.0f)));
+            const tcu::Vec4 diff(res - ref);
+            const tcu::UVec4 discreteFloatDiff(calculateDiscreteFloatDistance(ref, res));
 
-			if (tcu::anyNotEqual(res, ref))
-				log << tcu::TestLog::Message << i << ", Res: " << res << ", Ref: " << ref << ", Diff: " << diff << ", Discrete float diff: " << discreteFloatDiff << tcu::TestLog::EndMessage;
+            if (tcu::anyNotEqual(res, ref))
+                log << tcu::TestLog::Message << i << ", Res: " << res << ", Ref: " << ref << ", Diff: " << diff
+                    << ", Discrete float diff: " << discreteFloatDiff << tcu::TestLog::EndMessage;
 
-			if (tcu::boolAny(tcu::greaterThan(discreteFloatDiff, tcu::UVec4(1u))))
-				isOk = false;
-		}
+            if (tcu::boolAny(tcu::greaterThan(discreteFloatDiff, tcu::UVec4(1u))))
+                isOk = false;
+        }
 
-		if (isOk)
-			m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
-		else
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got ulp diffs greater than one.");
+        if (isOk)
+            m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+        else
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got ulp diffs greater than one.");
 
-		return STOP;
-	}
+        return STOP;
+    }
 };
 
-} // anonymous
+} // namespace
 
-tcu::TestCase* createSRGB8ConversionTest (tcu::TestContext& context)
+tcu::TestCase *createSRGB8ConversionTest(tcu::TestContext &context)
 {
-	return new SRGB8ConversionTest(context);
+    return new SRGB8ConversionTest(context);
 }
 
-} // dit
+} // namespace dit

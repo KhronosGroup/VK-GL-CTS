@@ -32,127 +32,127 @@
 #include <cstdlib>
 
 // See tcuMain.cpp
-tcu::Platform* createPlatform(void);
+tcu::Platform *createPlatform(void);
 
 struct CommandLine
 {
-	CommandLine(void) : runType(glu::ApiType::es(2, 0)), flags(0)
-	{
-	}
+    CommandLine(void) : runType(glu::ApiType::es(2, 0)), flags(0)
+    {
+    }
 
-	glu::ApiType runType;
-	std::string  waiverPath;
-	std::string  dstLogDir;
-	deUint32	 flags;
+    glu::ApiType runType;
+    std::string waiverPath;
+    std::string dstLogDir;
+    uint32_t flags;
 };
 
-static bool parseCommandLine(CommandLine& cmdLine, int argc, const char* const* argv)
+static bool parseCommandLine(CommandLine &cmdLine, int argc, const char *const *argv)
 {
-	for (int argNdx = 1; argNdx < argc; argNdx++)
-	{
-		const char* arg = argv[argNdx];
+    for (int argNdx = 1; argNdx < argc; argNdx++)
+    {
+        const char *arg = argv[argNdx];
 
-		if (deStringBeginsWith(arg, "--type="))
-		{
-			static const struct
-			{
-				const char*  name;
-				glu::ApiType runType;
-			} runTypes[] = { { "es2", glu::ApiType::es(2, 0) },	{ "es3", glu::ApiType::es(3, 0) },
-							 { "es31", glu::ApiType::es(3, 1) },   { "es32", glu::ApiType::es(3, 2) },
-							 { "gl30", glu::ApiType::core(3, 0) }, { "gl31", glu::ApiType::core(3, 1) },
-							 { "gl32", glu::ApiType::core(3, 2) }, { "gl33", glu::ApiType::core(3, 3) },
-							 { "gl40", glu::ApiType::core(4, 0) }, { "gl41", glu::ApiType::core(4, 1) },
-							 { "gl42", glu::ApiType::core(4, 2) }, { "gl43", glu::ApiType::core(4, 3) },
-							 { "gl44", glu::ApiType::core(4, 4) }, { "gl45", glu::ApiType::core(4, 5) },
-							 { "gl46", glu::ApiType::core(4, 6) } };
+        if (deStringBeginsWith(arg, "--type="))
+        {
+            static const struct
+            {
+                const char *name;
+                glu::ApiType runType;
+            } runTypes[] = {{"es2", glu::ApiType::es(2, 0)},    {"es3", glu::ApiType::es(3, 0)},
+                            {"es31", glu::ApiType::es(3, 1)},   {"es32", glu::ApiType::es(3, 2)},
+                            {"gl30", glu::ApiType::core(3, 0)}, {"gl31", glu::ApiType::core(3, 1)},
+                            {"gl32", glu::ApiType::core(3, 2)}, {"gl33", glu::ApiType::core(3, 3)},
+                            {"gl40", glu::ApiType::core(4, 0)}, {"gl41", glu::ApiType::core(4, 1)},
+                            {"gl42", glu::ApiType::core(4, 2)}, {"gl43", glu::ApiType::core(4, 3)},
+                            {"gl44", glu::ApiType::core(4, 4)}, {"gl45", glu::ApiType::core(4, 5)},
+                            {"gl46", glu::ApiType::core(4, 6)}};
 
-			const char* value = arg + 7;
-			int			ndx   = 0;
+            const char *value = arg + 7;
+            int ndx           = 0;
 
-			for (; ndx < DE_LENGTH_OF_ARRAY(runTypes); ndx++)
-			{
-				if (deStringEqual(runTypes[ndx].name, value))
-				{
-					cmdLine.runType = runTypes[ndx].runType;
-					break;
-				}
-			}
+            for (; ndx < DE_LENGTH_OF_ARRAY(runTypes); ndx++)
+            {
+                if (deStringEqual(runTypes[ndx].name, value))
+                {
+                    cmdLine.runType = runTypes[ndx].runType;
+                    break;
+                }
+            }
 
-			if (ndx >= DE_LENGTH_OF_ARRAY(runTypes))
-				return false;
-		}
-		else if (deStringBeginsWith(arg, "--waivers="))
-		{
-			const char* value = arg + 10;
-			cmdLine.waiverPath = value;
-		}
-		else if (deStringBeginsWith(arg, "--logdir="))
-		{
-			const char* value = arg + 9;
-			cmdLine.dstLogDir = value;
-		}
-		else if (deStringBeginsWith(arg, "--summary"))
-		{
-			cmdLine.flags = glcts::TestRunner::PRINT_SUMMARY;
-		}
-		else if (deStringEqual(arg, "--verbose"))
-			cmdLine.flags = glcts::TestRunner::VERBOSE_ALL;
-		else
-			return false;
-	}
+            if (ndx >= DE_LENGTH_OF_ARRAY(runTypes))
+                return false;
+        }
+        else if (deStringBeginsWith(arg, "--waivers="))
+        {
+            const char *value  = arg + 10;
+            cmdLine.waiverPath = value;
+        }
+        else if (deStringBeginsWith(arg, "--logdir="))
+        {
+            const char *value = arg + 9;
+            cmdLine.dstLogDir = value;
+        }
+        else if (deStringBeginsWith(arg, "--summary"))
+        {
+            cmdLine.flags = glcts::TestRunner::PRINT_SUMMARY;
+        }
+        else if (deStringEqual(arg, "--verbose"))
+            cmdLine.flags = glcts::TestRunner::VERBOSE_ALL;
+        else
+            return false;
+    }
 
-	return true;
+    return true;
 }
 
-static void printHelp(const char* binName)
+static void printHelp(const char *binName)
 {
-	printf("%s:\n", binName);
-	printf("  --type=[esN[M]|glNM] Conformance test run type. Choose from\n");
-	printf("                       ES: es2, es3, es31, es32\n");
-	printf("                       GL: gl30, gl31, gl32, gl33, gl40, gl41, gl42, gl43, gl44, gl45, gl46\n");
-	printf("  --waivers=[path]     Path to xml file containing waived tests\n");
-	printf("  --logdir=[path]      Destination directory for log files\n");
-	printf("  --summary            Print summary without running the tests\n");
-	printf("  --verbose            Print out and log more information\n");
+    printf("%s:\n", binName);
+    printf("  --type=[esN[M]|glNM] Conformance test run type. Choose from\n");
+    printf("                       ES: es2, es3, es31, es32\n");
+    printf("                       GL: gl30, gl31, gl32, gl33, gl40, gl41, gl42, gl43, gl44, gl45, gl46\n");
+    printf("  --waivers=[path]     Path to xml file containing waived tests\n");
+    printf("  --logdir=[path]      Destination directory for log files\n");
+    printf("  --summary            Print summary without running the tests\n");
+    printf("  --verbose            Print out and log more information\n");
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-	CommandLine cmdLine;
-	int exitStatus = EXIT_SUCCESS;
+    CommandLine cmdLine;
+    int exitStatus = EXIT_SUCCESS;
 
-	if (!parseCommandLine(cmdLine, argc, argv))
-	{
-		printHelp(argv[0]);
-		return -1;
-	}
+    if (!parseCommandLine(cmdLine, argc, argv))
+    {
+        printHelp(argv[0]);
+        return -1;
+    }
 
-	try
-	{
-		de::UniquePtr<tcu::Platform> platform(createPlatform());
-		tcu::DirArchive				 archive(".");
-		glcts::TestRunner runner(static_cast<tcu::Platform&>(*platform.get()), archive, cmdLine.waiverPath.c_str(),
-								 cmdLine.dstLogDir.c_str(), cmdLine.runType, cmdLine.flags);
+    try
+    {
+        de::UniquePtr<tcu::Platform> platform(createPlatform());
+        tcu::DirArchive archive(".");
+        glcts::TestRunner runner(static_cast<tcu::Platform &>(*platform.get()), archive, cmdLine.waiverPath.c_str(),
+                                 cmdLine.dstLogDir.c_str(), cmdLine.runType, cmdLine.flags);
 
-		for (;;)
-		{
-			if (!runner.iterate())
-			{
-				if (!runner.isConformant())
-				{
-					exitStatus = EXIT_FAILURE;
-				}
+        for (;;)
+        {
+            if (!runner.iterate())
+            {
+                if (!runner.isConformant())
+                {
+                    exitStatus = EXIT_FAILURE;
+                }
 
-				break;
-			}
-		}
-	}
-	catch (const std::exception& e)
-	{
-		printf("ERROR: %s\n", e.what());
-		return -1;
-	}
+                break;
+            }
+        }
+    }
+    catch (const std::exception &e)
+    {
+        printf("ERROR: %s\n", e.what());
+        return -1;
+    }
 
-	return exitStatus;
+    return exitStatus;
 }

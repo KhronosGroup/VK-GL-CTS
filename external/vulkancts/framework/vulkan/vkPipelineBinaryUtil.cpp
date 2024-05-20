@@ -29,157 +29,164 @@
 namespace vk
 {
 
-Move<VkPipelineBinaryKHR> makeMovablePipelineBinary (const DeviceInterface& vk, const VkDevice device, VkPipelineBinaryKHR rawPipelineBinary)
+Move<VkPipelineBinaryKHR> makeMovablePipelineBinary(const DeviceInterface &vk, const VkDevice device,
+                                                    VkPipelineBinaryKHR rawPipelineBinary)
 {
-	return Move<VkPipelineBinaryKHR>(check<VkPipelineBinaryKHR>(rawPipelineBinary), Deleter<VkPipelineBinaryKHR>(vk, device, DE_NULL));
+    return Move<VkPipelineBinaryKHR>(check<VkPipelineBinaryKHR>(rawPipelineBinary),
+                                     Deleter<VkPipelineBinaryKHR>(vk, device, DE_NULL));
 }
 
-PipelineBinaryWrapper::PipelineBinaryWrapper (const DeviceInterface&	vk,
-											  const VkDevice			device)
-	: m_vk		(vk)
-	, m_device	(device)
+PipelineBinaryWrapper::PipelineBinaryWrapper(const DeviceInterface &vk, const VkDevice device)
+    : m_vk(vk)
+    , m_device(device)
 {
 }
 
-void PipelineBinaryWrapper::getPipelineBinaryKeys (const void* pPipelineCreateInfo, bool clearPrevious)
+void PipelineBinaryWrapper::getPipelineBinaryKeys(const void *pPipelineCreateInfo, bool clearPrevious)
 {
-	// retrieve pipeline key count
-	deUint32 keyCount = 0;
-	VkPipelineBinaryKeysCreateInfoKHR pipelineBinaryKeysCreateInfo = initVulkanStructure(const_cast<void*>(pPipelineCreateInfo));
-	VK_CHECK(m_vk.getPipelineBinaryKeysKHR(m_device, &pipelineBinaryKeysCreateInfo, &keyCount, DE_NULL));
-	if (keyCount == 0)
-		TCU_FAIL("Expected number of binary keys to be greater than 0");
+    // retrieve pipeline key count
+    uint32_t keyCount = 0;
+    VkPipelineBinaryKeysCreateInfoKHR pipelineBinaryKeysCreateInfo =
+        initVulkanStructure(const_cast<void *>(pPipelineCreateInfo));
+    VK_CHECK(m_vk.getPipelineBinaryKeysKHR(m_device, &pipelineBinaryKeysCreateInfo, &keyCount, DE_NULL));
+    if (keyCount == 0)
+        TCU_FAIL("Expected number of binary keys to be greater than 0");
 
-	if (clearPrevious)
-		m_pipelineKeys.clear();
+    if (clearPrevious)
+        m_pipelineKeys.clear();
 
-	VkPipelineBinaryKeyKHR defaultKey;
-	defaultKey.sType = VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR;
-	defaultKey.pNext = nullptr;
+    VkPipelineBinaryKeyKHR defaultKey;
+    defaultKey.sType = VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR;
+    defaultKey.pNext = nullptr;
 
-	// if there were keys inserted then make room for more
-	std::size_t previousSize = m_pipelineKeys.size();
-	m_pipelineKeys.resize(previousSize + keyCount, defaultKey);
+    // if there were keys inserted then make room for more
+    std::size_t previousSize = m_pipelineKeys.size();
+    m_pipelineKeys.resize(previousSize + keyCount, defaultKey);
 
-	// retrieve pipeline keys
-	VK_CHECK(m_vk.getPipelineBinaryKeysKHR(m_device, &pipelineBinaryKeysCreateInfo, &keyCount, m_pipelineKeys.data() + previousSize));
+    // retrieve pipeline keys
+    VK_CHECK(m_vk.getPipelineBinaryKeysKHR(m_device, &pipelineBinaryKeysCreateInfo, &keyCount,
+                                           m_pipelineKeys.data() + previousSize));
 }
 
-void PipelineBinaryWrapper::createPipelineBinariesFromPipeline (VkPipeline pipeline)
+void PipelineBinaryWrapper::createPipelineBinariesFromPipeline(VkPipeline pipeline)
 {
-	const std::size_t keyCount = m_pipelineKeys.size();
+    const std::size_t keyCount = m_pipelineKeys.size();
 
-	VkPipelineBinaryCreateInfoKHR defaultPipelineBinaryCreateInfo = initVulkanStructure();
-	defaultPipelineBinaryCreateInfo.pipeline = pipeline;
+    VkPipelineBinaryCreateInfoKHR defaultPipelineBinaryCreateInfo = initVulkanStructure();
+    defaultPipelineBinaryCreateInfo.pipeline                      = pipeline;
 
-	// prepare pipeline binary info structures
-	std::vector<VkPipelineBinaryCreateInfoKHR> createInfos(keyCount, defaultPipelineBinaryCreateInfo);
-	for (std::size_t i = 0; i < keyCount; ++i)
-		createInfos[i].pKey = &m_pipelineKeys[i];
+    // prepare pipeline binary info structures
+    std::vector<VkPipelineBinaryCreateInfoKHR> createInfos(keyCount, defaultPipelineBinaryCreateInfo);
+    for (std::size_t i = 0; i < keyCount; ++i)
+        createInfos[i].pKey = &m_pipelineKeys[i];
 
-	createPipelineBinariesFromCreateInfo(createInfos);
+    createPipelineBinariesFromCreateInfo(createInfos);
 }
 
-void PipelineBinaryWrapper::createPipelineBinariesFromBinaryData (const std::vector<VkPipelineBinaryDataKHR>& pipelineDataInfo)
+void PipelineBinaryWrapper::createPipelineBinariesFromBinaryData(
+    const std::vector<VkPipelineBinaryDataKHR> &pipelineDataInfo)
 {
-	const std::size_t keyCount = m_pipelineKeys.size();
+    const std::size_t keyCount = m_pipelineKeys.size();
 
-	// create binaries from data blobs
-	VkPipelineBinaryCreateInfoKHR defaultPipelineBinaryCreateInfo = initVulkanStructure();
-	std::vector<VkPipelineBinaryCreateInfoKHR> createInfos(keyCount, defaultPipelineBinaryCreateInfo);
-	for (std::size_t i = 0; i < keyCount; ++i)
-	{
-		createInfos[i].pKey = &m_pipelineKeys[i];
-		createInfos[i].pDataInfo = &pipelineDataInfo[i];
-	}
+    // create binaries from data blobs
+    VkPipelineBinaryCreateInfoKHR defaultPipelineBinaryCreateInfo = initVulkanStructure();
+    std::vector<VkPipelineBinaryCreateInfoKHR> createInfos(keyCount, defaultPipelineBinaryCreateInfo);
+    for (std::size_t i = 0; i < keyCount; ++i)
+    {
+        createInfos[i].pKey      = &m_pipelineKeys[i];
+        createInfos[i].pDataInfo = &pipelineDataInfo[i];
+    }
 
-	createPipelineBinariesFromCreateInfo(createInfos);
+    createPipelineBinariesFromCreateInfo(createInfos);
 }
 
-void PipelineBinaryWrapper::createPipelineBinariesFromCreateInfo (const std::vector<VkPipelineBinaryCreateInfoKHR>& createInfos)
+void PipelineBinaryWrapper::createPipelineBinariesFromCreateInfo(
+    const std::vector<VkPipelineBinaryCreateInfoKHR> &createInfos)
 {
-	const std::size_t keyCount = m_pipelineKeys.size();
+    const std::size_t keyCount = m_pipelineKeys.size();
 
-	// create pipeline binary objects
-	m_pipelineBinariesRaw.resize(keyCount);
-	VK_CHECK(m_vk.createPipelineBinariesKHR(m_device, (deUint32)keyCount, createInfos.data(), DE_NULL, m_pipelineBinariesRaw.data()));
+    // create pipeline binary objects
+    m_pipelineBinariesRaw.resize(keyCount);
+    VK_CHECK(m_vk.createPipelineBinariesKHR(m_device, (uint32_t)keyCount, createInfos.data(), DE_NULL,
+                                            m_pipelineBinariesRaw.data()));
 
-	// wrap pipeline binaries to movable references to avoid leaks
-	m_pipelineBinaries.resize(keyCount);
-	for (std::size_t i = 0; i < keyCount; ++i)
-		m_pipelineBinaries[i] = makeMovablePipelineBinary(m_vk, m_device, m_pipelineBinariesRaw[i]);
+    // wrap pipeline binaries to movable references to avoid leaks
+    m_pipelineBinaries.resize(keyCount);
+    for (std::size_t i = 0; i < keyCount; ++i)
+        m_pipelineBinaries[i] = makeMovablePipelineBinary(m_vk, m_device, m_pipelineBinariesRaw[i]);
 }
 
-void PipelineBinaryWrapper::getPipelineBinaryData (std::vector<VkPipelineBinaryDataKHR>&	pipelineDataInfo,
-												   std::vector<std::vector<uint8_t> >&		pipelineDataBlob)
+void PipelineBinaryWrapper::getPipelineBinaryData(std::vector<VkPipelineBinaryDataKHR> &pipelineDataInfo,
+                                                  std::vector<std::vector<uint8_t>> &pipelineDataBlob)
 {
-	const std::size_t keyCount = m_pipelineKeys.size();
-	pipelineDataInfo.resize(keyCount);
-	pipelineDataBlob.resize(keyCount);
+    const std::size_t keyCount = m_pipelineKeys.size();
+    pipelineDataInfo.resize(keyCount);
+    pipelineDataBlob.resize(keyCount);
 
-	for (std::size_t i = 0; i < keyCount; ++i)
-	{
-		VkPipelineBinaryDataInfoKHR pipelineBinaryDataInfo = initVulkanStructure();
-		pipelineBinaryDataInfo.pipelineBinary = m_pipelineBinariesRaw[i];
+    for (std::size_t i = 0; i < keyCount; ++i)
+    {
+        VkPipelineBinaryDataInfoKHR pipelineBinaryDataInfo = initVulkanStructure();
+        pipelineBinaryDataInfo.pipelineBinary              = m_pipelineBinariesRaw[i];
 
-		// get binary data size
-		VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, &pipelineBinaryDataInfo, &pipelineDataInfo[i].dataSize, DE_NULL));
+        // get binary data size
+        VK_CHECK(
+            m_vk.getPipelineBinaryDataKHR(m_device, &pipelineBinaryDataInfo, &pipelineDataInfo[i].dataSize, DE_NULL));
 
-		// alocate space for data and store pointer for it
-		pipelineDataBlob[i].resize(pipelineDataInfo[i].dataSize);
-		pipelineDataInfo[i].pData = pipelineDataBlob[i].data();
+        // alocate space for data and store pointer for it
+        pipelineDataBlob[i].resize(pipelineDataInfo[i].dataSize);
+        pipelineDataInfo[i].pData = pipelineDataBlob[i].data();
 
-		// get binary data
-		VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, &pipelineBinaryDataInfo, &pipelineDataInfo[i].dataSize, pipelineDataInfo[i].pData));
-	}
+        // get binary data
+        VK_CHECK(m_vk.getPipelineBinaryDataKHR(m_device, &pipelineBinaryDataInfo, &pipelineDataInfo[i].dataSize,
+                                               pipelineDataInfo[i].pData));
+    }
 }
 
 void PipelineBinaryWrapper::deletePipelineBinariesAndKeys(void)
 {
-	m_pipelineKeys.clear();
-	m_pipelineBinaries.clear();
-	m_pipelineBinariesRaw.clear();
+    m_pipelineKeys.clear();
+    m_pipelineBinaries.clear();
+    m_pipelineBinariesRaw.clear();
 }
 
 void PipelineBinaryWrapper::deletePipelineBinariesKeepKeys(void)
 {
-	m_pipelineBinaries.clear();
-	m_pipelineBinariesRaw.clear();
+    m_pipelineBinaries.clear();
+    m_pipelineBinariesRaw.clear();
 }
 
-VkPipelineBinaryInfoKHR PipelineBinaryWrapper::preparePipelineBinaryInfo (deUint32 binaryIndex, deUint32 binaryCount) const
+VkPipelineBinaryInfoKHR PipelineBinaryWrapper::preparePipelineBinaryInfo(uint32_t binaryIndex,
+                                                                         uint32_t binaryCount) const
 {
-	binaryCount = std::min(binaryCount, static_cast<deUint32>(m_pipelineKeys.size()));
-	return
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR,
-		DE_NULL,
-		binaryCount,										// uint32_t							binaryCount;
-		m_pipelineKeys.data() + binaryIndex,				// const VkPipelineBinaryKeyKHR*	pPipelineBinaryKeys;
-		m_pipelineBinariesRaw.data() + binaryIndex			// const VkPipelineBinaryKHR*		pPipelineBinaries;
-	};
+    binaryCount = std::min(binaryCount, static_cast<uint32_t>(m_pipelineKeys.size()));
+    return {
+        VK_STRUCTURE_TYPE_PIPELINE_BINARY_INFO_KHR, DE_NULL,
+        binaryCount,                               // uint32_t binaryCount;
+        m_pipelineKeys.data() + binaryIndex,       // const VkPipelineBinaryKeyKHR* pPipelineBinaryKeys;
+        m_pipelineBinariesRaw.data() + binaryIndex // const VkPipelineBinaryKHR* pPipelineBinaries;
+    };
 }
 
-deUint32 PipelineBinaryWrapper::getKeyCount() const
+uint32_t PipelineBinaryWrapper::getKeyCount() const
 {
-	return static_cast<deUint32>(m_pipelineKeys.size());
+    return static_cast<uint32_t>(m_pipelineKeys.size());
 }
 
-deUint32 PipelineBinaryWrapper::getBinariesCount() const
+uint32_t PipelineBinaryWrapper::getBinariesCount() const
 {
-	return static_cast<deUint32>(m_pipelineBinariesRaw.size());
+    return static_cast<uint32_t>(m_pipelineBinariesRaw.size());
 }
 
-const VkPipelineBinaryKeyKHR* PipelineBinaryWrapper::getPipelineKeys() const
+const VkPipelineBinaryKeyKHR *PipelineBinaryWrapper::getPipelineKeys() const
 {
-	return m_pipelineKeys.data();
+    return m_pipelineKeys.data();
 }
 
-const VkPipelineBinaryKHR* PipelineBinaryWrapper::getPipelineBinaries() const
+const VkPipelineBinaryKHR *PipelineBinaryWrapper::getPipelineBinaries() const
 {
-	return m_pipelineBinariesRaw.data();
+    return m_pipelineBinariesRaw.data();
 }
 
-} // vk
+} // namespace vk
 
 #endif

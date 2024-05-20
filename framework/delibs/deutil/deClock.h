@@ -35,13 +35,13 @@ DE_BEGIN_EXTERN_C
  *       Use only for measuring time spans.
  *       Monotonic clock is used if platform supports it.
  *//*--------------------------------------------------------------------*/
-deUint64		deGetMicroseconds		(void);
+uint64_t deGetMicroseconds(void);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Get time in seconds since the epoch.
  * \return Current time in seconds since the epoch.
  *//*--------------------------------------------------------------------*/
-deUint64		deGetTime			(void);
+uint64_t deGetTime(void);
 
 DE_END_EXTERN_C
 

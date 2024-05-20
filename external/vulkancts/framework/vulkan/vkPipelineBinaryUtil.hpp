@@ -36,39 +36,35 @@ namespace vk
 class PipelineBinaryWrapper
 {
 public:
+    PipelineBinaryWrapper(const DeviceInterface &vk, const VkDevice vkDevice);
 
-							PipelineBinaryWrapper					(const DeviceInterface&								vk,
-																	 const VkDevice										vkDevice);
+    void getPipelineBinaryKeys(const void *pPipelineCreateInfo, bool clearPrevious = true);
+    void createPipelineBinariesFromPipeline(VkPipeline pipeline);
+    void createPipelineBinariesFromBinaryData(const std::vector<VkPipelineBinaryDataKHR> &pipelineDataInfo);
+    void createPipelineBinariesFromCreateInfo(const std::vector<VkPipelineBinaryCreateInfoKHR> &createInfos);
+    void getPipelineBinaryData(std::vector<VkPipelineBinaryDataKHR> &pipelineDataInfo,
+                               std::vector<std::vector<uint8_t>> &pipelineDataBlob);
+    void deletePipelineBinariesAndKeys(void);
+    void deletePipelineBinariesKeepKeys(void);
 
-	void					getPipelineBinaryKeys					(const void*										pPipelineCreateInfo,
-																	 bool												clearPrevious = true);
-	void					createPipelineBinariesFromPipeline		(VkPipeline											pipeline);
-	void					createPipelineBinariesFromBinaryData	(const std::vector<VkPipelineBinaryDataKHR>&		pipelineDataInfo);
-	void					createPipelineBinariesFromCreateInfo	(const std::vector<VkPipelineBinaryCreateInfoKHR>&	createInfos);
-	void					getPipelineBinaryData					(std::vector<VkPipelineBinaryDataKHR>&				pipelineDataInfo,
-																	 std::vector<std::vector<uint8_t> >&				pipelineDataBlob);
-	void					deletePipelineBinariesAndKeys			(void);
-	void					deletePipelineBinariesKeepKeys			(void);
+    VkPipelineBinaryInfoKHR preparePipelineBinaryInfo(
+        uint32_t binaryIndex = 0, uint32_t binaryCount = std::numeric_limits<uint32_t>::max()) const;
 
-	VkPipelineBinaryInfoKHR	preparePipelineBinaryInfo				(deUint32		binaryIndex = 0,
-																	 deUint32		binaryCount = std::numeric_limits<deUint32>::max()) const;
-
-	deUint32						getKeyCount() const;
-	deUint32						getBinariesCount() const;
-	const VkPipelineBinaryKeyKHR*	getPipelineKeys() const;
-	const VkPipelineBinaryKHR*		getPipelineBinaries() const;
+    uint32_t getKeyCount() const;
+    uint32_t getBinariesCount() const;
+    const VkPipelineBinaryKeyKHR *getPipelineKeys() const;
+    const VkPipelineBinaryKHR *getPipelineBinaries() const;
 
 protected:
+    const DeviceInterface &m_vk;
+    const VkDevice m_device;
 
-	const DeviceInterface&	m_vk;
-	const VkDevice			m_device;
-
-	std::vector<VkPipelineBinaryKeyKHR>		m_pipelineKeys;
-	std::vector<VkPipelineBinaryKHR>		m_pipelineBinariesRaw;
-	std::vector<Move<VkPipelineBinaryKHR>>	m_pipelineBinaries;
+    std::vector<VkPipelineBinaryKeyKHR> m_pipelineKeys;
+    std::vector<VkPipelineBinaryKHR> m_pipelineBinariesRaw;
+    std::vector<Move<VkPipelineBinaryKHR>> m_pipelineBinaries;
 };
 
-} // vk
+} // namespace vk
 
 #endif // CTS_USES_VULKANSC
 

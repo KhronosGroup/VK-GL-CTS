@@ -37,62 +37,80 @@ namespace detail
 class EnumPointerFmt
 {
 public:
-	typedef const char* (*GetEnumNameFunc) (int value);
+    typedef const char *(*GetEnumNameFunc)(int value);
 
-	const deUint32* const	value;
-	const deUint32			size;
-	const GetEnumNameFunc	getName;
+    const uint32_t *const value;
+    const uint32_t size;
+    const GetEnumNameFunc getName;
 
-	EnumPointerFmt (const deUint32* value_, deUint32 size_, GetEnumNameFunc getName_) : value(value_), size(size_), getName(getName_) {}
+    EnumPointerFmt(const uint32_t *value_, uint32_t size_, GetEnumNameFunc getName_)
+        : value(value_)
+        , size(size_)
+        , getName(getName_)
+    {
+    }
 };
 
 class BooleanPointerFmt
 {
 public:
-	const deUint8* const	value;
-	const deUint32			size;
+    const uint8_t *const value;
+    const uint32_t size;
 
-	BooleanPointerFmt (const deUint8* value_, deUint32 size_) : value(value_), size(size_) {}
+    BooleanPointerFmt(const uint8_t *value_, uint32_t size_) : value(value_), size(size_)
+    {
+    }
 };
 
 class TextureUnitStr
 {
 public:
-	const deUint32 texUnit;
-	TextureUnitStr (deUint32 texUnit_) : texUnit(texUnit_) {}
+    const uint32_t texUnit;
+    TextureUnitStr(uint32_t texUnit_) : texUnit(texUnit_)
+    {
+    }
 };
 
 class TextureParameterValueStr
 {
 public:
-	const deUint32	param;
-	const int		value;
-	TextureParameterValueStr (deUint32 param_, int value_) : param(param_), value(value_) {}
+    const uint32_t param;
+    const int value;
+    TextureParameterValueStr(uint32_t param_, int value_) : param(param_), value(value_)
+    {
+    }
 };
 
-std::ostream&		operator<<		(std::ostream& str, const TextureUnitStr& unitStr);
-std::ostream&		operator<<		(std::ostream& str, const TextureParameterValueStr& valueStr);
-std::ostream&		operator<<		(std::ostream& str, const BooleanPointerFmt& fmt);
-std::ostream&		operator<<		(std::ostream& str, const EnumPointerFmt& fmt);
+std::ostream &operator<<(std::ostream &str, const TextureUnitStr &unitStr);
+std::ostream &operator<<(std::ostream &str, const TextureParameterValueStr &valueStr);
+std::ostream &operator<<(std::ostream &str, const BooleanPointerFmt &fmt);
+std::ostream &operator<<(std::ostream &str, const EnumPointerFmt &fmt);
 
-} // detail
+} // namespace detail
 
-inline detail::EnumPointerFmt getEnumPointerStr (const deUint32* value, deInt32 size, detail::EnumPointerFmt::GetEnumNameFunc getName)
+inline detail::EnumPointerFmt getEnumPointerStr(const uint32_t *value, int32_t size,
+                                                detail::EnumPointerFmt::GetEnumNameFunc getName)
 {
-	return detail::EnumPointerFmt(value, (deUint32)de::max(0, size), getName);
+    return detail::EnumPointerFmt(value, (uint32_t)de::max(0, size), getName);
 }
 
-inline detail::BooleanPointerFmt getBooleanPointerStr (const deUint8* value, deInt32 size)
+inline detail::BooleanPointerFmt getBooleanPointerStr(const uint8_t *value, int32_t size)
 {
-	return detail::BooleanPointerFmt(value, (deUint32)de::max(0, size));
+    return detail::BooleanPointerFmt(value, (uint32_t)de::max(0, size));
 }
 
-inline detail::TextureUnitStr						getTextureUnitStr			(deUint32 unit) { return detail::TextureUnitStr(unit); }
-inline detail::TextureParameterValueStr				getTextureParameterValueStr	(deUint32 param, int value) { return detail::TextureParameterValueStr(param, value); }
-detail::EnumPointerFmt								getInvalidateAttachmentStr	(const deUint32* attachments, int numAttachments);
+inline detail::TextureUnitStr getTextureUnitStr(uint32_t unit)
+{
+    return detail::TextureUnitStr(unit);
+}
+inline detail::TextureParameterValueStr getTextureParameterValueStr(uint32_t param, int value)
+{
+    return detail::TextureParameterValueStr(param, value);
+}
+detail::EnumPointerFmt getInvalidateAttachmentStr(const uint32_t *attachments, int numAttachments);
 
-std::ostream&										operator<<					(std::ostream& str, ApiType apiType);
-std::ostream&										operator<<					(std::ostream& str, ContextType contextType);
+std::ostream &operator<<(std::ostream &str, ApiType apiType);
+std::ostream &operator<<(std::ostream &str, ContextType contextType);
 
 // prevent implicit conversions from bool to int.
 //
@@ -101,12 +119,12 @@ std::ostream&										operator<<					(std::ostream& str, ContextType contextTyp
 // mixing and matching GLboolean and bool types which may not be safe.
 //
 // \note return value is void to prevent compilation. Otherwise this would only break linking.
-void	getBooleanPointerStr	(const bool* value, deInt32 size);	// delete
-void	getBooleanStr			(bool);								// delete
-void	getBooleanName			(bool);								// delete
+void getBooleanPointerStr(const bool *value, int32_t size); // delete
+void getBooleanStr(bool);                                   // delete
+void getBooleanName(bool);                                  // delete
 
 #include "gluStrUtilPrototypes.inl"
 
-} // glu
+} // namespace glu
 
 #endif // _GLUSTRUTIL_HPP

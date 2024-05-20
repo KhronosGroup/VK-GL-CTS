@@ -34,24 +34,24 @@ namespace FragmentShaderInterlock
 namespace
 {
 
-static void createChildren (tcu::TestCaseGroup* group)
+static void createChildren(tcu::TestCaseGroup *group)
 {
-	tcu::TestContext&	testCtx		= group->getTestContext();
+    tcu::TestContext &testCtx = group->getTestContext();
 
-	group->addChild(createBasicTests(testCtx));
+    group->addChild(createBasicTests(testCtx));
 }
 
-static void cleanupGroup (tcu::TestCaseGroup* group)
+static void cleanupGroup(tcu::TestCaseGroup *group)
 {
-	DE_UNREF(group);
+    DE_UNREF(group);
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	return createTestGroup(testCtx, name.c_str(), createChildren, cleanupGroup);
+    return createTestGroup(testCtx, name.c_str(), createChildren, cleanupGroup);
 }
 
-} // FragmentShaderInterlock
-} // vkt
+} // namespace FragmentShaderInterlock
+} // namespace vkt

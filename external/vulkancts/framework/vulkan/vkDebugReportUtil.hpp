@@ -36,66 +36,74 @@ namespace vk
 
 struct DebugUtilsMessage
 {
-	VkDebugUtilsMessageSeverityFlagBitsEXT		severity;
-	VkDebugUtilsMessageTypeFlagsEXT				type;
-	std::string									vuid;
-	std::string									message;
+    VkDebugUtilsMessageSeverityFlagBitsEXT severity;
+    VkDebugUtilsMessageTypeFlagsEXT type;
+    std::string vuid;
+    std::string message;
 
-	DebugUtilsMessage (void)
-		: severity	{}
-		, type		{}
-	{}
+    DebugUtilsMessage(void) : severity{}, type{}
+    {
+    }
 
-	DebugUtilsMessage (VkDebugUtilsMessageSeverityFlagBitsEXT		severity_,
-						VkDebugUtilsMessageTypeFlagsEXT				type_,
-						std::string									vuid_,
-						std::string									message_)
-		: severity	(severity_)
-		, type		(type_)
-		, vuid		(vuid_)
-		, message	(message_)
-	{}
+    DebugUtilsMessage(VkDebugUtilsMessageSeverityFlagBitsEXT severity_, VkDebugUtilsMessageTypeFlagsEXT type_,
+                      std::string vuid_, std::string message_)
+        : severity(severity_)
+        , type(type_)
+        , vuid(vuid_)
+        , message(message_)
+    {
+    }
 
-	bool isError	() const
-	{
-		static const vk::VkDebugUtilsMessageSeverityFlagsEXT errorFlags = vk::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-		return (severity & errorFlags) != 0u;
-	}
+    bool isError() const
+    {
+        static const vk::VkDebugUtilsMessageSeverityFlagsEXT errorFlags =
+            vk::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        return (severity & errorFlags) != 0u;
+    }
 
-	bool shouldBeLogged	() const
-	{
-		// \note We are not logging INFORMATION and DEBUG messages. They are diabled when creating
-		// the debug utils messenger.
-		return true;
-	}
+    bool shouldBeLogged() const
+    {
+        // \note We are not logging INFORMATION and DEBUG messages. They are diabled when creating
+        // the debug utils messenger.
+        return true;
+    }
 };
 
-std::ostream& operator<< (std::ostream& str, const DebugUtilsMessage& message);
+std::ostream &operator<<(std::ostream &str, const DebugUtilsMessage &message);
 
 class DebugReportRecorder
 {
 public:
-	using MessageList = de::AppendList<DebugUtilsMessage>;
+    using MessageList = de::AppendList<DebugUtilsMessage>;
 
-											DebugReportRecorder		(bool printValidationErrors);
-											~DebugReportRecorder	(void);
+    DebugReportRecorder(bool printValidationErrors);
+    ~DebugReportRecorder(void);
 
-	MessageList&							getMessages				(void) { return m_messages; }
-	void									clearMessages			(void) { m_messages.clear(); }
-	bool									errorPrinting			(void) const { return m_print_errors; }
+    MessageList &getMessages(void)
+    {
+        return m_messages;
+    }
+    void clearMessages(void)
+    {
+        m_messages.clear();
+    }
+    bool errorPrinting(void) const
+    {
+        return m_print_errors;
+    }
 
-	VkDebugUtilsMessengerCreateInfoEXT		makeCreateInfo			(void);
-	Move<VkDebugUtilsMessengerEXT>			createCallback			(const InstanceInterface& vki, VkInstance instance);
+    VkDebugUtilsMessengerCreateInfoEXT makeCreateInfo(void);
+    Move<VkDebugUtilsMessengerEXT> createCallback(const InstanceInterface &vki, VkInstance instance);
 
 private:
-	MessageList								m_messages;
-	const bool								m_print_errors;
+    MessageList m_messages;
+    const bool m_print_errors;
 };
 
 #endif // CTS_USES_VULKANSC
 
-bool isDebugUtilsSupported (const PlatformInterface& vkp);
+bool isDebugUtilsSupported(const PlatformInterface &vkp);
 
-} // vk
+} // namespace vk
 
 #endif // _VKDEBUGREPORTUTIL_HPP

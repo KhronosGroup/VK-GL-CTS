@@ -31,9 +31,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createShaderBindingTableTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createShaderBindingTableTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGSHADERBINDINGTABLETESTS_HPP

@@ -42,62 +42,63 @@ namespace egl
 
 using namespace eglw;
 
-EglTestContext::EglTestContext (tcu::TestContext& testCtx, const eglu::NativeDisplayFactory& displayFactory)
-	: m_testCtx					(testCtx)
-	, m_nativeDisplayFactory	(displayFactory)
-	, m_nativeDisplay			(m_nativeDisplayFactory.createDisplay())
-	, m_glLibraryCache			(testCtx.getPlatform().getEGLPlatform(), testCtx.getCommandLine())
+EglTestContext::EglTestContext(tcu::TestContext &testCtx, const eglu::NativeDisplayFactory &displayFactory)
+    : m_testCtx(testCtx)
+    , m_nativeDisplayFactory(displayFactory)
+    , m_nativeDisplay(m_nativeDisplayFactory.createDisplay())
+    , m_glLibraryCache(testCtx.getPlatform().getEGLPlatform(), testCtx.getCommandLine())
 {
 }
 
-EglTestContext::~EglTestContext (void)
+EglTestContext::~EglTestContext(void)
 {
 }
 
-const eglw::Library& EglTestContext::getLibrary (void) const
+const eglw::Library &EglTestContext::getLibrary(void) const
 {
-	return m_nativeDisplay->getLibrary();
+    return m_nativeDisplay->getLibrary();
 }
 
-void EglTestContext::initGLFunctions (glw::Functions* dst, glu::ApiType apiType) const
+void EglTestContext::initGLFunctions(glw::Functions *dst, glu::ApiType apiType) const
 {
-	initGLFunctions(dst, apiType, 0, DE_NULL);
+    initGLFunctions(dst, apiType, 0, DE_NULL);
 }
 
-void EglTestContext::initGLFunctions (glw::Functions* dst, glu::ApiType apiType, int numExtensions, const char* const* extensions) const
+void EglTestContext::initGLFunctions(glw::Functions *dst, glu::ApiType apiType, int numExtensions,
+                                     const char *const *extensions) const
 {
-	const tcu::FunctionLibrary*		platformLib		= m_glLibraryCache.getLibrary(apiType);
-	const eglu::GLFunctionLoader	loader			(getLibrary(), platformLib);
+    const tcu::FunctionLibrary *platformLib = m_glLibraryCache.getLibrary(apiType);
+    const eglu::GLFunctionLoader loader(getLibrary(), platformLib);
 
-	glu::initCoreFunctions(dst, &loader, apiType);
-	glu::initExtensionFunctions(dst, &loader, apiType, numExtensions, extensions);
+    glu::initCoreFunctions(dst, &loader, apiType);
+    glu::initExtensionFunctions(dst, &loader, apiType, numExtensions, extensions);
 }
 
-TestCaseGroup::TestCaseGroup (EglTestContext& eglTestCtx, const char* name, const char* description)
-	: tcu::TestCaseGroup	(eglTestCtx.getTestContext(), name, description)
-	, m_eglTestCtx			(eglTestCtx)
-{
-}
-
-TestCaseGroup::~TestCaseGroup (void)
+TestCaseGroup::TestCaseGroup(EglTestContext &eglTestCtx, const char *name, const char *description)
+    : tcu::TestCaseGroup(eglTestCtx.getTestContext(), name, description)
+    , m_eglTestCtx(eglTestCtx)
 {
 }
 
-TestCase::TestCase (EglTestContext& eglTestCtx, const char* name, const char* description)
-	: tcu::TestCase		(eglTestCtx.getTestContext(), name, description)
-	, m_eglTestCtx		(eglTestCtx)
+TestCaseGroup::~TestCaseGroup(void)
 {
 }
 
-TestCase::TestCase (EglTestContext& eglTestCtx, tcu::TestNodeType type,  const char* name, const char* description)
-	: tcu::TestCase		(eglTestCtx.getTestContext(), type, name, description)
-	, m_eglTestCtx		(eglTestCtx)
+TestCase::TestCase(EglTestContext &eglTestCtx, const char *name, const char *description)
+    : tcu::TestCase(eglTestCtx.getTestContext(), name, description)
+    , m_eglTestCtx(eglTestCtx)
 {
 }
 
-TestCase::~TestCase (void)
+TestCase::TestCase(EglTestContext &eglTestCtx, tcu::TestNodeType type, const char *name, const char *description)
+    : tcu::TestCase(eglTestCtx.getTestContext(), type, name, description)
+    , m_eglTestCtx(eglTestCtx)
 {
 }
 
-} // egl
-} // deqp
+TestCase::~TestCase(void)
+{
+}
+
+} // namespace egl
+} // namespace deqp

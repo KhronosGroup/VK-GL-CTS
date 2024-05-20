@@ -26,147 +26,147 @@
 namespace rsg
 {
 
-ExecMaskStorage::ExecMaskStorage (bool initVal)
+ExecMaskStorage::ExecMaskStorage(bool initVal)
 {
-	for (int i = 0; i < EXEC_VEC_WIDTH; i++)
-		m_data[i].as<bool>() = initVal;
+    for (int i = 0; i < EXEC_VEC_WIDTH; i++)
+        m_data[i].as<bool>() = initVal;
 }
 
-ExecValueAccess ExecMaskStorage::getValue (void)
+ExecValueAccess ExecMaskStorage::getValue(void)
 {
-	return ExecValueAccess(VariableType::getScalarType(VariableType::TYPE_BOOL), m_data);
+    return ExecValueAccess(VariableType::getScalarType(VariableType::TYPE_BOOL), m_data);
 }
 
-ExecConstValueAccess ExecMaskStorage::getValue (void) const
+ExecConstValueAccess ExecMaskStorage::getValue(void) const
 {
-	return ExecConstValueAccess(VariableType::getScalarType(VariableType::TYPE_BOOL), m_data);
+    return ExecConstValueAccess(VariableType::getScalarType(VariableType::TYPE_BOOL), m_data);
 }
 
-ExecutionContext::ExecutionContext (const Sampler2DMap& samplers2D, const SamplerCubeMap& samplersCube)
-	: m_samplers2D		(samplers2D)
-	, m_samplersCube	(samplersCube)
+ExecutionContext::ExecutionContext(const Sampler2DMap &samplers2D, const SamplerCubeMap &samplersCube)
+    : m_samplers2D(samplers2D)
+    , m_samplersCube(samplersCube)
 {
-	// Initialize execution mask to true
-	ExecMaskStorage initVal(true);
-	pushExecutionMask(initVal.getValue());
+    // Initialize execution mask to true
+    ExecMaskStorage initVal(true);
+    pushExecutionMask(initVal.getValue());
 }
 
-ExecutionContext::~ExecutionContext (void)
+ExecutionContext::~ExecutionContext(void)
 {
-	for (VarValueMap::iterator i = m_varValues.begin(); i != m_varValues.end(); i++)
-		delete i->second;
-	m_varValues.clear();
+    for (VarValueMap::iterator i = m_varValues.begin(); i != m_varValues.end(); i++)
+        delete i->second;
+    m_varValues.clear();
 }
 
-ExecValueAccess ExecutionContext::getValue (const Variable* variable)
+ExecValueAccess ExecutionContext::getValue(const Variable *variable)
 {
-	ExecValueStorage* storage = m_varValues[variable];
+    ExecValueStorage *storage = m_varValues[variable];
 
-	if (!storage)
-	{
-		storage = new ExecValueStorage(variable->getType());
-		m_varValues[variable] = storage;
-	}
+    if (!storage)
+    {
+        storage               = new ExecValueStorage(variable->getType());
+        m_varValues[variable] = storage;
+    }
 
-	return storage->getValue(variable->getType());
+    return storage->getValue(variable->getType());
 }
 
-const Sampler2D& ExecutionContext::getSampler2D (const Variable* sampler) const
+const Sampler2D &ExecutionContext::getSampler2D(const Variable *sampler) const
 {
-	const ExecValueStorage* samplerVal = m_varValues.find(sampler)->second;
+    const ExecValueStorage *samplerVal = m_varValues.find(sampler)->second;
 
-	int samplerNdx = samplerVal->getValue(sampler->getType()).asInt(0);
+    int samplerNdx = samplerVal->getValue(sampler->getType()).asInt(0);
 
-	return m_samplers2D.find(samplerNdx)->second;
+    return m_samplers2D.find(samplerNdx)->second;
 }
 
-const SamplerCube& ExecutionContext::getSamplerCube (const Variable* sampler) const
+const SamplerCube &ExecutionContext::getSamplerCube(const Variable *sampler) const
 {
-	const ExecValueStorage* samplerVal = m_varValues.find(sampler)->second;
+    const ExecValueStorage *samplerVal = m_varValues.find(sampler)->second;
 
-	int samplerNdx = samplerVal->getValue(sampler->getType()).asInt(0);
+    int samplerNdx = samplerVal->getValue(sampler->getType()).asInt(0);
 
-	return m_samplersCube.find(samplerNdx)->second;
+    return m_samplersCube.find(samplerNdx)->second;
 }
 
-void ExecutionContext::andExecutionMask (ExecConstValueAccess value)
+void ExecutionContext::andExecutionMask(ExecConstValueAccess value)
 {
-	ExecMaskStorage			tmp;
-	ExecValueAccess			newValue	= tmp.getValue();
-	ExecConstValueAccess	oldValue	= getExecutionMask();
+    ExecMaskStorage tmp;
+    ExecValueAccess newValue      = tmp.getValue();
+    ExecConstValueAccess oldValue = getExecutionMask();
 
-	for (int i = 0; i < EXEC_VEC_WIDTH; i++)
-		newValue.asBool(i) = oldValue.asBool(i) && value.asBool(i);
+    for (int i = 0; i < EXEC_VEC_WIDTH; i++)
+        newValue.asBool(i) = oldValue.asBool(i) && value.asBool(i);
 
-	pushExecutionMask(newValue);
+    pushExecutionMask(newValue);
 }
 
-void ExecutionContext::pushExecutionMask (ExecConstValueAccess value)
+void ExecutionContext::pushExecutionMask(ExecConstValueAccess value)
 {
-	ExecMaskStorage tmp;
-	tmp.getValue() = value.value();
-	m_execMaskStack.push_back(tmp);
+    ExecMaskStorage tmp;
+    tmp.getValue() = value.value();
+    m_execMaskStack.push_back(tmp);
 }
 
-void ExecutionContext::popExecutionMask (void)
+void ExecutionContext::popExecutionMask(void)
 {
-	m_execMaskStack.pop_back();
+    m_execMaskStack.pop_back();
 }
 
-ExecConstValueAccess ExecutionContext::getExecutionMask (void) const
+ExecConstValueAccess ExecutionContext::getExecutionMask(void) const
 {
-	return m_execMaskStack[m_execMaskStack.size()-1].getValue();
+    return m_execMaskStack[m_execMaskStack.size() - 1].getValue();
 }
 
-void assignMasked (ExecValueAccess dst, ExecConstValueAccess src, ExecConstValueAccess mask)
+void assignMasked(ExecValueAccess dst, ExecConstValueAccess src, ExecConstValueAccess mask)
 {
-	const VariableType& type = dst.getType();
+    const VariableType &type = dst.getType();
 
-	switch (type.getBaseType())
-	{
-		case VariableType::TYPE_ARRAY:
-		{
-			int numElems = type.getNumElements();
-			for (int elemNdx = 0; elemNdx < numElems; elemNdx++)
-				assignMasked(dst.arrayElement(elemNdx), src.arrayElement(elemNdx), mask);
+    switch (type.getBaseType())
+    {
+    case VariableType::TYPE_ARRAY:
+    {
+        int numElems = type.getNumElements();
+        for (int elemNdx = 0; elemNdx < numElems; elemNdx++)
+            assignMasked(dst.arrayElement(elemNdx), src.arrayElement(elemNdx), mask);
 
-			break;
-		}
+        break;
+    }
 
-		case VariableType::TYPE_STRUCT:
-		{
-			int numMembers = (int)type.getMembers().size();
-			for (int memberNdx = 0; memberNdx < numMembers; memberNdx++)
-				assignMasked(dst.member(memberNdx), src.member(memberNdx), mask);
+    case VariableType::TYPE_STRUCT:
+    {
+        int numMembers = (int)type.getMembers().size();
+        for (int memberNdx = 0; memberNdx < numMembers; memberNdx++)
+            assignMasked(dst.member(memberNdx), src.member(memberNdx), mask);
 
-			break;
-		}
+        break;
+    }
 
-		case VariableType::TYPE_FLOAT:
-		case VariableType::TYPE_INT:
-		case VariableType::TYPE_BOOL:
-		case VariableType::TYPE_SAMPLER_2D:
-		case VariableType::TYPE_SAMPLER_CUBE:
-		{
-			for (int elemNdx = 0; elemNdx < type.getNumElements(); elemNdx++)
-			{
-				ExecValueAccess			dstElem		= dst.component(elemNdx);
-				ExecConstValueAccess	srcElem		= src.component(elemNdx);
+    case VariableType::TYPE_FLOAT:
+    case VariableType::TYPE_INT:
+    case VariableType::TYPE_BOOL:
+    case VariableType::TYPE_SAMPLER_2D:
+    case VariableType::TYPE_SAMPLER_CUBE:
+    {
+        for (int elemNdx = 0; elemNdx < type.getNumElements(); elemNdx++)
+        {
+            ExecValueAccess dstElem      = dst.component(elemNdx);
+            ExecConstValueAccess srcElem = src.component(elemNdx);
 
-				for (int compNdx = 0; compNdx < EXEC_VEC_WIDTH; compNdx++)
-				{
-					if (mask.asBool(compNdx))
-						dstElem.asScalar(compNdx) = srcElem.asScalar(compNdx);
-				}
-			}
+            for (int compNdx = 0; compNdx < EXEC_VEC_WIDTH; compNdx++)
+            {
+                if (mask.asBool(compNdx))
+                    dstElem.asScalar(compNdx) = srcElem.asScalar(compNdx);
+            }
+        }
 
-			break;
-		}
+        break;
+    }
 
-		default:
-			DE_FATAL("Unsupported");
-			break;
-	}
+    default:
+        DE_FATAL("Unsupported");
+        break;
+    }
 }
 
-} // rsg
+} // namespace rsg

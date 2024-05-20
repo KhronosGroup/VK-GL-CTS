@@ -33,18 +33,18 @@ namespace deqp
 class ShaderMultisampleInterpolationTests : public TestCaseGroup
 {
 public:
-	ShaderMultisampleInterpolationTests(Context& context, glu::GLSLVersion glslVersion);
-	~ShaderMultisampleInterpolationTests();
+    ShaderMultisampleInterpolationTests(Context &context, glu::GLSLVersion glslVersion);
+    ~ShaderMultisampleInterpolationTests();
 
-	void init();
+    void init();
 
 private:
-	ShaderMultisampleInterpolationTests(const ShaderMultisampleInterpolationTests& other);
-	ShaderMultisampleInterpolationTests& operator=(const ShaderMultisampleInterpolationTests& other);
+    ShaderMultisampleInterpolationTests(const ShaderMultisampleInterpolationTests &other);
+    ShaderMultisampleInterpolationTests &operator=(const ShaderMultisampleInterpolationTests &other);
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 };
 
-} // deqp
+} // namespace deqp
 
 #endif // _GLCSHADERMULTISAMPLEINTERPOLATIONTESTS_HPP

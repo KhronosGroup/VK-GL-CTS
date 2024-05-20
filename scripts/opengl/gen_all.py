@@ -37,25 +37,25 @@ import logging
 import sys
 
 def genAll ():
-	# https://docs.python.org/3/howto/logging.html#what-happens-if-no-configuration-is-provided
-	# To obtain the pre-3.2 behaviour, logging.lastResort can be set to None.
-	if (sys.version_info >= (3, 2)):
-		logging.lastResort=None
+    # https://docs.python.org/3/howto/logging.html#what-happens-if-no-configuration-is-provided
+    # To obtain the pre-3.2 behaviour, logging.lastResort can be set to None.
+    if (sys.version_info >= (3, 2)):
+        logging.lastResort=None
 
-	registry = getGLRegistry()
-	iface = getHybridInterface()
-	genCallLogWrapper(iface)
-	genEnums(iface)
-	genVersions(iface)
-	genESDirectInit(registry)
-	genESStaticLibrary(registry)
-	genExtInit(registry, iface)
-	genFuncInit(registry)
-	genFunctionPointers(iface)
-	genNullRenderContext(iface)
-	genStrUtil(iface)
-	genWrapper(iface)
-	genQueryUtil(iface)
+    registry = getGLRegistry()
+    iface = getHybridInterface()
+    genCallLogWrapper(iface)
+    genEnums(iface)
+    genVersions(iface)
+    genESDirectInit(registry)
+    genESStaticLibrary(registry)
+    genExtInit(registry, iface)
+    genFuncInit(registry)
+    genFunctionPointers(iface)
+    genNullRenderContext(iface)
+    genStrUtil(iface)
+    genWrapper(iface)
+    genQueryUtil(iface)
 
 if __name__ == "__main__":
-	genAll()
+    genAll()

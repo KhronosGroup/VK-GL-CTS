@@ -26,35 +26,34 @@
 namespace rsg
 {
 
-NameAllocator::NameAllocator (void)
-	: m_nextName(1)
+NameAllocator::NameAllocator(void) : m_nextName(1)
 {
 }
 
-NameAllocator::~NameAllocator (void)
+NameAllocator::~NameAllocator(void)
 {
 }
 
-inline std::string nameNdxToStr (deUint32 name)
+inline std::string nameNdxToStr(uint32_t name)
 {
-	std::string	str			= "";
-	deUint32	alphabetLen	= 'z' - 'a' + 1;
+    std::string str      = "";
+    uint32_t alphabetLen = 'z' - 'a' + 1;
 
-	while (name > alphabetLen)
-	{
-		str.insert(str.begin(), (char)('a' + ((name-1)%alphabetLen)));
-		name = ((name-1) / alphabetLen);
-	}
+    while (name > alphabetLen)
+    {
+        str.insert(str.begin(), (char)('a' + ((name - 1) % alphabetLen)));
+        name = ((name - 1) / alphabetLen);
+    }
 
-	str.insert(str.begin(), (char)('a' + (name%(alphabetLen+1)) - 1));
+    str.insert(str.begin(), (char)('a' + (name % (alphabetLen + 1)) - 1));
 
-	return str;
+    return str;
 }
 
-std::string NameAllocator::allocate (void)
+std::string NameAllocator::allocate(void)
 {
-	DE_ASSERT(m_nextName != 0);
-	return nameNdxToStr(m_nextName++);
+    DE_ASSERT(m_nextName != 0);
+    return nameNdxToStr(m_nextName++);
 }
 
-} // rsg
+} // namespace rsg

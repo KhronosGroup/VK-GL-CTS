@@ -29,9 +29,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup* createExtensionDuplicatesTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createExtensionDuplicatesTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIEXTENSIONDUPLICATESTESTS_HPP

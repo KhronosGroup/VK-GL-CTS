@@ -35,18 +35,18 @@ namespace Functional
 class ShaderIndexingTests : public TestCaseGroup
 {
 public:
-							ShaderIndexingTests		(Context& context);
-	virtual					~ShaderIndexingTests	(void);
+    ShaderIndexingTests(Context &context);
+    virtual ~ShaderIndexingTests(void);
 
-	virtual void			init					(void);
+    virtual void init(void);
 
 private:
-							ShaderIndexingTests		(const ShaderIndexingTests&);		// not allowed!
-	ShaderIndexingTests&	operator=				(const ShaderIndexingTests&);		// not allowed!
+    ShaderIndexingTests(const ShaderIndexingTests &);            // not allowed!
+    ShaderIndexingTests &operator=(const ShaderIndexingTests &); // not allowed!
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FSHADERINDEXINGTESTS_HPP

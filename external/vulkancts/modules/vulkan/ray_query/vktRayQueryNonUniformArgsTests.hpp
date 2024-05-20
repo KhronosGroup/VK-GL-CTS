@@ -32,9 +32,9 @@ namespace vkt
 namespace RayQuery
 {
 
-tcu::TestCaseGroup*	createNonUniformArgsTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createNonUniformArgsTests(tcu::TestContext &testCtx);
 
-} // RayQuery
-} // vkt
+} // namespace RayQuery
+} // namespace vkt
 
 #endif // _VKTRAYQUERYNONUNIFORMARGSTESTS_HPP

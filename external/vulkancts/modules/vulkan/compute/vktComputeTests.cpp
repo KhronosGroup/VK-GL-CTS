@@ -45,41 +45,44 @@ using namespace vk;
 namespace
 {
 
-void createChildren (tcu::TestCaseGroup* computeTests, ComputePipelineConstructionType computePipelineConstructionType)
+void createChildren(tcu::TestCaseGroup *computeTests, ComputePipelineConstructionType computePipelineConstructionType)
 {
-	tcu::TestContext&	testCtx		= computeTests->getTestContext();
+    tcu::TestContext &testCtx = computeTests->getTestContext();
 
-	computeTests->addChild(createBasicComputeShaderTests(testCtx, computePipelineConstructionType));
-	computeTests->addChild(createBasicDeviceGroupComputeShaderTests(testCtx, computePipelineConstructionType));
+    computeTests->addChild(createBasicComputeShaderTests(testCtx, computePipelineConstructionType));
+    computeTests->addChild(createBasicDeviceGroupComputeShaderTests(testCtx, computePipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
-	computeTests->addChild(createCooperativeMatrixTests(testCtx, computePipelineConstructionType));
+    computeTests->addChild(createCooperativeMatrixTests(testCtx, computePipelineConstructionType));
 #endif
-	computeTests->addChild(createIndirectComputeDispatchTests(testCtx, computePipelineConstructionType));
-	computeTests->addChild(createComputeShaderBuiltinVarTests(testCtx, computePipelineConstructionType));
-	computeTests->addChild(createZeroInitializeWorkgroupMemoryTests(testCtx, computePipelineConstructionType));
+    computeTests->addChild(createIndirectComputeDispatchTests(testCtx, computePipelineConstructionType));
+    computeTests->addChild(createComputeShaderBuiltinVarTests(testCtx, computePipelineConstructionType));
+    computeTests->addChild(createZeroInitializeWorkgroupMemoryTests(testCtx, computePipelineConstructionType));
 #ifndef CTS_USES_VULKANSC
-	computeTests->addChild(createWorkgroupMemoryExplicitLayoutTests(testCtx, computePipelineConstructionType));
+    computeTests->addChild(createWorkgroupMemoryExplicitLayoutTests(testCtx, computePipelineConstructionType));
 #endif // CTS_USES_VULKANSC
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx, const std::string& name)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	de::MovePtr<tcu::TestCaseGroup> pipelineGroup			(createTestGroup(testCtx, "pipeline", createChildren, COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE));
+    de::MovePtr<tcu::TestCaseGroup> pipelineGroup(
+        createTestGroup(testCtx, "pipeline", createChildren, COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE));
 #ifndef CTS_USES_VULKANSC
-	de::MovePtr<tcu::TestCaseGroup> shaderObjectSpirvGroup	(createTestGroup(testCtx, "shader_object_spirv", createChildren, COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV));
-	de::MovePtr<tcu::TestCaseGroup> shaderObjectBinaryGroup	(createTestGroup(testCtx, "shader_object_binary", createChildren, COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY));
+    de::MovePtr<tcu::TestCaseGroup> shaderObjectSpirvGroup(createTestGroup(
+        testCtx, "shader_object_spirv", createChildren, COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV));
+    de::MovePtr<tcu::TestCaseGroup> shaderObjectBinaryGroup(createTestGroup(
+        testCtx, "shader_object_binary", createChildren, COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY));
 #endif
 
-	de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
-	mainGroup->addChild(pipelineGroup.release());
+    de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
+    mainGroup->addChild(pipelineGroup.release());
 #ifndef CTS_USES_VULKANSC
-	mainGroup->addChild(shaderObjectSpirvGroup.release());
-	mainGroup->addChild(shaderObjectBinaryGroup.release());
+    mainGroup->addChild(shaderObjectSpirvGroup.release());
+    mainGroup->addChild(shaderObjectBinaryGroup.release());
 #endif
-	return mainGroup.release();
+    return mainGroup.release();
 }
 
-} // compute
-} // vkt
+} // namespace compute
+} // namespace vkt

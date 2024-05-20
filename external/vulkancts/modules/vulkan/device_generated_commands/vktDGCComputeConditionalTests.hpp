@@ -30,8 +30,8 @@ namespace vkt
 {
 namespace DGC
 {
-tcu::TestCaseGroup* createDGCComputeConditionalTests (tcu::TestContext& testCtx);
-} // DGC
-} // vkt
+tcu::TestCaseGroup *createDGCComputeConditionalTests(tcu::TestContext &testCtx);
+} // namespace DGC
+} // namespace vkt
 
 #endif // _VKTDGCCOMPUTECONDITIONALTESTS_HPP

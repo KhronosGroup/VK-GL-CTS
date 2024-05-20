@@ -36,18 +36,18 @@ namespace Functional
 class TextureMipmapTests : public TestCaseGroup
 {
 public:
-							TextureMipmapTests		(Context& context);
-							~TextureMipmapTests		(void);
+    TextureMipmapTests(Context &context);
+    ~TextureMipmapTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							TextureMipmapTests		(const TextureMipmapTests& other);
-	TextureMipmapTests&		operator=				(const TextureMipmapTests& other);
+    TextureMipmapTests(const TextureMipmapTests &other);
+    TextureMipmapTests &operator=(const TextureMipmapTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FTEXTUREMIPMAPTESTS_HPP

@@ -32,16 +32,16 @@ namespace gl4cts
 class ShaderAtomicCountersTests : public deqp::TestCaseGroup
 {
 public:
-	ShaderAtomicCountersTests(deqp::Context& context);
-	~ShaderAtomicCountersTests(void);
+    ShaderAtomicCountersTests(deqp::Context &context);
+    ~ShaderAtomicCountersTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderAtomicCountersTests(const ShaderAtomicCountersTests& other);
-	ShaderAtomicCountersTests& operator=(const ShaderAtomicCountersTests& other);
+    ShaderAtomicCountersTests(const ShaderAtomicCountersTests &other);
+    ShaderAtomicCountersTests &operator=(const ShaderAtomicCountersTests &other);
 };
 
-} // gl4cts
+} // namespace gl4cts
 
 #endif // _GL4CSHADERATOMICCOUNTERSTESTS_HPP

@@ -32,19 +32,23 @@ class ConstPixelBufferAccess;
 class PixelBufferAccess;
 class Surface;
 
-} // tcu
+} // namespace tcu
 
 namespace glu
 {
 
 class RenderContext;
 
-void	readPixels		(const RenderContext& context, int x, int y, const tcu::PixelBufferAccess& dst);
-void	texImage2D		(const RenderContext& context, deUint32 target, int level, deUint32 internalFormat, const tcu::ConstPixelBufferAccess& src);
-void	texImage3D		(const RenderContext& context, deUint32 target, int level, deUint32 internalFormat, const tcu::ConstPixelBufferAccess& src);
-void	texSubImage2D	(const RenderContext& context, deUint32 target, int level, int x, int y, const tcu::ConstPixelBufferAccess& src);
-void	texSubImage3D	(const RenderContext& context, deUint32 target, int level, int x, int y, int z, const tcu::ConstPixelBufferAccess& src);
+void readPixels(const RenderContext &context, int x, int y, const tcu::PixelBufferAccess &dst);
+void texImage2D(const RenderContext &context, uint32_t target, int level, uint32_t internalFormat,
+                const tcu::ConstPixelBufferAccess &src);
+void texImage3D(const RenderContext &context, uint32_t target, int level, uint32_t internalFormat,
+                const tcu::ConstPixelBufferAccess &src);
+void texSubImage2D(const RenderContext &context, uint32_t target, int level, int x, int y,
+                   const tcu::ConstPixelBufferAccess &src);
+void texSubImage3D(const RenderContext &context, uint32_t target, int level, int x, int y, int z,
+                   const tcu::ConstPixelBufferAccess &src);
 
-} // glu
+} // namespace glu
 
 #endif // _GLUPIXELTRANSFER_HPP

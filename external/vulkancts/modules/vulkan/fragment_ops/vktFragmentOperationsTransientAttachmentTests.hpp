@@ -32,9 +32,9 @@ namespace vkt
 namespace FragmentOperations
 {
 
-tcu::TestCaseGroup*		createTransientAttachmentTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTransientAttachmentTests(tcu::TestContext &testCtx);
 
-} // FragmentOperations
-} // vkt
+} // namespace FragmentOperations
+} // namespace vkt
 
 #endif // _VKTFRAGMENTOPERATIONSTRANSIENTATTACHMENTTESTS_HPP

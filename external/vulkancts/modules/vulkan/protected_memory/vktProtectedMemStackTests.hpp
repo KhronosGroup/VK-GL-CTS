@@ -34,9 +34,9 @@ namespace vkt
 namespace ProtectedMem
 {
 
-tcu::TestCaseGroup*		createStackTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createStackTests(tcu::TestContext &testCtx);
 
-} // ProtectedMem
-} // vkt
+} // namespace ProtectedMem
+} // namespace vkt
 
 #endif // _VKTPROTECTEDMEMSTACKTESTS_HPP

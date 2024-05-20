@@ -32,11 +32,12 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup*		createBasicBinarySemaphoreTests		(tcu::TestContext& testCtx, SynchronizationType type, VideoCodecOperationFlags videoCodecOperationFlags = 0);
-tcu::TestCaseGroup*		createBasicTimelineSemaphoreTests	(tcu::TestContext& testCtx, SynchronizationType type, VideoCodecOperationFlags videoCodecOperationFlags = 0);
+tcu::TestCaseGroup *createBasicBinarySemaphoreTests(tcu::TestContext &testCtx, SynchronizationType type,
+                                                    VideoCodecOperationFlags videoCodecOperationFlags = 0);
+tcu::TestCaseGroup *createBasicTimelineSemaphoreTests(tcu::TestContext &testCtx, SynchronizationType type,
+                                                      VideoCodecOperationFlags videoCodecOperationFlags = 0);
 
-} //synchronization
-} // vkt
-
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONBASICSEMAPHORETESTS_HPP

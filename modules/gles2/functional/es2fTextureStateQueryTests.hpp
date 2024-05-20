@@ -38,27 +38,27 @@ namespace TextureParamVerifiers
 class GetTexParameterIVerifier;
 class GetTexParameterFVerifier;
 
-} // TextureParamVerifiers
+} // namespace TextureParamVerifiers
 
 class TextureStateQueryTests : public TestCaseGroup
 {
 public:
-																TextureStateQueryTests	(Context& context);
-																~TextureStateQueryTests	(void);
+    TextureStateQueryTests(Context &context);
+    ~TextureStateQueryTests(void);
 
-	void														init					(void);
-	void														deinit					(void);
+    void init(void);
+    void deinit(void);
 
 private:
-																TextureStateQueryTests	(const TextureStateQueryTests& other);
-	TextureStateQueryTests&										operator=				(const TextureStateQueryTests& other);
+    TextureStateQueryTests(const TextureStateQueryTests &other);
+    TextureStateQueryTests &operator=(const TextureStateQueryTests &other);
 
-	TextureParamVerifiers::GetTexParameterIVerifier*			m_verifierInt;
-	TextureParamVerifiers::GetTexParameterFVerifier*			m_verifierFloat;
+    TextureParamVerifiers::GetTexParameterIVerifier *m_verifierInt;
+    TextureParamVerifiers::GetTexParameterFVerifier *m_verifierFloat;
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FTEXTURESTATEQUERYTESTS_HPP

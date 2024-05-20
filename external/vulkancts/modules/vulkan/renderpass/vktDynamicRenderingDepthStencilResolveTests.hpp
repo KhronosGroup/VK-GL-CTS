@@ -33,9 +33,10 @@ namespace vkt
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createDynamicRenderingDepthStencilResolveTests(tcu::TestContext& testCtx, const SharedGroupParams groupParams);
+tcu::TestCaseGroup *createDynamicRenderingDepthStencilResolveTests(tcu::TestContext &testCtx,
+                                                                   const SharedGroupParams groupParams);
 
-} // renderpass
-} // vkt
+} // namespace renderpass
+} // namespace vkt
 
 #endif // _VKTDYNAMICRENDERINGDEPTHSTENCILRESOLVETESTS_HPP

@@ -36,18 +36,18 @@ namespace Functional
 class UniformApiTests : public TestCaseGroup
 {
 public:
-							UniformApiTests		(Context& context);
-							~UniformApiTests	(void);
+    UniformApiTests(Context &context);
+    ~UniformApiTests(void);
 
-	void					init				(void);
+    void init(void);
 
 private:
-							UniformApiTests		(const UniformApiTests& other);
-	UniformApiTests&		operator=			(const UniformApiTests& other);
+    UniformApiTests(const UniformApiTests &other);
+    UniformApiTests &operator=(const UniformApiTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FUNIFORMAPITESTS_HPP

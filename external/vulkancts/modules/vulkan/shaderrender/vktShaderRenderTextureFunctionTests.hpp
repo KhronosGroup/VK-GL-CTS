@@ -33,9 +33,9 @@ namespace vkt
 namespace sr
 {
 
-tcu::TestCaseGroup*	createTextureFunctionTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createTextureFunctionTests(tcu::TestContext &testCtx);
 
-} // sr
-} // vkt
+} // namespace sr
+} // namespace vkt
 
 #endif // _VKTSHADERRENDERTEXTUREFUNCTIONTESTS_HPP

@@ -31,15 +31,15 @@ namespace glcts
 class FramebufferNoAttachmentsTests : public glcts::TestCaseGroup
 {
 public:
-	FramebufferNoAttachmentsTests(glcts::Context& context);
-	~FramebufferNoAttachmentsTests();
+    FramebufferNoAttachmentsTests(glcts::Context &context);
+    ~FramebufferNoAttachmentsTests();
 
-	void init(void);
+    void init(void);
 
 private:
-	FramebufferNoAttachmentsTests(const FramebufferNoAttachmentsTests&);
-	FramebufferNoAttachmentsTests& operator=(const FramebufferNoAttachmentsTests&);
+    FramebufferNoAttachmentsTests(const FramebufferNoAttachmentsTests &);
+    FramebufferNoAttachmentsTests &operator=(const FramebufferNoAttachmentsTests &);
 };
-}
+} // namespace glcts
 
 #endif // _ES31CFRAMEBUFFERNOATTACHMENTSTESTS_HPP

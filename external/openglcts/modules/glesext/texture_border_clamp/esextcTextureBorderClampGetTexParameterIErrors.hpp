@@ -52,31 +52,31 @@ namespace glcts
 class TextureBorderClampGetTexParameterIErrorsTest : public TextureBorderClampBase
 {
 public:
-	/* Public methods */
-	TextureBorderClampGetTexParameterIErrorsTest(Context& context, const ExtParameters& extParams, const char* name,
-												 const char* description);
+    /* Public methods */
+    TextureBorderClampGetTexParameterIErrorsTest(Context &context, const ExtParameters &extParams, const char *name,
+                                                 const char *description);
 
-	virtual ~TextureBorderClampGetTexParameterIErrorsTest()
-	{
-	}
+    virtual ~TextureBorderClampGetTexParameterIErrorsTest()
+    {
+    }
 
-	virtual IterateResult iterate(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	virtual void initTest(void);
+    /* Private methods */
+    virtual void initTest(void);
 
-	void CheckAllNames(glw::GLenum target, glw::GLenum expected_error);
-	void VerifyGLGetTexParameterIiv(glw::GLenum target, glw::GLenum pname, glw::GLenum expected_error);
-	void VerifyGLGetTexParameterIuiv(glw::GLenum target, glw::GLenum pname, glw::GLenum expected_error);
+    void CheckAllNames(glw::GLenum target, glw::GLenum expected_error);
+    void VerifyGLGetTexParameterIiv(glw::GLenum target, glw::GLenum pname, glw::GLenum expected_error);
+    void VerifyGLGetTexParameterIuiv(glw::GLenum target, glw::GLenum pname, glw::GLenum expected_error);
 
-	/* Private variables */
-	glw::GLboolean m_test_passed;
+    /* Private variables */
+    glw::GLboolean m_test_passed;
 
-	/* Private static variables */
-	static const glw::GLuint m_buffer_size;
+    /* Private static variables */
+    static const glw::GLuint m_buffer_size;
 
-	std::vector<glw::GLenum> m_pname_list;
+    std::vector<glw::GLenum> m_pname_list;
 };
 
 } // namespace glcts

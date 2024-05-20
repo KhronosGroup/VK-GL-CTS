@@ -34,23 +34,23 @@ namespace glcts
 class ShaderBitfieldOperationTests : public glcts::TestCaseGroup
 {
 public:
-	ShaderBitfieldOperationTests(glcts::Context& context, glu::GLSLVersion glslVersion);
-	~ShaderBitfieldOperationTests(void);
+    ShaderBitfieldOperationTests(glcts::Context &context, glu::GLSLVersion glslVersion);
+    ~ShaderBitfieldOperationTests(void);
 
-	void init(void);
+    void init(void);
 
 private:
-	ShaderBitfieldOperationTests(const ShaderBitfieldOperationTests& other);
-	ShaderBitfieldOperationTests& operator=(const ShaderBitfieldOperationTests& other);
+    ShaderBitfieldOperationTests(const ShaderBitfieldOperationTests &other);
+    ShaderBitfieldOperationTests &operator=(const ShaderBitfieldOperationTests &other);
 
-	glu::GLSLVersion m_glslVersion;
+    glu::GLSLVersion m_glslVersion;
 
-	enum
-	{
-		ITERATIONS = 4
-	};
+    enum
+    {
+        ITERATIONS = 4
+    };
 };
 
-} // glcts
+} // namespace glcts
 
 #endif // _ES31CSHADERBITFIELDOPERATIONTESTS_HPP

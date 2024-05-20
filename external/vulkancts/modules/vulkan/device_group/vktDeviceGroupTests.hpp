@@ -31,8 +31,8 @@ namespace vkt
 {
 namespace DeviceGroup
 {
-tcu::TestCaseGroup*		createTests (tcu::TestContext& testCtx, const std::string& name);
-} // DeviceGroup
-} // vkt
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name);
+} // namespace DeviceGroup
+} // namespace vkt
 
 #endif // _VKTDEVICEGROUPTESTS_HPP

@@ -43,22 +43,22 @@ namespace
 using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 }
 
-tcu::TestCaseGroup*	createTests	(tcu::TestContext& testCtx, const std::string& name)
+tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
 {
-	GroupPtr mainGroup	(new tcu::TestCaseGroup(testCtx, name.c_str()));
+    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
-	mainGroup->addChild(createShaderObjectApiTests(testCtx));
-	mainGroup->addChild(createShaderObjectCreateTests(testCtx));
-	mainGroup->addChild(createShaderObjectLinkTests(testCtx));
-	mainGroup->addChild(createShaderObjectBinaryTests(testCtx));
-	mainGroup->addChild(createShaderObjectPipelineInteractionTests(testCtx));
-	mainGroup->addChild(createShaderObjectBindingTests(testCtx));
-	mainGroup->addChild(createShaderObjectPerformanceTests(testCtx));
-	mainGroup->addChild(createShaderObjectRenderingTests(testCtx));
-	mainGroup->addChild(createShaderObjectMiscTests(testCtx));
+    mainGroup->addChild(createShaderObjectApiTests(testCtx));
+    mainGroup->addChild(createShaderObjectCreateTests(testCtx));
+    mainGroup->addChild(createShaderObjectLinkTests(testCtx));
+    mainGroup->addChild(createShaderObjectBinaryTests(testCtx));
+    mainGroup->addChild(createShaderObjectPipelineInteractionTests(testCtx));
+    mainGroup->addChild(createShaderObjectBindingTests(testCtx));
+    mainGroup->addChild(createShaderObjectPerformanceTests(testCtx));
+    mainGroup->addChild(createShaderObjectRenderingTests(testCtx));
+    mainGroup->addChild(createShaderObjectMiscTests(testCtx));
 
-	return mainGroup.release();
+    return mainGroup.release();
 }
 
-} // ShaderObject
-} // vkt
+} // namespace ShaderObject
+} // namespace vkt

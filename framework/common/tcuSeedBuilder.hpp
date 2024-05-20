@@ -39,41 +39,44 @@ namespace tcu
 class SeedBuilder
 {
 public:
-				SeedBuilder	(void);
-	deUint32	get			(void) const { return m_hash; }
-	void		feed		(size_t size, const void* ptr);
+    SeedBuilder(void);
+    uint32_t get(void) const
+    {
+        return m_hash;
+    }
+    void feed(size_t size, const void *ptr);
 
 private:
-	deUint32	m_hash;
+    uint32_t m_hash;
 } DE_WARN_UNUSED_TYPE;
 
-SeedBuilder& operator<< (SeedBuilder& builder, bool value);
-SeedBuilder& operator<< (SeedBuilder& builder, deInt8 value);
-SeedBuilder& operator<< (SeedBuilder& builder, deUint8 value);
+SeedBuilder &operator<<(SeedBuilder &builder, bool value);
+SeedBuilder &operator<<(SeedBuilder &builder, int8_t value);
+SeedBuilder &operator<<(SeedBuilder &builder, uint8_t value);
 
-SeedBuilder& operator<< (SeedBuilder& builder, deInt16 value);
-SeedBuilder& operator<< (SeedBuilder& builder, deUint16 value);
+SeedBuilder &operator<<(SeedBuilder &builder, int16_t value);
+SeedBuilder &operator<<(SeedBuilder &builder, uint16_t value);
 
-SeedBuilder& operator<< (SeedBuilder& builder, deInt32 value);
-SeedBuilder& operator<< (SeedBuilder& builder, deUint32 value);
+SeedBuilder &operator<<(SeedBuilder &builder, int32_t value);
+SeedBuilder &operator<<(SeedBuilder &builder, uint32_t value);
 
-SeedBuilder& operator<< (SeedBuilder& builder, deInt64 value);
-SeedBuilder& operator<< (SeedBuilder& builder, deUint64 value);
+SeedBuilder &operator<<(SeedBuilder &builder, int64_t value);
+SeedBuilder &operator<<(SeedBuilder &builder, uint64_t value);
 
-SeedBuilder& operator<< (SeedBuilder& builder, float value);
-SeedBuilder& operator<< (SeedBuilder& builder, double value);
+SeedBuilder &operator<<(SeedBuilder &builder, float value);
+SeedBuilder &operator<<(SeedBuilder &builder, double value);
 
-SeedBuilder& operator<< (SeedBuilder& builder, const std::string& value);
+SeedBuilder &operator<<(SeedBuilder &builder, const std::string &value);
 
-template<class T, int Size>
-SeedBuilder& operator<< (SeedBuilder& builder, const tcu::Vector<T, Size>& value)
+template <class T, int Size>
+SeedBuilder &operator<<(SeedBuilder &builder, const tcu::Vector<T, Size> &value)
 {
-	for (int i = 0; i < Size; i++)
-		builder << value[i];
+    for (int i = 0; i < Size; i++)
+        builder << value[i];
 
-	return builder;
+    return builder;
 }
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUSEEDBUILDER_HPP

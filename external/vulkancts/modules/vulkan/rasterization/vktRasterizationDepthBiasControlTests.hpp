@@ -32,9 +32,9 @@ namespace vkt
 namespace rasterization
 {
 
-tcu::TestCaseGroup* createDepthBiasControlTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDepthBiasControlTests(tcu::TestContext &testCtx);
 
-} // rasterization
-} // vkt
+} // namespace rasterization
+} // namespace vkt
 
 #endif // _VKTRASTERIZATIONDEPTHBIASCONTROLTESTS_HPP

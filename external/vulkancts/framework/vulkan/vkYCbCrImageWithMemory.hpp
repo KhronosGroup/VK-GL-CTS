@@ -35,29 +35,35 @@
 namespace vk
 {
 
-typedef de::SharedPtr<Allocation>		AllocationSp;
+typedef de::SharedPtr<Allocation> AllocationSp;
 
 class YCbCrImageWithMemory
 {
 public:
-										YCbCrImageWithMemory	(const vk::DeviceInterface&		vk,
-																 const vk::VkDevice				device,
-																 vk::Allocator&					allocator,
-																 const vk::VkImageCreateInfo&	imageCreateInfo,
-																 const vk::MemoryRequirement	requirement);
-	const vk::VkImage&					get						(void) const { return *m_image;			}
-	const vk::VkImage&					operator*				(void) const { return get();			}
-	const std::vector<AllocationSp>&	getAllocations			(void) const { return m_allocations;	}
+    YCbCrImageWithMemory(const vk::DeviceInterface &vk, const vk::VkDevice device, vk::Allocator &allocator,
+                         const vk::VkImageCreateInfo &imageCreateInfo, const vk::MemoryRequirement requirement);
+    const vk::VkImage &get(void) const
+    {
+        return *m_image;
+    }
+    const vk::VkImage &operator*(void) const
+    {
+        return get();
+    }
+    const std::vector<AllocationSp> &getAllocations(void) const
+    {
+        return m_allocations;
+    }
 
 private:
-	const vk::Unique<vk::VkImage>		m_image;
-	std::vector<AllocationSp>			m_allocations;
+    const vk::Unique<vk::VkImage> m_image;
+    std::vector<AllocationSp> m_allocations;
 
-	// "deleted"
-										YCbCrImageWithMemory	(const YCbCrImageWithMemory&);
-	YCbCrImageWithMemory&				operator=				(const YCbCrImageWithMemory&);
+    // "deleted"
+    YCbCrImageWithMemory(const YCbCrImageWithMemory &);
+    YCbCrImageWithMemory &operator=(const YCbCrImageWithMemory &);
 };
 
-} // vk
+} // namespace vk
 
 #endif // _VKYCBCRIMAGEWITHMEMORY_HPP

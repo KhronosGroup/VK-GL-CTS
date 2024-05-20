@@ -28,70 +28,66 @@
 namespace tcu
 {
 
-DirArchive::DirArchive (const char* path)
-	: m_path(path)
+DirArchive::DirArchive(const char *path) : m_path(path)
 {
-	// Append leading / if necessary
-	if (m_path.length() > 0 && m_path[m_path.length()-1] != '/')
-		m_path += "/";
+    // Append leading / if necessary
+    if (m_path.length() > 0 && m_path[m_path.length() - 1] != '/')
+        m_path += "/";
 }
 
-DirArchive::~DirArchive ()
-{
-}
-
-Resource* DirArchive::getResource (const char* name) const
-{
-	return static_cast<Resource*>(new FileResource((m_path + name).c_str()));
-}
-
-FileResource::FileResource (const char* filename)
-	: Resource(std::string(filename))
-{
-	m_file = fopen(filename, "rb");
-	if (!m_file)
-		throw ResourceError("Failed to open file", filename, __FILE__, __LINE__);
-}
-
-FileResource::~FileResource ()
-{
-	fclose(m_file);
-}
-
-void FileResource::read (deUint8* dst, int numBytes)
-{
-	int numRead = (int)fread(dst, 1, numBytes, m_file);
-	TCU_CHECK(numRead == numBytes);
-}
-
-int FileResource::getSize (void) const
-{
-	long curPos = ftell(m_file);
-	fseek(m_file, 0, SEEK_END);
-	int size = (int)ftell(m_file);
-	fseek(m_file, curPos, SEEK_SET);
-	return size;
-}
-
-int FileResource::getPosition (void) const
-{
-	return (int)ftell(m_file);
-}
-
-void FileResource::setPosition (int position)
-{
-	fseek(m_file, (size_t)position, SEEK_SET);
-}
-
-ResourcePrefix::ResourcePrefix (const Archive& archive, const char* prefix)
-	: m_archive	(archive)
-	, m_prefix	(prefix)
+DirArchive::~DirArchive()
 {
 }
 
-Resource* ResourcePrefix::getResource (const char* name) const
+Resource *DirArchive::getResource(const char *name) const
 {
-	return m_archive.getResource((m_prefix + name).c_str());
+    return static_cast<Resource *>(new FileResource((m_path + name).c_str()));
 }
 
-} // tcu
+FileResource::FileResource(const char *filename) : Resource(std::string(filename))
+{
+    m_file = fopen(filename, "rb");
+    if (!m_file)
+        throw ResourceError("Failed to open file", filename, __FILE__, __LINE__);
+}
+
+FileResource::~FileResource()
+{
+    fclose(m_file);
+}
+
+void FileResource::read(uint8_t *dst, int numBytes)
+{
+    int numRead = (int)fread(dst, 1, numBytes, m_file);
+    TCU_CHECK(numRead == numBytes);
+}
+
+int FileResource::getSize(void) const
+{
+    long curPos = ftell(m_file);
+    fseek(m_file, 0, SEEK_END);
+    int size = (int)ftell(m_file);
+    fseek(m_file, curPos, SEEK_SET);
+    return size;
+}
+
+int FileResource::getPosition(void) const
+{
+    return (int)ftell(m_file);
+}
+
+void FileResource::setPosition(int position)
+{
+    fseek(m_file, (size_t)position, SEEK_SET);
+}
+
+ResourcePrefix::ResourcePrefix(const Archive &archive, const char *prefix) : m_archive(archive), m_prefix(prefix)
+{
+}
+
+Resource *ResourcePrefix::getResource(const char *name) const
+{
+    return m_archive.getResource((m_prefix + name).c_str());
+}
+
+} // namespace tcu

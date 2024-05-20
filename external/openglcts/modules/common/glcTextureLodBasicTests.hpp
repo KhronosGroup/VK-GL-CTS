@@ -37,7 +37,7 @@
 
 namespace glu
 {
-	class ShaderProgram;
+class ShaderProgram;
 }
 
 namespace glcts
@@ -47,53 +47,53 @@ namespace glcts
 class TextureLodSelectionTestCase : public deqp::TestCase
 {
 public:
-	/* Public methods */
-	TextureLodSelectionTestCase(deqp::Context& context);
+    /* Public methods */
+    TextureLodSelectionTestCase(deqp::Context &context);
 
-	void						 deinit();
-	void						 init();
-	tcu::TestNode::IterateResult iterate();
+    void deinit();
+    void init();
+    tcu::TestNode::IterateResult iterate();
 
 private:
-	/* Private methods */
-	void createLodTexture(const glw::GLenum target);
-	void releaseTexture();
-	void setBuffers(const glu::ShaderProgram& program);
-	void releaseBuffers();
+    /* Private methods */
+    void createLodTexture(const glw::GLenum target);
+    void releaseTexture();
+    void setBuffers(const glu::ShaderProgram &program);
+    void releaseBuffers();
 
-	void createSolidTexture(const glw::GLenum, const int, const int, const glw::GLubyte* const);
-	bool drawAndVerify(const glw::GLint, const float, const int, const int, const int, const float, const float,
-					   const float, const glw::GLenum, const glw::GLenum, const bool);
-	bool doComparison(const int size, const glw::GLubyte* const expectedcolor);
+    void createSolidTexture(const glw::GLenum, const int, const int, const glw::GLubyte *const);
+    bool drawAndVerify(const glw::GLint, const float, const int, const int, const int, const float, const float,
+                       const float, const glw::GLenum, const glw::GLenum, const bool);
+    bool doComparison(const int size, const glw::GLubyte *const expectedcolor);
 
-	/* Private members */
-	static const glw::GLchar* m_shader_basic_vert;
-	static const glw::GLchar* m_shader_basic_1d_frag;
-	static const glw::GLchar* m_shader_basic_2d_frag;
+    /* Private members */
+    static const glw::GLchar *m_shader_basic_vert;
+    static const glw::GLchar *m_shader_basic_1d_frag;
+    static const glw::GLchar *m_shader_basic_2d_frag;
 
-	std::map<std::string, std::string> specializationMap;
+    std::map<std::string, std::string> specializationMap;
 
-	glw::GLuint m_texture;
-	glw::GLuint m_vao;
-	glw::GLuint m_vbo;
+    glw::GLuint m_texture;
+    glw::GLuint m_vao;
+    glw::GLuint m_vbo;
 
-	bool m_isContextES;
+    bool m_isContextES;
 };
 
 /** Test group which encapsulates all conformance tests */
 class TextureLodBasicTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	TextureLodBasicTests(deqp::Context& context);
+    /* Public methods */
+    TextureLodBasicTests(deqp::Context &context);
 
-	void init();
+    void init();
 
 private:
-	TextureLodBasicTests(const TextureLodBasicTests& other);
-	TextureLodBasicTests& operator=(const TextureLodBasicTests& other);
+    TextureLodBasicTests(const TextureLodBasicTests &other);
+    TextureLodBasicTests &operator=(const TextureLodBasicTests &other);
 };
 
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _GLCTEXTURELODBASICTESTS_HPP

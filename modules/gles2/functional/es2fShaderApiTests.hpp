@@ -36,18 +36,18 @@ namespace Functional
 class ShaderApiTests : public TestCaseGroup
 {
 public:
-						ShaderApiTests		(Context& context);
-						~ShaderApiTests		(void);
+    ShaderApiTests(Context &context);
+    ~ShaderApiTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						ShaderApiTests		(const ShaderApiTests& other);
-	ShaderApiTests&		operator=			(const ShaderApiTests& other);
+    ShaderApiTests(const ShaderApiTests &other);
+    ShaderApiTests &operator=(const ShaderApiTests &other);
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FSHADERAPITESTS_HPP

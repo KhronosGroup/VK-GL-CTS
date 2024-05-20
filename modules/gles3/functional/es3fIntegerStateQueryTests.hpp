@@ -40,29 +40,29 @@ class GetIntegerVerifier;
 class GetInteger64Verifier;
 class GetFloatVerifier;
 
-} // IntegerStateQueryVerifiers
+} // namespace IntegerStateQueryVerifiers
 
 class IntegerStateQueryTests : public TestCaseGroup
 {
 public:
-																IntegerStateQueryTests	(Context& context);
-																~IntegerStateQueryTests	(void);
+    IntegerStateQueryTests(Context &context);
+    ~IntegerStateQueryTests(void);
 
-	void														init					(void);
-	void														deinit					(void);
+    void init(void);
+    void deinit(void);
 
 private:
-																IntegerStateQueryTests	(const IntegerStateQueryTests& other);
-	IntegerStateQueryTests&										operator=				(const IntegerStateQueryTests& other);
+    IntegerStateQueryTests(const IntegerStateQueryTests &other);
+    IntegerStateQueryTests &operator=(const IntegerStateQueryTests &other);
 
-	IntegerStateQueryVerifiers::GetBooleanVerifier*				m_verifierBoolean;
-	IntegerStateQueryVerifiers::GetIntegerVerifier*				m_verifierInteger;
-	IntegerStateQueryVerifiers::GetInteger64Verifier*			m_verifierInteger64;
-	IntegerStateQueryVerifiers::GetFloatVerifier*				m_verifierFloat;
+    IntegerStateQueryVerifiers::GetBooleanVerifier *m_verifierBoolean;
+    IntegerStateQueryVerifiers::GetIntegerVerifier *m_verifierInteger;
+    IntegerStateQueryVerifiers::GetInteger64Verifier *m_verifierInteger64;
+    IntegerStateQueryVerifiers::GetFloatVerifier *m_verifierFloat;
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FINTEGERSTATEQUERYTESTS_HPP

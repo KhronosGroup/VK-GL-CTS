@@ -46,37 +46,38 @@ class Platform;
 class GLFunctionLoader : public glw::FunctionLoader
 {
 public:
-										GLFunctionLoader	(const eglw::Library& egl, const tcu::FunctionLibrary* platformLibrary);
-	glw::GenericFuncType				get					(const char* name) const;
+    GLFunctionLoader(const eglw::Library &egl, const tcu::FunctionLibrary *platformLibrary);
+    glw::GenericFuncType get(const char *name) const;
 
 private:
-										GLFunctionLoader	(const GLFunctionLoader&);
-	GLFunctionLoader&					operator=			(const GLFunctionLoader&);
+    GLFunctionLoader(const GLFunctionLoader &);
+    GLFunctionLoader &operator=(const GLFunctionLoader &);
 
-	const eglw::Library&				m_egl;
-	const tcu::FunctionLibrary* const	m_library;			//!< Base platform library for functions. Used if eglGetProcAddress() fails.
+    const eglw::Library &m_egl;
+    const tcu::FunctionLibrary
+        *const m_library; //!< Base platform library for functions. Used if eglGetProcAddress() fails.
 };
 
 class GLLibraryCache
 {
 public:
-								GLLibraryCache		(const Platform& platform, const tcu::CommandLine& cmdLine);
-								~GLLibraryCache		(void);
+    GLLibraryCache(const Platform &platform, const tcu::CommandLine &cmdLine);
+    ~GLLibraryCache(void);
 
-	const tcu::FunctionLibrary*	getLibrary			(glu::ApiType apiType);
+    const tcu::FunctionLibrary *getLibrary(glu::ApiType apiType);
 
 private:
-	GLLibraryCache&				operator=			(const GLLibraryCache& other);
-								GLLibraryCache		(const GLLibraryCache& other);
+    GLLibraryCache &operator=(const GLLibraryCache &other);
+    GLLibraryCache(const GLLibraryCache &other);
 
-	typedef std::map<deUint32, tcu::FunctionLibrary*> LibraryMap;
+    typedef std::map<uint32_t, tcu::FunctionLibrary *> LibraryMap;
 
-	const Platform&				m_platform;
-	const tcu::CommandLine&		m_cmdLine;
+    const Platform &m_platform;
+    const tcu::CommandLine &m_cmdLine;
 
-	LibraryMap					m_libraries;
+    LibraryMap m_libraries;
 };
 
-} // eglu
+} // namespace eglu
 
 #endif // _EGLUGLFUNCTIONLOADER_HPP

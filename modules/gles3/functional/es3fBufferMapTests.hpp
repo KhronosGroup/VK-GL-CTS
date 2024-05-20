@@ -36,18 +36,18 @@ namespace Functional
 class BufferMapTests : public TestCaseGroup
 {
 public:
-						BufferMapTests		(Context& context);
-						~BufferMapTests		(void);
+    BufferMapTests(Context &context);
+    ~BufferMapTests(void);
 
-	void				init				(void);
+    void init(void);
 
 private:
-						BufferMapTests		(const BufferMapTests& other);
-	BufferMapTests&		operator=			(const BufferMapTests& other);
+    BufferMapTests(const BufferMapTests &other);
+    BufferMapTests &operator=(const BufferMapTests &other);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FBUFFERMAPTESTS_HPP

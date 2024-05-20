@@ -28,19 +28,19 @@
 namespace xs
 {
 
-static std::string formatError (const char* message, const char* expr, const char* file, int line)
+static std::string formatError(const char *message, const char *expr, const char *file, int line)
 {
-	std::ostringstream msg;
-	msg << (message ? message : "Runtime check failed") << ": ";
-	if (expr)
-		msg << '\'' << expr << '\'';
-	msg << " at " << file << ":" << line;
-	return msg.str();
+    std::ostringstream msg;
+    msg << (message ? message : "Runtime check failed") << ": ";
+    if (expr)
+        msg << '\'' << expr << '\'';
+    msg << " at " << file << ":" << line;
+    return msg.str();
 }
 
-Error::Error (const char* message, const char* expr, const char* file, int line)
-	: std::runtime_error(formatError(message, expr, file, line))
+Error::Error(const char *message, const char *expr, const char *file, int line)
+    : std::runtime_error(formatError(message, expr, file, line))
 {
 }
 
-} // xs
+} // namespace xs

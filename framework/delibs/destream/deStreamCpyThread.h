@@ -31,16 +31,16 @@ DE_BEGIN_EXTERN_C
 
 typedef struct deStreamCpyThread_s
 {
-	deInStream*		input;
-	deOutStream*	output;
-	deThread		thread;
-	deInt32			bufferSize;
+    deInStream *input;
+    deOutStream *output;
+    deThread thread;
+    int32_t bufferSize;
 } deStreamCpyThread;
 
-deStreamCpyThread*	deStreamCpyThread_create	(deInStream* input, deOutStream* output, deInt32 bufferSize);
-void				deStreamCpyThread_destroy	(deStreamCpyThread* thread);
+deStreamCpyThread *deStreamCpyThread_create(deInStream *input, deOutStream *output, int32_t bufferSize);
+void deStreamCpyThread_destroy(deStreamCpyThread *thread);
 
-void				deStreamCpyThread_join		(deStreamCpyThread* thread);
+void deStreamCpyThread_join(deStreamCpyThread *thread);
 
 DE_END_EXTERN_C
 
