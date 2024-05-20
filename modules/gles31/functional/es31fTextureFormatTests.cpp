@@ -81,7 +81,8 @@ SupportedExtensions checkSupport (const glu::ContextInfo& renderCtxInfoid)
 {
 	SupportedExtensions supportedExtensions;
 
-	supportedExtensions.cubeMapArray = renderCtxInfoid.isExtensionSupported("GL_EXT_texture_cube_map_array");
+	supportedExtensions.cubeMapArray = renderCtxInfoid.isExtensionSupported("GL_EXT_texture_cube_map_array") ||
+                                           renderCtxInfoid.isExtensionSupported("GL_ARB_texture_cube_map_array");
 	supportedExtensions.sRGBR8 = renderCtxInfoid.isExtensionSupported("GL_EXT_texture_sRGB_R8");
 	supportedExtensions.sRGBRG8 = renderCtxInfoid.isExtensionSupported("GL_EXT_texture_sRGB_RG8");
 

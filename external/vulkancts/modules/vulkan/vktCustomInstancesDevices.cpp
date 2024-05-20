@@ -307,7 +307,7 @@ CustomInstance createCustomInstanceWithExtensions (Context& context, const std::
 
 	// Add debug extension if validation is enabled.
 	if (validationEnabled)
-		usedExtensions.insert("VK_EXT_debug_report");
+		usedExtensions.insert("VK_EXT_debug_utils");
 
 	// Check extension support.
 	for (const auto& ext : usedExtensions)
@@ -362,14 +362,14 @@ static void addExtension(std::vector<const char*>& presentExtensions, const char
 
 vector<const char*> addDebugReportExt(const vk::PlatformInterface& vkp, const vk::VkInstanceCreateInfo& createInfo)
 {
-	if (!isDebugReportSupported(vkp))
-		TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
+	if (!isDebugUtilsSupported(vkp))
+		TCU_THROW(NotSupportedError, "VK_EXT_debug_utils is not supported");
 
 	vector<const char*> actualExtensions;
 	if (createInfo.enabledExtensionCount != 0u)
 		actualExtensions = copyExtensions(createInfo);
 
-	addExtension(actualExtensions, "VK_EXT_debug_report");
+	addExtension(actualExtensions, "VK_EXT_debug_utils");
 
 	return actualExtensions;
 }

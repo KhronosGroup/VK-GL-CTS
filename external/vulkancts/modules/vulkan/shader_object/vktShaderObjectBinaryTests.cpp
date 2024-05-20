@@ -311,7 +311,8 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate (void)
 		}
 		else if (m_params.queryType == NEW_DEVICE || m_params.queryType == DEVICE_NO_EXTS_FEATURES)
 		{
-			vk::VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures	= m_context.getShaderObjectFeaturesEXT();
+			vk::VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures	= vk::initVulkanStructure();
+			shaderObjectFeatures.shaderObject = VK_TRUE;
 			vk::VkPhysicalDeviceFeatures2				features2;
 			std::vector<const char*>					extensions;
 
@@ -353,9 +354,16 @@ tcu::TestStatus ShaderObjectBinaryQueryInstance::iterate (void)
 				DE_NULL,												// pEnabledFeatures;
 			};
 
-			vk::Move<vk::VkDevice>		otherDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, instanceDriver, physicalDevice, &deviceCreateInfo);
+			vk::Move<vk::VkDevice>		otherDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, instanceDriver, physicalDevice, &deviceCreateInfo);
 
-			vk::Move<vk::VkShaderEXT>	otherShader		= createShader(vk, binaries, *otherDevice, features2.features, layout, m_params.linked, m_params.stage);
+			const vk::Unique<vk::VkDescriptorSetLayout> otherDescriptorSetLayout(
+				vk::DescriptorSetLayoutBuilder()
+				.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
+				.build(vk, *otherDevice));
+
+			vk::VkDescriptorSetLayout	otherLayout = (m_params.stage == vk::VK_SHADER_STAGE_COMPUTE_BIT) ? *otherDescriptorSetLayout : VK_NULL_HANDLE;
+
+			vk::Move<vk::VkShaderEXT>	otherShader = createShader(vk, binaries, *otherDevice, features2.features, otherLayout, m_params.linked, m_params.stage);
 			vk.getShaderBinaryDataEXT(*otherDevice, *otherShader, &otherDataSize, DE_NULL);
 			otherData.resize(otherDataSize);
 			vk.getShaderBinaryDataEXT(*otherDevice, *otherShader, &otherDataSize, otherData.data());
@@ -981,7 +989,14 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate (void)
 
 		vk::Move<vk::VkDevice>		otherDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, instanceDriver, physicalDevice, &deviceCreateInfo);
 
-		vk::Move<vk::VkShaderEXT>	otherShader = createShader(vk, binaries, *otherDevice, features, layout, m_linked, m_stage);
+		const vk::Unique<vk::VkDescriptorSetLayout> otherDescriptorSetLayout(
+			vk::DescriptorSetLayoutBuilder()
+			.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
+			.build(vk, *otherDevice));
+
+		vk::VkDescriptorSetLayout	otherLayout = (m_stage == vk::VK_SHADER_STAGE_COMPUTE_BIT) ? *otherDescriptorSetLayout : VK_NULL_HANDLE;
+
+		vk::Move<vk::VkShaderEXT>	otherShader = createShader(vk, binaries, *otherDevice, features, otherLayout, m_linked, m_stage);
 		vk.getShaderBinaryDataEXT(*otherDevice, *otherShader, &otherDataSize, DE_NULL);
 		otherData.resize(otherDataSize);
 		vk.getShaderBinaryDataEXT(*otherDevice, *otherShader, &otherDataSize, otherData.data());

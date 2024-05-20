@@ -863,6 +863,8 @@ public:
 		m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
 	}
 
+	virtual ~WideLineVertexShader () {}
+
 	void shadeVertices (const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const
 	{
 		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
@@ -884,6 +886,8 @@ public:
 		m_inputs[0].type = rr::GENERICVECTYPE_FLOAT;
 		m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
 	}
+
+	virtual ~WideLineFragmentShader () {}
 
 	void shadeFragments (rr::FragmentPacket* packets, const int numPackets, const rr::FragmentShadingContext& context) const
 	{

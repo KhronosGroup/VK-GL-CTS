@@ -75,4 +75,18 @@ JNIEXPORT void JNICALL createGL46CTSActivity(ANativeActivity* activity, void* sa
 {
 	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::core(4, 6));
 }
+
+JNIEXPORT void JNICALL createExportES32TestParamActivity (ANativeActivity* activity, void* savedState, size_t savedStateSize)
+{
+	DE_UNREF(savedState && savedStateSize);
+	try
+	{
+		glcts::Android::GetTestParamActivity* obj = new glcts::Android::GetTestParamActivity(activity, glu::ApiType::es(3, 2));
+		DE_UNREF(obj);
+	}
+	catch (const std::exception& e)
+	{
+		tcu::die("Failed to create activity: %s", e.what());
+	}
+}
 DE_END_EXTERN_C

@@ -26,12 +26,10 @@
 
 #include "vktTestCaseUtil.hpp"
 #include "vktDrawTestCaseUtil.hpp"
-#include "../compute/vktComputeTestsUtil.hpp"
 
 #include "vktDrawBaseClass.hpp"
 
 #include "tcuTestLog.hpp"
-#include "tcuResource.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuRGBA.hpp"
@@ -93,6 +91,10 @@ enum class IndirectCountType
 	LAST
 };
 
+constexpr uint32_t kDrawCount = 2u;
+
+class MultiDrawScopedSetter;
+
 struct DrawTypedTestSpec : public TestSpecBase
 {
 	DrawTypedTestSpec(const SharedGroupParams groupParams_)
@@ -105,7 +107,15 @@ struct DrawTypedTestSpec : public TestSpecBase
 		, layerCount(1u)
 		, bindIndexBufferOffset(0ull)
 		, indexBufferAllocOffset(0ull)
+		, m_useMultiDraw(false)
 	{}
+
+	bool useMultiDraw (void) const
+	{
+		if (m_useMultiDraw)
+			DE_ASSERT(!testFirstInstanceNdx);
+		return m_useMultiDraw;
+	}
 
 	DrawType			drawType;
 	bool				testFirstInstanceNdx;
@@ -115,6 +125,38 @@ struct DrawTypedTestSpec : public TestSpecBase
 	uint32_t			layerCount;
 	vk::VkDeviceSize	bindIndexBufferOffset;
 	vk::VkDeviceSize	indexBufferAllocOffset;
+
+protected:
+	friend class MultiDrawScopedSetter;
+
+	void setMultiDraw (bool multiDraw)
+	{
+		m_useMultiDraw = multiDraw;
+	}
+
+	bool				m_useMultiDraw;
+};
+
+// We use this to enable and disable multi-draw for a few selected test cases.
+class MultiDrawScopedSetter
+{
+public:
+	MultiDrawScopedSetter (DrawTypedTestSpec& testSpec)
+		: m_testSpec  (testSpec)
+		, m_origValue (testSpec.useMultiDraw())
+	{
+		DE_ASSERT(m_origValue == false);
+		m_testSpec.setMultiDraw(true);
+	}
+
+	~MultiDrawScopedSetter()
+	{
+		m_testSpec.setMultiDraw(m_origValue);
+	}
+
+protected:
+	DrawTypedTestSpec& m_testSpec;
+	bool               m_origValue;
 };
 
 class IndirectDraw : public DrawTestsBaseClass
@@ -144,13 +186,11 @@ protected:
 	vk::VkDeviceSize					m_offsetInCountBuffer;
 	const deUint32						m_indirectCountExtDrawPadding;
 
-	deUint32							m_drawCount;
 	JunkData							m_junkData;
 
 	const DrawType						m_drawType;
 	const bool							m_testFirstInstanceNdx;
-	deBool								m_isMultiDrawEnabled;
-	deUint32							m_drawIndirectMaxCount;
+	const bool							m_useMultiDraw;
 	deBool								m_dataFromComputeShader;
 	deBool								m_useMemoryAccess;
 
@@ -389,6 +429,7 @@ IndirectDraw::IndirectDraw (Context &context, TestSpec testSpec)
 	, m_indirectCountExtDrawPadding		(1u)
 	, m_drawType						(testSpec.drawType)
 	, m_testFirstInstanceNdx			(testSpec.testFirstInstanceNdx)
+	, m_useMultiDraw					(testSpec.useMultiDraw())
 	, m_dataFromComputeShader			(testSpec.dataFromCompute)
 	, m_useMemoryAccess					(testSpec.useMemoryAccess)
 	, m_bindIndexBufferOffset			(testSpec.bindIndexBufferOffset)
@@ -430,14 +471,6 @@ IndirectDraw::IndirectDraw (Context &context, TestSpec testSpec)
 
 		vk::flushAlloc(m_vk, device, m_indexBuffer->getBoundMemory());
 	}
-
-	// Check device for multidraw support:
-	if (!m_context.getDeviceFeatures().multiDrawIndirect || m_testFirstInstanceNdx)
-		m_isMultiDrawEnabled = false;
-	else
-		m_isMultiDrawEnabled = true;
-
-	m_drawIndirectMaxCount = devProp.limits.maxDrawIndirectCount;
 }
 
 template<>
@@ -474,7 +507,7 @@ void IndirectDraw::draw (vk::VkCommandBuffer cmdBuffer)
 	if (m_drawType == DRAW_TYPE_INDEXED)
 		m_vk.cmdBindIndexBuffer(cmdBuffer, m_indexBuffer->object(), m_bindIndexBufferOffset, vk::VK_INDEX_TYPE_UINT32);
 
-	if (m_isMultiDrawEnabled && m_drawCount <= m_drawIndirectMaxCount)
+	if (m_useMultiDraw)
 	{
 		switch (m_drawType)
 		{
@@ -482,26 +515,26 @@ void IndirectDraw::draw (vk::VkCommandBuffer cmdBuffer)
 			{
 				if (m_testIndirectCountExt != IndirectCountType::NONE)
 				{
-					const deUint32 maxDrawCount = m_drawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
+					const deUint32 maxDrawCount = kDrawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
 					m_vk.cmdDrawIndirectCount(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
 											  m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
 											  m_strideInBuffer);
 				}
 				else
-					m_vk.cmdDrawIndirect(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
+					m_vk.cmdDrawIndirect(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, kDrawCount, m_strideInBuffer);
 				break;
 			}
 			case DRAW_TYPE_INDEXED:
 			{
 				if (m_testIndirectCountExt != IndirectCountType::NONE)
 				{
-					const deUint32 maxDrawCount = m_drawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
+					const deUint32 maxDrawCount = kDrawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_indirectCountExtDrawPadding : 0u);
 					m_vk.cmdDrawIndexedIndirectCount(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
 													 m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
 													 m_strideInBuffer);
 				}
 				else
-					m_vk.cmdDrawIndexedIndirect(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
+					m_vk.cmdDrawIndexedIndirect(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, kDrawCount, m_strideInBuffer);
 				break;
 			}
 			default:
@@ -510,7 +543,7 @@ void IndirectDraw::draw (vk::VkCommandBuffer cmdBuffer)
 	}
 	else
 	{
-		for (deUint32 drawNdx = 0; drawNdx < m_drawCount; drawNdx++)
+		for (deUint32 drawNdx = 0; drawNdx < kDrawCount; drawNdx++)
 		{
 			switch (m_drawType)
 			{
@@ -518,7 +551,7 @@ void IndirectDraw::draw (vk::VkCommandBuffer cmdBuffer)
 				{
 					if (m_testIndirectCountExt != IndirectCountType::NONE)
 					{
-						const deUint32 maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_drawCount + m_indirectCountExtDrawPadding : 1u);
+						const deUint32 maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? kDrawCount + m_indirectCountExtDrawPadding : 1u);
 						m_vk.cmdDrawIndirectCount(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
 												  m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
 												  m_strideInBuffer);
@@ -531,7 +564,7 @@ void IndirectDraw::draw (vk::VkCommandBuffer cmdBuffer)
 				{
 					if (m_testIndirectCountExt != IndirectCountType::NONE)
 					{
-						const deUint32 maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? m_drawCount + m_indirectCountExtDrawPadding : 1u);
+						const deUint32 maxDrawCount = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? kDrawCount + m_indirectCountExtDrawPadding : 1u);
 						m_vk.cmdDrawIndexedIndirectCount(cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
 														 m_indirectCountBuffer->object(), m_offsetInCountBuffer, maxDrawCount,
 														 m_strideInBuffer);
@@ -553,9 +586,8 @@ tcu::TestStatus IndirectDraw::iterate (void)
 	const vk::VkQueue	queue	= m_context.getUniversalQueue();
 	const vk::VkDevice	device	= m_context.getDevice();
 
-					m_drawCount			= 2;
 					m_offsetInBuffer	= sizeof(m_junkData);
-	const deUint32	m_bufferDrawCount	= 2u * m_drawCount;
+	const deUint32	m_bufferDrawCount	= 2u * kDrawCount;
 
 	if (m_drawType == DRAW_TYPE_SEQUENTIAL)
 	{
@@ -681,7 +713,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 					3u,									// indexCount
 					1u,									// instanceCount
 					5u,									// firstIndex
-					VERTEX_OFFSET,						// vertexOffset
+					VERTEX_OFFSET,						// vertexOfcffset
 					0u									// firstInstance
 				},
 				{
@@ -805,7 +837,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 	vk::flushAlloc(m_vk, m_context.getDevice(), m_indirectBuffer->getBoundMemory());
 
 	m_offsetInCountBuffer = sizeof(tcu::Vec3);
-	const vk::VkDeviceSize countBufferSize	= m_offsetInCountBuffer + sizeof(m_drawCount);
+	const vk::VkDeviceSize countBufferSize	= m_offsetInCountBuffer + sizeof(kDrawCount);
 
 	if (m_testIndirectCountExt != IndirectCountType::NONE)
 	{
@@ -818,10 +850,10 @@ tcu::TestStatus IndirectDraw::iterate (void)
 		deUint8* countBufferPtr = reinterpret_cast<deUint8*>(m_indirectCountBuffer->getBoundMemory().getHostPtr());
 
 		// For IndirectCountType::PARAM_LIMIT, the real limit will be set using the call parameter.
-		if (m_isMultiDrawEnabled && m_drawCount <= m_drawIndirectMaxCount)
-			*(deUint32*)(countBufferPtr + m_offsetInCountBuffer) = m_drawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? 0u : m_indirectCountExtDrawPadding);
+		if (m_useMultiDraw)
+			*(deUint32*)(countBufferPtr + m_offsetInCountBuffer) = kDrawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? 0u : m_indirectCountExtDrawPadding);
 		else
-			*(deUint32*)(countBufferPtr + m_offsetInCountBuffer) = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? 1u : m_drawCount + m_indirectCountExtDrawPadding);
+			*(deUint32*)(countBufferPtr + m_offsetInCountBuffer) = (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? 1u : kDrawCount + m_indirectCountExtDrawPadding);
 
 		if (m_dataFromComputeShader)
 		{
@@ -947,7 +979,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 	qpTestResult res = QP_TEST_RESULT_PASS;
 
 	if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
-		referenceFrame.getLevel(0), renderedFrame, 0.05f, tcu::COMPARE_LOG_RESULT))
+		referenceFrame.getLevel(0), renderedFrame, 0.05f, tcu::COMPARE_LOG_ON_ERROR))
 	{
 		res = QP_TEST_RESULT_FAIL;
 	}
@@ -983,9 +1015,8 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 	const vk::VkQueue	queue	= m_context.getUniversalQueue();
 	const vk::VkDevice	device	= m_context.getDevice();
 
-					m_drawCount			= 2;
 					m_offsetInBuffer	= sizeof(m_junkData);
-	const deUint32	m_bufferDrawCount	= 2u * m_drawCount;
+	const deUint32	m_bufferDrawCount	= 2u * kDrawCount;
 
 	if (m_drawType == DRAW_TYPE_SEQUENTIAL)
 	{
@@ -1237,7 +1268,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 	vk::flushAlloc(m_vk, m_context.getDevice(), m_indirectBuffer->getBoundMemory());
 
 	m_offsetInCountBuffer = sizeof(tcu::Vec3);
-	const vk::VkDeviceSize	countBufferSize	= m_offsetInCountBuffer + sizeof(m_drawCount);
+	const vk::VkDeviceSize	countBufferSize	= m_offsetInCountBuffer + sizeof(kDrawCount);
 
 	if (m_testIndirectCountExt != IndirectCountType::NONE)
 	{
@@ -1250,8 +1281,8 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 		deUint8* countBufferPtr = reinterpret_cast<deUint8*>(m_indirectCountBuffer->getBoundMemory().getHostPtr());
 
 		// For IndirectCountType::PARAM_LIMIT, the real limit will be set using the call parameter.
-		if (m_isMultiDrawEnabled && m_drawCount <= m_drawIndirectMaxCount)
-			*(deUint32*)(countBufferPtr + m_offsetInCountBuffer) = m_drawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? 0u : m_indirectCountExtDrawPadding);
+		if (m_useMultiDraw)
+			*(deUint32*)(countBufferPtr + m_offsetInCountBuffer) = kDrawCount + (m_testIndirectCountExt == IndirectCountType::BUFFER_LIMIT ? 0u : m_indirectCountExtDrawPadding);
 		else
 			*(deUint32*)(countBufferPtr + m_offsetInCountBuffer) = 1u;
 
@@ -1382,7 +1413,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 	qpTestResult res = QP_TEST_RESULT_PASS;
 
 	if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
-		referenceFrame.getLevel(0), renderedFrame, 0.05f, tcu::COMPARE_LOG_RESULT))
+		referenceFrame.getLevel(0), renderedFrame, 0.05f, tcu::COMPARE_LOG_ON_ERROR))
 	{
 		res = QP_TEST_RESULT_FAIL;
 	}
@@ -1390,10 +1421,19 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
-void checkSupport(Context& context, IndirectDraw::TestSpec testSpec)
+void checkSupport (Context& context, IndirectDraw::TestSpec testSpec)
 {
 	if (testSpec.testIndirectCountExt != IndirectCountType::NONE)
 		context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+
+	if (testSpec.useMultiDraw())
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_DRAW_INDIRECT);
+
+		const auto& properties = context.getDeviceProperties();
+		if (properties.limits.maxDrawIndirectCount < kDrawCount)
+			TCU_THROW(NotSupportedError, "maxDrawIndirectCount too low");
+	}
 
 	if (testSpec.groupParams->useDynamicRendering)
 		context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
@@ -1482,6 +1522,11 @@ void IndirectDrawTests::init (void)
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 				indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_list", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+				{
+					MultiDrawScopedSetter setter(testSpec);
+					indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+						(m_testCtx, "triangle_list_multi_draw", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+				}
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 				indirectDrawGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
@@ -1499,6 +1544,11 @@ void IndirectDrawTests::init (void)
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 				indirectDrawCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_list", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+				{
+					MultiDrawScopedSetter setter(testSpec);
+					indirectDrawCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+						(m_testCtx, "triangle_list_multi_draw", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+				}
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 				indirectDrawCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
@@ -1516,6 +1566,11 @@ void IndirectDrawTests::init (void)
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 				indirectDrawParamCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_list", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+				{
+					MultiDrawScopedSetter setter(testSpec);
+					indirectDrawParamCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+						(m_testCtx, "triangle_list_multi_draw", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+				}
 				testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 				indirectDrawParamCountGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_strip", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
@@ -1525,6 +1580,11 @@ void IndirectDrawTests::init (void)
 				testSpec.layerCount = 2u;
 				indirectDrawMultiviewGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
 					(m_testCtx, "triangle_list", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+				{
+					MultiDrawScopedSetter setter(testSpec);
+					indirectDrawMultiviewGroup->addChild(new InstanceFactory<IndirectDraw, FunctionSupport1<IndirectDraw::TestSpec> >
+						(m_testCtx, "triangle_list_multi_draw", testSpec, FunctionSupport1<IndirectDraw::TestSpec>::Args(checkSupport, testSpec)));
+				}
 			}
 			drawTypeGroup->addChild(indirectDrawGroup);
 			drawTypeGroup->addChild(indirectDrawCountGroup);
@@ -1599,6 +1659,11 @@ void IndirectDrawTests::init (void)
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 					indirectDrawNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
 						(m_testCtx, "triangle_list", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
+					{
+						MultiDrawScopedSetter setter(testSpec);
+						indirectDrawNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
+							(m_testCtx, "triangle_list_multi_draw", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
+					}
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 					indirectDrawNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
 						(m_testCtx, "triangle_strip", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
@@ -1607,6 +1672,11 @@ void IndirectDrawTests::init (void)
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 					indirectDrawCountNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
 						(m_testCtx, "triangle_list", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
+					{
+						MultiDrawScopedSetter setter(testSpec);
+						indirectDrawCountNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
+							(m_testCtx, "triangle_list_multi_draw", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
+					}
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 					indirectDrawCountNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
 						(m_testCtx, "triangle_strip", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
@@ -1615,6 +1685,11 @@ void IndirectDrawTests::init (void)
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 					indirectDrawParamCountNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
 						(m_testCtx, "triangle_list", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
+					{
+						MultiDrawScopedSetter setter(testSpec);
+						indirectDrawParamCountNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
+							(m_testCtx, "triangle_list_multi_draw", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
+					}
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 					indirectDrawParamCountNoFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceNotSupported, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec> >
 						(m_testCtx, "triangle_strip", testSpec, FunctionSupport1<IDFirstInstanceNotSupported::TestSpec>::Args(checkSupport, testSpec)));
@@ -1643,6 +1718,11 @@ void IndirectDrawTests::init (void)
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 					indirectDrawFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
 						(m_testCtx, "triangle_list", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
+					{
+						MultiDrawScopedSetter setter(testSpec);
+						indirectDrawFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
+							(m_testCtx, "triangle_list_multi_draw", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
+					}
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 					indirectDrawFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
 						(m_testCtx, "triangle_strip", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
@@ -1651,6 +1731,11 @@ void IndirectDrawTests::init (void)
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 					indirectDrawCountFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
 						(m_testCtx, "triangle_list", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
+					{
+						MultiDrawScopedSetter setter(testSpec);
+						indirectDrawCountFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
+							(m_testCtx, "triangle_list_multi_draw", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
+					}
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 					indirectDrawCountFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
 						(m_testCtx, "triangle_strip", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
@@ -1659,6 +1744,11 @@ void IndirectDrawTests::init (void)
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 					indirectDrawParamCountFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
 						(m_testCtx, "triangle_list", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
+					{
+						MultiDrawScopedSetter setter(testSpec);
+						indirectDrawParamCountFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
+							(m_testCtx, "triangle_list_multi_draw", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));
+					}
 					testSpec.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 					indirectDrawParamCountFirstInstanceGroup->addChild(new InstanceFactory<IDFirstInstanceSupported, FunctionSupport1<IDFirstInstanceSupported::TestSpec> >
 						(m_testCtx, "triangle_strip", testSpec, FunctionSupport1<IDFirstInstanceSupported::TestSpec>::Args(checkSupport, testSpec)));

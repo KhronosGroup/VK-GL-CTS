@@ -8783,6 +8783,7 @@ dEQP-VK.ray_tracing_pipeline.misc.cullmask_AABB
 dEQP-VK.ray_tracing_pipeline.misc.cullmask_AABB_extrabits
 dEQP-VK.ray_tracing_pipeline.misc.cullmask_tri
 dEQP-VK.ray_tracing_pipeline.misc.cullmask_tri_extrabits
+dEQP-VK.ray_tracing_pipeline.misc.empty_pipeline_layout
 dEQP-VK.ray_tracing_pipeline.misc.maxrayhitattributesize_1TL1BL1G
 dEQP-VK.ray_tracing_pipeline.misc.maxrayhitattributesize_1TL1BLnG
 dEQP-VK.ray_tracing_pipeline.misc.maxrayhitattributesize_1TLnBL1G

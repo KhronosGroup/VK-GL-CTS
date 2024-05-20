@@ -54,7 +54,7 @@ buildPath						= DEFAULT_BUILD_DIR.format(targetName = DEFAULT_TARGET, buildType
 
 #-------------------------------------------------- ES MUSTPASS----------------------------------------------------------------------
 
-CTS_AOSP_MP_DATA_DIR			= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gles", "aosp_mustpass")
+CTS_AOSP_MP_DATA_DIR			= os.path.join(DEQP_DIR, "external", "openglcts", "data", "gl_cts", "data", "mustpass", "gles", "aosp_mustpass")
 
 CTS_AOSP_MP_DEVICE_DIR			= "gl_cts/data/mustpass/gles/aosp_mustpass"
 
@@ -62,7 +62,7 @@ CTS_MP_INC_DIR					= os.path.join(DEQP_DIR, "external", "openglcts", "modules", 
 
 CTS_AOSP_MP_ES_PROJECT			= Project(name = "AOSP Mustpass ES", path = CTS_AOSP_MP_DATA_DIR, incpath = CTS_MP_INC_DIR, devicepath = CTS_AOSP_MP_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 
-CTS_KHR_MP_DATA_DIR				= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gles", "khronos_mustpass")
+CTS_KHR_MP_DATA_DIR				= os.path.join(DEQP_DIR, "external", "openglcts", "data", "gl_cts", "data", "mustpass", "gles", "khronos_mustpass")
 
 CTS_KHR_MP_DEVICE_DIR			= "gl_cts/data/mustpass/gles/khronos_mustpass"
 
@@ -70,17 +70,17 @@ CTS_KHR_MP_ES_PROJECT			= Project(name = "Khronos Mustpass ES", path = CTS_KHR_M
 
 CTS_AOSP_MP_EGL_DEVICE_DIR		= "gl_cts/data/mustpass/egl/aosp_mustpass"
 
-CTS_AOSP_MP_EGL_DATA_DIR		= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "egl", "aosp_mustpass")
+CTS_AOSP_MP_EGL_DATA_DIR		= os.path.join(DEQP_DIR, "external", "openglcts", "data", "gl_cts", "data", "mustpass", "egl", "aosp_mustpass")
 
 CTS_AOSP_MP_EGL_PROJECT			= Project(name = "AOSP Mustpass EGL", path = CTS_AOSP_MP_EGL_DATA_DIR, incpath = CTS_MP_INC_DIR, devicepath = CTS_AOSP_MP_EGL_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 
-CTS_KHR_MP_NOCTX_DATA_DIR		= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gles", "khronos_mustpass_noctx")
+CTS_KHR_MP_NOCTX_DATA_DIR		= os.path.join(DEQP_DIR, "external", "openglcts", "data", "gl_cts", "data", "mustpass", "gles", "khronos_mustpass_noctx")
 
 CTS_KHR_MP_NOCTX_DEVICE_DIR		= "gl_cts/data/mustpass/gles/khronos_mustpass_noctx"
 
 CTS_KHR_MP_NOCTX_ES_PROJECT		= Project(name = "Khronos Mustpass ES NoContext", path = CTS_KHR_MP_NOCTX_DATA_DIR, incpath = CTS_MP_INC_DIR, devicepath = CTS_KHR_MP_NOCTX_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 
-CTS_KHR_MP_SINGLE_DATA_DIR		= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gles", "khronos_mustpass_single")
+CTS_KHR_MP_SINGLE_DATA_DIR		= os.path.join(DEQP_DIR, "external", "openglcts", "data", "gl_cts", "data", "mustpass", "gles", "khronos_mustpass_single")
 
 CTS_KHR_MP_SINGLE_DEVICE_DIR	= "gl_cts/data/mustpass/gles/khronos_mustpass_single"
 
@@ -1070,25 +1070,25 @@ ES_BUILD_CONFIG				= BuildConfig(buildPath, "Debug", ["-DDEQP_TARGET=%s" % DEFAU
 
 GL_CTS_MP_INC_DIR					= os.path.join(DEQP_DIR, "external", "openglcts", "modules", "runner")
 
-GL_CTS_KHR_MP_DATA_DIR				= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gl", "khronos_mustpass")
+GL_CTS_KHR_MP_DATA_DIR				= os.path.join(DEQP_DIR, "external", "openglcts", "data", "gl_cts", "data", "mustpass", "gl", "khronos_mustpass")
 
 GL_CTS_KHR_MP_DEVICE_DIR			= "gl_cts/data/mustpass/gl/khronos_mustpass"
 
 GL_CTS_KHR_MP_PROJECT				= Project(name = "Khronos Mustpass GL", path = GL_CTS_KHR_MP_DATA_DIR, incpath = GL_CTS_MP_INC_DIR, devicepath = GL_CTS_KHR_MP_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 
-GL_CTS_KHR_MP_NOCTX_DATA_DIR		= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gl", "khronos_mustpass_noctx")
+GL_CTS_KHR_MP_NOCTX_DATA_DIR		= os.path.join(DEQP_DIR, "external", "openglcts", "data", "gl_cts", "data", "mustpass", "gl", "khronos_mustpass_noctx")
 
 GL_CTS_KHR_MP_NOCTX_DEVICE_DIR		= "gl_cts/data/mustpass/gl/khronos_mustpass_noctx"
 
 GL_CTS_NOCTX_PROJECT				= Project(name = "Khronos Mustpass GL NoContext", path = GL_CTS_KHR_MP_NOCTX_DATA_DIR, incpath = GL_CTS_MP_INC_DIR, devicepath = GL_CTS_KHR_MP_NOCTX_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 
-GL_CTS_KHR_MP_SINGLE_DATA_DIR		= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gl", "khronos_mustpass_single")
+GL_CTS_KHR_MP_SINGLE_DATA_DIR		= os.path.join(DEQP_DIR, "external", "openglcts", "data", "gl_cts", "data", "mustpass", "gl", "khronos_mustpass_single")
 
 GL_CTS_KHR_MP_SINGLE_DEVICE_DIR		= "gl_cts/data/mustpass/gl/khronos_mustpass_single"
 
 GL_CTS_KHR_SINGLE_PROJECT			= Project(name = "Khronos Mustpass GL Single Config", path = GL_CTS_KHR_MP_SINGLE_DATA_DIR, incpath = GL_CTS_MP_INC_DIR, devicepath = GL_CTS_KHR_MP_SINGLE_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 
-GL_CTS_KHR_MP_GLES_DATA_DIR			= os.path.join(DEQP_DIR, "external", "openglcts", "data", "mustpass", "gl", "aosp_mustpass")
+GL_CTS_KHR_MP_GLES_DATA_DIR			= os.path.join(DEQP_DIR, "external", "openglcts", "data", "gl_cts", "data", "mustpass", "gl", "aosp_mustpass")
 
 GL_CTS_KHR_MP_GLES_DEVICE_DIR		= "gl_cts/data/mustpass/gl/aosp_mustpass"
 

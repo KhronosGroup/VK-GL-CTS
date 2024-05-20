@@ -114,6 +114,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineBindVertexBuffers2Tests.hpp
 	vktPipelineInputAttributeOffsetTests.cpp
 	vktPipelineInputAttributeOffsetTests.hpp
+	vktPipelineEmptyFSTests.cpp
+	vktPipelineEmptyFSTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_SRCS

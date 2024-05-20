@@ -1361,13 +1361,41 @@ void checkSupportExtVertexAttributeDivisorKHR (Context& context)
 	context.requireDeviceFunctionality("VK_KHR_vertex_attribute_divisor");
 }
 
-tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
+tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT (Context& context)
+{
+	const VkBool32											checkAlways							= VK_TRUE;
+	const InstanceInterface&								vk									= context.getInstanceInterface();
+	const VkPhysicalDevice									physicalDevice						= context.getPhysicalDevice();
+	vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT	vertexAttributeDivisorPropertiesEXT	= vk::initVulkanStructure();
+	vk::VkPhysicalDeviceProperties2							properties2							= vk::initVulkanStructure(&vertexAttributeDivisorPropertiesEXT);
+	TestLog&												log									= context.getTestContext().getLog();
+	bool													limitsOk							= true;
+
+	vk.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),	LIM_MIN_UINT32((1<<16) - 1) },
+	};
+
+	log << TestLog::Message << vertexAttributeDivisorPropertiesEXT << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+tcu::TestStatus validateLimitsExtVertexAttributeDivisorKHR (Context& context)
 {
 	const VkBool32													checkAlways							= VK_TRUE;
 #ifndef CTS_USES_VULKANSC
 	const InstanceInterface&										vki									= context.getInstanceInterface();
 	const VkPhysicalDevice											physicalDevice						= context.getPhysicalDevice();
-	vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR	vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorProperties();
+	vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR		vertexAttributeDivisorProperties	= context.getVertexAttributeDivisorProperties();
 	vk::VkPhysicalDeviceProperties2									properties2							= vk::initVulkanStructure(&vertexAttributeDivisorProperties);
 	vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 #else
@@ -1593,9 +1621,13 @@ void checkSupportKhrLineRasterization (Context& context)
 tcu::TestStatus validateLimitsLineRasterization (Context& context)
 {
 	const VkBool32											checkAlways						= VK_TRUE;
-	const VkPhysicalDeviceLineRasterizationPropertiesKHR&	lineRasterizationProperties		= context.getLineRasterizationProperties();
+	vk::VkPhysicalDeviceLineRasterizationPropertiesKHR		lineRasterizationProperties		= context.getLineRasterizationProperties();
 	TestLog&												log								= context.getTestContext().getLog();
 	bool													limitsOk						= true;
+	vk::VkPhysicalDeviceProperties2							properties2						= vk::initVulkanStructure(&lineRasterizationProperties);
+	const InstanceInterface&								vk								= context.getInstanceInterface();
+
+	vk.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties2);
 
 	FeatureLimitTableItem featureLimitTable[] =
 	{
@@ -7044,8 +7076,8 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		// Removed from Vulkan SC test set: VK_EXT_inline_uniform_block extension removed from Vulkan SC
 		addFunctionCase(limitsValidationTests.get(), "ext_inline_uniform_block",		checkSupportExtInlineUniformBlock,			validateLimitsExtInlineUniformBlock);
 #endif // CTS_USES_VULKANSC
-		addFunctionCase(limitsValidationTests.get(), "ext_vertex_attribute_divisor",	checkSupportExtVertexAttributeDivisorEXT,	validateLimitsExtVertexAttributeDivisor);
-		addFunctionCase(limitsValidationTests.get(), "khr_vertex_attribute_divisor",	checkSupportExtVertexAttributeDivisorKHR,	validateLimitsExtVertexAttributeDivisor);
+		addFunctionCase(limitsValidationTests.get(), "ext_vertex_attribute_divisor",	checkSupportExtVertexAttributeDivisorEXT,	validateLimitsExtVertexAttributeDivisorEXT);
+		addFunctionCase(limitsValidationTests.get(), "khr_vertex_attribute_divisor",	checkSupportExtVertexAttributeDivisorKHR,	validateLimitsExtVertexAttributeDivisorKHR);
 #ifndef CTS_USES_VULKANSC
 		// Removed from Vulkan SC test set: extensions VK_NV_mesh_shader, VK_EXT_transform_feedback, VK_EXT_fragment_density_map, VK_NV_ray_tracing extension removed from Vulkan SC
 		addFunctionCase(limitsValidationTests.get(), "nv_mesh_shader",					checkSupportNvMeshShader,					validateLimitsNvMeshShader);

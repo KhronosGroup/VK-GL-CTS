@@ -41,6 +41,8 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx, const std::string& n
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
 	group->addChild(createVideoCapabilitiesTests(testCtx));
+	group->addChild(createVideoFormatsTests(testCtx));
+
 	group->addChild(createVideoDecodeTests(testCtx));
 	group->addChild(createVideoEncodeTests(testCtx));
 

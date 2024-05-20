@@ -91,6 +91,7 @@
 #include "vktSpvAsmIntegerDotProductTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktSpvAsmPhysicalStorageBufferPointerTests.hpp"
+#include "vktSpvAsmRawAccessChainTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -5728,10 +5729,8 @@ do { \
 
 				for (size_t idx = 0; idx < byteSize / sizeof(float); ++idx)
 				{
-					if (!deFloatIsNaN(output_as_float[idx]))
-					{
+					if (!std::isnan(output_as_float[idx]))
 						return false;
-					}
 				}
 
 				return true;
@@ -5757,13 +5756,48 @@ do { \
 			}
 
 // Checks that a compute shader can generate a constant composite value of various types, without exercising a computation on it.
-			tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx)
+			tcu::TestCaseGroup* createOpQuantizeToF16Group (tcu::TestContext& testCtx, bool testVec4Form)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opquantize"));
+				de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, testVec4Form ? "opquantize_vec4" : "opquantize"));
 
-				const std::string shader (
-						string(getComputeAsmShaderPreamble()) +
+				std::string shader(getComputeAsmShaderPreamble());
+				if (testVec4Form)
+				{
+					shader +=
+						"OpSource GLSL 430\n"
+						"OpName %main           \"main\"\n"
+						"OpName %id             \"gl_GlobalInvocationID\"\n"
 
+						"OpDecorate %id BuiltIn GlobalInvocationId\n"
+						"OpDecorate %fvec4_array ArrayStride 16\n"
+
+						+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
+						"%fvec4       = OpTypeVector %f32 4\n"
+						"%fvec4_array = OpTypeRuntimeArray %fvec4\n"
+						"%fvec4ptr    = OpTypePointer Uniform %fvec4\n"
+						"%buf         = OpTypeStruct %fvec4_array\n"
+						"%bufptr      = OpTypePointer Uniform %buf\n"
+						"%indata      = OpVariable %bufptr Uniform\n"
+						"%outdata     = OpVariable %bufptr Uniform\n"
+
+						"%id          = OpVariable %uvec3ptr Input\n"
+						"%zero        = OpConstant %i32 0\n"
+
+						"%main        = OpFunction %void None %voidf\n"
+						"%label       = OpLabel\n"
+						"%idval       = OpLoad %uvec3 %id\n"
+						"%x           = OpCompositeExtract %u32 %idval 0\n"
+						"%inloc       = OpAccessChain %fvec4ptr %indata %zero %x\n"
+						"%inval       = OpLoad %fvec4 %inloc\n"
+						"%quant       = OpQuantizeToF16 %fvec4 %inval\n"
+						"%outloc      = OpAccessChain %fvec4ptr %outdata %zero %x\n"
+						"               OpStore %outloc %quant\n"
+						"               OpReturn\n"
+						"               OpFunctionEnd\n";
+				}
+				else
+				{
+					shader +=
 						"OpSource GLSL 430\n"
 						"OpName %main           \"main\"\n"
 						"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -5785,11 +5819,13 @@ do { \
 						"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
 						"             OpStore %outloc %quant\n"
 						"             OpReturn\n"
-						"             OpFunctionEnd\n");
+						"             OpFunctionEnd\n";
+				}
 
 				{
 					ComputeShaderSpec	spec;
 					const deUint32		numElements		= 100;
+					const deUint32		numWorkGroups	= testVec4Form ? numElements/4 : numElements;
 					vector<float>		infinities;
 					vector<float>		results;
 
@@ -5822,7 +5858,7 @@ do { \
 					spec.assembly = shader;
 					spec.inputs.push_back(BufferSp(new Float32Buffer(infinities)));
 					spec.outputs.push_back(BufferSp(new Float32Buffer(results)));
-					spec.numWorkGroups = IVec3(numElements, 1, 1);
+					spec.numWorkGroups = IVec3(numWorkGroups, 1, 1);
 
 					group->addChild(new SpvAsmComputeShaderCase(
 							testCtx, "infinities", spec));
@@ -5832,6 +5868,7 @@ do { \
 					ComputeShaderSpec	spec;
 					vector<float>		nans;
 					const deUint32		numElements		= 100;
+					const deUint32		numWorkGroups	= testVec4Form ? numElements/4 : numElements;
 
 					nans.reserve(numElements);
 
@@ -5850,7 +5887,7 @@ do { \
 					spec.assembly = shader;
 					spec.inputs.push_back(BufferSp(new Float32Buffer(nans)));
 					spec.outputs.push_back(BufferSp(new Float32Buffer(nans)));
-					spec.numWorkGroups = IVec3(numElements, 1, 1);
+					spec.numWorkGroups = IVec3(numWorkGroups, 1, 1);
 					spec.verifyIO = &compareNan;
 
 					group->addChild(new SpvAsmComputeShaderCase(
@@ -5860,11 +5897,10 @@ do { \
 				{
 					ComputeShaderSpec	spec;
 					vector<float>		small;
-					vector<float>		zeros;
 					const deUint32		numElements		= 100;
+					const deUint32		numWorkGroups	= testVec4Form ? numElements/4 : numElements;
 
 					small.reserve(numElements);
-					zeros.reserve(numElements);
 
 					for (size_t idx = 0; idx < numElements; ++idx)
 					{
@@ -5895,7 +5931,7 @@ do { \
 					spec.inputs.push_back(BufferSp(new Float32Buffer(small)));
 					// Only the size of outputs[0] will be used, actual expected values aren't needed.
 					spec.outputs.push_back(BufferSp(new Float32Buffer(small)));
-					spec.numWorkGroups = IVec3(numElements, 1, 1);
+					spec.numWorkGroups = IVec3(numWorkGroups, 1, 1);
 					spec.verifyIO = &compareZeros;
 
 					group->addChild(new SpvAsmComputeShaderCase(
@@ -5904,8 +5940,9 @@ do { \
 
 				{
 					ComputeShaderSpec	spec;
-					vector<float>		exact;
 					const deUint32		numElements		= 200;
+					const deUint32		numWorkGroups	= testVec4Form ? numElements/4 : numElements;
+					vector<float>		exact;
 
 					exact.reserve(numElements);
 
@@ -5915,7 +5952,7 @@ do { \
 					spec.assembly = shader;
 					spec.inputs.push_back(BufferSp(new Float32Buffer(exact)));
 					spec.outputs.push_back(BufferSp(new Float32Buffer(exact)));
-					spec.numWorkGroups = IVec3(numElements, 1, 1);
+					spec.numWorkGroups = IVec3(numWorkGroups, 1, 1);
 
 					group->addChild(new SpvAsmComputeShaderCase(
 							testCtx, "exact", spec));
@@ -5923,19 +5960,20 @@ do { \
 
 				{
 					ComputeShaderSpec	spec;
-					vector<float>		inputs;
-					const deUint32		numElements		= 4;
-
-					inputs.push_back(constructNormalizedFloat(8,	0x300300));
-					inputs.push_back(-constructNormalizedFloat(-7,	0x600800));
-					inputs.push_back(constructNormalizedFloat(2,	0x01E000));
-					inputs.push_back(constructNormalizedFloat(1,	0xFFE000));
+					const deUint32		numWorkGroups	= testVec4Form ? 1 : 4;
+					vector<float>		inputs
+					{
+						 constructNormalizedFloat(8, 0x300300),
+						-constructNormalizedFloat(-7, 0x600800),
+						 constructNormalizedFloat(2, 0x01E000),
+						 constructNormalizedFloat(1, 0xFFE000)
+					};
 
 					spec.assembly = shader;
 					spec.verifyIO = &compareOpQuantizeF16ComputeExactCase;
 					spec.inputs.push_back(BufferSp(new Float32Buffer(inputs)));
 					spec.outputs.push_back(BufferSp(new Float32Buffer(inputs)));
-					spec.numWorkGroups = IVec3(numElements, 1, 1);
+					spec.numWorkGroups = IVec3(numWorkGroups, 1, 1);
 
 					group->addChild(new SpvAsmComputeShaderCase(
 							testCtx, "rounded", spec));
@@ -14397,6 +14435,8 @@ do { \
 			{
 			}
 
+			virtual ~fp16PerComponent () {}
+
 			bool			callOncePerComponent	()									{ return true; }
 			deUint32		getComponentValidity	()									{ return static_cast<deUint32>(-1); }
 
@@ -20891,7 +20931,8 @@ do { \
 			computeTests->addChild(createNoContractionGroup(testCtx));
 			computeTests->addChild(createOpUndefGroup(testCtx));
 			computeTests->addChild(createOpUnreachableGroup(testCtx));
-			computeTests->addChild(createOpQuantizeToF16Group(testCtx));
+			computeTests->addChild(createOpQuantizeToF16Group(testCtx, false));
+			computeTests->addChild(createOpQuantizeToF16Group(testCtx, true));
 			computeTests->addChild(createOpFRemGroup(testCtx));
 			computeTests->addChild(createOpSRemComputeGroup(testCtx, QP_TEST_RESULT_PASS));
 			computeTests->addChild(createOpSRemComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
@@ -20969,6 +21010,7 @@ do { \
 #endif // CTS_USES_VULKANSC
 			computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));
 			computeTests->addChild(createOpMulExtendedGroup(testCtx));
+			computeTests->addChild(createRawAccessChainGroup(testCtx));
 
 			graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 			graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));

@@ -254,7 +254,7 @@ public:
 														 const bool						hostQueryReset,
 														 const bool						transferOnlyQueue,
 														 const VkQueryResultFlags		queryResultFlags);
-								~TimestampTestParam			(void);
+	virtual						~TimestampTestParam			(void);
 	virtual const std::string	generateTestName			(void) const;
 	PipelineConstructionType	getPipelineConstructionType	(void) const	{ return m_pipelineConstructionType; }
 	StageFlagVector				getStageVector				(void) const	{ return m_stageVec; }

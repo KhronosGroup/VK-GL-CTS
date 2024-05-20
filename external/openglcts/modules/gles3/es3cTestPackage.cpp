@@ -26,11 +26,16 @@
 #include "es3cCopyTexImageConversionsTests.hpp"
 #include "es3cNumberParsingTests.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
+#include "glcClipDistance.hpp"
+#include "glcCullDistance.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcFragDepthTests.hpp"
+#include "glcFramebufferBlitTests.hpp"
+#include "glcFramebufferCompleteness.hpp"
 #include "glcGLSLVectorConstructorTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcInternalformatTests.hpp"
+#include "glcNearestEdgeTests.hpp"
 #include "glcPackedDepthStencilTests.hpp"
 #include "glcPackedPixelsTests.hpp"
 #include "glcParallelShaderCompileTests.hpp"
@@ -44,10 +49,11 @@
 #include "glcShaderNegativeTests.hpp"
 #include "glcShaderStructTests.hpp"
 #include "glcTextureFilterAnisotropicTests.hpp"
+#include "glcTextureLodBasicTests.hpp"
+#include "glcTextureLodBiasTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
-#include "glcNearestEdgeTests.hpp"
-#include "glcFramebufferCompleteness.hpp"
+#include "glcUniformBlockNegativeTests.hpp"
 #include "gluStateReset.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -152,6 +158,7 @@ public:
 		addChild(new deqp::ShaderLibraryGroup(m_context, "name_hiding", "Name Hiding Tests", "name_hiding.test"));
 		addChild(new deqp::ShaderStructTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::UniformBlockTests(m_context, glu::GLSL_VERSION_300_ES));
+		addChild(new deqp::UniformBlockNegativeTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::GLSLVectorConstructorTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderIntegerMixTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_300_ES));
@@ -190,8 +197,13 @@ void ES30TestPackage::init(void)
 		addChild(new glcts::PackedPixelsTests(getContext()));
 		addChild(new glcts::PackedDepthStencilTests(getContext()));
 		addChild(new glcts::FramebufferCompletenessTests(getContext()));
+		addChild(new glcts::TextureLodBasicTests(getContext()));
+		addChild(new glcts::ClipDistance::Tests(getContext()));
+		addChild(new glcts::CullDistance::Tests(getContext()));
 		addChild(new es3cts::CopyTexImageConversionsTests(getContext()));
 		addChild(new es3cts::NumberParsingTests(getContext()));
+		addChild(new glcts::FramebufferBlitTests(getContext()));
+		addChild(new glcts::TextureLodBiasTests(getContext()));
 	}
 	catch (...)
 	{

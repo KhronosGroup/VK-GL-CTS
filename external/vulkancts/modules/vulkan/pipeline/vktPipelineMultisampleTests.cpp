@@ -5528,9 +5528,10 @@ Expected result:
 ********/
 enum ZExportTestBits
 {
-	ZEXP_DEPTH_BIT			= 0x1,
-	ZEXP_STENCIL_BIT		= 0x2,	// Requires VK_EXT_shader_stencil_export
-	ZEXP_SAMPLE_MASK_BIT	= 0x4,
+	ZEXP_DEPTH_BIT					= 0x1,
+	ZEXP_STENCIL_BIT				= 0x2,	// Requires VK_EXT_shader_stencil_export
+	ZEXP_SAMPLE_MASK_SHADER_BIT		= 0x4,
+	ZEXP_SAMPLE_MASK_PIPELINE_BIT	= 0x8,
 };
 
 using ZExportFlags = uint32_t;
@@ -5552,9 +5553,10 @@ struct ZExportParams
 		, dynamicRendering			(dynamicRendering_)
 	{}
 
-	bool testDepth		(void) const	{ return hasFlag(ZEXP_DEPTH_BIT);		}
-	bool testStencil	(void) const	{ return hasFlag(ZEXP_STENCIL_BIT);		}
-	bool testSampleMask	(void) const	{ return hasFlag(ZEXP_SAMPLE_MASK_BIT);	}
+	bool testDepth				(void) const { return hasFlag(ZEXP_DEPTH_BIT); }
+	bool testStencil			(void) const { return hasFlag(ZEXP_STENCIL_BIT); }
+	bool testSampleMaskShader	(void) const { return hasFlag(ZEXP_SAMPLE_MASK_SHADER_BIT); }
+	bool testSampleMaskPipeline	(void) const { return hasFlag(ZEXP_SAMPLE_MASK_PIPELINE_BIT); }
 
 	static constexpr float		kClearDepth			= 1.0f;
 	static constexpr float		kExpectedDepth		= 0.0f;
@@ -5644,7 +5646,7 @@ void ZExportInitPrograms (SourceCollections& programCollection, const ZExportPar
 			<< (params.testStencil() ? ("    gl_FragStencilRefARB = " + std::to_string(ZExportParams::kExpectedStencil) + ";\n") : "")
 			;
 
-		if (params.testSampleMask())
+		if (params.testSampleMaskShader())
 			frag << "    gl_SampleMask[0] = ((int(gl_FragCoord.y) >= " << (ZExportParams::kHeight / 2u) << ") ? 0 : 0xFF);\n";
 
 		frag << "}\n";
@@ -5931,6 +5933,7 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 
 	// Multisample state, including alpha to coverage, which is key for these tests.
 	const auto staticAlphaToCoverage = (params.dynamicAlphaToCoverage ? VK_FALSE : VK_TRUE);
+	const VkSampleMask sampleMask = 0b1101;
 	const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType								sType
@@ -5939,7 +5942,7 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 		sampleCount,													// VkSampleCountFlagBits						rasterizationSamples
 		VK_FALSE,														// VkBool32										sampleShadingEnable
 		1.0f,															// float										minSampleShading
-		nullptr,														// const VkSampleMask*							pSampleMask
+		(params.testSampleMaskPipeline() ? &sampleMask : nullptr),		// const VkSampleMask*							pSampleMask
 		staticAlphaToCoverage,											// VkBool32										alphaToCoverageEnable
 		VK_FALSE,														// VkBool32										alphaToOneEnable
 	};
@@ -6006,8 +6009,16 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 	CommandPoolWithBuffer cmd (ctx.vkd, ctx.device, ctx.qfIndex);
 	const auto cmdBuffer = *cmd.cmdBuffer;
 
-	const tcu::Vec4 clearColor		(0.0f, 0.0f, 0.0f, 0.0f);
-	const tcu::Vec4 geometryColor	(0.0f, 0.0f, 1.0f, 1.0f); // For pixels with coverage. Must match frag shader.
+	const tcu::Vec4	clearColor		(0.0f, 0.0f, 0.0f, 0.0f);
+	tcu::Vec4		geometryColor	(0.0f, 0.0f, 1.0f, 1.0f); // For pixels with coverage. Must match frag shader.
+	tcu::Vec4		colorThreshold	(0.0f, 0.0f, 0.0f, 0.0f);
+
+	// cover interactions between pSampleMask and alphaToCoverageEnable
+	if (params.testSampleMaskPipeline())
+	{
+		geometryColor	= tcu::Vec4(0.0f, 0.0f, 0.75f, 0.75f);	// there are 4 samples but one is masked
+		colorThreshold	= tcu::Vec4(0.02f);
+	}
 
 	const std::vector<VkClearValue> clearValues
 	{
@@ -6053,11 +6064,10 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 	const tcu::Vec4 geometryColorNoAlpha	(geometryColor.x(), geometryColor.y(), geometryColor.z(), 0.0f); // For pixels with coverage but alpha set to 0
 
 	// allow skipping alpha to coverage if sample mask output is used
-	std::vector<bool> skipAlphaToCoverageBehaviors = (params.testSampleMask() ? std::vector<bool>({false, true}) : std::vector<bool>({false}));
+	std::vector<bool> skipAlphaToCoverageBehaviors = (params.testSampleMaskShader() ? std::vector<bool>({false, true}) : std::vector<bool>({false}));
 
 	for (bool skipAlphaToCoverage : skipAlphaToCoverageBehaviors)
 	{
-
 		// Prepare color reference.
 		{
 			auto topLeft		= tcu::getSubregion(refColorAccess, 0,			0,			halfWidth, halfHeight);
@@ -6065,10 +6075,10 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 			auto topRight		= tcu::getSubregion(refColorAccess, halfWidth,	0,			halfWidth, halfHeight);
 			auto bottomRight	= tcu::getSubregion(refColorAccess, halfWidth,	halfHeight,	halfWidth, halfHeight);
 
-			tcu::clear(topLeft,		(skipAlphaToCoverage ? geometryColorNoAlpha												: clearColor));
-			tcu::clear(bottomLeft,	(skipAlphaToCoverage ? (params.testSampleMask() ? clearColor	: geometryColorNoAlpha) : clearColor));
+			tcu::clear(topLeft,		(skipAlphaToCoverage ? geometryColorNoAlpha													: clearColor));
+			tcu::clear(bottomLeft,	(skipAlphaToCoverage ? (params.testSampleMaskShader() ? clearColor	: geometryColorNoAlpha) : clearColor));
 			tcu::clear(topRight, geometryColor);
-			tcu::clear(bottomRight, (params.testSampleMask() ? clearColor : geometryColor));
+			tcu::clear(bottomRight, (params.testSampleMaskShader() ? clearColor : geometryColor));
 		}
 		// Prepare depth reference.
 		{
@@ -6077,10 +6087,10 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 			auto topRight		= tcu::getSubregion(refDepthAccess, halfWidth,	0,			halfWidth, halfHeight);
 			auto bottomRight	= tcu::getSubregion(refDepthAccess, halfWidth,	halfHeight,	halfWidth, halfHeight);
 
-			tcu::clearDepth(topLeft,		(skipAlphaToCoverage ? ZExportParams::kExpectedDepth							: ZExportParams::kClearDepth));
-			tcu::clearDepth(bottomLeft,		(skipAlphaToCoverage ? (params.testSampleMask() ? ZExportParams::kClearDepth	: ZExportParams::kExpectedDepth) : ZExportParams::kClearDepth));
+			tcu::clearDepth(topLeft,		(skipAlphaToCoverage ? ZExportParams::kExpectedDepth								: ZExportParams::kClearDepth));
+			tcu::clearDepth(bottomLeft,		(skipAlphaToCoverage ? (params.testSampleMaskShader() ? ZExportParams::kClearDepth	: ZExportParams::kExpectedDepth) : ZExportParams::kClearDepth));
 			tcu::clearDepth(topRight,		ZExportParams::kExpectedDepth);
-			tcu::clearDepth(bottomRight,	(params.testSampleMask() ? ZExportParams::kClearDepth : ZExportParams::kExpectedDepth));
+			tcu::clearDepth(bottomRight,	(params.testSampleMaskShader() ? ZExportParams::kClearDepth : ZExportParams::kExpectedDepth));
 		}
 		// Prepare stencil reference.
 		{
@@ -6092,15 +6102,15 @@ tcu::TestStatus ZExportIterate (Context& context, const ZExportParams params)
 			auto topRight		= tcu::getSubregion(refStencilAccess, halfWidth,	0,			halfWidth, halfHeight);
 			auto bottomRight	= tcu::getSubregion(refStencilAccess, halfWidth,	halfHeight,	halfWidth, halfHeight);
 
-			tcu::clearStencil(topLeft,		(skipAlphaToCoverage ? expectedStencil							: clearStencil));
-			tcu::clearStencil(bottomLeft,	(skipAlphaToCoverage ? (params.testSampleMask() ? clearStencil	: expectedStencil) : clearStencil));
+			tcu::clearStencil(topLeft,		(skipAlphaToCoverage ? expectedStencil									: clearStencil));
+			tcu::clearStencil(bottomLeft,	(skipAlphaToCoverage ? (params.testSampleMaskShader() ? clearStencil	: expectedStencil) : clearStencil));
 			tcu::clearStencil(topRight,		expectedStencil);
-			tcu::clearStencil(bottomRight,	(params.testSampleMask() ? clearStencil : expectedStencil));
+			tcu::clearStencil(bottomRight,	(params.testSampleMaskShader() ? clearStencil : expectedStencil));
 		}
 
 		// Compare results and references.
 		auto& log = context.getTestContext().getLog();
-		const auto colorOK		= tcu::floatThresholdCompare(log, "Color", "Color Result", refColorAccess, colorAccess, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), tcu::COMPARE_LOG_ON_ERROR);
+		const auto colorOK		= tcu::floatThresholdCompare(log, "Color", "Color Result", refColorAccess, colorAccess, colorThreshold, tcu::COMPARE_LOG_ON_ERROR);
 		const auto depthOK		= tcu::dsThresholdCompare(log, "Depth", "Depth Result", refDepthAccess, depthAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR);
 		const auto stencilOK	= tcu::dsThresholdCompare(log, "Stencil", "Stencil Result", refStencilAccess, stencilAccess, 0.0f, tcu::COMPARE_LOG_ON_ERROR);
 
@@ -6765,11 +6775,12 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx, PipelineC
 				const char*			name;
 			} flagsCases[] =
 			{
-				{ (ZEXP_DEPTH_BIT),												"depth"			},
-				{ (ZEXP_STENCIL_BIT),											"stencil"		},
-				{ (ZEXP_SAMPLE_MASK_BIT),										"sample_mask"	},
-				{ (ZEXP_DEPTH_BIT | ZEXP_STENCIL_BIT),							"depth_stencil"	},
-				{ (ZEXP_DEPTH_BIT | ZEXP_STENCIL_BIT | ZEXP_SAMPLE_MASK_BIT),	"write_all"		},
+				{ (ZEXP_DEPTH_BIT),														"depth"					},
+				{ (ZEXP_STENCIL_BIT),													"stencil"				},
+				{ (ZEXP_SAMPLE_MASK_SHADER_BIT),										"sample_mask"			},
+				{ (ZEXP_SAMPLE_MASK_PIPELINE_BIT),										"sample_mask_pipeline"	},
+				{ (ZEXP_DEPTH_BIT | ZEXP_STENCIL_BIT),									"depth_stencil"			},
+				{ (ZEXP_DEPTH_BIT | ZEXP_STENCIL_BIT | ZEXP_SAMPLE_MASK_SHADER_BIT),	"write_all"				},
 			};
 
 			for (const auto& flagsCase : flagsCases)

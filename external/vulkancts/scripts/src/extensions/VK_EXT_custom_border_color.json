@@ -1,0 +1,14 @@
+{
+	"register_extension":
+	{
+		"type": "device",
+		"core": ""
+	},
+	"mandatory_features":
+	{
+		"VkPhysicalDeviceCustomBorderColorFeaturesEXT":
+		[
+			{ "features": ["customBorderColors"], "requirements": ["VK_EXT_custom_border_color"], "mandatory_variant": ["vulkan"] }
+		]
+	}
+}

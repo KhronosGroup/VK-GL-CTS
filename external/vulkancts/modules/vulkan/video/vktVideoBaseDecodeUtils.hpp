@@ -40,19 +40,20 @@
  * limitations under the License.
  */
 
-#include "vktVideoTestUtils.hpp"
-#include "vktVideoFrameBuffer.hpp"
-#include "extESExtractor.hpp"
-
-#include "deMemory.h"
-#include "vkBufferWithMemory.hpp"
-#include "vkImageWithMemory.hpp"
-
 #include <array>
 #include <bitset>
 #include <list>
 #include <queue>
 #include <vector>
+
+#include "deMemory.h"
+
+#include "vktVideoTestUtils.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
+
+#include "vktVideoFrameBuffer.hpp"
+#include "vktDemuxer.hpp"
 
 namespace vkt
 {
@@ -65,11 +66,6 @@ using namespace std;
 #define MAKEFRAMERATE(num, den) (((num) << 14) | (den))
 #define NV_FRAME_RATE_NUM(rate) ((rate) >> 14)
 #define NV_FRAME_RATE_DEN(rate) ((rate)&0x3fff)
-
-// Set this to 1 to have the decoded YCbCr frames written to the
-// filesystem in the YV12 format.
-// Check the relevant sections to change the file name and so on...
-#define FRAME_DUMP_DEBUG 0
 
 const uint64_t TIMEOUT_100ms = 100 * 1000 * 1000;
 
@@ -817,6 +813,7 @@ public:
 		DeviceContext*							context{};
 		const VkVideoCoreProfile*				profile{};
 		size_t									framesToCheck{};
+		bool									layeredDpb{};
 		bool									queryDecodeStatus{};
 		bool									useInlineQueries{};
 		bool									resourcesWithoutProfiles{};
@@ -824,6 +821,7 @@ public:
 		bool									alwaysRecreateDPB{};
 		bool									intraOnlyDecoding{};
 		size_t									pictureParameterUpdateTriggerHack{0};
+		bool									forceDisableFilmGrain{false};
 		VkSharedBaseObj<VulkanVideoFrameBuffer> framebuffer;
 	};
 	explicit VideoBaseDecoder(Parameters&& params);
@@ -928,6 +926,7 @@ public:
 	deUint32						m_dpbSlotsMask{};
 	deUint32						m_fieldPicFlagMask{};
 	DpbSlots						m_dpb;
+	bool							m_layeredDpb;
 	std::array<int8_t, MAX_FRM_CNT> m_pictureToDpbSlotMap;
 	VkFormat						m_dpbImageFormat{VK_FORMAT_UNDEFINED};
 	VkFormat						m_outImageFormat{VK_FORMAT_UNDEFINED};
@@ -970,6 +969,7 @@ public:
 		}
 	}
 
+	bool														m_forceDisableFilmGrain{false};
 	bool														m_queryResultWithStatus{false};
 	bool														m_useInlineQueries{false};
 	bool														m_resourcesWithoutProfiles{false};
@@ -1006,22 +1006,32 @@ public:
 
 using VkVideoParser = VkSharedBaseObj<VulkanVideoDecodeParser>;
 
-void createParser(VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties, VideoBaseDecoder* decoder, VkSharedBaseObj<VulkanVideoDecodeParser>& parser, bool av1AnnexB);
+// FIXME: sample app interface issues (collapse the interface into CTS eventually)
+void createParser(VkVideoCodecOperationFlagBitsKHR codecOperation,
+				  std::shared_ptr<VideoBaseDecoder> decoder,
+				  VkVideoParser& parser,
+				  ElementaryStreamFraming framing);
 
 class FrameProcessor
 {
 public:
-	FrameProcessor(const char* filename, const char* demuxerOptions, VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties, VideoBaseDecoder* decoder, tcu::TestLog& log, bool av1AnnexB);
-	FrameProcessor(ese_read_buffer_func readBufferFunc, void* data, const char *demuxerOptions, VkVideoCodecOperationFlagBitsKHR codecOperation, const VkExtensionProperties* extensionProperties, VideoBaseDecoder* decoder, tcu::TestLog& log, bool av1AnnexB);
+	FrameProcessor() { }
+	FrameProcessor(std::shared_ptr<Demuxer>&& demuxer, std::shared_ptr<VideoBaseDecoder> decoder);
+
 	void parseNextChunk();
 	int getNextFrame(DecodedFrame* pFrame);
 	void bufferFrames(int framesToDecode);
-	int getBufferedDisplayCount() const { return m_decoder->GetVideoFrameBuffer()->GetDisplayedFrameCount(); };
-private:
-	ESEDemuxer m_demuxer;
-	VkVideoParser m_parser;
-	VideoBaseDecoder* m_decoder;
-	bool m_videoStreamHasEnded{false};
+	int getBufferedDisplayCount() const {
+		return m_decoder->GetVideoFrameBuffer()->GetDisplayedFrameCount();
+	}
+	void decodeFrameOutOfOrder(int framesToCheck) {
+		bufferFrames(framesToCheck);
+		m_decoder->decodeFramesOutOfOrder();
+	}
+	std::shared_ptr<VideoBaseDecoder>	m_decoder{};
+	VkVideoParser						m_parser{};
+	std::shared_ptr<Demuxer>			m_demuxer{};
+	bool								m_eos{false};
 };
 
 } // namespace video

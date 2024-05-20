@@ -209,6 +209,7 @@ tcu::Vec4 clipVec4ToVec4 (const ClipVec4& v)
 class ClipVolumePlane
 {
 public:
+	virtual ~ClipVolumePlane () {}
 	virtual bool		pointInClipVolume			(const ClipVec4& p) const						= 0;
 	virtual ClipFloat	clipLineSegmentEnd			(const ClipVec4& v0, const ClipVec4& v1) const	= 0;
 	virtual ClipVec4	getLineIntersectionPoint	(const ClipVec4& v0, const ClipVec4& v1) const	= 0;

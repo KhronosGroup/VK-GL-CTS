@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+DEVICE_EXTENSION VK_KHR_shader_terminate_invocation
 
 # A test for a bug found by the GraphicsFuzz project.
 
@@ -202,6 +203,7 @@ SHADER fragment reference_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; Bound: 540
 ; Schema: 0
                OpCapability Shader
+               OpExtension "SPV_KHR_terminate_invocation"
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %243 %369
@@ -498,7 +500,7 @@ SHADER fragment reference_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpSelectionMerge %308 None
                OpBranchConditional %306 %307 %310
         %307 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %310 = OpLabel
         %315 = OpSLessThan %31 %248 %314
                OpSelectionMerge %317 None
@@ -544,7 +546,7 @@ SHADER fragment reference_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
         %365 = OpFAdd %157 %255 %364
                OpBranch %345
         %366 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %345 = OpLabel
         %518 = OpPhi %157 %351 %344 %365 %358
                OpBranch %331
@@ -792,6 +794,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
 ; Bound: 602
 ; Schema: 0
                OpCapability Shader
+               OpExtension "SPV_KHR_terminate_invocation"
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %243 %376
@@ -1092,7 +1095,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpSelectionMerge %308 None
                OpBranchConditional %306 %307 %310
         %307 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %310 = OpLabel
         %315 = OpSLessThan %31 %248 %314
                OpSelectionMerge %317 None
@@ -1138,7 +1141,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
         %365 = OpFAdd %157 %255 %364
                OpBranch %345
         %366 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %345 = OpLabel
         %577 = OpPhi %157 %351 %344 %365 %358
                OpBranch %331
@@ -1172,7 +1175,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM TARGET_ENV spv1.0
                OpSelectionMerge %403 None
                OpBranchConditional %372 %402 %403
         %402 = OpLabel
-               OpKill
+               OpTerminateInvocation
         %403 = OpLabel
         %406 = OpCompositeExtract %157 %566 1
         %407 = OpFAdd %157 %406 %377

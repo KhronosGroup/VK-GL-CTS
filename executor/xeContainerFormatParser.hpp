@@ -40,6 +40,10 @@ enum ContainerElement
 	CONTAINERELEMENT_END_TEST_CASE_RESULT,
 	CONTAINERELEMENT_TERMINATE_TEST_CASE_RESULT,
 	CONTAINERELEMENT_TEST_LOG_DATA,
+	CONTAINERELEMENT_TEST_RUN_PARAM_SESSION_BEGIN,
+	CONTAINERELEMENT_TEST_RUN_PARAM_SESSION_END,
+	CONTAINERELEMENT_TEST_RUN_PARAM_BEGIN,
+	CONTAINERELEMENT_TEST_RUN_PARAM_END,
 
 	CONTAINERELEMENT_LAST
 };
@@ -76,6 +80,9 @@ public:
 	// TEST_LOG_DATA
 	int							getDataSize					(void) const;
 	void						getData						(deUint8* dst, int numBytes, int offset);
+
+    // TEST_RUN_PARAM
+	const char*                 getTestRunsParams           (void) const;
 
 private:
 								ContainerFormatParser		(const ContainerFormatParser& other);

@@ -59,6 +59,7 @@ struct TestParameters
 	UVec2		renderSize;
 	bool		enableGeometry;
 	bool		enableTessellation;
+	bool        enableMultiview;
 	deUint32	randomSeed;
 };
 
@@ -426,7 +427,10 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate (void)
 
 	std::vector<VkPipeline>				pipelines		= {*m_pipelineBasic, *m_pipelineGeom, *m_pipelineTess, *m_pipelineLayer, *m_pipelineMultiview, *m_pipelineBasic};
 
-	deUint32							validPipelines	= (1 << PIPELINE_TYPE_VERTEX_FRAGMENT) | (1 << PIPELINE_TYPE_VERTEX_FRAGMENT_MULTIVIEW) | (1 << PIPELINE_TYPE_ATTACHMENT_CLEAR);
+	uint32_t validPipelines = (1 << PIPELINE_TYPE_VERTEX_FRAGMENT) | (1 << PIPELINE_TYPE_ATTACHMENT_CLEAR);
+
+	if (m_parameters.enableMultiview)
+		validPipelines |= (1 << PIPELINE_TYPE_VERTEX_FRAGMENT_MULTIVIEW);
 
 	if (m_parameters.enableGeometry)
 		validPipelines |= (1 << PIPELINE_TYPE_VERTEX_GEOM_FRAGMENT) | (1 << PIPELINE_TYPE_VERTEX_GEOM_FRAGMENT_LAYER);
@@ -868,7 +872,7 @@ void RandomTestCase::checkSupport (Context& context) const
 	if (!context.requireDeviceFunctionality("VK_KHR_dynamic_rendering"))
 		TCU_THROW(NotSupportedError, "VK_KHR_dynamic_rendering is not supported");
 
-	if (!context.requireDeviceFunctionality("VK_KHR_multiview"))
+	if (m_parameters.enableMultiview && !context.requireDeviceFunctionality("VK_KHR_multiview"))
 		TCU_THROW(NotSupportedError, "VK_KHR_multiview is not supported");
 
 	const VkPhysicalDeviceDynamicRenderingFeaturesKHR& dynamicRenderingFeatures(context.getDynamicRenderingFeatures());
@@ -1045,17 +1049,21 @@ void RandomTestCase::initPrograms (SourceCollections& programCollection) const
 	// Fragment
 	{
 		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-			<< "#extension GL_EXT_multiview : require\n"
-			<< "\n"
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n";
+		if (m_parameters.enableMultiview)
+			src	<< "#extension GL_EXT_multiview : require\n";
+		src	<< "\n"
 			<< "layout(location = 0) in vec4 vsColor;\n"
 			<< "layout(location = 0) out vec4 fsColor;\n"
 			<< "\n"
 			<< "void main (void)\n"
 			<< "{\n"
-			<< "    fsColor   = vsColor;\n"
-			<< "    fsColor.z = 0.15f * gl_ViewIndex;\n"
-			<< "}\n";
+			<< "    fsColor   = vsColor;\n";
+		if (m_parameters.enableMultiview)
+			src	<< "    fsColor.z = 0.15f * gl_ViewIndex;\n";
+		else
+			src	<< "    fsColor.z = 0.0f;\n";
+		src	<< "}\n";
 		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
 	}
 }
@@ -1067,7 +1075,7 @@ TestInstance*	RandomTestCase::createInstance (Context& context) const
 
 tcu::TestNode* addDynamicRenderingTest (tcu::TestContext& testCtx, TestParameters& parameters)
 {
-	const std::string testName = "seed" + de::toString(parameters.randomSeed) + (parameters.enableGeometry ? "_geometry" : "") + (parameters.enableTessellation ? "_tessellation" : "");
+	const std::string testName = "seed" + de::toString(parameters.randomSeed) + (parameters.enableGeometry ? "_geometry" : "") + (parameters.enableTessellation ? "_tessellation" : "") + (parameters.enableMultiview ? "_multiview" : "");
 
 	return new RandomTestCase(testCtx, testName, parameters);
 }
@@ -1082,19 +1090,23 @@ tcu::TestCaseGroup* createDynamicRenderingRandomTests(tcu::TestContext& testCtx)
 	for (auto geometry : {true, false})
 		for (auto tessellation : {true, false})
 		{
-			TestParameters parameters =
+			for (auto multiview : {true, false})
 			{
-				VK_FORMAT_R8G8B8A8_UNORM,
-				(UVec2(256, 256)),
-				geometry,
-				tessellation,
-				0u
-			};
+				TestParameters parameters =
+				{
+					VK_FORMAT_R8G8B8A8_UNORM,
+					(UVec2(256, 256)),
+					geometry,
+					tessellation,
+					multiview,
+					0u
+				};
 
-			for (deUint32 i = 0; i < 100u; i++)
-			{
-				parameters.randomSeed = i;
-				dynamicRenderingGroup->addChild(addDynamicRenderingTest(testCtx, parameters));
+				for (uint32_t i = 0; i < 100u; i++)
+				{
+					parameters.randomSeed = i;
+					dynamicRenderingGroup->addChild(addDynamicRenderingTest(testCtx, parameters));
+				}
 			}
 		}
 

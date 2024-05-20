@@ -329,8 +329,11 @@ void TextureCubeArrayFilteringCase::deinit (void)
 	m_renderer.clear();
 	m_cases.clear();
 
-	if (!isContextTypeES(m_context.getRenderContext().getType()))
+	if (!isContextTypeES(m_context.getRenderContext().getType()) &&
+		m_context.getRenderContext().getFunctions().disable)
+	{
 		m_context.getRenderContext().getFunctions().disable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+	}
 }
 
 TextureCubeArrayFilteringCase::IterateResult TextureCubeArrayFilteringCase::iterate (void)

@@ -37,6 +37,8 @@ namespace eglw
 class Library
 {
 public:
+	virtual ~Library () {}
+
 	// Entry points:
 	// virtual EGLBoolean		initialize	(EGLDisplay ...) const = 0;
 #include "eglwLibrary.inl"

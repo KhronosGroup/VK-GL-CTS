@@ -309,6 +309,7 @@ float fuzzyCompare (const FuzzyCompareParams& params, const ConstPixelBufferAcce
 
 	int			numSamples	= 0;
 	deUint64	distSum4	= 0ull;
+	deUint32	distMax2	= 0u;
 
 	// Clear error mask to green.
 	clear(errorMask, Vec4(0.0f, 1.0f, 0.0f, 1.0f));
@@ -326,6 +327,7 @@ float fuzzyCompare (const FuzzyCompareParams& params, const ConstPixelBufferAcce
 			const deUint64	newSum4				= distSum4 + minDist2*minDist2;
 
 			distSum4	 = (newSum4 >= distSum4) ? newSum4 : ~0ull; // In case of overflow
+			distMax2	 = de::max(distMax2, minDist2);
 			numSamples	+= 1;
 
 			// Build error image.
@@ -342,6 +344,11 @@ float fuzzyCompare (const FuzzyCompareParams& params, const ConstPixelBufferAcce
 		}
 	}
 
+	if (params.returnMaxError)
+	{
+		return sqrtf(float(distMax2)) / 255.0f;
+	}
+	else
 	{
 		// Scale error sum based on number of samples taken
 		const double	pSamples	= double((width-2) * (height-2)) / double(numSamples);

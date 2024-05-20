@@ -1366,6 +1366,7 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 	int						referenceFragments	= 0;
 	int						resultFragments		= 0;
 	int						lineWidth			= deFloorFloatToInt32(scene.lineWidth + 0.5f);
+	bool					lineWidthHasFrac	= deFloatFrac(scene.lineWidth) > 0;
 	std::vector<bool>		lineIsXMajor		(scene.lines.size());
 	std::vector<tcu::Vec4>	screenspaceLines(scene.lines.size());
 
@@ -1605,7 +1606,10 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 					if (fullyVisibleLine && !lineIsXMajor[currentLine-1])
 					{
 						// check width
-						if (currentWidth != lineWidth)
+						if (lineWidthHasFrac && currentWidth + 1 == lineWidth) {
+							log << tcu::TestLog::Message << "\tAllowing width of " << currentWidth << " due to fractional line width" << tcu::TestLog::EndMessage;
+						}
+						else if (currentWidth != lineWidth)
 						{
 							log << tcu::TestLog::Message << "\tInvalid line width at (" << x - currentWidth << ", " << y << ") - (" << x - 1 << ", " << y << "). Detected width of " << currentWidth << ", expected " << lineWidth << tcu::TestLog::EndMessage;
 							invalidWidthFound = true;
@@ -1690,7 +1694,11 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 					if (fullyVisibleLine && lineIsXMajor[currentLine-1])
 					{
 						// check width
-						if (currentWidth != lineWidth)
+						if (lineWidthHasFrac && currentWidth + 1 == lineWidth)
+						{
+							log << tcu::TestLog::Message << "\tAllowing width of " << currentWidth << " due to fractional line width" << tcu::TestLog::EndMessage;
+						}
+						else if (currentWidth != lineWidth)
 						{
 							log << tcu::TestLog::Message << "\tInvalid line width at (" << x << ", " << y - currentWidth << ") - (" << x  << ", " << y - 1 << "). Detected width of " << currentWidth << ", expected " << lineWidth << tcu::TestLog::EndMessage;
 							invalidWidthFound = true;

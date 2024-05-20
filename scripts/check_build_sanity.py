@@ -162,6 +162,11 @@ POST_CHECKS			= [
 	CheckSrcChanges()
 ]
 
+# Optional step to clean up external resources after finishing receipe
+POST_CLEANUP = [
+    RunScript(os.path.join("external", "fetch_sources.py"), lambda env: ["--clean"])
+]
+
 BUILD_TARGETS		= [
 	Build("clang-64-debug",
 		  UnixConfig("null",
@@ -197,7 +202,8 @@ EARLY_SPECIAL_RECIPES	= [
 			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py"), lambda env: [] + (["--verbose"] if env.verbose else [])),
 			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py"), lambda env: ["--api", "SC"] + (["--verbose"] if env.verbose else [])),
 			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py"), lambda env: ["--api", "SC"] + (["--verbose"] if env.verbose else [])),
-			RunScript(os.path.join("scripts", "gen_android_bp.py"))
+			RunScript(os.path.join("scripts", "gen_android_bp.py")),
+			RunScript(os.path.join("scripts", "gen_khronos_cts_bp.py"))
 		]),
 ]
 
@@ -214,7 +220,7 @@ LATE_SPECIAL_RECIPES	= [
 			RunScript(os.path.join("external", "vulkancts", "scripts", "build_spirv_binaries.py"),
 					  lambda env: ["--build-type", "Release",
 									"--build-dir", os.path.join(env.tmpDir, "spirv-binaries"),
-									"--dst-path", os.path.join(env.tmpDir, "spirv-binaries")]),
+									"--dst-path", os.path.join(env.tmpDir, "spirv-binaries")] + (["--verbose"] if env.verbose else [])),
 		]),
 	('amber-verify', [
 			RunScript(os.path.join("external", "vulkancts", "scripts", "amber_verify.py"),
@@ -284,6 +290,10 @@ def parseArgs ():
 						dest="skipPostCheck",
 						action="store_true",
 						help="Skip post recipe checks")
+	parser.add_argument("--apply-post-external-cleanup",
+                        dest="applyPostExternalDependencyCleanup",
+                        action="store_true",
+                        help="skip external dependency clean up")
 	parser.add_argument("-v", "--verbose",
 						dest="verbose",
 						action="store_true",
@@ -308,7 +318,7 @@ if __name__ == "__main__":
 
 		print("Running %s" % ','.join(selectedRecipes.keys()))
 		selectedSteps = list(itertools.chain.from_iterable(selectedRecipes.values()))
-		allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + selectedSteps + (POST_CHECKS if (args.skipPostCheck == False) else [])
+		allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + selectedSteps + (POST_CHECKS if (args.skipPostCheck == False) else []) + (POST_CLEANUP if (args.applyPostExternalDependencyCleanup == True) else [])
 		runSteps(allSteps)
 
 		print("All steps completed successfully")

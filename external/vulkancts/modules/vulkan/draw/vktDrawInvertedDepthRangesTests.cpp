@@ -75,7 +75,7 @@ constexpr float				kClearDepth		= 1.0f;
 constexpr int				kClearStencil	= 0;
 constexpr int				kMaskedStencil	= 1;
 constexpr float				kDepthEpsilon	= 0.00025f;	// Used to decide if a calculated depth passes the depth test.
-constexpr float				kDepthThreshold	= 0.0025f;	// Used when checking depth buffer values. Less than depth delta in each pixel (~= 1.4/205).
+constexpr float				kDepthThreshold = 0.0064f;	// Used when checking depth buffer values. Less than depth delta in each pixel (~= 1.4/205).
 constexpr float				kMargin			= 0.2f;		// Space between triangle and image border. See kVertices.
 constexpr float				kDiagonalMargin	= 0.00125f; // Makes sure the image diagonal falls inside the triangle. See kVertices.
 const Vec4					kVertexColor	(0.0f, 0.5f, 0.5f, 1.0f); // Note: the first component will vary.

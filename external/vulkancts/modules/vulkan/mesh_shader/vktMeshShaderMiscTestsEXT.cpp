@@ -2546,6 +2546,725 @@ tcu::TestStatus CustomAttributesInstance::iterate ()
 	return tcu::TestStatus::pass("Pass");
 }
 
+// Tests for clipping and verifying clipped attributes
+// Test with custom per-vertex and per-primitive attributes of different types.
+class ClipCase : public MeshShaderMiscCase
+{
+public:
+					ClipCase						(tcu::TestContext& testCtx, const std::string& name, ParamsPtr params, bool useClipPlanes, bool useProvokingVertexLast, bool useMultiview)
+						: MeshShaderMiscCase		(testCtx, name, std::move(params))
+						, m_useClipDistances		(useClipPlanes)
+						, m_useProvokingVertexLast	(useProvokingVertexLast)
+						, m_useMultiview			(useMultiview)
+					{}
+	virtual			~ClipCase					(void) {}
+
+	TestInstance*	createInstance				(Context& context) const override;
+	void			checkSupport				(Context& context) const override;
+	void			initPrograms				(vk::SourceCollections& programCollection) const override;
+private:
+	bool			m_useClipDistances;
+	bool			m_useProvokingVertexLast;
+	bool			m_useMultiview;
+};
+
+
+Move<VkRenderPass> createCustomRenderPass (const DeviceInterface& vkd, VkDevice device, VkFormat format, bool multiview)
+{
+	const VkAttachmentDescription colorAttachmentDescription =
+	{
+		0u,											// VkAttachmentDescriptionFlags    flags
+		format,										// VkFormat                        format
+		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits           samples
+		VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp              loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp             storeOp
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp              stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp             stencilStoreOp
+		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout                   initialLayout
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout                   finalLayout
+	};
+
+	const VkAttachmentReference colorAttachmentRef = makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+	const VkSubpassDescription subpassDescription =
+	{
+		0u,									// VkSubpassDescriptionFlags       flags
+		VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint             pipelineBindPoint
+		0u,									// deUint32                        inputAttachmentCount
+		nullptr,							// const VkAttachmentReference*    pInputAttachments
+		1u,									// deUint32                        colorAttachmentCount
+		&colorAttachmentRef,				// const VkAttachmentReference*    pColorAttachments
+		nullptr,							// const VkAttachmentReference*    pResolveAttachments
+		nullptr,							// const VkAttachmentReference*    pDepthStencilAttachment
+		0u,									// deUint32                        preserveAttachmentCount
+		nullptr								// const deUint32*                 pPreserveAttachments
+	};
+
+	using MultiviewInfoPtr = de::MovePtr<VkRenderPassMultiviewCreateInfo>;
+
+	MultiviewInfoPtr	multiviewCreateInfo;
+
+	const deUint32		viewMasks[] =	{ 3 };
+
+	if (multiview)
+	{
+		multiviewCreateInfo		= MultiviewInfoPtr(new VkRenderPassMultiviewCreateInfo);
+		*multiviewCreateInfo	= initVulkanStructure();
+
+		multiviewCreateInfo->subpassCount	= 1u;
+		multiviewCreateInfo->pViewMasks		= viewMasks;
+	}
+
+	const VkRenderPassCreateInfo renderPassInfo =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType                   sType
+		multiviewCreateInfo.get(),							// const void*                       pNext
+		0u,													// VkRenderPassCreateFlags           flags
+		1u,													// deUint32                          attachmentCount
+		&colorAttachmentDescription,						// const VkAttachmentDescription*    pAttachments
+		1u,													// deUint32                          subpassCount
+		&subpassDescription,								// const VkSubpassDescription*       pSubpasses
+		0u,													// deUint32                          dependencyCount
+		nullptr,											// const VkSubpassDependency*        pDependencies
+	};
+
+	return createRenderPass(vkd, device, &renderPassInfo);
+}
+
+
+class ClipInstance : public MeshShaderMiscInstance
+{
+public:
+						ClipInstance					(Context& context, const MiscTestParams* params, bool useClipPlanes, bool useProvokingVertexLast, bool useMultiview)
+							: MeshShaderMiscInstance	(context, params)
+							, m_useClipDistances		(useClipPlanes)
+							, m_useProvokingVertexLast	(useProvokingVertexLast)
+							, m_useMultiview			(useMultiview)
+						{}
+	virtual				~ClipInstance				(void) {}
+
+	void				generateReferenceLevel		() override;
+	tcu::TestStatus		iterate						(void) override;
+private:
+	const bool		m_useClipDistances;
+	const bool		m_useProvokingVertexLast;
+	const bool		m_useMultiview;
+};
+
+TestInstance* ClipCase::createInstance (Context& context) const
+{
+	return new ClipInstance(context, m_params.get(), m_useClipDistances, m_useProvokingVertexLast, m_useMultiview);
+}
+
+void ClipCase::checkSupport (Context& context) const
+{
+	MeshShaderMiscCase::checkSupport(context);
+
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_CLIP_DISTANCE);
+
+	if (m_useProvokingVertexLast)
+		context.requireDeviceFunctionality("VK_EXT_provoking_vertex");
+
+	if (m_useMultiview)
+	{
+		const auto& multiviewFeatures = context.getMultiviewFeatures();
+		if (!multiviewFeatures.multiview)
+			TCU_THROW(NotSupportedError, "Multiview not supported");
+
+		const auto& meshFeatures = context.getMeshShaderFeaturesEXT();
+		if (!meshFeatures.multiviewMeshShader)
+			TCU_THROW(NotSupportedError, "Multiview not supported for mesh shaders");
+	}
+}
+
+void ClipCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	const auto buildOptions = getMinMeshEXTBuildOptions(programCollection.usedVulkanVersion);
+
+	std::ostringstream frag;
+	frag
+		<< "#version 450\n"
+		<< "#extension GL_EXT_mesh_shader : enable\n"
+		<< "\n"
+		<< "layout (location=0) in vec4 customAttribute1;\n"
+		<< "layout (location=1) in flat float customAttribute2;\n"
+		<< "layout (location=2) in flat int customAttribute3;\n"
+		<< "\n"
+		<< "layout (location=3) in perprimitiveEXT flat uvec4 customAttribute4;\n"
+		<< "layout (location=4) in perprimitiveEXT float customAttribute5;\n"
+		<< "\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "\n"
+		<< "void main ()\n"
+		<< "{\n"
+		<< "    bool goodPrimitiveID = (gl_PrimitiveID == 1000 || gl_PrimitiveID == 1001);\n"
+		<< "    bool goodViewportIndex = (gl_ViewportIndex == 1);\n"
+		<< "    bool goodCustom1 = (customAttribute1.x >= 0.25 && customAttribute1.x <= 0.5 &&\n"
+		<< "                        customAttribute1.y >= 0.5  && customAttribute1.y <= 1.0 &&\n"
+		<< "                        customAttribute1.z >= 10.0 && customAttribute1.z <= 20.0 &&\n"
+		<< "                        customAttribute1.w == 3.0);\n";
+	if (m_useProvokingVertexLast)
+		frag
+			<< "    bool goodCustom2 = (gl_PrimitiveID == 1000 &&  customAttribute2 == 2.0)  || (gl_PrimitiveID == 1001 && customAttribute2 == 1.0);\n";
+	else
+		frag
+			<< "    bool goodCustom2 = (gl_PrimitiveID == 1000 &&  customAttribute2 == 1.0)  || (gl_PrimitiveID == 1001 && customAttribute2 == 2.0);\n";
+	frag
+		<< "    bool goodCustom3 = (customAttribute3 == 3 || customAttribute3 == 4);\n"
+		<< "    bool goodCustom4 = ((gl_PrimitiveID == 1000 && customAttribute4 == uvec4(100, 101, 102, 103)) ||\n"
+		<< "                        (gl_PrimitiveID == 1001 && customAttribute4 == uvec4(200, 201, 202, 203)));\n"
+		<< "    bool goodCustom5 = ((gl_PrimitiveID == 1000 && customAttribute5 == 6.0) ||\n"
+		<< "                        (gl_PrimitiveID == 1001 && customAttribute5 == 7.0));\n"
+		<< "    \n"
+		<< "    if (goodPrimitiveID && goodViewportIndex && goodCustom1 && goodCustom2 && goodCustom3 && goodCustom4 && goodCustom5) {\n"
+		<< "        outColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+		<< "    } else {\n"
+		<< "        outColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
+		<< "    }\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str()) << buildOptions;
+
+	std::ostringstream pvdDataDeclStream;
+	pvdDataDeclStream
+		<< "    vec4 positions[4];\n"
+		<< "    float pointSizes[4];\n";
+	if (m_useClipDistances)
+		pvdDataDeclStream
+			<< "    float clipDistances[4];\n";
+	else
+		pvdDataDeclStream
+		<< "    float unused[4];\n";
+	pvdDataDeclStream
+		<< "    vec4 custom1[4];\n"
+		<< "    float custom2[4];\n"
+		<< "    int custom3[4];\n"
+		;
+	const auto pvdDataDecl = pvdDataDeclStream.str();
+
+	std::ostringstream ppdDataDeclStream;
+	ppdDataDeclStream
+		<< "    int primitiveIds[2];\n"
+		<< "    int viewportIndices[2];\n"
+		<< "    uvec4 custom4[2];\n"
+		<< "    float custom5[2];\n"
+		;
+	const auto ppdDataDecl = ppdDataDeclStream.str();
+
+	std::ostringstream bindingsDeclStream;
+	bindingsDeclStream
+		<< "layout (set=0, binding=0, std430) buffer PerVertexData {\n"
+		<< pvdDataDecl
+		<< "} pvd;\n"
+		<< "layout (set=0, binding=1) uniform PerPrimitiveData {\n"
+		<< ppdDataDecl
+		<< "} ppd;\n"
+		<< "\n"
+		;
+	const auto bindingsDecl = bindingsDeclStream.str();
+
+	std::ostringstream taskDataStream;
+	taskDataStream
+		<< "struct TaskData {\n"
+		<< pvdDataDecl
+		<< ppdDataDecl
+		<< "};\n"
+		<< "taskPayloadSharedEXT TaskData td;\n"
+		<< "\n"
+		;
+	const auto taskDataDecl = taskDataStream.str();
+
+	const auto taskShader = m_params->needsTaskShader();
+
+	const auto meshPvdPrefix = (taskShader ? "td" : "pvd");
+	const auto meshPpdPrefix = (taskShader ? "td" : "ppd");
+
+	std::ostringstream mesh;
+	mesh
+		<< "#version 450\n"
+		<< "#extension GL_EXT_mesh_shader : enable\n"
+		<< "\n"
+		<< "layout (local_size_x=1) in;\n"
+		<< "layout (max_primitives=2, max_vertices=4) out;\n"
+		<< "layout (triangles) out;\n"
+		<< "\n"
+		<< "out gl_MeshPerVertexEXT {\n"
+		<< "    vec4  gl_Position;\n"
+		<< "    float gl_PointSize;\n";
+	if (m_useClipDistances)
+		mesh
+			<< "    float gl_ClipDistance[1];\n";
+	mesh
+		<< "} gl_MeshVerticesEXT[];\n"
+		<< "\n"
+		<< "layout (location=0) out vec4 customAttribute1[];\n"
+		<< "layout (location=1) out flat float customAttribute2[];\n"
+		<< "layout (location=2) out int customAttribute3[];\n"
+		<< "\n"
+		<< "layout (location=3) out perprimitiveEXT uvec4 customAttribute4[];\n"
+		<< "layout (location=4) out perprimitiveEXT float customAttribute5[];\n"
+		<< "\n"
+		<< "out perprimitiveEXT gl_MeshPerPrimitiveEXT {\n"
+		<< "  int gl_PrimitiveID;\n"
+		<< "  int gl_ViewportIndex;\n"
+		<< "} gl_MeshPrimitivesEXT[];\n"
+		<< "\n"
+		<< (taskShader ? taskDataDecl : bindingsDecl)
+		<< "void main ()\n"
+		<< "{\n"
+		<< "    SetMeshOutputsEXT(4u, 2u);\n"
+		<< "\n"
+		<< "    gl_MeshVerticesEXT[0].gl_Position = " << meshPvdPrefix << ".positions[0]; //vec4(-1.0, -1.0, 0.0, 1.0)\n"
+		<< "    gl_MeshVerticesEXT[1].gl_Position = " << meshPvdPrefix << ".positions[1]; //vec4( 1.0, -1.0, 0.0, 1.0)\n"
+		<< "    gl_MeshVerticesEXT[2].gl_Position = " << meshPvdPrefix << ".positions[2]; //vec4(-1.0,  1.0, 0.0, 1.0)\n"
+		<< "    gl_MeshVerticesEXT[3].gl_Position = " << meshPvdPrefix << ".positions[3]; //vec4( 1.0,  1.0, 0.0, 1.0)\n"
+		<< "\n"
+		<< "    gl_MeshVerticesEXT[0].gl_PointSize = " << meshPvdPrefix << ".pointSizes[0]; //1.0\n"
+		<< "    gl_MeshVerticesEXT[1].gl_PointSize = " << meshPvdPrefix << ".pointSizes[1]; //1.0\n"
+		<< "    gl_MeshVerticesEXT[2].gl_PointSize = " << meshPvdPrefix << ".pointSizes[2]; //1.0\n"
+		<< "    gl_MeshVerticesEXT[3].gl_PointSize = " << meshPvdPrefix << ".pointSizes[3]; //1.0\n"
+		<< "\n";
+	if (m_useClipDistances)
+		mesh
+			<< "    // Remove geometry on the right side.\n"
+			<< "    gl_MeshVerticesEXT[0].gl_ClipDistance[0] = " << meshPvdPrefix << ".clipDistances[0]; // 1.0\n"
+			<< "    gl_MeshVerticesEXT[1].gl_ClipDistance[0] = " << meshPvdPrefix << ".clipDistances[1]; //-1.0\n"
+			<< "    gl_MeshVerticesEXT[2].gl_ClipDistance[0] = " << meshPvdPrefix << ".clipDistances[2]; // 1.0\n"
+			<< "    gl_MeshVerticesEXT[3].gl_ClipDistance[0] = " << meshPvdPrefix << ".clipDistances[3]; //-1.0\n"
+			<< "    \n";
+	mesh
+		<< "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+		<< "    gl_PrimitiveTriangleIndicesEXT[1] = uvec3(2, 3, 1);\n"
+		<< "\n"
+		<< "    gl_MeshPrimitivesEXT[0].gl_PrimitiveID = " << meshPpdPrefix << ".primitiveIds[0]; //1000\n"
+		<< "    gl_MeshPrimitivesEXT[1].gl_PrimitiveID = " << meshPpdPrefix << ".primitiveIds[1]; //1001\n"
+		<< "\n"
+		<< "    gl_MeshPrimitivesEXT[0].gl_ViewportIndex = " << meshPpdPrefix << ".viewportIndices[0]; //1\n"
+		<< "    gl_MeshPrimitivesEXT[1].gl_ViewportIndex = " << meshPpdPrefix << ".viewportIndices[1]; //1\n"
+		<< "\n"
+		<< "    // Custom per-vertex attributes\n"
+		<< "    customAttribute1[0] = " << meshPvdPrefix << ".custom1[0]; //vec4(0.25, 0.5, 10.0, 3.0)\n"
+		<< "    customAttribute1[1] = " << meshPvdPrefix << ".custom1[1]; //vec4(0.25, 1.0, 20.0, 3.0)\n"
+		<< "    customAttribute1[2] = " << meshPvdPrefix << ".custom1[2]; //vec4( 0.5, 0.5, 20.0, 3.0)\n"
+		<< "    customAttribute1[3] = " << meshPvdPrefix << ".custom1[3]; //vec4( 0.5, 1.0, 10.0, 3.0)\n"
+		<< "\n"
+		<< "    customAttribute2[0] = " << meshPvdPrefix << ".custom2[0]; //1.0f\n"
+		<< "    customAttribute2[1] = " << meshPvdPrefix << ".custom2[1]; //1.0f\n"
+		<< "    customAttribute2[2] = " << meshPvdPrefix << ".custom2[2]; //2.0f\n"
+		<< "    customAttribute2[3] = " << meshPvdPrefix << ".custom2[3]; //2.0f\n"
+		<< "\n"
+		<< "    customAttribute3[0] = " << meshPvdPrefix << ".custom3[0]; //3\n"
+		<< "    customAttribute3[1] = " << meshPvdPrefix << ".custom3[1]; //3\n"
+		<< "    customAttribute3[2] = " << meshPvdPrefix << ".custom3[2]; //4\n"
+		<< "    customAttribute3[3] = " << meshPvdPrefix << ".custom3[3]; //4\n"
+		<< "\n"
+		<< "    // Custom per-primitive attributes.\n"
+		<< "    customAttribute4[0] = " << meshPpdPrefix << ".custom4[0]; //uvec4(100, 101, 102, 103)\n"
+		<< "    customAttribute4[1] = " << meshPpdPrefix << ".custom4[1]; //uvec4(200, 201, 202, 203)\n"
+		<< "\n"
+		<< "    customAttribute5[0] = " << meshPpdPrefix << ".custom5[0]; //6.0\n"
+		<< "    customAttribute5[1] = " << meshPpdPrefix << ".custom5[1]; //7.0\n"
+		<< "}\n"
+		;
+	programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+
+	if (taskShader)
+	{
+		const auto& meshCount = m_params->meshCount;
+		std::ostringstream task;
+		task
+			<< "#version 450\n"
+			<< "#extension GL_EXT_mesh_shader : enable\n"
+			<< "\n"
+			<< taskDataDecl
+			<< bindingsDecl
+			<< "void main ()\n"
+			<< "{\n"
+			<< "    td.positions[0] = pvd.positions[0];\n"
+			<< "    td.positions[1] = pvd.positions[1];\n"
+			<< "    td.positions[2] = pvd.positions[2];\n"
+			<< "    td.positions[3] = pvd.positions[3];\n"
+			<< "\n"
+			<< "    td.pointSizes[0] = pvd.pointSizes[0];\n"
+			<< "    td.pointSizes[1] = pvd.pointSizes[1];\n"
+			<< "    td.pointSizes[2] = pvd.pointSizes[2];\n"
+			<< "    td.pointSizes[3] = pvd.pointSizes[3];\n"
+			<< "\n";
+		if (m_useClipDistances)
+			task
+				<< "    td.clipDistances[0] = pvd.clipDistances[0];\n"
+				<< "    td.clipDistances[1] = pvd.clipDistances[1];\n"
+				<< "    td.clipDistances[2] = pvd.clipDistances[2];\n"
+				<< "    td.clipDistances[3] = pvd.clipDistances[3];\n"
+				<< "\n";
+		task
+			<< "    td.custom1[0] = pvd.custom1[0];\n"
+			<< "    td.custom1[1] = pvd.custom1[1];\n"
+			<< "    td.custom1[2] = pvd.custom1[2];\n"
+			<< "    td.custom1[3] = pvd.custom1[3];\n"
+			<< "\n"
+			<< "    td.custom2[0] = pvd.custom2[0];\n"
+			<< "    td.custom2[1] = pvd.custom2[1];\n"
+			<< "    td.custom2[2] = pvd.custom2[2];\n"
+			<< "    td.custom2[3] = pvd.custom2[3];\n"
+			<< "\n"
+			<< "    td.custom3[0] = pvd.custom3[0];\n"
+			<< "    td.custom3[1] = pvd.custom3[1];\n"
+			<< "    td.custom3[2] = pvd.custom3[2];\n"
+			<< "    td.custom3[3] = pvd.custom3[3];\n"
+			<< "\n"
+			<< "    td.primitiveIds[0] = ppd.primitiveIds[0];\n"
+			<< "    td.primitiveIds[1] = ppd.primitiveIds[1];\n"
+			<< "\n"
+			<< "    td.viewportIndices[0] = ppd.viewportIndices[0];\n"
+			<< "    td.viewportIndices[1] = ppd.viewportIndices[1];\n"
+			<< "\n"
+			<< "    td.custom4[0] = ppd.custom4[0];\n"
+			<< "    td.custom4[1] = ppd.custom4[1];\n"
+			<< "\n"
+			<< "    td.custom5[0] = ppd.custom5[0];\n"
+			<< "    td.custom5[1] = ppd.custom5[1];\n"
+			<< "\n"
+			<< "    EmitMeshTasksEXT(" << meshCount.x() << ", " << meshCount.y() << ", " << meshCount.z() << ");\n"
+			<< "}\n"
+			;
+		programCollection.glslSources.add("task") << glu::TaskSource(task.str()) << buildOptions;
+	}
+}
+
+void ClipInstance::generateReferenceLevel ()
+{
+	const auto format		= getOutputFormat();
+	const auto tcuFormat	= mapVkFormat(format);
+
+	const auto iWidth		= static_cast<int>(m_params->width);
+	const auto iHeight		= static_cast<int>(m_params->height);
+
+	const auto halfWidth	= iWidth / 2;
+	const auto halfHeight	= iHeight / 2;
+
+	const auto usedHeight	= (m_useClipDistances ? halfHeight : iHeight);
+
+	m_referenceLevel.reset(new tcu::TextureLevel(tcuFormat, iWidth, iHeight));
+
+	const auto access		= m_referenceLevel->getAccess();
+	const auto clearColor	= tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	const auto blueColor	= tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
+
+
+	tcu::clear(access, clearColor);
+
+	// Fill the top left quarter.
+	for (int y = 0; y < halfWidth; ++y)
+	for (int x = 0; x < usedHeight; ++x)
+	{
+		access.setPixel(blueColor, x, y);
+	}
+}
+
+tcu::TestStatus ClipInstance::iterate ()
+{
+	struct PerVertexData
+	{
+		tcu::Vec4	positions[4];
+		float		pointSizes[4];
+		float		clipDistances[4];
+		tcu::Vec4	custom1[4];
+		float		custom2[4];
+		int32_t		custom3[4];
+	};
+
+	struct PerPrimitiveData
+	{
+		// Note some of these are declared as vectors to match the std140 layout.
+		tcu::IVec4	primitiveIds[2];
+		tcu::IVec4	viewportIndices[2];
+		tcu::UVec4	custom4[2];
+		tcu::Vec4	custom5[2];
+	};
+
+	const auto&		vkd			= m_context.getDeviceInterface();
+	const auto		device		= m_context.getDevice();
+	auto&			alloc		= m_context.getDefaultAllocator();
+	const auto		queueIndex	= m_context.getUniversalQueueFamilyIndex();
+	const auto		queue		= m_context.getUniversalQueue();
+
+	const auto		imageFormat	= getOutputFormat();
+	const auto		tcuFormat	= mapVkFormat(imageFormat);
+	const auto		imageExtent	= makeExtent3D(m_params->width, m_params->height, 1u);
+	const auto		imageUsage	= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+	const auto&		binaries	= m_context.getBinaryCollection();
+	const auto		hasTask		= binaries.contains("task");
+	const auto		bufStages	= (hasTask ? VK_SHADER_STAGE_TASK_BIT_EXT : VK_SHADER_STAGE_MESH_BIT_EXT);
+
+	const VkImageCreateInfo colorBufferInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,								//	const void*				pNext;
+		0u,										//	VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		imageFormat,							//	VkFormat				format;
+		imageExtent,							//	VkExtent3D				extent;
+		1u,										//	uint32_t				mipLevels;
+		m_useMultiview ? 2u : 1u,				//	uint32_t				arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		imageUsage,								//	VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		0u,										//	uint32_t				queueFamilyIndexCount;
+		nullptr,								//	const uint32_t*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+
+	// Create color image and view.
+	ImageWithMemory					colorImage	(vkd, device, alloc, colorBufferInfo, MemoryRequirement::Any);
+	const auto						colorSRR	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_useMultiview ? 2u : 1u);
+	const auto						colorSRL0	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const auto						colorSRL1	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 1u);
+	Move<VkImageView>				colorView	= makeImageView(vkd, device, colorImage.get(), m_useMultiview ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D, imageFormat, colorSRR);
+
+	// Create a memory buffer for verification.
+	const auto			verificationBufferSize	= static_cast<VkDeviceSize>(imageExtent.width * imageExtent.height * tcu::getPixelSize(tcuFormat));
+	const auto			verificationBufferUsage	= (VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	const auto			verificationBufferInfo	= makeBufferCreateInfo(verificationBufferSize, verificationBufferUsage);
+
+	BufferWithMemory	verificationBuffer0		(vkd, device, alloc, verificationBufferInfo, MemoryRequirement::HostVisible);
+	auto&				verificationBuffer0Alloc	= verificationBuffer0.getAllocation();
+	void*				verificationBuffer0Data		= verificationBuffer0Alloc.getHostPtr();
+
+	de::MovePtr<BufferWithMemory>	verificationBuffer1;
+	vk::Allocation*					verificationBuffer1Alloc		= nullptr;
+	void*							verificationBuffer1Data			= nullptr;
+	if (m_useMultiview)
+	{
+		verificationBuffer1			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, alloc, verificationBufferInfo, MemoryRequirement::HostVisible));
+		verificationBuffer1Alloc	= &verificationBuffer1->getAllocation();
+		verificationBuffer1Data		= verificationBuffer1Alloc->getHostPtr();
+	}
+
+	// This needs to match what the fragment shader will expect.
+	const PerVertexData perVertexWithClipDistancesData =
+	{
+		//	tcu::Vec4	positions[4];
+		{
+			tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+			tcu::Vec4( 1.0f, -1.0f, 0.0f, 1.0f),
+			tcu::Vec4(-1.0f,  1.0f, 0.0f, 1.0f),
+			tcu::Vec4( 1.0f,  1.0f, 0.0f, 1.0f),
+		},
+		//	float		pointSizes[4];
+		{ 1.0f, 1.0f, 1.0f, 1.0f, },
+		//	float		clipDistances[4];
+		{
+			1.0f,
+			-1.0f,
+			1.0f,
+			-1.0f,
+		},
+		//	tcu::Vec4	custom1[4];
+		{
+			tcu::Vec4(0.25, 0.5, 10.0, 3.0),
+			tcu::Vec4(0.25, 1.0, 20.0, 3.0),
+			tcu::Vec4( 0.5, 0.5, 20.0, 3.0),
+			tcu::Vec4( 0.5, 1.0, 10.0, 3.0),
+		},
+		//	float		custom2[4];
+		{ 1.0f, 1.0f, 2.0f, 2.0f, },
+		//	int32_t		custom3[4];
+		{ 3, 3, 4, 4 },
+	};
+	PerVertexData perVertexClippedGeometryData =
+	{
+		//	tcu::Vec4	positions[4];
+		{
+			tcu::Vec4(-1.0f, -19.0f, 0.0f, 1.0f),
+			tcu::Vec4( 1.0f, -19.0f, 0.0f, 1.0f),
+			tcu::Vec4(-1.0f,  1.0f,  0.0f, 1.0f),
+			tcu::Vec4( 1.0f,  1.0f,  0.0f, 1.0f),
+		},
+		//	float		pointSizes[4];
+		{ 1.0f, 1.0f, 1.0f, 1.0f, },
+		//	float		clipDistances[4];
+		{
+			// unused
+		},
+		//	tcu::Vec4	custom1[4];
+		{
+			tcu::Vec4(0.25, 0.5, 10.0, 3.0),
+			tcu::Vec4(0.25, 1.0, 20.0, 3.0),
+			tcu::Vec4( 0.5, 0.5, 20.0, 3.0),
+			tcu::Vec4( 0.5, 1.0, 10.0, 3.0),
+		},
+		//	float		custom2[4];
+		{ 1.0f, 1.0f, 2.0f, 2.0f, },
+		//	int32_t		custom3[4];
+		{ 3, 3, 4, 4 },
+	};
+
+	const PerVertexData& perVertexData  = (m_useClipDistances ? perVertexWithClipDistancesData : perVertexClippedGeometryData);
+
+	// This needs to match what the fragment shader will expect. Reminder: some of these are declared as gvec4 to match the std140
+	// layout, but only the first component is actually used.
+	const PerPrimitiveData perPrimitiveData =
+	{
+		//	int			primitiveIds[2];
+		{
+			tcu::IVec4(1000, 0, 0, 0),
+			tcu::IVec4(1001, 0, 0, 0),
+		},
+		//	int			viewportIndices[2];
+		{
+			tcu::IVec4(1, 0, 0, 0),
+			tcu::IVec4(1, 0, 0, 0),
+		},
+		//	uvec4		custom4[2];
+		{
+			tcu::UVec4(100u, 101u, 102u, 103u),
+			tcu::UVec4(200u, 201u, 202u, 203u),
+		},
+		//	float		custom5[2];
+		{
+			tcu::Vec4(6.0f, 0.0f, 0.0f, 0.0f),
+			tcu::Vec4(7.0f, 0.0f, 0.0f, 0.0f),
+		},
+	};
+
+	// Create and fill buffers with this data.
+	const auto			pvdSize		= static_cast<VkDeviceSize>(sizeof(perVertexData));
+	const auto			pvdInfo		= makeBufferCreateInfo(pvdSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	BufferWithMemory	pvdData		(vkd, device, alloc, pvdInfo, MemoryRequirement::HostVisible);
+	auto&				pvdAlloc	= pvdData.getAllocation();
+	void*				pvdPtr		= pvdAlloc.getHostPtr();
+
+	const auto			ppdSize		= static_cast<VkDeviceSize>(sizeof(perPrimitiveData));
+	const auto			ppdInfo		= makeBufferCreateInfo(ppdSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+	BufferWithMemory	ppdData		(vkd, device, alloc, ppdInfo, MemoryRequirement::HostVisible);
+	auto&				ppdAlloc	= ppdData.getAllocation();
+	void*				ppdPtr		= ppdAlloc.getHostPtr();
+
+	deMemcpy(pvdPtr, &perVertexData, sizeof(perVertexData));
+	deMemcpy(ppdPtr, &perPrimitiveData, sizeof(perPrimitiveData));
+
+	flushAlloc(vkd, device, pvdAlloc);
+	flushAlloc(vkd, device, ppdAlloc);
+
+	// Descriptor set layout.
+	DescriptorSetLayoutBuilder setLayoutBuilder;
+	setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, bufStages);
+	setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, bufStages);
+	const auto setLayout = setLayoutBuilder.build(vkd, device);
+
+	// Create and update descriptor set.
+	DescriptorPoolBuilder descriptorPoolBuilder;
+	descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	const auto descriptorPool	= descriptorPoolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const auto descriptorSet	= makeDescriptorSet(vkd, device, descriptorPool.get(), setLayout.get());
+
+	DescriptorSetUpdateBuilder updateBuilder;
+	const auto storageBufferInfo = makeDescriptorBufferInfo(pvdData.get(), 0ull, pvdSize);
+	const auto uniformBufferInfo = makeDescriptorBufferInfo(ppdData.get(), 0ull, ppdSize);
+	updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &storageBufferInfo);
+	updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uniformBufferInfo);
+	updateBuilder.update(vkd, device);
+
+	// Pipeline layout.
+	const auto pipelineLayout = makePipelineLayout(vkd, device, setLayout.get());
+
+	// Shader modules.
+	const auto	meshShader	= createShaderModule(vkd, device, binaries.get("mesh"));
+	const auto	fragShader	= createShaderModule(vkd, device, binaries.get("frag"));
+
+	Move<VkShaderModule> taskShader;
+	if (hasTask)
+		taskShader = createShaderModule(vkd, device, binaries.get("task"));
+
+	// Render pass.
+	const auto renderPass = createCustomRenderPass(vkd, device, imageFormat, m_useMultiview);
+
+	// Framebuffer.
+	const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), 1u, &colorView.get(), imageExtent.width, imageExtent.height);
+
+	// Viewport and scissor.
+	const auto						topHalf		= makeViewport(imageExtent.width, imageExtent.height / 2u);
+	const std::vector<VkViewport>	viewports	{ makeViewport(imageExtent), topHalf };
+	const std::vector<VkRect2D>		scissors	(2u, makeRect2D(imageExtent));
+
+	VkPipelineRasterizationProvokingVertexStateCreateInfoEXT	provokingVertexInfo = initVulkanStructure();
+	provokingVertexInfo.provokingVertexMode = (m_useProvokingVertexLast ? VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT : VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT);
+
+	VkPipelineRasterizationStateCreateInfo rasterizationStateInfo = initVulkanStructure();
+	rasterizationStateInfo.pNext = (m_useProvokingVertexLast ? &provokingVertexInfo : nullptr);
+	rasterizationStateInfo.lineWidth = 1.0f;
+
+	const auto pipeline = makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+		taskShader.get(), meshShader.get(), fragShader.get(),
+		renderPass.get(), viewports, scissors, 0u, &rasterizationStateInfo);
+
+	// Command pool and buffer.
+	const auto cmdPool		= makeCommandPool(vkd, device, queueIndex);
+	const auto cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	beginCommandBuffer(vkd, cmdBuffer);
+
+	// Run pipeline.
+	const tcu::Vec4	clearColor	(0.0f, 0.0f, 0.0f, 0.0f);
+	const auto		drawCount	= m_params->drawCount();
+	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	vkd.cmdDrawMeshTasksEXT(cmdBuffer, drawCount.x(), drawCount.y(), drawCount.z());
+	endRenderPass(vkd, cmdBuffer);
+
+	// Copy color buffer to verification buffer.
+	const auto colorAccess		= (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
+	const auto transferRead		= VK_ACCESS_TRANSFER_READ_BIT;
+	const auto transferWrite	= VK_ACCESS_TRANSFER_WRITE_BIT;
+	const auto hostRead			= VK_ACCESS_HOST_READ_BIT;
+
+	const auto preCopyBarrier0	= makeImageMemoryBarrier(colorAccess, transferRead, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorImage.get(), colorSRR);
+	VkImageMemoryBarrier preCopyBarrier1;
+	const auto postCopyBarrier	= makeMemoryBarrier(transferWrite, hostRead);
+	const auto copyRegion0		= makeBufferImageCopy(imageExtent, colorSRL0);
+
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &preCopyBarrier0);
+
+	vkd.cmdCopyImageToBuffer(cmdBuffer, colorImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, verificationBuffer0.get(), 1u, &copyRegion0);
+	if (m_useMultiview)
+	{
+		const auto copyRegion1 = makeBufferImageCopy(imageExtent, colorSRL1);
+		vkd.cmdCopyImageToBuffer(cmdBuffer, colorImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, verificationBuffer1->get(), 1u, &copyRegion1);
+	}
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &postCopyBarrier, 0u, nullptr, 0u, nullptr);
+
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Generate reference image and compare results.
+	const tcu::IVec3					iExtent				(static_cast<int>(imageExtent.width), static_cast<int>(imageExtent.height), 1);
+	const tcu::ConstPixelBufferAccess	verificationAccess0	(tcuFormat, iExtent, verificationBuffer0Data);
+
+	generateReferenceLevel();
+	invalidateAlloc(vkd, device, verificationBuffer0Alloc);
+	if (!verifyResult(verificationAccess0))
+		TCU_FAIL("Result does not match reference; check log for details");
+
+	if (m_useMultiview)
+	{
+		const tcu::ConstPixelBufferAccess	verificationAccess1(tcuFormat, iExtent, verificationBuffer1Data);
+
+		invalidateAlloc(vkd, device, *verificationBuffer1Alloc);
+
+		if (!verifyResult(verificationAccess1))
+			TCU_FAIL("Result does not match reference for multiview view = 1; check log for details");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 // Tests that use push constants in the new stages.
 class PushConstantCase : public MeshShaderMiscCase
 {
@@ -5178,6 +5897,28 @@ tcu::TestCaseGroup* createMeshShaderMiscTestsEXT (tcu::TestContext& testCtx)
 
 			miscTests->addChild(new CustomAttributesCase(testCtx, name, std::move(paramsPtr)));
 		}
+	}
+
+	{
+		for (int i = 0; i < 2; ++i)
+			for (int j = 0; j < 2; ++j)
+				for (int k = 0; k < 2; ++k)
+					for (int l = 0; l < 2; ++l)
+					{
+						const bool useTaskShader			= (i > 0);
+						const bool useClipPlanes			= (j > 0);
+						const bool useProvokingVertexLast	= (k > 0);
+						const bool useMultiview				= (l > 0);
+						const auto name						= std::string(useClipPlanes ? "clip_plane" : "clip_geom") + (useTaskShader ? "_and_task_shader" : "") + (useProvokingVertexLast ? "_provoking_last" : "") + (useMultiview ? "_multiview" : "");
+
+						ParamsPtr paramsPtr (new MiscTestParams(
+							/*taskCount*/		(useTaskShader ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
+							/*meshCount*/		tcu::UVec3(1u, 1u, 1u),
+							/*width*/			32u,
+							/*height*/			32u));
+
+						miscTests->addChild(new ClipCase(testCtx, name, std::move(paramsPtr), useClipPlanes, useProvokingVertexLast, useMultiview));
+					}
 	}
 
 	{

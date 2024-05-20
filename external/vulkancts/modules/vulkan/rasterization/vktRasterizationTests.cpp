@@ -273,6 +273,9 @@ protected:
 	Move<VkImage>									m_secondDrawImage;
 	de::MovePtr<Allocation>							m_secondDrawImageMemory;
 	Move<VkImageView>								m_secondDrawImageView;
+	Move<VkImage>									m_secondDrawResolvedImage;
+	de::MovePtr<Allocation>							m_secondDrawResolvedImageMemory;
+	Move<VkImageView>								m_secondDrawResolvedImageView;
 	Move<VkFramebuffer>								m_secondDrawFrameBuffer;
 	Move<VkBuffer>									m_secondDrawResultBuffer;
 	de::MovePtr<Allocation>							m_secondDrawResultBufferMemory;
@@ -460,6 +463,10 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 			m_resolvedImage			= vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
 			m_resolvedImageMemory	= allocator.allocate(getImageMemoryRequirements(vkd, vkDevice, *m_resolvedImage), MemoryRequirement::Any);
 			VK_CHECK(vkd.bindImageMemory(vkDevice, *m_resolvedImage, m_resolvedImageMemory->getMemory(), m_resolvedImageMemory->getOffset()));
+
+			m_secondDrawResolvedImage			= vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
+			m_secondDrawResolvedImageMemory		= allocator.allocate(getImageMemoryRequirements(vkd, vkDevice, *m_secondDrawResolvedImage), MemoryRequirement::Any);
+			VK_CHECK(vkd.bindImageMemory(vkDevice, *m_secondDrawResolvedImage, m_secondDrawResolvedImageMemory->getMemory(), m_secondDrawResolvedImageMemory->getOffset()));
 		}
 
 		// Resolved Image View
@@ -483,6 +490,8 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 			};
 
 			m_resolvedImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, DE_NULL);
+
+			m_secondDrawResolvedImageView	= vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, DE_NULL);
 		}
 
 	}
@@ -584,6 +593,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 		const VkImageView						secondDrawAttachments[] =
 		{
 			*m_secondDrawImageView,
+			*m_secondDrawResolvedImageView,
 		};
 
 		const VkFramebufferCreateInfo			secondDrawFramebufferCreateInfo =
@@ -592,7 +602,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 			DE_NULL,									// const void*				pNext;
 			0u,											// VkFramebufferCreateFlags	flags;
 			*m_renderPass,								// VkRenderPass				renderPass;
-			1u,											// deUint32					attachmentCount;
+			m_multisampling ? 2u : 1u,					// deUint32					attachmentCount;
 			secondDrawAttachments,						// const VkImageView*		pAttachments;
 			m_renderSize,								// deUint32					width;
 			m_renderSize,								// deUint32					height;
@@ -8020,6 +8030,9 @@ void PolygonModeLargePointsCase::checkSupport (Context &context) const
 #ifndef CTS_USES_VULKANSC
 	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().pointPolygons)
 		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Point polygons are not supported by this implementation");
+
+	if (!context.getMaintenance5Properties().polygonModePointSize && !m_config.defaultSize)
+		TCU_THROW(NotSupportedError, "VK_KHR_maintenance5: polygonModePointSize property is not supported by this implementation");
 #else
 	DE_ASSERT(false);
 #endif // CTS_USES_VULKANSC
