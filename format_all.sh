@@ -167,14 +167,25 @@ rm -rf external/glslang/src/
 git -C external/vulkan-docs/src/ clean -fd
 
 if grep -q -e "--skip-post-checks" "scripts/check_build_sanity.py"; then
-    skip_diff_check=" --skip-post-checks "
+    SKIP_DIFF_CHECK=" --skip-post-checks "
 else
-    skip_diff_check=""
+    SKIP_DIFF_CHECK=""
 fi
 
-python3 scripts/check_build_sanity.py -r gen-inl-files $skip_diff_check > /dev/null
-if [ -z "$skip_diff_check" ]; then
-    echo "It is expected that the previous lines report: Exception: Failed to execute '['git', 'diff', '--exit-code']', got 1"
+if command -v python3 &>/dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &>/dev/null && python -c "import sys; sys.exit(sys.version_info[0] != 3)" &>/dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Python 3 is not installed."
+    exit 1
+fi
+
+echo "Using $PYTHON_CMD"
+
+$PYTHON_CMD scripts/check_build_sanity.py -r gen-inl-files $SKIP_DIFF_CHECK > /dev/null
+if [ -z "$SKIP_DIFF_CHECK" ]; then
+    echo "It is acceptable if the previous lines report: Exception: Failed to execute '['git', 'diff', '--exit-code']', got 1"
 fi
 # This file is not being regenerated but its output will be slightly different.
 # Much faster to just fix it here than to regenerate mustpass
