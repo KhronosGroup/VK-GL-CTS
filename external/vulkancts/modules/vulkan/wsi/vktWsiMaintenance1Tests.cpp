@@ -259,6 +259,12 @@ struct TestNativeObjects
             }
         }
     }
+
+    void resizeWindow(uint32_t windowIndex, const tcu::UVec2 newWindowSize)
+    {
+        windows[windowIndex]->resize(newWindowSize);
+        windowSize = newWindowSize;
+    }
 };
 
 VkSwapchainCreateInfoKHR getBasicSwapchainParameters(VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat,
@@ -1445,7 +1451,7 @@ tcu::TestStatus scalingQueryCompatibleModesTest(Context &context, const ScalingQ
 tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams)
 {
     const InstanceHelper instHelper(context, testParams.wsiType, false);
-    const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
+    TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
@@ -1548,7 +1554,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
     };
 
-    tcu::UVec2 windowSize = native.windowSize;
+    tcu::UVec2 windowSize = tcu::UVec2(kDefaultWindowWidth, kDefaultWindowHeight);
     if (testParams.resizeWindow)
     {
         switch (testParams.size)
@@ -1576,7 +1582,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
             break;
         }
 
-        native.windows[0]->resize(windowSize);
+        native.resizeWindow(0, windowSize);
     }
 
     const uint32_t quarterPixels = swapchainSize.x() * swapchainSize.y() / 4;
@@ -1922,7 +1928,7 @@ struct ReleaseImagesTestConfig
 tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfig testParams)
 {
     const InstanceHelper instHelper(context, testParams.wsiType, false);
-    const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
+    TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
@@ -2018,11 +2024,11 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             // Resize the window if requested.
             if (doResize && testParams.resizeWindow == ResizeWindow::BeforeAcquire)
             {
-                tcu::UVec2 windowSize = native.windowSize;
+                tcu::UVec2 windowSize = tcu::UVec2(kDefaultWindowWidth, kDefaultWindowHeight);
                 windowSize.x()        = windowSize.x() - 20 + rng.getUint32() % 41;
                 windowSize.y()        = windowSize.y() - 20 + rng.getUint32() % 41;
 
-                native.windows[0]->resize(windowSize);
+                native.resizeWindow(0, windowSize);
             }
 
             // Acquire N times
@@ -2036,6 +2042,11 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             // If out of date, recreate the swapchain and reacquire.
             if (result == VK_ERROR_OUT_OF_DATE_KHR)
             {
+                if (testParams.scaling == 0)
+                {
+                    swapchainInfo.imageExtent = vk::makeExtent2D(native.windowSize.x(), native.windowSize.y());
+                }
+
                 swapchainInfo.oldSwapchain = *swapchain;
                 Move<VkSwapchainKHR> newSwapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
                 swapchain = std::move(newSwapchain);
@@ -2072,11 +2083,11 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
 
             if (doResize && testParams.resizeWindow == ResizeWindow::BeforePresent)
             {
-                tcu::UVec2 windowSize = native.windowSize;
+                tcu::UVec2 windowSize = tcu::UVec2(kDefaultWindowWidth, kDefaultWindowHeight);
                 windowSize.x()        = windowSize.x() - 20 + rng.getUint32() % 41;
                 windowSize.y()        = windowSize.y() - 20 + rng.getUint32() % 41;
 
-                native.windows[0]->resize(windowSize);
+                native.resizeWindow(0, windowSize);
             }
 
             if (doPresent)
@@ -2168,6 +2179,11 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     {
                         VK_CHECK(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
                         imagesReleased = true;
+                    }
+
+                    if (testParams.scaling == 0)
+                    {
+                        swapchainInfo.imageExtent = vk::makeExtent2D(native.windowSize.x(), native.windowSize.y());
                     }
 
                     swapchainInfo.oldSwapchain = *swapchain;
