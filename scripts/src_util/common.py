@@ -124,13 +124,13 @@ def getFilesChangedSince (commit):
 
 def getFilesCurrentlyDirty ():
     # Get all the files currently dirty and uncommitted
-    return getFilesChangedSize('HEAD')
+    return getFilesChangedSince('HEAD')
 
 def getFilesModifiedSinceLastCommit ():
     # Try to get only the modified files.  In a shallow clone with depth 1,
     # HEAD^ doesn't exist, so we have no choice but to return all the files.
     try:
-        return getFilesChangedSize('HEAD^')
+        return getFilesChangedSince('HEAD^')
     except:
         return getAllProjectFiles()
 
