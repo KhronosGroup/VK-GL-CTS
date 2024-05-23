@@ -1,7 +1,5 @@
-
 // WARNING: This is auto-generated file. Do not modify, since changes will
 // be lost! Modify scripts/gen_khronos_cts_bp.py instead.
-
 
 cc_defaults {
     name: "khronosctscompilationflag_default",
@@ -17,6 +15,7 @@ cc_defaults {
         "-Wno-switch",
         "-Wno-unused-parameter",
         "-Wno-unused-variable",
+        "-Wno-macro-redefined",
     ],
 
     cpp_std: "c++17",
@@ -92,11 +91,13 @@ cc_defaults {
         "external/deqp-deps/SPIRV-Headers/include",
     ],
 
+    header_libs: ["jni_headers"],
+    shared_libs: ["libandroid"],
+
     sdk_version: "current",
     rtti: true,
     stl: "c++_static",
 }
-
 
 cc_library_static {
     name: "libkhronoscts_common",
@@ -345,7 +346,7 @@ cc_library_static {
         "framework/referencerenderer/rrVertexPacket.cpp",
         "framework/xexml/xeDefs.cpp",
         "framework/xexml/xeXMLParser.cpp",
- ],
+    ],
     export_include_dirs: [
         "execserver",
         "executor",
@@ -368,12 +369,11 @@ cc_library_static {
         "framework/randomshaders",
         "framework/referencerenderer",
         "framework/xexml",
- ],
+    ],
     static_libs: [
         "libpng_ndk",
- ],
+    ],
 }
-
 
 cc_library_static {
     name: "libkhronoscts_modules_gles",
@@ -834,7 +834,7 @@ cc_library_static {
         "modules/internal/ditTextureFormatTests.cpp",
         "modules/internal/ditVulkanTests.cpp",
         "modules/pch.cpp",
- ],
+    ],
     export_include_dirs: [
         "external/vulkancts/framework/vulkan",
         "external/vulkancts/framework/vulkan/generated/vulkan",
@@ -855,12 +855,11 @@ cc_library_static {
         "modules/gles31/stress",
         "modules/glshared",
         "modules/internal",
- ],
+    ],
     static_libs: [
         "libkhronoscts_common",
- ],
+    ],
 }
-
 
 cc_library_static {
     name: "libkhronoscts_openglcts",
@@ -1150,7 +1149,7 @@ cc_library_static {
         "external/openglcts/modules/glesext/texture_cube_map_array/esextcTextureCubeMapArrayTex3DValidation.cpp",
         "external/openglcts/modules/glesext/texture_shadow_lod/esextcTextureShadowLodFunctionsTest.cpp",
         "external/openglcts/modules/pch.cpp",
- ],
+    ],
     export_include_dirs: [
         "external/openglcts/modules",
         "external/openglcts/modules/common",
@@ -1172,15 +1171,14 @@ cc_library_static {
         "external/openglcts/modules/glesext/texture_buffer",
         "external/openglcts/modules/glesext/texture_cube_map_array",
         "external/openglcts/modules/glesext/texture_shadow_lod",
- ],
+    ],
     static_libs: [
         "libkhronoscts_common",
         "libkhronoscts_modules_gles",
         "deqp_glslang_SPIRV",
         "deqp_spirv-tools",
- ],
+    ],
 }
-
 
 cc_library_static {
     name: "libkhronoscts_vulkancts",
@@ -1825,7 +1823,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/ycbcr/vktYCbCrTests.cpp",
         "external/vulkancts/modules/vulkan/ycbcr/vktYCbCrUtil.cpp",
         "external/vulkancts/modules/vulkan/ycbcr/vktYCbCrViewTests.cpp",
- ],
+    ],
     export_include_dirs: [
         "external/vulkancts/framework/vulkan",
         "external/vulkancts/framework/vulkan/generated/vulkan",
@@ -1877,15 +1875,14 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/util",
         "external/vulkancts/modules/vulkan/wsi",
         "external/vulkancts/modules/vulkan/ycbcr",
- ],
+    ],
     static_libs: [
         "libkhronoscts_common",
         "deqp_glslang_glslang",
         "deqp_spirv-tools",
         "deqp_amber",
- ],
+    ],
 }
-
 
 cc_library_static {
     name: "libkhronoscts_platform",
@@ -1906,16 +1903,16 @@ cc_library_static {
         "framework/platform/android/tcuAndroidWindow.cpp",
         "framework/platform/android/tcuTestLogParserJNI.cpp",
         "framework/platform/surfaceless/tcuSurfacelessPlatform.cpp",
- ],
+    ],
     export_include_dirs: [
         "external/openglcts/modules/runner",
         "framework/platform/android",
         "framework/platform/surfaceless",
- ],
+    ],
     static_libs: [
         "libkhronoscts_common",
         "libkhronoscts_modules_gles",
         "libkhronoscts_vulkancts",
         "libkhronoscts_openglcts",
- ],
+    ],
 }
