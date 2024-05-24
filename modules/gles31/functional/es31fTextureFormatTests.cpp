@@ -347,7 +347,8 @@ void TextureBufferFormatCase::init(void)
     const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
     if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_buffer") &&
-        !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer"))
+        !m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_buffer") &&
+        !m_context.getContextInfo().isExtensionSupported("GL_ARB_texture_buffer_object"))
     {
         TCU_THROW(NotSupportedError, "Texture buffers not supported");
     }
@@ -451,6 +452,7 @@ vector<string> toStringVector(const char *const *str, int numStr)
 
 void TextureFormatTests::init(void)
 {
+    bool isGL45 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
     tcu::TestCaseGroup *unsizedGroup     = DE_NULL;
     tcu::TestCaseGroup *sizedGroup       = DE_NULL;
     tcu::TestCaseGroup *sizedBufferGroup = DE_NULL;
@@ -483,6 +485,9 @@ void TextureFormatTests::init(void)
         string nameBase        = texFormats[formatNdx].name;
         string descriptionBase = string(glu::getTextureFormatName(format)) + ", " + glu::getTypeName(dataType);
 
+        // These formats are illegal in core desktop GL
+        if (isGL45 && (format == GL_ALPHA || format == GL_LUMINANCE || format == GL_LUMINANCE_ALPHA))
+            continue;
         unsizedGroup->addChild(new TextureCubeArrayFormatCase(
             m_testCtx, m_context.getRenderContext(), m_context.getContextInfo(), (nameBase + "_cube_array_pot").c_str(),
             (descriptionBase + ", GL_TEXTURE_CUBE_MAP_ARRAY").c_str(), format, dataType, 64, 12));
