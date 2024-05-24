@@ -32,6 +32,7 @@
 #include "gl3cTransformFeedbackTests.hpp"
 #include "gl3cTransformFeedback3Tests.hpp"
 #include "gl4cPipelineStatisticsQueryTests.hpp"
+#include "glcApiCoverageTests.hpp"
 #include "glcClipDistance.hpp"
 #include "glcCullDistance.hpp"
 #include "glcBufferObjectsTests.hpp"
@@ -188,6 +189,7 @@ void GL30TestPackage::init(void)
         addChild(new glcts::TextureLodBiasTests(getContext()));
         addChild(new glcts::BufferObjectsTests(getContext()));
         addChild(new glcts::TransformFeedbackTests(getContext()));
+        addChild(new glcts::ApiCoverageTests(getContext()));
     }
     catch (...)
     {

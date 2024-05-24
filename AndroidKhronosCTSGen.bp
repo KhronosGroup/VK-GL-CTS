@@ -868,6 +868,7 @@ cc_library_static {
 
     srcs: [
         "external/openglcts/modules/common/glcAggressiveShaderOptimizationsTests.cpp",
+        "external/openglcts/modules/common/glcApiCoverageTests.cpp",
         "external/openglcts/modules/common/glcBlendEquationAdvancedTests.cpp",
         "external/openglcts/modules/common/glcBufferObjectsTests.cpp",
         "external/openglcts/modules/common/glcClipDistance.cpp",
