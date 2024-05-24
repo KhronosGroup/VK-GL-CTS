@@ -196,6 +196,7 @@ class SmokeTest : public deqp::TestCase
 public:
     /* Public methods */
     SmokeTest(deqp::Context &context);
+    SmokeTest(deqp::Context &context, size_t access_idx, size_t channel_idx);
     SmokeTest(deqp::Context &context, const glw::GLchar *name, const glw::GLchar *description);
 
     virtual void deinit();
@@ -275,6 +276,9 @@ protected:
     static const glw::GLsizei m_width;
     static const glw::GLsizei m_output_height;
     static const glw::GLsizei m_output_width;
+
+    size_t m_access_idx;
+    size_t m_channel_idx;
 };
 
 /** Implements Functional test, description follows:
@@ -311,7 +315,7 @@ class FunctionalTest : public SmokeTest
 {
 public:
     /* Public methods */
-    FunctionalTest(deqp::Context &context);
+    FunctionalTest(deqp::Context &context, size_t format_idx, size_t tgt_idx);
 
     virtual tcu::TestNode::IterateResult iterate();
 
@@ -349,6 +353,8 @@ private:
 
         FunctionalTest::testCase m_test_case;
     };
+    size_t m_format_idx;
+    size_t m_tgt_idx;
 };
 } // namespace TextureSwizzle
 
@@ -368,6 +374,9 @@ private:
     /* Private methods */
     TextureSwizzleTests(const TextureSwizzleTests &);
     TextureSwizzleTests &operator=(const TextureSwizzleTests &);
+
+    void addSmokeTest();
+    void addFunctionalTest();
 };
 } // namespace gl3cts
 

@@ -2426,8 +2426,31 @@ SmokeTest::SmokeTest(deqp::Context &context)
     , m_source_tex_id(0)
     , m_test_fbo_id(0)
     , m_vao_id(0)
+    , m_access_idx(0)
+    , m_channel_idx(0)
 {
     /* Left blank intentionally */
+}
+
+/** Constructor.
+ *
+ * @param context Rendering context.
+ **/
+SmokeTest::SmokeTest(deqp::Context &context, size_t access_idx, size_t channel_idx)
+    : TestCase(context, "smoke", "Verifies that all swizzle combinations work with all texture access routines")
+    , m_is_ms_supported(false)
+    , m_prepare_fbo_id(0)
+    , m_out_tex_id(0)
+    , m_source_tex_id(0)
+    , m_test_fbo_id(0)
+    , m_vao_id(0)
+    , m_access_idx(access_idx)
+    , m_channel_idx(channel_idx)
+{
+    std::string name =
+        "smoke_access_idx_" + std::to_string(m_access_idx) + "_channel_idx_" + std::to_string(m_channel_idx);
+
+    TestCase::m_name = name;
 }
 
 /** Constructor.
@@ -2442,6 +2465,8 @@ SmokeTest::SmokeTest(deqp::Context &context, const glw::GLchar *name, const glw:
     , m_source_tex_id(0)
     , m_test_fbo_id(0)
     , m_vao_id(0)
+    , m_access_idx(0)
+    , m_channel_idx(0)
 {
     /* Left blank intentionally */
 }
@@ -2505,45 +2530,39 @@ tcu::TestNode::IterateResult SmokeTest::iterate()
         TCU_FAIL("Failed to prepare source texture");
     }
 
-    /* Iterate over all cases */
-    for (size_t access_idx = 0; access_idx < n_texture_access; ++access_idx)
+    /* Skip invalid cases */
+    if (false == isTargetSuppByAccess(m_access_idx, tgt_idx))
     {
-        /* Skip invalid cases */
-        if (false == isTargetSuppByAccess(access_idx, tgt_idx))
-        {
-            continue;
-        }
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Target not supported");
+        return STOP;
+    }
 
-        for (size_t r = 0; r < n_valid_values; ++r)
+    for (size_t r = 0; r < TextureSwizzle::n_valid_values; ++r)
+    {
+        for (size_t g = 0; g < TextureSwizzle::n_valid_values; ++g)
         {
-            for (size_t g = 0; g < n_valid_values; ++g)
+            for (size_t b = 0; b < TextureSwizzle::n_valid_values; ++b)
             {
-                for (size_t b = 0; b < n_valid_values; ++b)
+                for (size_t a = 0; a < TextureSwizzle::n_valid_values; ++a)
                 {
-                    for (size_t a = 0; a < n_valid_values; ++a)
-                    {
-                        for (size_t channel_idx = 0; channel_idx < 4; ++channel_idx)
-                        {
-                            const testCase test_case = {channel_idx,
-                                                        format_idx,
-                                                        tgt_idx,
-                                                        access_idx,
-                                                        valid_values[r],
-                                                        valid_values[g],
-                                                        valid_values[b],
-                                                        valid_values[a],
-                                                        {source_channel_sizes[0], source_channel_sizes[1],
-                                                         source_channel_sizes[2], source_channel_sizes[3]}};
+                    const testCase test_case = {m_channel_idx,
+                                                format_idx,
+                                                tgt_idx,
+                                                m_access_idx,
+                                                valid_values[r],
+                                                valid_values[g],
+                                                valid_values[b],
+                                                valid_values[a],
+                                                {source_channel_sizes[0], source_channel_sizes[1],
+                                                 source_channel_sizes[2], source_channel_sizes[3]}};
 
-                            executeTestCase(test_case);
+                    executeTestCase(test_case);
 
-                            deinitOutputTexture();
-                        } /* iteration over channels */
-                    }     /* iteration over swizzle combinations */
+                    deinitOutputTexture();
                 }
             }
         }
-    } /* iteration over access routines */
+    }
 
     /* Set result - exceptions are thrown in case of any error */
     m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -3710,11 +3729,15 @@ void SmokeTest::verifyOutputImage(const testCase &test_case, size_t /* output_fo
  *
  * @param context Rendering context.
  **/
-FunctionalTest::FunctionalTest(deqp::Context &context)
+FunctionalTest::FunctionalTest(deqp::Context &context, size_t format_idx, size_t tgt_idx)
     : SmokeTest(context, "functional",
                 "Verifies that swizzle is respected for textures of different formats and targets")
+    , m_format_idx(format_idx)
+    , m_tgt_idx(tgt_idx)
 {
-    /* Left blank intentionally */
+    std::string name = "functional_format_idx_" + std::to_string(format_idx) + "_target_idx_" + std::to_string(tgt_idx);
+
+    TestCase::m_name = name;
 }
 
 /** Executes test iteration.
@@ -3723,22 +3746,6 @@ FunctionalTest::FunctionalTest(deqp::Context &context)
  */
 tcu::TestNode::IterateResult FunctionalTest::iterate()
 {
-
-#if FUNCTIONAL_TEST_ALL_FORMATS == 0
-
-    static const glw::GLenum tested_formats[] = {GL_R8,      GL_R3_G3_B2,         GL_RGBA16, GL_R11F_G11F_B10F,
-                                                 GL_RGB9_E5, GL_DEPTH32F_STENCIL8};
-    static const size_t n_tested_formats      = sizeof(tested_formats) / sizeof(tested_formats[0]);
-
-#endif /* FUNCTIONAL_TEST_ALL_FORMATS == 0 */
-
-#if FUNCTIONAL_TEST_ALL_TARGETS == 0
-
-    static const glw::GLenum tested_targets[] = {GL_TEXTURE_1D, GL_TEXTURE_2D_MULTISAMPLE_ARRAY};
-    static const size_t n_tested_targets      = sizeof(tested_targets) / sizeof(tested_targets[0]);
-
-#endif /* FUNCTIONAL_TEST_ALL_TARGETS == 0 */
-
 #if FUNCTIONAL_TEST_ALL_ACCESS_ROUTINES == 0
 
     static const size_t access_idx = 4; /* 4 - index of "texelFetch" entry in texture_access_routines */
@@ -3769,156 +3776,136 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
 
 #if FUNCTIONAL_TEST_ALL_FORMATS
 
-    for (size_t format_idx = 0; format_idx < n_texture_formats; ++format_idx)
+    /* Check that format is supported by context. */
+    if (!glu::contextSupports(m_context.getRenderContext().getType(),
+                              texture_formats[m_format_idx].m_minimum_gl_context))
     {
-
-        /* Check that format is supported by context. */
-        if (!glu::contextSupports(m_context.getRenderContext().getType(),
-                                  texture_formats[format_idx].m_minimum_gl_context))
-        {
-            continue;
-        }
-
-#else /* FUNCTIONAL_TEST_ALL_FORMATS */
-
-    for (size_t tested_format_idx = 0; tested_format_idx < n_tested_formats; ++tested_format_idx)
-    {
-        const size_t format_idx = get_index_of_format(tested_formats[tested_format_idx]);
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Format not supported");
+        return STOP;
+    }
 
 #endif /* FUNCTIONAL_TEST_ALL_FORMATS */
 
-#if FUNCTIONAL_TEST_ALL_TARGETS
+    /* Skip not supported targets */
+    if (false == isTargetSupported(m_tgt_idx))
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Target not supported");
+        return STOP;
+    }
 
-        for (size_t tgt_idx = 0; tgt_idx < n_texture_targets; ++tgt_idx)
+    /* Skip invalid cases */
+    if (false == isTargetSuppByFormat(m_format_idx, m_tgt_idx))
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Target not supported");
+        return STOP;
+    }
+
+    try
+    {
+        prepareSourceTexture(m_format_idx, m_tgt_idx, source_channel_sizes);
+
+        /* Skip formats not supported by FBO */
+        if (false == fillSourceTexture(m_format_idx, m_tgt_idx))
         {
-
-#else /* FUNCTIONAL_TEST_ALL_TARGETS */
-
-        for (size_t tested_tgt_idx = 0; tested_tgt_idx < n_tested_targets; ++tested_tgt_idx)
-        {
-            const size_t tgt_idx = get_index_of_target(tested_targets[tested_tgt_idx]);
-
-#endif /* FUNCTIONAL_TEST_ALL_TARGETS */
-
-            /* Skip not supported targets */
-            if (false == isTargetSupported(tgt_idx))
-            {
-                continue;
-            }
-
-            /* Skip invalid cases */
-            if (false == isTargetSuppByFormat(format_idx, tgt_idx))
-            {
-                continue;
-            }
-
-            try
-            {
-                prepareSourceTexture(format_idx, tgt_idx, source_channel_sizes);
-
-                /* Skip formats not supported by FBO */
-                if (false == fillSourceTexture(format_idx, tgt_idx))
-                {
-                    deinitTextures();
-                    continue;
-                }
+            deinitTextures();
+            m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Format not supported");
+            return STOP;
+        }
 
 #if FUNCTIONAL_TEST_ALL_ACCESS_ROUTINES
 
-                for (size_t access_idx = 0; access_idx < n_texture_access; ++access_idx)
-                {
-                    /* Skip invalid cases */
-                    if (false == isTargetSuppByAccess(access_idx, tgt_idx))
-                    {
-                        continue;
-                    }
+        for (size_t access_idx = 0; access_idx < n_texture_access; ++access_idx)
+        {
+            /* Skip invalid cases */
+            if (false == isTargetSuppByAccess(access_idx, m_tgt_idx))
+            {
+                m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Target not supported");
+                return STOP;
+            }
 #else  /* FUNCTIONAL_TEST_ALL_ACCESS_ROUTINES */
-                /* Skip invalid cases */
-                if (false == isTargetSuppByAccess(access_idx, tgt_idx))
-                {
-                    deinitTextures();
-                    continue;
-                }
+        /* Skip invalid cases */
+        if (false == isTargetSuppByAccess(access_idx, m_tgt_idx))
+        {
+            deinitTextures();
+            m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Target not supported");
+            return STOP;
+        }
 #endif /* FUNCTIONAL_TEST_ALL_ACCESS_ROUTINES */
 
 #if FUNCTIONAL_TEST_ALL_SWIZZLE_COMBINATIONS
 
-                    for (size_t r = 0; r < n_valid_values; ++r)
+            for (size_t r = 0; r < n_valid_values; ++r)
+            {
+                for (size_t g = 0; g < n_valid_values; ++g)
+                {
+                    for (size_t b = 0; b < n_valid_values; ++b)
                     {
-                        for (size_t g = 0; g < n_valid_values; ++g)
+                        for (size_t a = 0; a < n_valid_values; ++a)
                         {
-                            for (size_t b = 0; b < n_valid_values; ++b)
-                            {
-                                for (size_t a = 0; a < n_valid_values; ++a)
-                                {
 
 #else /* FUNCTIONAL_TEST_ALL_SWIZZLE_COMBINATIONS */
 
-                for (size_t tested_swizzle_idx = 0; tested_swizzle_idx < n_tested_swizzle_combinations;
-                     ++tested_swizzle_idx)
-                {
-                    const size_t r = tested_swizzle_combinations[tested_swizzle_idx][0];
-                    const size_t g = tested_swizzle_combinations[tested_swizzle_idx][1];
-                    const size_t b = tested_swizzle_combinations[tested_swizzle_idx][2];
-                    const size_t a = tested_swizzle_combinations[tested_swizzle_idx][3];
+        for (size_t tested_swizzle_idx = 0; tested_swizzle_idx < n_tested_swizzle_combinations; ++tested_swizzle_idx)
+        {
+            const size_t r = tested_swizzle_combinations[tested_swizzle_idx][0];
+            const size_t g = tested_swizzle_combinations[tested_swizzle_idx][1];
+            const size_t b = tested_swizzle_combinations[tested_swizzle_idx][2];
+            const size_t a = tested_swizzle_combinations[tested_swizzle_idx][3];
 
 #endif /* FUNCTIONAL_TEST_ALL_SWIZZLE_COMBINATIONS */
 
-                                    for (size_t channel_idx = 0; channel_idx < 4; ++channel_idx)
-                                    {
-                                        const testCase test_case = {channel_idx,
-                                                                    format_idx,
-                                                                    tgt_idx,
-                                                                    access_idx,
-                                                                    valid_values[r],
-                                                                    valid_values[g],
-                                                                    valid_values[b],
-                                                                    valid_values[a],
-                                                                    {source_channel_sizes[0], source_channel_sizes[1],
-                                                                     source_channel_sizes[2], source_channel_sizes[3]}};
+                            for (size_t channel_idx = 0; channel_idx < 4; ++channel_idx)
+                            {
+                                const testCase test_case = {channel_idx,
+                                                            m_format_idx,
+                                                            m_tgt_idx,
+                                                            access_idx,
+                                                            valid_values[r],
+                                                            valid_values[g],
+                                                            valid_values[b],
+                                                            valid_values[a],
+                                                            {source_channel_sizes[0], source_channel_sizes[1],
+                                                             source_channel_sizes[2], source_channel_sizes[3]}};
 
-                                        executeTestCase(test_case);
+                                executeTestCase(test_case);
 
-                                        deinitOutputTexture();
-                                    } /* iteration over channels */
+                                deinitOutputTexture();
+                            } /* iteration over channels */
 
 #if FUNCTIONAL_TEST_ALL_SWIZZLE_COMBINATIONS
 
-                                    /* iteration over swizzle combinations */
-                                }
-                            }
+                            /* iteration over swizzle combinations */
                         }
                     }
+                }
+            }
 
 #else /* FUNCTIONAL_TEST_ALL_SWIZZLE_COMBINATIONS */
 
-                } /* iteration over swizzle combinations */
+        } /* iteration over swizzle combinations */
 
 #endif /* FUNCTIONAL_TEST_ALL_SWIZZLE_COMBINATIONS */
 
 #if FUNCTIONAL_TEST_ALL_ACCESS_ROUTINES
 
-                } /* iteration over access routines - only when enabled */
+        } /* iteration over access routines - only when enabled */
 
 #endif /* FUNCTIONAL_TEST_ALL_ACCESS_ROUTINES */
-                deinitTextures();
-            } /* try */
-            catch (wrongResults &exc)
-            {
-                logTestCaseDetials(exc.m_test_case);
-                m_context.getTestContext().getLog() << tcu::TestLog::Message << exc.what() << tcu::TestLog::EndMessage;
+        deinitTextures();
+    } /* try */
+    catch (wrongResults &exc)
+    {
+        logTestCaseDetials(exc.m_test_case);
+        m_context.getTestContext().getLog() << tcu::TestLog::Message << exc.what() << tcu::TestLog::EndMessage;
 
-                test_result = false;
-                deinitTextures();
-            }
-            catch (...)
-            {
-                deinitTextures();
-                throw;
-            }
-        } /* iteration over texture targets */
-
-    } /* iteration over texture formats */
+        test_result = false;
+        deinitTextures();
+    }
+    catch (...)
+    {
+        deinitTextures();
+        throw;
+    }
 
     /* Set result */
     if (true == test_result)
@@ -4252,7 +4239,65 @@ void TextureSwizzleTests::init(void)
 {
     addChild(new TextureSwizzle::APIErrorsTest(m_context));
     addChild(new TextureSwizzle::IntialStateTest(m_context));
-    addChild(new TextureSwizzle::SmokeTest(m_context));
-    addChild(new TextureSwizzle::FunctionalTest(m_context));
+    addSmokeTest();
+    addFunctionalTest();
+}
+
+void TextureSwizzleTests::addSmokeTest()
+{
+    /* Iterate over all cases */
+    for (size_t access_idx = 0; access_idx < TextureSwizzle::n_texture_access; ++access_idx)
+    {
+        for (size_t channel_idx = 0; channel_idx < 4; ++channel_idx)
+        {
+            addChild(new TextureSwizzle::SmokeTest(m_context, access_idx, channel_idx));
+        } /* iteration over channels */
+    }     /* iteration over access routines */
+}
+
+void TextureSwizzleTests::addFunctionalTest()
+{
+#if FUNCTIONAL_TEST_ALL_FORMATS == 0
+
+    static const glw::GLenum tested_formats[] = {GL_R8,      GL_R3_G3_B2,         GL_RGBA16, GL_R11F_G11F_B10F,
+                                                 GL_RGB9_E5, GL_DEPTH32F_STENCIL8};
+    static const size_t n_tested_formats      = sizeof(tested_formats) / sizeof(tested_formats[0]);
+
+#endif /* FUNCTIONAL_TEST_ALL_FORMATS == 0 */
+
+#if FUNCTIONAL_TEST_ALL_TARGETS == 0
+
+    static const glw::GLenum tested_targets[] = {GL_TEXTURE_1D, GL_TEXTURE_2D_MULTISAMPLE_ARRAY};
+    static const size_t n_tested_targets      = sizeof(tested_targets) / sizeof(tested_targets[0]);
+
+#endif /* FUNCTIONAL_TEST_ALL_TARGETS == 0 */
+
+#if FUNCTIONAL_TEST_ALL_FORMATS
+    for (size_t format_idx = 0; format_idx < TextureSwizzle::n_texture_formats; ++format_idx)
+    {
+
+#else /* FUNCTIONAL_TEST_ALL_FORMATS */
+
+    for (size_t tested_format_idx = 0; tested_format_idx < n_tested_formats; ++tested_format_idx)
+    {
+        const size_t format_idx = TextureSwizzle::get_index_of_format(tested_formats[tested_format_idx]);
+
+#endif /* FUNCTIONAL_TEST_ALL_FORMATS */
+
+#if FUNCTIONAL_TEST_ALL_TARGETS
+
+        for (size_t tgt_idx = 0; tgt_idx < TextureSwizzle::n_texture_targets; ++tgt_idx)
+        {
+
+#else /* FUNCTIONAL_TEST_ALL_TARGETS */
+
+        for (size_t tested_tgt_idx = 0; tested_tgt_idx < n_tested_targets; ++tested_tgt_idx)
+        {
+            const size_t tgt_idx = TextureSwizzle::get_index_of_target(tested_targets[tested_tgt_idx]);
+
+#endif /* FUNCTIONAL_TEST_ALL_TARGETS */
+            addChild(new TextureSwizzle::FunctionalTest(m_context, format_idx, tgt_idx));
+        } /* iteration over texture targets */
+    }     /* iteration over texture formats */
 }
 } // namespace gl3cts
