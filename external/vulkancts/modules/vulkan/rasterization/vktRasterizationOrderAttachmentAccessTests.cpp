@@ -1572,13 +1572,26 @@ tcu::TestStatus AttachmentAccessOrderTestInstance::iterate(void)
         }
     }
 
-    const VkMemoryBarrier memBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, VK_ACCESS_TRANSFER_WRITE_BIT,
-                                        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                                            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT};
+    const vk::VkAccessFlags colorOnlyAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT |
+                                                  VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+                                                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    const vk::VkAccessFlags depthStencilColorAccessMask = colorOnlyAccessMask |
+                                                          VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                                          VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    const vk::VkAccessFlags dstAccessMask =
+        m_testCase->hasDepthStencil() ? depthStencilColorAccessMask : colorOnlyAccessMask;
 
-    m_vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1,
-                            &memBarrier, 0, DE_NULL, 0, DE_NULL);
+    const VkMemoryBarrier memBarrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER, DE_NULL, VK_ACCESS_TRANSFER_WRITE_BIT,
+                                        dstAccessMask};
+
+    const vk::VkPipelineStageFlags colorOnlyStageFlags =
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    const vk::VkPipelineStageFlags depthStencilColorStageFlags =
+        colorOnlyStageFlags | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    const vk::VkPipelineStageFlags dstStageFlags =
+        m_testCase->hasDepthStencil() ? depthStencilColorStageFlags : colorOnlyStageFlags;
+    m_vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageFlags, 0, 1, &memBarrier, 0, DE_NULL,
+                            0, DE_NULL);
 
     const VkRect2D renderArea = makeRect2D(WIDTH, HEIGHT);
     beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
