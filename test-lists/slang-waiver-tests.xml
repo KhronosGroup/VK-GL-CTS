@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <waiver_list>
-<waiver vendorName="nvidia" vendorId="0x10de" url="">
-    <description>Known failure tests for slang.</description>
+<waiver vendorName="nvidia" vendorId="0x10de" url="https://github.com/shader-slang/slang/issues/4233">
+    <description>Known failure tests for slang. Github issue (#4233) is created to track the fix. Once the issue is fixed, we will remove the list.</description>
     <device_list>
         <d>0xa7a0</d>
+        <d>0x2206</d>
         <d>0x2208</d>
         <d>0x26b1</d>
         <d>0x1E04</d>
