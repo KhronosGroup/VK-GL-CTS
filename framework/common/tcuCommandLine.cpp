@@ -51,6 +51,13 @@ using std::vector;
 #define TEST_OOM_DEFAULT "disable"
 #endif
 
+// Duplicate name checks are enabled by default in Debug mode, and disabled in Release mode.
+#if defined(DE_DEBUG)
+#define DUPLICATE_CHECK_DEFAULT "enable"
+#else
+#define DUPLICATE_CHECK_DEFAULT "disable"
+#endif
+
 namespace tcu
 {
 
@@ -96,6 +103,7 @@ DE_DECLARE_COMMAND_LINE_OPT(LogFlush, bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogCompact, bool);
 DE_DECLARE_COMMAND_LINE_OPT(Validation, bool);
 DE_DECLARE_COMMAND_LINE_OPT(PrintValidationErrors, bool);
+DE_DECLARE_COMMAND_LINE_OPT(DuplicateCheck, bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCache, bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheFilename, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(Optimization, int);
@@ -233,6 +241,9 @@ void registerOptions(de::cmdline::Parser &parser)
                               "disable")
         << Option<PrintValidationErrors>(DE_NULL, "deqp-print-validation-errors",
                                          "Print validation errors to standard error")
+        << Option<DuplicateCheck>(DE_NULL, "deqp-duplicate-case-name-check",
+                                  "Check for duplicate case names when creating test hierarchy", s_enableNames,
+                                  DUPLICATE_CHECK_DEFAULT)
         << Option<Optimization>(DE_NULL, "deqp-optimization-recipe",
                                 "Shader optimization recipe (0=disabled, 1=performance, 2=size)", "0")
         << Option<OptimizeSpirv>(DE_NULL, "deqp-optimize-spirv", "Apply optimization to spir-v shaders as well",
@@ -1209,6 +1220,10 @@ bool CommandLine::isValidationEnabled(void) const
 bool CommandLine::printValidationErrors(void) const
 {
     return m_cmdLine.getOption<opt::PrintValidationErrors>();
+}
+bool CommandLine::checkDuplicateCaseNames(void) const
+{
+    return m_cmdLine.getOption<opt::DuplicateCheck>();
 }
 bool CommandLine::isLogDecompiledSpirvEnabled(void) const
 {
