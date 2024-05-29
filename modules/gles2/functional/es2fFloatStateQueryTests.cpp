@@ -74,17 +74,17 @@ public:
 
     const char *getTestNamePostfix(void) const;
 
-    virtual void verifyFloat(tcu::TestContext &testCtx, GLenum name, GLfloat reference) = DE_NULL;
+    virtual void verifyFloat(tcu::TestContext &testCtx, GLenum name, GLfloat reference) = 0;
 
     // "Expanded" == Float to int conversion converts from [-1.0 to 1.0] -> [MIN_INT MAX_INT]
-    virtual void verifyFloatExpanded(tcu::TestContext &testCtx, GLenum name, GLfloat reference) = DE_NULL;
+    virtual void verifyFloatExpanded(tcu::TestContext &testCtx, GLenum name, GLfloat reference) = 0;
     virtual void verifyFloat2Expanded(tcu::TestContext &testCtx, GLenum name, GLfloat reference0,
                                       GLfloat reference1)                                       = DE_NULL;
     virtual void verifyFloat4Color(tcu::TestContext &testCtx, GLenum name, GLfloat reference0, GLfloat reference1,
                                    GLfloat reference2, GLfloat reference3)                      = DE_NULL;
 
     // verify that the given range is completely whitin the GL state range
-    virtual void verifyFloatRange(tcu::TestContext &testCtx, GLenum name, GLfloat min, GLfloat max) = DE_NULL;
+    virtual void verifyFloatRange(tcu::TestContext &testCtx, GLenum name, GLfloat min, GLfloat max) = 0;
 
 private:
     const char *const m_testNamePostfix;

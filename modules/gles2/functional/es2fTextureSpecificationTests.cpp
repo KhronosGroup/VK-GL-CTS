@@ -374,7 +374,7 @@ public:
     IterateResult iterate(void);
 
 protected:
-    virtual void createTexture(void) = DE_NULL;
+    virtual void createTexture(void) = 0;
 
     const TextureType m_texType;
     const tcu::TextureFormat m_texFormat;

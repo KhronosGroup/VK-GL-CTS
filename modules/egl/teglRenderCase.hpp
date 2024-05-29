@@ -57,7 +57,7 @@ protected:
     };
 
     virtual void executeForConfig(eglw::EGLDisplay display, eglw::EGLConfig config);
-    virtual void executeForSurface(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config) = DE_NULL;
+    virtual void executeForSurface(eglw::EGLDisplay display, eglw::EGLSurface surface, const Config &config) = 0;
 
     eglw::EGLint m_surfaceTypeMask;
 };

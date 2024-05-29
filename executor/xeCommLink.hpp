@@ -53,16 +53,16 @@ public:
     CommLink(void);
     virtual ~CommLink(void);
 
-    virtual void reset(void)                                 = DE_NULL;
-    virtual CommLinkState getState(void) const               = DE_NULL;
-    virtual CommLinkState getState(std::string &error) const = DE_NULL;
+    virtual void reset(void)                                 = 0;
+    virtual CommLinkState getState(void) const               = 0;
+    virtual CommLinkState getState(std::string &error) const = 0;
 
     virtual void setCallbacks(StateChangedFunc stateChangedCallback, LogDataFunc testLogDataCallback,
                               LogDataFunc infoLogDataCallback, void *userPtr) = DE_NULL;
 
     virtual void startTestProcess(const char *name, const char *params, const char *workingDir,
                                   const char *caseList) = DE_NULL;
-    virtual void stopTestProcess(void)                  = DE_NULL;
+    virtual void stopTestProcess(void)                  = 0;
 };
 
 } // namespace xe

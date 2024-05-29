@@ -633,7 +633,7 @@ public:
     virtual void testColorAttachment(GLenum internalFormat, GLenum attachment, GLint bitsR, GLint bitsG, GLint bitsB,
                                      GLint bitsA) = DE_NULL;
 
-    virtual void testDepthAttachment(GLenum internalFormat, GLenum attachment, GLint bitsD, GLint bitsS) = DE_NULL;
+    virtual void testDepthAttachment(GLenum internalFormat, GLenum attachment, GLint bitsD, GLint bitsS) = 0;
 
     void test(void)
     {
@@ -876,9 +876,9 @@ public:
     {
     }
 
-    virtual void testColorAttachment(void) = DE_NULL;
+    virtual void testColorAttachment(void) = 0;
 
-    virtual void testDepthAttachment(void) = DE_NULL;
+    virtual void testDepthAttachment(void) = 0;
 
     void test(void)
     {

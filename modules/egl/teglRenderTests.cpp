@@ -524,7 +524,7 @@ public:
     {
     }
 
-    virtual void setup(void) const = DE_NULL;
+    virtual void setup(void) const = 0;
 };
 
 typedef de::SharedPtr<Program> ProgramSp;

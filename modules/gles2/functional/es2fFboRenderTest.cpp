@@ -607,7 +607,7 @@ public:
     }
 
     virtual IterateResult iterate(void);
-    virtual void render(sglr::Context &fboContext, Surface &dst) = DE_NULL;
+    virtual void render(sglr::Context &fboContext, Surface &dst) = 0;
 
     const FboConfig &getConfig(void) const
     {

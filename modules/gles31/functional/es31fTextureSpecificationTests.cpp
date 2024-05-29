@@ -121,8 +121,8 @@ protected:
         return true;
     }
 
-    virtual void createTexture(void)                                                              = DE_NULL;
-    virtual void verifyTexture(sglr::GLContext &gles3Context, sglr::ReferenceContext &refContext) = DE_NULL;
+    virtual void createTexture(void)                                                              = 0;
+    virtual void verifyTexture(sglr::GLContext &gles3Context, sglr::ReferenceContext &refContext) = 0;
 
     // Utilities.
     void renderTex(tcu::Surface &dst, uint32_t program, int width, int height);

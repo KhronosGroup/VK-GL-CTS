@@ -116,7 +116,7 @@ public:
     }
 
     virtual IterateResult iterate(void);
-    virtual void render(sglr::Context &context) = DE_NULL;
+    virtual void render(sglr::Context &context) = 0;
 };
 
 DepthCase::DepthCase(Context &context, const char *name, const char *description) : TestCase(context, name, description)

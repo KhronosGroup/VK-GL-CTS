@@ -52,7 +52,7 @@ public:
         return m_value.getValue(m_type);
     }
 
-    virtual void evaluate(ExecValueAccess dst, ExecConstValueAccess a, ExecConstValueAccess b) = DE_NULL;
+    virtual void evaluate(ExecValueAccess dst, ExecConstValueAccess a, ExecConstValueAccess b) = 0;
 
 protected:
     static float getWeight(const GeneratorState &state, ConstValueRangeAccess valueRange);

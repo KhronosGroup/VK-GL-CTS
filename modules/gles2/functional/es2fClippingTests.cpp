@@ -476,7 +476,7 @@ class RenderTestCase : public TestCase
 public:
     RenderTestCase(Context &context, const char *name, const char *description);
 
-    virtual void testRender(void) = DE_NULL;
+    virtual void testRender(void) = 0;
     virtual void init(void)
     {
     }
@@ -1125,7 +1125,7 @@ class FillTest : public RenderTestCase
 public:
     FillTest(Context &context, const char *name, const char *description, const rr::WindowRectangle &viewport);
 
-    virtual void render(sglr::Context &ctx) = DE_NULL;
+    virtual void render(sglr::Context &ctx) = 0;
     void testRender(void);
 
 protected:

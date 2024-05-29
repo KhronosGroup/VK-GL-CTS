@@ -48,7 +48,7 @@ public:
     IterateResult iterate(void);
 
 protected:
-    virtual void test(void) = DE_NULL;
+    virtual void test(void) = 0;
 
     void expectError(eglw::EGLenum error);
     void expectEitherError(eglw::EGLenum errorA, eglw::EGLenum errorB);

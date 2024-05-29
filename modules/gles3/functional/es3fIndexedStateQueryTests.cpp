@@ -78,7 +78,7 @@ public:
     {
     }
 
-    virtual void testTransformFeedback(void) = DE_NULL;
+    virtual void testTransformFeedback(void) = 0;
 
     void test(void)
     {
@@ -328,7 +328,7 @@ public:
     {
     }
 
-    virtual void testUniformBuffers(void) = DE_NULL;
+    virtual void testUniformBuffers(void) = 0;
 
     void test(void)
     {

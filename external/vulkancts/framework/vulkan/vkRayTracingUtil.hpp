@@ -789,20 +789,20 @@ public:
         const std::vector<tcu::Vec3> &geometryData, const bool triangles, const VkGeometryFlagsKHR geometryFlags = 0u,
         const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap = DE_NULL);
 
-    virtual void setBuildType(const VkAccelerationStructureBuildTypeKHR buildType)                         = DE_NULL;
+    virtual void setBuildType(const VkAccelerationStructureBuildTypeKHR buildType)                         = 0;
     virtual VkAccelerationStructureBuildTypeKHR getBuildType() const                                       = 0;
-    virtual void setCreateFlags(const VkAccelerationStructureCreateFlagsKHR createFlags)                   = DE_NULL;
+    virtual void setCreateFlags(const VkAccelerationStructureCreateFlagsKHR createFlags)                   = 0;
     virtual void setCreateGeneric(bool createGeneric)                                                      = 0;
     virtual void setCreationBufferUnbounded(bool creationBufferUnbounded)                                  = 0;
-    virtual void setBuildFlags(const VkBuildAccelerationStructureFlagsKHR buildFlags)                      = DE_NULL;
+    virtual void setBuildFlags(const VkBuildAccelerationStructureFlagsKHR buildFlags)                      = 0;
     virtual void setBuildWithoutGeometries(bool buildWithoutGeometries)                                    = 0;
     virtual void setBuildWithoutPrimitives(bool buildWithoutPrimitives)                                    = 0;
-    virtual void setDeferredOperation(const bool deferredOperation, const uint32_t workerThreadCount = 0u) = DE_NULL;
-    virtual void setUseArrayOfPointers(const bool useArrayOfPointers)                                      = DE_NULL;
-    virtual void setUseMaintenance5(const bool useMaintenance5)                                            = DE_NULL;
+    virtual void setDeferredOperation(const bool deferredOperation, const uint32_t workerThreadCount = 0u) = 0;
+    virtual void setUseArrayOfPointers(const bool useArrayOfPointers)                                      = 0;
+    virtual void setUseMaintenance5(const bool useMaintenance5)                                            = 0;
     virtual void setIndirectBuildParameters(const VkBuffer indirectBuffer, const VkDeviceSize indirectBufferOffset,
                                             const uint32_t indirectBufferStride)                           = DE_NULL;
-    virtual VkBuildAccelerationStructureFlagsKHR getBuildFlags() const                                     = DE_NULL;
+    virtual VkBuildAccelerationStructureFlagsKHR getBuildFlags() const                                     = 0;
     VkAccelerationStructureBuildSizesInfoKHR getStructureBuildSizes() const;
 
     // methods specific for each acceleration structure
@@ -829,7 +829,7 @@ public:
                            VkDeviceSize compactCopySize = 0u, VkDeviceAddress deviceAddress = 0u);
     void createAndDeserializeFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
                                   Allocator &allocator, SerialStorage *storage, VkDeviceAddress deviceAddress = 0u);
-    virtual const VkAccelerationStructureKHR *getPtr(void) const                         = DE_NULL;
+    virtual const VkAccelerationStructureKHR *getPtr(void) const                         = 0;
     virtual void updateGeometry(size_t geometryIndex,
                                 de::SharedPtr<RaytracedGeometryBase> &raytracedGeometry) = DE_NULL;
 
@@ -978,20 +978,20 @@ public:
                              uint32_t mask = 0xFF, uint32_t instanceShaderBindingTableRecordOffset = 0,
                              VkGeometryInstanceFlagsKHR flags = VkGeometryInstanceFlagBitsKHR(0u));
 
-    virtual void setBuildType(const VkAccelerationStructureBuildTypeKHR buildType)                         = DE_NULL;
-    virtual void setCreateFlags(const VkAccelerationStructureCreateFlagsKHR createFlags)                   = DE_NULL;
+    virtual void setBuildType(const VkAccelerationStructureBuildTypeKHR buildType)                         = 0;
+    virtual void setCreateFlags(const VkAccelerationStructureCreateFlagsKHR createFlags)                   = 0;
     virtual void setCreateGeneric(bool createGeneric)                                                      = 0;
     virtual void setCreationBufferUnbounded(bool creationBufferUnbounded)                                  = 0;
-    virtual void setBuildFlags(const VkBuildAccelerationStructureFlagsKHR buildFlags)                      = DE_NULL;
+    virtual void setBuildFlags(const VkBuildAccelerationStructureFlagsKHR buildFlags)                      = 0;
     virtual void setBuildWithoutPrimitives(bool buildWithoutPrimitives)                                    = 0;
     virtual void setInactiveInstances(bool inactiveInstances)                                              = 0;
-    virtual void setDeferredOperation(const bool deferredOperation, const uint32_t workerThreadCount = 0u) = DE_NULL;
-    virtual void setUseArrayOfPointers(const bool useArrayOfPointers)                                      = DE_NULL;
+    virtual void setDeferredOperation(const bool deferredOperation, const uint32_t workerThreadCount = 0u) = 0;
+    virtual void setUseArrayOfPointers(const bool useArrayOfPointers)                                      = 0;
     virtual void setIndirectBuildParameters(const VkBuffer indirectBuffer, const VkDeviceSize indirectBufferOffset,
                                             const uint32_t indirectBufferStride)                           = DE_NULL;
     virtual void setUsePPGeometries(const bool usePPGeometries)                                            = 0;
     virtual void setTryCachedMemory(const bool tryCachedMemory)                                            = 0;
-    virtual VkBuildAccelerationStructureFlagsKHR getBuildFlags() const                                     = DE_NULL;
+    virtual VkBuildAccelerationStructureFlagsKHR getBuildFlags() const                                     = 0;
     VkAccelerationStructureBuildSizesInfoKHR getStructureBuildSizes() const;
 
     // methods specific for each acceleration structure
@@ -1029,7 +1029,7 @@ public:
     void createAndDeserializeFrom(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
                                   Allocator &allocator, SerialStorage *storage, VkDeviceAddress deviceAddress = 0u);
 
-    virtual const VkAccelerationStructureKHR *getPtr(void) const = DE_NULL;
+    virtual const VkAccelerationStructureKHR *getPtr(void) const = 0;
 
     virtual void updateInstanceMatrix(const DeviceInterface &vk, const VkDevice device, size_t instanceIndex,
                                       const VkTransformMatrixKHR &matrix) = 0;

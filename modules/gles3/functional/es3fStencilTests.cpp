@@ -180,7 +180,7 @@ public:
     void deinit(void);
     IterateResult iterate(void);
 
-    virtual void genOps(vector<StencilOp> &dst, int stencilBits, int depthBits, int targetStencil) = DE_NULL;
+    virtual void genOps(vector<StencilOp> &dst, int stencilBits, int depthBits, int targetStencil) = 0;
 
 private:
     void executeOps(sglr::Context &context, const IVec4 &cell, const vector<StencilOp> &ops);

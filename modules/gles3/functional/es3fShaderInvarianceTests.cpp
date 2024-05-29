@@ -136,7 +136,7 @@ public:
     IterateResult iterate(void);
 
 private:
-    virtual ShaderPair genShaders(void) const = DE_NULL;
+    virtual ShaderPair genShaders(void) const = 0;
     bool checkImage(const tcu::Surface &) const;
 
     glu::ShaderProgram *m_shader0;
