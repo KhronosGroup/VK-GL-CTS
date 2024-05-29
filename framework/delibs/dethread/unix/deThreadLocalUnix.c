@@ -50,7 +50,7 @@ DE_INLINE pthread_key_t threadLocalToKey(deThreadLocal threadLocal)
 deThreadLocal deThreadLocal_create(void)
 {
     pthread_key_t key = (pthread_key_t)0;
-    if (pthread_key_create(&key, DE_NULL) != 0)
+    if (pthread_key_create(&key, NULL) != 0)
         return 0;
     return keyToThreadLocal(key);
 }

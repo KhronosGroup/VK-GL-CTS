@@ -39,7 +39,7 @@ deSemaphore deSemaphore_create(int initialValue, const deSemaphoreAttributes *at
 
     DE_UNREF(attributes);
 
-    handle = CreateSemaphore(DE_NULL, initialValue, WIN32_SEM_MAX_VALUE, DE_NULL);
+    handle = CreateSemaphore(NULL, initialValue, WIN32_SEM_MAX_VALUE, NULL);
     if (!handle)
         return 0;
 
@@ -57,7 +57,7 @@ void deSemaphore_destroy(deSemaphore semaphore)
 void deSemaphore_increment(deSemaphore semaphore)
 {
     HANDLE handle = (HANDLE)semaphore;
-    BOOL ret      = ReleaseSemaphore(handle, 1, DE_NULL);
+    BOOL ret      = ReleaseSemaphore(handle, 1, NULL);
     DE_ASSERT(ret);
     DE_UNREF(ret);
 }

@@ -123,14 +123,14 @@ static const deIOStreamVFTable fileIOStreamVFTable = {fileIOStream_read,  fileIO
                                                       fileIOStream_flush, fileIOStream_deinit, fileIOStrem_getStatus};
 
 static const deIOStreamVFTable fileInStreamVFTable = {
-    fileIOStream_read, DE_NULL, fileIOStream_getError, DE_NULL, fileIOStream_deinit, fileIOStrem_getStatus};
+    fileIOStream_read, NULL, fileIOStream_getError, NULL, fileIOStream_deinit, fileIOStrem_getStatus};
 
 static const deIOStreamVFTable fileOutStreamVFTable = {
-    DE_NULL, fileIOStream_write, fileIOStream_getError, fileIOStream_flush, fileIOStream_deinit, fileIOStrem_getStatus};
+    NULL, fileIOStream_write, fileIOStream_getError, fileIOStream_flush, fileIOStream_deinit, fileIOStrem_getStatus};
 
 void fileIOStream_init(deIOStream *stream, const char *filename, deFileMode mode)
 {
-    FileStream *fileStream = DE_NULL;
+    FileStream *fileStream = NULL;
 
     DE_ASSERT(stream);
 
@@ -142,7 +142,7 @@ void fileIOStream_init(deIOStream *stream, const char *filename, deFileMode mode
 
     fileStream->file   = deFile_create(filename, mode);
     fileStream->status = DE_STREAMSTATUS_GOOD;
-    fileStream->error  = DE_NULL;
+    fileStream->error  = NULL;
 
     if (!fileStream->file)
         fileStream->status = DE_STREAMSTATUS_ERROR;
@@ -150,7 +150,7 @@ void fileIOStream_init(deIOStream *stream, const char *filename, deFileMode mode
 
 void deFileInStream_init(deInStream *stream, const char *filename, deFileMode mode)
 {
-    FileStream *fileStream = DE_NULL;
+    FileStream *fileStream = NULL;
 
     DE_ASSERT(stream);
 
@@ -162,7 +162,7 @@ void deFileInStream_init(deInStream *stream, const char *filename, deFileMode mo
 
     fileStream->file   = deFile_create(filename, mode);
     fileStream->status = DE_STREAMSTATUS_GOOD;
-    fileStream->error  = DE_NULL;
+    fileStream->error  = NULL;
 
     if (!fileStream->file)
         fileStream->status = DE_STREAMSTATUS_ERROR;
@@ -170,7 +170,7 @@ void deFileInStream_init(deInStream *stream, const char *filename, deFileMode mo
 
 void deFileOutStream_init(deOutStream *stream, const char *filename, deFileMode mode)
 {
-    FileStream *fileStream = DE_NULL;
+    FileStream *fileStream = NULL;
 
     DE_ASSERT(stream);
 
@@ -182,7 +182,7 @@ void deFileOutStream_init(deOutStream *stream, const char *filename, deFileMode 
 
     fileStream->file   = deFile_create(filename, mode);
     fileStream->status = DE_STREAMSTATUS_GOOD;
-    fileStream->error  = DE_NULL;
+    fileStream->error  = NULL;
 
     if (!fileStream->file)
         fileStream->status = DE_STREAMSTATUS_ERROR;

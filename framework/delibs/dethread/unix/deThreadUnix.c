@@ -67,7 +67,7 @@ static void *startThread(void *entryPtr)
     /* Start actual thread. */
     func(arg);
 
-    return DE_NULL;
+    return NULL;
 }
 
 deThread deThread_create(deThreadFunc func, void *arg, const deThreadAttributes *attributes)
@@ -116,7 +116,7 @@ bool deThread_join(deThread threadptr)
     int ret;
 
     DE_ASSERT(thread->thread);
-    ret = pthread_join(thread->thread, DE_NULL);
+    ret = pthread_join(thread->thread, NULL);
 
     /* If join fails for some reason, at least mark as detached. */
     if (ret != 0)

@@ -221,7 +221,7 @@ static void exitProcess(void)
        handler is not safe. */
 
     /* Flush all open FILES */
-    fflush(DE_NULL);
+    fflush(NULL);
 
     /* Kill without calling any _at_exit handlers as those might hang */
     raise(SIGKILL);

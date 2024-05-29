@@ -127,8 +127,8 @@ DE_INLINE deStreamResult deIOStream_deinit(deIOStream *stream)
 
     result = stream->vfTable->deinitFunc(stream->streamData);
 
-    stream->vfTable    = DE_NULL;
-    stream->streamData = DE_NULL;
+    stream->vfTable    = NULL;
+    stream->streamData = NULL;
 
     return result;
 }

@@ -45,12 +45,12 @@ dePoolStringBuilder *dePoolStringBuilder_create(deMemPool *pool)
 {
     dePoolStringBuilder *builder = DE_POOL_NEW(pool, dePoolStringBuilder);
     if (!builder)
-        return DE_NULL;
+        return NULL;
 
     builder->pool          = pool;
     builder->length        = 0;
-    builder->blockListHead = DE_NULL;
-    builder->blockListTail = DE_NULL;
+    builder->blockListHead = NULL;
+    builder->blockListTail = NULL;
 
     return builder;
 }
@@ -73,7 +73,7 @@ bool dePoolStringBuilder_appendString(dePoolStringBuilder *builder, const char *
         *d = 0;
 
         block->str  = blockStr;
-        block->next = DE_NULL;
+        block->next = NULL;
     }
 
     /* Add block to list. */

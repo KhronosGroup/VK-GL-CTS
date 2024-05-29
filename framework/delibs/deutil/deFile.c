@@ -104,7 +104,7 @@ deFile *deFile_create(const char *filename, uint32_t mode)
     if (fd >= 0)
         return deFile_createFromHandle((uintptr_t)fd);
     else
-        return DE_NULL;
+        return NULL;
 }
 
 void deFile_destroy(deFile *file)
@@ -246,7 +246,7 @@ deFile *deFile_create(const char *filename, uint32_t mode)
 {
     DWORD access  = 0;
     DWORD create  = OPEN_EXISTING;
-    HANDLE handle = DE_NULL;
+    HANDLE handle = NULL;
 
     /* Read, write or read and write access is required. */
     DE_ASSERT((mode & DE_FILEMODE_READ) != 0 || ((mode & DE_FILEMODE_WRITE) != 0));
@@ -287,10 +287,10 @@ deFile *deFile_create(const char *filename, uint32_t mode)
             DE_ASSERT(false);
     }
 
-    handle = CreateFile(filename, access, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, DE_NULL, create,
-                        FILE_ATTRIBUTE_NORMAL, DE_NULL);
+    handle = CreateFile(filename, access, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, create,
+                        FILE_ATTRIBUTE_NORMAL, NULL);
     if (handle == INVALID_HANDLE_VALUE)
-        return DE_NULL;
+        return NULL;
 
     return deFile_createFromHandle((uintptr_t)handle);
 }
@@ -382,7 +382,7 @@ deFileResult deFile_read(deFile *file, void *buf, int64_t bufSize, int64_t *numR
     /* \todo [2011-10-03 pyry] 64-bit IO. */
     DE_ASSERT((int64_t)bufSize32 == bufSize);
 
-    result = ReadFile(file->handle, buf, bufSize32, &numRead32, DE_NULL);
+    result = ReadFile(file->handle, buf, bufSize32, &numRead32, NULL);
 
     if (numReadPtr)
         *numReadPtr = (int64_t)numRead32;
@@ -399,7 +399,7 @@ deFileResult deFile_write(deFile *file, const void *buf, int64_t bufSize, int64_
     /* \todo [2011-10-03 pyry] 64-bit IO. */
     DE_ASSERT((int64_t)bufSize32 == bufSize);
 
-    result = WriteFile(file->handle, buf, bufSize32, &numWritten32, DE_NULL);
+    result = WriteFile(file->handle, buf, bufSize32, &numWritten32, NULL);
 
     if (numWrittenPtr)
         *numWrittenPtr = (int64_t)numWritten32;

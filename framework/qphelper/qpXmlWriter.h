@@ -86,7 +86,7 @@ DE_INLINE qpXmlAttribute qpSetBoolAttrib(const char *name, bool value)
  * \param fileName Name of the file
  * \param useCompression Set to true to use compression, if supported by implementation
  * \param flushAfterWrite Set to true to call fflush after writing each XML token
- * \return qpXmlWriter instance, or DE_NULL if cannot create file
+ * \return qpXmlWriter instance, or NULL if cannot create file
  *//*--------------------------------------------------------------------*/
 qpXmlWriter *qpXmlWriter_createFileWriter(FILE *outFile, bool useCompression, bool flushAfterWrite);
 

@@ -68,7 +68,7 @@ deStreamCpyThread *deStreamCpyThread_create(deInStream *input, deOutStream *outp
     thread->input      = input;
     thread->output     = output;
     thread->bufferSize = bufferSize;
-    thread->thread     = deThread_create(cpyStream, thread, DE_NULL);
+    thread->thread     = deThread_create(cpyStream, thread, NULL);
 
     return thread;
 }

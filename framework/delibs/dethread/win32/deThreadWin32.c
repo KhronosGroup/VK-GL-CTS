@@ -85,7 +85,7 @@ deThread deThread_create(deThreadFunc func, void *arg, const deThreadAttributes 
     entry->func = func;
     entry->arg  = arg;
 
-    thread = CreateThread(DE_NULL, 0, startThread, entry, 0, DE_NULL);
+    thread = CreateThread(NULL, 0, startThread, entry, 0, NULL);
     if (!thread)
     {
         deFree(entry);
@@ -149,7 +149,7 @@ static SYSTEM_LOGICAL_PROCESSOR_INFORMATION *getWin32ProcessorInfo(uint32_t *num
             else
             {
                 deFree(info);
-                return DE_NULL;
+                return NULL;
             }
         }
     }

@@ -33,7 +33,7 @@ typedef struct deDynamicLibrary_s deDynamicLibrary;
 /*--------------------------------------------------------------------*//*!
  * \brief Open dynamic library.
  * \param fileName Name or path to dynamic library.
- * \return Dynamic library handle, or DE_NULL on failure.
+ * \return Dynamic library handle, or NULL on failure.
  *
  * This function opens and loads dynamic library to current process.
  * If library is already loaded, its reference count will be increased.
@@ -44,7 +44,7 @@ deDynamicLibrary *deDynamicLibrary_open(const char *fileName);
  * \brief Load function symbol from dynamic library.
  * \param library Dynamic library
  * \param symbolName Name of function symbol
- * \return Function pointer or DE_NULL on failure
+ * \return Function pointer or NULL on failure
  * \note Returned pointers will be invalidated if dynamic library is
  *       unloaded.
  *//*--------------------------------------------------------------------*/

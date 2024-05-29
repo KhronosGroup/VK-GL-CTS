@@ -45,4 +45,8 @@ typedef int deBool;
 #define DE_FALSE 0 /*!< False value for deBool. */
 #endif             /* DEQP_GTF_AVAILABLE */
 
+#if !defined(__cplusplus)
+#define DE_NULL ((void *)0)
+#endif
+
 #endif /* _DEDEFS_KC_CTS_H */

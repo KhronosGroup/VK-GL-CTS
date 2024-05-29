@@ -29,12 +29,12 @@
 
 deImage *deImage_loadTarga(const char *fileName)
 {
-    deImage *image = DE_NULL;
+    deImage *image = NULL;
     FILE *file;
 
     file = fopen(fileName, "rb");
 
-    if (file != DE_NULL)
+    if (file != NULL)
     {
         int bytesRead;
         int width;
@@ -119,7 +119,7 @@ deImage *deImage_loadTarga(const char *fileName)
 
 bool deImage_saveTarga(const deImage *image, const char *fileName)
 {
-    deImage *imageCopy = DE_NULL;
+    deImage *imageCopy = NULL;
     int width          = image->width;
     int height         = image->height;
     char tgaHeader[18];

@@ -116,11 +116,11 @@ qpWatchDog *qpWatchDog_create(qpWatchDogFunc timeOutFunc, void *userPtr, int tot
 
     /* Initialize watchdog thread. */
     dog->status         = STATUS_THREAD_RUNNING;
-    dog->watchDogThread = deThread_create(watchDogThreadFunc, dog, DE_NULL);
+    dog->watchDogThread = deThread_create(watchDogThreadFunc, dog, NULL);
     if (!dog->watchDogThread)
     {
         deFree(dog);
-        return DE_NULL;
+        return NULL;
     }
 
     return dog;

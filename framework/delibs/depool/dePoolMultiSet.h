@@ -130,7 +130,7 @@ DE_END_EXTERN_C
         /* Alloc struct. */                                                           \
         DE_PTR_TYPE(TYPENAME) set = DE_POOL_NEW(pool, TYPENAME);                      \
         if (!set)                                                                     \
-            return DE_NULL;                                                           \
+            return NULL;                                                              \
                                                                                       \
         /* Init. */                                                                   \
         memset(set, 0, sizeof(TYPENAME));                                             \
