@@ -92,7 +92,8 @@ namespace CopyImage
 class FunctionalTest : public deqp::TestCase
 {
 public:
-    FunctionalTest(deqp::Context &context);
+    FunctionalTest(deqp::Context &context, glw::GLenum dst_format, glw::GLenum dst_target, glw::GLenum src_format,
+                   glw::GLenum src_target);
     virtual ~FunctionalTest()
     {
     }
@@ -710,6 +711,8 @@ public:
 private:
     CopyImageTests(const CopyImageTests &other);
     CopyImageTests &operator=(const CopyImageTests &other);
+
+    void addFunctionalTest();
 };
 } /* namespace gl4cts */
 

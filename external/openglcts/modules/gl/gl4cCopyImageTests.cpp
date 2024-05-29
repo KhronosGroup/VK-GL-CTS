@@ -279,6 +279,67 @@ static const GLuint s_n_internal_formats = sizeof(s_internal_formats) / sizeof(s
 static const GLuint s_n_invalid_targets  = sizeof(s_invalid_targets) / sizeof(s_invalid_targets[0]);
 static const GLuint s_n_valid_targets    = sizeof(s_valid_targets) / sizeof(s_valid_targets[0]);
 
+static void removeGLPrefixAndLowerCase(std::string &name)
+{
+    std::string remove("GL_");
+    std::size_t ind = name.find(remove);
+    if (ind != std::string::npos)
+    {
+        name.erase(ind, remove.length());
+    }
+    std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return std::tolower(c); });
+};
+
+static std::string getTextureTargetString(GLint target)
+{
+    auto targetName = glu::getTextureTargetName(target);
+    if (targetName == nullptr)
+    {
+        switch (target)
+        {
+        case 0x8C18:
+            return "texture_1d_array";
+        case 0x84F5:
+            return "texture_rectangle";
+        case 0x8D41:
+            return "renderbuffer";
+        default:
+            return "null";
+        }
+    }
+    std::string name(targetName);
+    removeGLPrefixAndLowerCase(name);
+    return name;
+};
+
+static std::string getTextureFormatString(GLint format)
+{
+    auto formatName = glu::getTextureFormatName(format);
+    if (formatName == nullptr)
+    {
+        switch (format)
+        {
+        case 0x2A10:
+            return "gl_r3_g3_b2";
+        case 0x8055:
+            return "gl_rgba2";
+        case 0x804F:
+            return "gl_rgb4";
+        case 0x8050:
+            return "gl_rgb5";
+        case 0x8053:
+            return "gl_rgb12";
+        case 0x805A:
+            return "gl_rgba12";
+        default:
+            return "null";
+        }
+    }
+    std::string name(formatName);
+    removeGLPrefixAndLowerCase(name);
+    return name;
+}
+
 /**
  * Pixel compatibility depends on pixel size. However value returned by getPixelSizeForFormat
  * needs some refinements
@@ -2534,7 +2595,8 @@ bool Utils::unpackAndComaprePixels(GLenum left_format, GLenum left_type, GLenum 
  *
  * @param context Text context
  **/
-FunctionalTest::FunctionalTest(deqp::Context &context)
+FunctionalTest::FunctionalTest(deqp::Context &context, glw::GLenum dst_format, glw::GLenum dst_target,
+                               glw::GLenum src_format, glw::GLenum src_target)
     : TestCase(context, "functional", "Test verifies CopyImageSubData copy data as requested")
     , m_dst_buf_name(0)
     , m_dst_tex_name(0)
@@ -2543,66 +2605,14 @@ FunctionalTest::FunctionalTest(deqp::Context &context)
     , m_src_tex_name(0)
     , m_test_case_index(0)
 {
-    for (GLuint src_tgt_id = 0; src_tgt_id < s_n_valid_targets; ++src_tgt_id)
-    {
-        const GLenum src_target = s_valid_targets[src_tgt_id];
+    std::string name = "functional_src_target_" + CopyImage::getTextureTargetString(src_target) + "_src_format_" +
+                       CopyImage::getTextureFormatString(src_format) + "_dst_target_" +
+                       CopyImage::getTextureTargetString(dst_target) + "_dst_format_" +
+                       CopyImage::getTextureFormatString(dst_format);
 
-#if COPY_IMAGE_FUNCTIONAL_TEST_ENABLE_ALL_TARGETS == 0
-        if ((GL_TEXTURE_1D == src_target) || (GL_TEXTURE_1D_ARRAY == src_target) || (GL_TEXTURE_2D == src_target) ||
-            (GL_TEXTURE_CUBE_MAP == src_target) || (GL_TEXTURE_CUBE_MAP_ARRAY == src_target))
-        {
-            continue;
-        }
-#endif /* COPY_IMAGE_FUNCTIONAL_TEST_ENABLE_ALL_TARGETS == 0 */
+    TestCase::m_name = name;
 
-        for (GLuint dst_tgt_id = 0; dst_tgt_id < s_n_valid_targets; ++dst_tgt_id)
-        {
-            const GLenum dst_target = s_valid_targets[dst_tgt_id];
-
-#if COPY_IMAGE_FUNCTIONAL_TEST_ENABLE_ALL_TARGETS == 0
-            if ((GL_TEXTURE_1D == dst_target) || (GL_TEXTURE_1D_ARRAY == dst_target) || (GL_TEXTURE_2D == dst_target) ||
-                (GL_TEXTURE_CUBE_MAP == dst_target) || (GL_TEXTURE_CUBE_MAP_ARRAY == dst_target))
-            {
-                continue;
-            }
-#endif /* COPY_IMAGE_FUNCTIONAL_TEST_ENABLE_ALL_TARGETS == 0 */
-
-            /* Skip render buffer as destination */
-            if (GL_RENDERBUFFER == dst_target)
-            {
-                continue;
-            }
-
-            /* Skip multisampled */
-            if ((true == Utils::isTargetMultisampled(src_target)) || (true == Utils::isTargetMultisampled(dst_target)))
-            {
-                continue;
-            }
-
-            for (GLuint src_frmt_id = 0; src_frmt_id < s_n_internal_formats; ++src_frmt_id)
-            {
-                const GLenum src_format = s_internal_formats[src_frmt_id];
-
-                if (src_format == GL_RGB9_E5 && src_target == GL_RENDERBUFFER)
-                {
-                    continue;
-                }
-
-                for (GLuint dst_frmt_id = 0; dst_frmt_id < s_n_internal_formats; ++dst_frmt_id)
-                {
-                    const GLenum dst_format = s_internal_formats[dst_frmt_id];
-
-                    /* Skip not compatible formats */
-                    if (false == Utils::areFormatsCompatible(src_format, dst_format))
-                    {
-                        continue;
-                    }
-
-                    prepareTestCases(dst_format, dst_target, src_format, src_target);
-                }
-            }
-        }
-    }
+    prepareTestCases(dst_format, dst_target, src_format, src_target);
 }
 
 /** Execute test
@@ -5936,7 +5946,7 @@ CopyImageTests::~CopyImageTests(void)
 
 void CopyImageTests::init()
 {
-    addChild(new CopyImage::FunctionalTest(m_context));
+    addFunctionalTest();
     addChild(new CopyImage::IncompleteTexTest(m_context));
     addChild(new CopyImage::InvalidObjectTest(m_context));
     addChild(new CopyImage::SmokeTest(m_context));
@@ -5949,5 +5959,70 @@ void CopyImageTests::init()
     addChild(new CopyImage::ExceedingBoundariesTest(m_context));
     addChild(new CopyImage::InvalidAlignmentTest(m_context));
     addChild(new CopyImage::IntegerTexTest(m_context));
+}
+
+void CopyImageTests::addFunctionalTest()
+{
+    for (GLuint src_tgt_id = 0; src_tgt_id < CopyImage::s_n_valid_targets; ++src_tgt_id)
+    {
+        const GLenum src_target = CopyImage::s_valid_targets[src_tgt_id];
+
+#if COPY_IMAGE_FUNCTIONAL_TEST_ENABLE_ALL_TARGETS == 0
+        if ((GL_TEXTURE_1D == src_target) || (GL_TEXTURE_1D_ARRAY == src_target) || (GL_TEXTURE_2D == src_target) ||
+            (GL_TEXTURE_CUBE_MAP == src_target) || (GL_TEXTURE_CUBE_MAP_ARRAY == src_target))
+        {
+            continue;
+        }
+#endif /* COPY_IMAGE_FUNCTIONAL_TEST_ENABLE_ALL_TARGETS == 0 */
+
+        for (GLuint dst_tgt_id = 0; dst_tgt_id < CopyImage::s_n_valid_targets; ++dst_tgt_id)
+        {
+            const GLenum dst_target = CopyImage::s_valid_targets[dst_tgt_id];
+
+#if COPY_IMAGE_FUNCTIONAL_TEST_ENABLE_ALL_TARGETS == 0
+            if ((GL_TEXTURE_1D == dst_target) || (GL_TEXTURE_1D_ARRAY == dst_target) || (GL_TEXTURE_2D == dst_target) ||
+                (GL_TEXTURE_CUBE_MAP == dst_target) || (GL_TEXTURE_CUBE_MAP_ARRAY == dst_target))
+            {
+                continue;
+            }
+#endif /* COPY_IMAGE_FUNCTIONAL_TEST_ENABLE_ALL_TARGETS == 0 */
+
+            /* Skip render buffer as destination */
+            if (GL_RENDERBUFFER == dst_target)
+            {
+                continue;
+            }
+
+            /* Skip multisampled */
+            if ((true == CopyImage::Utils::isTargetMultisampled(src_target)) ||
+                (true == CopyImage::Utils::isTargetMultisampled(dst_target)))
+            {
+                continue;
+            }
+
+            for (GLuint src_frmt_id = 0; src_frmt_id < CopyImage::s_n_internal_formats; ++src_frmt_id)
+            {
+                const GLenum src_format = CopyImage::s_internal_formats[src_frmt_id];
+
+                if (src_format == GL_RGB9_E5 && src_target == GL_RENDERBUFFER)
+                {
+                    continue;
+                }
+
+                for (GLuint dst_frmt_id = 0; dst_frmt_id < CopyImage::s_n_internal_formats; ++dst_frmt_id)
+                {
+                    const GLenum dst_format = CopyImage::s_internal_formats[dst_frmt_id];
+
+                    /* Skip not compatible formats */
+                    if (false == CopyImage::Utils::areFormatsCompatible(src_format, dst_format))
+                    {
+                        continue;
+                    }
+
+                    addChild(new CopyImage::FunctionalTest(m_context, dst_format, dst_target, src_format, src_target));
+                }
+            }
+        }
+    }
 }
 } /* namespace gl4cts */
