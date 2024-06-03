@@ -86,7 +86,7 @@ struct TestParams
     uint32_t testFlagMask;
 };
 
-static constexpr uint32_t kNumThreadsAtOnce = 1024;
+static constexpr uint32_t kNumThreadsAtOnce = 128;
 
 class PositionFetchCase : public TestCase
 {
@@ -163,6 +163,15 @@ void PositionFetchCase::checkSupport(Context &context) const
 
         if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == false)
             TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+    }
+
+    if (m_params.shaderSourceType == SST_RAY_GENERATION_SHADER || m_params.shaderSourceType == SST_COMPUTE_SHADER)
+    {
+        const VkPhysicalDeviceLimits &deviceLimits = context.getDeviceProperties().limits;
+        if (kNumThreadsAtOnce > deviceLimits.maxComputeWorkGroupSize[0])
+        {
+            TCU_THROW(NotSupportedError, "Compute workgroup size exceeds device limit");
+        }
     }
 
     switch (m_params.shaderSourceType)
@@ -247,7 +256,8 @@ void PositionFetchCase::initPrograms(vk::SourceCollections &programCollection) c
     {
         DE_ASSERT(m_params.shaderSourceType == SST_COMPUTE_SHADER);
         std::ostringstream comp;
-        comp << sharedHeader.str() << "layout(local_size_x=1024, local_size_y=1, local_size_z=1) in;\n"
+        comp << sharedHeader.str() << "layout(local_size_x=" << kNumThreadsAtOnce
+             << ", local_size_y=1, local_size_z=1) in;\n"
              << "\n"
              << "void main()\n"
              << "{\n"
