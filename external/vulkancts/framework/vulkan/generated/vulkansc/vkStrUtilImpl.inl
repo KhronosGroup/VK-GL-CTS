@@ -2675,6 +2675,7 @@ const char* getVendorIdName (VkVendorId value)
 {
 	switch (value)
 	{
+		case VK_VENDOR_ID_KHRONOS:	return "VK_VENDOR_ID_KHRONOS";
 		case VK_VENDOR_ID_VIV:		return "VK_VENDOR_ID_VIV";
 		case VK_VENDOR_ID_VSI:		return "VK_VENDOR_ID_VSI";
 		case VK_VENDOR_ID_KAZAN:	return "VK_VENDOR_ID_KAZAN";
@@ -2716,6 +2717,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_MESA_NVK:						return "VK_DRIVER_ID_MESA_NVK";
 		case VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA:	return "VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA";
 		case VK_DRIVER_ID_MESA_AGXV:					return "VK_DRIVER_ID_MESA_AGXV";
+		case VK_DRIVER_ID_RESERVED_27:					return "VK_DRIVER_ID_RESERVED_27";
 		default:										return DE_NULL;
 	}
 }

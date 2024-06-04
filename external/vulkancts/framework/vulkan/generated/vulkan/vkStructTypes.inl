@@ -6199,6 +6199,20 @@ struct VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT
 	VkBool32		attachmentFeedbackLoopDynamicState;
 };
 
+struct VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		legacyVertexAttributes;
+};
+
+struct VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		nativeUnalignedPerformance;
+};
+
 struct VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT
 {
 	VkStructureType	sType;
@@ -9418,6 +9432,34 @@ struct VkPhysicalDeviceRawAccessChainsFeaturesNV
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shaderRawAccessChains;
+};
+
+struct VkPhysicalDeviceImageAlignmentControlFeaturesMESA
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imageAlignmentControl;
+};
+
+struct VkPhysicalDeviceImageAlignmentControlPropertiesMESA
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		supportedImageAlignmentMask;
+};
+
+struct VkImageAlignmentControlCreateInfoMESA
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		maximumRequestedAlignment;
+};
+
+struct VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderReplicatedComposites;
 };
 
 struct StdVideoH264SpsVuiFlags

@@ -1817,7 +1817,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 283
+#define VK_HEADER_VERSION 286
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 3, VK_HEADER_VERSION)
@@ -2794,6 +2794,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV = 1000492001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT = 1000351000,
     VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT = 1000351002,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT = 1000495000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT = 1000495001,
     VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT = 1000496000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM = 1000497000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM = 1000497001,
@@ -2859,7 +2861,11 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV = 1000546000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV = 1000555000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV = 1000563000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT = 1000564000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV = 1000568000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA = 1000575000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA = 1000575001,
+    VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA = 1000575002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -3152,6 +3158,7 @@ typedef enum VkObjectType {
 } VkObjectType;
 
 typedef enum VkVendorId {
+    VK_VENDOR_ID_KHRONOS = 0x10000,
     VK_VENDOR_ID_VIV = 0x10001,
     VK_VENDOR_ID_VSI = 0x10002,
     VK_VENDOR_ID_KAZAN = 0x10003,
@@ -7534,6 +7541,7 @@ typedef enum VkDriverId {
     VK_DRIVER_ID_MESA_NVK = 24,
     VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA = 25,
     VK_DRIVER_ID_MESA_AGXV = 26,
+    VK_DRIVER_ID_RESERVED_27 = 27,
     VK_DRIVER_ID_AMD_PROPRIETARY_KHR = VK_DRIVER_ID_AMD_PROPRIETARY,
     VK_DRIVER_ID_AMD_OPEN_SOURCE_KHR = VK_DRIVER_ID_AMD_OPEN_SOURCE,
     VK_DRIVER_ID_MESA_RADV_KHR = VK_DRIVER_ID_MESA_RADV,
@@ -20477,6 +20485,24 @@ typedef struct VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV {
 #define VK_EXT_MUTABLE_DESCRIPTOR_TYPE_EXTENSION_NAME "VK_EXT_mutable_descriptor_type"
 
 
+// VK_EXT_legacy_vertex_attributes is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_legacy_vertex_attributes 1
+#define VK_EXT_LEGACY_VERTEX_ATTRIBUTES_SPEC_VERSION 1
+#define VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME "VK_EXT_legacy_vertex_attributes"
+typedef struct VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           legacyVertexAttributes;
+} VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT;
+
+typedef struct VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           nativeUnalignedPerformance;
+} VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT;
+
+
+
 // VK_EXT_layer_settings is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_layer_settings 1
 #define VK_EXT_LAYER_SETTINGS_SPEC_VERSION 2
@@ -20885,6 +20911,18 @@ typedef struct VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV {
 
 
 
+// VK_EXT_shader_replicated_composites is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_shader_replicated_composites 1
+#define VK_EXT_SHADER_REPLICATED_COMPOSITES_SPEC_VERSION 1
+#define VK_EXT_SHADER_REPLICATED_COMPOSITES_EXTENSION_NAME "VK_EXT_shader_replicated_composites"
+typedef struct VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderReplicatedComposites;
+} VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT;
+
+
+
 // VK_NV_ray_tracing_validation is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_ray_tracing_validation 1
 #define VK_NV_RAY_TRACING_VALIDATION_SPEC_VERSION 1
@@ -20894,6 +20932,30 @@ typedef struct VkPhysicalDeviceRayTracingValidationFeaturesNV {
     void*              pNext;
     VkBool32           rayTracingValidation;
 } VkPhysicalDeviceRayTracingValidationFeaturesNV;
+
+
+
+// VK_MESA_image_alignment_control is a preprocessor guard. Do not pass it to API calls.
+#define VK_MESA_image_alignment_control 1
+#define VK_MESA_IMAGE_ALIGNMENT_CONTROL_SPEC_VERSION 1
+#define VK_MESA_IMAGE_ALIGNMENT_CONTROL_EXTENSION_NAME "VK_MESA_image_alignment_control"
+typedef struct VkPhysicalDeviceImageAlignmentControlFeaturesMESA {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           imageAlignmentControl;
+} VkPhysicalDeviceImageAlignmentControlFeaturesMESA;
+
+typedef struct VkPhysicalDeviceImageAlignmentControlPropertiesMESA {
+    VkStructureType    sType;
+    void*              pNext;
+    uint32_t           supportedImageAlignmentMask;
+} VkPhysicalDeviceImageAlignmentControlPropertiesMESA;
+
+typedef struct VkImageAlignmentControlCreateInfoMESA {
+    VkStructureType    sType;
+    const void*        pNext;
+    uint32_t           maximumRequestedAlignment;
+} VkImageAlignmentControlCreateInfoMESA;
 
 
 
