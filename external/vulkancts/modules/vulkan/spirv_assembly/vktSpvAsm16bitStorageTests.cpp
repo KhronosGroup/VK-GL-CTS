@@ -1235,7 +1235,7 @@ void addCompute16bitStorageUniform16To32Group(tcu::TestCaseGroup *group)
              {"vector", "v2f32", "v2f16", "OpDecorate %v2f32arr ArrayStride 8\nOpDecorate %v2f16arr ArrayStride 4\n",
               false, 0, numElements / 2, 2},
              {"matrix", "v2f32", "v2f16",
-              "OpDecorate %m4v2f32arr ArrayStride 32\nOpDecorate %m4v2f16arr ArrayStride 16\n", false, 0,
+              "OpDecorate %m4v2f32arr ArrayStride 32\nOpDecorate %m4v2f16arr ArrayStride 64\n", false, 0,
               numElements / 8, 8}},
             {{"scalar", "f32", "f16", "OpDecorate %f32arr ArrayStride 4\nOpDecorate %f16arr ArrayStride 16\n", false, 0,
               numElements, 8},
@@ -1246,7 +1246,7 @@ void addCompute16bitStorageUniform16To32Group(tcu::TestCaseGroup *group)
              {"vector", "v2f32", "v2f16", "OpDecorate %v2f32arr ArrayStride 8\nOpDecorate %v2f16arr ArrayStride 16\n",
               false, 0, numElements / 2, 8},
              {"matrix", "v2f32", "v2f16",
-              "OpDecorate %m4v2f32arr ArrayStride 32\nOpDecorate %m4v2f16arr ArrayStride 16\n", false, 0,
+              "OpDecorate %m4v2f32arr ArrayStride 32\nOpDecorate %m4v2f16arr ArrayStride 64\n", false, 0,
               numElements / 8, 8}}};
 
         for (uint32_t capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
@@ -1273,6 +1273,8 @@ void addCompute16bitStorageUniform16To32Group(tcu::TestCaseGroup *group)
                 const uint32_t count          = cTypes[capIdx][tyIdx].count;
                 const uint32_t scalarsPerItem = numElements / count;
                 vector<deFloat16> float16Data = getFloat16s(rnd, numElements * inputStride);
+                vector<deFloat16> *inputData  = &float16Data;
+                vector<deFloat16> float16MatrixData;
                 vector<float> float32Data;
 
                 float32Data.reserve(numElements);
@@ -1300,7 +1302,7 @@ void addCompute16bitStorageUniform16To32Group(tcu::TestCaseGroup *group)
                     specs["matrix_decor"]  = "OpMemberDecorate %SSBO32 0 ColMajor\n"
                                              "OpMemberDecorate %SSBO32 0 MatrixStride 8\n"
                                              "OpMemberDecorate %SSBO16 0 ColMajor\n"
-                                             "OpMemberDecorate %SSBO16 0 MatrixStride 4\n";
+                                             "OpMemberDecorate %SSBO16 0 MatrixStride 16\n";
                     specs["matrix_store"]  = "%inloc_1  = OpAccessChain %v2f16ptr %ssbo16 %zero %x %c_i32_1\n"
                                              "%val16_1  = OpLoad %v2f16 %inloc_1\n"
                                              "%val32_1  = OpFConvert %v2f32 %val16_1\n"
@@ -1318,13 +1320,27 @@ void addCompute16bitStorageUniform16To32Group(tcu::TestCaseGroup *group)
                                             "%val32_3  = OpFConvert %v2f32 %val16_3\n"
                                             "%outloc_3 = OpAccessChain %v2f32ptr %ssbo32 %zero %x %c_i32_3\n"
                                             "            OpStore %outloc_3 %val32_3\n";
+
+                    float16MatrixData.reserve(float16Data.size() * 4);
+                    for (size_t dataIdx = 0; dataIdx < float16Data.size() / 2; ++dataIdx)
+                    {
+                        // matrices are treated as arrays of vectors;
+                        // vec4 has same size as 8 x f16; we use 2 x f16 and leave
+                        // remaining 6 x f16 items representing column as deFloat16(0.0f)
+                        float16MatrixData.push_back(float16Data[dataIdx * 2]);
+                        float16MatrixData.push_back(float16Data[dataIdx * 2 + 1]);
+                        for (uint32_t padIdx = 0; padIdx < 6; ++padIdx)
+                            float16MatrixData.push_back(deFloat16(0.0f));
+                    }
+
+                    inputData = &float16MatrixData;
                 }
 
                 spec.assembly      = shaderTemplate.specialize(specs);
                 spec.numWorkGroups = IVec3(cTypes[capIdx][tyIdx].count, 1, 1);
                 spec.verifyIO      = check32BitFloats;
 
-                spec.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data)), CAPABILITIES[capIdx].dtype));
+                spec.inputs.push_back(Resource(BufferSp(new Float16Buffer(*inputData)), CAPABILITIES[capIdx].dtype));
                 spec.outputs.push_back(Resource(BufferSp(
                     new Float32Buffer(cTypes[capIdx][tyIdx].useConstantIndex ? float32DataConstIdx : float32Data))));
                 spec.extensions.push_back("VK_KHR_16bit_storage");
@@ -5889,13 +5905,13 @@ void addGraphics16BitStorageUniformFloat16To32Group(tcu::TestCaseGroup *testGrou
                                 "   %ssbo16 = OpVariable %up_SSBO16 Uniform\n";
 
         const StringTemplate decoration("OpDecorate %a8m4x2f32 ArrayStride 32\n"
-                                        "OpDecorate %a8m4x2f16 ArrayStride 16\n"
+                                        "OpDecorate %a8m4x2f16 ArrayStride 64\n"
                                         "OpMemberDecorate %SSBO32 0 Offset 0\n"
                                         "OpMemberDecorate %SSBO32 0 ColMajor\n"
                                         "OpMemberDecorate %SSBO32 0 MatrixStride 8\n"
                                         "OpMemberDecorate %SSBO16 0 Offset 0\n"
                                         "OpMemberDecorate %SSBO16 0 ColMajor\n"
-                                        "OpMemberDecorate %SSBO16 0 MatrixStride 4\n"
+                                        "OpMemberDecorate %SSBO16 0 MatrixStride 16\n"
                                         "OpDecorate %SSBO32 BufferBlock\n"
                                         "OpDecorate %SSBO16 ${indecor}\n"
                                         "OpDecorate %ssbo32 DescriptorSet 0\n"
@@ -5965,13 +5981,24 @@ void addGraphics16BitStorageUniformFloat16To32Group(tcu::TestCaseGroup *testGrou
             fragments["capability"] = capabilities.specialize(specs);
             fragments["decoration"] = decoration.specialize(specs);
 
+            vector<deFloat16> inputData(float16Data.size() * 4, deFloat16(0.0f));
+            for (size_t dataIdx = 0; dataIdx < float16Data.size() / 2; ++dataIdx)
+            {
+                // matrices are treated as arrays of vectors;
+                // vec4 has same size as 8 x f16; we use 2 x f16 and leave
+                // remaining 6 x f16 items representing column as deFloat16(0.0f)
+                size_t matrixDataIdx         = dataIdx * 8;
+                inputData[matrixDataIdx]     = float16Data[dataIdx * 2];
+                inputData[matrixDataIdx + 1] = float16Data[dataIdx * 2 + 1];
+            }
+
             vector<float> float32Data;
             float32Data.reserve(numDataPoints);
             for (uint32_t numIdx = 0; numIdx < numDataPoints; ++numIdx)
                 float32Data.push_back(deFloat16To32(float16Data[numIdx]));
 
             resources.inputs.push_back(
-                Resource(BufferSp(new Float16Buffer(float16Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+                Resource(BufferSp(new Float16Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
             resources.outputs.push_back(
                 Resource(BufferSp(new Float32Buffer(float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
             resources.verifyIO = check32BitFloats;
@@ -7128,13 +7155,13 @@ void addGraphics16BitStorageUniformFloat16To64Group(tcu::TestCaseGroup *testGrou
                                 "   %ssbo16 = OpVariable %up_SSBO16 Uniform\n";
 
         const StringTemplate decoration("OpDecorate %a8m4x2f64 ArrayStride 64\n"
-                                        "OpDecorate %a8m4x2f16 ArrayStride 16\n"
+                                        "OpDecorate %a8m4x2f16 ArrayStride 64\n"
                                         "OpMemberDecorate %SSBO64 0 Offset 0\n"
                                         "OpMemberDecorate %SSBO64 0 ColMajor\n"
                                         "OpMemberDecorate %SSBO64 0 MatrixStride 16\n"
                                         "OpMemberDecorate %SSBO16 0 Offset 0\n"
                                         "OpMemberDecorate %SSBO16 0 ColMajor\n"
-                                        "OpMemberDecorate %SSBO16 0 MatrixStride 4\n"
+                                        "OpMemberDecorate %SSBO16 0 MatrixStride 16\n"
                                         "OpDecorate %SSBO64 BufferBlock\n"
                                         "OpDecorate %SSBO16 ${indecor}\n"
                                         "OpDecorate %ssbo64 DescriptorSet 0\n"
@@ -7203,13 +7230,24 @@ void addGraphics16BitStorageUniformFloat16To64Group(tcu::TestCaseGroup *testGrou
             fragments["capability"] = capabilities.specialize(specs);
             fragments["decoration"] = decoration.specialize(specs);
 
+            vector<deFloat16> inputData(float16Data.size() * 4, deFloat16(0.0f));
+            for (size_t dataIdx = 0; dataIdx < float16Data.size() / 2; ++dataIdx)
+            {
+                // matrices are treated as arrays of vectors;
+                // vec4 has same size as 8 x f16; we use 2 x f16 and leave
+                // remaining 6 x f16 items representing column as deFloat16(0.0f)
+                size_t matrixDataIdx         = dataIdx * 8;
+                inputData[matrixDataIdx]     = float16Data[dataIdx * 2];
+                inputData[matrixDataIdx + 1] = float16Data[dataIdx * 2 + 1];
+            }
+
             vector<double> float64Data;
             float64Data.reserve(numDataPoints);
             for (uint32_t numIdx = 0; numIdx < numDataPoints; ++numIdx)
                 float64Data.push_back(deFloat16To64(float16Data[numIdx]));
 
             resources.inputs.push_back(
-                Resource(BufferSp(new Float16Buffer(float16Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+                Resource(BufferSp(new Float16Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
             resources.outputs.push_back(
                 Resource(BufferSp(new Float64Buffer(float64Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
             resources.verifyIO = check64BitFloats;
@@ -8278,9 +8316,11 @@ void addCompute16bitStorageUniform16To64Group(tcu::TestCaseGroup *group)
             {"vector", "v2f64", "v2f16", "OpDecorate %v2f64arr ArrayStride 16\nOpDecorate %v2f16arr ArrayStride ", "16",
              12, "4", 0, false, 0, numElements / 2, VEC2},
             {"matrix", "v2f64", "v2f16", "OpDecorate %m4v2f64arr ArrayStride 64\nOpDecorate %m4v2f16arr ArrayStride ",
-             "16", 0, "16", 0, false, 0, numElements / 8, MAT2X2}};
+             "64", 0, "64", 0, false, 0, numElements / 8, MAT2X2}};
 
         vector<deFloat16> float16Data = getFloat16s(rnd, numElements);
+        vector<deFloat16> *inputData  = &float16Data;
+        vector<deFloat16> float16MatrixData(float16Data.size() * 4, deFloat16(0.0f));
         vector<double> float64Data;
 
         float64Data.reserve(numElements);
@@ -8323,6 +8363,9 @@ void addCompute16bitStorageUniform16To64Group(tcu::TestCaseGroup *group)
                             float64Data[cTypes[tyIdx].constantIndex * numFloats + numIdx % numFloats]);
                 }
 
+                // reset input data (for matrix type we need to use float16MatrixData)
+                inputData = &float16Data;
+
                 if (deStringEqual(cTypes[tyIdx].name, "matrix"))
                 {
                     specs["index0"]        = "%zero";
@@ -8334,7 +8377,7 @@ void addCompute16bitStorageUniform16To64Group(tcu::TestCaseGroup *group)
                     specs["matrix_decor"]  = "OpMemberDecorate %SSBO64 0 ColMajor\n"
                                              "OpMemberDecorate %SSBO64 0 MatrixStride 16\n"
                                              "OpMemberDecorate %SSBO16 0 ColMajor\n"
-                                             "OpMemberDecorate %SSBO16 0 MatrixStride 4\n";
+                                             "OpMemberDecorate %SSBO16 0 MatrixStride 16\n";
                     specs["matrix_store"]  = "%inloc_1  = OpAccessChain %v2f16ptr %ssbo16 %zero %x %c_i32_1\n"
                                              "%val16_1  = OpLoad %v2f16 %inloc_1\n"
                                              "%val64_1  = OpFConvert %v2f64 %val16_1\n"
@@ -8352,6 +8395,17 @@ void addCompute16bitStorageUniform16To64Group(tcu::TestCaseGroup *group)
                                             "%val64_3  = OpFConvert %v2f64 %val16_3\n"
                                             "%outloc_3 = OpAccessChain %v2f64ptr %ssbo64 %zero %x %c_i32_3\n"
                                             "            OpStore %outloc_3 %val64_3\n";
+
+                    for (size_t dataIdx = 0; dataIdx < float16Data.size() / 2; ++dataIdx)
+                    {
+                        // matrices are treated as arrays of vectors;
+                        // vec4 has same size as 8 x f16; we use 2 x f16 and leave
+                        // remaining 6 x f16 items representing column as deFloat16(0.0f)
+                        size_t matrixDataIdx                 = dataIdx * 8;
+                        float16MatrixData[matrixDataIdx]     = float16Data[dataIdx * 2];
+                        float16MatrixData[matrixDataIdx + 1] = float16Data[dataIdx * 2 + 1];
+                    }
+                    inputData = &float16MatrixData;
                 }
 
                 spec.assembly          = shaderTemplate.specialize(specs);
@@ -8363,7 +8417,7 @@ void addCompute16bitStorageUniform16To64Group(tcu::TestCaseGroup *group)
                 {
                     DE_ASSERT(cTypes[tyIdx].dataType != MAT2X2 || padding == 0);
                     spec.inputs.push_back(
-                        Resource(BufferSp(new Float16Buffer(float16Data, padding)), CAPABILITIES[capIdx].dtype));
+                        Resource(BufferSp(new Float16Buffer(*inputData, padding)), CAPABILITIES[capIdx].dtype));
                 }
                 else if (cTypes[tyIdx].dataType == VEC2)
                 {
