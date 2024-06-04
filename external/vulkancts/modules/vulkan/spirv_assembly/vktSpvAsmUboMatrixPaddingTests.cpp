@@ -49,8 +49,8 @@ void addComputeUboMatrixPaddingTest(tcu::TestCaseGroup *group)
     de::Random rnd(deStringHash(group->getName()));
     const int numElements = 128;
 
-    // Read input UBO containing and array of mat2x2 using no padding inside matrix. Output
-    // into output buffer containing floats. The input and output buffer data should match.
+    // Read input UBO containing and array of mat2x2. Output into output buffer containing floats.
+    // The input and output buffer data should match.
     const string shaderSource =
         "                       OpCapability Shader\n"
         "                  %1 = OpExtInstImport \"GLSL.std.450\"\n"
@@ -64,10 +64,10 @@ void addComputeUboMatrixPaddingTest(tcu::TestCaseGroup *group)
         "                       OpDecorate %Output BufferBlock\n"
         "                       OpDecorate %dataOutput DescriptorSet 0\n"
         "                       OpDecorate %dataOutput Binding 1\n"
-        "                       OpDecorate %_arr_mat2v2 ArrayStride 16\n"
+        "                       OpDecorate %_arr_mat2v2 ArrayStride 32\n"
         "                       OpMemberDecorate %Input 0 ColMajor\n"
         "                       OpMemberDecorate %Input 0 Offset 0\n"
-        "                       OpMemberDecorate %Input 0 MatrixStride 8\n"
+        "                       OpMemberDecorate %Input 0 MatrixStride 16\n"
         "                       OpDecorate %Input Block\n"
         "                       OpDecorate %dataInput DescriptorSet 0\n"
         "                       OpDecorate %dataInput Binding 0\n"
@@ -126,19 +126,22 @@ void addComputeUboMatrixPaddingTest(tcu::TestCaseGroup *group)
         "                       OpReturn\n"
         "                       OpFunctionEnd\n";
 
-    vector<tcu::Vec4> inputData;
-    ComputeShaderSpec spec;
-
-    inputData.reserve(numElements);
+    vector<tcu::Vec4> inputData(numElements * 2u);
+    vector<tcu::Vec4> outputData(numElements);
     for (uint32_t numIdx = 0; numIdx < numElements; ++numIdx)
-        inputData.push_back(tcu::randomVec4(rnd));
+    {
+        auto v                     = tcu::randomVec4(rnd);
+        outputData[numIdx]         = v;
+        inputData[2u * numIdx]     = tcu::Vec4(v.x(), v.y(), 0.0f, 0.0f);
+        inputData[2u * numIdx + 1] = tcu::Vec4(v.z(), v.w(), 0.0f, 0.0f);
+    }
 
+    ComputeShaderSpec spec;
     spec.assembly      = shaderSource;
     spec.numWorkGroups = IVec3(numElements, 1, 1);
 
     spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
-    // Shader is expected to pass the input data by treating the input vec4 as mat2x2
-    spec.outputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData))));
+    spec.outputs.push_back(Resource(BufferSp(new Vec4Buffer(outputData))));
 
     group->addChild(new SpvAsmComputeShaderCase(testCtx, "mat2x2", spec));
 }
@@ -157,13 +160,18 @@ void addGraphicsUboMatrixPaddingTest(tcu::TestCaseGroup *group)
     std::vector<std::string> noExtensions;
     VulkanFeatures vulkanFeatures = VulkanFeatures();
 
-    vector<tcu::Vec4> inputData(numDataPoints);
+    vector<tcu::Vec4> inputData(numDataPoints * 2u);
+    vector<tcu::Vec4> outputData(numDataPoints);
     for (uint32_t numIdx = 0; numIdx < numDataPoints; ++numIdx)
-        inputData[numIdx] = tcu::randomVec4(rnd);
+    {
+        auto v                      = tcu::randomVec4(rnd);
+        outputData[numIdx]          = v;
+        inputData[2u * numIdx]      = tcu::Vec4(v.x(), v.y(), 0.0f, 0.0f);
+        inputData[2u * numIdx + 1u] = tcu::Vec4(v.z(), v.w(), 0.0f, 0.0f);
+    }
 
     resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
-    // Shader is expected to pass the input data by treating the input vec4 as mat2x2
-    resources.outputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+    resources.outputs.push_back(Resource(BufferSp(new Vec4Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
     getDefaultColors(defaultColors);
 
@@ -185,17 +193,16 @@ void addGraphicsUboMatrixPaddingTest(tcu::TestCaseGroup *group)
                               "                         OpDecorate %Output BufferBlock\n"
                               "                         OpDecorate %dataOutput DescriptorSet 0\n"
                               "                         OpDecorate %dataOutput Binding 1\n"
-                              "                         OpDecorate %_arr_mat2v2f_uint_128 ArrayStride 16\n"
+                              "                         OpDecorate %_arr_mat2v2f_uint_128 ArrayStride 32\n"
                               "                         OpMemberDecorate %Input 0 ColMajor\n"
                               "                         OpMemberDecorate %Input 0 Offset 0\n"
-                              "                         OpMemberDecorate %Input 0 MatrixStride 8\n"
+                              "                         OpMemberDecorate %Input 0 MatrixStride 16\n"
                               "                         OpDecorate %Input Block\n"
                               "                         OpDecorate %dataInput DescriptorSet 0\n"
                               "                         OpDecorate %dataInput Binding 0\n";
 
-    // Read input UBO containing and array of mat2x2 using no padding inside matrix. Output
-    // into output buffer containing floats. The input and output buffer data should match.
-    // The whole array is handled inside a for loop.
+    // Read input UBO containing and array of mat2x2. Output into output buffer containing floats.
+    // The input and output buffer data should match. The whole array is handled inside a for loop.
     fragments["testfun"] =
         "            %test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
         "                %param = OpFunctionParameter %v4f32\n"
