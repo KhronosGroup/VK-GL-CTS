@@ -1459,6 +1459,7 @@ TestInstance *VideoDecodeTestCase::createInstance(Context &context) const
 void VideoDecodeTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_video_queue");
+    context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
     switch (m_testDefinition->getTestType())
@@ -1498,6 +1499,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
     {
         context.requireDeviceFunctionality("VK_KHR_video_decode_h265");
+        context.requireDeviceFunctionality("VK_KHR_video_maintenance1");
         break;
     }
     case TEST_TYPE_AV1_DECODE_I:
@@ -1572,6 +1574,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
 void InterleavingDecodeTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_video_queue");
+    context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
 #ifdef DE_DEBUG
