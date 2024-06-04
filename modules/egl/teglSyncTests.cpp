@@ -335,34 +335,44 @@ void SyncTest::deinit(void)
     }
 }
 
-static const char *const glsl_cs_long = R"(
-    layout(local_size_x = 1, local_size_y = 1) in;
-    layout(std430) buffer;
-    layout(binding = 0) buffer Output {
-        int elements[2];
-    } output_data;
-
-    void main() {
-        int temp = 0;
-        int value = output_data.elements[1]/100;
-        for (int i = 0; i < value; i++) {
-            for (int j = 0; j < output_data.elements[1]/value; j++) {
-                temp += 1;
-            }
-        }
-        atomicAdd(output_data.elements[0], temp);
-    }
-)";
-
-static const char *const kGLSLVer = "#version 310 es\n";
-
 class CreateLongRunningSyncTest : public SyncTest
 {
+    const char *const glsl_cs_long = R"(
+        layout(local_size_x = 1, local_size_y = 1) in;
+        layout(std430) buffer;
+        layout(binding = 0) buffer Output {
+            int elements[2];
+        } output_data;
+
+        void main() {
+            int temp = 0;
+            int value = output_data.elements[1]/100;
+            for (int i = 0; i < value; i++) {
+                for (int j = 0; j < output_data.elements[1]/value; j++) {
+                    temp += 1;
+                }
+            }
+            atomicAdd(output_data.elements[0], temp);
+        }
+    )";
+
+    const char *const kGLSLVer = "#version 310 es\n";
+
     GLuint m_buffer                  = 0;
     volatile int *m_dataloadstoreptr = NULL;
     eglw::EGLContext m_sharedcontext = NULL;
     const int m_total_count          = 5000000;
     const int m_shorter_count        = 50000;
+
+    void requiredGLES31(const glw::Functions &gl)
+    {
+        int minor = 0;
+        gl.getIntegerv(GL_MINOR_VERSION, &minor);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "Get minor version failed");
+
+        if (minor < 1)
+            TCU_THROW(NotSupportedError, "Test case requires GLES 3.1");
+    }
 
     void init(void) override
     {
@@ -396,7 +406,11 @@ class CreateLongRunningSyncTest : public SyncTest
 
         EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
+        // Check sync extension support
         requiredGLESExtensions(m_gl);
+
+        // Check support for ES3.1, required by the compute shader used in the test
+        requiredGLES31(m_gl);
 
         m_sharedcontext = egl.createContext(m_eglDisplay, m_eglConfig, m_eglContext, contextAttribList);
 
