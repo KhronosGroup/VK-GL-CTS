@@ -66,47 +66,47 @@ public:
 
     virtual void pixelStorei(uint32_t pname, int param)                                              = 0;
     virtual void texImage1D(uint32_t target, int level, uint32_t internalFormat, int width, int border, uint32_t format,
-                            uint32_t type, const void *data)                                         = DE_NULL;
+                            uint32_t type, const void *data)                                         = 0;
     virtual void texImage2D(uint32_t target, int level, uint32_t internalFormat, int width, int height, int border,
-                            uint32_t format, uint32_t type, const void *data)                        = DE_NULL;
+                            uint32_t format, uint32_t type, const void *data)                        = 0;
     virtual void texImage3D(uint32_t target, int level, uint32_t internalFormat, int width, int height, int depth,
-                            int border, uint32_t format, uint32_t type, const void *data)            = DE_NULL;
+                            int border, uint32_t format, uint32_t type, const void *data)            = 0;
     virtual void texSubImage1D(uint32_t target, int level, int xoffset, int width, uint32_t format, uint32_t type,
-                               const void *data)                                                     = DE_NULL;
+                               const void *data)                                                     = 0;
     virtual void texSubImage2D(uint32_t target, int level, int xoffset, int yoffset, int width, int height,
-                               uint32_t format, uint32_t type, const void *data)                     = DE_NULL;
+                               uint32_t format, uint32_t type, const void *data)                     = 0;
     virtual void texSubImage3D(uint32_t target, int level, int xoffset, int yoffset, int zoffset, int width, int height,
-                               int depth, uint32_t format, uint32_t type, const void *data)          = DE_NULL;
+                               int depth, uint32_t format, uint32_t type, const void *data)          = 0;
     virtual void copyTexImage1D(uint32_t target, int level, uint32_t internalFormat, int x, int y, int width,
-                                int border)                                                          = DE_NULL;
+                                int border)                                                          = 0;
     virtual void copyTexImage2D(uint32_t target, int level, uint32_t internalFormat, int x, int y, int width,
-                                int height, int border)                                              = DE_NULL;
+                                int height, int border)                                              = 0;
     virtual void copyTexSubImage1D(uint32_t target, int level, int xoffset, int x, int y, int width) = 0;
     virtual void copyTexSubImage2D(uint32_t target, int level, int xoffset, int yoffset, int x, int y, int width,
-                                   int height)                                                       = DE_NULL;
+                                   int height)                                                       = 0;
     virtual void copyTexSubImage3D(uint32_t target, int level, int xoffset, int yoffset, int zoffset, int x, int y,
-                                   int width, int height)                                            = DE_NULL;
+                                   int width, int height)                                            = 0;
 
     virtual void texStorage2D(uint32_t target, int levels, uint32_t internalFormat, int width, int height) = 0;
     virtual void texStorage3D(uint32_t target, int levels, uint32_t internalFormat, int width, int height,
-                              int depth)                                                                   = DE_NULL;
+                              int depth)                                                                   = 0;
 
     virtual void texParameteri(uint32_t target, uint32_t pname, int value) = 0;
 
     virtual void framebufferTexture2D(uint32_t target, uint32_t attachment, uint32_t textarget, uint32_t texture,
-                                      int level)                = DE_NULL;
+                                      int level)                = 0;
     virtual void framebufferTextureLayer(uint32_t target, uint32_t attachment, uint32_t texture, int level,
-                                         int layer)             = DE_NULL;
+                                         int layer)             = 0;
     virtual void framebufferRenderbuffer(uint32_t target, uint32_t attachment, uint32_t renderbuffertarget,
-                                         uint32_t renderbuffer) = DE_NULL;
+                                         uint32_t renderbuffer) = 0;
     virtual uint32_t checkFramebufferStatus(uint32_t target)    = 0;
 
     virtual void getFramebufferAttachmentParameteriv(uint32_t target, uint32_t attachment, uint32_t pname,
-                                                     int *params) = DE_NULL;
+                                                     int *params) = 0;
 
     virtual void renderbufferStorage(uint32_t target, uint32_t internalformat, int width, int height) = 0;
     virtual void renderbufferStorageMultisample(uint32_t target, int samples, uint32_t internalFormat, int width,
-                                                int height)                                           = DE_NULL;
+                                                int height)                                           = 0;
 
     virtual void bindBuffer(uint32_t target, uint32_t buffer)           = 0;
     virtual void genBuffers(int numBuffers, uint32_t *buffers)          = 0;
@@ -154,10 +154,10 @@ public:
     virtual void stencilMaskSeparate(uint32_t face, uint32_t mask) = 0;
 
     virtual void blitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1,
-                                 uint32_t mask, uint32_t filter) = DE_NULL;
+                                 uint32_t mask, uint32_t filter) = 0;
 
     virtual void invalidateSubFramebuffer(uint32_t target, int numAttachments, const uint32_t *attachments, int x,
-                                          int y, int width, int height)                                  = DE_NULL;
+                                          int y, int width, int height)                                  = 0;
     virtual void invalidateFramebuffer(uint32_t target, int numAttachments, const uint32_t *attachments) = 0;
 
     virtual void bindVertexArray(uint32_t array)                                 = 0;
@@ -165,12 +165,11 @@ public:
     virtual void deleteVertexArrays(int numArrays, const uint32_t *vertexArrays) = 0;
 
     virtual void vertexAttribPointer(uint32_t index, int size, uint32_t type, bool normalized, int stride,
-                                     const void *pointer)              = DE_NULL;
-    virtual void vertexAttribIPointer(uint32_t index, int size, uint32_t type, int stride,
-                                      const void *pointer)             = DE_NULL;
-    virtual void enableVertexAttribArray(uint32_t index)               = 0;
-    virtual void disableVertexAttribArray(uint32_t index)              = 0;
-    virtual void vertexAttribDivisor(uint32_t index, uint32_t divisor) = 0;
+                                     const void *pointer)                                                       = 0;
+    virtual void vertexAttribIPointer(uint32_t index, int size, uint32_t type, int stride, const void *pointer) = 0;
+    virtual void enableVertexAttribArray(uint32_t index)                                                        = 0;
+    virtual void disableVertexAttribArray(uint32_t index)                                                       = 0;
+    virtual void vertexAttribDivisor(uint32_t index, uint32_t divisor)                                          = 0;
 
     virtual void vertexAttrib1f(uint32_t index, float)                                    = 0;
     virtual void vertexAttrib2f(uint32_t index, float, float)                             = 0;
@@ -201,23 +200,23 @@ public:
     virtual void drawArraysInstanced(uint32_t mode, int first, int count, int instanceCount) = 0;
     virtual void drawElements(uint32_t mode, int count, uint32_t type, const void *indices)  = 0;
     virtual void drawElementsInstanced(uint32_t mode, int count, uint32_t type, const void *indices,
-                                       int instanceCount)                                    = DE_NULL;
+                                       int instanceCount)                                    = 0;
     virtual void drawElementsBaseVertex(uint32_t mode, int count, uint32_t type, const void *indices,
-                                        int baseVertex)                                      = DE_NULL;
+                                        int baseVertex)                                      = 0;
     virtual void drawElementsInstancedBaseVertex(uint32_t mode, int count, uint32_t type, const void *indices,
-                                                 int instanceCount, int baseVertex)          = DE_NULL;
+                                                 int instanceCount, int baseVertex)          = 0;
     virtual void drawRangeElements(uint32_t mode, uint32_t start, uint32_t end, int count, uint32_t type,
-                                   const void *indices)                                      = DE_NULL;
+                                   const void *indices)                                      = 0;
     virtual void drawRangeElementsBaseVertex(uint32_t mode, uint32_t start, uint32_t end, int count, uint32_t type,
-                                             const void *indices, int baseVertex)            = DE_NULL;
+                                             const void *indices, int baseVertex)            = 0;
     virtual void drawArraysIndirect(uint32_t mode, const void *indirect)                     = 0;
     virtual void drawElementsIndirect(uint32_t mode, uint32_t type, const void *indirect)    = 0;
 
     virtual void multiDrawArrays(uint32_t mode, const int *first, const int *count, int primCount) = 0;
     virtual void multiDrawElements(uint32_t mode, const int *count, uint32_t type, const void **indices,
-                                   int primCount)                                                  = DE_NULL;
+                                   int primCount)                                                  = 0;
     virtual void multiDrawElementsBaseVertex(uint32_t mode, const int *count, uint32_t type, const void **indices,
-                                             int primCount, const int *baseVertex)                 = DE_NULL;
+                                             int primCount, const int *baseVertex)                 = 0;
 
     virtual uint32_t createProgram(ShaderProgram *program) = 0;
     virtual void useProgram(uint32_t program)              = 0;

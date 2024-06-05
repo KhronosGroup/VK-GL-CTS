@@ -631,7 +631,7 @@ public:
     }
 
     virtual void testColorAttachment(GLenum internalFormat, GLenum attachment, GLint bitsR, GLint bitsG, GLint bitsB,
-                                     GLint bitsA) = DE_NULL;
+                                     GLint bitsA) = 0;
 
     virtual void testDepthAttachment(GLenum internalFormat, GLenum attachment, GLint bitsD, GLint bitsS) = 0;
 

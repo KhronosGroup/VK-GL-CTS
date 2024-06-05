@@ -1453,7 +1453,7 @@ protected:
 
 private:
     virtual void generateTriangles(int iteration, std::vector<tcu::Vec4> &outData,
-                                   std::vector<TriangleSceneSpec::SceneTriangle> &outTriangles) = DE_NULL;
+                                   std::vector<TriangleSceneSpec::SceneTriangle> &outTriangles) = 0;
     virtual bool compareAndVerify(std::vector<TriangleSceneSpec::SceneTriangle> &triangles, tcu::Surface &resultImage,
                                   std::vector<tcu::Vec4> &drawBuffer);
 
@@ -1568,7 +1568,7 @@ protected:
 
 private:
     virtual void generateLines(int iteration, std::vector<tcu::Vec4> &outData,
-                               std::vector<LineSceneSpec::SceneLine> &outLines) = DE_NULL;
+                               std::vector<LineSceneSpec::SceneLine> &outLines) = 0;
     virtual bool compareAndVerify(std::vector<LineSceneSpec::SceneLine> &lines, tcu::Surface &resultImage,
                                   tcu::Surface &secondDrawResultImage, std::vector<tcu::Vec4> &drawBuffer);
 

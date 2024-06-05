@@ -641,7 +641,7 @@ public:
                        const ColorlessLineData *linesEnd, float lineWidth, const rr::WindowRectangle &viewport);
 
     virtual void verifyImage(const tcu::ConstPixelBufferAccess &testImageAccess,
-                             const tcu::ConstPixelBufferAccess &referenceImageAccess) = DE_NULL;
+                             const tcu::ConstPixelBufferAccess &referenceImageAccess) = 0;
     void init(void);
     void testRender(void);
 
@@ -924,7 +924,7 @@ public:
                      const TriangleData *polysEnd, const rr::WindowRectangle &viewport);
 
     virtual void verifyImage(const tcu::ConstPixelBufferAccess &testImageAccess,
-                             const tcu::ConstPixelBufferAccess &referenceImageAccess) = DE_NULL;
+                             const tcu::ConstPixelBufferAccess &referenceImageAccess) = 0;
     void testRender(void);
 
 private:

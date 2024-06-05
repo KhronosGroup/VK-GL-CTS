@@ -52,7 +52,7 @@ public:
 
     virtual void verifyBoolean(tcu::TestContext &testCtx, GLenum name, bool reference) = 0;
     virtual void verifyBoolean4(tcu::TestContext &testCtx, GLenum name, bool reference0, bool reference1,
-                                bool reference2, bool reference3)                      = DE_NULL;
+                                bool reference2, bool reference3)                      = 0;
 
 private:
     const char *const m_testNamePostfix;

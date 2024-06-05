@@ -58,10 +58,10 @@ public:
     virtual CommLinkState getState(std::string &error) const = 0;
 
     virtual void setCallbacks(StateChangedFunc stateChangedCallback, LogDataFunc testLogDataCallback,
-                              LogDataFunc infoLogDataCallback, void *userPtr) = DE_NULL;
+                              LogDataFunc infoLogDataCallback, void *userPtr) = 0;
 
     virtual void startTestProcess(const char *name, const char *params, const char *workingDir,
-                                  const char *caseList) = DE_NULL;
+                                  const char *caseList) = 0;
     virtual void stopTestProcess(void)                  = 0;
 };
 
