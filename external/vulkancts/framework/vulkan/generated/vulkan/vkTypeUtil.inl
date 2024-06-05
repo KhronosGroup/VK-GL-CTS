@@ -978,6 +978,16 @@ inline VkDecompressMemoryRegionNV makeDecompressMemoryRegionNV (VkDeviceAddress 
 	return res;
 }
 
+inline VkDecompressMemoryRegionEXT makeDecompressMemoryRegionEXT (VkDeviceAddress srcAddress, VkDeviceAddress dstAddress, VkDeviceSize compressedSize, VkDeviceSize decompressedSize)
+{
+	VkDecompressMemoryRegionEXT res;
+	res.srcAddress			= srcAddress;
+	res.dstAddress			= dstAddress;
+	res.compressedSize		= compressedSize;
+	res.decompressedSize	= decompressedSize;
+	return res;
+}
+
 inline VkDepthClampRangeEXT makeDepthClampRangeEXT (float minDepthClamp, float maxDepthClamp)
 {
 	VkDepthClampRangeEXT res;

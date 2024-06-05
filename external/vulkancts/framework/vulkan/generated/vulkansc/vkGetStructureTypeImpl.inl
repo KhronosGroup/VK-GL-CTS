@@ -1463,14 +1463,14 @@ template<> VkStructureType getStructureType<VkPipelineOfflineCreateInfo> (void)
 	return VK_STRUCTURE_TYPE_PIPELINE_OFFLINE_CREATE_INFO;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceRobustness2FeaturesEXT> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceRobustness2FeaturesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_KHR;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceRobustness2PropertiesEXT> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceRobustness2PropertiesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_EXT;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceImageRobustnessFeatures> (void)

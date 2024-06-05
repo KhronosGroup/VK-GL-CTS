@@ -3651,7 +3651,7 @@ struct VkPipelineOfflineCreateInfo
 	VkDeviceSize			poolEntrySize;
 };
 
-struct VkPhysicalDeviceRobustness2FeaturesEXT
+struct VkPhysicalDeviceRobustness2FeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -3660,7 +3660,7 @@ struct VkPhysicalDeviceRobustness2FeaturesEXT
 	VkBool32		nullDescriptor;
 };
 
-struct VkPhysicalDeviceRobustness2PropertiesEXT
+struct VkPhysicalDeviceRobustness2PropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -4499,6 +4499,10 @@ typedef VkPhysicalDeviceLineRasterizationProperties VkPhysicalDeviceLineRasteriz
 typedef VkPipelineRasterizationLineStateCreateInfo VkPipelineRasterizationLineStateCreateInfoKHR;
 
 typedef VkPipelineRasterizationLineStateCreateInfo VkPipelineRasterizationLineStateCreateInfoEXT;
+
+typedef VkPhysicalDeviceRobustness2FeaturesKHR VkPhysicalDeviceRobustness2FeaturesEXT;
+
+typedef VkPhysicalDeviceRobustness2PropertiesKHR VkPhysicalDeviceRobustness2PropertiesEXT;
 
 typedef VkPhysicalDeviceImageRobustnessFeatures VkPhysicalDeviceImageRobustnessFeaturesEXT;
 

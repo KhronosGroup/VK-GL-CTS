@@ -822,6 +822,16 @@ void DescriptorPool::reset(void)
     m_managedSets.clear();
 }
 
+#ifndef CTS_USES_VULKANSC
+class ExternalComputeQueueNV
+{
+public:
+    ExternalComputeQueueNV(VkDevice, const VkExternalComputeQueueCreateInfoNV *)
+    {
+    }
+};
+#endif
+
 // API implementation
 
 extern "C"
