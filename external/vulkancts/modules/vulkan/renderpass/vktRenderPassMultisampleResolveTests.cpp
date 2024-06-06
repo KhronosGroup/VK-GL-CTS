@@ -121,15 +121,14 @@ VkImageLayout chooseInputImageLayout(const SharedGroupParams groupParams)
 
 #ifndef CTS_USES_VULKANSC
 void beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCommandBuffer secCmdBuffer, uint32_t colorAttachmentsCount,
-                             VkSampleCountFlagBits rasterizationSamples,
-                             const void *additionalInheritanceRenderingInfo = DE_NULL)
+                             VkSampleCountFlagBits rasterizationSamples)
 {
     VkCommandBufferUsageFlags usageFlags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     const std::vector<VkFormat> colorAttachmentFormats(colorAttachmentsCount, VK_FORMAT_R8G8B8A8_UNORM);
 
     const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
-        additionalInheritanceRenderingInfo,                              // const void* pNext;
+        nullptr,                                                         // const void* pNext;
         0u,                                                              // VkRenderingFlagsKHR flags;
         0u,                                                              // uint32_t viewMask;
         colorAttachmentsCount,                                           // uint32_t colorAttachmentCount;
@@ -2081,7 +2080,6 @@ void MaxAttachmenstsRenderPassTestInstance::submitDynamicRendering()
     {
         secCmdBuffers[0] = allocateCommandBuffer(vk, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
         secCmdBuffers[1] = allocateCommandBuffer(vk, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-        renderingInputAttachmentIndexInfo.pNext = &renderingAttachmentLocationInfo;
 
         // record secondary command buffer for first subpass
         beginSecondaryCmdBuffer(vk, *secCmdBuffers[0], (uint32_t)m_multisampleImages.size(), m_sampleCount);
@@ -2091,9 +2089,10 @@ void MaxAttachmenstsRenderPassTestInstance::submitDynamicRendering()
         endCommandBuffer(vk, *secCmdBuffers[0]);
 
         // record secondary command buffer for second subpass
-        beginSecondaryCmdBuffer(vk, *secCmdBuffers[1], (uint32_t)m_multisampleImages.size(), VK_SAMPLE_COUNT_1_BIT,
-                                &renderingInputAttachmentIndexInfo);
+        beginSecondaryCmdBuffer(vk, *secCmdBuffers[1], (uint32_t)m_multisampleImages.size(), VK_SAMPLE_COUNT_1_BIT);
         vk.cmdBeginRendering(*secCmdBuffers[1], &secondRenderingInfo);
+        vk.cmdSetRenderingAttachmentLocationsKHR(*secCmdBuffers[1], &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingInputAttachmentIndicesKHR(*secCmdBuffers[1], &renderingInputAttachmentIndexInfo);
         drawSecondSubpass(vk, *secCmdBuffers[1]);
         vk.cmdEndRendering(*secCmdBuffers[1]);
         endCommandBuffer(vk, *secCmdBuffers[1]);
@@ -2103,8 +2102,6 @@ void MaxAttachmenstsRenderPassTestInstance::submitDynamicRendering()
         // record primary command buffer
         beginCommandBuffer(vk, *cmdBuffer);
         preRenderCommands(vk, *cmdBuffer);
-        vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocationInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
         vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffers[0]);
         inbetweenRenderCommands(vk, *cmdBuffer);
         vk.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffers[1]);

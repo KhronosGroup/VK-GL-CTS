@@ -675,10 +675,8 @@ de::MovePtr<vector<VkFormat>> getSupportedFormats(const InstanceInterface &vk, c
     const VkResult res = vk.getPhysicalDeviceVideoFormatPropertiesKHR(physicalDevice, &videoFormatInfo,
                                                                       &videoFormatPropertiesCount, DE_NULL);
 
-    if (res == VK_ERROR_FORMAT_NOT_SUPPORTED)
+    if (res != VK_SUCCESS)
         return de::MovePtr<vector<VkFormat>>(DE_NULL);
-    else
-        VK_CHECK(res);
 
     videoFormatProperties.resize(videoFormatPropertiesCount, videoFormatPropertiesKHR);
 
@@ -723,10 +721,8 @@ VkVideoFormatPropertiesKHR getSupportedFormatProperties(const InstanceInterface 
     const VkResult res = vk.getPhysicalDeviceVideoFormatPropertiesKHR(physicalDevice, &videoFormatInfo,
                                                                       &videoFormatPropertiesCount, DE_NULL);
 
-    if (res == VK_ERROR_FORMAT_NOT_SUPPORTED)
+    if (res != VK_SUCCESS)
         return VkVideoFormatPropertiesKHR();
-    else
-        VK_CHECK(res);
 
     videoFormatProperties.resize(videoFormatPropertiesCount, videoFormatPropertiesKHR);
 

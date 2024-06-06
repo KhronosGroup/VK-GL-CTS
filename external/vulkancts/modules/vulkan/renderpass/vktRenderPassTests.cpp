@@ -2052,8 +2052,8 @@ void fillRenderingInputAttachmentIndexInfo(const std::vector<AttachmentReference
 void prepareAttachmentRemapping(const Subpass &subpass, const std::vector<Attachment> &allAttachments,
                                 const std::vector<uint32_t> &colorAttachmentIndices,
                                 std::vector<uint32_t> &colorAttachmentLocations,
-                                std::vector<uint32_t> &colorAttachmentInputIndices, uint32_t localDepthAttachmentIndex,
-                                uint32_t localStencilAttachmentIndex,
+                                std::vector<uint32_t> &colorAttachmentInputIndices, uint32_t &localDepthAttachmentIndex,
+                                uint32_t &localStencilAttachmentIndex,
                                 VkRenderingAttachmentLocationInfoKHR &renderingAttachmentLocationInfo,
                                 VkRenderingInputAttachmentIndexInfoKHR &renderingInputAttachmentIndexInfo)
 {
