@@ -3961,13 +3961,13 @@ tcu::TestCaseGroup *createSpecConstantGroup(tcu::TestContext &testCtx)
                                            -21, addScToInput, outputInts1));
     cases.push_back(SpecConstantTwoValCase("sdiv", " %i32 0", " %i32 0", "%i32", "SDiv                 %sc_0 %sc_1",
                                            -126, -3, addScToInput, outputInts1));
-    cases.push_back(SpecConstantTwoValCase("udiv", " %i32 0", " %i32 0", "%i32", "UDiv                 %sc_0 %sc_1",
+    cases.push_back(SpecConstantTwoValCase("udiv", " %u32 0", " %u32 0", "%u32", "UDiv                 %sc_0 %sc_1",
                                            126, 3, addScToInput, outputInts1));
     cases.push_back(SpecConstantTwoValCase("srem", " %i32 0", " %i32 0", "%i32", "SRem                 %sc_0 %sc_1", 7,
                                            3, addScToInput, outputInts4));
     cases.push_back(SpecConstantTwoValCase("smod", " %i32 0", " %i32 0", "%i32", "SMod                 %sc_0 %sc_1", 7,
                                            3, addScToInput, outputInts4));
-    cases.push_back(SpecConstantTwoValCase("umod", " %i32 0", " %i32 0", "%i32", "UMod                 %sc_0 %sc_1",
+    cases.push_back(SpecConstantTwoValCase("umod", " %u32 0", " %u32 0", "%u32", "UMod                 %sc_0 %sc_1",
                                            342, 50, addScToInput, outputInts1));
     cases.push_back(SpecConstantTwoValCase("bitwiseand", " %i32 0", " %i32 0", "%i32",
                                            "BitwiseAnd           %sc_0 %sc_1", 42, 63, addScToInput, outputInts1));
@@ -8492,14 +8492,14 @@ tcu::TestCaseGroup *createSpecConstantTests(tcu::TestContext &testCtx)
     cases.push_back(SpecConstantTwoValGraphicsCase("sdiv", " %i32 0", " %i32 0", "%i32",
                                                    "SDiv                 %sc_0 %sc_1", -126, 126, addZeroToSc,
                                                    outputColors0));
-    cases.push_back(SpecConstantTwoValGraphicsCase("udiv", " %i32 0", " %i32 0", "%i32",
+    cases.push_back(SpecConstantTwoValGraphicsCase("udiv", " %u32 0", " %u32 0", "%u32",
                                                    "UDiv                 %sc_0 %sc_1", 126, 126, addZeroToSc,
                                                    outputColors2));
     cases.push_back(SpecConstantTwoValGraphicsCase(
         "srem", " %i32 0", " %i32 0", "%i32", "SRem                 %sc_0 %sc_1", 3, 2, addZeroToSc, outputColors2));
     cases.push_back(SpecConstantTwoValGraphicsCase(
         "smod", " %i32 0", " %i32 0", "%i32", "SMod                 %sc_0 %sc_1", 3, 2, addZeroToSc, outputColors2));
-    cases.push_back(SpecConstantTwoValGraphicsCase("umod", " %i32 0", " %i32 0", "%i32",
+    cases.push_back(SpecConstantTwoValGraphicsCase("umod", " %u32 0", " %u32 0", "%u32",
                                                    "UMod                 %sc_0 %sc_1", 1001, 500, addZeroToSc,
                                                    outputColors2));
     cases.push_back(SpecConstantTwoValGraphicsCase("bitwiseand", " %i32 0", " %i32 0", "%i32",
@@ -18585,7 +18585,7 @@ void createFloat16ArithmeticFuncTest(tcu::TestContext &testCtx, tcu::TestCaseGro
                                  "       %fp_v4i32 = OpTypePointer Function %v4i32\n"
 
                                  "      %c_u32_ndp = OpConstant %u32 ${num_data_points}\n"
-                                 " %c_u32_half_ndp = OpSpecConstantOp %u32 UDiv %c_i32_ndp %c_u32_2\n"
+                                 " %c_u32_half_ndp = OpSpecConstantOp %u32 UDiv %c_u32_ndp %c_u32_2\n"
                                  "        %c_u32_5 = OpConstant %u32 5\n"
                                  "        %c_u32_6 = OpConstant %u32 6\n"
                                  "        %c_u32_7 = OpConstant %u32 7\n"
