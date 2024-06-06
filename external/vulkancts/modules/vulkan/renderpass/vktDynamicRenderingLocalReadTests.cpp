@@ -579,6 +579,10 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     // update descriptor sets
     descriptorSetUpdateBuilder.update(vk, device);
 
+    // reuse MAX_INPUT_ATTACHMENTS case to also test pColorAttachmentInputIndices set to NULL
+    if (m_testType == TestType::MAX_INPUT_ATTACHMENTS)
+        m_colorAttachmentInputIndices[0].clear();
+
     // create components for pipelines
     const VkPushConstantRange pushConstantRange             = {VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4};
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts = {*descriptorSetLayoutA, *descriptorSetLayoutB};
@@ -617,38 +621,38 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
 
     // define DepthStencilState so that we can write to depth and stencil attachments
     const VkStencilOpState stencilOpState{
-        VK_STENCIL_OP_KEEP,                // VkStencilOp                                failOp
-        VK_STENCIL_OP_INCREMENT_AND_CLAMP, // VkStencilOp                                passOp
-        VK_STENCIL_OP_KEEP,                // VkStencilOp                                depthFailOp
-        VK_COMPARE_OP_ALWAYS,              // VkCompareOp                                compareOp
+        VK_STENCIL_OP_KEEP,                // VkStencilOp                                 failOp
+        VK_STENCIL_OP_INCREMENT_AND_CLAMP, // VkStencilOp                                 passOp
+        VK_STENCIL_OP_KEEP,                // VkStencilOp                                 depthFailOp
+        VK_COMPARE_OP_ALWAYS,              // VkCompareOp                                 compareOp
         0xffu,                             // uint32_t                                    compareMask
         0xffu,                             // uint32_t                                    writeMask
         0                                  // uint32_t                                    reference
     };
     VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                            sType
-        DE_NULL,                                                    // const void*                                pNext
-        0u,                                                         // VkPipelineDepthStencilStateCreateFlags    flags
-        VK_TRUE,               // VkBool32                                    depthTestEnable
-        VK_TRUE,               // VkBool32                                    depthWriteEnable
-        VK_COMPARE_OP_GREATER, // VkCompareOp                                depthCompareOp
-        VK_FALSE,              // VkBool32                                    depthBoundsTestEnable
-        VK_TRUE,               // VkBool32                                    stencilTestEnable
-        stencilOpState,        // VkStencilOpState                            front
-        stencilOpState,        // VkStencilOpState                            back
-        0.0f,                  // float                                    minDepthBounds
-        1.0f,                  // float                                    maxDepthBounds
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                        sType
+        DE_NULL,                                                    // const void*                            pNext
+        0u,                                                         // VkPipelineDepthStencilStateCreateFlags flags
+        VK_TRUE,               // VkBool32                               depthTestEnable
+        VK_TRUE,               // VkBool32                               depthWriteEnable
+        VK_COMPARE_OP_GREATER, // VkCompareOp                            depthCompareOp
+        VK_FALSE,              // VkBool32                               depthBoundsTestEnable
+        VK_TRUE,               // VkBool32                               stencilTestEnable
+        stencilOpState,        // VkStencilOpState                       front
+        stencilOpState,        // VkStencilOpState                       back
+        0.0f,                  // float                                  minDepthBounds
+        1.0f,                  // float                                  maxDepthBounds
     };
 
     VkDynamicState dynamicState = VK_DYNAMIC_STATE_COLOR_WRITE_ENABLE_EXT;
     if (useUseExtendedDynamicState3)
         dynamicState = VK_DYNAMIC_STATE_RASTERIZATION_SAMPLES_EXT;
     VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                        sType
-        DE_NULL,                                              // const void*                            pNext
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // VkStructureType                      sType
+        DE_NULL,                                              // const void*                          pNext
         0u,                                                   // VkPipelineDynamicStateCreateFlags    flags
-        1u,           // uint32_t                                dynamicStateCount
-        &dynamicState // const VkDynamicState*                pDynamicStates
+        1u,                                                   // uint32_t                             dynamicStateCount
+        &dynamicState                                         // const VkDynamicState*                pDynamicStates
     };
     VkPipelineDynamicStateCreateInfo *writeDynamicStateCreateInfo = nullptr;
     if (useColorWriteEnable || useUseExtendedDynamicState3)
@@ -704,7 +708,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     for (uint32_t pipelineIndex = 0; pipelineIndex < m_outputDrawsCount; ++pipelineIndex)
     {
         renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices =
-            m_colorAttachmentInputIndices[pipelineIndex].data();
+            de::dataOrNull(m_colorAttachmentInputIndices[pipelineIndex]);
         readGraphicsPipelines[pipelineIndex] = makeGraphicsPipeline(
             vk, device, *readPipelineLayout, *vertShaderModule, DE_NULL, DE_NULL, DE_NULL, *readFragShaderModule,
             DE_NULL, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 1, 0, &vertexInputState, DE_NULL,
@@ -782,7 +786,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         VkDescriptorSet descriptorSets[] = {*inputAttachmentsDescriptorSets[pipelineIndex],
                                             *bufferDescriptorSets[pipelineIndex]};
         renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices =
-            m_colorAttachmentInputIndices[pipelineIndex].data();
+            de::dataOrNull(m_colorAttachmentInputIndices[pipelineIndex]);
 
         vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *readGraphicsPipelines[pipelineIndex]);
         vk.cmdSetRenderingInputAttachmentIndicesKHR(cmdBuffer, &renderingInputAttachmentIndexInfo);
