@@ -130,6 +130,11 @@ protected:
     tcu::TestStatus iterate(void) override;
 
 private:
+    void CalculateExpectedValues(void);
+    bool UseColorWriteEnable(void) const;
+    uint32_t GetRemappedColorAttachment(uint32_t inputDrawId, uint32_t location) const;
+    uint32_t GetRemappedColorInputAttachment(uint32_t outputDrawId, uint32_t inputAttachmentIdx) const;
+
     const TestType m_testType;
     const uint32_t m_renderSize;
     VkFormat m_dsFormat;
@@ -143,6 +148,8 @@ private:
     std::vector<std::vector<uint32_t>> m_colorAttachmentInputIndices;
     uint32_t m_depthInputAttachmentIndex;
     uint32_t m_stencilInputAttachmentIndex;
+    const VkBool32 m_colorWriteEnables[4];
+    VkBool32 m_useStencilInReadFrag;
     std::vector<uint32_t> m_expectedValues;
 };
 
@@ -160,7 +167,9 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
     , m_colorAttachmentInputIndices{{0, 1, 2, 3}}
     , m_depthInputAttachmentIndex(4)
     , m_stencilInputAttachmentIndex(5)
-    , m_expectedValues{1600}
+    , m_colorWriteEnables{0, 1, 0, 1}
+    , m_useStencilInReadFrag(true)
+    , m_expectedValues{0}
 {
     const InstanceInterface &vki                = m_context.getInstanceInterface();
     VkPhysicalDevice physicalDevice             = m_context.getPhysicalDevice();
@@ -199,7 +208,6 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
         {
             m_colorAttachmentLocations[0][attIndex]    = attIndex;
             m_colorAttachmentInputIndices[0][attIndex] = attIndex;
-            m_expectedValues[0] += (attIndex + 1) * (attIndex + 1);
         }
         break;
     }
@@ -243,83 +251,181 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
                 (attIndex % 2) ? (m_colorAttachmentCount - 1 - attIndex / 2u) : (attIndex / 2u);
             m_colorAttachmentInputIndices[2][attIndex] = attIndex;
         }
-
-        // generate same valueas for each attachment as in frag0_* shader
-        uint32_t attachmentIndex = 0;
-        std::vector<uint32_t> valuesPerColorAttachment(m_colorAttachmentCount, 0);
-        for (uint32_t inputDraw = 0; inputDraw < m_inputDrawsCount; ++inputDraw)
-        {
-            valuesPerColorAttachment[attachmentIndex]     = 2u * inputDraw + 1u;
-            valuesPerColorAttachment[attachmentIndex + 1] = 2u * inputDraw + 2u;
-            attachmentIndex += 2u;
-        }
-
-        // calculate expected values for all three output draws, same as it will be done in frag1_* shader
-        m_expectedValues = {1600, 1600, 1600};
-        for (uint32_t outputDraw = 0; outputDraw < m_outputDrawsCount; ++outputDraw)
-        {
-            // each output draw uses all attachments but remaped differently
-            for (uint32_t attIndex = 0; attIndex < m_colorAttachmentCount; ++attIndex)
-            {
-                // perform same operation as in frag1_* shader to calculate final expected value
-                uint32_t attIndexRemaped = m_colorAttachmentInputIndices[outputDraw][attIndex];
-                m_expectedValues[outputDraw] += (attIndex + 1u) * valuesPerColorAttachment[attIndexRemaped];
-            }
-        }
         break;
     }
     case TestType::UNUSED_WRITEN_DISCARDED:
     {
+        m_useStencilInReadFrag           = true;
+        m_colorAttachmentCount           = 4;
         m_colorAttachmentLocations[0][0] = VK_ATTACHMENT_UNUSED;
         m_colorAttachmentLocations[0][2] = VK_ATTACHMENT_UNUSED;
-        m_expectedValues[0] += 20; // 0 * 1 + 2 * 2 + 0 * 3 + 4 * 4 = 20
         break;
     }
     case TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX:
     {
+        m_useStencilInReadFrag        = true;
         m_colorAttachmentCount        = 2;
         m_depthInputAttachmentIndex   = VK_ATTACHMENT_UNUSED;
         m_stencilInputAttachmentIndex = VK_ATTACHMENT_UNUSED;
-        m_expectedValues[0]           = 703;
         break;
     }
     case TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX:
     {
+        m_useStencilInReadFrag        = true;
         m_colorAttachmentCount        = 2;
         m_depthInputAttachmentIndex   = 2;
         m_stencilInputAttachmentIndex = 2;
-        m_expectedValues[0]           = 601;
         break;
     }
     case TestType::DEPTH_MAPPING_STENCIL_NOT:
     {
+        m_useStencilInReadFrag        = false;
+        m_colorAttachmentCount        = 4;
         m_depthInputAttachmentIndex   = 4;
         m_stencilInputAttachmentIndex = VK_ATTACHMENT_UNUSED;
-        m_expectedValues[0]           = 630;
         break;
     }
     case TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE:
     {
+        m_useStencilInReadFrag        = false;
         m_colorAttachmentCount        = 4;
         m_colorAttachmentLocations    = {{0, 3, 1, 2}};
         m_depthInputAttachmentIndex   = 4;
         m_stencilInputAttachmentIndex = VK_ATTACHMENT_UNUSED;
-        m_expectedValues[0]           = 620;
         break;
     }
     case TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3:
     {
+        m_useStencilInReadFrag        = false;
         m_colorAttachmentCount        = 4;
         m_colorAttachmentLocations    = {{0, 3, 1, 2}};
         m_depthInputAttachmentIndex   = 4;
         m_stencilInputAttachmentIndex = VK_ATTACHMENT_UNUSED;
-        m_expectedValues[0]           = 627;
         break;
     }
     default:
         DE_ASSERT(false);
         break;
     }
+
+    CalculateExpectedValues();
+}
+
+uint32_t BasicLocalReadTestInstance::GetRemappedColorAttachment(uint32_t inputDrawId, uint32_t location) const
+{
+    uint32_t attIndexRemaped = VK_ATTACHMENT_UNUSED;
+
+    // Find the remapped attachment index of a output color with decorator location = colorIdx in generateWriteFragSource
+    for (uint32_t i = 0; i < m_colorAttachmentCount; i++)
+    {
+        if (location == m_colorAttachmentLocations[inputDrawId][i])
+        {
+            attIndexRemaped = i;
+            break;
+        }
+    }
+
+    return attIndexRemaped;
+}
+
+uint32_t BasicLocalReadTestInstance::GetRemappedColorInputAttachment(uint32_t outputDrawId,
+                                                                     uint32_t inputAttachmentIdx) const
+{
+    // perform same operation as in frag1_* shader to calculate final expected value
+    uint32_t attIndexRemaped = VK_ATTACHMENT_UNUSED;
+
+    for (uint32_t i = 0; i < m_colorAttachmentCount; i++)
+    {
+        if (inputAttachmentIdx == m_colorAttachmentInputIndices[outputDrawId][i])
+        {
+            attIndexRemaped = i;
+            break;
+        }
+    }
+
+    DE_ASSERT(attIndexRemaped != VK_ATTACHMENT_UNUSED);
+
+    return attIndexRemaped;
+}
+
+void BasicLocalReadTestInstance::CalculateExpectedValues()
+{
+    // generate same valueas for each attachment as in frag0_* shader
+    std::vector<uint32_t> valuesPerColorAttachment(m_colorAttachmentCount, 0);
+
+    for (uint32_t inputDraw = 0; inputDraw < m_inputDrawsCount; ++inputDraw)
+    {
+        for (uint32_t colorIdx = 0; colorIdx < m_colorAttachmentCount / m_inputDrawsCount; colorIdx++)
+        {
+            uint32_t outColor        = 0;
+            uint32_t attIndexRemaped = GetRemappedColorAttachment(inputDraw, colorIdx);
+
+            // Calculate the shader ouput in generateWriteFragSource
+            if ((UseColorWriteEnable() == false) || (m_colorWriteEnables[attIndexRemaped] == 1))
+            {
+                outColor = (2u * inputDraw + colorIdx + 1u) * (2u * inputDraw + colorIdx + 1u);
+            }
+
+            // Write color output to the remapped attachment
+            if (attIndexRemaped != VK_ATTACHMENT_UNUSED)
+            {
+                valuesPerColorAttachment[attIndexRemaped] = outColor;
+            }
+        }
+    }
+
+    // calculate expected values for all three output draws, same as it will be done in frag1_* shader
+    m_expectedValues.resize(m_outputDrawsCount);
+
+    for (uint32_t outputDraw = 0; outputDraw < m_outputDrawsCount; ++outputDraw)
+    {
+        // Depth read is 0.6 and stencil read is 1. Depth read is already enabled, but stencil read depends on test type.
+        const float depthRead      = 0.6f;
+        const uint32_t stencilRead = 1;
+
+        if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX)
+        {
+            // Depth read and stencil read are both enabled
+            m_expectedValues[outputDraw] = static_cast<uint32_t>(depthRead * 1000) + stencilRead * 100;
+        }
+        else if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX)
+        {
+            // Depth read and stencil read are both enabled
+            m_expectedValues[outputDraw] = static_cast<uint32_t>(depthRead * 1000) + stencilRead;
+        }
+        else
+        {
+            m_expectedValues[outputDraw] =
+                static_cast<uint32_t>(depthRead * 1000) + ((m_useStencilInReadFrag) ? (stencilRead * 1000) : 0);
+        }
+
+        // each output draw uses all attachments but remaped differently
+        for (uint32_t attIndex = 0; attIndex < m_colorAttachmentCount; ++attIndex)
+        {
+            uint32_t attIndexRemaped = GetRemappedColorInputAttachment(outputDraw, attIndex);
+
+            if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX)
+            {
+                // Accumulate inColor_i, in which inColor_i is the color attachment with location = i in shader
+                m_expectedValues[outputDraw] += valuesPerColorAttachment[attIndexRemaped];
+            }
+            else if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX)
+            {
+                // No color is read
+                break;
+            }
+            else
+            {
+                // Accumulate i * inColor_i, in which inColor_i is the color attachment with location = i in shader
+                m_expectedValues[outputDraw] += (attIndex + 1u) * valuesPerColorAttachment[attIndexRemaped];
+            }
+        }
+    }
+}
+
+bool BasicLocalReadTestInstance::UseColorWriteEnable() const
+{
+    return (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE) ? true : false;
 }
 
 tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
@@ -335,9 +441,8 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     const VkImageSubresourceRange dsSRR = makeImageSubresourceRange(dSRR.aspectMask | sSRR.aspectMask, 0u, 1u, 0u, 1u);
     const std::vector<VkViewport> viewports{makeViewport(m_renderSize, m_renderSize)};
     const std::vector<VkRect2D> scissors{makeRect2D(m_renderSize, m_renderSize)};
-    const bool useColorWriteEnable(m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE);
+    const bool useColorWriteEnable = UseColorWriteEnable();
     const bool useUseExtendedDynamicState3(m_testType == TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3);
-    const VkBool32 colorWriteEnables[]{0, 1, 0, 1};
 
     // define few structures that will be modified and reused in multiple places
     VkImageMemoryBarrier colorImageBarrier =
@@ -448,7 +553,8 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         // content of the descriptor set with input attachment bindings must be consistent with the remapping
         for (uint32_t attIndex = 0; attIndex < m_colorAttachmentCount; ++attIndex)
         {
-            uint32_t remapedIndex = m_colorAttachmentInputIndices[i][attIndex];
+            uint32_t remapedIndex = GetRemappedColorInputAttachment(i, attIndex);
+
             descriptorSetUpdateBuilder.writeSingle(*inputAttachmentsDescriptorSets[i], DSLocation::binding(attIndex),
                                                    VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
                                                    &colorImageDescriptors[remapedIndex]);
@@ -641,7 +747,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
         vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocationInfo);
 
         if (useColorWriteEnable)
-            vk.cmdSetColorWriteEnableEXT(cmdBuffer, 4u, colorWriteEnables);
+            vk.cmdSetColorWriteEnableEXT(cmdBuffer, 4u, m_colorWriteEnables);
         if (useUseExtendedDynamicState3)
             vk.cmdSetRasterizationSamplesEXT(cmdBuffer, VK_SAMPLE_COUNT_1_BIT);
 
@@ -1049,7 +1155,11 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
             fragSrc << "layout(location=" << i << ") out uint outColor" << i << ";\n";
         fragSrc << "void main()\n{\n";
         for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+        {
             fragSrc << "  outColor" << i << " = 2u * inputDraw.count + " << i + 1 << ";\n";
+            fragSrc << "  outColor" << i << " *= "
+                    << "outColor" << i << ";\n";
+        }
         fragSrc << "}\n";
         return fragSrc.str();
     };
