@@ -15,7 +15,7 @@ const char* getErrorName (int value)
 		case GL_OUT_OF_MEMORY:					return "GL_OUT_OF_MEMORY";
 		case GL_INVALID_FRAMEBUFFER_OPERATION:	return "GL_INVALID_FRAMEBUFFER_OPERATION";
 		case GL_CONTEXT_LOST:					return "GL_CONTEXT_LOST";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -44,7 +44,7 @@ const char* getTypeName (int value)
 		case GL_SIGNED_NORMALIZED:				return "GL_SIGNED_NORMALIZED";
 		case GL_UNSIGNED_NORMALIZED:			return "GL_UNSIGNED_NORMALIZED";
 		case GL_HALF_FLOAT_OES:					return "GL_HALF_FLOAT_OES";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -109,7 +109,7 @@ const char* getParamQueryName (int value)
 		case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:		return "GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS";
 		case GL_MAX_TEXTURE_IMAGE_UNITS:			return "GL_MAX_TEXTURE_IMAGE_UNITS";
 		case GL_MAX_FRAGMENT_UNIFORM_VECTORS:		return "GL_MAX_FRAGMENT_UNIFORM_VECTORS";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -144,7 +144,7 @@ const char* getProgramParamName (int value)
 		case GL_TESS_GEN_SPACING:						return "GL_TESS_GEN_SPACING";
 		case GL_TESS_GEN_VERTEX_ORDER:					return "GL_TESS_GEN_VERTEX_ORDER";
 		case GL_TESS_GEN_POINT_MODE:					return "GL_TESS_GEN_POINT_MODE";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -160,7 +160,7 @@ const char* getUniformParamName (int value)
 		case GL_UNIFORM_ARRAY_STRIDE:	return "GL_UNIFORM_ARRAY_STRIDE";
 		case GL_UNIFORM_MATRIX_STRIDE:	return "GL_UNIFORM_MATRIX_STRIDE";
 		case GL_UNIFORM_IS_ROW_MAJOR:	return "GL_UNIFORM_IS_ROW_MAJOR";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -194,7 +194,7 @@ const char* getFramebufferAttachmentName (int value)
 		case GL_BACK_RIGHT:					return "GL_BACK_RIGHT";
 		case GL_DEPTH:						return "GL_DEPTH";
 		case GL_STENCIL:					return "GL_STENCIL";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -216,7 +216,7 @@ const char* getFramebufferAttachmentParameterName (int value)
 		case GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE:				return "GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE";
 		case GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE:			return "GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE";
 		case GL_FRAMEBUFFER_ATTACHMENT_LAYERED:					return "GL_FRAMEBUFFER_ATTACHMENT_LAYERED";
-		default:												return DE_NULL;
+		default:												return nullptr;
 	}
 }
 
@@ -228,7 +228,7 @@ const char* getFramebufferTargetName (int value)
 		case GL_RENDERBUFFER:		return "GL_RENDERBUFFER";
 		case GL_DRAW_FRAMEBUFFER:	return "GL_DRAW_FRAMEBUFFER";
 		case GL_READ_FRAMEBUFFER:	return "GL_READ_FRAMEBUFFER";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -243,7 +243,7 @@ const char* getFramebufferStatusName (int value)
 		case GL_FRAMEBUFFER_UNSUPPORTED:					return "GL_FRAMEBUFFER_UNSUPPORTED";
 		case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:			return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
 		case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:		return "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -255,7 +255,7 @@ const char* getFramebufferAttachmentTypeName (int value)
 		case GL_FRAMEBUFFER_DEFAULT:	return "GL_FRAMEBUFFER_DEFAULT";
 		case GL_TEXTURE:				return "GL_TEXTURE";
 		case GL_RENDERBUFFER:			return "GL_RENDERBUFFER";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -265,7 +265,7 @@ const char* getFramebufferColorEncodingName (int value)
 	{
 		case GL_LINEAR:	return "GL_LINEAR";
 		case GL_SRGB:	return "GL_SRGB";
-		default:		return DE_NULL;
+		default:		return nullptr;
 	}
 }
 
@@ -278,7 +278,7 @@ const char* getFramebufferParameterName (int value)
 		case GL_FRAMEBUFFER_DEFAULT_SAMPLES:				return "GL_FRAMEBUFFER_DEFAULT_SAMPLES";
 		case GL_FRAMEBUFFER_DEFAULT_FIXED_SAMPLE_LOCATIONS:	return "GL_FRAMEBUFFER_DEFAULT_FIXED_SAMPLE_LOCATIONS";
 		case GL_FRAMEBUFFER_DEFAULT_LAYERS:					return "GL_FRAMEBUFFER_DEFAULT_LAYERS";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -296,7 +296,7 @@ const char* getRenderbufferParameterName (int value)
 		case GL_RENDERBUFFER_DEPTH_SIZE:		return "GL_RENDERBUFFER_DEPTH_SIZE";
 		case GL_RENDERBUFFER_STENCIL_SIZE:		return "GL_RENDERBUFFER_STENCIL_SIZE";
 		case GL_RENDERBUFFER_SAMPLES:			return "GL_RENDERBUFFER_SAMPLES";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -315,7 +315,7 @@ const char* getPrimitiveTypeName (int value)
 		case GL_LINE_STRIP_ADJACENCY:		return "GL_LINE_STRIP_ADJACENCY";
 		case GL_TRIANGLES_ADJACENCY:		return "GL_TRIANGLES_ADJACENCY";
 		case GL_TRIANGLE_STRIP_ADJACENCY:	return "GL_TRIANGLE_STRIP_ADJACENCY";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -342,7 +342,7 @@ const char* getBlendFactorName (int value)
 		case GL_ONE_MINUS_CONSTANT_COLOR:	return "GL_ONE_MINUS_CONSTANT_COLOR";
 		case GL_CONSTANT_ALPHA:				return "GL_CONSTANT_ALPHA";
 		case GL_ONE_MINUS_CONSTANT_ALPHA:	return "GL_ONE_MINUS_CONSTANT_ALPHA";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -370,7 +370,7 @@ const char* getBlendEquationName (int value)
 		case GL_HSL_SATURATION_KHR:		return "GL_HSL_SATURATION_KHR";
 		case GL_HSL_COLOR_KHR:			return "GL_HSL_COLOR_KHR";
 		case GL_HSL_LUMINOSITY_KHR:		return "GL_HSL_LUMINOSITY_KHR";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -391,7 +391,7 @@ const char* getBufferTargetName (int value)
 		case GL_TEXTURE_BUFFER:				return "GL_TEXTURE_BUFFER";
 		case GL_DISPATCH_INDIRECT_BUFFER:	return "GL_DISPATCH_INDIRECT_BUFFER";
 		case GL_ATOMIC_COUNTER_BUFFER:		return "GL_ATOMIC_COUNTER_BUFFER";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -401,7 +401,7 @@ const char* getBufferBindingName (int value)
 	{
 		case GL_ARRAY_BUFFER_BINDING:			return "GL_ARRAY_BUFFER_BINDING";
 		case GL_ELEMENT_ARRAY_BUFFER_BINDING:	return "GL_ELEMENT_ARRAY_BUFFER_BINDING";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -418,7 +418,7 @@ const char* getUsageName (int value)
 		case GL_DYNAMIC_DRAW:	return "GL_DYNAMIC_DRAW";
 		case GL_DYNAMIC_READ:	return "GL_DYNAMIC_READ";
 		case GL_DYNAMIC_COPY:	return "GL_DYNAMIC_COPY";
-		default:				return DE_NULL;
+		default:				return nullptr;
 	}
 }
 
@@ -432,7 +432,7 @@ const char* getBufferQueryName (int value)
 		case GL_BUFFER_MAPPED:			return "GL_BUFFER_MAPPED";
 		case GL_BUFFER_MAP_OFFSET:		return "GL_BUFFER_MAP_OFFSET";
 		case GL_BUFFER_MAP_LENGTH:		return "GL_BUFFER_MAP_LENGTH";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -443,7 +443,7 @@ const char* getFaceName (int value)
 		case GL_FRONT:			return "GL_FRONT";
 		case GL_BACK:			return "GL_BACK";
 		case GL_FRONT_AND_BACK:	return "GL_FRONT_AND_BACK";
-		default:				return DE_NULL;
+		default:				return nullptr;
 	}
 }
 
@@ -459,7 +459,7 @@ const char* getCompareFuncName (int value)
 		case GL_NOTEQUAL:	return "GL_NOTEQUAL";
 		case GL_GEQUAL:		return "GL_GEQUAL";
 		case GL_ALWAYS:		return "GL_ALWAYS";
-		default:			return DE_NULL;
+		default:			return nullptr;
 	}
 }
 
@@ -487,7 +487,7 @@ const char* getEnableCapName (int value)
 		case GL_DEBUG_OUTPUT:					return "GL_DEBUG_OUTPUT";
 		case GL_DEBUG_OUTPUT_SYNCHRONOUS:		return "GL_DEBUG_OUTPUT_SYNCHRONOUS";
 		case GL_BLEND_ADVANCED_COHERENT_KHR:	return "GL_BLEND_ADVANCED_COHERENT_KHR";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -496,7 +496,7 @@ const char* getIndexedEnableCapName (int value)
 	switch (value)
 	{
 		case GL_BLEND:	return "GL_BLEND";
-		default:		return DE_NULL;
+		default:		return nullptr;
 	}
 }
 
@@ -506,7 +506,7 @@ const char* getWindingName (int value)
 	{
 		case GL_CW:		return "GL_CW";
 		case GL_CCW:	return "GL_CCW";
-		default:		return DE_NULL;
+		default:		return nullptr;
 	}
 }
 
@@ -517,7 +517,7 @@ const char* getHintModeName (int value)
 		case GL_DONT_CARE:	return "GL_DONT_CARE";
 		case GL_FASTEST:	return "GL_FASTEST";
 		case GL_NICEST:		return "GL_NICEST";
-		default:			return DE_NULL;
+		default:			return nullptr;
 	}
 }
 
@@ -526,7 +526,7 @@ const char* getHintName (int value)
 	switch (value)
 	{
 		case GL_GENERATE_MIPMAP_HINT:	return "GL_GENERATE_MIPMAP_HINT";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -542,7 +542,7 @@ const char* getStencilOpName (int value)
 		case GL_INVERT:		return "GL_INVERT";
 		case GL_INCR_WRAP:	return "GL_INCR_WRAP";
 		case GL_DECR_WRAP:	return "GL_DECR_WRAP";
-		default:			return DE_NULL;
+		default:			return nullptr;
 	}
 }
 
@@ -556,7 +556,7 @@ const char* getShaderTypeName (int value)
 		case GL_TESS_CONTROL_SHADER:	return "GL_TESS_CONTROL_SHADER";
 		case GL_TESS_EVALUATION_SHADER:	return "GL_TESS_EVALUATION_SHADER";
 		case GL_GEOMETRY_SHADER:		return "GL_GEOMETRY_SHADER";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -568,7 +568,7 @@ const char* getBufferName (int value)
 		case GL_DEPTH:			return "GL_DEPTH";
 		case GL_STENCIL:		return "GL_STENCIL";
 		case GL_DEPTH_STENCIL:	return "GL_DEPTH_STENCIL";
-		default:				return DE_NULL;
+		default:				return nullptr;
 	}
 }
 
@@ -590,7 +590,7 @@ const char* getInvalidateAttachmentName (int value)
 		case GL_DEPTH_ATTACHMENT:			return "GL_DEPTH_ATTACHMENT";
 		case GL_STENCIL_ATTACHMENT:			return "GL_STENCIL_ATTACHMENT";
 		case GL_DEPTH_STENCIL_ATTACHMENT:	return "GL_DEPTH_STENCIL_ATTACHMENT";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -614,7 +614,7 @@ const char* getDrawReadBufferName (int value)
 		case GL_DEPTH_ATTACHMENT:			return "GL_DEPTH_ATTACHMENT";
 		case GL_STENCIL_ATTACHMENT:			return "GL_STENCIL_ATTACHMENT";
 		case GL_DEPTH_STENCIL_ATTACHMENT:	return "GL_DEPTH_STENCIL_ATTACHMENT";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -637,7 +637,7 @@ const char* getTextureTargetName (int value)
 		case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:	return "GL_TEXTURE_2D_MULTISAMPLE_ARRAY";
 		case GL_TEXTURE_BUFFER:					return "GL_TEXTURE_BUFFER";
 		case GL_TEXTURE_CUBE_MAP_ARRAY:			return "GL_TEXTURE_CUBE_MAP_ARRAY";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -665,7 +665,7 @@ const char* getTextureParameterName (int value)
 		case GL_TEXTURE_BORDER_COLOR:		return "GL_TEXTURE_BORDER_COLOR";
 		case GL_TEXTURE_IMMUTABLE_LEVELS:	return "GL_TEXTURE_IMMUTABLE_LEVELS";
 		case GL_TEXTURE_IMMUTABLE_FORMAT:	return "GL_TEXTURE_IMMUTABLE_FORMAT";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -695,7 +695,7 @@ const char* getTextureLevelParameterName (int value)
 		case GL_TEXTURE_BUFFER_DATA_STORE_BINDING:	return "GL_TEXTURE_BUFFER_DATA_STORE_BINDING";
 		case GL_TEXTURE_BUFFER_OFFSET:				return "GL_TEXTURE_BUFFER_OFFSET";
 		case GL_TEXTURE_BUFFER_SIZE:				return "GL_TEXTURE_BUFFER_SIZE";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -707,7 +707,7 @@ const char* getRepeatModeName (int value)
 		case GL_CLAMP_TO_EDGE:		return "GL_CLAMP_TO_EDGE";
 		case GL_MIRRORED_REPEAT:	return "GL_MIRRORED_REPEAT";
 		case GL_CLAMP_TO_BORDER:	return "GL_CLAMP_TO_BORDER";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -721,7 +721,7 @@ const char* getTextureFilterName (int value)
 		case GL_LINEAR_MIPMAP_NEAREST:	return "GL_LINEAR_MIPMAP_NEAREST";
 		case GL_NEAREST_MIPMAP_LINEAR:	return "GL_NEAREST_MIPMAP_LINEAR";
 		case GL_LINEAR_MIPMAP_LINEAR:	return "GL_LINEAR_MIPMAP_LINEAR";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -732,7 +732,7 @@ const char* getTextureWrapModeName (int value)
 		case GL_REPEAT:				return "GL_REPEAT";
 		case GL_CLAMP_TO_EDGE:		return "GL_CLAMP_TO_EDGE";
 		case GL_MIRRORED_REPEAT:	return "GL_MIRRORED_REPEAT";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -746,7 +746,7 @@ const char* getTextureSwizzleName (int value)
 		case GL_ALPHA:	return "GL_ALPHA";
 		case GL_ZERO:	return "GL_ZERO";
 		case GL_ONE:	return "GL_ONE";
-		default:		return DE_NULL;
+		default:		return nullptr;
 	}
 }
 
@@ -756,7 +756,7 @@ const char* getTextureCompareModeName (int value)
 	{
 		case GL_NONE:					return "GL_NONE";
 		case GL_COMPARE_REF_TO_TEXTURE:	return "GL_COMPARE_REF_TO_TEXTURE";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -770,7 +770,7 @@ const char* getCubeMapFaceName (int value)
 		case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:	return "GL_TEXTURE_CUBE_MAP_NEGATIVE_Y";
 		case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:	return "GL_TEXTURE_CUBE_MAP_POSITIVE_Z";
 		case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:	return "GL_TEXTURE_CUBE_MAP_NEGATIVE_Z";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -780,7 +780,7 @@ const char* getTextureDepthStencilModeName (int value)
 	{
 		case GL_DEPTH_COMPONENT:	return "GL_DEPTH_COMPONENT";
 		case GL_STENCIL_INDEX:		return "GL_STENCIL_INDEX";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -797,7 +797,7 @@ const char* getPixelStoreParameterName (int value)
 		case GL_PACK_ROW_LENGTH:		return "GL_PACK_ROW_LENGTH";
 		case GL_PACK_SKIP_ROWS:			return "GL_PACK_SKIP_ROWS";
 		case GL_PACK_SKIP_PIXELS:		return "GL_PACK_SKIP_PIXELS";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -889,7 +889,7 @@ const char* getUncompressedTextureFormatName (int value)
 		case GL_SRG8_EXT:			return "GL_SRG8_EXT";
 		case GL_BGRA:				return "GL_BGRA";
 		case GL_BGRA8_EXT:			return "GL_BGRA8_EXT";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -943,7 +943,7 @@ const char* getCompressedTextureFormatName (int value)
 		case GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG:			return "GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG";
 		case GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG:			return "GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG";
 		case GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG:			return "GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -1023,7 +1023,7 @@ const char* getShaderVarTypeName (int value)
 		case GL_IMAGE_CUBE_MAP_ARRAY:						return "GL_IMAGE_CUBE_MAP_ARRAY";
 		case GL_INT_IMAGE_CUBE_MAP_ARRAY:					return "GL_INT_IMAGE_CUBE_MAP_ARRAY";
 		case GL_UNSIGNED_INT_IMAGE_CUBE_MAP_ARRAY:			return "GL_UNSIGNED_INT_IMAGE_CUBE_MAP_ARRAY";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -1036,7 +1036,7 @@ const char* getShaderParamName (int value)
 		case GL_COMPILE_STATUS:			return "GL_COMPILE_STATUS";
 		case GL_INFO_LOG_LENGTH:		return "GL_INFO_LOG_LENGTH";
 		case GL_SHADER_SOURCE_LENGTH:	return "GL_SHADER_SOURCE_LENGTH";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -1055,7 +1055,7 @@ const char* getVertexAttribParameterNameName (int value)
 		case GL_CURRENT_VERTEX_ATTRIB:				return "GL_CURRENT_VERTEX_ATTRIB";
 		case GL_VERTEX_ATTRIB_BINDING:				return "GL_VERTEX_ATTRIB_BINDING";
 		case GL_VERTEX_ATTRIB_RELATIVE_OFFSET:		return "GL_VERTEX_ATTRIB_RELATIVE_OFFSET";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -1065,7 +1065,7 @@ const char* getBooleanName (int value)
 	{
 		case GL_FALSE:	return "GL_FALSE";
 		case GL_TRUE:	return "GL_TRUE";
-		default:		return DE_NULL;
+		default:		return nullptr;
 	}
 }
 
@@ -1354,7 +1354,7 @@ const char* getGettableStateName (int value)
 		case GL_DEBUG_OUTPUT:										return "GL_DEBUG_OUTPUT";
 		case GL_DEBUG_OUTPUT_SYNCHRONOUS:							return "GL_DEBUG_OUTPUT_SYNCHRONOUS";
 		case GL_BLEND_ADVANCED_COHERENT_KHR:						return "GL_BLEND_ADVANCED_COHERENT_KHR";
-		default:													return DE_NULL;
+		default:													return nullptr;
 	}
 }
 
@@ -1394,7 +1394,7 @@ const char* getGettableIndexedStateName (int value)
 		case GL_BLEND_DST_RGB:						return "GL_BLEND_DST_RGB";
 		case GL_BLEND_DST_ALPHA:					return "GL_BLEND_DST_ALPHA";
 		case GL_COLOR_WRITEMASK:					return "GL_COLOR_WRITEMASK";
-		default:									return DE_NULL;
+		default:									return nullptr;
 	}
 }
 
@@ -1407,7 +1407,7 @@ const char* getGettableStringName (int value)
 		case GL_SHADING_LANGUAGE_VERSION:	return "GL_SHADING_LANGUAGE_VERSION";
 		case GL_VENDOR:						return "GL_VENDOR";
 		case GL_VERSION:					return "GL_VERSION";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -1417,7 +1417,7 @@ const char* getPointerStateName (int value)
 	{
 		case GL_DEBUG_CALLBACK_FUNCTION:	return "GL_DEBUG_CALLBACK_FUNCTION";
 		case GL_DEBUG_CALLBACK_USER_PARAM:	return "GL_DEBUG_CALLBACK_USER_PARAM";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -1427,7 +1427,7 @@ const char* getInternalFormatParameterName (int value)
 	{
 		case GL_NUM_SAMPLE_COUNTS:	return "GL_NUM_SAMPLE_COUNTS";
 		case GL_SAMPLES:			return "GL_SAMPLES";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -1442,7 +1442,7 @@ const char* getInternalFormatTargetName (int value)
 		case GL_TEXTURE_3D:						return "GL_TEXTURE_3D";
 		case GL_TEXTURE_2D_ARRAY:				return "GL_TEXTURE_2D_ARRAY";
 		case GL_TEXTURE_CUBE_MAP:				return "GL_TEXTURE_CUBE_MAP";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -1451,7 +1451,7 @@ const char* getMultisampleParameterName (int value)
 	switch (value)
 	{
 		case GL_SAMPLE_POSITION:	return "GL_SAMPLE_POSITION";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -1464,7 +1464,7 @@ const char* getQueryTargetName (int value)
 		case GL_PRIMITIVES_GENERATED:					return "GL_PRIMITIVES_GENERATED";
 		case GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN:	return "GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN";
 		case GL_TIME_ELAPSED:							return "GL_TIME_ELAPSED";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -1474,7 +1474,7 @@ const char* getQueryParamName (int value)
 	{
 		case GL_CURRENT_QUERY:		return "GL_CURRENT_QUERY";
 		case GL_QUERY_COUNTER_BITS:	return "GL_QUERY_COUNTER_BITS";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -1484,7 +1484,7 @@ const char* getQueryObjectParamName (int value)
 	{
 		case GL_QUERY_RESULT:			return "GL_QUERY_RESULT";
 		case GL_QUERY_RESULT_AVAILABLE:	return "GL_QUERY_RESULT_AVAILABLE";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -1495,7 +1495,7 @@ const char* getImageAccessName (int value)
 		case GL_READ_ONLY:	return "GL_READ_ONLY";
 		case GL_WRITE_ONLY:	return "GL_WRITE_ONLY";
 		case GL_READ_WRITE:	return "GL_READ_WRITE";
-		default:			return DE_NULL;
+		default:			return nullptr;
 	}
 }
 
@@ -1511,7 +1511,7 @@ const char* getProgramInterfaceName (int value)
 		case GL_TRANSFORM_FEEDBACK_VARYING:	return "GL_TRANSFORM_FEEDBACK_VARYING";
 		case GL_BUFFER_VARIABLE:			return "GL_BUFFER_VARIABLE";
 		case GL_SHADER_STORAGE_BLOCK:		return "GL_SHADER_STORAGE_BLOCK";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -1542,7 +1542,7 @@ const char* getProgramResourcePropertyName (int value)
 		case GL_TOP_LEVEL_ARRAY_STRIDE:					return "GL_TOP_LEVEL_ARRAY_STRIDE";
 		case GL_TYPE:									return "GL_TYPE";
 		case GL_IS_PER_PATCH:							return "GL_IS_PER_PATCH";
-		default:										return DE_NULL;
+		default:										return nullptr;
 	}
 }
 
@@ -1556,7 +1556,7 @@ const char* getPrecisionFormatTypeName (int value)
 		case GL_LOW_INT:		return "GL_LOW_INT";
 		case GL_MEDIUM_INT:		return "GL_MEDIUM_INT";
 		case GL_HIGH_INT:		return "GL_HIGH_INT";
-		default:				return DE_NULL;
+		default:				return nullptr;
 	}
 }
 
@@ -1565,7 +1565,7 @@ const char* getTransformFeedbackTargetName (int value)
 	switch (value)
 	{
 		case GL_TRANSFORM_FEEDBACK:	return "GL_TRANSFORM_FEEDBACK";
-		default:					return DE_NULL;
+		default:					return nullptr;
 	}
 }
 
@@ -1576,7 +1576,7 @@ const char* getProvokingVertexName (int value)
 		case GL_FIRST_VERTEX_CONVENTION:	return "GL_FIRST_VERTEX_CONVENTION";
 		case GL_LAST_VERTEX_CONVENTION:		return "GL_LAST_VERTEX_CONVENTION";
 		case GL_UNDEFINED_VERTEX:			return "GL_UNDEFINED_VERTEX";
-		default:							return DE_NULL;
+		default:							return nullptr;
 	}
 }
 
@@ -1591,7 +1591,7 @@ const char* getDebugMessageSourceName (int value)
 		case GL_DEBUG_SOURCE_APPLICATION:		return "GL_DEBUG_SOURCE_APPLICATION";
 		case GL_DEBUG_SOURCE_OTHER:				return "GL_DEBUG_SOURCE_OTHER";
 		case GL_DONT_CARE:						return "GL_DONT_CARE";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -1609,7 +1609,7 @@ const char* getDebugMessageTypeName (int value)
 		case GL_DEBUG_TYPE_PUSH_GROUP:			return "GL_DEBUG_TYPE_PUSH_GROUP";
 		case GL_DEBUG_TYPE_POP_GROUP:			return "GL_DEBUG_TYPE_POP_GROUP";
 		case GL_DONT_CARE:						return "GL_DONT_CARE";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -1622,7 +1622,7 @@ const char* getDebugMessageSeverityName (int value)
 		case GL_DEBUG_SEVERITY_LOW:				return "GL_DEBUG_SEVERITY_LOW";
 		case GL_DEBUG_SEVERITY_NOTIFICATION:	return "GL_DEBUG_SEVERITY_NOTIFICATION";
 		case GL_DONT_CARE:						return "GL_DONT_CARE";
-		default:								return DE_NULL;
+		default:								return nullptr;
 	}
 }
 
@@ -1639,7 +1639,7 @@ const char* getPipelineParamName (int value)
 		case GL_GEOMETRY_SHADER:		return "GL_GEOMETRY_SHADER";
 		case GL_TESS_CONTROL_SHADER:	return "GL_TESS_CONTROL_SHADER";
 		case GL_TESS_EVALUATION_SHADER:	return "GL_TESS_EVALUATION_SHADER";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 
@@ -1648,7 +1648,7 @@ const char* getPatchParamName (int value)
 	switch (value)
 	{
 		case GL_PATCH_VERTICES:	return "GL_PATCH_VERTICES";
-		default:				return DE_NULL;
+		default:				return nullptr;
 	}
 }
 
@@ -1786,7 +1786,7 @@ const char* getTextureFormatName (int value)
 		case GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG:			return "GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG";
 		case GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG:			return "GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG";
 		case GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG:			return "GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG";
-		default:											return DE_NULL;
+		default:											return nullptr;
 	}
 }
 
@@ -1798,7 +1798,7 @@ const char* getGraphicsResetStatusName (int value)
 		case GL_GUILTY_CONTEXT_RESET:	return "GL_GUILTY_CONTEXT_RESET";
 		case GL_INNOCENT_CONTEXT_RESET:	return "GL_INNOCENT_CONTEXT_RESET";
 		case GL_UNKNOWN_CONTEXT_RESET:	return "GL_UNKNOWN_CONTEXT_RESET";
-		default:						return DE_NULL;
+		default:						return nullptr;
 	}
 }
 

@@ -300,7 +300,7 @@ def getApiType(apiName):
 
 def getConfigName(cfgName):
     if cfgName == None:
-        return "DE_NULL"
+        return "nullptr"
     else:
         return '"' + cfgName + '"'
 

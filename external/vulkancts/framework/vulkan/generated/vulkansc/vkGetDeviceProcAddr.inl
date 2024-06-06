@@ -33,7 +33,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
     const VkDeviceQueueCreateInfo            deviceQueueCreateInfo =
     {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, //  VkStructureType sType;
-        DE_NULL, //  const void* pNext;
+        nullptr, //  const void* pNext;
         (VkDeviceQueueCreateFlags)0u, //  VkDeviceQueueCreateFlags flags;
         queueFamilyIndex, //  uint32_t queueFamilyIndex;
         queueCount, //  uint32_t queueCount;
@@ -43,15 +43,15 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
     const VkDeviceCreateInfo                deviceCreateInfo =
     {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //  VkStructureType sType;
-        DE_NULL, //  const void* pNext;
+        nullptr, //  const void* pNext;
         (VkDeviceCreateFlags)0u, //  VkDeviceCreateFlags flags;
         1u, //  uint32_t queueCreateInfoCount;
         &deviceQueueCreateInfo, //  const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u, //  uint32_t enabledLayerCount;
-        DE_NULL, //  const char* const* ppEnabledLayerNames;
+        nullptr, //  const char* const* ppEnabledLayerNames;
         0u, //  uint32_t enabledExtensionCount;
-        DE_NULL, //  const char* const* ppEnabledExtensionNames;
-        DE_NULL, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr, //  const char* const* ppEnabledExtensionNames;
+        nullptr, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
     const Unique<VkDevice>                    device            (createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
     const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
@@ -187,7 +187,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
     bool fail = false;
     for (const auto& function : functions)
     {
-        if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != DE_NULL)
+        if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != nullptr)
         {
             fail = true;
             log << tcu::TestLog::Message << "Function " << function << " is not NULL" << tcu::TestLog::EndMessage;

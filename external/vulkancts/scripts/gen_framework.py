@@ -1760,7 +1760,7 @@ def writeStrUtilImpl (api, filename):
                 lastValue = 0x7FFFFFFF
                 for e in enum.enumeratorList:
                     enumValues.append(f"\t\tcase {e.name}:\treturn \"{e.name}\";")
-                enumValues.append("\t\tdefault:\treturn DE_NULL;")
+                enumValues.append("\t\tdefault:\treturn nullptr;")
                 for line in indentLines(enumValues):
                     yield line
                 yield "\t}"
@@ -1797,7 +1797,7 @@ def writeStrUtilImpl (api, filename):
                 yield ""
                 yield f"tcu::Format::Bitfield<{bitSize}> get{bitmask.name[2:]}Str ({bitmask.name} value)"
                 yield "{"
-                yield f"\treturn tcu::Format::Bitfield<{bitSize}>(value, DE_NULL, DE_NULL);"
+                yield f"\treturn tcu::Format::Bitfield<{bitSize}>(value, nullptr, nullptr);"
                 yield "}"
 
         bitfieldTypeNames = set([bitmask.name for bitmask in api.bitmasks])
@@ -1912,7 +1912,7 @@ def writeRefUtilProto (api, filename):
 
     def makeRefUtilProto ():
         unindented = []
-        for line in indentLines(["Move<%s>\t%s\t(%s = DE_NULL);" % (function.objectType, function.name, argListToStr(function.ifaceArgs + function.arguments)) for function in functions]):
+        for line in indentLines(["Move<%s>\t%s\t(%s = nullptr);" % (function.objectType, function.name, argListToStr(function.ifaceArgs + function.arguments)) for function in functions]):
             yield line
 
     writeInlFile(filename, INL_HEADER, makeRefUtilProto())
@@ -2567,12 +2567,12 @@ def writeDeviceFeatures2(api, filename):
         # clear memory of each structure
         clearStructures.append('\tdeMemset(&' + structureDetail.instanceName + '[ndx], 0xFF * ndx, sizeof(' + structureName + '));')
         # construct structure chain
-        nextInstanceName = 'DE_NULL';
+        nextInstanceName = 'nullptr';
         if index < len(testedStructureDetail)-1:
             nextInstanceName = '&' + testedStructureDetail[index+1].instanceName + '[ndx]'
         structureChain.append([
             '\t\t' + structureDetail.instanceName + '[ndx].sType = ' + structureDetail.flagName + ' ? ' + structureDetail.sType + ' : VK_STRUCTURE_TYPE_MAX_ENUM;',
-            '\t\t' + structureDetail.instanceName + '[ndx].pNext = DE_NULL;'])
+            '\t\t' + structureDetail.instanceName + '[ndx].pNext = nullptr;'])
         # construct log section
         logStructures.append([
             '\tif (' + structureDetail.flagName + ')',
@@ -2603,7 +2603,7 @@ def writeDeviceFeatures2(api, filename):
     const int                    count = 2u;
     TestLog&                    log = context.getTestContext().getLog();
     VkPhysicalDeviceFeatures2    extFeatures;
-    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 """)
         stream.append("\t"+structureDefinitions[n])
         stream.append("\t"+featureEnabledFlags[n])
@@ -2662,7 +2662,7 @@ def writeDeviceFeatures2(api, filename):
     const VkDeviceQueueCreateInfo    deviceQueueCreateInfo =
     {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        DE_NULL,
+        nullptr,
         (VkDeviceQueueCreateFlags)0u,
         queueFamilyIndex, //queueFamilyIndex;
         queueCount, //queueCount;
@@ -2695,10 +2695,10 @@ def writeDeviceFeatures2(api, filename):
         1, //queueRecordCount;
         &deviceQueueCreateInfo, //pRequestedQueues;
         0, //layerCount;
-        DE_NULL, //ppEnabledLayerNames;
+        nullptr, //ppEnabledLayerNames;
         0, //extensionCount;
-        DE_NULL, //ppEnabledExtensionNames;
-        DE_NULL, //pEnabledFeatures;
+        nullptr, //ppEnabledExtensionNames;
+        nullptr, //pEnabledFeatures;
     };
 
     const Unique<VkDevice>            device            (createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
@@ -2942,7 +2942,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
     tcu::ResultCollector                    resultCollector            (log);
-    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), DE_NULL, true));
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
     const InstanceDriver&                    instanceDriver            (instance.getDriver());
     const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const uint32_t                            queueFamilyIndex = 0;
@@ -2980,7 +2980,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest{4} (Context& context)
 """
         additionalParams = ( 'memReservationStatMax, isSubProcess' if api.apiName == 'vulkansc' else 'isSubProcess' )
         additionalDefs = ( '    VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();' if apiName == 'vulkansc' else '')
-        featureItems.append(testBlock.format(structureType.name, "\n".join(items), len(items), ("DE_NULL" if coreFeaturesPattern.match(structureType.name) else "&extensionNames"), structureType.name[len('VkPhysicalDevice'):], additionalParams, additionalDefs))
+        featureItems.append(testBlock.format(structureType.name, "\n".join(items), len(items), ("nullptr" if coreFeaturesPattern.match(structureType.name) else "&extensionNames"), structureType.name[len('VkPhysicalDevice'):], additionalParams, additionalDefs))
 
         testFunctions.append("createDeviceWithUnsupportedFeaturesTest" + structureType.name[len('VkPhysicalDevice'):])
 
@@ -3297,7 +3297,7 @@ def writeMandatoryFeatures(api, filename):
                    '',
                    '\tVkPhysicalDevice\t\t\t\t\tphysicalDevice\t\t= context.getPhysicalDevice();',
                    '\tconst InstanceInterface&\t\t\tvki\t\t\t\t\t= context.getInstanceInterface();',
-                   '\tconst vector<VkExtensionProperties>\tdeviceExtensions\t= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);',
+                   '\tconst vector<VkExtensionProperties>\tdeviceExtensions\t= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);',
                    '\tconst uint32_t\t\t\t\t\t\tusedApiVersion\t\t= context.getUsedApiVersion();',
                    '',
                    '\ttcu::TestLog& log = context.getTestContext().getLog();',
@@ -3761,7 +3761,7 @@ def writeGetDeviceProcAddr(api, filename):
     const VkDeviceQueueCreateInfo            deviceQueueCreateInfo =
     {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, //  VkStructureType sType;
-        DE_NULL, //  const void* pNext;
+        nullptr, //  const void* pNext;
         (VkDeviceQueueCreateFlags)0u, //  VkDeviceQueueCreateFlags flags;
         queueFamilyIndex, //  uint32_t queueFamilyIndex;
         queueCount, //  uint32_t queueCount;
@@ -3771,15 +3771,15 @@ def writeGetDeviceProcAddr(api, filename):
     const VkDeviceCreateInfo                deviceCreateInfo =
     {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //  VkStructureType sType;
-        DE_NULL, //  const void* pNext;
+        nullptr, //  const void* pNext;
         (VkDeviceCreateFlags)0u, //  VkDeviceCreateFlags flags;
         1u, //  uint32_t queueCreateInfoCount;
         &deviceQueueCreateInfo, //  const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u, //  uint32_t enabledLayerCount;
-        DE_NULL, //  const char* const* ppEnabledLayerNames;
+        nullptr, //  const char* const* ppEnabledLayerNames;
         0u, //  uint32_t enabledExtensionCount;
-        DE_NULL, //  const char* const* ppEnabledExtensionNames;
-        DE_NULL, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr, //  const char* const* ppEnabledExtensionNames;
+        nullptr, //  const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
     const Unique<VkDevice>                    device            (createCustomDevice(validationEnabled, platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
     const DeviceDriver                        deviceDriver    (platformInterface, instance, device.get(), context.getUsedApiVersion(), context.getTestContext().getCommandLine());
@@ -3790,7 +3790,7 @@ def writeGetDeviceProcAddr(api, filename):
     bool fail = false;
     for (const auto& function : functions)
     {
-        if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != DE_NULL)
+        if (deviceDriver.getDeviceProcAddr(device.get(), function.c_str()) != nullptr)
         {
             fail = true;
             log << tcu::TestLog::Message << "Function " << function << " is not NULL" << tcu::TestLog::EndMessage;
