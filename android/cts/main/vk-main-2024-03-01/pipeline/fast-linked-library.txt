@@ -11180,6 +11180,8 @@ dEQP-VK.pipeline.fast_linked_library.pipeline_cache.robustness2.image
 dEQP-VK.pipeline.fast_linked_library.pipeline_cache.robustness2.storage
 dEQP-VK.pipeline.fast_linked_library.pipeline_cache.robustness2.uniform
 dEQP-VK.pipeline.fast_linked_library.pipeline_cache.robustness2.vertex_input
+dEQP-VK.pipeline.fast_linked_library.push_constant.graphics_pipeline.range_size_256
+dEQP-VK.pipeline.fast_linked_library.push_constant.graphics_pipeline.range_size_256_command2
 dEQP-VK.pipeline.fast_linked_library.push_constant.graphics_pipeline.unused_disjoint_1
 dEQP-VK.pipeline.fast_linked_library.push_constant.graphics_pipeline.unused_disjoint_2
 dEQP-VK.pipeline.fast_linked_library.push_constant.graphics_pipeline.unused_disjoint_3
