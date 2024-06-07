@@ -407,7 +407,7 @@ void FboColorTests::init(void)
 
         for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(unorm16ColorFormats); ndx++)
             tex2dGroup->addChild(new FboColorTex2DCase(m_context, getFormatName(unorm16ColorFormats[ndx]), "",
-                                                       unorm16ColorFormats[ndx], IVec2(129, 117)));
+                                                       unorm16ColorFormats[ndx], IVec2(128, 128)));
     }
 }
 
