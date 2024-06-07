@@ -98,10 +98,8 @@ void UniformIntegerFunctionCase::deinit(void)
 void UniformIntegerFunctionCase::init(void)
 {
     std::ostringstream oss;
-    oss << "result = " << getFunctionName()
-        << "(value);\n"
-           "comparison = ("
-        << getFunctionName() << "(value) == " << computeExpectedResult(m_input) << ");\n";
+    oss << "result = " << getFunctionName() << "(value);\n"
+        << "comparison = (" << getFunctionName() << "(value) == " << computeExpectedResult(m_input) << ");\n";
     m_spec.source = oss.str();
 
     DE_ASSERT(!m_executor);
@@ -117,7 +115,7 @@ void UniformIntegerFunctionCase::init(void)
 tcu::TestNode::IterateResult UniformIntegerFunctionCase::iterate(void)
 {
     int32_t result;
-    bool comparison;
+    int32_t comparison; // A bool in the shader, but we must use a 32-bit type to copy out into.
     vector<void *> outputPointers(2);
 
     outputPointers[0] = &result;
