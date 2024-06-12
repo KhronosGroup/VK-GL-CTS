@@ -498,6 +498,15 @@ static void parseCaseList (CaseTreeNode* root, std::istream& in)
 		}
 		else if (isValidTestCaseNameChar((char)curChr))
 			curName += (char)curChr;
+		else if (curChr == '#') {
+			int curChr_tmp = curChr;
+			while (curChr_tmp != '\n') {
+				curChr_tmp = in.get();
+				curName += (char)curChr_tmp;
+			}
+			std::cout << "Skip test case: " << curName << "\n";
+			curName.clear();
+		}
 		else
 			throw std::invalid_argument("Illegal character in test case name");
 	}
