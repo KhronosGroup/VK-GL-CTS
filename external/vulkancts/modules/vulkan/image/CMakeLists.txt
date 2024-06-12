@@ -16,6 +16,8 @@ set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageAtomicSpirvShaders.hpp
 	vktImageLoadStoreTests.cpp
 	vktImageLoadStoreTests.hpp
+	vktImageMismatchedDimensionalityTests.cpp
+	vktImageMismatchedDimensionalityTests.hpp
 	vktImageMismatchedFormatsTests.cpp
 	vktImageMismatchedFormatsTests.hpp
 	vktImageMutableTests.cpp
