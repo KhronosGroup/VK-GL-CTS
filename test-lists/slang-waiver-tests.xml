@@ -18,54 +18,6 @@
     <t>dEQP-VK.glsl.matrix.div.uniform.mediump_mat2x3_float_fragment</t>
     <t>dEQP-VK.glsl.matrix.div.uniform.highp_mat2x3_float_vertex</t>
     <t>dEQP-VK.glsl.matrix.div.uniform.highp_mat2x3_float_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler2d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler2d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler2d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler2d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler2d_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler2d_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isamplercube_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isamplercube_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usamplercube_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usamplercube_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isamplercube_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usamplercube_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler2darray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler2darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler2darray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler2darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler2darray_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler2darray_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler3d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler3d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler3d_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler3d_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler1d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler1d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler1d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler1d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler1d_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler1d_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler1darray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler1darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler1darray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler1darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isampler1darray_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usampler1darray_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isamplercubearray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isamplercubearray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usamplercubearray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usamplercubearray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.isamplercubearray_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texture.usamplercubearray_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.isampler2d_vec3_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.isampler2d_vec3_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.usampler2d_vec3_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.usampler2d_vec3_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.isampler2d_vec3_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.usampler2d_vec3_bias_fragment</t>
     <t>dEQP-VK.glsl.texture_functions.textureproj.sampler2d_vec4_fixed_vertex</t>
     <t>dEQP-VK.glsl.texture_functions.textureproj.sampler2d_vec4_fixed_fragment</t>
     <t>dEQP-VK.glsl.texture_functions.textureproj.sampler2d_vec4_float_vertex</t>
@@ -78,18 +30,6 @@
     <t>dEQP-VK.glsl.texture_functions.textureproj.sampler2d_vec4_bias_float_fragment</t>
     <t>dEQP-VK.glsl.texture_functions.textureproj.isampler2d_vec4_bias_fragment</t>
     <t>dEQP-VK.glsl.texture_functions.textureproj.usampler2d_vec4_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.isampler3d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.isampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.usampler3d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.usampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.isampler3d_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.usampler3d_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.isampler1d_vec2_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.isampler1d_vec2_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.usampler1d_vec2_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.usampler1d_vec2_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.isampler1d_vec2_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureproj.usampler1d_vec2_bias_fragment</t>
     <t>dEQP-VK.glsl.texture_functions.textureproj.sampler1d_vec4_fixed_vertex</t>
     <t>dEQP-VK.glsl.texture_functions.textureproj.sampler1d_vec4_fixed_fragment</t>
     <t>dEQP-VK.glsl.texture_functions.textureproj.sampler1d_vec4_float_vertex</t>
@@ -102,102 +42,6 @@
     <t>dEQP-VK.glsl.texture_functions.textureproj.sampler1d_vec4_bias_float_fragment</t>
     <t>dEQP-VK.glsl.texture_functions.textureproj.isampler1d_vec4_bias_fragment</t>
     <t>dEQP-VK.glsl.texture_functions.textureproj.usampler1d_vec4_bias_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isampler2d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isampler2d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usampler2d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usampler2d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isamplercube_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isamplercube_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usamplercube_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usamplercube_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isampler2darray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isampler2darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usampler2darray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usampler2darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isampler3d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usampler3d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isampler1d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isampler1d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usampler1d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usampler1d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isampler1darray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isampler1darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usampler1darray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usampler1darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isamplercubearray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.isamplercubearray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usamplercubearray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturelod.usamplercubearray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.isampler2d_vec3_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.isampler2d_vec3_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.usampler2d_vec3_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.usampler2d_vec3_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.isampler2d_vec4_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.isampler2d_vec4_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.usampler2d_vec4_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.usampler2d_vec4_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.isampler3d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.isampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.usampler3d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.usampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.isampler1d_vec2_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.isampler1d_vec2_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.usampler1d_vec2_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.usampler1d_vec2_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.isampler1d_vec4_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.isampler1d_vec4_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.usampler1d_vec4_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojlod.usampler1d_vec4_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isampler2d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isampler2d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usampler2d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usampler2d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isamplercube_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isamplercube_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usamplercube_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usamplercube_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isampler2darray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isampler2darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usampler2darray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usampler2darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isampler3d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usampler3d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isampler1d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isampler1d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usampler1d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usampler1d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isampler1darray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isampler1darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usampler1darray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usampler1darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isamplercubearray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.isamplercubearray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usamplercubearray_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.texturegrad.usamplercubearray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.isampler2d_vec3_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.isampler2d_vec3_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.usampler2d_vec3_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.usampler2d_vec3_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.isampler2d_vec4_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.isampler2d_vec4_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.usampler2d_vec4_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.usampler2d_vec4_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.isampler3d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.isampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.usampler3d_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.usampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.isampler1d_vec2_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.isampler1d_vec2_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.usampler1d_vec2_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.usampler1d_vec2_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.isampler1d_vec4_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.isampler1d_vec4_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.usampler1d_vec4_vertex</t>
-    <t>dEQP-VK.glsl.texture_functions.textureprojgrad.usampler1d_vec4_fragment</t>
     <t>dEQP-VK.glsl.texture_functions.query.texturesize.sampler2d_fixed_vertex</t>
     <t>dEQP-VK.glsl.texture_functions.query.texturesize.sampler2d_fixed_fragment</t>
     <t>dEQP-VK.glsl.texture_functions.query.texturesize.sampler2d_float_vertex</t>
@@ -267,34 +111,6 @@
     <t>dEQP-VK.glsl.texture_functions.query.texturesize.sampler1darrayshadow_vertex</t>
     <t>dEQP-VK.glsl.texture_functions.query.texturesize.sampler1darrayshadow_fragment</t>
     <t>dEQP-VK.glsl.texture_functions.query.texturesize.oob_lod</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isampler2d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isampler2d_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usampler2d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usampler2d_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isampler3d_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usampler3d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usampler3d_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isamplercube_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isamplercube_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usamplercube_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usamplercube_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isampler2darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isampler2darray_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usampler2darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usampler2darray_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isamplercubearray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isamplercubearray_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usamplercubearray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usamplercubearray_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isampler1d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isampler1d_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usampler1d_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usampler1d_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isampler1darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.isampler1darray_zero_uv_width_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usampler1darray_fragment</t>
-    <t>dEQP-VK.glsl.texture_functions.query.texturequerylod.usampler1darray_zero_uv_width_fragment</t>
     <t>dEQP-VK.glsl.builtin.precision_fconvert.f16_to_f32_size_1</t>
     <t>dEQP-VK.glsl.builtin.precision_fconvert.f16_to_f64_size_1</t>
     <t>dEQP-VK.glsl.builtin.precision_fconvert.f32_to_f16_size_1</t>
@@ -305,102 +121,6 @@
     <t>dEQP-VK.glsl.builtin.precision_fconvert.f64_to_f32_size_1</t>
     <t>dEQP-VK.glsl.builtin.precision_fconvert.f64_to_f32_size_2</t>
     <t>dEQP-VK.glsl.builtin.precision_fconvert.f64_to_f32_size_3</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.vertex.isampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.vertex.isampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.vertex.isampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.vertex.isamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.vertex.isampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.vertex.isampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.vertex.usampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.vertex.usampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.vertex.usampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.vertex.usamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.vertex.usampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.vertex.usampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.fragment.isampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.fragment.isampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.fragment.isampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.fragment.isamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.fragment.isampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.fragment.isampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.fragment.usampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.fragment.usampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.fragment.usampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.fragment.usamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.fragment.usampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_literal.fragment.usampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.vertex.isampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.vertex.isampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.vertex.isampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.vertex.isamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.vertex.isampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.vertex.isampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.vertex.usampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.vertex.usampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.vertex.usampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.vertex.usamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.vertex.usampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.vertex.usampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.fragment.isampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.fragment.isampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.fragment.isampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.fragment.isamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.fragment.isampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.fragment.isampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.fragment.usampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.fragment.usampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.fragment.usampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.fragment.usamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.fragment.usampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.const_expression.fragment.usampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.vertex.isampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.vertex.isampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.vertex.isampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.vertex.isamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.vertex.isampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.vertex.isampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.vertex.usampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.vertex.usampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.vertex.usampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.vertex.usamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.vertex.usampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.vertex.usampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.fragment.isampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.fragment.isampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.fragment.isampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.fragment.isamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.fragment.isampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.fragment.isampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.fragment.usampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.fragment.usampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.fragment.usampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.fragment.usamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.fragment.usampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.uniform.fragment.usampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.vertex.isampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.vertex.isampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.vertex.isampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.vertex.isamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.vertex.isampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.vertex.isampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.vertex.usampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.vertex.usampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.vertex.usampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.vertex.usamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.vertex.usampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.vertex.usampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.fragment.isampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.fragment.isampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.fragment.isampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.fragment.isamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.fragment.isampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.fragment.isampler3d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.fragment.usampler1d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.fragment.usampler1darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.fragment.usampler2d</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.fragment.usamplercube</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.fragment.usampler2darray</t>
-    <t>dEQP-VK.glsl.opaque_type_indexing.sampler.dynamically_uniform.fragment.usampler3d</t>
     <t>dEQP-VK.ssbo.layout.single_basic_type.std140.bvec2</t>
     <t>dEQP-VK.ssbo.layout.single_basic_type.std140.bvec3</t>
     <t>dEQP-VK.ssbo.layout.single_basic_type.std140.bvec4</t>
