@@ -155,8 +155,8 @@ void createChildren(tcu::TestCaseGroup *group, PipelineConstructionType pipeline
     if (!isConstructionTypeShaderObject(pipelineConstructionType))
     {
         group->addChild(createShaderModuleIdentifierTests(testCtx, pipelineConstructionType));
+        group->addChild(createPipelineRobustnessCacheTests(testCtx, pipelineConstructionType));
     }
-    group->addChild(createPipelineRobustnessCacheTests(testCtx, pipelineConstructionType));
 #endif // CTS_USES_VULKANSC
     group->addChild(createColorWriteEnable2Tests(testCtx, pipelineConstructionType));
     group->addChild(createMiscTests(testCtx, pipelineConstructionType));
