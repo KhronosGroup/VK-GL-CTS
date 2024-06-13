@@ -7935,11 +7935,19 @@ void createAmberFragmentTestCases(add_ref<tcu::TestContext> testCtx, add_ptr<tcu
         if (!context.getShaderMaximalReconvergenceFeatures().shaderMaximalReconvergence)
             TCU_THROW(NotSupportedError, "shaderMaximalReconvergence not supported");
 
-        if (!(context.getSubgroupProperties().subgroupSize >= 4))
-            TCU_THROW(NotSupportedError, "subgroupSize is less than 4");
-
         if (!(context.getSubgroupProperties().supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT))
             TCU_THROW(NotSupportedError, "VK_SUBGROUP_FEATURE_BALLOT_BIT not supported");
+
+        if (Case::matches(testName, {cases[DEMOTE_ENTIRE_QUAD]}))
+        {
+            if (!(context.getSubgroupProperties().subgroupSize > 4))
+                TCU_THROW(NotSupportedError, "subgroupSize is less than or equal to 4");
+        }
+        else
+        {
+            if (!(context.getSubgroupProperties().subgroupSize >= 4))
+                TCU_THROW(NotSupportedError, "subgroupSize is less than 4");
+        }
 
         if (Case::matches(testName, {cases[TERMINATE_INVOCATION]}))
         {
