@@ -65,6 +65,7 @@ const static std::vector<std::pair<uint32_t, uint32_t>> apiVersionPredecessors =
     {VK_MAKE_API_VERSION(0, 1, 2, 0), VK_MAKE_API_VERSION(0, 1, 1, 0)},
     {VK_MAKE_API_VERSION(1, 1, 0, 0), VK_MAKE_API_VERSION(0, 1, 2, 0)},
     {VK_MAKE_API_VERSION(0, 1, 3, 0), VK_MAKE_API_VERSION(0, 1, 2, 0)},
+    {VK_MAKE_API_VERSION(0, 1, 4, 0), VK_MAKE_API_VERSION(0, 1, 3, 0)},
 };
 
 bool isApiVersionEqual(uint32_t lhs, uint32_t rhs)
