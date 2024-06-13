@@ -249,11 +249,18 @@ private:
     de::Random m_random;   // Used to generate random offsets.
     uint32_t m_infoCount;  // How many infos have we appended so far?
     std::vector<uint8_t> m_dataVec; // Data vector in generic form.
+    bool m_finalized;               // Finished appending data.
 
     // Are draws indexed and using the offset member of VkMultiDrawIndexedInfoEXT?
     static bool indexedWithOffset(DrawType drawType, const tcu::Maybe<VertexOffsetType> &offsetType)
     {
         return (drawType == DrawType::INDEXED && *offsetType != VertexOffsetType::CONSTANT_PACK);
+    }
+
+    // Are draws indexed and packed?
+    static bool indexedPacked(DrawType drawType, const tcu::Maybe<VertexOffsetType> &offsetType)
+    {
+        return (drawType == DrawType::INDEXED && *offsetType == VertexOffsetType::CONSTANT_PACK);
     }
 
     // Size in bytes for the base structure used with the given draw type.
@@ -291,14 +298,16 @@ public:
         , m_random(seed)
         , m_infoCount(0u)
         , m_dataVec()
+        , m_finalized(false)
     {
         // estimatedInfoCount is used to avoid excessive reallocation.
-        if (estimatedInfoCount > 0u)
-            m_dataVec.reserve(estimatedInfoCount * entrySize());
+        m_dataVec.reserve((estimatedInfoCount + 1u) * entrySize());
     }
 
     void addDrawInfo(uint32_t first, uint32_t count, int32_t offset)
     {
+        DE_ASSERT(!m_finalized);
+
         std::vector<uint8_t> entry(entrySize(), 0);
 
         if (indexedWithOffset(m_drawType, m_offsetType))
@@ -318,14 +327,35 @@ public:
         ++m_infoCount;
     }
 
+    void finalize()
+    {
+        if (indexedPacked(m_drawType, m_offsetType) && m_infoCount > 0u)
+        {
+            // VUID-vkCmdDrawMultiIndexedEXT-drawCount-04940 says:
+            // If drawCount is greater than zero, pIndexInfo must be a valid pointer to memory containing one or more
+            // valid instances of VkMultiDrawIndexedInfoEXT structures
+            //
+            // This means if infoCount is greater than zero, we need to have enough bytes in the buffer so that reading
+            // a VkMultiDrawIndexedInfoEXT structure (12 bytes) at the last offset does not produce an OOB read. As
+            // we've been packing data in the buffer using smaller VkMultiDrawInfoEXT structures, we need 4 extra bytes
+            // at the end to make these tests legal.
+            std::vector<uint8_t> extraData(sizeof(int32_t), 0);
+            std::copy(begin(extraData), end(extraData), std::back_inserter(m_dataVec));
+        }
+
+        m_finalized = true;
+    }
+
     uint32_t drawInfoCount() const
     {
+        DE_ASSERT(m_finalized);
         return m_infoCount;
     }
 
     const void *drawInfoData() const
     {
-        return m_dataVec.data();
+        DE_ASSERT(m_finalized);
+        return de::dataOrNull(m_dataVec);
     }
 
     uint32_t stride() const
@@ -1093,11 +1123,12 @@ tcu::TestStatus MultiDrawInstance::iterate(void)
         uint32_t vertexIndex = 0u;
         for (uint32_t drawIdx = 0u; drawIdx < m_params.drawCount; ++drawIdx)
         {
-            // For indexed draws in mixed offset mode, taking into account vertex indices have been stored in reversed order and
-            // there may be a padding in the vertex buffer after the first verticesPerDraw vertices, we need to use offset 0 in the
-            // last draw call. That draw will contain the indices for the first verticesPerDraw vertices, which are stored without
-            // any offset, while other draw calls will use indices which are off by extraVertices vertices. This will make sure not
-            // every draw call will use the same offset and the implementation handles that.
+            // For indexed draws in mixed offset mode, taking into account vertex indices have been stored in reverse
+            // order and there may be a padding in the vertex buffer after the first verticesPerDraw vertices, we need
+            // to use offset 0 in the last draw call. That draw will contain the indices for the first verticesPerDraw
+            // vertices, which are stored without any offset, while other draw calls will use indices which are off by
+            // extraVertices vertices. This will make sure not every draw call will use the same offset and the
+            // implementation handles that.
             const auto drawOffset =
                 ((isIndexed && (!isMixedMode || (moreThanOneDraw && drawIdx < m_params.drawCount - 1u))) ?
                      vertexOffset :
@@ -1106,6 +1137,7 @@ tcu::TestStatus MultiDrawInstance::iterate(void)
             vertexIndex += verticesPerDraw;
         }
     }
+    drawInfos.finalize();
 
     std::vector<VkClearValue> clearValues;
     clearValues.reserve(2u);
