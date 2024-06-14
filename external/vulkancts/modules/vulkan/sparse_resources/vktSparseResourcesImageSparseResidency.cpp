@@ -681,7 +681,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
             std::ostringstream shaderName;
             shaderName << "comp" << planeNdx;
             auto shaderModule = makeVkSharedPtr(createShaderModule(
-                deviceInterface, getDevice(), m_context.getBinaryCollection().get(shaderName.str()), DE_NULL));
+                deviceInterface, getDevice(), m_context.getBinaryCollection().get(shaderName.str()), 0));
             shaderModules.push_back(shaderModule);
             auto computePipeline = makeVkSharedPtr(
                 makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, shaderModule->get()));

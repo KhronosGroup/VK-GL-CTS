@@ -482,7 +482,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
         }
         else
         {
-            vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, DE_NULL);
+            vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, 0);
         }
 
         vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);

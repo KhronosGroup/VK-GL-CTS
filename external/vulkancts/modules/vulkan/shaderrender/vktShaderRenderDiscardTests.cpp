@@ -94,8 +94,8 @@ public:
                       const ShaderEvalFunc evalFunc, bool usesTexture, bool fuzzyCompare, bool demote);
     virtual TestInstance *createInstance(Context &context) const
     {
-        DE_ASSERT(m_evaluator != DE_NULL);
-        DE_ASSERT(m_uniformSetup != DE_NULL);
+        DE_ASSERT(m_evaluator);
+        DE_ASSERT(m_uniformSetup);
         return new ShaderDiscardCaseInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_usesTexture,
                                              m_fuzzyCompare);
     }

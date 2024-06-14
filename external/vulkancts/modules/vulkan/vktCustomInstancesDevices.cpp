@@ -1102,7 +1102,7 @@ uint32_t VideoDevice::getQueueFamilyVideo(void) const
 vk::Allocator &VideoDevice::getAllocator(void)
 {
 #ifndef CTS_USES_VULKANSC
-    DE_ASSERT(m_allocator != DE_NULL);
+    DE_ASSERT(m_allocator);
 
     return *m_allocator;
 #else

@@ -901,7 +901,7 @@ void drawAndSampleInputAttachment(Context &context, const TestParams &params, Wo
         };
 
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, DE_NULL, 0u);
+                              (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
     }
 
     VK_CHECK(vk.endCommandBuffer(*cmdBuffer));

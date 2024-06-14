@@ -1952,8 +1952,8 @@ ShaderTextureFunctionCase::~ShaderTextureFunctionCase(void)
 
 TestInstance *ShaderTextureFunctionCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_evaluator != DE_NULL);
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_evaluator);
+    DE_ASSERT(m_uniformSetup);
     return new ShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec,
                                              m_textureSpec, m_lookupParams);
 }
@@ -4376,8 +4376,8 @@ SparseShaderTextureFunctionCase::~SparseShaderTextureFunctionCase()
 
 TestInstance *SparseShaderTextureFunctionCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_evaluator != DE_NULL);
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_evaluator);
+    DE_ASSERT(m_uniformSetup);
     return new SparseShaderTextureFunctionInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_lookupSpec,
                                                    m_textureSpec, m_lookupParams);
 }

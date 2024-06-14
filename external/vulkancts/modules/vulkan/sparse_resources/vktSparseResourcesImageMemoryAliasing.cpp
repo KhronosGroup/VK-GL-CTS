@@ -646,8 +646,8 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
             name << "comp" << mipLevelNdx;
 
             // Create and bind compute pipeline
-            Unique<VkShaderModule> shaderModule(createShaderModule(
-                deviceInterface, getDevice(), m_context.getBinaryCollection().get(name.str()), DE_NULL));
+            Unique<VkShaderModule> shaderModule(
+                createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get(name.str()), 0));
 
             computePipelines[mipLevelNdx] =
                 makeVkSharedPtr(makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, *shaderModule));

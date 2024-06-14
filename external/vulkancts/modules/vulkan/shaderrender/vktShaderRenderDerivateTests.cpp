@@ -982,7 +982,7 @@ ConstantDerivateCase::~ConstantDerivateCase(void)
 
 TestInstance *ConstantDerivateCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_uniformSetup);
     return new ConstantDerivateCaseInstance(context, *m_uniformSetup, m_definitions, m_values);
 }
 
@@ -1269,7 +1269,7 @@ LinearDerivateCase::~LinearDerivateCase(void)
 
 TestInstance *LinearDerivateCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_uniformSetup);
     if (m_fragmentTmpl.find("gl_SubgroupInvocationID") != std::string::npos)
     {
         if (!subgroups::areQuadOperationsSupportedForStages(context, VK_SHADER_STAGE_FRAGMENT_BIT))
@@ -1577,7 +1577,7 @@ TextureDerivateCase::~TextureDerivateCase(void)
 
 TestInstance *TextureDerivateCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_uniformSetup);
     return new TextureDerivateCaseInstance(context, *m_uniformSetup, m_definitions, m_values, m_textureValues);
 }
 

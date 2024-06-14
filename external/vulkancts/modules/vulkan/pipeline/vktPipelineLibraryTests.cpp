@@ -1490,8 +1490,8 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
     VkDescriptorSetLayout allDescriptorSetLayouts[maxBitsCount];
 
     // set all layouts to NULL
-    deMemset(&vertDescriptorSetLayouts, DE_NULL, maxBitsCount * sizeof(VkDescriptorSetLayout));
-    deMemset(&fragDescriptorSetLayouts, DE_NULL, maxBitsCount * sizeof(VkDescriptorSetLayout));
+    deMemset(&vertDescriptorSetLayouts, 0, maxBitsCount * sizeof(VkDescriptorSetLayout));
+    deMemset(&fragDescriptorSetLayouts, 0, maxBitsCount * sizeof(VkDescriptorSetLayout));
 
     // create used descriptor set layouts
     Move<VkDescriptorSetLayout> usedDescriptorSetLayouts[]{

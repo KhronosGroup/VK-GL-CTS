@@ -1134,7 +1134,7 @@ void PipelineCacheData::setFromPipelineCache(const vk::DeviceInterface &vk, cons
 
 vk::VkDevice getSyncDevice(de::MovePtr<VideoDevice> &device, Context &context)
 {
-    if (device == DE_NULL)
+    if (!device)
         return context.getDevice();
     else
         return device->getDeviceSupportingQueue();
@@ -1142,7 +1142,7 @@ vk::VkDevice getSyncDevice(de::MovePtr<VideoDevice> &device, Context &context)
 
 const vk::DeviceInterface &getSyncDeviceInterface(de::MovePtr<VideoDevice> &device, Context &context)
 {
-    if (device == DE_NULL)
+    if (!device)
         return context.getDeviceInterface();
     else
         return device->getDeviceDriver();
@@ -1150,7 +1150,7 @@ const vk::DeviceInterface &getSyncDeviceInterface(de::MovePtr<VideoDevice> &devi
 
 uint32_t getSyncQueueFamilyIndex(de::MovePtr<VideoDevice> &device, Context &context)
 {
-    if (device == DE_NULL)
+    if (!device)
         return context.getUniversalQueueFamilyIndex();
     else
         return device->getQueueFamilyVideo();
@@ -1158,7 +1158,7 @@ uint32_t getSyncQueueFamilyIndex(de::MovePtr<VideoDevice> &device, Context &cont
 
 vk::VkQueue getSyncQueue(de::MovePtr<VideoDevice> &device, Context &context)
 {
-    if (device == DE_NULL)
+    if (!device)
         return context.getUniversalQueue();
     else
         return getDeviceQueue(device->getDeviceDriver(), device->getDeviceSupportingQueue(),

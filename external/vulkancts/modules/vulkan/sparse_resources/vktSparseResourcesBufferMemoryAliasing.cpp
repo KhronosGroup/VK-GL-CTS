@@ -311,7 +311,7 @@ tcu::TestStatus BufferSparseMemoryAliasingInstance::iterate(void)
 
         // Create compute pipeline
         const Unique<VkShaderModule> shaderModule(
-            createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("comp"), DE_NULL));
+            createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get("comp"), 0));
         const Unique<VkPipelineLayout> pipelineLayout(
             makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout));
         const Unique<VkPipeline> computePipeline(

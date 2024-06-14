@@ -65,7 +65,7 @@ tcu::TestCaseGroup *createUniformTexelBufferTests(tcu::TestContext &testCtx)
             VkImageCreateInfo imageParams = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, //  VkStructureType         sType;
                 DE_NULL,                             //  const void*             pNext;
-                DE_NULL,                             //  VkImageCreateFlags      flags;
+                0,                                   //  VkImageCreateFlags      flags;
                 VK_IMAGE_TYPE_2D,                    //  VkImageType             imageType;
                 cases[i].format,                     //  VkFormat                format;
                 VkExtent3D({width, height, 1u}),     //  VkExtent3D              extent;

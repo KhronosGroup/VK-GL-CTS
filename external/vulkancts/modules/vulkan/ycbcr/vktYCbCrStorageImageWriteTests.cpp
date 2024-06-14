@@ -306,7 +306,7 @@ tcu::TestStatus testStorageImageWrite(Context &context, TestParameters params)
             std::ostringstream shaderName;
             shaderName << "comp" << planeNdx;
             auto shaderModule = makeVkSharedPtr(
-                createShaderModule(vkd, device, context.getBinaryCollection().get(shaderName.str()), DE_NULL));
+                createShaderModule(vkd, device, context.getBinaryCollection().get(shaderName.str()), 0));
             shaderModules.push_back(shaderModule);
             auto computePipeline = makeVkSharedPtr(
                 makeComputePipeline(vkd, device, *pipelineLayout, (VkPipelineCreateFlags)0u, nullptr,

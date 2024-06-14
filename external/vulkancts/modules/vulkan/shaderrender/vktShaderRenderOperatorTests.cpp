@@ -861,8 +861,8 @@ ShaderOperatorCase::ShaderOperatorCase(tcu::TestContext &testCtx, const char *ca
 
 TestInstance *ShaderOperatorCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_evaluator != DE_NULL);
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_evaluator);
+    DE_ASSERT(m_uniformSetup);
     return new ShaderOperatorCaseInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_spec);
 }
 

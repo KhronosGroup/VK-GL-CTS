@@ -378,7 +378,7 @@ LogicOpTestInstance::LogicOpTestInstance(Context &ctx, const TestParams &testPar
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
             DE_NULL,                                                  // const void* pNext;
-            DE_NULL,                                                  // VkPipelineColorBlendStateCreateFlags flags;
+            0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             VK_TRUE,                                                  // VkBool32 logicOpEnable;
             m_params.logicOp,                                         // VkLogicOp logicOp;
             1u,                                                       // uint32_t attachmentCount;

@@ -384,7 +384,7 @@ void copyLayeredImageToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuff
         };
 
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL,
-                              1u, &barrier, DE_NULL, 0u);
+                              1u, &barrier, 0u, DE_NULL);
     }
 }
 
@@ -1630,7 +1630,7 @@ tcu::TestStatus testLayeredReadBack(Context &context, const TestParams params)
             vk.cmdCopyImageToBuffer(*cmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorBuffer, 1u,
                                     &region);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &postCopyBarrier, DE_NULL, 0u);
+                                  DE_NULL, 1u, &postCopyBarrier, 0u, DE_NULL);
         }
 
         // Depth/Stencil image copy
@@ -1658,7 +1658,7 @@ tcu::TestStatus testLayeredReadBack(Context &context, const TestParams params)
             vk.cmdCopyImageToBuffer(*cmdBuffer, *dsImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *stencilBuffer, 1u,
                                     &stencilCopyRegion);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, DE_LENGTH_OF_ARRAY(postCopyBarriers), postCopyBarriers, DE_NULL, 0u);
+                                  DE_NULL, DE_LENGTH_OF_ARRAY(postCopyBarriers), postCopyBarriers, 0u, DE_NULL);
         }
     }
     endCommandBuffer(vk, *cmdBuffer);

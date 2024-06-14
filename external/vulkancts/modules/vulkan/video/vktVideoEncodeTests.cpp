@@ -1378,7 +1378,7 @@ VkFormat VideoEncodeTestInstance::checkImageFormat(VkImageUsageFlags flags,
     const VkPhysicalDevice physicalDevice      = m_context.getPhysicalDevice();
     MovePtr<vector<VkFormat>> supportedFormats = getSupportedFormats(vki, physicalDevice, flags, videoProfileList);
 
-    if (supportedFormats == DE_NULL || supportedFormats->empty())
+    if (!supportedFormats || supportedFormats->empty())
         TCU_THROW(NotSupportedError, "No supported picture formats");
 
     for (const auto &supportedFormat : *supportedFormats)

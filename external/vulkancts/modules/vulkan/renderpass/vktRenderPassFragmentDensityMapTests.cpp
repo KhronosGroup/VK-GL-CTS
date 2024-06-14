@@ -2128,7 +2128,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
             *m_framebufferProduceDynamicDensityMap,            // VkFramebuffer framebuffer;
             false,                                             // VkBool32 occlusionQueryEnable;
             0u,                                                // VkQueryControlFlags queryFlags;
-            DE_NULL,                                           // VkQueryPipelineStatisticFlags pipelineStatistics;
+            0,                                                 // VkQueryPipelineStatisticFlags pipelineStatistics;
         };
         const VkCommandBufferBeginInfo commandBufBeginParams{
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;

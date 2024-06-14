@@ -191,7 +191,7 @@ tcu::TestStatus descriptorSetLayoutLifetimeGraphicsTest(Context &context)
     const VkCommandPoolCreateInfo cmdPoolInfo = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // Stype
         DE_NULL,                                    // PNext
-        DE_NULL,                                    // flags
+        0,                                          // flags
         queueFamilyIndex,                           // queuefamilyindex
     };
 
@@ -274,7 +274,7 @@ tcu::TestStatus descriptorSetLayoutLifetimeComputeTest(Context &context)
     const VkCommandPoolCreateInfo cmdPoolInfo = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // Stype
         DE_NULL,                                    // PNext
-        DE_NULL,                                    // flags
+        0,                                          // flags
         queueFamilyIndex,                           // queuefamilyindex
     };
 
@@ -481,7 +481,7 @@ tcu::TestStatus descriptorSetLayoutBindingOrderingTest(Context &context)
     const VkCommandPoolCreateInfo cmdPoolInfo = {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // VkStructureType                    Stype
         DE_NULL,                                    // const void*                        PNext
-        DE_NULL,                                    // VkCommandPoolCreateFlags            flags
+        0,                                          // VkCommandPoolCreateFlags            flags
         queueFamilyIndex,                           // uint32_t                            queuefamilyindex
     };
 

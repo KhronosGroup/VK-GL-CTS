@@ -759,7 +759,7 @@ bool validateFormatSupport(const InstanceInterface &vk, VkPhysicalDevice physica
     de::MovePtr<vector<VkFormat>> supportedVideoFormats =
         getSupportedFormats(vk, physicalDevice, imageUsageFlags, videoProfileList);
 
-    if (supportedVideoFormats != DE_NULL)
+    if (supportedVideoFormats)
     {
         if (supportedVideoFormats->size() == 0)
             if (throwException)

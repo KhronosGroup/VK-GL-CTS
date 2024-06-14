@@ -6682,7 +6682,7 @@ ResolveImageToImage::ResolveImageToImage(Context &context, TestParams params, co
         }};
 
     // Only use one barrier if no options have been given.
-    if (m_options != DE_NULL)
+    if (m_options != NO_OPTIONAL_OPERATION)
     {
         srcImageBarriers.push_back(m_multisampledImageBarrier);
         srcImageBarriers.push_back(m_multisampledCopyImageBarrier);

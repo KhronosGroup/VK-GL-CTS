@@ -1950,7 +1950,7 @@ void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperati
         testfuns.push_back(createInputTestfun(elemNdx, spirvOperation));
     }
 
-    if (spirvOperation != DE_NULL)
+    if (spirvOperation != 0)
     {
         if (inputWidth == WIDTH_DEFAULT)
             full_operation = spirvExtension ?
@@ -3876,8 +3876,8 @@ tcu::TestCaseGroup *createTypeTests(tcu::TestContext &testCtx)
     MAKE_TEST_SV_I_3("find_lsb", GLSLstd450FindILsb, lsb, FILTER_NONE, RANGE_FULL, "GLSL.std.450")
     MAKE_TEST_SV_I_3("find_msb", GLSLstd450FindSMsb, msb, FILTER_NONE, RANGE_FULL, "GLSL.std.450")
     MAKE_TEST_SV_U_3("find_msb", GLSLstd450FindUMsb, msb, FILTER_NONE, RANGE_FULL, "GLSL.std.450")
-    MAKE_TEST_SV_I_1("mul_sdiv", DE_NULL, mul_div, FILTER_ZERO, RANGE_FULL, DE_NULL)
-    MAKE_TEST_SV_U_1("mul_udiv", DE_NULL, mul_div, FILTER_ZERO, RANGE_FULL, DE_NULL)
+    MAKE_TEST_SV_I_1("mul_sdiv", 0, mul_div, FILTER_ZERO, RANGE_FULL, DE_NULL)
+    MAKE_TEST_SV_U_1("mul_udiv", 0, mul_div, FILTER_ZERO, RANGE_FULL, DE_NULL)
 
     MAKE_TEST_SV_U_8136_W("shift_right_logical", SpvOpShiftRightLogical, lsr, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL)
     MAKE_TEST_SV_I_8136_W("shift_right_logical", SpvOpShiftRightLogical, lsr, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL)

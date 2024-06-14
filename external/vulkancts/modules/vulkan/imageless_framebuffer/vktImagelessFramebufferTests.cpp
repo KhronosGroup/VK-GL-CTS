@@ -1104,7 +1104,7 @@ void ColorImagelessTestInstance::readOneSampleFromMultisampleImage(
             vk.cmdCopyImageToBuffer(*cmdBuffer, *dstImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstBuffer, 1u,
                                     &region);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &postCopyBarrier, DE_NULL, 0u);
+                                  DE_NULL, 1u, &postCopyBarrier, 0u, DE_NULL);
         }
     }
     endCommandBuffer(vk, *cmdBuffer);
@@ -1305,7 +1305,7 @@ tcu::TestStatus ColorImagelessTestInstance::iterate(void)
             vk.cmdCopyImageToBuffer(*cmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorBuffer, 1u,
                                     &region);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &postCopyBarrier, DE_NULL, 0u);
+                                  DE_NULL, 1u, &postCopyBarrier, 0u, DE_NULL);
         }
     }
     endCommandBuffer(vk, *cmdBuffer);
@@ -1548,7 +1548,7 @@ tcu::TestStatus DepthImagelessTestInstance::iterate(void)
             vk.cmdCopyImageToBuffer(*cmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorBuffer, 1u,
                                     &region);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &postCopyBarrier, DE_NULL, 0u);
+                                  DE_NULL, 1u, &postCopyBarrier, 0u, DE_NULL);
         }
 
         // Depth/Stencil image copy
@@ -1577,7 +1577,7 @@ tcu::TestStatus DepthImagelessTestInstance::iterate(void)
             vk.cmdCopyImageToBuffer(*cmdBuffer, *dsImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *stencilBuffer, 1u,
                                     &stencilCopyRegion);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, DE_LENGTH_OF_ARRAY(postCopyBarriers), postCopyBarriers, DE_NULL, 0u);
+                                  DE_NULL, DE_LENGTH_OF_ARRAY(postCopyBarriers), postCopyBarriers, 0u, DE_NULL);
         }
     }
     endCommandBuffer(vk, *cmdBuffer);
@@ -1778,7 +1778,7 @@ tcu::TestStatus ColorResolveImagelessTestInstance::iterate(void)
             vk.cmdCopyImageToBuffer(*cmdBuffer, *colorResolveImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                     *colorResolveBuffer, 1u, &region);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &postCopyBarrier, DE_NULL, 0u);
+                                  DE_NULL, 1u, &postCopyBarrier, 0u, DE_NULL);
         }
     }
     endCommandBuffer(vk, *cmdBuffer);
@@ -2105,7 +2105,7 @@ tcu::TestStatus DepthResolveImagelessTestInstance::iterate(void)
             vk.cmdCopyImageToBuffer(*cmdBuffer, *colorResolveImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                     *colorResolveBuffer, 1u, &region);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &postCopyBarrier, DE_NULL, 0u);
+                                  DE_NULL, 1u, &postCopyBarrier, 0u, DE_NULL);
         }
 
         // Depth/Stencil resolve image copy
@@ -2133,7 +2133,7 @@ tcu::TestStatus DepthResolveImagelessTestInstance::iterate(void)
             vk.cmdCopyImageToBuffer(*cmdBuffer, *dsResolveImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                     *stencilResolveBuffer, 1u, &stencilCopyRegion);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, DE_LENGTH_OF_ARRAY(postCopyBarriers), postCopyBarriers, DE_NULL, 0u);
+                                  DE_NULL, DE_LENGTH_OF_ARRAY(postCopyBarriers), postCopyBarriers, 0u, DE_NULL);
         }
     }
     endCommandBuffer(vk, *cmdBuffer);
@@ -2432,7 +2432,7 @@ tcu::TestStatus MultisubpassTestInstance::iterate(void)
             vk.cmdCopyImageToBuffer(*cmdBuffer, *color0Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *color0Buffer, 1u,
                                     &region);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &postCopyBarrier, DE_NULL, 0u);
+                                  DE_NULL, 1u, &postCopyBarrier, 0u, DE_NULL);
         }
 
         // Subpass1 color image copy
@@ -2451,7 +2451,7 @@ tcu::TestStatus MultisubpassTestInstance::iterate(void)
             vk.cmdCopyImageToBuffer(*cmdBuffer, *color1Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *color1Buffer, 1u,
                                     &region);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &postCopyBarrier, DE_NULL, 0u);
+                                  DE_NULL, 1u, &postCopyBarrier, 0u, DE_NULL);
         }
     }
     endCommandBuffer(vk, *cmdBuffer);
@@ -2647,7 +2647,7 @@ tcu::TestStatus DifferentAttachmentsTestInstance::iterate(void)
             vk.cmdCopyImageToBuffer(*cmdBuffer, *color0Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *color0Buffer, 1u,
                                     &region);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &postCopyBarrier, DE_NULL, 0u);
+                                  DE_NULL, 1u, &postCopyBarrier, 0u, DE_NULL);
         }
 
         // Subpass1 color image copy
@@ -2666,7 +2666,7 @@ tcu::TestStatus DifferentAttachmentsTestInstance::iterate(void)
             vk.cmdCopyImageToBuffer(*cmdBuffer, *color1Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *color1Buffer, 1u,
                                     &region);
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
-                                  DE_NULL, 1u, &postCopyBarrier, DE_NULL, 0u);
+                                  DE_NULL, 1u, &postCopyBarrier, 0u, DE_NULL);
         }
     }
     endCommandBuffer(vk, *cmdBuffer);

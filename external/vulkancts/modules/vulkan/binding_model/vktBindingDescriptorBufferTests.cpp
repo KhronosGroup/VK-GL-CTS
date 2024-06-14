@@ -175,7 +175,7 @@ VkDeviceAddress getAccelerationStructureDeviceAddress(DeviceDriver &deviceDriver
     };
     const VkDeviceAddress deviceAddress = deviceDriver.getAccelerationStructureDeviceAddressKHR(device, &addressInfo);
 
-    DE_ASSERT(deviceAddress != DE_NULL);
+    DE_ASSERT(deviceAddress != 0);
 
     return deviceAddress;
 }
@@ -3665,7 +3665,7 @@ void DescriptorBufferTestInstance::createRayTracingPipeline()
 
 void DescriptorBufferTestInstance::addRayTracingShader(const VkShaderStageFlagBits stage, const uint32_t group)
 {
-    DE_ASSERT(m_rayTracingPipeline != DE_NULL);
+    DE_ASSERT(m_rayTracingPipeline);
 
     m_rayTracingPipeline->addShader(stage, createShaderModule(*m_deviceInterface, *m_device, getShaderBinary(stage), 0),
                                     group);
@@ -4530,7 +4530,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
             descGetInfo.type = binding.descriptorType;
             descGetInfo.data.accelerationStructure =
                 isNullDescriptor ?
-                    DE_NULL :
+                    0 :
                     getAccelerationStructureDeviceAddress(*m_deviceInterface, *m_device, *resources.rtTlas->getPtr());
         }
         else

@@ -813,8 +813,7 @@ struct Image : public BufferOrImage
                                        VK_IMAGE_LAYOUT_GENERAL, *m_image, subresourceRange);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  (VkDependencyFlags)0, 0u, (const VkMemoryBarrier *)DE_NULL, 0u,
-                                  (const VkBufferMemoryBarrier *)DE_NULL, 1u, &imageBarrier);
+                                  (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, 1u, &imageBarrier);
 
             endCommandBuffer(vk, *cmdBuffer);
             submitCommandsAndWait(vk, device, context.getUniversalQueue(), *cmdBuffer);
@@ -3352,9 +3351,8 @@ tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize(
             beginCommandBuffer(vk, *cmdBuffer);
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u,
-                                  (const VkMemoryBarrier *)DE_NULL, 0u, (const VkBufferMemoryBarrier *)DE_NULL, 1u,
-                                  &colorAttachmentBarrier);
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u,
+                                  nullptr, 1u, &colorAttachmentBarrier);
 
             vk.cmdSetViewport(*cmdBuffer, 0, 1, &viewport);
 

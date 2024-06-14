@@ -296,8 +296,8 @@ Move<VkPipeline> createRenderPipeline(const DeviceInterface &vkd, VkDevice devic
 
     VkPipelineRenderingCreateInfoKHR *pNext = DE_NULL;
     VkPipelineRenderingCreateInfoKHR renderingCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-                                                         0u,
                                                          DE_NULL,
+                                                         0u,
                                                          1u,
                                                          &format,
                                                          VK_FORMAT_UNDEFINED,

@@ -634,7 +634,7 @@ void recordCopyOutputImageToBuffer(const DeviceInterface &vk, const VkCommandBuf
         };
 
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, DE_NULL, 0u);
+                              (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
     }
 }
 

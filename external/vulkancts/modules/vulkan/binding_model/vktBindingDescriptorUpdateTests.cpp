@@ -96,7 +96,7 @@ tcu::TestStatus EmptyDescriptorUpdateCase(Context &context)
     const vk::VkBufferCreateInfo bufferCreateInfo = {
         vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
         DE_NULL,                                  // const void*            pNext
-        (vk::VkBufferCreateFlags)DE_NULL,         // VkBufferCreateFlags    flags
+        (vk::VkBufferCreateFlags)0,               // VkBufferCreateFlags    flags
         256,                                      // VkDeviceSize            size
         vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags    usage
         vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode        sharingMode

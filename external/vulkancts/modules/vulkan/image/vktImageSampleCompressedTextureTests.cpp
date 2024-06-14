@@ -87,7 +87,7 @@ inline VkImageCreateInfo makeImageCreateInfo(const IVec3 &size, const VkFormat &
 {
     VkImageUsageFlags usageFlags =
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    VkImageCreateFlags createFlags = cubemap ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : DE_NULL;
+    VkImageCreateFlags createFlags = cubemap ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
     const uint32_t layerCount      = getLayerCount(cubemap);
 
     if (storageImage)

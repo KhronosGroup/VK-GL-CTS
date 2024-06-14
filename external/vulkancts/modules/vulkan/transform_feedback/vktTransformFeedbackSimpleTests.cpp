@@ -2327,7 +2327,7 @@ tcu::TestStatus TransformFeedbackStreamsTestInstance::iterate(void)
         vk.cmdCopyImageToBuffer(*cmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorBuffer, 1u,
                                 &region);
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL,
-                              1u, &postCopyBarrier, DE_NULL, 0u);
+                              1u, &postCopyBarrier, 0u, DE_NULL);
 
         invalidateAlloc(vk, device, *colorBufferAlloc);
     }
@@ -2538,7 +2538,7 @@ tcu::TestStatus TransformFeedbackIndirectDrawTestInstance::iterate(void)
         vk.cmdCopyImageToBuffer(*cmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorBuffer, 1u,
                                 &region);
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL,
-                              1u, &postCopyBarrier, DE_NULL, 0u);
+                              1u, &postCopyBarrier, 0u, DE_NULL);
 
         invalidateAlloc(vk, device, *colorBufferAlloc);
     }
@@ -2743,8 +2743,8 @@ tcu::TestStatus TransformFeedbackBackwardDependencyTestInstance::iterate(void)
             }
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
-                                  VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0u, 1u, &tfcMemoryBarrier, 0u, DE_NULL, DE_NULL,
-                                  0u);
+                                  VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0u, 1u, &tfcMemoryBarrier, 0u, DE_NULL, 0u,
+                                  DE_NULL);
 
             {
                 const uint32_t startValue = static_cast<uint32_t>(chunkOffsetsList[1] / sizeof(uint32_t));

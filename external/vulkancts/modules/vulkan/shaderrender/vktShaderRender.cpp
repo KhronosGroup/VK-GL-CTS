@@ -608,8 +608,8 @@ void ShaderRenderCase::initPrograms(vk::SourceCollections &programCollection) co
 
 TestInstance *ShaderRenderCase::createInstance(Context &context) const
 {
-    DE_ASSERT(m_evaluator != DE_NULL);
-    DE_ASSERT(m_uniformSetup != DE_NULL);
+    DE_ASSERT(m_evaluator);
+    DE_ASSERT(m_uniformSetup);
     return new ShaderRenderCaseInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_attribFunc);
 }
 

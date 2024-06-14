@@ -119,7 +119,7 @@ static uint32_t getShaderGroupBaseAlignment(const InstanceInterface &vki, const 
 
 static VkBuffer getVkBuffer(const de::MovePtr<BufferWithMemory> &buffer)
 {
-    VkBuffer result = (buffer.get() == DE_NULL) ? VK_NULL_HANDLE : buffer->get();
+    VkBuffer result = (buffer.get() == VK_NULL_HANDLE) ? VK_NULL_HANDLE : buffer->get();
 
     return result;
 }
