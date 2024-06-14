@@ -1382,7 +1382,10 @@ struct ShaderModule
     static Move<VkShaderModule> create(const Environment &env, const Resources &res, const Parameters &)
     {
         const VkShaderModuleCreateInfo shaderModuleInfo = {
-            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, DE_NULL, (VkShaderModuleCreateFlags)0, res.binary.getSize(),
+            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            VK_NULL_HANDLE,
+            (VkShaderModuleCreateFlags)0,
+            res.binary.getSize(),
             (const uint32_t *)res.binary.getBinary(),
         };
 

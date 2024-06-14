@@ -350,9 +350,9 @@ tcu::TestStatus drawTriangleTest(Context &context, DrawTriangleMode mode)
         device,                               // const VkDevice                                device
         *pipelineLayout,                      // const VkPipelineLayout                        pipelineLayout
         *vertexShaderModule,                  // const VkShaderModule                          vertexShaderModule
-        DE_NULL,                              // const VkShaderModule                          tessellationControlModule
-        DE_NULL,                              // const VkShaderModule                          tessellationEvalModule
-        DE_NULL,                              // const VkShaderModule                          geometryShaderModule
+        VK_NULL_HANDLE,                       // const VkShaderModule                          tessellationControlModule
+        VK_NULL_HANDLE,                       // const VkShaderModule                          tessellationEvalModule
+        VK_NULL_HANDLE,                       // const VkShaderModule                          geometryShaderModule
         *fragmentShaderModule,                // const VkShaderModule                          fragmentShaderModule
         renderPassUsedForPipeline,            // const VkRenderPass                            renderPass
         viewports,                            // const std::vector<VkViewport>&                viewports

@@ -226,9 +226,9 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
             device,            // const VkDevice                                    device
             *m_pipelineLayout, // const VkPipelineLayout                            pipelineLayout
             *m_vertexModule,   // const VkShaderModule                                vertexShaderModule
-            DE_NULL,           // const VkShaderModule                                tessellationControlShaderModule
-            DE_NULL,           // const VkShaderModule                                tessellationEvalShaderModule
-            DE_NULL,           // const VkShaderModule                                geometryShaderModule
+            VK_NULL_HANDLE,    // const VkShaderModule                                tessellationControlShaderModule
+            VK_NULL_HANDLE,    // const VkShaderModule                                tessellationEvalShaderModule
+            VK_NULL_HANDLE,    // const VkShaderModule                                geometryShaderModule
             *m_fragmentModule, // const VkShaderModule                                fragmentShaderModule
             DE_NULL,           // const VkRenderPass                                renderPass
             viewports,         // const std::vector<VkViewport>&                    viewports
@@ -251,8 +251,8 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
                 device,                     // const VkDevice                                    device
                 *m_pipelineLayout,          // const VkPipelineLayout                            pipelineLayout
                 *m_vertexPassthroughModule, // const VkShaderModule                                vertexShaderModule
-                DE_NULL, // const VkShaderModule                                tessellationControlShaderModule
-                DE_NULL, // const VkShaderModule                                tessellationEvalShaderModule
+                VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlShaderModule
+                VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalShaderModule
                 *m_geometryModule, // const VkShaderModule                                geometryShaderModule
                 *m_fragmentModule, // const VkShaderModule                                fragmentShaderModule
                 DE_NULL,           // const VkRenderPass                                renderPass
@@ -274,8 +274,8 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
                 device,               // const VkDevice                                    device
                 *m_pipelineLayout,    // const VkPipelineLayout                            pipelineLayout
                 *m_vertexLayerModule, // const VkShaderModule                                vertexShaderModule
-                DE_NULL, // const VkShaderModule                                tessellationControlShaderModule
-                DE_NULL, // const VkShaderModule                                tessellationEvalShaderModule
+                VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlShaderModule
+                VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalShaderModule
                 *m_geometryLayerModule, // const VkShaderModule                                geometryShaderModule
                 *m_fragmentModule,      // const VkShaderModule                                fragmentShaderModule
                 DE_NULL,                // const VkRenderPass                                renderPass
@@ -300,9 +300,9 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
                 device,            // const VkDevice                                    device
                 *m_pipelineLayout, // const VkPipelineLayout                            pipelineLayout
                 *m_vertexModule,   // const VkShaderModule                                vertexShaderModule
-                *m_tscModule, // const VkShaderModule                                tessellationControlShaderModule
-                *m_tseModule, // const VkShaderModule                                tessellationEvalShaderModule
-                DE_NULL,      // const VkShaderModule                                geometryShaderModule
+                *m_tscModule,   // const VkShaderModule                                tessellationControlShaderModule
+                *m_tseModule,   // const VkShaderModule                                tessellationEvalShaderModule
+                VK_NULL_HANDLE, // const VkShaderModule                                geometryShaderModule
                 *m_fragmentModule, // const VkShaderModule                                fragmentShaderModule
                 DE_NULL,           // const VkRenderPass                                renderPass
                 viewports,         // const std::vector<VkViewport>&                    viewports
@@ -325,9 +325,9 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
             device,            // const VkDevice                                    device
             *m_pipelineLayout, // const VkPipelineLayout                            pipelineLayout
             *m_vertexModule,   // const VkShaderModule                                vertexShaderModule
-            DE_NULL, // const VkShaderModule                                tessellationControlShaderModule
-            DE_NULL, // const VkShaderModule                                tessellationEvalShaderModule
-            DE_NULL, // const VkShaderModule                                geometryShaderModule
+            VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlShaderModule
+            VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalShaderModule
+            VK_NULL_HANDLE, // const VkShaderModule                                geometryShaderModule
             *m_fragmentModule, // const VkShaderModule                                fragmentShaderModule
             DE_NULL,           // const VkRenderPass                                renderPass
             viewports,         // const std::vector<VkViewport>&                    viewports

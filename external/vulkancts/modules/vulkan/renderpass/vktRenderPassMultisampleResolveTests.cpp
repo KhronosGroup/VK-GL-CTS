@@ -1779,10 +1779,10 @@ Move<VkPipeline> MultisampleRenderPassTestInstance::createRenderPipeline(void)
         device,                  // const VkDevice                                device
         *m_renderPipelineLayout, // const VkPipelineLayout                        pipelineLayout
         *vertexShaderModule,     // const VkShaderModule                          vertexShaderModule
-        DE_NULL,                 // const VkShaderModule                          tessellationControlShaderModule
-        DE_NULL,                 // const VkShaderModule                          tessellationEvalShaderModule
+        VK_NULL_HANDLE,          // const VkShaderModule                          tessellationControlShaderModule
+        VK_NULL_HANDLE,          // const VkShaderModule                          tessellationEvalShaderModule
         m_layerCount != 1 ? *geometryShaderModule :
-                            DE_NULL,         // const VkShaderModule                          geometryShaderModule
+                            VK_NULL_HANDLE,  // const VkShaderModule                          geometryShaderModule
         *fragmentShaderModule,               // const VkShaderModule                          fragmentShaderModule
         *m_renderPass,                       // const VkRenderPass                            renderPass
         viewports,                           // const std::vector<VkViewport>&                viewports

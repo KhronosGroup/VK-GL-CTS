@@ -2666,7 +2666,7 @@ void PipelineLibraryShaderModuleInfoInstance::addModule(const std::string &modul
         nullptr,                                             // const void* pNext;
         0u,                                                  // VkPipelineShaderStageCreateFlags flags;
         stage,                                               // VkShaderStageFlagBits stage;
-        DE_NULL,                                             // VkShaderModule module;
+        VK_NULL_HANDLE,                                      // VkShaderModule module;
         "main",                                              // const char* pName;
         nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
     };

@@ -6866,9 +6866,9 @@ ResolveImageToImage::ResolveImageToImage(Context &context, TestParams params, co
                 vkDevice,              // const VkDevice                                device
                 *pipelineLayout,       // const VkPipelineLayout                        pipelineLayout
                 *vertexShaderModule,   // const VkShaderModule                          vertexShaderModule
-                DE_NULL,               // const VkShaderModule                          tessellationControlModule
-                DE_NULL,               // const VkShaderModule                          tessellationEvalModule
-                DE_NULL,               // const VkShaderModule                          geometryShaderModule
+                VK_NULL_HANDLE,        // const VkShaderModule                          tessellationControlModule
+                VK_NULL_HANDLE,        // const VkShaderModule                          tessellationEvalModule
+                VK_NULL_HANDLE,        // const VkShaderModule                          geometryShaderModule
                 *fragmentShaderModule, // const VkShaderModule                          fragmentShaderModule
                 *renderPass,           // const VkRenderPass                            renderPass
                 viewports,             // const std::vector<VkViewport>&                viewports
@@ -7459,9 +7459,9 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy(void)
         device,                              // const VkDevice                                device
         pipelineLayout.get(),                // const VkPipelineLayout                        pipelineLayout
         vertexModule.get(),                  // const VkShaderModule                          vertexShaderModule
-        DE_NULL,                             // const VkShaderModule                          tessellationControlModule
-        DE_NULL,                             // const VkShaderModule                          tessellationEvalModule
-        DE_NULL,                             // const VkShaderModule                          geometryShaderModule
+        VK_NULL_HANDLE,                      // const VkShaderModule                          tessellationControlModule
+        VK_NULL_HANDLE,                      // const VkShaderModule                          tessellationEvalModule
+        VK_NULL_HANDLE,                      // const VkShaderModule                          geometryShaderModule
         verificationModule.get(),            // const VkShaderModule                          fragmentShaderModule
         renderPass.get(),                    // const VkRenderPass                            renderPass
         viewports,                           // const std::vector<VkViewport>&                viewports
@@ -8554,9 +8554,9 @@ tcu::TestStatus DepthStencilMSAA::iterate(void)
                     vkDevice,            // const VkDevice                                    device
                     *pipelineLayout,     // const VkPipelineLayout                            pipelineLayout
                     *vertexShaderModule, // const VkShaderModule                                vertexShaderModule
-                    DE_NULL, // const VkShaderModule                                tessellationControlModule
-                    DE_NULL, // const VkShaderModule                                tessellationEvalModule
-                    DE_NULL, // const VkShaderModule                                geometryShaderModule
+                    VK_NULL_HANDLE, // const VkShaderModule                                tessellationControlModule
+                    VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalModule
+                    VK_NULL_HANDLE, // const VkShaderModule                                geometryShaderModule
                     *fragmentShaderModule, // const VkShaderModule                                fragmentShaderModule
                     *renderPass,           // const VkRenderPass                                renderPass
                     viewports,             // const std::vector<VkViewport>&                    viewports
@@ -8990,9 +8990,9 @@ tcu::TestStatus DepthStencilMSAA::checkCopyResults(VkCommandBuffer cmdBuffer,
         device,                   // const VkDevice                                    device
         pipelineLayout.get(),     // const VkPipelineLayout                            pipelineLayout
         vertexModule.get(),       // const VkShaderModule                                vertexShaderModule
-        DE_NULL,                  // const VkShaderModule                                tessellationControlModule
-        DE_NULL,                  // const VkShaderModule                                tessellationEvalModule
-        DE_NULL,                  // const VkShaderModule                                geometryShaderModule
+        VK_NULL_HANDLE,           // const VkShaderModule                                tessellationControlModule
+        VK_NULL_HANDLE,           // const VkShaderModule                                tessellationEvalModule
+        VK_NULL_HANDLE,           // const VkShaderModule                                geometryShaderModule
         verificationModule.get(), // const VkShaderModule                                fragmentShaderModule
         renderPass.get(),         // const VkRenderPass                                renderPass
         viewports,                // const std::vector<VkViewport>&                    viewports

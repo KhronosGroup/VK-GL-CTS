@@ -1170,9 +1170,9 @@ void AttachmentAccessOrderTestInstance::RenderSubpass::createPipeline(VkRenderPa
         device,            // const VkDevice                                    device
         *m_pipelineLayout, // const VkPipelineLayout                            pipelineLayout
         *vs,               // const VkShaderModule                                vertexShaderModule
-        DE_NULL,           // const VkShaderModule                                tessellationControlShaderModule
-        DE_NULL,           // const VkShaderModule                                tessellationEvalShaderModule
-        DE_NULL,           // const VkShaderModule                                geometryShaderModule
+        VK_NULL_HANDLE,    // const VkShaderModule                                tessellationControlShaderModule
+        VK_NULL_HANDLE,    // const VkShaderModule                                tessellationEvalShaderModule
+        VK_NULL_HANDLE,    // const VkShaderModule                                geometryShaderModule
         *fs,               // const VkShaderModule                                fragmentShaderModule
         renderPass,        // const VkRenderPass                                renderPass
         viewports,         // const std::vector<VkViewport>&                    viewports

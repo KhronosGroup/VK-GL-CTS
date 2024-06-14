@@ -4954,9 +4954,9 @@ void createPipelineWithResources(const vk::DeviceInterface &vkd, const vk::VkDev
             device,                    // const VkDevice                                device
             *resources.pipelineLayout, // const VkPipelineLayout                        pipelineLayout
             vertexShaderModule,        // const VkShaderModule                          vertexShaderModule
-            DE_NULL,                   // const VkShaderModule                          tessellationControlModule
-            DE_NULL,                   // const VkShaderModule                          tessellationEvalModule
-            DE_NULL,                   // const VkShaderModule                          geometryShaderModule
+            VK_NULL_HANDLE,            // const VkShaderModule                          tessellationControlModule
+            VK_NULL_HANDLE,            // const VkShaderModule                          tessellationEvalModule
+            VK_NULL_HANDLE,            // const VkShaderModule                          geometryShaderModule
             fragmentShaderModule,      // const VkShaderModule                          fragmentShaderModule
             renderPass,                // const VkRenderPass                            renderPass
             viewports,                 // const std::vector<VkViewport>&                viewports

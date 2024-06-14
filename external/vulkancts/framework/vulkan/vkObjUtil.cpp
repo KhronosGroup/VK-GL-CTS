@@ -171,7 +171,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         DE_NULL,                                             // const void*                         pNext
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags
         VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits               stage
-        DE_NULL,                                             // VkShaderModule                      module
+        VK_NULL_HANDLE,                                      // VkShaderModule                      module
         "main",                                              // const char*                         pName
         DE_NULL                                              // const VkSpecializationInfo*         pSpecializationInfo
     };
@@ -389,7 +389,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         nullptr,                                             // const void*                         pNext
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags
         VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits               stage
-        DE_NULL,                                             // VkShaderModule                      module
+        VK_NULL_HANDLE,                                      // VkShaderModule                      module
         "main",                                              // const char*                         pName
         nullptr                                              // const VkSpecializationInfo*         pSpecializationInfo
     };

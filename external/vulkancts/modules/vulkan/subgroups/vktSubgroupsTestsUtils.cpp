@@ -242,7 +242,7 @@ Move<VkPipeline> makeGraphicsPipeline(
         DE_NULL,                                             // const void*                         pNext
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags
         VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits               stage
-        DE_NULL,                                             // VkShaderModule                      module
+        VK_NULL_HANDLE,                                      // VkShaderModule                      module
         "main",                                              // const char*                         pName
         DE_NULL                                              // const VkSpecializationInfo*         pSpecializationInfo
     };
@@ -3945,7 +3945,7 @@ Move<VkPipeline> makeMeshPipeline(Context &context, const VkPipelineLayout pipel
         nullptr,                                             // const void* pNext;
         pipelineShaderStageFlags,                            // VkPipelineShaderStageCreateFlags flags;
         VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,                  // VkShaderStageFlagBits stage;
-        DE_NULL,                                             // VkShaderModule module;
+        VK_NULL_HANDLE,                                      // VkShaderModule module;
         "main",                                              // const char* pName;
         &info,                                               // const VkSpecializationInfo* pSpecializationInfo;
     };
