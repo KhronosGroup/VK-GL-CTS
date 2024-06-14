@@ -363,7 +363,7 @@ tcu::TestStatus AhbTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR, // VkStructureType    sType
         &importInfo,                                          // const void*        pNext
         *colorTargetImage,                                    // VkImage            image
-        DE_NULL,                                              // VkBuffer           buffer
+        VK_NULL_HANDLE,                                       // VkBuffer           buffer
     };
 
     const VkMemoryAllocateInfo allocateInfo = {

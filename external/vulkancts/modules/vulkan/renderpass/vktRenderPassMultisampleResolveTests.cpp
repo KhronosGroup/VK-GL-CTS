@@ -140,9 +140,9 @@ void beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCommandBuffer secCmdBu
     const VkCommandBufferInheritanceInfo bufferInheritanceInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
         &inheritanceRenderingInfo,                         // const void* pNext;
-        DE_NULL,                                           // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                    // VkRenderPass renderPass;
         0u,                                                // uint32_t subpass;
-        DE_NULL,                                           // VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                    // VkFramebuffer framebuffer;
         VK_FALSE,                                          // VkBool32 occlusionQueryEnable;
         (VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
         (VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;
@@ -870,10 +870,10 @@ void MultisampleRenderPassTestInstance::submitDynamicRendering(void)
         {
             vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
             DE_NULL,                                             // const void* pNext;
-            DE_NULL,                                             // VkImageView imageView;
+            VK_NULL_HANDLE,                                      // VkImageView imageView;
             vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
             vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                             // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
             vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout resolveImageLayout;
             vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,                 // VkAttachmentLoadOp loadOp;
             vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,                // VkAttachmentStoreOp storeOp;
@@ -2471,7 +2471,7 @@ Move<VkDescriptorSet> MaxAttachmenstsRenderPassTestInstance::createDescriptorSet
     for (uint32_t idx = 0; idx < m_attachmentsCount; ++idx)
     {
         descriptorImageInfo[idx] = {
-            DE_NULL,                         // VkSampler        sampler
+            VK_NULL_HANDLE,                  // VkSampler        sampler
             **m_singlesampleImageViews[idx], // VkImageView        imageView
             m_inputImageReadLayout           // VkImageLayout    imageLayout
         };

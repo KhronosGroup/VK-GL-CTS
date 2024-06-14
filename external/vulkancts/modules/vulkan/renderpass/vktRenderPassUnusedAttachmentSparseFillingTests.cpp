@@ -185,9 +185,9 @@ void beginSecondaryCmdBuffer(const DeviceInterface &vk, VkCommandBuffer secCmdBu
     const VkCommandBufferInheritanceInfo bufferInheritanceInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
         &inheritanceRenderingInfo,                         // const void* pNext;
-        DE_NULL,                                           // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                    // VkRenderPass renderPass;
         0u,                                                // uint32_t subpass;
-        DE_NULL,                                           // VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                    // VkFramebuffer framebuffer;
         VK_FALSE,                                          // VkBool32 occlusionQueryEnable;
         (VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
         (VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;
@@ -521,7 +521,7 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
     std::vector<VkDescriptorImageInfo> descriptorImageInfos;
     std::vector<VkImageView> framebufferImageViews;
     descriptorImageInfos.push_back(VkDescriptorImageInfo{
-        DE_NULL,                // VkSampleri sampler;
+        VK_NULL_HANDLE,         // VkSampler sampler;
         **m_outputImageView,    // VkImageView imageView;
         VK_IMAGE_LAYOUT_GENERAL // VkImageLayout imageLayout;
     });
@@ -529,7 +529,7 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
     {
         framebufferImageViews.push_back(**inputImageView);
         descriptorImageInfos.push_back(VkDescriptorImageInfo{
-            DE_NULL,               // VkSampleri sampler;
+            VK_NULL_HANDLE,        // VkSampler sampler;
             **inputImageView,      // VkImageView imageView;
             m_inputImageReadLayout // VkImageLayout imageLayout;
         });
@@ -772,7 +772,7 @@ void InputAttachmentSparseFillingTestInstance::createCommandBufferDynamicRenderi
             VK_NULL_HANDLE,                              // VkImageView imageView;
             m_inputImageReadLayout,                      // VkImageLayout imageLayout;
             VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                     // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                              // VkImageView resolveImageView;
             VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout resolveImageLayout;
             VK_ATTACHMENT_LOAD_OP_LOAD,                  // VkAttachmentLoadOp loadOp;
             VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp storeOp;

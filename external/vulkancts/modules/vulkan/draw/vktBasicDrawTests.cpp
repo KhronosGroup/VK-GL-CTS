@@ -597,9 +597,9 @@ void DrawTestInstanceBase::beginSecondaryCmdBuffer(const vk::DeviceInterface &vk
     const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
         &inheritanceRenderingInfo,                             // const void* pNext;
-        DE_NULL,                                               // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                        // VkRenderPass renderPass;
         0u,                                                    // uint32_t subpass;
-        DE_NULL,                                               // VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                        // VkFramebuffer framebuffer;
         VK_FALSE,                                              // VkBool32 occlusionQueryEnable;
         (vk::VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
         (vk::VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;
@@ -635,9 +635,9 @@ void DrawTestInstanceBase::beginNestedCmdBuffer(const vk::DeviceInterface &vk, v
     const vk::VkCommandBufferInheritanceInfo bufferInheritanceInfo{
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
         &inheritanceRenderingInfo,                             // const void* pNext;
-        DE_NULL,                                               // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                        // VkRenderPass renderPass;
         0u,                                                    // uint32_t subpass;
-        DE_NULL,                                               // VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                        // VkFramebuffer framebuffer;
         VK_FALSE,                                              // VkBool32 occlusionQueryEnable;
         (vk::VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
         (vk::VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;

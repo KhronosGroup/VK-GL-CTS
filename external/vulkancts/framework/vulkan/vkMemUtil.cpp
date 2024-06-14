@@ -307,7 +307,7 @@ de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const De
     const VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
         DE_NULL,                                          // const void*            pNext
-        DE_NULL,                                          // VkImage                image
+        VK_NULL_HANDLE,                                   // VkImage                image
         buffer                                            // VkBuffer                buffer
     };
 

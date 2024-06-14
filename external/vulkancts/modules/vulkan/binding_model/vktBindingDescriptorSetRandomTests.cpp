@@ -1738,7 +1738,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
             DE_NULL,                                  // const void* pNext;
             0u,                                       // VkImageViewCreateFlags flags;
-            DE_NULL,                                  // VkImage image;
+            VK_NULL_HANDLE,                           // VkImage image;
             VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
             VK_FORMAT_R32_SINT,                       // VkFormat format;
             {                                         // VkComponentMapping channels;
@@ -1814,7 +1814,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
         DE_NULL,                                  // const void* pNext;
         0u,                                       // VkImageViewCreateFlags flags;
-        DE_NULL,                                  // VkImage image;
+        VK_NULL_HANDLE,                           // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
         VK_FORMAT_R32_SINT,                       // VkFormat format;
         {                                         // VkComponentMapping channels;
@@ -1859,7 +1859,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout        newLayout
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                dstQueueFamilyIndex
-        DE_NULL,                                // VkImage                image
+        VK_NULL_HANDLE,                         // VkImage                image
         {
             VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags    aspectMask
             0u,                        // uint32_t                baseMipLevel
@@ -1877,7 +1877,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout;
         VK_QUEUE_FAMILY_IGNORED,                  // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                  // uint32_t dstQueueFamilyIndex;
-        DE_NULL,                                  // VkImage image;
+        VK_NULL_HANDLE,                           // VkImage image;
         clearRange,                               // VkImageSubresourceRange subresourceRange;
     };
 
@@ -1890,7 +1890,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout        newLayout
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                dstQueueFamilyIndex
-        DE_NULL,                                // VkImage                image
+        VK_NULL_HANDLE,                         // VkImage                image
         {
             VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags    aspectMask
             0u,                        // uint32_t                baseMipLevel
@@ -1908,7 +1908,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_GENERAL,                                  // VkImageLayout newLayout;
         VK_QUEUE_FAMILY_IGNORED,                                  // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                                  // uint32_t dstQueueFamilyIndex;
-        DE_NULL,                                                  // VkImage image;
+        VK_NULL_HANDLE,                                           // VkImage image;
         clearRange,                                               // VkImageSubresourceRange subresourceRange;
     };
 
@@ -2127,7 +2127,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
         DE_NULL,                                  // const void* pNext;
         (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
-        DE_NULL,                                  // VkImage image;
+        VK_NULL_HANDLE,                           // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
         VK_FORMAT_R32_SINT,                       // VkFormat format;
         {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,

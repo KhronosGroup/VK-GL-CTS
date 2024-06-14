@@ -290,7 +290,7 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer(VkDeviceSize size, V
         vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
             VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType            sType
             DE_NULL,                                          // const void*                pNext
-            DE_NULL,                                          // VkImage                    image
+            VK_NULL_HANDLE,                                   // VkImage                    image
             *testBuffer                                       // VkBuffer                    buffer
         };
 

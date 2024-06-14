@@ -247,7 +247,7 @@ tcu::TestStatus ShaderObjectMiscInstance::iterate(void)
         VK_NULL_HANDLE,                                      // VkImageView imageView;
         vk::VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout imageLayout;
         vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                             // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
         vk::VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
         vk::VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
         vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;

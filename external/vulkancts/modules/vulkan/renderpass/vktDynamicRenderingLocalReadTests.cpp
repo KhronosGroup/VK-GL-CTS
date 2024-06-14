@@ -454,10 +454,10 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     VkRenderingAttachmentInfo depthStencilAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType sType;
         DE_NULL,                                     // const void* pNext;
-        DE_NULL,                                     // VkImageView imageView;
+        VK_NULL_HANDLE,                              // VkImageView imageView;
         VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR,    // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                     // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                              // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_CLEAR,                 // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp storeOp;
@@ -929,10 +929,10 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
     VkRenderingAttachmentInfo colorAttachment{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,           // VkStructureType sType;
         DE_NULL,                                               // const void* pNext;
-        DE_NULL,                                               // VkImageView imageView;
+        VK_NULL_HANDLE,                                        // VkImageView imageView;
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,              // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                                  // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                               // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                        // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                             // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_CLEAR,                           // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                          // VkAttachmentStoreOp storeOp;

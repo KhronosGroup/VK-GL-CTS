@@ -360,7 +360,7 @@ void pushBufferDescriptor(const DeviceInterface &vkd, VkCommandBuffer cmdBuffer,
     const VkWriteDescriptorSet write = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureType sType;
         nullptr,                                // const void* pNext;
-        DE_NULL,                                // VkDescriptorSet dstSet;
+        VK_NULL_HANDLE,                         // VkDescriptorSet dstSet;
         0u,                                     // uint32_t dstBinding;
         0u,                                     // uint32_t dstArrayElement;
         1u,                                     // uint32_t descriptorCount;

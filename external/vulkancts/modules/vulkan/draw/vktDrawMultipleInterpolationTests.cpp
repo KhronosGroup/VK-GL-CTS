@@ -688,10 +688,10 @@ void DrawTestInstance::beginDynamicRender(vk::VkCommandBuffer cmdBuffer, vk::VkR
         {
             vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
             DE_NULL,                                             // const void* pNext;
-            DE_NULL,                                             // VkImageView imageView;
+            VK_NULL_HANDLE,                                      // VkImageView imageView;
             vk::VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout imageLayout;
             vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                             // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
             vk::VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout resolveImageLayout;
             vk::VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
             vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;

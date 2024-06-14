@@ -451,7 +451,7 @@ tcu::TestStatus TransientAttachmentTestInstance::iterate(void)
     const std::vector<VkDescriptorSet> descriptorSets = {descriptorSetAttachments.get()};
 
     const VkDescriptorImageInfo imageInfo = {
-        DE_NULL,                                 // VkSampler sampler;
+        VK_NULL_HANDLE,                          // VkSampler sampler;
         *inputImageView,                         // VkImageView imageView;
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // VkImageLayout imageLayout;
     };

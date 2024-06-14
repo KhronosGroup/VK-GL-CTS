@@ -162,9 +162,9 @@ void beginSecondaryCmdBuffer(const DeviceInterface &vkd, VkCommandBuffer secCmdB
     const VkCommandBufferInheritanceInfo bufferInheritanceInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
         &inheritanceRenderingInfo,                         // const void* pNext;
-        DE_NULL,                                           // VkRenderPass renderPass;
+        VK_NULL_HANDLE,                                    // VkRenderPass renderPass;
         0u,                                                // uint32_t subpass;
-        DE_NULL,                                           // VkFramebuffer framebuffer;
+        VK_NULL_HANDLE,                                    // VkFramebuffer framebuffer;
         VK_FALSE,                                          // VkBool32 occlusionQueryEnable;
         (VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
         (VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;
@@ -1398,7 +1398,7 @@ vector<SharedPtrVkDescriptorSet> SubpassDependencyTestInstance::createDescriptor
                                                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
             const VkDescriptorImageInfo imageInfo = {
-                DE_NULL,              // VkSampler        sampler
+                VK_NULL_HANDLE,       // VkSampler        sampler
                 **imageViews[setNdx], // VkImageView        imageView
                 imageLayout           // VkImageLayout    imageLayout
             };
@@ -1472,7 +1472,7 @@ tcu::TestStatus SubpassDependencyTestInstance::iterateInternal(void)
             VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, // VkImageLayout            newLayout
             VK_QUEUE_FAMILY_IGNORED,                         // uint32_t                    srcQueueFamilyIndex
             VK_QUEUE_FAMILY_IGNORED,                         // uint32_t                    dstQueueFamilyIndex
-            DE_NULL,                                         // VkImage                    image
+            VK_NULL_HANDLE,                                  // VkImage                    image
             imageSubresourceRange                            // VkImageSubresourceRange    subresourceRange
         };
 

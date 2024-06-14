@@ -3117,9 +3117,9 @@ void TwoCmdBuffersTestInstance::configCommandBuffer(void)
         const VkCommandBufferInheritanceInfo inheritanceInfo = {
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType                  sType;
             DE_NULL,                                           // const void*                      pNext;
-            DE_NULL,                                           // VkRenderPass                     renderPass;
+            VK_NULL_HANDLE,                                    // VkRenderPass                     renderPass;
             0u,                                                // uint32_t                         subpass;
-            DE_NULL,                                           // VkFramebuffer                    framebuffer;
+            VK_NULL_HANDLE,                                    // VkFramebuffer                    framebuffer;
             VK_FALSE,                                          // VkBool32                         occlusionQueryEnable;
             0u,                                                // VkQueryControlFlags              queryFlags;
             0u                                                 // VkQueryPipelineStatisticFlags    pipelineStatistics;
@@ -3288,7 +3288,7 @@ ConsistentQueryResultsTestInstance::ConsistentQueryResultsTestInstance(Context &
         vk::VK_ACCESS_HOST_READ_BIT,                 // VkAccessFlags dstAccessMask;
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                     // uint32_t dstQueueFamilyIndex;
-        DE_NULL,                                     // VkBuffer buffer;
+        VK_NULL_HANDLE,                              // VkBuffer buffer;
         0ull,                                        // VkDeviceSize offset;
         VK_WHOLE_SIZE                                // VkDeviceSize size;
     };

@@ -2160,7 +2160,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout        newLayout
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t                dstQueueFamilyIndex
-        DE_NULL,                                // VkImage                image
+        VK_NULL_HANDLE,                         // VkImage                image
         barrierRange,                           // VkImageSubresourceRange subresourceRange;
     };
 
@@ -2173,7 +2173,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout newLayout;
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                // uint32_t dstQueueFamilyIndex;
-        DE_NULL,                                // VkImage image;
+        VK_NULL_HANDLE,                         // VkImage image;
         barrierRange,                           // VkImageSubresourceRange subresourceRange;
     };
 
@@ -2272,7 +2272,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
         DE_NULL,                                  // const void* pNext;
         (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
-        DE_NULL,                                  // VkImage image;
+        VK_NULL_HANDLE,                           // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
         m_data.format,                            // VkFormat format;
         {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,

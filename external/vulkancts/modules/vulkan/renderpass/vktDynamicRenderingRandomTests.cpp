@@ -230,7 +230,7 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
             VK_NULL_HANDLE,    // const VkShaderModule                                tessellationEvalShaderModule
             VK_NULL_HANDLE,    // const VkShaderModule                                geometryShaderModule
             *m_fragmentModule, // const VkShaderModule                                fragmentShaderModule
-            DE_NULL,           // const VkRenderPass                                renderPass
+            VK_NULL_HANDLE,    // const VkRenderPass                                renderPass
             viewports,         // const std::vector<VkViewport>&                    viewports
             scissors,          // const std::vector<VkRect2D>&                        scissors
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // const VkPrimitiveTopology                        topology
@@ -255,7 +255,7 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
                 VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalShaderModule
                 *m_geometryModule, // const VkShaderModule                                geometryShaderModule
                 *m_fragmentModule, // const VkShaderModule                                fragmentShaderModule
-                DE_NULL,           // const VkRenderPass                                renderPass
+                VK_NULL_HANDLE,    // const VkRenderPass                                renderPass
                 viewports,         // const std::vector<VkViewport>&                    viewports
                 scissors,          // const std::vector<VkRect2D>&                        scissors
                 VK_PRIMITIVE_TOPOLOGY_POINT_LIST, // const VkPrimitiveTopology                        topology
@@ -278,7 +278,7 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
                 VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalShaderModule
                 *m_geometryLayerModule, // const VkShaderModule                                geometryShaderModule
                 *m_fragmentModule,      // const VkShaderModule                                fragmentShaderModule
-                DE_NULL,                // const VkRenderPass                                renderPass
+                VK_NULL_HANDLE,         // const VkRenderPass                                renderPass
                 viewports,              // const std::vector<VkViewport>&                    viewports
                 scissors,               // const std::vector<VkRect2D>&                        scissors
                 VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // const VkPrimitiveTopology                        topology
@@ -304,7 +304,7 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
                 *m_tseModule,   // const VkShaderModule                                tessellationEvalShaderModule
                 VK_NULL_HANDLE, // const VkShaderModule                                geometryShaderModule
                 *m_fragmentModule, // const VkShaderModule                                fragmentShaderModule
-                DE_NULL,           // const VkRenderPass                                renderPass
+                VK_NULL_HANDLE,    // const VkRenderPass                                renderPass
                 viewports,         // const std::vector<VkViewport>&                    viewports
                 scissors,          // const std::vector<VkRect2D>&                        scissors
                 vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, // const VkPrimitiveTopology                        topology
@@ -329,7 +329,7 @@ DynamicRenderingTestInstance::DynamicRenderingTestInstance(Context &context, con
             VK_NULL_HANDLE, // const VkShaderModule                                tessellationEvalShaderModule
             VK_NULL_HANDLE, // const VkShaderModule                                geometryShaderModule
             *m_fragmentModule, // const VkShaderModule                                fragmentShaderModule
-            DE_NULL,           // const VkRenderPass                                renderPass
+            VK_NULL_HANDLE,    // const VkRenderPass                                renderPass
             viewports,         // const std::vector<VkViewport>&                    viewports
             scissors,          // const std::vector<VkRect2D>&                        scissors
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // const VkPrimitiveTopology                        topology
@@ -546,7 +546,7 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate(void)
                 *m_colorAttachmentView,                          // VkImageView                imageView
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout            imageLayout
                 VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits    resolveMode
-                DE_NULL,                                         // VkImageView                resolveImageView
+                VK_NULL_HANDLE,                                  // VkImageView                resolveImageView
                 VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout            resolveImageLayout
                 loadOp,                                          // VkAttachmentLoadOp        loadOp
                 VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp        storeOp
@@ -589,9 +589,9 @@ tcu::TestStatus DynamicRenderingTestInstance::iterate(void)
             const VkCommandBufferInheritanceInfo bufferInheritanceInfo = {
                 vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType                    sType
                 &inheritanceRenderingInfo,                             // const void*                        pNext
-                DE_NULL,                                               // VkRenderPass                        renderPass
+                VK_NULL_HANDLE,                                        // VkRenderPass                        renderPass
                 0u,                                                    // uint32_t                            subpass
-                DE_NULL,                                               // VkFramebuffer                    framebuffer
+                VK_NULL_HANDLE,                                        // VkFramebuffer                    framebuffer
                 VK_FALSE,                         // VkBool32                            occlusionQueryEnable
                 (VkQueryControlFlags)0u,          // VkQueryControlFlags                queryFlags
                 (VkQueryPipelineStatisticFlags)0u // VkQueryPipelineStatisticFlags    pipelineStatistics

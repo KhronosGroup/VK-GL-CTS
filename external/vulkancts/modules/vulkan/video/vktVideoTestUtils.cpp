@@ -1530,8 +1530,8 @@ de::MovePtr<VkVideoSessionParametersCreateInfoKHR> getVideoSessionParametersCrea
         VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR, //  VkStructureType sType;
         pNext,                                                      //  const void* pNext;
         static_cast<VkVideoSessionParametersCreateFlagsKHR>(0u),    //  VkVideoSessionParametersCreateFlagsKHR flags;
-        DE_NULL,      //  VkVideoSessionParametersKHR videoEncodeSessionParametersTemplate;
-        videoSession, //  VkVideoSessionKHR videoEncodeSession;
+        VK_NULL_HANDLE, //  VkVideoSessionParametersKHR videoEncodeSessionParametersTemplate;
+        videoSession,   //  VkVideoSessionKHR videoEncodeSession;
     };
 
     return de::MovePtr<VkVideoSessionParametersCreateInfoKHR>(

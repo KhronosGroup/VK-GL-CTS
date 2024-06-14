@@ -1480,7 +1480,7 @@ void SamplerDescriptor::init(Context &context, PipelineType pipelineType)
     {
         const VkDescriptorImageInfo imageInfo = {
             **m_samplers[i],          // VkSampler        sampler
-            DE_NULL,                  // VkImageView        imageView
+            VK_NULL_HANDLE,           // VkImageView        imageView
             VK_IMAGE_LAYOUT_UNDEFINED // VkImageLayout    imageLayout
         };
 

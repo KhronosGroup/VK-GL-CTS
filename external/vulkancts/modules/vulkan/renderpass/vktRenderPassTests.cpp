@@ -2271,10 +2271,10 @@ void beginDynamicRendering(const DeviceInterface &vk, VkCommandBuffer commandBuf
     VkRenderingAttachmentInfoKHR depthAttachment{
         vk::VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
         DE_NULL,                                             // const void* pNext;
-        DE_NULL,                                             // VkImageView imageView;
+        VK_NULL_HANDLE,                                      // VkImageView imageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                           // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                                // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                             // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                           // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_LOAD,                          // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                        // VkAttachmentStoreOp storeOp;
@@ -6097,7 +6097,7 @@ tcu::TestStatus RenderPassNoDrawLoadStoreTestInstance::iterate()
             colorAttachmentView.get(),                   // VkImageView imageView;
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,    // VkImageLayout imageLayout;
             VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits resolveMode;
-            DE_NULL,                                     // VkImageView resolveImageView;
+            VK_NULL_HANDLE,                              // VkImageView resolveImageView;
             VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout resolveImageLayout;
             VK_ATTACHMENT_LOAD_OP_CLEAR,                 // VkAttachmentLoadOp loadOp;
             VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp storeOp;

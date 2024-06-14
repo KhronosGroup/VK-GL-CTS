@@ -1771,7 +1771,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
             vk, vkDevice, *m_descriptorPoolOperateOnSubsampledImage, *m_descriptorSetLayoutOperateOnSubsampledImage);
 
         const VkDescriptorImageInfo inputImageInfo = {
-            DE_NULL,                                 // VkSampleri sampler;
+            VK_NULL_HANDLE,                          // VkSampler sampler;
             *m_colorImageView,                       // VkImageView imageView;
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // VkImageLayout imageLayout;
         };
@@ -1808,7 +1808,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
             srcImageView = *m_colorCopyImageView;
 
         const VkDescriptorImageInfo inputImageInfo{
-            DE_NULL,                                 // VkSampleri sampler;
+            VK_NULL_HANDLE,                          // VkSampler sampler;
             srcImageView,                            // VkImageView imageView;
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // VkImageLayout imageLayout;
         };
@@ -2392,10 +2392,10 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
     };
 
     const VkRenderingFragmentDensityMapAttachmentInfoEXT densityMap1Attachment{
-        VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_INFO_EXT, // VkStructureType sType;
-        DE_NULL,                                                              // const void* pNext;
-        m_testParams.subsampledLoads ? **m_densityMapImageViews[1] : DE_NULL, // VkImageView imageView;
-        VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT                      // VkImageLayout imageLayout;
+        VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_INFO_EXT,        // VkStructureType sType;
+        DE_NULL,                                                                     // const void* pNext;
+        m_testParams.subsampledLoads ? **m_densityMapImageViews[1] : VK_NULL_HANDLE, // VkImageView imageView;
+        VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT                             // VkImageLayout imageLayout;
     };
 
     const VkRenderingAttachmentInfoKHR dynamicDensityMapColorAttachment{
@@ -2404,7 +2404,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
         **m_densityMapImageViews[0],                     // VkImageView imageView;
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                         // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -2432,12 +2432,12 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             *m_colorImageView,                               // VkImageView imageView;
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
             resolveFirstAttachment ? VK_RESOLVE_MODE_AVERAGE_BIT :
-                                     VK_RESOLVE_MODE_NONE,                // VkResolveModeFlagBits resolveMode;
-            resolveFirstAttachment ? *m_colorResolvedImageView : DE_NULL, // VkImageView resolveImageView;
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                     // VkImageLayout resolveImageLayout;
-            VK_ATTACHMENT_LOAD_OP_CLEAR,                                  // VkAttachmentLoadOp loadOp;
-            VK_ATTACHMENT_STORE_OP_STORE,                                 // VkAttachmentStoreOp storeOp;
-            attachmentClearValues[0]                                      // VkClearValue clearValue;
+                                     VK_RESOLVE_MODE_NONE,                       // VkResolveModeFlagBits resolveMode;
+            resolveFirstAttachment ? *m_colorResolvedImageView : VK_NULL_HANDLE, // VkImageView resolveImageView;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                            // VkImageLayout resolveImageLayout;
+            VK_ATTACHMENT_LOAD_OP_CLEAR,                                         // VkAttachmentLoadOp loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE,                                        // VkAttachmentStoreOp storeOp;
+            attachmentClearValues[0]                                             // VkClearValue clearValue;
         },
         {
             VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
@@ -2445,12 +2445,12 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             *m_colorCopyImageView,                           // VkImageView imageView;
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
             isColorImageMultisampled ? VK_RESOLVE_MODE_AVERAGE_BIT :
-                                       VK_RESOLVE_MODE_NONE,                // VkResolveModeFlagBits resolveMode;
-            isColorImageMultisampled ? *m_colorResolvedImageView : DE_NULL, // VkImageView resolveImageView;
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                       // VkImageLayout resolveImageLayout;
-            VK_ATTACHMENT_LOAD_OP_CLEAR,                                    // VkAttachmentLoadOp loadOp;
-            VK_ATTACHMENT_STORE_OP_STORE,                                   // VkAttachmentStoreOp storeOp;
-            attachmentClearValues[0]                                        // VkClearValue clearValue;
+                                       VK_RESOLVE_MODE_NONE,                       // VkResolveModeFlagBits resolveMode;
+            isColorImageMultisampled ? *m_colorResolvedImageView : VK_NULL_HANDLE, // VkImageView resolveImageView;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                              // VkImageLayout resolveImageLayout;
+            VK_ATTACHMENT_LOAD_OP_CLEAR,                                           // VkAttachmentLoadOp loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE,                                          // VkAttachmentStoreOp storeOp;
+            attachmentClearValues[0]                                               // VkClearValue clearValue;
         }};
 
     VkRenderingInfoKHR subsampledImageRenderingInfo{
@@ -2472,7 +2472,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
         *m_colorImageView,                               // VkImageView imageView;
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                         // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_LOAD,                      // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -2498,7 +2498,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
         *m_outputImageView,                              // VkImageView imageView;
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                         // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
         VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;

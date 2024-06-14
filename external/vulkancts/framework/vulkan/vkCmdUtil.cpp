@@ -196,7 +196,7 @@ void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuff
         colorImageView,                                  // VkImageView imageView;
         imageLayout,                                     // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                         // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
         loadOperation,                                   // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -232,7 +232,7 @@ void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuff
         colorImageView,                                  // VkImageView imageView;
         colorImageLayout,                                // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                         // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
         loadOperation,                                   // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -245,7 +245,7 @@ void beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuff
         depthStencilImageView,                           // VkImageView imageView;
         depthImageLayout,                                // VkImageLayout imageLayout;
         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                         // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
         VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
         loadOperation,                                   // VkAttachmentLoadOp loadOp;
         VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;

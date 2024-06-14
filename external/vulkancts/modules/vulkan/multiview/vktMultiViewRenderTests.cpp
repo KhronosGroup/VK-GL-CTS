@@ -4204,7 +4204,7 @@ void MultiViewDepthStencilTestInstance::draw(const uint32_t subpassCount, VkRend
                     m_colorAttachment->getImageView(),                   // VkImageView imageView;
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,            // VkImageLayout imageLayout;
                     VK_RESOLVE_MODE_NONE,                                // VkResolveModeFlagBits resolveMode;
-                    DE_NULL,                                             // VkImageView resolveImageView;
+                    VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
                     VK_IMAGE_LAYOUT_UNDEFINED,                           // VkImageLayout resolveImageLayout;
                     VK_ATTACHMENT_LOAD_OP_LOAD,                          // VkAttachmentLoadOp loadOp;
                     vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
@@ -4218,7 +4218,7 @@ void MultiViewDepthStencilTestInstance::draw(const uint32_t subpassCount, VkRend
                 m_dsAttachment->getImageView(),                   // VkImageView imageView;
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout imageLayout;
                 VK_RESOLVE_MODE_NONE,                             // VkResolveModeFlagBits resolveMode;
-                DE_NULL,                                          // VkImageView resolveImageView;
+                VK_NULL_HANDLE,                                   // VkImageView resolveImageView;
                 VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout resolveImageLayout;
                 VK_ATTACHMENT_LOAD_OP_LOAD,                       // VkAttachmentLoadOp loadOp;
                 VK_ATTACHMENT_STORE_OP_STORE,                     // VkAttachmentStoreOp storeOp;

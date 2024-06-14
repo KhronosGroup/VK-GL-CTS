@@ -1461,7 +1461,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
         DE_NULL,                                  // const void* pNext;
         (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags  flags;
-        DE_NULL,                                  // VkImage image;
+        VK_NULL_HANDLE,                           // VkImage image;
         VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
         imageFormat,                              // VkFormat format;
         {

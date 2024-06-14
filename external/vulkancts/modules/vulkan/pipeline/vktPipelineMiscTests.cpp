@@ -648,7 +648,7 @@ void PipelineLibraryInterpolateAtSampleTestInstance::runTest(BufferWithMemory &i
         colorAttachmentView.get(),                           // VkImageView imageView;
         vk::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,          // VkImageLayout imageLayout;
         vk::VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-        DE_NULL,                                             // VkImageView resolveImageView;
+        VK_NULL_HANDLE,                                      // VkImageView resolveImageView;
         vk::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,          // VkImageLayout resolveImageLayout;
         vk::VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
         vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
