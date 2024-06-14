@@ -1157,7 +1157,7 @@ private:
             pipelineLayout,                                    // VkPipelineLayout layout;
             renderPass,                                        // VkRenderPass renderPass;
             0u,                                                // uint32_t subpass;
-            DE_NULL,                                           // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                    // VkPipeline basePipelineHandle;
             0,                                                 // int32_t basePipelineIndex;
         };
         for (int shaderNdx = 0; shaderNdx < static_cast<int>(m_shadersExecutions.size()) * 2; shaderNdx += 2)

@@ -4228,7 +4228,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         *pipelineLayout,         // VkPipelineLayout layout;
         *renderPass,             // VkRenderPass renderPass;
         0u,                      // uint32_t subpass;
-        DE_NULL,                 // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,          // VkPipeline basePipelineHandle;
         0u,                      // int32_t basePipelineIndex;
     };
 

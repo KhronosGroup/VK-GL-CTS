@@ -5190,7 +5190,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
             VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT,   // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             *m_pipelineLayout,                              // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
 

@@ -68,7 +68,7 @@ Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, const VkDevice d
         (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags flags;
         shaderStageInfo,                                // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout,                                 // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
 
@@ -359,7 +359,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
         pipelineLayout,                     // VkPipelineLayout layout;
         renderPass,                         // VkRenderPass renderPass;
         0u,                                 // uint32_t subpass;
-        DE_NULL,                            // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                     // VkPipeline basePipelineHandle;
         0,                                  // int32_t basePipelineIndex;
     };
 

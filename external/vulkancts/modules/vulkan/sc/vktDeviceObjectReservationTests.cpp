@@ -503,7 +503,7 @@ void createGraphicsPipelines(const DeviceInterface &vkd, const VkDevice device, 
             pipelineLayout,                // VkPipelineLayout                                 layout;
             renderPass,                    // VkRenderPass                                     renderPass;
             0u,                            // uint32_t                                         subpass;
-            DE_NULL,                       // VkPipeline                                       basePipelineHandle;
+            VK_NULL_HANDLE,                // VkPipeline                                       basePipelineHandle;
             0                              // int                                              basePipelineIndex;
         };
 

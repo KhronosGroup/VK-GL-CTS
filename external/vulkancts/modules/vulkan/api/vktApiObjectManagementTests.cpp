@@ -1459,7 +1459,7 @@ struct PipelineCache
                 (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags            flags
                 stageCreateInfo,                                // VkPipelineShaderStageCreateInfo    stage
                 *pipelineLayout,                                // VkPipelineLayout                    layout
-                DE_NULL,                                        // VkPipeline                        basePipelineHandle
+                VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
                 0u                                              // int32_t                            basePipelineIndex
             };
 
@@ -1567,7 +1567,7 @@ struct MergedPipelineCache
                 (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags            flags
                 stageCreateInfo,                                // VkPipelineShaderStageCreateInfo    stage
                 *pipelineLayout,                                // VkPipelineLayout                    layout
-                DE_NULL,                                        // VkPipeline                        basePipelineHandle
+                VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
                 0u                                              // int32_t                            basePipelineIndex
             };
 

@@ -590,7 +590,7 @@ ComputeEnvironment::ComputeEnvironment(Context &context, const DeviceInterface &
             0u,                                             // VkPipelineCreateFlags flags;
             computeStageParams,                             // VkPipelineShaderStageCreateInfo stage;
             *m_pipelineLayout,                              // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0u                                              // int32_t basePipelineIndex;
         };
 

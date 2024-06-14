@@ -281,7 +281,7 @@ tcu::TestStatus DynamicIndexingInstance::iterate(void)
         0u,                                             // VkPipelineCreateFlags flags;
         shaderStageInfo,                                // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout.get(),                           // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
 

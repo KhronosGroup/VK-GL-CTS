@@ -805,7 +805,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
             pipelineLayout.get(),            // VkPipelineLayout layout;
             renderPass.get(),                // VkRenderPass renderPass;
             0,                               // uint32_t subpass;
-            DE_NULL,                         // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                  // VkPipeline basePipelineHandle;
             0,                               // int32_t basePipelineIndex;
         };
 
@@ -831,7 +831,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context &context, MemoryDepParams params)
             0u,                                             // VkPipelineCreateFlags              flags;
             shaderStageInfo,                                // VkPipelineShaderStageCreateInfo    stage;
             pipelineLayout.get(),                           // VkPipelineLayout                   layout;
-            DE_NULL,                                        // VkPipeline                         basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline                         basePipelineHandle;
             0                                               // int32_t                            basePipelineIndex;
         };
 

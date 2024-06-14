@@ -779,7 +779,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
             m_params.flags,                                     // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                          // VkPipelineShaderStageCreateInfo stage;
             *pipelineLayout,                                    // VkPipelineLayout layout;
-            DE_NULL,                                            // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                     // VkPipeline basePipelineHandle;
             0,                                                  // int32_t basePipelineIndex;
         };
 

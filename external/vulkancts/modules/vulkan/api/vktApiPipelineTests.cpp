@@ -821,7 +821,7 @@ Move<VkPipeline> createSimpleGraphicsPipeline(const DeviceInterface &vk, const V
         pipelineLayout,                // VkPipelineLayout                                 layout;
         renderPass,                    // VkRenderPass                                     renderPass;
         0u,                            // uint32_t                                         subpass;
-        DE_NULL,                       // VkPipeline                                       basePipelineHandle;
+        VK_NULL_HANDLE,                // VkPipeline                                       basePipelineHandle;
         0                              // int                                              basePipelineIndex;
     };
 
@@ -1119,7 +1119,7 @@ tcu::TestStatus pipelineLayoutLifetimeTest(Context &context, VkPipelineBindPoint
             (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags              flags
             shaderStageCreateInfo,                          // VkPipelineShaderStageCreateInfo    stage
             pipelineLayoutB,                                // VkPipelineLayout                   layout
-            DE_NULL,                                        // VkPipeline                         basePipelineHandle
+            VK_NULL_HANDLE,                                 // VkPipeline                         basePipelineHandle
             0                                               // int                                basePipelineIndex
         };
 
@@ -1334,7 +1334,7 @@ tcu::TestStatus destroyEarlyTest(Context &context, DestroyPipelineLayoutMode mod
         0u,                                                 // VkPipelineCreateFlags flags;
         shaderInfo,                                         // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout.get(),                               // VkPipelineLayout layout;
-        DE_NULL,                                            // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                     // VkPipeline basePipelineHandle;
         0,                                                  // int32_t basePipelineIndex;
     };
 
@@ -1494,7 +1494,7 @@ Move<VkPipeline> createSimpleGraphicsPipelineInvalidPointers(
         pipelineLayout,     // VkPipelineLayout                                 layout;
         renderPass,         // VkRenderPass                                     renderPass;
         0u,                 // uint32_t                                         subpass;
-        DE_NULL,            // VkPipeline                                       basePipelineHandle;
+        VK_NULL_HANDLE,     // VkPipeline                                       basePipelineHandle;
         0                   // int                                              basePipelineIndex;
     };
 
@@ -1651,7 +1651,7 @@ tcu::TestStatus pipelineInvalidPointersUnusedStructsTest(Context &context, VkPip
             (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags              flags
             shaderStageCreateInfo,                          // VkPipelineShaderStageCreateInfo    stage
             *pipelineLayout,                                // VkPipelineLayout                   layout
-            DE_NULL,                                        // VkPipeline                         basePipelineHandle
+            VK_NULL_HANDLE,                                 // VkPipeline                         basePipelineHandle
             0                                               // int                                basePipelineIndex
         };
 

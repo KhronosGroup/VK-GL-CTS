@@ -589,7 +589,7 @@ tcu::TestStatus BindPointInstance::iterate(void)
             0u,                                             // VkPipelineCreateFlags flags;
             computeShaderStageInfo,                         // VkPipelineShaderStageCreateInfo stage;
             computePipelineLayout.get(),                    // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0u,                                             // int32_t basePipelineIndex;
         };
 

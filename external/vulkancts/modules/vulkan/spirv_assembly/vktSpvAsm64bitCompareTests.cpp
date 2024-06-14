@@ -1389,7 +1389,7 @@ tcu::TestStatus T64bitCompareTestInstance<T>::iterate(void)
                 DE_NULL, // const VkSpecializationInfo*         pSpecializationInfo;
             },
             *pipelineLayout, // VkPipelineLayout                   layout;
-            DE_NULL,         // VkPipeline                         basePipelineHandle;
+            VK_NULL_HANDLE,  // VkPipeline                         basePipelineHandle;
             0,               // int32_t                            basePipelineIndex;
         };
         auto computePipeline = vk::createComputePipeline(vkdi, device, DE_NULL, &computeCreateInfo);
@@ -1567,7 +1567,7 @@ tcu::TestStatus T64bitCompareTestInstance<T>::iterate(void)
             *pipelineLayout,        // VkPipelineLayout layout;
             *renderPass,            // VkRenderPass renderPass;
             0u,                     // uint32_t subpass;
-            DE_NULL,                // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,         // VkPipeline basePipelineHandle;
             0u,                     // int32_t basePipelineIndex;
         };
         auto graphicsPipeline = vk::createGraphicsPipeline(vkdi, device, DE_NULL, &graphicsCreateInfo);

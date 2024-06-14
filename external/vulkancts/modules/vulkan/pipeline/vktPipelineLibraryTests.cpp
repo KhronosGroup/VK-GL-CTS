@@ -2740,7 +2740,7 @@ tcu::TestStatus PipelineLibraryShaderModuleInfoCompInstance::iterate(void)
         0u,                                             // VkPipelineCreateFlags flags;
         m_pipelineStageInfos.at(0u),                    // VkPipelineShaderStageCreateInfo stage;
         pipelineLayout.get(),                           // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
 
@@ -2817,7 +2817,7 @@ tcu::TestStatus PipelineLibraryShaderModuleInfoRTInstance::iterate(void)
         pLibraryIface,        // const VkRayTracingPipelineInterfaceCreateInfoKHR* pLibraryInterface;
         nullptr,              // const VkPipelineDynamicStateCreateInfo* pDynamicState;
         pipelineLayout.get(), // VkPipelineLayout layout;
-        DE_NULL,              // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,       // VkPipeline basePipelineHandle;
         0,                    // int32_t basePipelineIndex;
     };
 
@@ -2848,7 +2848,7 @@ tcu::TestStatus PipelineLibraryShaderModuleInfoRTInstance::iterate(void)
             pLibraryIface,        // const VkRayTracingPipelineInterfaceCreateInfoKHR* pLibraryInterface;
             nullptr,              // const VkPipelineDynamicStateCreateInfo* pDynamicState;
             pipelineLayout.get(), // VkPipelineLayout layout;
-            DE_NULL,              // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,       // VkPipeline basePipelineHandle;
             0,                    // int32_t basePipelineIndex;
         };
         pipeline = createRayTracingPipelineKHR(m_vkd, m_device, DE_NULL, DE_NULL, &nonLibCreateInfo);

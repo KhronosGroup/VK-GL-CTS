@@ -167,7 +167,7 @@ tcu::TestStatus descriptorSetLayoutLifetimeGraphicsTest(Context &context)
         pipelineLayout.get(),          // VkPipelineLayout layout;
         renderPass.get(),              // VkRenderPass renderPass;
         0u,                            // uint32_t subpass;
-        DE_NULL,                       // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                // VkPipeline basePipelineHandle;
         0                              // int basePipelineIndex;
     };
 
@@ -254,7 +254,7 @@ tcu::TestStatus descriptorSetLayoutLifetimeComputeTest(Context &context)
         (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags            flags
         shaderStageCreateInfo,                          // VkPipelineShaderStageCreateInfo    stage
         pipelineLayout.get(),                           // VkPipelineLayout                    layout
-        DE_NULL,                                        // VkPipeline                        basePipelineHandle
+        VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
         0                                               // int                                basePipelineIndex
     };
 
@@ -524,7 +524,7 @@ tcu::TestStatus descriptorSetLayoutBindingOrderingTest(Context &context)
         (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags            flags
         shaderStageCreateInfo,                          // VkPipelineShaderStageCreateInfo    stage
         *pipelineLayout,                                // VkPipelineLayout                    layout
-        DE_NULL,                                        // VkPipeline                        basePipelineHandle
+        VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
         0                                               // int                                basePipelineIndex
     };
 

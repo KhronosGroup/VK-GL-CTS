@@ -1419,7 +1419,7 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
         *m_graphicsPipelineLayout,       // VkPipelineLayout layout;
         DE_NULL,                         // VkRenderPass renderPass;
         0u,                              // uint32_t subpass;
-        DE_NULL,                         // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                  // VkPipeline basePipelineHandle;
         0,                               // int32_t basePipelineIndex;
     };
 

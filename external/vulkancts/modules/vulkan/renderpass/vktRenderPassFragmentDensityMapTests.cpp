@@ -1016,7 +1016,7 @@ Move<VkPipeline> buildGraphicsPipeline(const DeviceInterface &vk, const VkDevice
         pipelineLayout,                      // VkPipelineLayout                                    layout
         renderPass,                          // VkRenderPass                                        renderPass
         subpass,                             // uint32_t                                            subpass
-        DE_NULL,                             // VkPipeline                                        basePipelineHandle
+        VK_NULL_HANDLE,                      // VkPipeline                                        basePipelineHandle
         0                                    // int32_t basePipelineIndex;
     };
 

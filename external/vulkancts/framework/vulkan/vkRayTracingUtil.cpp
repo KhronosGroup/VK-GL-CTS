@@ -3792,7 +3792,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR(const DeviceInterface &vk
         pipelineInterfaceCreateInfoPtr, //  VkRayTracingPipelineInterfaceCreateInfoKHR* pLibraryInterface;
         &dynamicStateCreateInfo,        //  const VkPipelineDynamicStateCreateInfo* pDynamicState;
         pipelineLayout,                 //  VkPipelineLayout layout;
-        (VkPipeline)DE_NULL,            //  VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                 //  VkPipeline basePipelineHandle;
         0,                              //  int32_t basePipelineIndex;
     };
     VkPipeline object = DE_NULL;

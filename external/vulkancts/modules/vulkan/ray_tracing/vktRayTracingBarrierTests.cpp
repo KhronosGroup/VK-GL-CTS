@@ -1006,7 +1006,7 @@ void createComputePipeline(const DeviceInterface &vkd, VkDevice device, Context 
         0u,                                             // VkPipelineCreateFlags flags;
         stageInfo,                                      // VkPipelineShaderStageCreateInfo stage;
         stageData.pipelineLayout.get(),                 // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
 

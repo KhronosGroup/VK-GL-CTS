@@ -505,7 +505,7 @@ Move<VkPipeline> makeGraphicsPipeline(
         pipelineLayout,                       // VkPipelineLayout                                 layout
         renderPass,                           // VkRenderPass                                     renderPass
         subpass,                              // uint32_t                                         subpass
-        DE_NULL,                              // VkPipeline                                       basePipelineHandle
+        VK_NULL_HANDLE,                       // VkPipeline                                       basePipelineHandle
         0                                     // int32_t                                          basePipelineIndex;
     };
 
@@ -3904,8 +3904,8 @@ Move<VkPipeline> makeComputePipeline(Context &context, const VkPipelineLayout pi
         basePipelineHandle, // VkPipeline basePipelineHandle;
         -1,                 // int32_t basePipelineIndex;
 #else
-        DE_NULL, // VkPipeline basePipelineHandle;
-        0,       // int32_t basePipelineIndex;
+        VK_NULL_HANDLE, // VkPipeline basePipelineHandle;
+        0,              // int32_t basePipelineIndex;
 #endif // CTS_USES_VULKANSC
     };
     static_cast<void>(basePipelineHandle);

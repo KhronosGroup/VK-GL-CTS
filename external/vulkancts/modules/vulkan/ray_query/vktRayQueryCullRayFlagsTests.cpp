@@ -612,7 +612,7 @@ void GraphicsConfiguration::initConfiguration(Context &context, TestParams &test
         pipelineLayout.get(),                         // VkPipelineLayout layout;
         renderPass.get(),                             // VkRenderPass renderPass;
         0u,                                           // uint32_t subpass;
-        DE_NULL,                                      // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                               // VkPipeline basePipelineHandle;
         0                                             // int basePipelineIndex;
     };
 
@@ -830,7 +830,7 @@ void ComputeConfiguration::initConfiguration(Context &context, TestParams &testP
         0u,                                             // VkPipelineCreateFlags flags;
         pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
         *pipelineLayout,                                // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
 

@@ -296,7 +296,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
         pipelineLayout,                     // VkPipelineLayout layout;
         renderPass,                         // VkRenderPass renderPass;
         0u,                                 // uint32_t subpass;
-        DE_NULL,                            // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                     // VkPipeline basePipelineHandle;
         0,                                  // int32_t basePipelineIndex;
     };
 

@@ -1827,7 +1827,7 @@ std::vector<T> rayQueryComputeTestSetup(const vk::DeviceInterface &vkd, const vk
         static_cast<VkPipelineCreateFlags>(0u),         // VkPipelineCreateFlags flags;
         pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
         *pipelineLayout,                                // VkPipelineLayout layout;
-        DE_NULL,                                        // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
     Move<VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
@@ -2201,7 +2201,7 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
         pipelineLayout.get(),                         // VkPipelineLayout layout;
         renderPass.get(),                             // VkRenderPass renderPass;
         0u,                                           // uint32_t subpass;
-        DE_NULL,                                      // VkPipeline basePipelineHandle;
+        VK_NULL_HANDLE,                               // VkPipeline basePipelineHandle;
         0                                             // int basePipelineIndex;
     };
 

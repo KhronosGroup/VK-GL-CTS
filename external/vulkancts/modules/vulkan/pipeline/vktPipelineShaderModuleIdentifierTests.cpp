@@ -2434,7 +2434,7 @@ tcu::TestStatus CreateAndUseIdsInstance::iterate(void)
                     pipelineFlags,                                  // VkPipelineCreateFlags flags;
                     pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
                     pipelineLayout.get(),                           // VkPipelineLayout layout;
-                    DE_NULL,                                        // VkPipeline basePipelineHandle;
+                    VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
                     0,                                              // int32_t basePipelineIndex;
                 };
 

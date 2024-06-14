@@ -939,7 +939,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             pipelineLayoutPass0.get(),     // VkPipelineLayout layout;
             renderPass.get(),              // VkRenderPass renderPass;
             0u,                            // uint32_t subpass;
-            DE_NULL,                       // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                // VkPipeline basePipelineHandle;
             0                              // int basePipelineIndex;
         };
 
@@ -1070,7 +1070,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             pipelineLayoutPass1.get(),     // VkPipelineLayout layout;
             renderPass.get(),              // VkRenderPass renderPass;
             1u,                            // uint32_t subpass;
-            DE_NULL,                       // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                // VkPipeline basePipelineHandle;
             0                              // int basePipelineIndex;
         };
 

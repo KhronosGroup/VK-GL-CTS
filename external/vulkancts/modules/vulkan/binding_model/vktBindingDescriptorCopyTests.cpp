@@ -2164,7 +2164,7 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
                 (VkPipelineCreateFlags)0,                       // VkPipelineCreateFlags            flags
                 shaderStageInfo,                                // VkPipelineShaderStageCreateInfo    stage
                 *pipelineLayout,                                // VkPipelineLayout                    layout
-                DE_NULL,                                        // VkPipeline                        basePipelineHandle
+                VK_NULL_HANDLE,                                 // VkPipeline                        basePipelineHandle
                 0                                               // int32_t                            basePipelineIndex
             };
 

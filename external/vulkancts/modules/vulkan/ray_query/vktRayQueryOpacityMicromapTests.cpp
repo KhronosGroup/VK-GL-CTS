@@ -991,7 +991,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
             0u,                                             // VkPipelineCreateFlags flags;
             shaderInfo,                                     // VkPipelineShaderStageCreateInfo stage;
             pipelineLayout.get(),                           // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
         pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);

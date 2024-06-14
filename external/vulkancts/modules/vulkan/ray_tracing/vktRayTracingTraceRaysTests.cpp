@@ -516,7 +516,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
             VkPipelineCreateFlags(0u),                      // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             *computePipelineLayout,                         // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
 
@@ -1210,7 +1210,7 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
             VkPipelineCreateFlags(0u),                      // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             *computePipelineLayout,                         // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
 

@@ -989,7 +989,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest(const VkCommandPool 
             (VkPipelineCreateFlags)0u,                      // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             pipelineLayout,                                 // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
         const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
@@ -1232,7 +1232,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
             0u,                                             // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             pipelineLayout,                                 // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
         pipeline.push_back(
@@ -1512,7 +1512,7 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
             0u,                                             // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             pipelineLayout,                                 // VkPipelineLayout layout;
-            DE_NULL,                                        // VkPipeline basePipelineHandle;
+            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
         pipeline.push_back(
