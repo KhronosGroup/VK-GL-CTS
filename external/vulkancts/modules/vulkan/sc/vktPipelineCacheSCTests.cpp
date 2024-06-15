@@ -189,7 +189,7 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
 
             // creation of a pipeline in main process registers it in pipeline cache
             Move<VkPipeline> graphicsPipeline =
-                createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+                createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
         }
 
         // compute pipeline
@@ -227,7 +227,8 @@ tcu::TestStatus createPipelineCacheTest(Context &context, TestParams testParams)
             computePipelineCreateInfo.pNext = &pipelineID;
 
             // creation of a pipeline in main process registers it in pipeline cache
-            Move<VkPipeline> computePipeline = createComputePipeline(vk, device, DE_NULL, &computePipelineCreateInfo);
+            Move<VkPipeline> computePipeline =
+                createComputePipeline(vk, device, VK_NULL_HANDLE, &computePipelineCreateInfo);
         }
         return tcu::TestStatus::pass("Pass");
     }

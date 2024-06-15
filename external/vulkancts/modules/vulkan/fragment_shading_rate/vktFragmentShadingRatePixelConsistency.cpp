@@ -943,7 +943,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             0                              // int basePipelineIndex;
         };
 
-        pipelinePass0 = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+        pipelinePass0 = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     // Create pipeline for pass 1
@@ -1074,7 +1074,7 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
             0                              // int basePipelineIndex;
         };
 
-        pipelinePass1 = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+        pipelinePass1 = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     // Create command buffer

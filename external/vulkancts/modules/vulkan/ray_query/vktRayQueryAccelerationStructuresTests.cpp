@@ -619,7 +619,7 @@ void GraphicsConfiguration::initConfiguration(Context &context, TestParams &test
         0                                             // int basePipelineIndex;
     };
 
-    pipeline = createGraphicsPipeline(vkd, device, DE_NULL, &graphicsPipelineCreateInfo);
+    pipeline = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
 
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                 // VkStructureType sType;
@@ -840,7 +840,7 @@ void ComputeConfiguration::initConfiguration(Context &context, TestParams &testP
         0,                                              // int32_t basePipelineIndex;
     };
 
-    pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+    pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 void ComputeConfiguration::fillCommandBuffer(
@@ -3302,7 +3302,7 @@ tcu::TestStatus RayQueryASDynamicIndexingTestInstance::iterate(void)
         0,               // int32_t                                basePipelineIndex
     };
 
-    Move<VkPipeline> pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+    Move<VkPipeline> pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     const VkDeviceSize pointerBufferSize = tlasCount * sizeof(VkDeviceAddress);
     const VkBufferCreateInfo pointerBufferCreateInfo =

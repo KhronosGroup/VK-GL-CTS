@@ -280,7 +280,7 @@ tcu::TestStatus SSBOCornerCaseInstance::iterate(void)
         VK_NULL_HANDLE,                                     // VkPipeline basePipelineHandle;
         0,                                                  // int32_t basePipelineIndex;
     };
-    vk::Move<vk::VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+    vk::Move<vk::VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     vk::Move<vk::VkCommandPool> cmdPool(
         createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));

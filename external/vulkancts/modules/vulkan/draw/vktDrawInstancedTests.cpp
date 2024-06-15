@@ -610,7 +610,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
     }
 #endif // CTS_USES_VULKANSC
 
-    m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
+    m_pipeline = vk::createGraphicsPipeline(m_vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 tcu::TestStatus InstancedDrawInstance::iterate()

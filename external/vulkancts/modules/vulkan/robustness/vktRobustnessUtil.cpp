@@ -594,7 +594,7 @@ ComputeEnvironment::ComputeEnvironment(Context &context, const DeviceInterface &
             0u                                              // int32_t basePipelineIndex;
         };
 
-        m_computePipeline = createComputePipeline(vk, m_device, DE_NULL, &computePipelineParams);
+        m_computePipeline = createComputePipeline(vk, m_device, VK_NULL_HANDLE, &computePipelineParams);
     }
 
     // Record commands

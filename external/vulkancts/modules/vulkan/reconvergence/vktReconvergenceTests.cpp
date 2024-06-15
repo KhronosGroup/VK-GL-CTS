@@ -838,7 +838,7 @@ Move<VkPipeline> ReconvergenceTestInstance::createComputePipeline(const VkPipeli
         0u,                // basePipelineIndex
     };
 
-    return vk::createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+    return vk::createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
 }
 
 typedef enum

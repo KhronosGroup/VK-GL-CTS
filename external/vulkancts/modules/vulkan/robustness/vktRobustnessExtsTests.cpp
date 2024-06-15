@@ -2845,7 +2845,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         }
 #endif
 
-        pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+        pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 #ifndef CTS_USES_VULKANSC
     else if (m_data.stage == STAGE_RAYGEN)
@@ -3249,7 +3249,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         }
 #endif
         if (*pipeline == VK_NULL_HANDLE)
-            pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+            pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     const VkImageMemoryBarrier imageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType

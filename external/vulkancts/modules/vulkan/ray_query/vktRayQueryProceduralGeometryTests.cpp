@@ -137,7 +137,7 @@ tcu::TestStatus RayQueryProceduralGeometryTestBase::iterate(void)
         VK_NULL_HANDLE,  // VkPipeline                            basePipelineHandle
         0,               // int32_t                                basePipelineIndex
     };
-    Move<VkPipeline> pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+    Move<VkPipeline> pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     m_cmdPool   = createCommandPool(vkd, device, 0, queueFamilyIndex);
     m_cmdBuffer = allocateCommandBuffer(vkd, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);

@@ -1339,7 +1339,7 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline(
         0,                                                 // int32_t basePipelineIndex;
     };
 
-    return createGraphicsPipeline(*m_device, *m_logicalDevice, DE_NULL, &graphicsPipelineParams);
+    return createGraphicsPipeline(*m_device, *m_logicalDevice, VK_NULL_HANDLE, &graphicsPipelineParams);
 }
 
 void MultiViewRenderTestInstance::readImage(VkImage image, const tcu::PixelBufferAccess &dst)

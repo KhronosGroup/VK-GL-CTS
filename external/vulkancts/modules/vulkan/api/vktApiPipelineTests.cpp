@@ -1123,7 +1123,7 @@ tcu::TestStatus pipelineLayoutLifetimeTest(Context &context, VkPipelineBindPoint
             0                                               // int                                basePipelineIndex
         };
 
-        pipeline = createComputePipeline(vk, device, DE_NULL, &computePipelineCreateInfo);
+        pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &computePipelineCreateInfo);
     }
 
     if (isGraphics)
@@ -1338,7 +1338,7 @@ tcu::TestStatus destroyEarlyTest(Context &context, DestroyPipelineLayoutMode mod
         0,                                                  // int32_t basePipelineIndex;
     };
 
-    const auto pipeline = vk::createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);
+    const auto pipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
 
     // Delete pipeline layout just after creating pipeline - this is what the test is for
     if (DPLM_DESTROY_AFTER_CREATE_COMPUTE_PIPELINES == mode)
@@ -1655,7 +1655,7 @@ tcu::TestStatus pipelineInvalidPointersUnusedStructsTest(Context &context, VkPip
             0                                               // int                                basePipelineIndex
         };
 
-        pipeline = createComputePipeline(vk, device, DE_NULL, &computePipelineCreateInfo);
+        pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &computePipelineCreateInfo);
     }
 
     if (isGraphics)

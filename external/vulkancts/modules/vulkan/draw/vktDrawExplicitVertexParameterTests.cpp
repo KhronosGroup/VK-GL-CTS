@@ -530,7 +530,7 @@ tcu::TestStatus DrawTestInstance::iterate(void)
             pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-        m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+        m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     // Queue draw and read results.

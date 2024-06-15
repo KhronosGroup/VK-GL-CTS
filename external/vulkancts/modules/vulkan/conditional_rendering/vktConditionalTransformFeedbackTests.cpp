@@ -371,7 +371,7 @@ void ConditionalTransformFeedbackDraw::createStreamPipeline(void)
         pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-    m_streamPipeline = vk::createGraphicsPipeline(m_vk, m_context.getDevice(), DE_NULL, &pipelineCreateInfo);
+    m_streamPipeline = vk::createGraphicsPipeline(m_vk, m_context.getDevice(), VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 void ConditionalTransformFeedbackDraw::recordDraw(vk::VkCommandBuffer cmdBuffer, uint32_t index)

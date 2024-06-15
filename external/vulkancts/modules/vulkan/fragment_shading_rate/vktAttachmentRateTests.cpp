@@ -863,7 +863,7 @@ Move<VkPipeline> AttachmentRateInstance::buildGraphicsPipeline(VkDevice device, 
     }
 #endif // CTS_USES_VULKANSC
 
-    return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    return createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 Move<VkPipeline> AttachmentRateInstance::buildComputePipeline(VkDevice device, const vk::DeviceInterface &vk,

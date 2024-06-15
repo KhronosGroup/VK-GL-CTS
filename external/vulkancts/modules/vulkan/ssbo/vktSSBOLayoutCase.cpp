@@ -2452,7 +2452,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
         VK_NULL_HANDLE,                                     // VkPipeline basePipelineHandle;
         0,                                                  // int32_t basePipelineIndex;
     };
-    vk::Move<vk::VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+    vk::Move<vk::VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     m_context.getTestContext().touchWatchdogAndEnableIntervalTimeLimit();
 

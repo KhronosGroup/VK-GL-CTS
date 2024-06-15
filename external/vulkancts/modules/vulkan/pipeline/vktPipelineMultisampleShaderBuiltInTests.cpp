@@ -1474,8 +1474,8 @@ tcu::TestStatus WriteSampleTestInstance::iterate(void)
     auto verificationPipelineCreateInfo         = writePipelineCreateInfo;
     verificationPipelineCreateInfo.stage.module = shaderVerifyModule.getModule();
 
-    auto writePipeline        = vk::createComputePipeline(vkd, device, DE_NULL, &writePipelineCreateInfo);
-    auto verificationPipeline = vk::createComputePipeline(vkd, device, DE_NULL, &verificationPipelineCreateInfo);
+    auto writePipeline        = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &writePipelineCreateInfo);
+    auto verificationPipeline = vk::createComputePipeline(vkd, device, VK_NULL_HANDLE, &verificationPipelineCreateInfo);
 
     // Transition images to the correct layout and buffers at different stages.
     auto storageImgPreClearBarrier =

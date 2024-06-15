@@ -2168,7 +2168,7 @@ tcu::TestStatus DescriptorCommands::run(Context &context)
                 0                                               // int32_t                            basePipelineIndex
             };
 
-            pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineInfo);
+            pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineInfo);
         }
     }
     else

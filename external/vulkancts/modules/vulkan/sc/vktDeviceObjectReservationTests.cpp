@@ -1852,7 +1852,7 @@ public:
         {
             std::vector<Move<VkPipeline>> pipelines;
             for (uint32_t i = 0; i < pipelineCount; ++i)
-                pipelines.emplace_back(createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo));
+                pipelines.emplace_back(createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo));
             return;
         }
 

@@ -300,7 +300,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build(const DeviceInterface &vk, const
         0,                                  // int32_t basePipelineIndex;
     };
 
-    return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+    return createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineInfo);
 }
 
 std::string inputTypeToGLString(const VkPrimitiveTopology &inputType)

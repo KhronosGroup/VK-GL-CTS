@@ -1463,7 +1463,7 @@ struct PipelineCache
                 0u                                              // int32_t                            basePipelineIndex
             };
 
-            Move<VkPipeline> pipeline = createComputePipeline(env.vkd, env.device, DE_NULL, &pipelineInfo);
+            Move<VkPipeline> pipeline = createComputePipeline(env.vkd, env.device, VK_NULL_HANDLE, &pipelineInfo);
         }
 #else
         VkPipelineCacheCreateFlags pipelineCacheCreateFlags =
@@ -1571,7 +1571,7 @@ struct MergedPipelineCache
                 0u                                              // int32_t                            basePipelineIndex
             };
 
-            Move<VkPipeline> pipeline = createComputePipeline(env.vkd, env.device, DE_NULL, &pipelineInfo);
+            Move<VkPipeline> pipeline = createComputePipeline(env.vkd, env.device, VK_NULL_HANDLE, &pipelineInfo);
         }
 
         VkPipelineCacheCreateFlags pipelineCacheCreateFlags =

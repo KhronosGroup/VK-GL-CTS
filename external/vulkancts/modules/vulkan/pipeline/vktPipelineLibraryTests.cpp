@@ -981,7 +981,7 @@ bool PipelineLibraryTestInstance::runTest(RuntimePipelineTreeConfiguration &runt
             graphicsPipelineCreateInfo.flags &= ~VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
         }
 
-        node.pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+        node.pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
 
         if (buildLibrary)
         {
@@ -1614,12 +1614,12 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
             makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT |
                                                   VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT);
         appendStructurePtrToVulkanChain(&partialPipelineCreateInfo[0].pNext, &libraryCreateInfo);
-        vertPipelinePart = createGraphicsPipeline(vk, device, DE_NULL, &partialPipelineCreateInfo[0]);
+        vertPipelinePart = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &partialPipelineCreateInfo[0]);
 
         libraryCreateInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT |
                                   VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT,
         appendStructurePtrToVulkanChain(&partialPipelineCreateInfo[1].pNext, &libraryCreateInfo);
-        fragPipelinePart = createGraphicsPipeline(vk, device, DE_NULL, &partialPipelineCreateInfo[1]);
+        fragPipelinePart = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &partialPipelineCreateInfo[1]);
     }
 
     // create final pipeline out of two parts
@@ -1629,7 +1629,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSet(void)
 
     finalPipelineInfo.layout = *finalPipelineLayout;
     appendStructurePtrToVulkanChain(&finalPipelineInfo.pNext, &linkingInfo);
-    Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, DE_NULL, &finalPipelineInfo);
+    Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &finalPipelineInfo);
 
     vk::beginCommandBuffer(vk, *m_cmdBuffer, 0u);
     {
@@ -1758,7 +1758,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runNullDescriptorSetInMonolithi
     updatePreRasterization(m_context, pipelineCreateInfo, false);
     updatePostRasterization(m_context, pipelineCreateInfo, false);
     updateFragmentOutputInterface(m_context, pipelineCreateInfo);
-    Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     vk::beginCommandBuffer(vk, *m_cmdBuffer, 0u);
     {
@@ -1953,7 +1953,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSet
     {
         libraryCreateInfo.flags = GRAPHICS_PIPELINE_LIBRARY_FLAGS[i];
         appendStructurePtrToVulkanChain(&partialPipelineCreateInfo[i].pNext, &libraryCreateInfo);
-        pipelineParts.emplace_back(createGraphicsPipeline(vk, device, DE_NULL, &partialPipelineCreateInfo[i]));
+        pipelineParts.emplace_back(createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &partialPipelineCreateInfo[i]));
         rawParts[i] = *pipelineParts[i];
     }
 
@@ -1965,7 +1965,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runIndependentPipelineLayoutSet
     finalPipelineInfo.layout = *allLayouts;
 
     appendStructurePtrToVulkanChain(&finalPipelineInfo.pNext, &linkingInfo);
-    Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, DE_NULL, &finalPipelineInfo);
+    Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &finalPipelineInfo);
 
     vk::beginCommandBuffer(vk, *m_cmdBuffer, 0u);
     {
@@ -2116,7 +2116,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runCompareLinkTimes(void)
 
         auto &partData            = pipelinePartData[i];
         auto timeStart            = std::chrono::high_resolution_clock::now();
-        partData.pipelineHandle   = createGraphicsPipeline(vk, device, DE_NULL, partialPipelineCreateInfo + i);
+        partData.pipelineHandle   = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, partialPipelineCreateInfo + i);
         partData.creationDuration = std::chrono::high_resolution_clock::now() - timeStart;
     }
 
@@ -2149,7 +2149,7 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runCompareLinkTimes(void)
 
         // link pipeline without the optimised bit, and record the time taken to link it
         auto timeStart            = std::chrono::high_resolution_clock::now();
-        Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, DE_NULL, &finalPipelineInfo);
+        Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &finalPipelineInfo);
         const auto linkingTime    = std::chrono::high_resolution_clock::now() - timeStart;
         const auto creationTime   = preRasterizationData.creationDuration + fragmentStateData.creationDuration;
 
@@ -2744,7 +2744,7 @@ tcu::TestStatus PipelineLibraryShaderModuleInfoCompInstance::iterate(void)
         0,                                              // int32_t basePipelineIndex;
     };
 
-    const auto pipeline = createComputePipeline(m_vkd, m_device, DE_NULL, &pipelineCreateInfo);
+    const auto pipeline = createComputePipeline(m_vkd, m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
 
     beginCommandBuffer(m_vkd, m_cmdBuffer);
     m_vkd.cmdBindDescriptorSets(m_cmdBuffer, bindPoint, pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u,
@@ -3059,7 +3059,7 @@ tcu::TestStatus NullRenderingCreateInfoInstance::iterate(void)
         preRasterShaderPipelineInfo.stageCount = 1u;
         preRasterShaderPipelineInfo.pStages    = &vertShaderInfo;
 
-        preRasterShaderLib = createGraphicsPipeline(ctx.vkd, ctx.device, DE_NULL, &preRasterShaderPipelineInfo);
+        preRasterShaderLib = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &preRasterShaderPipelineInfo);
     }
 
     // Fragment shader stage library.
@@ -3078,7 +3078,7 @@ tcu::TestStatus NullRenderingCreateInfoInstance::iterate(void)
         fragShaderPipelineInfo.stageCount = 1u;
         fragShaderPipelineInfo.pStages    = &fragShaderInfo;
 
-        fragShaderLib = createGraphicsPipeline(ctx.vkd, ctx.device, DE_NULL, &fragShaderPipelineInfo);
+        fragShaderLib = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &fragShaderPipelineInfo);
     }
 
     // Fragment output library.
@@ -3092,7 +3092,7 @@ tcu::TestStatus NullRenderingCreateInfoInstance::iterate(void)
         fragOutputPipelineInfo.pColorBlendState             = &colorBlendStateInfo;
         fragOutputPipelineInfo.pMultisampleState            = &multisampleStateInfo;
 
-        fragOutputLib = createGraphicsPipeline(ctx.vkd, ctx.device, DE_NULL, &fragOutputPipelineInfo);
+        fragOutputLib = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &fragOutputPipelineInfo);
     }
 
     // Linked pipeline.
@@ -3111,7 +3111,7 @@ tcu::TestStatus NullRenderingCreateInfoInstance::iterate(void)
     linkedPipelineInfo.flags                        = linkFlags;
     linkedPipelineInfo.layout                       = pipelineLayout.get();
 
-    const auto pipeline = createGraphicsPipeline(ctx.vkd, ctx.device, DE_NULL, &linkedPipelineInfo);
+    const auto pipeline = createGraphicsPipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &linkedPipelineInfo);
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
     const auto cmdBuffer = cmd.cmdBuffer.get();

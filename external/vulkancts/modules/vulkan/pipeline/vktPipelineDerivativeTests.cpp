@@ -106,7 +106,7 @@ tcu::TestStatus testComputeDerivativeByHandle(Context &context, bool useMaintena
     DE_UNREF(useMaintenance5);
 #endif // CTS_USES_VULKANSC
 
-    Move<VkPipeline> basePipeline = createComputePipeline(vk, vkDevice, DE_NULL, &cpci);
+    Move<VkPipeline> basePipeline = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &cpci);
 
     // Create second (identical) pipeline based on first
     cpci.flags              = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
@@ -120,7 +120,7 @@ tcu::TestStatus testComputeDerivativeByHandle(Context &context, bool useMaintena
     }
 #endif // CTS_USES_VULKANSC
 
-    Move<VkPipeline> derivedPipeline = createComputePipeline(vk, vkDevice, DE_NULL, &cpci);
+    Move<VkPipeline> derivedPipeline = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &cpci);
 
     // If we got here without crashing, success.
     return tcu::TestStatus::pass("OK");

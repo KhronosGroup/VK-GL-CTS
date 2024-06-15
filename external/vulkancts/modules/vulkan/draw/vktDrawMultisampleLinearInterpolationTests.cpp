@@ -311,7 +311,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate(void)
                 pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-            pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+            pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
         }
 
         // Draw quad and read results.

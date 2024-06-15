@@ -1392,7 +1392,7 @@ tcu::TestStatus T64bitCompareTestInstance<T>::iterate(void)
             VK_NULL_HANDLE,  // VkPipeline                         basePipelineHandle;
             0,               // int32_t                            basePipelineIndex;
         };
-        auto computePipeline = vk::createComputePipeline(vkdi, device, DE_NULL, &computeCreateInfo);
+        auto computePipeline = vk::createComputePipeline(vkdi, device, VK_NULL_HANDLE, &computeCreateInfo);
 
         // Run the shader.
         vk::beginCommandBuffer(vkdi, *cmdBuffer);
@@ -1570,7 +1570,7 @@ tcu::TestStatus T64bitCompareTestInstance<T>::iterate(void)
             VK_NULL_HANDLE,         // VkPipeline basePipelineHandle;
             0u,                     // int32_t basePipelineIndex;
         };
-        auto graphicsPipeline = vk::createGraphicsPipeline(vkdi, device, DE_NULL, &graphicsCreateInfo);
+        auto graphicsPipeline = vk::createGraphicsPipeline(vkdi, device, VK_NULL_HANDLE, &graphicsCreateInfo);
 
         const vk::VkFramebufferCreateInfo frameBufferCreateInfo = {
             vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;

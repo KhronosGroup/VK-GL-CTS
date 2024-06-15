@@ -285,7 +285,7 @@ tcu::TestStatus DynamicIndexingInstance::iterate(void)
         0,                                              // int32_t basePipelineIndex;
     };
 
-    const auto pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);
+    const auto pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
 
     // Create and update descriptor set.
     DescriptorPoolBuilder poolBuilder;

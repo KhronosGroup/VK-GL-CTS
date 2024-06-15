@@ -335,7 +335,7 @@ Move<VkPipeline> DescriptorCombinationTestInstance::createBasicPipeline(VkPipeli
         0,              // int32_t                                basePipelineIndex
     };
 
-    return createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    return createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 class DescriptorCombinationTestCase : public TestCase

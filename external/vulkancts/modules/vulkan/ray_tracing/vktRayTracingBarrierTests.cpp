@@ -1011,7 +1011,7 @@ void createComputePipeline(const DeviceInterface &vkd, VkDevice device, Context 
     };
 
     // Compute pipeline.
-    stageData.pipeline = createComputePipeline(vkd, device, DE_NULL, &createInfo);
+    stageData.pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &createInfo);
 }
 
 // Auxiliar function to record commands using the compute pipeline.

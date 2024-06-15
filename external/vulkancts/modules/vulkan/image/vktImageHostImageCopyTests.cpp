@@ -716,7 +716,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             DE_NULL,                                            // basePipelineHandle
             0,                                                  // basePipelineIndex
         };
-        computePipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+        computePipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
 
     de::MovePtr<BufferWithMemory> colorOutputBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(

@@ -173,9 +173,9 @@ tcu::TestStatus EntryPointsTest::iterate(void)
         0,
     };
 
-    Unique<VkPipeline> pipelineB(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+    Unique<VkPipeline> pipelineB(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
     pipelineCreateInfo.stage = pipelineAShaderStageParams;
-    Unique<VkPipeline> pipelineA(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+    Unique<VkPipeline> pipelineA(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     const VkMemoryBarrier hostWriteBarrier(makeMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT));
     const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));

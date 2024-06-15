@@ -509,7 +509,7 @@ Move<VkPipeline> makeGraphicsPipeline(
         0                                     // int32_t                                          basePipelineIndex;
     };
 
-    return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    return createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 Move<VkPipeline> makeGraphicsPipeline(
@@ -3910,7 +3910,8 @@ Move<VkPipeline> makeComputePipeline(Context &context, const VkPipelineLayout pi
     };
     static_cast<void>(basePipelineHandle);
 
-    return createComputePipeline(context.getDeviceInterface(), context.getDevice(), DE_NULL, &pipelineCreateInfo);
+    return createComputePipeline(context.getDeviceInterface(), context.getDevice(), VK_NULL_HANDLE,
+                                 &pipelineCreateInfo);
 }
 
 #ifndef CTS_USES_VULKANSC

@@ -1830,7 +1830,7 @@ std::vector<T> rayQueryComputeTestSetup(const vk::DeviceInterface &vkd, const vk
         VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
-    Move<VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+    Move<VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
     const Unique<VkCommandBuffer> cmdBuffer(
         allocateCommandBuffer(vk, device, *state.cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -2205,7 +2205,7 @@ static std::vector<T> rayQueryGraphicsTestSetup(const DeviceInterface &vkd, cons
         0                                             // int basePipelineIndex;
     };
 
-    pipeline = createGraphicsPipeline(vkd, device, DE_NULL, &graphicsPipelineCreateInfo);
+    pipeline = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
 
     const VkBufferCreateInfo vertexBufferParams = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                                 // VkStructureType sType;

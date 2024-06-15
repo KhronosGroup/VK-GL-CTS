@@ -1030,7 +1030,7 @@ Move<VkPipeline> buildGraphicsPipeline(const DeviceInterface &vk, const VkDevice
         pipelineCreateInfo.flags       = 0;
     }
 
-    return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    return createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 class FragmentDensityMapTest : public vkt::TestCase

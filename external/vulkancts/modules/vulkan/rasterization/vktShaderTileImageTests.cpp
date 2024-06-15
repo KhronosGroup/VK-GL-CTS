@@ -1161,7 +1161,7 @@ void ShaderTileImageTestInstance::generateComputePipeline()
         0u,                       // basePipelineIndex
     };
 
-    m_computePipeline = createComputePipeline(m_vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+    m_computePipeline = createComputePipeline(m_vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
 
     VkDescriptorPoolCreateFlags poolCreateFlags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
@@ -1423,7 +1423,7 @@ Move<VkPipeline> ShaderTileImageTestInstance::generateGraphicsPipeline(bool disa
         0,                               // int32_t basePipelineIndex;
     };
 
-    return createGraphicsPipeline(m_vk, device, DE_NULL, &graphicsPipelineInfo);
+    return createGraphicsPipeline(m_vk, device, VK_NULL_HANDLE, &graphicsPipelineInfo);
 }
 
 void ShaderTileImageTestInstance::generateAttachments()

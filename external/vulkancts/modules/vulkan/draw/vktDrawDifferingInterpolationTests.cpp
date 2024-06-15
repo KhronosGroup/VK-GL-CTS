@@ -307,7 +307,7 @@ tcu::TestStatus DrawTestInstance::iterate(void)
                 pipelineCreateInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-            pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+            pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
         }
 
         const VkRect2D renderArea = makeRect2D(WIDTH, HEIGHT);

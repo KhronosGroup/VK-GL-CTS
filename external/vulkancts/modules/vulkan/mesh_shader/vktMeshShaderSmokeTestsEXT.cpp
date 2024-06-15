@@ -1811,7 +1811,7 @@ tcu::TestStatus SharedFragLibraryInstance::iterate(void)
     fragOutputInfo.flags                        = libCompileFlags;
     fragOutputInfo.pNext                        = &fragOutputLibInfo;
 
-    const auto fragOutputLib = createGraphicsPipeline(vkd, device, DE_NULL, &fragOutputInfo);
+    const auto fragOutputLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &fragOutputInfo);
 
     // Fragment shader lib (shared among the classic and mesh pipelines).
     const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = initVulkanStructure();
@@ -1838,7 +1838,7 @@ tcu::TestStatus SharedFragLibraryInstance::iterate(void)
     fragShaderInfo.flags                        = libCompileFlags;
     fragShaderInfo.pNext                        = &fragShaderLibInfo;
 
-    const auto fragShaderLib = createGraphicsPipeline(vkd, device, DE_NULL, &fragShaderInfo);
+    const auto fragShaderLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &fragShaderInfo);
 
     // Vertex input state (common, but should be unused by the mesh shading pipeline).
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
@@ -1853,7 +1853,7 @@ tcu::TestStatus SharedFragLibraryInstance::iterate(void)
     vertexInputInfo.flags                        = libCompileFlags;
     vertexInputInfo.pNext                        = &vertexInputLibInfo;
 
-    const auto vertexInputLib = createGraphicsPipeline(vkd, device, DE_NULL, &vertexInputInfo);
+    const auto vertexInputLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &vertexInputInfo);
 
     // Pre-rasterization shader state: common pieces.
     const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
@@ -1920,10 +1920,10 @@ tcu::TestStatus SharedFragLibraryInstance::iterate(void)
 
     // Pre-rasterization shader libs.
     preRastShaderInfo.pStages    = &vertShaderStageCreateInfo;
-    const auto preRastClassicLib = createGraphicsPipeline(vkd, device, DE_NULL, &preRastShaderInfo);
+    const auto preRastClassicLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &preRastShaderInfo);
 
     preRastShaderInfo.pStages = &meshShaderStageCreateInfo;
-    const auto preRastMeshLib = createGraphicsPipeline(vkd, device, DE_NULL, &preRastShaderInfo);
+    const auto preRastMeshLib = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &preRastShaderInfo);
 
     // Pipelines.
     const std::vector<VkPipeline> classicLibs{vertexInputLib.get(), preRastClassicLib.get(), fragShaderLib.get(),
@@ -1955,8 +1955,8 @@ tcu::TestStatus SharedFragLibraryInstance::iterate(void)
     meshPipelineCreateInfo.layout                       = pipelineLayout.get();
     meshPipelineCreateInfo.pNext                        = &meshLinkInfo;
 
-    const auto classicPipeline = createGraphicsPipeline(vkd, device, DE_NULL, &classicPipelineCreateInfo);
-    const auto meshPipeline    = createGraphicsPipeline(vkd, device, DE_NULL, &meshPipelineCreateInfo);
+    const auto classicPipeline = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &classicPipelineCreateInfo);
+    const auto meshPipeline    = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &meshPipelineCreateInfo);
 
     // Record commands with both pipelines.
     const auto cmdPool      = makeCommandPool(vkd, device, queueIndex);

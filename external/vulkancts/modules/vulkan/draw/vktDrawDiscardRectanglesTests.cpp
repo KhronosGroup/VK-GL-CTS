@@ -342,7 +342,7 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface &vk, const VkDevice 
         graphicsPipelineInfo.pNext = &renderingCreateInfo;
 #endif // CTS_USES_VULKANSC
 
-    return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+    return createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineInfo);
 }
 
 void generateDiscardRectangles(const UVec2 &renderSize, uint32_t numRect, std::vector<VkRect2D> &rectangles)

@@ -992,7 +992,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest(const VkCommandPool 
             VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
-        const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+        const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
         const Unique<VkCommandBuffer> cmdBuffer(
             allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -1235,8 +1235,8 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
             VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
-        pipeline.push_back(
-            VkPipelineSp(new Unique<VkPipeline>(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo))));
+        pipeline.push_back(VkPipelineSp(
+            new Unique<VkPipeline>(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo))));
     }
 
     const Unique<VkCommandBuffer> primaryCmdBuffer(
@@ -1515,8 +1515,8 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
             VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
             0,                                              // int32_t basePipelineIndex;
         };
-        pipeline.push_back(
-            VkPipelineSp(new Unique<VkPipeline>(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo))));
+        pipeline.push_back(VkPipelineSp(
+            new Unique<VkPipeline>(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo))));
     }
 
     const Unique<VkCommandBuffer> primaryCmdBuffer(
@@ -2012,7 +2012,7 @@ void VertexShaderTestInstance::createPipeline(void)
     pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
     pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
     pipelineCreateInfo.addState(vf_info);
-    m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 tcu::TestStatus VertexShaderTestInstance::executeTest(void)
@@ -2675,7 +2675,7 @@ void GeometryShaderTestInstance::createPipeline(void)
     pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState(false));
     pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
     pipelineCreateInfo.addState(vf_info);
-    m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 tcu::TestStatus GeometryShaderTestInstance::executeTest(void)
@@ -3312,7 +3312,7 @@ void TessellationShaderTestInstance::createPipeline(void)
     pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
     pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
     pipelineCreateInfo.addState(vf_info);
-    m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 tcu::TestStatus TessellationShaderTestInstance::executeTest(void)
@@ -4451,7 +4451,7 @@ void VertexShaderMultipleQueryTestInstance::createPipeline(void)
     pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
     pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
     pipelineCreateInfo.addState(vf_info);
-    m_pipeline = createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+    m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
 tcu::TestStatus VertexShaderMultipleQueryTestInstance::executeTest(void)

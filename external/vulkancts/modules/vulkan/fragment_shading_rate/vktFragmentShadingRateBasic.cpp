@@ -1630,7 +1630,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
         (vk::VkPipeline)0,  // basePipelineHandle
         0u,                 // basePipelineIndex
     };
-    Move<VkPipeline> computePipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+    Move<VkPipeline> computePipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
 
     for (uint32_t modeIdx = 0; modeIdx < ATTACHMENT_MODE_COUNT; ++modeIdx)
     {

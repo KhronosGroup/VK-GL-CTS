@@ -2889,7 +2889,7 @@ void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, vo
             0u,                                             // int32_t basePipelineIndex;
         };
 
-        computePipeline = createComputePipeline(vk, vkDevice, DE_NULL, &computePipelineParams);
+        computePipeline = createComputePipeline(vk, vkDevice, VK_NULL_HANDLE, &computePipelineParams);
     }
 
     const int maxValuesPerInvocation = m_context.getDeviceProperties().limits.maxComputeWorkGroupSize[0];

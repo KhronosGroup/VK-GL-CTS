@@ -5202,7 +5202,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
             pipelineCreateInfo.flags       = 0;
         }
 
-        m_pipeline = createComputePipeline(vk, *m_device, DE_NULL, &pipelineCreateInfo);
+        m_pipeline = createComputePipeline(vk, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
     }
     else if (m_params.isRayTracing())
     {

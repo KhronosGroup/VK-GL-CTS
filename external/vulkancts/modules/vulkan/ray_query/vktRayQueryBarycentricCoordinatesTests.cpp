@@ -331,7 +331,7 @@ tcu::TestStatus BarycentricCoordinatesInstance::iterate(void)
         VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
         0,                                              // int32_t basePipelineIndex;
     };
-    const auto pipeline = createComputePipeline(vkd, device, DE_NULL, &pipelineInfo);
+    const auto pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineInfo);
 
     // Dispatch work with ray queries.
     vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get());

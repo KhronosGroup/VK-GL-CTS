@@ -593,7 +593,7 @@ tcu::TestStatus BindPointInstance::iterate(void)
             0u,                                             // int32_t basePipelineIndex;
         };
 
-        computePipeline = createComputePipeline(vkd, device, DE_NULL, &computePipelineCreateInfo);
+        computePipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &computePipelineCreateInfo);
     }
 
     // Ray tracing pipeline and shader binding tables.

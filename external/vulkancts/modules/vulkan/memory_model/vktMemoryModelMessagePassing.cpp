@@ -1657,7 +1657,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             (vk::VkPipeline)0, // basePipelineHandle
             0u,                // basePipelineIndex
         };
-        pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+        pipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo, NULL);
     }
     else
     {
@@ -1818,7 +1818,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
             0                              // int basePipelineIndex;
         };
 
-        pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
+        pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &graphicsPipelineCreateInfo);
     }
 
     const VkQueue queue             = m_context.getUniversalQueue();

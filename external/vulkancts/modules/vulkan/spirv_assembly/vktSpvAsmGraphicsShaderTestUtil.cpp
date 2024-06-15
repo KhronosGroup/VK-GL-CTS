@@ -4232,7 +4232,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         0u,                      // int32_t basePipelineIndex;
     };
 
-    const Unique<VkPipeline> pipeline(createGraphicsPipeline(vk, device, DE_NULL, &pipelineParams));
+    const Unique<VkPipeline> pipeline(createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineParams));
 
     if (needInterface)
     {

@@ -480,7 +480,7 @@ tcu::TestStatus AhbTestInstance::iterate(void)
     for (uint32_t i = 0; i < m_data.m_numLayers; i++)
     {
         pipelineCreateInfo.subpass = i;
-        pipelines.push_back(createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+        pipelines.push_back(createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
     }
 
     beginCommandBuffer(vk, *cmdBuffer, 0u);

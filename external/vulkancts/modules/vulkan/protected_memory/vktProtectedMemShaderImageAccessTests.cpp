@@ -793,7 +793,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
         }
 #endif // CTS_USES_VULKANSC
 
-        vk::Unique<vk::VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+        vk::Unique<vk::VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
         const vk::Unique<vk::VkFence> fence(vk::createFence(vk, device));
         vk::Unique<vk::VkCommandBuffer> cmdBuffer(
