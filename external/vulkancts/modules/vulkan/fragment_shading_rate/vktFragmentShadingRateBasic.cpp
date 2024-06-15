@@ -1800,7 +1800,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                     w.descriptorType = bindings[0].descriptorType;
                     vk.updateDescriptorSets(device, 1, &w, 0, NULL);
 
-                    imageInfo        = makeDescriptorImageInfo(DE_NULL, *cbImageView, VK_IMAGE_LAYOUT_GENERAL);
+                    imageInfo        = makeDescriptorImageInfo(VK_NULL_HANDLE, *cbImageView, VK_IMAGE_LAYOUT_GENERAL);
                     w.dstBinding     = 1;
                     w.descriptorType = bindings[1].descriptorType;
                     vk.updateDescriptorSets(device, 1, &w, 0, NULL);
@@ -1827,13 +1827,13 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                         w.descriptorType = bindings[5].descriptorType;
                         vk.updateDescriptorSets(device, 1, &w, 0, NULL);
 
-                        imageInfo        = makeDescriptorImageInfo(DE_NULL, *dImageView, VK_IMAGE_LAYOUT_GENERAL);
-                        w.dstBinding     = 6;
+                        imageInfo    = makeDescriptorImageInfo(VK_NULL_HANDLE, *dImageView, VK_IMAGE_LAYOUT_GENERAL);
+                        w.dstBinding = 6;
                         w.descriptorType = bindings[6].descriptorType;
                         vk.updateDescriptorSets(device, 1, &w, 0, NULL);
 
-                        imageInfo        = makeDescriptorImageInfo(DE_NULL, *sImageView, VK_IMAGE_LAYOUT_GENERAL);
-                        w.dstBinding     = 7;
+                        imageInfo    = makeDescriptorImageInfo(VK_NULL_HANDLE, *sImageView, VK_IMAGE_LAYOUT_GENERAL);
+                        w.dstBinding = 7;
                         w.descriptorType = bindings[7].descriptorType;
                         vk.updateDescriptorSets(device, 1, &w, 0, NULL);
                     }

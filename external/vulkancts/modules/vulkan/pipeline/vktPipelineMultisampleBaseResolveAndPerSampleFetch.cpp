@@ -582,7 +582,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate(void)
 
     {
         const VkDescriptorImageInfo descImageInfo =
-            makeDescriptorImageInfo(DE_NULL, imageViews[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, imageViews[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         const VkDescriptorBufferInfo descBufferInfo = makeDescriptorBufferInfo(**bufferSampleID, 0u, sizeof(int32_t));
 
         DescriptorSetUpdateBuilder()

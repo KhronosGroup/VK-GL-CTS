@@ -1520,7 +1520,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate(void)
         imageViewCreateInfo.image = **images[i];
         imageViews[i]             = createImageView(vk, device, &imageViewCreateInfo, NULL);
 
-        imageDescriptors[i] = makeDescriptorImageInfo(DE_NULL, *imageViews[i], VK_IMAGE_LAYOUT_GENERAL);
+        imageDescriptors[i] = makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViews[i], VK_IMAGE_LAYOUT_GENERAL);
     }
 
     vk::DescriptorSetLayoutBuilder layoutBuilder;

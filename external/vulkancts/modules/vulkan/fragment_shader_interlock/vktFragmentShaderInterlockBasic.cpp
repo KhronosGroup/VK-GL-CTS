@@ -477,7 +477,7 @@ tcu::TestStatus FSITestInstance::iterate(void)
     imageViewCreateInfo.image = **image;
     imageView                 = createImageView(vk, device, &imageViewCreateInfo, NULL);
 
-    VkDescriptorImageInfo imageInfo   = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+    VkDescriptorImageInfo imageInfo   = makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
     VkDescriptorBufferInfo bufferInfo = makeDescriptorBufferInfo(**buffer, 0, bufferSize);
 
     VkWriteDescriptorSet w = {

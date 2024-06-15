@@ -958,7 +958,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate(void)
     imageViewCreateInfo.image = **image;
     imageView                 = createImageView(vk, device, &imageViewCreateInfo, NULL);
 
-    VkDescriptorImageInfo imageInfo   = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+    VkDescriptorImageInfo imageInfo   = makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
     VkDescriptorBufferInfo bufferInfo = makeDescriptorBufferInfo(**buffers[0], 0, align);
 
     VkWriteDescriptorSet w = {

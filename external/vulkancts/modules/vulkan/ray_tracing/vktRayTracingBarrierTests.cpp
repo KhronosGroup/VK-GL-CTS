@@ -940,7 +940,7 @@ void updateDescriptorSet(const DeviceInterface &vkd, VkDevice device, VkCommandB
     }
     else if (resourceType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
     {
-        const auto descriptorImageInfo = makeDescriptorImageInfo(DE_NULL, resourceImgView, layout);
+        const auto descriptorImageInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, resourceImgView, layout);
         updateBuilder.writeSingle(stageData.descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
                                   resourceType, &descriptorImageInfo);
     }

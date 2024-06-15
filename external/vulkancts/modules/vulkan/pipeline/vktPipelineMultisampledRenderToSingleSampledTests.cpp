@@ -2127,7 +2127,7 @@ void setupVerifyDescriptorSetAndPipeline(Context &context, const TestParams &par
     const VkDescriptorImageInfo stencilImageInfo = makeDescriptorImageInfo(
         DE_NULL, *wd.getResolvedStencilOnlyImageView(params), VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
     const VkDescriptorImageInfo verifyImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *wd.verify.view, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.verify.view, VK_IMAGE_LAYOUT_GENERAL);
 
     DescriptorSetUpdateBuilder builder;
 
@@ -2209,9 +2209,9 @@ void dispatchVerifyConstantColor(Context &context, TestObjects &testObjects, con
 
     const VkDescriptorBufferInfo resultBufferInfo =
         makeDescriptorBufferInfo(*verificationBuffer, 0ull, sizeof(VerificationResults));
-    const VkDescriptorImageInfo imageInfo = makeDescriptorImageInfo(DE_NULL, *imageView, layout);
+    const VkDescriptorImageInfo imageInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, layout);
     const VkDescriptorImageInfo verifyImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *verifyImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *verifyImageView, VK_IMAGE_LAYOUT_GENERAL);
 
     DescriptorSetUpdateBuilder builder;
 
@@ -4813,7 +4813,7 @@ void drawInputAttachments(Context &context, const TestParams &params, WorkingDat
         makeDescriptorSet(vk, device, *testObjects.descriptorPools.back(), *descriptorSetLayout));
 
     const VkDescriptorImageInfo color1Info =
-        makeDescriptorImageInfo(DE_NULL, *wd.floatColor1.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatColor1.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     const VkDescriptorImageInfo depthInfo = makeDescriptorImageInfo(
         DE_NULL, isDepthFormat(params.depthStencilFormat) ? *wd.depthOnlyImageView : *wd.stencilOnlyImageView,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

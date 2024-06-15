@@ -840,7 +840,7 @@ tcu::TestStatus CopyImageToSSBOTestInstance::iterate(void)
     // Set the bindings
 
     const VkDescriptorImageInfo imageDescriptorInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*outputBuffer, 0ull, bufferSizeBytes);
 
     DescriptorSetUpdateBuilder()
@@ -1045,7 +1045,7 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate(void)
     // Set the bindings
 
     const VkDescriptorImageInfo imageDescriptorInfo =
-        makeDescriptorImageInfo(DE_NULL, imageWithBuffer.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, imageWithBuffer.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*inputBuffer, 0ull, bufferSizeBytes);
 
     DescriptorSetUpdateBuilder()
@@ -2233,7 +2233,7 @@ tcu::TestStatus ImageAtomicOpTestInstance::iterate(void)
     // Set the bindings
 
     const VkDescriptorImageInfo imageDescriptorInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorBufferInfo bufferDescriptorInfo =
         makeDescriptorBufferInfo(*inputBuffer, 0ull, inputBufferSizeBytes);
 
@@ -2467,7 +2467,7 @@ tcu::TestStatus ImageBarrierTestInstance::iterate(void)
     const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
     const VkDescriptorImageInfo imageDescriptorInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorBufferInfo outputBufferDescriptorInfo =
         makeDescriptorBufferInfo(*outputBuffer, 0ull, outputBufferSizeBytes);
     const VkDescriptorBufferInfo uniformBufferDescriptorInfo =

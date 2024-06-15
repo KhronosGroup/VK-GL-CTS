@@ -1777,7 +1777,7 @@ tcu::TestStatus testSecondaryCmdBuffer(Context &context, const TestParams params
     zeroBuffer(vk, device, *colorBufferAlloc, colorBufferSize);
 
     const VkDescriptorImageInfo imageDescriptorInfo =
-        makeDescriptorImageInfo(DE_NULL, *offscreenImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *offscreenImageView, VK_IMAGE_LAYOUT_GENERAL);
 
     DescriptorSetUpdateBuilder()
         .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),

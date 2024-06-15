@@ -551,7 +551,7 @@ void MemoryQualifierInstanceImage::prepareDescriptors(void)
 
     // Set the bindings
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     DescriptorSetUpdateBuilder()
         .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),

@@ -405,7 +405,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
         {
             const VkDescriptorSet descriptorSet = **allDescriptorSets[layerNdx];
             const VkDescriptorImageInfo descriptorMultiImageInfo =
-                makeDescriptorImageInfo(DE_NULL, **allMultisampledImageViews[layerNdx], VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, **allMultisampledImageViews[layerNdx], VK_IMAGE_LAYOUT_GENERAL);
             const VkDescriptorBufferInfo descriptorConstantsBufferInfo =
                 makeDescriptorBufferInfo(constantsBuffer->get(), layerNdx * bufferChunkSize, bufferChunkSize);
 
@@ -450,9 +450,9 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
         {
             const VkDescriptorSet descriptorSet = **allDescriptorSets[layerNdx];
             const VkDescriptorImageInfo descriptorMultiImageInfo =
-                makeDescriptorImageInfo(DE_NULL, **allMultisampledImageViews[layerNdx], VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, **allMultisampledImageViews[layerNdx], VK_IMAGE_LAYOUT_GENERAL);
             const VkDescriptorImageInfo descriptorChecksumImageInfo =
-                makeDescriptorImageInfo(DE_NULL, **allChecksumImageViews[layerNdx], VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, **allChecksumImageViews[layerNdx], VK_IMAGE_LAYOUT_GENERAL);
             const VkDescriptorBufferInfo descriptorConstantsBufferInfo =
                 makeDescriptorBufferInfo(constantsBuffer->get(), layerNdx * bufferChunkSize, bufferChunkSize);
 

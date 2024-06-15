@@ -564,7 +564,7 @@ void GraphicsAttachmentsTestInstance::transcode(std::vector<uint8_t> &srcData, s
             .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, SINGLE_LAYER));
     const Move<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
     const VkDescriptorImageInfo descriptorSrcImageInfo(
-        makeDescriptorImageInfo(DE_NULL, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
 
     const VkExtent2D renderSize(makeExtent2D(m_parameters.size[0], m_parameters.size[1]));
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
@@ -867,7 +867,7 @@ void GraphicsTextureTestInstance::transcode(std::vector<uint8_t> &srcData, std::
     const VkDescriptorImageInfo descriptorSrcImage(
         makeDescriptorImageInfo(*srcSampler, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
     const VkDescriptorImageInfo descriptorDstImage(
-        makeDescriptorImageInfo(DE_NULL, *dstImageView, VK_IMAGE_LAYOUT_GENERAL));
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *dstImageView, VK_IMAGE_LAYOUT_GENERAL));
 
     const VkExtent2D renderSize(makeExtent2D(m_parameters.size[0], m_parameters.size[1]));
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));

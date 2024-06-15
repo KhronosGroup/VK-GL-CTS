@@ -584,7 +584,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
         new BufferWithMemory(vkd, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     // create indirect command buffer and fill it with parameter values
     de::MovePtr<BufferWithMemory> indirectBuffer;
@@ -1266,7 +1266,7 @@ TestStatus TraceRaysIndirect2Instance::iterate(void)
     Allocation &resultBufferAllocation = resultBuffer->getAllocation();
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     // create indirect command buffer and fill it with parameter values
     const VkDeviceSize bufferSize = sizeof(VkTraceRaysIndirectCommand2KHR);

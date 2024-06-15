@@ -2528,7 +2528,7 @@ void SeparateChannelsTestInstance::setup(void)
     if (!isDSFormat)
     {
         VkDescriptorImageInfo descInputAttachment =
-            makeDescriptorImageInfo(DE_NULL, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
 
         DescriptorSetUpdateBuilder()
             .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
@@ -3283,7 +3283,7 @@ void SingleAttachmentTestInstance::setup(void)
 #endif // CTS_USES_VULKANSC
 
     // Update descriptor set information.
-    VkDescriptorImageInfo descIOAttachment = makeDescriptorImageInfo(DE_NULL, *m_imageViewInput, ioImageLayout);
+    VkDescriptorImageInfo descIOAttachment = makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageViewInput, ioImageLayout);
     VkDescriptorImageInfo descImageSampler =
         makeDescriptorImageInfo(*m_sampler, *m_imageViewInput, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 

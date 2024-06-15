@@ -193,9 +193,9 @@ tcu::TestStatus MisalignedCubeTestInstance::iterate(void)
             .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
     Move<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
     const VkDescriptorImageInfo descriptorImageInfo0 =
-        makeDescriptorImageInfo(DE_NULL, *imageView0, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView0, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorImageInfo descriptorImageInfo1 =
-        makeDescriptorImageInfo(DE_NULL, *imageView1, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView1, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorBufferInfo descriptorBufferInfo =
         makeDescriptorBufferInfo(resultBuffer->get(), 0ull, resultBufferSizeBytes);
 

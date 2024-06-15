@@ -1436,9 +1436,9 @@ tcu::TestStatus WriteSampleTestInstance::iterate(void)
 
     // Update descriptor set using the images.
     const auto storageImgDescriptorInfo =
-        vk::makeDescriptorImageInfo(DE_NULL, storageImgViewPtr.get(), vk::VK_IMAGE_LAYOUT_GENERAL);
+        vk::makeDescriptorImageInfo(VK_NULL_HANDLE, storageImgViewPtr.get(), vk::VK_IMAGE_LAYOUT_GENERAL);
     const auto verificationImgDescriptorInfo =
-        vk::makeDescriptorImageInfo(DE_NULL, verificationImgViewPtr.get(), vk::VK_IMAGE_LAYOUT_GENERAL);
+        vk::makeDescriptorImageInfo(VK_NULL_HANDLE, verificationImgViewPtr.get(), vk::VK_IMAGE_LAYOUT_GENERAL);
 
     vk::DescriptorSetUpdateBuilder updateBuilder;
     updateBuilder.writeSingle(descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u),
@@ -2105,7 +2105,7 @@ tcu::TestStatus WriteSampleMaskTestInstance::iterate(void)
     // Update descriptor set.
     vk::DescriptorSetUpdateBuilder updateBuilder;
     const auto imageInfo =
-        vk::makeDescriptorImageInfo(DE_NULL, colorImageView.get(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        vk::makeDescriptorImageInfo(VK_NULL_HANDLE, colorImageView.get(), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     const auto bufferInfo = vk::makeDescriptorBufferInfo(storageBuffer.get(), 0u, VK_WHOLE_SIZE);
     updateBuilder.writeSingle(descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u),
                               vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imageInfo);

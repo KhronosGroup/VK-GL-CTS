@@ -2498,7 +2498,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                         makeComputePipeline(vk, device, *pipelineLayoutFillImage, *shaderModuleFillImage);
 
                     const VkDescriptorImageInfo descResultImageInfo =
-                        makeDescriptorImageInfo(DE_NULL, **imageViews[b], VK_IMAGE_LAYOUT_GENERAL);
+                        makeDescriptorImageInfo(VK_NULL_HANDLE, **imageViews[b], VK_IMAGE_LAYOUT_GENERAL);
                     const VkDescriptorBufferInfo descResultBufferInfo =
                         makeDescriptorBufferInfo(bufferR64, 0, sizeImageR64);
 
@@ -2626,7 +2626,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                 default:
                     // Other descriptor types.
                     if (b == 1 && m_data.nullDescriptor)
-                        bufferInfoVec[vecIndex] = makeDescriptorBufferInfo(DE_NULL, 0, VK_WHOLE_SIZE);
+                        bufferInfoVec[vecIndex] = makeDescriptorBufferInfo(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
                     else
                         bufferInfoVec[vecIndex] = makeDescriptorBufferInfo(**buffer, 0, layout.refData.size());
                     break;

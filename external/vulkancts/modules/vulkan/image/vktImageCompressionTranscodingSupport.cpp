@@ -1471,8 +1471,8 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
                 makeDescriptorImageInfo(*sampler, *compressedView,
                                         layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL :
                                                                VK_IMAGE_LAYOUT_GENERAL),
-                makeDescriptorImageInfo(DE_NULL, *resultView, VK_IMAGE_LAYOUT_GENERAL),
-                makeDescriptorImageInfo(DE_NULL, *referenceView, VK_IMAGE_LAYOUT_GENERAL)};
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *resultView, VK_IMAGE_LAYOUT_GENERAL),
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *referenceView, VK_IMAGE_LAYOUT_GENERAL)};
             DescriptorSetUpdateBuilder()
                 .writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descriptorImageInfos[0])
@@ -2154,7 +2154,7 @@ void GraphicsAttachmentsTestInstance::transcodeRead(const VkCommandPool &cmdPool
             beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderSize);
 
             const VkDescriptorImageInfo descriptorSrcImageInfo(
-                makeDescriptorImageInfo(DE_NULL, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
             DescriptorSetUpdateBuilder()
                 .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
                              VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &descriptorSrcImageInfo)
@@ -2337,7 +2337,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite(const VkCommandPool &cmdPoo
             beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderSize);
 
             const VkDescriptorImageInfo descriptorSrcImageInfo(
-                makeDescriptorImageInfo(DE_NULL, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
             DescriptorSetUpdateBuilder()
                 .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
                              VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &descriptorSrcImageInfo)
@@ -2579,9 +2579,9 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression(const VkCommandPool &c
         *resSrcSampler, *resSrcImageView,
         layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL));
     const VkDescriptorImageInfo descriptorRefDstImage(
-        makeDescriptorImageInfo(DE_NULL, *refDstImageView, VK_IMAGE_LAYOUT_GENERAL));
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *refDstImageView, VK_IMAGE_LAYOUT_GENERAL));
     const VkDescriptorImageInfo descriptorResDstImage(
-        makeDescriptorImageInfo(DE_NULL, *resDstImageView, VK_IMAGE_LAYOUT_GENERAL));
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *resDstImageView, VK_IMAGE_LAYOUT_GENERAL));
 
     const VkExtent2D renderSize(makeExtent2D(mipmapDims.x(), mipmapDims.y()));
     const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
@@ -2865,7 +2865,7 @@ void GraphicsTextureTestInstance::transcodeRead(const VkCommandPool &cmdPool)
             const VkDescriptorImageInfo descriptorSrcImage(
                 makeDescriptorImageInfo(*srcSampler, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
             const VkDescriptorImageInfo descriptorDstImage(
-                makeDescriptorImageInfo(DE_NULL, *dstImageView, VK_IMAGE_LAYOUT_GENERAL));
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *dstImageView, VK_IMAGE_LAYOUT_GENERAL));
 
             const VkBufferImageCopy srcCopyRegion =
                 makeBufferImageCopy(srcImageResolution.x(), srcImageResolution.y(), levelNdx, layerNdx,
@@ -3052,7 +3052,7 @@ void GraphicsTextureTestInstance::transcodeWrite(const VkCommandPool &cmdPool)
             const VkDescriptorImageInfo descriptorSrcImage(
                 makeDescriptorImageInfo(*srcSampler, *srcImageView, VK_IMAGE_LAYOUT_GENERAL));
             const VkDescriptorImageInfo descriptorDstImage(
-                makeDescriptorImageInfo(DE_NULL, *dstImageView, VK_IMAGE_LAYOUT_GENERAL));
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *dstImageView, VK_IMAGE_LAYOUT_GENERAL));
 
             const VkBufferImageCopy srcCopyRegion =
                 makeBufferImageCopy(srcImageResolution.x(), srcImageResolution.y(), 0u, 0u);

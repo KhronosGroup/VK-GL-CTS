@@ -7399,7 +7399,7 @@ tcu::TestStatus ResolveImageToImage::checkIntermediateCopy(void)
     imageInfos.reserve(imageViewsRaw.size());
     for (size_t i = 0; i < imageViewsRaw.size(); ++i)
         imageInfos.push_back(
-            makeDescriptorImageInfo(DE_NULL, imageViewsRaw[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+            makeDescriptorImageInfo(VK_NULL_HANDLE, imageViewsRaw[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
     for (size_t i = 0; i < imageInfos.size(); ++i)
         updater.writeSingle(descriptorSetAttachments.get(),
@@ -8934,7 +8934,7 @@ tcu::TestStatus DepthStencilMSAA::checkCopyResults(VkCommandBuffer cmdBuffer,
     for (size_t i = 0; i < imageViewsRaw.size(); ++i)
     {
         imageInfos.push_back(
-            makeDescriptorImageInfo(DE_NULL, imageViewsRaw[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+            makeDescriptorImageInfo(VK_NULL_HANDLE, imageViewsRaw[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
         updater.writeSingle(descriptorSetAttachments.get(),
                             DescriptorSetUpdateBuilder::Location::binding(static_cast<uint32_t>(i)),
                             VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imageInfos[i]);

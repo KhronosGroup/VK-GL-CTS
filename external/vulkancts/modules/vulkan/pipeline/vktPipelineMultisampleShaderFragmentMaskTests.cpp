@@ -628,7 +628,7 @@ void drawAndSampleInputAttachment(Context &context, const TestParams &params, Wo
 
     {
         const VkDescriptorImageInfo colorImageInfo =
-            makeDescriptorImageInfo(DE_NULL, *wd.colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         const VkDescriptorBufferInfo bufferInfo = makeDescriptorBufferInfo(*wd.colorBuffer, 0u, wd.colorBufferSize);
 
         DescriptorSetUpdateBuilder builder;
@@ -1139,7 +1139,7 @@ void dispatchSampleImage(Context &context, const TestParams &params, WorkingData
 
     {
         const VkDescriptorImageInfo colorImageInfo =
-            makeDescriptorImageInfo(DE_NULL, *wd.colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         const VkDescriptorBufferInfo resultBufferInfo =
             makeDescriptorBufferInfo(*wd.colorBuffer, 0ull, wd.colorBufferSize);
 

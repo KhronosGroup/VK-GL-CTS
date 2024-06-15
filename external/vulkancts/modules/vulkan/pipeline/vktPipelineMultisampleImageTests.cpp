@@ -1258,7 +1258,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
         const Unique<VkDescriptorSet> descriptorSet(
             makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
         const VkDescriptorImageInfo imageDescriptorInfo =
-            makeDescriptorImageInfo(DE_NULL, *colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         DescriptorSetUpdateBuilder()
             .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
@@ -1488,7 +1488,7 @@ void renderAndResolve(Context &context, const CaseDef &caseDef, const VkBuffer r
         const Unique<VkDescriptorSet> descriptorSet(
             makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
         const VkDescriptorImageInfo descriptorImageInfo =
-            makeDescriptorImageInfo(DE_NULL, *colorImageView, VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *colorImageView, VK_IMAGE_LAYOUT_GENERAL);
 
         DescriptorSetUpdateBuilder()
             .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
@@ -1904,7 +1904,7 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
         const Unique<VkDescriptorSet> descriptorSet(
             makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
         const VkDescriptorImageInfo imageDescriptorInfo =
-            makeDescriptorImageInfo(DE_NULL, *colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         DescriptorSetUpdateBuilder()
             .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),

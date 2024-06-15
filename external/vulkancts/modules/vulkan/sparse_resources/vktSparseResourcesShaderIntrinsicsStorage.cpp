@@ -520,19 +520,19 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands(const VkCommandBuffer
             makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageSparse, mapImageViewType(m_imageType),
                                           imageSparseInfo.format, mipLevelRange));
         const VkDescriptorImageInfo imageSparseDescInfo =
-            makeDescriptorImageInfo(DE_NULL, **imageSparseViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, **imageSparseViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
 
         imageTexelsViews[mipLevelNdx] =
             makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageTexels, mapImageViewType(m_imageType),
                                           imageSparseInfo.format, mipLevelRange));
         const VkDescriptorImageInfo imageTexelsDescInfo =
-            makeDescriptorImageInfo(DE_NULL, **imageTexelsViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, **imageTexelsViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
 
         imageResidencyViews[mipLevelNdx] =
             makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), imageResidency, mapImageViewType(m_imageType),
                                           mapTextureFormat(m_residencyFormat), mipLevelRange));
         const VkDescriptorImageInfo imageResidencyDescInfo =
-            makeDescriptorImageInfo(DE_NULL, **imageResidencyViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, **imageResidencyViews[mipLevelNdx], VK_IMAGE_LAYOUT_GENERAL);
 
         DescriptorSetUpdateBuilder descriptorUpdateBuilder;
         descriptorUpdateBuilder.writeSingle(descriptorSet,

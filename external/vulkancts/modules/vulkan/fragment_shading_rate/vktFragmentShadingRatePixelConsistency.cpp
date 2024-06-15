@@ -982,7 +982,8 @@ tcu::TestStatus FSRPixelConsistencyInstance::iterate(void)
         descriptorPool = poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
         descriptorSet  = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 
-        VkDescriptorImageInfo imageInfo = makeDescriptorImageInfo(DE_NULL, *cbImagePass0View, VK_IMAGE_LAYOUT_GENERAL);
+        VkDescriptorImageInfo imageInfo =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *cbImagePass0View, VK_IMAGE_LAYOUT_GENERAL);
 
         VkWriteDescriptorSet writeDescriptorSet = {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // sType

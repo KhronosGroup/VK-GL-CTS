@@ -825,7 +825,7 @@ tcu::TestStatus testNoAtt(Context &context, const NoAttCaseDef caseDef)
 
     const Move<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
     DescriptorSetUpdateBuilder()
         .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
                      VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo)
@@ -1570,7 +1570,7 @@ tcu::TestStatus testInputResolveSameAttachment(Context &context, const CaseDef c
     attachmentHandles.push_back(**colorAttachments.back());
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, attachmentHandles[1], VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, attachmentHandles[1], VK_IMAGE_LAYOUT_GENERAL);
     DescriptorSetUpdateBuilder()
         .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
                      VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &descriptorImageInfo)

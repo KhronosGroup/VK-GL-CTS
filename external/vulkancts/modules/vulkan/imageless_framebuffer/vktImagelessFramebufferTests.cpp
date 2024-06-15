@@ -1016,7 +1016,7 @@ void ColorImagelessTestInstance::readOneSampleFromMultisampleImage(
             .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
     const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
     const VkDescriptorImageInfo imageDescriptorInfo(
-        makeDescriptorImageInfo(DE_NULL, *srcImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *srcImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
     DescriptorSetUpdateBuilder()
         .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), samplerDescType,
@@ -2328,7 +2328,7 @@ tcu::TestStatus MultisubpassTestInstance::iterate(void)
             .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
     const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
     const VkDescriptorImageInfo imageDescriptorInfo(
-        makeDescriptorImageInfo(DE_NULL, *color0Attachment, VK_IMAGE_LAYOUT_GENERAL));
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *color0Attachment, VK_IMAGE_LAYOUT_GENERAL));
 
     DescriptorSetUpdateBuilder()
         .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType,

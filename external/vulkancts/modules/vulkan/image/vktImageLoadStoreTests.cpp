@@ -1092,7 +1092,7 @@ void ImageStoreTestInstance::commandBindDescriptorsForLayer(const VkCommandBuffe
     const VkImageView imageView         = **m_allImageViews[layerNdx];
 
     const VkDescriptorImageInfo descriptorImageInfo =
-        makeDescriptorImageInfo(DE_NULL, imageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, imageView, VK_IMAGE_LAYOUT_GENERAL);
 
     // Set the next chunk of the constants buffer. Each chunk begins with layer index that we've set before.
     const VkDescriptorBufferInfo descriptorConstantsBufferInfo = makeDescriptorBufferInfo(
@@ -1776,9 +1776,9 @@ void ImageLoadStoreTestInstance::commandBindDescriptorsForLayer(const VkCommandB
     const VkImageView dstImageView      = **m_allDstImageViews[layerNdx];
 
     const VkDescriptorImageInfo descriptorSrcImageInfo =
-        makeDescriptorImageInfo(DE_NULL, srcImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, srcImageView, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorImageInfo descriptorDstImageInfo =
-        makeDescriptorImageInfo(DE_NULL, dstImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, dstImageView, VK_IMAGE_LAYOUT_GENERAL);
 
     DescriptorSetUpdateBuilder()
         .writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
@@ -2078,9 +2078,9 @@ void ImageLoadStoreLodAMDTestInstance::commandBindDescriptorsForLayer(const VkCo
     const VkImageView dstImageView      = **m_allDstImageViews[layerNdx];
 
     const VkDescriptorImageInfo descriptorSrcImageInfo =
-        makeDescriptorImageInfo(DE_NULL, srcImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, srcImageView, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorImageInfo descriptorDstImageInfo =
-        makeDescriptorImageInfo(DE_NULL, dstImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, dstImageView, VK_IMAGE_LAYOUT_GENERAL);
 
     DescriptorSetUpdateBuilder()
         .writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
@@ -2418,9 +2418,9 @@ void ImageExtendOperandTestInstance::commandBindDescriptorsForLayer(const VkComm
     const VkDescriptorSet descriptorSet = **m_descriptorSet;
 
     const VkDescriptorImageInfo descriptorSrcImageInfo =
-        makeDescriptorImageInfo(DE_NULL, **m_imageSrcView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, **m_imageSrcView, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorImageInfo descriptorDstImageInfo =
-        makeDescriptorImageInfo(DE_NULL, **m_imageDstView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, **m_imageDstView, VK_IMAGE_LAYOUT_GENERAL);
 
     typedef DescriptorSetUpdateBuilder::Location DSUBL;
     DescriptorSetUpdateBuilder()

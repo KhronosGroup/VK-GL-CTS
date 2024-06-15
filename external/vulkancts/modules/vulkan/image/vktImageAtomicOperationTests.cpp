@@ -1638,7 +1638,7 @@ void BinaryAtomicInstanceBase::shaderFillImage(const VkCommandBuffer cmdBuffer, 
     const VkDevice device                  = m_context.getDevice();
     const DeviceInterface &deviceInterface = m_context.getDeviceInterface();
     const VkDescriptorImageInfo descResultImageInfo =
-        makeDescriptorImageInfo(DE_NULL, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
     const VkDescriptorBufferInfo descResultBufferInfo = makeDescriptorBufferInfo(buffer, 0, range);
     const VkImageSubresourceRange subresourceRange =
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
@@ -1818,7 +1818,7 @@ void BinaryAtomicEndResultInstance::prepareDescriptors(const bool isTexelBuffer)
     else
     {
         const VkDescriptorImageInfo descResultImageInfo =
-            makeDescriptorImageInfo(DE_NULL, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
 
         DescriptorSetUpdateBuilder()
             .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType,
@@ -1861,7 +1861,7 @@ void BinaryAtomicEndResultInstance::commandsAfterCompute(const VkCommandBuffer c
     {
         const VkDevice device = m_context.getDevice();
         const VkDescriptorImageInfo descResultImageInfo =
-            makeDescriptorImageInfo(DE_NULL, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
         const VkDescriptorBufferInfo descResultBufferInfo = makeDescriptorBufferInfo(m_outputBuffer->get(), 0, range);
 
         DescriptorSetUpdateBuilder()
@@ -2169,9 +2169,9 @@ void BinaryAtomicIntermValuesInstance::prepareDescriptors(const bool isTexelBuff
     else
     {
         const VkDescriptorImageInfo descResultImageInfo =
-            makeDescriptorImageInfo(DE_NULL, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
         const VkDescriptorImageInfo descIntermResultsImageInfo =
-            makeDescriptorImageInfo(DE_NULL, *m_intermResultsImageView, VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *m_intermResultsImageView, VK_IMAGE_LAYOUT_GENERAL);
 
         DescriptorSetUpdateBuilder()
             .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType,
@@ -2233,7 +2233,7 @@ void BinaryAtomicIntermValuesInstance::commandsAfterCompute(const VkCommandBuffe
     {
         const VkDevice device = m_context.getDevice();
         const VkDescriptorImageInfo descResultImageInfo =
-            makeDescriptorImageInfo(DE_NULL, *m_intermResultsImageView, VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *m_intermResultsImageView, VK_IMAGE_LAYOUT_GENERAL);
         const VkDescriptorBufferInfo descResultBufferInfo = makeDescriptorBufferInfo(m_outputBuffer->get(), 0, range);
 
         DescriptorSetUpdateBuilder()

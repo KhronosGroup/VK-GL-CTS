@@ -1191,8 +1191,9 @@ void ShaderTileImageTestInstance::generateComputePipeline()
             DE_NULL,                                // pTexelBufferView
         };
 
-        imageInfo    = makeDescriptorImageInfo(DE_NULL, *m_imageColorView[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        w.dstBinding = 0;
+        imageInfo =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageColorView[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        w.dstBinding     = 0;
         w.descriptorType = bindings[0].descriptorType;
         m_vk.updateDescriptorSets(device, 1, &w, 0, NULL);
 

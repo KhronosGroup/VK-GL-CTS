@@ -3340,8 +3340,8 @@ tcu::TestStatus MutableTypesInstance::iterate()
     bufferInfoPtr               = DescriptorBufferInfoPtr(new VkDescriptorBufferInfo(
         makeDescriptorBufferInfo(extraResources[bindingCount++].bufferWithMemory->get(), 0ull, outputBufferSize)));
     if (useExternalImage)
-        imageInfoPtr = DescriptorImageInfoPtr(new VkDescriptorImageInfo(
-            makeDescriptorImageInfo(DE_NULL, extraResources[bindingCount++].imageView.get(), VK_IMAGE_LAYOUT_GENERAL)));
+        imageInfoPtr = DescriptorImageInfoPtr(new VkDescriptorImageInfo(makeDescriptorImageInfo(
+            VK_NULL_HANDLE, extraResources[bindingCount++].imageView.get(), VK_IMAGE_LAYOUT_GENERAL)));
     if (useExternalSampler)
         samplerInfoPtr = DescriptorImageInfoPtr(new VkDescriptorImageInfo(
             makeDescriptorImageInfo(extraResources[bindingCount++].sampler.get(), DE_NULL, VK_IMAGE_LAYOUT_GENERAL)));

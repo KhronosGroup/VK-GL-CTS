@@ -820,12 +820,12 @@ tcu::TestStatus DepthStencilDescriptorInstance::iterate()
             const auto inType = (isIA ? VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
             const auto view =
                 ((desc.aspect == VK_IMAGE_ASPECT_DEPTH_BIT) ? depthOnlyView.get() : stencilOnlyView.get());
-            inputImgInfos.push_back(makeDescriptorImageInfo(DE_NULL, view, m_params.layout));
+            inputImgInfos.push_back(makeDescriptorImageInfo(VK_NULL_HANDLE, view, m_params.layout));
             inputUpdateBuilder.writeSingle(inputSet.get(), location, inType, &inputImgInfos.back());
 
             // Output descriptors.
             outputImgInfos.push_back(
-                makeDescriptorImageInfo(DE_NULL, outputImageViews[descriptorIdx].get(), outputImgLayout));
+                makeDescriptorImageInfo(VK_NULL_HANDLE, outputImageViews[descriptorIdx].get(), outputImgLayout));
             outputUpdateBuilder.writeSingle(outputSet.get(), location, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
                                             &outputImgInfos.back());
         }

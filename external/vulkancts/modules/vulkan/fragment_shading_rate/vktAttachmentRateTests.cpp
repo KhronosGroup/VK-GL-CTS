@@ -1247,7 +1247,7 @@ bool AttachmentRateInstance::runComputeShaderMode(void)
             buildShadingRateObjects(device, vk, m_context.getDefaultAllocator(), 0, srWidth, srHeight, m_srUsage);
 
             const VkDescriptorImageInfo computeDescriptorInfo =
-                makeDescriptorImageInfo(DE_NULL, *m_srImageView[0], VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *m_srImageView[0], VK_IMAGE_LAYOUT_GENERAL);
             DescriptorSetUpdateBuilder()
                 .writeSingle(*computeDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
                              VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &computeDescriptorInfo)

@@ -2255,7 +2255,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
                         if (s == 0 && b == 0)
                         {
                             imageInfoVec[vecIndex] =
-                                makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+                                makeDescriptorImageInfo(VK_NULL_HANDLE, *imageView, VK_IMAGE_LAYOUT_GENERAL);
                         }
                         else
                         {
@@ -2266,7 +2266,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate(void)
                         break;
                     case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
                         imageInfoVec[vecIndex] =
-                            makeDescriptorImageInfo(DE_NULL, inputAttachmentViews[attachmentIndex].get(),
+                            makeDescriptorImageInfo(VK_NULL_HANDLE, inputAttachmentViews[attachmentIndex].get(),
                                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                         ++attachmentIndex;
                         break;

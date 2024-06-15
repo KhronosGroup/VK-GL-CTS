@@ -2960,7 +2960,8 @@ tcu::TestStatus OverwriteTestInstance::iterate(void)
     const auto descriptorSet  = makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get());
 
     DescriptorSetUpdateBuilder updateBuilder;
-    const auto descriptorImageInfo = makeDescriptorImageInfo(DE_NULL, storageImageView.get(), VK_IMAGE_LAYOUT_GENERAL);
+    const auto descriptorImageInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, storageImageView.get(), VK_IMAGE_LAYOUT_GENERAL);
     updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
                               VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageInfo);
     updateBuilder.update(vkd, device);

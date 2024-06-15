@@ -466,7 +466,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
                                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     VkDescriptorImageInfo depthImageDescriptor(
-        makeDescriptorImageInfo(DE_NULL, DE_NULL, VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR));
+        makeDescriptorImageInfo(VK_NULL_HANDLE, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ_KHR));
     VkDescriptorImageInfo stencilImageDescriptor(depthImageDescriptor);
 
     // construct required containers
@@ -568,7 +568,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     }
 
     // set descriptor sets for all output buffers
-    VkDescriptorBufferInfo bufferInfo = makeDescriptorBufferInfo(DE_NULL, 0u, VK_WHOLE_SIZE);
+    VkDescriptorBufferInfo bufferInfo = makeDescriptorBufferInfo(VK_NULL_HANDLE, 0u, VK_WHOLE_SIZE);
     for (uint32_t buffIndex = 0; buffIndex < m_outputDrawsCount; ++buffIndex)
     {
         bufferInfo.buffer = **outputBuffers[buffIndex];

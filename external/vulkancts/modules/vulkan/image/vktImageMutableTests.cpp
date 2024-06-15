@@ -1100,7 +1100,8 @@ void UploadDownloadExecutor::uploadStore(Context &context)
 
     m_uStore.pipelineLayout = makePipelineLayout(m_vk, m_device, *m_uStore.descriptorSetLayout);
     m_uStore.descriptorSet = makeDescriptorSet(m_vk, m_device, *m_uStore.descriptorPool, *m_uStore.descriptorSetLayout);
-    m_uStore.imageDescriptorInfo = makeDescriptorImageInfo(DE_NULL, *m_uStore.imageView, VK_IMAGE_LAYOUT_GENERAL);
+    m_uStore.imageDescriptorInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *m_uStore.imageView, VK_IMAGE_LAYOUT_GENERAL);
     m_uStore.computeModule =
         createShaderModule(m_vk, m_device, context.getBinaryCollection().get("uploadStoreComp"), 0);
     m_uStore.computePipeline = makeComputePipeline(m_vk, m_device, *m_uStore.pipelineLayout, *m_uStore.computeModule);
@@ -1368,8 +1369,9 @@ void UploadDownloadExecutor::downloadTexture(Context &context, VkBuffer buffer)
     m_dTex.pipelineLayout = makePipelineLayout(m_vk, m_device, *m_dTex.descriptorSetLayout);
     m_dTex.descriptorSet  = makeDescriptorSet(m_vk, m_device, *m_dTex.descriptorPool, *m_dTex.descriptorSetLayout);
     m_dTex.inImageDescriptorInfo =
-        makeDescriptorImageInfo(DE_NULL, *m_dTex.inImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    m_dTex.outImageDescriptorInfo = makeDescriptorImageInfo(DE_NULL, *m_dTex.outImageView, VK_IMAGE_LAYOUT_GENERAL);
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *m_dTex.inImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    m_dTex.outImageDescriptorInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *m_dTex.outImageView, VK_IMAGE_LAYOUT_GENERAL);
     m_dTex.computeModule =
         createShaderModule(m_vk, m_device, context.getBinaryCollection().get("downloadTextureComp"), 0);
     m_dTex.computePipeline = makeComputePipeline(m_vk, m_device, *m_dTex.pipelineLayout, *m_dTex.computeModule);
@@ -1453,8 +1455,10 @@ void UploadDownloadExecutor::downloadLoad(Context &context, VkBuffer buffer)
 
     m_dLoad.pipelineLayout = makePipelineLayout(m_vk, m_device, *m_dLoad.descriptorSetLayout);
     m_dLoad.descriptorSet  = makeDescriptorSet(m_vk, m_device, *m_dLoad.descriptorPool, *m_dLoad.descriptorSetLayout);
-    m_dLoad.inImageDescriptorInfo  = makeDescriptorImageInfo(DE_NULL, *m_dLoad.inImageView, VK_IMAGE_LAYOUT_GENERAL);
-    m_dLoad.outImageDescriptorInfo = makeDescriptorImageInfo(DE_NULL, *m_dLoad.outImageView, VK_IMAGE_LAYOUT_GENERAL);
+    m_dLoad.inImageDescriptorInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *m_dLoad.inImageView, VK_IMAGE_LAYOUT_GENERAL);
+    m_dLoad.outImageDescriptorInfo =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *m_dLoad.outImageView, VK_IMAGE_LAYOUT_GENERAL);
     m_dLoad.computeModule =
         createShaderModule(m_vk, m_device, context.getBinaryCollection().get("downloadLoadComp"), 0);
     m_dLoad.computePipeline = makeComputePipeline(m_vk, m_device, *m_dLoad.pipelineLayout, *m_dLoad.computeModule);

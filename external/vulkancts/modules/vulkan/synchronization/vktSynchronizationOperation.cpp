@@ -2077,9 +2077,9 @@ public:
             m_descriptorSet = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
 
             const VkDescriptorImageInfo srcImageInfo =
-                makeDescriptorImageInfo(DE_NULL, *m_srcImageView, VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *m_srcImageView, VK_IMAGE_LAYOUT_GENERAL);
             const VkDescriptorImageInfo dstImageInfo =
-                makeDescriptorImageInfo(DE_NULL, *m_dstImageView, VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *m_dstImageView, VK_IMAGE_LAYOUT_GENERAL);
 
             DescriptorSetUpdateBuilder()
                 .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
@@ -2916,9 +2916,9 @@ public:
             m_descriptorSet = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
 
             const VkDescriptorImageInfo srcImageInfo =
-                makeDescriptorImageInfo(DE_NULL, *m_srcImageView, VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *m_srcImageView, VK_IMAGE_LAYOUT_GENERAL);
             const VkDescriptorImageInfo dstImageInfo =
-                makeDescriptorImageInfo(DE_NULL, *m_dstImageView, VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *m_dstImageView, VK_IMAGE_LAYOUT_GENERAL);
 
             DescriptorSetUpdateBuilder()
                 .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
@@ -3168,7 +3168,7 @@ public:
             const VkDescriptorBufferInfo bufferInfo =
                 makeDescriptorBufferInfo(**m_hostBuffer, 0u, m_hostBufferSizeBytes);
             const VkDescriptorImageInfo imageInfo =
-                makeDescriptorImageInfo(DE_NULL, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
+                makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
 
             DescriptorSetUpdateBuilder()
                 .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
