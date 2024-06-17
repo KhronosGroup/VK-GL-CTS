@@ -1094,7 +1094,7 @@ tcu::TestStatus MultiDrawInstance::iterate(void)
     // Index buffer if needed.
     de::MovePtr<BufferWithMemory> indexBuffer;
     VkDeviceSize indexBufferOffset = 0ull;
-    VkBuffer indexBufferHandle     = DE_NULL;
+    VkBuffer indexBufferHandle     = VK_NULL_HANDLE;
 
     if (isIndexed)
     {

@@ -816,7 +816,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         vk::endCommandBuffer(vk, *cmdBuffer);
         uint32_t semaphoreCount         = 0;
-        vk::VkSemaphore semaphore       = DE_NULL;
+        vk::VkSemaphore semaphore       = VK_NULL_HANDLE;
         VkPipelineStageFlags waitStages = 0;
         if (m_parameters.sparse)
         {

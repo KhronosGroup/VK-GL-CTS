@@ -668,7 +668,7 @@ void RayTracingBuildIndirectTestInstance::checkSupportInInstance(void) const
 
 VkBuffer RayTracingBuildIndirectTestInstance::initIndirectTopAccelerationStructure(void)
 {
-    VkBuffer result = DE_NULL;
+    VkBuffer result = VK_NULL_HANDLE;
 
     m_indirectAccelerationStructureTop = prepareBuffer(sizeof(VkAccelerationStructureBuildRangeInfoKHR), "wr-ast");
     result                             = **m_indirectAccelerationStructureTop;
@@ -678,7 +678,7 @@ VkBuffer RayTracingBuildIndirectTestInstance::initIndirectTopAccelerationStructu
 
 VkBuffer RayTracingBuildIndirectTestInstance::initIndirectBottomAccelerationStructure(void)
 {
-    VkBuffer result = DE_NULL;
+    VkBuffer result = VK_NULL_HANDLE;
 
     m_indirectAccelerationStructureBottom =
         prepareBuffer(sizeof(VkAccelerationStructureBuildRangeInfoKHR) * m_data.geometriesGroupCount, "wr-asb");

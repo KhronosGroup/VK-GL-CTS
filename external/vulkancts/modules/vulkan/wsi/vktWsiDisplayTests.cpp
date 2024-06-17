@@ -1074,7 +1074,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneSupportedDisplay
              displayCountRequested++)
         {
             const uint32_t displayCountExpected = std::min(displayCountRequested, displayCountReported);
-            const VkDisplayKHR nullDisplay      = DE_NULL;
+            const VkDisplayKHR nullDisplay      = VK_NULL_HANDLE;
             const VkDisplayKHR canaryDisplay    = static_cast<VkDisplayKHR>(0xABCDEF11);
             const uint32_t canaryItemCount      = 1;
             std::vector<VkDisplayKHR> displaysForPlane(displayCountRequested + canaryItemCount, nullDisplay);
@@ -1159,7 +1159,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModePropertiesKHR(voi
              modesCountRequested          = nextTestNumber(modesCountRequested, modesCountReported + 2))
         {
             const uint32_t modesCountExpected         = std::min(modesCountRequested, modesCountReported);
-            const VkDisplayModeKHR nullDisplayMode    = DE_NULL;
+            const VkDisplayModeKHR nullDisplayMode    = VK_NULL_HANDLE;
             const VkDisplayModePropertiesKHR nullMode = {nullDisplayMode, // VkDisplayModeKHR                displayMode
                                                          {
                                                              // VkDisplayModeParametersKHR    parameters
@@ -1236,7 +1236,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testCreateDisplayModeKHR(void)
         const VkDisplayKHR display                               = *it;
         DisplayModePropertiesVector::size_type builtinModesCount = 0u;
         VkDisplayModePropertiesKHR validModeProperties;
-        VkDisplayModeKHR mode = DE_NULL;
+        VkDisplayModeKHR mode = VK_NULL_HANDLE;
         DisplayModePropertiesVector modes;
         VkDisplayModeCreateInfoKHR createInfo = {
             VK_STRUCTURE_TYPE_DISPLAY_MODE_CREATE_INFO_KHR, // VkStructureType                sType
@@ -1264,7 +1264,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testCreateDisplayModeKHR(void)
         for (uint32_t testIndex = 0; testIndex < 3; testIndex++)
         {
             VkDisplayModeCreateInfoKHR createInfoFail(createInfo);
-            VkDisplayModeKHR modeFail = DE_NULL;
+            VkDisplayModeKHR modeFail = VK_NULL_HANDLE;
 
             createInfoFail.parameters = validModeProperties.parameters;
 
@@ -1616,7 +1616,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testDisplaySurface(SurfaceTestKind 
                                 alphaMode,                             // VkDisplayPlaneAlphaFlagBitsKHR    alphaMode
                                 {                                      // VkExtent2D                        imageExtent
                                  planeCapabilities.minDstExtent.width, planeCapabilities.minDstExtent.height}};
-                            VkSurfaceKHR surface = DE_NULL;
+                            VkSurfaceKHR surface = VK_NULL_HANDLE;
 
                             result = m_vki.createDisplayPlaneSurfaceKHR(
                                 instance,    // VkInstance                            instance
@@ -2083,7 +2083,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModeProperties2KHR(vo
              modesCountRequested          = nextTestNumber(modesCountRequested, modesCountReported + 2))
         {
             const uint32_t modesCountExpected      = std::min(modesCountRequested, modesCountReported);
-            const VkDisplayModeKHR nullDisplayMode = DE_NULL;
+            const VkDisplayModeKHR nullDisplayMode = VK_NULL_HANDLE;
             const VkDisplayModePropertiesKHR nonUpdatedModeProperties = {
                 nullDisplayMode, // VkDisplayModeKHR                displayMode
                 {

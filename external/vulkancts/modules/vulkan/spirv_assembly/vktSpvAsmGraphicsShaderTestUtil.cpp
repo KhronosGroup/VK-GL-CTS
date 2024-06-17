@@ -3555,8 +3555,8 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     vector<SamplerHandleSp> inResourceSamplers;
     Move<VkDescriptorPool> descriptorPool;
     Move<VkDescriptorSetLayout> setLayout;
-    VkDescriptorSetLayout rawSetLayout = DE_NULL;
-    VkDescriptorSet rawSet             = DE_NULL;
+    VkDescriptorSetLayout rawSetLayout = VK_NULL_HANDLE;
+    VkDescriptorSet rawSet             = VK_NULL_HANDLE;
 
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));

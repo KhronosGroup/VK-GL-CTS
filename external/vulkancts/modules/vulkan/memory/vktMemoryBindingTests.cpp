@@ -590,7 +590,7 @@ void BaseTestInstance::createMemory<VkBuffer, false>(BuffersList &targets, Memor
         const VkMemoryAllocateInfo memAlloc =
             makeMemoryAllocateInfo(memReqs, (m_params.priorityMode == PRIORITY_MODE_STATIC) ? &priority : DE_NULL);
 #endif
-        VkDeviceMemory rawMemory = DE_NULL;
+        VkDeviceMemory rawMemory = VK_NULL_HANDLE;
 
         vk.allocateMemory(vkDevice, &memAlloc, (VkAllocationCallbacks *)DE_NULL, &rawMemory);
 
@@ -625,7 +625,7 @@ void BaseTestInstance::createMemory<VkImage, false>(ImagesList &targets, MemoryR
             makeMemoryAllocateInfo(memReqs, (m_params.priorityMode == PRIORITY_MODE_STATIC) ? &priority : DE_NULL);
 #endif
 
-        VkDeviceMemory rawMemory = DE_NULL;
+        VkDeviceMemory rawMemory = VK_NULL_HANDLE;
 
         vk.allocateMemory(vkDevice, &memAlloc, (VkAllocationCallbacks *)DE_NULL, &rawMemory);
 
@@ -664,7 +664,7 @@ void BaseTestInstance::createMemory<VkBuffer, true>(BuffersList &targets, Memory
             (m_params.priorityMode == PRIORITY_MODE_STATIC) ? &priority : (const void *)&dedicatedAllocationInfo);
 #endif
 
-        VkDeviceMemory rawMemory = DE_NULL;
+        VkDeviceMemory rawMemory = VK_NULL_HANDLE;
 
         vk.allocateMemory(vkDevice, &memAlloc, static_cast<VkAllocationCallbacks *>(DE_NULL), &rawMemory);
 
@@ -702,7 +702,7 @@ void BaseTestInstance::createMemory<VkImage, true>(ImagesList &targets, MemoryRe
             makeMemoryAllocateInfo(memReqs, m_params.priorityMode ? &priority : (const void *)&dedicatedAllocationInfo);
 #endif
 
-        VkDeviceMemory rawMemory = DE_NULL;
+        VkDeviceMemory rawMemory = VK_NULL_HANDLE;
 
         vk.allocateMemory(vkDevice, &memAlloc, static_cast<VkAllocationCallbacks *>(DE_NULL), &rawMemory);
 
@@ -944,7 +944,7 @@ void BaseTestInstance::createBuffer(Move<VkBuffer> &buffer, Move<VkDeviceMemory>
     *memorySize = memReqs.size;
 
     const VkMemoryAllocateInfo memAlloc = makeMemoryAllocateInfo(m_context, memReqs, MemoryHostVisible);
-    VkDeviceMemory rawMemory            = DE_NULL;
+    VkDeviceMemory rawMemory            = VK_NULL_HANDLE;
 
     vk.allocateMemory(vkDevice, &memAlloc, static_cast<VkAllocationCallbacks *>(DE_NULL), &rawMemory);
     memory = Move<VkDeviceMemory>(check<VkDeviceMemory>(rawMemory), Deleter<VkDeviceMemory>(vk, vkDevice, DE_NULL));

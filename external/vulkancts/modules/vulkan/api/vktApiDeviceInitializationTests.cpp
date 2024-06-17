@@ -1736,7 +1736,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest(Context &context)
                                                          DE_NULL,
                                                          &enabledFeatures};
 
-            VkDevice device = DE_NULL;
+            VkDevice device = VK_NULL_HANDLE;
             const VkResult res =
                 createUncheckedDevice(false, instanceDriver, physicalDevice, &deviceCreateInfo, DE_NULL, &device);
 
@@ -2602,8 +2602,8 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail(Context &context)
 {
     const PlatformInterface &vkp        = context.getPlatformInterface();
     const uint32_t chosenDevice         = context.getTestContext().getCommandLine().getVKDeviceId() - 1;
-    VkInstance instance                 = DE_NULL;
-    VkDevice device                     = DE_NULL;
+    VkInstance instance                 = VK_NULL_HANDLE;
+    VkDevice device                     = VK_NULL_HANDLE;
     uint32_t physicalDeviceCount        = 0;
     uint32_t queueFamilyCount           = 0;
     uint32_t queueFamilyIndex           = 0;

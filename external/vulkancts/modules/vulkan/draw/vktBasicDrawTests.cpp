@@ -701,7 +701,7 @@ public:
     DrawTestInstance(Context &context, const T &data);
     virtual ~DrawTestInstance(void);
     virtual void generateDrawData(void);
-    virtual void draw(vk::VkCommandBuffer cmdBuffer, vk::VkBuffer indirectBuffer = DE_NULL,
+    virtual void draw(vk::VkCommandBuffer cmdBuffer, vk::VkBuffer indirectBuffer = VK_NULL_HANDLE,
                       vk::VkDeviceSize indirectOffset = 0ul);
     virtual tcu::TestStatus iterate(void);
 

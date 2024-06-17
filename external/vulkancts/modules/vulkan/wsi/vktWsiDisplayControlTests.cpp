@@ -235,7 +235,7 @@ VkSurfaceKHR createSurface(const InstanceInterface &vki, VkInstance instance, Vk
         {                                                  // VkExtent2D                        imageExtent
          planeCapabilities.minDstExtent.width, planeCapabilities.minDstExtent.height}};
 
-    VkSurfaceKHR surface = DE_NULL;
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
     result               = vki.createDisplayPlaneSurfaceKHR(instance, &createInfo, DE_NULL, &surface);
     if (result != VK_SUCCESS)
         TCU_FAIL("CreateDisplayPlaneSurfaceKHR failed");

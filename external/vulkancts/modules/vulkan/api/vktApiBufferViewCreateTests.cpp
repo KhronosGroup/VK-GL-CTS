@@ -285,7 +285,7 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer(VkDeviceSize size, V
 
     {
         VkResult result          = VK_ERROR_OUT_OF_HOST_MEMORY;
-        VkDeviceMemory rawMemory = DE_NULL;
+        VkDeviceMemory rawMemory = VK_NULL_HANDLE;
 
         vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
             VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType            sType

@@ -1160,7 +1160,7 @@ tcu::TestStatus querySurfacePresentModesTest(Context &context, Type wsiType)
 void checkDeprecatedExtensionGoogleSurfacelessQuery(const vk::InstanceDriver &vk, VkPhysicalDevice physicalDevice,
                                                     VkSurfaceKHR surface, tcu::ResultCollector &result)
 {
-    const VkSurfaceKHR nullSurface = DE_NULL;
+    const VkSurfaceKHR nullSurface = VK_NULL_HANDLE;
 
     if (isSupportedByAnyQueue(vk, physicalDevice, surface))
     {
@@ -1204,7 +1204,7 @@ void checkDeprecatedExtensionGoogleSurfacelessQuery(const vk::InstanceDriver &vk
 void checkExtensionGoogleSurfacelessQuery(const vk::InstanceDriver &vk, VkPhysicalDevice physicalDevice,
                                           tcu::ResultCollector &result)
 {
-    const VkSurfaceKHR nullSurface = DE_NULL;
+    const VkSurfaceKHR nullSurface = VK_NULL_HANDLE;
     const vector<VkPresentModeKHR> validPresentModes{VK_PRESENT_MODE_FIFO_KHR,
                                                      VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,
                                                      VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR};
@@ -1659,7 +1659,7 @@ tcu::TestStatus resizeSurfaceTest(Context &context, Type wsiType)
 tcu::TestStatus destroyNullHandleSurfaceTest(Context &context, Type wsiType)
 {
     const InstanceHelper instHelper(context, wsiType);
-    const VkSurfaceKHR nullHandle = DE_NULL;
+    const VkSurfaceKHR nullHandle = VK_NULL_HANDLE;
 
     // Default allocator
     instHelper.vki.destroySurfaceKHR(instHelper.instance, nullHandle, DE_NULL);

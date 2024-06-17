@@ -2369,7 +2369,7 @@ tcu::TestStatus destroyNullHandleSwapchainTest(Context &context, Type wsiType)
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                      native.getWindow(), context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
-    const VkSwapchainKHR nullHandle = DE_NULL;
+    const VkSwapchainKHR nullHandle = VK_NULL_HANDLE;
 
     // Default allocator
     devHelper.vkd.destroySwapchainKHR(*devHelper.device, nullHandle, DE_NULL);

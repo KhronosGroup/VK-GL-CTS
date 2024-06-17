@@ -562,7 +562,7 @@ BindIndexBuffer2Instance::BindIndexBuffer2Instance(Context &c,
 
 VkQueue BindIndexBuffer2Instance::getQueue() const
 {
-    VkQueue queue = DE_NULL;
+    VkQueue queue = VK_NULL_HANDLE;
     getDeviceInterface().getDeviceQueue(getDevice(), m_context.getUniversalQueueFamilyIndex(), 0, &queue);
     return queue;
 }

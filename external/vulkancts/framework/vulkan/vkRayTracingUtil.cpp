@@ -3795,7 +3795,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR(const DeviceInterface &vk
         VK_NULL_HANDLE,                 //  VkPipeline basePipelineHandle;
         0,                              //  int32_t basePipelineIndex;
     };
-    VkPipeline object = DE_NULL;
+    VkPipeline object = VK_NULL_HANDLE;
     VkResult result   = vk.createRayTracingPipelinesKHR(device, deferredOperation.get(), pipelineCache, 1u,
                                                         &pipelineCreateInfo, DE_NULL, &object);
     const bool allowCompileRequired =

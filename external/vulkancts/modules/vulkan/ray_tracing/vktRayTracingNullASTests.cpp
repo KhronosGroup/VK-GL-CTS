@@ -478,7 +478,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest(DeviceHelper 
     const VkMemoryBarrier postCopyMemoryBarrier =
         makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
     const VkClearValue clearValue                                  = makeClearValueColorU32(5u, 5u, 5u, 255u);
-    const VkAccelerationStructureKHR topLevelAccelerationStructure = DE_NULL;
+    const VkAccelerationStructureKHR topLevelAccelerationStructure = VK_NULL_HANDLE;
 
     beginCommandBuffer(vkd, *cmdBuffer, 0u);
     {

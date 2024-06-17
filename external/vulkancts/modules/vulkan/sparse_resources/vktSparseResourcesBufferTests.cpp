@@ -651,7 +651,7 @@ protected:
         return referenceBufferCreateInfo;
     }
 
-    void draw(const VkPrimitiveTopology topology, const VkDescriptorSetLayout descriptorSetLayout = DE_NULL,
+    void draw(const VkPrimitiveTopology topology, const VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE,
               Renderer::SpecializationMap specMap = Renderer::SpecializationMap(), bool useDeviceGroups = false,
               uint32_t deviceID = 0)
     {

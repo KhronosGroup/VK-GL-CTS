@@ -3470,11 +3470,11 @@ tcu::TestStatus MutableTypesInstance::iterate()
             pipeline = makeComputePipeline(vkd, device, pipelineLayout.get(), shaderModule.get());
         else if (bindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS)
         {
-            VkShaderModule vertModule = DE_NULL;
-            VkShaderModule teseModule = DE_NULL;
-            VkShaderModule tescModule = DE_NULL;
-            VkShaderModule geomModule = DE_NULL;
-            VkShaderModule fragModule = DE_NULL;
+            VkShaderModule vertModule = VK_NULL_HANDLE;
+            VkShaderModule teseModule = VK_NULL_HANDLE;
+            VkShaderModule tescModule = VK_NULL_HANDLE;
+            VkShaderModule geomModule = VK_NULL_HANDLE;
+            VkShaderModule fragModule = VK_NULL_HANDLE;
 
             if (m_params.testingStage == TestingStage::VERTEX)
                 vertModule = shaderModule.get();
@@ -3515,12 +3515,12 @@ tcu::TestStatus MutableTypesInstance::iterate()
             shaderGroupHandleSize              = rayTracingPropertiesKHR->getShaderGroupHandleSize();
             shaderGroupBaseAlignment           = rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
 
-            VkShaderModule rgenModule = DE_NULL;
-            VkShaderModule isecModule = DE_NULL;
-            VkShaderModule ahitModule = DE_NULL;
-            VkShaderModule chitModule = DE_NULL;
-            VkShaderModule missModule = DE_NULL;
-            VkShaderModule callModule = DE_NULL;
+            VkShaderModule rgenModule = VK_NULL_HANDLE;
+            VkShaderModule isecModule = VK_NULL_HANDLE;
+            VkShaderModule ahitModule = VK_NULL_HANDLE;
+            VkShaderModule chitModule = VK_NULL_HANDLE;
+            VkShaderModule missModule = VK_NULL_HANDLE;
+            VkShaderModule callModule = VK_NULL_HANDLE;
 
             const uint32_t rgenGroup = 0u;
             uint32_t hitGroup        = 0u;

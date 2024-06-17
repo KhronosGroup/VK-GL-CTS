@@ -660,7 +660,7 @@ vk::VkDevice BindVertexBuffers2Instance::getDevice() const
 
 vk::VkQueue BindVertexBuffers2Instance::getQueue() const
 {
-    vk::VkQueue queue = DE_NULL;
+    vk::VkQueue queue = VK_NULL_HANDLE;
     if (m_robustness2)
     {
         const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
