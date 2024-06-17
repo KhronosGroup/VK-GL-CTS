@@ -151,11 +151,12 @@ struct BindingCaseParameters
     VkImageCreateFlags imageCreateFlags;
     PriorityMode priorityMode;
     bool checkIndividualResult;
+    double overallocationFactor;
 };
 
 BindingCaseParameters makeBindingCaseParameters(uint32_t targetsCount, uint32_t width, uint32_t height,
                                                 VkImageCreateFlags imageCreateFlags, PriorityMode priorityMode,
-                                                bool checkIndividualResult)
+                                                bool checkIndividualResult, double overallocationFactor = 1.0)
 {
     BindingCaseParameters params;
     deMemset(&params, 0, sizeof(BindingCaseParameters));
@@ -168,6 +169,7 @@ BindingCaseParameters makeBindingCaseParameters(uint32_t targetsCount, uint32_t 
     params.imageCreateFlags      = imageCreateFlags;
     params.priorityMode          = priorityMode;
     params.checkIndividualResult = checkIndividualResult;
+    params.overallocationFactor  = overallocationFactor;
     return params;
 }
 
@@ -176,15 +178,16 @@ BindingCaseParameters makeBindingCaseParameters(uint32_t targetsCount, VkBufferU
                                                 PriorityMode priorityMode, bool checkIndividualResult)
 {
     BindingCaseParameters params = {
-        0,                    // VkBufferCreateFlags flags;
-        usage,                // VkBufferUsageFlags usage;
-        sharing,              // VkSharingMode sharing;
-        bufferSize,           // VkDeviceSize bufferSize;
-        {0u, 0u, 0u},         // VkExtent3D imageSize;
-        targetsCount,         // uint32_t targetsCount;
-        imageCreateFlags,     // VkImageCreateFlags    imageCreateFlags
-        priorityMode,         // PriorityMode            priorityMode
-        checkIndividualResult // bool                checkIndividualResult
+        0,                     // VkBufferCreateFlags   flags
+        usage,                 // VkBufferUsageFlags    usage
+        sharing,               // VkSharingMode         sharing
+        bufferSize,            // VkDeviceSize          bufferSize
+        {0u, 0u, 0u},          // VkExtent3D            imageSize
+        targetsCount,          // uint32_t              targetsCount
+        imageCreateFlags,      // VkImageCreateFlags    imageCreateFlags
+        priorityMode,          // PriorityMode          priorityMode
+        checkIndividualResult, // bool                  checkIndividualResult
+        1.0                    // double                overallocationFactor
     };
     return params;
 }
@@ -690,6 +693,10 @@ void BaseTestInstance::createMemory<VkImage, true>(ImagesList &targets, MemoryRe
     {
         VkMemoryRequirements memReqs;
         vk.getImageMemoryRequirements(vkDevice, **targets[i], &memReqs);
+        if (m_params.overallocationFactor > 1.0)
+        {
+            memReqs.size = static_cast<VkDeviceSize>(double(memReqs.size) * m_params.overallocationFactor);
+        }
 
         ConstDedicatedInfo dedicatedAllocationInfo = makeDedicatedAllocationInfo(**targets[i]);
 
@@ -1147,6 +1154,8 @@ tcu::TestCaseGroup *createMemoryBindingTests(tcu::TestContext &testCtx)
 
         de::MovePtr<tcu::TestCaseGroup> aliasing_suballocated(new tcu::TestCaseGroup(testCtx, "suballocated"));
 
+        de::MovePtr<tcu::TestCaseGroup> overallocated(new tcu::TestCaseGroup(testCtx, "overallocated"));
+
         const VkDeviceSize allocationSizes[] = {33, 257, 4087, 8095, 1 * 1024 * 1024 + 1};
 
         for (uint32_t sizeNdx = 0u; sizeNdx < DE_LENGTH_OF_ARRAY(allocationSizes); ++sizeNdx)
@@ -1170,6 +1179,7 @@ tcu::TestCaseGroup *createMemoryBindingTests(tcu::TestContext &testCtx)
         }
 
         const uint32_t imageSizes[] = {8, 33, 257};
+        const double overallocFactors[]{1.5, 2.3, 3.0};
 
         for (uint32_t widthNdx = 0u; widthNdx < DE_LENGTH_OF_ARRAY(imageSizes); ++widthNdx)
             for (uint32_t heightNdx = 0u; heightNdx < DE_LENGTH_OF_ARRAY(imageSizes); ++heightNdx)
@@ -1180,6 +1190,10 @@ tcu::TestCaseGroup *createMemoryBindingTests(tcu::TestContext &testCtx)
                     makeBindingCaseParameters(10, width, height, 0u, priorityMode, checkIndividualBindResults);
                 const BindingCaseParameters aliasparams = makeBindingCaseParameters(
                     10, width, height, VK_IMAGE_CREATE_ALIAS_BIT, priorityMode, checkIndividualBindResults);
+                const BindingCaseParameters overallocparams =
+                    makeBindingCaseParameters(10, width, height, 0u, priorityMode, checkIndividualBindResults,
+                                              overallocFactors[(widthNdx * DE_LENGTH_OF_ARRAY(imageSizes) + heightNdx) %
+                                                               DE_LENGTH_OF_ARRAY(overallocFactors)]);
                 std::ostringstream testName;
 
                 testName << "image_" << width << '_' << height;
@@ -1189,10 +1203,13 @@ tcu::TestCaseGroup *createMemoryBindingTests(tcu::TestContext &testCtx)
                     testCtx, testName.str(), regularparams));
                 aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkImage, false>>(
                     testCtx, testName.str(), aliasparams));
+                overallocated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkImage, true>>(
+                    testCtx, testName.str(), overallocparams));
             }
 
         regular->addChild(regular_suballocated.release());
         regular->addChild(regular_dedicated.release());
+        regular->addChild(overallocated.release());
 
         aliasing->addChild(aliasing_suballocated.release());
 
