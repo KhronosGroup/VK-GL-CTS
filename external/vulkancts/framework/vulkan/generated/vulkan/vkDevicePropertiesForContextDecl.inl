@@ -5,9 +5,9 @@
 
 const vk::VkPhysicalDeviceTransformFeedbackPropertiesEXT&			getTransformFeedbackPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const;
-const vk::VkPhysicalDevicePipelineRobustnessPropertiesEXT&			getPipelineRobustnessPropertiesEXT			(void) const;
+const vk::VkPhysicalDevicePipelineRobustnessProperties&				getPipelineRobustnessProperties				(void) const;
 const vk::VkPhysicalDeviceIDProperties&								getIDProperties								(void) const;
-const vk::VkPhysicalDevicePushDescriptorPropertiesKHR&				getPushDescriptorProperties					(void) const;
+const vk::VkPhysicalDevicePushDescriptorProperties&					getPushDescriptorProperties					(void) const;
 const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	getMultiviewPerViewAttributesPropertiesNVX	(void) const;
 const vk::VkPhysicalDeviceDiscardRectanglePropertiesEXT&			getDiscardRectanglePropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	getConservativeRasterizationPropertiesEXT	(void) const;
@@ -40,7 +40,7 @@ const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShading
 const vk::VkPhysicalDeviceShaderCoreProperties2AMD&					getShaderCoreProperties2AMD					(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesNV&			getCooperativeMatrixPropertiesNV			(void) const;
 const vk::VkPhysicalDeviceProvokingVertexPropertiesEXT&				getProvokingVertexPropertiesEXT				(void) const;
-const vk::VkPhysicalDeviceHostImageCopyPropertiesEXT&				getHostImageCopyPropertiesEXT				(void) const;
+const vk::VkPhysicalDeviceHostImageCopyProperties&					getHostImageCopyProperties					(void) const;
 const vk::VkPhysicalDeviceMapMemoryPlacedPropertiesEXT&				getMapMemoryPlacedPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		getDeviceGeneratedCommandsProperties		(void) const;
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&		getShaderIntegerDotProductProperties		(void) const;
@@ -74,7 +74,7 @@ const vk::VkPhysicalDeviceExtendedDynamicState3PropertiesEXT&		getExtendedDynami
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&		getShaderModuleIdentifierPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&					getOpticalFlowProperties					(void) const;
 const vk::VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&	getExternalFormatResolvePropertiesANDROID	(void) const;
-const vk::VkPhysicalDeviceMaintenance5PropertiesKHR&				getMaintenance5Properties					(void) const;
+const vk::VkPhysicalDeviceMaintenance5Properties&					getMaintenance5Properties					(void) const;
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&				getShaderObjectPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&	getRayTracingInvocationReorderProperties	(void) const;
 const vk::VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&	getExtendedSparseAddressSpacePropertiesNV	(void) const;
@@ -82,10 +82,10 @@ const vk::VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&		getLegacyVertexA
 const vk::VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM&			getShaderCoreBuiltinsPropertiesARM			(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesKHR&			getCooperativeMatrixProperties				(void) const;
 const vk::VkPhysicalDeviceImageProcessing2PropertiesQCOM&			getImageProcessing2PropertiesQCOM			(void) const;
-const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		getVertexAttributeDivisorProperties			(void) const;
+const vk::VkPhysicalDeviceVertexAttributeDivisorProperties&			getVertexAttributeDivisorProperties			(void) const;
 const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&				getLayeredDriverPropertiesMSFT				(void) const;
-const vk::VkPhysicalDeviceLineRasterizationPropertiesKHR&			getLineRasterizationProperties				(void) const;
-const vk::VkPhysicalDeviceMaintenance6PropertiesKHR&				getMaintenance6Properties					(void) const;
+const vk::VkPhysicalDeviceLineRasterizationProperties&				getLineRasterizationProperties				(void) const;
+const vk::VkPhysicalDeviceMaintenance6Properties&					getMaintenance6Properties					(void) const;
 const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&		getImageAlignmentControlPropertiesMESA		(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const;

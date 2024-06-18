@@ -3575,6 +3575,7 @@ void ExtendedDynamicStateTest::checkSupport(Context &context) const
     {
         // Check the implementation supports some type of stippled line.
         const auto &lineRastFeatures = context.getLineRasterizationFeatures();
+
         const auto rasterMode = selectLineRasterizationMode(lineRastFeatures, m_testConfig.lineStippleSupportRequired(),
                                                             m_testConfig.lineRasterModeConfig.staticValue);
 
@@ -4307,7 +4308,11 @@ void setDynamicStates(const TestConfig &testConfig, const vk::DeviceInterface &v
         static_cast<bool>(testConfig.lineStippleParamsConfig.dynamicValue.get()))
     {
         const auto &stippleParams = testConfig.lineStippleParamsConfig.dynamicValue->get();
-        vkd.cmdSetLineStippleKHR(cmdBuffer, stippleParams.factor, stippleParams.pattern);
+#ifndef CTS_USES_VULKANSC
+        vkd.cmdSetLineStipple(cmdBuffer, stippleParams.factor, stippleParams.pattern);
+#else
+        vkd.cmdSetLineStippleEXT(cmdBuffer, stippleParams.factor, stippleParams.pattern);
+#endif // CTS_USES_VULKANSC
     }
 
 #ifndef CTS_USES_VULKANSC

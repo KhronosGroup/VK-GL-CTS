@@ -72,8 +72,8 @@ struct TestConfig
 {
     VkQueueFlagBits transitionFrom;
     VkQueueFlagBits transitionTo;
-    VkQueueGlobalPriorityKHR priorityFrom;
-    VkQueueGlobalPriorityKHR priorityTo;
+    VkQueueGlobalPriority priorityFrom;
+    VkQueueGlobalPriority priorityTo;
     bool enableProtected;
     bool enableSparseBinding;
     SyncType syncType;
@@ -511,7 +511,7 @@ void GPQCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "Queue families with VK_QUEUE_SPARSE_BINDING_BIT not supported");
     }
 
-    auto assertUnavailableQueue = [](const uint32_t qIdx, VkQueueFlagBits qfb, VkQueueGlobalPriorityKHR qgp)
+    auto assertUnavailableQueue = [](const uint32_t qIdx, VkQueueFlagBits qfb, VkQueueGlobalPriority qgp)
     {
         if (qIdx == INVALID_UINT32)
         {
@@ -1066,7 +1066,7 @@ tcu::TestCaseGroup *createGlobalPriorityQueueTests(tcu::TestContext &testCtx)
     std::pair<VkQueueFlags, const char *> const modifiers[]{
         {0, "no_modifiers"}, {VK_QUEUE_SPARSE_BINDING_BIT, "sparse"}, {VK_QUEUE_PROTECTED_BIT, "protected"}};
 
-    std::pair<VkQueueGlobalPriorityKHR, const char *> const prios[]{
+    std::pair<VkQueueGlobalPriority, const char *> const prios[]{
         {VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR, "low"},
         {VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR, "medium"},
         {VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR, "high"},

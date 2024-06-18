@@ -42,14 +42,14 @@ namespace synchronization
 constexpr uint32_t INVALID_UINT32 = (~(static_cast<uint32_t>(0u)));
 
 uint32_t findQueueFamilyIndex(const vk::InstanceInterface &vki, vk::VkPhysicalDevice dev,
-                              vk::VkQueueGlobalPriorityKHR priority, vk::VkQueueFlags includeFlags,
+                              vk::VkQueueGlobalPriority priority, vk::VkQueueFlags includeFlags,
                               vk::VkQueueFlags excludeFlags, uint32_t excludeIndex = INVALID_UINT32);
 
 struct SpecialDevice
 {
     SpecialDevice(Context &ctx, vk::VkQueueFlagBits transitionFrom, vk::VkQueueFlagBits transitionTo,
-                  vk::VkQueueGlobalPriorityKHR priorityFrom, vk::VkQueueGlobalPriorityKHR priorityTo,
-                  bool enableProtected, bool enableSparseBinding);
+                  vk::VkQueueGlobalPriority priorityFrom, vk::VkQueueGlobalPriority priorityTo, bool enableProtected,
+                  bool enableSparseBinding);
     SpecialDevice(const SpecialDevice &)            = delete;
     SpecialDevice &operator=(const SpecialDevice &) = delete;
     static vk::VkQueueFlags getColissionFlags(vk::VkQueueFlags flags);

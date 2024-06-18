@@ -1755,11 +1755,10 @@ void checkSupportKhrLineRasterization(Context &context)
 
 tcu::TestStatus validateLimitsLineRasterization(Context &context)
 {
-    const VkBool32 checkAlways = VK_TRUE;
-    vk::VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProperties =
-        context.getLineRasterizationProperties();
+    const VkBool32 checkAlways                  = VK_TRUE;
     TestLog &log                                = context.getTestContext().getLog();
     bool limitsOk                               = true;
+    auto lineRasterizationProperties            = context.getLineRasterizationProperties();
     vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&lineRasterizationProperties);
     const InstanceInterface &vk                 = context.getInstanceInterface();
 
@@ -6147,6 +6146,103 @@ tcu::TestStatus deviceFeaturesVulkan13(Context &context)
 
     return tcu::TestStatus::pass("Querying Vulkan 1.3 device features succeeded");
 }
+
+tcu::TestStatus deviceFeaturesVulkan14(Context &context)
+{
+    using namespace ValidateQueryBits;
+
+    const QueryMemberTableEntry feature14OffsetTable[] = {
+
+        // VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, dynamicRenderingLocalRead),
+
+        // VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, globalPriorityQuery),
+
+        // VkPhysicalDeviceIndexTypeUint8FeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, indexTypeUint8),
+
+        // VkPhysicalDeviceLineRasterizationFeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, rectangularLines),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, bresenhamLines),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, smoothLines),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, stippledRectangularLines),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, stippledBresenhamLines),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, stippledSmoothLines),
+
+        // VkPhysicalDeviceMaintenance5FeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, maintenance5),
+
+        // VkPhysicalDeviceMaintenance6FeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, maintenance6),
+
+        // VkPhysicalDeviceShaderExpectAssumeFeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, shaderExpectAssume),
+
+        // VkPhysicalDeviceShaderFloatControls2FeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, shaderFloatControls2),
+
+        // VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, shaderSubgroupRotate),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, shaderSubgroupRotateClustered),
+
+        // VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, vertexAttributeInstanceRateDivisor),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, vertexAttributeInstanceRateZeroDivisor),
+
+        // VkPhysicalDeviceHostImageCopyFeaturesEXT
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, hostImageCopy),
+
+        // VkPhysicalDevicePipelineProtectedAccessFeaturesEXT
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, pipelineProtectedAccess),
+
+        // VkPhysicalDevicePipelineRobustnessFeaturesEXT
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Features, pipelineRobustness),
+        {0, 0}};
+    TestLog &log                          = context.getTestContext().getLog();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const CustomInstance instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver &vki                 = instance.getDriver();
+    const uint32_t vulkan14FeaturesBufferSize = sizeof(VkPhysicalDeviceVulkan14Features) + GUARD_SIZE;
+    VkPhysicalDeviceFeatures2 extFeatures;
+    uint8_t buffer14a[vulkan14FeaturesBufferSize];
+    uint8_t buffer14b[vulkan14FeaturesBufferSize];
+    const int count                                           = 2u;
+    VkPhysicalDeviceVulkan14Features *vulkan14Features[count] = {(VkPhysicalDeviceVulkan14Features *)(buffer14a),
+                                                                 (VkPhysicalDeviceVulkan14Features *)(buffer14b)};
+
+    if (!context.contextSupports(vk::ApiVersion(0, 1, 4, 0)))
+        TCU_THROW(NotSupportedError, "At least Vulkan 1.4 required to run test");
+
+    deMemset(buffer14a, GUARD_VALUE, sizeof(buffer14a));
+    deMemset(buffer14b, GUARD_VALUE, sizeof(buffer14b));
+
+    // Validate all fields initialized
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&extFeatures.features, 0x00, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = vulkan14Features[ndx];
+
+        deMemset(vulkan14Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan14Features));
+        vulkan14Features[ndx]->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
+        vulkan14Features[ndx]->pNext = DE_NULL;
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << *vulkan14Features[0] << TestLog::EndMessage;
+
+    if (!validateStructsWithGuard(feature14OffsetTable, vulkan14Features, GUARD_VALUE, GUARD_SIZE))
+    {
+        log << TestLog::Message << "deviceFeatures - VkPhysicalDeviceVulkan14Features initialization failure"
+            << TestLog::EndMessage;
+
+        return tcu::TestStatus::fail("VkPhysicalDeviceVulkan14Features initialization failure");
+    }
+
+    return tcu::TestStatus::pass("Querying Vulkan 1.4 device features succeeded");
+}
 #endif // CTS_USES_VULKANSC
 
 tcu::TestStatus devicePropertiesVulkan12(Context &context)
@@ -6434,6 +6530,94 @@ tcu::TestStatus devicePropertiesVulkan13(Context &context)
 
     return tcu::TestStatus::pass("Querying Vulkan 1.3 device properties succeeded");
 }
+
+tcu::TestStatus devicePropertiesVulkan14(Context &context)
+{
+    using namespace ValidateQueryBits;
+
+    const QueryMemberTableEntry properties14OffsetTable[] = {
+
+        // VkPhysicalDeviceLineRasterizationPropertiesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, lineSubPixelPrecisionBits),
+
+        // VkPhysicalDeviceMaintenance5PropertiesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, earlyFragmentMultisampleCoverageAfterSampleCounting),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, earlyFragmentSampleMaskTestBeforeSampleCounting),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, depthStencilSwizzleOneSupport),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, polygonModePointSize),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, nonStrictSinglePixelWideLinesUseParallelogram),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, nonStrictWideLinesUseParallelogram),
+
+        // VkPhysicalDeviceMaintenance6PropertiesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, blockTexelViewCompatibleMultipleLayers),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, maxCombinedImageSamplerDescriptorCount),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, fragmentShadingRateClampCombinerInputs),
+
+        // VkPhysicalDevicePushDescriptorPropertiesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, maxPushDescriptors),
+
+        // VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, maxVertexAttribDivisor),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, supportsNonZeroFirstInstance),
+
+        // VkPhysicalDeviceHostImageCopyPropertiesEXT
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, copySrcLayoutCount),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, pCopySrcLayouts),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, copyDstLayoutCount),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, pCopyDstLayouts),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, optimalTilingLayoutUUID),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, identicalMemoryTypeRequirements),
+
+        // VkPhysicalDevicePipelineRobustnessPropertiesEXT
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, defaultRobustnessStorageBuffers),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, defaultRobustnessUniformBuffers),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, defaultRobustnessVertexInputs),
+        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, defaultRobustnessImages),
+        {0, 0}};
+
+    TestLog &log                          = context.getTestContext().getLog();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const CustomInstance instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver &vki                   = instance.getDriver();
+    const uint32_t vulkan14PropertiesBufferSize = sizeof(VkPhysicalDeviceVulkan14Properties) + GUARD_SIZE;
+    VkPhysicalDeviceProperties2 extProperties;
+    uint8_t buffer14a[vulkan14PropertiesBufferSize];
+    uint8_t buffer14b[vulkan14PropertiesBufferSize];
+    const int count                                               = 2u;
+    VkPhysicalDeviceVulkan14Properties *vulkan14Properties[count] = {(VkPhysicalDeviceVulkan14Properties *)(buffer14a),
+                                                                     (VkPhysicalDeviceVulkan14Properties *)(buffer14b)};
+
+    if (!context.contextSupports(vk::ApiVersion(0, 1, 4, 0)))
+        TCU_THROW(NotSupportedError, "At least Vulkan 1.4 required to run test");
+
+    deMemset(buffer14a, GUARD_VALUE, sizeof(buffer14a));
+    deMemset(buffer14b, GUARD_VALUE, sizeof(buffer14b));
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&extProperties.properties, 0x00, sizeof(extProperties.properties));
+        extProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+        extProperties.pNext = vulkan14Properties[ndx];
+
+        deMemset(vulkan14Properties[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan14Properties));
+        vulkan14Properties[ndx]->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_PROPERTIES;
+        vulkan14Properties[ndx]->pNext = DE_NULL;
+
+        vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+    }
+
+    log << TestLog::Message << *vulkan14Properties[0] << TestLog::EndMessage;
+
+    if (!validateStructsWithGuard(properties14OffsetTable, vulkan14Properties, GUARD_VALUE, GUARD_SIZE))
+    {
+        log << TestLog::Message << "deviceProperties - VkPhysicalDeviceVulkan14Properties initialization failure"
+            << TestLog::EndMessage;
+
+        return tcu::TestStatus::fail("VkPhysicalDeviceVulkan14Properties initialization failure");
+    }
+
+    return tcu::TestStatus::pass("Querying Vulkan 1.4 device properties succeeded");
+}
 #endif // CTS_USES_VULKANSC
 
 tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context &context)
@@ -6705,6 +6889,160 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context &context)
 }
 
 #ifndef CTS_USES_VULKANSC
+tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan14(Context &context)
+{
+    TestLog &log                          = context.getTestContext().getLog();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const CustomInstance instance =
+        createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2");
+    const InstanceDriver &vki = instance.getDriver();
+
+    if (!context.contextSupports(vk::ApiVersion(0, 1, 4, 0)))
+        TCU_THROW(NotSupportedError, "At least Vulkan 1.4 required to run test");
+
+    VkPhysicalDeviceVulkan14Features vulkan14Features = initVulkanStructure();
+    VkPhysicalDeviceFeatures2 extFeatures             = initVulkanStructure(&vulkan14Features);
+
+    vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+
+    log << TestLog::Message << vulkan14Features << TestLog::EndMessage;
+
+    // Validate if required VkPhysicalDeviceVulkan14Features fields are set
+    std::pair<const char *, VkBool32> features2validate[]{
+        {{"globalPriorityQuery"}, vulkan14Features.globalPriorityQuery},
+        {{"shaderSubgroupRotate"}, vulkan14Features.shaderSubgroupRotate},
+        {{"shaderSubgroupRotateClustered"}, vulkan14Features.shaderSubgroupRotateClustered},
+        {{"shaderFloatControls2"}, vulkan14Features.shaderFloatControls2},
+        {{"shaderExpectAssume"}, vulkan14Features.shaderExpectAssume},
+        {{"rectangularLines"}, vulkan14Features.rectangularLines},
+        {{"bresenhamLines"}, vulkan14Features.bresenhamLines},
+        {{"smoothLines"}, vulkan14Features.smoothLines},
+        {{"stippledRectangularLines"}, vulkan14Features.stippledRectangularLines},
+        {{"stippledBresenhamLines"}, vulkan14Features.stippledBresenhamLines},
+        {{"stippledSmoothLines"}, vulkan14Features.stippledSmoothLines},
+        {{"vertexAttributeInstanceRateDivisor"}, vulkan14Features.vertexAttributeInstanceRateDivisor},
+        {{"vertexAttributeInstanceRateZeroDivisor"}, vulkan14Features.vertexAttributeInstanceRateZeroDivisor},
+        {{"indexTypeUint8"}, vulkan14Features.indexTypeUint8},
+        {{"dynamicRenderingLocalRead"}, vulkan14Features.dynamicRenderingLocalRead},
+        {{"maintenance5"}, vulkan14Features.maintenance5},
+        {{"maintenance6"}, vulkan14Features.maintenance6},
+        {{"pipelineProtectedAccess"}, vulkan14Features.pipelineProtectedAccess},
+        {{"pipelineRobustness"}, vulkan14Features.pipelineRobustness},
+        {{"hostImageCopy"}, vulkan14Features.hostImageCopy},
+    };
+    for (const auto &feature : features2validate)
+    {
+        if (!feature.second)
+            TCU_FAIL(string("Required feature VkPhysicalDeviceVulkan14Features.") + feature.first + " is not set");
+    }
+
+    // collect all extension features
+    {
+        VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR dynamicRenderingLocalReadFeatures = initVulkanStructure();
+        VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR globalPriorityQueryFeatures =
+            initVulkanStructure(&dynamicRenderingLocalReadFeatures);
+        VkPhysicalDeviceIndexTypeUint8FeaturesKHR indexTypeUint8Features =
+            initVulkanStructure(&globalPriorityQueryFeatures);
+        VkPhysicalDeviceLineRasterizationFeaturesKHR lineRasterizationFeatures =
+            initVulkanStructure(&indexTypeUint8Features);
+        VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features = initVulkanStructure(&lineRasterizationFeatures);
+        VkPhysicalDeviceMaintenance6FeaturesKHR maintenance6Features = initVulkanStructure(&maintenance5Features);
+        VkPhysicalDeviceShaderExpectAssumeFeaturesKHR shaderExpectAssumeFeatures =
+            initVulkanStructure(&maintenance6Features);
+        VkPhysicalDeviceShaderFloatControls2FeaturesKHR shaderFloatControls2Features =
+            initVulkanStructure(&shaderExpectAssumeFeatures);
+        VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR shaderSubgroupRotateFeatures =
+            initVulkanStructure(&shaderFloatControls2Features);
+        VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR vertexAttributeDivisorFeatures =
+            initVulkanStructure(&shaderSubgroupRotateFeatures);
+        VkPhysicalDeviceHostImageCopyFeaturesEXT hostImageCopyFeatures =
+            initVulkanStructure(&vertexAttributeDivisorFeatures);
+        VkPhysicalDevicePipelineProtectedAccessFeaturesEXT pipelineProtectedAccessFeatures =
+            initVulkanStructure(&hostImageCopyFeatures);
+        VkPhysicalDevicePipelineRobustnessFeaturesEXT pipelineRobustnessFeatures =
+            initVulkanStructure(&pipelineProtectedAccessFeatures);
+
+        extFeatures = initVulkanStructure(&pipelineRobustnessFeatures);
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+
+        log << TestLog::Message << extFeatures << TestLog::EndMessage;
+        log << TestLog::Message << dynamicRenderingLocalReadFeatures << TestLog::EndMessage;
+        log << TestLog::Message << globalPriorityQueryFeatures << TestLog::EndMessage;
+        log << TestLog::Message << indexTypeUint8Features << TestLog::EndMessage;
+        log << TestLog::Message << lineRasterizationFeatures << TestLog::EndMessage;
+        log << TestLog::Message << maintenance5Features << TestLog::EndMessage;
+        log << TestLog::Message << maintenance6Features << TestLog::EndMessage;
+        log << TestLog::Message << shaderExpectAssumeFeatures << TestLog::EndMessage;
+        log << TestLog::Message << shaderFloatControls2Features << TestLog::EndMessage;
+        log << TestLog::Message << shaderSubgroupRotateFeatures << TestLog::EndMessage;
+        log << TestLog::Message << vertexAttributeDivisorFeatures << TestLog::EndMessage;
+        log << TestLog::Message << hostImageCopyFeatures << TestLog::EndMessage;
+        log << TestLog::Message << pipelineProtectedAccessFeatures << TestLog::EndMessage;
+        log << TestLog::Message << pipelineRobustnessFeatures << TestLog::EndMessage;
+
+        if (dynamicRenderingLocalReadFeatures.dynamicRenderingLocalRead != vulkan14Features.dynamicRenderingLocalRead)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR and "
+                     "VkPhysicalDeviceVulkan14Features");
+
+        if (globalPriorityQueryFeatures.globalPriorityQuery != vulkan14Features.globalPriorityQuery)
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR and VkPhysicalDeviceVulkan14Features");
+
+        if (indexTypeUint8Features.indexTypeUint8 != vulkan14Features.indexTypeUint8)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceIndexTypeUint8FeaturesKHR and VkPhysicalDeviceVulkan14Features");
+
+        if ((lineRasterizationFeatures.rectangularLines != vulkan14Features.rectangularLines) ||
+            (lineRasterizationFeatures.bresenhamLines != vulkan14Features.bresenhamLines) ||
+            (lineRasterizationFeatures.smoothLines != vulkan14Features.smoothLines) ||
+            (lineRasterizationFeatures.stippledRectangularLines != vulkan14Features.stippledRectangularLines) ||
+            (lineRasterizationFeatures.stippledBresenhamLines != vulkan14Features.stippledBresenhamLines) ||
+            (lineRasterizationFeatures.stippledSmoothLines != vulkan14Features.stippledSmoothLines))
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDeviceLineRasterizationFeaturesKHR and VkPhysicalDeviceVulkan14Features");
+
+        if (maintenance5Features.maintenance5 != vulkan14Features.maintenance5)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance5FeaturesKHR and VkPhysicalDeviceVulkan14Features");
+
+        if (maintenance6Features.maintenance6 != vulkan14Features.maintenance6)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance6FeaturesKHR and VkPhysicalDeviceVulkan14Features");
+
+        if (shaderExpectAssumeFeatures.shaderExpectAssume != vulkan14Features.shaderExpectAssume)
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDeviceShaderExpectAssumeFeatures and VkPhysicalDeviceVulkan14Features");
+
+        if (shaderFloatControls2Features.shaderFloatControls2 != vulkan14Features.shaderFloatControls2)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloatControls2FeaturesKHR and "
+                     "VkPhysicalDeviceVulkan14Features");
+
+        if ((shaderSubgroupRotateFeatures.shaderSubgroupRotate != vulkan14Features.shaderSubgroupRotate) ||
+            (shaderSubgroupRotateFeatures.shaderSubgroupRotateClustered !=
+             vulkan14Features.shaderSubgroupRotateClustered))
+            TCU_FAIL("Mismatch between VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR and "
+                     "VkPhysicalDeviceVulkan14Features");
+
+        if ((vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor !=
+             vulkan14Features.vertexAttributeInstanceRateDivisor) ||
+            (vertexAttributeDivisorFeatures.vertexAttributeInstanceRateZeroDivisor !=
+             vulkan14Features.vertexAttributeInstanceRateZeroDivisor))
+            TCU_FAIL("Mismatch between VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR and "
+                     "VkPhysicalDeviceVulkan14Features");
+
+        if (hostImageCopyFeatures.hostImageCopy != vulkan14Features.hostImageCopy)
+            TCU_FAIL("Mismatch between VkPhysicalDeviceHostImageCopyFeaturesEXT and VkPhysicalDeviceVulkan14Features");
+
+        if (pipelineProtectedAccessFeatures.pipelineProtectedAccess != vulkan14Features.pipelineProtectedAccess)
+            TCU_FAIL("Mismatch between VkPhysicalDevicePipelineProtectedAccessFeaturesEXT and "
+                     "VkPhysicalDeviceVulkan14Features");
+
+        if (pipelineRobustnessFeatures.pipelineRobustness != vulkan14Features.pipelineRobustness)
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDevicePipelineRobustnessFeaturesEXT and VkPhysicalDeviceVulkan14Features");
+    }
+
+    return tcu::TestStatus::pass("Vulkan 1.4 device features are consistent with extensions");
+}
+
 tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan13(Context &context)
 {
     TestLog &log                          = context.getTestContext().getLog();
@@ -7272,6 +7610,119 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan13(Context &context)
 
     return tcu::TestStatus::pass("Vulkan 1.3 device properties are consistent with extension properties");
 }
+
+tcu::TestStatus devicePropertyExtensionsConsistencyVulkan14(Context &context)
+{
+    TestLog &log                          = context.getTestContext().getLog();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const CustomInstance instance =
+        createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2");
+    const InstanceDriver &vki = instance.getDriver();
+
+    if (!context.contextSupports(vk::ApiVersion(0, 1, 4, 0)))
+        TCU_THROW(NotSupportedError, "At least Vulkan 1.4 required to run test");
+
+    VkPhysicalDeviceVulkan14Properties vulkan14Properties = initVulkanStructure();
+    VkPhysicalDeviceProperties2 extProperties             = initVulkanStructure(&vulkan14Properties);
+
+    vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+    log << TestLog::Message << vulkan14Properties << TestLog::EndMessage;
+
+    // Validate all fields initialized matching to extension structures
+    {
+        VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProperties = initVulkanStructure();
+        VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5Properties =
+            initVulkanStructure(&lineRasterizationProperties);
+        VkPhysicalDeviceMaintenance6PropertiesKHR maintenance6Properties = initVulkanStructure(&maintenance5Properties);
+        VkPhysicalDevicePushDescriptorPropertiesKHR pushDescriptorProperties =
+            initVulkanStructure(&maintenance6Properties);
+        VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR vertexAttributeDivisorProperties =
+            initVulkanStructure(&pushDescriptorProperties);
+        VkPhysicalDeviceHostImageCopyPropertiesEXT hostImageCopyProperties =
+            initVulkanStructure(&vertexAttributeDivisorProperties);
+        VkPhysicalDevicePipelineRobustnessPropertiesEXT pipelineRobustnessProperties =
+            initVulkanStructure(&hostImageCopyProperties);
+        extProperties = initVulkanStructure(&pipelineRobustnessProperties);
+
+        vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+        if (lineRasterizationProperties.lineSubPixelPrecisionBits != vulkan14Properties.lineSubPixelPrecisionBits)
+        {
+            TCU_FAIL("Mismatch between VkPhysicalDeviceLineRasterizationPropertiesKHR and "
+                     "VkPhysicalDeviceVulkan14Properties");
+        }
+
+        if (maintenance5Properties.earlyFragmentMultisampleCoverageAfterSampleCounting !=
+                vulkan14Properties.earlyFragmentMultisampleCoverageAfterSampleCounting ||
+            maintenance5Properties.earlyFragmentSampleMaskTestBeforeSampleCounting !=
+                vulkan14Properties.earlyFragmentSampleMaskTestBeforeSampleCounting ||
+            maintenance5Properties.depthStencilSwizzleOneSupport != vulkan14Properties.depthStencilSwizzleOneSupport ||
+            maintenance5Properties.polygonModePointSize != vulkan14Properties.polygonModePointSize ||
+            maintenance5Properties.nonStrictSinglePixelWideLinesUseParallelogram !=
+                vulkan14Properties.nonStrictSinglePixelWideLinesUseParallelogram ||
+            maintenance5Properties.nonStrictWideLinesUseParallelogram !=
+                vulkan14Properties.nonStrictWideLinesUseParallelogram)
+        {
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDeviceMaintenance5PropertiesKHR and VkPhysicalDeviceVulkan14Properties");
+        }
+
+        if (maintenance6Properties.blockTexelViewCompatibleMultipleLayers !=
+                vulkan14Properties.blockTexelViewCompatibleMultipleLayers ||
+            maintenance6Properties.maxCombinedImageSamplerDescriptorCount !=
+                vulkan14Properties.maxCombinedImageSamplerDescriptorCount ||
+            maintenance6Properties.fragmentShadingRateClampCombinerInputs !=
+                vulkan14Properties.fragmentShadingRateClampCombinerInputs)
+        {
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDeviceMaintenance6PropertiesKHR and VkPhysicalDeviceVulkan14Properties");
+        }
+
+        if (pushDescriptorProperties.maxPushDescriptors != vulkan14Properties.maxPushDescriptors)
+        {
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDevicePushDescriptorPropertiesKHR and VkPhysicalDeviceVulkan14Properties");
+        }
+
+        if (vertexAttributeDivisorProperties.maxVertexAttribDivisor != vulkan14Properties.maxVertexAttribDivisor ||
+            vertexAttributeDivisorProperties.supportsNonZeroFirstInstance !=
+                vulkan14Properties.supportsNonZeroFirstInstance)
+        {
+            TCU_FAIL("Mismatch between VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR and "
+                     "VkPhysicalDeviceVulkan14Properties");
+        }
+
+        if (hostImageCopyProperties.copySrcLayoutCount != vulkan14Properties.copySrcLayoutCount ||
+            (deMemCmp(hostImageCopyProperties.pCopySrcLayouts, vulkan14Properties.pCopySrcLayouts,
+                      vulkan14Properties.copySrcLayoutCount) != 0) ||
+            hostImageCopyProperties.copyDstLayoutCount != vulkan14Properties.copyDstLayoutCount ||
+            (deMemCmp(hostImageCopyProperties.pCopyDstLayouts, vulkan14Properties.pCopyDstLayouts,
+                      vulkan14Properties.copyDstLayoutCount) != 0) ||
+            (deMemCmp(hostImageCopyProperties.optimalTilingLayoutUUID, vulkan14Properties.optimalTilingLayoutUUID,
+                      VK_LUID_SIZE) != 0) ||
+            hostImageCopyProperties.identicalMemoryTypeRequirements !=
+                vulkan14Properties.identicalMemoryTypeRequirements)
+        {
+            TCU_FAIL(
+                "Mismatch between VkPhysicalDeviceHostImageCopyPropertiesEXT and VkPhysicalDeviceVulkan14Properties");
+        }
+
+        if (pipelineRobustnessProperties.defaultRobustnessStorageBuffers !=
+                vulkan14Properties.defaultRobustnessStorageBuffers ||
+            pipelineRobustnessProperties.defaultRobustnessUniformBuffers !=
+                vulkan14Properties.defaultRobustnessUniformBuffers ||
+            pipelineRobustnessProperties.defaultRobustnessVertexInputs !=
+                vulkan14Properties.defaultRobustnessVertexInputs ||
+            pipelineRobustnessProperties.defaultRobustnessImages != vulkan14Properties.defaultRobustnessImages)
+        {
+            TCU_FAIL("Mismatch between VkPhysicalDevicePipelineRobustnessPropertiesEXT and "
+                     "VkPhysicalDeviceVulkan14Properties");
+        }
+    }
+
+    return tcu::TestStatus::pass("Vulkan 1.4 device properties are consistent with extension properties");
+}
 #endif // CTS_USES_VULKANSC
 
 tcu::TestStatus imageFormatProperties2(Context &context, const VkFormat format, const VkImageType imageType,
@@ -7821,6 +8272,21 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
                         devicePropertyExtensionsConsistencyVulkan13);
         addFunctionCase(extendedPropertiesTests.get(), "feature_bits_influence", checkApiVersionSupport<1, 3>,
                         featureBitInfluenceOnDeviceCreate<VK_API_VERSION_1_3>);
+
+        infoTests->addChild(extendedPropertiesTests.release());
+    }
+    {
+        // Vulkan 1.4 related tests
+        de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests(new tcu::TestCaseGroup(testCtx, "vulkan1p4"));
+
+        addFunctionCase(extendedPropertiesTests.get(), "features", deviceFeaturesVulkan14);
+        addFunctionCase(extendedPropertiesTests.get(), "properties", devicePropertiesVulkan14);
+        addFunctionCase(extendedPropertiesTests.get(), "feature_extensions_consistency",
+                        deviceFeatureExtensionsConsistencyVulkan14);
+        addFunctionCase(extendedPropertiesTests.get(), "property_extensions_consistency",
+                        devicePropertyExtensionsConsistencyVulkan14);
+        addFunctionCase(extendedPropertiesTests.get(), "feature_bits_influence", checkApiVersionSupport<1, 4>,
+                        featureBitInfluenceOnDeviceCreate<VK_API_VERSION_1_4>);
 
         infoTests->addChild(extendedPropertiesTests.release());
     }

@@ -50,6 +50,7 @@ struct AllFeaturesBlobs
     VkPhysicalDeviceVulkan12Features &vk12;
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceVulkan13Features &vk13;
+    VkPhysicalDeviceVulkan14Features &vk14;
 #endif // CTS_USES_VULKANSC
     // add blobs from future vulkan versions here
 };
@@ -125,6 +126,10 @@ public:
     {
         return m_vulkan13Features;
     }
+    const VkPhysicalDeviceVulkan14Features &getVulkan14Features(void) const
+    {
+        return m_vulkan14Features;
+    }
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
     const VkPhysicalDeviceVulkanSC10Features &getVulkanSC10Features(void) const
@@ -148,6 +153,7 @@ private:
     VkPhysicalDeviceVulkan12Features m_vulkan12Features;
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceVulkan13Features m_vulkan13Features;
+    VkPhysicalDeviceVulkan14Features m_vulkan14Features;
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
     VkPhysicalDeviceVulkanSC10Features m_vulkanSC10Features;

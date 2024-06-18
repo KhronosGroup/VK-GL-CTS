@@ -221,7 +221,7 @@ void pushConstants(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkPipel
             size,                                      // uint32_t size;
             pValues,                                   // const void* pValues;
         };
-        vk.cmdPushConstants2KHR(cmdBuffer, &pushConstantInfo);
+        vk.cmdPushConstants2(cmdBuffer, &pushConstantInfo);
 #endif
     }
     else

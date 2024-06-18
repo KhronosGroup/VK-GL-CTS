@@ -2013,7 +2013,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkDestroyDescriptorUpdateTemplateKHR");
 		functions.push_back("vkUpdateDescriptorSetWithTemplateKHR");
 		// Dependencies: VK_KHR_push_descriptor
-		if (extensionIsSupported(vDEP, "VK_KHR_push_descriptor")) {
+		if ((checkVersion(1, 4, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_push_descriptor"))) {
 			functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
 		}
 		return;
@@ -3677,7 +3677,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdBindDescriptorSets2KHR");
 		functions.push_back("vkCmdPushConstants2KHR");
 		// Dependencies: VK_KHR_push_descriptor
-		if (extensionIsSupported(vDEP, "VK_KHR_push_descriptor")) {
+		if ((checkVersion(1, 4, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_push_descriptor"))) {
 			functions.push_back("vkCmdPushDescriptorSet2KHR");
 			functions.push_back("vkCmdPushDescriptorSetWithTemplate2KHR");
 		}

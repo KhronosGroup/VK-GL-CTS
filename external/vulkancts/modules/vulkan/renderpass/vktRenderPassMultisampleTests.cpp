@@ -1533,8 +1533,8 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternalDynamicRenderi
         {
             renderingAttachmentLocation = getRenderingAttachmentLocationInfo(
                 colorAttachmentLocations, isDepthStencilFormat, m_sampleCount, splitPipelineNdx);
-            vk.cmdSetRenderingAttachmentLocationsKHR(*secCmdBuffer, &renderingAttachmentLocation);
-            vk.cmdSetRenderingInputAttachmentIndicesKHR(*secCmdBuffer, &renderingInputAttachmentIndexInfo);
+            vk.cmdSetRenderingAttachmentLocations(*secCmdBuffer, &renderingAttachmentLocation);
+            vk.cmdSetRenderingInputAttachmentIndices(*secCmdBuffer, &renderingInputAttachmentIndexInfo);
 
             drawNextSubpass(vk, *secCmdBuffer, splitPipelineNdx);
         }
@@ -1565,8 +1565,8 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternalDynamicRenderi
         {
             renderingAttachmentLocation = getRenderingAttachmentLocationInfo(
                 colorAttachmentLocations, isDepthStencilFormat, m_sampleCount, splitPipelineNdx);
-            vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocation);
-            vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
+            vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocation);
+            vk.cmdSetRenderingInputAttachmentIndices(*cmdBuffer, &renderingInputAttachmentIndexInfo);
 
             drawNextSubpass(vk, *cmdBuffer, splitPipelineNdx);
         }

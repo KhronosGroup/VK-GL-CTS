@@ -767,7 +767,7 @@ tcu::TestStatus ImageSubresourceLayoutInvarianceInstance::iterate(void)
         VkDeviceImageSubresourceInfoKHR imageSubresourceInfo = initVulkanStructure();
         imageSubresourceInfo.pCreateInfo                     = &imageCreateInfo;
         imageSubresourceInfo.pSubresource                    = &imageSubresource2;
-        vk.getDeviceImageSubresourceLayoutKHR(device, &imageSubresourceInfo, &subresourceLayout2);
+        vk.getDeviceImageSubresourceLayout(device, &imageSubresourceInfo, &subresourceLayout2);
 
         const auto size = sizeof(VkSubresourceLayout);
         if (deMemCmp(&subresourceLayout1, &(subresourceLayout2.subresourceLayout), size))
@@ -776,7 +776,7 @@ tcu::TestStatus ImageSubresourceLayoutInvarianceInstance::iterate(void)
         if (m_context.isDeviceFunctionalitySupported("VK_EXT_image_compression_control"))
         {
             VkSubresourceLayout2EXT subresourceLayout3 = initVulkanStructure();
-            vk.getImageSubresourceLayout2KHR(device, *image, &imageSubresource2, &subresourceLayout3);
+            vk.getImageSubresourceLayout2(device, *image, &imageSubresource2, &subresourceLayout3);
 
             if (deMemCmp(&subresourceLayout1, &(subresourceLayout3.subresourceLayout), size))
                 return tcu::TestStatus::fail("Fail (vkGetImageSubresourceLayout2KHR)");

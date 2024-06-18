@@ -2698,8 +2698,8 @@ public:
                                            localStencilAttachmentIndex, renderingAttachmentLocationInfo,
                                            renderingInputAttachmentIndexInfo);
 
-                vk.cmdSetRenderingAttachmentLocationsKHR(commandBuffer, &renderingAttachmentLocationInfo);
-                vk.cmdSetRenderingInputAttachmentIndicesKHR(commandBuffer, &renderingInputAttachmentIndexInfo);
+                vk.cmdSetRenderingAttachmentLocations(commandBuffer, &renderingAttachmentLocationInfo);
+                vk.cmdSetRenderingInputAttachmentIndices(commandBuffer, &renderingInputAttachmentIndexInfo);
             }
         }
 #endif // CTS_USES_VULKANSC
@@ -3521,8 +3521,8 @@ void pushDynamicRenderingCommands(const DeviceInterface &vk, VkCommandBuffer com
                                                localStencilAttachmentIndex, renderingAttachmentLocationInfo,
                                                renderingInputAttachmentIndexInfo);
 
-                    vk.cmdSetRenderingAttachmentLocationsKHR(commandBuffer, &renderingAttachmentLocationInfo);
-                    vk.cmdSetRenderingInputAttachmentIndicesKHR(commandBuffer, &renderingInputAttachmentIndexInfo);
+                    vk.cmdSetRenderingAttachmentLocations(commandBuffer, &renderingAttachmentLocationInfo);
+                    vk.cmdSetRenderingInputAttachmentIndices(commandBuffer, &renderingInputAttachmentIndexInfo);
                 }
 
                 const VkCommandBuffer cmd = subpassRenderers[subpassNdx]->getCommandBuffer();

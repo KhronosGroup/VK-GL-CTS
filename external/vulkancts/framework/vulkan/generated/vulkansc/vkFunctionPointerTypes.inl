@@ -281,8 +281,8 @@ typedef VKAPI_ATTR VkDeviceAddress		(VKAPI_CALL* GetBufferDeviceAddressEXTFunc)	
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateHeadlessSurfaceEXTFunc)										(VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR uint64_t				(VKAPI_CALL* GetDeviceMemoryOpaqueCaptureAddressFunc)							(VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo);
 typedef VKAPI_ATTR uint64_t				(VKAPI_CALL* GetDeviceMemoryOpaqueCaptureAddressKHRFunc)						(VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo);
-typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLineStippleKHRFunc)											(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLineStippleEXTFunc)											(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLineStippleKHRFunc)											(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFaultDataFunc)													(VkDevice device, VkFaultQueryBehavior faultQueryBehavior, VkBool32* pUnrecordedFaults, uint32_t* pFaultCount, VkFaultData* pFaults);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetCullModeEXTFunc)												(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFrontFaceEXTFunc)											(VkCommandBuffer commandBuffer, VkFrontFace frontFace);

@@ -1024,15 +1024,15 @@ void UnusedAttachmentTestInstance::createCommandBufferDynamicRendering(const Dev
         renderingAttachmentLocationInfo.pNext                          = DE_NULL;
         renderingAttachmentLocationInfo.pColorAttachmentLocations      = colorAttachmentLocationsSubpass0;
         renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices = colorAttachmentInputIndicesSubpass0;
-        vk.cmdSetRenderingAttachmentLocationsKHR(secCmdBuffer, &renderingAttachmentLocationInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(secCmdBuffer, &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingAttachmentLocations(secCmdBuffer, &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(secCmdBuffer, &renderingInputAttachmentIndexInfo);
         drawFirstSubpass(vk, secCmdBuffer);
         inbetweenRenderCommands(vk, secCmdBuffer);
 
         renderingAttachmentLocationInfo.pColorAttachmentLocations      = colorAttachmentLocationsSubpass1;
         renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices = colorAttachmentInputIndicesSubpass1;
-        vk.cmdSetRenderingAttachmentLocationsKHR(secCmdBuffer, &renderingAttachmentLocationInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(secCmdBuffer, &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingAttachmentLocations(secCmdBuffer, &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(secCmdBuffer, &renderingInputAttachmentIndexInfo);
         drawSecondSubpass(vk, secCmdBuffer);
 
         vk.cmdEndRendering(secCmdBuffer);
@@ -1050,13 +1050,13 @@ void UnusedAttachmentTestInstance::createCommandBufferDynamicRendering(const Dev
         preRenderCommands(vk, *m_cmdBuffer);
         vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 
-        vk.cmdSetRenderingAttachmentLocationsKHR(*m_cmdBuffer, &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingAttachmentLocations(*m_cmdBuffer, &renderingAttachmentLocationInfo);
         drawFirstSubpass(vk, *m_cmdBuffer);
         inbetweenRenderCommands(vk, *m_cmdBuffer);
 
         renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass1;
-        vk.cmdSetRenderingAttachmentLocationsKHR(*m_cmdBuffer, &renderingAttachmentLocationInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingAttachmentLocations(*m_cmdBuffer, &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
         drawSecondSubpass(vk, *m_cmdBuffer);
 
         vk.cmdEndRendering(*m_cmdBuffer);

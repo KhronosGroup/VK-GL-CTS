@@ -577,8 +577,8 @@ void PushDescriptorBufferGraphicsTestInstance::init(void)
                 DE_NULL                                 // const VkBufferView* pTexelBufferView;
             };
 
-            m_vkd.cmdPushDescriptorSetKHR(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                          *m_preRasterizationStatePipelineLayout, 0, 1, &writeDescriptorSet);
+            m_vkd.cmdPushDescriptorSet(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                       *m_preRasterizationStatePipelineLayout, 0, 1, &writeDescriptorSet);
             m_vkd.cmdDraw(*m_cmdBuffer, 6, 1, 6 * quadNdx, 0);
         }
 
@@ -965,8 +965,8 @@ void PushDescriptorBufferComputeTestInstance::init(void)
                     DE_NULL                                 // const VkBufferView* pTexelBufferView;
                 }};
 
-            m_vkd.cmdPushDescriptorSetKHR(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0, 2,
-                                          writeDescriptorSets);
+            m_vkd.cmdPushDescriptorSet(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0, 2,
+                                       writeDescriptorSets);
             m_vkd.cmdDispatch(*m_cmdBuffer, 1, 1, 1);
         }
 
@@ -1693,8 +1693,8 @@ void PushDescriptorImageGraphicsTestInstance::init(void)
                 writeDescriptorSets.push_back(writeDescriptorSet);
             }
 
-            m_vkd.cmdPushDescriptorSetKHR(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout,
-                                          0, (uint32_t)writeDescriptorSets.size(), writeDescriptorSets.data());
+            m_vkd.cmdPushDescriptorSet(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout, 0,
+                                       (uint32_t)writeDescriptorSets.size(), writeDescriptorSets.data());
             m_vkd.cmdDraw(*m_cmdBuffer, 6, 1, 6 * quadNdx, 0);
         }
 
@@ -2429,8 +2429,8 @@ void PushDescriptorImageComputeTestInstance::init(void)
 
             writeDescriptorSets.push_back(writeDescriptorSetOutput);
 
-            m_vkd.cmdPushDescriptorSetKHR(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0,
-                                          (uint32_t)writeDescriptorSets.size(), writeDescriptorSets.data());
+            m_vkd.cmdPushDescriptorSet(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0,
+                                       (uint32_t)writeDescriptorSets.size(), writeDescriptorSets.data());
             m_vkd.cmdDispatch(*m_cmdBuffer, 1, 1, 1);
         }
 
@@ -3069,8 +3069,8 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init(void)
                 &m_bufferViews[quadNdx]->get()          // const VkBufferView* pTexelBufferView;
             };
 
-            m_vkd.cmdPushDescriptorSetKHR(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout,
-                                          0, 1u, &writeDescriptorSet);
+            m_vkd.cmdPushDescriptorSet(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout, 0,
+                                       1u, &writeDescriptorSet);
             m_vkd.cmdDraw(*m_cmdBuffer, 6, 1, 6 * quadNdx, 0);
         }
 
@@ -3477,8 +3477,8 @@ void PushDescriptorTexelBufferComputeTestInstance::init(void)
 
             writeDescriptorSets.push_back(writeDescriptorSetOutput);
 
-            m_vkd.cmdPushDescriptorSetKHR(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0,
-                                          (uint32_t)writeDescriptorSets.size(), writeDescriptorSets.data());
+            m_vkd.cmdPushDescriptorSet(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0,
+                                       (uint32_t)writeDescriptorSets.size(), writeDescriptorSets.data());
             m_vkd.cmdDispatch(*m_cmdBuffer, 1, 1, 1);
         }
 
@@ -4123,8 +4123,8 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init(void)
                 DE_NULL                                 // const VkBufferView* pTexelBufferView;
             };
 
-            m_vkd.cmdPushDescriptorSetKHR(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout,
-                                          0, 1, &writeDescriptorSet);
+            m_vkd.cmdPushDescriptorSet(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_fragmentStatePipelineLayout, 0,
+                                       1, &writeDescriptorSet);
             m_vkd.cmdDraw(*m_cmdBuffer, 6, 1, 6 * quadNdx, 0);
 
             (*m_renderPasses[quadNdx]).end(m_vkd, *m_cmdBuffer);

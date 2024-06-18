@@ -2099,7 +2099,7 @@ void FragmentDensityMapTestInstance::remapingBeforeCopySubsampledImage(VkCommand
     uint32_t colorAttachmentLocations[] = {VK_ATTACHMENT_UNUSED, 0};
     VkRenderingAttachmentLocationInfoKHR renderingAttachmentLocationInfo{
         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR, DE_NULL, 2, colorAttachmentLocations};
-    vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocationInfo);
+    vk.cmdSetRenderingAttachmentLocations(cmdBuffer, &renderingAttachmentLocationInfo);
 }
 
 void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPassWrapperBasePtr renderPassWrapper,

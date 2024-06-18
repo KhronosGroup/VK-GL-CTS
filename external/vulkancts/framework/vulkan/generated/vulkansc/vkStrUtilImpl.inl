@@ -1172,7 +1172,6 @@ const char* getResultName (VkResult value)
 		case VK_ERROR_NO_PIPELINE_MATCH:							return "VK_ERROR_NO_PIPELINE_MATCH";
 		case VK_ERROR_INVALID_PIPELINE_CACHE_DATA:					return "VK_ERROR_INVALID_PIPELINE_CACHE_DATA";
 		case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS:				return "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS";
-		case VK_ERROR_NOT_PERMITTED_EXT:							return "VK_ERROR_NOT_PERMITTED_EXT";
 		case VK_ERROR_FRAGMENTATION:								return "VK_ERROR_FRAGMENTATION";
 		case VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT:	return "VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT";
 		case VK_ERROR_INVALID_EXTERNAL_HANDLE:						return "VK_ERROR_INVALID_EXTERNAL_HANDLE";
@@ -1202,6 +1201,7 @@ const char* getResultName (VkResult value)
 		case VK_EVENT_RESET:										return "VK_EVENT_RESET";
 		case VK_INCOMPLETE:											return "VK_INCOMPLETE";
 		case VK_SUBOPTIMAL_KHR:										return "VK_SUBOPTIMAL_KHR";
+		case VK_ERROR_NOT_PERMITTED_EXT:							return "VK_ERROR_NOT_PERMITTED_EXT";
 		case VK_PIPELINE_COMPILE_REQUIRED:							return "VK_PIPELINE_COMPILE_REQUIRED";
 		default:													return nullptr;
 	}
@@ -1872,15 +1872,15 @@ const char* getPointClippingBehaviorName (VkPointClippingBehavior value)
 	}
 }
 
-const char* getQueueGlobalPriorityKHRName (VkQueueGlobalPriorityKHR value)
+const char* getQueueGlobalPriorityName (VkQueueGlobalPriority value)
 {
 	switch (value)
 	{
-		case VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR:		return "VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR";
-		case VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR:	return "VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR";
-		case VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR:		return "VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR";
-		case VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR:	return "VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR";
-		default:									return nullptr;
+		case VK_QUEUE_GLOBAL_PRIORITY_LOW:		return "VK_QUEUE_GLOBAL_PRIORITY_LOW";
+		case VK_QUEUE_GLOBAL_PRIORITY_MEDIUM:	return "VK_QUEUE_GLOBAL_PRIORITY_MEDIUM";
+		case VK_QUEUE_GLOBAL_PRIORITY_HIGH:		return "VK_QUEUE_GLOBAL_PRIORITY_HIGH";
+		case VK_QUEUE_GLOBAL_PRIORITY_REALTIME:	return "VK_QUEUE_GLOBAL_PRIORITY_REALTIME";
+		default:								return nullptr;
 	}
 }
 
@@ -2025,15 +2025,15 @@ tcu::Format::Bitfield<32> getSemaphoreWaitFlagsStr (VkSemaphoreWaitFlags value)
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-const char* getLineRasterizationModeKHRName (VkLineRasterizationModeKHR value)
+const char* getLineRasterizationModeName (VkLineRasterizationMode value)
 {
 	switch (value)
 	{
-		case VK_LINE_RASTERIZATION_MODE_DEFAULT_KHR:			return "VK_LINE_RASTERIZATION_MODE_DEFAULT_KHR";
-		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR:		return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_KHR";
-		case VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR:			return "VK_LINE_RASTERIZATION_MODE_BRESENHAM_KHR";
-		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR:	return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_KHR";
-		default:												return nullptr;
+		case VK_LINE_RASTERIZATION_MODE_DEFAULT:			return "VK_LINE_RASTERIZATION_MODE_DEFAULT";
+		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR:		return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR";
+		case VK_LINE_RASTERIZATION_MODE_BRESENHAM:			return "VK_LINE_RASTERIZATION_MODE_BRESENHAM";
+		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH:	return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH";
+		default:											return nullptr;
 	}
 }
 
@@ -2216,7 +2216,7 @@ tcu::Format::Bitfield<64> getFormatFeatureFlags2Str (VkFormatFeatureFlags2 value
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_BLIT_SRC_BIT,																	"VK_FORMAT_FEATURE_2_BLIT_SRC_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_BLIT_DST_BIT,																	"VK_FORMAT_FEATURE_2_BLIT_DST_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT,												"VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT"),
-		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_CUBIC_BIT,												"VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_CUBIC_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT,											"VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT,																"VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT,																"VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_MINMAX_BIT,												"VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_MINMAX_BIT"),
@@ -2716,7 +2716,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_MESA_DOZEN:					return "VK_DRIVER_ID_MESA_DOZEN";
 		case VK_DRIVER_ID_MESA_NVK:						return "VK_DRIVER_ID_MESA_NVK";
 		case VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA:	return "VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA";
-		case VK_DRIVER_ID_MESA_AGXV:					return "VK_DRIVER_ID_MESA_AGXV";
+		case VK_DRIVER_ID_MESA_HONEYKRISP:				return "VK_DRIVER_ID_MESA_HONEYKRISP";
 		case VK_DRIVER_ID_RESERVED_27:					return "VK_DRIVER_ID_RESERVED_27";
 		default:										return nullptr;
 	}
@@ -2797,7 +2797,7 @@ tcu::Format::Bitfield<32> getShaderModuleCreateFlagsStr (VkShaderModuleCreateFla
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
-tcu::Format::Bitfield<32> getMemoryUnmapFlagsKHRStr (VkMemoryUnmapFlagsKHR value)
+tcu::Format::Bitfield<32> getMemoryUnmapFlagsStr (VkMemoryUnmapFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
@@ -2892,12 +2892,12 @@ tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLo
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
-tcu::Format::Bitfield<64> getPipelineCreateFlags2KHRStr (VkPipelineCreateFlags2KHR value)
+tcu::Format::Bitfield<64> getPipelineCreateFlags2Str (VkPipelineCreateFlags2 value)
 {
 	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
 }
 
-tcu::Format::Bitfield<64> getBufferUsageFlags2KHRStr (VkBufferUsageFlags2KHR value)
+tcu::Format::Bitfield<64> getBufferUsageFlags2Str (VkBufferUsageFlags2 value)
 {
 	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
 }
@@ -3077,7 +3077,7 @@ tcu::Format::Bitfield<32> getImageFormatConstraintsFlagsFUCHSIAStr (VkImageForma
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
-tcu::Format::Bitfield<32> getHostImageCopyFlagsEXTStr (VkHostImageCopyFlagsEXT value)
+tcu::Format::Bitfield<32> getHostImageCopyFlagsStr (VkHostImageCopyFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
@@ -6614,9 +6614,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceHostQueryResetF
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDeviceQueueGlobalPriorityCreateInfoKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkDeviceQueueGlobalPriorityCreateInfoEXT& value)
 {
-	s << "VkDeviceQueueGlobalPriorityCreateInfoKHR = {\n";
+	s << "VkDeviceQueueGlobalPriorityCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tglobalPriority = " << value.globalPriority << '\n';
@@ -7030,18 +7030,18 @@ std::ostream& operator<< (std::ostream& s, const VkSemaphoreSignalInfo& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkVertexInputBindingDivisorDescriptionKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkVertexInputBindingDivisorDescriptionEXT& value)
 {
-	s << "VkVertexInputBindingDivisorDescriptionKHR = {\n";
+	s << "VkVertexInputBindingDivisorDescriptionEXT = {\n";
 	s << "\tbinding = " << value.binding << '\n';
 	s << "\tdivisor = " << value.divisor << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoEXT& value)
 {
-	s << "VkPipelineVertexInputDivisorStateCreateInfoKHR = {\n";
+	s << "VkPipelineVertexInputDivisorStateCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvertexBindingDivisorCount = " << value.vertexBindingDivisorCount << '\n';
@@ -7129,9 +7129,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAtomicFlo
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& value)
 {
-	s << "VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR = {\n";
+	s << "VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvertexAttributeInstanceRateDivisor = " << value.vertexAttributeInstanceRateDivisor << '\n';
@@ -7580,9 +7580,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderClockFeat
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesEXT& value)
 {
-	s << "VkPhysicalDeviceIndexTypeUint8FeaturesKHR = {\n";
+	s << "VkPhysicalDeviceIndexTypeUint8FeaturesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tindexTypeUint8 = " << value.indexTypeUint8 << '\n';
@@ -7690,9 +7690,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSubgroupSizeCon
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkShaderRequiredSubgroupSizeCreateInfoEXT& value)
 {
-	s << "VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT = {\n";
+	s << "VkShaderRequiredSubgroupSizeCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trequiredSubgroupSize = " << value.requiredSubgroupSize << '\n';
@@ -7720,9 +7720,9 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceMemoryOpaqueCaptureAddr
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesEXT& value)
 {
-	s << "VkPhysicalDeviceLineRasterizationFeaturesKHR = {\n";
+	s << "VkPhysicalDeviceLineRasterizationFeaturesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trectangularLines = " << value.rectangularLines << '\n';
@@ -7735,9 +7735,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizati
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationPropertiesKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationPropertiesEXT& value)
 {
-	s << "VkPhysicalDeviceLineRasterizationPropertiesKHR = {\n";
+	s << "VkPhysicalDeviceLineRasterizationPropertiesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tlineSubPixelPrecisionBits = " << value.lineSubPixelPrecisionBits << '\n';
@@ -7745,9 +7745,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizati
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationLineStateCreateInfoKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationLineStateCreateInfoEXT& value)
 {
-	s << "VkPipelineRasterizationLineStateCreateInfoKHR = {\n";
+	s << "VkPipelineRasterizationLineStateCreateInfoEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tlineRasterizationMode = " << value.lineRasterizationMode << '\n';

@@ -113,7 +113,7 @@ void mapMemoryWrapper(const DeviceInterface &vkd, VkDevice device, vk::VkDeviceM
             mappingOffset,                         // VkDeviceSize        offset
             mappingSize,                           // VkDeviceSize        size
         };
-        VK_CHECK(vkd.mapMemory2KHR(device, &info, ptr));
+        VK_CHECK(vkd.mapMemory2(device, &info, ptr));
     }
 }
 
@@ -131,7 +131,7 @@ void unmapMemoryWrapper(const DeviceInterface &vkd, VkDevice device, vk::VkDevic
             0u,                                      // VkMemoryUnmapFlagsEXT    flags
             memory,                                  // VkDeviceMemory            memory
         };
-        VK_CHECK(vkd.unmapMemory2KHR(device, &unmap));
+        VK_CHECK(vkd.unmapMemory2(device, &unmap));
     }
 }
 

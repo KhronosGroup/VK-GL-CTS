@@ -350,6 +350,7 @@ public:
             context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
 
             const auto &vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
+
             if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
                 TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");
 
@@ -361,8 +362,7 @@ public:
         {
             context.requireDeviceFunctionality("VK_KHR_vertex_attribute_divisor");
 
-            const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR &vertexAttributeDivisorFeatures =
-                context.getVertexAttributeDivisorFeatures();
+            const auto &vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
 
             if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
                 TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");
@@ -977,7 +977,7 @@ void InstancedDrawInstance::cmdBindIndexBufferImpl(vk::VkCommandBuffer commandBu
 {
 #ifndef CTS_USES_VULKANSC
     if (m_params.useMaintenance5Ext)
-        m_vk.cmdBindIndexBuffer2KHR(commandBuffer, indexBuffer, offset, size, indexType);
+        m_vk.cmdBindIndexBuffer2(commandBuffer, indexBuffer, offset, size, indexType);
     else
 #endif
     {

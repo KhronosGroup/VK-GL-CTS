@@ -369,7 +369,7 @@ void pushBufferDescriptor(const DeviceInterface &vkd, VkCommandBuffer cmdBuffer,
         &bufferInfo,                            // const VkDescriptorBufferInfo* pBufferInfo;
         nullptr,                                // const VkBufferView* pTexelBufferView;
     };
-    vkd.cmdPushDescriptorSetKHR(cmdBuffer, bindPoint, layout, 0u, 1u, &write);
+    vkd.cmdPushDescriptorSet(cmdBuffer, bindPoint, layout, 0u, 1u, &write);
 }
 
 void verifyBufferContents(const DeviceInterface &vkd, VkDevice device, const BufferWithMemory &buffer,
@@ -709,8 +709,8 @@ tcu::TestStatus BindPointInstance::iterate(void)
             else if (m_params.graphicsSetUpdateType == SetUpdateType::PUSH_WITH_TEMPLATE)
             {
                 const auto bufferInfo = makeDescriptorBufferInfo(graphicsBuffer->get(), 0ull, bufferSize);
-                vkd.cmdPushDescriptorSetWithTemplateKHR(cmdBuffer, graphicsUpdateTemplate.get(),
-                                                        graphicsPipelineLayout.get(), 0u, &bufferInfo);
+                vkd.cmdPushDescriptorSetWithTemplate(cmdBuffer, graphicsUpdateTemplate.get(),
+                                                     graphicsPipelineLayout.get(), 0u, &bufferInfo);
             }
             else
                 DE_ASSERT(false);
@@ -727,8 +727,8 @@ tcu::TestStatus BindPointInstance::iterate(void)
             else if (m_params.computeSetUpdateType == SetUpdateType::PUSH_WITH_TEMPLATE)
             {
                 const auto bufferInfo = makeDescriptorBufferInfo(computeBuffer->get(), 0ull, bufferSize);
-                vkd.cmdPushDescriptorSetWithTemplateKHR(cmdBuffer, computeUpdateTemplate.get(),
-                                                        computePipelineLayout.get(), 0u, &bufferInfo);
+                vkd.cmdPushDescriptorSetWithTemplate(cmdBuffer, computeUpdateTemplate.get(),
+                                                     computePipelineLayout.get(), 0u, &bufferInfo);
             }
             else
                 DE_ASSERT(false);
@@ -746,8 +746,8 @@ tcu::TestStatus BindPointInstance::iterate(void)
             else if (m_params.rayTracingSetUpdateType == SetUpdateType::PUSH_WITH_TEMPLATE)
             {
                 const auto bufferInfo = makeDescriptorBufferInfo(rayTracingBuffer->get(), 0ull, bufferSize);
-                vkd.cmdPushDescriptorSetWithTemplateKHR(cmdBuffer, rayTracingUpdateTemplate.get(),
-                                                        rayTracingPipelineLayout.get(), 0u, &bufferInfo);
+                vkd.cmdPushDescriptorSetWithTemplate(cmdBuffer, rayTracingUpdateTemplate.get(),
+                                                     rayTracingPipelineLayout.get(), 0u, &bufferInfo);
             }
             else
                 DE_ASSERT(false);

@@ -278,7 +278,11 @@ void setFragmentShadingRage(const DeviceInterface *vkd, VkCommandBuffer cmdBuffe
 
 void setLineStipple(const DeviceInterface *vkd, VkCommandBuffer cmdBuffer, const DynamicStateData *)
 {
-    vkd->cmdSetLineStippleKHR(cmdBuffer, 1u, 1u);
+#ifndef CTS_USES_VULKANSC
+    vkd->cmdSetLineStipple(cmdBuffer, 1u, 1u);
+#else
+    vkd->cmdSetLineStippleEXT(cmdBuffer, 1u, 1u);
+#endif // CTS_USES_VULKANSC
 }
 
 void setCullMode(const DeviceInterface *vkd, VkCommandBuffer cmdBuffer, const DynamicStateData *)

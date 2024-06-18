@@ -744,7 +744,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
 
         vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *writeGraphicsPipelines[pipelineIndex]);
         vk.cmdPushConstants(cmdBuffer, *writePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4, &pipelineIndex);
-        vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingAttachmentLocations(cmdBuffer, &renderingAttachmentLocationInfo);
 
         if (useColorWriteEnable)
             vk.cmdSetColorWriteEnableEXT(cmdBuffer, 4u, m_colorWriteEnables);
@@ -781,7 +781,7 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
             m_colorAttachmentInputIndices[pipelineIndex].data();
 
         vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *readGraphicsPipelines[pipelineIndex]);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(cmdBuffer, &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(cmdBuffer, &renderingInputAttachmentIndexInfo);
         vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *readPipelineLayout, 0u, 2u,
                                  descriptorSets, 0u, DE_NULL);
         vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
@@ -1023,7 +1023,7 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
     vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
 
     // remaping should affect to which attachments shader writes but not blend state
-    vk.cmdSetRenderingAttachmentLocationsKHR(cmdBuffer, &renderingAttachmentLocations);
+    vk.cmdSetRenderingAttachmentLocations(cmdBuffer, &renderingAttachmentLocations);
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
     vk.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);

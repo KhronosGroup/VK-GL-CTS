@@ -294,7 +294,7 @@ void HostImageCopyTestInstance::transitionImageLayout(const Move<vk::VkCommandBu
             newLayout,                                                   // VkImageLayout newLayout;
             subresourceRange                                             // VkImageSubresourceRange subresourceRange;
         };
-        vk.transitionImageLayoutEXT(device, 1, &transition);
+        vk.transitionImageLayout(device, 1, &transition);
     }
     else
     {
@@ -361,7 +361,7 @@ void HostImageCopyTestInstance::copyMemoryToImage(const std::vector<uint8_t> tes
         regions.data(),                                      // const VkMemoryToImageCopyEXT* pRegions;
     };
 
-    vk.copyMemoryToImageEXT(device, &copyMemoryToImageInfo);
+    vk.copyMemoryToImage(device, &copyMemoryToImageInfo);
 }
 
 tcu::TestStatus HostImageCopyTestInstance::iterate(void)
@@ -845,7 +845,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         vk::VkSubresourceHostMemcpySizeEXT subresourceHostMemcpySize = vk::initVulkanStructure();
         vk::VkSubresourceLayout2EXT subresourceLayout = vk::initVulkanStructure(&subresourceHostMemcpySize);
-        vk.getImageSubresourceLayout2KHR(device, sampledImage, &subresource2, &subresourceLayout);
+        vk.getImageSubresourceLayout2(device, sampledImage, &subresource2, &subresourceLayout);
 
         std::vector<uint8_t> data((size_t)subresourceHostMemcpySize.size);
 
@@ -869,7 +869,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             1,                                                   // uint32_t regionCount;
             &region,                                             // const VkImageToMemoryCopyEXT* pRegions;
         };
-        vk.copyImageToMemoryEXT(device, &copyImageToMemoryInfo);
+        vk.copyImageToMemory(device, &copyImageToMemoryInfo);
         commandsLog << "vkCopyImageToMemoryEXT() with image " << sampledImage << ", xOffset (" << region.imageOffset.x
                     << "), yOffset (" << region.imageOffset.y << "), width (" << mipImageSize.width << "), height ("
                     << mipImageSize.height << ")\n";
@@ -897,7 +897,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             1u,                                                  // uint32_t regionCount;
             &toImageRegion,                                      // const VkMemoryToImageCopyEXT* pRegions;
         };
-        vk.copyMemoryToImageEXT(device, &copyMemoryToImageInfo);
+        vk.copyMemoryToImage(device, &copyMemoryToImageInfo);
         commandsLog << "vkCopyMemoryToImageEXT() with image " << sampledImageCopy << ", xOffset ("
                     << toImageRegion.imageOffset.x << "), yOffset (" << toImageRegion.imageOffset.y << "), width ("
                     << toImageRegion.imageExtent.width << "), height (" << toImageRegion.imageExtent.height << ")\n";
@@ -1046,7 +1046,7 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
             (uint32_t)regions.size(),                            // uint32_t regionCount;
             regions.data(),                                      // const VkImageToMemoryCopyEXT* pRegions;
         };
-        vk.copyImageToMemoryEXT(device, &copyImageToMemoryInfo);
+        vk.copyImageToMemory(device, &copyImageToMemoryInfo);
         commandsLog << "vkCopyImageToMemoryEXT() with image " << **outputImage << "\n";
 
         for (uint32_t j = 0; j < mipImageSize.height; ++j)
@@ -1494,7 +1494,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
             m_srcLayout,                                                 // VkImageLayout newLayout;
             subresourceRange                                             // VkImageSubresourceRange subresourceRange;
         };
-        vk.transitionImageLayoutEXT(device, 1, &transition);
+        vk.transitionImageLayout(device, 1, &transition);
     }
 
     if (m_imageToImageCopy)
@@ -1507,7 +1507,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
             m_dstLayout,                                                 // VkImageLayout newLayout;
             subresourceRange                                             // VkImageSubresourceRange subresourceRange;
         };
-        vk.transitionImageLayoutEXT(device, 1, &transition);
+        vk.transitionImageLayout(device, 1, &transition);
 
         const vk::VkImageCopy2KHR region = {
             vk::VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR, // VkStructureType sType;
@@ -1534,11 +1534,11 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
             &region,                                            // const VkImageCopy2* pRegions;
         };
 
-        vk.copyImageToImageEXT(device, &copyImageToImageInfo);
+        vk.copyImageToImage(device, &copyImageToImageInfo);
 
         transition.oldLayout = m_dstLayout;
         transition.newLayout = m_srcLayout;
-        vk.transitionImageLayoutEXT(device, 1, &transition);
+        vk.transitionImageLayout(device, 1, &transition);
     }
 
     uint8_t *data = new uint8_t[bufferSize];
@@ -1563,7 +1563,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
         1,                                                   // uint32_t regionCount;
         &region,                                             // const VkImageToMemoryCopyEXT* pRegions;
     };
-    vk.copyImageToMemoryEXT(device, &copyImageToMemoryInfo);
+    vk.copyImageToMemory(device, &copyImageToMemoryInfo);
 
     vk::beginCommandBuffer(vk, *cmdBuffer);
     {
@@ -2582,7 +2582,7 @@ void hostLayoutTransition(const DeviceInterface &vkd, const VkDevice device, con
         newLayout,                                               // VkImageLayout newLayout;
         imageSRR,                                                // VkImageSubresourceRange subresourceRange;
     };
-    vkd.transitionImageLayoutEXT(device, 1u, &toTransfer);
+    vkd.transitionImageLayout(device, 1u, &toTransfer);
 }
 
 void copyDSMemoryToImage(const DeviceInterface &vkd, const VkDevice device, const VkImage image,
@@ -2610,7 +2610,7 @@ void copyDSMemoryToImage(const DeviceInterface &vkd, const VkDevice device, cons
         &copyRegion,                                     // const VkMemoryToImageCopyEXT* pRegions;
     };
 
-    vkd.copyMemoryToImageEXT(device, &copyInfo);
+    vkd.copyMemoryToImage(device, &copyInfo);
 }
 
 void copyDSImageToMemory(const DeviceInterface &vkd, const VkDevice device, const VkImage image,
@@ -2638,7 +2638,7 @@ void copyDSImageToMemory(const DeviceInterface &vkd, const VkDevice device, cons
         &copyRegion,                                     // const VkImageToMemoryCopyEXT* pRegions;
     };
 
-    vkd.copyImageToMemoryEXT(device, &copyInfo);
+    vkd.copyImageToMemory(device, &copyInfo);
 }
 
 tcu::TestStatus DepthStencilHostImageCopyInstance::iterate(void)

@@ -3981,18 +3981,12 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
     const uint32_t pipelineShaderStageCreateFlags, const uint32_t numWorkgroups[3], const bool isRequiredSubgroupSize,
     const uint32_t subgroupSize, const uint32_t localSizesToTest[][3], const uint32_t localSizesToTestCount)
 {
-    const DeviceInterface &vk       = context.getDeviceInterface();
-    const VkDevice device           = context.getDevice();
-    const VkQueue queue             = context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-#ifndef CTS_USES_VULKANSC
-    const VkPhysicalDeviceSubgroupSizeControlProperties &subgroupSizeControlProperties =
-        context.getSubgroupSizeControlProperties();
-#else
-    const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-        context.getSubgroupSizeControlPropertiesEXT();
-#endif // CTS_USES_VULKANSC
-    const VkDeviceSize elementSize     = getFormatSizeInBytes(format);
+    const DeviceInterface &vk                 = context.getDeviceInterface();
+    const VkDevice device                     = context.getDevice();
+    const VkQueue queue                       = context.getUniversalQueue();
+    const uint32_t queueFamilyIndex           = context.getUniversalQueueFamilyIndex();
+    const auto &subgroupSizeControlProperties = context.getSubgroupSizeControlProperties();
+    const VkDeviceSize elementSize            = getFormatSizeInBytes(format);
     const VkDeviceSize maxSubgroupSize = isRequiredSubgroupSize ? deMax32(subgroupSizeControlProperties.maxSubgroupSize,
                                                                           vkt::subgroups::maxSupportedSubgroupSize()) :
                                                                   vkt::subgroups::maxSupportedSubgroupSize();

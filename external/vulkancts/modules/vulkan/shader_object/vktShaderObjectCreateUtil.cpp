@@ -368,7 +368,7 @@ void setDefaultShaderObjectDynamicStates(const vk::DeviceInterface &vk, vk::VkCo
         vk.cmdSetLineStippleEnableEXT(cmdBuffer, VK_FALSE);
     if (extensionEnabled(deviceExtensions, "VK_KHR_line_rasterization") ||
         extensionEnabled(deviceExtensions, "VK_EXT_line_rasterization"))
-        vk.cmdSetLineStippleKHR(cmdBuffer, 1u, 0x0F0F);
+        vk.cmdSetLineStipple(cmdBuffer, 1u, 0x0F0F);
     if (extensionEnabled(deviceExtensions, "VK_EXT_depth_clip_control"))
         vk.cmdSetDepthClipNegativeOneToOneEXT(cmdBuffer, VK_FALSE);
     VkBool32 colorWriteEnable = VK_TRUE;

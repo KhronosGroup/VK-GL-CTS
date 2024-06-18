@@ -2522,11 +2522,11 @@ struct VkPhysicalDeviceHostQueryResetFeatures
 	VkBool32		hostQueryReset;
 };
 
-struct VkDeviceQueueGlobalPriorityCreateInfoKHR
+struct VkDeviceQueueGlobalPriorityCreateInfoEXT
 {
-	VkStructureType				sType;
-	const void*					pNext;
-	VkQueueGlobalPriorityKHR	globalPriority;
+	VkStructureType			sType;
+	const void*				pNext;
+	VkQueueGlobalPriority	globalPriority;
 };
 
 struct VkDebugUtilsObjectNameInfoEXT
@@ -2848,18 +2848,18 @@ struct VkSemaphoreSignalInfo
 	uint64_t		value;
 };
 
-struct VkVertexInputBindingDivisorDescriptionKHR
+struct VkVertexInputBindingDivisorDescriptionEXT
 {
 	uint32_t	binding;
 	uint32_t	divisor;
 };
 
-struct VkPipelineVertexInputDivisorStateCreateInfoKHR
+struct VkPipelineVertexInputDivisorStateCreateInfoEXT
 {
 	VkStructureType										sType;
 	const void*											pNext;
 	uint32_t											vertexBindingDivisorCount;
-	const VkVertexInputBindingDivisorDescriptionKHR*	pVertexBindingDivisors;
+	const VkVertexInputBindingDivisorDescriptionEXT*	pVertexBindingDivisors;
 };
 
 struct VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
@@ -2923,7 +2923,7 @@ struct VkPhysicalDeviceShaderAtomicFloatFeaturesEXT
 	VkBool32		sparseImageFloat32AtomicAdd;
 };
 
-struct VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR
+struct VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -3251,7 +3251,7 @@ struct VkPhysicalDeviceShaderClockFeaturesKHR
 	VkBool32		shaderDeviceClock;
 };
 
-struct VkPhysicalDeviceIndexTypeUint8FeaturesKHR
+struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -3331,7 +3331,7 @@ struct VkPhysicalDeviceSubgroupSizeControlPropertiesEXT
 	VkShaderStageFlags	requiredSubgroupSizeStages;
 };
 
-struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT
+struct VkShaderRequiredSubgroupSizeCreateInfoEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -3352,7 +3352,7 @@ struct VkDeviceMemoryOpaqueCaptureAddressInfo
 	VkDeviceMemory	memory;
 };
 
-struct VkPhysicalDeviceLineRasterizationFeaturesKHR
+struct VkPhysicalDeviceLineRasterizationFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -3364,21 +3364,21 @@ struct VkPhysicalDeviceLineRasterizationFeaturesKHR
 	VkBool32		stippledSmoothLines;
 };
 
-struct VkPhysicalDeviceLineRasterizationPropertiesKHR
+struct VkPhysicalDeviceLineRasterizationPropertiesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
 	uint32_t		lineSubPixelPrecisionBits;
 };
 
-struct VkPipelineRasterizationLineStateCreateInfoKHR
+struct VkPipelineRasterizationLineStateCreateInfoEXT
 {
-	VkStructureType				sType;
-	const void*					pNext;
-	VkLineRasterizationModeKHR	lineRasterizationMode;
-	VkBool32					stippledLineEnable;
-	uint32_t					lineStippleFactor;
-	uint16_t					lineStipplePattern;
+	VkStructureType			sType;
+	const void*				pNext;
+	VkLineRasterizationMode	lineRasterizationMode;
+	VkBool32				stippledLineEnable;
+	uint32_t				lineStippleFactor;
+	uint16_t				lineStipplePattern;
 };
 
 struct VkPhysicalDeviceVulkan11Features
@@ -4387,7 +4387,7 @@ typedef VkPhysicalDeviceFloatControlsProperties VkPhysicalDeviceFloatControlsPro
 
 typedef VkPhysicalDeviceHostQueryResetFeatures VkPhysicalDeviceHostQueryResetFeaturesEXT;
 
-typedef VkDeviceQueueGlobalPriorityCreateInfoKHR VkDeviceQueueGlobalPriorityCreateInfoEXT;
+typedef VkDeviceQueueGlobalPriorityCreateInfoEXT VkDeviceQueueGlobalPriorityCreateInfoKHR;
 
 typedef VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT;
 
@@ -4427,9 +4427,9 @@ typedef VkSemaphoreWaitInfo VkSemaphoreWaitInfoKHR;
 
 typedef VkSemaphoreSignalInfo VkSemaphoreSignalInfoKHR;
 
-typedef VkVertexInputBindingDivisorDescriptionKHR VkVertexInputBindingDivisorDescriptionEXT;
+typedef VkVertexInputBindingDivisorDescriptionEXT VkVertexInputBindingDivisorDescriptionKHR;
 
-typedef VkPipelineVertexInputDivisorStateCreateInfoKHR VkPipelineVertexInputDivisorStateCreateInfoEXT;
+typedef VkPipelineVertexInputDivisorStateCreateInfoEXT VkPipelineVertexInputDivisorStateCreateInfoKHR;
 
 typedef VkPhysicalDevice8BitStorageFeatures VkPhysicalDevice8BitStorageFeaturesKHR;
 
@@ -4437,7 +4437,7 @@ typedef VkPhysicalDeviceVulkanMemoryModelFeatures VkPhysicalDeviceVulkanMemoryMo
 
 typedef VkPhysicalDeviceShaderAtomicInt64Features VkPhysicalDeviceShaderAtomicInt64FeaturesKHR;
 
-typedef VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT;
+typedef VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR;
 
 typedef VkPhysicalDeviceDepthStencilResolveProperties VkPhysicalDeviceDepthStencilResolvePropertiesKHR;
 
@@ -4465,7 +4465,7 @@ typedef VkFramebufferAttachmentImageInfo VkFramebufferAttachmentImageInfoKHR;
 
 typedef VkRenderPassAttachmentBeginInfo VkRenderPassAttachmentBeginInfoKHR;
 
-typedef VkPhysicalDeviceIndexTypeUint8FeaturesKHR VkPhysicalDeviceIndexTypeUint8FeaturesEXT;
+typedef VkPhysicalDeviceIndexTypeUint8FeaturesEXT VkPhysicalDeviceIndexTypeUint8FeaturesKHR;
 
 typedef VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR;
 
@@ -4473,15 +4473,15 @@ typedef VkAttachmentReferenceStencilLayout VkAttachmentReferenceStencilLayoutKHR
 
 typedef VkAttachmentDescriptionStencilLayout VkAttachmentDescriptionStencilLayoutKHR;
 
-typedef VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT VkShaderRequiredSubgroupSizeCreateInfoEXT;
+typedef VkShaderRequiredSubgroupSizeCreateInfoEXT VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT;
 
 typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAllocateInfoKHR;
 
 typedef VkDeviceMemoryOpaqueCaptureAddressInfo VkDeviceMemoryOpaqueCaptureAddressInfoKHR;
 
-typedef VkPhysicalDeviceLineRasterizationFeaturesKHR VkPhysicalDeviceLineRasterizationFeaturesEXT;
+typedef VkPhysicalDeviceLineRasterizationFeaturesEXT VkPhysicalDeviceLineRasterizationFeaturesKHR;
 
-typedef VkPhysicalDeviceLineRasterizationPropertiesKHR VkPhysicalDeviceLineRasterizationPropertiesEXT;
+typedef VkPhysicalDeviceLineRasterizationPropertiesEXT VkPhysicalDeviceLineRasterizationPropertiesKHR;
 
-typedef VkPipelineRasterizationLineStateCreateInfoKHR VkPipelineRasterizationLineStateCreateInfoEXT;
+typedef VkPipelineRasterizationLineStateCreateInfoEXT VkPipelineRasterizationLineStateCreateInfoKHR;
 

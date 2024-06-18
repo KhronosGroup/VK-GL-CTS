@@ -811,7 +811,7 @@ void InputAttachmentSparseFillingTestInstance::createCommandBufferDynamicRenderi
         // record secondary command buffer
         beginSecondaryCmdBuffer(vk, *m_secCmdBuffer, colorAttachmentFormats);
         vk.cmdBeginRendering(*m_secCmdBuffer, &renderingInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_secCmdBuffer, &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(*m_secCmdBuffer, &renderingInputAttachmentIndexInfo);
         drawCommands(vk, *m_secCmdBuffer);
         vk.cmdEndRendering(*m_secCmdBuffer);
         endCommandBuffer(vk, *m_secCmdBuffer);
@@ -838,7 +838,7 @@ void InputAttachmentSparseFillingTestInstance::createCommandBufferDynamicRenderi
         beginCommandBuffer(vk, *m_cmdBuffer);
         preRenderCommands(vk, *m_cmdBuffer);
         vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
         vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_secCmdBuffer);
         vk.cmdEndRendering(*m_cmdBuffer);
         postRenderCommands(vk, *m_cmdBuffer);
@@ -850,7 +850,7 @@ void InputAttachmentSparseFillingTestInstance::createCommandBufferDynamicRenderi
         preRenderCommands(vk, *m_cmdBuffer);
         vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
         drawCommands(vk, *m_cmdBuffer);
 
         vk.cmdEndRendering(*m_cmdBuffer);

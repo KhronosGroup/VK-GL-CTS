@@ -704,7 +704,7 @@ void ShaderObjectStateInstance::createDevice(void)
     vk::VkPhysicalDeviceDepthClipControlFeaturesEXT depthClipControlFeatures   = vk::initVulkanStructure();
     vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT depthClipEnableFeatures     = vk::initVulkanStructure();
     vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT transformFeedbackFeatures = vk::initVulkanStructure();
-    vk::VkPhysicalDeviceLineRasterizationFeaturesEXT lineRasterizationFeatures = vk::initVulkanStructure();
+    vk::VkPhysicalDeviceLineRasterizationFeatures lineRasterizationFeatures    = vk::initVulkanStructure();
 
     vk::VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures = m_context.getDynamicRenderingFeatures();
     vk::VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures      = m_context.getShaderObjectFeaturesEXT();
@@ -1177,7 +1177,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_ENABLE_EXT))
             vk.cmdSetLineStippleEnableEXT(cmdBuffer, m_params.stippledLineEnable ? VK_TRUE : VK_FALSE);
         if (m_params.stippledLineEnable && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_STIPPLE_EXT))
-            vk.cmdSetLineStippleKHR(cmdBuffer, 1u, 0x1);
+            vk.cmdSetLineStipple(cmdBuffer, 1u, 0x1);
     }
     if (m_params.depthClipControl &&
         hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE_EXT))

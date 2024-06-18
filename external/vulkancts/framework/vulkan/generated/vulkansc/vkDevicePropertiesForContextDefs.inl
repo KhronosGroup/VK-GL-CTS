@@ -11,10 +11,10 @@ const vk::VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&		Context::getBlen
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			Context::getExternalMemoryHostPropertiesEXT			(void) const { return m_device->getExternalMemoryHostPropertiesEXT();			}
 const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		Context::getVertexAttributeDivisorPropertiesEXT		(void) const { return m_device->getVertexAttributeDivisorPropertiesEXT();		}
 const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&					Context::getPCIBusInfoPropertiesEXT					(void) const { return m_device->getPCIBusInfoPropertiesEXT();					}
-const vk::VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			Context::getSubgroupSizeControlPropertiesEXT		(void) const { return m_device->getSubgroupSizeControlPropertiesEXT();			}
+const vk::VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			Context::getSubgroupSizeControlProperties			(void) const { return m_device->getSubgroupSizeControlProperties();				}
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			Context::getFragmentShadingRateProperties			(void) const { return m_device->getFragmentShadingRateProperties();				}
-const vk::VkPhysicalDeviceLineRasterizationPropertiesKHR&			Context::getLineRasterizationProperties				(void) const { return m_device->getLineRasterizationProperties();				}
-const vk::VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		Context::getTexelBufferAlignmentPropertiesEXT		(void) const { return m_device->getTexelBufferAlignmentPropertiesEXT();			}
+const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			Context::getLineRasterizationProperties				(void) const { return m_device->getLineRasterizationProperties();				}
+const vk::VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		Context::getTexelBufferAlignmentProperties			(void) const { return m_device->getTexelBufferAlignmentProperties();			}
 const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					Context::getRobustness2PropertiesEXT				(void) const { return m_device->getRobustness2PropertiesEXT();					}
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			Context::getCustomBorderColorPropertiesEXT			(void) const { return m_device->getCustomBorderColorPropertiesEXT();			}
 const vk::VkPhysicalDeviceDriverProperties&							Context::getDriverProperties						(void) const { return m_device->getDriverProperties();							}

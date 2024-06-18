@@ -4779,12 +4779,12 @@ void DescriptorBufferTestInstance::pushDescriptorSet(VkCommandBuffer cmdBuf, VkP
                 u32(descriptorWrites.size()),                   // uint32_t descriptorWriteCount;
                 descriptorWrites.data()                         // const VkWriteDescriptorSet* pDescriptorWrites;
             };
-            m_deviceInterface->cmdPushDescriptorSet2KHR(cmdBuf, &pushDescriptorSetInfo);
+            m_deviceInterface->cmdPushDescriptorSet2(cmdBuf, &pushDescriptorSetInfo);
         }
         else
         {
-            m_deviceInterface->cmdPushDescriptorSetKHR(cmdBuf, bindPoint, *m_pipelineLayout, setIndex,
-                                                       u32(descriptorWrites.size()), descriptorWrites.data());
+            m_deviceInterface->cmdPushDescriptorSet(cmdBuf, bindPoint, *m_pipelineLayout, setIndex,
+                                                    u32(descriptorWrites.size()), descriptorWrites.data());
         }
     }
     else if (m_params.variant == TestVariant::PUSH_TEMPLATE)
@@ -4859,12 +4859,12 @@ void DescriptorBufferTestInstance::pushDescriptorSet(VkCommandBuffer cmdBuf, VkP
                 setIndex,                  // uint32_t set;
                 dataBasePtr                // const void* pData;
             };
-            m_deviceInterface->cmdPushDescriptorSetWithTemplate2KHR(cmdBuf, &pushDescriptorSetWithTemplateInfo);
+            m_deviceInterface->cmdPushDescriptorSetWithTemplate2(cmdBuf, &pushDescriptorSetWithTemplateInfo);
         }
         else
         {
-            m_deviceInterface->cmdPushDescriptorSetWithTemplateKHR(cmdBuf, *descriptorUpdateTemplate, *m_pipelineLayout,
-                                                                   setIndex, dataBasePtr);
+            m_deviceInterface->cmdPushDescriptorSetWithTemplate(cmdBuf, *descriptorUpdateTemplate, *m_pipelineLayout,
+                                                                setIndex, dataBasePtr);
         }
     }
 }

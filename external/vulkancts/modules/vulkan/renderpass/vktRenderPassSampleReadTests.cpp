@@ -797,8 +797,8 @@ tcu::TestStatus SampleReadTestInstance::iterateInternalDynamicRendering()
 
         drawFirstSubpass(vk, *secCmdBuffer);
         inbetweenRenderCommands(vk, *secCmdBuffer);
-        vk.cmdSetRenderingAttachmentLocationsKHR(*secCmdBuffer, &renderingAttachmentLocationInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(*secCmdBuffer, &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingAttachmentLocations(*secCmdBuffer, &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(*secCmdBuffer, &renderingInputAttachmentIndexInfo);
         drawSecondSubpass(vk, *secCmdBuffer);
 
         vk.cmdEndRendering(*secCmdBuffer);
@@ -820,8 +820,8 @@ tcu::TestStatus SampleReadTestInstance::iterateInternalDynamicRendering()
         vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
         drawFirstSubpass(vk, *cmdBuffer);
         inbetweenRenderCommands(vk, *cmdBuffer);
-        vk.cmdSetRenderingAttachmentLocationsKHR(*cmdBuffer, &renderingAttachmentLocationInfo);
-        vk.cmdSetRenderingInputAttachmentIndicesKHR(*cmdBuffer, &renderingInputAttachmentIndexInfo);
+        vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(*cmdBuffer, &renderingInputAttachmentIndexInfo);
         drawSecondSubpass(vk, *cmdBuffer);
         vk.cmdEndRendering(*cmdBuffer);
 
