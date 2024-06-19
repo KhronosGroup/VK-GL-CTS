@@ -1349,7 +1349,11 @@ enum class MiscTestMode
     NULL_RENDERING_CREATE_INFO,
     COMMON_FRAG_LIBRARY,
     VIEW_INDEX_FROM_DEVICE_INDEX_IN_ALL_STAGES,
+    VIEW_INDEX_FROM_DEVICE_INDEX_IN_PRE_RASTERIZATION,
+    VIEW_INDEX_FROM_DEVICE_INDEX_IN_FRAGMENT,
     VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES,
+    VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_PRE_RASTERIZATION,
+    VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_FRAGMENT,
 };
 
 struct MiscTestParams
@@ -3209,11 +3213,21 @@ tcu::TestStatus CreateViewIndexFromDeviceIndexInstance::iterate()
     const auto colorFormat = VK_FORMAT_R8G8B8A8_UINT;
     const auto extent      = makeExtent3D(imageSize, imageSize, 1u);
 
-    bool useMeshShader = (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES);
+    bool useMeshShader = (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES) ||
+                         (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_PRE_RASTERIZATION) ||
+                         (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_FRAGMENT);
     VkPipelineCreateFlags preRasterPipelineFlags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
     VkPipelineCreateFlags fragmentPipelineFlags  = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
-    preRasterPipelineFlags |= VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT;
-    fragmentPipelineFlags |= VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT;
+    if ((m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_ALL_STAGES) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_PRE_RASTERIZATION) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_PRE_RASTERIZATION))
+        preRasterPipelineFlags |= VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT;
+    if ((m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_ALL_STAGES) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_FRAGMENT) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_FRAGMENT))
+        fragmentPipelineFlags |= VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT;
 
     // fill structures that are needed for pipeline creation
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo     = initVulkanStructure();
@@ -3407,10 +3421,27 @@ tcu::TestStatus CreateViewIndexFromDeviceIndexInstance::iterate()
         for (uint8_t d = 0; d < static_cast<uint8_t>(deviceCount); ++d)
         {
             uint8_t *allowedValuesPtr = allowedValueSets.data() + d * componentCount;
-            allowedValuesPtr[0]       = d;
-            allowedValuesPtr[1]       = static_cast<uint8_t>(d + d);
-            allowedValuesPtr[2]       = d;
-            allowedValuesPtr[3]       = d;
+            if (preRasterPipelineFlags == fragmentPipelineFlags)
+            {
+                allowedValuesPtr[0] = d;
+                allowedValuesPtr[1] = static_cast<uint8_t>(d + d);
+                allowedValuesPtr[2] = d;
+                allowedValuesPtr[3] = d;
+            }
+            else if (fragmentPipelineFlags & VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT)
+            {
+                allowedValuesPtr[0] = v;
+                allowedValuesPtr[1] = static_cast<uint8_t>(v + v);
+                allowedValuesPtr[2] = v;
+                allowedValuesPtr[3] = d;
+            }
+            else
+            {
+                allowedValuesPtr[0] = d;
+                allowedValuesPtr[1] = static_cast<uint8_t>(d + d);
+                allowedValuesPtr[2] = d;
+                allowedValuesPtr[3] = v;
+            }
 
             // ignore tesselation and/or geometry stages when those features are not available
             if (!multiviewFeatures.multiviewTessellationShader || useMeshShader)
@@ -3505,7 +3536,9 @@ bool CreateViewIndexFromDeviceIndexInstance::createDeviceGroup(void)
     meshShaderFeatures.pNext = nullptr;
     multiviewFeatures.pNext  = nullptr;
     gplFeatures.pNext        = &multiviewFeatures;
-    if (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES)
+    if ((m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_PRE_RASTERIZATION) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_FRAGMENT))
     {
         deviceExtensions.push_back("VK_EXT_mesh_shader");
         multiviewFeatures.pNext = &meshShaderFeatures;
@@ -3613,9 +3646,13 @@ void PipelineLibraryMiscTestCase::checkSupport(Context &context) const
             TCU_THROW(NotSupportedError, "Specified values of clip or cull distances are not supported");
     }
 
-    if (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_ALL_STAGES)
+    if ((m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_ALL_STAGES) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_PRE_RASTERIZATION) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_FRAGMENT))
         context.requireDeviceFunctionality("VK_KHR_multiview");
-    else if (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES)
+    else if ((m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES) ||
+             (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_PRE_RASTERIZATION) ||
+             (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_FRAGMENT))
     {
         context.requireDeviceFunctionality("VK_KHR_multiview");
         context.requireDeviceFunctionality("VK_EXT_mesh_shader");
@@ -3940,7 +3977,9 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections &programCollect
         }
         programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
     }
-    else if (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_ALL_STAGES)
+    else if ((m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_ALL_STAGES) ||
+             (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_PRE_RASTERIZATION) ||
+             (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_FRAGMENT))
     {
         std::string vert("#version 460\n"
                          "#extension GL_EXT_multiview : require\n"
@@ -4016,7 +4055,9 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections &programCollect
                          "}\n");
         programCollection.glslSources.add("frag") << glu::FragmentSource(frag);
     }
-    else if (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES)
+    else if ((m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES) ||
+             (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_PRE_RASTERIZATION) ||
+             (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_FRAGMENT))
     {
         const auto buildOptions =
             vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0, true);
@@ -4072,7 +4113,11 @@ TestInstance *PipelineLibraryMiscTestCase::createInstance(Context &context) cons
         return new NullRenderingCreateInfoInstance(context);
 
     if ((m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_ALL_STAGES) ||
-        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES))
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_PRE_RASTERIZATION) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_FRAGMENT) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_PRE_RASTERIZATION) ||
+        (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_FRAGMENT))
         return new CreateViewIndexFromDeviceIndexInstance(context, m_testParams);
 
     return new PipelineLibraryMiscTestInstance(context, m_testParams);
@@ -4292,8 +4337,20 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
             new PipelineLibraryMiscTestCase(testCtx, "view_index_from_device_index_in_all_stages",
                                             {MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_ALL_STAGES, 0u, 0u}));
         otherTests->addChild(
+            new PipelineLibraryMiscTestCase(testCtx, "view_index_from_device_index_in_pre_rasterization",
+                                            {MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_PRE_RASTERIZATION, 0u, 0u}));
+        otherTests->addChild(
+            new PipelineLibraryMiscTestCase(testCtx, "view_index_from_device_index_in_fragment",
+                                            {MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_FRAGMENT, 0u, 0u}));
+        otherTests->addChild(
             new PipelineLibraryMiscTestCase(testCtx, "view_index_from_device_index_in_mesh_stages",
                                             {MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_STAGES, 0u, 0u}));
+        otherTests->addChild(new PipelineLibraryMiscTestCase(
+            testCtx, "view_index_from_device_index_in_mesh_pre_rasterization",
+            {MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_PRE_RASTERIZATION, 0u, 0u}));
+        otherTests->addChild(
+            new PipelineLibraryMiscTestCase(testCtx, "view_index_from_device_index_in_mesh_fragment",
+                                            {MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX_IN_MESH_FRAGMENT, 0u, 0u}));
 
         miscTests->addChild(otherTests.release());
     }
