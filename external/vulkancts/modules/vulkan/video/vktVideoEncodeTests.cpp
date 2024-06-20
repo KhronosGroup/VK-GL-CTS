@@ -123,62 +123,94 @@ enum TestType
     TEST_TYPE_LAST
 };
 
+enum TestCodec
+{
+    TEST_CODEC_H264,
+    TEST_CODEC_H265,
+
+    TEST_CODEC_LAST
+};
+
 const char *getTestName(const TestType testType)
 {
     switch (testType)
     {
     case TEST_TYPE_H264_ENCODE_I:
-        return "h264_i";
-    case TEST_TYPE_H264_ENCODE_RC_VBR:
-        return "h264_rc_vbr";
-    case TEST_TYPE_H264_ENCODE_RC_CBR:
-        return "h264_rc_cbr";
-    case TEST_TYPE_H264_ENCODE_RC_DISABLE:
-        return "h264_rc_disable";
-    case TEST_TYPE_H264_ENCODE_QUALITY_LEVEL:
-        return "h264_quality_level";
-    case TEST_TYPE_H264_ENCODE_USAGE:
-        return "h264_usage";
-    case TEST_TYPE_H264_ENCODE_I_P:
-        return "h264_i_p";
-    case TEST_TYPE_H264_ENCODE_I_P_NOT_MATCHING_ORDER:
-        return "h264_i_p_not_matching_order";
-    case TEST_TYPE_H264_I_P_B_13:
-        return "h264_i_p_b_13";
-    case TEST_TYPE_H264_ENCODE_RESOLUTION_CHANGE_DPB:
-        return "h264_resolution_change_dpb";
-    case TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS:
-        return "h264_query_with_status";
-    case TEST_TYPE_H264_ENCODE_INLINE_QUERY:
-        return "h264_inline_query";
-    case TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES:
-        return "h264_resources_without_profiles";
     case TEST_TYPE_H265_ENCODE_I:
-        return "h265_i";
+        return "i";
+    case TEST_TYPE_H264_ENCODE_RC_VBR:
     case TEST_TYPE_H265_ENCODE_RC_VBR:
-        return "h265_rc_vbr";
+        return "rc_vbr";
+    case TEST_TYPE_H264_ENCODE_RC_CBR:
     case TEST_TYPE_H265_ENCODE_RC_CBR:
-        return "h265_rc_cbr";
+        return "rc_cbr";
+    case TEST_TYPE_H264_ENCODE_RC_DISABLE:
     case TEST_TYPE_H265_ENCODE_RC_DISABLE:
-        return "h265_rc_disable";
+        return "rc_disable";
+    case TEST_TYPE_H264_ENCODE_QUALITY_LEVEL:
     case TEST_TYPE_H265_ENCODE_QUALITY_LEVEL:
-        return "h265_quality_level";
+        return "quality_level";
+    case TEST_TYPE_H264_ENCODE_USAGE:
     case TEST_TYPE_H265_ENCODE_USAGE:
-        return "h265_usage";
+        return "usage";
+    case TEST_TYPE_H264_ENCODE_I_P:
     case TEST_TYPE_H265_ENCODE_I_P:
-        return "h265_i_p";
+        return "i_p";
+    case TEST_TYPE_H264_ENCODE_I_P_NOT_MATCHING_ORDER:
     case TEST_TYPE_H265_ENCODE_I_P_NOT_MATCHING_ORDER:
-        return "h265_i_p_not_matching_order";
+        return "i_p_not_matching_order";
+    case TEST_TYPE_H264_I_P_B_13:
     case TEST_TYPE_H265_I_P_B_13:
-        return "h265_i_p_b_13";
+        return "i_p_b_13";
+    case TEST_TYPE_H264_ENCODE_RESOLUTION_CHANGE_DPB:
     case TEST_TYPE_H265_ENCODE_RESOLUTION_CHANGE_DPB:
-        return "h265_resolution_change_dpb";
+        return "resolution_change_dpb";
+    case TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS:
     case TEST_TYPE_H265_ENCODE_QUERY_RESULT_WITH_STATUS:
-        return "h265_query_with_status";
+        return "query_with_status";
+    case TEST_TYPE_H264_ENCODE_INLINE_QUERY:
     case TEST_TYPE_H265_ENCODE_INLINE_QUERY:
-        return "h265_inline_query";
+        return "inline_query";
+    case TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES:
     case TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES:
-        return "h265_resources_without_profiles";
+        return "resources_without_profiles";
+    default:
+        TCU_THROW(InternalError, "Unknown TestType");
+    }
+}
+
+enum TestCodec getTestCodec(const TestType testType)
+{
+    switch (testType)
+    {
+    case TEST_TYPE_H264_ENCODE_I:
+    case TEST_TYPE_H264_ENCODE_RC_VBR:
+    case TEST_TYPE_H264_ENCODE_RC_CBR:
+    case TEST_TYPE_H264_ENCODE_RC_DISABLE:
+    case TEST_TYPE_H264_ENCODE_QUALITY_LEVEL:
+    case TEST_TYPE_H264_ENCODE_USAGE:
+    case TEST_TYPE_H264_ENCODE_I_P:
+    case TEST_TYPE_H264_ENCODE_I_P_NOT_MATCHING_ORDER:
+    case TEST_TYPE_H264_I_P_B_13:
+    case TEST_TYPE_H264_ENCODE_RESOLUTION_CHANGE_DPB:
+    case TEST_TYPE_H264_ENCODE_QUERY_RESULT_WITH_STATUS:
+    case TEST_TYPE_H264_ENCODE_INLINE_QUERY:
+    case TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES:
+        return TEST_CODEC_H264;
+    case TEST_TYPE_H265_ENCODE_I:
+    case TEST_TYPE_H265_ENCODE_RC_VBR:
+    case TEST_TYPE_H265_ENCODE_RC_CBR:
+    case TEST_TYPE_H265_ENCODE_RC_DISABLE:
+    case TEST_TYPE_H265_ENCODE_QUALITY_LEVEL:
+    case TEST_TYPE_H265_ENCODE_USAGE:
+    case TEST_TYPE_H265_ENCODE_I_P:
+    case TEST_TYPE_H265_ENCODE_I_P_NOT_MATCHING_ORDER:
+    case TEST_TYPE_H265_I_P_B_13:
+    case TEST_TYPE_H265_ENCODE_RESOLUTION_CHANGE_DPB:
+    case TEST_TYPE_H265_ENCODE_QUERY_RESULT_WITH_STATUS:
+    case TEST_TYPE_H265_ENCODE_INLINE_QUERY:
+    case TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES:
+        return TEST_CODEC_H265;
     default:
         TCU_THROW(InternalError, "Unknown TestType");
     }
@@ -2484,13 +2516,28 @@ tcu::TestCaseGroup *createVideoEncodeTests(tcu::TestContext &testCtx)
 {
     MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "encode", "Video encoding session tests"));
 
+    MovePtr<tcu::TestCaseGroup> h264Group(new tcu::TestCaseGroup(testCtx, "h264", "H.264 video codec"));
+    MovePtr<tcu::TestCaseGroup> h265Group(new tcu::TestCaseGroup(testCtx, "h265", "H.265 video codec"));
+
     for (const auto &encodeTest : g_EncodeTests)
     {
         auto defn = TestDefinition::create(encodeTest);
 
         const char *testName = getTestName(defn->getTestType());
-        group->addChild(new VideoEncodeTestCase(testCtx, testName, defn));
+        auto testCodec       = getTestCodec(defn->getTestType());
+
+        if (testCodec == TEST_CODEC_H264)
+            h264Group->addChild(new VideoEncodeTestCase(testCtx, testName, defn));
+        else if (testCodec == TEST_CODEC_H265)
+            h265Group->addChild(new VideoEncodeTestCase(testCtx, testName, defn));
+        else
+        {
+            TCU_THROW(InternalError, "Unknown Video Codec");
+        }
     }
+
+    group->addChild(h264Group.release());
+    group->addChild(h265Group.release());
 
     return group.release();
 }
