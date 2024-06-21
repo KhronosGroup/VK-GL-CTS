@@ -1567,15 +1567,11 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     vk::beginCommandBuffer(vk, *cmdBuffer);
     {
-        const vk::VkHostImageLayoutTransitionInfoEXT transition = {
-            vk::VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT, // VkStructureType sType;
-            DE_NULL,                                                     // const void* pNext;
-            **image,                                                     // VkImage image;
-            m_srcLayout,                                                 // VkImageLayout oldLayout;
-            vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,                    // VkImageLayout newLayout;
-            subresourceRange                                             // VkImageSubresourceRange subresourceRange;
-        };
-        vk.transitionImageLayoutEXT(device, 1, &transition);
+        auto imageMemoryBarrier =
+            makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, m_srcLayout,
+                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **image, subresourceRange);
+        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_NONE, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
+                              DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
 
         const vk::VkBufferImageCopy copyRegion = {
             0u,                // VkDeviceSize bufferOffset;
@@ -3275,22 +3271,22 @@ void testGenerator(tcu::TestCaseGroup *group)
                 for (const auto &action : copyActions)
                 {
                     const TestParameters parameters = {
-                        action.action,                        // HostCopyAction    action
-                        true,                                 // bool                hostCopy
-                        true,                                 // bool                hostTransferLayout
-                        false,                                // bool                dynamicRendering
-                        DRAW,                                 // Command            command
-                        sampledFormat,                        // VkFormat            imageSampledFormat
-                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // VkImageLayout    srcLayout
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout    dstLayout
-                        VK_IMAGE_LAYOUT_GENERAL,              // VkImageLayout    intermediateLayout
-                        VK_IMAGE_TILING_OPTIMAL,              // VkImageTiling sampledTiling;
-                        outputFormat,                         // VkFormat            imageOutputFormat
-                        extent,                               // VkExtent3D        imageSize
-                        false,                                // bool                sparse
-                        0u,                                   // uint32_t            mipLevel
-                        1u,                                   // uint32_t            regionsCount
-                        0u,                                   // uint32_t            padding
+                        action.action,           // HostCopyAction    action
+                        true,                    // bool                hostCopy
+                        true,                    // bool                hostTransferLayout
+                        false,                   // bool                dynamicRendering
+                        DRAW,                    // Command            command
+                        sampledFormat,           // VkFormat            imageSampledFormat
+                        VK_IMAGE_LAYOUT_GENERAL, // VkImageLayout    srcLayout
+                        VK_IMAGE_LAYOUT_GENERAL, // VkImageLayout    dstLayout
+                        VK_IMAGE_LAYOUT_GENERAL, // VkImageLayout    intermediateLayout
+                        VK_IMAGE_TILING_OPTIMAL, // VkImageTiling sampledTiling;
+                        outputFormat,            // VkFormat            imageOutputFormat
+                        extent,                  // VkExtent3D        imageSize
+                        false,                   // bool                sparse
+                        0u,                      // uint32_t            mipLevel
+                        1u,                      // uint32_t            regionsCount
+                        0u,                      // uint32_t            padding
                     };
 
                     const std::string testName = action.name + "_" + getFormatShortString(sampledFormat) + "_" +

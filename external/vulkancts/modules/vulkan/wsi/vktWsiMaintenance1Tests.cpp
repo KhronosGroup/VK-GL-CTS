@@ -1364,6 +1364,11 @@ tcu::TestStatus scalingQueryTest(Context &context, const ScalingQueryTestConfig 
                                                *native.windows[0], context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false);
 
+    const std::vector<VkPresentModeKHR> presentModes =
+        getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
+    if (std::find(presentModes.begin(), presentModes.end(), testParams.mode) == presentModes.end())
+        TCU_THROW(NotSupportedError, "Present mode not supported");
+
     // Query the scaling capabilities and make sure they only report acceptable values.
     VkSurfacePresentScalingCapabilitiesEXT scaling =
         getSurfaceScalingCapabilities(instHelper.vki, devHelper.physicalDevice, testParams.mode, *surface);
@@ -1393,6 +1398,11 @@ tcu::TestStatus scalingQueryCompatibleModesTest(Context &context, const ScalingQ
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false);
+
+    const std::vector<VkPresentModeKHR> presentModes =
+        getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
+    if (std::find(presentModes.begin(), presentModes.end(), testParams.mode) == presentModes.end())
+        TCU_THROW(NotSupportedError, "Present mode not supported");
 
     // Query compatible present modes, and scaling capabilities for each mode.  They must all be identical.
     VkSurfacePresentModeEXT presentModeInfo = {
