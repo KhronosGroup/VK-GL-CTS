@@ -2880,7 +2880,7 @@ KHR-GL44.pipeline_statistics_query_tests_ARB.functional_geometry_shader_queries
 KHR-GL44.pipeline_statistics_query_tests_ARB.functional_fragment_shader_invocations
 KHR-GL44.pipeline_statistics_query_tests_ARB.functional_compute_shader_invocations
 KHR-GL44.cull_distance.coverage
-KHR-GL44.cull_distance.functional
+KHR-GL44.cull_distance.functional*
 KHR-GL44.cull_distance.negative
 KHR-GL44.texture_swizzle.api_errors
 KHR-GL44.texture_swizzle.intial_state
