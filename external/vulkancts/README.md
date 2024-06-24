@@ -802,6 +802,10 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Enable or disable test case validation
     default: 'disable'
 
+  --deqp-spirv-validation=[enable|disable]
+    Enable or disable spir-v shader validation
+    default: 'disable' in release builds, 'enable' in debug builds
+
   --deqp-print-validation-errors
     Print validation errors to standard error
 

@@ -52,12 +52,6 @@ using std::map;
 using std::string;
 using std::vector;
 
-#if defined(DE_DEBUG)
-#define VALIDATE_BINARIES true
-#else
-#define VALIDATE_BINARIES false
-#endif
-
 #define SPIRV_BINARY_ENDIANNESS DE_LITTLE_ENDIAN
 
 // ProgramBinary
@@ -695,7 +689,7 @@ ProgramBinary *buildProgram(const GlslSource &program, glu::ShaderProgramInfo *b
                             const tcu::CommandLine &commandLine)
 {
     const SpirvVersion spirvVersion = program.buildOptions.targetVersion;
-    const bool validateBinary       = VALIDATE_BINARIES;
+    const bool validateBinary       = commandLine.isSpirvValidationEnabled();
     vector<uint32_t> binary;
     std::string cachekey;
     std::string shaderstring;
@@ -785,7 +779,7 @@ ProgramBinary *buildProgram(const HlslSource &program, glu::ShaderProgramInfo *b
                             const tcu::CommandLine &commandLine)
 {
     const SpirvVersion spirvVersion = program.buildOptions.targetVersion;
-    const bool validateBinary       = VALIDATE_BINARIES;
+    const bool validateBinary       = commandLine.isSpirvValidationEnabled();
     vector<uint32_t> binary;
     std::string cachekey;
     std::string shaderstring;
@@ -877,7 +871,7 @@ ProgramBinary *assembleProgram(const SpirVAsmSource &program, SpirVProgramInfo *
                                const tcu::CommandLine &commandLine)
 {
     const SpirvVersion spirvVersion = program.buildOptions.targetVersion;
-    const bool validateBinary       = VALIDATE_BINARIES;
+    const bool validateBinary       = commandLine.isSpirvValidationEnabled();
     vector<uint32_t> binary;
     vk::ProgramBinary *res = 0;
     std::string cachekey;

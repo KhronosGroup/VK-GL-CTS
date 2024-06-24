@@ -58,6 +58,13 @@ using std::vector;
 #define DUPLICATE_CHECK_DEFAULT "disable"
 #endif
 
+// SPIRV validation is enabled by default in Debug mode, and disabled in Release mode.
+#if defined(DE_DEBUG)
+#define SPIRV_VALIDATION_DEFAULT "enable"
+#else
+#define SPIRV_VALIDATION_DEFAULT "disable"
+#endif
+
 namespace tcu
 {
 
@@ -102,6 +109,7 @@ DE_DECLARE_COMMAND_LINE_OPT(VKDeviceGroupID, int);
 DE_DECLARE_COMMAND_LINE_OPT(LogFlush, bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogCompact, bool);
 DE_DECLARE_COMMAND_LINE_OPT(Validation, bool);
+DE_DECLARE_COMMAND_LINE_OPT(SpirvValidation, bool);
 DE_DECLARE_COMMAND_LINE_OPT(PrintValidationErrors, bool);
 DE_DECLARE_COMMAND_LINE_OPT(DuplicateCheck, bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCache, bool);
@@ -239,6 +247,8 @@ void registerOptions(de::cmdline::Parser &parser)
                               s_enableNames, "disable")
         << Option<Validation>(DE_NULL, "deqp-validation", "Enable or disable test case validation", s_enableNames,
                               "disable")
+        << Option<SpirvValidation>(DE_NULL, "deqp-spirv-validation", "Enable or disable spir-v shader validation",
+                                   s_enableNames, SPIRV_VALIDATION_DEFAULT)
         << Option<PrintValidationErrors>(DE_NULL, "deqp-print-validation-errors",
                                          "Print validation errors to standard error")
         << Option<DuplicateCheck>(DE_NULL, "deqp-duplicate-case-name-check",
@@ -1216,6 +1226,10 @@ int CommandLine::getVKDeviceGroupId(void) const
 bool CommandLine::isValidationEnabled(void) const
 {
     return m_cmdLine.getOption<opt::Validation>();
+}
+bool CommandLine::isSpirvValidationEnabled(void) const
+{
+    return m_cmdLine.getOption<opt::SpirvValidation>();
 }
 bool CommandLine::printValidationErrors(void) const
 {
