@@ -906,6 +906,29 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
     ProtectedContext context(baseCtx, params.wsiType, *native.display, *native.window, instExts, devExts);
     vk::VkSurfaceKHR surface = context.getSurface();
 
+    if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
+    {
+        // Check if swapchain can be created for protected surface
+        const vk::InstanceInterface &vki = context.getInstanceDriver();
+        vk::VkSurfaceCapabilities2KHR extCapabilities;
+        vk::VkSurfaceProtectedCapabilitiesKHR extProtectedCapabilities;
+        const vk::VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
+            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, DE_NULL, surface};
+
+        extProtectedCapabilities.sType             = vk::VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
+        extProtectedCapabilities.pNext             = DE_NULL;
+        extProtectedCapabilities.supportsProtected = false;
+
+        extCapabilities.sType = vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
+        extCapabilities.pNext = &extProtectedCapabilities;
+
+        VK_CHECK(
+            vki.getPhysicalDeviceSurfaceCapabilities2KHR(context.getPhysicalDevice(), &surfaceInfo, &extCapabilities));
+
+        if (extProtectedCapabilities.supportsProtected == false)
+            TCU_THROW(NotSupportedError, "Swapchain creation for Protected VkSurface is not Supported.");
+    }
+
     return executeSwapchainParameterCases(params.wsiType, params.dimension, context, surface,
                                           isExtensionForPresentModeEnabled, swapchainCreateExecutor);
 }
