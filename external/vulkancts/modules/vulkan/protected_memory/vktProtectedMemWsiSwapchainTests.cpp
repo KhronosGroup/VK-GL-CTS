@@ -688,23 +688,31 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
 
     case TEST_DIMENSION_IMAGE_USAGE:
     {
-        uint32_t testIndex = 0u;
-        uint32_t testCount = 0u;
-        for (uint32_t flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
-        {
-            if ((flags & ~capabilities.supportedUsageFlags) == 0)
-                testCount++;
-        }
+        const vk::InstanceDriver &instanceDriver  = context.getInstanceDriver();
+        const vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+        std::vector<vk::VkSwapchainCreateInfoKHR> cases;
 
         for (uint32_t flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
         {
             if ((flags & ~capabilities.supportedUsageFlags) == 0)
             {
-                vk::VkSwapchainCreateInfoKHR createInfo = baseParameters;
-                createInfo.imageUsage                   = flags;
-                testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
+                vk::VkImageFormatProperties imageProps;
+
+                // The Vulkan 1.1.87 spec contains the following VU for VkSwapchainCreateInfoKHR:
+                //
+                //     * imageFormat, imageUsage, imageExtent, and imageArrayLayers must be supported for VK_IMAGE_TYPE_2D
+                //     VK_IMAGE_TILING_OPTIMAL images as reported by vkGetPhysicalDeviceImageFormatProperties.
+                if (instanceDriver.getPhysicalDeviceImageFormatProperties(
+                        physicalDevice, baseParameters.imageFormat, vk::VK_IMAGE_TYPE_2D, vk::VK_IMAGE_TILING_OPTIMAL,
+                        flags, (vk::VkImageCreateFlags)0u, &imageProps) != vk::VK_SUCCESS)
+                    continue;
+
+                cases.push_back(baseParameters);
+                cases.back().imageUsage = flags;
             }
         }
+        for (uint32_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
+            testExecutor(vkd, device, cases[caseNdx], log, caseNdx + 1, (uint32_t)cases.size());
 
         break;
     }
