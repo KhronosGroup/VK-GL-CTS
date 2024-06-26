@@ -71,6 +71,9 @@ enum class TestType
     // Test mapping depth + stencil to the same index
     DEPTH_STENCIL_MAPPING_TO_SAME_INDEX,
 
+    // Test mapping depth + stencil to large index
+    DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX,
+
     // Test mapping depth + stencil so only one takes an index, the other does not
     DEPTH_MAPPING_STENCIL_NOT,
 
@@ -80,8 +83,11 @@ enum class TestType
     // Test interaction with VK_EXT_color_write_enable
     INTERACTION_WITH_COLOR_WRITE_ENABLE,
 
+    // Test interaction with VK_EXT_graphics_pipeline_library
+    INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY,
+
     // Test interaction with VK_EXT_extended_dynamic_state3
-    INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3
+    INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3,
 };
 
 // During test creation we dont know what is the maximal number of input attachments.
@@ -125,6 +131,7 @@ class BasicLocalReadTestInstance : public vkt::TestInstance
 {
 public:
     BasicLocalReadTestInstance(Context &context, TestType testType);
+    ~BasicLocalReadTestInstance() = default;
 
 protected:
     tcu::TestStatus iterate(void) override;
@@ -277,6 +284,14 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
         m_stencilInputAttachmentIndex = 2;
         break;
     }
+    case TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX:
+    {
+        m_useStencilInReadFrag        = true;
+        m_colorAttachmentCount        = 2;
+        m_depthInputAttachmentIndex   = 20;
+        m_stencilInputAttachmentIndex = 21;
+        break;
+    }
     case TestType::DEPTH_MAPPING_STENCIL_NOT:
     {
         m_useStencilInReadFrag        = false;
@@ -388,7 +403,8 @@ void BasicLocalReadTestInstance::CalculateExpectedValues()
             // Depth read and stencil read are both enabled
             m_expectedValues[outputDraw] = static_cast<uint32_t>(depthRead * 1000) + stencilRead * 100;
         }
-        else if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX)
+        else if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
+                 (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX))
         {
             // Depth read and stencil read are both enabled
             m_expectedValues[outputDraw] = static_cast<uint32_t>(depthRead * 1000) + stencilRead;
@@ -409,7 +425,8 @@ void BasicLocalReadTestInstance::CalculateExpectedValues()
                 // Accumulate inColor_i, in which inColor_i is the color attachment with location = i in shader
                 m_expectedValues[outputDraw] += valuesPerColorAttachment[attIndexRemaped];
             }
-            else if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX)
+            else if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
+                     (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX))
             {
                 // No color is read
                 break;
@@ -871,6 +888,7 @@ class MappingWithBlendStateTestInstance : public vkt::TestInstance
 {
 public:
     MappingWithBlendStateTestInstance(Context &context, const TestType testType);
+    ~MappingWithBlendStateTestInstance() = default;
 
 protected:
     tcu::TestStatus iterate(void) override;
@@ -1104,6 +1122,272 @@ tcu::TestStatus MappingWithBlendStateTestInstance::iterate()
     return tcu::TestStatus::fail("Fail");
 }
 
+class MappingWithGraphicsPipelineLibraryTestInstance : public vkt::TestInstance
+{
+public:
+    MappingWithGraphicsPipelineLibraryTestInstance(Context &context, const TestType testType);
+    ~MappingWithGraphicsPipelineLibraryTestInstance() = default;
+
+protected:
+    tcu::TestStatus iterate(void) override;
+};
+
+MappingWithGraphicsPipelineLibraryTestInstance::MappingWithGraphicsPipelineLibraryTestInstance(Context &context,
+                                                                                               const TestType testType)
+    : vkt::TestInstance(context)
+{
+    DE_UNREF(testType);
+}
+
+tcu::TestStatus MappingWithGraphicsPipelineLibraryTestInstance::iterate()
+{
+    // test using GPL and only providing valid formats in VkPipelineRenderingCreateInfo to the fragment output interface
+
+    const auto &vk       = m_context.getDeviceInterface();
+    const auto device    = m_context.getDevice();
+    Allocator &allocator = m_context.getDefaultAllocator();
+
+    const auto imageSize   = 8u;
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto inputFormat = VK_FORMAT_B8G8R8A8_UNORM;
+    const auto extent      = makeExtent3D(imageSize, imageSize, 1u);
+    const auto isrr        = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+
+    const uint32_t inputsCount = 3;
+    VkClearColorValue inputColors[inputsCount]{
+        {{0.0f, 0.0f, 0.0f, 1.0}}, {{1.0f, 0.0f, 0.0f, 0.0}}, {{1.0f, 1.0f, 0.0f, 0.0}}};
+
+    // create color attachment
+    const VkImageUsageFlags colorImageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    ImageWithBuffer colorImageWithBuffer(vk, device, allocator, extent, colorFormat, colorImageUsage, VK_IMAGE_TYPE_2D,
+                                         isrr, 1u);
+    auto colorImageView =
+        makeImageView(vk, device, colorImageWithBuffer.getImage(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, isrr);
+
+    // create input attachments
+    VkImageCreateInfo inputImageCreateInfo = initVulkanStructure();
+    inputImageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+    inputImageCreateInfo.format            = inputFormat;
+    inputImageCreateInfo.extent            = extent;
+    inputImageCreateInfo.mipLevels         = 1u;
+    inputImageCreateInfo.arrayLayers       = 1u;
+    inputImageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+    inputImageCreateInfo.usage =
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    ImageWithMemory inputImagesWithMemory[]{{vk, device, allocator, inputImageCreateInfo, MemoryRequirement::Any},
+                                            {vk, device, allocator, inputImageCreateInfo, MemoryRequirement::Any},
+                                            {vk, device, allocator, inputImageCreateInfo, MemoryRequirement::Any}};
+    Move<VkImageView> inputImageViews[]{
+        makeImageView(vk, device, *inputImagesWithMemory[0], VK_IMAGE_VIEW_TYPE_2D, inputFormat, isrr),
+        makeImageView(vk, device, *inputImagesWithMemory[1], VK_IMAGE_VIEW_TYPE_2D, inputFormat, isrr),
+        makeImageView(vk, device, *inputImagesWithMemory[2], VK_IMAGE_VIEW_TYPE_2D, inputFormat, isrr),
+    };
+
+    // setup descriptor set
+    const auto descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+    Move<VkDescriptorPool> descriptorPool =
+        DescriptorPoolBuilder()
+            .addType(descriptorType, inputsCount)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
+    DescriptorSetLayoutBuilder descriptorSetLayoutBuilder;
+    for (uint32_t i = 0; i < inputsCount; ++i)
+        descriptorSetLayoutBuilder.addSingleBinding(descriptorType, VK_SHADER_STAGE_FRAGMENT_BIT);
+    Move<VkDescriptorSetLayout> descriptorSetLayout = descriptorSetLayoutBuilder.build(vk, device);
+    Move<VkDescriptorSet> descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+    DescriptorSetUpdateBuilder descriptorSetUpdateBuilder;
+    auto di = makeDescriptorImageInfo(VK_NULL_HANDLE, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL);
+    for (uint32_t i = 0; i < inputsCount; ++i)
+    {
+        di.imageView = *inputImageViews[i];
+        descriptorSetUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(i),
+                                               descriptorType, &di);
+    }
+    descriptorSetUpdateBuilder.update(vk, device);
+
+    const auto pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
+
+    // fill structures that are needed for pipeline creation
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = initVulkanStructure();
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateInfo   = initVulkanStructure();
+    inputAssemblyStateInfo.topology                                 = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+    const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo = initVulkanStructure();
+    const auto viewport                                                 = makeViewport(extent);
+    const auto scissor                                                  = makeRect2D(extent);
+    VkPipelineViewportStateCreateInfo viewportStateInfo                 = initVulkanStructure();
+    viewportStateInfo.viewportCount                                     = 1u;
+    viewportStateInfo.pViewports                                        = &viewport;
+    viewportStateInfo.scissorCount                                      = 1u;
+    viewportStateInfo.pScissors                                         = &scissor;
+
+    VkPipelineMultisampleStateCreateInfo multisampleStateInfo         = initVulkanStructure();
+    multisampleStateInfo.rasterizationSamples                         = VK_SAMPLE_COUNT_1_BIT;
+    const VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo = initVulkanStructure();
+    const VkPipelineTessellationStateCreateInfo tessellationStateInfo = initVulkanStructure();
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
+    deMemset(&colorBlendAttachmentState, 0x00, sizeof(VkPipelineColorBlendAttachmentState));
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(1 + inputsCount,
+                                                                                colorBlendAttachmentState);
+    // render to last attachment
+    colorBlendAttachmentStates[inputsCount].colorWriteMask = 0xFu;
+
+    VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = initVulkanStructure();
+    colorBlendStateInfo.attachmentCount                     = 1 + inputsCount;
+    colorBlendStateInfo.pAttachments                        = colorBlendAttachmentStates.data();
+
+    auto &bc(m_context.getBinaryCollection());
+    const auto vertModule(createShaderModule(vk, device, bc.get("vert")));
+    const auto fragModule(createShaderModule(vk, device, bc.get("frag")));
+    VkPipelineShaderStageCreateInfo stages[]{
+        makePipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, *vertModule),
+        makePipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, *fragModule)};
+
+    // provide 0 formats in VkPipelineRenderingCreateInfo for shader stages in the pipeline libraries
+    const std::vector<VkFormat> undefinedColorFormats(1 + inputsCount, VK_FORMAT_UNDEFINED);
+    VkPipelineRenderingCreateInfo renderingCreateInfo = initVulkanStructure();
+    renderingCreateInfo.colorAttachmentCount          = 1 + inputsCount;
+    renderingCreateInfo.pColorAttachmentFormats       = undefinedColorFormats.data();
+
+    // create all shader pipeline part
+    VkGraphicsPipelineLibraryCreateInfoEXT shdersLibraryInfo = initVulkanStructure(&renderingCreateInfo);
+    shdersLibraryInfo.flags = VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT |
+                              VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT |
+                              VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT;
+    VkGraphicsPipelineCreateInfo shadersPipelineInfo = initVulkanStructure(&shdersLibraryInfo);
+    shadersPipelineInfo.flags                        = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+    shadersPipelineInfo.layout                       = *pipelineLayout;
+    shadersPipelineInfo.pVertexInputState            = &vertexInputStateInfo;
+    shadersPipelineInfo.pInputAssemblyState          = &inputAssemblyStateInfo;
+    shadersPipelineInfo.pViewportState               = &viewportStateInfo;
+    shadersPipelineInfo.pRasterizationState          = &rasterizationStateInfo;
+    shadersPipelineInfo.pTessellationState           = &tessellationStateInfo;
+    shadersPipelineInfo.pMultisampleState            = &multisampleStateInfo;
+    shadersPipelineInfo.pDepthStencilState           = &depthStencilStateInfo;
+    shadersPipelineInfo.pColorBlendState             = &colorBlendStateInfo;
+    shadersPipelineInfo.stageCount                   = 2u;
+    shadersPipelineInfo.pStages                      = stages;
+    auto shadersPipelinePart = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &shadersPipelineInfo);
+
+    // provide valid formats in VkPipelineRenderingCreateInfo for fragment output library
+    std::vector<VkFormat> attachmentFormats(1 + inputsCount, inputFormat);
+    attachmentFormats[inputsCount]              = colorFormat;
+    renderingCreateInfo.pColorAttachmentFormats = attachmentFormats.data();
+
+    // create fragment output part
+    VkGraphicsPipelineLibraryCreateInfoEXT fragOutLibInfo = initVulkanStructure(&renderingCreateInfo);
+    fragOutLibInfo.flags                             = VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT;
+    VkGraphicsPipelineCreateInfo fragOutPipelineInfo = initVulkanStructure(&fragOutLibInfo);
+    fragOutPipelineInfo.flags                        = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+    fragOutPipelineInfo.layout                       = *pipelineLayout;
+    fragOutPipelineInfo.pMultisampleState            = &multisampleStateInfo;
+    fragOutPipelineInfo.pColorBlendState             = &colorBlendStateInfo;
+    auto fragmentOutPipelinePart = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &fragOutPipelineInfo);
+
+    // merge pipelines
+    const VkPipeline libraryHandles[]{
+        *shadersPipelinePart,
+        *fragmentOutPipelinePart,
+    };
+    VkPipelineLibraryCreateInfoKHR linkedPipelineLibraryInfo = initVulkanStructure();
+    linkedPipelineLibraryInfo.libraryCount                   = 2u;
+    linkedPipelineLibraryInfo.pLibraries                     = libraryHandles;
+    VkGraphicsPipelineCreateInfo linkedPipelineInfo          = initVulkanStructure(&linkedPipelineLibraryInfo);
+    linkedPipelineInfo.layout                                = *pipelineLayout;
+    const auto pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &linkedPipelineInfo);
+
+    const auto initialColorBarrier(makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                                          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+                                                          colorImageWithBuffer.getImage(), isrr));
+    std::vector<VkImageMemoryBarrier> initialInputBarriers(inputsCount, initialColorBarrier);
+    for (uint32_t i = 0; i < inputsCount; ++i)
+    {
+        auto &b         = initialInputBarriers[i];
+        b.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        b.image         = *inputImagesWithMemory[i];
+    }
+    const auto afterClearBarrier(makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT));
+    const auto beforeCopyBarrier(makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT));
+
+    const auto srl(makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
+    const auto copyRegion(makeBufferImageCopy(extent, srl));
+
+    VkRenderingAttachmentInfo colorAttachment = initVulkanStructure();
+    colorAttachment.imageView                 = *colorImageView;
+    colorAttachment.imageLayout               = VK_IMAGE_LAYOUT_GENERAL;
+    colorAttachment.loadOp                    = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.clearValue                = makeClearValueColorF32(0.0f, 0.0f, 1.0f, 0.0f);
+
+    std::vector<VkRenderingAttachmentInfo> attachments(1 + inputsCount, colorAttachment);
+    for (uint32_t i = 0; i < inputsCount; ++i)
+    {
+        auto &input     = attachments[i];
+        input.loadOp    = VK_ATTACHMENT_LOAD_OP_LOAD;
+        input.imageView = *inputImageViews[i];
+    }
+
+    VkRenderingInfo renderingInfo      = initVulkanStructure();
+    renderingInfo.renderArea           = scissor;
+    renderingInfo.layerCount           = 1u;
+    renderingInfo.colorAttachmentCount = (uint32_t)attachments.size();
+    renderingInfo.pColorAttachments    = attachments.data();
+
+    uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const auto cmdPool(
+        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+    const auto cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    // transition layout of image used as color attachment
+    vk.cmdPipelineBarrier(*cmdBuffer, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0, 0, 0, 0, 1,
+                          &initialColorBarrier);
+
+    // transition layout of images used as input attachments
+    vk.cmdPipelineBarrier(*cmdBuffer, 0, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0, 0, 0, 0, inputsCount,
+                          initialInputBarriers.data());
+
+    // clear input attachments
+    for (uint32_t i = 0; i < inputsCount; ++i)
+        vk.cmdClearColorImage(*cmdBuffer, *inputImagesWithMemory[i], VK_IMAGE_LAYOUT_GENERAL, &inputColors[i], 1u,
+                              &isrr);
+
+    // wait for clears before loading inputs
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u, 1u,
+                          &afterClearBarrier, 0, 0, 0, 0);
+
+    // render full screen quad
+    vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+    vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1, &*descriptorSet, 0u,
+                             DE_NULL);
+    vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
+    vk.cmdEndRendering(*cmdBuffer);
+
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 1,
+                          &beforeCopyBarrier, 0, 0, 0, 0);
+    vk.cmdCopyImageToBuffer(*cmdBuffer, colorImageWithBuffer.getImage(), VK_IMAGE_LAYOUT_GENERAL,
+                            colorImageWithBuffer.getBuffer(), 1u, &copyRegion);
+
+    endCommandBuffer(vk, *cmdBuffer);
+
+    submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
+    const auto &bufferAllocation = colorImageWithBuffer.getBufferAllocation();
+    invalidateAlloc(vk, device, bufferAllocation);
+
+    // check just one fragment - at location (1,1) - expect color (1,1,0,1) while clear color was (0,0,1,0)
+    uint8_t *bufferPtr = static_cast<uint8_t *>(bufferAllocation.getHostPtr());
+    uint8_t *fragment  = bufferPtr + 4 * imageSize + 4;
+    if ((fragment[0] > 253) && (fragment[1] > 253) && (fragment[2] < 2) && (fragment[3] > 253))
+        return tcu::TestStatus::pass("Pass");
+
+    tcu::PixelBufferAccess resultAccess(mapVkFormat(colorFormat), imageSize, imageSize, 1, bufferPtr);
+    m_context.getTestContext().getLog() << tcu::TestLog::ImageSet("Result", "")
+                                        << tcu::TestLog::Image("Output", "", resultAccess) << tcu::TestLog::EndImageSet;
+
+    return tcu::TestStatus::fail("Fail");
+}
+
 class LocalReadTestCase : public vkt::TestCase
 {
 public:
@@ -1130,6 +1414,8 @@ void LocalReadTestCase::checkSupport(Context &context) const
 
     if (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE)
         context.requireDeviceFunctionality("VK_EXT_color_write_enable");
+    else if (m_testType == TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY)
+        context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
     else if (m_testType == TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3)
     {
         context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state3");
@@ -1194,7 +1480,7 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                    "void main()\n{\n"
                    "  uint result = 0;\n";
         for (uint32_t i = 0; i < colorInputAttachmentCount; ++i)
-            fragSrc << "  result = result + " << i + 1 << " * subpassLoad(inColor" << i << ").x; \n";
+            fragSrc << "  result = result + " << (i + 1) << " * subpassLoad(inColor" << i << ").x; \n";
         fragSrc << "  result = result + uint(subpassLoad(inDepth).x * 1000);\n"; // 0.6*1000
         if (useStencil)
             fragSrc << "  result = result + uint(subpassLoad(inStencil).x * 1000);\n"; // 1 * 1000
@@ -1247,8 +1533,8 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
         //    "  uint v[];\n"
         //    "} outBuffer;\n"
         //    "void main()\n{\n"
-        //    "  uint result = subpassLoad(inColor0).x + subpassLoad(inColor1).x;\n"    // 1 + 2
-        //    "  result = result + uint(subpassLoad(inDepth).x * 1000);\n"            // 0.6*1000
+        //    "  uint result = subpassLoad(inColor0).x + subpassLoad(inColor1).x;\n"   // 1 + 2
+        //    "  result = result + uint(subpassLoad(inDepth).x * 1000);\n"             // 0.6*1000
         //    "  result = result + uint(subpassLoad(inStencil).x * 100);\n"            // 1*100
         //    "  const uvec2 i = uvec2(trunc(gl_FragCoord.xy));\n"
         //    "  outBuffer.v[i.x+i.y*16] = result;\n"
@@ -1365,36 +1651,34 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
         glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(4));
         glslSources.add("frag1") << glu::FragmentSource(generateReadFragSource(5, false));
     }
-    else if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX)
+    else if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||
+             (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX))
     {
-        std::string fragSrc(
-            "#version 450\n"
-            "layout(input_attachment_index = 0, binding = 0) uniform usubpassInput inColor0;\n"
-            "layout(input_attachment_index = 1, binding = 1) uniform usubpassInput inColor1;\n"
-            "layout(input_attachment_index = 2, binding = 2) uniform  subpassInput inDepth;\n"
-            "layout(input_attachment_index = 2, binding = 3) uniform usubpassInput inStencil;\n"
-            "layout(set=1, binding=0, std430) writeonly buffer Output\n{\n"
-            "  uint v[];\n"
-            "} outBuffer;\n"
-            "void main()\n{\n"
-            "  const uvec2 i = uvec2(trunc(gl_FragCoord.xy));\n"
-            "  outBuffer.v[i.x+i.y*16] = uint(subpassLoad(inDepth).x * 1000) + subpassLoad(inStencil).x;\n"
-            "}\n");
+        bool useLargeIndex       = (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX);
+        std::string depthIndex   = useLargeIndex ? "20" : "2";
+        std::string stencilIndex = useLargeIndex ? "21" : "2";
+
+        std::stringstream fragSrc;
+        fragSrc << "#version 450\n"
+                   "layout(input_attachment_index = 0, binding = 0) uniform usubpassInput inColor0;\n"
+                   "layout(input_attachment_index = 1, binding = 1) uniform usubpassInput inColor1;\n"
+                   "layout(input_attachment_index = "
+                << depthIndex
+                << ", binding = 2) uniform  subpassInput inDepth;\n"
+                   "layout(input_attachment_index = "
+                << stencilIndex
+                << ", binding = 3) uniform usubpassInput inStencil;\n"
+                   "layout(set=1, binding=0, std430) writeonly buffer Output\n{\n"
+                   "  uint v[];\n"
+                   "} outBuffer;\n"
+                   "void main()\n{\n"
+                   "  const uvec2 i = uvec2(trunc(gl_FragCoord.xy));\n"
+                   "  outBuffer.v[i.x+i.y*16] = uint(subpassLoad(inDepth).x * 1000) + subpassLoad(inStencil).x;\n"
+                   "}\n";
         glslSources.add("frag0") << glu::FragmentSource(generateWriteFragSource(2));
-        glslSources.add("frag1") << glu::FragmentSource(fragSrc);
+        glslSources.add("frag1") << glu::FragmentSource(fragSrc.str());
     }
-
-    if ((m_testType == TestType::MAX_INPUT_ATTACHMENTS) ||
-        (m_testType == TestType::MAX_ATTACHMENTS_REMAPPED_REPEATEDLY))
-    {
-        // generate fragment shaders for all posible number of input attachments;
-        // during test execution proper shader will be picked
-        for (uint32_t inputAttachmentCount : inputAttachmentsPossibleValues)
-            glslSources.add(std::string("frag1_") + std::to_string(inputAttachmentCount))
-                << glu::FragmentSource(generateReadFragSource(inputAttachmentCount));
-    }
-
-    if (m_testType == TestType::MAPPING_NOT_AFFECTING_BLEND_STATE)
+    else if (m_testType == TestType::MAPPING_NOT_AFFECTING_BLEND_STATE)
     {
         std::string fragSrc("#version 450\n"
                             "layout(location = 0) out vec4 outColor0;\n"
@@ -1411,12 +1695,37 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                             "}\n");
         glslSources.add("frag") << glu::FragmentSource(fragSrc);
     }
+    else if (m_testType == TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY)
+    {
+        std::string fragSrc("#version 450\n"
+                            "layout(input_attachment_index = 0, binding = 0) uniform subpassInput inColor0;\n"
+                            "layout(input_attachment_index = 1, binding = 1) uniform subpassInput inColor1;\n"
+                            "layout(input_attachment_index = 2, binding = 2) uniform subpassInput inColor2;\n"
+                            "layout(location = 3) out vec4 outColor;\n"
+                            "void main()\n{\n"
+                            "  outColor = subpassLoad(inColor0) + subpassLoad(inColor2);\n"
+                            "}\n");
+        glslSources.add("frag") << glu::FragmentSource(fragSrc);
+    }
+
+    if ((m_testType == TestType::MAX_INPUT_ATTACHMENTS) ||
+        (m_testType == TestType::MAX_ATTACHMENTS_REMAPPED_REPEATEDLY))
+    {
+        // generate fragment shaders for all posible number of input attachments;
+        // during test execution proper shader will be picked
+        for (uint32_t inputAttachmentCount : inputAttachmentsPossibleValues)
+            glslSources.add(std::string("frag1_") + std::to_string(inputAttachmentCount))
+                << glu::FragmentSource(generateReadFragSource(inputAttachmentCount));
+    }
 }
 
 TestInstance *LocalReadTestCase::createInstance(Context &context) const
 {
     if (m_testType == TestType::MAPPING_NOT_AFFECTING_BLEND_STATE)
         return new MappingWithBlendStateTestInstance(context, m_testType);
+
+    if (m_testType == TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY)
+        return new MappingWithGraphicsPipelineLibraryTestInstance(context, m_testType);
 
     return new BasicLocalReadTestInstance(context, m_testType);
 }
@@ -1436,9 +1745,11 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
         {"unused_writen_discarded", TestType::UNUSED_WRITEN_DISCARDED},
         {"depth_stencil_mapping_to_no_index", TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX},
         {"depth_stencil_mapping_to_same_index", TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX},
+        {"depth_stencil_mapping_to_large_index", TestType::DEPTH_STENCIL_MAPPING_TO_LARGE_INDEX},
         {"depth_mapping_stencil_not", TestType::DEPTH_MAPPING_STENCIL_NOT},
         {"mapping_not_affecting_blend_state", TestType::MAPPING_NOT_AFFECTING_BLEND_STATE},
         {"interaction_with_color_write_enable", TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE},
+        {"interaction_with_graphics_pipeline_library", TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY},
         {"interaction_with_extended_dynamic_state3", TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3},
     };
 
