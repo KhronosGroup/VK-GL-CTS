@@ -627,9 +627,15 @@ static tcu::TestStatus swapchainCreateTest(Context &context, TestParams testPara
                                                            nullptr);
 
         vector<VkSurfaceFormat2KHR> formats(numFormats);
-        for (auto &surfaceFormat : formats)
+        VkImageCompressionPropertiesEXT *compressionProps = new VkImageCompressionPropertiesEXT[numFormats];
+        for (uint32_t j = 0; j < numFormats; ++j)
         {
-            surfaceFormat = initVulkanStructure();
+            VkImageCompressionPropertiesEXT formatCompressionProps = initVulkanStructure();
+            VkSurfaceFormat2KHR surfaceFormat                      = initVulkanStructure();
+
+            compressionProps[j] = formatCompressionProps;
+            formats[j]          = surfaceFormat;
+            formats[j].pNext    = &compressionProps[j];
         }
 
         instHelper.vki.getPhysicalDeviceSurfaceFormats2KHR(devHelper.physicalDevice, &surfaceInfo, &numFormats,
@@ -637,12 +643,35 @@ static tcu::TestStatus swapchainCreateTest(Context &context, TestParams testPara
 
         uint32_t queueFamilyIndex = devHelper.queueFamilyIndex;
 
-        for (auto &format : formats)
+        for (uint32_t j = 0; j < numFormats; ++j)
         {
-            testParams.format = format.surfaceFormat.format;
+            VkSurfaceFormat2KHR format                          = formats[j];
+            testParams.format                                   = format.surfaceFormat.format;
+            VkImageCompressionFlagsEXT supportedCompressionMode = compressionProps[j].imageCompressionFlags;
+            VkImageCompressionFixedRateFlagsEXT supportedCompressionRate =
+                compressionProps[j].imageCompressionFixedRateFlags;
 
             const uint32_t numPlanes = isYCbCrFormat(testParams.format) ? getPlaneCount(testParams.format) : 1;
             testParams.control.compressionControlPlaneCount = is_fixed_rate_ex ? numPlanes : 0;
+
+            // check that is format is compatible with selected compression mode/rate
+            if (((testParams.control.flags & supportedCompressionMode) == 0) ||
+                (is_fixed_rate_ex && ((testParams.control.pFixedRateFlags[0] & supportedCompressionRate) == 0)))
+            {
+
+                // When testing fixed rate default, query returns fixed rate explicit flag - don't skip it unless compression rate
+                //  is also zero
+                if (!((testParams.control.flags == VK_IMAGE_COMPRESSION_FIXED_RATE_DEFAULT_EXT) &&
+                      (supportedCompressionRate != 0)))
+                    TCU_THROW(NotSupportedError, "Swapchain compression control and format not compatible");
+            }
+
+            if (is_fixed_rate_ex && (numPlanes >= 1))
+            {
+                // only use compression rate that is supported
+                testParams.control.pFixedRateFlags[0] =
+                    testParams.control.pFixedRateFlags[0] & supportedCompressionRate;
+            }
 
             VkSwapchainCreateInfoKHR swapchainInfo = initVulkanStructure();
             swapchainInfo.surface                  = surface.get();
@@ -672,6 +701,8 @@ static tcu::TestStatus swapchainCreateTest(Context &context, TestParams testPara
             validate(instHelper.vki, devHelper.vkd, results, devHelper.physicalDevice, devHelper.device.get(),
                      testParams, images[0]);
         }
+
+        delete[] compressionProps;
     }
 
     return tcu::TestStatus(results.getResult(), results.getMessage());
