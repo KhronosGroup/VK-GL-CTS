@@ -911,10 +911,10 @@ struct StageData
         , missShaderBindingTable()
         , hitShaderBindingTable()
         , callableShaderBindingTable()
-        , raygenShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0))
-        , missShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0))
-        , hitShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0))
-        , callableShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0))
+        , raygenShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(0, 0, 0))
+        , missShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(0, 0, 0))
+        , hitShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(0, 0, 0))
+        , callableShaderBindingTableRegion(makeStridedDeviceAddressRegionKHR(0, 0, 0))
     {
     }
 

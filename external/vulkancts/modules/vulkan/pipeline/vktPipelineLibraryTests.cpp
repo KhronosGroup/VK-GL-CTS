@@ -2878,9 +2878,9 @@ tcu::TestStatus PipelineLibraryShaderModuleInfoRTInstance::iterate(void)
     // Strided device address regions.
     VkStridedDeviceAddressRegionKHR rgenSBTRegion = makeStridedDeviceAddressRegionKHR(
         getBufferDeviceAddress(m_vkd, m_device, sbt->get(), 0), rtHandleSize, rtHandleSize);
-    VkStridedDeviceAddressRegionKHR missSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR hitsSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    VkStridedDeviceAddressRegionKHR callSBTRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    VkStridedDeviceAddressRegionKHR missSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR hitsSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    VkStridedDeviceAddressRegionKHR callSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     beginCommandBuffer(m_vkd, m_cmdBuffer);
     m_vkd.cmdBindDescriptorSets(m_cmdBuffer, bindPoint, pipelineLayout.get(), 0u, 1u, &m_descriptorSet.get(), 0u,

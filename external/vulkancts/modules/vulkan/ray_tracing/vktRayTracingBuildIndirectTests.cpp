@@ -475,12 +475,9 @@ de::MovePtr<BufferWithMemory> RayTracingBuildIndirectTestInstance::prepareBuffer
     const VkStridedDeviceAddressRegionKHR raygenShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, shaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, shaderGroupHandleSize);
-    const VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    const VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    const VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    const VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     beginCommandBuffer(vkd, *cmdBuffer, 0u);
     {
@@ -553,8 +550,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuildIndirectTestInstance::runTest(
     const VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, shaderGroupHandleSize);
-    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     const VkImageCreateInfo imageCreateInfo = makeImageCreateInfo(m_data.width, m_data.height, m_data.depth, format);
     const VkImageSubresourceRange imageSubresourceRange =

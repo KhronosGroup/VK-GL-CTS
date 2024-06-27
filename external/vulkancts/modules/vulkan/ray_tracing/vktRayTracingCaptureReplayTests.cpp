@@ -381,7 +381,7 @@ void TestShaderBindingTablesConfiguration::initShaderBindingTables(de::MovePtr<R
         pipelineData.pipelines[0].hitShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(
             getBufferDeviceAddress(vkd, device, pipelineData.pipelines[0].hitShaderBindingTable->get(), 0),
             shaderGroupHandleSize, RTCR_SHADER_COUNT * shaderGroupHandleSize);
-        pipelineData.pipelines[0].callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+        pipelineData.pipelines[0].callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
         // capture SBT addresses
         VkBufferDeviceAddressInfo deviceAddressInfo = {
@@ -425,8 +425,7 @@ void TestShaderBindingTablesConfiguration::initShaderBindingTables(de::MovePtr<R
             pipelineData.pipelines[0].hitShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(
                 getBufferDeviceAddress(vkd, device, pipelineData.pipelines[0].hitShaderBindingTable->get(), 0),
                 shaderGroupHandleSize, RTCR_SHADER_COUNT * shaderGroupHandleSize);
-            pipelineData.pipelines[0].callableShaderBindingTableRegion =
-                makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            pipelineData.pipelines[0].callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
             break;
         case TEST_PIPELINE_AFTER:
@@ -454,8 +453,7 @@ void TestShaderBindingTablesConfiguration::initShaderBindingTables(de::MovePtr<R
             pipelineData.pipelines[0].hitShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(
                 getBufferDeviceAddress(vkd, device, pipelineData.pipelines[0].hitShaderBindingTable->get(), 0),
                 shaderGroupHandleSize, RTCR_SHADER_COUNT * shaderGroupHandleSize);
-            pipelineData.pipelines[0].callableShaderBindingTableRegion =
-                makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            pipelineData.pipelines[0].callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
             pipelineData.pipelines[1].pipeline =
                 rayTracingPipeline->createPipeline(vkd, device, pipelineData.pipelineLayout);
@@ -481,8 +479,7 @@ void TestShaderBindingTablesConfiguration::initShaderBindingTables(de::MovePtr<R
             pipelineData.pipelines[1].hitShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(
                 getBufferDeviceAddress(vkd, device, pipelineData.pipelines[1].hitShaderBindingTable->get(), 0),
                 shaderGroupHandleSize, RTCR_SHADER_COUNT * shaderGroupHandleSize);
-            pipelineData.pipelines[1].callableShaderBindingTableRegion =
-                makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            pipelineData.pipelines[1].callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
             break;
         case TEST_PIPELINE_BEFORE:
@@ -510,8 +507,7 @@ void TestShaderBindingTablesConfiguration::initShaderBindingTables(de::MovePtr<R
             pipelineData.pipelines[0].hitShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(
                 getBufferDeviceAddress(vkd, device, pipelineData.pipelines[0].hitShaderBindingTable->get(), 0),
                 shaderGroupHandleSize, RTCR_SHADER_COUNT * shaderGroupHandleSize);
-            pipelineData.pipelines[0].callableShaderBindingTableRegion =
-                makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            pipelineData.pipelines[0].callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
             pipelineData.pipelines[1].pipeline =
                 rayTracingPipeline->createPipeline(vkd, device, pipelineData.pipelineLayout);
@@ -537,8 +533,7 @@ void TestShaderBindingTablesConfiguration::initShaderBindingTables(de::MovePtr<R
             pipelineData.pipelines[1].hitShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(
                 getBufferDeviceAddress(vkd, device, pipelineData.pipelines[1].hitShaderBindingTable->get(), 0),
                 shaderGroupHandleSize, RTCR_SHADER_COUNT * shaderGroupHandleSize);
-            pipelineData.pipelines[1].callableShaderBindingTableRegion =
-                makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+            pipelineData.pipelines[1].callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
             break;
         default:
             TCU_THROW(InternalError, "Wrong test type");
@@ -792,7 +787,7 @@ void TestAccelerationStructuresConfiguration::initShaderBindingTables(
     pipelineData.pipelines[0].hitShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(
         getBufferDeviceAddress(vkd, device, pipelineData.pipelines[0].hitShaderBindingTable->get(), 0),
         shaderGroupHandleSize, shaderGroupHandleSize);
-    pipelineData.pipelines[0].callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    pipelineData.pipelines[0].callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 }
 
 bool TestAccelerationStructuresConfiguration::verifyImage(const std::vector<uint32_t> &captureResults,

@@ -458,8 +458,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest(bool useGpuBu
     const VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, shaderGroupHandleSize);
-    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     const VkImageCreateInfo imageCreateInfo = makeImageCreateInfo(m_data.width, m_data.height, m_format);
     const VkImageSubresourceRange imageSubresourceRange =

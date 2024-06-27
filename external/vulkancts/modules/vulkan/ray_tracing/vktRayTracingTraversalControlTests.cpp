@@ -316,7 +316,7 @@ void SingleSquareConfiguration::initShaderBindingTables(
     missShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, shaderGroupHandleSize);
-    callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 }
 
 bool SingleSquareConfiguration::verifyImage(BufferWithMemory *resultBuffer, Context &context, TestParams &testParams)

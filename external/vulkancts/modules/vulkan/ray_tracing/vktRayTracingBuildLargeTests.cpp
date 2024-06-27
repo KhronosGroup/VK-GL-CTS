@@ -387,10 +387,8 @@ de::MovePtr<BufferWithMemory> RayTracingBuildLargeTestInstance::runTest(const ui
     const VkStridedDeviceAddressRegionKHR raygenShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, shaderGroupHandleSize);
-    const VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-    const VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    const VkStridedDeviceAddressRegionKHR missShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    const VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion  = makeStridedDeviceAddressRegionKHR(0, 0, 0);
     const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, callableShaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, shaderGroupHandleSize * callableShaderCount);

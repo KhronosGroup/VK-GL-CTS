@@ -853,8 +853,7 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest(bool replay
     const VkStridedDeviceAddressRegionKHR hitShaderBindingTableRegion =
         makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0),
                                           shaderGroupHandleSize, hitGroupCount * shaderGroupHandleSize);
-    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     const VkFormat imageFormat              = VK_FORMAT_R32_UINT;
     const VkImageCreateInfo imageCreateInfo = makeImageCreateInfo(m_data.width, m_data.height, imageFormat);

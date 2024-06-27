@@ -1373,8 +1373,7 @@ tcu::TestStatus PipelineFlagsInstance::iterate(void)
     std::tie(hitShaderBindingTable, hitShaderBindingTableRegion) =
         rayTracingPipeline->createHitShaderBindingTable(*pipeline);
 
-    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion =
-        makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+    const VkStridedDeviceAddressRegionKHR callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
 
     const Move<VkCommandPool> cmdPool = createCommandPool(vkd, device, 0, familyIndex);
     const Move<VkCommandBuffer> cmdBuffer =
