@@ -1309,7 +1309,11 @@ def genDefinesSrc (apiName, defines):
     for line in indentLines(genLines(defines)):
         yield line
     # add VK_API_MAX_FRAMEWORK_VERSION
-    major, minor = api.features[-1].number.split('.')
+    major, minor = 1, 0
+    for feature in reversed(api.features):
+        if feature.api == api.apiName:
+            major, minor = feature.number.split('.')
+            break
     yield f"#define VK{apiName}_API_MAX_FRAMEWORK_VERSION\tVK{apiName}_API_VERSION_{major}_{minor}"
 
 def genHandlesSrc (handles):
@@ -3904,11 +3908,10 @@ def writeConformanceVersions(api, filename):
             remote_url = line.split()[1]
             break
     listOfTags = os.popen("git ls-remote -t %s" % (remote_url)).read()
+    pattern = "vulkan-cts-(\d).(\d).(\d).(\d)"
     if args.api == 'SC':
-        matches = re.findall("vulkansc-cts-(\d).(\d).(\d).(\d)", listOfTags, re.M)
-    else:
-        matches = re.findall("vulkan-cts-(\d).(\d).(\d).(\d)", listOfTags, re.M)
-
+        pattern = "vulkansc-cts-(\d).(\d).(\d).(\d)"
+    matches = re.findall(pattern, listOfTags, re.M)
     if len(matches) == 0:
         return
     # read all text files in doc folder and find withdrawn cts versions (branches)
@@ -3925,10 +3928,7 @@ def writeConformanceVersions(api, filename):
             # check if announcement refers to date in the past
             if today > datetime.date(int(match[1]), int(match[2]), int(match[3])):
                 # get names of withdrawn branches
-                if args.api == 'SC':
-                    branchMatches = re.findall("vulkansc-cts-(\d).(\d).(\d).(\d)", fileContent, re.M)
-                else:
-                    branchMatches = re.findall("vulkan-cts-(\d).(\d).(\d).(\d)", fileContent, re.M)
+                branchMatches = re.findall(pattern, fileContent, re.M)
                 for v in branchMatches:
                     withdrawnBranches.add((v[0], v[1], v[2], v[3]))
     # define helper function that will be used to add entries for both vk and sc

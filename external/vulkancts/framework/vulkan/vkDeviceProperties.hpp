@@ -152,6 +152,8 @@ private:
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceVulkan13Properties m_vulkan13Properties;
     VkPhysicalDeviceVulkan14Properties m_vulkan14Properties;
+
+    std::vector<VkImageLayout> m_vulkan14CopyLayouts;
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
     VkPhysicalDeviceVulkanSC10Properties m_vulkanSC10Properties;

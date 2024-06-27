@@ -162,6 +162,23 @@ DeviceProperties::DeviceProperties(const InstanceInterface &vki, const uint32_t 
             for (auto property : propertiesToFillFromBlob)
                 property->initializePropertyFromBlob(allBlobs);
         }
+
+#ifndef CTS_USES_VULKANSC
+        // special handling for the copyDstLayoutCount/pCopyDstLayouts fields
+        // we need to query again to fill allocated arrays with layouts
+        if (vk14Supported)
+        {
+            m_vulkan14CopyLayouts.resize(m_vulkan14Properties.copySrcLayoutCount +
+                                         m_vulkan14Properties.copyDstLayoutCount);
+            m_vulkan14Properties.pCopySrcLayouts = m_vulkan14CopyLayouts.data();
+            m_vulkan14Properties.pCopyDstLayouts =
+                m_vulkan14CopyLayouts.data() + m_vulkan14Properties.copySrcLayoutCount;
+            m_vulkan14Properties.pNext = nullptr;
+            m_coreProperties2.pNext    = &m_vulkan14Properties;
+
+            vki.getPhysicalDeviceProperties2(physicalDevice, &m_coreProperties2);
+        }
+#endif // CTS_USES_VULKANSC
     }
     else
         m_coreProperties2.properties = getPhysicalDeviceProperties(vki, physicalDevice);

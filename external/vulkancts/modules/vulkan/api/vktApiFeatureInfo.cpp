@@ -3190,7 +3190,7 @@ tcu::TestStatus deviceProperties(Context &context)
     {
         const ApiVersion deviceVersion = unpackVersion(props->apiVersion);
 #ifndef CTS_USES_VULKANSC
-        const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION_1_3);
+        const ApiVersion deqpVersion = unpackVersion(VK_API_MAX_FRAMEWORK_VERSION);
 #else
         const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION_1_2);
 #endif // CTS_USES_VULKANSC
@@ -6560,9 +6560,7 @@ tcu::TestStatus devicePropertiesVulkan14(Context &context)
 
         // VkPhysicalDeviceHostImageCopyPropertiesEXT
         OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, copySrcLayoutCount),
-        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, pCopySrcLayouts),
         OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, copyDstLayoutCount),
-        OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, pCopyDstLayouts),
         OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, optimalTilingLayoutUUID),
         OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan14Properties, identicalMemoryTypeRequirements),
 
@@ -6584,6 +6582,7 @@ tcu::TestStatus devicePropertiesVulkan14(Context &context)
     const int count                                               = 2u;
     VkPhysicalDeviceVulkan14Properties *vulkan14Properties[count] = {(VkPhysicalDeviceVulkan14Properties *)(buffer14a),
                                                                      (VkPhysicalDeviceVulkan14Properties *)(buffer14b)};
+    std::vector<VkImageLayout> copyLayouts[count];
 
     if (!context.contextSupports(vk::ApiVersion(0, 1, 4, 0)))
         TCU_THROW(NotSupportedError, "At least Vulkan 1.4 required to run test");
@@ -6593,14 +6592,26 @@ tcu::TestStatus devicePropertiesVulkan14(Context &context)
 
     for (int ndx = 0; ndx < count; ++ndx)
     {
-        deMemset(&extProperties.properties, 0x00, sizeof(extProperties.properties));
-        extProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-        extProperties.pNext = vulkan14Properties[ndx];
-
         deMemset(vulkan14Properties[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan14Properties));
-        vulkan14Properties[ndx]->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_PROPERTIES;
-        vulkan14Properties[ndx]->pNext = DE_NULL;
+        vulkan14Properties[ndx]->sType           = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_PROPERTIES;
+        vulkan14Properties[ndx]->pNext           = DE_NULL;
+        vulkan14Properties[ndx]->pCopySrcLayouts = DE_NULL;
+        vulkan14Properties[ndx]->pCopyDstLayouts = DE_NULL;
 
+        extProperties = initVulkanStructure(vulkan14Properties[ndx]);
+
+        vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+        // safety check in case large array counts are returned
+        if ((vulkan14Properties[ndx]->copyDstLayoutCount + vulkan14Properties[ndx]->copySrcLayoutCount) > GUARD_VALUE)
+            return tcu::TestStatus::fail("Wrong layouts count");
+
+        // set pCopySrcLayouts / pCopyDstLayouts to allocated array and query again
+        copyLayouts[ndx].resize(vulkan14Properties[ndx]->copyDstLayoutCount +
+                                vulkan14Properties[ndx]->copySrcLayoutCount);
+        vulkan14Properties[ndx]->pCopySrcLayouts = copyLayouts[ndx].data();
+        vulkan14Properties[ndx]->pCopyDstLayouts =
+            copyLayouts[ndx].data() + vulkan14Properties[ndx]->copySrcLayoutCount;
         vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
     }
 
@@ -6613,6 +6624,14 @@ tcu::TestStatus devicePropertiesVulkan14(Context &context)
 
         return tcu::TestStatus::fail("VkPhysicalDeviceVulkan14Properties initialization failure");
     }
+
+    // validation of pCopySrcLayouts / pCopyDstLayouts needs to be done separately
+    // because the size of those arrays is not know at compile time
+    if ((deMemCmp(vulkan14Properties[0]->pCopySrcLayouts, vulkan14Properties[1]->pCopySrcLayouts,
+                  vulkan14Properties[0]->copySrcLayoutCount * sizeof(VkImageLayout)) != 0) ||
+        (deMemCmp(vulkan14Properties[0]->pCopyDstLayouts, vulkan14Properties[1]->pCopyDstLayouts,
+                  vulkan14Properties[0]->copyDstLayoutCount * sizeof(VkImageLayout)) != 0))
+        return tcu::TestStatus::fail("VkPhysicalDeviceVulkan14Properties initialization failure");
 
     return tcu::TestStatus::pass("Querying Vulkan 1.4 device properties succeeded");
 }
@@ -7622,7 +7641,14 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan14(Context &context)
 
     VkPhysicalDeviceVulkan14Properties vulkan14Properties = initVulkanStructure();
     VkPhysicalDeviceProperties2 extProperties             = initVulkanStructure(&vulkan14Properties);
+    std::vector<VkImageLayout> vulkan14CopyLayouts;
+    std::vector<VkImageLayout> extCopyLayouts;
 
+    vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+    vulkan14CopyLayouts.resize(vulkan14Properties.copySrcLayoutCount + vulkan14Properties.copyDstLayoutCount);
+    vulkan14Properties.pCopySrcLayouts = vulkan14CopyLayouts.data();
+    vulkan14Properties.pCopyDstLayouts = vulkan14CopyLayouts.data() + vulkan14Properties.copySrcLayoutCount;
     vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
 
     log << TestLog::Message << vulkan14Properties << TestLog::EndMessage;
@@ -7643,6 +7669,14 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan14(Context &context)
             initVulkanStructure(&hostImageCopyProperties);
         extProperties = initVulkanStructure(&pipelineRobustnessProperties);
 
+        vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+        // alocate and fill pCopySrcLayouts/pCopyDstLayouts data
+        extCopyLayouts.resize(hostImageCopyProperties.copySrcLayoutCount + hostImageCopyProperties.copyDstLayoutCount);
+        hostImageCopyProperties.pCopySrcLayouts = extCopyLayouts.data();
+        hostImageCopyProperties.pCopyDstLayouts = extCopyLayouts.data() + hostImageCopyProperties.copySrcLayoutCount;
+        hostImageCopyProperties.pNext           = nullptr;
+        extProperties.pNext                     = &hostImageCopyProperties;
         vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
 
         if (lineRasterizationProperties.lineSubPixelPrecisionBits != vulkan14Properties.lineSubPixelPrecisionBits)
