@@ -6500,7 +6500,7 @@ void GPUShaderFP64Test4::initProgramObjects()
 
     for (unsigned int n_program = 0; n_program < n_programs; ++n_program)
     {
-        unsigned int n_uniform_prefixes = DE_NULL;
+        unsigned int n_uniform_prefixes = 0;
         glw::GLuint po_id               = programs[n_program];
         _stage_data **stages_data       = DE_NULL;
         const char **uniform_prefixes   = DE_NULL;

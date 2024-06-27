@@ -1723,7 +1723,7 @@ glw::GLenum StorageAndSubImageTest<T, S, N, D, I>::TextureTarget()
         return GL_TEXTURE_3D;
     default:
         DE_FATAL("invalid texture dimension");
-        return DE_NULL;
+        return 0;
     }
 }
 
@@ -3142,7 +3142,7 @@ glw::GLenum StorageMultisampleTest<T, S, N, D>::MultisampleTextureTarget()
         return GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
     default:
         DE_FATAL("invalid texture dimension");
-        return DE_NULL;
+        return 0;
     }
 }
 
@@ -3161,7 +3161,7 @@ glw::GLenum StorageMultisampleTest<T, S, N, D>::InputTextureTarget()
         return GL_TEXTURE_2D_ARRAY;
     default:
         DE_FATAL("invalid texture dimension");
-        return DE_NULL;
+        return 0;
     }
 }
 

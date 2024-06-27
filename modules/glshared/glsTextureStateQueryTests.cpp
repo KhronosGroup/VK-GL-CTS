@@ -594,7 +594,7 @@ static bool isCoreTextureTarget(const glu::ContextType &contextType, glw::GLenum
     else
     {
         DE_ASSERT(false);
-        return DE_NULL;
+        return false;
     }
 }
 
@@ -611,7 +611,7 @@ static bool isCoreTextureParam(const glu::ContextType &contextType, glw::GLenum 
     else
     {
         DE_ASSERT(false);
-        return DE_NULL;
+        return false;
     }
 }
 
@@ -628,7 +628,7 @@ static bool isCoreQuery(const glu::ContextType &contextType, QueryType query)
     else
     {
         DE_ASSERT(false);
-        return DE_NULL;
+        return false;
     }
 }
 
@@ -645,7 +645,7 @@ static bool isCoreTester(const glu::ContextType &contextType, TesterType tester)
     else
     {
         DE_ASSERT(false);
-        return DE_NULL;
+        return false;
     }
 }
 

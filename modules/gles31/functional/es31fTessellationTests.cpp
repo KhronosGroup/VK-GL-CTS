@@ -2533,7 +2533,7 @@ public:
 
 protected:
     virtual const glu::ProgramSources makeSources(TessPrimitiveType, SpacingMode,
-                                                  const char *vtxOutPosAttrName) const = DE_NULL;
+                                                  const char *vtxOutPosAttrName) const = 0;
 
 private:
     static const int RENDER_SIZE = 256;

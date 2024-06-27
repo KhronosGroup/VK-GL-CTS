@@ -84,7 +84,6 @@ FenceSyncCase::FenceSyncCase(Context &context, const char *name, const char *des
     , m_numSyncs(numSyncs)
     , m_waitCommand(waitCommand)
     , m_program(DE_NULL)
-    , m_syncObjects(DE_NULL)
     , m_iterNdx(0)
     , m_rnd(deStringHash(name))
 {

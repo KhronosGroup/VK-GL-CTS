@@ -765,8 +765,7 @@ LayeredImage::LayeredImage(TextureType type, const TextureFormat &format, int w,
 
     DE_ASSERT(w == h || type != TEXTURETYPE_CUBE);
 
-    DE_ASSERT(m_texBuffer != DE_NULL || m_tex2D != DE_NULL || m_texCube != DE_NULL || m_tex3D != DE_NULL ||
-              m_tex2DArray != DE_NULL);
+    DE_ASSERT(m_texBuffer || m_tex2D || m_texCube || m_tex3D || m_tex2DArray);
 }
 
 template <typename ColorT>
