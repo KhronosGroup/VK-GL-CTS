@@ -4631,12 +4631,11 @@ void copyBufferToImage(const DeviceInterface &vk, const VkCommandBuffer &cmdBuff
 
     // Copy buffer to image
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
-                          0, (const VkMemoryBarrier *)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
+                          0, nullptr, 1, &preBufferBarrier, 1, &preImageBarrier);
     vk.cmdCopyBufferToImage(cmdBuffer, buffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                             (uint32_t)copyRegions.size(), copyRegions.data());
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, destImageDstStageFlags, (VkDependencyFlags)0, 0,
-                          (const VkMemoryBarrier *)DE_NULL, 0, (const VkBufferMemoryBarrier *)DE_NULL, 1,
-                          &postImageBarrier);
+                          nullptr, 0, nullptr, 1, &postImageBarrier);
 }
 
 void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
@@ -4668,7 +4667,7 @@ void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
         DE_NULL,                                     // const void* pNext;
         VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // VkCommandBufferUsageFlags flags;
-        (const VkCommandBufferInheritanceInfo *)DE_NULL,
+        nullptr,
     };
 
     VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
@@ -5668,7 +5667,7 @@ void allocateAndBindSparseImage(const DeviceInterface &vk, VkDevice device, cons
         bindSparseInfo.pImageOpaqueBinds    = &imageMipTailBindInfo;
     }
 
-    VK_CHECK(vk.queueBindSparse(queue, 1u, &bindSparseInfo, DE_NULL));
+    VK_CHECK(vk.queueBindSparse(queue, 1u, &bindSparseInfo, VK_NULL_HANDLE));
 }
 
 bool checkSparseImageFormatSupport(const VkPhysicalDevice physicalDevice, const InstanceInterface &instance,

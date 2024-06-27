@@ -47,7 +47,7 @@ using std::vector;
 
 #if defined(DEQP_SUPPORT_WAYLAND)
 #include "tcuLnxWayland.hpp"
-#define WAYLAND_DISPLAY DE_NULL
+#define WAYLAND_DISPLAY 0
 #endif // DEQP_SUPPORT_WAYLAND
 
 #if (DE_OS == DE_OS_WIN32)

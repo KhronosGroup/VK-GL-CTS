@@ -88,9 +88,9 @@ ComputePipelineWrapper::ComputePipelineWrapper(const ComputePipelineWrapper &rhs
     , m_pipelineCreatePNext(rhs.m_pipelineCreatePNext)
     , m_subgroupSize(rhs.m_subgroupSize)
 {
-    DE_ASSERT(rhs.m_pipeline.get() == DE_NULL);
+    DE_ASSERT(rhs.m_pipeline.get() == VK_NULL_HANDLE);
 #ifndef CTS_USES_VULKANSC
-    DE_ASSERT(rhs.m_shader.get() == DE_NULL);
+    DE_ASSERT(rhs.m_shader.get() == VK_NULL_HANDLE);
 #endif
 }
 
@@ -103,9 +103,9 @@ ComputePipelineWrapper::ComputePipelineWrapper(ComputePipelineWrapper &&rhs) noe
     , m_pipelineCreatePNext(rhs.m_pipelineCreatePNext)
     , m_subgroupSize(rhs.m_subgroupSize)
 {
-    DE_ASSERT(rhs.m_pipeline.get() == DE_NULL);
+    DE_ASSERT(rhs.m_pipeline.get() == VK_NULL_HANDLE);
 #ifndef CTS_USES_VULKANSC
-    DE_ASSERT(rhs.m_shader.get() == DE_NULL);
+    DE_ASSERT(rhs.m_shader.get() == VK_NULL_HANDLE);
 #endif
 }
 
@@ -117,9 +117,9 @@ ComputePipelineWrapper &ComputePipelineWrapper::operator=(const ComputePipelineW
     m_specializationInfo   = rhs.m_specializationInfo;
     m_pipelineCreateFlags  = rhs.m_pipelineCreateFlags;
     m_pipelineCreatePNext  = rhs.m_pipelineCreatePNext;
-    DE_ASSERT(rhs.m_pipeline.get() == DE_NULL);
+    DE_ASSERT(rhs.m_pipeline.get() == VK_NULL_HANDLE);
 #ifndef CTS_USES_VULKANSC
-    DE_ASSERT(rhs.m_shader.get() == DE_NULL);
+    DE_ASSERT(rhs.m_shader.get() == VK_NULL_HANDLE);
 #endif
     m_subgroupSize = rhs.m_subgroupSize;
     return *this;
@@ -133,9 +133,9 @@ ComputePipelineWrapper &ComputePipelineWrapper::operator=(ComputePipelineWrapper
     m_specializationInfo   = rhs.m_specializationInfo;
     m_pipelineCreateFlags  = rhs.m_pipelineCreateFlags;
     m_pipelineCreatePNext  = rhs.m_pipelineCreatePNext;
-    DE_ASSERT(rhs.m_pipeline.get() == DE_NULL);
+    DE_ASSERT(rhs.m_pipeline.get() == VK_NULL_HANDLE);
 #ifndef CTS_USES_VULKANSC
-    DE_ASSERT(rhs.m_shader.get() == DE_NULL);
+    DE_ASSERT(rhs.m_shader.get() == VK_NULL_HANDLE);
 #endif
     m_subgroupSize = rhs.m_subgroupSize;
     return *this;
@@ -179,7 +179,7 @@ void ComputePipelineWrapper::buildPipeline(void)
     VkSpecializationInfo *specializationInfo = m_specializationInfo.mapEntryCount > 0 ? &m_specializationInfo : DE_NULL;
     if (m_internalData->pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE)
     {
-        DE_ASSERT(m_pipeline.get() == DE_NULL);
+        DE_ASSERT(m_pipeline.get() == VK_NULL_HANDLE);
         const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, *m_programBinary));
         buildPipelineLayout();
         m_pipeline =
@@ -189,7 +189,7 @@ void ComputePipelineWrapper::buildPipeline(void)
     else
     {
 #ifndef CTS_USES_VULKANSC
-        DE_ASSERT(m_shader.get() == DE_NULL);
+        DE_ASSERT(m_shader.get() == VK_NULL_HANDLE);
         buildPipelineLayout();
 
         VkShaderRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo = {

@@ -1013,8 +1013,7 @@ public:
     virtual std::vector<VkDeviceSize> getSerializingSizes(const DeviceInterface &vk, const VkDevice device,
                                                           const VkQueue queue, const uint32_t queueFamilyIndex) = 0;
 
-    virtual std::vector<uint64_t> getSerializingAddresses(const DeviceInterface &vk,
-                                                          const VkDevice device) const = DE_NULL;
+    virtual std::vector<uint64_t> getSerializingAddresses(const DeviceInterface &vk, const VkDevice device) const = 0;
 
     // helper methods for typical acceleration structure creation tasks
     void createAndBuild(const DeviceInterface &vk, const VkDevice device, const VkCommandBuffer cmdBuffer,
@@ -1143,7 +1142,7 @@ protected:
     Move<VkPipeline> createPipelineKHR(const DeviceInterface &vk, const VkDevice device,
                                        const VkPipelineLayout pipelineLayout,
                                        const std::vector<VkPipeline> &pipelineLibraries,
-                                       const VkPipelineCache pipelineCache = DE_NULL);
+                                       const VkPipelineCache pipelineCache = VK_NULL_HANDLE);
 
     std::vector<de::SharedPtr<Move<VkShaderModule>>> m_shadersModules;
     std::vector<de::SharedPtr<de::MovePtr<RayTracingPipeline>>> m_pipelineLibraries;

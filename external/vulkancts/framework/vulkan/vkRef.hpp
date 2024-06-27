@@ -84,7 +84,7 @@ public:
         , m_allocator(allocator)
     {
     }
-    Deleter(void) : m_deviceIface(DE_NULL), m_device(DE_NULL), m_allocator(DE_NULL)
+    Deleter(void) : m_deviceIface(DE_NULL), m_device(VK_NULL_HANDLE), m_allocator(DE_NULL)
     {
     }
 
@@ -105,7 +105,7 @@ public:
         , m_allocator(allocator)
     {
     }
-    Deleter(void) : m_destroyInstance((DestroyInstanceFunc)DE_NULL), m_allocator(DE_NULL)
+    Deleter(void) : m_destroyInstance(nullptr), m_allocator(DE_NULL)
     {
     }
 
@@ -131,7 +131,7 @@ public:
         m_destroyDevice = (DestroyDeviceFunc)getDeviceProcAddr(device, "vkDestroyDevice");
         m_allocator     = allocator;
     }
-    Deleter(void) : m_destroyDevice((DestroyDeviceFunc)DE_NULL), m_allocator(DE_NULL)
+    Deleter(void) : m_destroyDevice(nullptr), m_allocator(DE_NULL)
     {
     }
 
@@ -155,7 +155,7 @@ public:
         , m_allocator(allocator)
     {
     }
-    Deleter(void) : m_instanceIface(DE_NULL), m_instance((VkInstance)0), m_allocator(DE_NULL)
+    Deleter(void) : m_instanceIface(DE_NULL), m_instance(VK_NULL_HANDLE), m_allocator(DE_NULL)
     {
     }
 
@@ -182,7 +182,7 @@ public:
         , m_allocator(allocator)
     {
     }
-    Deleter(void) : m_instanceIface(DE_NULL), m_instance((VkInstance)0), m_allocator(DE_NULL)
+    Deleter(void) : m_instanceIface(DE_NULL), m_instance(VK_NULL_HANDLE), m_allocator(DE_NULL)
     {
     }
 
@@ -209,7 +209,7 @@ public:
         , m_allocator(allocator)
     {
     }
-    Deleter(void) : m_instanceIface(DE_NULL), m_instance((VkInstance)0), m_allocator(DE_NULL)
+    Deleter(void) : m_instanceIface(DE_NULL), m_instance(VK_NULL_HANDLE), m_allocator(DE_NULL)
     {
     }
 
@@ -234,7 +234,7 @@ public:
         , m_pool(pool)
     {
     }
-    Deleter(void) : m_deviceIface(DE_NULL), m_device(DE_NULL), m_pool(DE_NULL)
+    Deleter(void) : m_deviceIface(DE_NULL), m_device(VK_NULL_HANDLE), m_pool(VK_NULL_HANDLE)
     {
     }
 
@@ -259,7 +259,7 @@ public:
         , m_pool(pool)
     {
     }
-    Deleter(void) : m_deviceIface(DE_NULL), m_device(DE_NULL), m_pool(DE_NULL)
+    Deleter(void) : m_deviceIface(DE_NULL), m_device(VK_NULL_HANDLE), m_pool(VK_NULL_HANDLE)
     {
     }
 

@@ -358,7 +358,7 @@ VkDeviceAddress getBufferDeviceAddress(const DeviceInterface &vk, const VkDevice
                                        VkDeviceSize offset)
 {
 
-    if (buffer == DE_NULL)
+    if (buffer == VK_NULL_HANDLE)
         return 0;
 
     VkBufferDeviceAddressInfo deviceAddressInfo{
@@ -1071,13 +1071,13 @@ BottomLevelAccelerationStructureKHR::BottomLevelAccelerationStructureKHR()
     , m_workerThreadCount(0)
     , m_useArrayOfPointers(false)
     , m_useMaintenance5(false)
-    , m_accelerationStructureBuffer(DE_NULL)
-    , m_vertexBuffer(DE_NULL)
-    , m_indexBuffer(DE_NULL)
-    , m_deviceScratchBuffer(DE_NULL)
+    , m_accelerationStructureBuffer(VK_NULL_HANDLE)
+    , m_vertexBuffer(VK_NULL_HANDLE)
+    , m_indexBuffer(VK_NULL_HANDLE)
+    , m_deviceScratchBuffer(VK_NULL_HANDLE)
     , m_hostScratchBuffer(new std::vector<uint8_t>)
     , m_accelerationStructureKHR()
-    , m_indirectBuffer(DE_NULL)
+    , m_indirectBuffer(VK_NULL_HANDLE)
     , m_indirectBufferOffset(0)
     , m_indirectBufferStride(0)
 {
@@ -1337,13 +1337,13 @@ void BottomLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const
                                                 BottomLevelAccelerationStructure *srcAccelerationStructure)
 {
     DE_ASSERT(!m_geometriesData.empty());
-    DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
+    DE_ASSERT(m_accelerationStructureKHR.get() != VK_NULL_HANDLE);
     DE_ASSERT(m_buildScratchSize != 0);
 
     if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
     {
         updateVertexBuffer(vk, device, m_geometriesData, getVertexBuffer(), getVertexBufferOffset());
-        if (getIndexBuffer() != DE_NULL)
+        if (getIndexBuffer() != VK_NULL_HANDLE)
             updateIndexBuffer(vk, device, m_geometriesData, getIndexBuffer(), getIndexBufferOffset());
     }
 
@@ -1371,7 +1371,7 @@ void BottomLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const
             (m_buildWithoutGeometries ? 0u : static_cast<uint32_t>(accelerationStructureGeometriesKHR.size()));
 
         VkAccelerationStructureKHR srcStructure =
-            (srcAccelerationStructure != DE_NULL) ? *(srcAccelerationStructure->getPtr()) : DE_NULL;
+            (srcAccelerationStructure != DE_NULL) ? *(srcAccelerationStructure->getPtr()) : VK_NULL_HANDLE;
         VkBuildAccelerationStructureModeKHR mode = (srcAccelerationStructure != DE_NULL) ?
                                                        VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR :
                                                        VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
@@ -1398,7 +1398,7 @@ void BottomLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const
 
         if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
         {
-            if (m_indirectBuffer == DE_NULL)
+            if (m_indirectBuffer == VK_NULL_HANDLE)
                 vk.cmdBuildAccelerationStructuresKHR(
                     cmdBuffer, 1u, &accelerationStructureBuildGeometryInfoKHR,
                     (const VkAccelerationStructureBuildRangeInfoKHR **)&accelerationStructureBuildRangeInfoKHRPtr);
@@ -1415,7 +1415,7 @@ void BottomLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const
         else if (!m_deferredOperation)
         {
             VK_CHECK(vk.buildAccelerationStructuresKHR(
-                device, DE_NULL, 1u, &accelerationStructureBuildGeometryInfoKHR,
+                device, VK_NULL_HANDLE, 1u, &accelerationStructureBuildGeometryInfoKHR,
                 (const VkAccelerationStructureBuildRangeInfoKHR **)&accelerationStructureBuildRangeInfoKHRPtr));
         }
         else
@@ -1451,7 +1451,7 @@ void BottomLevelAccelerationStructureKHR::copyFrom(const DeviceInterface &vk, co
                                                    BottomLevelAccelerationStructure *accelerationStructure,
                                                    bool compactCopy)
 {
-    DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
+    DE_ASSERT(m_accelerationStructureKHR.get() != VK_NULL_HANDLE);
     DE_ASSERT(accelerationStructure != DE_NULL);
 
     VkCopyAccelerationStructureInfoKHR copyAccelerationStructureInfo = {
@@ -1469,7 +1469,7 @@ void BottomLevelAccelerationStructureKHR::copyFrom(const DeviceInterface &vk, co
     }
     else if (!m_deferredOperation)
     {
-        VK_CHECK(vk.copyAccelerationStructureKHR(device, DE_NULL, &copyAccelerationStructureInfo));
+        VK_CHECK(vk.copyAccelerationStructureKHR(device, VK_NULL_HANDLE, &copyAccelerationStructureInfo));
     }
     else
     {
@@ -1499,7 +1499,7 @@ void BottomLevelAccelerationStructureKHR::copyFrom(const DeviceInterface &vk, co
 void BottomLevelAccelerationStructureKHR::serialize(const DeviceInterface &vk, const VkDevice device,
                                                     const VkCommandBuffer cmdBuffer, SerialStorage *storage)
 {
-    DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
+    DE_ASSERT(m_accelerationStructureKHR.get() != VK_NULL_HANDLE);
     DE_ASSERT(storage != DE_NULL);
 
     const VkCopyAccelerationStructureToMemoryInfoKHR copyAccelerationStructureInfo = {
@@ -1516,7 +1516,7 @@ void BottomLevelAccelerationStructureKHR::serialize(const DeviceInterface &vk, c
     }
     else if (!m_deferredOperation)
     {
-        VK_CHECK(vk.copyAccelerationStructureToMemoryKHR(device, DE_NULL, &copyAccelerationStructureInfo));
+        VK_CHECK(vk.copyAccelerationStructureToMemoryKHR(device, VK_NULL_HANDLE, &copyAccelerationStructureInfo));
     }
     else
     {
@@ -1537,7 +1537,7 @@ void BottomLevelAccelerationStructureKHR::serialize(const DeviceInterface &vk, c
 void BottomLevelAccelerationStructureKHR::deserialize(const DeviceInterface &vk, const VkDevice device,
                                                       const VkCommandBuffer cmdBuffer, SerialStorage *storage)
 {
-    DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
+    DE_ASSERT(m_accelerationStructureKHR.get() != VK_NULL_HANDLE);
     DE_ASSERT(storage != DE_NULL);
 
     const VkCopyMemoryToAccelerationStructureInfoKHR copyAccelerationStructureInfo = {
@@ -1554,7 +1554,7 @@ void BottomLevelAccelerationStructureKHR::deserialize(const DeviceInterface &vk,
     }
     else if (!m_deferredOperation)
     {
-        VK_CHECK(vk.copyMemoryToAccelerationStructureKHR(device, DE_NULL, &copyAccelerationStructureInfo));
+        VK_CHECK(vk.copyMemoryToAccelerationStructureKHR(device, VK_NULL_HANDLE, &copyAccelerationStructureInfo));
     }
     else
     {
@@ -1610,7 +1610,7 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
             if (getVertexBuffer() != DE_NULL)
             {
                 vertexData = makeDeviceOrHostAddressConstKHR(vk, device, getVertexBuffer()->get(), vertexBufferOffset);
-                if (m_indirectBuffer == DE_NULL)
+                if (m_indirectBuffer == VK_NULL_HANDLE)
                 {
                     vertexBufferOffset += deAlignSize(geometryData->getVertexByteSize(), 8);
                 }
@@ -2723,7 +2723,7 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR()
     , m_instanceAddressBuffer(DE_NULL)
     , m_deviceScratchBuffer(DE_NULL)
     , m_accelerationStructureKHR()
-    , m_indirectBuffer(DE_NULL)
+    , m_indirectBuffer(VK_NULL_HANDLE)
     , m_indirectBufferOffset(0)
     , m_indirectBufferStride(0)
     , m_usePPGeometries(false)
@@ -3045,7 +3045,7 @@ void TopLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const Vk
                                              TopLevelAccelerationStructure *srcAccelerationStructure)
 {
     DE_ASSERT(!m_bottomLevelInstances.empty());
-    DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
+    DE_ASSERT(m_accelerationStructureKHR.get() != VK_NULL_HANDLE);
     DE_ASSERT(m_buildScratchSize != 0);
 
     updateInstanceBuffer(vk, device, m_bottomLevelInstances, m_instanceData, m_instanceBuffer.get(), m_buildType,
@@ -3061,7 +3061,7 @@ void TopLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const Vk
                                                makeDeviceOrHostAddressKHR(m_hostScratchBuffer.data());
 
     VkAccelerationStructureKHR srcStructure =
-        (srcAccelerationStructure != DE_NULL) ? *(srcAccelerationStructure->getPtr()) : DE_NULL;
+        (srcAccelerationStructure != DE_NULL) ? *(srcAccelerationStructure->getPtr()) : VK_NULL_HANDLE;
     VkBuildAccelerationStructureModeKHR mode = (srcAccelerationStructure != DE_NULL) ?
                                                    VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR :
                                                    VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
@@ -3097,7 +3097,7 @@ void TopLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const Vk
 
     if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
     {
-        if (m_indirectBuffer == DE_NULL)
+        if (m_indirectBuffer == VK_NULL_HANDLE)
             vk.cmdBuildAccelerationStructuresKHR(
                 cmdBuffer, 1u, &accelerationStructureBuildGeometryInfoKHR,
                 (const VkAccelerationStructureBuildRangeInfoKHR **)&accelerationStructureBuildRangeInfoKHRPtr);
@@ -3114,7 +3114,7 @@ void TopLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const Vk
     else if (!m_deferredOperation)
     {
         VK_CHECK(vk.buildAccelerationStructuresKHR(
-            device, DE_NULL, 1u, &accelerationStructureBuildGeometryInfoKHR,
+            device, VK_NULL_HANDLE, 1u, &accelerationStructureBuildGeometryInfoKHR,
             (const VkAccelerationStructureBuildRangeInfoKHR **)&accelerationStructureBuildRangeInfoKHRPtr));
     }
     else
@@ -3150,7 +3150,7 @@ void TopLevelAccelerationStructureKHR::copyFrom(const DeviceInterface &vk, const
                                                 const VkCommandBuffer cmdBuffer,
                                                 TopLevelAccelerationStructure *accelerationStructure, bool compactCopy)
 {
-    DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
+    DE_ASSERT(m_accelerationStructureKHR.get() != VK_NULL_HANDLE);
     DE_ASSERT(accelerationStructure != DE_NULL);
 
     VkCopyAccelerationStructureInfoKHR copyAccelerationStructureInfo = {
@@ -3168,7 +3168,7 @@ void TopLevelAccelerationStructureKHR::copyFrom(const DeviceInterface &vk, const
     }
     else if (!m_deferredOperation)
     {
-        VK_CHECK(vk.copyAccelerationStructureKHR(device, DE_NULL, &copyAccelerationStructureInfo));
+        VK_CHECK(vk.copyAccelerationStructureKHR(device, VK_NULL_HANDLE, &copyAccelerationStructureInfo));
     }
     else
     {
@@ -3198,7 +3198,7 @@ void TopLevelAccelerationStructureKHR::copyFrom(const DeviceInterface &vk, const
 void TopLevelAccelerationStructureKHR::serialize(const DeviceInterface &vk, const VkDevice device,
                                                  const VkCommandBuffer cmdBuffer, SerialStorage *storage)
 {
-    DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
+    DE_ASSERT(m_accelerationStructureKHR.get() != VK_NULL_HANDLE);
     DE_ASSERT(storage != DE_NULL);
 
     const VkCopyAccelerationStructureToMemoryInfoKHR copyAccelerationStructureInfo = {
@@ -3213,13 +3213,13 @@ void TopLevelAccelerationStructureKHR::serialize(const DeviceInterface &vk, cons
     {
         vk.cmdCopyAccelerationStructureToMemoryKHR(cmdBuffer, &copyAccelerationStructureInfo);
         if (storage->hasDeepFormat())
-            serializeBottoms(vk, device, cmdBuffer, storage, DE_NULL);
+            serializeBottoms(vk, device, cmdBuffer, storage, VK_NULL_HANDLE);
     }
     else if (!m_deferredOperation)
     {
-        VK_CHECK(vk.copyAccelerationStructureToMemoryKHR(device, DE_NULL, &copyAccelerationStructureInfo));
+        VK_CHECK(vk.copyAccelerationStructureToMemoryKHR(device, VK_NULL_HANDLE, &copyAccelerationStructureInfo));
         if (storage->hasDeepFormat())
-            serializeBottoms(vk, device, cmdBuffer, storage, DE_NULL);
+            serializeBottoms(vk, device, cmdBuffer, storage, VK_NULL_HANDLE);
     }
     else
     {
@@ -3242,7 +3242,7 @@ void TopLevelAccelerationStructureKHR::serialize(const DeviceInterface &vk, cons
 void TopLevelAccelerationStructureKHR::deserialize(const DeviceInterface &vk, const VkDevice device,
                                                    const VkCommandBuffer cmdBuffer, SerialStorage *storage)
 {
-    DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
+    DE_ASSERT(m_accelerationStructureKHR.get() != VK_NULL_HANDLE);
     DE_ASSERT(storage != DE_NULL);
 
     const VkCopyMemoryToAccelerationStructureInfoKHR copyAccelerationStructureInfo = {
@@ -3259,7 +3259,7 @@ void TopLevelAccelerationStructureKHR::deserialize(const DeviceInterface &vk, co
     }
     else if (!m_deferredOperation)
     {
-        VK_CHECK(vk.copyMemoryToAccelerationStructureKHR(device, DE_NULL, &copyAccelerationStructureInfo));
+        VK_CHECK(vk.copyMemoryToAccelerationStructureKHR(device, VK_NULL_HANDLE, &copyAccelerationStructureInfo));
     }
     else
     {
@@ -3376,7 +3376,7 @@ std::vector<VkDeviceSize> TopLevelAccelerationStructureKHR::getSerializingSizes(
         handles[h] = *m_bottomLevelInstances[h - 1].get()->getPtr();
 
     if (VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR == m_buildType)
-        queryAccelerationStructureSize(vk, device, DE_NULL, handles, m_buildType, DE_NULL,
+        queryAccelerationStructureSize(vk, device, DE_NULL, handles, m_buildType, VK_NULL_HANDLE,
                                        VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR, 0u, sizes);
     else
     {
@@ -3408,7 +3408,7 @@ std::vector<uint64_t> TopLevelAccelerationStructureKHR::getSerializingAddresses(
     VkAccelerationStructureDeviceAddressInfoKHR asDeviceAddressInfo = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR, // VkStructureType sType;
         DE_NULL,                                                          // const void* pNext;
-        DE_NULL // VkAccelerationStructureKHR accelerationStructure;
+        VK_NULL_HANDLE, // VkAccelerationStructureKHR accelerationStructure;
     };
 
     if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -3455,7 +3455,7 @@ void TopLevelAccelerationStructureKHR::prepareInstances(
     VkDeviceOrHostAddressConstKHR instancesData;
     if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
     {
-        if (m_instanceBuffer.get() != DE_NULL)
+        if (m_instanceBuffer.get() != VK_NULL_HANDLE)
         {
             if (m_useArrayOfPointers)
             {
@@ -3486,7 +3486,7 @@ void TopLevelAccelerationStructureKHR::prepareInstances(
     }
     else
     {
-        if (m_instanceBuffer.get() != DE_NULL)
+        if (m_instanceBuffer.get() != VK_NULL_HANDLE)
         {
             if (m_useArrayOfPointers)
             {

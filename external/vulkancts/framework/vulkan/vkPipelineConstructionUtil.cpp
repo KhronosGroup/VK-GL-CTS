@@ -577,11 +577,11 @@ RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructi
                     subpass.m_colorAttachments[i].index          = j;
                     subpass.m_colorAttachments[i].format         = pCreateInfo->pAttachments[j].format;
 
-                    subpass.m_colorAttachments[i].attachmentInfo.imageView = DE_NULL;
+                    subpass.m_colorAttachments[i].attachmentInfo.imageView = VK_NULL_HANDLE;
                     subpass.m_colorAttachments[i].attachmentInfo.imageLayout =
                         pCreateInfo->pSubpasses[s].pColorAttachments[i].layout;
                     subpass.m_colorAttachments[i].attachmentInfo.resolveMode        = vk::VK_RESOLVE_MODE_NONE;
-                    subpass.m_colorAttachments[i].attachmentInfo.resolveImageView   = DE_NULL;
+                    subpass.m_colorAttachments[i].attachmentInfo.resolveImageView   = VK_NULL_HANDLE;
                     subpass.m_colorAttachments[i].attachmentInfo.resolveImageLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
                     subpass.m_colorAttachments[i].attachmentInfo.loadOp     = pCreateInfo->pAttachments[j].loadOp;
                     subpass.m_colorAttachments[i].attachmentInfo.storeOp    = pCreateInfo->pAttachments[j].storeOp;
@@ -602,11 +602,11 @@ RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructi
                     subpass.m_depthStencilAttachment.index          = j;
                     subpass.m_depthStencilAttachment.format         = pCreateInfo->pAttachments[j].format;
 
-                    subpass.m_depthStencilAttachment.attachmentInfo.imageView = DE_NULL;
+                    subpass.m_depthStencilAttachment.attachmentInfo.imageView = VK_NULL_HANDLE;
                     subpass.m_depthStencilAttachment.attachmentInfo.imageLayout =
                         pCreateInfo->pSubpasses[s].pDepthStencilAttachment->layout;
                     subpass.m_depthStencilAttachment.attachmentInfo.resolveMode        = vk::VK_RESOLVE_MODE_NONE;
-                    subpass.m_depthStencilAttachment.attachmentInfo.resolveImageView   = DE_NULL;
+                    subpass.m_depthStencilAttachment.attachmentInfo.resolveImageView   = VK_NULL_HANDLE;
                     subpass.m_depthStencilAttachment.attachmentInfo.resolveImageLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
                     subpass.m_depthStencilAttachment.attachmentInfo.loadOp     = pCreateInfo->pAttachments[j].loadOp;
                     subpass.m_depthStencilAttachment.attachmentInfo.storeOp    = pCreateInfo->pAttachments[j].storeOp;
@@ -632,11 +632,11 @@ RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructi
                         subpass.m_resolveAttachments[i].index          = j;
                         subpass.m_resolveAttachments[i].format         = pCreateInfo->pAttachments[j].format;
 
-                        subpass.m_resolveAttachments[i].attachmentInfo.imageView = DE_NULL;
+                        subpass.m_resolveAttachments[i].attachmentInfo.imageView = VK_NULL_HANDLE;
                         subpass.m_resolveAttachments[i].attachmentInfo.imageLayout =
                             pCreateInfo->pSubpasses[s].pResolveAttachments[i].layout;
                         subpass.m_resolveAttachments[i].attachmentInfo.resolveMode      = vk::VK_RESOLVE_MODE_NONE;
-                        subpass.m_resolveAttachments[i].attachmentInfo.resolveImageView = DE_NULL;
+                        subpass.m_resolveAttachments[i].attachmentInfo.resolveImageView = VK_NULL_HANDLE;
                         subpass.m_resolveAttachments[i].attachmentInfo.resolveImageLayout =
                             vk::VK_IMAGE_LAYOUT_UNDEFINED;
                         subpass.m_resolveAttachments[i].attachmentInfo.loadOp  = pCreateInfo->pAttachments[j].loadOp;
@@ -728,11 +728,11 @@ RenderPassWrapper::RenderPassWrapper(const DeviceInterface &vk, VkDevice device,
                     subpass.m_colorAttachments[i].index          = j;
                     subpass.m_colorAttachments[i].format         = pCreateInfo->pAttachments[j].format;
 
-                    subpass.m_colorAttachments[i].attachmentInfo.imageView = DE_NULL;
+                    subpass.m_colorAttachments[i].attachmentInfo.imageView = VK_NULL_HANDLE;
                     subpass.m_colorAttachments[i].attachmentInfo.imageLayout =
                         pCreateInfo->pSubpasses[s].pColorAttachments[i].layout;
                     subpass.m_colorAttachments[i].attachmentInfo.resolveMode        = vk::VK_RESOLVE_MODE_NONE;
-                    subpass.m_colorAttachments[i].attachmentInfo.resolveImageView   = DE_NULL;
+                    subpass.m_colorAttachments[i].attachmentInfo.resolveImageView   = VK_NULL_HANDLE;
                     subpass.m_colorAttachments[i].attachmentInfo.resolveImageLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
                     subpass.m_colorAttachments[i].attachmentInfo.loadOp     = pCreateInfo->pAttachments[j].loadOp;
                     subpass.m_colorAttachments[i].attachmentInfo.storeOp    = pCreateInfo->pAttachments[j].storeOp;
@@ -753,11 +753,11 @@ RenderPassWrapper::RenderPassWrapper(const DeviceInterface &vk, VkDevice device,
                     subpass.m_depthStencilAttachment.index          = j;
                     subpass.m_depthStencilAttachment.format         = pCreateInfo->pAttachments[j].format;
 
-                    subpass.m_depthStencilAttachment.attachmentInfo.imageView = DE_NULL;
+                    subpass.m_depthStencilAttachment.attachmentInfo.imageView = VK_NULL_HANDLE;
                     subpass.m_depthStencilAttachment.attachmentInfo.imageLayout =
                         pCreateInfo->pSubpasses[s].pDepthStencilAttachment->layout;
                     subpass.m_depthStencilAttachment.attachmentInfo.resolveMode        = vk::VK_RESOLVE_MODE_NONE;
-                    subpass.m_depthStencilAttachment.attachmentInfo.resolveImageView   = DE_NULL;
+                    subpass.m_depthStencilAttachment.attachmentInfo.resolveImageView   = VK_NULL_HANDLE;
                     subpass.m_depthStencilAttachment.attachmentInfo.resolveImageLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
                     subpass.m_depthStencilAttachment.attachmentInfo.loadOp     = pCreateInfo->pAttachments[j].loadOp;
                     subpass.m_depthStencilAttachment.attachmentInfo.storeOp    = pCreateInfo->pAttachments[j].storeOp;
@@ -783,11 +783,11 @@ RenderPassWrapper::RenderPassWrapper(const DeviceInterface &vk, VkDevice device,
                         subpass.m_resolveAttachments[i].index          = j;
                         subpass.m_resolveAttachments[i].format         = pCreateInfo->pAttachments[j].format;
 
-                        subpass.m_resolveAttachments[i].attachmentInfo.imageView = DE_NULL;
+                        subpass.m_resolveAttachments[i].attachmentInfo.imageView = VK_NULL_HANDLE;
                         subpass.m_resolveAttachments[i].attachmentInfo.imageLayout =
                             pCreateInfo->pSubpasses[s].pResolveAttachments[i].layout;
                         subpass.m_resolveAttachments[i].attachmentInfo.resolveMode      = vk::VK_RESOLVE_MODE_NONE;
-                        subpass.m_resolveAttachments[i].attachmentInfo.resolveImageView = DE_NULL;
+                        subpass.m_resolveAttachments[i].attachmentInfo.resolveImageView = VK_NULL_HANDLE;
                         subpass.m_resolveAttachments[i].attachmentInfo.resolveImageLayout =
                             vk::VK_IMAGE_LAYOUT_UNDEFINED;
                         subpass.m_resolveAttachments[i].attachmentInfo.loadOp  = pCreateInfo->pAttachments[j].loadOp;
@@ -850,10 +850,10 @@ RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructi
             subpass.m_colorAttachments[0].index          = 0u;
             subpass.m_colorAttachments[0].format         = colorFormat;
 
-            subpass.m_colorAttachments[0].attachmentInfo.imageView          = DE_NULL;
+            subpass.m_colorAttachments[0].attachmentInfo.imageView          = VK_NULL_HANDLE;
             subpass.m_colorAttachments[0].attachmentInfo.imageLayout        = subpassLayoutColor;
             subpass.m_colorAttachments[0].attachmentInfo.resolveMode        = vk::VK_RESOLVE_MODE_NONE;
-            subpass.m_colorAttachments[0].attachmentInfo.resolveImageView   = DE_NULL;
+            subpass.m_colorAttachments[0].attachmentInfo.resolveImageView   = VK_NULL_HANDLE;
             subpass.m_colorAttachments[0].attachmentInfo.resolveImageLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
             subpass.m_colorAttachments[0].attachmentInfo.loadOp             = loadOperation;
             subpass.m_colorAttachments[0].attachmentInfo.storeOp            = VK_ATTACHMENT_STORE_OP_STORE;
@@ -881,10 +881,10 @@ RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructi
             subpass.m_depthStencilAttachment.index          = hasColor ? 1u : 0u;
             subpass.m_depthStencilAttachment.format         = depthStencilFormat;
 
-            subpass.m_depthStencilAttachment.attachmentInfo.imageView          = DE_NULL;
+            subpass.m_depthStencilAttachment.attachmentInfo.imageView          = VK_NULL_HANDLE;
             subpass.m_depthStencilAttachment.attachmentInfo.imageLayout        = subpassLayoutDepthStencil;
             subpass.m_depthStencilAttachment.attachmentInfo.resolveMode        = vk::VK_RESOLVE_MODE_NONE;
-            subpass.m_depthStencilAttachment.attachmentInfo.resolveImageView   = DE_NULL;
+            subpass.m_depthStencilAttachment.attachmentInfo.resolveImageView   = VK_NULL_HANDLE;
             subpass.m_depthStencilAttachment.attachmentInfo.resolveImageLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
             subpass.m_depthStencilAttachment.attachmentInfo.loadOp             = loadOperation;
             subpass.m_depthStencilAttachment.attachmentInfo.storeOp            = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1749,7 +1749,7 @@ vk::VkShaderModule ShaderWrapper::getModule(void) const
     if (!m_module)
     {
         if (!m_vk)
-            return DE_NULL;
+            return VK_NULL_HANDLE;
         m_module = createShaderModule(*m_vk, m_device, *m_binary, m_moduleCreateFlags);
     }
     return *m_module;
@@ -2038,7 +2038,7 @@ GraphicsPipelineWrapper::GraphicsPipelineWrapper(GraphicsPipelineWrapper &&pw) n
 GraphicsPipelineWrapper &GraphicsPipelineWrapper::setMonolithicPipelineLayout(const PipelineLayoutWrapper &layout)
 {
     // make sure pipeline was not already built
-    DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
+    DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
 
     m_internalData->monolithicPipelineCreateInfo.layout = *layout;
     m_internalData->explicitLinkPipelineLayoutSet       = true;
@@ -2400,7 +2400,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupVertexInputState(
     PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback, const bool useNullPtrs)
 {
     // make sure pipeline was not already build
-    DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
+    DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
 
     // make sure states are set in order - no need to complicate logic to support out of order specification - this state needs to be set first
     DE_ASSERT(m_internalData && (m_internalData->setupState == PSS_NONE));
@@ -2528,7 +2528,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback)
 {
     // make sure pipeline was not already build
-    DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
+    DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
 
     // make sure states are set in order - no need to complicate logic to support out of order specification - this state needs to be set second
     DE_ASSERT(m_internalData && (m_internalData->setupState == PSS_VERTEX_INPUT_INTERFACE));
@@ -2774,7 +2774,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
     VkPipelineCreationFeedbackCreateInfoEXT *partCreationFeedback)
 {
     // Make sure pipeline was not already built.
-    DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
+    DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
 
     // Make sure states are set in order - this state needs to be set first or second.
     DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_PRE_RASTERIZATION_SHADERS));
@@ -2944,7 +2944,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
     RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo)
 {
     // make sure pipeline was not already build
-    DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
+    DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
 
     // make sure states are set in order - no need to complicate logic to support out of order specification - this state needs to be set third
     DE_ASSERT(m_internalData &&
@@ -3082,7 +3082,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
     RenderingAttachmentLocationInfoWrapper renderingAttachmentLocationInfo)
 {
     // make sure pipeline was not already build
-    DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
+    DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
 
     // make sure states are set in order - no need to complicate logic to support out of order specification - this state needs to be set last
     DE_ASSERT(m_internalData && (m_internalData->setupState ==
@@ -3277,7 +3277,7 @@ vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo(VkShader
         shaderCreateInfo.pCode    = shader.getBinary();
     }
     shaderCreateInfo.pName = "main";
-    if (shader.getPipelineLayout() != DE_NULL)
+    if (shader.getPipelineLayout() != VK_NULL_HANDLE)
     {
         shaderCreateInfo.setLayoutCount         = shader.getPipelineLayout()->getSetLayoutCount();
         shaderCreateInfo.pSetLayouts            = shader.getPipelineLayout()->getSetLayouts();
@@ -3370,7 +3370,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
                                             PipelineCreationFeedbackCreateInfoWrapper creationFeedback)
 {
     // make sure we are not trying to build pipeline second time
-    DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
+    DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
 
     // make sure all states were set
     DE_ASSERT(m_internalData &&
@@ -3932,7 +3932,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
             for (const auto &pipelinePtr : m_pipelineParts)
             {
                 const auto &pipeline = pipelinePtr.get();
-                if (pipeline != DE_NULL)
+                if (pipeline != VK_NULL_HANDLE)
                     rawPipelines.push_back(pipeline);
             }
 
@@ -4499,13 +4499,13 @@ bool GraphicsPipelineWrapper::wasPipelineOrShaderObjectBuild(void) const
 
 VkPipeline GraphicsPipelineWrapper::getPipeline(void) const
 {
-    DE_ASSERT(m_pipelineFinal.get() != DE_NULL);
+    DE_ASSERT(m_pipelineFinal.get() != VK_NULL_HANDLE);
     return m_pipelineFinal.get();
 }
 
 void GraphicsPipelineWrapper::destroyPipeline(void)
 {
-    DE_ASSERT(m_pipelineFinal.get() != DE_NULL);
+    DE_ASSERT(m_pipelineFinal.get() != VK_NULL_HANDLE);
 
     m_pipelineFinal = Move<VkPipeline>();
 }

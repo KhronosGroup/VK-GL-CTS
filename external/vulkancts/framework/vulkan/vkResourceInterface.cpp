@@ -204,7 +204,7 @@ void ResourceInterface::removeRedundantObjects()
                     continue;
                 for (uint32_t j = 0; j < dsCI.pBindings[i].descriptorCount; ++j)
                 {
-                    if (dsCI.pBindings[i].pImmutableSamplers[j] == DE_NULL)
+                    if (dsCI.pBindings[i].pImmutableSamplers[j] == VK_NULL_HANDLE)
                         continue;
                     samplersInPipeline.insert(dsCI.pBindings[i].pImmutableSamplers[j]);
                 }

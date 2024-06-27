@@ -38,7 +38,7 @@
 #define VKAPI_CALL
 #endif
 
-#define VK_NULL_HANDLE DE_NULL
+#define VK_NULL_HANDLE 0
 #define VK_DEFINE_HANDLE(NAME, TYPE) typedef struct NAME##_s *NAME
 #define VK_DEFINE_NON_DISPATCHABLE_HANDLE(NAME, TYPE) typedef Handle<TYPE> NAME
 
