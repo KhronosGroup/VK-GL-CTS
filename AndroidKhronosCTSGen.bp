@@ -1344,6 +1344,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/draw/vktDrawMultipleInterpolationTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawMultisampleLinearInterpolationTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawNegativeViewportHeightTests.cpp",
+        "external/vulkancts/modules/vulkan/draw/vktDrawNonLineTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawOutputLocationTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawPointClampTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawSampleAttributeTests.cpp",
