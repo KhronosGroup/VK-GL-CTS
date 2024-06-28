@@ -941,6 +941,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderQuadControlFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT physicalDeviceShaderReplicatedCompositesFeaturesEXT;
+	deMemset(&physicalDeviceShaderReplicatedCompositesFeaturesEXT, 0, sizeof(physicalDeviceShaderReplicatedCompositesFeaturesEXT));
+
+	if ( canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_replicated_composites") )
+	{
+		physicalDeviceShaderReplicatedCompositesFeaturesEXT.sType = getStructureType<VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT>();
+		*nextPtr = &physicalDeviceShaderReplicatedCompositesFeaturesEXT;
+		nextPtr  = &physicalDeviceShaderReplicatedCompositesFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures physicalDeviceShaderSubgroupExtendedTypesFeatures;
 	deMemset(&physicalDeviceShaderSubgroupExtendedTypesFeatures, 0, sizeof(physicalDeviceShaderSubgroupExtendedTypesFeatures));
 
@@ -2080,6 +2090,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderObjectFeaturesEXT.shaderObject == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderObject not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_replicated_composites")) )
+	{
+		if ( physicalDeviceShaderReplicatedCompositesFeaturesEXT.shaderReplicatedComposites == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderReplicatedComposites not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

@@ -53,9 +53,10 @@
 #include "tcuTestLog.hpp"
 #include "tcuMaybe.hpp"
 
+#include "deMath.h"
+#include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
-#include "deRandom.hpp"
 
 #include <vector>
 #include <memory>
@@ -4601,6 +4602,541 @@ tcu::TestStatus SecondaryCommandBufferComputeOnlyTestInstance::iterate()
 
 }; // namespace ComputeOnlyQueueTests
 
+enum CompositeType
+{
+    VECTOR,
+    MATRIX,
+    ARRAY,
+    ARRAY_ARRAY,
+    STRUCT,
+    STRUCT_STRUCT,
+    COOPMAT,
+};
+enum InstType
+{
+    VALUE,
+    CONSTANT,
+    SPECCONSTANT,
+};
+
+class ReplicatedCompositesTest : public vkt::TestCase
+{
+public:
+    ReplicatedCompositesTest(tcu::TestContext &testCtx, const std::string &name, const CompositeType compositeType,
+                             const InstType instType,
+                             const vk::ComputePipelineConstructionType computePipelineConstructionType);
+
+    virtual void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &sourceCollections) const;
+    TestInstance *createInstance(Context &context) const;
+
+private:
+    vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+    CompositeType m_compositeType;
+    InstType m_instType;
+};
+
+class ReplicatedCompositesTestInstance : public vkt::TestInstance
+{
+public:
+    ReplicatedCompositesTestInstance(Context &context, const CompositeType compositeType, const InstType instType,
+                                     const vk::ComputePipelineConstructionType computePipelineConstructionType);
+
+    tcu::TestStatus iterate(void);
+
+private:
+    vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+    CompositeType m_compositeType;
+    InstType m_instType;
+};
+
+ReplicatedCompositesTest::ReplicatedCompositesTest(
+    tcu::TestContext &testCtx, const std::string &name, const CompositeType compositeType, const InstType instType,
+    const vk::ComputePipelineConstructionType computePipelineConstructionType)
+    : TestCase(testCtx, name)
+    , m_computePipelineConstructionType(computePipelineConstructionType)
+    , m_compositeType(compositeType)
+    , m_instType(instType)
+{
+}
+
+void ReplicatedCompositesTest::checkSupport(Context &context) const
+{
+    checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                  m_computePipelineConstructionType);
+
+#ifndef CTS_USES_VULKANSC
+    if (!context.getShaderReplicatedCompositesFeaturesEXT().shaderReplicatedComposites)
+    {
+        TCU_THROW(NotSupportedError, "shaderReplicatedComposites not supported");
+    }
+
+    if (m_compositeType == COOPMAT)
+    {
+        const InstanceInterface &vki = context.getInstanceInterface();
+        if (!context.getCooperativeMatrixFeatures().cooperativeMatrix)
+        {
+            TCU_THROW(NotSupportedError,
+                      "VkPhysicalDeviceCooperativeMatrixFeaturesKHR::cooperativeMatrix not supported");
+        }
+
+        uint32_t propertyCount = 0;
+
+        VK_CHECK(
+            vki.getPhysicalDeviceCooperativeMatrixPropertiesKHR(context.getPhysicalDevice(), &propertyCount, DE_NULL));
+
+        const VkCooperativeMatrixPropertiesKHR initStruct = initVulkanStructureConst();
+
+        std::vector<VkCooperativeMatrixPropertiesKHR> properties(propertyCount, initStruct);
+
+        VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixPropertiesKHR(context.getPhysicalDevice(), &propertyCount,
+                                                                     properties.data()));
+
+        bool foundFp16 = false;
+        for (size_t i = 0; i < properties.size(); ++i)
+        {
+            const VkCooperativeMatrixPropertiesKHR *p = &properties[i];
+
+            if (p->scope != VK_SCOPE_SUBGROUP_KHR)
+                continue;
+
+            if (p->AType == VK_COMPONENT_TYPE_FLOAT16_KHR)
+                foundFp16 = true;
+        }
+        if (!foundFp16)
+        {
+            TCU_THROW(NotSupportedError, "cooperativeMatrix float16 not supported");
+        }
+    }
+#endif // CTS_USES_VULKANSC
+}
+
+void ReplicatedCompositesTest::initPrograms(SourceCollections &sourceCollections) const
+{
+    std::ostringstream src;
+    src << "#version 460 core\n"
+        << "#extension GL_EXT_scalar_block_layout : enable\n"
+        << "#extension GL_KHR_cooperative_matrix : enable\n"
+        << "#extension GL_EXT_shader_explicit_arithmetic_types_float16 : enable\n"
+        << "#extension GL_KHR_memory_scope_semantics : enable\n"
+        << "#extension GL_EXT_spec_constant_composites : enable\n"
+        << "#pragma use_replicated_composites\n"
+        << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+        << "layout(binding = 0, scalar) buffer Output {\n";
+
+    switch (m_compositeType)
+    {
+    case VECTOR:
+        src << "float vec[4];\n";
+        break;
+    case MATRIX:
+        src << "float mat[4*4];\n";
+        break;
+    case ARRAY:
+        src << "uint arr[3];\n";
+        break;
+    case ARRAY_ARRAY:
+        src << "uint arrarr[6];\n";
+        break;
+    case STRUCT:
+        src << "uint str[3];\n";
+        break;
+    case STRUCT_STRUCT:
+        src << "uint str[6];\n";
+        break;
+    case COOPMAT:
+        src << "float mat[2];\n";
+        break;
+    default:
+        DE_ASSERT(0);
+        break;
+    }
+    src << "} sb_out;\n\n";
+
+    if (m_compositeType == COOPMAT)
+    {
+        src << "layout(constant_id = 1) const uint rows = 1;\n"
+            << "layout(constant_id = 2) const uint cols = 1;\n";
+    }
+
+    if (m_instType != VALUE)
+    {
+        if (m_instType == SPECCONSTANT)
+        {
+            src << "layout(constant_id = 0) ";
+        }
+        switch (m_compositeType)
+        {
+        case VECTOR:
+            src << "const float one = 1.0;\n"
+                << "const vec4 vec = vec4(one);\n";
+            break;
+        case MATRIX:
+            src << "const float one = 1.0;\n"
+                << "const vec4 vec = vec4(one);\n"
+                << "const mat4 mat = mat4(vec, vec, vec, vec);\n";
+            break;
+        case ARRAY:
+            src << "const uint three = 3;\n"
+                << "const uint arr[3] = {three, three, three};\n";
+            break;
+        case ARRAY_ARRAY:
+            src << "const uint three = 3;\n"
+                << "const uint arr[3] = {three, three, three};\n"
+                << "const uint arrarr[2][3] = {arr, arr};\n";
+            break;
+        case STRUCT:
+            src << "const uint six = 6;\n"
+                << "struct S { uint a; uint b; uint c; };\n"
+                << "const S str = S(six, six, six);\n\n";
+            break;
+        case STRUCT_STRUCT:
+            src << "const uint six = 6;\n"
+                << "struct S { uint a; uint b; uint c; };\n"
+                << "struct SS { S a; S b; };\n"
+                << "const S str = S(six, six, six);\n"
+                << "const SS str2 = SS(str, str);\n\n";
+            break;
+        case COOPMAT:
+            src << "const float one = 1.0;\n"
+                << "const coopmat<float16_t, gl_ScopeSubgroup, rows, cols, gl_MatrixUseA> mat = coopmat<float16_t, "
+                   "gl_ScopeSubgroup, rows, cols, gl_MatrixUseA>(one);\n";
+            break;
+        default:
+            DE_ASSERT(0);
+            break;
+        }
+    }
+    src << "void main (void) {\n";
+
+    if (m_instType == VALUE)
+    {
+        switch (m_compositeType)
+        {
+        case VECTOR:
+            src << "    float one = 1.0;\n"
+                << "    vec4 vec = vec4(one);\n";
+            break;
+        case MATRIX:
+            src << "    float one = 1.0;\n"
+                << "    vec4 vec = vec4(one);\n"
+                << "    mat4 mat = mat4(vec, vec, vec, vec);\n";
+            break;
+        case ARRAY:
+            src << "    uint three = 3;\n"
+                << "    uint arr[3] = {three, three, three};\n";
+            break;
+        case ARRAY_ARRAY:
+            src << "    uint three = 3;\n"
+                << "    uint arr[3] = {three, three, three};\n"
+                << "    uint arrarr[2][3] = {arr, arr};\n";
+            break;
+        case STRUCT:
+            src << "    uint six = 6;\n"
+                << "    struct S { uint a; uint b; uint c; };\n"
+                << "    S str = S(six, six, six);\n\n";
+            break;
+        case STRUCT_STRUCT:
+            src << "    uint six = 6;\n"
+                << "    struct S { uint a; uint b; uint c; };\n"
+                << "    struct SS { S a; S b; };\n"
+                << "    S str = S(six, six, six);\n"
+                << "    SS str2 = SS(str, str);\n\n";
+            break;
+        case COOPMAT:
+            src << "    float one = 1.0;\n"
+                << "    coopmat<float16_t, gl_ScopeSubgroup, rows, cols, gl_MatrixUseA> mat = coopmat<float16_t, "
+                   "gl_ScopeSubgroup, rows, cols, gl_MatrixUseA>(one);\n";
+            break;
+        default:
+            DE_ASSERT(0);
+            break;
+        }
+    }
+    switch (m_compositeType)
+    {
+    case VECTOR:
+        src << "    sb_out.vec[0] = vec[0];\n"
+            << "    sb_out.vec[1] = vec[1];\n"
+            << "    sb_out.vec[2] = vec[2];\n"
+            << "    sb_out.vec[3] = vec[3];\n";
+        break;
+    case MATRIX:
+        src << "    sb_out.mat[0] = mat[0][0];\n"
+            << "    sb_out.mat[1] = mat[0][1];\n"
+            << "    sb_out.mat[2] = mat[0][2];\n"
+            << "    sb_out.mat[3] = mat[0][3];\n"
+            << "    sb_out.mat[4] = mat[1][0];\n"
+            << "    sb_out.mat[5] = mat[1][1];\n"
+            << "    sb_out.mat[6] = mat[1][2];\n"
+            << "    sb_out.mat[7] = mat[1][3];\n"
+            << "    sb_out.mat[8] = mat[2][0];\n"
+            << "    sb_out.mat[9] = mat[2][1];\n"
+            << "    sb_out.mat[10] = mat[2][2];\n"
+            << "    sb_out.mat[11] = mat[2][3];\n"
+            << "    sb_out.mat[12] = mat[3][0];\n"
+            << "    sb_out.mat[13] = mat[3][1];\n"
+            << "    sb_out.mat[14] = mat[3][2];\n"
+            << "    sb_out.mat[15] = mat[3][3];\n";
+        break;
+    case ARRAY:
+        src << "    sb_out.arr[0] = arr[0];\n"
+            << "    sb_out.arr[1] = arr[1];\n"
+            << "    sb_out.arr[2] = arr[2];\n";
+        break;
+    case ARRAY_ARRAY:
+        src << "    sb_out.arrarr[0] = arrarr[0][0];\n"
+            << "    sb_out.arrarr[1] = arrarr[0][1];\n"
+            << "    sb_out.arrarr[2] = arrarr[0][2];\n"
+            << "    sb_out.arrarr[3] = arrarr[1][0];\n"
+            << "    sb_out.arrarr[4] = arrarr[1][1];\n"
+            << "    sb_out.arrarr[5] = arrarr[1][2];\n";
+        break;
+    case STRUCT:
+        src << "    sb_out.str[0] = str.a;\n"
+            << "    sb_out.str[1] = str.b;\n"
+            << "    sb_out.str[2] = str.c;\n";
+        break;
+    case STRUCT_STRUCT:
+        src << "    sb_out.str[0] = str2.a.a;\n"
+            << "    sb_out.str[1] = str2.a.b;\n"
+            << "    sb_out.str[2] = str2.a.c;\n"
+            << "    sb_out.str[3] = str2.b.a;\n"
+            << "    sb_out.str[4] = str2.b.b;\n"
+            << "    sb_out.str[5] = str2.b.c;\n";
+        break;
+    case COOPMAT:
+        src << "    sb_out.mat[0] = float(mat[0]);\n"
+            << "    sb_out.mat[1] = (mat.length() > 1) ? float(mat[1]) : float(mat[0]);\n";
+        break;
+    default:
+        DE_ASSERT(0);
+        break;
+    }
+    src << "}\n";
+
+    sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
+}
+
+TestInstance *ReplicatedCompositesTest::createInstance(Context &context) const
+{
+    return new ReplicatedCompositesTestInstance(context, m_compositeType, m_instType,
+                                                m_computePipelineConstructionType);
+}
+
+ReplicatedCompositesTestInstance::ReplicatedCompositesTestInstance(
+    Context &context, const CompositeType compositeType, const InstType instType,
+    const vk::ComputePipelineConstructionType computePipelineConstructionType)
+    : TestInstance(context)
+    , m_computePipelineConstructionType(computePipelineConstructionType)
+    , m_compositeType(compositeType)
+    , m_instType(instType)
+{
+}
+
+tcu::TestStatus ReplicatedCompositesTestInstance::iterate(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+
+    // Create a buffer and host-visible memory for it
+
+    const VkDeviceSize bufferSizeBytes = 256;
+    const BufferWithMemory buffer(vk, device, allocator,
+                                  makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                  MemoryRequirement::HostVisible);
+
+    const Allocation &bufferAllocation = buffer.getAllocation();
+    deMemset(bufferAllocation.getHostPtr(), 0, bufferSizeBytes);
+
+    flushAlloc(vk, device, bufferAllocation);
+    // Create descriptor set
+
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device));
+
+    const Unique<VkDescriptorPool> descriptorPool(
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+    const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+    const VkDescriptorBufferInfo descriptorInfo = makeDescriptorBufferInfo(*buffer, 0ull, bufferSizeBytes);
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
+        .update(vk, device);
+
+    // Perform the computation
+    ComputePipelineWrapper pipeline(vk, device, m_computePipelineConstructionType,
+                                    m_context.getBinaryCollection().get("comp"));
+    pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+
+    uint32_t coopmatRows = 0, coopmatCols = 0;
+#ifndef CTS_USES_VULKANSC
+    if (m_compositeType == COOPMAT)
+    {
+        const InstanceInterface &vki = m_context.getInstanceInterface();
+        uint32_t propertyCount       = 0;
+
+        VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixPropertiesKHR(m_context.getPhysicalDevice(), &propertyCount,
+                                                                     DE_NULL));
+
+        const VkCooperativeMatrixPropertiesKHR initStruct = initVulkanStructureConst();
+
+        std::vector<VkCooperativeMatrixPropertiesKHR> properties(propertyCount, initStruct);
+
+        VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixPropertiesKHR(m_context.getPhysicalDevice(), &propertyCount,
+                                                                     properties.data()));
+
+        for (size_t i = 0; i < properties.size(); ++i)
+        {
+            const VkCooperativeMatrixPropertiesKHR *p = &properties[i];
+
+            if (p->scope != VK_SCOPE_SUBGROUP_KHR)
+                continue;
+
+            if (p->AType == VK_COMPONENT_TYPE_FLOAT16_KHR)
+            {
+                if (p->MSize * p->KSize > coopmatRows * coopmatCols)
+                {
+                    coopmatRows = p->MSize;
+                    coopmatCols = p->KSize;
+                }
+            }
+        }
+        DE_ASSERT(coopmatRows * coopmatCols > 0);
+    }
+#endif // CTS_USES_VULKANSC
+
+    uint32_t specializationData[3]                           = {deFloatBitsToUint32(2.0f), coopmatRows, coopmatCols};
+    const vk::VkSpecializationMapEntry specializationMaps[3] = {
+        {
+            0u,               // uint32_t constantID;
+            0u,               // uint32_t offset;
+            sizeof(uint32_t), // uintptr_t size;
+        },
+        {
+            1u,               // uint32_t constantID;
+            4u,               // uint32_t offset;
+            sizeof(uint32_t), // uintptr_t size;
+        },
+        {
+            2u,               // uint32_t constantID;
+            8u,               // uint32_t offset;
+            sizeof(uint32_t), // uintptr_t size;
+        },
+    };
+    const vk::VkSpecializationInfo specializationInfo = {
+        3u,                                                 // uint32_t mapEntryCount;
+        specializationMaps,                                 // const VkSpecializationMapEntry* pMapEntries;
+        static_cast<uintptr_t>(sizeof(specializationData)), // uintptr_t dataSize;
+        specializationData,                                 // const void* pData;
+    };
+    pipeline.setSpecializationInfo(specializationInfo);
+    pipeline.buildPipeline();
+
+    const VkBufferMemoryBarrier computeFinishBarrier =
+        makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
+
+    const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    // Start recording commands
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    pipeline.bind(*cmdBuffer);
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
+                             &descriptorSet.get(), 0u, DE_NULL);
+
+    vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
+
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                          (VkDependencyFlags)0, 0, (const VkMemoryBarrier *)DE_NULL, 1, &computeFinishBarrier, 0,
+                          (const VkImageMemoryBarrier *)DE_NULL);
+
+    endCommandBuffer(vk, *cmdBuffer);
+
+    // Wait for completion
+
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    // Validate the results
+
+    invalidateAlloc(vk, device, bufferAllocation);
+
+    const void *outStruct = bufferAllocation.getHostPtr();
+
+    {
+        float vecelem       = m_instType == SPECCONSTANT ? 2.0f : 1.0f;
+        float vecRef[4]     = {vecelem, vecelem, vecelem, vecelem};
+        float matRef[4 * 4] = {vecelem, vecelem, vecelem, vecelem, vecelem, vecelem, vecelem, vecelem,
+                               vecelem, vecelem, vecelem, vecelem, vecelem, vecelem, vecelem, vecelem};
+        float coopmatRef[2] = {vecelem, vecelem};
+
+        uint32_t arrElem      = m_instType == SPECCONSTANT ? deFloatBitsToUint32(2.0f) : 3;
+        uint32_t arrRef[3]    = {arrElem, arrElem, arrElem};
+        uint32_t arrarrRef[6] = {arrElem, arrElem, arrElem, arrElem, arrElem, arrElem};
+
+        uint32_t strElem      = m_instType == SPECCONSTANT ? deFloatBitsToUint32(2.0f) : 6;
+        uint32_t strRef[3]    = {strElem, strElem, strElem};
+        uint32_t strstrRef[6] = {strElem, strElem, strElem, strElem, strElem, strElem};
+
+        const void *ref  = DE_NULL;
+        size_t sizeofref = 0;
+
+        switch (m_compositeType)
+        {
+        case VECTOR:
+            ref       = vecRef;
+            sizeofref = sizeof(vecRef);
+            break;
+        case MATRIX:
+            ref       = matRef;
+            sizeofref = sizeof(matRef);
+            break;
+        case ARRAY:
+            ref       = arrRef;
+            sizeofref = sizeof(arrRef);
+            break;
+        case ARRAY_ARRAY:
+            ref       = arrarrRef;
+            sizeofref = sizeof(arrarrRef);
+            break;
+        case STRUCT:
+            ref       = strRef;
+            sizeofref = sizeof(strRef);
+            break;
+        case STRUCT_STRUCT:
+            ref       = strstrRef;
+            sizeofref = sizeof(strstrRef);
+            break;
+        case COOPMAT:
+            ref       = coopmatRef;
+            sizeofref = sizeof(coopmatRef);
+            break;
+        default:
+            DE_ASSERT(0);
+            break;
+        }
+        DE_ASSERT(sizeofref <= bufferSizeBytes);
+
+        if (deMemCmp(outStruct, ref, sizeofref) != 0)
+        {
+            return tcu::TestStatus::fail("Comparison failed");
+        }
+    }
+    return tcu::TestStatus::pass("Compute succeeded");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
@@ -4765,6 +5301,33 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
         new ComputeOnlyQueueTests::SecondaryCommandBufferComputeOnlyTest(testCtx, "secondary_compute_only_queue"));
 
 #ifndef CTS_USES_VULKANSC
+    for (uint32_t i = 0; i < 3; ++i)
+    {
+        const char *instStr[3] = {"value", "constant", "specconstant"};
+        std::string name;
+        name = std::string("replicated_composites_vector_") + instStr[i];
+        basicComputeTests->addChild(
+            new ReplicatedCompositesTest(testCtx, name.c_str(), VECTOR, (InstType)i, computePipelineConstructionType));
+        name = std::string("replicated_composites_matrix_") + instStr[i];
+        basicComputeTests->addChild(
+            new ReplicatedCompositesTest(testCtx, name.c_str(), MATRIX, (InstType)i, computePipelineConstructionType));
+        name = std::string("replicated_composites_array_") + instStr[i];
+        basicComputeTests->addChild(
+            new ReplicatedCompositesTest(testCtx, name.c_str(), ARRAY, (InstType)i, computePipelineConstructionType));
+        name = std::string("replicated_composites_array_array_") + instStr[i];
+        basicComputeTests->addChild(new ReplicatedCompositesTest(testCtx, name.c_str(), ARRAY_ARRAY, (InstType)i,
+                                                                 computePipelineConstructionType));
+        name = std::string("replicated_composites_struct_") + instStr[i];
+        basicComputeTests->addChild(
+            new ReplicatedCompositesTest(testCtx, name.c_str(), STRUCT, (InstType)i, computePipelineConstructionType));
+        name = std::string("replicated_composites_struct_struct_") + instStr[i];
+        basicComputeTests->addChild(new ReplicatedCompositesTest(testCtx, name.c_str(), STRUCT_STRUCT, (InstType)i,
+                                                                 computePipelineConstructionType));
+        name = std::string("replicated_composites_coopmat_") + instStr[i];
+        basicComputeTests->addChild(
+            new ReplicatedCompositesTest(testCtx, name.c_str(), COOPMAT, (InstType)i, computePipelineConstructionType));
+    }
+
     if (!isComputePipelineConstructionTypeShaderObject(computePipelineConstructionType))
     {
         basicComputeTests->addChild(
