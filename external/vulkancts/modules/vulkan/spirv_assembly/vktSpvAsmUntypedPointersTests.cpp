@@ -8775,20 +8775,20 @@ void addStructAsTypeTests(tcu::TestCaseGroup* testGroup, MEMORY_MODEL_TYPE memMo
 			tcu::Vec2	vec2_float32;
 		} inputStruct;
 
-		inputStruct.vec2_float32[0]	= 1.0f;
-		inputStruct.vec2_float32[1]	= 1.0f;
 		inputStruct.vec2_uint32[0]	= 0u;
 		inputStruct.vec2_uint32[1]	= 1u;
+		inputStruct.vec2_float32[0]	= 1.0f;
+		inputStruct.vec2_float32[1]	= 1.0f;
 
 		struct OutputStruct
 		{
 			tcu::UVec4	vec4_int32;
 		} outputStruct;
 
-		outputStruct.vec4_int32[0]	= 1;
+		outputStruct.vec4_int32[0]	= 0;
 		outputStruct.vec4_int32[1]	= 1;
-		outputStruct.vec4_int32[2]	= 0;
-		outputStruct.vec4_int32[3]	= 1;
+		outputStruct.vec4_int32[2]	= tcu::Float32(1.0f).bits();
+		outputStruct.vec4_int32[3]	= tcu::Float32(1.0f).bits();
 
 		Resource inputResource = Resource(BufferSp(new Buffer<InputStruct>(std::vector<InputStruct>(1, inputStruct), 0)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 		Resource outputResource = Resource(BufferSp(new Buffer<OutputStruct>(std::vector<OutputStruct>(1, outputStruct), 0)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
