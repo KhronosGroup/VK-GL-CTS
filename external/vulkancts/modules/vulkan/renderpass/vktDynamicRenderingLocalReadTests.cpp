@@ -689,6 +689,10 @@ tcu::TestStatus BasicLocalReadTestInstance::iterate(void)
     // read pipelines need input attachments remaping
     renderingCreateInfo.pNext = &renderingInputAttachmentIndexInfo;
 
+    // read pipelines don't write to the color attachments
+    for (auto &cb : colorBlendAttachmentStates)
+        cb.colorWriteMask = 0;
+
     // Per spec, if either of pDepthInputAttachmentIndex or pStencilInputAttachmentIndex are set to NULL it means that these are only accessible in the shader
     // if the shader does not associate these input attachments with an InputAttachmentIndex.
     if (m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_NO_INDEX)
