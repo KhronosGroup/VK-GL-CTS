@@ -112,9 +112,15 @@ SampleShadingSampleAttributeTestCase::SampleShadingSampleAttributeTestCase(tcu::
 
 void SampleShadingSampleAttributeTestCase::checkSupport(Context &context) const
 {
+    const bool declareSampleId       = (m_params.trigger == Trigger::SAMPLE_ID_STATIC_USE);
+    const bool declareSamplePosition = (m_params.trigger == Trigger::SAMPLE_POSITION_STATIC_USE);
+
     if (m_params.general->useDynamicRendering)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+
+    if (declareSampleId || declareSamplePosition)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 void SampleShadingSampleAttributeTestCase::initPrograms(SourceCollections &collection) const

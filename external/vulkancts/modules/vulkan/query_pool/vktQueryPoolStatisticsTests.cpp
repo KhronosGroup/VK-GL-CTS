@@ -816,13 +816,14 @@ void StatisticQueryTestInstance::checkExtensions(bool hostResetQueryEnabled)
 
 tcu::TestStatus StatisticQueryTestInstance::verifyUnavailable()
 {
+    const auto &deviceHelper         = getDeviceHelper(m_context, m_useComputeQueue);
     const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
     const void *allocationData       = allocation.getHostPtr();
     uint32_t size                    = dstOffset ? 2 : 1;
     std::vector<ValueAndAvailability> va;
     va.resize(size);
 
-    vk::invalidateAlloc(m_context.getDeviceInterface(), m_context.getDevice(), allocation);
+    vk::invalidateAlloc(deviceHelper.getDeviceInterface(), deviceHelper.getDevice(), allocation);
     deMemcpy(va.data(), allocationData, size * sizeof(ValueAndAvailability));
 
     bool failed = false;
