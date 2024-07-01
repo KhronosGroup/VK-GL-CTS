@@ -2315,6 +2315,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT:										return "VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM";
@@ -2373,7 +2375,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA";
+		case VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA:							return "VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA";
 		default:																					return DE_NULL;
 	}
 }
@@ -4598,6 +4604,7 @@ const char* getVendorIdName (VkVendorId value)
 {
 	switch (value)
 	{
+		case VK_VENDOR_ID_KHRONOS:	return "VK_VENDOR_ID_KHRONOS";
 		case VK_VENDOR_ID_VIV:		return "VK_VENDOR_ID_VIV";
 		case VK_VENDOR_ID_VSI:		return "VK_VENDOR_ID_VSI";
 		case VK_VENDOR_ID_KAZAN:	return "VK_VENDOR_ID_KAZAN";
@@ -4638,7 +4645,8 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_MESA_DOZEN:					return "VK_DRIVER_ID_MESA_DOZEN";
 		case VK_DRIVER_ID_MESA_NVK:						return "VK_DRIVER_ID_MESA_NVK";
 		case VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA:	return "VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA";
-		case VK_DRIVER_ID_MESA_AGXV:					return "VK_DRIVER_ID_MESA_AGXV";
+		case VK_DRIVER_ID_MESA_HONEYKRISP:				return "VK_DRIVER_ID_MESA_HONEYKRISP";
+		case VK_DRIVER_ID_RESERVED_27:					return "VK_DRIVER_ID_RESERVED_27";
 		default:										return DE_NULL;
 	}
 }
@@ -14004,6 +14012,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAttachmentFeedb
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlegacyVertexAttributes = " << value.legacyVertexAttributes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tnativeUnalignedPerformance = " << value.nativeUnalignedPerformance << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT = {\n";
@@ -18550,6 +18578,46 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRawAccessChains
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderRawAccessChains = " << value.shaderRawAccessChains << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageAlignmentControlFeaturesMESA& value)
+{
+	s << "VkPhysicalDeviceImageAlignmentControlFeaturesMESA = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timageAlignmentControl = " << value.imageAlignmentControl << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageAlignmentControlPropertiesMESA& value)
+{
+	s << "VkPhysicalDeviceImageAlignmentControlPropertiesMESA = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsupportedImageAlignmentMask = " << value.supportedImageAlignmentMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageAlignmentControlCreateInfoMESA& value)
+{
+	s << "VkImageAlignmentControlCreateInfoMESA = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaximumRequestedAlignment = " << value.maximumRequestedAlignment << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderReplicatedComposites = " << value.shaderReplicatedComposites << '\n';
 	s << '}';
 	return s;
 }

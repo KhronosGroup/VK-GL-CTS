@@ -2668,6 +2668,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceAttachmentFeedbackLo
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT;
@@ -4456,5 +4466,25 @@ template<> VkStructureType getStructureType<VkMemoryMapPlacedInfoEXT> (void)
 template<> VkStructureType getStructureType<VkPhysicalDeviceRawAccessChainsFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageAlignmentControlFeaturesMESA> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceImageAlignmentControlPropertiesMESA> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA;
+}
+
+template<> VkStructureType getStructureType<VkImageAlignmentControlCreateInfoMESA> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT;
 }
 

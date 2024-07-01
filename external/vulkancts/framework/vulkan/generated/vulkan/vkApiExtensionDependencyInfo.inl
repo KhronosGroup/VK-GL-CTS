@@ -3265,6 +3265,18 @@ bool check_VK_EXT_mutable_descriptor_type(const tcu::UVec2& v, const ExtPropVect
 	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance3"));
 }
 
+bool check_VK_EXT_legacy_vertex_attributes(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_legacy_vertex_attributes"))
+		return true;
+
+	// depends attribute in xml: VK_EXT_vertex_input_dynamic_state
+	return isSupported(vDEP, "VK_EXT_vertex_input_dynamic_state");
+}
+
 bool check_VK_ARM_shader_core_builtins(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3529,6 +3541,18 @@ bool check_VK_NV_descriptor_pool_overallocation(const tcu::UVec2& v, const ExtPr
 	return isCompatibile(1, 1, v);
 }
 
+bool check_VK_MESA_image_alignment_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_MESA_image_alignment_control"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 static const DependencyCheckVect deviceExtensionDependencies
 {
 	std::make_pair("VK_KHR_swapchain",										&check_VK_KHR_swapchain),
@@ -3763,6 +3787,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_QCOM_multiview_per_view_viewports",					&check_VK_QCOM_multiview_per_view_viewports),
 	std::make_pair("VK_NV_ray_tracing_invocation_reorder",					&check_VK_NV_ray_tracing_invocation_reorder),
 	std::make_pair("VK_EXT_mutable_descriptor_type",						&check_VK_EXT_mutable_descriptor_type),
+	std::make_pair("VK_EXT_legacy_vertex_attributes",						&check_VK_EXT_legacy_vertex_attributes),
 	std::make_pair("VK_ARM_shader_core_builtins",							&check_VK_ARM_shader_core_builtins),
 	std::make_pair("VK_EXT_pipeline_library_group_handles",					&check_VK_EXT_pipeline_library_group_handles),
 	std::make_pair("VK_EXT_dynamic_rendering_unused_attachments",			&check_VK_EXT_dynamic_rendering_unused_attachments),
@@ -3785,6 +3810,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_shader_expect_assume",							&check_VK_KHR_shader_expect_assume),
 	std::make_pair("VK_KHR_maintenance6",									&check_VK_KHR_maintenance6),
 	std::make_pair("VK_NV_descriptor_pool_overallocation",					&check_VK_NV_descriptor_pool_overallocation),
+	std::make_pair("VK_MESA_image_alignment_control",						&check_VK_MESA_image_alignment_control),
 };
 
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
@@ -4136,6 +4162,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_ray_tracing_invocation_reorder"),
 	std::make_tuple(1, 0, "VK_NV_extended_sparse_address_space"),
 	std::make_tuple(1, 0, "VK_EXT_mutable_descriptor_type"),
+	std::make_tuple(1, 0, "VK_EXT_legacy_vertex_attributes"),
 	std::make_tuple(1, 0, "VK_EXT_layer_settings"),
 	std::make_tuple(1, 0, "VK_ARM_shader_core_builtins"),
 	std::make_tuple(1, 0, "VK_EXT_pipeline_library_group_handles"),
@@ -4164,5 +4191,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 1, "VK_NV_descriptor_pool_overallocation"),
 	std::make_tuple(1, 0, "VK_NV_raw_access_chains"),
 	std::make_tuple(1, 0, "VK_NV_shader_atomic_float16_vector"),
+	std::make_tuple(1, 0, "VK_EXT_shader_replicated_composites"),
 	std::make_tuple(1, 0, "VK_NV_ray_tracing_validation"),
+	std::make_tuple(1, 0, "VK_MESA_image_alignment_control"),
 };

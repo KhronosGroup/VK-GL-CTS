@@ -3216,6 +3216,43 @@ tcu::TestStatus testPhysicalDeviceFeatureAttachmentFeedbackLoopDynamicStateFeatu
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureLegacyVertexAttributesFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT	deviceLegacyVertexAttributesFeaturesEXT[count];
+	const bool											isLegacyVertexAttributesFeaturesEXT = checkExtension(properties, "VK_EXT_legacy_vertex_attributes");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceLegacyVertexAttributesFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT));
+		deviceLegacyVertexAttributesFeaturesEXT[ndx].sType = isLegacyVertexAttributesFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceLegacyVertexAttributesFeaturesEXT[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceLegacyVertexAttributesFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isLegacyVertexAttributesFeaturesEXT)
+		log << TestLog::Message << deviceLegacyVertexAttributesFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isLegacyVertexAttributesFeaturesEXT &&
+		(deviceLegacyVertexAttributesFeaturesEXT[0].legacyVertexAttributes != deviceLegacyVertexAttributesFeaturesEXT[1].legacyVertexAttributes))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureMutableDescriptorTypeFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -5162,6 +5199,80 @@ tcu::TestStatus testPhysicalDeviceFeatureMapMemoryPlacedFeaturesEXT (Context& co
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureImageAlignmentControlFeaturesMESA (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceImageAlignmentControlFeaturesMESA	deviceImageAlignmentControlFeaturesMESA[count];
+	const bool											isImageAlignmentControlFeaturesMESA = checkExtension(properties, "VK_MESA_image_alignment_control");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceImageAlignmentControlFeaturesMESA[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceImageAlignmentControlFeaturesMESA));
+		deviceImageAlignmentControlFeaturesMESA[ndx].sType = isImageAlignmentControlFeaturesMESA ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceImageAlignmentControlFeaturesMESA[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceImageAlignmentControlFeaturesMESA[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isImageAlignmentControlFeaturesMESA)
+		log << TestLog::Message << deviceImageAlignmentControlFeaturesMESA[0] << TestLog::EndMessage;
+
+	if (isImageAlignmentControlFeaturesMESA &&
+		(deviceImageAlignmentControlFeaturesMESA[0].imageAlignmentControl != deviceImageAlignmentControlFeaturesMESA[1].imageAlignmentControl))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceImageAlignmentControlFeaturesMESA");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureShaderReplicatedCompositesFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT	deviceShaderReplicatedCompositesFeaturesEXT[count];
+	const bool												isShaderReplicatedCompositesFeaturesEXT = checkExtension(properties, "VK_EXT_shader_replicated_composites");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceShaderReplicatedCompositesFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT));
+		deviceShaderReplicatedCompositesFeaturesEXT[ndx].sType = isShaderReplicatedCompositesFeaturesEXT ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceShaderReplicatedCompositesFeaturesEXT[ndx].pNext = DE_NULL;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceShaderReplicatedCompositesFeaturesEXT[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isShaderReplicatedCompositesFeaturesEXT)
+		log << TestLog::Message << deviceShaderReplicatedCompositesFeaturesEXT[0] << TestLog::EndMessage;
+
+	if (isShaderReplicatedCompositesFeaturesEXT &&
+		(deviceShaderReplicatedCompositesFeaturesEXT[0].shaderReplicatedComposites != deviceShaderReplicatedCompositesFeaturesEXT[1].shaderReplicatedComposites))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
 {
     if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -5436,6 +5547,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "image_2d_view_of_3d_features_ext", testPhysicalDeviceFeatureImage2DViewOf3DFeaturesEXT);
 	addFunctionCase(testGroup, "image_sliced_view_of_3d_features_ext", testPhysicalDeviceFeatureImageSlicedViewOf3DFeaturesEXT);
 	addFunctionCase(testGroup, "attachment_feedback_loop_dynamic_state_features_ext", testPhysicalDeviceFeatureAttachmentFeedbackLoopDynamicStateFeaturesEXT);
+	addFunctionCase(testGroup, "legacy_vertex_attributes_features_ext", testPhysicalDeviceFeatureLegacyVertexAttributesFeaturesEXT);
 	addFunctionCase(testGroup, "mutable_descriptor_type_features_ext", testPhysicalDeviceFeatureMutableDescriptorTypeFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clip_control_features_ext", testPhysicalDeviceFeatureDepthClipControlFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT);
@@ -5488,6 +5600,8 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "dynamic_rendering_local_read_features_khr", testPhysicalDeviceFeatureDynamicRenderingLocalReadFeaturesKHR);
 	addFunctionCase(testGroup, "shader_quad_control_features_khr", testPhysicalDeviceFeatureShaderQuadControlFeaturesKHR);
 	addFunctionCase(testGroup, "map_memory_placed_features_ext", testPhysicalDeviceFeatureMapMemoryPlacedFeaturesEXT);
+	addFunctionCase(testGroup, "image_alignment_control_features_mesa", testPhysicalDeviceFeatureImageAlignmentControlFeaturesMESA);
+	addFunctionCase(testGroup, "shader_replicated_composites_features_ext", testPhysicalDeviceFeatureShaderReplicatedCompositesFeaturesEXT);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", createDeviceWithPromoted12Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted13_structures", createDeviceWithPromoted13Structures);

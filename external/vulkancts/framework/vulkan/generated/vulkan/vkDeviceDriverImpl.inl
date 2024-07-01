@@ -2625,8 +2625,8 @@ void DeviceDriver::cmdSetRenderingAttachmentLocationsKHR (VkCommandBuffer comman
     m_vk.cmdSetRenderingAttachmentLocationsKHR(commandBuffer, pLocationInfo);
 }
 
-void DeviceDriver::cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo) const
+void DeviceDriver::cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pInputAttachmentIndexInfo) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetRenderingInputAttachmentIndicesKHR(commandBuffer, pLocationInfo);
+    m_vk.cmdSetRenderingInputAttachmentIndicesKHR(commandBuffer, pInputAttachmentIndexInfo);
 }

@@ -502,4 +502,4 @@ virtual void				setLatencyMarkerNV										(VkDevice device, VkSwapchainKHR swa
 virtual void				getLatencyTimingsNV										(VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const;
 virtual void				queueNotifyOutOfBandNV									(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const;
 virtual void				cmdSetRenderingAttachmentLocationsKHR					(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfoKHR* pLocationInfo) const;
-virtual void				cmdSetRenderingInputAttachmentIndicesKHR				(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo) const;
+virtual void				cmdSetRenderingInputAttachmentIndicesKHR				(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pInputAttachmentIndexInfo) const;
