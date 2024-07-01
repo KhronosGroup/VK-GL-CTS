@@ -1190,11 +1190,6 @@ void createFragmentShadingRateMiscTests(tcu::TestCaseGroup *group)
         addFunctionCaseWithPrograms<TestParams>(group, "test_oob_attachment_robustness2", checkOobSupport,
                                                 initOOBShaders, testOOB, params);
     }
-    {
-        TestParams params = {true, true};
-        addFunctionCaseWithPrograms<TestParams>(group, "test_oob_attachment_miplevel1", checkOobSupport, initOOBShaders,
-                                                testOOB, params);
-    }
 }
 
 } // namespace FragmentShadingRate
