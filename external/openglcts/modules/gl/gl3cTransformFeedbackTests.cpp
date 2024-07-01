@@ -33,7 +33,9 @@
 #include "gluDefs.hpp"
 #include "gluRenderContext.hpp"
 #include "gluStrUtil.hpp"
+#include "gluShaderUtil.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuStringTemplate.hpp"
 
 #include <algorithm>
 #include <climits>
@@ -102,6 +104,8 @@ gl3cts::TransformFeedback::Tests::Tests(deqp::Context &context)
                                                      "Transform Feedback Draw Instanced Test"));
     addChild(new TransformFeedback::DrawXFBStreamInstanced(m_context, "draw_xfb_stream_instanced_test",
                                                            "Transform Feedback Draw Stream Instanced Test"));
+    addChild(new TransformFeedback::Geometry(
+        m_context, "geometry", "Transform Feedback Capture The Varyings Processed By The Geometry Shader"));
 }
 
 gl3cts::TransformFeedback::Tests::~Tests(void)
@@ -6706,6 +6710,352 @@ const glw::GLfloat gl3cts::TransformFeedback::DrawXFBStreamInstanced::s_bo_unifo
 const glw::GLuint gl3cts::TransformFeedback::DrawXFBStreamInstanced::s_bo_uniform_size = sizeof(s_bo_uniform_data);
 
 const glw::GLuint gl3cts::TransformFeedback::DrawXFBStreamInstanced::s_view_size = 4;
+
+/*-----------------------------------------------------------------------------------------------*/
+
+gl3cts::TransformFeedback::Geometry::Geometry(deqp::Context &context, const char *test_name,
+                                              const char *test_description)
+    : deqp::TestCase(context, test_name, test_description)
+    , m_context(context)
+    , m_program_id(0)
+{
+    m_varying = "gl_Position";
+
+    m_initial_data = {
+        1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 2.0f, 1.0f, 1.0f, -1.0f, 3.0f, 1.0f,
+    };
+
+    m_reference_data = {
+        1.0f,        1.0f,        1.0f, 1.0f, -1.0f, 1.0f, 2.0f, 1.0f, 1.0f / 3.0f, 1.0f / 3.0f, 2.0f, 1.0f,
+        1.0f / 3.0f, 1.0f / 3.0f, 2.0f, 1.0f, -1.0f, 1.0f, 2.0f, 1.0f, 1.0f,        -1.0f,       3.0f, 1.0f,
+    };
+
+    m_bo_size = sizeof(decltype(m_initial_data)::value_type) * m_initial_data.size();
+}
+
+gl3cts::TransformFeedback::Geometry::~Geometry(void)
+{
+}
+
+tcu::TestNode::IterateResult gl3cts::TransformFeedback::Geometry::iterate(void)
+{
+    /* Initializations. */
+    bool is_at_least_gl_33 = (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(3, 3)));
+
+    bool is_ok      = true;
+    bool test_error = false;
+
+    /* Tests. */
+    try
+    {
+        if (is_at_least_gl_33)
+        {
+            draw();
+
+            is_ok = is_ok && check();
+        }
+    }
+    catch (...)
+    {
+        is_ok      = false;
+        test_error = true;
+    }
+
+    /* Clean GL objects. */
+    clean();
+
+    /* Result's setup. */
+    if (is_ok)
+    {
+        /* Log success. */
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Geometry Feedback have passed." << tcu::TestLog::EndMessage;
+
+        m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+    }
+    else
+    {
+        if (test_error)
+        {
+            /* Log error. */
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Geometry Feedback have approached error." << tcu::TestLog::EndMessage;
+
+            m_testCtx.setTestResult(QP_TEST_RESULT_INTERNAL_ERROR, "Error");
+        }
+        else
+        {
+            /* Log fail. */
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Geometry Feedback have failed." << tcu::TestLog::EndMessage;
+
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+        }
+    }
+
+    return STOP;
+}
+
+void gl3cts::TransformFeedback::Geometry::draw()
+{
+    /* Functions handler */
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+    const glw::GLchar *vars_str_ptr = m_varying.c_str();
+    /* Prepare programs. */
+
+    std::map<std::string, std::string> specializationMap;
+    const glu::RenderContext &renderContext = m_context.getRenderContext();
+    glu::GLSLVersion glslVersion            = glu::getContextTypeGLSLVersion(renderContext.getType());
+    specializationMap["VERSION"]            = glu::getGLSLVersionDeclaration(glslVersion);
+    std::string vert_shader                 = tcu::StringTemplate(s_vertex_shader).specialize(specializationMap);
+    std::string geom_shader                 = tcu::StringTemplate(s_geometry_shader).specialize(specializationMap);
+    std::string frag_shader                 = tcu::StringTemplate(s_fragment_shader).specialize(specializationMap);
+
+    m_program_id = gl3cts::TransformFeedback::Utilities::buildProgram(
+        gl, m_context.getTestContext().getLog(), geom_shader.c_str(), NULL, NULL, vert_shader.c_str(),
+        frag_shader.c_str(), &vars_str_ptr, 1, GL_SEPARATE_ATTRIBS);
+
+    if (0 == m_program_id)
+    {
+        throw 0;
+    }
+
+    /* Prepare buffers. */
+    gl.useProgram(m_program_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
+
+    glw::GLuint buffer = 0;
+    gl.genBuffers(1, &buffer);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "genBuffers");
+
+    gl.bindBuffer(GL_ARRAY_BUFFER, buffer);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bindBuffer");
+
+    gl.bufferData(GL_ARRAY_BUFFER, m_bo_size * 2, NULL, GL_STATIC_DRAW);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bufferData");
+
+    gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buffer);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bindBufferBase");
+
+    gl.bindBuffer(GL_ARRAY_BUFFER, 0);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bindBuffer");
+
+    glw::GLuint queries[2] = {0, 0};
+    gl.genQueries(2, queries);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "genQueries");
+
+    gl.beginQuery(GL_PRIMITIVES_GENERATED, queries[0]);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "beginQuery");
+
+    gl.beginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, queries[1]);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "beginQuery");
+
+    glw::GLuint vbo = 0;
+    gl.genBuffers(1, &vbo);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glGenBuffers");
+    gl.bindBuffer(GL_ARRAY_BUFFER, vbo);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer");
+    gl.bufferData(GL_ARRAY_BUFFER, m_bo_size, (glw::GLvoid *)m_initial_data.data(), GL_STATIC_DRAW);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData");
+
+    glw::GLuint vao = 0;
+    gl.genVertexArrays(1, &vao);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "genVertexArrays");
+    gl.bindVertexArray(vao);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bindVertexArray");
+
+    glw::GLuint locVertices = gl.getAttribLocation(m_program_id, "vertex");
+    GLU_EXPECT_NO_ERROR(gl.getError(), "getAttribLocation");
+
+    gl.enable(GL_RASTERIZER_DISCARD);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "enable");
+
+    gl.clearColor(0.1f, 0.0f, 0.0f, 1.0f);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "clearColor");
+
+    gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "clear");
+
+    gl.vertexAttribPointer(locVertices, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "vertexAttribPointer");
+
+    gl.enableVertexAttribArray(locVertices);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "enableVertexAttribArray");
+
+    /* Draw */
+    gl.beginTransformFeedback(GL_TRIANGLES);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "beginTransformFeedback");
+
+    gl.drawArrays(GL_TRIANGLES, 0, 3);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "drawArrays");
+
+    gl.endTransformFeedback();
+    GLU_EXPECT_NO_ERROR(gl.getError(), "endTransformFeedback");
+
+    gl.disable(GL_RASTERIZER_DISCARD);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "disable");
+
+    gl.disableVertexAttribArray(locVertices);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "disableVertexAttribArray");
+
+    /* Collect queries results */
+    glw::GLuint queryresults[2] = {0, 0};
+    gl.endQuery(GL_PRIMITIVES_GENERATED);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "endQuery");
+
+    gl.endQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "endQuery");
+
+    gl.getQueryObjectuiv(queries[0], GL_QUERY_RESULT, &queryresults[0]);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "getQueryObjectuiv");
+
+    gl.getQueryObjectuiv(queries[1], GL_QUERY_RESULT, &queryresults[1]);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "getQueryObjectuiv");
+
+    gl.deleteQueries(2, queries);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "deleteQueries");
+
+    m_result_data.resize(m_initial_data.size() * 2);
+    m_result_data.assign(m_result_data.size(), 0);
+
+    /* Collect transform feedback result */
+    gl.bindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buffer);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "bindBufferRange");
+
+    void *ret = gl.mapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_bo_size * 2, GL_MAP_READ_BIT);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "mapBufferRange");
+
+    if (!ret)
+    {
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Geometry::draw unexpected resutl." << tcu::TestLog::EndMessage;
+        throw 0;
+    }
+
+    memcpy(m_result_data.data(), ret, m_bo_size * 2);
+
+    gl.unmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "unmapBuffer");
+
+    if (vbo)
+    {
+        gl.deleteBuffers(1, &vbo);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteBuffers");
+    }
+
+    if (vao)
+    {
+        gl.deleteVertexArrays(1, &vao);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteVertexArrays");
+    }
+
+    if (buffer)
+    {
+        gl.deleteBuffers(1, &buffer);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteBuffers");
+    }
+
+    if (queryresults[0] != 2 || queryresults[1] != 2 || m_result_data.size() != m_reference_data.size())
+    {
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Geometry::draw unexpected query resutl." << tcu::TestLog::EndMessage;
+        throw 0;
+    }
+}
+
+bool gl3cts::TransformFeedback::Geometry::check()
+{
+    bool is_ok           = true;
+    auto compare_results = [&](const glw::GLfloat *d1, const glw::GLfloat *d2, const int N)
+    {
+        const float FLOAT_EPSILON = 1.0e-03F;
+        for (int i = 0; i < N; ++i)
+        {
+            if (std::fabs(d1[i] - d2[i]) > FLOAT_EPSILON)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "compareArrays(GLfloat):index " << i << " value " << d1[i]
+                    << " != " << d2[i] << tcu::TestLog::EndMessage;
+
+                return false;
+            }
+        }
+        return true;
+    };
+
+    if (!compare_results(m_result_data.data(), m_reference_data.data(), m_reference_data.size()))
+    {
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Geometry::check unexpected feedback data." << tcu::TestLog::EndMessage;
+        is_ok = false;
+    }
+
+    return is_ok;
+}
+
+void gl3cts::TransformFeedback::Geometry::clean()
+{
+    /* Functions handler */
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+    gl.useProgram(0);
+
+    if (m_program_id)
+    {
+        gl.deleteProgram(m_program_id);
+
+        m_program_id = 0;
+    }
+}
+
+const glw::GLchar *gl3cts::TransformFeedback::Geometry::s_vertex_shader =
+    R"(${VERSION}
+        in vec4 vertex;
+
+        void main (void)
+        {
+            gl_Position = vertex;
+        })";
+
+const glw::GLchar *gl3cts::TransformFeedback::Geometry::s_geometry_shader =
+    R"(${VERSION}
+        layout(triangles) in;
+        layout(triangle_strip, max_vertices = 5) out;
+
+        out vec4 color;
+
+        void main() {
+
+            gl_Position = gl_in[0].gl_Position;
+            color = vec4(1.0);
+            EmitVertex();
+
+            gl_Position = gl_in[1].gl_Position;
+            color = vec4(1.0);
+            EmitVertex();
+
+            gl_Position = (gl_in[0].gl_Position+gl_in[1].gl_Position+gl_in[2].gl_Position)/3;
+            color = vec4(1.0);
+            EmitVertex();
+
+            gl_Position = gl_in[2].gl_Position;
+            color = vec4(1.0);
+            EmitVertex();
+
+            EndPrimitive();
+        })";
+
+const glw::GLchar *gl3cts::TransformFeedback::Geometry::s_fragment_shader =
+    R"(${VERSION}
+            in vec4 color;
+
+            out vec4 outColor;
+
+            void main (void)
+            {
+                    outColor = color;
+            })";
 
 /*-----------------------------------------------------------------------------------------------*/
 
