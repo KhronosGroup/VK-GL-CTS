@@ -1598,7 +1598,7 @@ public:
             ops.push_back({OP_NOISE, 1});
     }
 
-    void generateRandomProgram(add_ref<tcu::TestLog> log)
+    void generateRandomProgram(qpWatchDog *watchDog, add_ref<tcu::TestLog> log)
     {
         std::vector<tcu::UVec4> ref;
 
@@ -1615,7 +1615,7 @@ public:
                 for (int32_t subgroupSize = 4; subgroupSize <= 128; subgroupSize *= 2)
                 {
                     //simulate(true, subgroupSize, ref);
-                    execute(true, subgroupSize, 0u, invocationStride, ref, log);
+                    execute(watchDog, true, subgroupSize, 0u, invocationStride, ref, log);
                 }
             }
         } while (caseDef.isUCF() && !hasUCF());
@@ -2024,10 +2024,11 @@ public:
     // values to ref.
     virtual uint32_t simulate(bool countOnly, uint32_t subgroupSize, add_ref<std::vector<uint64_t>> ref) = 0;
 
-    virtual uint32_t execute(bool countOnly, const uint32_t subgroupSize, const uint32_t fragmentStride,
-                             const uint32_t primitiveStride, add_ref<std::vector<tcu::UVec4>> ref,
-                             add_ref<tcu::TestLog> log, add_cref<std::vector<uint32_t>> outputP = {},
-                             const tcu::UVec4 *cmp = nullptr, const uint32_t primitiveID = (~0u))
+    virtual uint32_t execute(qpWatchDog *watchDog, bool countOnly, const uint32_t subgroupSize,
+                             const uint32_t fragmentStride, const uint32_t primitiveStride,
+                             add_ref<std::vector<tcu::UVec4>> ref, add_ref<tcu::TestLog> log,
+                             add_cref<std::vector<uint32_t>> outputP = {}, const tcu::UVec4 *cmp = nullptr,
+                             const uint32_t primitiveID = (~0u))
     {
         // Per-invocation output location counters
         std::vector<uint32_t> outLoc;
@@ -2042,11 +2043,15 @@ public:
         nesting         = 0;
         loopNesting     = 0;
 
-        int32_t i = 0;
+        int32_t i          = 0;
+        uint32_t loopCount = 0;
 
         while (i < (int32_t)ops.size())
         {
             add_cref<Ballots> activeMask = stateStack[nesting].activeMask;
+
+            if ((loopCount % 5000) == 0 && watchDog)
+                qpWatchDog_touch(watchDog);
 
             switch (ops[i].type)
             {
@@ -2391,6 +2396,7 @@ public:
                 break;
             }
             i++;
+            loopCount++;
         }
         uint32_t maxLoc = 0;
         for (uint32_t id = 0; id < (uint32_t)outLoc.size(); ++id)
@@ -2818,18 +2824,19 @@ public:
     // Simulate execution of the program. If countOnly is true, just return
     // the max number of outputs written. If it's false, store out the result
     // values to ref.
-    virtual uint32_t execute(bool countOnly, const uint32_t subgroupSize, const uint32_t fragmentStride,
-                             const uint32_t primitiveStride, add_ref<std::vector<tcu::UVec4>> ref,
-                             add_ref<tcu::TestLog> log, add_cref<std::vector<uint32_t>> outputP,
-                             const tcu::UVec4 *cmp = nullptr, const uint32_t reserved = (~0u)) override
+    virtual uint32_t execute(qpWatchDog *watchDog, bool countOnly, const uint32_t subgroupSize,
+                             const uint32_t fragmentStride, const uint32_t primitiveStride,
+                             add_ref<std::vector<tcu::UVec4>> ref, add_ref<tcu::TestLog> log,
+                             add_cref<std::vector<uint32_t>> outputP, const tcu::UVec4 *cmp = nullptr,
+                             const uint32_t reserved = (~0u)) override
     {
         DE_UNREF(reserved);
         uint32_t outLocs    = 0u;
         uint32_t maxOutLocs = 0u;
         for (uint32_t primitiveID = 0u; primitiveID < primitiveStride; ++primitiveID)
         {
-            outLocs    = RandomProgram::execute(countOnly, subgroupSize, fragmentStride, primitiveStride, ref, log,
-                                                outputP, cmp, primitiveID);
+            outLocs    = RandomProgram::execute(watchDog, countOnly, subgroupSize, fragmentStride, primitiveStride, ref,
+                                                log, outputP, cmp, primitiveID);
             maxOutLocs = std::max(outLocs, maxOutLocs);
         }
         return maxOutLocs;
@@ -4503,7 +4510,7 @@ void ReconvergenceTestCase::initPrograms(SourceCollections &programCollection) c
 {
     de::MovePtr<RandomProgram> program = selectProgram();
 
-    program->generateRandomProgram(m_testCtx.getLog());
+    program->generateRandomProgram(m_testCtx.getWatchDog(), m_testCtx.getLog());
 
     std::stringstream header, layout, globals, prologue, epilogue, aux;
 
@@ -5023,9 +5030,10 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
 
     std::vector<tcu::UVec4> ref;
     ComputeRandomProgram program(m_data);
-    program.generateRandomProgram(log);
+    program.generateRandomProgram(m_context.getTestContext().getWatchDog(), log);
 
-    uint32_t maxLoc       = program.execute(true, m_subgroupSize, 0u, invocationStride, ref, log);
+    uint32_t maxLoc =
+        program.execute(m_context.getTestContext().getWatchDog(), true, m_subgroupSize, 0u, invocationStride, ref, log);
     uint32_t shaderMaxLoc = maxLoc;
 
     // maxLoc is per-invocation. Add one (to make sure no additional writes are done) and multiply by
@@ -5221,7 +5229,7 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
                                "Failed system memory allocation " + de::toString(maxLoc * sizeof(uint64_t)) + " bytes");
     }
 
-    program.execute(false, m_subgroupSize, 0u, invocationStride, ref, log);
+    program.execute(m_context.getTestContext().getWatchDog(), false, m_subgroupSize, 0u, invocationStride, ref, log);
 
     const tcu::UVec4 *result = (const tcu::UVec4 *)ptrs[1];
 
@@ -6009,10 +6017,10 @@ tcu::TestStatus ReconvergenceTestFragmentInstance::iterate(void)
 
     std::vector<tcu::UVec4> ref;
     de::MovePtr<FragmentRandomProgram> program = FragmentRandomProgram::create(m_data);
-    program->generateRandomProgram(log);
+    program->generateRandomProgram(m_context.getTestContext().getWatchDog(), log);
 
-    const uint32_t simulationMaxLoc =
-        program->execute(true, m_subgroupSize, fragmentStride, primitiveStride, ref, log, primitiveMap);
+    const uint32_t simulationMaxLoc = program->execute(m_context.getTestContext().getWatchDog(), true, m_subgroupSize,
+                                                       fragmentStride, primitiveStride, ref, log, primitiveMap);
     log << tcu::TestLog::Message << "simulated maxLoc: " << simulationMaxLoc << tcu::TestLog::EndMessage;
     // maxLoc is per-invocation. Add one (to make sure no additional writes are done)
     uint32_t maxLoc = simulationMaxLoc;
@@ -6273,7 +6281,8 @@ tcu::TestStatus ReconvergenceTestFragmentInstance::iterate(void)
                                                primitiveStride);
     const tcu::UVec4 *ballots = static_cast<tcu::UVec4 *>(ptrs[OutputBallots]);
 
-    program->execute(false, m_subgroupSize, fragmentStride, primitiveStride, ref, log, primitiveMap, ballots);
+    program->execute(m_context.getTestContext().getWatchDog(), false, m_subgroupSize, fragmentStride, primitiveStride,
+                     ref, log, primitiveMap, ballots);
 
     const uint32_t finalMaxLoc = std::max(computedShaderMaxLoc, simulationMaxLoc);
     const qpTestResult res     = calculateAndLogResultEx(log, ballots, ref, finalMaxLoc, a, PrintMode::None);
@@ -6331,15 +6340,15 @@ tcu::TestStatus ReconvergenceTestVertexInstance::iterate(void)
                                   .size());
 
     de::MovePtr<VertexRandomProgram> program(new VertexRandomProgram(m_data));
-    program->generateRandomProgram(log);
+    program->generateRandomProgram(m_context.getTestContext().getWatchDog(), log);
 
     // simulate content of outputP buffer
     std::vector<uint32_t> outputP =
         VertexRandomProgram::Arrangement::generateOutputPvector(m_subgroupSize, invocationStride);
 
     std::vector<tcu::UVec4> ref;
-    const uint32_t hostMaxLoc =
-        program->execute(true, m_subgroupSize, fragmentStride, invocationStride, ref, log, outputP, nullptr);
+    const uint32_t hostMaxLoc = program->execute(m_context.getTestContext().getWatchDog(), true, m_subgroupSize,
+                                                 fragmentStride, invocationStride, ref, log, outputP, nullptr);
     log << tcu::TestLog::Message << "Rendering area  : " << tcu::UVec2(m_data.sizeX, m_data.sizeY)
         << tcu::TestLog::EndMessage;
     log << tcu::TestLog::Message << "invocationStride: " << invocationStride << tcu::TestLog::EndMessage;
@@ -6606,8 +6615,8 @@ tcu::TestStatus ReconvergenceTestVertexInstance::iterate(void)
     }
 
     // Simulate execution on the CPU, and compare against the GPU result
-    const uint32_t finalHostMaxLoc =
-        program->execute(false, m_subgroupSize, fragmentStride, invocationStride, ref, log, outputP, ballots);
+    const uint32_t finalHostMaxLoc = program->execute(m_context.getTestContext().getWatchDog(), false, m_subgroupSize,
+                                                      fragmentStride, invocationStride, ref, log, outputP, ballots);
 
     const qpTestResult res = calculateAndLogResultEx(log, ballots, ref, finalHostMaxLoc, PrintMode::None);
 
@@ -6722,7 +6731,7 @@ tcu::TestStatus ReconvergenceTestTessCtrlInstance::iterate(void)
     log << tcu::TestLog::Message << "usedSubgroupCount:  " << m_data.sizeX << tcu::TestLog::EndMessage;
 
     de::MovePtr<TessCtrlRandomProgram> program(new TessCtrlRandomProgram(m_data, invocationStride));
-    program->generateRandomProgram(log);
+    program->generateRandomProgram(m_context.getTestContext().getWatchDog(), log);
 
     std::vector<uint64_t> ref;
     const uint32_t simulationMaxLoc = program->simulate(true, m_subgroupSize, ref);
@@ -7044,7 +7053,7 @@ tcu::TestStatus ReconvergenceTestTessEvalInstance::iterate(void)
     DE_ASSERT(invocationStride <= MAX_INVOCATIONS_ALL_TESTS);
 
     de::MovePtr<TessEvalRandomProgram> program(new TessEvalRandomProgram(m_data, invocationStride));
-    program->generateRandomProgram(log);
+    program->generateRandomProgram(m_context.getTestContext().getWatchDog(), log);
 
     std::vector<uint64_t> ref;
     const uint32_t simulationMaxLoc = program->simulate(true, m_subgroupSize, ref);
@@ -7364,15 +7373,15 @@ tcu::TestStatus ReconvergenceTestGeometryInstance::iterate(void)
         m_data.sizeX, m_data.sizeY, GeometryRandomProgram::fillPercentage);
 
     de::MovePtr<GeometryRandomProgram> program(new GeometryRandomProgram(m_data));
-    program->generateRandomProgram(log);
+    program->generateRandomProgram(m_context.getTestContext().getWatchDog(), log);
 
     // simulate content of outputP buffer
     std::vector<uint32_t> outputP =
         GeometryRandomProgram::Arrangement::generateVectorOutputP(m_subgroupSize, invocationStride);
 
     std::vector<tcu::UVec4> ref;
-    const uint32_t hostMaxLoc =
-        program->execute(true, m_subgroupSize, fragmentStride, invocationStride, ref, log, outputP, nullptr);
+    const uint32_t hostMaxLoc = program->execute(m_context.getTestContext().getWatchDog(), true, m_subgroupSize,
+                                                 fragmentStride, invocationStride, ref, log, outputP, nullptr);
     log << tcu::TestLog::Message << "Rendering area  : " << tcu::UVec2(m_data.sizeX, m_data.sizeY)
         << tcu::TestLog::EndMessage;
     log << tcu::TestLog::Message << "invocationStride: " << invocationStride << tcu::TestLog::EndMessage;
@@ -7642,8 +7651,8 @@ tcu::TestStatus ReconvergenceTestGeometryInstance::iterate(void)
     }
 
     // Simulate execution on the CPU, and compare against the GPU result
-    const uint32_t finalHostMaxLoc =
-        program->execute(false, m_subgroupSize, fragmentStride, invocationStride, ref, log, outputP, ballots);
+    const uint32_t finalHostMaxLoc = program->execute(m_context.getTestContext().getWatchDog(), false, m_subgroupSize,
+                                                      fragmentStride, invocationStride, ref, log, outputP, ballots);
 
     const qpTestResult res = calculateAndLogResultEx(log, ballots, ref, finalHostMaxLoc, PrintMode::None);
 
