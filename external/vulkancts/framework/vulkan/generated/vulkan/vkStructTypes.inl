@@ -3203,6 +3203,52 @@ struct VkPhysicalDeviceMaintenance6PropertiesKHR
 	VkBool32		fragmentShadingRateClampCombinerInputs;
 };
 
+struct VkPhysicalDeviceMaintenance7FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance7;
+};
+
+struct VkPhysicalDeviceMaintenance7PropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		robustFragmentShadingRateAttachmentAccess;
+	VkBool32		separateDepthStencilAttachmentAccess;
+	uint32_t		maxDescriptorSetTotalUniformBuffersDynamic;
+	uint32_t		maxDescriptorSetTotalStorageBuffersDynamic;
+	uint32_t		maxDescriptorSetTotalBuffersDynamic;
+	uint32_t		maxDescriptorSetUpdateAfterBindTotalUniformBuffersDynamic;
+	uint32_t		maxDescriptorSetUpdateAfterBindTotalStorageBuffersDynamic;
+	uint32_t		maxDescriptorSetUpdateAfterBindTotalBuffersDynamic;
+};
+
+struct VkPhysicalDeviceLayeredApiPropertiesKHR
+{
+	VkStructureType					sType;
+	void*							pNext;
+	uint32_t						vendorID;
+	uint32_t						deviceID;
+	VkPhysicalDeviceLayeredApiKHR	layeredAPI;
+	char							deviceName[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE];
+};
+
+struct VkPhysicalDeviceLayeredApiPropertiesListKHR
+{
+	VkStructureType								sType;
+	void*										pNext;
+	uint32_t									layeredApiCount;
+	VkPhysicalDeviceLayeredApiPropertiesKHR*	pLayeredApis;
+};
+
+struct VkPhysicalDeviceLayeredApiVulkanPropertiesKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkPhysicalDeviceProperties2	properties;
+};
+
 struct VkRenderingAreaInfoKHR
 {
 	VkStructureType	sType;
@@ -4893,6 +4939,13 @@ struct VkPerformanceQuerySubmitInfoKHR
 	uint32_t		counterPassIndex;
 };
 
+struct VkPerformanceQueryReservationInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		maxPerformanceQueriesPerPool;
+};
+
 struct VkHeadlessSurfaceCreateInfoEXT
 {
 	VkStructureType					sType;
@@ -6260,6 +6313,13 @@ struct VkPhysicalDeviceExternalMemoryRDMAFeaturesNV
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		externalMemoryRDMA;
+};
+
+struct VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderRelaxedExtendedInstruction;
 };
 
 struct VkVertexInputBindingDescription2EXT

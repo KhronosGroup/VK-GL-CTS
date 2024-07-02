@@ -1586,6 +1586,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_relaxed_extended_instruction")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_maintenance7")
+	{
+		return;
+	}
 	if (extName == "VK_NV_shader_atomic_float16_vector")
 	{
 		return;
@@ -3696,6 +3704,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_relaxed_extended_instruction")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_maintenance7")
+	{
+		return;
+	}
 	if (extName == "VK_NV_shader_atomic_float16_vector")
 	{
 		return;
@@ -4125,6 +4141,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_maintenance6",
 	"VK_NV_descriptor_pool_overallocation",
 	"VK_NV_raw_access_chains",
+	"VK_KHR_shader_relaxed_extended_instruction",
+	"VK_KHR_maintenance7",
 	"VK_NV_shader_atomic_float16_vector",
 	"VK_EXT_shader_replicated_composites",
 	"VK_NV_ray_tracing_validation",

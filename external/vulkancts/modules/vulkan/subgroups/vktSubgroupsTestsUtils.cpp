@@ -3989,7 +3989,7 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
         context.getSubgroupSizeControlProperties();
 #else
     const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-        context.getSubgroupSizeControlPropertiesEXT();
+        context.getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
     const VkDeviceSize elementSize     = getFormatSizeInBytes(format);
     const VkDeviceSize maxSubgroupSize = isRequiredSubgroupSize ? deMax32(subgroupSizeControlProperties.maxSubgroupSize,
