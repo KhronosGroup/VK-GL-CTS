@@ -23,20 +23,31 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktFragmentShadingRateMiscTests.hpp"
+#include "deMemory.h"
+#include "tcuVectorType.hpp"
+#include "vkQueryUtil.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vkSafetyCriticalUtil.hpp"
 
 #include "vkImageUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkBarrierUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "tcuImageCompare.hpp"
+#include "tcuTextureUtil.hpp"
+
+#include "vkBuilderUtil.hpp"
 
 #include "deUniquePtr.hpp"
 
 #include <sstream>
 #include <vector>
 #include <cstddef>
+#include <cmath>
+#include <cstdint>
 
 namespace vkt
 {
@@ -56,6 +67,12 @@ struct PositionColor
 
     tcu::Vec4 position;
     tcu::Vec4 color;
+};
+
+struct TestParams
+{
+    bool useRobustness2;
+    bool useBaseMipLevel1;
 };
 
 VkExtent3D getDefaultExtent(void)
@@ -711,6 +728,445 @@ tcu::TestStatus testNoFrag(Context &context)
     return tcu::TestStatus::pass("Pass");
 }
 
+void checkOobSupport(Context &context, TestParams param)
+{
+    context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+    checkShadingRateSupport(context, true, false, true);
+
+    bool allowOobFSRAttachment = false;
+#ifndef CTS_USES_VULKANSC
+    const VkPhysicalDeviceMaintenance7PropertiesKHR &m_maintenance7Properties = context.getMaintenance7Properties();
+    allowOobFSRAttachment = m_maintenance7Properties.robustFragmentShadingRateAttachmentAccess;
+#endif
+    if (!allowOobFSRAttachment)
+        TCU_THROW(NotSupportedError, "Fragment shading rate attachment size must match render area size");
+
+    if (param.useRobustness2)
+    {
+        context.requireDeviceFunctionality("VK_EXT_robustness2");
+
+        VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features;
+        robustness2Features.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
+        robustness2Features.pNext = nullptr;
+        vk::VkPhysicalDeviceFeatures2 features2;
+
+        features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features2.pNext = &robustness2Features;
+
+        context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+        if (robustness2Features.robustImageAccess2 == false)
+            TCU_THROW(NotSupportedError, "VK_EXT_robustness2 robustImageAccess2 feature not supported");
+    }
+    else
+    {
+        context.requireDeviceFunctionality("VK_EXT_image_robustness");
+    }
+}
+
+void initOOBShaders(vk::SourceCollections &programCollection, TestParams param)
+{
+    std::ignore = param;
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "vec2 positions[3] = vec2[](\n"
+         << "        vec2(-1.0, -1.0),"
+         << "        vec2(3.0, -1.0),"
+         << "        vec2(-1.0, 3.0)"
+         << ");\n"
+         << "void main() {\n"
+         << "        gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);\n"
+         << "}";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    // Default fragment shader, with vertex color.
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "#extension GL_EXT_fragment_shading_rate : enable\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "layout (std430, binding = 0) readonly buffer Dimensions {"
+         << "    uint minW;"
+         << "    uint minH;"
+         << "} dimensions;\n"
+         << "void main (void) {\n"
+         << "    if (gl_FragCoord.x < dimensions.minW && gl_FragCoord.y < dimensions.minH) {\n"
+         << "        outColor = (gl_ShadingRateEXT == (gl_ShadingRateFlag2VerticalPixelsEXT | "
+            "gl_ShadingRateFlag2HorizontalPixelsEXT))"
+         << "                                ? vec4(0.0, 1.0, 0.0, 1.0) : vec4(1.0, 0.0, 0.0, 1.0);"
+         << "    } else {\n"
+         << "        outColor = (gl_ShadingRateEXT == 0) ? vec4(0.0, 1.0, 0.0, 1.0) : vec4(1.0, 0.0, 0.0, 1.0);"
+         << "    }\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+Move<VkDevice> getRobustDevice(Context &context, bool robustness2)
+{
+    const auto &vki           = context.getInstanceInterface();
+    const float queuePriority = 1.0f;
+    // Create a universal queue that supports graphics and compute
+    const VkDeviceQueueCreateInfo queueParams = {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType              sType;
+        DE_NULL,                                    // const void*                  pNext;
+        0u,                                         // VkDeviceQueueCreateFlags     flags;
+        context.getUniversalQueueFamilyIndex(),     // uint32_t                     queueFamilyIndex;
+        1u,                                         // uint32_t                     queueCount;
+        &queuePriority                              // const float*                 pQueuePriorities;
+    };
+
+    VkPhysicalDeviceFeatures2 features2 = getPhysicalDeviceFeatures2(vki, context.getPhysicalDevice());
+    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features    = initVulkanStructure(&features2);
+    robustness2Features.robustImageAccess2                        = true;
+    VkPhysicalDeviceImageRobustnessFeaturesEXT robustnessFeatures = initVulkanStructure(&features2);
+    robustnessFeatures.robustImageAccess                          = true;
+    VkPhysicalDeviceFragmentShadingRateFeaturesKHR fsrFeatures =
+        initVulkanStructure(robustness2 ? (void *)&robustness2Features : &robustnessFeatures);
+    fsrFeatures.attachmentFragmentShadingRate = true;
+    fsrFeatures.pipelineFragmentShadingRate   = true;
+    const auto &extensionPtrs                 = context.getDeviceCreationExtensions();
+
+    void *pNext = (void *)&fsrFeatures;
+#ifdef CTS_USES_VULKANSC
+    VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
+                                                                 context.getResourceInterface()->getStatMax() :
+                                                                 resetDeviceObjectReservationCreateInfo();
+    memReservationInfo.pNext                               = pNext;
+    pNext                                                  = &memReservationInfo;
+
+    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
+    sc10Features.pNext                              = pNext;
+    pNext                                           = &sc10Features;
+
+    VkPipelineCacheCreateInfo pcCI;
+    std::vector<VkPipelinePoolSize> poolSizes;
+    if (context.getTestContext().getCommandLine().isSubProcess())
+    {
+        if (context.getResourceInterface()->getCacheDataSize() > 0)
+        {
+            pcCI = {
+                VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType              sType;
+                DE_NULL,                                      // const void*                  pNext;
+                VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+                    VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags   flags;
+                context.getResourceInterface()->getCacheDataSize(), // uintptr_t                    initialDataSize;
+                context.getResourceInterface()->getCacheData()      // const void*                  pInitialData;
+            };
+            memReservationInfo.pipelineCacheCreateInfoCount = 1;
+            memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
+        }
+
+        poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
+        if (!poolSizes.empty())
+        {
+            memReservationInfo.pipelinePoolSizeCount = static_cast<uint32_t>(poolSizes.size());
+            memReservationInfo.pPipelinePoolSizes    = poolSizes.data();
+        }
+    }
+#endif
+
+    const VkDeviceCreateInfo deviceParams = {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType                  sType;
+        pNext,                                // const void*                      pNext;
+        0u,                                   // VkDeviceCreateFlags              flags;
+        1u,                                   // uint32_t                         queueCreateInfoCount;
+        &queueParams,                         // const VkDeviceQueueCreateInfo*   pQueueCreateInfos;
+        0u,                                   // uint32_t                         enabledLayerCount;
+        nullptr,                              // const char* const*               ppEnabledLayerNames;
+        de::sizeU32(extensionPtrs),           // uint32_t                         enabledExtensionCount;
+        de::dataOrNull(extensionPtrs),        // const char* const*               ppEnabledExtensionNames;
+        nullptr                               // const VkPhysicalDeviceFeatures*  pEnabledFeatures;
+    };
+    const auto instance = context.getInstance();
+
+    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
+                              context.getPlatformInterface(), instance, vki, context.getPhysicalDevice(),
+                              &deviceParams);
+}
+
+tcu::TestStatus testOOB(Context &context, TestParams params)
+{
+    const auto &fsrProperties          = context.getFragmentShadingRateProperties();
+    const auto &fsrAttachmentTexelSize = fsrProperties.minFragmentShadingRateAttachmentTexelSize;
+    const auto colorFormat             = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto colorUsage              = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto colorSRL                = makeDefaultImageSubresourceLayers();
+    const auto bindPoint               = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    const auto fsrFormat               = VK_FORMAT_R8_UINT;
+    const auto fsrUsage = (VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto sampleCount = VK_SAMPLE_COUNT_1_BIT;
+    const auto &vki        = context.getInstanceInterface();
+    const auto &vkp        = context.getPlatformInterface();
+    const auto device      = getRobustDevice(context, params.useRobustness2);
+    const auto instance    = context.getInstance();
+    auto driver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(),
+                                                             context.getTestContext().getCommandLine()));
+    auto queueFamilyIndex      = context.getUniversalQueueFamilyIndex();
+    auto queue                 = getDeviceQueue(*driver, *device, queueFamilyIndex, 0u);
+    auto alloc                 = de::MovePtr<Allocator>(new SimpleAllocator(
+        *driver, device.get(), getPhysicalDeviceMemoryProperties(vki, context.getPhysicalDevice())));
+    const DeviceInterface &vkd = *driver;
+
+    struct Dims
+    {
+        int w;
+        int h;
+    } dimensions;
+    dimensions.w = fsrAttachmentTexelSize.width;
+    dimensions.h = fsrAttachmentTexelSize.height;
+
+    const auto bufferSize = static_cast<VkDeviceSize>(sizeof(Dims));
+    BufferWithMemory buffer(vkd, *device, *alloc, makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                            MemoryRequirement::HostVisible);
+    auto &bufferAlloc = buffer.getAllocation();
+    void *bufferData  = bufferAlloc.getHostPtr();
+    deMemcpy(bufferData, &dimensions, sizeof(Dims));
+    flushAlloc(vkd, device.get(), bufferAlloc);
+
+    const auto outputSize = VkExtent3D{fsrAttachmentTexelSize.width * 4, fsrAttachmentTexelSize.height * 4, 1};
+    const tcu::IVec3 fbExtent(static_cast<int>(outputSize.width), static_cast<int>(outputSize.height),
+                              static_cast<int>(outputSize.depth));
+
+    vk::ImageWithBuffer colorBuffer(vkd, *device, *alloc, outputSize, colorFormat, colorUsage, VK_IMAGE_TYPE_2D);
+
+    const auto fsrExtent            = makeExtent3D(1, 1, 1u); // 1 pixel for the whole image.
+    const auto mipLevelScaleFactor  = 2u;
+    const auto fsrExtentScaled      = makeExtent3D(1u * mipLevelScaleFactor, 1u * mipLevelScaleFactor, 1u);
+    const auto fsrImgCreationExtent = params.useBaseMipLevel1 ? fsrExtentScaled : fsrExtent;
+
+    const auto fsrMipCount     = (params.useBaseMipLevel1 ? 2u : 1u);
+    const auto fsrBaseMipLevel = (params.useBaseMipLevel1 ? 1u : 0u);
+
+    const auto fsrSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, fsrBaseMipLevel, 1u, 0u, 1u);
+    // Fragment shading rate attachment.
+    const VkImageCreateInfo fsrAttachmentCreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, //  VkStructureType         sType;
+        nullptr,                             //  const void*             pNext;
+        0u,                                  //  VkImageCreateFlags      flags;
+        VK_IMAGE_TYPE_2D,                    //  VkImageType             imageType;
+        fsrFormat,                           //  VkFormat                format;
+        fsrImgCreationExtent,                //  VkExtent3D              extent;
+        fsrMipCount,                         //  uint32_t                mipLevels;
+        1u,                                  //  uint32_t                arrayLayers;
+        sampleCount,                         //  VkSampleCountFlagBits   samples;
+        VK_IMAGE_TILING_OPTIMAL,             //  VkImageTiling           tiling;
+        fsrUsage,                            //  VkImageUsageFlags       usage;
+        VK_SHARING_MODE_EXCLUSIVE,           //  VkSharingMode           sharingMode;
+        0u,                                  //  uint32_t                queueFamilyIndexCount;
+        nullptr,                             //  const uint32_t*         pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,           //  VkImageLayout           initialLayout;
+    };
+    ImageWithMemory fsrAttachment(vkd, *device, *alloc, fsrAttachmentCreateInfo, MemoryRequirement::Any);
+    const auto fsrAttView = makeImageView(vkd, *device, fsrAttachment.get(), VK_IMAGE_VIEW_TYPE_2D, fsrFormat, fsrSRR);
+
+    const auto &binaries  = context.getBinaryCollection();
+    const auto vertModule = createShaderModule(vkd, *device, binaries.get("vert"));
+    const auto fragModule = createShaderModule(vkd, *device, binaries.get("frag"));
+
+    const std::vector<VkAttachmentDescription2> attachmentDescriptions{
+        // Color attachment.
+        {
+            VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2, //  VkStructureType                 sType;
+            nullptr,                                    //  const void*                     pNext;
+            0u,                                         //  VkAttachmentDescriptionFlags    flags;
+            colorFormat,                                //  VkFormat                        format;
+            sampleCount,                                //  VkSampleCountFlagBits           samples;
+            VK_ATTACHMENT_LOAD_OP_CLEAR,                //  VkAttachmentLoadOp              loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE,               //  VkAttachmentStoreOp             storeOp;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,            //  VkAttachmentLoadOp              stencilLoadOp;
+            VK_ATTACHMENT_STORE_OP_DONT_CARE,           //  VkAttachmentStoreOp             stencilStoreOp;
+            VK_IMAGE_LAYOUT_UNDEFINED,                  //  VkImageLayout                   initialLayout;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   //  VkImageLayout                   finalLayout;
+        },
+        // FSR attachment.
+        {
+            VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2, //  VkStructureType                 sType;
+            nullptr,                                    //  const void*                     pNext;
+            0u,                                         //  VkAttachmentDescriptionFlags    flags;
+            fsrFormat,                                  //  VkFormat                        format;
+            sampleCount,                                //  VkSampleCountFlagBits           samples;
+            VK_ATTACHMENT_LOAD_OP_LOAD,                 //  VkAttachmentLoadOp              loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE,               //  VkAttachmentStoreOp             storeOp;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,            //  VkAttachmentLoadOp              stencilLoadOp;
+            VK_ATTACHMENT_STORE_OP_DONT_CARE,           //  VkAttachmentStoreOp             stencilStoreOp;
+            VK_IMAGE_LAYOUT_GENERAL,                    //  VkImageLayout                   initialLayout;
+            VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, //  VkImageLayout                   finalLayout;
+        },
+    };
+
+    const VkAttachmentReference2 colorAttRef = {
+        VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2, //  VkStructureType     sType;
+        nullptr,                                  //  const void*         pNext;
+        0u,                                       //  uint32_t            attachment;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, //  VkImageLayout       layout;
+        VK_IMAGE_ASPECT_COLOR_BIT,                //  VkImageAspectFlags  aspectMask;
+    };
+
+    const VkAttachmentReference2 fsrAttRef = {
+        VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,                     //  VkStructureType     sType;
+        nullptr,                                                      //  const void*         pNext;
+        1u,                                                           //  uint32_t            attachment;
+        VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, //  VkImageLayout       layout;
+        VK_IMAGE_ASPECT_COLOR_BIT,                                    //  VkImageAspectFlags  aspectMask;
+    };
+
+    const VkFragmentShadingRateAttachmentInfoKHR fsrAttInfo = {
+        VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR, //  VkStructureType                 sType;
+        nullptr,                                                     //  const void*                     pNext;
+        &fsrAttRef, //  const VkAttachmentReference2*   pFragmentShadingRateAttachment;
+        makeExtent2D(fsrAttachmentTexelSize.width,
+                     fsrAttachmentTexelSize.height), //  VkExtent2D                      shadingRateAttachmentTexelSize;
+    };
+
+    const VkSubpassDescription2 subpassDescription{
+        VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2, //  VkStructureType                 sType;
+        &fsrAttInfo,                             //  const void*                     pNext;
+        0u,                                      //  VkSubpassDescriptionFlags       flags;
+        bindPoint,                               //  VkPipelineBindPoint             pipelineBindPoint;
+        0u,                                      //  uint32_t                        viewMask;
+        0u,                                      //  uint32_t                        inputAttachmentCount;
+        nullptr,                                 //  const VkAttachmentReference2*   pInputAttachments;
+        1u,                                      //  uint32_t                        colorAttachmentCount;
+        &colorAttRef,                            //  const VkAttachmentReference2*   pColorAttachments;
+        nullptr,                                 //  const VkAttachmentReference2*   pResolveAttachments;
+        nullptr,                                 //  const VkAttachmentReference2*   pDepthStencilAttachment;
+        0u,                                      //  uint32_t                        preserveAttachmentCount;
+        nullptr,                                 //  const uint32_t*                 pPreserveAttachments;
+    };
+
+    const VkRenderPassCreateInfo2 renderPassCreateInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2, //  VkStructureType                 sType;
+        nullptr,                                     //  const void*                     pNext;
+        0u,                                          //  VkRenderPassCreateFlags         flags;
+        de::sizeU32(attachmentDescriptions),         //  uint32_t                        attachmentCount;
+        de::dataOrNull(attachmentDescriptions),      //  const VkAttachmentDescription2* pAttachments;
+        1u,                                          //  uint32_t                        subpassCount;
+        &subpassDescription,                         //  const VkSubpassDescription2*    pSubpasses;
+        0u,                                          //  uint32_t                        dependencyCount;
+        nullptr,                                     //  const VkSubpassDependency2*     pDependencies;
+        0u,                                          //  uint32_t                        correlatedViewMaskCount;
+        nullptr,                                     //  const uint32_t*                 pCorrelatedViewMasks;
+    };
+
+    const auto renderPass = createRenderPass2(vkd, *device, &renderPassCreateInfo);
+
+    const std::vector<VkImageView> attachmentViews{colorBuffer.getImageView(), fsrAttView.get()};
+    const auto framebuffer = makeFramebuffer(vkd, *device, renderPass.get(), de::sizeU32(attachmentViews),
+                                             de::dataOrNull(attachmentViews), fbExtent.x(), fbExtent.y());
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    // Use the rate according to the attachment.
+    const auto fragmentShadingRateStateCreateInfo = makeFragmentShadingRateStateCreateInfo(
+        1u, 1u, VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR, VK_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_KHR);
+
+    DescriptorSetLayoutBuilder layoutBuilder;
+    layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+
+    auto descriptorSetLayout    = layoutBuilder.build(vkd, device.get());
+    auto graphicsPipelineLayout = makePipelineLayout(vkd, device.get(), descriptorSetLayout.get());
+
+    static const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, //  VkStructureType                             sType;
+        nullptr, //  const void*                                 pNext;
+        0u,      //  VkPipelineVertexInputStateCreateFlags       flags;
+        0u,      //  uint32_t                                    vertexBindingDescriptionCount;
+        nullptr, //  const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+        0,       //  uint32_t                                    vertexAttributeDescriptionCount;
+        nullptr, //  const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+    };
+
+    const auto pipelineVRS = makeGraphicsPipeline(
+        vkd, *device, graphicsPipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        fragModule.get(), renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, 0u,
+        &vertexInputStateCreateInfo, nullptr, nullptr, nullptr, nullptr, nullptr, &fragmentShadingRateStateCreateInfo);
+
+    CommandPoolWithBuffer cmd(vkd, *device, queueFamilyIndex);
+    const auto cmdBuffer = cmd.cmdBuffer.get();
+
+#if 0
+      const int gl_ShadingRateFlag2VerticalPixelsEXT = 1;
+      const int gl_ShadingRateFlag4VerticalPixelsEXT = 2;
+      const int gl_ShadingRateFlag2HorizontalPixelsEXT = 4;
+      const int gl_ShadingRateFlag4HorizontalPixelsEXT = 8;
+#endif
+    using ClearValueVec = std::vector<VkClearValue>;
+    const uint32_t clearAttRate =
+        5u; // 2x2: (gl_ShadingRateFlag2HorizontalPixelsEXT | gl_ShadingRateFlag2VerticalPixelsEXT)
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    const ClearValueVec clearValues{
+        makeClearValueColor(clearColor),
+    };
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    const auto descriptorPool =
+        poolBuilder.build(vkd, device.get(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
+    const auto descriptorSetBuffer =
+        makeDescriptorSet(vkd, device.get(), descriptorPool.get(), descriptorSetLayout.get());
+
+    // Update descriptor sets.
+    DescriptorSetUpdateBuilder updater;
+
+    const auto bufferInfo = makeDescriptorBufferInfo(buffer.get(), 0ull, bufferSize);
+    updater.writeSingle(descriptorSetBuffer.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
+                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
+
+    updater.update(vkd, device.get());
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    const auto imgSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, fsrMipCount, 0u, 1u);
+    auto barrier1     = makeImageMemoryBarrier(0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                               VK_IMAGE_LAYOUT_GENERAL, fsrAttachment.get(), imgSRR);
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+                           nullptr, 0, nullptr, 1, &barrier1);
+    auto fsr_color = makeClearValueColorU32(clearAttRate, 0u, 0u, 0u).color;
+    vkd.cmdClearColorImage(cmdBuffer, fsrAttachment.get(), VK_IMAGE_LAYOUT_GENERAL, &fsr_color, 1, &imgSRR);
+    auto barrier2 =
+        makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,
+                               VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, fsrAttachment.get(), imgSRR);
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                           VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR, 0, 0, nullptr, 0, nullptr, 1,
+                           &barrier2);
+    {
+        // Render pass.
+        beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), de::sizeU32(clearValues),
+                        de::dataOrNull(clearValues));
+        vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineLayout.get(), 0u, 1,
+                                  &descriptorSetBuffer.get(), 0u, nullptr);
+        vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipelineVRS.get());
+        vkd.cmdDraw(cmdBuffer, 3, 1u, 0u, 0u);
+        endRenderPass(vkd, cmdBuffer);
+    }
+    // Copy image to verification buffer after rendering.
+    const auto colorSubRes        = makeDefaultImageSubresourceRange();
+    const auto preTransferBarrier = makeImageMemoryBarrier(
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorBuffer.getImage(), colorSubRes);
+    cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT, &preTransferBarrier);
+    const auto copyRegion = makeBufferImageCopy(makeExtent3D(fbExtent.x(), fbExtent.y(), 1), colorSRL);
+    vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                             colorBuffer.getBuffer(), 1u, &copyRegion);
+    const auto preHostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+    cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                             &preHostBarrier);
+
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device.get(), queue, cmdBuffer);
+    invalidateAlloc(vkd, device.get(), colorBuffer.getBufferAllocation());
+
+    const auto colorTcuFormat = mapVkFormat(colorFormat);
+    const tcu::ConstPixelBufferAccess colorResultAccess(colorTcuFormat, fbExtent,
+                                                        colorBuffer.getBufferAllocation().getHostPtr());
+
+    auto &log = context.getTestContext().getLog();
+    if (!tcu::floatThresholdCompare(log, "Compare", "Result comparison", tcu::Vec4(0.0, 1.0, 0.0, 1.0),
+                                    colorResultAccess, tcu::Vec4(0.0), tcu::COMPARE_LOG_ON_ERROR))
+        return tcu::TestStatus::fail("Color output does not match reference, image added to log");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 void createFragmentShadingRateMiscTests(tcu::TestCaseGroup *group)
@@ -725,6 +1181,19 @@ void createFragmentShadingRateMiscTests(tcu::TestCaseGroup *group)
         const char *testName = "no_frag_shader";
         // Test drawing with VRS enabled and no frag shader
         addFunctionCaseWithPrograms(group, testName, checkNoFragSupport, initNoFragShaders, testNoFrag);
+    }
+    {
+        TestParams params = {false, false};
+        addFunctionCaseWithPrograms<TestParams>(group, "test_oob_attachment", checkOobSupport, initOOBShaders, testOOB,
+                                                params);
+        params.useRobustness2 = true;
+        addFunctionCaseWithPrograms<TestParams>(group, "test_oob_attachment_robustness2", checkOobSupport,
+                                                initOOBShaders, testOOB, params);
+    }
+    {
+        TestParams params = {true, true};
+        addFunctionCaseWithPrograms<TestParams>(group, "test_oob_attachment_miplevel1", checkOobSupport, initOOBShaders,
+                                                testOOB, params);
     }
 }
 

@@ -14,6 +14,7 @@ vksc-default/glsl.txt
 vksc-default/image/astc-decode-mode.txt
 vksc-default/image/atomic-operations.txt
 vksc-default/image/depth-stencil-descriptor.txt
+vksc-default/image/depth-stencil-separate-access.txt
 vksc-default/image/extend-operands-spirv1p4.txt
 vksc-default/image/extended-usage-bit.txt
 vksc-default/image/extended-usage-bit-compatibility.txt

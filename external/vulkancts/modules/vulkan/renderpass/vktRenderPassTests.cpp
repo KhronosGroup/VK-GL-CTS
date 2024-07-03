@@ -42,6 +42,7 @@
 #include "vktDynamicRenderingTests.hpp"
 #include "vktDynamicRenderingLocalReadTests.hpp"
 #include "vktDynamicRenderingDepthStencilResolveTests.hpp"
+#include "vktRenderPassNestedCommandBuffersTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktRenderPassDepthStencilWriteConditionsTests.hpp"
 #include "vktRenderPassSubpassMergeFeedbackTests.hpp"
@@ -8407,8 +8408,13 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
 #endif // CTS_USES_VULKANSC
 
         if (groupParams->useSecondaryCmdBuffer == false)
+        {
             noDrawGroup->addChild(
                 new RenderPassNoDrawLoadStoreTestCase(testCtx, "no_draw_clear_load_store", groupParams));
+#ifndef CTS_USES_VULKANSC
+            renderingTests->addChild(createNestedCommandBufferTests(testCtx, groupParams));
+#endif // CTS_USES_VULKANSC
+        }
     }
 
     renderingTests->addChild(suballocationTestGroup.release());
