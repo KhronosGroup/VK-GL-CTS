@@ -16,6 +16,7 @@
 
 # A geometry shader test for ModfStruct.
 
+DEVICE_FEATURE vertexPipelineStoresAndAtomics
 DEVICE_FEATURE geometryShader
 
 # SHADER vertex vert_shader GLSL

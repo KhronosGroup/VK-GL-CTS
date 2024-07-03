@@ -16,6 +16,7 @@
 
 # A tessellation evaluation shader test for ModfStruct.
 
+DEVICE_FEATURE vertexPipelineStoresAndAtomics
 DEVICE_FEATURE tessellationShader
 
 # SHADER vertex vert_shader GLSL

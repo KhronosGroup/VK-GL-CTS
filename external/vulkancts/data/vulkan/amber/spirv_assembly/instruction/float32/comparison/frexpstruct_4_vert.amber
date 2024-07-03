@@ -16,6 +16,8 @@
 
 # A vertex shader test for FrexpStruct.
 
+DEVICE_FEATURE vertexPipelineStoresAndAtomics
+
 # SHADER vertex vert_shader GLSL
 # #version 430
 # precision highp float;
