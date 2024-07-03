@@ -391,6 +391,9 @@ void FSRTestCase::checkSupport(Context &context) const
             TCU_THROW(NotSupportedError, "shaderEarlyAndLateFragmentTests is not supported");
     }
 #endif
+
+    if (m_data.sampleShadingEnable || m_data.sampleShadingInput)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 // Error codes writted by the fragment shader

@@ -1347,6 +1347,9 @@ void FragmentDensityMapTest::checkSupport(Context &context) const
             NotSupportedError,
             "VK_KHR_portability_subset: Implementation does not support image array with multiple samples per texel");
     }
+
+    if (m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context, const TestParams &testParams)
