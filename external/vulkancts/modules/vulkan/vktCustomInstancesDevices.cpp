@@ -624,11 +624,17 @@ void VideoDevice::checkSupport(Context &context, const VideoCodecOperationFlags 
     if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR) != 0)
         context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
 
+    if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR) != 0)
+        context.requireDeviceFunctionality("VK_KHR_video_encode_av1");
+
     if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR) != 0)
         context.requireDeviceFunctionality("VK_KHR_video_decode_h264");
 
     if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR) != 0)
         context.requireDeviceFunctionality("VK_KHR_video_decode_h265");
+
+    if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR) != 0)
+        context.requireDeviceFunctionality("VK_KHR_video_decode_av1");
 #else
     DE_UNREF(context);
     DE_UNREF(videoCodecOperation);
@@ -691,8 +697,9 @@ vk::VkQueueFlags VideoDevice::getQueueFlags(const VideoCodecOperationFlags video
 bool VideoDevice::isVideoEncodeOperation(const VideoCodecOperationFlags videoCodecOperationFlags)
 {
 #ifndef CTS_USES_VULKANSC
-    const vk::VkVideoCodecOperationFlagsKHR encodeOperations =
-        vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR | vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR;
+    const vk::VkVideoCodecOperationFlagsKHR encodeOperations = vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR |
+                                                               vk::VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR |
+                                                               vk::VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR;
 
     return (encodeOperations & videoCodecOperationFlags) != 0;
 #else
@@ -705,8 +712,9 @@ bool VideoDevice::isVideoEncodeOperation(const VideoCodecOperationFlags videoCod
 bool VideoDevice::isVideoDecodeOperation(const VideoCodecOperationFlags videoCodecOperationFlags)
 {
 #ifndef CTS_USES_VULKANSC
-    const vk::VkVideoCodecOperationFlagsKHR decodeOperations =
-        vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR | vk::VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
+    const vk::VkVideoCodecOperationFlagsKHR decodeOperations = vk::VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR |
+                                                               vk::VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR |
+                                                               vk::VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
 
     return (decodeOperations & videoCodecOperationFlags) != 0;
 #else

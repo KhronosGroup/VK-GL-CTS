@@ -2997,6 +2997,14 @@ typedef uint32_t VkVideoEncodeH265CtbSizeFlagsKHR;
 
 typedef uint32_t VkVideoEncodeH265TransformBlockSizeFlagsKHR;
 
+typedef uint32_t VkVideoEncodeAV1CapabilityFlagsKHR;
+
+typedef uint32_t VkVideoEncodeAV1StdFlagsKHR;
+
+typedef uint32_t VkVideoEncodeAV1RateControlFlagsKHR;
+
+typedef uint32_t VkVideoEncodeAV1SuperblockSizeFlagsKHR;
+
 
 VK_DEFINE_PLATFORM_TYPE(XlibDisplayPtr,				void*)
 VK_DEFINE_PLATFORM_TYPE(XlibWindow,					uintptr_t)

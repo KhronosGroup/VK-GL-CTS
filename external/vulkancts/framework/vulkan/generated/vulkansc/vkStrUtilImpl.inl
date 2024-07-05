@@ -3315,6 +3315,26 @@ tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsKHRStr (VkVid
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
+tcu::Format::Bitfield<32> getVideoEncodeAV1CapabilityFlagsKHRStr (VkVideoEncodeAV1CapabilityFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeAV1StdFlagsKHRStr (VkVideoEncodeAV1StdFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeAV1RateControlFlagsKHRStr (VkVideoEncodeAV1RateControlFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeAV1SuperblockSizeFlagsKHRStr (VkVideoEncodeAV1SuperblockSizeFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
 std::ostream& operator<< (std::ostream& s, const VkBaseOutStructure& value)
 {
 	s << "VkBaseOutStructure = {\n";

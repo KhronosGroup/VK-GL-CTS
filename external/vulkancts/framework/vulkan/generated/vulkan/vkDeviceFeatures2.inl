@@ -3849,6 +3849,80 @@ tcu::TestStatus testPhysicalDeviceFeatureVideoMaintenance1FeaturesKHR (Context& 
 	return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureVideoEncodeQuantizationMapFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+	VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR	deviceVideoEncodeQuantizationMapFeaturesKHR[count];
+	const bool												isVideoEncodeQuantizationMapFeaturesKHR = checkExtension(properties, "VK_KHR_video_encode_quantization_map");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceVideoEncodeQuantizationMapFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR));
+		deviceVideoEncodeQuantizationMapFeaturesKHR[ndx].sType = isVideoEncodeQuantizationMapFeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceVideoEncodeQuantizationMapFeaturesKHR[ndx].pNext = nullptr;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceVideoEncodeQuantizationMapFeaturesKHR[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isVideoEncodeQuantizationMapFeaturesKHR)
+		log << TestLog::Message << deviceVideoEncodeQuantizationMapFeaturesKHR[0] << TestLog::EndMessage;
+
+	if (isVideoEncodeQuantizationMapFeaturesKHR &&
+		(deviceVideoEncodeQuantizationMapFeaturesKHR[0].videoEncodeQuantizationMap != deviceVideoEncodeQuantizationMapFeaturesKHR[1].videoEncodeQuantizationMap))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureVideoEncodeAV1FeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance        instance        (createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&        vki                (instance.getDriver());
+    const int                    count = 2u;
+    TestLog&                    log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2    extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+	VkPhysicalDeviceVideoEncodeAV1FeaturesKHR	deviceVideoEncodeAV1FeaturesKHR[count];
+	const bool									isVideoEncodeAV1FeaturesKHR = checkExtension(properties, "VK_KHR_video_encode_av1");
+
+	for (int ndx = 0; ndx < count; ++ndx)
+	{
+		deMemset(&deviceVideoEncodeAV1FeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVideoEncodeAV1FeaturesKHR));
+		deviceVideoEncodeAV1FeaturesKHR[ndx].sType = isVideoEncodeAV1FeaturesKHR ? VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_AV1_FEATURES_KHR : VK_STRUCTURE_TYPE_MAX_ENUM;
+		deviceVideoEncodeAV1FeaturesKHR[ndx].pNext = nullptr;
+
+		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		extFeatures.pNext = &deviceVideoEncodeAV1FeaturesKHR[ndx];
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if (isVideoEncodeAV1FeaturesKHR)
+		log << TestLog::Message << deviceVideoEncodeAV1FeaturesKHR[0] << TestLog::EndMessage;
+
+	if (isVideoEncodeAV1FeaturesKHR &&
+		(deviceVideoEncodeAV1FeaturesKHR[0].videoEncodeAV1 != deviceVideoEncodeAV1FeaturesKHR[1].videoEncodeAV1))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceVideoEncodeAV1FeaturesKHR");
+	}
+	return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureYcbcr2Plane444FormatsFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -5788,6 +5862,8 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "multisampled_render_to_single_sampled_features_ext", testPhysicalDeviceFeatureMultisampledRenderToSingleSampledFeaturesEXT);
 	addFunctionCase(testGroup, "pipeline_protected_access_features_ext", testPhysicalDeviceFeaturePipelineProtectedAccessFeaturesEXT);
 	addFunctionCase(testGroup, "video_maintenance1_features_khr", testPhysicalDeviceFeatureVideoMaintenance1FeaturesKHR);
+	addFunctionCase(testGroup, "video_encode_quantization_map_features_khr", testPhysicalDeviceFeatureVideoEncodeQuantizationMapFeaturesKHR);
+	addFunctionCase(testGroup, "video_encode_av1_features_khr", testPhysicalDeviceFeatureVideoEncodeAV1FeaturesKHR);
 	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", testPhysicalDeviceFeatureYcbcr2Plane444FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "provoking_vertex_features_ext", testPhysicalDeviceFeatureProvokingVertexFeaturesEXT);
 	addFunctionCase(testGroup, "descriptor_buffer_features_ext", testPhysicalDeviceFeatureDescriptorBufferFeaturesEXT);

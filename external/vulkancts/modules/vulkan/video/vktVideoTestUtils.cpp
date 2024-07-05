@@ -104,6 +104,8 @@ static const VkExtensionProperties EXTENSION_PROPERTIES_H264_DECODE = makeExtens
     VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION);
 static const VkExtensionProperties EXTENSION_PROPERTIES_H264_ENCODE = makeExtensionProperties(
     VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_SPEC_VERSION);
+static const VkExtensionProperties EXTENSION_PROPERTIES_AV1_ENCODE = makeExtensionProperties(
+    VK_STD_VULKAN_VIDEO_CODEC_AV1_ENCODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_AV1_ENCODE_SPEC_VERSION);
 static const VkExtensionProperties EXTENSION_PROPERTIES_H265_DECODE = makeExtensionProperties(
     VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION);
 static const VkExtensionProperties EXTENSION_PROPERTIES_H265_ENCODE = makeExtensionProperties(
@@ -560,6 +562,8 @@ const VkExtensionProperties *getVideoExtensionProperties(const VkVideoCodecOpera
         return &EXTENSION_PROPERTIES_H264_ENCODE;
     case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
         return &EXTENSION_PROPERTIES_H265_ENCODE;
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
+        return &EXTENSION_PROPERTIES_AV1_ENCODE;
     case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
         return &EXTENSION_PROPERTIES_H264_DECODE;
     case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
@@ -874,6 +878,17 @@ VkVideoDecodeAV1ProfileInfoKHR getProfileOperationAV1Decode(StdVideoAV1Profile s
         nullptr,
         stdProfile,
         filmgrainSupport,
+    };
+
+    return videoProfileOperation;
+}
+
+VkVideoEncodeAV1ProfileInfoKHR getProfileOperationAV1Encode(StdVideoAV1Profile stdProfile)
+{
+    const VkVideoEncodeAV1ProfileInfoKHR videoProfileOperation = {
+        VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_PROFILE_INFO_KHR,
+        nullptr,
+        stdProfile,
     };
 
     return videoProfileOperation;

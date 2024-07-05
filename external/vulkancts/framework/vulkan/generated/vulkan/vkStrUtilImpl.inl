@@ -992,6 +992,7 @@ const char* getImageLayoutName (VkImageLayout value)
 		case VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL:								return "VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL";
 		case VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL:							return "VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL";
 		case VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT:			return "VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT";
+		case VK_IMAGE_LAYOUT_VIDEO_ENCODE_QUANTIZATION_MAP_KHR:				return "VK_IMAGE_LAYOUT_VIDEO_ENCODE_QUANTIZATION_MAP_KHR";
 		default:															return nullptr;
 	}
 }
@@ -1022,27 +1023,29 @@ tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_SRC_BIT,							"VK_IMAGE_USAGE_TRANSFER_SRC_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_DST_BIT,							"VK_IMAGE_USAGE_TRANSFER_DST_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLED_BIT,								"VK_IMAGE_USAGE_SAMPLED_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_STORAGE_BIT,								"VK_IMAGE_USAGE_STORAGE_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,						"VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,				"VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,					"VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,						"VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,	"VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT,				"VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR,					"VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI,					"VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,			"VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM,						"VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM,				"VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM"),
-		tcu::Format::BitDesc(VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT,						"VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_SRC_BIT,								"VK_IMAGE_USAGE_TRANSFER_SRC_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSFER_DST_BIT,								"VK_IMAGE_USAGE_TRANSFER_DST_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLED_BIT,									"VK_IMAGE_USAGE_SAMPLED_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_STORAGE_BIT,									"VK_IMAGE_USAGE_STORAGE_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,							"VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,					"VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,						"VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,							"VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,		"VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT,					"VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR,						"VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR,						"VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR,						"VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR,						"VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR,						"VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR,						"VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI,						"VK_IMAGE_USAGE_INVOCATION_MASK_BIT_HUAWEI"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,				"VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM,							"VK_IMAGE_USAGE_SAMPLE_WEIGHT_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM,					"VK_IMAGE_USAGE_SAMPLE_BLOCK_MATCH_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT,							"VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR,	"VK_IMAGE_USAGE_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR,				"VK_IMAGE_USAGE_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2385,6 +2388,17 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_SESSION_PARAMETERS_CREATE_INFO_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_SESSION_PARAMETERS_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_DPB_SLOT_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_DPB_SLOT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_CAPABILITIES_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_SESSION_PARAMETERS_CREATE_INFO_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_SESSION_PARAMETERS_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_PICTURE_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_PICTURE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_DPB_SLOT_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_DPB_SLOT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_AV1_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_AV1_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_PROFILE_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_PROFILE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_RATE_CONTROL_INFO_KHR:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_RATE_CONTROL_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_RATE_CONTROL_LAYER_INFO_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_RATE_CONTROL_LAYER_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_QUALITY_LEVEL_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_QUALITY_LEVEL_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_SESSION_CREATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_SESSION_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_GOP_REMAINING_FRAME_INFO_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_GOP_REMAINING_FRAME_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_INLINE_QUERY_INFO_KHR:											return "VK_STRUCTURE_TYPE_VIDEO_INLINE_QUERY_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV";
@@ -2417,6 +2431,16 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT:								return "VK_STRUCTURE_TYPE_SET_DESCRIPTOR_BUFFER_OFFSETS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT:					return "VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_CAPABILITIES_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_FORMAT_QUANTIZATION_MAP_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_FORMAT_QUANTIZATION_MAP_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_INFO_KHR:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_QUANTIZATION_MAP_CAPABILITIES_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_QUANTIZATION_MAP_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_QUANTIZATION_MAP_CAPABILITIES_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_QUANTIZATION_MAP_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_SESSION_PARAMETERS_CREATE_INFO_KHR:	return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_SESSION_PARAMETERS_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_FORMAT_H265_QUANTIZATION_MAP_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_FORMAT_H265_QUANTIZATION_MAP_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_QUANTIZATION_MAP_CAPABILITIES_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_QUANTIZATION_MAP_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_FORMAT_AV1_QUANTIZATION_MAP_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_FORMAT_AV1_QUANTIZATION_MAP_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV";
@@ -3485,6 +3509,8 @@ tcu::Format::Bitfield<64> getFormatFeatureFlags2Str (VkFormatFeatureFlags2 value
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_OPTICAL_FLOW_VECTOR_BIT_NV,													"VK_FORMAT_FEATURE_2_OPTICAL_FLOW_VECTOR_BIT_NV"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_OPTICAL_FLOW_COST_BIT_NV,														"VK_FORMAT_FEATURE_2_OPTICAL_FLOW_COST_BIT_NV"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT,													"VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR,									"VK_FORMAT_FEATURE_2_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR,												"VK_FORMAT_FEATURE_2_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4853,6 +4879,7 @@ tcu::Format::Bitfield<32> getVideoCodecOperationFlagsKHRStr (VkVideoCodecOperati
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR,	"VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4899,6 +4926,17 @@ tcu::Format::Bitfield<32> getVideoSessionCreateFlagsKHRStr (VkVideoSessionCreate
 		tcu::Format::BitDesc(VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR,						"VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_SESSION_CREATE_ALLOW_ENCODE_PARAMETER_OPTIMIZATIONS_BIT_KHR,	"VK_VIDEO_SESSION_CREATE_ALLOW_ENCODE_PARAMETER_OPTIMIZATIONS_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_SESSION_CREATE_INLINE_QUERIES_BIT_KHR,						"VK_VIDEO_SESSION_CREATE_INLINE_QUERIES_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_SESSION_CREATE_ALLOW_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR,	"VK_VIDEO_SESSION_CREATE_ALLOW_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_SESSION_CREATE_ALLOW_ENCODE_EMPHASIS_MAP_BIT_KHR,				"VK_VIDEO_SESSION_CREATE_ALLOW_ENCODE_EMPHASIS_MAP_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoSessionParametersCreateFlagsKHRStr (VkVideoSessionParametersCreateFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_SESSION_PARAMETERS_CREATE_QUANTIZATION_MAP_COMPATIBLE_BIT_KHR,	"VK_VIDEO_SESSION_PARAMETERS_CREATE_QUANTIZATION_MAP_COMPATIBLE_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4959,6 +4997,16 @@ tcu::Format::Bitfield<32> getVideoDecodeH264PictureLayoutFlagsKHRStr (VkVideoDec
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getVideoEncodeFlagsKHRStr (VkVideoEncodeFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_WITH_QUANTIZATION_DELTA_MAP_BIT_KHR,	"VK_VIDEO_ENCODE_WITH_QUANTIZATION_DELTA_MAP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_WITH_EMPHASIS_MAP_BIT_KHR,				"VK_VIDEO_ENCODE_WITH_EMPHASIS_MAP_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getVideoEncodeUsageFlagsKHRStr (VkVideoEncodeUsageFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5003,6 +5051,8 @@ tcu::Format::Bitfield<32> getVideoEncodeCapabilityFlagsKHRStr (VkVideoEncodeCapa
 	{
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR,				"VK_VIDEO_ENCODE_CAPABILITY_PRECEDING_EXTERNALLY_ENCODED_BYTES_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CAPABILITY_INSUFFICIENT_BITSTREAM_BUFFER_RANGE_DETECTION_BIT_KHR,	"VK_VIDEO_ENCODE_CAPABILITY_INSUFFICIENT_BITSTREAM_BUFFER_RANGE_DETECTION_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CAPABILITY_QUANTIZATION_DELTA_MAP_BIT_KHR,							"VK_VIDEO_ENCODE_CAPABILITY_QUANTIZATION_DELTA_MAP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_CAPABILITY_EMPHASIS_MAP_BIT_KHR,									"VK_VIDEO_ENCODE_CAPABILITY_EMPHASIS_MAP_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5043,6 +5093,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsKHRStr (VkVideoEncode
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_PER_PICTURE_TYPE_MIN_MAX_QP_BIT_KHR,		"VK_VIDEO_ENCODE_H264_CAPABILITY_PER_PICTURE_TYPE_MIN_MAX_QP_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_PER_SLICE_CONSTANT_QP_BIT_KHR,				"VK_VIDEO_ENCODE_H264_CAPABILITY_PER_SLICE_CONSTANT_QP_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_GENERATE_PREFIX_NALU_BIT_KHR,				"VK_VIDEO_ENCODE_H264_CAPABILITY_GENERATE_PREFIX_NALU_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_MB_QP_DIFF_WRAPAROUND_BIT_KHR,				"VK_VIDEO_ENCODE_H264_CAPABILITY_MB_QP_DIFF_WRAPAROUND_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5102,6 +5153,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsKHRStr (VkVideoEncode
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_PER_SLICE_SEGMENT_CONSTANT_QP_BIT_KHR,		"VK_VIDEO_ENCODE_H265_CAPABILITY_PER_SLICE_SEGMENT_CONSTANT_QP_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_TILES_PER_SLICE_SEGMENT_BIT_KHR,	"VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_TILES_PER_SLICE_SEGMENT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_SLICE_SEGMENTS_PER_TILE_BIT_KHR,	"VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_SLICE_SEGMENTS_PER_TILE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_CU_QP_DIFF_WRAPAROUND_BIT_KHR,				"VK_VIDEO_ENCODE_H265_CAPABILITY_CU_QP_DIFF_WRAPAROUND_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5169,6 +5221,76 @@ tcu::Format::Bitfield<32> getVideoEncodeH265TransformBlockSizeFlagsKHRStr (VkVid
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_32_BIT_KHR,	"VK_VIDEO_ENCODE_H265_TRANSFORM_BLOCK_SIZE_32_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeAV1CapabilityFlagsKHRStr (VkVideoEncodeAV1CapabilityFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_CAPABILITY_PER_RATE_CONTROL_GROUP_MIN_MAX_Q_INDEX_BIT_KHR,	"VK_VIDEO_ENCODE_AV1_CAPABILITY_PER_RATE_CONTROL_GROUP_MIN_MAX_Q_INDEX_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_CAPABILITY_GENERATE_OBU_EXTENSION_HEADER_BIT_KHR,			"VK_VIDEO_ENCODE_AV1_CAPABILITY_GENERATE_OBU_EXTENSION_HEADER_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_CAPABILITY_PRIMARY_REFERENCE_CDF_ONLY_BIT_KHR,				"VK_VIDEO_ENCODE_AV1_CAPABILITY_PRIMARY_REFERENCE_CDF_ONLY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_CAPABILITY_FRAME_SIZE_OVERRIDE_BIT_KHR,					"VK_VIDEO_ENCODE_AV1_CAPABILITY_FRAME_SIZE_OVERRIDE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_CAPABILITY_MOTION_VECTOR_SCALING_BIT_KHR,					"VK_VIDEO_ENCODE_AV1_CAPABILITY_MOTION_VECTOR_SCALING_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeAV1StdFlagsKHRStr (VkVideoEncodeAV1StdFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_STD_UNIFORM_TILE_SPACING_FLAG_SET_BIT_KHR,	"VK_VIDEO_ENCODE_AV1_STD_UNIFORM_TILE_SPACING_FLAG_SET_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_STD_SKIP_MODE_PRESENT_UNSET_BIT_KHR,		"VK_VIDEO_ENCODE_AV1_STD_SKIP_MODE_PRESENT_UNSET_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_STD_PRIMARY_REF_FRAME_BIT_KHR,				"VK_VIDEO_ENCODE_AV1_STD_PRIMARY_REF_FRAME_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_STD_DELTA_Q_BIT_KHR,						"VK_VIDEO_ENCODE_AV1_STD_DELTA_Q_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeAV1RateControlFlagsKHRStr (VkVideoEncodeAV1RateControlFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_RATE_CONTROL_REGULAR_GOP_BIT_KHR,						"VK_VIDEO_ENCODE_AV1_RATE_CONTROL_REGULAR_GOP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_RATE_CONTROL_TEMPORAL_LAYER_PATTERN_DYADIC_BIT_KHR,	"VK_VIDEO_ENCODE_AV1_RATE_CONTROL_TEMPORAL_LAYER_PATTERN_DYADIC_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_RATE_CONTROL_REFERENCE_PATTERN_FLAT_BIT_KHR,			"VK_VIDEO_ENCODE_AV1_RATE_CONTROL_REFERENCE_PATTERN_FLAT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_RATE_CONTROL_REFERENCE_PATTERN_DYADIC_BIT_KHR,			"VK_VIDEO_ENCODE_AV1_RATE_CONTROL_REFERENCE_PATTERN_DYADIC_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeAV1SuperblockSizeFlagsKHRStr (VkVideoEncodeAV1SuperblockSizeFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_SUPERBLOCK_SIZE_64_BIT_KHR,	"VK_VIDEO_ENCODE_AV1_SUPERBLOCK_SIZE_64_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_SUPERBLOCK_SIZE_128_BIT_KHR,	"VK_VIDEO_ENCODE_AV1_SUPERBLOCK_SIZE_128_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+const char* getVideoEncodeAV1PredictionModeKHRName (VkVideoEncodeAV1PredictionModeKHR value)
+{
+	switch (value)
+	{
+		case VK_VIDEO_ENCODE_AV1_PREDICTION_MODE_INTRA_ONLY_KHR:				return "VK_VIDEO_ENCODE_AV1_PREDICTION_MODE_INTRA_ONLY_KHR";
+		case VK_VIDEO_ENCODE_AV1_PREDICTION_MODE_SINGLE_REFERENCE_KHR:			return "VK_VIDEO_ENCODE_AV1_PREDICTION_MODE_SINGLE_REFERENCE_KHR";
+		case VK_VIDEO_ENCODE_AV1_PREDICTION_MODE_UNIDIRECTIONAL_COMPOUND_KHR:	return "VK_VIDEO_ENCODE_AV1_PREDICTION_MODE_UNIDIRECTIONAL_COMPOUND_KHR";
+		case VK_VIDEO_ENCODE_AV1_PREDICTION_MODE_BIDIRECTIONAL_COMPOUND_KHR:	return "VK_VIDEO_ENCODE_AV1_PREDICTION_MODE_BIDIRECTIONAL_COMPOUND_KHR";
+		default:																return nullptr;
+	}
+}
+
+const char* getVideoEncodeAV1RateControlGroupKHRName (VkVideoEncodeAV1RateControlGroupKHR value)
+{
+	switch (value)
+	{
+		case VK_VIDEO_ENCODE_AV1_RATE_CONTROL_GROUP_INTRA_KHR:			return "VK_VIDEO_ENCODE_AV1_RATE_CONTROL_GROUP_INTRA_KHR";
+		case VK_VIDEO_ENCODE_AV1_RATE_CONTROL_GROUP_PREDICTIVE_KHR:		return "VK_VIDEO_ENCODE_AV1_RATE_CONTROL_GROUP_PREDICTIVE_KHR";
+		case VK_VIDEO_ENCODE_AV1_RATE_CONTROL_GROUP_BIPREDICTIVE_KHR:	return "VK_VIDEO_ENCODE_AV1_RATE_CONTROL_GROUP_BIPREDICTIVE_KHR";
+		default:														return nullptr;
+	}
 }
 
 const char* getAccelerationStructureMotionInstanceTypeNVName (VkAccelerationStructureMotionInstanceTypeNV value)
@@ -5612,7 +5734,7 @@ const char* getdVideoAV1ColorPrimariesName (StdVideoAV1ColorPrimaries value)
 	switch (value)
 	{
 		case STD_VIDEO_AV1_COLOR_PRIMARIES_BT_709:			return "STD_VIDEO_AV1_COLOR_PRIMARIES_BT_709";
-		case STD_VIDEO_AV1_COLOR_PRIMARIES_BT_UNSPECIFIED:	return "STD_VIDEO_AV1_COLOR_PRIMARIES_BT_UNSPECIFIED";
+		case STD_VIDEO_AV1_COLOR_PRIMARIES_UNSPECIFIED:		return "STD_VIDEO_AV1_COLOR_PRIMARIES_UNSPECIFIED";
 		case STD_VIDEO_AV1_COLOR_PRIMARIES_BT_470_M:		return "STD_VIDEO_AV1_COLOR_PRIMARIES_BT_470_M";
 		case STD_VIDEO_AV1_COLOR_PRIMARIES_BT_470_B_G:		return "STD_VIDEO_AV1_COLOR_PRIMARIES_BT_470_B_G";
 		case STD_VIDEO_AV1_COLOR_PRIMARIES_BT_601:			return "STD_VIDEO_AV1_COLOR_PRIMARIES_BT_601";
@@ -5958,11 +6080,6 @@ tcu::Format::Bitfield<32> getImageFormatConstraintsFlagsFUCHSIAStr (VkImageForma
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
-tcu::Format::Bitfield<32> getVideoSessionParametersCreateFlagsKHRStr (VkVideoSessionParametersCreateFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
 tcu::Format::Bitfield<32> getVideoBeginCodingFlagsKHRStr (VkVideoBeginCodingFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
@@ -5974,11 +6091,6 @@ tcu::Format::Bitfield<32> getVideoEndCodingFlagsKHRStr (VkVideoEndCodingFlagsKHR
 }
 
 tcu::Format::Bitfield<32> getVideoDecodeFlagsKHRStr (VkVideoDecodeFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
-tcu::Format::Bitfield<32> getVideoEncodeFlagsKHRStr (VkVideoEncodeFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
@@ -15156,6 +15268,79 @@ std::ostream& operator<< (std::ostream& s, const VkVideoFormatPropertiesKHR& val
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeQuantizationMapCapabilitiesKHR& value)
+{
+	s << "VkVideoEncodeQuantizationMapCapabilitiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxQuantizationMapExtent = " << value.maxQuantizationMapExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH264QuantizationMapCapabilitiesKHR& value)
+{
+	s << "VkVideoEncodeH264QuantizationMapCapabilitiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tminQpDelta = " << value.minQpDelta << '\n';
+	s << "\tmaxQpDelta = " << value.maxQpDelta << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265QuantizationMapCapabilitiesKHR& value)
+{
+	s << "VkVideoEncodeH265QuantizationMapCapabilitiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tminQpDelta = " << value.minQpDelta << '\n';
+	s << "\tmaxQpDelta = " << value.maxQpDelta << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1QuantizationMapCapabilitiesKHR& value)
+{
+	s << "VkVideoEncodeAV1QuantizationMapCapabilitiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tminQIndexDelta = " << value.minQIndexDelta << '\n';
+	s << "\tmaxQIndexDelta = " << value.maxQIndexDelta << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoFormatQuantizationMapPropertiesKHR& value)
+{
+	s << "VkVideoFormatQuantizationMapPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tquantizationMapTexelSize = " << value.quantizationMapTexelSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoFormatH265QuantizationMapPropertiesKHR& value)
+{
+	s << "VkVideoFormatH265QuantizationMapPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcompatibleCtbSizes = " << getVideoEncodeH265CtbSizeFlagsKHRStr(value.compatibleCtbSizes) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoFormatAV1QuantizationMapPropertiesKHR& value)
+{
+	s << "VkVideoFormatAV1QuantizationMapPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcompatibleSuperblockSizes = " << getVideoEncodeAV1SuperblockSizeFlagsKHRStr(value.compatibleSuperblockSizes) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkVideoProfileInfoKHR& value)
 {
 	s << "VkVideoProfileInfoKHR = {\n";
@@ -15609,6 +15794,37 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeInfoKHR& value)
 	s << "\treferenceSlotCount = " << value.referenceSlotCount << '\n';
 	s << "\tpReferenceSlots = " << value.pReferenceSlots << '\n';
 	s << "\tprecedingExternallyEncodedBytes = " << value.precedingExternallyEncodedBytes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeQuantizationMapInfoKHR& value)
+{
+	s << "VkVideoEncodeQuantizationMapInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tquantizationMap = " << value.quantizationMap << '\n';
+	s << "\tquantizationMapExtent = " << value.quantizationMapExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeQuantizationMapSessionParametersCreateInfoKHR& value)
+{
+	s << "VkVideoEncodeQuantizationMapSessionParametersCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tquantizationMapTexelSize = " << value.quantizationMapTexelSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvideoEncodeQuantizationMap = " << value.videoEncodeQuantizationMap << '\n';
 	s << '}';
 	return s;
 }
@@ -16114,6 +16330,195 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeH265DpbSlotInfoKHR
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpStdReferenceInfo = " << value.pStdReferenceInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1CapabilitiesKHR& value)
+{
+	s << "VkVideoEncodeAV1CapabilitiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoEncodeAV1CapabilityFlagsKHRStr(value.flags) << '\n';
+	s << "\tmaxLevel = " << value.maxLevel << '\n';
+	s << "\tcodedPictureAlignment = " << value.codedPictureAlignment << '\n';
+	s << "\tmaxTiles = " << value.maxTiles << '\n';
+	s << "\tminTileSize = " << value.minTileSize << '\n';
+	s << "\tmaxTileSize = " << value.maxTileSize << '\n';
+	s << "\tsuperblockSizes = " << getVideoEncodeAV1SuperblockSizeFlagsKHRStr(value.superblockSizes) << '\n';
+	s << "\tmaxSingleReferenceCount = " << value.maxSingleReferenceCount << '\n';
+	s << "\tsingleReferenceNameMask = " << value.singleReferenceNameMask << '\n';
+	s << "\tmaxUnidirectionalCompoundReferenceCount = " << value.maxUnidirectionalCompoundReferenceCount << '\n';
+	s << "\tmaxUnidirectionalCompoundGroup1ReferenceCount = " << value.maxUnidirectionalCompoundGroup1ReferenceCount << '\n';
+	s << "\tunidirectionalCompoundReferenceNameMask = " << value.unidirectionalCompoundReferenceNameMask << '\n';
+	s << "\tmaxBidirectionalCompoundReferenceCount = " << value.maxBidirectionalCompoundReferenceCount << '\n';
+	s << "\tmaxBidirectionalCompoundGroup1ReferenceCount = " << value.maxBidirectionalCompoundGroup1ReferenceCount << '\n';
+	s << "\tmaxBidirectionalCompoundGroup2ReferenceCount = " << value.maxBidirectionalCompoundGroup2ReferenceCount << '\n';
+	s << "\tbidirectionalCompoundReferenceNameMask = " << value.bidirectionalCompoundReferenceNameMask << '\n';
+	s << "\tmaxTemporalLayerCount = " << value.maxTemporalLayerCount << '\n';
+	s << "\tmaxSpatialLayerCount = " << value.maxSpatialLayerCount << '\n';
+	s << "\tmaxOperatingPoints = " << value.maxOperatingPoints << '\n';
+	s << "\tminQIndex = " << value.minQIndex << '\n';
+	s << "\tmaxQIndex = " << value.maxQIndex << '\n';
+	s << "\tprefersGopRemainingFrames = " << value.prefersGopRemainingFrames << '\n';
+	s << "\trequiresGopRemainingFrames = " << value.requiresGopRemainingFrames << '\n';
+	s << "\tstdSyntaxFlags = " << getVideoEncodeAV1StdFlagsKHRStr(value.stdSyntaxFlags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1QualityLevelPropertiesKHR& value)
+{
+	s << "VkVideoEncodeAV1QualityLevelPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpreferredRateControlFlags = " << getVideoEncodeAV1RateControlFlagsKHRStr(value.preferredRateControlFlags) << '\n';
+	s << "\tpreferredGopFrameCount = " << value.preferredGopFrameCount << '\n';
+	s << "\tpreferredKeyFramePeriod = " << value.preferredKeyFramePeriod << '\n';
+	s << "\tpreferredConsecutiveBipredictiveFrameCount = " << value.preferredConsecutiveBipredictiveFrameCount << '\n';
+	s << "\tpreferredTemporalLayerCount = " << value.preferredTemporalLayerCount << '\n';
+	s << "\tpreferredConstantQIndex = " << value.preferredConstantQIndex << '\n';
+	s << "\tpreferredMaxSingleReferenceCount = " << value.preferredMaxSingleReferenceCount << '\n';
+	s << "\tpreferredSingleReferenceNameMask = " << value.preferredSingleReferenceNameMask << '\n';
+	s << "\tpreferredMaxUnidirectionalCompoundReferenceCount = " << value.preferredMaxUnidirectionalCompoundReferenceCount << '\n';
+	s << "\tpreferredMaxUnidirectionalCompoundGroup1ReferenceCount = " << value.preferredMaxUnidirectionalCompoundGroup1ReferenceCount << '\n';
+	s << "\tpreferredUnidirectionalCompoundReferenceNameMask = " << value.preferredUnidirectionalCompoundReferenceNameMask << '\n';
+	s << "\tpreferredMaxBidirectionalCompoundReferenceCount = " << value.preferredMaxBidirectionalCompoundReferenceCount << '\n';
+	s << "\tpreferredMaxBidirectionalCompoundGroup1ReferenceCount = " << value.preferredMaxBidirectionalCompoundGroup1ReferenceCount << '\n';
+	s << "\tpreferredMaxBidirectionalCompoundGroup2ReferenceCount = " << value.preferredMaxBidirectionalCompoundGroup2ReferenceCount << '\n';
+	s << "\tpreferredBidirectionalCompoundReferenceNameMask = " << value.preferredBidirectionalCompoundReferenceNameMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoEncodeAV1FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceVideoEncodeAV1FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvideoEncodeAV1 = " << value.videoEncodeAV1 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1SessionCreateInfoKHR& value)
+{
+	s << "VkVideoEncodeAV1SessionCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tuseMaxLevel = " << value.useMaxLevel << '\n';
+	s << "\tmaxLevel = " << value.maxLevel << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1SessionParametersCreateInfoKHR& value)
+{
+	s << "VkVideoEncodeAV1SessionParametersCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpStdSequenceHeader = " << value.pStdSequenceHeader << '\n';
+	s << "\tpStdDecoderModelInfo = " << value.pStdDecoderModelInfo << '\n';
+	s << "\tstdOperatingPointCount = " << value.stdOperatingPointCount << '\n';
+	s << "\tpStdOperatingPoints = " << value.pStdOperatingPoints << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1DpbSlotInfoKHR& value)
+{
+	s << "VkVideoEncodeAV1DpbSlotInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpStdReferenceInfo = " << value.pStdReferenceInfo << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1PictureInfoKHR& value)
+{
+	s << "VkVideoEncodeAV1PictureInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpredictionMode = " << value.predictionMode << '\n';
+	s << "\trateControlGroup = " << value.rateControlGroup << '\n';
+	s << "\tconstantQIndex = " << value.constantQIndex << '\n';
+	s << "\tpStdPictureInfo = " << value.pStdPictureInfo << '\n';
+	s << "\treferenceNameSlotIndices = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.referenceNameSlotIndices), DE_ARRAY_END(value.referenceNameSlotIndices)) << '\n';
+	s << "\tprimaryReferenceCdfOnly = " << value.primaryReferenceCdfOnly << '\n';
+	s << "\tgenerateObuExtensionHeader = " << value.generateObuExtensionHeader << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1ProfileInfoKHR& value)
+{
+	s << "VkVideoEncodeAV1ProfileInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstdProfile = " << value.stdProfile << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1RateControlInfoKHR& value)
+{
+	s << "VkVideoEncodeAV1RateControlInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getVideoEncodeAV1RateControlFlagsKHRStr(value.flags) << '\n';
+	s << "\tgopFrameCount = " << value.gopFrameCount << '\n';
+	s << "\tkeyFramePeriod = " << value.keyFramePeriod << '\n';
+	s << "\tconsecutiveBipredictiveFrameCount = " << value.consecutiveBipredictiveFrameCount << '\n';
+	s << "\ttemporalLayerCount = " << value.temporalLayerCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1QIndexKHR& value)
+{
+	s << "VkVideoEncodeAV1QIndexKHR = {\n";
+	s << "\tintraQIndex = " << value.intraQIndex << '\n';
+	s << "\tpredictiveQIndex = " << value.predictiveQIndex << '\n';
+	s << "\tbipredictiveQIndex = " << value.bipredictiveQIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1FrameSizeKHR& value)
+{
+	s << "VkVideoEncodeAV1FrameSizeKHR = {\n";
+	s << "\tintraFrameSize = " << value.intraFrameSize << '\n';
+	s << "\tpredictiveFrameSize = " << value.predictiveFrameSize << '\n';
+	s << "\tbipredictiveFrameSize = " << value.bipredictiveFrameSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1GopRemainingFrameInfoKHR& value)
+{
+	s << "VkVideoEncodeAV1GopRemainingFrameInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tuseGopRemainingFrames = " << value.useGopRemainingFrames << '\n';
+	s << "\tgopRemainingIntra = " << value.gopRemainingIntra << '\n';
+	s << "\tgopRemainingPredictive = " << value.gopRemainingPredictive << '\n';
+	s << "\tgopRemainingBipredictive = " << value.gopRemainingBipredictive << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeAV1RateControlLayerInfoKHR& value)
+{
+	s << "VkVideoEncodeAV1RateControlLayerInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tuseMinQIndex = " << value.useMinQIndex << '\n';
+	s << "\tminQIndex = " << value.minQIndex << '\n';
+	s << "\tuseMaxQIndex = " << value.useMaxQIndex << '\n';
+	s << "\tmaxQIndex = " << value.maxQIndex << '\n';
+	s << "\tuseMaxFrameSize = " << value.useMaxFrameSize << '\n';
+	s << "\tmaxFrameSize = " << value.maxFrameSize << '\n';
 	s << '}';
 	return s;
 }
@@ -20677,6 +21082,146 @@ std::ostream& operator<< (std::ostream& s, const StdVideoDecodeAV1ReferenceInfo&
 	s << "\tRefFrameSignBias = " << value.RefFrameSignBias << '\n';
 	s << "\tOrderHint = " << value.OrderHint << '\n';
 	s << "\tSavedOrderHints = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.SavedOrderHints)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.SavedOrderHints))) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1ExtensionHeader& value)
+{
+	s << "StdVideoEncodeAV1ExtensionHeader = {\n";
+	s << "\ttemporal_id = " << value.temporal_id << '\n';
+	s << "\tspatial_id = " << value.spatial_id << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1DecoderModelInfo& value)
+{
+	s << "StdVideoEncodeAV1DecoderModelInfo = {\n";
+	s << "\tbuffer_delay_length_minus_1 = " << value.buffer_delay_length_minus_1 << '\n';
+	s << "\tbuffer_removal_time_length_minus_1 = " << value.buffer_removal_time_length_minus_1 << '\n';
+	s << "\tframe_presentation_time_length_minus_1 = " << value.frame_presentation_time_length_minus_1 << '\n';
+	s << "\treserved1 = " << value.reserved1 << '\n';
+	s << "\tnum_units_in_decoding_tick = " << value.num_units_in_decoding_tick << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1OperatingPointInfoFlags& value)
+{
+	s << "StdVideoEncodeAV1OperatingPointInfoFlags = {\n";
+	s << "\tdecoder_model_present_for_this_op = " << value.decoder_model_present_for_this_op << '\n';
+	s << "\tlow_delay_mode_flag = " << value.low_delay_mode_flag << '\n';
+	s << "\tinitial_display_delay_present_for_this_op = " << value.initial_display_delay_present_for_this_op << '\n';
+	s << "\treserved = " << value.reserved << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1OperatingPointInfo& value)
+{
+	s << "StdVideoEncodeAV1OperatingPointInfo = {\n";
+	s << "\tflags = " << value.flags << '\n';
+	s << "\toperating_point_idc = " << value.operating_point_idc << '\n';
+	s << "\tseq_level_idx = " << value.seq_level_idx << '\n';
+	s << "\tseq_tier = " << value.seq_tier << '\n';
+	s << "\tdecoder_buffer_delay = " << value.decoder_buffer_delay << '\n';
+	s << "\tencoder_buffer_delay = " << value.encoder_buffer_delay << '\n';
+	s << "\tinitial_display_delay_minus_1 = " << value.initial_display_delay_minus_1 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1PictureInfoFlags& value)
+{
+	s << "StdVideoEncodeAV1PictureInfoFlags = {\n";
+	s << "\terror_resilient_mode = " << value.error_resilient_mode << '\n';
+	s << "\tdisable_cdf_update = " << value.disable_cdf_update << '\n';
+	s << "\tuse_superres = " << value.use_superres << '\n';
+	s << "\trender_and_frame_size_different = " << value.render_and_frame_size_different << '\n';
+	s << "\tallow_screen_content_tools = " << value.allow_screen_content_tools << '\n';
+	s << "\tis_filter_switchable = " << value.is_filter_switchable << '\n';
+	s << "\tforce_integer_mv = " << value.force_integer_mv << '\n';
+	s << "\tframe_size_override_flag = " << value.frame_size_override_flag << '\n';
+	s << "\tbuffer_removal_time_present_flag = " << value.buffer_removal_time_present_flag << '\n';
+	s << "\tallow_intrabc = " << value.allow_intrabc << '\n';
+	s << "\tframe_refs_short_signaling = " << value.frame_refs_short_signaling << '\n';
+	s << "\tallow_high_precision_mv = " << value.allow_high_precision_mv << '\n';
+	s << "\tis_motion_mode_switchable = " << value.is_motion_mode_switchable << '\n';
+	s << "\tuse_ref_frame_mvs = " << value.use_ref_frame_mvs << '\n';
+	s << "\tdisable_frame_end_update_cdf = " << value.disable_frame_end_update_cdf << '\n';
+	s << "\tallow_warped_motion = " << value.allow_warped_motion << '\n';
+	s << "\treduced_tx_set = " << value.reduced_tx_set << '\n';
+	s << "\tskip_mode_present = " << value.skip_mode_present << '\n';
+	s << "\tdelta_q_present = " << value.delta_q_present << '\n';
+	s << "\tdelta_lf_present = " << value.delta_lf_present << '\n';
+	s << "\tdelta_lf_multi = " << value.delta_lf_multi << '\n';
+	s << "\tsegmentation_enabled = " << value.segmentation_enabled << '\n';
+	s << "\tsegmentation_update_map = " << value.segmentation_update_map << '\n';
+	s << "\tsegmentation_temporal_update = " << value.segmentation_temporal_update << '\n';
+	s << "\tsegmentation_update_data = " << value.segmentation_update_data << '\n';
+	s << "\tUsesLr = " << value.UsesLr << '\n';
+	s << "\tusesChromaLr = " << value.usesChromaLr << '\n';
+	s << "\tshow_frame = " << value.show_frame << '\n';
+	s << "\tshowable_frame = " << value.showable_frame << '\n';
+	s << "\treserved = " << value.reserved << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1PictureInfo& value)
+{
+	s << "StdVideoEncodeAV1PictureInfo = {\n";
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tframe_type = " << value.frame_type << '\n';
+	s << "\tframe_presentation_time = " << value.frame_presentation_time << '\n';
+	s << "\tcurrent_frame_id = " << value.current_frame_id << '\n';
+	s << "\torder_hint = " << value.order_hint << '\n';
+	s << "\tprimary_ref_frame = " << value.primary_ref_frame << '\n';
+	s << "\trefresh_frame_flags = " << value.refresh_frame_flags << '\n';
+	s << "\tcoded_denom = " << value.coded_denom << '\n';
+	s << "\trender_width_minus_1 = " << value.render_width_minus_1 << '\n';
+	s << "\trender_height_minus_1 = " << value.render_height_minus_1 << '\n';
+	s << "\tinterpolation_filter = " << value.interpolation_filter << '\n';
+	s << "\tTxMode = " << value.TxMode << '\n';
+	s << "\tdelta_q_res = " << value.delta_q_res << '\n';
+	s << "\tdelta_lf_res = " << value.delta_lf_res << '\n';
+	s << "\tref_order_hint = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.ref_order_hint)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.ref_order_hint))) << '\n';
+	s << "\tref_frame_idx = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.ref_frame_idx), DE_ARRAY_END(value.ref_frame_idx)) << '\n';
+	s << "\treserved1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.reserved1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.reserved1))) << '\n';
+	s << "\tdelta_frame_id_minus_1 = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.delta_frame_id_minus_1), DE_ARRAY_END(value.delta_frame_id_minus_1)) << '\n';
+	s << "\tpTileInfo = " << value.pTileInfo << '\n';
+	s << "\tpQuantization = " << value.pQuantization << '\n';
+	s << "\tpSegmentation = " << value.pSegmentation << '\n';
+	s << "\tpLoopFilter = " << value.pLoopFilter << '\n';
+	s << "\tpCDEF = " << value.pCDEF << '\n';
+	s << "\tpLoopRestoration = " << value.pLoopRestoration << '\n';
+	s << "\tpGlobalMotion = " << value.pGlobalMotion << '\n';
+	s << "\tpExtensionHeader = " << value.pExtensionHeader << '\n';
+	s << "\tpBufferRemovalTimes = " << value.pBufferRemovalTimes << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1ReferenceInfoFlags& value)
+{
+	s << "StdVideoEncodeAV1ReferenceInfoFlags = {\n";
+	s << "\tdisable_frame_end_update_cdf = " << value.disable_frame_end_update_cdf << '\n';
+	s << "\tsegmentation_enabled = " << value.segmentation_enabled << '\n';
+	s << "\treserved = " << value.reserved << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const StdVideoEncodeAV1ReferenceInfo& value)
+{
+	s << "StdVideoEncodeAV1ReferenceInfo = {\n";
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tRefFrameId = " << value.RefFrameId << '\n';
+	s << "\tframe_type = " << value.frame_type << '\n';
+	s << "\tOrderHint = " << value.OrderHint << '\n';
+	s << "\treserved1 = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<uint8_t>(DE_ARRAY_BEGIN(value.reserved1)), tcu::Format::HexIterator<uint8_t>(DE_ARRAY_END(value.reserved1))) << '\n';
+	s << "\tpExtensionHeader = " << value.pExtensionHeader << '\n';
 	s << '}';
 	return s;
 }

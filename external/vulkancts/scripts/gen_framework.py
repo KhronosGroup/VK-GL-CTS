@@ -2248,6 +2248,9 @@ def writeTypeUtil (api, filename):
         "StdVideoH265ShortTermRefPicSetFlags",
         "StdVideoEncodeH264ReferenceListsInfoFlags",
         "StdVideoEncodeH265ReferenceListsInfoFlags",
+        "StdVideoEncodeAV1OperatingPointInfoFlags",
+        "StdVideoEncodeAV1PictureInfoFlags",
+        "StdVideoEncodeAV1ReferenceInfoFlags",
     ])
 
     def isSimpleStruct (type):

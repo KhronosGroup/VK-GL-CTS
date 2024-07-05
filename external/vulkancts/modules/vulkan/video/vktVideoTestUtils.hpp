@@ -136,6 +136,7 @@ VkVideoEncodeH265ProfileInfoKHR getProfileOperationH265Encode(
     StdVideoH265ProfileIdc stdProfileIdc = STD_VIDEO_H265_PROFILE_IDC_MAIN);
 VkVideoDecodeAV1ProfileInfoKHR getProfileOperationAV1Decode(StdVideoAV1Profile stdProfile = STD_VIDEO_AV1_PROFILE_MAIN,
                                                             bool filmgrainSupport         = true);
+VkVideoEncodeAV1ProfileInfoKHR getProfileOperationAV1Encode(StdVideoAV1Profile stdProfile = STD_VIDEO_AV1_PROFILE_MAIN);
 const VkExtensionProperties *getVideoExtensionProperties(const VkVideoCodecOperationFlagBitsKHR codecOperation);
 
 de::MovePtr<vector<VkFormat>> getSupportedFormats(const InstanceInterface &vk, const VkPhysicalDevice physicalDevice,
