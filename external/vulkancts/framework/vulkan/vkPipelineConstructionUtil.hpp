@@ -89,12 +89,14 @@ typedef ConstPointerWrapper<VkPipelineShaderStageModuleIdentifierCreateInfoEXT>
     PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<VkPipelineRepresentativeFragmentTestStateCreateInfoNV>
     PipelineRepresentativeFragmentTestCreateInfoWrapper;
+typedef PointerWrapper<VkPipelineRobustnessCreateInfoEXT> PipelineRobustnessCreateInfoWrapper;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineCreationFeedbackCreateInfoWrapper;
 typedef ConstPointerWrapper<void> PipelineShaderStageModuleIdentifierCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRepresentativeFragmentTestCreateInfoWrapper;
+typedef PointerWrapper<void> PipelineRobustnessCreateInfoWrapper;
 #endif
 
 // Class that can build monolithic pipeline or fully separated pipeline libraries
@@ -123,6 +125,9 @@ public:
     // Specify the representative fragment test state.
     GraphicsPipelineWrapper &setRepresentativeFragmentTestState(
         PipelineRepresentativeFragmentTestCreateInfoWrapper representativeFragmentTestState);
+
+    // Specify pipeline robustness state
+    GraphicsPipelineWrapper &setPipelineRobustnessState(PipelineRobustnessCreateInfoWrapper pipelineRobustnessState);
 
     // Specify topology that is used by default InputAssemblyState in vertex input state. This needs to be
     // specified only when there is no custom InputAssemblyState provided in setupVertexInputState and when
@@ -275,8 +280,7 @@ public:
     void buildPipeline(
         const VkPipelineCache pipelineCache = DE_NULL, const VkPipeline basePipelineHandle = DE_NULL,
         const int32_t basePipelineIndex                            = 0,
-        PipelineCreationFeedbackCreateInfoWrapper creationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
-        void *pNext                                                = DE_NULL);
+        PipelineCreationFeedbackCreateInfoWrapper creationFeedback = PipelineCreationFeedbackCreateInfoWrapper());
 
     // Returns true when pipeline was build using buildPipeline method.
     bool wasBuild(void) const;

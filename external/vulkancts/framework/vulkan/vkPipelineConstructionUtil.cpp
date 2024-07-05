@@ -246,6 +246,7 @@ struct GraphicsPipelineWrapper::InternalData
     PipelineRenderingCreateInfoWrapper pRenderingState;
     const VkPipelineDynamicStateCreateInfo *pDynamicState;
     PipelineRepresentativeFragmentTestCreateInfoWrapper pRepresentativeFragmentTestState;
+    PipelineRobustnessCreateInfoWrapper pPipelineRobustnessState;
 
     TessellationDomainOriginStatePtr pTessellationDomainOrigin;
     bool useViewportState;
@@ -308,6 +309,7 @@ struct GraphicsPipelineWrapper::InternalData
         , pFragmentShadingRateState        (nullptr)
         , pDynamicState                    (DE_NULL)
         , pRepresentativeFragmentTestState(nullptr)
+        , pPipelineRobustnessState          (nullptr)
         , pTessellationDomainOrigin        ()
         , useViewportState                (true)
         , useDefaultRasterizationState    (false)
@@ -362,6 +364,16 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setRepresentativeFragmentTestS
     DE_ASSERT(m_internalData && (m_internalData->setupState < PSS_FRAGMENT_SHADER));
 
     m_internalData->pRepresentativeFragmentTestState = representativeFragmentTestState;
+    return *this;
+}
+
+GraphicsPipelineWrapper &GraphicsPipelineWrapper::setPipelineRobustnessState(
+    PipelineRobustnessCreateInfoWrapper pipelineRobustnessState)
+{
+    // pipeline robustness is needed by vertex input state, make sure vertex input state was not setup yet
+    DE_ASSERT(m_internalData && (m_internalData->setupState == PSS_NONE));
+
+    m_internalData->pPipelineRobustnessState = pipelineRobustnessState;
     return *this;
 }
 
@@ -689,6 +701,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupVertexInputState(
             makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT);
         void *firstStructInChain = reinterpret_cast<void *>(&libraryCreateInfo);
         addToChain(&firstStructInChain, partCreationFeedback.ptr);
+        addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
 
         VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
         std::vector<VkDynamicState> states;
@@ -936,6 +949,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
         addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
         addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
         addToChain(&firstStructInChain, partCreationFeedback.ptr);
+        addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
 
         VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
         std::vector<VkDynamicState> states;
@@ -1079,6 +1093,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
         addToChain(&firstStructInChain, m_internalData->pFragmentShadingRateState);
         addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
         addToChain(&firstStructInChain, partCreationFeedback);
+        addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
 
         VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
         std::vector<VkDynamicState> states;
@@ -1209,6 +1224,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
         addToChain(&firstStructInChain, m_internalData->pRenderingState.ptr);
         addToChain(&firstStructInChain, partCreationFeedback.ptr);
         addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
+        addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
 
         VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
         std::vector<VkDynamicState> states;
@@ -1299,6 +1315,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
             makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_OUTPUT_INTERFACE_BIT_EXT);
         addToChain(&firstStructInChain, &libraryCreateInfo);
         addToChain(&firstStructInChain, partCreationFeedback.ptr);
+        addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
 
         VkPipelineDynamicStateCreateInfo pickedDynamicStateInfo = initVulkanStructure();
         std::vector<VkDynamicState> states;
@@ -1334,7 +1351,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
 
 void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache, const VkPipeline basePipelineHandle,
                                             const int32_t basePipelineIndex,
-                                            PipelineCreationFeedbackCreateInfoWrapper creationFeedback, void *pNext)
+                                            PipelineCreationFeedbackCreateInfoWrapper creationFeedback)
 {
     // make sure we are not trying to build pipeline second time
     DE_ASSERT(m_pipelineFinal.get() == DE_NULL);
@@ -1346,7 +1363,6 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
 
     // Unreference variables that are not used in Vulkan SC. No need to put this in ifdef.
     DE_UNREF(creationFeedback);
-    DE_UNREF(pNext);
 
     VkGraphicsPipelineCreateInfo *pointerToCreateInfo = &m_internalData->monolithicPipelineCreateInfo;
 
@@ -1390,7 +1406,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
         void *firstStructInChain = static_cast<void *>(pointerToCreateInfo);
         addToChain(&firstStructInChain, creationFeedback.ptr);
         addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
-        addToChain(&firstStructInChain, pNext);
+        addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
     }
 #endif // CTS_USES_VULKANSC
 
