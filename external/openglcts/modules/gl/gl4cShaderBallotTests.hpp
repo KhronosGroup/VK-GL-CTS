@@ -40,25 +40,42 @@ public:
     private:
         glu::ShaderProgram *m_programRender;
         glu::ShaderProgram *m_programCompute;
-        glu::ShaderType m_testedShader;
+        const glu::ShaderType m_testedShader;
+        const uint32_t m_fileNameSuffixOffset;
 
         std::vector<std::string> m_shaders[glu::SHADERTYPE_LAST];
-        char **m_shaderChunks[glu::SHADERTYPE_LAST];
+        const char **m_shaderChunks[glu::SHADERTYPE_LAST];
 
         std::map<std::string, std::string> m_specializationMap;
 
-        void renderQuad(deqp::Context &context);
-        void executeComputeShader(deqp::Context &context);
+        virtual void renderQuad(deqp::Context &context);
+        virtual void executeComputeShader(deqp::Context &context);
 
     public:
         ShaderPipeline(glu::ShaderType testedShader, const std::string &contentSnippet,
-                       std::map<std::string, std::string> specMap = std::map<std::string, std::string>());
-        ~ShaderPipeline();
+                       const std::map<std::string, std::string> &specMap = std::map<std::string, std::string>(),
+                       const std::string &additionalLayout               = std::string(),
+                       const std::string &additionalFunctions            = std::string(),
+                       const uint32_t &fileNameSuffixOffset              = 0u);
+        virtual ~ShaderPipeline();
 
         const char *const *getShaderParts(glu::ShaderType shaderType) const;
         unsigned int getShaderPartsCount(glu::ShaderType shaderType) const;
 
         void use(deqp::Context &context);
+
+        // methods defined in the class body are treated as inline by default
+        uint32_t getRenderProgram() const
+        {
+            DE_ASSERT(m_programRender);
+            return m_programRender->getProgram();
+        }
+
+        uint32_t getComputeProgram() const
+        {
+            DE_ASSERT(m_programCompute);
+            return m_programCompute->getProgram();
+        }
 
         inline void setShaderPrograms(glu::ShaderProgram *programRender, glu::ShaderProgram *programCompute)
         {
@@ -71,12 +88,22 @@ public:
             return m_specializationMap;
         }
 
+        glu::ShaderType getTestedShader() const
+        {
+            return m_testedShader;
+        }
+
+        uint32_t getFileNameSuffixOffset()
+        {
+            return m_fileNameSuffixOffset;
+        }
+
         void test(deqp::Context &context);
     };
 
 protected:
     /* Protected methods */
-    void createShaderPrograms(ShaderPipeline &pipeline);
+    void createShaderPrograms(ShaderPipeline &pipeline, const std::string &name, uint32_t index);
 
     /* Protected members*/
     std::vector<ShaderPipeline *> m_shaderPipelines;
@@ -93,9 +120,9 @@ public:
 
     virtual ~ShaderBallotBaseTestCase();
 
-    static bool validateScreenPixels(deqp::Context &context, tcu::Vec4 desiredColor, tcu::Vec4 ignoredColor);
-    static bool validateScreenPixelsSameColor(deqp::Context &context, tcu::Vec4 ignoredColor);
-    static bool validateColor(tcu::Vec4 testedColor, tcu::Vec4 desiredColor);
+    static bool validateScreenPixels(deqp::Context &context, tcu::Vec4 desiredColor, const tcu::Vec4 &ignoredColor);
+    static bool validateScreenPixelsSameColor(deqp::Context &context, const tcu::Vec4 &ignoredColor);
+    static bool validateColor(tcu::Vec4 testedColor, const tcu::Vec4 &desiredColor);
 };
 
 /** Test verifies availability of new build-in features
@@ -148,12 +175,41 @@ public:
 class ShaderBallotFunctionReadTestCase : public ShaderBallotBaseTestCase
 {
 public:
+    typedef ShaderBallotBaseTestCase super;
+
+    class ShaderPipeline : public super::ShaderPipeline
+    {
+        glw::GLuint m_buffer;
+
+        void createAndBindBuffer(deqp::Context &context);
+        void destroyBuffer(deqp::Context &context);
+
+        virtual void renderQuad(deqp::Context &context) override;
+        virtual void executeComputeShader(deqp::Context &context) override;
+
+    public:
+        ShaderPipeline(glu::ShaderType testedShader, const std::string &additionalLayout,
+                       const std::string &additionalFunctions, const std::string &contentSnippet,
+                       const uint32_t &fileNameSuffixOffset,
+                       const std::map<std::string, std::string> &specMap = std::map<std::string, std::string>())
+            : ShaderBallotBaseTestCase::ShaderPipeline(testedShader, contentSnippet, specMap, additionalLayout,
+                                                       additionalFunctions, fileNameSuffixOffset)
+            , m_buffer(0u)
+        {
+        }
+    };
+
     /* Public methods */
     ShaderBallotFunctionReadTestCase(deqp::Context &context);
 
-    void init();
+    virtual void init() override
+    {
+    }
 
-    tcu::TestNode::IterateResult iterate();
+    tcu::TestNode::IterateResult iterate() override;
+
+    static inline const uint32_t readInvocationSuffix      = 0u;
+    static inline const uint32_t readFirstInvocationSuffix = 10u;
 };
 
 class ShaderBallotTests : public deqp::TestCaseGroup
