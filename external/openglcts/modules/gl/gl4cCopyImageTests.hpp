@@ -92,79 +92,80 @@ namespace CopyImage
 class FunctionalTest : public deqp::TestCase
 {
 public:
-	FunctionalTest(deqp::Context& context);
-	virtual ~FunctionalTest()
-	{
-	}
+    FunctionalTest(deqp::Context &context, glw::GLenum dst_format, glw::GLenum dst_target, glw::GLenum src_format,
+                   glw::GLenum src_target);
+    virtual ~FunctionalTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct targetDesc
-	{
-		glw::GLenum m_target;
-		glw::GLuint m_width;
-		glw::GLuint m_height;
-		glw::GLuint m_level;
-		glw::GLenum m_internal_format;
-		glw::GLenum m_format;
-		glw::GLenum m_type;
-	};
+    /* Private types */
+    struct targetDesc
+    {
+        glw::GLenum m_target;
+        glw::GLuint m_width;
+        glw::GLuint m_height;
+        glw::GLuint m_level;
+        glw::GLenum m_internal_format;
+        glw::GLenum m_format;
+        glw::GLenum m_type;
+    };
 
-	struct testCase
-	{
-		targetDesc  m_dst;
-		glw::GLuint m_dst_x;
-		glw::GLuint m_dst_y;
-		targetDesc  m_src;
-		glw::GLuint m_src_x;
-		glw::GLuint m_src_y;
-		glw::GLuint m_width;
-		glw::GLuint m_height;
-	};
+    struct testCase
+    {
+        targetDesc m_dst;
+        glw::GLuint m_dst_x;
+        glw::GLuint m_dst_y;
+        targetDesc m_src;
+        glw::GLuint m_src_x;
+        glw::GLuint m_src_y;
+        glw::GLuint m_width;
+        glw::GLuint m_height;
+    };
 
-	/* Private methods */
-	void calculateDimmensions(glw::GLenum target, glw::GLuint level, glw::GLuint width, glw::GLuint height,
-							  glw::GLuint* out_widths, glw::GLuint* out_heights, glw::GLuint* out_depths) const;
+    /* Private methods */
+    void calculateDimmensions(glw::GLenum target, glw::GLuint level, glw::GLuint width, glw::GLuint height,
+                              glw::GLuint *out_widths, glw::GLuint *out_heights, glw::GLuint *out_depths) const;
 
-	void clean();
-	void cleanPixels(glw::GLubyte** pixels) const;
+    void clean();
+    void cleanPixels(glw::GLubyte **pixels) const;
 
-	bool compareImages(const targetDesc& left_desc, const glw::GLubyte* left_data, glw::GLuint left_x,
-					   glw::GLuint left_y, glw::GLuint left_layer, glw::GLuint left_level, const targetDesc& right_desc,
-					   const glw::GLubyte* right_data, glw::GLuint right_x, glw::GLuint right_y,
-					   glw::GLuint right_layer, glw::GLuint right_level, glw::GLuint region_width,
-					   glw::GLuint region_height) const;
+    bool compareImages(const targetDesc &left_desc, const glw::GLubyte *left_data, glw::GLuint left_x,
+                       glw::GLuint left_y, glw::GLuint left_layer, glw::GLuint left_level, const targetDesc &right_desc,
+                       const glw::GLubyte *right_data, glw::GLuint right_x, glw::GLuint right_y,
+                       glw::GLuint right_layer, glw::GLuint right_level, glw::GLuint region_width,
+                       glw::GLuint region_height) const;
 
-	bool copyAndVerify(const testCase& test_case, const glw::GLubyte** dst_pixels, const glw::GLubyte** src_pixels);
+    bool copyAndVerify(const testCase &test_case, const glw::GLubyte **dst_pixels, const glw::GLubyte **src_pixels);
 
-	void getCleanRegions(const testCase& test_case, glw::GLuint dst_level, glw::GLuint out_corners[4][4],
-						 glw::GLuint& out_n_corners) const;
+    void getCleanRegions(const testCase &test_case, glw::GLuint dst_level, glw::GLuint out_corners[4][4],
+                         glw::GLuint &out_n_corners) const;
 
-	void getPixels(glw::GLuint name, const targetDesc& desc, glw::GLuint level, glw::GLubyte* out_pixels) const;
+    void getPixels(glw::GLuint name, const targetDesc &desc, glw::GLuint level, glw::GLubyte *out_pixels) const;
 
-	void prepareDstPxls(const targetDesc& desc, glw::GLubyte** out_pixels) const;
+    void prepareDstPxls(const targetDesc &desc, glw::GLubyte **out_pixels) const;
 
-	void prepareSrcPxls(const targetDesc& desc, glw::GLenum dst_internal_format, glw::GLubyte** out_pixels) const;
+    void prepareSrcPxls(const targetDesc &desc, glw::GLenum dst_internal_format, glw::GLubyte **out_pixels) const;
 
-	void prepareTestCases(glw::GLenum dst_internal_format, glw::GLenum dst_target, glw::GLenum src_internal_format,
-						  glw::GLenum src_target);
+    void prepareTestCases(glw::GLenum dst_internal_format, glw::GLenum dst_target, glw::GLenum src_internal_format,
+                          glw::GLenum src_target);
 
-	glw::GLuint prepareTexture(const targetDesc& desc, const glw::GLubyte** pixels, glw::GLuint& out_buf_id);
+    glw::GLuint prepareTexture(const targetDesc &desc, const glw::GLubyte **pixels, glw::GLuint &out_buf_id);
 
-	bool verify(const testCase& test_case, glw::GLuint dst_layer, const glw::GLubyte** dst_pixels,
-				glw::GLuint src_layer, const glw::GLubyte** src_pixels, glw::GLuint depth);
+    bool verify(const testCase &test_case, glw::GLuint dst_layer, const glw::GLubyte **dst_pixels,
+                glw::GLuint src_layer, const glw::GLubyte **src_pixels, glw::GLuint depth);
 
-	/* Private fields */
-	glw::GLuint			  m_dst_buf_name;
-	glw::GLuint			  m_dst_tex_name;
-	glw::GLuint			  m_rb_name;
-	glw::GLuint			  m_src_buf_name;
-	glw::GLuint			  m_src_tex_name;
-	glw::GLuint			  m_test_case_index;
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    glw::GLuint m_dst_buf_name;
+    glw::GLuint m_dst_tex_name;
+    glw::GLuint m_rb_name;
+    glw::GLuint m_src_buf_name;
+    glw::GLuint m_src_tex_name;
+    glw::GLuint m_test_case_index;
+    std::vector<testCase> m_test_cases;
 };
 
 /** Implements functional test. Description follows:
@@ -196,55 +197,55 @@ private:
 class SmokeTest : public deqp::TestCase
 {
 public:
-	SmokeTest(deqp::Context& context);
-	virtual ~SmokeTest()
-	{
-	}
+    SmokeTest(deqp::Context &context);
+    virtual ~SmokeTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLenum m_target;
-		glw::GLenum m_internal_format;
-		glw::GLenum m_format;
-		glw::GLenum m_type;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLenum m_target;
+        glw::GLenum m_internal_format;
+        glw::GLenum m_format;
+        glw::GLenum m_type;
+    };
 
-	/* Private methods */
-	void clean();
-	void cleanPixels(glw::GLubyte*& pixels) const;
+    /* Private methods */
+    void clean();
+    void cleanPixels(glw::GLubyte *&pixels) const;
 
-	bool compareImages(const testCase& test_case, const glw::GLubyte* left_data, const glw::GLubyte* right_data) const;
+    bool compareImages(const testCase &test_case, const glw::GLubyte *left_data, const glw::GLubyte *right_data) const;
 
-	bool copyAndVerify(const testCase& test_case, const glw::GLubyte* src_pixels);
+    bool copyAndVerify(const testCase &test_case, const glw::GLubyte *src_pixels);
 
-	void getPixels(glw::GLuint name, const testCase& test_case, glw::GLubyte* out_pixels) const;
+    void getPixels(glw::GLuint name, const testCase &test_case, glw::GLubyte *out_pixels) const;
 
-	void prepareDstPxls(const testCase& test_case, glw::GLubyte*& out_pixels) const;
+    void prepareDstPxls(const testCase &test_case, glw::GLubyte *&out_pixels) const;
 
-	void prepareSrcPxls(const testCase& test_case, glw::GLubyte*& out_pixels) const;
+    void prepareSrcPxls(const testCase &test_case, glw::GLubyte *&out_pixels) const;
 
-	glw::GLuint prepareTexture(const testCase& test_case, const glw::GLubyte* pixels, glw::GLuint& out_buf_id);
+    glw::GLuint prepareTexture(const testCase &test_case, const glw::GLubyte *pixels, glw::GLuint &out_buf_id);
 
-	bool verify(const testCase& test_case, const glw::GLubyte* src_pixels);
+    bool verify(const testCase &test_case, const glw::GLubyte *src_pixels);
 
-	/* Private fields */
-	glw::GLuint			  m_dst_buf_name;
-	glw::GLuint			  m_dst_tex_name;
-	glw::GLuint			  m_rb_name;
-	glw::GLuint			  m_src_buf_name;
-	glw::GLuint			  m_src_tex_name;
-	glw::GLuint			  m_test_case_index;
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    glw::GLuint m_dst_buf_name;
+    glw::GLuint m_dst_tex_name;
+    glw::GLuint m_rb_name;
+    glw::GLuint m_src_buf_name;
+    glw::GLuint m_src_tex_name;
+    glw::GLuint m_test_case_index;
+    std::vector<testCase> m_test_cases;
 
-	/* Constants */
-	static const glw::GLuint m_width;
-	static const glw::GLuint m_height;
-	static const glw::GLuint m_depth;
+    /* Constants */
+    static const glw::GLuint m_width;
+    static const glw::GLuint m_height;
+    static const glw::GLuint m_depth;
 };
 
 /** Implements negative test A. Description follows:
@@ -257,33 +258,33 @@ private:
 class InvalidTargetTest : public deqp::TestCase
 {
 public:
-	InvalidTargetTest(deqp::Context& context);
-	virtual ~InvalidTargetTest()
-	{
-	}
+    InvalidTargetTest(deqp::Context &context);
+    virtual ~InvalidTargetTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLenum m_src_target;
-		glw::GLenum m_dst_target;
-		glw::GLenum m_expected_result;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLenum m_src_target;
+        glw::GLenum m_dst_target;
+        glw::GLenum m_expected_result;
+    };
 
-	/* Private methods */
-	void clean();
+    /* Private methods */
+    void clean();
 
-	/* Private fields */
-	glw::GLuint			  m_dst_buf_name;
-	glw::GLuint			  m_dst_tex_name;
-	glw::GLuint			  m_src_buf_name;
-	glw::GLuint			  m_src_tex_name;
-	glw::GLuint			  m_test_case_index;
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    glw::GLuint m_dst_buf_name;
+    glw::GLuint m_dst_tex_name;
+    glw::GLuint m_src_buf_name;
+    glw::GLuint m_src_tex_name;
+    glw::GLuint m_test_case_index;
+    std::vector<testCase> m_test_cases;
 };
 
 /** Implements negative test B. Description follows:
@@ -295,34 +296,34 @@ private:
 class TargetMismatchTest : public deqp::TestCase
 {
 public:
-	TargetMismatchTest(deqp::Context& context);
-	virtual ~TargetMismatchTest()
-	{
-	}
+    TargetMismatchTest(deqp::Context &context);
+    virtual ~TargetMismatchTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLenum m_tex_target;
-		glw::GLenum m_src_target;
-		glw::GLenum m_dst_target;
-		glw::GLenum m_expected_result;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLenum m_tex_target;
+        glw::GLenum m_src_target;
+        glw::GLenum m_dst_target;
+        glw::GLenum m_expected_result;
+    };
 
-	/* Private methods */
-	void clean();
+    /* Private methods */
+    void clean();
 
-	/* Private fields */
-	glw::GLuint			  m_dst_buf_name;
-	glw::GLuint			  m_dst_tex_name;
-	glw::GLuint			  m_src_buf_name;
-	glw::GLuint			  m_src_tex_name;
-	glw::GLuint			  m_test_case_index;
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    glw::GLuint m_dst_buf_name;
+    glw::GLuint m_dst_tex_name;
+    glw::GLuint m_src_buf_name;
+    glw::GLuint m_src_tex_name;
+    glw::GLuint m_test_case_index;
+    std::vector<testCase> m_test_cases;
 };
 
 /** Implements negative test C. Description follows:
@@ -334,34 +335,34 @@ private:
 class IncompleteTexTest : public deqp::TestCase
 {
 public:
-	IncompleteTexTest(deqp::Context& context);
-	virtual ~IncompleteTexTest()
-	{
-	}
+    IncompleteTexTest(deqp::Context &context);
+    virtual ~IncompleteTexTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLenum m_tex_target;
-		bool		m_is_dst_complete;
-		bool		m_is_src_complete;
-		glw::GLenum m_expected_result;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLenum m_tex_target;
+        bool m_is_dst_complete;
+        bool m_is_src_complete;
+        glw::GLenum m_expected_result;
+    };
 
-	/* Private methods */
-	void clean();
+    /* Private methods */
+    void clean();
 
-	/* Private fields */
-	glw::GLuint			  m_dst_buf_name;
-	glw::GLuint			  m_dst_tex_name;
-	glw::GLuint			  m_src_buf_name;
-	glw::GLuint			  m_src_tex_name;
-	glw::GLuint			  m_test_case_index;
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    glw::GLuint m_dst_buf_name;
+    glw::GLuint m_dst_tex_name;
+    glw::GLuint m_src_buf_name;
+    glw::GLuint m_src_tex_name;
+    glw::GLuint m_test_case_index;
+    std::vector<testCase> m_test_cases;
 };
 
 /** Implements negative test D. Description follows:
@@ -373,38 +374,38 @@ private:
 class IncompatibleFormatsTest : public deqp::TestCase
 {
 public:
-	IncompatibleFormatsTest(deqp::Context& context);
-	virtual ~IncompatibleFormatsTest()
-	{
-	}
+    IncompatibleFormatsTest(deqp::Context &context);
+    virtual ~IncompatibleFormatsTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLenum m_tex_target;
-		glw::GLenum m_dst_internal_format;
-		glw::GLenum m_dst_format;
-		glw::GLenum m_dst_type;
-		glw::GLenum m_src_internal_format;
-		glw::GLenum m_src_format;
-		glw::GLenum m_src_type;
-		glw::GLenum m_expected_result;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLenum m_tex_target;
+        glw::GLenum m_dst_internal_format;
+        glw::GLenum m_dst_format;
+        glw::GLenum m_dst_type;
+        glw::GLenum m_src_internal_format;
+        glw::GLenum m_src_format;
+        glw::GLenum m_src_type;
+        glw::GLenum m_expected_result;
+    };
 
-	/* Private methods */
-	void clean();
+    /* Private methods */
+    void clean();
 
-	/* Private fields */
-	glw::GLuint			  m_dst_buf_name;
-	glw::GLuint			  m_dst_tex_name;
-	glw::GLuint			  m_src_buf_name;
-	glw::GLuint			  m_src_tex_name;
-	glw::GLuint			  m_test_case_index;
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    glw::GLuint m_dst_buf_name;
+    glw::GLuint m_dst_tex_name;
+    glw::GLuint m_src_buf_name;
+    glw::GLuint m_src_tex_name;
+    glw::GLuint m_test_case_index;
+    std::vector<testCase> m_test_cases;
 };
 
 /** Implements negative test E. Description follows:
@@ -417,33 +418,33 @@ private:
 class SamplesMismatchTest : public deqp::TestCase
 {
 public:
-	SamplesMismatchTest(deqp::Context& context);
-	virtual ~SamplesMismatchTest()
-	{
-	}
+    SamplesMismatchTest(deqp::Context &context);
+    virtual ~SamplesMismatchTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLenum  m_src_target;
-		glw::GLsizei m_src_n_samples;
-		glw::GLenum  m_dst_target;
-		glw::GLsizei m_dst_n_samples;
-		glw::GLenum  m_expected_result;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLenum m_src_target;
+        glw::GLsizei m_src_n_samples;
+        glw::GLenum m_dst_target;
+        glw::GLsizei m_dst_n_samples;
+        glw::GLenum m_expected_result;
+    };
 
-	/* Private methods */
-	void clean();
+    /* Private methods */
+    void clean();
 
-	/* Private fields */
-	glw::GLuint			  m_dst_tex_name;
-	glw::GLuint			  m_src_tex_name;
-	glw::GLuint			  m_test_case_index;
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    glw::GLuint m_dst_tex_name;
+    glw::GLuint m_src_tex_name;
+    glw::GLuint m_test_case_index;
+    std::vector<testCase> m_test_cases;
 };
 
 /** Implements negative test F. Description follows:
@@ -457,36 +458,36 @@ private:
 class IncompatibleFormatsCompressionTest : public deqp::TestCase
 {
 public:
-	IncompatibleFormatsCompressionTest(deqp::Context& context);
-	virtual ~IncompatibleFormatsCompressionTest()
-	{
-	}
+    IncompatibleFormatsCompressionTest(deqp::Context &context);
+    virtual ~IncompatibleFormatsCompressionTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLenum m_tex_target;
-		glw::GLenum m_dst_internal_format;
-		glw::GLenum m_dst_format;
-		glw::GLenum m_dst_type;
-		glw::GLenum m_src_internal_format;
-		glw::GLenum m_src_format;
-		glw::GLenum m_src_type;
-		glw::GLenum m_expected_result;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLenum m_tex_target;
+        glw::GLenum m_dst_internal_format;
+        glw::GLenum m_dst_format;
+        glw::GLenum m_dst_type;
+        glw::GLenum m_src_internal_format;
+        glw::GLenum m_src_format;
+        glw::GLenum m_src_type;
+        glw::GLenum m_expected_result;
+    };
 
-	/* Private methods */
-	void clean();
+    /* Private methods */
+    void clean();
 
-	/* Private fields */
-	glw::GLuint			  m_dst_tex_name;
-	glw::GLuint			  m_src_tex_name;
-	glw::GLuint			  m_test_case_index;
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    glw::GLuint m_dst_tex_name;
+    glw::GLuint m_src_tex_name;
+    glw::GLuint m_test_case_index;
+    std::vector<testCase> m_test_cases;
 };
 
 /** Implements negative test G. Description follows:
@@ -500,33 +501,33 @@ private:
 class InvalidObjectTest : public deqp::TestCase
 {
 public:
-	InvalidObjectTest(deqp::Context& context);
-	virtual ~InvalidObjectTest()
-	{
-	}
+    InvalidObjectTest(deqp::Context &context);
+    virtual ~InvalidObjectTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLenum m_dst_target;
-		bool		m_dst_valid;
-		glw::GLenum m_src_target;
-		bool		m_src_valid;
-		glw::GLenum m_expected_result;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLenum m_dst_target;
+        bool m_dst_valid;
+        glw::GLenum m_src_target;
+        bool m_src_valid;
+        glw::GLenum m_expected_result;
+    };
 
-	/* Private methods */
-	void clean();
+    /* Private methods */
+    void clean();
 
-	/* Private fields */
-	glw::GLuint			  m_dst_name;
-	glw::GLuint			  m_src_name;
-	glw::GLuint			  m_test_case_index;
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    glw::GLuint m_dst_name;
+    glw::GLuint m_src_name;
+    glw::GLuint m_test_case_index;
+    std::vector<testCase> m_test_cases;
 };
 
 /** Implements negative test H. Description follows:
@@ -540,32 +541,32 @@ private:
 class NonExistentMipMapTest : public deqp::TestCase
 {
 public:
-	NonExistentMipMapTest(deqp::Context& context);
-	virtual ~NonExistentMipMapTest()
-	{
-	}
+    NonExistentMipMapTest(deqp::Context &context);
+    virtual ~NonExistentMipMapTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLenum m_tex_target;
-		glw::GLuint m_src_level;
-		glw::GLuint m_dst_level;
-		glw::GLenum m_expected_result;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLenum m_tex_target;
+        glw::GLuint m_src_level;
+        glw::GLuint m_dst_level;
+        glw::GLenum m_expected_result;
+    };
 
-	/* Private methods */
-	void clean();
+    /* Private methods */
+    void clean();
 
-	/* Private fields */
-	glw::GLuint			  m_dst_tex_name;
-	glw::GLuint			  m_src_tex_name;
-	glw::GLuint			  m_test_case_index;
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    glw::GLuint m_dst_tex_name;
+    glw::GLuint m_src_tex_name;
+    glw::GLuint m_test_case_index;
+    std::vector<testCase> m_test_cases;
 };
 
 /** Implements negative test I. Description follows:
@@ -577,43 +578,43 @@ private:
 class ExceedingBoundariesTest : public deqp::TestCase
 {
 public:
-	ExceedingBoundariesTest(deqp::Context& context);
-	virtual ~ExceedingBoundariesTest()
-	{
-	}
+    ExceedingBoundariesTest(deqp::Context &context);
+    virtual ~ExceedingBoundariesTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLenum m_tex_target;
-		glw::GLuint m_depth;
-		glw::GLuint m_height;
-		glw::GLuint m_src_x;
-		glw::GLuint m_src_y;
-		glw::GLuint m_src_z;
-		glw::GLuint m_dst_x;
-		glw::GLuint m_dst_y;
-		glw::GLuint m_dst_z;
-		glw::GLenum m_expected_result;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLenum m_tex_target;
+        glw::GLuint m_depth;
+        glw::GLuint m_height;
+        glw::GLuint m_src_x;
+        glw::GLuint m_src_y;
+        glw::GLuint m_src_z;
+        glw::GLuint m_dst_x;
+        glw::GLuint m_dst_y;
+        glw::GLuint m_dst_z;
+        glw::GLenum m_expected_result;
+    };
 
-	/* Private methods */
-	void clean();
+    /* Private methods */
+    void clean();
 
-	/* Private fields */
-	glw::GLuint			  m_dst_tex_name;
-	glw::GLuint			  m_src_tex_name;
-	glw::GLuint			  m_test_case_index;
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    glw::GLuint m_dst_tex_name;
+    glw::GLuint m_src_tex_name;
+    glw::GLuint m_test_case_index;
+    std::vector<testCase> m_test_cases;
 
-	/* Private constants */
-	static const glw::GLuint m_region_depth;
-	static const glw::GLuint m_region_height;
-	static const glw::GLuint m_region_width;
+    /* Private constants */
+    static const glw::GLuint m_region_depth;
+    static const glw::GLuint m_region_height;
+    static const glw::GLuint m_region_width;
 };
 
 /** Implements negative test J. Description follows:
@@ -627,35 +628,35 @@ private:
 class InvalidAlignmentTest : public deqp::TestCase
 {
 public:
-	InvalidAlignmentTest(deqp::Context& context);
-	virtual ~InvalidAlignmentTest()
-	{
-	}
+    InvalidAlignmentTest(deqp::Context &context);
+    virtual ~InvalidAlignmentTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLuint m_height;
-		glw::GLuint m_width;
-		glw::GLuint m_src_x;
-		glw::GLuint m_src_y;
-		glw::GLuint m_dst_x;
-		glw::GLuint m_dst_y;
-		glw::GLenum m_expected_result;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLuint m_height;
+        glw::GLuint m_width;
+        glw::GLuint m_src_x;
+        glw::GLuint m_src_y;
+        glw::GLuint m_dst_x;
+        glw::GLuint m_dst_y;
+        glw::GLenum m_expected_result;
+    };
 
-	/* Private methods */
-	void clean();
+    /* Private methods */
+    void clean();
 
-	/* Private fields */
-	glw::GLuint			  m_dst_tex_name;
-	glw::GLuint			  m_src_tex_name;
-	glw::GLuint			  m_test_case_index;
-	std::vector<testCase> m_test_cases;
+    /* Private fields */
+    glw::GLuint m_dst_tex_name;
+    glw::GLuint m_src_tex_name;
+    glw::GLuint m_test_case_index;
+    std::vector<testCase> m_test_cases;
 };
 
 /** Implements functional test. Description follows:
@@ -669,47 +670,49 @@ private:
 class IntegerTexTest : public deqp::TestCase
 {
 public:
-	IntegerTexTest(deqp::Context& context);
-	virtual ~IntegerTexTest()
-	{
-	}
+    IntegerTexTest(deqp::Context &context);
+    virtual ~IntegerTexTest()
+    {
+    }
 
-	/* Implementation of tcu::TestNode methods */
-	virtual IterateResult iterate(void);
+    /* Implementation of tcu::TestNode methods */
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private types */
-	struct testCase
-	{
-		glw::GLint  m_internal_format;
-		glw::GLuint m_type;
-	};
+    /* Private types */
+    struct testCase
+    {
+        glw::GLint m_internal_format;
+        glw::GLuint m_type;
+    };
 
-	/* Private methods */
-	unsigned int createTexture(int width, int height, glw::GLint internalFormat, glw::GLuint type, const void* data,
-							   int minFilter, int magFilter);
-	void clean();
+    /* Private methods */
+    unsigned int createTexture(int width, int height, glw::GLint internalFormat, glw::GLuint type, const void *data,
+                               int minFilter, int magFilter);
+    void clean();
 
-	/* Private fields */
-	glw::GLuint m_dst_buf_name;
-	glw::GLuint m_dst_tex_name;
-	glw::GLuint m_src_buf_name;
-	glw::GLuint m_src_tex_name;
-	glw::GLuint m_test_case_index;
+    /* Private fields */
+    glw::GLuint m_dst_buf_name;
+    glw::GLuint m_dst_tex_name;
+    glw::GLuint m_src_buf_name;
+    glw::GLuint m_src_tex_name;
+    glw::GLuint m_test_case_index;
 };
-}
+} // namespace CopyImage
 
 class CopyImageTests : public deqp::TestCaseGroup
 {
 public:
-	CopyImageTests(deqp::Context& context);
-	~CopyImageTests(void);
+    CopyImageTests(deqp::Context &context);
+    ~CopyImageTests(void);
 
-	virtual void init(void);
+    virtual void init(void);
 
 private:
-	CopyImageTests(const CopyImageTests& other);
-	CopyImageTests& operator=(const CopyImageTests& other);
+    CopyImageTests(const CopyImageTests &other);
+    CopyImageTests &operator=(const CopyImageTests &other);
+
+    void addFunctionalTest();
 };
 } /* namespace gl4cts */
 

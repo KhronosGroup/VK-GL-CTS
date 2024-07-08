@@ -34,7 +34,7 @@ namespace tcu
 
 class ResultCollector;
 
-} // tcu
+} // namespace tcu
 
 namespace deqp
 {
@@ -48,54 +48,63 @@ namespace NegativeTestShared
 class ErrorCase : public TestCase
 {
 public:
-								ErrorCase		(Context& ctx, const char* name, const char* desc);
-	virtual						~ErrorCase		(void) {}
+    ErrorCase(Context &ctx, const char *name, const char *desc);
+    virtual ~ErrorCase(void)
+    {
+    }
 
-	virtual void				expectError		(glw::GLenum error0, glw::GLenum error1) = 0;
+    virtual void expectError(glw::GLenum error0, glw::GLenum error1) = 0;
 };
 
 class NegativeTestContext : public glu::CallLogWrapper
 {
 public:
-								NegativeTestContext		(ErrorCase& host, glu::RenderContext& renderCtx, const glu::ContextInfo& ctxInfo, tcu::TestLog& log, tcu::ResultCollector& results, bool enableLog);
-								~NegativeTestContext	();
+    NegativeTestContext(ErrorCase &host, glu::RenderContext &renderCtx, const glu::ContextInfo &ctxInfo,
+                        tcu::TestLog &log, tcu::ResultCollector &results, bool enableLog);
+    ~NegativeTestContext();
 
-	const tcu::ResultCollector&	getResults				(void) const;
+    const tcu::ResultCollector &getResults(void) const;
 
-	void						fail					(const std::string& msg);
-	int							getInteger				(glw::GLenum pname) const;
-	const glu::RenderContext&	getRenderContext		(void) const { return m_renderCtx; }
-	const glu::ContextInfo&		getContextInfo			(void) const { return m_ctxInfo; }
-	void						beginSection			(const std::string& desc);
-	void						endSection				(void);
+    void fail(const std::string &msg);
+    int getInteger(glw::GLenum pname) const;
+    const glu::RenderContext &getRenderContext(void) const
+    {
+        return m_renderCtx;
+    }
+    const glu::ContextInfo &getContextInfo(void) const
+    {
+        return m_ctxInfo;
+    }
+    void beginSection(const std::string &desc);
+    void endSection(void);
 
-	void						expectError				(glw::GLenum error);
-	void						expectError				(glw::GLenum error0, glw::GLenum error1);
-	bool						isShaderSupported		(glu::ShaderType shaderType);
-	bool						isExtensionSupported	(std::string extension);
+    void expectError(glw::GLenum error);
+    void expectError(glw::GLenum error0, glw::GLenum error1);
+    bool isShaderSupported(glu::ShaderType shaderType);
+    bool isExtensionSupported(std::string extension);
 
 protected:
-	ErrorCase&					m_host;
+    ErrorCase &m_host;
 
 private:
-	glu::RenderContext&			m_renderCtx;
-	const glu::ContextInfo&		m_ctxInfo;
-	tcu::ResultCollector&		m_results;
-	int							m_openSections;
+    glu::RenderContext &m_renderCtx;
+    const glu::ContextInfo &m_ctxInfo;
+    tcu::ResultCollector &m_results;
+    int m_openSections;
 };
 
-typedef void (*TestFunc)(NegativeTestContext& ctx);
+typedef void (*TestFunc)(NegativeTestContext &ctx);
 
 struct FunctionContainer
 {
-	TestFunc	function;
-	const char* name;
-	const char* desc;
+    TestFunc function;
+    const char *name;
+    const char *desc;
 };
 
-} // NegativeTestShared
-} // Functional
-} // gles31
-} // deqp
+} // namespace NegativeTestShared
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FNEGATIVETESTSHARED_HPP

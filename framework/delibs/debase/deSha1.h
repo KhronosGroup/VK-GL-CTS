@@ -29,39 +29,39 @@ DE_BEGIN_EXTERN_C
 
 typedef struct deSha1Stream_s
 {
-	deUint64	size;
-	deUint32	hash[5];
+    uint64_t size;
+    uint32_t hash[5];
 
-	deUint32	data[80];
+    uint32_t data[80];
 } deSha1Stream;
 
 typedef struct deSha1_s
 {
-	deUint32	hash[5];
+    uint32_t hash[5];
 } deSha1;
 
 /* Initialize sha1 stream. */
-void	deSha1Stream_init			(deSha1Stream* stream);
+void deSha1Stream_init(deSha1Stream *stream);
 
 /* Process single 512bit chunk. */
-void	deSha1Stream_process		(deSha1Stream* stream, size_t size, const void* data);
+void deSha1Stream_process(deSha1Stream *stream, size_t size, const void *data);
 
 /* Finalize the stream and output the hash. */
-void	deSha1Stream_finalize		(deSha1Stream* stream, deSha1* hash);
+void deSha1Stream_finalize(deSha1Stream *stream, deSha1 *hash);
 
 /* Compute the sha1 hash from data. */
-void	deSha1_compute				(deSha1* hash, size_t size, const void* data);
+void deSha1_compute(deSha1 *hash, size_t size, const void *data);
 
 /* Render sha1 hash as 40 digit hex string. */
-void	deSha1_render				(const deSha1* hash, char* buffer);
+void deSha1_render(const deSha1 *hash, char *buffer);
 
 /* Parse sha1 from 40 digit hex string. */
-deBool	deSha1_parse				(deSha1* hash, const char* buffer);
+bool deSha1_parse(deSha1 *hash, const char *buffer);
 
 /* Compare hashes for equality. */
-deBool	deSha1_equal				(const deSha1* a, const deSha1* b);
+bool deSha1_equal(const deSha1 *a, const deSha1 *b);
 
-void	deSha1_selfTest				(void);
+void deSha1_selfTest(void);
 
 DE_END_EXTERN_C
 

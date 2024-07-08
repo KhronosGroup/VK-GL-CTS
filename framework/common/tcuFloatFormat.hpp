@@ -33,71 +33,87 @@ namespace tcu
 
 enum YesNoMaybe
 {
-	NO,
-	MAYBE,
-	YES
+    NO,
+    MAYBE,
+    YES
 };
 
 class FloatFormat
 {
 public:
+    FloatFormat(int minExp, int maxExp, int fractionBits, bool exactPrecision, YesNoMaybe hasSubnormal = MAYBE,
+                YesNoMaybe hasInf = MAYBE, YesNoMaybe hasNaN = MAYBE);
+    virtual ~FloatFormat()
+    {
+    }
 
-						FloatFormat	(int		minExp,
-									 int		maxExp,
-									 int		fractionBits,
-									 bool		exactPrecision,
-									 YesNoMaybe	hasSubnormal	= MAYBE,
-									 YesNoMaybe	hasInf			= MAYBE,
-									 YesNoMaybe	hasNaN			= MAYBE);
-	virtual				~FloatFormat() {}
+    int getMinExp(void) const
+    {
+        return m_minExp;
+    }
+    int getMaxExp(void) const
+    {
+        return m_maxExp;
+    }
+    double getMaxValue(void) const
+    {
+        return m_maxValue;
+    }
+    int getFractionBits(void) const
+    {
+        return m_fractionBits;
+    }
+    YesNoMaybe hasInf(void) const
+    {
+        return m_hasInf;
+    }
+    YesNoMaybe hasSubnormal(void) const
+    {
+        return m_hasSubnormal;
+    }
 
-	int					getMinExp		(void) const { return m_minExp; }
-	int					getMaxExp		(void) const { return m_maxExp; }
-	double				getMaxValue		(void) const { return m_maxValue; }
-	int					getFractionBits	(void) const { return m_fractionBits; }
-	YesNoMaybe			hasInf			(void) const { return m_hasInf; }
-	YesNoMaybe			hasSubnormal	(void) const { return m_hasSubnormal; }
+    virtual double ulp(double x, double count = 1.0) const;
+    Interval roundOut(const Interval &x, bool roundUnderOverflow) const;
+    virtual double round(double d, bool upward) const;
+    virtual double roundOut(double d, bool upward, bool roundUnderOverflow) const;
+    Interval convert(const Interval &x) const;
 
-	virtual double		ulp				(double x, double count = 1.0) const;
-	Interval			roundOut		(const Interval& x, bool roundUnderOverflow) const;
-	virtual double		round			(double d, bool upward) const;
-	virtual double		roundOut		(double d, bool upward, bool roundUnderOverflow) const;
-	Interval			convert			(const Interval& x) const;
+    std::string floatToHex(double x) const;
+    std::string intervalToHex(const Interval &interval) const;
 
-	std::string			floatToHex		(double x) const;
-	std::string			intervalToHex	(const Interval& interval) const;
-
-	static FloatFormat	nativeFloat		(void);
-	static FloatFormat	nativeDouble	(void);
+    static FloatFormat nativeFloat(void);
+    static FloatFormat nativeDouble(void);
 
 private:
-	int					exponentShift	(int exp) const;
-	Interval			clampValue		(double d) const;
+    int exponentShift(int exp) const;
+    Interval clampValue(double d) const;
 
-	int					m_minExp;			// Minimum exponent, inclusive
-	int					m_maxExp;			// Maximum exponent, inclusive
-	int					m_fractionBits;		// Number of fractional bits in significand
-	YesNoMaybe			m_hasSubnormal;		// Does the format support denormalized numbers?
-	YesNoMaybe			m_hasInf;			// Does the format support infinities?
-	YesNoMaybe			m_hasNaN;			// Does the format support NaNs?
-	bool				m_exactPrecision;	// Are larger precisions disallowed?
-	double				m_maxValue;			// Largest representable finite value.
+    int m_minExp;              // Minimum exponent, inclusive
+    int m_maxExp;              // Maximum exponent, inclusive
+    int m_fractionBits;        // Number of fractional bits in significand
+    YesNoMaybe m_hasSubnormal; // Does the format support denormalized numbers?
+    YesNoMaybe m_hasInf;       // Does the format support infinities?
+    YesNoMaybe m_hasNaN;       // Does the format support NaNs?
+    bool m_exactPrecision;     // Are larger precisions disallowed?
+    double m_maxValue;         // Largest representable finite value.
 } DE_WARN_UNUSED_TYPE;
 
 class NormalizedFormat : public FloatFormat
 {
 public:
-			NormalizedFormat    (int		fractionBits);
-			~NormalizedFormat	() {}
+    NormalizedFormat(int fractionBits);
+    ~NormalizedFormat()
+    {
+    }
 
-	double		ulp				(double x, double count = 1.0) const override;
-	double		round			(double d, bool upward) const override;
-	double		roundOut		(double d, bool upward, bool roundUnderOverflow) const override;
+    double ulp(double x, double count = 1.0) const override;
+    double round(double d, bool upward) const override;
+    double roundOut(double d, bool upward, bool roundUnderOverflow) const override;
 
 } DE_WARN_UNUSED_TYPE;
 
-void		FloatFormat_selfTest	(void);
+void FloatFormat_selfTest(void);
 
-} // tcu
+} // namespace tcu
 
 #endif // _TCUFLOATFORMAT_HPP

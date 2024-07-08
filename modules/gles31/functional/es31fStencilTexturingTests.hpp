@@ -36,18 +36,18 @@ namespace Functional
 class StencilTexturingTests : public TestCaseGroup
 {
 public:
-							StencilTexturingTests	(Context& context);
-							~StencilTexturingTests	(void);
+    StencilTexturingTests(Context &context);
+    ~StencilTexturingTests(void);
 
-	void					init					(void);
+    void init(void);
 
 private:
-							StencilTexturingTests	(const StencilTexturingTests& other);
-	StencilTexturingTests&	operator=				(const StencilTexturingTests& other);
+    StencilTexturingTests(const StencilTexturingTests &other);
+    StencilTexturingTests &operator=(const StencilTexturingTests &other);
 };
 
-} // Functional
-} // gles31
-} // deqp
+} // namespace Functional
+} // namespace gles31
+} // namespace deqp
 
 #endif // _ES31FSTENCILTEXTURINGTESTS_HPP

@@ -31,9 +31,9 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup* createGlobalPriorityQueueTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createGlobalPriorityQueueTests(tcu::TestContext &testCtx);
 
-} // synchronization
-} // vkt
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTGLOBALPRIORITYQUEUETESTS_HPP

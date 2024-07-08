@@ -32,9 +32,9 @@ namespace vkt
 namespace Draw
 {
 
-tcu::TestCaseGroup*	createDrawPointClampTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDrawPointClampTests(tcu::TestContext &testCtx);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWPOINTCLAMPTESTS_HPP

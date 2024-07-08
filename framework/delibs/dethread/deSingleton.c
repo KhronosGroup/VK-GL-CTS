@@ -25,37 +25,39 @@
 #include "deAtomic.h"
 #include "deThread.h"
 
-DE_STATIC_ASSERT(sizeof(deSingletonState) == sizeof(deUint32));
+DE_STATIC_ASSERT(sizeof(deSingletonState) == sizeof(uint32_t));
 
-void deInitSingleton (volatile deSingletonState* singletonState, deSingletonConstructorFunc constructor, void* arg)
+void deInitSingleton(volatile deSingletonState *singletonState, deSingletonConstructorFunc constructor, void *arg)
 {
-	if (*singletonState != DE_SINGLETON_STATE_INITIALIZED)
-	{
-		deSingletonState curState = (deSingletonState)deAtomicCompareExchange32((volatile deUint32*)singletonState, (deUint32)DE_SINGLETON_STATE_NOT_INITIALIZED, (deUint32)DE_SINGLETON_STATE_INITIALIZING);
+    if (*singletonState != DE_SINGLETON_STATE_INITIALIZED)
+    {
+        deSingletonState curState = (deSingletonState)deAtomicCompareExchange32(
+            (volatile uint32_t *)singletonState, (uint32_t)DE_SINGLETON_STATE_NOT_INITIALIZED,
+            (uint32_t)DE_SINGLETON_STATE_INITIALIZING);
 
-		if (curState == DE_SINGLETON_STATE_NOT_INITIALIZED)
-		{
-			constructor(arg);
+        if (curState == DE_SINGLETON_STATE_NOT_INITIALIZED)
+        {
+            constructor(arg);
 
-			deMemoryReadWriteFence();
+            deMemoryReadWriteFence();
 
-			*singletonState = DE_SINGLETON_STATE_INITIALIZED;
+            *singletonState = DE_SINGLETON_STATE_INITIALIZED;
 
-			deMemoryReadWriteFence();
-		}
-		else if (curState == DE_SINGLETON_STATE_INITIALIZING)
-		{
-			for (;;)
-			{
-				deMemoryReadWriteFence();
+            deMemoryReadWriteFence();
+        }
+        else if (curState == DE_SINGLETON_STATE_INITIALIZING)
+        {
+            for (;;)
+            {
+                deMemoryReadWriteFence();
 
-				if (*singletonState == DE_SINGLETON_STATE_INITIALIZED)
-					break;
-				else
-					deYield();
-			}
-		}
+                if (*singletonState == DE_SINGLETON_STATE_INITIALIZED)
+                    break;
+                else
+                    deYield();
+            }
+        }
 
-		DE_ASSERT(*singletonState == DE_SINGLETON_STATE_INITIALIZED);
-	}
+        DE_ASSERT(*singletonState == DE_SINGLETON_STATE_INITIALIZED);
+    }
 }

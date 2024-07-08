@@ -36,13 +36,12 @@ namespace SpirVAssembly
 class SpvAsmLoopControlDependencyInfiniteCase : public TestCase
 {
 public:
-							SpvAsmLoopControlDependencyInfiniteCase	(tcu::TestContext& testCtx, const char* name);
-	void					initPrograms							(vk::SourceCollections& programCollection) const;
-	TestInstance*			createInstance							(Context& context) const;
+    SpvAsmLoopControlDependencyInfiniteCase(tcu::TestContext &testCtx, const char *name);
+    void initPrograms(vk::SourceCollections &programCollection) const;
+    TestInstance *createInstance(Context &context) const;
 };
 
-
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMLOOPDEPINFTESTS_HPP

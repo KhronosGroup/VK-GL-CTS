@@ -31,11 +31,11 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-tcu::TestCaseGroup*	createVariablePointersComputeGroup	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createPhysicalPointersComputeGroup	(tcu::TestContext& testCtx);
-tcu::TestCaseGroup*	createVariablePointersGraphicsGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createVariablePointersComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createPhysicalPointersComputeGroup(tcu::TestContext &testCtx);
+tcu::TestCaseGroup *createVariablePointersGraphicsGroup(tcu::TestContext &testCtx);
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt
 
 #endif // _VKTSPVASMVARIABLEPOINTERSTESTS_HPP

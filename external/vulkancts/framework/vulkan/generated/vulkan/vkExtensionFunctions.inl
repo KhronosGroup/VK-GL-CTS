@@ -4,7 +4,7 @@
  */
 
 
-bool checkVersion(deUint32 major, deUint32 minor, const uint32_t testedApiVersion)
+bool checkVersion(uint32_t major, uint32_t minor, const uint32_t testedApiVersion)
 {
 	uint32_t testedMajor = VK_API_VERSION_MAJOR(testedApiVersion);
 	uint32_t testedMinor = VK_API_VERSION_MINOR(testedApiVersion);
@@ -1472,6 +1472,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_legacy_vertex_attributes")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_layer_settings")
 	{
 		return;
@@ -1582,11 +1586,27 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_relaxed_extended_instruction")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_maintenance7")
+	{
+		return;
+	}
 	if (extName == "VK_NV_shader_atomic_float16_vector")
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_replicated_composites")
+	{
+		return;
+	}
 	if (extName == "VK_NV_ray_tracing_validation")
+	{
+		return;
+	}
+	if (extName == "VK_MESA_image_alignment_control")
 	{
 		return;
 	}
@@ -3551,6 +3571,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_legacy_vertex_attributes")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_layer_settings")
 	{
 		return;
@@ -3680,11 +3704,27 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_relaxed_extended_instruction")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_maintenance7")
+	{
+		return;
+	}
 	if (extName == "VK_NV_shader_atomic_float16_vector")
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_replicated_composites")
+	{
+		return;
+	}
 	if (extName == "VK_NV_ray_tracing_validation")
+	{
+		return;
+	}
+	if (extName == "VK_MESA_image_alignment_control")
 	{
 		return;
 	}
@@ -4074,6 +4114,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_ray_tracing_invocation_reorder",
 	"VK_NV_extended_sparse_address_space",
 	"VK_EXT_mutable_descriptor_type",
+	"VK_EXT_legacy_vertex_attributes",
 	"VK_ARM_shader_core_builtins",
 	"VK_EXT_pipeline_library_group_handles",
 	"VK_EXT_dynamic_rendering_unused_attachments",
@@ -4100,6 +4141,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_maintenance6",
 	"VK_NV_descriptor_pool_overallocation",
 	"VK_NV_raw_access_chains",
+	"VK_KHR_shader_relaxed_extended_instruction",
+	"VK_KHR_maintenance7",
 	"VK_NV_shader_atomic_float16_vector",
+	"VK_EXT_shader_replicated_composites",
 	"VK_NV_ray_tracing_validation",
+	"VK_MESA_image_alignment_control",
 };

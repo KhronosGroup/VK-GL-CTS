@@ -28,73 +28,72 @@ namespace tcu
 
 // FunctionLibrary
 
-FunctionLibrary::FunctionLibrary (void)
+FunctionLibrary::FunctionLibrary(void)
 {
 }
 
-FunctionLibrary::~FunctionLibrary (void)
+FunctionLibrary::~FunctionLibrary(void)
 {
 }
 
 // StaticFunctionLibrary
 
-StaticFunctionLibrary::StaticFunctionLibrary (const Entry* entries, int numEntries)
+StaticFunctionLibrary::StaticFunctionLibrary(const Entry *entries, int numEntries)
 {
-	for (int entryNdx = 0; entryNdx < numEntries; entryNdx++)
-		m_functions.insert(std::make_pair(std::string(entries[entryNdx].name), entries[entryNdx].ptr));
+    for (int entryNdx = 0; entryNdx < numEntries; entryNdx++)
+        m_functions.insert(std::make_pair(std::string(entries[entryNdx].name), entries[entryNdx].ptr));
 }
 
-StaticFunctionLibrary::~StaticFunctionLibrary (void)
+StaticFunctionLibrary::~StaticFunctionLibrary(void)
 {
 }
 
-deFunctionPtr StaticFunctionLibrary::getFunction (const char* funcName) const
+deFunctionPtr StaticFunctionLibrary::getFunction(const char *funcName) const
 {
-	std::map<std::string, deFunctionPtr>::const_iterator iter = m_functions.find(funcName);
+    std::map<std::string, deFunctionPtr>::const_iterator iter = m_functions.find(funcName);
 
-	if (iter == m_functions.end())
-		return DE_NULL;
-	else
-		return iter->second;
+    if (iter == m_functions.end())
+        return DE_NULL;
+    else
+        return iter->second;
 }
 
 // DynamicFunctionLibrary
 
-DynamicFunctionLibrary::DynamicFunctionLibrary (const char* fileName)
-	: m_dynamicLibrary(fileName)
+DynamicFunctionLibrary::DynamicFunctionLibrary(const char *fileName) : m_dynamicLibrary(fileName)
 {
 }
 
-DynamicFunctionLibrary::~DynamicFunctionLibrary (void)
+DynamicFunctionLibrary::~DynamicFunctionLibrary(void)
 {
 }
 
-deFunctionPtr DynamicFunctionLibrary::getFunction (const char* funcName) const
+deFunctionPtr DynamicFunctionLibrary::getFunction(const char *funcName) const
 {
-	return m_dynamicLibrary.getFunction(funcName);
+    return m_dynamicLibrary.getFunction(funcName);
 }
 
 // CompositeFunctionLibrary
 
-CompositeFunctionLibrary::CompositeFunctionLibrary (const FunctionLibrary* libraries, int numLibraries)
-	: m_libraries		(libraries)
-	, m_numLibraries	(numLibraries)
+CompositeFunctionLibrary::CompositeFunctionLibrary(const FunctionLibrary *libraries, int numLibraries)
+    : m_libraries(libraries)
+    , m_numLibraries(numLibraries)
 {
 }
 
-CompositeFunctionLibrary::~CompositeFunctionLibrary (void)
+CompositeFunctionLibrary::~CompositeFunctionLibrary(void)
 {
 }
 
-deFunctionPtr CompositeFunctionLibrary::getFunction (const char* name) const
+deFunctionPtr CompositeFunctionLibrary::getFunction(const char *name) const
 {
-	for (int ndx = 0; ndx < m_numLibraries; ndx++)
-	{
-		const deFunctionPtr ptr = m_libraries[ndx].getFunction(name);
-		if (ptr)
-			return ptr;
-	}
-	return DE_NULL;
+    for (int ndx = 0; ndx < m_numLibraries; ndx++)
+    {
+        const deFunctionPtr ptr = m_libraries[ndx].getFunction(name);
+        if (ptr)
+            return ptr;
+    }
+    return DE_NULL;
 }
 
-} // tcu
+} // namespace tcu

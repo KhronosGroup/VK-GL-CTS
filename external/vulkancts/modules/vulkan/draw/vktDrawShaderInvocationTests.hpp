@@ -31,9 +31,9 @@ namespace vkt
 namespace Draw
 {
 
-	tcu::TestCaseGroup* createShaderInvocationTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createShaderInvocationTests(tcu::TestContext &testCtx);
 
-} // Draw
-} // vkt
+} // namespace Draw
+} // namespace vkt
 
 #endif // _VKTDRAWSHADERINVOCATIONTESTS_HPP

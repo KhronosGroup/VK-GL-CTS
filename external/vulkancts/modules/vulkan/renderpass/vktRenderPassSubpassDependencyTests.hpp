@@ -31,8 +31,9 @@
 namespace vkt
 {
 
-tcu::TestCaseGroup* createRenderPassSubpassDependencyTests(tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams);
+tcu::TestCaseGroup *createRenderPassSubpassDependencyTests(tcu::TestContext &testCtx,
+                                                           const renderpass::SharedGroupParams groupParams);
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTRENDERPASSSUBPASSDEPENDENCYTESTS_HPP

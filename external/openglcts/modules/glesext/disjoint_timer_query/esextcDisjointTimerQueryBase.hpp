@@ -38,39 +38,38 @@ namespace glcts
 class DisjointTimerQueryBase : public TestCaseBase
 {
 public:
-	DisjointTimerQueryBase			(Context& context, const ExtParameters& extParams, const char* name,
-									 const char* description);
+    DisjointTimerQueryBase(Context &context, const ExtParameters &extParams, const char *name, const char *description);
 
-	virtual ~DisjointTimerQueryBase	()
-	{
-	}
+    virtual ~DisjointTimerQueryBase()
+    {
+    }
 
 protected:
-	typedef void		(*glGenQueriesEXTFunc)(GLsizei n, GLuint* ids);
-	typedef void		(*glDeleteQueriesEXTFunc)(GLsizei n, const GLuint* ids);
-	typedef GLboolean	(*glIsQueryEXTFunc)(GLuint id);
-	typedef void		(*glBeginQueryEXTFunc)(GLenum target, GLuint id);
-	typedef void		(*glEndQueryEXTFunc)(GLenum target);
-	typedef void		(*glQueryCounterEXTFunc)(GLuint id, GLenum target);
-	typedef void		(*glGetQueryivEXTFunc)(GLenum target, GLenum pname, GLint* params);
-	typedef void		(*glGetQueryObjectivEXTFunc)(GLuint id, GLenum pname, GLint* params);
-	typedef void		(*glGetQueryObjectuivEXTFunc)(GLuint id, GLenum pname, GLuint* params);
-	typedef void		(*glGetQueryObjecti64vEXTFunc)(GLuint id, GLenum pname, GLint64* params);
-	typedef void		(*glGetQueryObjectui64vEXTFunc)(GLuint id, GLenum pname, GLuint64* params);
-	typedef void		(*glGetInteger64vEXTFunc)(GLenum pname, GLint64* data);
+    typedef void (*glGenQueriesEXTFunc)(GLsizei n, GLuint *ids);
+    typedef void (*glDeleteQueriesEXTFunc)(GLsizei n, const GLuint *ids);
+    typedef GLboolean (*glIsQueryEXTFunc)(GLuint id);
+    typedef void (*glBeginQueryEXTFunc)(GLenum target, GLuint id);
+    typedef void (*glEndQueryEXTFunc)(GLenum target);
+    typedef void (*glQueryCounterEXTFunc)(GLuint id, GLenum target);
+    typedef void (*glGetQueryivEXTFunc)(GLenum target, GLenum pname, GLint *params);
+    typedef void (*glGetQueryObjectivEXTFunc)(GLuint id, GLenum pname, GLint *params);
+    typedef void (*glGetQueryObjectuivEXTFunc)(GLuint id, GLenum pname, GLuint *params);
+    typedef void (*glGetQueryObjecti64vEXTFunc)(GLuint id, GLenum pname, GLint64 *params);
+    typedef void (*glGetQueryObjectui64vEXTFunc)(GLuint id, GLenum pname, GLuint64 *params);
+    typedef void (*glGetInteger64vEXTFunc)(GLenum pname, GLint64 *data);
 
-	glGenQueriesEXTFunc				glGenQueriesEXT;
-	glDeleteQueriesEXTFunc			glDeleteQueriesEXT;
-	glIsQueryEXTFunc				glIsQueryEXT;
-	glBeginQueryEXTFunc				glBeginQueryEXT;
-	glEndQueryEXTFunc				glEndQueryEXT;
-	glQueryCounterEXTFunc			glQueryCounterEXT;
-	glGetQueryivEXTFunc				glGetQueryivEXT;
-	glGetQueryObjectivEXTFunc		glGetQueryObjectivEXT;
-	glGetQueryObjectuivEXTFunc		glGetQueryObjectuivEXT;
-	glGetQueryObjecti64vEXTFunc		glGetQueryObjecti64vEXT;
-	glGetQueryObjectui64vEXTFunc	glGetQueryObjectui64vEXT;
-	glGetInteger64vEXTFunc			glGetInteger64vEXT;
+    glGenQueriesEXTFunc glGenQueriesEXT;
+    glDeleteQueriesEXTFunc glDeleteQueriesEXT;
+    glIsQueryEXTFunc glIsQueryEXT;
+    glBeginQueryEXTFunc glBeginQueryEXT;
+    glEndQueryEXTFunc glEndQueryEXT;
+    glQueryCounterEXTFunc glQueryCounterEXT;
+    glGetQueryivEXTFunc glGetQueryivEXT;
+    glGetQueryObjectivEXTFunc glGetQueryObjectivEXT;
+    glGetQueryObjectuivEXTFunc glGetQueryObjectuivEXT;
+    glGetQueryObjecti64vEXTFunc glGetQueryObjecti64vEXT;
+    glGetQueryObjectui64vEXTFunc glGetQueryObjectui64vEXT;
+    glGetInteger64vEXTFunc glGetInteger64vEXT;
 };
 
 } // namespace glcts

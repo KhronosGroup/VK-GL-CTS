@@ -31,9 +31,9 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*	createFragmentShaderOutputTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createFragmentShaderOutputTests(tcu::TestContext &testCtx);
 
-} // api
-} // vkt
+} // namespace api
+} // namespace vkt
 
 #endif // _VKTAPIFRAGMENTSHADEROUTPUTTESTS_HPP

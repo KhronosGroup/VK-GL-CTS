@@ -25,10 +25,20 @@
 
 #include "tcuDefs.hpp"
 
-#define EGLU_CHECK(EGLW)					eglu::checkError((EGLW).getError(), DE_NULL, __FILE__, __LINE__)
-#define EGLU_CHECK_MSG(EGLW, MSG)			eglu::checkError((EGLW).getError(), MSG, __FILE__, __LINE__)
-#define EGLU_CHECK_CALL(EGLW, CALL)			do { (EGLW).CALL; eglu::checkError((EGLW).getError(), #CALL, __FILE__, __LINE__); } while (deGetFalse())
-#define EGLU_CHECK_CALL_FPTR(EGLW, CALL)	do { CALL; eglu::checkError((EGLW).getError(), #CALL, __FILE__, __LINE__); } while (deGetFalse())
+#define EGLU_CHECK(EGLW) eglu::checkError((EGLW).getError(), DE_NULL, __FILE__, __LINE__)
+#define EGLU_CHECK_MSG(EGLW, MSG) eglu::checkError((EGLW).getError(), MSG, __FILE__, __LINE__)
+#define EGLU_CHECK_CALL(EGLW, CALL)                                     \
+    do                                                                  \
+    {                                                                   \
+        (EGLW).CALL;                                                    \
+        eglu::checkError((EGLW).getError(), #CALL, __FILE__, __LINE__); \
+    } while (false)
+#define EGLU_CHECK_CALL_FPTR(EGLW, CALL)                                \
+    do                                                                  \
+    {                                                                   \
+        CALL;                                                           \
+        eglu::checkError((EGLW).getError(), #CALL, __FILE__, __LINE__); \
+    } while (false)
 
 /*--------------------------------------------------------------------*//*!
  * \brief EGL utilities
@@ -39,47 +49,62 @@ namespace eglu
 class Error : public tcu::TestError
 {
 public:
-						Error			(deUint32 errCode, const char* errStr);
-						Error			(deUint32 errCode, const char* message, const char* expr, const char* file, int line);
-						~Error			(void) throw() {}
+    Error(uint32_t errCode, const char *errStr);
+    Error(uint32_t errCode, const char *message, const char *expr, const char *file, int line);
+    ~Error(void) throw()
+    {
+    }
 
-	deUint32			getError		(void) const { return m_error; }
+    uint32_t getError(void) const
+    {
+        return m_error;
+    }
 
 private:
-	deUint32			m_error;
+    uint32_t m_error;
 };
 
 class BadAllocError : public tcu::ResourceError
 {
 public:
-						BadAllocError	(const char* errStr);
-						BadAllocError	(const char* message, const char* expr, const char* file, int line);
-						~BadAllocError	(void) throw() {}
+    BadAllocError(const char *errStr);
+    BadAllocError(const char *message, const char *expr, const char *file, int line);
+    ~BadAllocError(void) throw()
+    {
+    }
 };
 
-void	checkError		(deUint32 err, const char* msg, const char* file, int line);
+void checkError(uint32_t err, const char *msg, const char *file, int line);
 
 class Version
 {
 public:
-						Version			(int major, int minor) : m_major(major), m_minor(minor) {}
+    Version(int major, int minor) : m_major(major), m_minor(minor)
+    {
+    }
 
-	int					getMajor		(void) const { return m_major; }
-	int					getMinor		(void) const { return m_minor; }
+    int getMajor(void) const
+    {
+        return m_major;
+    }
+    int getMinor(void) const
+    {
+        return m_minor;
+    }
 
-	bool				operator<		(const Version& v) const;
-	bool				operator==		(const Version& v) const;
+    bool operator<(const Version &v) const;
+    bool operator==(const Version &v) const;
 
-	bool				operator!=		(const Version& v) const;
-	bool				operator>		(const Version& v) const;
-	bool				operator<=		(const Version& v) const;
-	bool				operator>=		(const Version& v) const;
+    bool operator!=(const Version &v) const;
+    bool operator>(const Version &v) const;
+    bool operator<=(const Version &v) const;
+    bool operator>=(const Version &v) const;
 
 private:
-	int					m_major;
-	int					m_minor;
+    int m_major;
+    int m_minor;
 };
 
-} // eglu
+} // namespace eglu
 
 #endif // _EGLUDEFS_HPP

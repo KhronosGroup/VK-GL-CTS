@@ -34,57 +34,66 @@
 #include <cstdio>
 
 // Implement this in your platform port.
-tcu::Platform* createPlatform (void);
+tcu::Platform *createPlatform(void);
 
 namespace
 {
 
-deBool	disableRawWrites	(int, const char*)			{ return false; }
-deBool	disableFmtWrites	(int, const char*, va_list)	{ return false; }
-void	disableStdout		()							{ qpRedirectOut(disableRawWrites, disableFmtWrites); }
+bool disableRawWrites(int, const char *)
+{
+    return false;
+}
+bool disableFmtWrites(int, const char *, va_list)
+{
+    return false;
+}
+void disableStdout()
+{
+    qpRedirectOut(disableRawWrites, disableFmtWrites);
+}
 
 } // anonymous namespace
 
-int main (int argc, char** argv)
+int main(int argc, char **argv)
 {
-	int exitStatus = EXIT_SUCCESS;
+    int exitStatus = EXIT_SUCCESS;
 
 #if (DE_OS != DE_OS_WIN32)
-	// Set stdout to line-buffered mode (will be fully buffered by default if stdout is pipe).
-	setvbuf(stdout, DE_NULL, _IOLBF, 4*1024);
+    // Set stdout to line-buffered mode (will be fully buffered by default if stdout is pipe).
+    setvbuf(stdout, DE_NULL, _IOLBF, 4 * 1024);
 #endif
 
-	try
-	{
-		tcu::CommandLine				cmdLine		(argc, argv);
+    try
+    {
+        tcu::CommandLine cmdLine(argc, argv);
 
-		if (cmdLine.quietMode())
-			disableStdout();
+        if (cmdLine.quietMode())
+            disableStdout();
 
-		tcu::DirArchive					archive		(cmdLine.getArchiveDir());
-		tcu::TestLog					log			(cmdLine.getLogFileName(), cmdLine.getLogFlags());
-		de::UniquePtr<tcu::Platform>	platform	(createPlatform());
-		de::UniquePtr<tcu::App>			app			(new tcu::App(*platform, archive, log, cmdLine));
+        tcu::DirArchive archive(cmdLine.getArchiveDir());
+        tcu::TestLog log(cmdLine.getLogFileName(), cmdLine.getLogFlags());
+        de::UniquePtr<tcu::Platform> platform(createPlatform());
+        de::UniquePtr<tcu::App> app(new tcu::App(*platform, archive, log, cmdLine));
 
-		// Main loop.
-		for (;;)
-		{
-			if (!app->iterate())
-			{
-				if (cmdLine.getRunMode() == tcu::RUNMODE_EXECUTE &&
-					(!app->getResult().isComplete || app->getResult().numFailed))
-				{
-					exitStatus = EXIT_FAILURE;
-				}
+        // Main loop.
+        for (;;)
+        {
+            if (!app->iterate())
+            {
+                if (cmdLine.getRunMode() == tcu::RUNMODE_EXECUTE &&
+                    (!app->getResult().isComplete || app->getResult().numFailed))
+                {
+                    exitStatus = EXIT_FAILURE;
+                }
 
-				break;
-			}
-		}
-	}
-	catch (const std::exception& e)
-	{
-		tcu::die("%s", e.what());
-	}
+                break;
+            }
+        }
+    }
+    catch (const std::exception &e)
+    {
+        tcu::die("%s", e.what());
+    }
 
-	return exitStatus;
+    return exitStatus;
 }

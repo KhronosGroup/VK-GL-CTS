@@ -36,17 +36,17 @@ namespace Functional
 class ClippingTests : public TestCaseGroup
 {
 public:
-						ClippingTests	(Context& context);
-						~ClippingTests	(void);
-	void				init			(void);
+    ClippingTests(Context &context);
+    ~ClippingTests(void);
+    void init(void);
 
 private:
-	ClippingTests&		operator=		(const ClippingTests&);
-						ClippingTests	(const ClippingTests&);
+    ClippingTests &operator=(const ClippingTests &);
+    ClippingTests(const ClippingTests &);
 };
 
-} // Functional
-} // gles3
-} // deqp
+} // namespace Functional
+} // namespace gles3
+} // namespace deqp
 
 #endif // _ES3FCLIPPINGTESTS_HPP

@@ -37,18 +37,18 @@ namespace de
 class Mutex
 {
 public:
-					Mutex			(deUint32 flags = 0);
-					~Mutex			(void);
+    Mutex(uint32_t flags = 0);
+    ~Mutex(void);
 
-	void			lock			(void) throw();
-	void			unlock			(void) throw();
-	bool			tryLock			(void) throw();
+    void lock(void) throw();
+    void unlock(void) throw();
+    bool tryLock(void) throw();
 
 private:
-					Mutex			(const Mutex& other); // Not allowed!
-	Mutex&			operator=		(const Mutex& other); // Not allowed!
+    Mutex(const Mutex &other);            // Not allowed!
+    Mutex &operator=(const Mutex &other); // Not allowed!
 
-	deMutex			m_mutex;
+    deMutex m_mutex;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -61,14 +61,17 @@ private:
 class ScopedLock
 {
 public:
-					ScopedLock		(Mutex& mutex);
-					~ScopedLock		(void) { m_mutex.unlock(); }
+    ScopedLock(Mutex &mutex);
+    ~ScopedLock(void)
+    {
+        m_mutex.unlock();
+    }
 
 private:
-					ScopedLock		(const ScopedLock& other); // Not allowed!
-	ScopedLock&		operator=		(const ScopedLock& other); // Not allowed!
+    ScopedLock(const ScopedLock &other);            // Not allowed!
+    ScopedLock &operator=(const ScopedLock &other); // Not allowed!
 
-	Mutex&			m_mutex;
+    Mutex &m_mutex;
 };
 
 // Mutex inline implementations.
@@ -76,8 +79,8 @@ private:
 /*--------------------------------------------------------------------*//*!
  * \brief Acquire mutex lock.
  * \note This method will never report failure. If an error occurs due
- *		 to misuse or other reason it will lead to process termination
-*		 in debug build.
+ *         to misuse or other reason it will lead to process termination
+*         in debug build.
  *
  * If mutex is currently locked the function will block until current
  * lock is released.
@@ -85,23 +88,23 @@ private:
  * In recursive mode further calls from the thread owning the mutex will
  * succeed and increment lock count.
  *//*--------------------------------------------------------------------*/
-inline void Mutex::lock (void) throw()
+inline void Mutex::lock(void) throw()
 {
-	deMutex_lock(m_mutex);
+    deMutex_lock(m_mutex);
 }
 
 /*--------------------------------------------------------------------*//*!
  * \brief Release mutex lock.
  * \note This method will never report failure. If an error occurs due
- *		 to misuse or other reason it will lead to process termination
-*		 in debug build.
+ *         to misuse or other reason it will lead to process termination
+*         in debug build.
  *
  * In recursive mode the mutex will be released once the lock count reaches
  * zero.
  *//*--------------------------------------------------------------------*/
-inline void Mutex::unlock (void) throw()
+inline void Mutex::unlock(void) throw()
 {
-	deMutex_unlock(m_mutex);
+    deMutex_unlock(m_mutex);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -111,9 +114,9 @@ inline void Mutex::unlock (void) throw()
  * This function will never block, i.e. it will return false if mutex
  * is currently locked.
  *//*--------------------------------------------------------------------*/
-inline bool Mutex::tryLock (void) throw()
+inline bool Mutex::tryLock(void) throw()
 {
-	return deMutex_tryLock(m_mutex) == DE_TRUE;
+    return deMutex_tryLock(m_mutex) == true;
 }
 
 // ScopedLock inline implementations.
@@ -122,12 +125,11 @@ inline bool Mutex::tryLock (void) throw()
  * \brief Acquire scoped lock to mutex.
  * \param mutex Mutex to be locked.
  *//*--------------------------------------------------------------------*/
-inline ScopedLock::ScopedLock (Mutex& mutex)
-	: m_mutex(mutex)
+inline ScopedLock::ScopedLock(Mutex &mutex) : m_mutex(mutex)
 {
-	m_mutex.lock();
+    m_mutex.lock();
 }
 
-} // de
+} // namespace de
 
 #endif // _DEMUTEX_HPP

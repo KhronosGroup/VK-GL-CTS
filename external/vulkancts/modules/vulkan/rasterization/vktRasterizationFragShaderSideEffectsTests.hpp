@@ -32,9 +32,9 @@ namespace vkt
 namespace rasterization
 {
 
-tcu::TestCaseGroup* createFragSideEffectsTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createFragSideEffectsTests(tcu::TestContext &testCtx);
 
-} // rasterization
-} // vkt
+} // namespace rasterization
+} // namespace vkt
 
 #endif // _VKTRASTERIZATIONFRAGSHADERSIDEEFFECTSTESTS_HPP

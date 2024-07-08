@@ -32,9 +32,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createBarrierTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createBarrierTests(tcu::TestContext &testCtx);
 
-} // RayTracing
-} // vkt
+} // namespace RayTracing
+} // namespace vkt
 
 #endif // _VKTRAYTRACINGBARRIERTESTS_HPP

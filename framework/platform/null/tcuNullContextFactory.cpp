@@ -29,15 +29,15 @@ namespace tcu
 namespace null
 {
 
-NullGLContextFactory::NullGLContextFactory (void)
-	: glu::ContextFactory("null", "Null Render Context")
+NullGLContextFactory::NullGLContextFactory(void) : glu::ContextFactory("null", "Null Render Context")
 {
 }
 
-glu::RenderContext* NullGLContextFactory::createContext (const glu::RenderConfig& config, const tcu::CommandLine&, const glu::RenderContext*) const
+glu::RenderContext *NullGLContextFactory::createContext(const glu::RenderConfig &config, const tcu::CommandLine &,
+                                                        const glu::RenderContext *) const
 {
-	return new RenderContext(config);
+    return new RenderContext(config);
 }
 
-} // null
-} // tcu
+} // namespace null
+} // namespace tcu

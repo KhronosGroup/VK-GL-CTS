@@ -37,18 +37,18 @@ namespace DynamicState
 class DynamicStateDiscardTests : public tcu::TestCaseGroup
 {
 public:
-					DynamicStateDiscardTests	(tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
-					~DynamicStateDiscardTests	(void);
-	void			init						(void);
+    DynamicStateDiscardTests(tcu::TestContext &testCtx, vk::PipelineConstructionType pipelineConstructionType);
+    ~DynamicStateDiscardTests(void);
+    void init(void);
 
 private:
-	DynamicStateDiscardTests					(const DynamicStateDiscardTests& other);
-	DynamicStateDiscardTests&		operator=	(const DynamicStateDiscardTests& other);
+    DynamicStateDiscardTests(const DynamicStateDiscardTests &other);
+    DynamicStateDiscardTests &operator=(const DynamicStateDiscardTests &other);
 
-	vk::PipelineConstructionType	m_pipelineConstructionType;
+    vk::PipelineConstructionType m_pipelineConstructionType;
 };
 
-} // DynamicState
-} // vkt
+} // namespace DynamicState
+} // namespace vkt
 
 #endif // _VKTDYNAMICSTATEDISCARDTESTS_HPP

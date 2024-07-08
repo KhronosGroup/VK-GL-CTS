@@ -28,26 +28,26 @@ namespace vk
 namespace wsi
 {
 
-void Window::setVisible (bool visible)
+void Window::setVisible(bool visible)
 {
-	DE_UNREF(visible);
-	TCU_THROW(InternalError, "setVisible() called on window not supporting it");
+    DE_UNREF(visible);
+    TCU_THROW(InternalError, "setVisible() called on window not supporting it");
 }
 
 void Window::setForeground(void)
 {
 }
 
-void Window::resize (const tcu::UVec2&)
+void Window::resize(const tcu::UVec2 &)
 {
-	TCU_THROW(InternalError, "resize() called on window not supporting it");
+    TCU_THROW(InternalError, "resize() called on window not supporting it");
 }
 
-void Window::setMinimized (bool minimized)
+void Window::setMinimized(bool minimized)
 {
-	DE_UNREF(minimized);
-	TCU_THROW(InternalError, "setMinimized() called on window not supporting it");
+    DE_UNREF(minimized);
+    TCU_THROW(InternalError, "setMinimized() called on window not supporting it");
 }
 
-} // wsi
-} // vk
+} // namespace wsi
+} // namespace vk

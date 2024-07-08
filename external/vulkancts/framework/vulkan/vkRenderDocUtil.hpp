@@ -34,18 +34,18 @@ struct RenderDocPrivate;
 class RenderDocUtil
 {
 public:
-											RenderDocUtil		(void);
-											~RenderDocUtil		(void);
+    RenderDocUtil(void);
+    ~RenderDocUtil(void);
 
-	bool									isValid				(void);
+    bool isValid(void);
 
-	void									startFrame			(vk::VkInstance);
-	void									endFrame			(vk::VkInstance);
+    void startFrame(vk::VkInstance);
+    void endFrame(vk::VkInstance);
 
 private:
-	RenderDocPrivate *						m_priv;
+    RenderDocPrivate *m_priv;
 };
 
-} // vk
+} // namespace vk
 
 #endif // _VKRENDERDOCUTIL_HPP

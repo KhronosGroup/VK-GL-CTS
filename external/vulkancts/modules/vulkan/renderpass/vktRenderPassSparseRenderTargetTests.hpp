@@ -30,8 +30,9 @@
 namespace vkt
 {
 
-tcu::TestCaseGroup*	createRenderPassSparseRenderTargetTests(tcu::TestContext& testCtx, const renderpass::SharedGroupParams groupParams);
+tcu::TestCaseGroup *createRenderPassSparseRenderTargetTests(tcu::TestContext &testCtx,
+                                                            const renderpass::SharedGroupParams groupParams);
 
-} // vkt
+} // namespace vkt
 
 #endif // _VKTRENDERPASSSPARSERENDERTARGETTESTS_HPP

@@ -51,17 +51,17 @@ import sys
 import hashlib
 
 if len(sys.argv) != 4:
-	print("Usage: yuv2rgb-cv.py yuvFile width height")
-	sys.exit(1)
+    print("Usage: yuv2rgb-cv.py yuvFile width height")
+    sys.exit(1)
 
 yuv_filename = sys.argv[1]
 width = int(sys.argv[2])
 height = int(sys.argv[3])
 
 def checksum(bs: bytes) -> str:
-	md5 = hashlib.md5()
-	md5.update(bs)
-	return md5.hexdigest()
+    md5 = hashlib.md5()
+    md5.update(bs)
+    return md5.hexdigest()
 
 file_size = os.path.getsize(yuv_filename)
 
@@ -71,6 +71,6 @@ frame_size = int(width * height * 1.5)
 n_frames = file_size // frame_size
 
 with open(yuv_filename, 'rb') as f:
-	print("Computing checksums for ", n_frames, " frames")
-	for frame in range(n_frames):
-		print(checksum(f.read(frame_size)))
+    print("Computing checksums for ", n_frames, " frames")
+    for frame in range(n_frames):
+        print(checksum(f.read(frame_size)))

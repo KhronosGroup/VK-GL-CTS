@@ -23,7 +23,6 @@
  * \brief Synchronization internally synchronized objects tests
  *//*--------------------------------------------------------------------*/
 
-
 #include "tcuTestCase.hpp"
 
 namespace vkt
@@ -31,10 +30,9 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup*		createInternallySynchronizedObjects(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createInternallySynchronizedObjects(tcu::TestContext &testCtx);
 
-} //synchronization
-} // vkt
-
+} // namespace synchronization
+} // namespace vkt
 
 #endif // _VKTSYNCHRONIZATIONINTERNALLYSYNCHRONIZEDOBJECTSTESTS_HPP

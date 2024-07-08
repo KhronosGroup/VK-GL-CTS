@@ -2316,6 +2316,7 @@ KHR-GLES3.shaders.uniform_block.random.all_shared_buffer.18
 KHR-GLES3.shaders.uniform_block.random.all_shared_buffer.19
 KHR-GLES3.shaders.uniform_block.common.precision_matching
 KHR-GLES3.shaders.uniform_block.common.name_matching
+KHR-GLES3.shaders.uniform_block_negative.structure_declaration
 KHR-GLES3.shaders.glsl_constructors.vec2_from_mat2_vs
 KHR-GLES3.shaders.glsl_constructors.vec2_from_mat2_fs
 KHR-GLES3.shaders.glsl_constructors.vec2_from_mat2_mat2_invalid_vs
@@ -3935,6 +3936,12 @@ KHR-GLES3.framebuffer_completeness.status_tracking
 KHR-GLES3.framebuffer_completeness.mutable_texture_missing_attachment_level
 KHR-GLES3.framebuffer_completeness.immutable_texture_any_level_as_attachment
 KHR-GLES3.texture_lod_basic.lod_selection
+KHR-GLES3.clip_distance.coverage
+KHR-GLES3.clip_distance.functional
+KHR-GLES3.clip_distance.negative
+KHR-GLES3.cull_distance.coverage
+KHR-GLES3.cull_distance.functional
+KHR-GLES3.cull_distance.negative
 KHR-GLES3.copy_tex_image_conversions.forbidden.texture2d_texture2d
 KHR-GLES3.copy_tex_image_conversions.forbidden.texture2d_cubemap_negx
 KHR-GLES3.copy_tex_image_conversions.forbidden.texture2d_cubemap_negy
@@ -4095,3 +4102,4 @@ KHR-GLES3.number_parsing.float_overflow_to_positive_infinity
 KHR-GLES3.number_parsing.float_overflow_to_negative_infinity
 KHR-GLES3.framebuffer_blit.framebuffer_blit_functionality_multisampled_to_singlesampled_blit
 KHR-GLES3.texture_lod_bias.texture_lod_bias_all
+KHR-GLES3.transform_feedback2.transform_feedback2_states

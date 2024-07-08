@@ -48,6 +48,8 @@ GetPhysicalDeviceExternalFencePropertiesFunc						getPhysicalDeviceExternalFence
 GetPhysicalDeviceExternalFencePropertiesKHRFunc						getPhysicalDeviceExternalFencePropertiesKHR;
 GetPhysicalDeviceSciSyncAttributesNVFunc							getPhysicalDeviceSciSyncAttributesNV;
 ReleaseDisplayEXTFunc												releaseDisplayEXT;
+AcquireWinrtDisplayNVFunc											acquireWinrtDisplayNV;
+GetWinrtDisplayNVFunc												getWinrtDisplayNV;
 GetPhysicalDeviceSurfaceCapabilities2EXTFunc						getPhysicalDeviceSurfaceCapabilities2EXT;
 EnumeratePhysicalDeviceGroupsFunc									enumeratePhysicalDeviceGroups;
 EnumeratePhysicalDeviceGroupsKHRFunc								enumeratePhysicalDeviceGroupsKHR;

@@ -44,35 +44,50 @@ struct RenderConfig;
 class FboRenderContext : public RenderContext
 {
 public:
-										FboRenderContext		(RenderContext* context, const RenderConfig& config);
-										FboRenderContext		(const ContextFactory& factory, const RenderConfig& config, const tcu::CommandLine& cmdLine);
-	virtual								~FboRenderContext		(void);
+    FboRenderContext(RenderContext *context, const RenderConfig &config);
+    FboRenderContext(const ContextFactory &factory, const RenderConfig &config, const tcu::CommandLine &cmdLine);
+    virtual ~FboRenderContext(void);
 
-	virtual ContextType					getType					(void) const { return m_context->getType();			}
-	virtual const  glw::Functions&		getFunctions			(void) const { return m_context->getFunctions();	}
-	virtual const tcu::RenderTarget&	getRenderTarget			(void) const { return m_renderTarget;				}
-	virtual void						postIterate				(void);
+    virtual ContextType getType(void) const
+    {
+        return m_context->getType();
+    }
+    virtual const glw::Functions &getFunctions(void) const
+    {
+        return m_context->getFunctions();
+    }
+    virtual const tcu::RenderTarget &getRenderTarget(void) const
+    {
+        return m_renderTarget;
+    }
+    virtual void postIterate(void);
 
-	virtual deUint32					getDefaultFramebuffer	(void) const { return m_framebuffer; }
-	virtual glw::GenericFuncType		getProcAddress			(const char* name) const { return m_context->getProcAddress(name); }
+    virtual uint32_t getDefaultFramebuffer(void) const
+    {
+        return m_framebuffer;
+    }
+    virtual glw::GenericFuncType getProcAddress(const char *name) const
+    {
+        return m_context->getProcAddress(name);
+    }
 
-	virtual void						makeCurrent				(void);
+    virtual void makeCurrent(void);
 
 private:
-	void								createFramebuffer		(const RenderConfig& config);
-	void								destroyFramebuffer		(void);
+    void createFramebuffer(const RenderConfig &config);
+    void destroyFramebuffer(void);
 
-	RenderContext*						m_context;
-	deUint32							m_framebuffer;
-	deUint32							m_colorBuffer;
-	deUint32							m_depthStencilBuffer;
-	tcu::RenderTarget					m_renderTarget;
+    RenderContext *m_context;
+    uint32_t m_framebuffer;
+    uint32_t m_colorBuffer;
+    uint32_t m_depthStencilBuffer;
+    tcu::RenderTarget m_renderTarget;
 };
 
 // RenderConfig to format mapping utilities, useful for platforms like iOS.
-deUint32	chooseColorFormat			(const RenderConfig& config);
-deUint32	chooseDepthStencilFormat	(const RenderConfig& config);
+uint32_t chooseColorFormat(const RenderConfig &config);
+uint32_t chooseDepthStencilFormat(const RenderConfig &config);
 
-} // glu
+} // namespace glu
 
 #endif // _GLUFBORENDERCONTEXT_HPP

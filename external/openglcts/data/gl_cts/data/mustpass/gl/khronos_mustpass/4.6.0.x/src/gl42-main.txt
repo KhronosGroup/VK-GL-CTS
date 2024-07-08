@@ -2884,8 +2884,8 @@ KHR-GL42.cull_distance.functional
 KHR-GL42.cull_distance.negative
 KHR-GL42.texture_swizzle.api_errors
 KHR-GL42.texture_swizzle.intial_state
-KHR-GL42.texture_swizzle.smoke
-KHR-GL42.texture_swizzle.functional
+KHR-GL42.texture_swizzle.smoke*
+KHR-GL42.texture_swizzle.functional*
 KHR-GL42.draw_elements_base_vertex_tests.basevertex_behavior1
 KHR-GL42.draw_elements_base_vertex_tests.basevertex_behavior2
 KHR-GL42.draw_elements_base_vertex_tests.AEP_shader_stages

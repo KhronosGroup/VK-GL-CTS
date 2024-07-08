@@ -35,16 +35,17 @@ namespace DynamicState
 class DynamicStateInheritanceTests : public tcu::TestCaseGroup
 {
 public:
-	DynamicStateInheritanceTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
-	void init (void);
-private:
-	DynamicStateInheritanceTests (const DynamicStateInheritanceTests& other); // not implemented
-	DynamicStateInheritanceTests& operator= (const DynamicStateInheritanceTests& other); // not implemented
+    DynamicStateInheritanceTests(tcu::TestContext &testCtx, vk::PipelineConstructionType pipelineConstructionType);
+    void init(void);
 
-	vk::PipelineConstructionType	m_pipelineConstructionType;
+private:
+    DynamicStateInheritanceTests(const DynamicStateInheritanceTests &other);            // not implemented
+    DynamicStateInheritanceTests &operator=(const DynamicStateInheritanceTests &other); // not implemented
+
+    vk::PipelineConstructionType m_pipelineConstructionType;
 };
 
-} // DynamicState
-} // vkt
+} // namespace DynamicState
+} // namespace vkt
 
 #endif // _VKTDYNAMICSTATEINHERITANCETESTS_HPP

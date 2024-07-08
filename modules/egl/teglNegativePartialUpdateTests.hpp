@@ -34,16 +34,15 @@ namespace egl
 class NegativePartialUpdateTests : public TestCaseGroup
 {
 public:
-								NegativePartialUpdateTests		(EglTestContext& eglTestCtx);
-	void						init							(void);
+    NegativePartialUpdateTests(EglTestContext &eglTestCtx);
+    void init(void);
 
 private:
-								NegativePartialUpdateTests		(const NegativePartialUpdateTests&);
-	NegativePartialUpdateTests&	operator=						(const NegativePartialUpdateTests&);
-
+    NegativePartialUpdateTests(const NegativePartialUpdateTests &);
+    NegativePartialUpdateTests &operator=(const NegativePartialUpdateTests &);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLNEGATIVEPARTIALUPDATETESTS_HPP

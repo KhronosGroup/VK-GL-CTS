@@ -31,22 +31,22 @@ namespace glcts
 {
 
 /** Test group which encapsulates conformance tests that verify if the set of
-	 *  attributes captured in transform feedback mode is taken from the program object
-	 *  active on the upstream shader when the separable program objects are in use.
-*/
+ *  attributes captured in transform feedback mode is taken from the program object
+ *  active on the upstream shader when the separable program objects are in use.
+ */
 class SeparableProgramsTransformFeedbackTests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	SeparableProgramsTransformFeedbackTests(deqp::Context& context);
+    /* Public methods */
+    SeparableProgramsTransformFeedbackTests(deqp::Context &context);
 
-	void init(void);
+    void init(void);
 
 private:
-	SeparableProgramsTransformFeedbackTests(const SeparableProgramsTransformFeedbackTests& other);
-	SeparableProgramsTransformFeedbackTests& operator=(const SeparableProgramsTransformFeedbackTests& other);
+    SeparableProgramsTransformFeedbackTests(const SeparableProgramsTransformFeedbackTests &other);
+    SeparableProgramsTransformFeedbackTests &operator=(const SeparableProgramsTransformFeedbackTests &other);
 };
 
-} /* glcts namespace */
+} // namespace glcts
 
 #endif // _GLCSEPARABLEPROGRAMSTRANSFORMFEEDBACKTESTS_HPP

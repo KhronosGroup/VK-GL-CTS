@@ -61,35 +61,35 @@ namespace glcts
 class TextureCubeMapArrayFBOIncompleteness : public TestCaseBase
 {
 public:
-	/* Public methods */
-	TextureCubeMapArrayFBOIncompleteness(Context& context, const ExtParameters& extParams, const char* name,
-										 const char* description);
+    /* Public methods */
+    TextureCubeMapArrayFBOIncompleteness(Context &context, const ExtParameters &extParams, const char *name,
+                                         const char *description);
 
-	virtual ~TextureCubeMapArrayFBOIncompleteness(void)
-	{
-	}
+    virtual ~TextureCubeMapArrayFBOIncompleteness(void)
+    {
+    }
 
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 private:
-	/* Private methods */
-	glw::GLboolean checkState(glw::GLint expectedState, const char* message);
-	void initTest();
+    /* Private methods */
+    glw::GLboolean checkState(glw::GLint expectedState, const char *message);
+    void initTest();
 
-	/* Private static constants */
-	static const glw::GLint m_small_texture_depth = 6;
-	static const glw::GLint m_texture_levels	  = 1;
-	static const glw::GLint m_texture_height	  = 1;
-	static const glw::GLint m_texture_width		  = 1;
+    /* Private static constants */
+    static const glw::GLint m_small_texture_depth = 6;
+    static const glw::GLint m_texture_levels      = 1;
+    static const glw::GLint m_texture_height      = 1;
+    static const glw::GLint m_texture_width       = 1;
 
-	/* Variables for general usage */
-	glw::GLuint m_fbo_id;
-	glw::GLuint m_lots_of_layers_to_id;
-	glw::GLuint m_non_layered_to_id;
-	glw::GLuint m_small_to_id;
+    /* Variables for general usage */
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_lots_of_layers_to_id;
+    glw::GLuint m_non_layered_to_id;
+    glw::GLuint m_small_to_id;
 };
 
-} /* glcts */
+} // namespace glcts
 
 #endif // _ESEXTCTEXTURECUBEMAPARRAYFBOINCOMPLETENESS_HPP

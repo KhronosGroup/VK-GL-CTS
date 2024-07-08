@@ -41,8 +41,8 @@ class VertexPacketAllocator;
  *//*--------------------------------------------------------------------*/
 struct PrimitivePacket
 {
-	int						primitiveIDIn;
-	const VertexPacket*		vertices[6];
+    int primitiveIDIn;
+    const VertexPacket *vertices[6];
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
@@ -53,24 +53,24 @@ struct PrimitivePacket
 class GeometryEmitter
 {
 public:
-								GeometryEmitter	(VertexPacketAllocator& vpalloc, size_t numVertices);
+    GeometryEmitter(VertexPacketAllocator &vpalloc, size_t numVertices);
 
-	void						EmitVertex		(const tcu::Vec4& position, float pointSize, const GenericVec4* varyings, int primitiveID);
-	void						EndPrimitive	(void);
+    void EmitVertex(const tcu::Vec4 &position, float pointSize, const GenericVec4 *varyings, int primitiveID);
+    void EndPrimitive(void);
 
-	void						moveEmittedTo	(std::vector<VertexPacket*>&);
+    void moveEmittedTo(std::vector<VertexPacket *> &);
 
 private:
-								GeometryEmitter	(const GeometryEmitter&);
-	GeometryEmitter&			operator=		(const GeometryEmitter&);
+    GeometryEmitter(const GeometryEmitter &);
+    GeometryEmitter &operator=(const GeometryEmitter &);
 
-	std::vector<VertexPacket*>	m_emitted;	//!< NULL elements mean primitive end
-	VertexPacketAllocator&		m_vpalloc;
-	size_t						m_numEmitted;
-	size_t						m_maxVertices;
+    std::vector<VertexPacket *> m_emitted; //!< NULL elements mean primitive end
+    VertexPacketAllocator &m_vpalloc;
+    size_t m_numEmitted;
+    size_t m_maxVertices;
 
 } DE_WARN_UNUSED_TYPE;
 
-} // rr
+} // namespace rr
 
 #endif // _RRPRIMITIVEPACKET_HPP

@@ -32,9 +32,10 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup* createImage2DViewOf3DTests (tcu::TestContext& testCtx, vk::PipelineConstructionType pipelineConstructionType);
+tcu::TestCaseGroup *createImage2DViewOf3DTests(tcu::TestContext &testCtx,
+                                               vk::PipelineConstructionType pipelineConstructionType);
 
-} // pipeline
-} // vkt
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEIMAGE2DVIEWOF3DTESTS_HPP

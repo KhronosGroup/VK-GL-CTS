@@ -91,43 +91,43 @@ namespace glcts
 class GeometryShaderPrimitiveQueries : public TestCaseBase
 {
 public:
-	/* Public methods */
-	virtual void		  deinit(void);
-	virtual IterateResult iterate(void);
+    /* Public methods */
+    virtual void deinit(void);
+    virtual IterateResult iterate(void);
 
 protected:
-	/* Protected methods */
-	GeometryShaderPrimitiveQueries(Context& context, const ExtParameters& extParams, const char* name,
-								   const char* description);
+    /* Protected methods */
+    GeometryShaderPrimitiveQueries(Context &context, const ExtParameters &extParams, const char *name,
+                                   const char *description);
 
-	virtual ~GeometryShaderPrimitiveQueries(void)
-	{
-	}
+    virtual ~GeometryShaderPrimitiveQueries(void)
+    {
+    }
 
-	/* Protected abstract methods */
-	virtual glw::GLint  getAmountOfEmittedVertices() = 0;
-	virtual const char* getGeometryShaderCode()		 = 0;
-	virtual glw::GLenum getTFMode()					 = 0;
+    /* Protected abstract methods */
+    virtual glw::GLint getAmountOfEmittedVertices() = 0;
+    virtual const char *getGeometryShaderCode()     = 0;
+    virtual glw::GLenum getTFMode()                 = 0;
 
 private:
-	/* Private methods */
-	void readPrimitiveQueryValues(glw::GLint bufferId, glw::GLuint* nPrimitivesGenerated,
-								  glw::GLuint* nPrimitivesWritten);
+    /* Private methods */
+    void readPrimitiveQueryValues(glw::GLint bufferId, glw::GLuint *nPrimitivesGenerated,
+                                  glw::GLuint *nPrimitivesWritten);
 
-	/* Private variables */
-	static const char* m_fs_code;
-	static const char* m_vs_code;
+    /* Private variables */
+    static const char *m_fs_code;
+    static const char *m_vs_code;
 
-	const glw::GLint m_n_texture_components;
-	glw::GLuint		 m_bo_large_id;
-	glw::GLuint		 m_bo_small_id;
-	glw::GLuint		 m_fs_id;
-	glw::GLuint		 m_gs_id;
-	glw::GLuint		 m_po_id;
-	glw::GLuint		 m_qo_primitives_generated_id;
-	glw::GLuint		 m_qo_tf_primitives_written_id;
-	glw::GLuint		 m_vao_id;
-	glw::GLuint		 m_vs_id;
+    const glw::GLint m_n_texture_components;
+    glw::GLuint m_bo_large_id;
+    glw::GLuint m_bo_small_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_qo_primitives_generated_id;
+    glw::GLuint m_qo_tf_primitives_written_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 /**
@@ -136,23 +136,23 @@ private:
 class GeometryShaderPrimitiveQueriesPoints : public GeometryShaderPrimitiveQueries
 {
 public:
-	/* Public methods */
-	GeometryShaderPrimitiveQueriesPoints(Context& context, const ExtParameters& extParams, const char* name,
-										 const char* description);
+    /* Public methods */
+    GeometryShaderPrimitiveQueriesPoints(Context &context, const ExtParameters &extParams, const char *name,
+                                         const char *description);
 
-	virtual ~GeometryShaderPrimitiveQueriesPoints(void)
-	{
-	}
+    virtual ~GeometryShaderPrimitiveQueriesPoints(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	glw::GLint  getAmountOfEmittedVertices();
-	const char* getGeometryShaderCode();
-	glw::GLenum getTFMode();
+    /* Protected methods */
+    glw::GLint getAmountOfEmittedVertices();
+    const char *getGeometryShaderCode();
+    glw::GLenum getTFMode();
 
 private:
-	/* Private variables */
-	static const char* m_gs_code;
+    /* Private variables */
+    static const char *m_gs_code;
 };
 
 /**
@@ -161,23 +161,23 @@ private:
 class GeometryShaderPrimitiveQueriesLines : public GeometryShaderPrimitiveQueries
 {
 public:
-	/* Public methods */
-	GeometryShaderPrimitiveQueriesLines(Context& context, const ExtParameters& extParams, const char* name,
-										const char* description);
+    /* Public methods */
+    GeometryShaderPrimitiveQueriesLines(Context &context, const ExtParameters &extParams, const char *name,
+                                        const char *description);
 
-	virtual ~GeometryShaderPrimitiveQueriesLines(void)
-	{
-	}
+    virtual ~GeometryShaderPrimitiveQueriesLines(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	glw::GLint  getAmountOfEmittedVertices();
-	const char* getGeometryShaderCode();
-	glw::GLenum getTFMode();
+    /* Protected methods */
+    glw::GLint getAmountOfEmittedVertices();
+    const char *getGeometryShaderCode();
+    glw::GLenum getTFMode();
 
 private:
-	/* Private variables */
-	static const char* m_gs_code;
+    /* Private variables */
+    static const char *m_gs_code;
 };
 
 /**
@@ -186,23 +186,23 @@ private:
 class GeometryShaderPrimitiveQueriesTriangles : public GeometryShaderPrimitiveQueries
 {
 public:
-	/* Public methods */
-	GeometryShaderPrimitiveQueriesTriangles(Context& context, const ExtParameters& extParams, const char* name,
-											const char* description);
+    /* Public methods */
+    GeometryShaderPrimitiveQueriesTriangles(Context &context, const ExtParameters &extParams, const char *name,
+                                            const char *description);
 
-	virtual ~GeometryShaderPrimitiveQueriesTriangles(void)
-	{
-	}
+    virtual ~GeometryShaderPrimitiveQueriesTriangles(void)
+    {
+    }
 
 protected:
-	/* Protected methods */
-	glw::GLint  getAmountOfEmittedVertices();
-	const char* getGeometryShaderCode();
-	glw::GLenum getTFMode();
+    /* Protected methods */
+    glw::GLint getAmountOfEmittedVertices();
+    const char *getGeometryShaderCode();
+    glw::GLenum getTFMode();
 
 private:
-	/* Private variables */
-	static const char* m_gs_code;
+    /* Private variables */
+    static const char *m_gs_code;
 };
 
 } // namespace glcts

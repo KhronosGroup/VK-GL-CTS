@@ -31,9 +31,9 @@ namespace vkt
 namespace BindingModel
 {
 
-tcu::TestCaseGroup* createDescriptorUpdateTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createDescriptorUpdateTests(tcu::TestContext &testCtx);
 
-} // BindingModel
-} // vkt
+} // namespace BindingModel
+} // namespace vkt
 
 #endif // _VKTBINDINGDESCRIPTORUPDATETESTS_HPP

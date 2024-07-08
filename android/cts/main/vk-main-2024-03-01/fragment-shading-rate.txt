@@ -1366,6 +1366,9 @@ dEQP-VK.fragment_shading_rate.renderpass2.monolithic.maintenance6.dynamic.attach
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.maintenance6.dynamic.attachment.shaderrate.replace.replace.4x4.samples8.vs
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.enable_disable_attachment
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.no_frag_shader
+dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.test_oob_attachment
+dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.test_oob_attachment_miplevel1
+dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.test_oob_attachment_robustness2
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.multipass.dynamic.attachment.noshaderrate.keep.keep.151x431.samples1.ms
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.multipass.dynamic.attachment.noshaderrate.keep.keep.151x431.samples1.vs
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.multipass.dynamic.attachment.noshaderrate.keep.keep.1x1.samples1.ms

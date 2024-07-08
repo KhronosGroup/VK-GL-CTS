@@ -35,24 +35,30 @@ namespace posix
 class FileReader : public de::Thread
 {
 public:
-							FileReader			(int blockSize, int numBlocks);
-							~FileReader			(void);
+    FileReader(int blockSize, int numBlocks);
+    ~FileReader(void);
 
-	void					start				(const char* filename);
-	void					stop				(void);
+    void start(const char *filename);
+    void stop(void);
 
-	bool					isRunning			(void) const					{ return m_isRunning;					}
-	int						read				(deUint8* dst, int numBytes)	{ return m_buf.tryRead(numBytes, dst);	}
+    bool isRunning(void) const
+    {
+        return m_isRunning;
+    }
+    int read(uint8_t *dst, int numBytes)
+    {
+        return m_buf.tryRead(numBytes, dst);
+    }
 
-	void					run					(void);
+    void run(void);
 
 private:
-	deFile*					m_file;
-	ThreadedByteBuffer		m_buf;
-	bool					m_isRunning;
+    deFile *m_file;
+    ThreadedByteBuffer m_buf;
+    bool m_isRunning;
 };
 
-} // posix
-} // xs
+} // namespace posix
+} // namespace xs
 
 #endif // _XSPOSIXFILEREADER_HPP

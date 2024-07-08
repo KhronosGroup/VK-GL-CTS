@@ -888,6 +888,7 @@ const char* getUncompressedTextureFormatName (int value)
 		case GL_SR8_EXT:			return "GL_SR8_EXT";
 		case GL_SRG8_EXT:			return "GL_SRG8_EXT";
 		case GL_BGRA:				return "GL_BGRA";
+		case GL_BGRA8_EXT:			return "GL_BGRA8_EXT";
 		default:					return DE_NULL;
 	}
 }
@@ -1738,6 +1739,7 @@ const char* getTextureFormatName (int value)
 		case GL_SR8_EXT:									return "GL_SR8_EXT";
 		case GL_SRG8_EXT:									return "GL_SRG8_EXT";
 		case GL_BGRA:										return "GL_BGRA";
+		case GL_BGRA8_EXT:									return "GL_BGRA8_EXT";
 		case GL_COMPRESSED_R11_EAC:							return "GL_COMPRESSED_R11_EAC";
 		case GL_COMPRESSED_SIGNED_R11_EAC:					return "GL_COMPRESSED_SIGNED_R11_EAC";
 		case GL_COMPRESSED_RG11_EAC:						return "GL_COMPRESSED_RG11_EAC";

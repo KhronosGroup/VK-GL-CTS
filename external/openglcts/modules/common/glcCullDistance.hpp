@@ -1,5 +1,5 @@
-#ifndef _GL3CCULLDISTANCETESTS_HPP
-#define _GL3CCULLDISTANCETESTS_HPP
+#ifndef _GLCCULLDISTANCE_HPP
+#define _GLCCULLDISTANCE_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
@@ -31,7 +31,8 @@
 
 #include "glcTestCase.hpp"
 #include "glwDefs.hpp"
-#include "tcuDefs.hpp"
+
+#include <map>
 
 namespace glcts
 {
@@ -46,15 +47,39 @@ namespace CullDistance
 class Utilities
 {
 public:
-	/* Public static methods */
-	static void buildProgram(const glw::Functions& gl, tcu::TestContext& testCtx, const glw::GLchar* cs_body,
-							 const glw::GLchar* fs_body, const glw::GLchar* gs_body, const glw::GLchar* tc_body,
-							 const glw::GLchar* te_body, const glw::GLchar* vs_body, const glw::GLuint& n_tf_varyings,
-							 const glw::GLchar** tf_varyings, glw::GLuint* out_program);
+    /* Public static methods */
+    static void buildProgram(const glw::Functions &gl, tcu::TestContext &testCtx, const glw::GLchar *cs_body,
+                             const glw::GLchar *fs_body, const glw::GLchar *gs_body, const glw::GLchar *tc_body,
+                             const glw::GLchar *te_body, const glw::GLchar *vs_body, const glw::GLuint &n_tf_varyings,
+                             const glw::GLchar **tf_varyings, glw::GLuint *out_program);
 
-	static void replaceAll(std::string& str, const std::string& from, const std::string& to);
+    static void replaceAll(std::string &str, const std::string &from, const std::string &to);
 
-	static std::string intToString(glw::GLint integer);
+    static std::string intToString(glw::GLint integer);
+};
+
+/** @class CullDistanceTestBase
+ *
+ *  @brief Cull distance test cases base class.
+ */
+class CullDistanceTestBase : public deqp::TestCase
+{
+public:
+    /* Public member functions */
+    CullDistanceTestBase(deqp::Context &context, const char *name, const char *description);
+
+    tcu::TestNode::IterateResult iterate() override;
+
+protected:
+    /* Protected methods */
+    virtual void test(void) = DE_NULL;
+
+protected:
+    /* Protected constants */
+    std::map<std::string, std::string> specializationMap;
+
+    bool m_extensionSupported;
+    bool m_isContextES;
 };
 
 /** @brief Cull Distance API Coverage Test class
@@ -78,32 +103,33 @@ public:
  *     links successfully and that the value of the built-in constant is at
  *     least 8.
  */
-class APICoverageTest : public deqp::TestCase
+class APICoverageTest : public CullDistanceTestBase
 {
 public:
-	/* Public methods */
-	APICoverageTest(deqp::Context& context);
+    /* Public methods */
+    APICoverageTest(deqp::Context &context);
 
 protected:
-	/* Protected methods */
-	void						 deinit();
-	tcu::TestNode::IterateResult iterate();
+    /* Protected methods */
+    void deinit() override;
+
+    void test(void) override;
 
 private:
-	/* Private fields */
-	glw::GLuint m_bo_id;
-	glw::GLuint m_cs_id;
-	glw::GLuint m_cs_to_id;
-	glw::GLuint m_fbo_draw_id;
-	glw::GLuint m_fbo_draw_to_id;
-	glw::GLuint m_fbo_read_id;
-	glw::GLuint m_fs_id;
-	glw::GLuint m_gs_id;
-	glw::GLuint m_po_id;
-	glw::GLuint m_tc_id;
-	glw::GLuint m_te_id;
-	glw::GLuint m_vao_id;
-	glw::GLuint m_vs_id;
+    /* Private fields */
+    glw::GLuint m_bo_id;
+    glw::GLuint m_cs_id;
+    glw::GLuint m_cs_to_id;
+    glw::GLuint m_fbo_draw_id;
+    glw::GLuint m_fbo_draw_to_id;
+    glw::GLuint m_fbo_read_id;
+    glw::GLuint m_fs_id;
+    glw::GLuint m_gs_id;
+    glw::GLuint m_po_id;
+    glw::GLuint m_tc_id;
+    glw::GLuint m_te_id;
+    glw::GLuint m_vao_id;
+    glw::GLuint m_vs_id;
 };
 
 /** @brief Cull Distance Functional Test class
@@ -147,60 +173,61 @@ private:
  *      fragment matches the expected interpolated values of the written cull
  *      distances.
  * */
-class FunctionalTest : public deqp::TestCase
+class FunctionalTest : public CullDistanceTestBase
 {
 public:
-	/* Public methods */
-	FunctionalTest(deqp::Context& context);
+    /* Public methods */
+    FunctionalTest(deqp::Context &context);
 
 protected:
-	/* Protected methods */
-	void						 deinit();
-	tcu::TestNode::IterateResult iterate();
+    /* Protected methods */
+    void deinit() override;
+
+    void test(void) override;
 
 private:
-	/* Private type definitions */
-	enum _primitive_mode
-	{
-		PRIMITIVE_MODE_LINES,
-		PRIMITIVE_MODE_POINTS,
-		PRIMITIVE_MODE_TRIANGLES,
+    /* Private type definitions */
+    enum _primitive_mode
+    {
+        PRIMITIVE_MODE_LINES,
+        PRIMITIVE_MODE_POINTS,
+        PRIMITIVE_MODE_TRIANGLES,
 
-		PRIMITIVE_MODE_COUNT
-	};
+        PRIMITIVE_MODE_COUNT
+    };
 
-	/* Private methods */
-	void buildPO(glw::GLuint clipdistances_array_size, glw::GLuint culldistances_array_size, bool dynamic_index_writes,
-				 _primitive_mode primitive_mode, bool redeclare_clipdistances, bool redeclare_culldistances,
-				 bool use_core_functionality, bool use_gs, bool use_ts, bool fetch_culldistance_from_fs);
+    /* Private methods */
+    void buildPO(glw::GLuint clipdistances_array_size, glw::GLuint culldistances_array_size, bool dynamic_index_writes,
+                 _primitive_mode primitive_mode, bool redeclare_clipdistances, bool redeclare_culldistances,
+                 bool use_core_functionality, bool use_gs, bool use_ts, bool fetch_culldistance_from_fs);
 
-	void configureVAO(glw::GLuint clipdistances_array_size, glw::GLuint culldistances_array_size,
-					  _primitive_mode primitive_mode);
+    void configureVAO(glw::GLuint clipdistances_array_size, glw::GLuint culldistances_array_size,
+                      _primitive_mode primitive_mode);
 
-	void deinitPO();
+    void deinitPO();
 
-	void executeRenderTest(glw::GLuint clipdistances_array_size, glw::GLuint culldistances_array_size,
-						   _primitive_mode primitive_mode, bool use_tesselation, bool fetch_culldistance_from_fs);
+    void executeRenderTest(glw::GLuint clipdistances_array_size, glw::GLuint culldistances_array_size,
+                           _primitive_mode primitive_mode, bool use_tesselation, bool fetch_culldistance_from_fs);
 
-	glw::GLint readRedPixelValue(glw::GLint x, glw::GLint y);
+    glw::GLfloat readRedPixelValue(glw::GLint x, glw::GLint y);
 
-	void readTexturePixels();
+    void readTexturePixels();
 
-	/* Private fields */
-	std::vector<glw::GLfloat> m_bo_data;
-	glw::GLuint				  m_bo_id;
-	glw::GLuint				  m_fbo_id;
-	glw::GLuint				  m_po_id;
-	glw::GLsizei			  m_render_primitives;
-	glw::GLsizei			  m_render_vertices;
-	glw::GLint				  m_sub_grid_cell_size;
-	glw::GLuint				  m_to_id;
-	glw::GLuint				  m_vao_id;
+    /* Private fields */
+    std::vector<glw::GLfloat> m_bo_data;
+    glw::GLuint m_bo_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_po_id;
+    glw::GLsizei m_render_primitives;
+    glw::GLsizei m_render_vertices;
+    glw::GLint m_sub_grid_cell_size;
+    glw::GLuint m_to_id;
+    glw::GLuint m_vao_id;
 
-	const glw::GLuint		   m_to_height;
-	const glw::GLuint		   m_to_width;
-	static const glw::GLuint   m_to_pixel_data_cache_color_components = 4;
-	std::vector<glw::GLushort> m_to_pixel_data_cache;
+    const glw::GLuint m_to_height;
+    const glw::GLuint m_to_width;
+    static const glw::GLuint m_to_pixel_data_cache_color_components = 4;
+    std::vector<glw::GLfloat> m_to_pixel_data_cache;
 };
 
 /** @brief Cull Distance Negative Test class
@@ -222,44 +249,45 @@ private:
  *      gl_CullDistance with a size and use dynamic indexing when writing their
  *      elements. Expect a compile-time or link-time error.
  */
-class NegativeTest : public deqp::TestCase
+class NegativeTest : public CullDistanceTestBase
 {
 public:
-	/* Public methods */
-	NegativeTest(deqp::Context& context);
+    /* Public methods */
+    NegativeTest(deqp::Context &context);
 
 protected:
-	/* Protected methods */
-	void						 deinit();
-	tcu::TestNode::IterateResult iterate();
+    /* Protected methods */
+    void deinit() override;
+
+    void test(void) override;
 
 private:
-	/* Private methods */
-	std::string getTestDescription(glw::GLint n_test_iteration, bool should_redeclare_output_variables,
-								   bool use_dynamic_index_based_writes);
+    /* Private methods */
+    std::string getTestDescription(glw::GLint n_test_iteration, bool should_redeclare_output_variables,
+                                   bool use_dynamic_index_based_writes);
 
-	/* Private fields */
-	glw::GLuint  m_fs_id;
-	glw::GLuint  m_po_id;
-	glw::GLchar* m_temp_buffer;
-	glw::GLuint  m_vs_id;
+    /* Private fields */
+    glw::GLuint m_fs_id;
+    glw::GLuint m_po_id;
+    glw::GLchar *m_temp_buffer;
+    glw::GLuint m_vs_id;
 };
 
 /** @brief Grouping class for Cull Distance Tests */
 class Tests : public deqp::TestCaseGroup
 {
 public:
-	/* Public methods */
-	Tests(deqp::Context& context);
+    /* Public methods */
+    Tests(deqp::Context &context);
 
-	void init(void);
+    void init(void);
 
 private:
-	Tests(const CullDistance::Tests& other);
-	Tests& operator=(const CullDistance::Tests& other);
+    Tests(const CullDistance::Tests &other);
+    Tests &operator=(const CullDistance::Tests &other);
 };
-}
+} // namespace CullDistance
 /* CullDistance namespace */
-} /* glcts namespace */
+} // namespace glcts
 
-#endif // _GL3CCULLDISTANCETESTS_HPP
+#endif // _GLCCULLDISTANCE_HPP

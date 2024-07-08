@@ -32,9 +32,9 @@ namespace vkt
 namespace sr
 {
 
-tcu::TestCaseGroup*	createLoopTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createLoopTests(tcu::TestContext &testCtx);
 
-} // sr
-} // vkt
+} // namespace sr
+} // namespace vkt
 
 #endif // _VKTSHADERRENDERLOOPTESTS_HPP

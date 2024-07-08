@@ -38,9 +38,9 @@ namespace vkt
 namespace image
 {
 
-tcu::TestCaseGroup* createImageSampleDrawnTextureTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup *createImageSampleDrawnTextureTests(tcu::TestContext &testCtx);
 
-} // image
-} // vkt
+} // namespace image
+} // namespace vkt
 
 #endif // _VKTIMAGESAMPLECOMPRESSEDTEXTURETESTS_HPP

@@ -35,47 +35,48 @@ namespace SpirVAssembly
 namespace
 {
 
-void createSignedIntCompareTests (tcu::TestCaseGroup* tests, const char* data_dir)
+void createSignedIntCompareTests(tcu::TestCaseGroup *tests, const char *data_dir)
 {
 #ifndef CTS_USES_VULKANSC
-	tcu::TestContext& testCtx = tests->getTestContext();
+    tcu::TestContext &testCtx = tests->getTestContext();
 
-	// Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
-	struct Case {
-		const char* basename;
-		const char* description;
-	};
-	const Case cases[] =
-	{
-		{ "uint_sgreaterthanequal", "32bit unsigned int with OpSGreaterThanEqual" },
-		{ "uint_sgreaterthan", "32bit unsigned int with OpSGreaterThan" },
-		{ "uint_slessthan", "32bit unsigned int with OpSLessThan" },
-		{ "uint_slessthanequal", "32bit unsigned int with OpSLessThanEqual" }
-		// For testing fail-to-parse case:
-		//, { "foo", "Amber syntax error" }
-	};
+    // Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
+    struct Case
+    {
+        const char *basename;
+        const char *description;
+    };
+    const Case cases[] = {
+        {"uint_sgreaterthanequal", "32bit unsigned int with OpSGreaterThanEqual"},
+        {"uint_sgreaterthan", "32bit unsigned int with OpSGreaterThan"},
+        {"uint_slessthan", "32bit unsigned int with OpSLessThan"},
+        {"uint_slessthanequal", "32bit unsigned int with OpSLessThanEqual"}
+        // For testing fail-to-parse case:
+        //, { "foo", "Amber syntax error" }
+    };
 
-	for (unsigned i = 0; i < sizeof(cases)/sizeof(cases[0]) ; ++i)
-	{
-		std::string					file		= std::string(cases[i].basename) + ".amber";
-		cts_amber::AmberTestCase	*testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file);
+    for (unsigned i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i)
+    {
+        std::string file = std::string(cases[i].basename) + ".amber";
+        cts_amber::AmberTestCase *testCase =
+            cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file);
 
-		tests->addChild(testCase);
-	}
+        tests->addChild(testCase);
+    }
 #else
-	DE_UNREF(tests);
-	DE_UNREF(data_dir);
+    DE_UNREF(tests);
+    DE_UNREF(data_dir);
 #endif
 }
 
-} // anonymous
+} // namespace
 
-tcu::TestCaseGroup* createSignedIntCompareGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup *createSignedIntCompareGroup(tcu::TestContext &testCtx)
 {
-	// Location of the Amber script files under the data/vulkan/amber source tree.
-	const char* data_dir = "spirv_assembly/instruction/compute/signed_int_compare";
-	return createTestGroup(testCtx, "signed_int_compare", createSignedIntCompareTests, data_dir);
+    // Location of the Amber script files under the data/vulkan/amber source tree.
+    const char *data_dir = "spirv_assembly/instruction/compute/signed_int_compare";
+    return createTestGroup(testCtx, "signed_int_compare", createSignedIntCompareTests, data_dir);
 }
 
-} // SpirVAssembly
-} // vkt
+} // namespace SpirVAssembly
+} // namespace vkt

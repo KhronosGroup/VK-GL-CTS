@@ -32,25 +32,25 @@
 
 enum Operator
 {
-	OPERATOR_ADD,
-	OPERATOR_MUL,
-	OPERATOR_MIN,
-	OPERATOR_MAX,
-	OPERATOR_AND,
-	OPERATOR_OR,
-	OPERATOR_XOR,
+    OPERATOR_ADD,
+    OPERATOR_MUL,
+    OPERATOR_MIN,
+    OPERATOR_MAX,
+    OPERATOR_AND,
+    OPERATOR_OR,
+    OPERATOR_XOR,
 };
 
 enum ScanType
 {
-	SCAN_REDUCE,
-	SCAN_INCLUSIVE,
-	SCAN_EXCLUSIVE
+    SCAN_REDUCE,
+    SCAN_INCLUSIVE,
+    SCAN_EXCLUSIVE
 };
 
-std::string getScanOpName (std::string prefix, std::string suffix, Operator op, ScanType scanType);
-std::string getOpOperation (Operator op, vk::VkFormat format, std::string lhs, std::string rhs);
-std::string getIdentity (Operator op, vk::VkFormat format);
-std::string getCompare (Operator op, vk::VkFormat format, std::string lhs, std::string rhs);
+std::string getScanOpName(std::string prefix, std::string suffix, Operator op, ScanType scanType);
+std::string getOpOperation(Operator op, vk::VkFormat format, std::string lhs, std::string rhs);
+std::string getIdentity(Operator op, vk::VkFormat format);
+std::string getCompare(Operator op, vk::VkFormat format, std::string lhs, std::string rhs);
 
 #endif // _VKTSUBGROUPSSCANHELPERS_HPP

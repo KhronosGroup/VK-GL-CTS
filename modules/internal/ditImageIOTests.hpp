@@ -32,12 +32,12 @@ namespace dit
 class ImageIOTests : public tcu::TestCaseGroup
 {
 public:
-					ImageIOTests		(tcu::TestContext& testCtx);
-					~ImageIOTests		(void);
+    ImageIOTests(tcu::TestContext &testCtx);
+    ~ImageIOTests(void);
 
-	void			init				(void);
+    void init(void);
 };
 
-} // dit
+} // namespace dit
 
 #endif // _DITIMAGEIOTESTS_HPP

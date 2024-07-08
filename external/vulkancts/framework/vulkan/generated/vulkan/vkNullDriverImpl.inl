@@ -4208,10 +4208,10 @@ VKAPI_ATTR void VKAPI_CALL cmdSetRenderingAttachmentLocationsKHR (VkCommandBuffe
 	DE_UNREF(pLocationInfo);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pLocationInfo)
+VKAPI_ATTR void VKAPI_CALL cmdSetRenderingInputAttachmentIndicesKHR (VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfoKHR* pInputAttachmentIndexInfo)
 {
 	DE_UNREF(commandBuffer);
-	DE_UNREF(pLocationInfo);
+	DE_UNREF(pInputAttachmentIndexInfo);
 }
 
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =

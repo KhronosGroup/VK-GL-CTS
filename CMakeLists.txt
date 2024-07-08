@@ -65,8 +65,8 @@ include_directories(
 include(targets/${DEQP_TARGET}/${DEQP_TARGET}.cmake)
 
 # Handle target selection list.
-string(STRIP "${SELECTED_BUILD_TARGETS}" TARGET_SELECTION_STRIPPED)
-if ("${TARGET_SELECTION_STRIPPED}" STREQUAL "" OR (NOT (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)))
+string(STRIP "${SELECTED_BUILD_TARGETS}" SBT_STRIPPED)
+if ("${SBT_STRIPPED}" STREQUAL "" OR (NOT (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)))
 	set(MAYBE_EXCLUDE_FROM_ALL)
 else ()
 	# If a non-empty target selection list is provided, exclude all subdirectories by default.
@@ -74,9 +74,9 @@ else ()
 
 	# Each target in the target selection list will be added as a dependency of a new fake target.
 	# The new fake target will be added as a dependency of the default build target.
-	string(REGEX REPLACE "[ \t\r\n]+" ";" TARGET_SELECTION_LIST "${TARGET_SELECTION_STRIPPED}")
-	add_custom_target(target_selection_list_target ALL)
-	add_dependencies(target_selection_list_target ${TARGET_SELECTION_LIST})
+	string(REGEX REPLACE "[ \t\r\n]+" ";" SBT_LIST "${SBT_STRIPPED}")
+	add_custom_target(sbt_list_target ALL)
+	add_dependencies(sbt_list_target ${SBT_LIST})
 endif ()
 
 # zlib

@@ -33,9 +33,9 @@ namespace vkt
 namespace wsi
 {
 
-void createPresentIdWaitTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType);
+void createPresentIdWaitTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType);
 
-} // wsi
-} // vkt
+} // namespace wsi
+} // namespace vkt
 
 #endif // _VKTWSIPRESENTIDWAITTESTS_HPP

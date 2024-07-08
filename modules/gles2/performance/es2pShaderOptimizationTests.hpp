@@ -36,18 +36,18 @@ namespace Performance
 class ShaderOptimizationTests : public TestCaseGroup
 {
 public:
-								ShaderOptimizationTests		(Context& context);
-								~ShaderOptimizationTests	(void);
+    ShaderOptimizationTests(Context &context);
+    ~ShaderOptimizationTests(void);
 
-	void						init						(void);
+    void init(void);
 
 private:
-								ShaderOptimizationTests		(const ShaderOptimizationTests& other);
-	ShaderOptimizationTests&	operator=					(const ShaderOptimizationTests& other);
+    ShaderOptimizationTests(const ShaderOptimizationTests &other);
+    ShaderOptimizationTests &operator=(const ShaderOptimizationTests &other);
 };
 
-} // Performance
-} // gles2
-} // deqp
+} // namespace Performance
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2PSHADEROPTIMIZATIONTESTS_HPP

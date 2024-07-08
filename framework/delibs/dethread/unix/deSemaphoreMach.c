@@ -33,48 +33,48 @@
 
 DE_STATIC_ASSERT(sizeof(deSemaphore) >= sizeof(semaphore_t));
 
-deSemaphore deSemaphore_create (int initialValue, const deSemaphoreAttributes* attributes)
+deSemaphore deSemaphore_create(int initialValue, const deSemaphoreAttributes *attributes)
 {
-	semaphore_t	sem;
+    semaphore_t sem;
 
-	DE_UNREF(attributes);
-	DE_ASSERT(initialValue >= 0);
+    DE_UNREF(attributes);
+    DE_ASSERT(initialValue >= 0);
 
-	if (semaphore_create(mach_task_self(), &sem, SYNC_POLICY_FIFO, initialValue) != KERN_SUCCESS)
-		return 0;
+    if (semaphore_create(mach_task_self(), &sem, SYNC_POLICY_FIFO, initialValue) != KERN_SUCCESS)
+        return 0;
 
-	return (deSemaphore)sem;
+    return (deSemaphore)sem;
 }
 
-void deSemaphore_destroy (deSemaphore semaphore)
+void deSemaphore_destroy(deSemaphore semaphore)
 {
-	semaphore_t		sem	= (semaphore_t)semaphore;
-	kern_return_t	res	= semaphore_destroy(mach_task_self(), sem);
-	DE_ASSERT(res == 0);
-	DE_UNREF(res);
+    semaphore_t sem   = (semaphore_t)semaphore;
+    kern_return_t res = semaphore_destroy(mach_task_self(), sem);
+    DE_ASSERT(res == 0);
+    DE_UNREF(res);
 }
 
-void deSemaphore_increment (deSemaphore semaphore)
+void deSemaphore_increment(deSemaphore semaphore)
 {
-	semaphore_t		sem	= (semaphore_t)semaphore;
-	kern_return_t	res	= semaphore_signal(sem);
-	DE_ASSERT(res == 0);
-	DE_UNREF(res);
+    semaphore_t sem   = (semaphore_t)semaphore;
+    kern_return_t res = semaphore_signal(sem);
+    DE_ASSERT(res == 0);
+    DE_UNREF(res);
 }
 
-void deSemaphore_decrement (deSemaphore semaphore)
+void deSemaphore_decrement(deSemaphore semaphore)
 {
-	semaphore_t		sem	= (semaphore_t)semaphore;
-	kern_return_t	res	= semaphore_wait(sem);
-	DE_ASSERT(res == 0);
-	DE_UNREF(res);
+    semaphore_t sem   = (semaphore_t)semaphore;
+    kern_return_t res = semaphore_wait(sem);
+    DE_ASSERT(res == 0);
+    DE_UNREF(res);
 }
 
-deBool deSemaphore_tryDecrement (deSemaphore semaphore)
+bool deSemaphore_tryDecrement(deSemaphore semaphore)
 {
-	semaphore_t		sem = (semaphore_t)semaphore;
-	mach_timespec_t	ts	= { 0, 1 };	/* one nanosecond */
-	return (semaphore_timedwait(sem, ts) == KERN_SUCCESS);
+    semaphore_t sem    = (semaphore_t)semaphore;
+    mach_timespec_t ts = {0, 1}; /* one nanosecond */
+    return (semaphore_timedwait(sem, ts) == KERN_SUCCESS);
 }
 
 #endif /* DE_OS */

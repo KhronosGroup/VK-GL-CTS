@@ -35,18 +35,18 @@ namespace Functional
 class ShaderDiscardTests : public TestCaseGroup
 {
 public:
-							ShaderDiscardTests		(Context& context);
-	virtual					~ShaderDiscardTests		(void);
+    ShaderDiscardTests(Context &context);
+    virtual ~ShaderDiscardTests(void);
 
-	virtual void			init					(void);
+    virtual void init(void);
 
 private:
-							ShaderDiscardTests		(const ShaderDiscardTests&);		// not allowed!
-	ShaderDiscardTests&		operator=				(const ShaderDiscardTests&);		// not allowed!
+    ShaderDiscardTests(const ShaderDiscardTests &);            // not allowed!
+    ShaderDiscardTests &operator=(const ShaderDiscardTests &); // not allowed!
 };
 
-} // Functional
-} // gles2
-} // deqp
+} // namespace Functional
+} // namespace gles2
+} // namespace deqp
 
 #endif // _ES2FSHADERDISCARDTESTS_HPP

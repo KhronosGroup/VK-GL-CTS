@@ -2884,8 +2884,8 @@ KHR-GL45.cull_distance.functional
 KHR-GL45.cull_distance.negative
 KHR-GL45.texture_swizzle.api_errors
 KHR-GL45.texture_swizzle.intial_state
-KHR-GL45.texture_swizzle.smoke
-KHR-GL45.texture_swizzle.functional
+KHR-GL45.texture_swizzle.smoke*
+KHR-GL45.texture_swizzle.functional*
 KHR-GL45.draw_elements_base_vertex_tests.basevertex_behavior1
 KHR-GL45.draw_elements_base_vertex_tests.basevertex_behavior2
 KHR-GL45.draw_elements_base_vertex_tests.AEP_shader_stages
@@ -3923,7 +3923,7 @@ KHR-GL45.texture_view.view_classes
 KHR-GL45.texture_view.coherency
 KHR-GL45.texture_view.base_and_max_levels
 KHR-GL45.texture_view.reference_counting
-KHR-GL45.copy_image.functional
+KHR-GL45.copy_image.functional*
 KHR-GL45.copy_image.incomplete_tex
 KHR-GL45.copy_image.invalid_object
 KHR-GL45.copy_image.smoke_test

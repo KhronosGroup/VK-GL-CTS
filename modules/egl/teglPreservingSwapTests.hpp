@@ -34,15 +34,15 @@ namespace egl
 class PreservingSwapTests : public TestCaseGroup
 {
 public:
-			PreservingSwapTests		(EglTestContext& eglTestCtx);
-	void	init					(void);
+    PreservingSwapTests(EglTestContext &eglTestCtx);
+    void init(void);
 
 private:
-							PreservingSwapTests	(const PreservingSwapTests&);
-	PreservingSwapTests&	operator=			(const PreservingSwapTests&);
+    PreservingSwapTests(const PreservingSwapTests &);
+    PreservingSwapTests &operator=(const PreservingSwapTests &);
 };
 
-} // egl
-} // deqp
+} // namespace egl
+} // namespace deqp
 
 #endif // _TEGLPRESERVINGSWAPTESTS_HPP

@@ -46,66 +46,66 @@ namespace glcts
 class FragmentShadingRateAttachment : public TestCaseBase
 {
 public:
-	enum class TestKind
-	{
-		Scissor	  = 0,
-		MultiView = 1,
-		Count,
-	};
+    enum class TestKind
+    {
+        Scissor   = 0,
+        MultiView = 1,
+        Count,
+    };
 
-	struct TestcaseParam
-	{
-		TestKind testKind;
-		bool	 attachmentShadingRate;
-		bool	 multiShadingRate;
-		deUint32 framebufferSize;
-		deUint32 layerCount;
-	};
+    struct TestcaseParam
+    {
+        TestKind testKind;
+        bool attachmentShadingRate;
+        bool multiShadingRate;
+        uint32_t framebufferSize;
+        uint32_t layerCount;
+    };
 
-	struct Box
-	{
-		bool in(deUint32 xIn, deUint32 yIn)
-		{
-			return (xIn >= x && xIn < (x + width) && yIn >= y && yIn < (y + height));
-		}
-		deUint32 x;
-		deUint32 y;
-		deUint32 width;
-		deUint32 height;
-	};
+    struct Box
+    {
+        bool in(uint32_t xIn, uint32_t yIn)
+        {
+            return (xIn >= x && xIn < (x + width) && yIn >= y && yIn < (y + height));
+        }
+        uint32_t x;
+        uint32_t y;
+        uint32_t width;
+        uint32_t height;
+    };
 
 public:
-	FragmentShadingRateAttachment(Context& context, const ExtParameters& extParams, const TestcaseParam& testcaseParam,
-								  const char* name, const char* description);
+    FragmentShadingRateAttachment(Context &context, const ExtParameters &extParams, const TestcaseParam &testcaseParam,
+                                  const char *name, const char *description);
 
-	~FragmentShadingRateAttachment() override
-	{
-	}
+    ~FragmentShadingRateAttachment() override
+    {
+    }
 
-	void		  init(void) override;
-	void		  deinit(void) override;
-	IterateResult iterate(void) override;
-
-private:
-	std::string genVS() const;
-	std::string genFS() const;
-	glw::GLenum translateCoordsToShadingRate(deUint32 srLayer, deUint32 srx, deUint32 sry) const;
-	glw::GLenum translateDrawIDToShadingRate(deUint32 drawID) const;
-	deUint32	drawIDToViewID(deUint32 drawID) const;
-
-	void setupTest(void);
+    void init(void) override;
+    void deinit(void) override;
+    IterateResult iterate(void) override;
 
 private:
-	TestcaseParam			 m_tcParam;
-	glu::ShaderProgram*		 m_program;
-	glw::GLuint				 m_to_id;
-	glw::GLuint				 m_sr_to_id;
-	glw::GLuint				 m_fbo_id;
-	glw::GLuint				 m_vbo_id;
-	Box						 m_scissorBox;
-	std::vector<glw::GLenum> m_availableShadingRates;
-	glw::GLint				 m_srTexelWidth;
-	glw::GLint				 m_srTexelHeight;
+    std::string genVS() const;
+    std::string genFS() const;
+    glw::GLenum translateCoordsToShadingRate(uint32_t srLayer, uint32_t srx, uint32_t sry) const;
+    glw::GLenum translateDrawIDToShadingRate(uint32_t drawID) const;
+    uint32_t drawIDToViewID(uint32_t drawID) const;
+
+    void setupTest(void);
+
+private:
+    TestcaseParam m_tcParam;
+    glu::ShaderProgram *m_program;
+    glw::GLuint m_to_id;
+    glw::GLuint m_sr_to_id;
+    glw::GLuint m_fbo_id;
+    glw::GLuint m_vbo_id;
+    Box m_scissorBox;
+    std::vector<glw::GLenum> m_availableShadingRates;
+    glw::GLint m_srTexelWidth;
+    glw::GLint m_srTexelHeight;
 };
 
 } // namespace glcts

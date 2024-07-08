@@ -21,7 +21,7 @@
  *//*!
  * \file vktPipelineMultisampleBaseResolveAndPerSampleFetch.hpp
  * \brief Base class for tests that check results of multisample resolve
- *		  and/or values of individual samples
+ *          and/or values of individual samples
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineMultisampleBase.hpp"
@@ -38,39 +38,38 @@ namespace multisample
 class MSCaseBaseResolveAndPerSampleFetch : public MultisampleCaseBase
 {
 public:
-		MSCaseBaseResolveAndPerSampleFetch	(tcu::TestContext&		testCtx,
-											 const std::string&		name,
-											 const ImageMSParams&	imageMSParams)
-		: MultisampleCaseBase(testCtx, name, imageMSParams) {}
+    MSCaseBaseResolveAndPerSampleFetch(tcu::TestContext &testCtx, const std::string &name,
+                                       const ImageMSParams &imageMSParams)
+        : MultisampleCaseBase(testCtx, name, imageMSParams)
+    {
+    }
 
-	void initPrograms						(vk::SourceCollections&	programCollection) const;
+    void initPrograms(vk::SourceCollections &programCollection) const;
 };
 
 class MSInstanceBaseResolveAndPerSampleFetch : public MultisampleInstanceBase
 {
 public:
-							MSInstanceBaseResolveAndPerSampleFetch					(Context&											context,
-																					 const ImageMSParams&								imageMSParams);
+    MSInstanceBaseResolveAndPerSampleFetch(Context &context, const ImageMSParams &imageMSParams);
 
 protected:
+    tcu::TestStatus iterate(void);
 
-	tcu::TestStatus										iterate						(void);
+    virtual vk::VkPipelineMultisampleStateCreateInfo getMSStateCreateInfo(const ImageMSParams &imageMSParams) const;
 
-	virtual vk::VkPipelineMultisampleStateCreateInfo	getMSStateCreateInfo		(const ImageMSParams&								imageMSParams) const;
+    virtual const vk::VkDescriptorSetLayout *createMSPassDescSetLayout(const ImageMSParams &imageMSParams);
 
-	virtual const vk::VkDescriptorSetLayout*			createMSPassDescSetLayout	(const ImageMSParams&								imageMSParams);
+    virtual const vk::VkDescriptorSet *createMSPassDescSet(const ImageMSParams &imageMSParams,
+                                                           const vk::VkDescriptorSetLayout *descSetLayout);
 
-	virtual const vk::VkDescriptorSet*					createMSPassDescSet			(const ImageMSParams&								imageMSParams,
-																					 const vk::VkDescriptorSetLayout*					descSetLayout);
-
-	virtual tcu::TestStatus								verifyImageData				(const vk::VkImageCreateInfo&						imageMSInfo,
-																					 const vk::VkImageCreateInfo&						imageRSInfo,
-																					 const std::vector<tcu::ConstPixelBufferAccess>&	dataPerSample,
-																					 const tcu::ConstPixelBufferAccess&					dataRS) const = 0;
+    virtual tcu::TestStatus verifyImageData(const vk::VkImageCreateInfo &imageMSInfo,
+                                            const vk::VkImageCreateInfo &imageRSInfo,
+                                            const std::vector<tcu::ConstPixelBufferAccess> &dataPerSample,
+                                            const tcu::ConstPixelBufferAccess &dataRS) const = 0;
 };
 
-} // multisample
-} // pipeline
-} // vkt
+} // namespace multisample
+} // namespace pipeline
+} // namespace vkt
 
 #endif // _VKTPIPELINEMULTISAMPLEBASERESOLVEANDPERSAMPLEFETCH_HPP

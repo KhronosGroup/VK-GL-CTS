@@ -28,48 +28,48 @@ package com.drawelements.deqp.execserver;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.widget.TextView;
 import android.os.Bundle;
-
-import com.drawelements.deqp.testercore.Log;
+import android.widget.TextView;
 import com.drawelements.deqp.R;
+import com.drawelements.deqp.testercore.Log;
 
 public class ExecServerActivity extends Activity {
 
-	private TextView	m_statusText;
+    private TextView m_statusText;
 
-	@Override
-	protected void onCreate (Bundle savedInstance) {
-		super.onCreate(savedInstance);
-		setContentView(R.layout.exec_server);
+    @Override
+    protected void onCreate(Bundle savedInstance) {
+        super.onCreate(savedInstance);
+        setContentView(R.layout.exec_server);
 
-		m_statusText = (TextView)findViewById(R.id.status_text);
-	}
+        m_statusText = (TextView)findViewById(R.id.status_text);
+    }
 
-	@Override
-	protected void onStart () {
-		super.onStart();
-		// \todo [2015-10-06 pyry] Connect to service, check status, offer option for killing it
-		m_statusText.setText("dEQP ExecServer is running");
-	}
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // \todo [2015-10-06 pyry] Connect to service, check status, offer
+        // option for killing it
+        m_statusText.setText("dEQP ExecServer is running");
+    }
 
-	@Override
-	protected void onStop () {
-		super.onStop();
-	}
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
 
-	@Override
-	protected void onPause () {
-		super.onPause();
-	}
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
 
-	@Override
-	protected void onResume () {
-		super.onResume();
-	}
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
 
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-	}
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
 }

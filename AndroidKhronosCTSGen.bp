@@ -1,7 +1,5 @@
-
 // WARNING: This is auto-generated file. Do not modify, since changes will
 // be lost! Modify scripts/gen_khronos_cts_bp.py instead.
-
 
 cc_defaults {
     name: "khronosctscompilationflag_default",
@@ -17,6 +15,7 @@ cc_defaults {
         "-Wno-switch",
         "-Wno-unused-parameter",
         "-Wno-unused-variable",
+        "-Wno-macro-redefined",
     ],
 
     cpp_std: "c++17",
@@ -92,11 +91,13 @@ cc_defaults {
         "external/deqp-deps/SPIRV-Headers/include",
     ],
 
+    header_libs: ["jni_headers"],
+    shared_libs: ["libandroid"],
+
     sdk_version: "current",
     rtti: true,
     stl: "c++_static",
 }
-
 
 cc_library_static {
     name: "libkhronoscts_common",
@@ -345,7 +346,7 @@ cc_library_static {
         "framework/referencerenderer/rrVertexPacket.cpp",
         "framework/xexml/xeDefs.cpp",
         "framework/xexml/xeXMLParser.cpp",
- ],
+    ],
     export_include_dirs: [
         "execserver",
         "executor",
@@ -368,12 +369,11 @@ cc_library_static {
         "framework/randomshaders",
         "framework/referencerenderer",
         "framework/xexml",
- ],
+    ],
     static_libs: [
         "libpng_ndk",
- ],
+    ],
 }
-
 
 cc_library_static {
     name: "libkhronoscts_modules_gles",
@@ -834,7 +834,7 @@ cc_library_static {
         "modules/internal/ditTextureFormatTests.cpp",
         "modules/internal/ditVulkanTests.cpp",
         "modules/pch.cpp",
- ],
+    ],
     export_include_dirs: [
         "external/vulkancts/framework/vulkan",
         "external/vulkancts/framework/vulkan/generated/vulkan",
@@ -855,12 +855,11 @@ cc_library_static {
         "modules/gles31/stress",
         "modules/glshared",
         "modules/internal",
- ],
+    ],
     static_libs: [
         "libkhronoscts_common",
- ],
+    ],
 }
-
 
 cc_library_static {
     name: "libkhronoscts_openglcts",
@@ -870,6 +869,8 @@ cc_library_static {
     srcs: [
         "external/openglcts/modules/common/glcAggressiveShaderOptimizationsTests.cpp",
         "external/openglcts/modules/common/glcBlendEquationAdvancedTests.cpp",
+        "external/openglcts/modules/common/glcBufferObjectsTests.cpp",
+        "external/openglcts/modules/common/glcClipDistance.cpp",
         "external/openglcts/modules/common/glcCompressedFormatTests.cpp",
         "external/openglcts/modules/common/glcConfigList.cpp",
         "external/openglcts/modules/common/glcConfigListCase.cpp",
@@ -878,6 +879,7 @@ cc_library_static {
         "external/openglcts/modules/common/glcConfigPackage.cpp",
         "external/openglcts/modules/common/glcContext.cpp",
         "external/openglcts/modules/common/glcContextFlagsTests.cpp",
+        "external/openglcts/modules/common/glcCullDistance.cpp",
         "external/openglcts/modules/common/glcExposedExtensionsTests.cpp",
         "external/openglcts/modules/common/glcExtTokens.cpp",
         "external/openglcts/modules/common/glcFragDepthTests.cpp",
@@ -926,7 +928,9 @@ cc_library_static {
         "external/openglcts/modules/common/glcTextureLodBasicTests.cpp",
         "external/openglcts/modules/common/glcTextureLodBiasTests.cpp",
         "external/openglcts/modules/common/glcTextureRepeatModeTests.cpp",
+        "external/openglcts/modules/common/glcTransformFeedbackTests.cpp",
         "external/openglcts/modules/common/glcUniformBlockCase.cpp",
+        "external/openglcts/modules/common/glcUniformBlockNegativeTests.cpp",
         "external/openglcts/modules/common/glcUniformBlockTests.cpp",
         "external/openglcts/modules/common/glcViewportArrayTests.cpp",
         "external/openglcts/modules/common/subgroups/glcSubgroupsArithmeticTests.cpp",
@@ -944,9 +948,7 @@ cc_library_static {
         "external/openglcts/modules/common/subgroups/glcSubgroupsTests.cpp",
         "external/openglcts/modules/common/subgroups/glcSubgroupsTestsUtils.cpp",
         "external/openglcts/modules/common/subgroups/glcSubgroupsVoteTests.cpp",
-        "external/openglcts/modules/gl/gl3cClipDistance.cpp",
         "external/openglcts/modules/gl/gl3cCommonBugsTests.cpp",
-        "external/openglcts/modules/gl/gl3cCullDistanceTests.cpp",
         "external/openglcts/modules/gl/gl3cGLSLnoperspectiveTests.cpp",
         "external/openglcts/modules/gl/gl3cGPUShader5Tests.cpp",
         "external/openglcts/modules/gl/gl3cTestPackages.cpp",
@@ -1154,7 +1156,7 @@ cc_library_static {
         "external/openglcts/modules/glesext/texture_cube_map_array/esextcTextureCubeMapArrayTex3DValidation.cpp",
         "external/openglcts/modules/glesext/texture_shadow_lod/esextcTextureShadowLodFunctionsTest.cpp",
         "external/openglcts/modules/pch.cpp",
- ],
+    ],
     export_include_dirs: [
         "external/openglcts/modules",
         "external/openglcts/modules/common",
@@ -1176,15 +1178,14 @@ cc_library_static {
         "external/openglcts/modules/glesext/texture_buffer",
         "external/openglcts/modules/glesext/texture_cube_map_array",
         "external/openglcts/modules/glesext/texture_shadow_lod",
- ],
+    ],
     static_libs: [
         "libkhronoscts_common",
         "libkhronoscts_modules_gles",
         "deqp_glslang_SPIRV",
         "deqp_spirv-tools",
- ],
+    ],
 }
-
 
 cc_library_static {
     name: "libkhronoscts_vulkancts",
@@ -1267,6 +1268,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/api/vktApiImageCompressionControlTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiMaintenance3Check.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiMaintenance6Check.cpp",
+        "external/vulkancts/modules/vulkan/api/vktApiMaintenance7Tests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiMemoryRequirementInvarianceTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiNullHandleTests.cpp",
         "external/vulkancts/modules/vulkan/api/vktApiObjectManagementTests.cpp",
@@ -1280,6 +1282,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorBufferTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorCombinationTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorCopyTests.cpp",
+        "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorInlineUniformTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorSetRandomTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorUpdateASTests.cpp",
         "external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorUpdateTests.cpp",
@@ -1392,6 +1395,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/image/vktImageAtomicSpirvShaders.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageCompressionTranscodingSupport.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageDepthStencilDescriptorTests.cpp",
+        "external/vulkancts/modules/vulkan/image/vktImageDepthStencilSeparateTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageExtendedUsageBitTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageHostImageCopyTests.cpp",
         "external/vulkancts/modules/vulkan/image/vktImageLoadStoreTests.cpp",
@@ -1543,6 +1547,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemWorkgroupStorageTests.cpp",
         "external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemWsiSwapchainTests.cpp",
         "external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemYCbCrConversionTests.cpp",
+        "external/vulkancts/modules/vulkan/query_pool/vktQueryMaintenance7Tests.cpp",
         "external/vulkancts/modules/vulkan/query_pool/vktQueryPoolConcurrentTests.cpp",
         "external/vulkancts/modules/vulkan/query_pool/vktQueryPoolFragInvocationTests.cpp",
         "external/vulkancts/modules/vulkan/query_pool/vktQueryPoolOcclusionTests.cpp",
@@ -1610,6 +1615,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleResolveTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleTests.cpp",
+        "external/vulkancts/modules/vulkan/renderpass/vktRenderPassNestedCommandBuffersTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassSampleReadTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassSparseRenderTargetTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassSubpassDependencyTests.cpp",
@@ -1711,6 +1717,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmPhysicalStorageBufferPointerTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmPointerParameterTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmPtrAccessChainTests.cpp",
+        "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmRawAccessChainTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmSignedIntCompareTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmSignedOpTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmSpirvVersion1p4Tests.cpp",
@@ -1844,7 +1851,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/ycbcr/vktYCbCrTests.cpp",
         "external/vulkancts/modules/vulkan/ycbcr/vktYCbCrUtil.cpp",
         "external/vulkancts/modules/vulkan/ycbcr/vktYCbCrViewTests.cpp",
- ],
+    ],
     export_include_dirs: [
         "external/vulkancts/framework/vulkan",
         "external/vulkancts/framework/vulkan/generated/vulkan",
@@ -1897,15 +1904,14 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/util",
         "external/vulkancts/modules/vulkan/wsi",
         "external/vulkancts/modules/vulkan/ycbcr",
- ],
+    ],
     static_libs: [
         "libkhronoscts_common",
         "deqp_glslang_glslang",
         "deqp_spirv-tools",
         "deqp_amber",
- ],
+    ],
 }
-
 
 cc_library_static {
     name: "libkhronoscts_platform",
@@ -1926,16 +1932,16 @@ cc_library_static {
         "framework/platform/android/tcuAndroidWindow.cpp",
         "framework/platform/android/tcuTestLogParserJNI.cpp",
         "framework/platform/surfaceless/tcuSurfacelessPlatform.cpp",
- ],
+    ],
     export_include_dirs: [
         "external/openglcts/modules/runner",
         "framework/platform/android",
         "framework/platform/surfaceless",
- ],
+    ],
     static_libs: [
         "libkhronoscts_common",
         "libkhronoscts_modules_gles",
         "libkhronoscts_vulkancts",
         "libkhronoscts_openglcts",
- ],
+    ],
 }

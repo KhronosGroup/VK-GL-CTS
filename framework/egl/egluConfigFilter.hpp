@@ -43,67 +43,74 @@ class ConfigInfo;
 class CandidateConfig
 {
 public:
-					CandidateConfig		(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config);
-					CandidateConfig		(const ConfigInfo& configInfo);
+    CandidateConfig(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLConfig config);
+    CandidateConfig(const ConfigInfo &configInfo);
 
-	int				get					(deUint32 attrib) const;
+    int get(uint32_t attrib) const;
 
-	int				id					(void) const;
-	int				redSize				(void) const;
-	int				greenSize			(void) const;
-	int				blueSize			(void) const;
-	int				alphaSize			(void) const;
-	int				depthSize			(void) const;
-	int				stencilSize			(void) const;
-	int				samples				(void) const;
+    int id(void) const;
+    int redSize(void) const;
+    int greenSize(void) const;
+    int blueSize(void) const;
+    int alphaSize(void) const;
+    int depthSize(void) const;
+    int stencilSize(void) const;
+    int samples(void) const;
 
-	deUint32		renderableType		(void) const;
-	deUint32		surfaceType			(void) const;
-	deUint32		colorComponentType	(void) const;
-	deUint32		colorBufferType		(void) const;
-	tcu::RGBA		colorBits			(void) const { return tcu::RGBA(redSize(), greenSize(), blueSize(), alphaSize());	}
+    uint32_t renderableType(void) const;
+    uint32_t surfaceType(void) const;
+    uint32_t colorComponentType(void) const;
+    uint32_t colorBufferType(void) const;
+    tcu::RGBA colorBits(void) const
+    {
+        return tcu::RGBA(redSize(), greenSize(), blueSize(), alphaSize());
+    }
 
 private:
-	enum Type
-	{
-		TYPE_EGL_OBJECT = 0,
-		TYPE_CONFIG_INFO,
+    enum Type
+    {
+        TYPE_EGL_OBJECT = 0,
+        TYPE_CONFIG_INFO,
 
-		TYPE_LAST
-	};
+        TYPE_LAST
+    };
 
-	const Type		m_type;
-	union
-	{
-		struct
-		{
-			const eglw::Library*	egl;
-			eglw::EGLDisplay		display;
-			eglw::EGLConfig			config;
-		} object;
-		const ConfigInfo*			configInfo;
-	} m_cfg;
+    const Type m_type;
+    union
+    {
+        struct
+        {
+            const eglw::Library *egl;
+            eglw::EGLDisplay display;
+            eglw::EGLConfig config;
+        } object;
+        const ConfigInfo *configInfo;
+    } m_cfg;
 };
 
-typedef bool (*ConfigFilter) (const CandidateConfig& candidate);
+typedef bool (*ConfigFilter)(const CandidateConfig &candidate);
 
 class FilterList
 {
 public:
-								FilterList		(void) {}
-								~FilterList		(void) {}
+    FilterList(void)
+    {
+    }
+    ~FilterList(void)
+    {
+    }
 
-	FilterList&					operator<<		(ConfigFilter filter);
-	FilterList&					operator<<		(const FilterList& other);
+    FilterList &operator<<(ConfigFilter filter);
+    FilterList &operator<<(const FilterList &other);
 
-	bool						match			(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config) const;
-	bool						match			(const ConfigInfo& configInfo) const;
-	bool						match			(const CandidateConfig& candidate) const;
+    bool match(const eglw::Library &egl, eglw::EGLDisplay display, eglw::EGLConfig config) const;
+    bool match(const ConfigInfo &configInfo) const;
+    bool match(const CandidateConfig &candidate) const;
 
 private:
-	std::vector<ConfigFilter>	m_rules;
+    std::vector<ConfigFilter> m_rules;
 };
 
-} // eglu
+} // namespace eglu
 
 #endif // _EGLUCONFIGFILTER_HPP
