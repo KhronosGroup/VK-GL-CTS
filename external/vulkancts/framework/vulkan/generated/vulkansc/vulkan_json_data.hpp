@@ -41817,7 +41817,7 @@ static void print_VkCalibratedTimestampInfoEXT(const VkCalibratedTimestampInfoEX
 }
 
 static void print_VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT(
-    VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT obj, const std::string &s, bool commaNeeded = true)
+    VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -41847,7 +41847,7 @@ static void print_VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT(
         _OUT << "}" << std::endl;
 }
 static void print_VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT(
-    const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT *obj, const std::string &s, bool commaNeeded = true)
+    const VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR *obj, const std::string &s, bool commaNeeded = true)
 {
     PRINT_SPACE
     _OUT << "{" << std::endl;
@@ -44927,7 +44927,7 @@ static void dumpPNextChain(const void *pNext)
             print_VkPhysicalDeviceHostQueryResetFeatures((VkPhysicalDeviceHostQueryResetFeatures *)pNext,
                                                          "VkPhysicalDeviceHostQueryResetFeatures", true);
             break;
-        case VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT:
+        case VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR:
             print_VkDeviceQueueGlobalPriorityCreateInfoEXT((VkDeviceQueueGlobalPriorityCreateInfoEXT *)pNext,
                                                            "VkDeviceQueueGlobalPriorityCreateInfoEXT", true);
             break;
@@ -44991,14 +44991,14 @@ static void dumpPNextChain(const void *pNext)
             print_VkTimelineSemaphoreSubmitInfo((VkTimelineSemaphoreSubmitInfo *)pNext, "VkTimelineSemaphoreSubmitInfo",
                                                 true);
             break;
-        case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT:
+        case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR:
             print_VkPipelineVertexInputDivisorStateCreateInfoEXT(
                 (VkPipelineVertexInputDivisorStateCreateInfoEXT *)pNext,
                 "VkPipelineVertexInputDivisorStateCreateInfoEXT", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT:
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_KHR:
             print_VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT(
-                (VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT *)pNext,
+                (VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR *)pNext,
                 "VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT", true);
             break;
         case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT:
@@ -45021,7 +45021,7 @@ static void dumpPNextChain(const void *pNext)
             print_VkPhysicalDeviceShaderAtomicFloatFeaturesEXT((VkPhysicalDeviceShaderAtomicFloatFeaturesEXT *)pNext,
                                                                "VkPhysicalDeviceShaderAtomicFloatFeaturesEXT", true);
             break;
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT:
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR:
             print_VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT(
                 (VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT *)pNext,
                 "VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT", true);

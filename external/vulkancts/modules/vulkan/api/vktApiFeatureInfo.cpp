@@ -1499,20 +1499,20 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT(Context &context)
     const VkBool32 checkAlways            = VK_TRUE;
     const InstanceInterface &vk           = context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT vertexAttributeDivisorPropertiesEXT =
+    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR vertexAttributeDivisorPropertiesKHR =
         vk::initVulkanStructure();
-    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesEXT);
+    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesKHR);
     TestLog &log                                = context.getTestContext().getLog();
     bool limitsOk                               = true;
 
     vk.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 
     FeatureLimitTableItem featureLimitTable[] = {
-        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),
+        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesKHR.maxVertexAttribDivisor),
          LIM_MIN_UINT32((1 << 16) - 1)},
     };
 
-    log << TestLog::Message << vertexAttributeDivisorPropertiesEXT << TestLog::EndMessage;
+    log << TestLog::Message << vertexAttributeDivisorPropertiesKHR << TestLog::EndMessage;
 
     for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
         limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
@@ -1526,16 +1526,14 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT(Context &context)
 tcu::TestStatus validateLimitsExtVertexAttributeDivisorKHR(Context &context)
 {
     const VkBool32 checkAlways = VK_TRUE;
-#ifndef CTS_USES_VULKANSC
-    const InstanceInterface &vki          = context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
     vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR vertexAttributeDivisorProperties =
         context.getVertexAttributeDivisorProperties();
+#ifndef CTS_USES_VULKANSC
+    const InstanceInterface &vki                = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice       = context.getPhysicalDevice();
     vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorProperties);
     vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
-#else
-    const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT &vertexAttributeDivisorProperties =
-        context.getVertexAttributeDivisorPropertiesEXT();
 #endif
     TestLog &log  = context.getTestContext().getLog();
     bool limitsOk = true;

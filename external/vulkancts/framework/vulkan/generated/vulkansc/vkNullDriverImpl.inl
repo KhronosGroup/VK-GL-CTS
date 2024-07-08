@@ -1147,6 +1147,21 @@ VKAPI_ATTR VkResult VKAPI_CALL releaseDisplayEXT (VkPhysicalDevice physicalDevic
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL acquireWinrtDisplayNV (VkPhysicalDevice physicalDevice, VkDisplayKHR display)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(display);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getWinrtDisplayNV (VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(deviceRelativeId);
+	DE_UNREF(pDisplay);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL displayPowerControlEXT (VkDevice device, VkDisplayKHR display, const VkDisplayPowerInfoEXT* pDisplayPowerInfo)
 {
 	DE_UNREF(device);
@@ -1944,6 +1959,8 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFenceProperties,						getPhysicalDeviceExternalFenceProperties),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSciSyncAttributesNV,							getPhysicalDeviceSciSyncAttributesNV),
 	VK_NULL_FUNC_ENTRY(vkReleaseDisplayEXT,												releaseDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkAcquireWinrtDisplayNV,											acquireWinrtDisplayNV),
+	VK_NULL_FUNC_ENTRY(vkGetWinrtDisplayNV,												getWinrtDisplayNV),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2EXT,						getPhysicalDeviceSurfaceCapabilities2EXT),
 	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroups,									enumeratePhysicalDeviceGroups),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDevicePresentRectanglesKHR,							getPhysicalDevicePresentRectanglesKHR),

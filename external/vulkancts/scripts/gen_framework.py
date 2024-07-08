@@ -1071,6 +1071,9 @@ class API:
                     for newType in requirement.newTypes:
                         if (newType.name == enumName) or (newType.name == enumAlias):
                             return True
+                    for extendedEnum in requirement.extendedEnums:
+                        if extendedEnum.extends == enumName:
+                            return True
             return False
         # do removal using above function
         enumsToRemove = []

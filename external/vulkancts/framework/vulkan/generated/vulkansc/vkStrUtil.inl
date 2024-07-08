@@ -676,6 +676,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderFloat16In
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFloatControlsProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHostQueryResetFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceQueueGlobalPriorityCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyGlobalPriorityPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugUtilsObjectNameInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugUtilsObjectTagInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugUtilsLabelEXT& value);
@@ -707,7 +709,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreWaitInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreSignalInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDivisorDescriptionEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePCIBusInfoPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice8BitStorageFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkanMemoryModelFeatures& value);

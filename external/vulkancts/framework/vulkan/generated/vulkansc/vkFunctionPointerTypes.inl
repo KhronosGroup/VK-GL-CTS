@@ -185,6 +185,8 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportSemaphoreSciSyncObjNVFunc)				
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSciSyncAttributesNVFunc)							(VkPhysicalDevice physicalDevice, const VkSciSyncAttributesInfoNV* pSciSyncAttributesInfo, pt::NvSciSyncAttrList pAttributes);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateSemaphoreSciSyncPoolNVFunc)									(VkDevice device, const VkSemaphoreSciSyncPoolCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphoreSciSyncPoolNV* pSemaphorePool);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ReleaseDisplayEXTFunc)												(VkPhysicalDevice physicalDevice, VkDisplayKHR display);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireWinrtDisplayNVFunc)											(VkPhysicalDevice physicalDevice, VkDisplayKHR display);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetWinrtDisplayNVFunc)												(VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* DisplayPowerControlEXTFunc)										(VkDevice device, VkDisplayKHR display, const VkDisplayPowerInfoEXT* pDisplayPowerInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* RegisterDeviceEventEXTFunc)										(VkDevice device, const VkDeviceEventInfoEXT* pDeviceEventInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* RegisterDisplayEventEXTFunc)										(VkDevice device, VkDisplayKHR display, const VkDisplayEventInfoEXT* pDisplayEventInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence);

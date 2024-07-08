@@ -3567,6 +3567,18 @@ bool check_VK_NV_descriptor_pool_overallocation(const tcu::UVec2& v, const ExtPr
 	return isCompatibile(1, 1, v);
 }
 
+bool check_VK_KHR_maintenance7(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_maintenance7"))
+		return true;
+
+	// depends attribute in xml: VK_VERSION_1_1
+	return isCompatibile(1, 1, v);
+}
+
 bool check_VK_MESA_image_alignment_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3836,6 +3848,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_shader_expect_assume",							&check_VK_KHR_shader_expect_assume),
 	std::make_pair("VK_KHR_maintenance6",									&check_VK_KHR_maintenance6),
 	std::make_pair("VK_NV_descriptor_pool_overallocation",					&check_VK_NV_descriptor_pool_overallocation),
+	std::make_pair("VK_KHR_maintenance7",									&check_VK_KHR_maintenance7),
 	std::make_pair("VK_MESA_image_alignment_control",						&check_VK_MESA_image_alignment_control),
 };
 
@@ -4218,6 +4231,8 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 1, "VK_KHR_maintenance6"),
 	std::make_tuple(1, 1, "VK_NV_descriptor_pool_overallocation"),
 	std::make_tuple(1, 0, "VK_NV_raw_access_chains"),
+	std::make_tuple(1, 0, "VK_KHR_shader_relaxed_extended_instruction"),
+	std::make_tuple(1, 1, "VK_KHR_maintenance7"),
 	std::make_tuple(1, 0, "VK_NV_shader_atomic_float16_vector"),
 	std::make_tuple(1, 0, "VK_EXT_shader_replicated_composites"),
 	std::make_tuple(1, 0, "VK_NV_ray_tracing_validation"),

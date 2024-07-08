@@ -1258,6 +1258,31 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance6Properti
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance7FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance7PropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceLayeredApiPropertiesListKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceLayeredApiPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceLayeredApiVulkanPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkRenderingAreaInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_RENDERING_AREA_INFO;
@@ -2721,6 +2746,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceVertexInputDynamicSt
 template<> VkStructureType getStructureType<VkPhysicalDeviceExternalMemoryRDMAFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkVertexInputBindingDescription2EXT> (void)

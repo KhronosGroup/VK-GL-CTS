@@ -3827,10 +3827,12 @@ tcu::TestStatus ConcurrentComputeInstance::iterate(void)
     }
 
     if (err == ERROR_ORDER)
+    {
         log << tcu::TestLog::Message
             << "Note: Low-priority queue was faster than high-priority one. This is not an error, but priorities may "
                "be inverted."
             << tcu::TestLog::EndMessage;
+    }
 
     return tcu::TestStatus::pass("Test passed");
 }

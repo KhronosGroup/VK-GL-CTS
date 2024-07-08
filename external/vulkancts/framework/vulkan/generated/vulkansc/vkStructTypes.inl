@@ -2529,6 +2529,21 @@ struct VkDeviceQueueGlobalPriorityCreateInfoEXT
 	VkQueueGlobalPriority	globalPriority;
 };
 
+struct VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		globalPriorityQuery;
+};
+
+struct VkQueueFamilyGlobalPriorityPropertiesEXT
+{
+	VkStructureType			sType;
+	void*					pNext;
+	uint32_t				priorityCount;
+	VkQueueGlobalPriority	priorities[VK_MAX_GLOBAL_PRIORITY_SIZE];
+};
+
 struct VkDebugUtilsObjectNameInfoEXT
 {
 	VkStructureType	sType;
@@ -2862,11 +2877,12 @@ struct VkPipelineVertexInputDivisorStateCreateInfoEXT
 	const VkVertexInputBindingDivisorDescriptionEXT*	pVertexBindingDivisors;
 };
 
-struct VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
+struct VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	uint32_t		maxVertexAttribDivisor;
+	VkBool32		supportsNonZeroFirstInstance;
 };
 
 struct VkPhysicalDevicePCIBusInfoPropertiesEXT
@@ -4388,6 +4404,10 @@ typedef VkPhysicalDeviceFloatControlsProperties VkPhysicalDeviceFloatControlsPro
 typedef VkPhysicalDeviceHostQueryResetFeatures VkPhysicalDeviceHostQueryResetFeaturesEXT;
 
 typedef VkDeviceQueueGlobalPriorityCreateInfoEXT VkDeviceQueueGlobalPriorityCreateInfoKHR;
+
+typedef VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR;
+
+typedef VkQueueFamilyGlobalPriorityPropertiesEXT VkQueueFamilyGlobalPriorityPropertiesKHR;
 
 typedef VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT;
 

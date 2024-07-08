@@ -9,14 +9,14 @@ const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			getPerformanceQueryPr
 const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&		getBlendOperationAdvancedPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHostPropertiesEXT			(void) const;
-const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		getVertexAttributeDivisorPropertiesEXT		(void) const;
 const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&					getPCIBusInfoPropertiesEXT					(void) const;
 const vk::VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			getSubgroupSizeControlProperties			(void) const;
 const vk::VkPhysicalDeviceFragmentShadingRatePropertiesKHR&			getFragmentShadingRateProperties			(void) const;
-const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationProperties				(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		getTexelBufferAlignmentProperties			(void) const;
 const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					getRobustness2PropertiesEXT					(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&			getCustomBorderColorPropertiesEXT			(void) const;
+const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		getVertexAttributeDivisorProperties			(void) const;
+const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationProperties				(void) const;
 const vk::VkPhysicalDeviceDriverProperties&							getDriverProperties							(void) const;
 const vk::VkPhysicalDeviceIDProperties&								getIDProperties								(void) const;
 const vk::VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const;
