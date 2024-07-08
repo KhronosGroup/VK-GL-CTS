@@ -5,6 +5,7 @@
 
 static const char* s_allowedDeviceKhrExtensions[] =
 {
+	"VK_KHR_calibrated_timestamps",
 	"VK_KHR_copy_commands2",
 	"VK_KHR_display_swapchain",
 	"VK_KHR_external_fence_fd",
@@ -12,7 +13,10 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_external_semaphore_fd",
 	"VK_KHR_format_feature_flags2",
 	"VK_KHR_fragment_shading_rate",
+	"VK_KHR_global_priority",
 	"VK_KHR_incremental_present",
+	"VK_KHR_index_type_uint8",
+	"VK_KHR_line_rasterization",
 	"VK_KHR_object_refresh",
 	"VK_KHR_performance_query",
 	"VK_KHR_shader_clock",
@@ -21,5 +25,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_swapchain",
 	"VK_KHR_swapchain_mutable_format",
 	"VK_KHR_synchronization2",
+	"VK_KHR_vertex_attribute_divisor",
 };
 

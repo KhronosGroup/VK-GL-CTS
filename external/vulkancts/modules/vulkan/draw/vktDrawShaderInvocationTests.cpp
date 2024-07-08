@@ -49,13 +49,8 @@ void checkSupport(Context &context, TestType type)
     if ((context.getSubgroupProperties().supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT) == 0u)
         TCU_THROW(NotSupportedError, "Device does not support subgroup quad operations");
 
-#ifndef CTS_USES_VULKANSC
     if (!context.getShaderDemoteToHelperInvocationFeatures().shaderDemoteToHelperInvocation)
         TCU_THROW(NotSupportedError, "demoteToHelperInvocation not supported.");
-#else
-    if (!context.getShaderDemoteToHelperInvocationFeaturesEXT().shaderDemoteToHelperInvocation)
-        TCU_THROW(NotSupportedError, "demoteToHelperInvocation not supported.");
-#endif
 
     // EXT test requires that the extension be supported, because OpIsHelperInvocationEXT was not promoted to core.
     if (type == EXT && !context.isDeviceFunctionalitySupported("VK_EXT_shader_demote_to_helper_invocation"))

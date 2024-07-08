@@ -1354,7 +1354,7 @@ const char* getSubpassContentsName (VkSubpassContents value)
 	{
 		case VK_SUBPASS_CONTENTS_INLINE:									return "VK_SUBPASS_CONTENTS_INLINE";
 		case VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS:					return "VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS";
-		case VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_EXT:	return "VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_EXT";
+		case VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_KHR:	return "VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_KHR";
 		default:															return nullptr;
 	}
 }
@@ -1746,6 +1746,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR:										return "VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR:												return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR:									return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR";
+		case VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_RESERVATION_INFO_KHR:								return "VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_RESERVATION_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO:						return "VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO:										return "VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO";
@@ -2374,6 +2375,12 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT:					return "VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_BUFFER_EMBEDDED_SAMPLERS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_LIST_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LAYERED_API_VULKAN_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_VALIDATION_FEATURES_NV";
@@ -3427,7 +3434,7 @@ tcu::Format::Bitfield<32> getRenderingFlagsStr (VkRenderingFlags value)
 		tcu::Format::BitDesc(VK_RENDERING_SUSPENDING_BIT,							"VK_RENDERING_SUSPENDING_BIT"),
 		tcu::Format::BitDesc(VK_RENDERING_RESUMING_BIT,								"VK_RENDERING_RESUMING_BIT"),
 		tcu::Format::BitDesc(VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT,			"VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT"),
-		tcu::Format::BitDesc(VK_RENDERING_CONTENTS_INLINE_BIT_EXT,					"VK_RENDERING_CONTENTS_INLINE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_RENDERING_CONTENTS_INLINE_BIT_KHR,					"VK_RENDERING_CONTENTS_INLINE_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3843,6 +3850,19 @@ const char* getLayeredDriverUnderlyingApiMSFTName (VkLayeredDriverUnderlyingApiM
 	{
 		case VK_LAYERED_DRIVER_UNDERLYING_API_NONE_MSFT:	return "VK_LAYERED_DRIVER_UNDERLYING_API_NONE_MSFT";
 		case VK_LAYERED_DRIVER_UNDERLYING_API_D3D12_MSFT:	return "VK_LAYERED_DRIVER_UNDERLYING_API_D3D12_MSFT";
+		default:											return nullptr;
+	}
+}
+
+const char* getPhysicalDeviceLayeredApiKHRName (VkPhysicalDeviceLayeredApiKHR value)
+{
+	switch (value)
+	{
+		case VK_PHYSICAL_DEVICE_LAYERED_API_VULKAN_KHR:		return "VK_PHYSICAL_DEVICE_LAYERED_API_VULKAN_KHR";
+		case VK_PHYSICAL_DEVICE_LAYERED_API_D3D12_KHR:		return "VK_PHYSICAL_DEVICE_LAYERED_API_D3D12_KHR";
+		case VK_PHYSICAL_DEVICE_LAYERED_API_METAL_KHR:		return "VK_PHYSICAL_DEVICE_LAYERED_API_METAL_KHR";
+		case VK_PHYSICAL_DEVICE_LAYERED_API_OPENGL_KHR:		return "VK_PHYSICAL_DEVICE_LAYERED_API_OPENGL_KHR";
+		case VK_PHYSICAL_DEVICE_LAYERED_API_OPENGLES_KHR:	return "VK_PHYSICAL_DEVICE_LAYERED_API_OPENGLES_KHR";
 		default:											return nullptr;
 	}
 }
@@ -4645,7 +4665,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_MESA_DOZEN:					return "VK_DRIVER_ID_MESA_DOZEN";
 		case VK_DRIVER_ID_MESA_NVK:						return "VK_DRIVER_ID_MESA_NVK";
 		case VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA:	return "VK_DRIVER_ID_IMAGINATION_OPEN_SOURCE_MESA";
-		case VK_DRIVER_ID_MESA_AGXV:					return "VK_DRIVER_ID_MESA_AGXV";
+		case VK_DRIVER_ID_MESA_HONEYKRISP:				return "VK_DRIVER_ID_MESA_HONEYKRISP";
 		case VK_DRIVER_ID_RESERVED_27:					return "VK_DRIVER_ID_RESERVED_27";
 		default:										return nullptr;
 	}
@@ -10084,6 +10104,67 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance6Pro
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance7FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceMaintenance7FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaintenance7 = " << value.maintenance7 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance7PropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceMaintenance7PropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trobustFragmentShadingRateAttachmentAccess = " << value.robustFragmentShadingRateAttachmentAccess << '\n';
+	s << "\tseparateDepthStencilAttachmentAccess = " << value.separateDepthStencilAttachmentAccess << '\n';
+	s << "\tmaxDescriptorSetTotalUniformBuffersDynamic = " << value.maxDescriptorSetTotalUniformBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetTotalStorageBuffersDynamic = " << value.maxDescriptorSetTotalStorageBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetTotalBuffersDynamic = " << value.maxDescriptorSetTotalBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindTotalUniformBuffersDynamic = " << value.maxDescriptorSetUpdateAfterBindTotalUniformBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindTotalStorageBuffersDynamic = " << value.maxDescriptorSetUpdateAfterBindTotalStorageBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindTotalBuffersDynamic = " << value.maxDescriptorSetUpdateAfterBindTotalBuffersDynamic << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesListKHR& value)
+{
+	s << "VkPhysicalDeviceLayeredApiPropertiesListKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlayeredApiCount = " << value.layeredApiCount << '\n';
+	s << "\tpLayeredApis = " << value.pLayeredApis << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLayeredApiPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceLayeredApiPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvendorID = " << value.vendorID << '\n';
+	s << "\tdeviceID = " << value.deviceID << '\n';
+	s << "\tlayeredAPI = " << value.layeredAPI << '\n';
+	s << "\tdeviceName = " << (const char*)value.deviceName << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLayeredApiVulkanPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceLayeredApiVulkanPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tproperties = " << value.properties << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkRenderingAreaInfoKHR& value)
 {
 	s << "VkRenderingAreaInfoKHR = {\n";
@@ -12341,6 +12422,16 @@ std::ostream& operator<< (std::ostream& s, const VkPerformanceQuerySubmitInfoKHR
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPerformanceQueryReservationInfoKHR& value)
+{
+	s << "VkPerformanceQueryReservationInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxPerformanceQueriesPerPool = " << value.maxPerformanceQueriesPerPool << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkHeadlessSurfaceCreateInfoEXT& value)
 {
 	s << "VkHeadlessSurfaceCreateInfoEXT = {\n";
@@ -14098,6 +14189,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalMemoryR
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\texternalMemoryRDMA = " << value.externalMemoryRDMA << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderRelaxedExtendedInstruction = " << value.shaderRelaxedExtendedInstruction << '\n';
 	s << '}';
 	return s;
 }

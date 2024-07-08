@@ -261,7 +261,7 @@ uint32_t getSubgroupSizeFromMode(Context &context, const SubgroupSizeMode subgro
         context.getSubgroupSizeControlProperties();
 #else
     const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-        context.getSubgroupSizeControlPropertiesEXT();
+        context.getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
 
     switch (subgroupSizeMode)

@@ -66,6 +66,8 @@ if (!m_vk.getPhysicalDeviceExternalFenceProperties)
 m_vk.getPhysicalDeviceExternalFencePropertiesKHR = (GetPhysicalDeviceExternalFencePropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceExternalFencePropertiesKHR");
 m_vk.getPhysicalDeviceSciSyncAttributesNV = (GetPhysicalDeviceSciSyncAttributesNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceSciSyncAttributesNV");
 m_vk.releaseDisplayEXT = (ReleaseDisplayEXTFunc) GET_PROC_ADDR("vkReleaseDisplayEXT");
+m_vk.acquireWinrtDisplayNV = (AcquireWinrtDisplayNVFunc) GET_PROC_ADDR("vkAcquireWinrtDisplayNV");
+m_vk.getWinrtDisplayNV = (GetWinrtDisplayNVFunc) GET_PROC_ADDR("vkGetWinrtDisplayNV");
 m_vk.getPhysicalDeviceSurfaceCapabilities2EXT = (GetPhysicalDeviceSurfaceCapabilities2EXTFunc) GET_PROC_ADDR("vkGetPhysicalDeviceSurfaceCapabilities2EXT");
 m_vk.enumeratePhysicalDeviceGroups = (EnumeratePhysicalDeviceGroupsFunc) GET_PROC_ADDR("vkEnumeratePhysicalDeviceGroups");
 if (!m_vk.enumeratePhysicalDeviceGroups)

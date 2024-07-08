@@ -132,7 +132,7 @@ static bool checkVertexPipelineStages(const void *internalData, vector<const voi
         context->getSubgroupSizeControlProperties();
 #else
     const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-        context->getSubgroupSizeControlPropertiesEXT();
+        context->getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
 
     TestLog &log         = context->getTestContext().getLog();
@@ -174,7 +174,7 @@ static bool checkFragmentPipelineStages(const void *internalData, vector<const v
         context->getSubgroupSizeControlProperties();
 #else
     const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-        context->getSubgroupSizeControlPropertiesEXT();
+        context->getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
     TestLog &log         = context->getTestContext().getLog();
     const uint32_t *data = reinterpret_cast<const uint32_t *>(datas[0]);
@@ -219,7 +219,7 @@ static bool checkCompute(const void *internalData, vector<const void *> datas, c
         context->getSubgroupSizeControlProperties();
 #else
     const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-        context->getSubgroupSizeControlPropertiesEXT();
+        context->getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
     TestLog &log               = context->getTestContext().getLog();
     const uint32_t globalSizeX = numWorkgroups[0] * localSize[0];
@@ -265,7 +265,7 @@ static bool checkComputeRequireFull(const void *internalData, vector<const void 
         context->getSubgroupSizeControlProperties();
 #else
     const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-        context->getSubgroupSizeControlPropertiesEXT();
+        context->getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
     TestLog &log               = context->getTestContext().getLog();
     const uint32_t globalSizeX = numWorkgroups[0] * localSize[0];
@@ -564,7 +564,7 @@ void supportedCheckFeatures(Context &context, CaseDefinition caseDef)
             context.getSubgroupSizeControlFeatures();
 #else
         const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT &subgroupSizeControlFeatures =
-            context.getSubgroupSizeControlFeaturesEXT();
+            context.getSubgroupSizeControlFeatures();
 #endif // CTS_USES_VULKANSC
 
         if (subgroupSizeControlFeatures.subgroupSizeControl == false)
@@ -577,7 +577,7 @@ void supportedCheckFeatures(Context &context, CaseDefinition caseDef)
                 context.getSubgroupSizeControlProperties();
 #else
             const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-                context.getSubgroupSizeControlPropertiesEXT();
+                context.getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
 
             if ((subgroupSizeControlProperties.requiredSubgroupSizeStages & caseDef.shaderStage) != caseDef.shaderStage)
@@ -593,7 +593,7 @@ void supportedCheckFeatures(Context &context, CaseDefinition caseDef)
             context.getSubgroupSizeControlFeatures();
 #else
         const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT &subgroupSizeControlFeatures =
-            context.getSubgroupSizeControlFeaturesEXT();
+            context.getSubgroupSizeControlFeatures();
 #endif // CTS_USES_VULKANSC
 
         if (subgroupSizeControlFeatures.computeFullSubgroups == false)
@@ -805,7 +805,7 @@ TestStatus testRequireFullSubgroups(Context &context, const CaseDefinition caseD
         context.getSubgroupSizeControlProperties();
 #else
     const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-        context.getSubgroupSizeControlPropertiesEXT();
+        context.getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
     const VkPhysicalDeviceProperties &physicalDeviceProperties = context.getDeviceProperties();
     // Calculate the local workgroup sizes to exercise the maximum supported by the driver
@@ -850,7 +850,7 @@ TestStatus testRequireSubgroupSize(Context &context, const CaseDefinition caseDe
             context.getSubgroupSizeControlProperties();
 #else
         const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlPropertiesEXT();
+            context.getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
         const VkPhysicalDeviceProperties &physicalDeviceProperties = context.getDeviceProperties();
         const uint32_t requiredSubgroupSize =
@@ -950,7 +950,7 @@ TestStatus testRequireSubgroupSize(Context &context, const CaseDefinition caseDe
             context.getSubgroupSizeControlProperties();
 #else
         const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-            context.getSubgroupSizeControlPropertiesEXT();
+            context.getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
         const uint32_t requiredSubgroupSize =
             getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
@@ -1002,7 +1002,7 @@ TestStatus noSSBOtestRequireSubgroupSize(Context &context, const CaseDefinition 
         context.getSubgroupSizeControlProperties();
 #else
     const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT &subgroupSizeControlProperties =
-        context.getSubgroupSizeControlPropertiesEXT();
+        context.getSubgroupSizeControlProperties();
 #endif // CTS_USES_VULKANSC
     const uint32_t requiredSubgroupSize =
         getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);

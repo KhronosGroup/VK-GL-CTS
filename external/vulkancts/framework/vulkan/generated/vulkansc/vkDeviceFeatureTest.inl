@@ -43,8 +43,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemorySciBufFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -86,8 +86,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures 
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -131,8 +131,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalSciSyncFeaturesNV
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -176,8 +176,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalSciSync2FeaturesN
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -220,8 +220,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestMultiviewFeatures (Contex
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -265,8 +265,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest16BitStorageFeatures (Con
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -307,8 +307,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderSubgroupExtendedTyp
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -349,8 +349,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSamplerYcbcrConversionFea
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -391,8 +391,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestProtectedMemoryFeatures (
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -433,8 +433,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBlendOperationAdvancedFea
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -475,8 +475,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -518,8 +518,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -560,8 +560,50 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures (C
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestGlobalPriorityQueryFeaturesKHR (Context& context)
+{
+    const PlatformInterface&                vkp = context.getPlatformInterface();
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const CustomInstance                    instance                (createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const InstanceDriver&                    instanceDriver            (instance.getDriver());
+    const VkPhysicalDevice                    physicalDevice = chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+    const tcu::CommandLine&                    commandLine = context.getTestContext().getCommandLine();
+    bool                                    isSubProcess = context.getTestContext().getCommandLine().isSubProcess();
+    VkDeviceObjectReservationCreateInfo memReservationStatMax = context.getResourceInterface()->getStatMax();
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR, globalPriorityQuery),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR*>(featuresStruct);
+        checkFeatures(vkp, instance, instanceDriver, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion(), commandLine);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -621,8 +663,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeature
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -663,8 +705,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -707,8 +749,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures (Cont
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -751,8 +793,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkanMemoryModelFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -794,8 +836,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicInt64Features
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -847,8 +889,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderAtomicFloatFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -890,8 +932,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFea
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -932,8 +974,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestASTCDecodeFeaturesEXT (Co
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -974,8 +1016,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestScalarBlockLayoutFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1016,8 +1058,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayo
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1058,8 +1100,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestDepthClipEnableFeaturesEX
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1102,8 +1144,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestBufferDeviceAddressFeatur
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1144,8 +1186,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImagelessFramebufferFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1186,8 +1228,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTextureCompressionASTCHDR
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1228,8 +1270,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcrImageArraysFeaturesE
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1271,8 +1313,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestPerformanceQueryFeaturesK
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1314,8 +1356,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderClockFeaturesKHR (C
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1356,8 +1398,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestIndexTypeUint8FeaturesKHR
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1400,8 +1442,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShaderInterlockFe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1442,8 +1484,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSeparateDepthStencilLayou
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1484,8 +1526,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderDemoteToHelperInvoc
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1526,8 +1568,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestTexelBufferAlignmentFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1569,8 +1611,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSubgroupSizeControlFeatur
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1616,8 +1658,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestLineRasterizationFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1669,8 +1711,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan11Features (Context
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1757,8 +1799,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan12Features (Context
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1813,8 +1855,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkan13Features (Context
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1856,8 +1898,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeatures
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1898,8 +1940,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeatu
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1942,8 +1984,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2Feat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -1986,8 +2028,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT (C
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2028,8 +2070,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestImageRobustnessFeaturesEX
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2071,8 +2113,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT (C
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2114,8 +2156,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64Fea
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2158,8 +2200,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestFragmentShadingRateFeatur
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2200,8 +2242,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestShaderTerminateInvocation
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2242,8 +2284,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2284,8 +2326,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestColorWriteEnableFeaturesE
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2326,8 +2368,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestSynchronization2FeaturesK
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2368,8 +2410,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVulkanSC10Features (Conte
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2410,8 +2452,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestYcbcr2Plane444FormatsFeat
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2452,8 +2494,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExternalMemoryScreenBuffe
 
     if (numErrors > 0)
         return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
-    else
-        return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
 
@@ -2473,6 +2515,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_draw_parameters_features", createDeviceWithUnsupportedFeaturesTestShaderDrawParametersFeatures);
 	addFunctionCase(testGroup, "shader_float16_int8_features", createDeviceWithUnsupportedFeaturesTestShaderFloat16Int8Features);
 	addFunctionCase(testGroup, "host_query_reset_features", createDeviceWithUnsupportedFeaturesTestHostQueryResetFeatures);
+	addFunctionCase(testGroup, "global_priority_query_features_khr", createDeviceWithUnsupportedFeaturesTestGlobalPriorityQueryFeaturesKHR);
 	addFunctionCase(testGroup, "descriptor_indexing_features", createDeviceWithUnsupportedFeaturesTestDescriptorIndexingFeatures);
 	addFunctionCase(testGroup, "timeline_semaphore_features", createDeviceWithUnsupportedFeaturesTestTimelineSemaphoreFeatures);
 	addFunctionCase(testGroup, "8_bit_storage_features", createDeviceWithUnsupportedFeaturesTest8BitStorageFeatures);

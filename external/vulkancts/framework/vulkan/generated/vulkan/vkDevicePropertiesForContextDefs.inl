@@ -86,6 +86,7 @@ const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR&		Context::getVert
 const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&				Context::getLayeredDriverPropertiesMSFT				(void) const { return m_device->getLayeredDriverPropertiesMSFT();				}
 const vk::VkPhysicalDeviceLineRasterizationPropertiesKHR&			Context::getLineRasterizationProperties				(void) const { return m_device->getLineRasterizationProperties();				}
 const vk::VkPhysicalDeviceMaintenance6PropertiesKHR&				Context::getMaintenance6Properties					(void) const { return m_device->getMaintenance6Properties();					}
+const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&				Context::getMaintenance7Properties					(void) const { return m_device->getMaintenance7Properties();					}
 const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&		Context::getImageAlignmentControlPropertiesMESA		(void) const { return m_device->getImageAlignmentControlPropertiesMESA();		}
 const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupProperties						(void) const { return m_device->getSubgroupProperties();						}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				Context::getProtectedMemoryProperties				(void) const { return m_device->getProtectedMemoryProperties();					}
