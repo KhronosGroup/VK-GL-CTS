@@ -173,9 +173,9 @@ void registerOptions(de::cmdline::Parser &parser)
     parser
         << Option<QuietStdout>("q", "quiet", "Suppress messages to standard output")
         << Option<CasePath>("n", "deqp-case", "Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)")
+        << Option<CaseListFile>("f", "deqp-caselist-file", "Read case list (in trie format) from given file")
         << Option<CaseList>(DE_NULL, "deqp-caselist",
                             "Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})")
-        << Option<CaseListFile>(DE_NULL, "deqp-caselist-file", "Read case list (in trie format) from given file")
         << Option<CaseListResource>(DE_NULL, "deqp-caselist-resource",
                                     "Read case list (in trie format) from given file located application's assets")
         << Option<StdinCaseList>(DE_NULL, "deqp-stdin-caselist", "Read case list (in trie format) from stdin")
